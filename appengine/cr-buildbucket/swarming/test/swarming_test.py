@@ -36,7 +36,7 @@ from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from swarming import isolate
 from swarming import swarming
-from test.test_util import future, future_exception, ununicide
+from test.test_util import future, future_exception, ununicode
 import api_common
 import bbutil
 import errors
@@ -860,7 +860,7 @@ class SwarmingTest(BaseTest):
         'numerical_value_for_coverage_in_format_obj':
             42,
     }
-    self.assertEqual(ununicide(actual_task_def), expected_task_def)
+    self.assertEqual(ununicode(actual_task_def), expected_task_def)
 
     self.assertEqual(
         set(build.tags), {
@@ -1288,7 +1288,7 @@ class SwarmingTest(BaseTest):
         'numerical_value_for_coverage_in_format_obj':
             42,
     }
-    self.assertEqual(ununicide(actual_task_def), expected_task_def)
+    self.assertEqual(ununicode(actual_task_def), expected_task_def)
 
     self.assertEqual(
         set(build.tags), {

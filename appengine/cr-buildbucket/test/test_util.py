@@ -12,12 +12,12 @@ from google.appengine.ext import ndb
 from proto.config import project_config_pb2
 
 
-def ununicide(jsonish):  # pragma: no cover
+def ununicode(jsonish):  # pragma: no cover
   if isinstance(jsonish, dict):
-    return {ununicide(k): ununicide(v) for k, v in jsonish.iteritems()}
+    return {ununicode(k): ununicode(v) for k, v in jsonish.iteritems()}
 
   if isinstance(jsonish, list):
-    return map(ununicide, jsonish)
+    return map(ununicode, jsonish)
 
   if isinstance(jsonish, unicode):
     return str(jsonish)
