@@ -49,6 +49,7 @@ type TestArgs struct {
 	Hosts    []string
 	TaskName string
 
+	XTestArgs          string
 	XClientTest        bool
 	XJobOwner          string
 	XKeyvals           map[string]string
@@ -70,6 +71,9 @@ func TestCommand(c Config, r TestArgs) *exec.Cmd {
 	args = append(args, "-hosts", strings.Join(r.Hosts, ","))
 	args = append(args, "-task-name", r.TaskName)
 
+	if r.XTestArgs != "" {
+		args = append(args, "-x-test-args", r.XTestArgs)
+	}
 	if r.XClientTest {
 		args = append(args, "-x-client-test")
 	} else {

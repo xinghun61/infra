@@ -62,6 +62,7 @@ type args struct {
 	xClientTest         bool
 	xKeyvals            map[string]string
 	xProvisionLabels    []string
+	xTestArgs           string
 }
 
 func parseArgs() *args {
@@ -77,6 +78,8 @@ func parseArgs() *args {
 		"Labels to provision, comma separated")
 	flag.Var(flagx.JSONMap(&a.xKeyvals), "keyvals",
 		"JSON string of job keyvals")
+	flag.StringVar(&a.xTestArgs, "test-args", "",
+		"Test args (meaning depends on test)")
 	flag.Parse()
 
 	return a
@@ -171,6 +174,7 @@ func runTest(b *swarming.Bot, i *harness.Info, a *args, logdogOutput io.Writer, 
 		TaskArgs:           ta,
 		Hosts:              []string{i.DUTName},
 		TaskName:           a.taskName,
+		XTestArgs:          a.xTestArgs,
 		XClientTest:        a.xClientTest,
 		XKeyvals:           a.xKeyvals,
 		XLevel:             lucifer.LuciferLevelSkylabProvision,
