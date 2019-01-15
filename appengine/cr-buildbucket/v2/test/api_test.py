@@ -116,9 +116,7 @@ class RpcImplTests(BaseTestCase):
     )
 
   def test_invalid_field_mask(self):
-    req = rpc_pb2.GetBuildRequest(
-        fields=field_mask_pb2.FieldMask(paths=['invalid'])
-    )
+    req = rpc_pb2.GetBuildRequest(fields=dict(paths=['invalid']))
     self.call(
         self.api.GetBuild,
         req,
@@ -144,9 +142,7 @@ class RpcImplTests(BaseTestCase):
     get_async.return_value = future(
         self.new_build_v1(input_properties=bbutil.dict_to_struct({'a': 'b'})),
     )
-    req = rpc_pb2.GetBuildRequest(
-        id=1, fields=field_mask_pb2.FieldMask(paths=['input.properties'])
-    )
+    req = rpc_pb2.GetBuildRequest(id=1, fields=dict(paths=['input.properties']))
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.input.properties.items(), [('a', 'b')])
 
@@ -243,10 +239,8 @@ class SearchTests(BaseTestCase):
     search_async.return_value = future((builds_v1, 'next page token'))
 
     req = rpc_pb2.SearchBuildsRequest(
-        predicate=rpc_pb2.BuildPredicate(
-            builder=build_pb2.BuilderID(
-                project='chromium', bucket='try', builder='linux-try'
-            ),
+        predicate=dict(
+            builder=dict(project='chromium', bucket='try', builder='linux-try'),
         ),
         page_size=10,
         page_token='page token',
@@ -326,9 +320,7 @@ class UpdateBuildTests(BaseTestCase):
       expected_props = {'a': 1}
       build_steps = model.BuildSteps(
           key=model.BuildSteps.key_for(build.key),
-          step_container=build_pb2.Build(
-              steps=[step_pb2.Step(name='bot_update')],
-          ),
+          step_container=build_pb2.Build(steps=[dict(name='bot_update')],),
       )
       build_steps.put()
 
@@ -447,10 +439,10 @@ class BatchTests(BaseTestCase):
 
     req = rpc_pb2.BatchRequest(
         requests=[
-            rpc_pb2.BatchRequest.Request(
-                search_builds=rpc_pb2.SearchBuildsRequest(
-                    predicate=rpc_pb2.BuildPredicate(
-                        builder=build_pb2.BuilderID(
+            dict(
+                search_builds=dict(
+                    predicate=dict(
+                        builder=dict(
                             project='chromium',
                             bucket='try',
                             builder='linux-rel',
@@ -458,9 +450,7 @@ class BatchTests(BaseTestCase):
                     ),
                 ),
             ),
-            rpc_pb2.BatchRequest.Request(
-                get_build=rpc_pb2.GetBuildRequest(id=3),
-            ),
+            dict(get_build=dict(id=3)),
         ],
     )
     res = self.call(self.api.Batch, req)
@@ -486,10 +476,8 @@ class BatchTests(BaseTestCase):
 
     req = rpc_pb2.BatchRequest(
         requests=[
-            rpc_pb2.BatchRequest.Request(
-                get_build=rpc_pb2.GetBuildRequest(id=1),
-            ),
-            rpc_pb2.BatchRequest.Request(),
+            dict(get_build=dict(id=1)),
+            dict(),
         ],
     )
     res = self.call(self.api.Batch, req)
@@ -497,14 +485,14 @@ class BatchTests(BaseTestCase):
         res,
         rpc_pb2.BatchResponse(
             responses=[
-                rpc_pb2.BatchResponse.Response(
-                    error=status_pb2.Status(
+                dict(
+                    error=dict(
                         code=prpc.StatusCode.NOT_FOUND.value,
                         message='not found',
                     ),
                 ),
-                rpc_pb2.BatchResponse.Response(
-                    error=status_pb2.Status(
+                dict(
+                    error=dict(
                         code=prpc.StatusCode.INVALID_ARGUMENT.value,
                         message='request is not specified',
                     ),
@@ -517,9 +505,7 @@ class BatchTests(BaseTestCase):
 class BuildPredicateToSearchQueryTests(BaseTestCase):
 
   def test_project(self):
-    predicate = rpc_pb2.BuildPredicate(
-        builder=build_pb2.BuilderID(project='chromium'),
-    )
+    predicate = rpc_pb2.BuildPredicate(builder=dict(project='chromium'),)
     q = api.build_predicate_to_search_query(predicate)
     self.assertEqual(q.project, 'chromium')
     self.assertFalse(q.bucket_ids)
@@ -527,7 +513,7 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
 
   def test_project_bucket(self):
     predicate = rpc_pb2.BuildPredicate(
-        builder=build_pb2.BuilderID(project='chromium', bucket='try'),
+        builder=dict(project='chromium', bucket='try'),
     )
     q = api.build_predicate_to_search_query(predicate)
     self.assertFalse(q.project)
@@ -536,9 +522,7 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
 
   def test_project_bucket_builder(self):
     predicate = rpc_pb2.BuildPredicate(
-        builder=build_pb2.BuilderID(
-            project='chromium', bucket='try', builder='linux-rel'
-        ),
+        builder=dict(project='chromium', bucket='try', builder='linux-rel'),
     )
     q = api.build_predicate_to_search_query(predicate)
     self.assertFalse(q.project)
