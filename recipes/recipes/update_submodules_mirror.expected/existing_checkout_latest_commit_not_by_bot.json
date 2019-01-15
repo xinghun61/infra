@@ -168,6 +168,7 @@
     "cmd": [
       "git",
       "branch",
+      "-f",
       "master-original",
       "HEAD~"
     ],

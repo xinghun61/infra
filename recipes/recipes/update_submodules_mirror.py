@@ -146,7 +146,7 @@ def RunSteps(api, source_repo, target_repo):
   # This branch is used by the log cache job to ensure that the cache point
   # remains reachable even after this recipe runs again - if we put the cache
   # point at HEAD it wouldn't be.
-  api.git('branch', 'master-original', 'HEAD~')
+  api.git('branch', '-f', 'master-original', 'HEAD~')
 
   # We've effectively deleted the commit that was at HEAD before. This means
   # that we've diverged from the remote repo, and hence must do a force push.
