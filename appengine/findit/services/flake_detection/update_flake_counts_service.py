@@ -139,6 +139,7 @@ def _UpdateCountsForNewFlake(start_date):
   cursor = None
 
   while more:
+    ndb.get_context().clear_cache()
     flakes, cursor, more = Flake.query().filter(
         Flake.last_occurred_time > start_date).filter(
             Flake.flake_score_last_week == 0).fetch_page(
@@ -162,6 +163,7 @@ def _UpdateCountsForOldFlake(start_date):
   cursor = None
 
   while more:
+    ndb.get_context().clear_cache()
     flakes, cursor, more = Flake.query().filter(
         Flake.flake_score_last_week > 0).fetch_page(
             100, start_cursor=cursor)
