@@ -31,3 +31,38 @@ message BotDimensions {
   string dut_name = 3;
 }
 
+// ServerRole is adapted from chrome.chromeos_infra.skylab.proto.inventory
+// (Server.Role enum). It is filtered down to only server roles that are
+// applicable to Skylab.
+//
+// Commented-out fields are those that exist in the inventory proto schema, but
+// do no apply to this API.
+enum ServerRole {
+  ROLE_INVALID = 0;
+  // ROLE_AFE = 1;
+  ROLE_CRASH_SERVER = 2;
+  // ROLE_DATABASE = 3;
+  // ROLE_DATABASE_SLAVE = 4;
+  ROLE_DEVSERVER = 5;
+  // ROLE_DRONE = 6;
+  // ROLE_GOLO_PROXY = 7;
+  // ROLE_HOST_SCHEDULER = 8;
+  // ROLE_SCHEDULER = 9;
+  // ROLE_SENTINEL = 10;
+  // ROLE_SHARD = 11;
+  ROLE_SUITE_SCHEDULER = 12;
+  ROLE_SKYLAB_DRONE = 13;
+  ROLE_SKYLAB_SUITE_PROXY = 14;
+  ROLE_RPMSERVER = 15;
+}
+
+// Server is adapted from chrome.chromeos_infra.skylab.proto.inventory
+// (Server message type). It is filtered down to only aspects applicable
+// to Skylab, and of interest to clients of the crosskylabadmin APIs.
+message Server {
+  string hostname = 1;
+
+  repeated ServerRole roles = 2;
+
+  repeated string dut_uids = 3;
+}

@@ -90,3 +90,20 @@ func (s *DecoratedInventory) AssignDutsToDrones(c context.Context, req *AssignDu
 	}
 	return
 }
+
+func (s *DecoratedInventory) ListServers(c context.Context, req *ListServersRequest) (rsp *ListServersResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "ListServers", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.ListServers(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "ListServers", rsp, err)
+	}
+	return
+}

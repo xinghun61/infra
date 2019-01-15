@@ -299,3 +299,12 @@ func (is *ServerImpl) assignDutsToDronesNoRetry(ctx context.Context, req *fleet.
 
 	return resp, nil
 }
+
+// ListServers implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) ListServers(ctx context.Context, req *fleet.ListServersRequest) (resp *fleet.ListServersResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	return nil, status.Error(codes.Unimplemented, "ListServers not yet implemented")
+}

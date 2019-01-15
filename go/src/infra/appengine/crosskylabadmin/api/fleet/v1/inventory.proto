@@ -4,6 +4,8 @@
 
 syntax = "proto3";
 
+import "infra/appengine/crosskylabadmin/api/fleet/v1/common.proto";
+
 package crosskylabadmin.fleet;
 
 option go_package = "fleet";
@@ -36,7 +38,8 @@ service Inventory {
   // AssignDutsToDrones assigns the given duts to drones.
   rpc AssignDutsToDrones(AssignDutsToDronesRequest) returns (AssignDutsToDronesResponse);
 
-  // TODO(akeshet): Add a ListDrones rpc.
+  // ListServers lists the servers in the current environment.
+  rpc ListServers(ListServersRequest) returns (ListServersResponse);
 }
 
 message EnsurePoolHealthyRequest {
@@ -243,4 +246,17 @@ message AssignDutsToDronesResponse {
   // It is intended to be the gerrit CL corresponding to the change, or the
   // gitiles path for a committed changelist for the change.
   string url = 2;
+}
+
+message ListServersRequest {
+  message Filter {
+    // Role of servers to list; if absent, list servers of all roles.
+    ServerRole role = 1;
+  }
+
+  Filter filter = 1;
+}
+
+message ListServersResponse {
+  repeated Server servers = 1;
 }
