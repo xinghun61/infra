@@ -138,6 +138,7 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (
 					"cipd_package": recipe.Recipe.CipdPackage,
 					"cipd_version": recipe.Recipe.CipdVersion,
 				},
+				"execution_timeout_secs": worker.Deadline,
 			},
 		},
 	}

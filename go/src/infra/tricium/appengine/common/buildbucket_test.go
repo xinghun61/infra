@@ -20,6 +20,7 @@ func TestParametersJSON(t *testing.T) {
 		w := &admin.Worker{
 			Name:       "FileIsolator",
 			Dimensions: []string{"pool:Chrome", "os:Ubuntu13.04"},
+			Deadline:   1200,
 		}
 		recipe := &admin.Worker_Recipe{
 			Recipe: &tricium.Recipe{
@@ -47,6 +48,7 @@ func TestParametersJSON(t *testing.T) {
 						"cipd_package": "infra/recipe_bundle",
 						"cipd_version": "live",
 					},
+					"execution_timeout_secs": float64(1200),
 				},
 			},
 		}
