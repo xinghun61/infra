@@ -5,8 +5,11 @@
 import json
 
 from google.protobuf import json_format
+from google.protobuf import text_format
 
 from google.appengine.ext import ndb
+
+from proto.config import project_config_pb2
 
 
 def ununicide(jsonish):  # pragma: no cover
@@ -42,3 +45,9 @@ def msg_to_dict(message):  # pragma: no cover
   support for dicts, but not protobuf messages.
   """
   return json.loads(json_format.MessageToJson(message))
+
+
+def parse_bucket_cfg(text):
+  cfg = project_config_pb2.Bucket()
+  text_format.Merge(text, cfg)
+  return cfg

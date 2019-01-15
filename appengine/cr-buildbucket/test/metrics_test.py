@@ -8,7 +8,7 @@ from google.appengine.ext import ndb
 import mock
 import gae_ts_mon
 
-from test import config_test
+from test import test_util
 from test.test_util import future
 from testing_utils import testing
 import config
@@ -214,7 +214,7 @@ class MetricsTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
           name: "luci.chromium.try"
           swarming {

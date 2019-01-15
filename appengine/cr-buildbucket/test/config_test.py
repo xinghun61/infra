@@ -21,14 +21,9 @@ import mock
 
 from proto.config import project_config_pb2
 from swarming import flatten_swarmingcfg
+from test import test_util
 import config
 import errors
-
-
-def parse_bucket_cfg(text):
-  cfg = project_config_pb2.Bucket()
-  text_format.Merge(text, cfg)
-  return cfg
 
 
 def short_bucket_cfg(cfg):
@@ -37,7 +32,7 @@ def short_bucket_cfg(cfg):
   return cfg
 
 
-LUCI_CHROMIUM_TRY = parse_bucket_cfg(
+LUCI_CHROMIUM_TRY = test_util.parse_bucket_cfg(
     '''
     name: "luci.chromium.try"
     acls {
@@ -66,7 +61,7 @@ LUCI_CHROMIUM_TRY = parse_bucket_cfg(
 '''
 )
 
-LUCI_DART_TRY = parse_bucket_cfg(
+LUCI_DART_TRY = test_util.parse_bucket_cfg(
     '''
     name: "luci.dart.try"
     swarming {
@@ -82,7 +77,7 @@ LUCI_DART_TRY = parse_bucket_cfg(
     '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_LINUX = parse_bucket_cfg(
+MASTER_TRYSERVER_CHROMIUM_LINUX = test_util.parse_bucket_cfg(
     '''
     name: "master.tryserver.chromium.linux"
     acls {
@@ -96,7 +91,7 @@ MASTER_TRYSERVER_CHROMIUM_LINUX = parse_bucket_cfg(
     '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_WIN = parse_bucket_cfg(
+MASTER_TRYSERVER_CHROMIUM_WIN = test_util.parse_bucket_cfg(
     '''
     name: "master.tryserver.chromium.win"
     acls {
@@ -110,7 +105,7 @@ MASTER_TRYSERVER_CHROMIUM_WIN = parse_bucket_cfg(
     '''
 )
 
-MASTER_TRYSERVER_CHROMIUM_MAC = parse_bucket_cfg(
+MASTER_TRYSERVER_CHROMIUM_MAC = test_util.parse_bucket_cfg(
     '''
     name: "master.tryserver.chromium.mac"
     acls {
@@ -124,7 +119,7 @@ MASTER_TRYSERVER_CHROMIUM_MAC = parse_bucket_cfg(
     '''
 )
 
-MASTER_TRYSERVER_V8 = parse_bucket_cfg(
+MASTER_TRYSERVER_V8 = test_util.parse_bucket_cfg(
     '''
     name: "master.tryserver.v8"
     acls {

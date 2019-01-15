@@ -14,8 +14,8 @@ import mock
 
 from proto import build_pb2
 from proto.config import service_config_pb2
-from test.test_util import future, msg_to_dict
-from test import config_test
+from test import test_util
+from test.test_util import future
 import config
 import errors
 import model
@@ -47,7 +47,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "luci.chromium.try"
             acls {
@@ -71,7 +71,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "master.chromium"
             acls {
@@ -548,7 +548,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNotNone(self.test_build.complete_time)
 
     out_props = model.BuildOutputProperties.key_for(self.test_build.key).get()
-    self.assertEqual(msg_to_dict(out_props.properties), {'foo': 'bar'})
+    self.assertEqual(
+        test_util.msg_to_dict(out_props.properties), {'foo': 'bar'}
+    )
 
   def test_succeed_timed_out_build(self):
     self.test_build.status = model.BuildStatus.COMPLETED
@@ -721,12 +723,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg('name: "master.foo"'),
+        test_util.parse_bucket_cfg('name: "master.foo"'),
     )
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg('name: "master.bar"'),
+        test_util.parse_bucket_cfg('name: "master.bar"'),
     )
 
     self.put_many_builds(5, bucket_id='chromium/master.foo')
@@ -741,7 +743,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg('name: "master.foo"'),
+        test_util.parse_bucket_cfg('name: "master.foo"'),
     )
     self.put_many_builds(5, bucket_id='chromium/master.foo')
 
@@ -757,7 +759,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg('name: "master.foo"'),
+        test_util.parse_bucket_cfg('name: "master.foo"'),
     )
 
     service.pause(bid, True)

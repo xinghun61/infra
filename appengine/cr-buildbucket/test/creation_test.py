@@ -14,8 +14,8 @@ import mock
 from proto import common_pb2
 from proto import rpc_pb2
 from proto.config import service_config_pb2
-from test import config_test
-from test.test_util import future, future_exception, msg_to_dict
+from test import test_util
+from test.test_util import future, future_exception
 import bbutil
 import config
 import creation
@@ -43,7 +43,7 @@ class CreationTest(testing.AppengineTestCase):
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
-    self.chromium_try = config_test.parse_bucket_cfg(
+    self.chromium_try = test_util.parse_bucket_cfg(
         '''
         name: "luci.chromium.try"
         swarming {
@@ -129,7 +129,7 @@ class CreationTest(testing.AppengineTestCase):
   def test_add_with_properties(self):
     props = {'foo': 'bar', 'qux': 1}
     build = self.add(dict(properties=bbutil.dict_to_struct(props)))
-    self.assertEqual(msg_to_dict(build.input_properties), props)
+    self.assertEqual(test_util.msg_to_dict(build.input_properties), props)
     self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
 
   def test_add_with_notify(self):

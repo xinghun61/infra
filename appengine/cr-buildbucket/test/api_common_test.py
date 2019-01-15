@@ -10,7 +10,7 @@ utils.fix_protobuf_package()
 
 from google.protobuf import struct_pb2
 
-from test import config_test
+from test import test_util
 from testing_utils import testing
 
 import api_common
@@ -140,7 +140,7 @@ class ToBucketIDTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg('name: "luci.chromium.try"'),
+        test_util.parse_bucket_cfg('name: "luci.chromium.try"'),
     )
 
   def to_bucket_id(self, bucket):

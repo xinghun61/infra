@@ -24,10 +24,9 @@ import mock
 import gae_ts_mon
 
 from proto import rpc_pb2
-from test import config_test
+from test import test_util
 from test.test_util import future, future_exception
 import api
-import api_common
 import bbutil
 import config
 import creation
@@ -74,7 +73,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "luci.chromium.try"
             acls {
@@ -281,7 +280,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "readonly"
             acls {
@@ -311,7 +310,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "luci.chromium.ci"
             acls {
@@ -413,7 +412,7 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   def test_put_batch_auth_error(self):
     # Not a SCHEDULER role.
-    bucket_cfg = config_test.parse_bucket_cfg(
+    bucket_cfg = test_util.parse_bucket_cfg(
         '''
         name: "ci"
         acls {
@@ -845,7 +844,7 @@ class V1ApiTest(testing.EndpointsTestCase):
   def test_get_bucket(self, get_buildbucket_cfg_url):
     get_buildbucket_cfg_url.return_value = 'https://example.com/buildbucket.cfg'
 
-    bucket_cfg = config_test.parse_bucket_cfg(
+    bucket_cfg = test_util.parse_bucket_cfg(
         '''
         name: "master.tryserver.chromium.linux"
         acls {
@@ -927,7 +926,7 @@ class ConvertBucketTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "luci.chromium.try"
             acls {
@@ -952,7 +951,7 @@ class ConvertBucketTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg('name: "secret"'),
+        test_util.parse_bucket_cfg('name: "secret"'),
     )
     with self.assertRaises(auth.AuthorizationError):
       api.convert_bucket('secret')

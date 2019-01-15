@@ -10,7 +10,7 @@ from components import auth_testing
 from testing_utils import testing
 
 from swarming import swarmbucket_api
-from test import config_test
+from test import test_util
 from test.test_util import future
 import api_common
 import config
@@ -42,7 +42,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     auth.bootstrap_group('all', [auth.Anonymous])
     user.clear_request_cache()
 
-    chromium_cfg = config_test.parse_bucket_cfg(
+    chromium_cfg = test_util.parse_bucket_cfg(
         '''
           name: "luci.chromium.try"
           acls {
@@ -74,7 +74,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     )
     config.put_bucket('chromium', 'deadbeef', chromium_cfg)
 
-    v8_cfg = config_test.parse_bucket_cfg(
+    v8_cfg = test_util.parse_bucket_cfg(
         '''
       name: "luci.v8.try"
       acls {
@@ -140,7 +140,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
   def test_get_builders(self):
     secret_cfg = 'name: "secret"'
     config.put_bucket(
-        'secret', 'deadbeef', config_test.parse_bucket_cfg(secret_cfg)
+        'secret', 'deadbeef', test_util.parse_bucket_cfg(secret_cfg)
     )
 
     resp = self.call_api('get_builders').json_body
@@ -191,7 +191,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
       }
     '''
     config.put_bucket(
-        'other', 'deadbeef', config_test.parse_bucket_cfg(other_bucket)
+        'other', 'deadbeef', test_util.parse_bucket_cfg(other_bucket)
     )
 
     req = {

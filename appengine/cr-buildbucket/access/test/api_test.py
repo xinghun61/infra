@@ -4,13 +4,10 @@
 
 from testing_utils import testing
 
-from components import auth
-from components import auth_testing
-
 from access import access_pb2
 from access import api
 from proto.config import project_config_pb2
-from test import config_test
+from test import test_util
 import config
 import user
 
@@ -51,7 +48,7 @@ class AccessApiTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "try"
             acls {
@@ -64,7 +61,7 @@ class AccessApiTest(testing.AppengineTestCase):
     config.put_bucket(
         'chromium',
         'a' * 40,
-        config_test.parse_bucket_cfg(
+        test_util.parse_bucket_cfg(
             '''
             name: "ci"
             acls {
