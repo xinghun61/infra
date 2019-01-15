@@ -444,6 +444,7 @@ class ServeCodeCoverageData(BaseHandler):
     revision = self.request.get('revision')
     path = self.request.get('path')
     data_type = self.request.get('data_type')
+
     if not data_type and path:
       if path.endswith('/'):
         data_type = 'dirs'
@@ -531,11 +532,18 @@ class ServeCodeCoverageData(BaseHandler):
         elif data_type == 'components':
           path = path or '>>'
         else:
+          if data_type != 'files':
+            return BaseHandler.CreateError(
+                'Expected data_type to be "files", but got "%s"' % data_type,
+                400)
+
           template = 'coverage/file_view.html'
-        assert data_type, 'Unknown data_type'
 
         code_revision_index = '%s-%s' % (project, revision)
         entity = CoverageData.Get(host, code_revision_index, data_type, path)
+        if not entity:
+          return BaseHandler.CreateError('Requested path does not exist', 404)
+
         metadata = entity.data if entity else None
         data = {
             'commit_position': report.commit_position,
