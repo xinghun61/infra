@@ -73,12 +73,18 @@ func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
 
 const swarmingAPISuffix = "_ah/api/swarming/v1/"
 
-func newSwarmingService(service string, c *http.Client) (*swarming.Service, error) {
-	s, err := swarming.New(c)
+func newSwarmingService(ctx context.Context, auth authcli.Flags, env site.Environment) (*swarming.Service, error) {
+	cl, err := httpClient(ctx, &auth)
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to create Swarming client for host %s", service).Err()
+		return nil, errors.Annotate(err, "create swarming client").Err()
 	}
-	s.BasePath = service + swarmingAPISuffix
+
+	s, err := swarming.New(cl)
+	if err != nil {
+		return nil, errors.Annotate(err, "create swarming client").Err()
+	}
+
+	s.BasePath = env.SwarmingService + swarmingAPISuffix
 	return s, nil
 }
 

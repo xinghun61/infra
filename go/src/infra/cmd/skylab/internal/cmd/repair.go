@@ -47,15 +47,12 @@ func (c *repairRun) Run(a subcommands.Application, args []string, env subcommand
 
 func (c *repairRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	ctx := cli.GetContext(a, c, env)
-	cl, err := httpClient(ctx, &c.authFlags)
-	if err != nil {
-		return errors.Annotate(err, "failed to get auth options").Err()
-	}
 	e := c.envFlags.Env()
-	s, err := newSwarmingService(e.SwarmingService, cl)
+	s, err := newSwarmingService(ctx, c.authFlags, e)
 	if err != nil {
 		return errors.Annotate(err, "failed to create Swarming client").Err()
 	}
+
 	for _, host := range args {
 		id, err := createRepairTask(ctx, s, e, host)
 		if err != nil {
