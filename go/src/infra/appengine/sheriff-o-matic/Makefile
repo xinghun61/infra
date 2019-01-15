@@ -20,8 +20,8 @@ format:
 	cd frontend && make format
 
 test: build
-	cd som && go test ... --cover
-	cd frontend && make test
+	cd som && go test infra/appengine/sheriff-o-matic/som/... -cover
+	cd frontend && make wct
 
 relnotes:
 	go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic . ../../monitoring/analyzer ../../monitoring/client ../../monitoring/messages

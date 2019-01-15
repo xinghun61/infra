@@ -54,13 +54,22 @@ make devserver
 
 To run tests:
 ```sh
+# Default (go and JS):
+make test
+
 # For go:
-cd som
-go test
+go test infra/appengine/sheriff-o-matic/som/...
+
+# For interactive go, automatically re-runs tests on save:
+cd som && goconvey
 
 # For JS:
 cd frontend
-xvfb-run -a wct
+make wct
+
+# For debugging JS, with a persistent browser instance you can reload:
+cd frontend
+make wct_debug
 ```
 
 To view test coverage report after running tests:
