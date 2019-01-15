@@ -8,7 +8,6 @@ import mock
 from dto.flakiness import Flakiness
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
-from dto.test_location import TestLocation
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from infra_api_clients import crrev
 from libs import analysis_status
@@ -27,10 +26,6 @@ from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertPipeline)
-from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakeInput)
-from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipeline)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     DetermineApproximatePassRateInput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
@@ -56,7 +51,6 @@ from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
 from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
 from pipelines.report_event_pipeline import ReportEventInput
-from services import swarmed_test_util
 from services.actions import flake_analysis_actions
 from services.flake_failure import confidence_score_util
 from services.flake_failure import flake_analysis_util
@@ -102,11 +96,10 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
-  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
   @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulprit(
-      self, mocked_culprit_identified, mocked_test_location, mocked_confidence,
-      mocked_culprit, mocked_revision, _):
+      self, mocked_culprit_identified, mocked_confidence, mocked_culprit,
+      mocked_revision, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -133,8 +126,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
                                   culprit_commit_position)
     culprit.put()
 
-    test_location = TestLocation(file='f', line=123)
-    mocked_test_location.return_value = test_location
     mocked_revision.return_value = {'git_sha': culprit_revision}
     mocked_confidence.return_value = confidence_score
     mocked_culprit.return_value = culprit
@@ -151,10 +142,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         retries=0,
         step_metadata=None)
 
-    expected_create_bug_input = CreateBugForFlakeInput(
-        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        step_metadata=None,
-        test_location=test_location)
     expected_create_and_submit_revert_input = CreateAndSubmitRevertInput(
         analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
     expected_notify_culprit_input = NotifyCulpritInput(
@@ -162,8 +149,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     expected_report_event_input = ReportEventInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
 
-    self.MockGeneratorPipeline(CreateBugForFlakePipeline,
-                               expected_create_bug_input, None)
     self.MockGeneratorPipeline(CreateAndSubmitRevertPipeline,
                                expected_create_and_submit_revert_input, True)
     self.MockGeneratorPipeline(NotifyCulpritPipeline,
@@ -188,11 +173,10 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
   @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
-  @mock.patch.object(swarmed_test_util, 'GetTestLocation')
   @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulpritNoAutoAction(
-      self, mocked_culprit_identified, mocked_test_location, mocked_confidence,
-      mocked_culprit, mocked_revision, _):
+      self, mocked_culprit_identified, mocked_confidence, mocked_culprit,
+      mocked_revision, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -218,8 +202,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
                                   culprit_commit_position)
     culprit.put()
 
-    test_location = TestLocation(file='f', line=123)
-    mocked_test_location.return_value = test_location
     mocked_revision.return_value = {'git_sha': culprit_revision}
     mocked_confidence.return_value = confidence_score
     mocked_culprit.return_value = culprit

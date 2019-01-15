@@ -22,10 +22,6 @@ from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertPipeline)
-from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakeInput)
-from pipelines.flake_failure.create_bug_for_flake_pipeline import (
-    CreateBugForFlakePipeline)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
     DetermineApproximatePassRateInput)
 from pipelines.flake_failure.determine_approximate_pass_rate_pipeline import (
@@ -49,7 +45,6 @@ from pipelines.flake_failure.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
 from pipelines.report_event_pipeline import ReportAnalysisEventPipeline
 from pipelines.report_event_pipeline import ReportEventInput
-from services import swarmed_test_util
 from services.flake_failure import confidence_score_util
 from services.actions import flake_analysis_actions
 from services.flake_failure import flake_analysis_util
@@ -167,20 +162,10 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
               culprit_commit_position)
           assert culprit_data_point, 'Culprit unexpectedly missing!'
 
-          test_location = swarmed_test_util.GetTestLocation(
-              culprit_data_point.GetSwarmingTaskId(), analysis.test_name)
-
           # Data needed for reverts.
           build_key = BaseBuildModel.CreateBuildKey(
               analysis.original_master_name, analysis.original_builder_name,
               analysis.original_build_number)
-          # Log Monorail bug.
-          yield CreateBugForFlakePipeline(
-              self.CreateInputObjectInstance(
-                  CreateBugForFlakeInput,
-                  analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-                  step_metadata=parameters.step_metadata,
-                  test_location=test_location))
 
           # Revert culprit if applicable.
           yield CreateAndSubmitRevertPipeline(
