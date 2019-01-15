@@ -163,16 +163,13 @@ class BuildRequest(_BuildRequestBase):
 def add_async(req):
   """Adds the build entity to the build bucket.
 
-  Requires the current user to have permissions to add builds to the
-  |bucket|.
+  Does not check permissions.
 
   Returns:
     A new Build.
 
   Raises:
     errors.InvalidInputError: if build creation parameters are invalid.
-    auth.AuthorizationError: if the current user does not have permissions to
-      add a build to req.bucket.
   """
   ((build, ex),) = yield add_many_async([req])
   if ex:
@@ -184,14 +181,14 @@ def add_async(req):
 def add_many_async(build_request_list):
   """Adds many builds in a batch, for each BuildRequest.
 
+  Does not check permissions.
+
   Returns:
     A list of (new_build, exception) tuples in the same order.
     Exactly one item of a tuple will be non-None.
     The exception can only be errors.InvalidInputError.
 
   Raises:
-    auth.AuthorizationError if any of the build requests is denied.
-      No builds will be created in this case.
     Any exception that datastore operations can raise.
   """
   # When changing this code, make corresponding changes to
@@ -216,19 +213,6 @@ def add_many_async(build_request_list):
     for i, r in enumerate(build_request_list):
       if results[i] is None:
         yield i, r
-
-  @ndb.tasklet
-  def check_access_async():
-    """For each pending request, check ACLs.
-
-    Make one ACL query per bucket id.
-    Raise an exception if at least one request is denied, as opposed to saving
-    the exception in results, for backward compatibility.
-    """
-    bucket_ids = sorted({r.bucket_id for _, r in pending_reqs()})
-    for b, can in utils.async_apply(bucket_ids, user.can_add_build_async):
-      if not can:
-        raise user.current_identity_cannot('add builds to bucket %s', b)
 
   @ndb.tasklet
   def check_cached_builds_async():
@@ -386,7 +370,6 @@ def add_many_async(build_request_list):
             b.swarming_task_id
         )
 
-  yield check_access_async()
   yield check_cached_builds_async()
   create_new_builds()
   if new_builds:

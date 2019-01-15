@@ -99,18 +99,6 @@ class CreationTest(testing.AppengineTestCase):
 
     self.patch('search.TagIndex.random_shard_index', return_value=0)
 
-  def mock_cannot(self, action, bucket_id=None):
-
-    def can_async(requested_bucket_id, requested_action, _identity=None):
-      match = (
-          requested_action == action and
-          (bucket_id is None or requested_bucket_id == bucket_id)
-      )
-      return future(not match)
-
-    # user.can_async is patched in setUp()
-    user.can_async.side_effect = can_async
-
   def build_request(self, schedule_build_request_fields=None, **kwargs):
     schedule_build_request_fields = schedule_build_request_fields or {}
     sbr = rpc_pb2.ScheduleBuildRequest(**schedule_build_request_fields)
@@ -204,11 +192,6 @@ class CreationTest(testing.AppengineTestCase):
     self.assertTrue(build.is_leased)
     self.assertGreater(build.lease_expiration_date, utils.utcnow())
     self.assertIsNotNone(build.lease_key)
-
-  def test_add_with_auth_error(self):
-    self.mock_cannot(user.Action.ADD_BUILD)
-    with self.assertRaises(auth.AuthorizationError):
-      self.add()
 
   def test_add_with_swarming_400(self):
     swarming.create_task_async.return_value = future_exception(
@@ -369,22 +352,6 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(index.entries[0].bucket_id, results[1][0].bucket_id)
     self.assertEqual(index.entries[1].build_id, results[0][0].key.id())
     self.assertEqual(index.entries[1].bucket_id, results[0][0].bucket_id)
-
-  def test_add_many_auth_error(self):
-    self.mock_cannot(user.Action.ADD_BUILD, bucket_id='forbidden/forbidden')
-    with self.assertRaises(auth.AuthorizationError):
-      creation.add_many_async([
-          self.build_request(dict(tags=[dict(key='buildset', value='a')])),
-          self.build_request(
-              dict(
-                  builder=dict(project='forbidden', bucket='forbidden'),
-                  tags=[dict(key='buildset', value='a')],
-              ),
-          ),
-      ]).get_result()
-
-    index = search.TagIndex.get_by_id('buildset:a')
-    self.assertIsNone(index)
 
   def test_add_many_with_request_id(self):
     req1 = self.build_request(

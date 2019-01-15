@@ -277,6 +277,25 @@ class V1ApiTest(testing.EndpointsTestCase):
   def test_retry_not_found(self):
     self.expect_error('retry', {'id': 42}, 'BUILD_NOT_FOUND')
 
+  def test_retry_forbidden(self):
+    config.put_bucket(
+        'chromium',
+        'a' * 40,
+        config_test.parse_bucket_cfg(
+            '''
+            name: "readonly"
+            acls {
+              role: READER
+              identity: "anonymous:anonymous"
+            }
+            '''
+        ),
+    )
+
+    build = model.Build(bucket_id='chromium/readonly')
+    build.put()
+    self.call_api('retry', {'id': build.key.id()}, status=403)
+
   ####### PUT_BATCH ############################################################
 
   @mock.patch('creation.add_many_async', autospec=True)
@@ -391,6 +410,34 @@ class V1ApiTest(testing.EndpointsTestCase):
             },
         }
     )
+
+  def test_put_batch_auth_error(self):
+    # Not a SCHEDULER role.
+    bucket_cfg = config_test.parse_bucket_cfg(
+        '''
+        name: "ci"
+        acls {
+          role: READER
+          identity: "anonymous:anonymous"
+        }
+        '''
+    )
+    config.put_bucket('chromium', 'deadbeef', bucket_cfg)
+
+    req = {
+        'builds': [
+            {
+                'bucket': 'luci.chromium.try',
+                'tags': ['a:b'],
+                'client_operation_id': '0',
+            },
+            {
+                'bucket': 'luci.chromium.ci',
+                'client_operation_id': '1',
+            },
+        ],
+    }
+    self.call_api('put_batch', req, status=403)
 
   @mock.patch('creation.add_many_async', autospec=True)
   def test_put_batch_with_exception(self, add_many_async):

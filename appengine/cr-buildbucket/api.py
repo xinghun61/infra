@@ -280,6 +280,17 @@ def parse_datetime(timestamp):
     raise errors.InvalidInputError('Could not parse timestamp: %s' % timestamp)
 
 
+def check_scheduling_permissions(bucket_ids):
+  """Checks if the requester can schedule builds in any of the buckets.
+
+  Raises auth.AuthorizationError on insufficient permissions.
+  """
+  can_add = utils.async_apply(set(bucket_ids), user.can_add_build_async)
+  forbidden = [b for b, can in can_add if not can]
+  if forbidden:
+    raise user.current_identity_cannot('add builds to buckets %s', forbidden)
+
+
 @auth.endpoints_api(
     name='buildbucket', version='v1', title='Build Bucket Service'
 )
@@ -314,6 +325,7 @@ class BuildBucketApi(remote.Service):
   def put(self, request):
     """Creates a new build."""
     request.bucket = convert_bucket(request.bucket)
+    check_scheduling_permissions([request.bucket])
     build_req = put_request_message_to_build_request(request)
     build = creation.add_async(build_req).get_result()
     return build_to_response_message(build, include_lease_key=True)
@@ -348,6 +360,9 @@ class BuildBucketApi(remote.Service):
     bucket_ids = dict(zip(buckets, convert_bucket_list(buckets)))
     for b in request.builds:
       b.bucket = bucket_ids[b.bucket]
+
+    # Check permissions.
+    check_scheduling_permissions(bucket_ids.itervalues())
 
     # Prepare response.
     res = self.PutBatchResponseMessage()
@@ -403,6 +418,8 @@ class BuildBucketApi(remote.Service):
     build = model.Build.get_by_id(request.id)
     if not build:
       raise errors.BuildNotFoundError('Build %s not found' % request.id)
+
+    check_scheduling_permissions([build.bucket_id])
 
     # Remove properties from parameters.
     prop_dict = build.parameters.pop(model.PROPERTIES_PARAMETER, {})
