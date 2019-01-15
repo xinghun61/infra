@@ -167,7 +167,7 @@ func runTest(b *swarming.Bot, i *harness.Info, a *args, logdogOutput io.Writer, 
 		runReset:     true,
 		rebootBefore: RebootAlways,
 	}
-	r := lucifer.RunJobArgs{
+	r := lucifer.TestArgs{
 		TaskArgs:           ta,
 		Hosts:              []string{i.DUTName},
 		TaskName:           a.taskName,

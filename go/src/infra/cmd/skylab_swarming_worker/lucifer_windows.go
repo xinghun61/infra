@@ -16,7 +16,7 @@ type luciferResult struct {
 	TestsFailed int
 }
 
-func runLuciferJob(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.RunJobArgs) (*luciferResult, error) {
+func runLuciferJob(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
 	panic("not supported on windows")
 }
 

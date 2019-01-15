@@ -2,10 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/*
-Package lucifer provides Go bindings for interacting with the
-lucifer_run_job command.
-*/
+// Package lucifer provides Go bindings for running lucifer.
 package lucifer
 
 import (
@@ -44,10 +41,10 @@ type TaskArgs struct {
 	LogDogFile string
 }
 
-// RunJobArgs contains the arguments for creating a lucifer_run_job
+// TestArgs contains the arguments for creating a lucifer test
 // command.  This only includes the subset of the available arguments
 // that is currently needed.
-type RunJobArgs struct {
+type TestArgs struct {
 	TaskArgs
 	Hosts    []string
 	TaskName string
@@ -61,8 +58,8 @@ type RunJobArgs struct {
 	XProvisionLabels   []string
 }
 
-// RunJobCommand creates an exec.Cmd for running lucifer_run_job.
-func RunJobCommand(c Config, r RunJobArgs) *exec.Cmd {
+// TestCommand creates an exec.Cmd for running a lucifer test.
+func TestCommand(c Config, r TestArgs) *exec.Cmd {
 	p := filepath.Join(c.BinDir, "lucifer")
 
 	args := make([]string, 0, 20)
@@ -97,7 +94,7 @@ func RunJobCommand(c Config, r RunJobArgs) *exec.Cmd {
 	return cmd
 }
 
-// AdminTaskArgs contains the arguments for creating a lucifer_admin_task command.
+// AdminTaskArgs contains the arguments for creating a lucifer admintask command.
 type AdminTaskArgs struct {
 	TaskArgs
 	Host string
@@ -106,7 +103,7 @@ type AdminTaskArgs struct {
 	GCPProject string
 }
 
-// AdminTaskCommand creates an exec.Cmd for running lucifer_admin_task.
+// AdminTaskCommand creates an exec.Cmd for running a lucifer admintask.
 func AdminTaskCommand(c Config, a AdminTaskArgs) *exec.Cmd {
 	p := filepath.Join(c.BinDir, "lucifer")
 	args := make([]string, 0, 6)

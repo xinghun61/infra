@@ -30,8 +30,8 @@ type luciferResult struct {
 	TestsFailed int
 }
 
-func runLuciferJob(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.RunJobArgs) (*luciferResult, error) {
-	cmd := lucifer.RunJobCommand(b.LuciferConfig(), r)
+func runLuciferJob(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
+	cmd := lucifer.TestCommand(b.LuciferConfig(), r)
 	c := make(chan os.Signal, 1)
 	defer close(c)
 	signal.Notify(c, unix.SIGTERM, unix.SIGINT)
