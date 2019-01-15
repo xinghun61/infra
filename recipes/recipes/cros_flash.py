@@ -112,6 +112,7 @@ def RunSteps(api):
           CROS_DUT_HOSTNAME,
           img_path,
           '--disable-rootfs-verification',  # Needed to add ssh identity below.
+          '--clobber-stateful',  # Fully wipe the device.
           '--force',  # Force yes to all Y/N prompts.
           '--debug',  # More verbose logging.
         ]
