@@ -113,6 +113,7 @@ def RunSteps(api):
           img_path,
           '--disable-rootfs-verification',  # Needed to add ssh identity below.
           '--clobber-stateful',  # Fully wipe the device.
+          '--clear-cache',  # Don't keep old image files lying around.
           '--force',  # Force yes to all Y/N prompts.
           '--debug',  # More verbose logging.
         ]
