@@ -147,7 +147,10 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 	// Construct authentication with default set of scopes to be used through out
 	// Kitchen.
 	authOpts := infraenv.DefaultAuthOptions()
-	authOpts.Scopes = OAuthScopes
+	authOpts.Scopes = append([]string(nil), OAuthScopes...)
+	if ac.EnableFirebaseAuth {
+		authOpts.Scopes = append(authOpts.Scopes, "https://www.googleapis.com/auth/firebase")
+	}
 	ac.authenticator = auth.NewAuthenticator(ac.ctx, auth.SilentLogin, authOpts)
 
 	// Figure out what email is associated with this account (if any).
