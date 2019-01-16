@@ -11,6 +11,9 @@ platforms:
   - mac-amd64
   - windows-386
   - windows-amd64
+# Some Skia tasks isolate golctl binary after it is installed. It is simpler in
+# this case if symlinks are not involved.
+install_mode: copy
 go_build_environ:
   CGO_ENABLED:
     darwin:  1  # native Go DNS resolved is buggy on OSX (crbug.com/803673)
