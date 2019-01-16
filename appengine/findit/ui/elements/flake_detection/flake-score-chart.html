@@ -47,6 +47,10 @@
         },
 
         _getFormula: function (flake, weights) {
+          if (flake.flake_score_last_week == 0) {
+            return 'Flake score is not calculated because there are not enough occurrences.';
+          }
+
           let formula_str = flake.flake_score_last_week + ' = ';
           for (let i = 0; i < flake.flake_counts_last_week.length; i++) {
               let count = flake.flake_counts_last_week[i];
