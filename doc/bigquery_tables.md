@@ -29,3 +29,14 @@ Organized by Project ID. Links are in the form `project_id.dataset_id.table_id`.
     contains one row for each test run collected by the test-results staging server. Includes test names, expected/actual results,
     chromium revision etc.
     [Proto: testresults.event.TestResultEvent](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/test-results/model/gen/testresults.proto)
+
+
+## isolateserver
+
+All isolate server instances have:
+
+*   [isolated.stats](https://bigquery.cloud.google.com/table/isolateserver:isolated.stats):
+    contains instance I/O statistics at a 1 minute resolution. There is one
+    table per isolate server instance.
+    [Proto:
+    StatsSnapshot](https://chromium.googlesource.com/infra/luci/luci-py.git/+/master/appengine/isolate/proto/isolated.proto)
