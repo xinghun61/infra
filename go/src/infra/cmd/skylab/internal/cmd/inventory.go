@@ -14,10 +14,10 @@ import (
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/flag"
 	"go.chromium.org/luci/grpc/prpc"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
 	"infra/libs/skylab/inventory"
 )
@@ -31,7 +31,7 @@ var Inventory = &subcommands.Command{
 		c := &inventoryRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.Var(flagx.NewCommaList(&c.labs), "labs", "Restrict results to chromeos labs, e.g. 2,4,6")
+		c.Flags.Var(flag.CommaList(&c.labs), "labs", "Restrict results to chromeos labs, e.g. 2,4,6")
 		return c
 	},
 }

@@ -35,6 +35,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	lflag "go.chromium.org/luci/common/flag"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/logdog/common/types"
 
@@ -74,7 +75,7 @@ func parseArgs() *args {
 		"LogDog annotation URL, like logdog://HOST/PROJECT/PREFIX/+/annotations")
 	flag.BoolVar(&a.xClientTest, "client-test", false,
 		"This is a client side test")
-	flag.Var(flagx.CommaList(&a.xProvisionLabels), "provision-labels",
+	flag.Var(lflag.CommaList(&a.xProvisionLabels), "provision-labels",
 		"Labels to provision, comma separated")
 	flag.Var(flagx.JSONMap(&a.xKeyvals), "keyvals",
 		"JSON string of job keyvals")
