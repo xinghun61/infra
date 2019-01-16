@@ -1621,4 +1621,8 @@ CREATE TABLE LinkedAccountInvite (
   FOREIGN KEY (child_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
+==================================================================================
+2018-1-15: Add notify_group and notify_members bool col to UserGroupSettings table.
 
+ALTER TABLE UserGroupSettings ADD COLUMN notify_members BOOLEAN DEFAULT TRUE;
+ALTER TABLE UserGroupSettings ADD COLUMN notify_group BOOLEAN DEFAULT FALSE;

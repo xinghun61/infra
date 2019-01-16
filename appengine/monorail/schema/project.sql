@@ -218,6 +218,8 @@ CREATE TABLE UserGroupSettings (
       'chrome_infra_auth', 'mdb', 'baggins', 'computed'),
   -- timestamps in seconds since the epoch.
   last_sync_time INT,
+  notify_members BOOL DEFAULT TRUE,
+  notify_group BOOL DEFAULT FALSE,
 
   PRIMARY KEY (group_id),
   FOREIGN KEY (group_id) REFERENCES User(user_id)
