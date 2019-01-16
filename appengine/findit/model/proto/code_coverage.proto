@@ -104,6 +104,11 @@ message File {
 
   // The summary metric for the file.
   repeated Metric metrics = 6;
+
+  // The git hash (up to the revision in the checkout) of the commit in Gitiles
+  // when the file was most recently changed.
+  // E.g. fc7b1de555d4b1fe5b7ff2e4c99662a10cf4ddd6.
+  string last_updated_revision = 7;
 }
 
 
