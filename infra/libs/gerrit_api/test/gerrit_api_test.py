@@ -11,7 +11,7 @@ import requests
 import tempfile
 import time
 import unittest
-import urllib3
+import requests.packages.urllib3
 
 from infra.libs import gerrit_api
 
@@ -120,7 +120,7 @@ class GerritAgentTestCase(unittest.TestCase):
         '%s[]' % GERRIT_JSON_HEADER, 200)
     g = gerrit_api.Gerrit('chromium-review.googlesource.com',
                           gerrit_api.Credentials(auth=MOCK_AUTH),
-                          retry_config=urllib3.util.Retry(
+                          retry_config=requests.packages.urllib3.util.Retry(
                             total=1, status_forcelist=[500, 503]),
                           timeout=(1, 2))
     g._request(method='GET', request_path='/self')

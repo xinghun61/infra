@@ -10,11 +10,10 @@ import functools
 import json
 import logging
 import requests
+import requests.packages.urllib3
 import requests_cache
 import time
 import urllib
-
-from requests.packages import urllib3
 
 from infra_libs import instrumented_requests
 
@@ -70,7 +69,8 @@ class Gerrit(object):
       AccessViolationException.
     timeout (float or tuple of floats): passed as is to requests library.
       None by default, which means block forever.
-    retry_config (urllib3.util.Retry): override default retry config.
+    retry_config (requests.packages.urllib3.util.Retry): override default retry
+      config.
     instrumentation_id (str): monitoring identifier for HTTP requests.
       'gerrit' by default. See also `infra_libs.instrumented_requests library`.
   """
@@ -89,8 +89,15 @@ class Gerrit(object):
     # Gerrit instances. Do not use cookies as advised by the Gerrit team.
     self.session.cookies.set_policy(BlockCookiesPolicy())
     if retry_config is None:
-      retry_config = urllib3.util.Retry(total=4, backoff_factor=2,
-                                        status_forcelist=[500, 503])
+      retry_config = requests.packages.urllib3.util.Retry(
+          total=4, backoff_factor=2, status_forcelist=[500, 503])
+    else:
+      # The |requests| package actually vendors in its own copy of urllib3,
+      # Additionally, urllib3.util.retry module checks type using
+      # isinstance(retry_config, Retry) and will return False if one provides
+      # anything other than a requests.packages.urllib3.util.retry.Retry object.
+      # So, help users of this package detect such errors early.
+      assert isinstance(retry_config, requests.packages.urllib3.util.Retry)
     self.session.mount(self._url_base, requests.adapters.HTTPAdapter(
         max_retries=retry_config))
     # Instrumentation hooks cache indexed by method.
