@@ -54,7 +54,7 @@ func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, erro
 }
 
 // TODO(seanmccullough): Replace this urlfetch/memcache code with a luci-config reader.
-var getGatekeeperTrees = func(c context.Context) (map[string][]messages.TreeMasterConfig, error) {
+func getGatekeeperTrees(c context.Context) (map[string][]messages.TreeMasterConfig, error) {
 	ret := map[string][]messages.TreeMasterConfig{}
 
 	for _, URL := range []string{gkTreesURL, gkTreesInternalURL, gkTreesCorpURL, gkUnkeptTreesURL} {
