@@ -1,4 +1,6 @@
-`infra_libs/bigquery` provides some helper methods for working with BigQuery. It
+# bqh.py
+
+`infra_libs/bqh` provides some helper methods for working with BigQuery. It
 is recommended you use this library over using the client API directly as it
 includes common logic for handling protobufs, formatting errors, safe guards,
 and handling edge cases.
@@ -23,16 +25,15 @@ bigquery_client = bigquery.client.Client(
 Send rows:
 
 ```
-from infra_libs import bigquery
+from infra_libs import bqh
 
 # ExampleRow is a protobuf Message
 rows = [ExampleRow(example_field='1'), ExampleRow(example_field='2')]
 try:
-  bigquery.helper.send_rows(bigquery_client, 'example-dataset', 'example-table',
-                            rows)
-except bigquery.helper.BigQueryInsertError:
+  bqh.send_rows(bigquery_client, 'example-dataset', 'example-table', rows)
+except bqh.BigQueryInsertError:
   # handle error
-except bigquery.helper.UnsupportedTypeError:
+except bqh.UnsupportedTypeError:
   # handle error
 ```
 
@@ -57,9 +58,9 @@ What form this takes depends on the application.
 
 # vPython
 
-infra_libs/bigquery is available via vPython as a CIPD package. To update the
+infra_libs/bqh is available via vPython as a CIPD package. To update the
 available version, build and upload a new wheel with
-[dockerbuild](../../tools/dockerbuild/README#subcommand_wheel_build).
+[dockerbuild](../../infra/tools/dockerbuild/README#subcommand_wheel_build).
 
 google-cloud-bigquery is required to create a BigQuery client. Unfortunately,
 google-cloud-bigquery has quite a few dependencies. Here is the Vpython spec you
@@ -133,7 +134,7 @@ upload_errors = ts_mon.CounterMetric(
 
 with ts_mon.ScopedMeasureTime(upload_durations):
   try:
-    bigquery.helper.send_rows(...)
+    bqh.send_rows(...)
   except UnsupportedTypeError:
     upload_errors.Add(...)
 ```

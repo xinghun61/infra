@@ -95,9 +95,9 @@ Go: use
 [example CL](https://chromium-review.googlesource.com/c/infra/infra/+/719962).
 
 Python: use
-[infra.libs.bigquery](https://cs.chromium.org/chromium/infra/infra/libs/bigquery/helper.py),
+[infra.libs.bqh](https://cs.chromium.org/chromium/infra/infra/libs/bqh.py),
 [example CL](https://chrome-internal-review.googlesource.com/c/infra/infra_internal/+/445955),
-[docs](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/bigquery/README.md).
+[docs](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/README.md).
 
 
 ### Options
@@ -142,15 +142,15 @@ With `bq`, you can construct a synchronous `Uploader` or asynchronous
 [kitchen](../../go/src/infra/tools/kitchen/monitoring.go) is an example of a
 tool that uses bq.
 
-### From Python: infra/libs/bigquery
+### From Python: infra/libs/bqh
 
 You will need the
 [google-cloud-bigquery](https://pypi.python.org/pypi/google-cloud-bigquery)
 library in your environment. infra.git/ENV has this dependency already, so you
 only need to add it if you are working outside that environment.
 
-Check out the (../../infra/libs/bigquery/helper.py)[bigquery helper module].
-Under the hood, it uses the [BigQuery Python
+Check out the (../../infra/libs/bqh.py)[bigquery helper module]. Under the hood,
+it uses the [BigQuery Python
 client](https://cloud.google.com/bigquery/docs/reference/libraries#client-libraries-usage-python).
 It is recommended that you use it over using the client directly, as it houses
 common logic around handling edge cases, formatting errors, and handling
@@ -166,7 +166,7 @@ can also be helpful.
 
 ### From Python GAE:
 
-1. Use [message_to_dict](https://chromium.googlesource.com/infra/infra/+/fe875b1417d5d6a73999462b1001a2852ef6efb9/packages/infra_libs/infra_libs/bigquery/helper.py#24)
+1. Use [message_to_dict](https://chromium.googlesource.com/infra/infra/+/fe875b1417d5d6a73999462b1001a2852ef6efb9/packages/infra_libs/infra_libs/bqh.py#24)
    function to convert a protobuf message to a dict.
 2. Use [BigQuery REST API](https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll)
    to insert rows.

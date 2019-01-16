@@ -12,8 +12,8 @@ from google.protobuf import empty_pb2
 from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
-from infra_libs.bigquery import helper
-from infra_libs.bigquery.test import testmessage_pb2
+from infra_libs import bqh
+from infra_libs.test import testmessage_pb2
 
 
 class TestBigQueryHelper(unittest.TestCase):
@@ -30,28 +30,28 @@ class TestBigQueryHelper(unittest.TestCase):
 
   def test_send_rows_tuple(self):
     rows = [('a',), ('b',), ('c',)]
-    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
+    bqh.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
     self.mock_create_rows.assert_any_call(self.table, rows)
 
   def test_batch_sizes(self):
     rows = [('a',), ('b',), ('c',)]
-    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows, 0)
+    bqh.send_rows(self.bq_client, self.dataset_id, self.table_id, rows, 0)
     self.mock_create_rows.assert_any_call(self.table, rows)
-    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows, 1)
+    bqh.send_rows(self.bq_client, self.dataset_id, self.table_id, rows, 1)
     self.mock_create_rows.assert_any_call(self.table, [('a',)])
     self.mock_create_rows.assert_any_call(self.table, [('b',)])
     self.mock_create_rows.assert_any_call(self.table, [('c',)])
-    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows,
-                     helper.BATCH_LIMIT+1)
+    bqh.send_rows(self.bq_client, self.dataset_id, self.table_id, rows,
+                  bqh._BATCH_LIMIT+1)
     self.mock_create_rows.assert_any_call(self.table, rows)
 
   def test_send_rows_unsupported_type(self):
-    with self.assertRaises(helper.UnsupportedTypeError):
-      helper.send_rows(self.bq_client, self.dataset_id, self.table_id, [{}])
+    with self.assertRaises(bqh.UnsupportedTypeError):
+      bqh.send_rows(self.bq_client, self.dataset_id, self.table_id, [{}])
 
   def test_send_rows_message(self):
     rows = [testmessage_pb2.TestMessage(str='a')]
-    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
+    bqh.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
     expected_rows_arg = [{'num': 0, 'e': 'E0', 'str': u'a'}]
     self.mock_create_rows.assert_any_call(self.table, expected_rows_arg)
 
@@ -63,8 +63,8 @@ class TestBigQueryHelper(unittest.TestCase):
             'errors': ['some err'],
         },
     ]
-    with self.assertRaises(helper.BigQueryInsertError):
-      helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
+    with self.assertRaises(bqh.BigQueryInsertError):
+      bqh.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
 
   def test_message_to_dict(self):
     struct0 = struct_pb2.Struct()
@@ -106,7 +106,7 @@ class TestBigQueryHelper(unittest.TestCase):
 
         repeated_container=testmessage_pb2.RepeatedContainer(nums=[1, 2]),
     )
-    row = helper.message_to_dict(msg)
+    row = bqh.message_to_dict(msg)
 
     expected = {
       'str': u'a',
@@ -144,24 +144,24 @@ class TestBigQueryHelper(unittest.TestCase):
     self.assertEqual(row, expected)
 
   def test_message_to_dict_empty(self):
-    row = helper.message_to_dict(testmessage_pb2.TestMessage())
+    row = bqh.message_to_dict(testmessage_pb2.TestMessage())
     expected = {'e': 'E0', 'str': u'', 'num': 0}
     self.assertEqual(row, expected)
 
   def test_message_to_dict_repeated_container_with_no_elems(self):
-    row = helper.message_to_dict(testmessage_pb2.TestMessage(
+    row = bqh.message_to_dict(testmessage_pb2.TestMessage(
         repeated_container=testmessage_pb2.RepeatedContainer()))
     self.assertNotIn('repeated_container', row)
 
   def test_message_to_dict_invalid_enum(self):
     with self.assertRaisesRegexp(
         ValueError, '^Invalid value -1 for enum type bigquery.E$'):
-      helper.message_to_dict(testmessage_pb2.TestMessage(e=-1))
+      bqh.message_to_dict(testmessage_pb2.TestMessage(e=-1))
 
   def test_message_to_dict_omit_null(self):
     with self.assertRaisesRegexp(
         ValueError, '^Invalid value -1 for enum type bigquery.E$'):
-      helper.message_to_dict(testmessage_pb2.TestMessage(e=-1))
+      bqh.message_to_dict(testmessage_pb2.TestMessage(e=-1))
 
 
 if __name__ == '__main__':
