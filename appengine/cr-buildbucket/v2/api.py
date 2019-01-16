@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import json
 import functools
 import logging
@@ -26,7 +27,9 @@ from v2 import tokens
 from v2 import validation
 from v2 import default_field_masks
 import buildtags
+import creation
 import config
+import errors
 import model
 import search
 import service
@@ -55,6 +58,14 @@ not_found = lambda *args: StatusError(prpc.StatusCode.NOT_FOUND, *args)
 invalid_argument = (
     lambda *args: StatusError(prpc.StatusCode.INVALID_ARGUMENT, *args)
 )
+
+
+def current_identity_cannot(action_format, *args):
+  """Raises a StatusError with a PERMISSION_DENIED code."""
+  action = action_format % args
+  msg = '%s cannot %s' % (auth.get_current_identity().to_bytes(), action)
+  return StatusError(prpc.StatusCode.PERMISSION_DENIED, '%s', msg)
+
 
 METHODS_BY_NAME = {
     m.name: m
@@ -304,13 +315,86 @@ def update_build_async(req, ctx, _mask):
   raise ndb.Return(build_pb2.Build())
 
 
+@rpc_impl_async('ScheduleBuild')
+@ndb.tasklet
+def schedule_build_async(req, _ctx, mask):
+  """Schedules one build."""
+  validation.validate_schedule_build_request(req)
+
+  bucket_id = config.format_bucket_id(req.builder.project, req.builder.bucket)
+  if not (yield user.can_add_build_async(bucket_id)):
+    raise current_identity_cannot('schedule builds to bucket %s', bucket_id)
+
+  build_req = creation.BuildRequest(schedule_build_request=req)
+  build_v1 = yield creation.add_async(build_req)
+  raise ndb.Return((yield builds_to_v2_async([build_v1], mask))[0])
+
+
+# A pair of request and response.
+_ReqRes = collections.namedtuple('_ReqRes', 'request response')
+
+
+def schedule_build_multi(batch):
+  """Schedules multiple builds.
+
+  Args:
+    batch: list of _ReqRes where
+      request is rpc_pb2.ScheduleBuildRequest and
+      response is rpc_pb2.BatchResponse.Response.
+      Response objects will be mutated.
+  """
+  # Validate requests.
+  valid_requests = []
+  for rr in batch:
+    try:
+      validation.validate_schedule_build_request(rr.request)
+      valid_requests.append(rr)
+    except validation.Error as ex:
+      rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
+      rr.response.error.message = ex.message
+
+  # Check permissions.
+  def get_bucket_id(req):
+    return config.format_bucket_id(req.builder.project, req.builder.bucket)
+
+  bucket_ids = {get_bucket_id(rr.request) for rr in valid_requests}
+  can_add = dict(utils.async_apply(bucket_ids, user.can_add_build_async))
+  identity_str = auth.get_current_identity().to_bytes()
+  to_schedule = []
+  for rr in valid_requests:
+    bid = get_bucket_id(rr.request)
+    if can_add[bid]:
+      to_schedule.append(rr)
+    else:
+      rr.response.error.code = prpc.StatusCode.PERMISSION_DENIED.value
+      rr.response.error.message = (
+          '%s cannot schedule builds in bucket %s' % (identity_str, bid)
+      )
+
+  # Schedule builds.
+  if not to_schedule:  # pragma: no cover
+    return
+  build_requests = [
+      creation.BuildRequest(schedule_build_request=rr.request)
+      for rr in to_schedule
+  ]
+  results = creation.add_many_async(build_requests).get_result()
+  for rr, (build, ex) in zip(to_schedule, results):
+    if ex:
+      assert isinstance(ex, errors.InvalidInputError)
+      rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
+      rr.response.error.message = ex.message
+    else:
+      rr.response.schedule_build.MergeFrom(v2.build_to_v2(build))
+
+
 # Maps an rpc_pb2.BatchRequest.Request field name to an async function
 #   (req, ctx) => ndb.Future of res.
 BATCH_REQUEST_TYPE_TO_RPC_IMPL = {
     'get_build': get_build_async,
     'search_builds': search_builds_async,
 }
-assert set(BATCH_REQUEST_TYPE_TO_RPC_IMPL) == set(
+assert set(BATCH_REQUEST_TYPE_TO_RPC_IMPL) | {'schedule_build'} == set(
     rpc_pb2.BatchRequest.Request.DESCRIPTOR.fields_by_name
 )
 
@@ -332,29 +416,49 @@ class BuildsApi(object):
   def UpdateBuild(self, req, ctx):
     return update_build_async(req, ctx).get_result()
 
+  def ScheduleBuild(self, req, ctx):
+    return schedule_build_async(req, ctx).get_result()
+
   def Batch(self, req, ctx):
+    batch = [
+        _ReqRes(req, rpc_pb2.BatchResponse.Response()) for req in req.requests
+    ]
+
+    # First, execute ScheduleBuild requests.
+    schedule_requests = []
+    in_parallel = []
+    for rr in batch:
+      request_type = rr.request.WhichOneof('request')
+      if not request_type:
+        rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
+        rr.response.error.message = 'request is not specified'
+      elif request_type == 'schedule_build':
+        schedule_requests.append(rr)
+      else:
+        in_parallel.append(rr)
+    if schedule_requests:
+      schedule_build_multi([
+          _ReqRes(rr.request.schedule_build, rr.response)
+          for rr in schedule_requests
+      ])
+
+    # Then, execute the rest in parallel.
 
     @ndb.tasklet
-    def serve_subrequest_async(sub_req):
-      request_type = sub_req.WhichOneof('request')
-      sub_res = rpc_pb2.BatchResponse.Response()
-      if not request_type:
-        sub_res.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
-        sub_res.error.message = 'request is not specified'
-        raise ndb.Return(sub_res)
+    def serve_subrequest_async(rr):
+      request_type = rr.request.WhichOneof('request')
+      assert request_type != 'schedule_build'
       rpc_impl = BATCH_REQUEST_TYPE_TO_RPC_IMPL[request_type]
       sub_ctx = ctx.clone()
-      rpc_res = yield rpc_impl(getattr(sub_req, request_type), sub_ctx)
+      rpc_res = yield rpc_impl(getattr(rr.request, request_type), sub_ctx)
       if sub_ctx.code != prpc.StatusCode.OK:
-        sub_res.error.code = sub_ctx.code.value
-        sub_res.error.message = sub_ctx.details
+        rr.response.error.code = sub_ctx.code.value
+        rr.response.error.message = sub_ctx.details
       else:
-        getattr(sub_res, request_type).MergeFrom(rpc_res)
-      raise ndb.Return(sub_res)
+        getattr(rr.response, request_type).MergeFrom(rpc_res)
 
-    return rpc_pb2.BatchResponse(
-        responses=[
-            r
-            for _, r in utils.async_apply(req.requests, serve_subrequest_async)
-        ],
-    )
+    for f in map(serve_subrequest_async, in_parallel):
+      f.check_success()
+
+    assert all(rr.response.WhichOneof('response') for rr in batch), batch
+    return rpc_pb2.BatchResponse(responses=[rr.response for rr in batch])

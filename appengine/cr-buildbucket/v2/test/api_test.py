@@ -27,11 +27,13 @@ from proto import step_pb2
 from test import test_util
 from v2 import api
 from v2 import validation
-import api_common
 import bbutil
 import buildtags
+import creation
+import errors
 import model
 import search
+import user
 
 future = test_util.future
 
@@ -73,10 +75,12 @@ class BaseTestCase(testing.AppengineTestCase):
       self.assertIsNone(res)
     return res
 
-  def new_build_v1(self, builder_name='linux-try', **kwargs):
+  def new_build_v1(
+      self, bucket_id='chromium/try', builder_name='linux-try', **kwargs
+  ):
     build_kwargs = dict(
         id=model.create_build_ids(self.now, 1)[0],
-        bucket_id='chromium/try',
+        bucket_id=bucket_id,
         parameters={
             model.BUILDER_PARAMETER: builder_name,
         },
@@ -426,6 +430,38 @@ class UpdateBuildTests(BaseTestCase):
     )
 
 
+class ScheduleBuildTests(BaseTestCase):
+
+  @mock.patch('creation.add_async', autospec=True)
+  def test_schedule(self, add_async):
+    add_async.return_value = future(
+        self.new_build_v1(
+            id=54, bucket_id='chromium/try', builder_name='linux'
+        )
+    )
+    req = rpc_pb2.ScheduleBuildRequest(
+        builder=dict(project='chromium', bucket='try', builder='linux'),
+        request_id='0',
+    )
+    res = self.call(self.api.ScheduleBuild, req)
+    self.assertEqual(res.id, 54)
+    add_async.assert_called_once_with(
+        creation.BuildRequest(schedule_build_request=req)
+    )
+
+  def test_forbidden(self):
+    user.can_async.return_value = future(False)
+    req = rpc_pb2.ScheduleBuildRequest(
+        builder=dict(project='chromium', bucket='try', builder='linux'),
+        request_id='0',
+    )
+    self.call(
+        self.api.ScheduleBuild,
+        req,
+        expected_code=prpc.StatusCode.PERMISSION_DENIED
+    )
+
+
 class BatchTests(BaseTestCase):
 
   @mock.patch('service.get_async', autospec=True)
@@ -480,9 +516,8 @@ class BatchTests(BaseTestCase):
             dict(),
         ],
     )
-    res = self.call(self.api.Batch, req)
     self.assertEqual(
-        res,
+        self.call(self.api.Batch, req),
         rpc_pb2.BatchResponse(
             responses=[
                 dict(
@@ -499,6 +534,67 @@ class BatchTests(BaseTestCase):
                 ),
             ]
         )
+    )
+
+  @mock.patch('creation.add_many_async', autospec=True)
+  def test_schedule_build_requests(self, add_many_async):
+    add_many_async.return_value = future([
+        (self.new_build_v1(id=42), None),
+        (None, errors.InvalidInputError('bad')),
+    ])
+
+    user.can_async.side_effect = (
+        lambda bucket_id, _: future('forbidden' not in bucket_id)
+    )
+
+    req = rpc_pb2.BatchRequest(
+        requests=[
+            dict(
+                schedule_build=dict(
+                    builder=dict(
+                        project='chromium', bucket='try', builder='linux'
+                    ),
+                    request_id='0',
+                )
+            ),
+            dict(
+                schedule_build=dict(
+                    builder=dict(
+                        project='chromium', bucket='try', builder='windows'
+                    ),
+                    request_id='1',
+                )
+            ),
+            dict(
+                schedule_build=dict(
+                    builder=dict(
+                        project='chromium', bucket='forbidden', builder='nope'
+                    ),
+                    request_id='1',
+                )
+            ),
+            dict(
+                schedule_build=dict(),  # invalid request
+            ),
+        ],
+    )
+
+    res = self.call(self.api.Batch, req)
+    self.assertEqual(res.responses[0].schedule_build.id, 42)
+    self.assertEqual(
+        res.responses[1],
+        rpc_pb2.BatchResponse.Response(
+            error=dict(
+                code=prpc.StatusCode.INVALID_ARGUMENT.value,
+                message='bad',
+            )
+        )
+    )
+    self.assertEqual(
+        res.responses[2].error.code, prpc.StatusCode.PERMISSION_DENIED.value
+    )
+    self.assertEqual(
+        res.responses[3].error.code, prpc.StatusCode.INVALID_ARGUMENT.value
     )
 
 
