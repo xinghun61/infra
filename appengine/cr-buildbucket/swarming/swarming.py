@@ -409,9 +409,7 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
 
 
 @ndb.tasklet
-def _create_task_def_async(
-    swarming_cfg, builder_cfg, build, build_number, fake_build
-):
+def _create_task_def_async(builder_cfg, build, build_number, fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -423,8 +421,6 @@ def _create_task_def_async(
   Raises:
     errors.InvalidInputError if build.parameters are invalid.
   """
-  assert isinstance(swarming_cfg,
-                    project_config_pb2.Swarming), type(swarming_cfg)
   assert isinstance(builder_cfg, project_config_pb2.Builder), type(builder_cfg)
   assert isinstance(build, model.Build), type(build)
   assert build.key and build.key.id(), build.key
@@ -443,9 +439,9 @@ def _create_task_def_async(
   assert isinstance(build.canary_preference, model.CanaryPreference)
   if build.canary_preference == model.CanaryPreference.AUTO:
     canary_percentage = _DEFAULT_CANARY_TEMPLATE_PERCENTAGE
-    if swarming_cfg.HasField(  # pragma: no branch
+    if builder_cfg.HasField(  # pragma: no branch
         'task_template_canary_percentage'):
-      canary_percentage = swarming_cfg.task_template_canary_percentage.value
+      canary_percentage = builder_cfg.task_template_canary_percentage.value
     build.canary = _should_use_canary_template(canary_percentage)
   else:
     build.canary = build.canary_preference == model.CanaryPreference.CANARY
@@ -464,7 +460,7 @@ def _create_task_def_async(
   if not task_template:
     raise TemplateNotFound('task template is not configured')
 
-  build.swarming_hostname = swarming_cfg.hostname
+  build.swarming_hostname = builder_cfg.swarming_host
   if not build.swarming_hostname:  # pragma: no cover
     raise Error('swarming hostname is not configured')
   h = hashlib.sha256('%s/%s' % (build.bucket_id, builder_cfg.name)).hexdigest()
@@ -828,7 +824,7 @@ def _get_builder_async(build):
     errors.BuilderNotFoundError if builder is not found.
 
   Returns:
-    (project_config_pb2.Bucket, project_config_pb2.Builder) tuple future.
+    project_config_pb2.Builder future.
   """
   if not build.parameters:
     raise errors.InvalidInputError(
@@ -847,7 +843,7 @@ def _get_builder_async(build):
 
   for builder_cfg in bucket_cfg.swarming.builders:  # pragma: no branch
     if builder_cfg.name == builder_name:  # pragma: no branch
-      raise ndb.Return(bucket_cfg, builder_cfg)
+      raise ndb.Return(builder_cfg)
 
   raise errors.BuilderNotFoundError(
       'Builder %r is not found in bucket %r' % (builder_name, build.bucket_id)
@@ -857,16 +853,16 @@ def _get_builder_async(build):
 @ndb.tasklet
 def prepare_task_def_async(build, build_number=None, fake_build=False):
   settings = yield _get_settings_async()
-  bucket_cfg, builder_cfg = yield _get_builder_async(build)
+  builder_cfg = yield _get_builder_async(build)
   ret = yield _prepare_task_def_async(
-      build, build_number, bucket_cfg, builder_cfg, settings, fake_build
+      build, build_number, builder_cfg, settings, fake_build
   )
   raise ndb.Return(ret)
 
 
 @ndb.tasklet
 def _prepare_task_def_async(
-    build, build_number, bucket_cfg, builder_cfg, settings, fake_build
+    build, build_number, builder_cfg, settings, fake_build
 ):
   """Prepares a swarming task definition.
 
@@ -904,7 +900,7 @@ def _prepare_task_def_async(
       build.experimental = not is_prod
 
   task_def = yield _create_task_def_async(
-      bucket_cfg.swarming, builder_cfg, build, build_number, fake_build
+      builder_cfg, build, build_number, fake_build
   )
   raise ndb.Return(task_def)
 
@@ -919,10 +915,10 @@ def create_task_async(build, build_number=None):
     errors.InvalidInputError if build attribute values are invalid.
   """
   settings = yield _get_settings_async()
-  bucket_cfg, builder_cfg = yield _get_builder_async(build)
+  builder_cfg = yield _get_builder_async(build)
 
   task_def = yield _prepare_task_def_async(
-      build, build_number, bucket_cfg, builder_cfg, settings, False
+      build, build_number, builder_cfg, settings, False
   )
 
   assert build.swarming_hostname

@@ -53,6 +53,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             hostname: "swarming.example.com"
             builders {
               name: "linux_chromium_rel_ng"
+              swarming_host: "swarming.example.com"
               category: "Chromium"
               build_numbers: YES
               recipe {
@@ -68,6 +69,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             builders {
               name: "win_chromium_rel_ng"
               category: "Chromium"
+              swarming_host: "swarming.example.com"
             }
           }
     '''
@@ -145,7 +147,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     resp = self.call_api('get_builders').json_body
     self.assertEqual(
-        resp,
+        test_util.ununicode(resp),
         {
             'buckets': [{
                 'name':
@@ -160,6 +162,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                             'Chromium',
                         'properties_json':
                             json.dumps({'foo': 'bar', 'baz': 1}),
+                        'swarming_hostname':
+                            'swarming.example.com',
                         'swarming_dimensions': [
                             'baz:baz', 'builder:linux_chromium_rel_ng',
                             'foo:bar'
@@ -169,6 +173,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'name': 'win_chromium_rel_ng',
                         'category': 'Chromium',
                         'properties_json': json.dumps({}),
+                        'swarming_hostname': 'swarming.example.com',
                     },
                 ],
             }],
@@ -187,6 +192,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         hostname: "swarming.example.com"
         builders {
           name: "a"
+          swarming_host: "swarming.example.com"
         }
       }
     '''
@@ -199,7 +205,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     resp = self.call_api('get_builders', req).json_body
     self.assertEqual(
-        resp,
+        test_util.ununicode(resp),
         {
             'buckets': [{
                 'name':
@@ -214,6 +220,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                             'Chromium',
                         'properties_json':
                             json.dumps({'foo': 'bar', 'baz': 1}),
+                        'swarming_hostname':
+                            'swarming.example.com',
                         'swarming_dimensions': [
                             'baz:baz', 'builder:linux_chromium_rel_ng',
                             'foo:bar'
@@ -223,6 +231,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'name': 'win_chromium_rel_ng',
                         'category': 'Chromium',
                         'properties_json': json.dumps({}),
+                        'swarming_hostname': 'swarming.example.com',
                     },
                 ],
             }],

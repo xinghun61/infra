@@ -105,9 +105,9 @@ class SwarmingTest(BaseTest):
     bucket_cfg_text = '''
       name: "luci.chromium.try"
       swarming {
-        hostname: "chromium-swarm.appspot.com"
         builders {
           name: "linux_chromium_rel_ng"
+          swarming_host: "chromium-swarm.appspot.com"
           swarming_tags: "buildertag:yes"
           swarming_tags: "commontag:yes"
           dimensions: "cores:8"
@@ -137,6 +137,7 @@ class SwarmingTest(BaseTest):
         }
         builders {
           name: "linux_chromium_rel_ng cipd"
+          swarming_host: "chromium-swarm.appspot.com"
           swarming_tags: "buildertag:yes"
           swarming_tags: "commontag:yes"
           dimensions: "cores:8"
@@ -1326,7 +1327,8 @@ class SwarmingTest(BaseTest):
   ):
     should_use_canary_template.return_value = True
     self.task_template_canary = None
-    self.bucket_cfg.swarming.task_template_canary_percentage.value = 54
+    for b in self.bucket_cfg.swarming.builders:
+      b.task_template_canary_percentage.value = 54
 
     self.json_response = {
         'task_id': 'deadbeef',
