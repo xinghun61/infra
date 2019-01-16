@@ -126,7 +126,7 @@ func filterSkippedFiles(files []*tricium.Data_File, dir string) []*tricium.Data_
 func checkoutGitattributes(paths []string, dir string) {
 	// We cannot directly try to check out files that may not actually be
 	// there; so, we first use ls-tree to find out which files exist.
-	c := exec.Command("git", "ls-tree", "-z", "FETCH_HEAD", "--")
+	c := exec.Command("git", "ls-tree", "--name-only", "-z", "FETCH_HEAD", "--")
 	c.Dir = dir
 	c.Args = append(c.Args, possibleGitattributesPaths(paths)...)
 	log.Printf("Running cmd: %s", c.Args)

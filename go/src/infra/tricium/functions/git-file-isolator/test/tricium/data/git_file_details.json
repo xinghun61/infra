@@ -1,26 +1,9 @@
 {
 	"repository": "https://chromium.googlesource.com/infra/luci/luci-py",
-	"ref": "refs/changes/33/1080733/7",
+	"ref": "refs/changes/27/938327/3",
 	"files": [
-		{ "path": "appengine/components/PRESUBMIT.py" },
-		{ "path": "appengine/components/components/prpc/discovery/Makefile" },
-		{ "path": "appengine/components/components/prpc/discovery/README.md" },
-		{ "path": "appengine/components/components/prpc/discovery/__init__.py" },
-		{ "path": "appengine/components/components/prpc/discovery/service.proto" },
-		{ "path": "appengine/components/components/prpc/discovery/service.py" },
-		{ "path": "appengine/components/components/prpc/discovery/service_pb2.py" },
-		{ "path": "appengine/components/components/prpc/discovery/service_prpc_pb2.py" },
-		{ "path": "appengine/components/components/prpc/discovery/service_test.py" },
-		{ "path": "appengine/components/components/prpc/discovery/test/Makefile" },
-		{ "path": "appengine/components/components/prpc/discovery/test/__init__.py" },
-		{ "path": "appengine/components/components/prpc/discovery/test/imported1_test.proto" },
-		{ "path": "appengine/components/components/prpc/discovery/test/imported1_test_pb2.py" },
-		{ "path": "appengine/components/components/prpc/discovery/test/imported2_test.proto" },
-		{ "path": "appengine/components/components/prpc/discovery/test/imported2_test_pb2.py" },
-		{ "path": "appengine/components/components/prpc/discovery/test/test.proto" },
-		{ "path": "appengine/components/components/prpc/discovery/test/test_pb2.py" },
-		{ "path": "appengine/components/components/prpc/discovery/test/test_prpc_pb2.py" },
-		{ "path": "appengine/components/components/prpc/discovery/test_support" },
-		{ "path": "appengine/components/components/prpc/server.py" }
+		{ "path": "appengine/components/components/config/proto/Makefile" },
+		{ "path": "appengine/components/components/config/proto/project_config_pb2.py" },
+		{ "path": "appengine/components/components/config/proto/service_config_pb2.py" }
 	]
 }
