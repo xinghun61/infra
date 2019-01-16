@@ -12,7 +12,7 @@ The rest of this page is specific to this repo.
 * [run.py](run.py): wrapper script to run programs contained in subdirectories
   without having to deal with `sys.path` modifications.
 * [test.py](test.py): multi-purpose script to run tests.
-* [infra\_libs/](infra_libs): generally useful functions and classes
+* [packages/infra\_libs/](packages/infra_libs): generally useful functions and classes
 * [infra/services/](infra/services): standalone programs intended to be run as
   daemons.
 * [infra/tools](infra/tools): command-line tools, intended to be run by developers.
