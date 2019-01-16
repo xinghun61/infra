@@ -70,12 +70,13 @@ class Gerrit(object):
       AccessViolationException.
     timeout (float or tuple of floats): passed as is to requests library.
       None by default, which means block forever.
+    retry_config (urllib3.util.Retry): override default retry config.
     instrumentation_id (str): monitoring identifier for HTTP requests.
       'gerrit' by default. See also `infra_libs.instrumented_requests library`.
   """
 
   def __init__(self, host, creds, throttle_delay_sec=0, read_only=False,
-               timeout=None, instrumentation_id='gerrit'):
+               retry_config=None, timeout=None, instrumentation_id='gerrit'):
     self._auth_header = 'Basic %s' % (
         base64.b64encode('%s:%s' % creds[host]))
     self._url_base = 'https://%s/a' % host.rstrip('/')
@@ -87,8 +88,9 @@ class Gerrit(object):
     # Do not use cookies with Gerrit. This breaks interaction with Google's
     # Gerrit instances. Do not use cookies as advised by the Gerrit team.
     self.session.cookies.set_policy(BlockCookiesPolicy())
-    retry_config = urllib3.util.Retry(total=4, backoff_factor=2,
-                                      status_forcelist=[500, 503])
+    if retry_config is None:
+      retry_config = urllib3.util.Retry(total=4, backoff_factor=2,
+                                        status_forcelist=[500, 503])
     self.session.mount(self._url_base, requests.adapters.HTTPAdapter(
         max_retries=retry_config))
     # Instrumentation hooks cache indexed by method.

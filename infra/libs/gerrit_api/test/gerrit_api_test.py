@@ -11,6 +11,7 @@ import requests
 import tempfile
 import time
 import unittest
+import urllib3
 
 from infra.libs import gerrit_api
 
@@ -114,11 +115,13 @@ class GerritAgentTestCase(unittest.TestCase):
         read_only=True)
 
   @mock.patch.object(requests.Session, 'request')
-  def test_with_timeout(self, mock_request):
+  def test_with_timeout_and_retries(self, mock_request):
     mock_request.return_value = _create_mock_return(
         '%s[]' % GERRIT_JSON_HEADER, 200)
     g = gerrit_api.Gerrit('chromium-review.googlesource.com',
                           gerrit_api.Credentials(auth=MOCK_AUTH),
+                          retry_config=urllib3.util.Retry(
+                            total=1, status_forcelist=[500, 503]),
                           timeout=(1, 2))
     g._request(method='GET', request_path='/self')
     mock_request.assert_called_once_with(
