@@ -103,30 +103,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Creates a scanner from pylint's output to stdout.
-	scanner := bufio.NewScanner(stdoutReader)
-	output := &tricium.Data_Results{}
-
-	// Prepare to parse the pylint output in a separate goroutine in case it is
-	// very large.
-	done := make(chan bool)
-	go scanPylintOutput(scanner, output, done)
-
-	// Pylint will start producing output to stdout, and therefore to the
-	// scanner.
-	err = cmd.Start()
-	if err != nil {
+	if err = cmd.Start(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error starting Cmd.", err)
 		os.Exit(1)
 	}
-
-	// Halts until parsing the pylint output has finished, making sure that all
-	// the data has been read from stderr, preventing race conditions or
-	// non-determinism. See: https://golang.org/pkg/os/exec/#Cmd.StderrPipe.
-	<-done
+	scanner := bufio.NewScanner(stdoutReader)
+	output := &tricium.Data_Results{}
+	scanPylintOutput(scanner, output)
 
 	// A non-zero exit status for Pylint doesn't mean that an error occurred,
-	// so we don't need to look at the error returned by Wait.
+	// it just means that warnings were found, so we don't need to look at the
+	// error returned by Wait.
 	cmd.Wait()
 
 	// Write Tricium RESULTS data.
@@ -138,10 +125,7 @@ func main() {
 }
 
 // scanPylintOutput reads Pylint output line by line and populates results.
-//
-// It must notify the calling function when it is done by sending true into the
-// done channel.
-func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, done chan bool) {
+func scanPylintOutput(scanner *bufio.Scanner, results *tricium.Data_Results) {
 	// Read line by line, adding comments to the output.
 	for scanner.Scan() {
 		line := scanner.Text()

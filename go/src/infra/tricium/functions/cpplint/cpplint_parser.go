@@ -71,6 +71,7 @@ func main() {
 	}
 	cmd := exec.Command(cmdName, cmdArgs...)
 	log.Printf("Command: %s", cmd.Args)
+
 	// Cpplint prints warnings to stderr.
 	stderrReader, err := cmd.StderrPipe()
 	if err != nil {
@@ -78,19 +79,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	scanner := bufio.NewScanner(stderrReader)
-	output := &tricium.Data_Results{}
-
-	done := make(chan bool)
-	go scanCpplintOutput(scanner, output, done)
-
-	err = cmd.Start()
-	if err != nil {
+	if err = cmd.Start(); err != nil {
 		fmt.Fprintln(os.Stderr, "Error starting Cmd", err)
 		os.Exit(1)
 	}
+	scanner := bufio.NewScanner(stderrReader)
+	output := &tricium.Data_Results{}
+	scanCpplintOutput(scanner, output)
 
-	<-done
+	// A non-zero exit status for Cpplint doesn't mean that an error occurred,
+	// it just means that warnings were found, so we don't need to look at the
+	// error returned by Wait.
 	cmd.Wait()
 
 	// Write Tricium RESULTS data.
@@ -119,8 +118,8 @@ func filterArg(filterFlag string) string {
 	return strings.Join(filters, ",")
 }
 
-//  Reads cpplint's output line by line and populates results.
-func scanCpplintOutput(scanner *bufio.Scanner, results *tricium.Data_Results, done chan bool) {
+// Reads the output of cpplint line by line and populates the results.
+func scanCpplintOutput(scanner *bufio.Scanner, results *tricium.Data_Results) {
 	// Read line by line, adding comments to the output.
 	for scanner.Scan() {
 		line := scanner.Text()
