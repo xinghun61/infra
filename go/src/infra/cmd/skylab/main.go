@@ -44,6 +44,7 @@ func getApplication() *cli.Application {
 			cmd.EnsurePoolHealthy,
 			cmd.ResizePool,
 			subcommands.Section("Tasks"),
+			cmd.CreateTest,
 			cmd.Repair,
 		},
 	}
