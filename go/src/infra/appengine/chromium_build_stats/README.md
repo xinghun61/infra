@@ -72,3 +72,38 @@ $ make update-prod # or `make update-staging`
 
 Ninja log is uploaded from user too.
 Upload script is located in [depot_tools](https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/master/ninjalog_uploader.py).
+
+### example query
+
+[link to query editor](https://console.cloud.google.com/bigquery?project=chromium-build-stats)
+
+1. Find time consuming build tasks in a day per target_os, build os and outputs
+
+```
+SELECT
+  (
+  SELECT
+    value
+  FROM
+    UNNEST(build_configs)
+  WHERE
+    key = "target_os") target_os,
+  os,
+  SUBSTR(ARRAY_TO_STRING(log_entry.outputs, ", "), 0, 128) outputs,
+  TRUNC(AVG(log_entry.end_duration_sec - log_entry.start_duration_sec), 2) task_duration_avg,
+  TRUNC(SUM(log_entry.end_duration_sec - log_entry.start_duration_sec), 2) task_duration_sum,
+  TRUNC(SUM(weighted_duration_sec), 2) weighted_duration_sum,
+  COUNT(1) cnt
+FROM
+  `chromium-build-stats.ninjalog.user`
+WHERE
+  (_PARTITIONTIME >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
+    -- This is for streaming buffer.
+    OR _PARTITIONTIME IS NULL)
+GROUP BY
+  target_os,
+  os,
+  outputs
+ORDER BY
+  weighted_duration_sum DESC
+```
