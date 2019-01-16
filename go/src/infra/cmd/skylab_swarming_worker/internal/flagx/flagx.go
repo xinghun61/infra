@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"flag"
 
-	"github.com/pkg/errors"
+	"go.chromium.org/luci/common/errors"
 )
 
 type jsonMap map[string]string
@@ -36,7 +36,7 @@ func (m *jsonMap) String() string {
 
 func (m *jsonMap) Set(s string) error {
 	if m == nil {
-		return errors.New("nil jsonMap pointer")
+		return errors.Reason("JSONMap pointer is nil").Err()
 	}
 	d := []byte(s)
 	return json.Unmarshal(d, m)
