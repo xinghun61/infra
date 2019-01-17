@@ -11,12 +11,13 @@ import logging
 import random
 
 from google.appengine.ext import ndb
-from google.protobuf import struct_pb2
 
 from components import auth
 from components import net
 from components import utils
 
+from proto import build_pb2
+from proto import common_pb2
 from proto.config import project_config_pb2
 import bbutil
 import buildtags
@@ -27,7 +28,6 @@ import model
 import search
 import sequence
 import swarming
-import user
 
 _BuildRequestBase = collections.namedtuple(
     '_BuildRequestBase', [
@@ -100,16 +100,50 @@ class BuildRequest(_BuildRequestBase):
     bid = self.schedule_build_request.builder
     return config.format_bucket_id(bid.project, bid.bucket)
 
+  def create_build_proto(self, created_by, now):
+    """Converts the request to a build_pb2.Build.
+
+    Assumes self is valid.
+    """
+    sbr = self.schedule_build_request
+
+    build_proto = build_pb2.Build(
+        builder=sbr.builder,
+        tags=sbr.tags,
+        status=common_pb2.SCHEDULED,
+        created_by=created_by.to_bytes(),
+        input=dict(
+            properties=sbr.properties,
+            gerrit_changes=sbr.gerrit_changes,
+        )
+    )
+    build_proto.create_time.FromDatetime(now)
+
+    if sbr.HasField('gitiles_commit'):
+      build_proto.input.gitiles_commit.CopyFrom(sbr.gitiles_commit)
+
+    if sbr.priority:
+      build_proto.infra.swarming.priority = sbr.priority
+
+    return build_proto
+
   def create_build(self, build_id, created_by, now):
     """Converts the request to a build.
 
     Assumes self is valid.
     """
     sbr = self.schedule_build_request
-    tags = sorted(set(buildtags.unparse(t.key, t.value) for t in sbr.tags))
 
+    build_proto = self.create_build_proto(created_by, now)
+    tags = sorted(
+        set(buildtags.unparse(t.key, t.value) for t in build_proto.tags)
+    )
+
+    # TODO(crbug.com/917851): remove property assignments that are reduntant
+    # with build.proto.
     build = model.Build(
         id=build_id,
+        proto=build_proto,
         bucket_id=self.bucket_id,
         initial_tags=tags,
         tags=tags,
@@ -123,12 +157,10 @@ class BuildRequest(_BuildRequestBase):
         canary_preference=model.TRINARY_TO_CANARY_PREFERENCE[sbr.canary],
         experimental=bbutil.TRINARY_TO_BOOLISH[sbr.experimental],
     )
+
     if sbr.builder.builder:  # pragma: no branch
-      # TODO(nodir): move to model.Build.proto.builder.builder
       build.parameters[model.BUILDER_PARAMETER] = sbr.builder.builder
 
-    # TODO(nodir): move to
-    # model.Build.proto.infra.buildbucket.requested_properties
     build.parameters[model.PROPERTIES_PARAMETER] = bbutil.struct_to_dict(
         sbr.properties
     )
@@ -287,42 +319,39 @@ def add_many_async(build_request_list):
     # Fetch and index swarmbucket builder configs.
     bucket_ids = {b.bucket_id for b in new_builds.itervalues()}
     bucket_cfgs = yield config.get_buckets_async(bucket_ids)
-    builder_cfgs = {}  # {(bucket_id, builder): cfg}
+    builder_cfgs = {}  # {bucket_id: {builder_name: cfg}}
     for bucket_id, bucket_cfg in bucket_cfgs.iteritems():
-      assert bucket_cfg  # must exist since we checked access earlier
-      for builder_cfg in bucket_cfg.swarming.builders:
-        builder_cfgs[(bucket_id, builder_cfg.name)] = builder_cfg
+      builder_cfgs[bucket_id] = {
+          b.name: b for b in bucket_cfg.swarming.builders
+      }
 
     # For each swarmbucket builder with build numbers, generate numbers.
     # Filter and index new_builds first.
-    numbered = {}  # {(bucket, builder): [i]}
+    numbered = {}  # {seq_name: [i]}
     for i, b in new_builds.iteritems():
-      builder = (b.parameters or {}).get(model.BUILDER_PARAMETER)
-      builder_id = (b.bucket_id, builder)
-      cfg = builder_cfgs.get(builder_id)
+      cfg = builder_cfgs[b.bucket_id].get(b.proto.builder.builder)
       if cfg and cfg.build_numbers == project_config_pb2.YES:
-        numbered.setdefault(builder_id, []).append(i)
+        seq_name = sequence.builder_seq_name(b.proto.builder)
+        numbered.setdefault(seq_name, []).append(i)
     # Now actually generate build numbers.
-    build_number_futs = []  # [(indexes, seq_name, build_number_fut)]
-    for builder_id, indexes in numbered.iteritems():
-      seq_name = sequence.builder_seq_name(builder_id[0], builder_id[1])
-      fut = sequence.generate_async(seq_name, len(indexes))
-      build_number_futs.append((indexes, seq_name, fut))
-    # {i: (seq_name, build_number)}
-    build_numbers = collections.defaultdict(lambda: (None, None))
-    for indexes, seq_name, fut in build_number_futs:
-      build_number = yield fut
+    build_number_futs = {
+        seq_name: sequence.generate_async(seq_name, len(indexes))
+        for seq_name, indexes in numbered.iteritems()
+    }
+    for seq_name, indexes in numbered.iteritems():
+      build_number = yield build_number_futs[seq_name]
       for i in sorted(indexes):
-        build_numbers[i] = (seq_name, build_number)
+        new_builds[i].proto.number = build_number
         build_number += 1
 
     create_futs = {}
     for i, b in new_builds.iteritems():
       cfg = bucket_cfgs[b.bucket_id]
       if cfg and config.is_swarming_config(cfg):  # pragma: no branch
-        create_futs[i] = swarming.create_task_async(b, build_numbers[i][1])
+        create_futs[i] = swarming.create_task_async(b)
 
     for i, fut in create_futs.iteritems():
+      build = new_builds[i]
       success = False
       try:
         with _with_swarming_api_error_converter():
@@ -332,9 +361,9 @@ def add_many_async(build_request_list):
         results[i] = (None, ex)
         del new_builds[i]
       finally:
-        seq_name, build_number = build_numbers[i]
-        if not success and build_number is not None:  # pragma: no branch
-          yield _try_return_build_number_async(seq_name, build_number)
+        if not success and build.proto.number:  # pragma: no branch
+          seq_name = sequence.builder_seq_name(build.proto.builder)
+          yield _try_return_build_number_async(seq_name, build.proto.number)
 
   @ndb.tasklet
   def put_and_cache_builds_async():

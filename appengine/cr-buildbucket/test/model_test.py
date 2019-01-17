@@ -7,9 +7,10 @@ import mock
 
 from google.appengine.ext import ndb
 
-from components import utils
 from testing_utils import testing
 
+from proto import build_pb2
+from proto import common_pb2
 import model
 import v2
 
@@ -63,3 +64,20 @@ class BuildTest(testing.AppengineTestCase):
     )
     with self.assertRaises(AssertionError):
       build_steps.put()
+
+  def test_proto_population(self):
+    build = model.Build(
+        bucket_id='chromium/try',
+        proto=build_pb2.Build(),
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.SUCCESS,
+        create_time=datetime.datetime(2019, 1, 1),
+        start_time=datetime.datetime(2019, 1, 2),
+        complete_time=datetime.datetime(2019, 1, 3),
+        update_time=datetime.datetime(2019, 1, 3),
+    )
+    build.put()
+    self.assertEqual(build.proto.status, common_pb2.SUCCESS)
+    self.assertEqual(build.proto.start_time.ToDatetime(), build.start_time)
+    self.assertEqual(build.proto.end_time.ToDatetime(), build.complete_time)
+    self.assertEqual(build.proto.update_time.ToDatetime(), build.update_time)

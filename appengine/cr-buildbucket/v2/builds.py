@@ -6,7 +6,6 @@
 
 import logging
 
-from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
 
 from proto import build_pb2
@@ -28,6 +27,7 @@ class MalformedBuild(Exception):
   """A build has unexpected format."""
 
 
+# TODO(crbug.com/917851): delete this function in favor of model.Build.proto.
 def build_to_v2(build, build_steps=None):
   """Converts a model.Build to an incomplete build_pb2.Build.
 

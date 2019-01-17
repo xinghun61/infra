@@ -800,6 +800,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 def mkBuild(**kwargs):
   args = dict(
       id=model.create_build_ids(utils.utcnow(), 1)[0],
+      proto=build_pb2.Build(),
       bucket_id='chromium/try',
       create_time=utils.utcnow(),
       created_by=auth.Identity('user', 'john@example.com'),

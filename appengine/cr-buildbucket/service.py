@@ -524,6 +524,8 @@ def cancel(build_id, human_reason=None, result_details=None):
         message=human_reason,
         canceled_by=auth.get_current_identity().to_bytes(),
     )
+    if build.proto:  # pragma: no branch
+      build.proto.cancel_reason.CopyFrom(build.cancel_reason_v2)
     build.complete_time = now
     build.clear_lease()
     futs = [

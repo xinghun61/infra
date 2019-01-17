@@ -18,6 +18,7 @@ import gae_ts_mon
 from . import flatten_swarmingcfg
 from . import swarming
 from . import swarmingcfg
+from proto import build_pb2
 import api
 import api_common
 import config
@@ -189,8 +190,9 @@ class SwarmbucketApi(remote.Service):
 
       identity = auth.get_current_identity()
       build = build_request.create_build(1, identity, utils.utcnow())
+      build.proto.number = 1
       task_def = swarming.prepare_task_def_async(
-          build, build_number=0, fake_build=True
+          build, fake_build=True
       ).get_result()
       task_def_json = json.dumps(task_def)
 
@@ -219,7 +221,11 @@ class SwarmbucketApi(remote.Service):
           (request.builder, bucket_id)
       )
 
-    seq_name = sequence.builder_seq_name(bucket_id, request.builder)
+    project, bucket = config.parse_bucket_id(bucket_id)
+    builder_id = build_pb2.BuilderID(
+        project=project, bucket=bucket, builder=request.builder
+    )
+    seq_name = sequence.builder_seq_name(builder_id)
     try:
       sequence.set_next(seq_name, request.next_number)
     except ValueError as ex:

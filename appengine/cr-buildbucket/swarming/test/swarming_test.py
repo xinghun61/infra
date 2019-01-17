@@ -423,7 +423,7 @@ class SwarmingTest(BaseTest):
     task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(
-        build.recipe.cipd_package,
+        build.proto.infra.recipe.cipd_package,
         'infra/recipe_bundles/chromium.googlesource.com/chromium/tools/build'
     )
     self.assertIn(
@@ -716,7 +716,8 @@ class SwarmingTest(BaseTest):
         },
     }
 
-    swarming.create_task_async(build, 1).get_result()
+    build.proto.number = 1
+    swarming.create_task_async(build).get_result()
 
     # Test swarming request.
     self.assertEqual(
@@ -892,15 +893,20 @@ class SwarmingTest(BaseTest):
     )
     self.assertEqual(build.url, 'https://milo.example.com/b/1')
 
-    self.assertEqual(build.service_account, 'robot@example.com')
-
-    self.assertEqual(build.logdog_hostname, 'luci-logdog-dev.appspot.com')
-    self.assertEqual(build.logdog_project, 'chromium')
     self.assertEqual(
-        build.logdog_prefix, 'buildbucket/cr-buildbucket.appspot.com/1'
+        build.proto.infra.swarming.task_service_account, 'robot@example.com'
+    )
+
+    self.assertEqual(
+        build.proto.infra.logdog.hostname, 'luci-logdog-dev.appspot.com'
+    )
+    self.assertEqual(build.proto.infra.logdog.project, 'chromium')
+    self.assertEqual(
+        build.proto.infra.logdog.prefix,
+        'buildbucket/cr-buildbucket.appspot.com/1'
     )
     self.assertEqual(build.input_properties['predefined-property'], 'x')
-    self.assertEqual(build.recipe.name, 'recipe')
+    self.assertEqual(build.proto.infra.recipe.name, 'recipe')
 
     # Test delegation token params.
     self.assertEqual(
@@ -940,7 +946,8 @@ class SwarmingTest(BaseTest):
         },
     }
 
-    swarming.create_task_async(build, 1).get_result()
+    build.proto.number = 1
+    swarming.create_task_async(build).get_result()
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertEqual(actual_task_def['priority'], '216')
@@ -1026,7 +1033,8 @@ class SwarmingTest(BaseTest):
         },
     }
 
-    swarming.create_task_async(build, 1).get_result()
+    build.proto.number = 1
+    swarming.create_task_async(build).get_result()
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertEqual(actual_task_def['priority'], '108')
@@ -1363,7 +1371,7 @@ class SwarmingTest(BaseTest):
     )
     swarming.create_task_async(build).get_result()
 
-    self.assertFalse(build.canary)
+    self.assertFalse(build.proto.infra.buildbucket.canary)
     should_use_canary_template.assert_called_with(54)
 
   def test_create_task_async_override_cfg(self):
@@ -1623,11 +1631,12 @@ class SwarmingTest(BaseTest):
                 model.BuildStatus.COMPLETED,
             'result':
                 model.BuildResult.SUCCESS,
-            'bot_dimensions': {
-                'os': ['Ubuntu', 'Trusty'],
-                'pool': ['luci.chromium.try'],
-                'id': ['bot1'],
-            },
+            'bot_dimensions': [
+                common_pb2.StringPair(key='id', value='bot1'),
+                common_pb2.StringPair(key='os', value='Trusty'),
+                common_pb2.StringPair(key='os', value='Ubuntu'),
+                common_pb2.StringPair(key='pool', value='luci.chromium.try'),
+            ],
             'start_time':
                 datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
             'complete_time':
@@ -1802,8 +1811,8 @@ class SwarmingTest(BaseTest):
       self.assertEqual(build.start_time, case.get('start_time'))
       self.assertEqual(build.complete_time, case.get('complete_time'))
       self.assertEqual(
-          build.result_details.get('swarming', {}).get('bot_dimensions'),
-          case.get('bot_dimensions', {})
+          list(build.proto.infra.swarming.bot_dimensions),
+          case.get('bot_dimensions', [])
       )
 
       expected_steps = case.get('build_steps') or []
@@ -2472,6 +2481,7 @@ def b64json(data):
 def mkBuild(**kwargs):
   args = dict(
       id=1,
+      proto=build_pb2.Build(),
       bucket_id='chromium/try',
       create_time=utils.utcnow(),
       created_by=auth.Identity('user', 'john@example.com'),

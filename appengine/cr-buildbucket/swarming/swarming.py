@@ -409,7 +409,7 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
 
 
 @ndb.tasklet
-def _create_task_def_async(builder_cfg, build, build_number, fake_build):
+def _create_task_def_async(builder_cfg, build, fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -425,8 +425,6 @@ def _create_task_def_async(builder_cfg, build, build_number, fake_build):
   assert isinstance(build, model.Build), type(build)
   assert build.key and build.key.id(), build.key
   assert build.url, 'build.url should have been initialized'
-  assert isinstance(build_number,
-                    int) or build_number is None, type(build_number)
   assert isinstance(fake_build, bool), type(fake_build)
   params = build.parameters or {}
   validate_build_parameters(params)
@@ -460,7 +458,10 @@ def _create_task_def_async(builder_cfg, build, build_number, fake_build):
   if not task_template:
     raise TemplateNotFound('task template is not configured')
 
+  build.proto.infra.buildbucket.canary = build.canary
+
   build.swarming_hostname = builder_cfg.swarming_host
+  build.proto.infra.swarming.hostname = builder_cfg.swarming_host
   if not build.swarming_hostname:  # pragma: no cover
     raise Error('swarming hostname is not configured')
   h = hashlib.sha256('%s/%s' % (build.bucket_id, builder_cfg.name)).hexdigest()
@@ -478,8 +479,8 @@ def _create_task_def_async(builder_cfg, build, build_number, fake_build):
   extra_swarming_tags = []
   extra_cipd_packages = []
   if builder_cfg.HasField('recipe'):  # pragma: no branch
-    (extra_swarming_tags, extra_cipd_packages, extra_task_template_params
-    ) = _setup_recipes(build, builder_cfg, build_number, params)
+    (extra_swarming_tags, extra_cipd_packages,
+     extra_task_template_params) = _setup_recipes(build, builder_cfg, params)
     task_template_params.update(extra_task_template_params)
 
   # Render task template.
@@ -519,7 +520,7 @@ def _create_task_def_async(builder_cfg, build, build_number, fake_build):
   raise ndb.Return(task)
 
 
-def _setup_recipes(build, builder_cfg, build_number, params):
+def _setup_recipes(build, builder_cfg, params):
   """Initializes a build request using recipes.
 
   Mutates build.
@@ -527,7 +528,7 @@ def _setup_recipes(build, builder_cfg, build_number, params):
   Returns:
     extra_swarming_tags, extra_cipd_packages, extra_task_template_params
   """
-  build.recipe = build.recipe or build_pb2.BuildInfra.Recipe()
+  build.recipe = build.proto.infra.recipe
   build.recipe.cipd_package = builder_cfg.recipe.cipd_package
   build.recipe.name = builder_cfg.recipe.name
 
@@ -551,8 +552,8 @@ def _setup_recipes(build, builder_cfg, build_number, params):
       'is_experimental': build.experimental,
   })
 
-  if build_number is not None:  # pragma: no branch
-    props['buildnumber'] = build_number
+  if build.proto.number:  # pragma: no branch
+    props['buildnumber'] = build.proto.number
 
   # TODO(nodir): remove changes support. This is legacy.
   changes = params.get(_PARAM_CHANGES)
@@ -851,19 +852,15 @@ def _get_builder_async(build):
 
 
 @ndb.tasklet
-def prepare_task_def_async(build, build_number=None, fake_build=False):
+def prepare_task_def_async(build, fake_build=False):
   settings = yield _get_settings_async()
   builder_cfg = yield _get_builder_async(build)
-  ret = yield _prepare_task_def_async(
-      build, build_number, builder_cfg, settings, fake_build
-  )
+  ret = yield _prepare_task_def_async(build, builder_cfg, settings, fake_build)
   raise ndb.Return(ret)
 
 
 @ndb.tasklet
-def _prepare_task_def_async(
-    build, build_number, builder_cfg, settings, fake_build
-):
+def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
   """Prepares a swarming task definition.
 
   Validates the new build.
@@ -880,14 +877,12 @@ def _prepare_task_def_async(
         'Swarming buckets do not support creation of leased builds'
     )
 
-  if build_number is not None:
+  if build.proto.number:
     build.tags.append(
         buildtags.build_address_tag(
-            # TODO(crbug.com/851036): migrate build address to use short
-            # bucket names.
             api_common.format_luci_bucket(build.bucket_id),
             builder_cfg.name,
-            build_number,
+            build.proto.number,
         )
     )
 
@@ -898,15 +893,14 @@ def _prepare_task_def_async(
     is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build)
     if is_prod is not None:
       build.experimental = not is_prod
+  build.proto.input.experimental = build.experimental
 
-  task_def = yield _create_task_def_async(
-      builder_cfg, build, build_number, fake_build
-  )
+  task_def = yield _create_task_def_async(builder_cfg, build, fake_build)
   raise ndb.Return(task_def)
 
 
 @ndb.tasklet
-def create_task_async(build, build_number=None):
+def create_task_async(build):
   """Creates a swarming task for the build and mutates the build.
 
   May be called only if build's bucket is configured for swarming.
@@ -917,9 +911,7 @@ def create_task_async(build, build_number=None):
   settings = yield _get_settings_async()
   builder_cfg = yield _get_builder_async(build)
 
-  task_def = yield _prepare_task_def_async(
-      build, build_number, builder_cfg, settings, False
-  )
+  task_def = yield _prepare_task_def_async(build, builder_cfg, settings, False)
 
   assert build.swarming_hostname
   res = yield _call_api_async(
@@ -946,6 +938,7 @@ def create_task_async(build, build_number=None):
   logging.info('Created a swarming task %s', task_id)
 
   build.swarming_task_id = task_id
+  build.proto.infra.swarming.task_id = task_id
 
   build.tags.extend([
       'swarming_hostname:%s' % build.swarming_hostname,
@@ -959,13 +952,17 @@ def create_task_async(build, build_number=None):
       build.logdog_hostname = host
       build.logdog_project = project
       build.logdog_prefix = prefix
+      build.proto.infra.logdog.hostname = host
+      build.proto.infra.logdog.project = project
+      build.proto.infra.logdog.prefix = prefix
     build.tags.append(buildtags.unparse(buildtags.SWARMING_TAG_KEY, t))
   task_slices = task_req.get('task_slices') or [{}]
   for d in task_slices[0].get('properties', {}).get('dimensions', []):
     dt = buildtags.unparse(d['key'], d['value'])
     build.tags.append(buildtags.unparse(buildtags.SWARMING_DIMENSION_KEY, dt))
 
-  build.service_account = task_req.get('service_account')
+  build.service_account = task_req.get('service_account', '')
+  build.proto.infra.swarming.task_service_account = build.service_account
 
   # Mark the build as leased.
   exp = sum(int(t['expiration_secs']) for t in task_def['task_slices'])
@@ -1134,9 +1131,17 @@ def _sync_build_in_memory(
   build.cancelation_reason = None
   build.result_details = {'swarming': {'bot_dimensions': {}}}
 
+  if build.proto:  # pragma: no branch
+    build.proto.infra.swarming.ClearField('bot_dimensions')
   bot_dimensions = build.result_details['swarming']['bot_dimensions']
   for d in (task_result or {}).get('bot_dimensions', []):
-    bot_dimensions[d['key']] = d['value']  # this is a list of values
+    assert isinstance(d['value'], list)
+    if build.proto:  # pragma: no branch
+      for v in d['value']:
+        build.proto.infra.swarming.bot_dimensions.add(key=d['key'], value=v)
+    # TODO(crbug.com/917851): remove bot_dimensions.
+    bot_dimensions[d['key']] = d['value']
+  build.proto.infra.swarming.bot_dimensions.sort(key=lambda d: (d.key, d.value))
 
   # error message to include in result_details. Used only if build is complete.
   errmsg = ''

@@ -136,7 +136,28 @@ class Build(ndb.Model):
   # We workaround this problem by setting a timeout.
   _memcache_timeout = 600  # 10m
 
-  status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
+  # Stores the build proto. The primary property of this entity.
+  # Majority of the other properties are either derivatives of this field or
+  # legacy.
+  #
+  # Does not include:
+  #   id: stored in __key__
+  #   output.properties: see BuildOutputProperties
+  #   steps: see BuildSteps.
+  #
+  # Transition period: proto is either None or complete, i.e. created by
+  # creation.py or fix_builds.py.
+  proto = datastore_utils.ProtobufProperty(build_pb2.Build)
+
+  # Specifies whether canary of build infrastructure should be used for this
+  # build.
+  canary_preference = msgprop.EnumProperty(CanaryPreference, indexed=False)
+
+  # == proto-derived properties ================================================
+  #
+  # These properties are derived from "proto" properties.
+  # They are used to index builds.
+  # TODO(crbug.com/917851): make them computed.
 
   # A proto.common_pb2.Status corresponding to self.status.
   # This is needed to index builds by V2 status because status_v2->status_v1
@@ -148,55 +169,61 @@ class Build(ndb.Model):
   incomplete = ndb.ComputedProperty(
       lambda self: self.status != BuildStatus.COMPLETED
   )
-  status_changed_time = ndb.DateTimeProperty(auto_now_add=True)
-  update_time = ndb.DateTimeProperty(auto_now=True)
 
-  # Creation time attributes.
-
-  create_time = ndb.DateTimeProperty(auto_now_add=True)
-  created_by = auth.IdentityProperty()
   # A container of builds, defines a security domain.
   # Format: "<project_id>/<bucket_name>".
   # "luci.<project_id>." prefix is stripped from bucket name,
   # e.g. "chromium/try", not "chromium/luci.chromium.try".
   bucket_id = ndb.StringProperty()
+
   # ID of the LUCI project to which this build belongs.
   project = ndb.ComputedProperty(
       lambda self: config.parse_bucket_id(self.bucket_id)[0]
   )
-  # a list of tags, where each tag is a string
-  # with ":" symbol. The first occurrence of ":" splits tag name and tag
-  # value. Contains only tags specified by the build request. Old Build
-  # entities do not have this field.
-  initial_tags = ndb.StringProperty(repeated=True, indexed=False)
-  # superset of initial_tags. May contain auto-added tags.
+
+  # Superset of proto.tags. May contain auto-added tags.
+  # A list of colon-separated key-value pairs.
   tags = ndb.StringProperty(repeated=True)
-  # immutable arbitrary build parameters.
-  parameters = datastore_utils.DeterministicJsonProperty(json_type=dict)
-  # PubSub message parameters for build status change notifications.
-  # TODO(nodir): replace with notification_pb2.NotificationConfig.
-  pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
-  # id of the original build that this build was derived from.
-  retry_of = ndb.IntegerProperty()
-  # Specifies whether canary of build infrastructure should be used for this
-  # build.
-  canary_preference = msgprop.EnumProperty(CanaryPreference, indexed=False)
+
   # If True, the build won't affect monitoring and won't be surfaced in
   # search results unless explicitly requested.
   experimental = ndb.BooleanProperty()
-  # Stores build_pb2.Build.input.gitiles_commit.
-  input_gitiles_commit = datastore_utils.ProtobufProperty(
-      common_pb2.GitilesCommit
-  )
 
-  # Stores buildbucket.v2.Build.input.properties.
-  input_properties = datastore_utils.ProtobufProperty(struct_pb2.Struct)
+  swarming_task_id = ndb.StringProperty()
 
-  # Lease-time attributes.
+  @property
+  def is_luci(self):  # pragma: no cover
+    return bool(self.swarming_hostname)
+
+  # == Legacy properties =======================================================
+
+  status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
+
+  status_changed_time = ndb.DateTimeProperty(auto_now_add=True)
+
+  # immutable arbitrary build parameters.
+  parameters = datastore_utils.DeterministicJsonProperty(json_type=dict)
+
+  # PubSub message parameters for build status change notifications.
+  # TODO(nodir): replace with notification_pb2.NotificationConfig.
+  pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
+
+  # id of the original build that this build was derived from.
+  retry_of = ndb.IntegerProperty()
+
+  # a URL to a build-system-specific build, viewable by a human.
+  url = ndb.StringProperty(indexed=False)
+
+  # Completion-time properties.
+  result = msgprop.EnumProperty(BuildResult)
+  result_details = datastore_utils.DeterministicJsonProperty(json_type=dict)
+  cancelation_reason = msgprop.EnumProperty(CancelationReason)
+  failure_reason = msgprop.EnumProperty(FailureReason)
+
+  # Lease-time properties.
 
   # TODO(nodir): move lease to a separate entity under Build.
   # It would be more efficient.
-
   # current lease expiration date.
   # The moment the build is leased, |lease_expiration_date| is set to
   # (utcnow + lease_duration).
@@ -210,36 +237,40 @@ class Build(ndb.Model):
   leasee = auth.IdentityProperty()
   never_leased = ndb.BooleanProperty()
 
-  # Start time attributes.
+  # == Properties redundant with "proto" =======================================
+  #
+  # TODO(crbug.com/917851): delete these properties or move to "derived".
 
-  # a URL to a build-system-specific build, viewable by a human.
-  url = ndb.StringProperty(indexed=False)
+  # Stores buildbucket.v2.Build.input.properties.
+  input_properties = datastore_utils.ProtobufProperty(struct_pb2.Struct)
+
+  # a list of tags, where each tag is a string
+  # with ":" symbol. The first occurrence of ":" splits tag name and tag
+  # value. Contains only tags specified by the build request. Old Build
+  # entities do not have this field.
+  initial_tags = ndb.StringProperty(repeated=True, indexed=False)
+
+  update_time = ndb.DateTimeProperty(auto_now=True)
+  create_time = ndb.DateTimeProperty(auto_now_add=True)
+  created_by = auth.IdentityProperty()
+  input_gitiles_commit = datastore_utils.ProtobufProperty(
+      common_pb2.GitilesCommit
+  )
+
   # when the build started. Unknown for old builds.
   start_time = ndb.DateTimeProperty()
+
   # True if canary build infrastructure is used to run this build.
   # It may be None only in SCHEDULED state. Otherwise it must be True or False.
   # If canary_preference is CANARY, this field value does not have to be True,
   # e.g. if the build infrastructure does not have a canary.
   canary = ndb.BooleanProperty()
 
-  # Completion time attributes.
-
   complete_time = ndb.DateTimeProperty()
-  result = msgprop.EnumProperty(BuildResult)
-  result_details = datastore_utils.DeterministicJsonProperty(json_type=dict)
-  cancelation_reason = msgprop.EnumProperty(CancelationReason)
   cancel_reason_v2 = datastore_utils.ProtobufProperty(build_pb2.CancelReason)
-  failure_reason = msgprop.EnumProperty(FailureReason)
-
-  # Swarming integration
 
   swarming_hostname = ndb.StringProperty()
-  swarming_task_id = ndb.StringProperty()
   service_account = ndb.StringProperty()
-
-  @property
-  def is_luci(self):  # pragma: no cover
-    return bool(self.swarming_hostname)
 
   # LogDog integration
 
@@ -282,6 +313,18 @@ class Build(ndb.Model):
     self.experimental = bool(self.experimental)
     self.initial_tags = sorted(set(self.initial_tags))
     self.tags = sorted(set(self.tags))
+
+    if self.proto:
+      # TODO(crbug.com/917851): once all entities have proto property,
+      # update proto fields directly and remove this code.
+      # This code updates only fields that are changed after creation.
+      # Fields immutable after creation must be set already.
+      status_to_v2(self, self.proto)
+      self.proto.update_time.FromDatetime(self.update_time)
+      if self.start_time:  # pragma: no branch
+        self.proto.start_time.FromDatetime(self.start_time)
+      if self.complete_time:  # pragma: no branch
+        self.proto.end_time.FromDatetime(self.complete_time)
 
   def _compute_v2_status(self):
     build_v2 = build_pb2.Build()

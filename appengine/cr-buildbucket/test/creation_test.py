@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
 
+from proto import build_pb2
 from proto import common_pb2
 from proto import rpc_pb2
 from proto.config import service_config_pb2
@@ -112,23 +113,31 @@ class CreationTest(testing.AppengineTestCase):
     return creation.add_async(br).get_result()
 
   def test_add(self):
-    build = self.add(
-        dict(builder=dict(
-            project='chromium',
-            bucket='try',
-            builder='linux',
-        ))
+    builder_id = build_pb2.BuilderID(
+        project='chromium',
+        bucket='try',
+        builder='linux',
     )
+    build = self.add(dict(builder=builder_id))
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
+
     build = build.key.get()
+    self.assertEqual(build.proto.builder, builder_id)
+    self.assertEqual(
+        build.proto.created_by,
+        auth.get_current_identity().to_bytes()
+    )
+
     self.assertEqual(build.bucket_id, 'chromium/try')
     self.assertEqual(build.parameters[model.BUILDER_PARAMETER], 'linux')
     self.assertEqual(build.created_by, auth.get_current_identity())
 
   def test_add_with_properties(self):
     props = {'foo': 'bar', 'qux': 1}
-    build = self.add(dict(properties=bbutil.dict_to_struct(props)))
+    prop_struct = bbutil.dict_to_struct(props)
+    build = self.add(dict(properties=prop_struct))
+    self.assertEqual(build.proto.input.properties, prop_struct)
     self.assertEqual(test_util.msg_to_dict(build.input_properties), props)
     self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
 
@@ -154,7 +163,12 @@ class CreationTest(testing.AppengineTestCase):
     )
 
     build = self.add(dict(gitiles_commit=gitiles_commit))
+    self.assertEqual(build.proto.input.gitiles_commit, gitiles_commit)
     self.assertEqual(build.input_gitiles_commit, gitiles_commit)
+
+  def test_add_with_priority(self):
+    build = self.add(dict(priority=42))
+    self.assertEqual(build.proto.infra.swarming.priority, 42)
 
   def test_add_update_builders(self):
     recently = self.now - datetime.timedelta(minutes=1)
@@ -203,8 +217,8 @@ class CreationTest(testing.AppengineTestCase):
   def test_add_with_build_numbers(self):
     build_numbers = {}
 
-    def create_task_async(build, build_number):
-      build_numbers[build.parameters['i']] = build_number
+    def create_task_async(build):
+      build_numbers[build.parameters['i']] = build.proto.number
       return future(None)
 
     swarming.create_task_async.side_effect = create_task_async
@@ -234,7 +248,7 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_add_with_swarming_200_and_400(self):
 
-    def create_task_async(b, number):  # pylint: disable=unused-argument
+    def create_task_async(b):
       if b.parameters['i'] == 1:
         return future_exception(
             net.Error('', status_code=400, response='bad request')
@@ -372,9 +386,9 @@ class CreationTest(testing.AppengineTestCase):
   @mock.patch('search.add_to_tag_index_async', autospec=True)
   def test_add_with_tag_index_contention(self, add_to_tag_index_async):
 
-    def mock_create_task_async(build, build_number):
+    def mock_create_task_async(build):
       build.swarming_hostname = 'swarming.example.com'
-      build.swarming_task_id = str(build_number)
+      build.swarming_task_id = str(build.proto.number)
       return future(None)
 
     swarming.create_task_async.side_effect = mock_create_task_async

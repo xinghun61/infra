@@ -299,7 +299,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'foo': 'bar',
                 'baz': 1,
                 'buildername': 'linux_chromium_rel_ng',
-                'buildnumber': 0,
+                'buildnumber': 1,
             }),
             u'-logdog-project',
             u'chromium',
@@ -338,7 +338,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         u'name':
             u'bb-1-chromium-linux_chromium_rel_ng',
         u'tags': [
-            u'build_address:luci.chromium.try/linux_chromium_rel_ng/0',
+            u'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
             u'buildbucket_bucket:chromium/try',
             u'buildbucket_build_id:1',
             u'buildbucket_hostname:cr-buildbucket.appspot.com',
