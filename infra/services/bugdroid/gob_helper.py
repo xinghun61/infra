@@ -17,6 +17,7 @@ import urlparse
 from base64 import b64decode
 from textwrap import dedent
 
+from infra.services.bugdroid import creds_service
 from infra_libs import httplib2_utils
 
 
@@ -277,15 +278,19 @@ class RestApiHelper(object):
     urlp = urlparse.urlparse(self._api_url)
     self.http = httplib2_utils.InstrumentedHttp('gob:%s' % urlp.path)
 
-    try:
-      nrc = netrc.netrc()
-    except IOError:
-      logging.exception('Failed to authenticate REST API client')
+    credentials = creds_service.get_luci_credentials()
+    if credentials:
+      self.http = credentials.authorize(self.http)
     else:
-      if urlp.netloc in nrc.hosts:
-        self.headers['Authorization'] = 'OAuth %s' % nrc.hosts[urlp.netloc][2]
+      try:
+        nrc = netrc.netrc()
+      except IOError:
+        logging.exception('Failed to authenticate REST API client')
       else:
-        logging.warning('No auth token found for host %s!' % urlp.netloc)
+        if urlp.netloc in nrc.hosts:
+          self.headers['Authorization'] = 'OAuth %s' % nrc.hosts[urlp.netloc][2]
+        else:
+          logging.warning('No auth token found for host %s!' % urlp.netloc)
 
 
 class GitilesHelper(RestApiHelper):

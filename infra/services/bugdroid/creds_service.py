@@ -8,9 +8,23 @@ from infra_libs import luci_auth
 from oauth2client.client import OAuth2Credentials
 
 
-def get_credentials(credentials_db, user_agent, token_expiry=None):
+OAUTH_SCOPES = (
+    # This is what most GAE apps require for authentication.
+    'https://www.googleapis.com/auth/userinfo.email',
+    # Gerrit and Git on *.googlesource.com require this scope.
+    'https://www.googleapis.com/auth/gerritcodereview',
+)
+
+
+def get_luci_credentials():
   if luci_auth.available():
-    return luci_auth.LUCICredentials()
+    return luci_auth.LUCICredentials(scopes=OAUTH_SCOPES)
+  return None
+
+def get_credentials(credentials_db, user_agent, token_expiry=None):
+  luci_credentials = get_luci_credentials()
+  if luci_credentials:
+    return luci_credentials
   with open(credentials_db) as data_file:
     creds_data = json.load(data_file)
   return OAuth2Credentials(
