@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -23,7 +24,7 @@ import (
 
 // CreateTest subcommand: create a test task.
 var CreateTest = &subcommands.Command{
-	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-client-test] [-tag KEY:VALUE...] TEST_NAME [DIMENSION_KEY:VALUE...]",
+	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-client-test] [-tag KEY:VALUE...] [-keyval KEY:VALUE] TEST_NAME [DIMENSION_KEY:VALUE...]",
 	ShortDesc: "Create a test task, with the given test name and swarming dimensions",
 	LongDesc:  "Create a test task, with the given test name and swarming dimensions.",
 	CommandRun: func() subcommands.CommandRun {
@@ -39,6 +40,7 @@ var CreateTest = &subcommands.Command{
 		// list of common choices.
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
+		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval", "Autotest keyval for test. Key may not contain : character. May be specified multiple times.")
 		return c
 	},
 }
@@ -53,6 +55,7 @@ type createTestRun struct {
 	model     string
 	pool      string
 	tags      []string
+	keyvals   []string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -112,10 +115,15 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		provisionableLabels = append(provisionableLabels, "provisionable-cros-version:"+c.image)
 	}
 
+	keyvals, err := toKeyvalMap(c.keyvals)
+	if err != nil {
+		return err
+	}
+
 	e := c.envFlags.Env()
 
 	logdogURL := generateAnnotationURL(e)
-	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions)
+	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions, keyvals)
 	if err != nil {
 		return errors.Annotate(err, "create test").Err()
 	}
@@ -146,8 +154,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	return nil
 }
 
-// toPairs converts a slice of string dimensions in foo:bar form to a slice of
-// swarming rpc string pairs.
+// toPairs converts a slice of strings in foo:bar form to a slice of swarming rpc string pairs.
 func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
 	pairs := make([]*swarming.SwarmingRpcsStringPair, len(dimensions))
 	for i, d := range dimensions {
@@ -158,6 +165,21 @@ func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
 		pairs[i] = &swarming.SwarmingRpcsStringPair{Key: k, Value: v}
 	}
 	return pairs, nil
+}
+
+func toKeyvalMap(keyvals []string) (map[string]string, error) {
+	m := make(map[string]string, len(keyvals))
+	for _, s := range keyvals {
+		k, v := strpair.Parse(s)
+		if v == "" {
+			return nil, fmt.Errorf("malformed keyval with key '%s' has no value", k)
+		}
+		if _, ok := m[k]; ok {
+			return nil, fmt.Errorf("keyval with key %s specified more than once", k)
+		}
+		m[k] = v
+	}
+	return m, nil
 }
 
 func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair) *swarming.SwarmingRpcsTaskSlice {
@@ -176,7 +198,7 @@ func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair) 
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
 func getSlices(taskName string, clientTest bool, annotationURL string, provisionableDimensions []string,
-	dimensions []string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+	dimensions []string, keyvals map[string]string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	basePairs, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
@@ -186,7 +208,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
 
-	s0cmd := skylabWorkerCommand(taskName, clientTest, "", annotationURL, nil)
+	s0cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, nil)
 	s0Dims := append(basePairs, provisionablePairs...)
 	s0 := taskSlice(s0cmd, s0Dims)
 
@@ -194,7 +216,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 		return []*swarming.SwarmingRpcsTaskSlice{s0}, nil
 	}
 
-	s1cmd := skylabWorkerCommand(taskName, clientTest, "", annotationURL, provisionableDimensions)
+	s1cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, provisionableDimensions)
 	s1Dims := basePairs
 	s1 := taskSlice(s1cmd, s1Dims)
 
@@ -206,7 +228,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 //
 // Note: provisionDimensions (if supplied) may be suppled with their "provisionable-" prefix,
 // and this prefix will be tripped to turn them into provisionable labels.
-func skylabWorkerCommand(taskName string, clientTest bool, keyvalsJSON string, annotationURL string,
+func skylabWorkerCommand(taskName string, clientTest bool, keyvals map[string]string, annotationURL string,
 	provisionDimensions []string) []string {
 	cmd := []string{}
 	cmd = append(cmd, "/opt/infra-tools/skylab_swarming_worker")
@@ -214,8 +236,13 @@ func skylabWorkerCommand(taskName string, clientTest bool, keyvalsJSON string, a
 	if clientTest {
 		cmd = append(cmd, "-client-test")
 	}
-	if keyvalsJSON != "" {
-		cmd = append(cmd, "-keyvals", keyvalsJSON)
+	if len(keyvals) > 0 {
+		keyvalsJSON, err := json.Marshal(keyvals)
+		if err != nil {
+			// keyvals is a string-to-string map, there should be no chance of an error here.
+			panic(err)
+		}
+		cmd = append(cmd, "-keyvals", string(keyvalsJSON))
 	}
 	if annotationURL != "" {
 		cmd = append(cmd, "-logdog-annotation-url", annotationURL)
