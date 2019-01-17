@@ -234,6 +234,11 @@ message ResultsResponse {
 }
 
 message FeedbackRequest {
+  // Name of the project in luci-config to provide feedback for.
+  //
+  // TODO(crbug.com/905885): Use this field and make it required.
+  string project = 4;
+
   // Analyzer category to provide aggregated feedback for.
   //
   // This includes the analyzer name along with optional subcategories
@@ -245,16 +250,17 @@ message FeedbackRequest {
 
   // Start of time period to report feedback for.
   //
-  // Feedback for comments created from this time will be included.
-  // Must be on the form "2006-01-02T08:04:05Z" (RFC 3339) and before end_time.
+  // Feedback for comments created from this time (inclusive) will be included.
+  // Must be before end_time. The format for both start_time and end_time is
+  // RFC 3339, e.g. "2006-01-02T08:04:05Z".
   //
   // Optional field. Defaults to epoch start of time (Jan 1, 1970).
   string start_time = 2;
 
   // End of time period to report feedback for.
   //
-  // Feedback from comments created before this time will be included.
-  // Must be on the form "2006-01-02T08:04:05Z" (RFC 3339) and after start_time.
+  // Feedback from comments created before this time will be included. Must be
+  // after start_time.
   //
   // Optional field. Defaults to now.
   string end_time = 3;
@@ -263,9 +269,10 @@ message FeedbackRequest {
 message FeedbackResponse {
   // Number of returned comments.
   //
-  // In any case where an analyzer was run on multiple platforms and the resulting
-  // comments were merged, only merged comments are returned in this count. Note that
-  // only merged comments are ever returned from the Tricium service.
+  // In any case where an analyzer was run on multiple platforms and the
+  // resulting comments were merged, only merged comments are returned in this
+  // count. Note that only merged comments are ever returned from the Tricium
+  // service.
   int32 comments = 1;
 
   // Number of collected 'not useful' reports.
@@ -275,7 +282,6 @@ message FeedbackResponse {
 message ReportNotUsefulRequest {
   // ID of comment as returned by the Results endpoint.
   string comment_id = 1;
-
 }
 
 message ReportNotUsefulResponse {
