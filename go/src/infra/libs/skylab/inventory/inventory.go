@@ -245,12 +245,30 @@ func sortCommonDeviceSpecs(c *CommonDeviceSpecs) {
 	sort.SliceStable(c.Attributes, func(i, j int) bool {
 		return strings.ToLower(c.Attributes[i].GetKey()) < strings.ToLower(c.Attributes[j].GetKey())
 	})
+	sortSchedulableLabels(c.Labels)
+}
 
-	sl := c.Labels
-	if sl != nil {
-		sort.SliceStable(sl.CriticalPools, func(i, j int) bool {
-			return sl.CriticalPools[i] < sl.CriticalPools[j]
+func sortSchedulableLabels(sl *SchedulableLabels) {
+	if sl == nil {
+		return
+	}
+
+	sort.SliceStable(sl.CtsAbi, func(i, j int) bool {
+		return sl.CtsAbi[i] < sl.CtsAbi[j]
+	})
+	sort.SliceStable(sl.CtsCpu, func(i, j int) bool {
+		return sl.CtsCpu[i] < sl.CtsCpu[j]
+	})
+	sort.SliceStable(sl.CriticalPools, func(i, j int) bool {
+		return sl.CriticalPools[i] < sl.CriticalPools[j]
+	})
+	sort.Strings(sl.SelfServePools)
+	sort.Strings(sl.Variant)
+
+	if sl.TestCoverageHints != nil {
+		h := sl.TestCoverageHints
+		sort.SliceStable(h.CtsSparse, func(i, j int) bool {
+			return h.CtsSparse[i] < h.CtsSparse[j]
 		})
-		sort.Strings(sl.SelfServePools)
 	}
 }

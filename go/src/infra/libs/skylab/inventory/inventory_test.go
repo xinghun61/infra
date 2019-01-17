@@ -5,6 +5,7 @@
 package inventory
 
 import (
+	fmt "fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,26 +18,43 @@ import (
 
 func TestWriteAndLoadLab(t *testing.T) {
 	t.Parallel()
-	d, err := ioutil.TempDir("", "test")
-	if err != nil {
-		t.Fatalf("Error creating temporary directory: %s", err)
-	}
-	defer os.RemoveAll(d)
 	id := "some-dut"
-	want := &Lab{
-		Duts: []*DeviceUnderTest{
-			{Common: &CommonDeviceSpecs{Id: &id, Hostname: &id}},
-		},
+	board := "some-board"
+	labs := map[string]*Lab{
+		"empty": {},
+		"has_common": {Duts: []*DeviceUnderTest{
+			{Common: &CommonDeviceSpecs{
+				Id:       &id,
+				Hostname: &id,
+			}},
+		}},
+		"has_labels": {Duts: []*DeviceUnderTest{
+			{Common: &CommonDeviceSpecs{
+				Id:       &id,
+				Hostname: &id,
+				Labels:   &SchedulableLabels{Board: &board},
+			}},
+		}},
 	}
-	if err := WriteLab(want, d); err != nil {
-		t.Fatal(err)
-	}
-	got, err := LoadLab(d)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := pretty.Compare(want, got); diff != "" {
-		t.Errorf("Loaded Lab differs -want +got, %s", diff)
+
+	for lname, lab := range labs {
+		t.Run(fmt.Sprintf("%s", lname), func(t *testing.T) {
+			d, err := ioutil.TempDir("", "test")
+			if err != nil {
+				t.Fatalf("Error creating temporary directory: %s", err)
+			}
+			defer os.RemoveAll(d)
+			if err := WriteLab(lab, d); err != nil {
+				t.Fatal(err)
+			}
+			got, err := LoadLab(d)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := pretty.Compare(lab, got); diff != "" {
+				t.Errorf("Loaded Lab differs -want +got, %s", diff)
+			}
+		})
 	}
 }
 
