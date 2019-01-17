@@ -116,7 +116,7 @@ message Shard {
 // semantically known to the inventory service to allow filtering based on them.
 // (i.e., no "extra_labels" field down here)
 //
-// NEXT TAG: ??
+// NEXT TAG: 23
 message SchedulableLabels {
   // TODO(pprabhu) Both of these should be enums, that are shared from
   // stable_versions.proto But there are 171 of them... (guess it doesn't
@@ -142,6 +142,8 @@ message SchedulableLabels {
   repeated string self_serve_pools = 4;
 
   optional HardwareCapabilities capabilities = 5;
+  optional TestCoverageHints test_coverage_hints = 18;
+  optional Peripherals peripherals = 19;
 
   // NEXT TAG: 2
   enum ECType {
@@ -152,14 +154,6 @@ message SchedulableLabels {
 
   optional string model = 13;
 
-  // NEXT TAG: 3
-  enum CTSABI {
-      CTS_ABI_INVALID = 0;
-      CTS_ABI_ARM = 1;
-      CTS_ABI_X86 = 2;
-  }
-  repeated CTSABI cts_abi = 14;
-
   // NEXT TAG: 4
   enum OSType {
       OS_TYPE_INVALID = 0;
@@ -169,6 +163,26 @@ message SchedulableLabels {
       OS_TYPE_MOBLAB = 4;
   }
   optional OSType os_type = 15;
+
+  // Whether this device supports ARC execution environment.
+  optional bool arc = 20;
+
+  // NEXT TAG: 3
+  enum CTSABI {
+      CTS_ABI_INVALID = 0;
+      CTS_ABI_ARM = 1;
+      CTS_ABI_X86 = 2;
+  }
+  repeated CTSABI cts_abi = 14;
+
+  // NEXT TAG: 3
+  enum CTSCPU {
+      CTS_CPU_INVALID = 0;
+      CTS_CPU_ARM = 1;
+      CTS_CPU_X86 = 2;
+  }
+  repeated CTSCPU cts_cpu = 21;
+
 
   // Devices go through the phases EVT -> DVT -> PVT during early development.
   // Post launch devices are in the MP phase.
@@ -189,14 +203,33 @@ message SchedulableLabels {
   }
   optional Phase phase = 16;
 
+  // Similar to device phases, but for the cr50 module onboard.
+  //
+  // NEXT TAG: 3
+  enum CR50_Phase {
+      CR50_PHASE_INVALID = 0;
+      CR50_PHASE_PREPVT = 1;
+      CR50_PHASE_PVT = 2;
+  }
+  optional CR50_Phase cr50_phase = 22;
+
   repeated string variant = 17;
-  optional TestCoverageHints test_coverage_hints = 18;
-  optional Peripherals peripherals = 19;
 }
 
-// NEXT TAG: ??
+// NEXT TAG: 18
 message HardwareCapabilities {
   optional string modem = 1;
+
+  // NEXT TAG: 5
+  enum Carrier {
+      CARRIER_INVALID = 0;
+      CARRIER_ATT = 1;
+      CARRIER_TMOBILE = 2;
+      CARRIER_VERIZON = 3;
+      CARRIER_SPRINT = 4;
+  }
+  optional Carrier carrier = 16;
+
   optional string telephony = 2;
   optional string gpu_family = 3;
   optional string graphics = 4;
@@ -220,6 +253,12 @@ message HardwareCapabilities {
       VIDEO_ACCELERATION_ENC_VP9_2 = 8;
   }
   repeated VideoAcceleration video_acceleration = 11;
+
+  optional bool detachablebase = 12;
+  optional bool lucidsleep = 13;
+  optional bool flashrom = 14;
+  optional bool hotwording = 15;
+  optional bool atrus = 17;
 }
 
 // Peripherals list peripherals connected to the device in the lab.
@@ -227,16 +266,45 @@ message HardwareCapabilities {
 // These peripherals are not addressable as devices themselves. For peripherals
 // that have complex connections with devices, create a separate device and
 // connections with other devices.
-// NEXT TAG: ??
+// NEXT TAG: 12
 message Peripherals {
     optional bool audio_loopback_dongle = 1;
     optional bool servo = 2;
+    optional bool stylus = 3;
+
+    // Is this device inside a hermetic wifi cell.
+    optional bool wificell = 4;
+
+    // Is this device connected to a chameleon (GVC head).
+    optional bool chameleon = 5;
+
+    // NEXT TAG: 6
+    enum ChameleonType {
+        CHAMELEON_TYPE_INVALID = 0;
+        CHAMELEON_TYPE_BT_HID = 1;
+        CHAMELEON_TYPE_DP = 2;
+        CHAMELEON_TYPE_DP_HDMI = 3;
+        CHAMELEON_TYPE_VGA = 4;
+        CHAMELEON_TYPE_HDMI = 5;
+    }
+    optional ChameleonType chameleon_type = 10;
+
+    optional bool audio_board = 6;
+
+    // The DUT is housed in an audio box to record / replay audio for audio
+    // testing.
+    optional bool audio_box = 7;
+    optional bool mimo = 8;
+    optional bool huddly = 9;
+
+    // Whether DUT WiFi antenna is connected conductively or OTA.
+    optional bool conductive = 11;
 }
 
 // These labels are used by the CI system to provide test coverage hints to
 // Skylab.
 //
-// NEXT TAG: 2
+// NEXT TAG: 12
 message TestCoverageHints {
     // Related to sparse CTS testing. See b/70309087
     enum CTSSparse {
@@ -246,6 +314,28 @@ message TestCoverageHints {
         CTS_SPARSE_5 = 3;
     }
     repeated CTSSparse cts_sparse = 1;
+
+    // TODO(pprabhu) These labels should instead be self-servo pools.
+    // Migrate the test requests to use pools and then deprecate these fields
+    // in favor of pools.
+    optional bool test_hdmiaudio = 2;
+    optional bool test_audiojack = 3;
+    optional bool test_usbaudio = 4;
+    optional bool test_usbprinting = 5;
+    optional bool usb_detect = 6;
+    optional bool chaos_dut = 7;
+    optional bool recovery_test = 8;
+    // Whether the DUT has the hangout app installed.
+    // This is a software feature of the DUT that is not provisioned as part of
+    // the test setup, hence the DUT must be labelled explicitly as supporting
+    // this feature.  Should probably be a SoftwareFeature for the DUT.
+    optional bool hangout_app = 9;
+    // Whether the DUT has the meet app installed.
+    // This is a software feature of the DUT that is not provisioned as part of
+    // the test setup, hence the DUT must be labelled explicitly as supporting
+    // this feature.  Should probably be a SoftwareFeature for the DUT.
+    optional bool meet_app = 10;
+    optional bool chromesign = 11;
 }
 
 // NEXT TAG: 3
