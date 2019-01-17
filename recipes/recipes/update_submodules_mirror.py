@@ -32,6 +32,8 @@ COMMIT_USERNAME = 'Submodules bot'
 COMMIT_EMAIL_ADDRESS = \
     'infra-codesearch@chops-service-accounts.iam.gserviceaccount.com'
 
+SHA1_RE = re.compile(r'[0-9a-fA-F]{40}')
+
 def RunSteps(api, source_repo, target_repo):
   _, source_project = api.gitiles.parse_repo_url(source_repo)
 
@@ -90,6 +92,9 @@ def RunSteps(api, source_repo, target_repo):
   gitmodules_entries = []
   update_index_entries = []
   for path, entry in deps.iteritems():
+    url = entry['url']
+    rev = entry['rev']
+
     # Filter out any DEPS that point outside of the repo, as there's no way to
     # represent this with submodules.
     #
@@ -104,11 +109,17 @@ def RunSteps(api, source_repo, target_repo):
     # json.loads returns unicode but the recipe framework can only handle str.
     path = str(path[len(source_checkout_name):])
 
-    update_index_entries.extend(
-        ['--cacheinfo', '160000,%s,%s' % (entry['rev'], path)])
+    if not SHA1_RE.match(rev):
+      if rev.startswith('origin/'):
+        rev = rev[len('origin/'):]
+      rev = api.git(
+          'ls-remote', url, rev,
+          stdout=api.raw_io.output_text()).stdout.split()[0]
+
+    update_index_entries.extend(['--cacheinfo', '160000,%s,%s' % (rev, path)])
 
     gitmodules_entries.append('[submodule "%s"]\n\tpath = %s\n\turl = %s'
-                              % (path, path, str(entry['url'])))
+                              % (path, path, str(url)))
 
   # This adds submodule entries to the index without cloning the underlying
   # repository.
@@ -194,6 +205,15 @@ fake_src_deps = """
   "src/": {
     "url": "https://chromium.googlesource.com/chromium/src.git",
     "rev": null
+  }
+}
+"""
+
+fake_deps_with_symbolic_ref = """
+{
+  "src/v8": {
+    "url": "https://chromium.googlesource.com/v8/v8.git",
+    "rev": "origin/master"
   }
 }
 """
@@ -296,4 +316,29 @@ def GenTests(api):
                     retcode=1) +
       api.step_data('gclient evaluate DEPS',
                     api.raw_io.stream_output(fake_src_deps, stream='stdout'))
+  )
+
+  yield (
+      api.test('ref_that_needs_resolving') +
+      api.properties(
+          source_repo='https://chromium.googlesource.com/chromium/src',
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror'
+      ) +
+      api.step_data('Check for existing source checkout dir',
+                    api.raw_io.stream_output('src', stream='stdout')) +
+      api.step_data('Check for new commits.Find latest commit to target repo',
+                    api.json.output({'log': [
+                        {
+                            'commit': 'a' * 40,
+                            'author': {'name': 'Someone else'},
+                        },
+                    ]})) +
+      api.step_data('gclient evaluate DEPS',
+                    api.raw_io.stream_output(fake_deps_with_symbolic_ref,
+                                             stream='stdout')) +
+      api.step_data('git ls-remote',
+                    api.raw_io.stream_output(
+                        '91c13923c1d136dc688527fa39583ef61a3277f7\t' +
+                        'refs/heads/master',
+                        stream='stdout'))
   )
