@@ -248,9 +248,6 @@ class IssueDetail(issuepeek.IssuePeek):
     else:
       mr.ComputeColSpec(config)
 
-    back_to_list_url = _ComputeBackToListURL(
-        mr, issue, config, hotlist, self.services)
-
     restrict_to_known = config.restrict_to_known
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
                       if fd.field_type is tracker_pb2.FieldTypes.ENUM_TYPE and
@@ -365,7 +362,6 @@ class IssueDetail(issuepeek.IssuePeek):
         'max_attach_size': template_helpers.BytesKbOrMb(
             framework_constants.MAX_POST_BODY_SIZE),
         'colspec': mr.col_spec,
-        'back_to_list_url': back_to_list_url,
         'restrict_to_known': ezt.boolean(restrict_to_known),
         'after_issue_update': int(after_issue_update),  # TODO(jrobbins): str
         'prevent_restriction_removal': ezt.boolean(
@@ -1252,6 +1248,27 @@ class FlipperPrev(FlipperRedirectBase):
   next_handler = False
 
 
+class FlipperList(servlet.Servlet):
+  # pylint: disable=arguments-differ
+  # pylint: disable=unused-argument
+  def get(self, project_name=None, viewed_username=None, hotlist_id=None):
+    with work_env.WorkEnv(self.mr, self.services) as we:
+      hotlist_id = self.mr.GetIntParam('hotlist_id')
+      current_issue = we.GetIssueByLocalID(self.mr.project_id, self.mr.local_id,
+                                   use_cache=False)
+      hotlist = None
+      if hotlist_id:
+        try:
+          hotlist = self.services.features.GetHotlist(self.mr.cnxn, hotlist_id)
+        except features_svc.NoSuchHotlistException:
+          pass
+
+      config = we.GetProjectConfig(self.mr.project_id)
+      url = _ComputeBackToListURL(self.mr, current_issue, config,
+                                               hotlist, self.services)
+    self.redirect(url)
+
+
 class FlipperIndex(jsonfeed.JsonFeed):
   """Return a JSON object of an issue's index in search.
 
@@ -1261,10 +1278,13 @@ class FlipperIndex(jsonfeed.JsonFeed):
 
   def HandleRequest(self, mr):
     hotlist_id = mr.GetIntParam('hotlist_id')
+    list_url = None
     with work_env.WorkEnv(mr, self.services) as we:
       if not _ShouldShowFlipper(mr, self.services):
         return {}
       issue = we.GetIssueByLocalID(mr.project_id, mr.local_id, use_cache=False)
+      hotlist = None
+
       if hotlist_id:
         hotlist = self.services.features.GetHotlist(mr.cnxn, hotlist_id)
 
@@ -1280,8 +1300,13 @@ class FlipperIndex(jsonfeed.JsonFeed):
         (prev_iid, cur_index, next_iid, total_count
             ) = we.FindIssuePositionInSearch(issue)
 
+      config = we.GetProjectConfig(self.mr.project_id)
+      list_url = _ComputeBackToListURL(mr, issue, config, hotlist,
+        self.services)
+
     prev_url = None
     next_url = None
+
     recognized_params = [(name, mr.GetParam(name)) for name in
                            framework_helpers.RECOGNIZED_PARAMS]
     if prev_iid:
@@ -1302,6 +1327,7 @@ class FlipperIndex(jsonfeed.JsonFeed):
       'cur_index': cur_index,
       'next_iid': next_iid,
       'next_url': next_url,
+      'list_url': list_url,
       'total_count': total_count,
     }
 

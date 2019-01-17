@@ -15,6 +15,7 @@ class MrFlipper extends HTMLElement {
     this.totalCount = null;
     this.prevUrl = null;
     this.nextUrl = null;
+    this.listUrl = null;
     this.showCounts = false;
 
     // Set up DOM.
@@ -27,6 +28,7 @@ class MrFlipper extends HTMLElement {
     this.totalCountEl = shadowRoot.querySelector('span.total-count');
     this.prevUrlEl = shadowRoot.querySelector('a.prev-url');
     this.nextUrlEl = shadowRoot.querySelector('a.next-url');
+    this.listUrlEl = shadowRoot.querySelector('a.list-url');
 
     this.fetchFlipperData();
   }
@@ -82,6 +84,13 @@ class MrFlipper extends HTMLElement {
     } else {
       this.nextUrlEl.style.visibility = 'hidden';
     }
+
+    if (data.list_url) {
+      this.listUrlEl.style.visibility = 'visible';
+      this.listUrlEl.href = data.list_url;
+    } else {
+      this.listUrlEl.style.visibility = 'hidden';
+    }
   }
 
   _template() {
@@ -92,12 +101,15 @@ class MrFlipper extends HTMLElement {
       <style>
         :host {
           display: flex;
-          align-items: baseline;
-          flex-direction: row;
+          justify-content: center;
+          flex-direction: column;
+          // TODO(zhangtiff): Replace this with a global link color variable.
+          --mr-flipper-link-color: #00c;
         }
         a {
           display: block;
           padding: 0.25em 0;
+          color: var(--mr-flipper-link-color);
         }
         a, div {
           flex: 1;
@@ -107,9 +119,15 @@ class MrFlipper extends HTMLElement {
         .counts {
           padding: 0 16px;
         }
-        .counts, a.prev-url, a.next-url {
+        .counts, a.prev-url, a.next-url, a.list-url {
           /* Initially not shown */
           visibility: hidden;
+        }
+        .row {
+          display: flex;
+          align-items: baseline;
+          text-align: center;
+          flex-direction: row;
         }
         @media (max-width: 960px) {
           :host {
@@ -118,21 +136,27 @@ class MrFlipper extends HTMLElement {
         }
       </style>
 
-      <a href="" title="Prev" class="prev-url">
-        &lsaquo; Prev
-      </a>
-      <div class="counts">
-        <span class="current-index">&nbsp;</span>
-        <span>of</span>
-        <span class="total-count">&nbsp;</span>
+      <div class="row">
+        <a href="" title="Prev" class="prev-url">
+          &lsaquo; Prev
+        </a>
+        <div class="counts">
+          <span class="current-index">&nbsp;</span>
+          <span>of</span>
+          <span class="total-count">&nbsp;</span>
+        </div>
+        <a href="" title="Next" class="next-url">
+          Next &rsaquo;
+        </a>
       </div>
-      <a href="" title="Next" class="next-url">
-        Next &rsaquo;
-      </a>
+      <div class="row">
+        <a href="" title="Back to list" class="list-url">
+          Back to list
+        </a>
+      </div>
     `;
     return tmpl;
   }
-
 }
 
 window.customElements.define(MrFlipper.is(), MrFlipper);

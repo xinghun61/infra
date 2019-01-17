@@ -95,11 +95,6 @@
        nonce="[nonce]">
      </script>
     </div>
-    <div>
-      [if-any back_to_list_url]
-        <a href="[back_to_list_url]">Back to list</a>
-      [end]
-    </div>
    </div>
 
    <div>
@@ -389,7 +384,7 @@ runOnLoad(function() {
 runOnLoad(function() {
   // TODO(jeffcarp): Update prev/next URLs once flipper index has loaded.
   _setupKibblesOnDetailPage(
-   [if-any back_to_list_url]'[format "js"][back_to_list_url][end]'[else]'[project_home_url]/issues/list'[end],
+   `[project_home_url]/issues/detail/list${location.search}`,
    '[project_home_url]/issues/entry',
    `[project_home_url]/issues/detail/previous${location.search}`,
    `[project_home_url]/issues/detail/next${location.search}`,

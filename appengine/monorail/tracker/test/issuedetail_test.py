@@ -838,12 +838,15 @@ class FlipperRedirectTest(unittest.TestCase):
         'req', 'res', services=self.services)
     self.prev_servlet = issuedetail.FlipperPrev(
         'req', 'res', services=self.services)
+    self.list_servlet = issuedetail.FlipperList(
+        'req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest(project=self.project)
     mr.local_id = 123
     mr.me_user_id = 111L
 
     self.next_servlet.mr = mr
     self.prev_servlet.mr = mr
+    self.list_servlet.mr = mr
 
     self.fake_issue_1 = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L,
         project_name='rutabaga')
@@ -857,6 +860,7 @@ class FlipperRedirectTest(unittest.TestCase):
 
     self.next_servlet.redirect = mock.Mock()
     self.prev_servlet.redirect = mock.Mock()
+    self.list_servlet.redirect = mock.Mock()
 
   @mock.patch('tracker.issuedetail.GetAdjacentIssue')
   def testFlipperNext(self, patchGetAdjacentIssue):
@@ -901,6 +905,29 @@ class FlipperRedirectTest(unittest.TestCase):
     self.prev_servlet.mr.GetIntParam.assert_called_with('hotlist_id')
     self.prev_servlet.redirect.assert_called_once_with(
       '/p/potato/issues/detail?id=789')
+
+  @mock.patch('tracker.issuedetail._ComputeBackToListURL')
+  def testFlipperList(self, patch_ComputeBackToListURL):
+    patch_ComputeBackToListURL.return_value = '/p/test/issues/list'
+    self.list_servlet.mr.GetIntParam = mock.Mock(return_value=None)
+
+    self.list_servlet.get()
+
+    self.list_servlet.mr.GetIntParam.assert_called_with('hotlist_id')
+    patch_ComputeBackToListURL.assert_called_once()
+    self.list_servlet.redirect.assert_called_once_with(
+      '/p/test/issues/list')
+
+  @mock.patch('tracker.issuedetail._ComputeBackToListURL')
+  def testFlipperList_Hotlist(self, patch_ComputeBackToListURL):
+    patch_ComputeBackToListURL.return_value = '/p/test/issues/list'
+    self.list_servlet.mr.GetIntParam = mock.Mock(return_value=123)
+
+    self.list_servlet.get()
+
+    self.list_servlet.mr.GetIntParam.assert_called_with('hotlist_id')
+    self.list_servlet.redirect.assert_called_once_with(
+      '/p/test/issues/list')
 
 
 class ShouldShowFlipperTest(unittest.TestCase):

@@ -77,6 +77,10 @@ td.issueheader { background: #e5ecf9; }
     padding: 3px;
 }
 
+.closed_colors {
+  --mr-flipper-link-color: #fff;
+}
+
 .closed_colors td.issueheader, .closed_colors td.issueheader a {
     background: #888; color: #fff;
 }
