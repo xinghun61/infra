@@ -89,8 +89,7 @@
       'luci_bucket': 'luci.v8.ci',
       'builders': [
         'Linux V8 FYI Release (NVIDIA)',
-        # TODO(machenbach): Add back when https://crbug.com/920545 is resolved.
-        # 'V8-Blink Linux 64',
+        'V8-Blink Linux 64',
         'V8 Linux GN',
       ],
     },  # client.v8.fyi
