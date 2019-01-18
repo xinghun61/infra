@@ -128,7 +128,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		return errors.Annotate(err, "create test").Err()
 	}
 
-	tags := append(c.tags, "skylab-tool:create-test")
+	tags := append(c.tags, "skylab-tool:create-test", "log_location:"+logdogURL, "luci_project:"+e.LUCIProject)
 
 	req := &swarming.SwarmingRpcsNewTaskRequest{
 		Name:       taskName,
