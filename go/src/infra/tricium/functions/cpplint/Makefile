@@ -17,7 +17,8 @@ python:
 	cipd install -root python infra/python/cpython/linux-amd64
 
 cpplint.py:
-	wget https://raw.githubusercontent.com/google/styleguide/gh-pages/cpplint/cpplint.py
+	curl https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/master/cpplint.py\?format\=TEXT \
+		| base64 --decode > cpplint.py
 	chmod +x cpplint.py
 
 clean:
