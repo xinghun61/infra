@@ -12,6 +12,7 @@ from google.appengine.ext import ndb
 from components import utils
 
 import bulkproc
+import model
 import v2
 
 PROC_NAME = 'fix_builds'
@@ -38,11 +39,13 @@ def _fix_builds(build_keys):  # pragma: no cover
 @ndb.transactional_tasklet
 def _fix_build_async(build_key):  # pragma: no cover
   build = yield build_key.get_async()
-  if not build or build.proto:
+  if not build:
     return
 
+  if build.status != model.BuildStatus.COMPLETED:
+    return
   build.proto = v2.build_to_v2(build)
-  build.proto.Clear('id')
-  build.proto.Clear('steps')
-  build.proto.output.Clear('properties')
-  yield ndb.put_async(build)
+  build.proto.ClearField('id')
+  build.proto.ClearField('steps')
+  build.proto.output.ClearField('properties')
+  yield build.put_async()
