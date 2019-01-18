@@ -21,6 +21,9 @@ service Inventory {
   rpc EnsurePoolHealthy(EnsurePoolHealthyRequest) returns
       (EnsurePoolHealthyResponse);
 
+  rpc EnsurePoolHealthyForAllModels(EnsurePoolHealthyForAllModelsRequest)
+          returns (EnsurePoolHealthyForAllModelsResponse);
+
   // ResizePool changes the size of the target DUT pool.
   //
   // ResizePool borrows or returns extra DUTs from the spare pool.
@@ -119,6 +122,30 @@ message EnsurePoolHealthyResponse {
   // changes correspond to the proposed or executed pool changes to ensure
   // inventory in response to various API methods calls.
   repeated PoolChange changes = 5;
+}
+
+message EnsurePoolHealthyForAllModelsRequest {
+  // target_pool is the pool that should contain healthy DUTs.
+  string target_pool = 1;
+
+  // spare_pool is the pool from which healthy DUTs will be swapped into
+  // target_pool.
+  string spare_pool = 2;
+
+  // max_unhealthy_duts is the maximum number of DUTs that may be unhealthy in
+  // the target pool before any action is taken.
+  //
+  // max_unhealthy_duts is meaningful only when it has a positive value (> 0).
+  //
+  // If the total number of unhealthy DUTs is above this threshold,
+  // EnsurePoolHealthy does not change DUT pools and returns a
+  // NOT_ENOUGH_HEALTHY_SPARES failure.
+  int32 max_unhealthy_duts = 3;
+}
+
+message EnsurePoolHealthyForAllModelsResponse {
+  // model_result maps a model to the EnsurePoolHealthyResponse for that model.
+  map<string, EnsurePoolHealthyResponse> model_result = 1;
 }
 
 message ResizePoolRequest {

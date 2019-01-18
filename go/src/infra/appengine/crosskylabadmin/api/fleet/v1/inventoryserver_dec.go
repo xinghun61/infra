@@ -40,6 +40,23 @@ func (s *DecoratedInventory) EnsurePoolHealthy(c context.Context, req *EnsurePoo
 	return
 }
 
+func (s *DecoratedInventory) EnsurePoolHealthyForAllModels(c context.Context, req *EnsurePoolHealthyForAllModelsRequest) (rsp *EnsurePoolHealthyForAllModelsResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "EnsurePoolHealthyForAllModels", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.EnsurePoolHealthyForAllModels(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "EnsurePoolHealthyForAllModels", rsp, err)
+	}
+	return
+}
+
 func (s *DecoratedInventory) ResizePool(c context.Context, req *ResizePoolRequest) (rsp *ResizePoolResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context

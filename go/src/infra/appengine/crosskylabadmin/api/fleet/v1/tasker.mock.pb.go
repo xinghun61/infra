@@ -6,10 +6,9 @@ package fleet
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
+	reflect "reflect"
 )
 
 // MockTaskerClient is a mock of TaskerClient interface

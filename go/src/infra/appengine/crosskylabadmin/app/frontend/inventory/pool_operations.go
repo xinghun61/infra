@@ -21,10 +21,12 @@ import (
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/dutpool"
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/store"
 	"infra/libs/skylab/inventory"
+	"sync"
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
+	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -81,6 +83,80 @@ func (is *ServerImpl) ensurePoolHealthyNoRetry(ctx context.Context, req *fleet.E
 			return nil, err
 		}
 		resp.Url = u
+	}
+	return resp, nil
+}
+
+// EnsurePoolHealthyForAllModels ensures that a target pool has healthy DUTs
+// for each known model.
+func (is *ServerImpl) EnsurePoolHealthyForAllModels(ctx context.Context, req *fleet.EnsurePoolHealthyForAllModelsRequest) (resp *fleet.EnsurePoolHealthyForAllModelsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	if err := req.Validate(); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, err.Error())
+	}
+	err = retry.Retry(
+		ctx,
+		transientErrorRetries(),
+		func() error {
+			var ierr error
+			resp, ierr = is.ensurePoolHealthyForAllModelsNoRetry(ctx, req)
+			return ierr
+		},
+		retry.LogCallback(ctx, "ensurePoolHealthyForAllModelsNoRetry"),
+	)
+	return resp, err
+}
+
+func (is *ServerImpl) ensurePoolHealthyForAllModelsNoRetry(ctx context.Context, req *fleet.EnsurePoolHealthyForAllModelsRequest) (*fleet.EnsurePoolHealthyForAllModelsResponse, error) {
+	inventoryConfig := config.Get(ctx).Inventory
+	store, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := store.Refresh(ctx); err != nil {
+		return nil, err
+	}
+
+	mds := mapModelsToDUTs(store.Lab.Duts, inventoryConfig.Environment)
+	ts := is.TrackerFactory()
+
+	resp := &fleet.EnsurePoolHealthyForAllModelsResponse{
+		ModelResult: make(map[string]*fleet.EnsurePoolHealthyResponse),
+	}
+	// Protects access to resp
+	mResp := &sync.Mutex{}
+	err = parallel.WorkPool(10, func(workC chan<- func() error) {
+		for m, ds := range mds {
+			// In-scope variables for goroutine closure.
+			im := m
+			ids := ds
+			workC <- func() error {
+				iResp, err := ensurePoolHealthyFor(ctx, ts, ids, req.TargetPool, req.SparePool, req.MaxUnhealthyDuts)
+				if err != nil {
+					return err
+				}
+
+				mResp.Lock()
+				defer mResp.Unlock()
+				resp.ModelResult[im] = iResp
+				return nil
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	changes := collectChanges(resp.ModelResult)
+	u, err := is.commitBalancePoolChanges(ctx, store, changes)
+	if err != nil {
+		return nil, err
+	}
+	for _, res := range resp.ModelResult {
+		res.Url = u
 	}
 	return resp, nil
 }
@@ -180,6 +256,16 @@ func ensurePoolHealthyFor(ctx context.Context, ts fleet.TrackerServer, duts []*i
 	}, nil
 }
 
+func collectChanges(mrs map[string]*fleet.EnsurePoolHealthyResponse) []*fleet.PoolChange {
+	// No way of knowning how many total changs are necessary without walking all
+	// the changes.
+	ret := make([]*fleet.PoolChange, 0)
+	for _, res := range mrs {
+		ret = append(ret, res.Changes...)
+	}
+	return ret
+}
+
 func applyChanges(lab *inventory.Lab, changes []*fleet.PoolChange) error {
 	oldPool := make(map[string]inventory.SchedulableLabels_DUTPool)
 	newPool := make(map[string]inventory.SchedulableLabels_DUTPool)
@@ -212,4 +298,16 @@ func removeOld(ls []inventory.SchedulableLabels_DUTPool, old inventory.Schedulab
 		}
 	}
 	return ls
+}
+
+func mapModelsToDUTs(duts []*inventory.DeviceUnderTest, env string) map[string][]*inventory.DeviceUnderTest {
+	dms := make(map[string][]*inventory.DeviceUnderTest)
+	for _, d := range duts {
+		if d.GetCommon().GetEnvironment().String() != env {
+			continue
+		}
+		m := d.GetCommon().GetLabels().GetModel()
+		dms[m] = append(dms[m], d)
+	}
+	return dms
 }
