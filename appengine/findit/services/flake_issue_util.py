@@ -778,6 +778,11 @@ def _CreateIssueForFlakeGroup(flake_group):
       flake_group.test_suite_name)
   for flake in flake_group.flakes:
     _AssignIssueToFlake(issue_id, flake)
+
+  monorail_util.PostCommentOnMonorailBug(
+      issue_id, issue_generator,
+      issue_generator.GetFirstCommentWhenBugJustCreated())
+
   return issue_id
 
 

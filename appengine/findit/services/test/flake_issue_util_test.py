@@ -18,6 +18,7 @@ from monorail_api import Issue
 from services import flake_issue_util
 from services import monorail_util
 from services.issue_generator import FlakeAnalysisIssueGenerator
+from services.issue_generator import FlakeDetectionGroupIssueGenerator
 from services.issue_generator import FlakyTestIssueGenerator
 from waterfall.test.wf_testcase import WaterfallTestCase
 
@@ -1371,7 +1372,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
           'updated': '2018-12-07T17:52:45',
           'id': '234567',
       }))
-  def testCreateIssueForAGroup(self, *_):
+  @mock.patch.object(
+      FlakeDetectionGroupIssueGenerator,
+      'GetFirstCommentWhenBugJustCreated',
+      return_value='group link')
+  @mock.patch.object(monorail_util, 'PostCommentOnMonorailBug')
+  def testCreateIssueForAGroup(self, mock_first_comment, *_):
     flake1 = self._CreateFlake('s1', 'suite1.t1', 'suite1.t1')
     occurrences1 = [
         self._CreateFlakeOccurrence(1, 's1', 'suite1.t1', 12345, flake1.key),
@@ -1392,6 +1398,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(
         datetime.datetime(2018, 1, 2),
         flake_issue.last_updated_time_by_flake_detection)
+    self.assertTrue(mock_first_comment.called)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))

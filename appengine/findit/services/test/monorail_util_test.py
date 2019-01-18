@@ -407,3 +407,27 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     mock_comments.return_value = expected_comments
     self.assertEqual(expected_comments, monorail_util.GetComments(12345))
     mock_comments.assert_called_once_with(12345)
+
+  @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(monorail_util, 'UpdateBug')
+  def testPostCommentOnMonorailBug(self, mock_update_bug_fn,
+                                   mock_get_merged_issue):
+    issue_id = 12345
+    issue = Issue({
+        'status': 'Available',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+    })
+    mock_get_merged_issue.return_value = issue
+    test_issue_generator = TestIssueGenerator()
+    monorail_util.PostCommentOnMonorailBug(
+        issue_id=issue_id,
+        issue_generator=test_issue_generator,
+        comment='Random comment')
+
+    mock_update_bug_fn.assert_called_once_with(issue, 'Random comment',
+                                               'chromium')

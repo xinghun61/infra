@@ -207,3 +207,17 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
   UpdateBug(issue, issue_generator.GetComment(),
             issue_generator.GetMonorailProject())
   issue_generator.OnIssueUpdated()
+
+
+def PostCommentOnMonorailBug(issue_id, issue_generator, comment):
+  """Posts a comment on monorail bug.
+
+  Args:
+    issue_id: Id of the issue to be updated.
+    issue_generator: A FlakyTestIssueGenerator object.
+    comment: Comment content.
+  """
+  issue = GetMergedDestinationIssueForId(issue_id,
+                                         issue_generator.GetMonorailProject())
+  UpdateBug(issue, comment, issue_generator.GetMonorailProject())
+  issue_generator.OnIssueUpdated()
