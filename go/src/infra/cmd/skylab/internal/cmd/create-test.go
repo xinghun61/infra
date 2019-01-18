@@ -24,7 +24,7 @@ import (
 
 // CreateTest subcommand: create a test task.
 var CreateTest = &subcommands.Command{
-	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-client-test] [-tag KEY:VALUE...] [-keyval KEY:VALUE] TEST_NAME [DIMENSION_KEY:VALUE...]",
+	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-client-test] [-tag KEY:VALUE...] [-keyval KEY:VALUE] [-test-args ARGS] TEST_NAME [DIMENSION_KEY:VALUE...]",
 	ShortDesc: "Create a test task, with the given test name and swarming dimensions",
 	LongDesc:  "Create a test task, with the given test name and swarming dimensions.",
 	CommandRun: func() subcommands.CommandRun {
@@ -41,6 +41,7 @@ var CreateTest = &subcommands.Command{
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
 		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval", "Autotest keyval for test. Key may not contain : character. May be specified multiple times.")
+		c.Flags.StringVar(&c.testArgs, "test-args", "", "Test arguments string (meaning depends on test).")
 		return c
 	},
 }
@@ -56,6 +57,7 @@ type createTestRun struct {
 	pool      string
 	tags      []string
 	keyvals   []string
+	testArgs  string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -123,7 +125,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	e := c.envFlags.Env()
 
 	logdogURL := generateAnnotationURL(e)
-	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions, keyvals)
+	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions, keyvals, c.testArgs)
 	if err != nil {
 		return errors.Annotate(err, "create test").Err()
 	}
@@ -198,7 +200,7 @@ func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair) 
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
 func getSlices(taskName string, clientTest bool, annotationURL string, provisionableDimensions []string,
-	dimensions []string, keyvals map[string]string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+	dimensions []string, keyvals map[string]string, testArgs string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	basePairs, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
@@ -208,7 +210,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
 
-	s0cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, nil)
+	s0cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, nil, testArgs)
 	s0Dims := append(basePairs, provisionablePairs...)
 	s0 := taskSlice(s0cmd, s0Dims)
 
@@ -216,7 +218,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 		return []*swarming.SwarmingRpcsTaskSlice{s0}, nil
 	}
 
-	s1cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, provisionableDimensions)
+	s1cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, provisionableDimensions, testArgs)
 	s1Dims := basePairs
 	s1 := taskSlice(s1cmd, s1Dims)
 
@@ -229,7 +231,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 // Note: provisionDimensions (if supplied) may be suppled with their "provisionable-" prefix,
 // and this prefix will be tripped to turn them into provisionable labels.
 func skylabWorkerCommand(taskName string, clientTest bool, keyvals map[string]string, annotationURL string,
-	provisionDimensions []string) []string {
+	provisionDimensions []string, testArgs string) []string {
 	cmd := []string{}
 	cmd = append(cmd, "/opt/infra-tools/skylab_swarming_worker")
 	cmd = append(cmd, "-task-name", taskName)
@@ -246,6 +248,9 @@ func skylabWorkerCommand(taskName string, clientTest bool, keyvals map[string]st
 	}
 	if annotationURL != "" {
 		cmd = append(cmd, "-logdog-annotation-url", annotationURL)
+	}
+	if testArgs != "" {
+		cmd = append(cmd, "-test-args", testArgs)
 	}
 	provisionableLabels := make([]string, len(provisionDimensions))
 	for i, l := range provisionDimensions {
