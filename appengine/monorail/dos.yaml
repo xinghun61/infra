@@ -152,3 +152,5 @@ blacklist:
     description: someone repeatedly posting to detail.do 2018-12-05
   - subnet: 173.239.232.128
     description: someone repeatedly posting to template/detail.do 2019-01-13
+  - subnet: 191.180.60.133
+    description: someone making lots of requests with bad XSRF token
