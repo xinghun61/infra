@@ -7,10 +7,12 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/flag"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/cmd/qscheduler/internal/site"
@@ -28,7 +30,7 @@ var AddAccount = &subcommands.Command{
 		c.envFlags.Register(&c.Flags)
 		c.Flags.StringVar(&c.poolID, "id", "", "Scheduler ID to modify.")
 		c.Flags.StringVar(&c.accountID, "account", "", "Account ID to create.")
-		c.Flags.Var(MultiFloat(&c.chargeRates), "rate", "Quota recharge rate for a given priority level. "+
+		c.Flags.Var(flag.StringSlice(&c.chargeRates), "rate", "Quota recharge rate for a given priority level. "+
 			"May be specified multiple times, to specify charge rate at P0, P1, P2, ...")
 		c.Flags.Float64Var(&c.chargeTime, "charge-time", 0,
 			"Maximum amount of time (seconds) for which the account can accumulate quota.")
@@ -44,7 +46,7 @@ type addAccountRun struct {
 
 	poolID      string
 	accountID   string
-	chargeRates []float64
+	chargeRates []string
 	chargeTime  float64
 	fanout      int
 }
@@ -60,6 +62,16 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 		return 1
 	}
 
+	chargeRateFloats := make([]float64, len(c.chargeRates))
+	for i, c := range c.chargeRates {
+		f, err := strconv.ParseFloat(c, 64)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid charge rate: %s\n", err.Error())
+			return 1
+		}
+		chargeRateFloats[i] = f
+	}
+
 	ctx := cli.GetContext(a, c, env)
 
 	adminClient, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
@@ -72,7 +84,7 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 		AccountId: c.accountID,
 		PoolId:    c.poolID,
 		Config: &scheduler.AccountConfig{
-			ChargeRate:       c.chargeRates,
+			ChargeRate:       chargeRateFloats,
 			MaxChargeSeconds: c.chargeTime,
 			MaxFanout:        int32(c.fanout),
 		},

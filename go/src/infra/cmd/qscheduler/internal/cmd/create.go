@@ -12,6 +12,7 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/data/strpair"
+	"go.chromium.org/luci/common/flag"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/cmd/qscheduler/internal/site"
@@ -27,7 +28,7 @@ var Create = &subcommands.Command{
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.StringVar(&c.poolID, "id", "", "Scheduler ID to create.")
-		c.Flags.Var(MultiString(&c.labels), "label",
+		c.Flags.Var(flag.StringSlice(&c.labels), "label",
 			"Label that will be used by all tasks and bots for this scheduler, specified in "+
 				"the form foo:bar. May be specified multiple times.")
 
