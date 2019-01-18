@@ -22,6 +22,7 @@ from libs import test_name_util
 from libs import time_util
 from libs.cache_decorator import Cached
 from model.flake.detection.flake_occurrence import FlakeOccurrence
+from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.flake import Flake
 from model.flake.flake import TestLocation
 from model.flake import flake_type
@@ -376,6 +377,10 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
         index = component.rfind('>', 0, index)
         if index > 0:
           all_tags.add('parent_component::%s' % component[0:index])
+    else:
+      flake.component = DEFAULT_COMPONENT
+      all_tags.add('component::%s' % DEFAULT_COMPONENT)
+      all_tags.add('parent_component::%s' % DEFAULT_COMPONENT)
 
     flake.tags = sorted(all_tags)
     flake.last_test_location_based_tag_update_time = time_util.GetUTCNow()

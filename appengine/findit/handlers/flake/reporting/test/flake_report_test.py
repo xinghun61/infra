@@ -81,6 +81,22 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         }
     }
 
+    component_unknown_dict = {
+        'id': 'Unknown',
+        'test_count': 1,
+        'bug_count': 6,
+        'impacted_cl_counts': {
+            'cq_false_rejection': 1,
+            'retry_with_patch': 0,
+            'total': 1
+        },
+        'occurrence_counts': {
+            'cq_false_rejection': 1,
+            'retry_with_patch': 0,
+            'total': 1
+        }
+    }
+
     expected_reports = {
         'total_report': {
             'id': '2018-08-27@chromium',
@@ -97,20 +113,29 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
                 'total': 8
             }
         },
-        'top_components': [
-            {
-                'rank_by': 'test_count',
-                'components': [component_b_dict, component_a_dict]
-            },
-            {
-                'rank_by': 'bug_count',
-                'components': [component_a_dict, component_b_dict]
-            },
-            {
-                'rank_by': 'false_rejected_cl_count',
-                'components': [component_a_dict, component_b_dict]
-            }
-        ],
+        'top_components': [{
+            'rank_by':
+                'test_count',
+            'components': [
+                component_b_dict, component_a_dict, component_unknown_dict
+            ]
+        },
+                           {
+                               'rank_by':
+                                   'bug_count',
+                               'components': [
+                                   component_unknown_dict, component_a_dict,
+                                   component_b_dict
+                               ]
+                           },
+                           {
+                               'rank_by':
+                                   'false_rejected_cl_count',
+                               'components': [
+                                   component_a_dict, component_b_dict,
+                                   component_unknown_dict
+                               ]
+                           }],
         'component':
             '',
         'luci_project':

@@ -5,7 +5,6 @@
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from libs import time_util
-from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.reporting.report import ComponentFlakinessReport
 from model.flake.reporting.report import TotalFlakinessReport
 from services.constants import DEFAULT_LUCI_PROJECT
@@ -22,6 +21,8 @@ _RANK_PROPERTY_TUPLES = [('test_count', ComponentFlakinessReport.test_count),
                           ComponentFlakinessReport.false_rejected_cl_count)]
 
 
+# TODO (crbug.com/923552): Add count as a parameter instead of always use the
+# default _DEFAULT_TOP_COMPONENT_NUM.
 def _QueryTopComponents(total_report_key):
   """Queries previous week's flake report and return the top n components.
 
@@ -40,13 +41,8 @@ def _QueryTopComponents(total_report_key):
     components = component_report_query.order(-rank_property).fetch(
         _DEFAULT_TOP_COMPONENT_NUM)
     query_result = {
-        'rank_by':
-            rank_by,
-        'components': [
-            component.ToSerializable()
-            for component in components
-            if component.GetComponent() != DEFAULT_COMPONENT
-        ]
+        'rank_by': rank_by,
+        'components': [component.ToSerializable() for component in components]
     }
 
     top_components.append(query_result)
