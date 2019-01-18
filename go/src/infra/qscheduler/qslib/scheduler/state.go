@@ -53,6 +53,9 @@ type state struct {
 
 // request represents a queued or running task request.
 type request struct {
+	// ID is the ID of this request.
+	ID RequestID
+
 	// accountID is the id of the account that this request charges to.
 	accountID AccountID
 
@@ -71,7 +74,9 @@ type request struct {
 	confirmedTime time.Time
 }
 
-func newTaskRequest(r *request) *TaskRequest {
+// requestProto converts a request to a TaskRequest proto. It is a convenience method.
+// Note: TaskRequest does not include the request's ID, so this conversion is lossy.
+func requestProto(r *request) *TaskRequest {
 	return &TaskRequest{
 		AccountId:           string(r.accountID),
 		ConfirmedTime:       tutils.TimestampProto(r.confirmedTime),
@@ -91,16 +96,15 @@ type taskRun struct {
 	// request is the request that this running task corresponds to.
 	request *request
 
-	// requestID is the request id of the request that this running task
-	// corresponds to.
-	requestID RequestID
-
 	// priority is the current priority level of the running task.
 	priority int
 }
 
 // worker represents a running or idle worker capable of running tasks.
 type worker struct {
+	// ID is the ID of this worker.
+	ID WorkerID
+
 	// labels represents the set of labels that this worke possesses.
 	labels stringset.Set
 
@@ -123,6 +127,7 @@ func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequ
 		s.notifyRequest(ctx, requestID, "", t)
 	} else {
 		rr := &request{
+			ID:                  requestID,
 			accountID:           AccountID(r.AccountId),
 			confirmedTime:       tutils.Timestamp(r.ConfirmedTime),
 			enqueueTime:         tutils.Timestamp(r.EnqueueTime),
@@ -138,7 +143,7 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time) {
 	w, ok := s.workers[workerID]
 	if !ok {
 		// This is a new worker, create it and return.
-		s.workers[workerID] = &worker{confirmedTime: t, labels: labels}
+		s.workers[workerID] = &worker{ID: workerID, confirmedTime: t, labels: labels}
 		return
 	}
 
@@ -170,7 +175,7 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time) {
 
 	// Our worker wasn't previously idle. Remove the previous request it was
 	// running.
-	previousRequestID := w.runningTask.requestID
+	previousRequestID := w.runningTask.request.ID
 	s.deleteRequest(previousRequestID)
 }
 
@@ -303,7 +308,7 @@ func (s *state) applyAssignment(m *Assignment) {
 		s.chargeAccount(s.queuedRequests[m.RequestID].accountID, cost)
 
 		// Remove the preempted job from worker.
-		oldRequestID := worker.runningTask.requestID
+		oldRequestID := worker.runningTask.request.ID
 		s.deleteRequest(oldRequestID)
 	}
 
@@ -329,7 +334,7 @@ func (s *state) validateAssignment(m *Assignment) {
 	case AssignmentIdleWorker:
 		if !worker.isIdle() {
 			panic(fmt.Sprintf("Worker %s is not idle, it is running task %s.",
-				m.WorkerID, worker.runningTask.requestID))
+				m.WorkerID, worker.runningTask.request.ID))
 		}
 
 	case AssignmentPreemptWorker:
@@ -337,7 +342,7 @@ func (s *state) validateAssignment(m *Assignment) {
 			panic(fmt.Sprintf("Worker %s is idle, expected running task %s.",
 				m.WorkerID, m.TaskToAbort))
 		}
-		runningID := worker.runningTask.requestID
+		runningID := worker.runningTask.request.ID
 		if runningID != m.TaskToAbort {
 			panic(fmt.Sprintf("Worker %s is running task %s, expected %s.", m.WorkerID,
 				runningID, m.TaskToAbort))
@@ -375,10 +380,9 @@ func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority in
 	s.ensureCache()
 
 	rt := &taskRun{
-		priority:  priority,
-		request:   s.queuedRequests[requestID],
-		cost:      initialCost,
-		requestID: requestID,
+		priority: priority,
+		request:  s.queuedRequests[requestID],
+		cost:     initialCost,
 	}
 	s.workers[workerID].runningTask = rt
 	delete(s.queuedRequests, requestID)
@@ -391,7 +395,7 @@ func (s *state) deleteWorker(workerID WorkerID) {
 	if worker, ok := s.workers[workerID]; ok {
 		if !worker.isIdle() {
 			s.ensureCache()
-			delete(s.runningRequestsCache, worker.runningTask.requestID)
+			delete(s.runningRequestsCache, worker.runningTask.request.ID)
 		}
 		delete(s.workers, workerID)
 	}
@@ -428,7 +432,7 @@ func (s *state) regenCache() {
 		if w.isIdle() {
 			continue
 		}
-		rid := w.runningTask.requestID
+		rid := w.runningTask.request.ID
 		if existing, ok := s.runningRequestsCache[rid]; ok {
 			panic(fmt.Sprintf(
 				"Duplicate workers %s and %s assigned to a single request %s",

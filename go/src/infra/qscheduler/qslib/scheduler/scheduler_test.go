@@ -264,8 +264,8 @@ func TestUpdateBalance(t *testing.T) {
 		Convey("when 2 tasks for the account are running", func() {
 			r1 := RequestID("request 1")
 			r2 := RequestID("request 2")
-			s.AddRequest(ctx, r1, newTaskRequest(&request{aID, t0, nil, nil, t0}), t0)
-			s.AddRequest(ctx, r2, newTaskRequest(&request{aID, t0, nil, nil, t0}), t0)
+			s.AddRequest(ctx, r1, requestProto(&request{r1, aID, t0, nil, nil, t0}), t0)
+			s.AddRequest(ctx, r2, requestProto(&request{r2, aID, t0, nil, nil, t0}), t0)
 			s.MarkIdle(ctx, "w1", nil, t0)
 			s.MarkIdle(ctx, "w2", nil, t0)
 			s.state.applyAssignment(&Assignment{Priority: 0, RequestID: r1, WorkerID: "w1", Type: AssignmentIdleWorker})

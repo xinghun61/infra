@@ -64,17 +64,18 @@ func newStateFromProto(sp *StateProto) *state {
 				cost:     cost,
 				priority: int(w.RunningTask.Priority),
 				request: &request{
+					ID:                  RequestID(w.RunningTask.RequestId),
 					accountID:           AccountID(w.RunningTask.Request.AccountId),
 					confirmedTime:       tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
 					enqueueTime:         tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
 					provisionableLabels: stringset.NewFromSlice(w.RunningTask.Request.ProvisionableLabels...),
 					baseLabels:          stringset.NewFromSlice(w.RunningTask.Request.BaseLabels...),
 				},
-				requestID: RequestID(w.RunningTask.RequestId),
 			}
 			s.runningRequestsCache[RequestID(w.RunningTask.RequestId)] = WorkerID(wid)
 		}
 		s.workers[WorkerID(wid)] = &worker{
+			ID:            WorkerID(wid),
 			confirmedTime: tutils.Timestamp(w.ConfirmedTime),
 			labels:        stringset.NewFromSlice(w.Labels...),
 			runningTask:   tr,
@@ -100,7 +101,7 @@ func (s *state) toProto() *StateProto {
 
 	queuedRequests := make(map[string]*TaskRequest, len(s.queuedRequests))
 	for rid, rq := range s.queuedRequests {
-		queuedRequests[string(rid)] = newTaskRequest(rq)
+		queuedRequests[string(rid)] = requestProto(rq)
 	}
 
 	workers := make(map[string]*Worker, len(s.workers))
@@ -111,8 +112,8 @@ func (s *state) toProto() *StateProto {
 			rt = &TaskRun{
 				Cost:      costCopy[:],
 				Priority:  int32(w.runningTask.priority),
-				Request:   newTaskRequest(w.runningTask.request),
-				RequestId: string(w.runningTask.requestID),
+				Request:   requestProto(w.runningTask.request),
+				RequestId: string(w.runningTask.request.ID),
 			}
 		}
 		workers[string(wid)] = &Worker{

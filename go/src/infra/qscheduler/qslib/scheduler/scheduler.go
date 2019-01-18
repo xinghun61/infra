@@ -143,7 +143,7 @@ func (s *Scheduler) IsAssigned(requestID RequestID, workerID WorkerID) bool {
 	s.ensureMaps()
 	if w, ok := s.state.workers[workerID]; ok {
 		if !w.isIdle() {
-			return w.runningTask.requestID == requestID
+			return w.runningTask.request.ID == requestID
 		}
 	}
 	return false
@@ -294,7 +294,7 @@ func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
 // GetRequest returns the (waiting or running) request for a given ID.
 func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequest, ok bool) {
 	if r, ok := s.state.getRequest(rid); ok {
-		return newTaskRequest(r), ok
+		return requestProto(r), ok
 	}
 	return nil, false
 }
@@ -420,36 +420,36 @@ func reprioritizeRunningTasks(state *state, config *Config, priority int) {
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *state, candidates []workerWithID, chargeRate float64, priority int) {
+func doDemote(state *state, candidates []*worker, chargeRate float64, priority int) {
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
 	for _, toDemote := range candidates[:numberToDemote] {
-		toDemote.worker.runningTask.priority = priority + 1
+		toDemote.runningTask.priority = priority + 1
 	}
 }
 
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *state, candidates []workerWithID, chargeRate float64, priority int) {
+func doPromote(state *state, candidates []*worker, chargeRate float64, priority int) {
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
 	for _, toPromote := range candidates[:numberToPromote] {
-		toPromote.worker.runningTask.priority = priority
+		toPromote.runningTask.priority = priority
 	}
 }
 
 // workersAt is a helper function that returns the workers with a given
 // account id and running.
-func workersAt(ws map[WorkerID]*worker, priority int, accountID AccountID) []workerWithID {
-	ans := make([]workerWithID, 0, len(ws))
-	for wid, worker := range ws {
+func workersAt(ws map[WorkerID]*worker, priority int, accountID AccountID) []*worker {
+	ans := make([]*worker, 0, len(ws))
+	for _, worker := range ws {
 		if !worker.isIdle() &&
 			worker.runningTask.request.accountID == accountID &&
 			worker.runningTask.priority == priority {
-			ans = append(ans, workerWithID{worker, wid})
+			ans = append(ans, worker)
 		}
 	}
 	return ans
@@ -457,13 +457,13 @@ func workersAt(ws map[WorkerID]*worker, priority int, accountID AccountID) []wor
 
 // workersBelow is a helper function that returns the workers with a given
 // account id and below a given running.
-func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []workerWithID {
-	ans := make([]workerWithID, 0, len(ws))
-	for wid, worker := range ws {
+func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []*worker {
+	ans := make([]*worker, 0, len(ws))
+	for _, worker := range ws {
 		if !worker.isIdle() &&
 			worker.runningTask.request.accountID == accountID &&
 			worker.runningTask.priority > priority {
-			ans = append(ans, workerWithID{worker, wid})
+			ans = append(ans, worker)
 		}
 	}
 	return ans
@@ -474,16 +474,16 @@ func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []
 // the account that had been charged for the task.
 func preemptRunningTasks(state *state, jobsAtP []prioritizedRequest, priority int) []*Assignment {
 	var output []*Assignment
-	candidates := make([]workerWithID, 0, len(state.workers))
+	candidates := make([]*worker, 0, len(state.workers))
 	// Accounts that are already running a lower priority job are not
 	// permitted to preempt jobs at this priority. This is to prevent a type
 	// of thrashing that may occur if an account is unable to promote jobs to
 	// this priority (because that would push it over its charge rate)
 	// but still has positive quota at this priority.
 	bannedAccounts := make(map[AccountID]bool)
-	for wid, worker := range state.workers {
+	for _, worker := range state.workers {
 		if !worker.isIdle() && worker.runningTask.priority > priority {
-			candidates = append(candidates, workerWithID{worker, wid})
+			candidates = append(candidates, worker)
 			bannedAccounts[worker.runningTask.request.accountID] = true
 		}
 	}
@@ -500,7 +500,7 @@ func preemptRunningTasks(state *state, jobsAtP []prioritizedRequest, priority in
 		if _, ok := bannedAccounts[requestAccountID]; ok {
 			continue
 		}
-		cost := candidate.worker.runningTask.cost
+		cost := candidate.runningTask.cost
 		requestAccountBalance, ok := state.balances[requestAccountID]
 		if !ok || less(requestAccountBalance, cost) {
 			continue
@@ -509,8 +509,8 @@ func preemptRunningTasks(state *state, jobsAtP []prioritizedRequest, priority in
 			Type:        AssignmentPreemptWorker,
 			Priority:    priority,
 			RequestID:   request.RequestID,
-			TaskToAbort: candidate.worker.runningTask.requestID,
-			WorkerID:    candidate.id,
+			TaskToAbort: candidate.runningTask.request.ID,
+			WorkerID:    candidate.ID,
 			Time:        state.lastUpdateTime,
 		}
 		output = append(output, mut)

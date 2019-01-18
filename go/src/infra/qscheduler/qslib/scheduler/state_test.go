@@ -104,7 +104,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 				So(state.queuedRequests, ShouldHaveLength, 0)
 				So(state.workers, ShouldContainKey, "w1")
 				So(state.workers["w1"].runningTask, ShouldNotBeNil)
-				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
+				So(state.workers["w1"].runningTask.request.ID, ShouldEqual, "r1")
 			})
 		})
 		Convey("when notifying (idle request) with an intermediate time (between current request and worker time) t=1", func() {
@@ -113,7 +113,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 				So(state.queuedRequests, ShouldHaveLength, 0)
 				So(state.workers, ShouldContainKey, "w1")
 				So(state.workers["w1"].runningTask, ShouldNotBeNil)
-				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
+				So(state.workers["w1"].runningTask.request.ID, ShouldEqual, "r1")
 			})
 		})
 		Convey("when notifying (idle request) with newer time t=4", func() {
@@ -147,7 +147,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 				So(state.queuedRequests, ShouldHaveLength, 0)
 				So(state.workers, ShouldContainKey, "w1")
 				So(state.workers["w1"].runningTask, ShouldNotBeNil)
-				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
+				So(state.workers["w1"].runningTask.request.ID, ShouldEqual, "r1")
 			})
 		})
 		Convey("when notifying (correct match) with intermediate time t=2", func() {
@@ -184,7 +184,7 @@ func TestnotifyRequest(ctx, t *testing.T) {
 			Convey("then the update is ignored.", func() {
 				So(state.workers, ShouldContainKey, "w1")
 				So(state.workers["w1"].runningTask, ShouldNotBeNil)
-				So(state.workers["w1"].runningTask.requestID, ShouldEqual, "r1")
+				So(state.workers["w1"].runningTask.request.ID, ShouldEqual, "r1")
 				So(state.workers, ShouldContainKey, "w2")
 				So(state.workers["w2"].runningTask, ShouldBeNil)
 			})
@@ -285,7 +285,7 @@ func TestabortRequest(ctx, t *testing.T) {
 				So(state.queuedRequests, ShouldBeEmpty)
 				So(state.workers, ShouldHaveLength, 1)
 				So(state.workers[wID].runningTask, ShouldNotBeNil)
-				So(state.workers[wID].runningTask.requestID, ShouldEqual, reqID)
+				So(state.workers[wID].runningTask.request.ID, ShouldEqual, reqID)
 			})
 		})
 	})
@@ -307,7 +307,7 @@ func TestApplyIdleAssignment(t *testing.T) {
 				So(s.queuedRequests, ShouldBeEmpty)
 				rt := s.workers["w1"].runningTask
 				So(rt, ShouldNotBeNil)
-				So(rt.requestID, ShouldEqual, "t1")
+				So(rt.request.ID, ShouldEqual, "t1")
 				So(rt.priority, ShouldEqual, 1)
 
 			})
@@ -320,16 +320,17 @@ func TestApplyPreempt(t *testing.T) {
 	tm := time.Unix(0, 0)
 	Convey("Given a state with a running request, a queued request, and two accounts", t, func() {
 		s := newState(tm)
-		s.workers["w1"] = &worker{}
+		s.workers["w1"] = &worker{ID: "w1"}
 		s.workers["w1"].runningTask = &taskRun{
 			cost:     balance{1},
 			priority: 2,
 			request: &request{
+				ID:        "t1",
 				accountID: "a1",
 			},
-			requestID: "t1",
 		}
 		s.queuedRequests["t2"] = &request{
+			ID:        "t2",
 			accountID: "a2",
 		}
 		s.balances["a1"] = balance{1}
@@ -344,7 +345,7 @@ func TestApplyPreempt(t *testing.T) {
 				rt := s.workers["w1"].runningTask
 				So(rt, ShouldNotBeNil)
 				So(rt.cost, ShouldResemble, balance{1})
-				So(rt.requestID, ShouldEqual, "t2")
+				So(rt.request.ID, ShouldEqual, "t2")
 				So(s.balances["a1"], ShouldResemble, balance{2})
 				So(s.balances["a2"], ShouldResemble, balance{1})
 			})
