@@ -39,7 +39,7 @@ import (
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/logdog/common/types"
 
-	"infra/cmd/skylab_swarming_worker/internal/autotest"
+	"infra/cmd/skylab_swarming_worker/internal/autotest/constants"
 	"infra/cmd/skylab_swarming_worker/internal/fifo"
 	"infra/cmd/skylab_swarming_worker/internal/flagx"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
@@ -216,7 +216,7 @@ type prejobTaskControl struct {
 	rebootBefore rebootBefore
 }
 
-func choosePrejobTask(tc prejobTaskControl, hostDirty, hostProtected bool) autotest.AdminTaskType {
+func choosePrejobTask(tc prejobTaskControl, hostDirty, hostProtected bool) constants.AdminTaskType {
 	willVerify := (tc.runReset || tc.runVerify) && !hostProtected
 
 	var willReboot bool
@@ -231,13 +231,13 @@ func choosePrejobTask(tc prejobTaskControl, hostDirty, hostProtected bool) autot
 
 	switch {
 	case willReboot && willVerify:
-		return autotest.Reset
+		return constants.Reset
 	case willReboot:
-		return autotest.Cleanup
+		return constants.Cleanup
 	case willVerify:
-		return autotest.Verify
+		return constants.Verify
 	default:
-		return autotest.NoTask
+		return constants.NoTask
 	}
 }
 
