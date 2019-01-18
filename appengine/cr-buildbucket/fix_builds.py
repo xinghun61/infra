@@ -8,12 +8,11 @@ This code changes each time something needs to be migrated once.
 """
 
 from google.appengine.ext import ndb
-from google.protobuf import struct_pb2
 
 from components import utils
 
 import bulkproc
-import model
+import v2
 
 PROC_NAME = 'fix_builds'
 
@@ -39,8 +38,11 @@ def _fix_builds(build_keys):  # pragma: no cover
 @ndb.transactional_tasklet
 def _fix_build_async(build_key):  # pragma: no cover
   build = yield build_key.get_async()
-  if not build:
+  if not build or build.proto:
     return
 
-  to_put = [build]
-  yield ndb.put_multi_async(to_put)
+  build.proto = v2.build_to_v2(build)
+  build.proto.Clear('id')
+  build.proto.Clear('steps')
+  build.proto.output.Clear('properties')
+  yield ndb.put_async(build)
