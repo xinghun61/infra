@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package autotest
+// Package hostinfo provides support for Autotest's serialized
+// hostinfo data.
+package hostinfo
 
 import (
 	"encoding/json"
@@ -24,8 +26,8 @@ type versionedHostInfo struct {
 
 const supportedSerializerVersion = 1
 
-// UnmarshalHostInfo deserializes a HostInfo struct from a slice of bytes.
-func UnmarshalHostInfo(blob []byte) (*HostInfo, error) {
+// Unmarshal deserializes a HostInfo struct from a slice of bytes.
+func Unmarshal(blob []byte) (*HostInfo, error) {
 	var vhi versionedHostInfo
 	err := json.Unmarshal(blob, &vhi)
 	if vhi.SerializerVersion != supportedSerializerVersion {
@@ -35,8 +37,8 @@ func UnmarshalHostInfo(blob []byte) (*HostInfo, error) {
 	return vhi.HostInfo, err
 }
 
-// MarshalHostInfo serializes the HostInfo struct into a slice of bytes.
-func MarshalHostInfo(hi *HostInfo) ([]byte, error) {
+// Marshal serializes the HostInfo struct into a slice of bytes.
+func Marshal(hi *HostInfo) ([]byte, error) {
 	vhi := versionedHostInfo{
 		HostInfo:          hi,
 		SerializerVersion: supportedSerializerVersion,

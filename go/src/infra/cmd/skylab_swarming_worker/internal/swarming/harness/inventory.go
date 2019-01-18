@@ -12,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"infra/cmd/skylab_swarming_worker/internal/autotest"
+	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 )
 
@@ -68,7 +68,7 @@ func getDutNameFromDimensions(blob []byte) (string, error) {
 }
 
 // loadDUTHostInfo returns the host information for the swarming bot’s assigned DUT.
-func loadDUTHostInfo(b *swarming.Bot) (*autotest.HostInfo, error) {
+func loadDUTHostInfo(b *swarming.Bot) (*hostinfo.HostInfo, error) {
 	// TODO(pprabhu) This implementation delegates to inventory tools to convert the inventory
 	// data to autotest's host_info format. Instead, support directly reading inventory here.
 	ddir, err := readSymlinkTargetWithRetry(b.Inventory.DataDir)
@@ -87,7 +87,7 @@ func loadDUTHostInfo(b *swarming.Bot) (*autotest.HostInfo, error) {
 		log.Printf("Failed to run command %#v", cmd)
 		return nil, fmt.Errorf("Failed to obtain host info for DUT: %s", err)
 	}
-	return autotest.UnmarshalHostInfo(r)
+	return hostinfo.Unmarshal(r)
 }
 
 // readSymlinkTargetWithRetry dereferences the symlink pointing to the data directory.

@@ -14,7 +14,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"infra/cmd/skylab_swarming_worker/internal/autotest"
+	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 )
@@ -41,8 +41,8 @@ const hostInfoSubDir = "host_info_store"
 
 // dumpHostInfo dumps the given HostInfo object to a file expected by autoserv.
 // It returns the path to the created file.
-func dumpHostInfo(dutName string, resultsDir string, hi *autotest.HostInfo) (string, error) {
-	blob, err := autotest.MarshalHostInfo(hi)
+func dumpHostInfo(dutName string, resultsDir string, hi *hostinfo.HostInfo) (string, error) {
+	blob, err := hostinfo.Marshal(hi)
 	if err != nil {
 		msg := fmt.Sprintf("failed to marshal HostInfo for %s", dutName)
 		return "", errors.Wrap(err, msg)
@@ -66,7 +66,7 @@ func updateBotInfoFromHostInfo(hiPath string, bi *botinfo.BotInfo) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read host info from results")
 	}
-	hi, err := autotest.UnmarshalHostInfo(blob)
+	hi, err := hostinfo.Unmarshal(blob)
 	if err != nil {
 		return errors.Wrap(err, "failed to unmarshal host info from results")
 	}

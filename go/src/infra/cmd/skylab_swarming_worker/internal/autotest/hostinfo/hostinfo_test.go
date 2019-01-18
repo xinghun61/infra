@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package autotest
+package hostinfo
 
 import (
 	"reflect"
@@ -24,12 +24,12 @@ func TestMarshalRoundTrip(t *testing.T) {
 		},
 	}
 	for _, hi := range his {
-		d, err := MarshalHostInfo(hi)
+		d, err := Marshal(hi)
 		if err != nil {
 			t.Errorf("Error writing HostInfo %#v: %s", hi, err)
 			continue
 		}
-		got, err := UnmarshalHostInfo(d)
+		got, err := Unmarshal(d)
 		if err != nil {
 			t.Errorf("Error reading HostInfo: %#v: %s", hi, err)
 		}
@@ -51,7 +51,7 @@ func TestWriteFormat(t *testing.T) {
 			"job_repo_url": "http://127.0.0.1",
 		},
 	}
-	got, err := MarshalHostInfo(&hi)
+	got, err := Marshal(&hi)
 	if err != nil {
 		t.Fatalf("Error writing HostInfo %#v: %s", hi, err)
 	}
@@ -77,7 +77,7 @@ func TestWriteFormat(t *testing.T) {
 func TestReadIncorrectSerializerVersion(t *testing.T) {
 	t.Parallel()
 	blob := []byte(`{"serializer_version": 0}`)
-	got, err := UnmarshalHostInfo(blob)
+	got, err := Unmarshal(blob)
 	if err == nil {
 		t.Errorf("Did not return error parsing corrupted HostInfo. Parsed `%s`to %#v", blob, got)
 	}
