@@ -180,8 +180,8 @@ def status_to_v2(src, dest):
       all of status_reason fields will be mutated.
   """
   dest.status = common_pb2.STATUS_UNSPECIFIED
-  dest.ClearField('infra_failure_reason')
-  dest.ClearField('cancel_reason')
+  if dest.HasField('infra_failure_reason'):  # pragma: no cover
+    dest.infra_failure_reason.ClearField('resource_exhaustion')
 
   if src.status == model.BuildStatus.SCHEDULED:
     dest.status = common_pb2.SCHEDULED
