@@ -242,24 +242,6 @@ class LogDogUtilTest(unittest.TestCase):
     self.assertIsNone(project)
     self.assertIsNone(path)
 
-  def testGetLogLocationFromBuildbucketBuildFromTag(self):
-    build = {
-        'tags': [
-            'build_type:test',
-            'swarming_tag:log_location:logdog://logdog.com/project/path'
-        ],
-        'result_details_json':
-            json.dumps({
-                'swarming': {
-                    'task_result': {
-                        'run_id': 'some_run_id'
-                    }
-                }
-            }),
-    }
-    self.assertEqual('logdog://logdog.com/project/path',
-                     logdog_util.GetLogLocationFromBuildbucketBuild(build))
-
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   @mock.patch.object(logdog_util, '_GetLog')
   def testGetStepLogLegacy(self, mock_log, mock_data):

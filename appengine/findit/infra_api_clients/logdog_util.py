@@ -189,27 +189,6 @@ def _GetStreamForStep(step_name, data, log_type='stdout'):
   return None
 
 
-def GetLogLocationFromBuildbucketBuild(buildbucket_build):
-  """Gets the path to the logdog annotations.
-
-  Args:
-    buildbucket_build (dict): The build as retrieved by the buildbucket client.
-  Returns:
-    log_location of the build.
-  """
-  # The log location is a property on buildbot builds and a tag on swarming
-  # builds.
-  # First check the tags.
-  for tag in buildbucket_build.get('tags', []):
-    if tag.startswith('swarming_tag:log_location:logdog:'):
-      return tag.split(':', 2)[2]
-
-  # Then try to get it from properties.
-  result_details = json.loads(
-      buildbucket_build.get('result_details_json', '{}'))
-  return result_details.get('properties', {}).get('log_location')
-
-
 def _GetQueryParametersForAnnotation(log_location):
   """Gets the path to the logdog annotations.
 
