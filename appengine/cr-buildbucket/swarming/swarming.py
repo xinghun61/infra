@@ -1133,15 +1133,19 @@ def _sync_build_in_memory(
 
   if build.proto:  # pragma: no branch
     build.proto.infra.swarming.ClearField('bot_dimensions')
+    for d in (task_result or {}).get('bot_dimensions', []):
+      assert isinstance(d['value'], list)
+      for v in d['value']:
+        build.proto.infra.swarming.bot_dimensions.add(key=d['key'], value=v)
+    build.proto.infra.swarming.bot_dimensions.sort(
+        key=lambda d: (d.key, d.value)
+    )
+
+  # TODO(crbug.com/917851): remove bot_dimensions.
   bot_dimensions = build.result_details['swarming']['bot_dimensions']
   for d in (task_result or {}).get('bot_dimensions', []):
     assert isinstance(d['value'], list)
-    if build.proto:  # pragma: no branch
-      for v in d['value']:
-        build.proto.infra.swarming.bot_dimensions.add(key=d['key'], value=v)
-    # TODO(crbug.com/917851): remove bot_dimensions.
     bot_dimensions[d['key']] = d['value']
-  build.proto.infra.swarming.bot_dimensions.sort(key=lambda d: (d.key, d.value))
 
   # error message to include in result_details. Used only if build is complete.
   errmsg = ''
