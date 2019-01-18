@@ -17,6 +17,7 @@ from model.flake.flake import TestLocation as NDBTestLocation
 from model.flake.flake_type import FlakeType
 from waterfall.test.wf_testcase import WaterfallTestCase
 from services import bigquery_helper
+from services import step_util
 from services.flake_detection import detect_flake_occurrences
 from services.flake_detection.detect_flake_occurrences import (
     QueryAndStoreFlakes)
@@ -666,3 +667,24 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
     all_flake_occurrences = FlakeOccurrence.query().fetch()
     self.assertEqual(4, len(all_flake_occurrences))
+
+  @mock.patch.object(
+      step_util, 'GetCanonicalStepName', return_value='webgl_conformance_tests')
+  def testGetTestSuiteForOccurrence(self, _):
+    row = {
+        'build_id': 123,
+        'step_ui_name': 'webgl_conformance_tests on platform',
+        'luci_builder': 'linux_chromium_rel_ng',
+        'test_start_msec': datetime(1970, 1, 1, 0, 0),
+        'gerrit_project': 'chromium/src',
+        'luci_bucket': 'try',
+        'gerrit_cl_id': 10000,
+        'legacy_master_name': 'tryserver.chromium.linux',
+        'test_name': 'suite.test',
+        'luci_project': 'chromium',
+        'legacy_build_number': 999
+    }
+    self.assertEqual(
+        'webgl_conformance_tests',
+        detect_flake_occurrences._GetTestSuiteForOccurrence(
+            row, 'normalized_test_name', 'telemetry_gpu_integration_test'))

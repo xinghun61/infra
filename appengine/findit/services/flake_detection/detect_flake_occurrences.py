@@ -104,11 +104,33 @@ def _CreateFlakeFromRow(row):
       test_label_name=test_label_name)
 
 
+def _GetTestSuiteForOccurrence(row, normalized_test_name, normalized_step_name):
+  """ Gets test suite name from test_name or step_name
+
+  Args:
+    row: A row of query result.
+    normalized_test_name: Test name without parameters.
+    normalized_step_name: Isolated target of the step.
+  """
+  step_ui_name = row['step_ui_name']
+
+  if normalized_step_name == 'telemetry_gpu_integration_test':
+    # Special case for Telemetry-based GPU tests (identified by
+    # telemetry_gpu_integration_test isolate). Suite not related to test
+    # names but step names.
+    return step_util.GetCanonicalStepName(
+        master_name=row['legacy_master_name'],
+        builder_name=row['luci_builder'],
+        build_number=row['legacy_build_number'],
+        step_name=step_ui_name) or step_ui_name.split()[0]
+
+  return test_name_util.GetTestSuiteName(normalized_test_name, step_ui_name)
+
+
 def _CreateFlakeOccurrenceFromRow(row, flake_type_enum):
   """Creates a FlakeOccurrence from a row fetched from BigQuery."""
   gerrit_project = row['gerrit_project']
   luci_project = row['luci_project']
-  luci_bucket = row['luci_bucket']
   luci_builder = row['luci_builder']
   step_ui_name = row['step_ui_name']
   test_name = row['test_name']
@@ -147,7 +169,9 @@ def _CreateFlakeOccurrenceFromRow(row, flake_type_enum):
       'step::%s' % step_ui_name,  # e.g. "flavored_tests on Mac 10.13"
       'flake::%s' % normalized_test_name,
   ]
-  suite = test_name_util.GetTestSuiteName(normalized_test_name, step_ui_name)
+
+  suite = _GetTestSuiteForOccurrence(row, normalized_test_name,
+                                     normalized_step_name)
   if suite:
     tags.append('suite::%s' % suite)
   tags.sort()
