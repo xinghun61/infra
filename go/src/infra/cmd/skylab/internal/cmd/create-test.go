@@ -42,6 +42,7 @@ var CreateTest = &subcommands.Command{
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
 		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval", "Autotest keyval for test. Key may not contain : character. May be specified multiple times.")
 		c.Flags.StringVar(&c.testArgs, "test-args", "", "Test arguments string (meaning depends on test).")
+		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "QuotaScheduler account to use for this task (optional)")
 		return c
 	},
 }
@@ -58,6 +59,7 @@ type createTestRun struct {
 	tags      []string
 	keyvals   []string
 	testArgs  string
+	qsAccount string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -131,6 +133,9 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	tags := append(c.tags, "skylab-tool:create-test", "log_location:"+logdogURL, "luci_project:"+e.LUCIProject)
+	if c.qsAccount != "" {
+		tags = append(tags, "qs_account:"+c.qsAccount)
+	}
 
 	req := &swarming.SwarmingRpcsNewTaskRequest{
 		Name:       taskName,
