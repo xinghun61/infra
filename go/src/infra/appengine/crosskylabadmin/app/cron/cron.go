@@ -22,16 +22,22 @@
 package cron
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/proto/gerrit"
+	"go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/server/router"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory"
 )
 
 // InstallHandlers installs handlers for cron jobs that are part of this app.
@@ -44,6 +50,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	r.GET("/internal/cron/ensure-background-tasks", mwCron, logAndSetHTTPErr(ensureBackgroundTasksCronHandler))
 	r.GET("/internal/cron/trigger-repair-on-idle", mwCron, logAndSetHTTPErr(triggerRepairOnIdleCronHandler))
 	r.GET("/internal/cron/trigger-repair-on-repair-failed", mwCron, logAndSetHTTPErr(triggerRepairOnRepairFailedCronHandler))
+	r.GET("/internal/cron/ensure-critical-pools-healthy", mwCron, logAndSetHTTPErr(ensureCriticalPoolsHealthy))
 }
 
 // refreshBotsCronHandler refreshes the swarming bot information about the whole fleet.
@@ -140,6 +147,41 @@ func logAndSetHTTPErr(f func(c *router.Context) error) func(*router.Context) {
 			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
 		}
 	}
+}
+
+func ensureCriticalPoolsHealthy(c *router.Context) (err error) {
+	cfg := config.Get(c.Context).GetCron().GetPoolBalancer()
+	if cfg == nil {
+		return errors.New("invalid pool balancer configuration")
+	}
+
+	tracker := &frontend.TrackerServerImpl{}
+	inv := &inventory.ServerImpl{
+		GerritFactory: func(c context.Context, host string) (gerrit.GerritClient, error) {
+			return clients.NewGerritClientAsSelf(c, host)
+		},
+		GitilesFactory: func(c context.Context, host string) (gitiles.GitilesClient, error) {
+			return clients.NewGitilesClientAsSelf(c, host)
+		},
+		TrackerFactory: func() fleet.TrackerServer {
+			return tracker
+		},
+	}
+	merr := make(errors.MultiError, 0)
+	for _, target := range cfg.GetTargetPools() {
+		resp, err := inv.EnsurePoolHealthyForAllModels(c.Context, &fleet.EnsurePoolHealthyForAllModelsRequest{
+			TargetPool:       target,
+			SparePool:        cfg.GetSparePool(),
+			MaxUnhealthyDuts: cfg.GetMaxUnhealthyDuts(),
+		})
+		if err != nil {
+			logging.Errorf(c.Context, "Error ensuring pool health for %s: %s", target, err.Error())
+			merr = append(merr, errors.Annotate(err, "ensure critical pools healthy for pool %s", target).Err())
+			continue
+		}
+		logging.Infof(c.Context, "Ensured pool health for target pool %s. Result %#v", target, resp)
+	}
+	return merr.First()
 }
 
 func countBotsAndTasks(resp *fleet.TaskerTasksResponse) (int, int) {

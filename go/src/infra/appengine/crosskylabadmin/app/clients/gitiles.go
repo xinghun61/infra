@@ -17,6 +17,7 @@ package clients
 import (
 	"net/http"
 
+	authclient "go.chromium.org/luci/auth"
 	gitilesapi "go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/gitiles"
@@ -34,6 +35,19 @@ func NewGitilesClient(c context.Context, host string) (gitiles.GitilesClient, er
 	t, err := auth.GetRPCTransport(c, auth.AsCredentialsForwarder)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get RPC transport").Err()
+	}
+	return gitilesapi.NewRESTClient(&http.Client{Transport: t}, host, true)
+}
+
+// NewGitilesClientAsSelf returns a new gitiles client using oauth tokens for the
+// current service itself.
+//
+// This function is intended to be used from cron calls that are not part of a
+// user session. For normal RPC users, see NewGitilesClient.
+func NewGitilesClientAsSelf(ctx context.Context, host string) (gitiles.GitilesClient, error) {
+	t, err := auth.GetRPCTransport(ctx, auth.AsSelf, auth.WithScopes(authclient.OAuthScopeEmail, gitilesapi.OAuthScope))
+	if err != nil {
+		return nil, errors.Annotate(err, "new gitiles client as self").Err()
 	}
 	return gitilesapi.NewRESTClient(&http.Client{Transport: t}, host, true)
 }

@@ -17,7 +17,9 @@ package clients
 import (
 	"net/http"
 
+	authclient "go.chromium.org/luci/auth"
 	gerritapi "go.chromium.org/luci/common/api/gerrit"
+	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/server/auth"
@@ -36,5 +38,18 @@ func NewGerritClient(c context.Context, host string) (gerrit.GerritClient, error
 		return nil, errors.Annotate(err, "failed to get RPC transport").Err()
 	}
 
+	return gerritapi.NewRESTClient(&http.Client{Transport: t}, host, true)
+}
+
+// NewGerritClientAsSelf returns a new gerrit client using oauth tokens for the
+// current service itself.
+//
+// This function is intended to be used from cron calls that are not part of a
+// user session. For normal RPC users, see NewGerritClient.
+func NewGerritClientAsSelf(ctx context.Context, host string) (gerrit.GerritClient, error) {
+	t, err := auth.GetRPCTransport(ctx, auth.AsSelf, auth.WithScopes(authclient.OAuthScopeEmail, gitiles.OAuthScope))
+	if err != nil {
+		return nil, errors.Annotate(err, "new gerrit client as self").Err()
+	}
 	return gerritapi.NewRESTClient(&http.Client{Transport: t}, host, true)
 }
