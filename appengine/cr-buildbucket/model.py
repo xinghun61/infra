@@ -195,6 +195,12 @@ class Build(ndb.Model):
   def is_luci(self):  # pragma: no cover
     return bool(self.swarming_hostname)
 
+  @property
+  def is_ended(self):  # pragma: no cover
+    return self.proto.status not in (
+        common_pb2.STATUS_UNSPECIFIED, common_pb2.SCHEDULED, common_pb2.STARTED
+    )
+
   # == Legacy properties =======================================================
 
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
@@ -314,7 +320,7 @@ class Build(ndb.Model):
     self.initial_tags = sorted(set(self.initial_tags))
     self.tags = sorted(set(self.tags))
 
-    if self.proto:
+    if self.proto:  # pragma: no branch
       # TODO(crbug.com/917851): once all entities have proto property,
       # update proto fields directly and remove this code.
       # This code updates only fields that are changed after creation.

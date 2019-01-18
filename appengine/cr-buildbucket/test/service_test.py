@@ -13,6 +13,7 @@ from testing_utils import testing
 import mock
 
 from proto import build_pb2
+from proto import common_pb2
 from proto.config import service_config_pb2
 from test import test_util
 from test.test_util import future
@@ -26,10 +27,6 @@ import v2
 
 
 class BuildBucketServiceTest(testing.AppengineTestCase):
-
-  def __init__(self, *args, **kwargs):
-    super(BuildBucketServiceTest, self).__init__(*args, **kwargs)
-    self.test_build = None
 
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
@@ -84,7 +81,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
-    self.test_build = mkBuild()
     self.patch(
         'google.appengine.api.app_identity.get_default_version_hostname',
         autospec=True,
@@ -104,6 +100,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         autospec=True,
         return_value=future(service_config_pb2.SettingsCfg())
     )
+    self.patch(
+        'swarming.cancel_task_transactionally_async',
+        autospec=True,
+        return_value=future(None)
+    )
 
     self.patch('search.TagIndex.random_shard_index', return_value=0)
 
@@ -119,11 +120,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     # user.can_async is patched in setUp()
     user.can_async.side_effect = can_async
 
-  def put_many_builds(self, count=100, tags=None, **kwargs):
-    tags = tags or []
+  def put_many_builds(self, count=100, **build_proto_fields):
     builds = []
-    for _ in xrange(count):
-      builds.append(mkBuild(**kwargs))
+    build_ids = model.create_build_ids(utils.utcnow(), count)
+    for build_id in build_ids:
+      builds.append(test_util.build(id=build_id, **build_proto_fields))
       self.now += datetime.timedelta(seconds=1)
     ndb.put_multi(builds)
     return builds
@@ -131,123 +132,107 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   #################################### GET #####################################
 
   def test_get(self):
-    self.test_build.put()
-    build = service.get_async(self.test_build.key.id()).get_result()
-    self.assertEqual(build, self.test_build)
+    test_util.build(id=1).put()
+    build = service.get_async(1).get_result()
+    self.assertEqual(build, build)
 
   def test_get_nonexistent_build(self):
     self.assertIsNone(service.get_async(42).get_result())
 
   def test_get_with_auth_error(self):
     self.mock_cannot(user.Action.VIEW_BUILD)
-    self.test_build.put()
+    test_util.build(id=1).put()
     with self.assertRaises(auth.AuthorizationError):
-      service.get_async(self.test_build.key.id()).get_result()
+      service.get_async(1).get_result()
 
   ################################### CANCEL ###################################
 
-  def test_cancel(self):
-    self.test_build.put()
-    build = service.cancel(self.test_build.key.id(), human_reason='nope')
-    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(build.status_changed_time, utils.utcnow())
-    self.assertEqual(build.complete_time, utils.utcnow())
-    self.assertEqual(build.result, model.BuildResult.CANCELED)
+  @mock.patch('swarming.cancel_task_async', autospec=True)
+  def test_cancel(self, cancel_task_async):
+    test_util.build(id=1).put()
+    build = service.cancel(1, human_reason='nope')
+    self.assertEqual(build.proto.status, common_pb2.CANCELED)
+    self.assertEqual(build.proto.end_time.ToDatetime(), utils.utcnow())
     self.assertEqual(
-        build.cancelation_reason, model.CancelationReason.CANCELED_EXPLICITLY
-    )
-    self.assertEqual(
-        build.cancel_reason_v2,
+        build.proto.cancel_reason,
         build_pb2.CancelReason(
             message='nope',
             canceled_by=self.current_identity.to_bytes(),
         ),
     )
+    cancel_task_async.assert_called_with('swarming.example.com', 'deadbeef')
+    self.assertEqual(build.status_changed_time, utils.utcnow())
 
   def test_cancel_is_idempotent(self):
-    self.test_build.put()
-    service.cancel(self.test_build.key.id())
-    service.cancel(self.test_build.key.id())
+    build = test_util.build(id=1)
+    build.put()
+    service.cancel(1)
+    service.cancel(1)
 
   def test_cancel_started_build(self):
-    self.lease()
-    self.start()
-    service.cancel(self.test_build.key.id())
+    self.new_started_build(id=1).put()
+    service.cancel(1)
 
   def test_cancel_nonexistent_build(self):
     with self.assertRaises(errors.BuildNotFoundError):
       service.cancel(1)
 
   def test_cancel_with_auth_error(self):
-    self.test_build.put()
+    self.new_started_build(id=1)
     self.mock_cannot(user.Action.CANCEL_BUILD)
     with self.assertRaises(auth.AuthorizationError):
-      service.cancel(self.test_build.key.id())
+      service.cancel(1)
 
   def test_cancel_completed_build(self):
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.SUCCESS
-    self.test_build.complete_time = utils.utcnow()
-    self.test_build.put()
+    build = test_util.build(id=1, status=common_pb2.SUCCESS)
+    build.put()
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.cancel(self.test_build.key.id())
-
-  @mock.patch('swarming.cancel_task_transactionally_async', autospec=True)
-  def test_cancel_swarmbucket_build(self, cancel_task_async):
-    cancel_task_async.return_value = future(None)
-    self.test_build.swarming_hostname = 'chromium-swarm.appspot.com'
-    self.test_build.swarming_task_id = 'deadbeef'
-    self.test_build.put()
-    service.cancel(self.test_build.key.id())
-    cancel_task_async.assert_called_with(
-        'chromium-swarm.appspot.com', 'deadbeef'
-    )
+      service.cancel(1)
 
   def test_cancel_result_details(self):
-    self.test_build.put()
+    test_util.build(id=1).put()
     result_details = {'message': 'bye bye build'}
-    build = service.cancel(
-        self.test_build.key.id(), result_details=result_details
-    )
+    build = service.cancel(1, result_details=result_details)
     self.assertEqual(build.result_details, result_details)
 
   def test_peek(self):
-    self.test_build.put()
-    builds, _ = service.peek(bucket_ids=[self.test_build.bucket_id])
-    self.assertEqual(builds, [self.test_build])
+    build = test_util.build()
+    build.put()
+    builds, _ = service.peek(bucket_ids=[build.bucket_id])
+    self.assertEqual(builds, [build])
 
   def test_peek_multi(self):
-    self.test_build.key = ndb.Key(model.Build, 10)
-    self.test_build.put()
-    # We test that peek returns builds in decreasing order of the build key. The
-    # build key is derived from the inverted current time, so later builds get
-    # smaller ids. Only exception: if the time is the same, randomness decides
-    # the order. So artificially create an id here to avoid flakiness.
-    build2 = mkBuild(id=self.test_build.key.id() - 1,)
-    build2.put()
-    builds, _ = service.peek(
-        bucket_ids=[self.test_build.bucket_id, 'chromium/ci']
+    build1 = test_util.build(
+        id=1,
+        builder=dict(project='chromium', bucket='ci'),
     )
-    self.assertEqual(builds, [self.test_build, build2])
+    build2 = test_util.build(
+        id=2,
+        builder=dict(project='chromium', bucket='ci'),
+    )
+    assert build1.bucket_id == build2.bucket_id
+    ndb.put_multi([build1, build2])
+    builds, _ = service.peek(bucket_ids=['chromium/ci'])
+    self.assertEqual(builds, [build2, build1])
 
   def test_peek_with_paging(self):
-    self.put_many_builds()
+    self.put_many_builds(builder=dict(project='chromium', bucket='ci'))
     first_page, next_cursor = service.peek(
-        bucket_ids=[self.test_build.bucket_id], max_builds=10
+        bucket_ids=['chromium/ci'], max_builds=10
     )
     self.assertTrue(first_page)
     self.assertTrue(next_cursor)
 
     second_page, _ = service.peek(
-        bucket_ids=[self.test_build.bucket_id], start_cursor=next_cursor
+        bucket_ids=['chromium/ci'], start_cursor=next_cursor
     )
 
     self.assertTrue(all(b not in second_page for b in first_page))
 
   def test_peek_with_bad_cursor(self):
-    self.put_many_builds()
+    self.put_many_builds(builder=dict(project='chromium', bucket='ci'))
     with self.assertRaises(errors.InvalidInputError):
-      service.peek(bucket_ids=[self.test_build.bucket_id], start_cursor='abc')
+      service.peek(bucket_ids=['chromium/ci'], start_cursor='abc')
 
   def test_peek_without_buckets(self):
     with self.assertRaises(errors.InvalidInputError):
@@ -255,101 +240,90 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_peek_with_auth_error(self):
     self.mock_cannot(user.Action.SEARCH_BUILDS)
-    self.test_build.put()
+    build = test_util.build(builder=dict(project='chromium', bucket='ci'))
+    build.put()
     with self.assertRaises(auth.AuthorizationError):
-      service.peek(bucket_ids=[self.test_build.bucket_id])
+      service.peek(bucket_ids=['chromium/ci'])
 
   def test_peek_does_not_return_leased_builds(self):
-    self.test_build.put()
-    self.lease()
-    builds, _ = service.peek([self.test_build.bucket_id])
+    self.new_leased_build(builder=dict(project='chromium', bucket='ci'))
+    builds, _ = service.peek(['chromium/ci'])
     self.assertFalse(builds)
 
   #################################### LEASE ###################################
 
-  def lease(self, lease_expiration_date=None):
-    if not (self.test_build.key and self.test_build.key.get()):
-      self.test_build.put()
-    success, self.test_build = service.lease(
-        self.test_build.key.id(),
+  def lease(self, build_id, lease_expiration_date=None, expect_success=True):
+    success, build = service.lease(
+        build_id,
         lease_expiration_date=lease_expiration_date,
     )
-    return success
+    self.assertEqual(success, expect_success)
+    return build
+
+  def new_leased_build(self, **build_proto_fields):
+    build = test_util.build(**build_proto_fields)
+    build.put()
+    return self.lease(build.key.id())
 
   def test_lease(self):
     expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
-    self.assertTrue(self.lease(lease_expiration_date=expiration_date))
-    self.assertTrue(self.test_build.is_leased)
-    self.assertGreater(self.test_build.lease_expiration_date, utils.utcnow())
-    self.assertEqual(self.test_build.leasee, self.current_identity)
+    test_util.build(id=1).put()
+    build = self.lease(1, lease_expiration_date=expiration_date)
+    self.assertTrue(build.is_leased)
+    self.assertGreater(build.lease_expiration_date, utils.utcnow())
+    self.assertEqual(build.leasee, self.current_identity)
 
   def test_lease_build_with_auth_error(self):
     self.mock_cannot(user.Action.LEASE_BUILD)
-    build = self.test_build
-    build.put()
+    test_util.build(id=1).put()
     with self.assertRaises(auth.AuthorizationError):
-      self.lease()
+      self.lease(1)
 
   def test_cannot_lease_a_leased_build(self):
-    build = self.test_build
-    build.put()
-    self.assertTrue(self.lease())
-    self.assertFalse(self.lease())
+    self.new_leased_build(id=1)
+    self.lease(1, expect_success=False)
 
   def test_cannot_lease_a_nonexistent_build(self):
     with self.assertRaises(errors.BuildNotFoundError):
       service.lease(build_id=42)
 
-  def test_leasing_regenerates_lease_key(self):
-    orig_lease_key = 42
-    self.lease()
-    self.assertNotEqual(self.test_build.lease_key, orig_lease_key)
-
   def test_cannot_lease_completed_build(self):
-    build = self.test_build
-    build.status = model.BuildStatus.COMPLETED
-    build.result = model.BuildResult.SUCCESS
-    build.complete_time = utils.utcnow()
+    build = test_util.build(id=1, status=common_pb2.SUCCESS)
     build.put()
-    self.assertFalse(self.lease())
+    self.lease(1, expect_success=False)
 
   ################################### UNELASE ##################################
 
   def test_reset(self):
-    self.lease()
-    build = service.reset(self.test_build.key.id())
-    self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
+    build = self.new_started_build(id=1)
+    build = service.reset(1)
+    self.assertEqual(build.proto.status, common_pb2.SCHEDULED)
     self.assertEqual(build.status_changed_time, utils.utcnow())
     self.assertIsNone(build.lease_key)
     self.assertIsNone(build.lease_expiration_date)
     self.assertIsNone(build.leasee)
     self.assertIsNone(build.canary)
-    self.assertTrue(self.lease())
+    self.lease(1)
 
   def test_reset_is_idempotent(self):
-    self.lease()
-    build_id = self.test_build.key.id()
-    service.reset(build_id)
-    service.reset(build_id)
+    self.new_leased_build(id=1)
+    service.reset(1)
+    service.reset(1)
 
   def test_reset_completed_build(self):
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.SUCCESS
-    self.test_build.complete_time = utils.utcnow()
-    self.test_build.put()
-
+    test_util.build(id=1, status=common_pb2.SUCCESS).put()
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.reset(self.test_build.key.id())
+      service.reset(1)
 
   def test_cannot_reset_nonexistent_build(self):
     with self.assertRaises(errors.BuildNotFoundError):
       service.reset(123)
 
   def test_reset_with_auth_error(self):
-    self.lease()
+    self.new_leased_build(id=1)
     self.mock_cannot(user.Action.RESET_BUILD)
     with self.assertRaises(auth.AuthorizationError):
-      service.reset(self.test_build.key.id())
+      service.reset(1)
 
   #################################### START ###################################
 
@@ -365,78 +339,74 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.validate_url(123)
 
-  def start(self, url=None, lease_key=None, canary=False):
-    self.test_build = service.start(
-        self.test_build.key.id(), lease_key or self.test_build.lease_key, url,
-        canary
+  def start(self, build, url=None, lease_key=None, canary=False):
+    return service.start(
+        build.key.id(), lease_key or build.lease_key, url, canary
     )
 
   def test_start(self):
-    self.lease()
-    self.start(url='http://localhost', canary=True)
-    self.assertEqual(self.test_build.status, model.BuildStatus.STARTED)
-    self.assertEqual(self.test_build.url, 'http://localhost')
-    self.assertEqual(self.test_build.start_time, self.now)
-    self.assertTrue(self.test_build.canary)
+    build = self.new_leased_build()
+    build = self.start(build, url='http://localhost', canary=True)
+    self.assertEqual(build.proto.status, common_pb2.STARTED)
+    self.assertEqual(build.url, 'http://localhost')
+    self.assertEqual(build.proto.start_time.ToDatetime(), self.now)
+    self.assertTrue(build.canary)
 
   def test_start_started_build(self):
-    self.lease()
-    build_id = self.test_build.key.id()
-    lease_key = self.test_build.lease_key
+    build = self.new_leased_build(id=1)
+    lease_key = build.lease_key
     url = 'http://localhost/'
 
-    service.start(build_id, lease_key, url, False)
-    service.start(build_id, lease_key, url, False)
-    service.start(build_id, lease_key, url + '1', False)
+    service.start(1, lease_key, url, False)
+    service.start(1, lease_key, url, False)
+    service.start(1, lease_key, url + '1', False)
 
   def test_start_non_leased_build(self):
-    self.test_build.put()
+    test_util.build(id=1).put()
     with self.assertRaises(errors.LeaseExpiredError):
-      service.start(self.test_build.key.id(), 42, None, False)
+      service.start(1, 42, None, False)
 
   def test_start_completed_build(self):
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.SUCCESS
-    self.test_build.complete_time = utils.utcnow()
-    self.test_build.put()
+    test_util.build(id=1, status=common_pb2.SUCCESS).put()
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.start(self.test_build.key.id(), 42, None, False)
+      service.start(1, 42, None, False)
 
   def test_start_without_lease_key(self):
     with self.assertRaises(errors.InvalidInputError):
       service.start(1, None, None, False)
 
   @contextlib.contextmanager
-  def callback_test(self):
-    self.test_build.key = ndb.Key(model.Build, 1)
-    self.test_build.pubsub_callback = model.PubSubCallback(
+  def callback_test(self, build):
+    build.pubsub_callback = model.PubSubCallback(
         topic='projects/example/topics/buildbucket',
         user_data='hello',
         auth_token='secret',
     )
-    self.test_build.put()
+    build.put()
     yield
     notifications.enqueue_tasks_async.assert_called_with(
         'backend-default', [
             {
                 'url':
-                    '/internal/task/buildbucket/notify/1',
+                    '/internal/task/buildbucket/notify/%d' % build.key.id(),
                 'payload':
                     json.dumps({
-                        'id': 1,
+                        'id': build.key.id(),
                         'mode': 'global',
-                    }, sort_keys=True),
+                    },
+                               sort_keys=True),
                 'age_limit_sec':
                     model.BUILD_TIMEOUT.total_seconds(),
             },
             {
                 'url':
-                    '/internal/task/buildbucket/notify/1',
+                    '/internal/task/buildbucket/notify/%d' % build.key.id(),
                 'payload':
                     json.dumps({
-                        'id': 1,
+                        'id': build.key.id(),
                         'mode': 'callback',
-                    }, sort_keys=True),
+                    },
+                               sort_keys=True),
                 'age_limit_sec':
                     model.BUILD_TIMEOUT.total_seconds(),
             },
@@ -444,45 +414,33 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
 
   def test_start_creates_notification_task(self):
-    self.lease()
-    with self.callback_test():
-      self.start()
+    build = self.new_leased_build()
+    with self.callback_test(build):
+      self.start(build)
 
   ################################## HEARTBEAT #################################
 
   def test_heartbeat(self):
-    self.lease()
+    build = self.new_leased_build(id=1)
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     build = service.heartbeat(
-        self.test_build.key.id(),
-        self.test_build.lease_key,
-        lease_expiration_date=new_expiration_date
+        1, build.lease_key, lease_expiration_date=new_expiration_date
     )
     self.assertEqual(build.lease_expiration_date, new_expiration_date)
 
   def test_heartbeat_completed(self):
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.CANCELED
-    self.test_build.cancelation_reason = (
-        model.CancelationReason.CANCELED_EXPLICITLY
-    )
-    self.test_build.complete_time = utils.utcnow()
-    self.test_build.put()
-
+    test_util.build(id=1, status=common_pb2.CANCELED).put()
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.heartbeat(
-          self.test_build.key.id(),
-          0,
-          lease_expiration_date=new_expiration_date
-      )
+      service.heartbeat(1, 0, lease_expiration_date=new_expiration_date)
 
-  def test_heartbeat_timed_out(self):
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.CANCELED
-    self.test_build.cancelation_reason = model.CancelationReason.TIMEOUT
-    self.test_build.complete_time = utils.utcnow()
-    self.test_build.put()
+  def test_heartbeat_resource_exhaustion(self):
+    build = test_util.build(
+        id=1,
+        status=common_pb2.INFRA_FAILURE,
+        infra_failure_reason=dict(resource_exhaustion=True),
+    )
+    build.put()
 
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     exc_regex = (
@@ -490,23 +448,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'because it did not complete for 2 days'
     )
     with self.assertRaisesRegexp(errors.BuildIsCompletedError, exc_regex):
-      service.heartbeat(
-          self.test_build.key.id(),
-          0,
-          lease_expiration_date=new_expiration_date
-      )
+      service.heartbeat(1, 0, lease_expiration_date=new_expiration_date)
 
   def test_heartbeat_batch(self):
-    self.lease()
+    build = self.new_leased_build(id=1)
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     results = service.heartbeat_batch([
         {
-            'build_id': self.test_build.key.id(),
-            'lease_key': self.test_build.lease_key,
+            'build_id': 1,
+            'lease_key': build.lease_key,
             'lease_expiration_date': new_expiration_date,
         },
         {
-            'build_id': 42,
+            'build_id': 2,
             'lease_key': 42,
             'lease_expiration_date': new_expiration_date,
         },
@@ -514,208 +468,149 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     self.assertEqual(len(results), 2)
 
-    self.test_build = self.test_build.key.get()
-    self.assertEqual(
-        results[0], (self.test_build.key.id(), self.test_build, None)
-    )
+    build = build.key.get()
+    self.assertEqual(results[0], (1, build, None))
 
     self.assertIsNone(results[1][1])
     self.assertTrue(isinstance(results[1][2], errors.BuildNotFoundError))
 
   def test_heartbeat_without_expiration_date(self):
-    self.lease()
+    build = self.new_leased_build(id=1)
     with self.assertRaises(errors.InvalidInputError):
-      service.heartbeat(
-          self.test_build.key.id(),
-          self.test_build.lease_key,
-          lease_expiration_date=None
-      )
+      service.heartbeat(1, build.lease_key, lease_expiration_date=None)
 
   ################################### COMPLETE #################################
 
-  def succeed(self, **kwargs):
-    self.test_build = service.succeed(
-        self.test_build.key.id(), self.test_build.lease_key, **kwargs
-    )
+  def new_started_build(self, **build_proto_fields):
+    build = self.new_leased_build(**build_proto_fields)
+    build = self.start(build)
+    return build
+
+  def succeed(self, build, **kwargs):
+    return service.succeed(build.key.id(), build.lease_key, **kwargs)
 
   def test_succeed(self):
-    self.lease()
-    self.start()
-    self.succeed(result_details={'properties': {'foo': 'bar',}})
-    self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(self.test_build.status_changed_time, utils.utcnow())
-    self.assertEqual(self.test_build.result, model.BuildResult.SUCCESS)
-    self.assertIsNotNone(self.test_build.complete_time)
+    build = self.new_started_build()
+    build = self.succeed(build, result_details={'properties': {'foo': 'bar'}})
+    self.assertEqual(build.proto.status, common_pb2.SUCCESS)
+    self.assertEqual(build.status_changed_time, utils.utcnow())
+    self.assertTrue(build.proto.HasField('end_time'))
 
-    out_props = model.BuildOutputProperties.key_for(self.test_build.key).get()
+    out_props = model.BuildOutputProperties.key_for(build.key).get()
     self.assertEqual(
         test_util.msg_to_dict(out_props.properties), {'foo': 'bar'}
     )
 
-  def test_succeed_timed_out_build(self):
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.CANCELED
-    self.test_build.cancelation_reason = model.CancelationReason.TIMEOUT
-    self.test_build.complete_time = utils.utcnow()
-    self.test_build.put()
+  def test_succeed_failed(self):
+    build = test_util.build(id=1, status=common_pb2.FAILURE)
+    build.put()
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.succeed(self.test_build.key.id(), 42)
+      service.succeed(1, 42)
 
   def test_succeed_is_idempotent(self):
-    self.lease()
-    self.start()
-    build_id = self.test_build.key.id()
-    lease_key = self.test_build.lease_key
-    service.succeed(build_id, lease_key)
-    service.succeed(build_id, lease_key)
+    build = self.new_started_build(id=1)
+    service.succeed(1, build.lease_key)
+    service.succeed(1, build.lease_key)
 
   def test_succeed_with_new_tags(self):
-    self.test_build.tags = ['a:1']
-    self.test_build.put()
-    self.lease()
-    self.start()
-    self.succeed(new_tags=['b:2'])
-    self.assertEqual(self.test_build.tags, ['a:1', 'b:2'])
+    build = self.new_started_build(id=1, tags=[dict(key='a', value='1')])
+    build = self.succeed(build, new_tags=['b:2'])
+    self.assertIn('a:1', build.tags)
+    self.assertIn('b:2', build.tags)
 
   def test_fail(self):
-    self.lease()
-    self.start()
-    self.test_build = service.fail(
-        self.test_build.key.id(), self.test_build.lease_key
-    )
-    self.assertEqual(self.test_build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(self.test_build.status_changed_time, utils.utcnow())
-    self.assertEqual(self.test_build.result, model.BuildResult.FAILURE)
-    self.assertIsNotNone(self.test_build.complete_time)
+    build = self.new_started_build(id=1)
+    build = service.fail(1, build.lease_key)
+    self.assertEqual(build.proto.status, common_pb2.FAILURE)
+    self.assertEqual(build.status_changed_time, utils.utcnow())
 
   def test_fail_with_details(self):
-    self.lease()
-    self.start()
+    build = self.new_started_build(id=1)
     result_details = {'transient_failure': True}
-    self.test_build = service.fail(
-        self.test_build.key.id(),
-        self.test_build.lease_key,
-        result_details=result_details
-    )
-    self.assertEqual(self.test_build.result_details, result_details)
+    build = service.fail(1, build.lease_key, result_details=result_details)
+    self.assertEqual(build.result_details, result_details)
 
   def test_complete_with_url(self):
-    self.lease()
-    self.start()
+    build = self.new_started_build(id=1)
     url = 'http://localhost/1'
-    self.succeed(url=url)
-    self.assertEqual(self.test_build.url, url)
+    build = self.succeed(build, url=url)
+    self.assertEqual(build.url, url)
 
   def test_complete_not_started_build(self):
-    self.lease()
-    self.succeed()
+    build = self.new_leased_build()
+    self.succeed(build)
 
   def test_completion_creates_notification_task(self):
-    self.lease()
-    self.start()
-    with self.callback_test():
-      self.succeed()
+    build = self.new_started_build()
+    with self.callback_test(build):
+      self.succeed(build)
 
   ########################## RESET EXPIRED BUILDS ##############################
 
   def test_delete_many_scheduled_builds(self):
-    self.test_build.put()
-    completed_build = mkBuild(
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
-        complete_time=utils.utcnow() + datetime.timedelta(seconds=1),
-    )
+    scheduled_build = test_util.build(id=1, status=common_pb2.SCHEDULED)
+    completed_build = test_util.build(id=2, status=common_pb2.SUCCESS)
+    scheduled_build.put()
     completed_build.put()
-    self.assertIsNotNone(self.test_build.key.get())
+    self.assertIsNotNone(scheduled_build.key.get())
     self.assertIsNotNone(completed_build.key.get())
     service._task_delete_many_builds(
-        self.test_build.bucket_id, model.BuildStatus.SCHEDULED
+        scheduled_build.bucket_id, model.BuildStatus.SCHEDULED
     )
-    self.assertIsNone(self.test_build.key.get())
+    self.assertIsNone(scheduled_build.key.get())
     self.assertIsNotNone(completed_build.key.get())
 
   def test_delete_many_started_builds(self):
-    self.test_build.put()
-
-    started_build = mkBuild(
-        status=model.BuildStatus.STARTED,
-        start_time=utils.utcnow(),
-    )
-    started_build.put()
-
-    completed_build = mkBuild(
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
-        create_time=utils.utcnow(),
-        complete_time=utils.utcnow(),
-    )
-    completed_build.put()
+    scheduled_build = test_util.build(id=1, status=common_pb2.SCHEDULED)
+    started_build = test_util.build(id=2, status=common_pb2.STARTED)
+    completed_build = test_util.build(id=3, status=common_pb2.SUCCESS)
+    ndb.put_multi([scheduled_build, started_build, completed_build])
 
     service._task_delete_many_builds(
-        self.test_build.bucket_id, model.BuildStatus.STARTED
+        scheduled_build.bucket_id, model.BuildStatus.STARTED
     )
-    self.assertIsNotNone(self.test_build.key.get())
+    self.assertIsNotNone(scheduled_build.key.get())
     self.assertIsNone(started_build.key.get())
     self.assertIsNotNone(completed_build.key.get())
 
   def test_delete_many_builds_with_tags(self):
-    self.test_build.tags = ['tag:1']
-    self.test_build.put()
+    build = test_util.build(tags=[dict(key='tag', value='1')])
+    build.put()
 
     service._task_delete_many_builds(
-        self.test_build.bucket_id, model.BuildStatus.SCHEDULED, tags=['tag:0']
+        build.bucket_id, model.BuildStatus.SCHEDULED, tags=['tag:0']
     )
-    self.assertIsNotNone(self.test_build.key.get())
+    self.assertIsNotNone(build.key.get())
 
     service._task_delete_many_builds(
-        self.test_build.bucket_id, model.BuildStatus.SCHEDULED, tags=['tag:1']
+        build.bucket_id, model.BuildStatus.SCHEDULED, tags=['tag:1']
     )
-    self.assertIsNone(self.test_build.key.get())
+    self.assertIsNone(build.key.get())
 
   def test_delete_many_builds_created_by(self):
-    self.test_build.created_by = auth.Identity('user', 'nodir@google.com')
-    self.test_build.put()
-    other_build = mkBuild()
-    other_build.put()
+    build1 = test_util.build(id=1, created_by='user:1@example.com')
+    build2 = test_util.build(id=2, created_by='user:2@example.com')
+    ndb.put_multi([build1, build2])
 
     service._task_delete_many_builds(
-        self.test_build.bucket_id,
+        build1.bucket_id,
         model.BuildStatus.SCHEDULED,
-        created_by='nodir@google.com'
+        created_by=build2.created_by,
     )
-    self.assertIsNone(self.test_build.key.get())
-    self.assertIsNotNone(other_build.key.get())
+    self.assertIsNone(build2.key.get())
+    self.assertIsNotNone(build1.key.get())
 
   def test_delete_many_builds_auth_error(self):
     self.mock_cannot(user.Action.DELETE_SCHEDULED_BUILDS)
     with self.assertRaises(auth.AuthorizationError):
-      service.delete_many_builds(
-          self.test_build.bucket_id, model.BuildStatus.SCHEDULED
-      )
+      service.delete_many_builds('chromium/ci', model.BuildStatus.SCHEDULED)
 
   def test_delete_many_builds_schedule_task(self):
-    service.delete_many_builds(
-        self.test_build.bucket_id, model.BuildStatus.SCHEDULED
-    )
+    service.delete_many_builds('chromium/ci', model.BuildStatus.SCHEDULED)
 
   def test_delete_many_completed_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.delete_many_builds(
-          self.test_build.bucket_id, model.BuildStatus.COMPLETED
-      )
-
-  @mock.patch('swarming.cancel_task_transactionally_async', autospec=True)
-  def test_delete_many_swarmbucket_builds(self, cancel_task_async):
-    cancel_task_async.return_value = future(None)
-    self.test_build.swarming_hostname = 'swarming.example.com'
-    self.test_build.swarming_task_id = 'deadbeef'
-    self.test_build.put()
-
-    service._task_delete_many_builds(
-        self.test_build.bucket_id, model.BuildStatus.SCHEDULED
-    )
-
-    cancel_task_async.assert_called_with('swarming.example.com', 'deadbeef')
+      service.delete_many_builds('chromium/ci', model.BuildStatus.COMPLETED)
 
   ################################ PAUSE BUCKET ################################
 
@@ -731,8 +626,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         test_util.parse_bucket_cfg('name: "master.bar"'),
     )
 
-    self.put_many_builds(5, bucket_id='chromium/master.foo')
-    self.put_many_builds(5, bucket_id='chromium/master.bar')
+    self.put_many_builds(
+        5, builder=dict(project='chromium', bucket='master.foo')
+    )
+    self.put_many_builds(
+        5, builder=dict(project='chromium', bucket='master.bar')
+    )
 
     service.pause('chromium/master.foo', True)
     builds, _ = service.peek(['chromium/master.foo', 'chromium/master.bar'])
@@ -745,30 +644,31 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'a' * 40,
         test_util.parse_bucket_cfg('name: "master.foo"'),
     )
-    self.put_many_builds(5, bucket_id='chromium/master.foo')
+    self.put_many_builds(
+        5, builder=dict(project='chromium', bucket='master.foo')
+    )
 
     service.pause('chromium/master.foo', True)
     builds, _ = service.peek(['chromium/master.foo'])
     self.assertEqual(len(builds), 0)
 
   def test_pause_then_unpause(self):
-    bid = 'chromium/master.foo'
-    self.test_build.bucket_id = bid
-    self.test_build.put()
+    build = test_util.build(builder=dict(project='chromium', bucket='ci'))
+    build.put()
 
     config.put_bucket(
         'chromium',
         'a' * 40,
-        test_util.parse_bucket_cfg('name: "master.foo"'),
+        test_util.parse_bucket_cfg('name: "ci"'),
     )
 
-    service.pause(bid, True)
-    service.pause(bid, True)  # Again, to cover equality case.
-    builds, _ = service.peek([bid])
+    service.pause(build.bucket_id, True)
+    service.pause(build.bucket_id, True)  # Again, to cover equality case.
+    builds, _ = service.peek([build.bucket_id])
     self.assertEqual(len(builds), 0)
 
-    service.pause(bid, False)
-    builds, _ = service.peek([bid])
+    service.pause(build.bucket_id, False)
+    builds, _ = service.peek([build.bucket_id])
     self.assertEqual(len(builds), 1)
 
   def test_pause_bucket_auth_error(self):
@@ -795,20 +695,3 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     service.unregister_builders()
     builders = model.Builder.query().fetch()
     self.assertFalse(builders)
-
-
-def mkBuild(**kwargs):
-  args = dict(
-      id=model.create_build_ids(utils.utcnow(), 1)[0],
-      proto=build_pb2.Build(),
-      bucket_id='chromium/try',
-      create_time=utils.utcnow(),
-      created_by=auth.Identity('user', 'john@example.com'),
-      canary_preference=model.CanaryPreference.PROD,
-      parameters={
-          model.BUILDER_PARAMETER: 'linux',
-      },
-      canary=False,
-  )
-  args.update(kwargs)
-  return model.Build(**args)

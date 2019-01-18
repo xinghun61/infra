@@ -14,6 +14,7 @@ from google.protobuf import struct_pb2
 import webtest
 
 from components import pubsub
+from test import test_util
 from testing_utils import testing
 
 from test import test_util
@@ -57,16 +58,11 @@ class NotificationsTest(testing.AppengineTestCase):
     self.patch('components.pubsub.publish', autospec=True)
 
   def test_pubsub_callback(self):
-    build = model.Build(
-        id=1,
-        bucket_id='chromium/try',
-        create_time=datetime.datetime(2017, 1, 1),
-        pubsub_callback=model.PubSubCallback(
-            topic='projects/example/topics/buildbucket',
-            user_data='hello',
-            auth_token='secret',
-        ),
-        input_properties=struct_pb2.Struct(),
+    build = test_util.build(id=1)
+    build.pubsub_callback = model.PubSubCallback(
+        topic='projects/example/topics/buildbucket',
+        user_data='hello',
+        auth_token='secret',
     )
 
     @ndb.transactional
@@ -135,12 +131,7 @@ class NotificationsTest(testing.AppengineTestCase):
     )
 
   def test_no_pubsub_callback(self):
-    build = model.Build(
-        id=1,
-        bucket_id='chromium/try',
-        create_time=datetime.datetime(2017, 1, 1),
-        input_properties=struct_pb2.Struct(),
-    )
+    build = test_util.build(id=1)
 
     @ndb.transactional
     def txn():

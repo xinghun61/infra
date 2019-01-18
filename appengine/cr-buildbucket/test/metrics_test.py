@@ -11,6 +11,7 @@ import gae_ts_mon
 from test import test_util
 from test.test_util import future
 from testing_utils import testing
+from proto import common_pb2
 import config
 import metrics
 import model
@@ -24,50 +25,26 @@ class MetricsTest(testing.AppengineTestCase):
     gae_ts_mon.reset_for_unittest(disable=True)
 
   def test_set_build_count_metric(self):
-    ndb.put_multi([
-        model.Build(
-            bucket_id='chromium/try',
-            status=model.BuildStatus.SCHEDULED,
-            create_time=datetime.datetime(2015, 1, 1),
-            tags=['builder:release'],
-            experimental=True,
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            status=model.BuildStatus.SCHEDULED,
-            tags=['builder:release'],
-            create_time=datetime.datetime(2015, 1, 1),
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            status=model.BuildStatus.SCHEDULED,
-            tags=['builder:release'],
-            create_time=datetime.datetime(2015, 1, 1),
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            status=model.BuildStatus.SCHEDULED,
-            tags=['builder:debug'],
-            create_time=datetime.datetime(2015, 1, 1),
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/ci',
-            status=model.BuildStatus.SCHEDULED,
-            create_time=datetime.datetime(2015, 1, 1),
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            status=model.BuildStatus.STARTED,
-            create_time=datetime.datetime(2015, 1, 1),
-            start_time=datetime.datetime(2015, 1, 1),
-            swarming_hostname='swarming.example.com',
-        ),
-    ])
+
+    def mkbuild(
+        bucket='try',
+        builder='release',
+        status=common_pb2.SCHEDULED,
+        experimental=False
+    ):
+      test_util.build(
+          builder=dict(project='chromium', bucket=bucket, builder=builder),
+          status=status,
+          input=dict(experimental=experimental),
+      ).put()
+
+    mkbuild()
+    mkbuild()
+    mkbuild(builder='debug')
+    mkbuild(bucket='ci')
+    mkbuild(status=common_pb2.STARTED)
+    mkbuild(experimental=True)
+
     metrics.set_build_count_metric_async(
         'chromium/try', 'luci.chromium.try', 'release',
         model.BuildStatus.SCHEDULED, False
@@ -86,69 +63,33 @@ class MetricsTest(testing.AppengineTestCase):
   def test_set_build_lease_latency(self, utcnow):
     utcnow.return_value = datetime.datetime(2015, 1, 4)
 
-    ndb.put_multi([
-        model.Build(
-            bucket_id='chromium/try',
-            tags=['builder:release'],
-            status=model.BuildStatus.SCHEDULED,
-            never_leased=True,
-            create_time=datetime.datetime(2014, 1, 1),
-            experimental=True,  # should be ignored by both metrics
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            tags=['builder:release'],
-            status=model.BuildStatus.SCHEDULED,
-            never_leased=True,
-            create_time=datetime.datetime(2015, 1, 1),
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            tags=['builder:release'],
-            status=model.BuildStatus.SCHEDULED,
-            never_leased=False,
-            create_time=datetime.datetime(2014, 12, 31),
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            tags=['builder:release'],
-            status=model.BuildStatus.SCHEDULED,
-            never_leased=True,
-            create_time=datetime.datetime(2015, 1, 3),
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            tags=['builder:release'],
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.CANCELED,
-            cancelation_reason=model.CancelationReason.TIMEOUT,
-            never_leased=True,
-            create_time=datetime.datetime(2015, 1, 3),
-            complete_time=datetime.datetime(2015, 1, 4),
-            canary=False,
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/try',
-            tags=['builder:release'],
-            status=model.BuildStatus.SCHEDULED,
-            create_time=datetime.datetime(2014, 1, 3),
-            # never_leased is None, so this should be ignored by both metrics.
-            swarming_hostname='swarming.example.com',
-        ),
-        model.Build(
-            bucket_id='chromium/ci',
-            tags=['builder:release'],
-            status=model.BuildStatus.SCHEDULED,
-            never_leased=True,
-            create_time=datetime.datetime(2015, 1, 3),
-            swarming_hostname='swarming.example.com',
-        ),
-    ])
+    def mkbuild(
+        create_time,
+        never_leased,
+        bucket='try',
+        status=common_pb2.SCHEDULED,
+        experimental=False
+    ):
+      build = test_util.build(
+          builder=dict(project='chromium', bucket=bucket, builder='release'),
+          status=status,
+          create_time=test_util.dt2ts(create_time),
+          input=dict(experimental=experimental),
+      )
+      build.never_leased = never_leased
+      build.put()
+
+    mkbuild(datetime.datetime(2014, 12, 31), False)  # oldest
+    mkbuild(datetime.datetime(2015, 1, 1), True)  # oldest never leased
+    mkbuild(datetime.datetime(2015, 1, 3), True)
+    mkbuild(datetime.datetime(2014, 1, 1), True, experimental=True)
+    mkbuild(
+        datetime.datetime(2015, 1, 3), True, status=common_pb2.INFRA_FAILURE
+    )
+    # never_leased is None, so this should be ignored by both metrics.
+    mkbuild(datetime.datetime(2014, 1, 3), None)
+    mkbuild(datetime.datetime(2015, 1, 3), True, bucket='ci')
+
     metrics.set_build_latency(
         'chromium/try', 'luci.chromium.try', 'release', True
     ).get_result()
@@ -257,24 +198,18 @@ class MetricsTest(testing.AppengineTestCase):
     )
 
   def test_fields_for(self):
-    build = model.Build(
-        bucket_id='chromium/try',
-        parameters={
-            model.BUILDER_PARAMETER: 'release',
-        },
+    build = test_util.build(
+        builder=dict(project='chromium', bucket='try', builder='linux'),
+        status=common_pb2.FAILURE,
         tags=[
-            'user_agent:cq',
-            'something:else',
+            dict(key='user_agent', value='cq'),
+            dict(key='something', value='else'),
         ],
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.FAILURE,
-        failure_reason=model.FailureReason.BUILD_FAILURE,
-        canary=True,
-        swarming_hostname='swarming.example.com',
+        infra=dict(buildbucket=dict(canary=True)),
     )
     expected = {
         'bucket': 'luci.chromium.try',
-        'builder': 'release',
+        'builder': 'linux',
         'canary': True,
         'user_agent': 'cq',
         'status': 'COMPLETED',

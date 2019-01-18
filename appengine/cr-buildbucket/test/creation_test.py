@@ -64,21 +64,6 @@ class CreationTest(testing.AppengineTestCase):
     self.patch('swarming.create_task_async', return_value=future(None))
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
-    self.test_build = model.Build(
-        id=model.create_build_ids(self.now, 1)[0],
-        bucket_id='chromium/try',
-        create_time=self.now,
-        parameters={
-            model.BUILDER_PARAMETER:
-                'linux',
-            'changes': [{
-                'author': 'nodir@google.com',
-                'message': 'buildbucket: initial commit'
-            }],
-        },
-        canary=False,
-    )
-
     self.patch(
         'google.appengine.api.app_identity.get_default_version_hostname',
         autospec=True,

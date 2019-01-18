@@ -3,11 +3,11 @@
 # found in the LICENSE file.
 
 import datetime
-import mock
 
 from google.appengine.ext import ndb
 
 from testing_utils import testing
+from test import test_util
 
 from proto import build_pb2
 from proto import common_pb2
@@ -18,14 +18,14 @@ import v2
 class BuildTest(testing.AppengineTestCase):
 
   def test_regenerate_lease_key(self):
-    build = model.Build(bucket_id='chromium/try')
+    build = test_util.build()
     build.put()
-    orig_lease_key = 0
     build.regenerate_lease_key()
-    self.assertNotEqual(build.lease_key, orig_lease_key)
+    self.assertNotEqual(build.lease_key, 0)
 
   def test_put_with_bad_tags(self):
-    build = model.Build(bucket_id='chromium/try', tags=['x'])
+    build = test_util.build()
+    build.tags.append('x')
     with self.assertRaises(AssertionError):
       build.put()
 

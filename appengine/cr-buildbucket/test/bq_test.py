@@ -46,9 +46,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
   def test_enqueue_bq_export_async(self, enqueue_pull_task_async):
     enqueue_pull_task_async.return_value = test_util.future(None)
 
-    build = model.Build(
-        id=1, bucket_id='chromium/try', status=model.BuildStatus.COMPLETED
-    )
+    build = test_util.build(id=1, status=common_pb2.SUCCESS)
 
     ndb.transactional(  # pylint: disable=no-value-for-parameter
         lambda: bq.enqueue_bq_export_async(build).get_result())()
@@ -59,25 +57,10 @@ class BigQueryExportTest(testing.AppengineTestCase):
 
   def test_cron_export_builds_to_bq(self):
     builds = [
-        mkbuild(
-            id=1,
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.SUCCESS,
-            complete_time=datetime.datetime(2018, 1, 1)
-        ),
-        mkbuild(
-            id=2,
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.FAILURE,
-            failure_reason=model.FailureReason.BUILD_FAILURE,
-            complete_time=datetime.datetime(2018, 1, 1)
-        ),
-        mkbuild(id=3, status=model.BuildStatus.SCHEDULED),
-        mkbuild(
-            id=4,
-            status=model.BuildStatus.STARTED,
-            start_time=datetime.datetime(2018, 1, 1)
-        ),
+        test_util.build(id=1, status=common_pb2.SUCCESS),
+        test_util.build(id=2, status=common_pb2.FAILURE),
+        test_util.build(id=3, status=common_pb2.SCHEDULED),
+        test_util.build(id=4, status=common_pb2.STARTED),
     ]
     ndb.put_multi(builds)
 
@@ -129,12 +112,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
   )
   def test_cron_export_builds_to_bq_exception(self, delete_tasks, build_to_v2):
     builds = [
-        mkbuild(
-            id=i + 1,
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.SUCCESS,
-            complete_time=datetime.datetime(2018, 1, 1)
-        ) for i in xrange(3)
+        test_util.build(id=i + 1, status=common_pb2.SUCCESS) for i in xrange(3)
     ]
     ndb.put_multi(builds)
 
@@ -180,12 +158,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
   )
   def test_cron_export_builds_to_bq_insert_errors(self, delete_tasks):
     builds = [
-        mkbuild(
-            id=i + 1,
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.SUCCESS,
-            complete_time=datetime.datetime(2018, 1, 1)
-        ) for i in xrange(3)
+        test_util.build(id=i + 1, status=common_pb2.SUCCESS) for i in xrange(3)
     ]
     ndb.put_multi(builds)
     tasks = [
@@ -210,16 +183,3 @@ class BigQueryExportTest(testing.AppengineTestCase):
         [t.payload for t in deleted],
         [tasks[0].payload, tasks[2].payload],
     )
-
-
-def mkbuild(**kwargs):
-  args = dict(
-      id=1,
-      bucket_id='chromium/try',
-      parameters={model.BUILDER_PARAMETER: 'linux-rel'},
-      created_by=auth.Identity('user', 'john@example.com'),
-      create_time=datetime.datetime(2018, 1, 1),
-  )
-  args['parameters'].update(kwargs.pop('parameters', {}))
-  args.update(kwargs)
-  return model.Build(**args)

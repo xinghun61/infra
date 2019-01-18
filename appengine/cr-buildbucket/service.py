@@ -533,7 +533,7 @@ def cancel(build_id, human_reason=None, result_details=None):
         events.on_build_completing_async(build),
         _put_output_properties_async(build.key, result_details),
     ]
-    if build.swarming_hostname and build.swarming_task_id is not None:
+    if build.swarming_hostname and build.swarming_task_id:  # pragma: no branch
       futs.append(
           swarming.cancel_task_transactionally_async(
               build.swarming_hostname, build.swarming_task_id
@@ -582,7 +582,7 @@ def _task_delete_many_builds(bucket_id, status, tags=None, created_by=None):
     if not build or build.status != status:  # pragma: no cover
       raise ndb.Return(False)
     futs = [key.delete_async()]
-    if build.swarming_hostname and build.swarming_task_id:
+    if build.swarming_hostname and build.swarming_task_id:  # pragma: no branch
       futs.append(
           swarming.cancel_task_transactionally_async(
               build.swarming_hostname, build.swarming_task_id

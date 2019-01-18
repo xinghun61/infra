@@ -8,8 +8,6 @@ import json
 from components import utils
 utils.fix_protobuf_package()
 
-from google.protobuf import struct_pb2
-
 from test import test_util
 from testing_utils import testing
 
@@ -25,100 +23,56 @@ class ApiCommonTests(testing.AppengineTestCase):
     self.patch(
         'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1)
     )
-    self.test_build = model.Build(
-        id=1,
-        bucket_id='chromium/try',
-        create_time=datetime.datetime(2017, 1, 1),
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_rel',
-        },
-        input_properties=struct_pb2.Struct(),
-        canary_preference=model.CanaryPreference.AUTO,
-        swarming_hostname='swarming.example.com',
-    )
 
   def test_expired_build_to_message(self):
     yesterday = utils.utcnow() - datetime.timedelta(days=1)
     yesterday_timestamp = utils.datetime_to_timestamp(yesterday)
-    self.test_build.lease_key = 1
-    self.test_build.lease_expiration_date = yesterday
-    msg = api_common.build_to_message(self.test_build)
+    build = test_util.build()
+    build.lease_key = 1
+    build.lease_expiration_date = yesterday
+    msg = api_common.build_to_message(build)
     self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
-  def test_build_to_dict_empty(self):
+  def test_build_to_dict(self):
+    props_json = json.dumps(
+        {model.BUILDER_PARAMETER: 'linux', model.PROPERTIES_PARAMETER: {}},
+        sort_keys=True,
+    )
+    tags = [
+        'build_address:luci.chromium.try/linux/1',
+        'builder:linux',
+        'buildset:1',
+    ]
     expected = {
-        'project':
-            'chromium',
-        'bucket':
-            'luci.chromium.try',
-        'created_ts':
-            '1483228800000000',
-        'id':
-            '1',
-        'parameters_json':
-            json.dumps(
-                {
-                    model.BUILDER_PARAMETER: 'linux_rel',
-                },
-                sort_keys=True,
-            ),
-        'result_details_json':
-            'null',
-        'status':
-            'SCHEDULED',
-        'tags': [],
-        'utcnow_ts':
-            '1483228800000000',
-        'canary_preference':
-            'AUTO',
+        'project': 'chromium',
+        'bucket': 'luci.chromium.try',
+        'created_by': 'anonymous:anonymous',
+        'created_ts': '1483228800000000',
+        'id': '8991715593768927232',
+        'parameters_json': props_json,
+        'result_details_json': json.dumps({'properties': {}}),
+        'status': 'SCHEDULED',
+        'status_changed_ts': '1483228800000000',
+        'tags': tags,
+        'utcnow_ts': '1483228800000000',
+        'canary_preference': 'PROD',
+        'canary': False,
+        'service_account': 'service@example.com',
+        'url': 'https://ci.example.com/8991715593768927232',
     }
-    self.assertEqual(expected, api_common.build_to_dict(self.test_build))
+    self.assertEqual(
+        expected,
+        test_util.ununicode(api_common.build_to_dict(test_util.build()))
+    )
 
   def test_build_to_dict_non_luci(self):
-    self.test_build.bucket_id = 'chromium/master.chromium'
-    self.test_build.swarming_hostname = None
+    build = test_util.build(builder=dict(bucket='master.chromium'))
+    build.proto.infra.swarming.hostname = ''
+    build.swarming_hostname = None
 
-    actual = api_common.build_to_dict(self.test_build)
+    actual = api_common.build_to_dict(build)
     self.assertEqual(actual['project'], 'chromium')
     self.assertEqual(actual['bucket'], 'master.chromium')
-
-  def test_build_to_dict_full(self):
-    self.test_build.start_time = datetime.datetime(2017, 1, 2)
-    self.test_build.complete_time = datetime.datetime(2017, 1, 2)
-    self.test_build.status = model.BuildStatus.COMPLETED
-    self.test_build.result = model.BuildResult.SUCCESS
-    self.test_build.result_details = {'result': 'nice'}
-    self.test_build.service_account = 'robot@example.com'
-    expected = {
-        'project':
-            'chromium',
-        'bucket':
-            'luci.chromium.try',
-        'completed_ts':
-            '1483315200000000',
-        'created_ts':
-            '1483228800000000',
-        'id':
-            '1',
-        'parameters_json':
-            json.dumps({model.BUILDER_PARAMETER: 'linux_rel'}, sort_keys=True),
-        'result':
-            'SUCCESS',
-        'result_details_json':
-            json.dumps({'result': 'nice'}),
-        'started_ts':
-            '1483315200000000',
-        'status':
-            'COMPLETED',
-        'tags': [],
-        'utcnow_ts':
-            '1483228800000000',
-        'canary_preference':
-            'AUTO',
-        'service_account':
-            'robot@example.com',
-    }
-    self.assertEqual(expected, api_common.build_to_dict(self.test_build))
 
   def test_format_luci_bucket(self):
     self.assertEqual(

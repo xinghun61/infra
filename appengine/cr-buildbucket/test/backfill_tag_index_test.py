@@ -4,10 +4,10 @@
 
 import mock
 
+from test import test_util
 from test.test_util import future_exception
 from testing_utils import testing
 import backfill_tag_index
-import model
 import search
 import v2
 
@@ -21,20 +21,19 @@ class BackfillTagIndexTest(testing.AppengineTestCase):
 
   def test_process(self):
     builds = [
-        model.Build(
+        test_util.build(
             id=i,
-            bucket_id='chromium/try',
             tags=[
-                'buildset:%d' % (i % 3),
-                'a:b',
+                dict(key='t', value='%d' % (i % 3)),
+                dict(key='a', value='b'),
             ],
         ) for i in xrange(50, 60)
     ]
 
-    backfill_tag_index._process_builds(builds, 'buildset', 5)
+    backfill_tag_index._process_builds(builds, 't', 5)
 
     backfill_tag_index._enqueue_flush_entries.assert_called_with(
-        'buildset', {
+        't', {
             '0': [
                 ['chromium/try', 51],
                 ['chromium/try', 54],

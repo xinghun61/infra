@@ -23,6 +23,7 @@ from testing_utils import testing
 import mock
 import gae_ts_mon
 
+from proto import common_pb2
 from proto import rpc_pb2
 from test import test_util
 from test.test_util import future, future_exception
@@ -41,7 +42,6 @@ import user
 class V1ApiTest(testing.EndpointsTestCase):
   api_service_cls = api.BuildBucketApi
 
-  test_build = None
   test_bucket = None
   future_ts = None
   future_date = None
@@ -58,17 +58,6 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.future_date = utils.utcnow() + datetime.timedelta(days=1)
     # future_ts is str because INT64 values are formatted as strings.
     self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
-    self.test_build = model.Build(
-        id=1,
-        bucket_id='chromium/try',
-        create_time=datetime.datetime(2017, 1, 1),
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_rel',
-        },
-        input_properties=struct_pb2.Struct(),
-        swarming_hostname='swarming.example.com',
-        swarming_task_id='deadbeef',
-    )
 
     config.put_bucket(
         'chromium',
@@ -91,23 +80,10 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.get_async', autospec=True)
   def test_get(self, get_async):
-    self.test_build.lease_expiration_date = self.future_date
-
-    build_id = self.test_build.key.id()
-    get_async.return_value = future(self.test_build)
-
-    resp = self.call_api('get', {'id': build_id}).json_body
-    get_async.assert_called_once_with(build_id)
-    self.assertEqual(resp['build']['id'], str(build_id))
-    self.assertEqual(resp['build']['bucket'], 'luci.chromium.try')
-    self.assertEqual(resp['build']['lease_expiration_ts'], self.future_ts)
-    self.assertEqual(resp['build']['status'], 'SCHEDULED')
-    self.assertEqual(
-        json.loads(resp['build']['parameters_json']),
-        {
-            model.BUILDER_PARAMETER: 'linux_rel',
-        },
-    )
+    get_async.return_value = future(test_util.build(id=1))
+    resp = self.call_api('get', {'id': '1'}).json_body
+    get_async.assert_called_once_with(1)
+    self.assertEqual(resp['build']['id'], '1')
 
   @mock.patch('service.get_async', autospec=True)
   def test_get_auth_error(self, get_async):
@@ -123,8 +99,8 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('creation.add_async', autospec=True)
   def test_put(self, add_async):
-    self.test_build.tags = ['a:b']
-    add_async.return_value = future(self.test_build)
+    build = test_util.build(id=1, tags=[dict(key='a', value='b')])
+    add_async.return_value = future(build)
     props = {'foo': 'bar'}
     parameters_json = json.dumps({
         model.BUILDER_PARAMETER: 'linux',
@@ -162,9 +138,9 @@ class V1ApiTest(testing.EndpointsTestCase):
             pubsub_callback_auth_token='secret',
         )
     )
-    self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
+    self.assertEqual(resp['build']['id'], '1')
     self.assertEqual(resp['build']['bucket'], req['bucket'])
-    self.assertEqual(resp['build']['tags'], req['tags'])
+    self.assertIn('a:b', resp['build']['tags'])
 
   def test_put_with_invalid_request(self):
     req = {
@@ -186,8 +162,9 @@ class V1ApiTest(testing.EndpointsTestCase):
   @mock.patch('creation.add_async', autospec=True)
   def test_put_with_leasing(self, add_async):
     expiration = utils.utcnow() + datetime.timedelta(hours=1)
-    self.test_build.lease_expiration_date = expiration
-    add_async.return_value = future(self.test_build)
+    build = test_util.build(id=1)
+    build.lease_expiration_date = expiration
+    add_async.return_value = future(build)
     req = {
         'bucket': 'luci.chromium.try',
         'lease_expiration_ts': str(utils.datetime_to_timestamp(expiration)),
@@ -216,22 +193,21 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('creation.add_async', autospec=True)
   def test_retry(self, add_async):
-    props = {'foo': 'bar'}
-    build = model.Build(
-        bucket_id='chromium/try',
-        parameters={
-            model.BUILDER_PARAMETER: 'linux',
-            model.PROPERTIES_PARAMETER: props,
-        },
-        initial_tags=['a:b'],
-        retry_of=2,
-        swarming_hostname='swarming.example.com',
+    orig_build = test_util.build(
+        id=1,
+        input=dict(properties=bbutil.dict_to_struct({'foo': 'bar'})),
     )
-    build.put()
-    add_async.return_value = future(build)
+    orig_build.put()
+
+    retried_build = test_util.build(
+        id=2,
+        input=dict(properties=bbutil.dict_to_struct({'foo': 'bar'})),
+    )
+    retried_build.retry_of = 1
+    add_async.return_value = future(retried_build)
 
     req = {
-        'id': build.key.id(),
+        'id': '1',
         'client_operation_id': '42',
         'pubsub_callback': {
             'topic': 'projects/foo/topic/bar',
@@ -244,34 +220,25 @@ class V1ApiTest(testing.EndpointsTestCase):
     add_async.assert_called_once_with(
         creation.BuildRequest(
             schedule_build_request=rpc_pb2.ScheduleBuildRequest(
-                builder=dict(
-                    project='chromium',
-                    bucket='try',
-                    builder='linux',
-                ),
+                builder=orig_build.proto.builder,
                 request_id='42',
                 notify=dict(
                     pubsub_topic='projects/foo/topic/bar',
                     user_data='hello',
                 ),
-                properties=bbutil.dict_to_struct(props),
-                tags=[dict(key='a', value='b')],
+                properties=orig_build.proto.input.properties,
+                tags=orig_build.proto.tags,
+                canary=common_pb2.NO,
             ),
             parameters={model.BUILDER_PARAMETER: 'linux'},
             lease_expiration_date=None,
-            retry_of=build.key.id(),
+            retry_of=1,
             pubsub_callback_auth_token='secret',
         )
     )
-    self.assertEqual(resp['build']['id'], str(build.key.id()))
+    self.assertEqual(resp['build']['id'], '2')
     self.assertEqual(resp['build']['bucket'], 'luci.chromium.try')
-    self.assertEqual(
-        json.loads(resp['build']['parameters_json']), {
-            model.BUILDER_PARAMETER: 'linux',
-            model.PROPERTIES_PARAMETER: {'foo': 'bar',},
-        }
-    )
-    self.assertEqual(resp['build']['retry_of'], '2')
+    self.assertEqual(resp['build']['retry_of'], '1')
 
   def test_retry_not_found(self):
     self.expect_error('retry', {'id': 42}, 'BUILD_NOT_FOUND')
@@ -291,28 +258,24 @@ class V1ApiTest(testing.EndpointsTestCase):
         ),
     )
 
-    build = model.Build(bucket_id='chromium/readonly')
-    build.put()
-    self.call_api('retry', {'id': build.key.id()}, status=403)
+    test_util.build(
+        id=1, builder=dict(project='chromium', bucket='readonly')
+    ).put()
+    self.call_api('retry', {'id': '1'}, status=403)
 
   ####### PUT_BATCH ############################################################
 
   @mock.patch('creation.add_many_async', autospec=True)
   def test_put_batch(self, add_many_async):
-    self.test_build.tags = ['a:b']
+    build1 = test_util.build(id=1, tags=[dict(key='a', value='b')])
+    build2 = test_util.build(id=2)
 
-    build2 = model.Build(
-        id=2,
-        bucket_id='chromium/ci',
-        swarming_hostname=self.test_build.swarming_hostname,
-        input_properties=struct_pb2.Struct(),
-    )
     config.put_bucket(
         'chromium',
         'a' * 40,
         test_util.parse_bucket_cfg(
             '''
-            name: "luci.chromium.ci"
+            name: "luci.chromium.try"
             acls {
               role: SCHEDULER
               identity: "anonymous:anonymous"
@@ -322,7 +285,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     )
 
     add_many_async.return_value = future([
-        (self.test_build, None),
+        (build1, None),
         (build2, None),
         (None, errors.InvalidInputError('bad')),
     ])
@@ -334,7 +297,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                 'client_operation_id': '0',
             },
             {
-                'bucket': 'luci.chromium.ci',
+                'bucket': 'luci.chromium.try',
                 'client_operation_id': '1',
             },
             {
@@ -353,7 +316,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         creation.BuildRequest(
             schedule_build_request=rpc_pb2.ScheduleBuildRequest(
                 builder=dict(project='chromium', bucket='try'),
-                tags=[{'key': 'a', 'value': 'b'}],
+                tags=[dict(key='a', value='b')],
                 request_id='0',
                 properties=dict(),
             ),
@@ -361,7 +324,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         ),
         creation.BuildRequest(
             schedule_build_request=rpc_pb2.ScheduleBuildRequest(
-                builder=dict(project='chromium', bucket='ci'),
+                builder=dict(project='chromium', bucket='try'),
                 request_id='1',
                 properties=dict(),
             ),
@@ -379,14 +342,13 @@ class V1ApiTest(testing.EndpointsTestCase):
 
     res0 = resp['results'][0]
     self.assertEqual(res0['client_operation_id'], '0')
-    self.assertEqual(res0['build']['id'], str(self.test_build.key.id()))
+    self.assertEqual(res0['build']['id'], '1')
     self.assertEqual(res0['build']['bucket'], 'luci.chromium.try')
-    self.assertEqual(res0['build']['tags'], self.test_build.tags)
 
     res1 = resp['results'][1]
     self.assertEqual(res1['client_operation_id'], '1')
-    self.assertEqual(res1['build']['id'], str(build2.key.id()))
-    self.assertEqual(res1['build']['bucket'], 'luci.chromium.ci')
+    self.assertEqual(res1['build']['id'], '2')
+    self.assertEqual(res1['build']['bucket'], 'luci.chromium.try')
 
     res2 = resp['results'][2]
     self.assertEqual(
@@ -450,8 +412,8 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('search.search_async', autospec=True)
   def test_search(self, search_async):
-    self.test_build.put()
-    search_async.return_value = future(([self.test_build], 'the cursor'))
+    build = test_util.build(id=1)
+    search_async.return_value = future(([build], 'the cursor'))
 
     time_low = model.BEGINING_OF_THE_WORLD
     time_high = datetime.datetime(2120, 5, 4)
@@ -488,15 +450,15 @@ class V1ApiTest(testing.EndpointsTestCase):
         )
     )
     self.assertEqual(len(res['builds']), 1)
-    self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['builds'][0]['id'], '1')
     self.assertEqual(res['next_cursor'], 'the cursor')
 
   ####### PEEK #################################################################
 
   @mock.patch('service.peek', autospec=True)
   def test_peek(self, peek):
-    self.test_build.put()
-    peek.return_value = ([self.test_build], 'the cursor')
+    build = test_util.build(id=1)
+    peek.return_value = ([build], 'the cursor')
     req = {'bucket': ['luci.chromium.try']}
     res = self.call_api('peek', req).json_body
     peek.assert_called_once_with(
@@ -506,46 +468,43 @@ class V1ApiTest(testing.EndpointsTestCase):
     )
     self.assertEqual(len(res['builds']), 1)
     peeked_build = res['builds'][0]
-    self.assertEqual(peeked_build['id'], str(self.test_build.key.id()))
+    self.assertEqual(peeked_build['id'], '1')
     self.assertEqual(res['next_cursor'], 'the cursor')
 
   ####### LEASE ################################################################
 
   @mock.patch('service.lease', autospec=True)
   def test_lease(self, lease):
-    self.test_build.lease_expiration_date = self.future_date
-    self.test_build.lease_key = 42
-    lease.return_value = (True, self.test_build)
+    build = test_util.build(id=1)
+    build.lease_expiration_date = self.future_date
+    build.lease_key = 42
+    lease.return_value = (True, build)
 
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('lease', req).json_body
-    lease.assert_called_once_with(
-        self.test_build.key.id(),
-        lease_expiration_date=self.future_date,
-    )
+    lease.assert_called_once_with(1, lease_expiration_date=self.future_date)
     self.assertIsNone(res.get('error'))
-    self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
-    self.assertEqual(res['build']['lease_key'], str(self.test_build.lease_key))
+    self.assertEqual(res['build']['id'], '1')
+    self.assertEqual(res['build']['lease_key'], str(build.lease_key))
     self.assertEqual(
         res['build']['lease_expiration_ts'], req['lease_expiration_ts']
     )
 
   def test_lease_with_negative_expiration_date(self):
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_expiration_ts': 242894728472423847289472398,
     }
     self.expect_error('lease', req, 'INVALID_INPUT')
 
   @mock.patch('service.lease', autospec=True)
   def test_lease_unsuccessful(self, lease):
-    self.test_build.put()
-    lease.return_value = (False, self.test_build)
+    lease.return_value = (False, test_util.build(id=1))
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_expiration_ts': self.future_ts,
     }
     self.expect_error('lease', req, 'CANNOT_LEASE_BUILD')
@@ -554,40 +513,40 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.reset', autospec=True)
   def test_reset(self, reset):
-    reset.return_value = self.test_build
+    reset.return_value = test_util.build(id=1)
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
     }
     res = self.call_api('reset', req).json_body
-    reset.assert_called_once_with(self.test_build.key.id())
+    reset.assert_called_once_with(1)
     self.assertIsNone(res.get('error'))
-    self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['build']['id'], '1')
     self.assertFalse('lease_key' in res['build'])
 
   ####### START ################################################################
 
   @mock.patch('service.start', autospec=True)
   def test_start(self, start):
-    self.test_build.url = 'http://localhost/build/1'
-    start.return_value = self.test_build
+    build = test_util.build(id=1)
+    start.return_value = build
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_key': 42,
-        'url': self.test_build.url,
+        'url': build.url,
         'canary': True,
     }
     res = self.call_api('start', req).json_body
     start.assert_called_once_with(
-        req['id'], req['lease_key'], req['url'], req['canary']
+        1, req['lease_key'], req['url'], req['canary']
     )
-    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(res['build']['id'], '1')
     self.assertEqual(res['build']['url'], req['url'])
 
   @mock.patch('service.start', autospec=True)
   def test_start_completed_build(self, start):
     start.side_effect = errors.BuildIsCompletedError
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_key': 42,
     }
     res = self.call_api('start', req).json_body
@@ -597,18 +556,17 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.heartbeat', autospec=True)
   def test_heartbeat(self, heartbeat):
-    self.test_build.lease_expiration_date = self.future_date
-    heartbeat.return_value = self.test_build
+    build = test_util.build(id=1)
+    build.lease_expiration_date = self.future_date
+    heartbeat.return_value = build
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_key': 42,
         'lease_expiration_ts': self.future_ts,
     }
     res = self.call_api('heartbeat', req).json_body
-    heartbeat.assert_called_once_with(
-        req['id'], req['lease_key'], self.future_date
-    )
-    self.assertEqual(int(res['build']['id']), req['id'])
+    heartbeat.assert_called_once_with(1, req['lease_key'], self.future_date)
+    self.assertEqual(res['build']['id'], req['id'])
     self.assertEqual(
         res['build']['lease_expiration_ts'],
         req['lease_expiration_ts'],
@@ -616,27 +574,22 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.heartbeat_batch', autospec=True)
   def test_heartbeat_batch(self, heartbeat_batch):
-    self.test_build.lease_expiration_date = self.future_date
-    build2 = model.Build(
-        id=2,
-        bucket_id='chromium/try',
-        lease_expiration_date=self.future_date,
-        input_properties=struct_pb2.Struct(),
-    )
+    build1 = test_util.build(id=1)
+    build1.lease_expiration_date = self.future_date
 
     heartbeat_batch.return_value = [
-        (self.test_build.key.id(), self.test_build, None),
-        (build2.key.id(), None, errors.LeaseExpiredError()),
+        (1, build1, None),
+        (2, None, errors.LeaseExpiredError()),
     ]
     req = {
         'heartbeats': [
             {
-                'build_id': self.test_build.key.id(),
+                'build_id': '1',
                 'lease_key': 42,
                 'lease_expiration_ts': self.future_ts,
             },
             {
-                'build_id': build2.key.id(),
+                'build_id': '2',
                 'lease_key': 42,
                 'lease_expiration_ts': self.future_ts,
             },
@@ -645,35 +598,34 @@ class V1ApiTest(testing.EndpointsTestCase):
     res = self.call_api('heartbeat_batch', req).json_body
     heartbeat_batch.assert_called_with([
         {
-            'build_id': self.test_build.key.id(),
+            'build_id': 1,
             'lease_key': 42,
             'lease_expiration_date': self.future_date,
         },
         {
-            'build_id': build2.key.id(),
+            'build_id': 2,
             'lease_key': 42,
             'lease_expiration_date': self.future_date,
         },
     ])
 
     result1 = res['results'][0]
-    self.assertEqual(int(result1['build_id']), self.test_build.key.id())
+    self.assertEqual(result1['build_id'], '1')
     self.assertEqual(result1['lease_expiration_ts'], self.future_ts)
 
     result2 = res['results'][1]
-    self.assertEqual(int(result2['build_id']), build2.key.id())
+    self.assertEqual(result2['build_id'], '2')
     self.assertTrue(result2['error']['reason'] == 'LEASE_EXPIRED')
 
   @mock.patch('service.heartbeat_batch', autospec=True)
   def test_heartbeat_batch_with_internal_server_error(self, heartbeat_batch):
-    self.test_build.lease_expiration_date = self.future_date
+    build = test_util.build(id=1)
+    build.lease_expiration_date = self.future_date
 
-    heartbeat_batch.return_value = [
-        (self.test_build.key.id(), None, ValueError())
-    ]
+    heartbeat_batch.return_value = [(1, None, ValueError())]
     req = {
         'heartbeats': [{
-            'build_id': self.test_build.key.id(),
+            'build_id': '1',
             'lease_key': 42,
             'lease_expiration_ts': self.future_ts,
         }],
@@ -684,65 +636,69 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.succeed', autospec=True)
   def test_succeed(self, succeed):
-    succeed.return_value = self.test_build
+    succeed.return_value = test_util.build(id=1)
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_key': 42,
         'new_tags': ['bot_id:bot42'],
     }
     res = self.call_api('succeed', req).json_body
     succeed.assert_called_once_with(
-        req['id'],
+        1,
         req['lease_key'],
         result_details=None,
         url=None,
         new_tags=['bot_id:bot42']
     )
-    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(res['build']['id'], '1')
 
   @mock.patch('service.succeed', autospec=True)
   def test_succeed_with_result_details(self, succeed):
-    self.test_build.result_details = {'test_coverage': 100}
-    self.test_build.tags = ['bot_id:bot42']
-    succeed.return_value = self.test_build
+    props = {'p': '0'}
+    build = test_util.build(
+        id=1,
+        tags=[dict(key='t', value='0')],
+        output=dict(properties=bbutil.dict_to_struct(props)),
+    )
+    succeed.return_value = build
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_key': 42,
-        'result_details_json': json.dumps(self.test_build.result_details),
+        'result_details_json': json.dumps({
+            'properties': props,
+        }),
     }
     res = self.call_api('succeed', req).json_body
     _, kwargs = service.succeed.call_args
-    self.assertEqual(kwargs['result_details'], self.test_build.result_details)
+    self.assertEqual(kwargs['result_details'], build.result_details)
     self.assertEqual(
         res['build']['result_details_json'], req['result_details_json']
     )
-    self.assertIn('bot_id:bot42', res['build']['tags'])
+    self.assertIn('t:0', res['build']['tags'])
 
   ####### FAIL #################################################################
 
   @mock.patch('service.fail', autospec=True)
   def test_infra_failure(self, fail):
-    self.test_build.result_details = {'transient_error': True}
-    self.test_build.failure_reason = model.FailureReason.INFRA_FAILURE
-    self.test_build.tags = ['bot_id:bot42']
-    fail.return_value = self.test_build
+    build = test_util.build(id=1, status=common_pb2.INFRA_FAILURE)
+    fail.return_value = build
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'lease_key': 42,
         'failure_reason': 'INFRA_FAILURE',
-        'result_details_json': json.dumps(self.test_build.result_details),
-        'new_tags': ['bot_id:bot42'],
+        'result_details_json': json.dumps(build.result_details),
+        'new_tags': ['t:0'],
     }
     res = self.call_api('fail', req).json_body
     fail.assert_called_once_with(
-        req['id'],
+        1,
         req['lease_key'],
-        result_details=self.test_build.result_details,
+        result_details=build.result_details,
         failure_reason=model.FailureReason.INFRA_FAILURE,
         url=None,
-        new_tags=['bot_id:bot42']
+        new_tags=['t:0']
     )
-    self.assertEqual(int(res['build']['id']), req['id'])
+    self.assertEqual(res['build']['id'], '1')
     self.assertEqual(res['build']['failure_reason'], req['failure_reason'])
     self.assertEqual(
         res['build']['result_details_json'], req['result_details_json']
@@ -752,33 +708,29 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.cancel', autospec=True)
   def test_cancel(self, cancel):
-    cancel.return_value = self.test_build
-    req = {
-        'id': self.test_build.key.id(),
-    }
+    cancel.return_value = test_util.build(id=1)
+    req = {'id': '1'}
     res = self.call_api('cancel', req).json_body
-    cancel.assert_called_once_with(req['id'], result_details=None)
-    self.assertEqual(int(res['build']['id']), req['id'])
+    cancel.assert_called_once_with(1, result_details=None)
+    self.assertEqual(res['build']['id'], '1')
 
   @mock.patch('service.cancel', autospec=True)
   def test_cancel_with_details(self, cancel):
-    self.test_build.result_details = {'message': 'bye bye build'}
-    cancel.return_value = self.test_build
-    req = {
-        'id': self.test_build.key.id(),
-        'result_details_json': '{"message": "bye bye build"}',
-    }
-    res = self.call_api('cancel', req).json_body
-    cancel.assert_called_once_with(
-        req['id'], result_details=self.test_build.result_details
+    props = {'p': 0}
+    build = test_util.build(
+        id=1, output=dict(properties=bbutil.dict_to_struct(props))
     )
+    cancel.return_value = build
+    req = {'id': '1', 'result_details_json': json.dumps(build.result_details)}
+    res = self.call_api('cancel', req).json_body
+    cancel.assert_called_once_with(1, result_details=build.result_details)
     self.assertEqual(
         res['build']['result_details_json'], req['result_details_json']
     )
 
   def test_cancel_bad_details(self):
     req = {
-        'id': self.test_build.key.id(),
+        'id': '1',
         'result_details_json': '["no", "lists"]',
     }
     res = self.call_api('cancel', req).json_body
@@ -788,25 +740,26 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.cancel')
   def test_cancel_batch(self, cancel):
-    self.test_build.result_details = {'message': 'bye bye build'}
-    cancel.side_effect = [self.test_build, errors.BuildIsCompletedError]
+    props = {'p': 0}
+    build = test_util.build(
+        id=1, output=dict(properties=bbutil.dict_to_struct(props))
+    )
+    cancel.side_effect = [build, errors.BuildIsCompletedError]
     req = {
-        'build_ids': [self.test_build.key.id(), 2],
-        'result_details_json': '{"message": "bye bye build"}',
+        'build_ids': ['1', '2'],
+        'result_details_json': json.dumps(build.result_details),
     }
     res = self.call_api('cancel_batch', req).json_body
 
     res0 = res['results'][0]
-    self.assertEqual(int(res0['build_id']), self.test_build.key.id())
-    self.assertEqual(int(res0['build']['id']), self.test_build.key.id())
-    cancel.assert_any_call(
-        self.test_build.key.id(), result_details=self.test_build.result_details
-    )
+    self.assertEqual(res0['build_id'], '1')
+    self.assertEqual(res0['build']['id'], '1')
+    cancel.assert_any_call(1, result_details=build.result_details)
 
     res1 = res['results'][1]
-    self.assertEqual(int(res1['build_id']), 2)
+    self.assertEqual(res1['build_id'], '2')
     self.assertEqual(res1['error']['reason'], 'BUILD_IS_COMPLETED')
-    cancel.assert_any_call(2, result_details=self.test_build.result_details)
+    cancel.assert_any_call(2, result_details=build.result_details)
 
   ####### DELETE_MANY_BUILDS ###################################################
 

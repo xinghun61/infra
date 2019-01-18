@@ -827,7 +827,7 @@ def _get_builder_async(build):
   Returns:
     project_config_pb2.Builder future.
   """
-  if not build.parameters:
+  if not build.parameters:  # pragma: no cover | TODO(nodir): stop using params
     raise errors.InvalidInputError(
         'A build for bucket %r must have parameters' % build.bucket_id
     )
@@ -877,7 +877,7 @@ def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
         'Swarming buckets do not support creation of leased builds'
     )
 
-  if build.proto.number:
+  if build.proto.number:  # pragma: no branch
     build.tags.append(
         buildtags.build_address_tag(
             api_common.format_luci_bucket(build.bucket_id),

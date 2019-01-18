@@ -16,7 +16,6 @@ utils.fix_protobuf_package()
 
 from google import protobuf
 from google.protobuf import json_format
-from google.protobuf import struct_pb2
 
 from components import auth
 from components import net
@@ -36,16 +35,19 @@ from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from swarming import isolate
 from swarming import swarming
-from test.test_util import future, future_exception, ununicode
+from test import test_util
+from test.test_util import future, future_exception
 import api_common
 import bbutil
 import errors
 import model
 import user
 
-LINUX_CHROMIUM_REL_NG_CACHE_NAME = (
-    'builder_c7a0b323f25e60c6973918a075aad0b9d7f9c43afe40287662a279d8745874ac'
+linux_CACHE_NAME = (
+    'builder_ccadafffd20293e0378d1f94d214c63a0f8342d1161454ef0acfa0405178106b'
 )
+
+NOW = datetime.datetime(2015, 11, 30)
 
 
 class BaseTest(testing.AppengineTestCase):
@@ -64,7 +66,7 @@ class BaseTest(testing.AppengineTestCase):
         'bq.enqueue_pull_task_async', autospec=True, return_value=future(None)
     )
 
-    self.now = datetime.datetime(2015, 11, 30)
+    self.now = NOW
     self.patch(
         'components.utils.utcnow', autospec=True, side_effect=lambda: self.now
     )
@@ -106,8 +108,8 @@ class SwarmingTest(BaseTest):
       name: "luci.chromium.try"
       swarming {
         builders {
-          name: "linux_chromium_rel_ng"
-          swarming_host: "chromium-swarm.appspot.com"
+          name: "linux"
+          swarming_host: "swarming.example.com"
           swarming_tags: "buildertag:yes"
           swarming_tags: "commontag:yes"
           dimensions: "cores:8"
@@ -136,8 +138,8 @@ class SwarmingTest(BaseTest):
           }
         }
         builders {
-          name: "linux_chromium_rel_ng cipd"
-          swarming_host: "chromium-swarm.appspot.com"
+          name: "linux cipd"
+          swarming_host: "swarming.example.com"
           swarming_tags: "buildertag:yes"
           swarming_tags: "commontag:yes"
           dimensions: "cores:8"
@@ -152,7 +154,7 @@ class SwarmingTest(BaseTest):
             name: "recipe"
             properties_j: "predefined-property:\\\"x\\\""
             properties_j: "predefined-property-bool:true"
-            properties: "buildername:linux_chromium_rel_ng"
+            properties: "buildername:linux"
           }
           caches {
             path: "a"
@@ -280,14 +282,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.caches.add(path='builder', name='shared_builder_cache')
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
-    task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(test_util.build()).get_result()
 
     self.assertEqual(
         task_def['task_slices'][0]['properties']['caches'], [
@@ -318,14 +313,7 @@ class SwarmingTest(BaseTest):
     )
     builder_cfg.dimensions.append("120:opt:ional")
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
-    task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(test_util.build()).get_result()
 
     self.assertEqual(4, len(task_def['task_slices']))
     for t in task_def['task_slices']:
@@ -402,23 +390,11 @@ class SwarmingTest(BaseTest):
         wait_for_warm_cache_secs=60,
     )
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
     with self.assertRaises(errors.InvalidInputError):
-      swarming.prepare_task_def_async(build).get_result()
+      swarming.prepare_task_def_async(test_util.build()).get_result()
 
   def test_recipe_cipd_package(self):
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng cipd',
-        },
-        tags=['builder:linux_chromium_rel_ng cipd'],
-    )
+    build = test_util.build(builder=dict(builder='linux cipd'))
 
     task_def = swarming.prepare_task_def_async(build).get_result()
 
@@ -444,14 +420,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.execution_timeout_secs = 120
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
-    task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(test_util.build()).get_result()
 
     self.assertEqual(
         task_def['task_slices'][0]['properties']['execution_timeout_secs'],
@@ -462,14 +431,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.expiration_secs = 120
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
-    task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(test_util.build()).get_result()
 
     self.assertEqual(2, len(task_def['task_slices']))
     self.assertEqual(task_def['task_slices'][0]['expiration_secs'], '60')
@@ -479,18 +441,11 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.auto_builder_dimension = project_config_pb2.YES
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
-    task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(test_util.build()).get_result()
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
-            {u'key': u'builder', u'value': u'linux_chromium_rel_ng'},
-            {u'key': u'caches', u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {u'key': u'builder', u'value': u'linux'},
+            {u'key': u'caches', u'value': linux_CACHE_NAME},
             {u'key': u'cores', u'value': u'8'},
             {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
@@ -502,18 +457,11 @@ class SwarmingTest(BaseTest):
     builder_cfg.auto_builder_dimension = project_config_pb2.YES
     builder_cfg.dimensions.append('builder:custom')
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
-    task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(test_util.build()).get_result()
     self.assertEqual(
         task_def['task_slices'][0]['properties']['dimensions'], [
             {u'key': u'builder', u'value': u'custom'},
-            {u'key': u'caches', u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {u'key': u'caches', u'value': linux_CACHE_NAME},
             {u'key': u'cores', u'value': u'8'},
             {u'key': u'os', u'value': u'Ubuntu'},
             {u'key': u'pool', u'value': u'Chrome'},
@@ -524,14 +472,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.dimensions[:] = ['cores:']
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
-    task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(test_util.build()).get_result()
     dim_keys = {
         d['key'] for d in task_def['task_slices'][0]['properties']['dimensions']
     }
@@ -540,19 +481,21 @@ class SwarmingTest(BaseTest):
   def test_is_migrating_builder_prod_async_no_master_name(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
-    build = mkBuild()
     self.assertIsNone(
-        swarming._is_migrating_builder_prod_async(builder_cfg,
-                                                  build).get_result()
+        swarming._is_migrating_builder_prod_async(
+            builder_cfg, test_util.build()
+        ).get_result()
     )
     self.assertFalse(net.json_request_async.called)
 
   def test_is_migrating_builder_prod_async_no_host(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
-    build = mkBuild(
-        input_properties=bbutil.dict_to_struct({
-            'mastername': 'tryserver.chromium.linux'
-        }),
+    build = test_util.build(
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'mastername': 'tryserver.chromium.linux',
+            })
+        ),
     )
     self.assertIsNone(
         swarming._is_migrating_builder_prod_async(builder_cfg,
@@ -563,10 +506,12 @@ class SwarmingTest(BaseTest):
   def test_is_migrating_builder_prod_async_prod(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
-    build = mkBuild(
-        input_properties=bbutil.dict_to_struct({
-            'mastername': 'tryserver.chromium.linux'
-        }),
+    build = test_util.build(
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'mastername': 'tryserver.chromium.linux',
+            })
+        ),
     )
     self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
     self.assertTrue(
@@ -581,22 +526,31 @@ class SwarmingTest(BaseTest):
     builder_cfg.recipe.properties_j.append(
         'mastername:"tryserver.chromium.linux"'
     )
-    build = mkBuild()
     self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
     self.assertTrue(
-        swarming._is_migrating_builder_prod_async(builder_cfg,
-                                                  build).get_result()
+        swarming._is_migrating_builder_prod_async(
+            builder_cfg, test_util.build()
+        ).get_result()
     )
     self.assertTrue(net.json_request_async.called)
 
   def test_is_migrating_builder_prod_async_custom_name(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
-    build = mkBuild(
-        input_properties=bbutil.dict_to_struct({
-            'luci_migration_master_name': 'custom_master',
-            'mastername': 'ordinary_mastername',
-        }),
+    build = test_util.build(
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'mastername': 'tryserver.chromium.linux',
+            })
+        ),
+    )
+    build = test_util.build(
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'luci_migration_master_name': 'custom_master',
+                'mastername': 'ordinary_mastername',
+            })
+        ),
     )
     self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
     self.assertTrue(
@@ -609,10 +563,12 @@ class SwarmingTest(BaseTest):
   def test_is_migrating_builder_prod_async_404(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
-    build = mkBuild(
-        input_properties=bbutil.dict_to_struct({
-            'mastername': 'tryserver.chromium.linux'
-        }),
+    build = test_util.build(
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'mastername': 'tryserver.chromium.linux',
+            })
+        ),
     )
 
     self.net_err_response = net.NotFoundError('nope', 404, 'can\'t find it')
@@ -624,10 +580,12 @@ class SwarmingTest(BaseTest):
   def test_is_migrating_builder_prod_async_500(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
-    build = mkBuild(
-        input_properties=bbutil.dict_to_struct({
-            'mastername': 'tryserver.chromium.linux'
-        }),
+    build = test_util.build(
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'mastername': 'tryserver.chromium.linux',
+            })
+        ),
     )
 
     self.net_err_response = net.Error('BOOM', 500, 'IT\'S BAD')
@@ -639,10 +597,12 @@ class SwarmingTest(BaseTest):
   def test_is_migrating_builder_prod_async_no_is_prod_in_response(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
-    build = mkBuild(
-        input_properties=bbutil.dict_to_struct({
-            'mastername': 'tryserver.chromium.linux'
-        }),
+    build = test_util.build(
+        input=dict(
+            properties=bbutil.dict_to_struct({
+                'mastername': 'tryserver.chromium.linux',
+            })
+        ),
     )
 
     self.net_err_response = None
@@ -669,18 +629,18 @@ class SwarmingTest(BaseTest):
         return_value='beeff00d',
     )
 
-    build = mkBuild(
-        input_properties=bbutil.dict_to_struct({'a': 'b'}),
-        parameters={
-            model.BUILDER_PARAMETER:
-                'linux_chromium_rel_ng',
-            'changes': [{
-                'author': {'email': 'bob@example.com'},
-                'repo_url': 'https://chromium.googlesource.com/chromium/src',
-            }],
-        },
-        tags=['builder:linux_chromium_rel_ng'],
+    build = test_util.build(
+        id=1,
+        number=1,
+        builder=build_pb2.BuilderID(
+            project='chromium', bucket='try', builder='linux'
+        ),
+        input=dict(properties=bbutil.dict_to_struct({'a': 'b'})),
     )
+    build.parameters['changes'] = [{
+        'author': {'email': 'bob@example.com'},
+        'repo_url': 'https://chromium.googlesource.com/chromium/src',
+    }]
 
     self.json_response = {
         'task_id': 'deadbeef',
@@ -698,9 +658,10 @@ class SwarmingTest(BaseTest):
                 },
             }],
             'tags': [
-                'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
-                'builder:linux_chromium_rel_ng',
+                'build_address:luci.chromium.try/linux/1',
+                'builder:linux',
                 'buildertag:yes',
+                'buildset:1',
                 'commontag:yes',
                 (
                     'log_location:logdog://luci-logdog-dev.appspot.com/'
@@ -716,13 +677,12 @@ class SwarmingTest(BaseTest):
         },
     }
 
-    build.proto.number = 1
     swarming.create_task_async(build).get_result()
 
     # Test swarming request.
     self.assertEqual(
         net.json_request_async.call_args[0][0],
-        'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
+        'https://swarming.example.com/_ah/api/swarming/v1/tasks/new'
     )
     actual_task_def = net.json_request_async.call_args[1]['payload']
     expected_secret_bytes = base64.b64encode(
@@ -755,15 +715,15 @@ class SwarmingTest(BaseTest):
                         'bucket':
                             'luci.chromium.try',
                         'created_by':
-                            'user:john@example.com',
+                            'anonymous:anonymous',
                         'created_ts':
                             utils.datetime_to_timestamp(build.create_time),
                         'id':
                             '1',
-                        'tags': [],
+                        'tags': ['buildset:1'],
                     },
                 },
-                'buildername': 'linux_chromium_rel_ng',
+                'buildername': 'linux',
                 'buildnumber': 1,
                 'predefined-property': 'x',
                 'predefined-property-bool': True,
@@ -785,7 +745,7 @@ class SwarmingTest(BaseTest):
         ],
         'caches': [
             {'path': 'cache/a', 'name': 'a'},
-            {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {'path': 'cache/builder', 'name': linux_CACHE_NAME},
             {'path': 'cache/git_cache', 'name': 'git_chromium'},
             {'path': 'cache/out', 'name': 'build_chromium'},
         ],
@@ -808,23 +768,24 @@ class SwarmingTest(BaseTest):
     props_def_first = copy.deepcopy(props_def)
     props_def_first[u'dimensions'].append({
         u'key': u'caches',
-        u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
+        u'value': linux_CACHE_NAME,
     })
     props_def_first[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
     expected_task_def = {
         'name':
-            'bb-1-chromium-linux_chromium_rel_ng',
+            'bb-1-chromium-linux',
         'priority':
             '108',
         'tags': [
-            'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
+            'build_address:luci.chromium.try/linux/1',
             'buildbucket_bucket:chromium/try',
             'buildbucket_build_id:1',
             'buildbucket_hostname:cr-buildbucket.appspot.com',
             'buildbucket_template_canary:0',
             'buildbucket_template_revision:template_rev',
-            'builder:linux_chromium_rel_ng',
+            'builder:linux',
             'buildertag:yes',
+            'buildset:1',
             'commontag:yes',
             (
                 'log_location:logdog://luci-logdog-dev.appspot.com/chromium/'
@@ -853,7 +814,7 @@ class SwarmingTest(BaseTest):
         'pubsub_userdata':
             json.dumps({
                 'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-                'swarming_hostname': 'chromium-swarm.appspot.com',
+                'swarming_hostname': 'swarming.example.com',
                 'build_id': 1L,
             },
                        sort_keys=True),
@@ -862,22 +823,22 @@ class SwarmingTest(BaseTest):
         'numerical_value_for_coverage_in_format_obj':
             42,
     }
-    self.assertEqual(ununicode(actual_task_def), expected_task_def)
+    self.assertEqual(test_util.ununicode(actual_task_def), expected_task_def)
 
     self.assertEqual(
         set(build.tags), {
-            'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
-            'builder:linux_chromium_rel_ng',
+            'build_address:luci.chromium.try/linux/1',
+            'builder:linux',
+            'buildset:1',
             'swarming_dimension:cores:8',
             'swarming_dimension:os:Ubuntu',
             'swarming_dimension:pool:Chrome',
-            'swarming_hostname:chromium-swarm.appspot.com',
-            (
-                'swarming_tag:build_address:luci.chromium.try/'
-                'linux_chromium_rel_ng/1'
-            ),
-            'swarming_tag:builder:linux_chromium_rel_ng',
+            'swarming_hostname:swarming.example.com',
+            ('swarming_tag:build_address:luci.chromium.try/'
+             'linux/1'),
+            'swarming_tag:builder:linux',
             'swarming_tag:buildertag:yes',
+            'swarming_tag:buildset:1',
             'swarming_tag:commontag:yes',
             (
                 'swarming_tag:log_location:'
@@ -912,7 +873,7 @@ class SwarmingTest(BaseTest):
     self.assertEqual(
         auth.delegate_async.mock_calls, [
             mock.call(
-                services=[u'https://chromium-swarm.appspot.com'],
+                services=[u'https://swarming.example.com'],
                 audience=[auth.Identity('user', 'test@localhost')],
                 impersonate=auth.Identity('user', 'john@example.com'),
                 tags=['buildbucket:bucket:chromium/try'],
@@ -921,11 +882,6 @@ class SwarmingTest(BaseTest):
     )
 
   def test_create_task_async_experimental(self):
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-        experimental=True,
-    )
-
     self.json_response = {
         'task_id': 'deadbeef',
         'request': {
@@ -934,9 +890,10 @@ class SwarmingTest(BaseTest):
                 'properties': {'execution_timeout_secs': 1800},
             }],
             'tags': [
-                'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
-                'builder:linux_chromium_rel_ng',
+                'build_address:luci.chromium.try/linux/1',
+                'builder:linux',
                 'buildertag:yes',
+                'buildset:1',
                 'priority:108',
                 'recipe_name:recipe',
                 'recipe_repository:https://example.com/repo',
@@ -946,7 +903,11 @@ class SwarmingTest(BaseTest):
         },
     }
 
-    build.proto.number = 1
+    build = test_util.build(
+        number=1,
+        input=dict(experimental=True),
+    )
+    build.experimental = True
     swarming.create_task_async(build).get_result()
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
@@ -1009,9 +970,7 @@ class SwarmingTest(BaseTest):
         ],
     }
 
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-    )
+    build = test_util.build(number=1)
 
     self.json_response = {
         'task_id': 'deadbeef',
@@ -1021,9 +980,10 @@ class SwarmingTest(BaseTest):
                 'properties': {'execution_timeout_secs': 1800},
             }],
             'tags': [
-                'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
-                'builder:linux_chromium_rel_ng',
+                'build_address:luci.chromium.try/linux/1',
+                'builder:linux',
                 'buildertag:yes',
+                'buildset:1',
                 'priority:108',
                 'recipe_name:recipe',
                 'recipe_repository:https://example.com/repo',
@@ -1033,7 +993,6 @@ class SwarmingTest(BaseTest):
         },
     }
 
-    build.proto.number = 1
     swarming.create_task_async(build).get_result()
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
@@ -1045,36 +1004,19 @@ class SwarmingTest(BaseTest):
 
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
     with self.assertRaises(errors.InvalidInputError):
-      swarming.create_task_async(build).get_result()
+      swarming.create_task_async(test_util.build()).get_result()
 
   def test_create_task_async_without_template(self):
     self.task_template = None
     self.task_template_canary = None
 
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-        tags=['builder:linux_chromium_rel_ng'],
-    )
-
     with self.assertRaises(swarming.TemplateNotFound):
-      swarming.create_task_async(build).get_result()
+      swarming.create_task_async(test_util.build()).get_result()
 
   def test_create_task_async_bad_request(self):
-    build = mkBuild()
-
-    with self.assertRaises(errors.InvalidInputError):
-      swarming.create_task_async(build).get_result()
-
     with self.assertRaises(errors.BuilderNotFoundError):
-      build.parameters = {
-          model.BUILDER_PARAMETER: 'non-existent builder',
-      }
+      build = test_util.build(builder=dict(builder='non-existent builder'))
       swarming.create_task_async(build).get_result()
 
     with self.assertRaises(errors.InvalidInputError):
@@ -1082,9 +1024,6 @@ class SwarmingTest(BaseTest):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_max_dimensions(self):
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-    )
     self.json_response = {
         'task_id': 'deadbeef',
     }
@@ -1095,13 +1034,10 @@ class SwarmingTest(BaseTest):
     builder_cfg.dimensions.append("300:opt4:ional")
     builder_cfg.dimensions.append("360:opt5:ional")
     builder_cfg.dimensions.append("420:opt6:ional")
-    swarming.create_task_async(build).get_result()
+    swarming.create_task_async(test_util.build()).get_result()
 
   def test_create_task_async_bad_request_dimensions(self):
     # One too much.
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-    )
     self.json_response = {
         'task_id': 'deadbeef',
     }
@@ -1114,7 +1050,7 @@ class SwarmingTest(BaseTest):
     builder_cfg.dimensions.append("420:opt6:ional")
     builder_cfg.dimensions.append("480:opt7:ional")
     with self.assertRaises(errors.InvalidInputError):
-      swarming.create_task_async(build).get_result()
+      swarming.create_task_async(test_util.build()).get_result()
 
   def test_create_task_async_canary_template(self):
     self.patch(
@@ -1123,13 +1059,8 @@ class SwarmingTest(BaseTest):
         return_value='beeff00d',
     )
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-        canary_preference=model.CanaryPreference.CANARY,
-    )
+    build = test_util.build(id=1)
+    build.canary_preference = model.CanaryPreference.CANARY
 
     self.json_response = {
         'task_id': 'deadbeef',
@@ -1147,8 +1078,9 @@ class SwarmingTest(BaseTest):
                 },
             }],
             'tags': [
-                'builder:linux_chromium_rel_ng',
+                'builder:linux',
                 'buildertag:yes',
+                'buildset:1',
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:recipe',
@@ -1162,7 +1094,7 @@ class SwarmingTest(BaseTest):
     # Test swarming request.
     self.assertEqual(
         net.json_request_async.call_args[0][0],
-        'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
+        'https://swarming.example.com/_ah/api/swarming/v1/tasks/new'
     )
     actual_task_def = net.json_request_async.call_args[1]['payload']
     expected_secret_bytes = base64.b64encode(
@@ -1193,19 +1125,20 @@ class SwarmingTest(BaseTest):
                         'bucket':
                             'luci.chromium.try',
                         'created_by':
-                            'user:john@example.com',
+                            'anonymous:anonymous',
                         'created_ts':
                             utils.datetime_to_timestamp(build.create_time),
                         'id':
                             '1',
-                        'tags': [],
+                        'tags': ['buildset:1'],
                     },
                 },
                 '$recipe_engine/runtime': {
                     'is_experimental': False,
                     'is_luci': True,
                 },
-                'buildername': 'linux_chromium_rel_ng',
+                'buildername': 'linux',
+                'buildnumber': 1,
                 'predefined-property': 'x',
                 'predefined-property-bool': True,
             }),
@@ -1221,7 +1154,7 @@ class SwarmingTest(BaseTest):
         ],
         'caches': [
             {'path': 'cache/a', 'name': 'a'},
-            {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
+            {'path': 'cache/builder', 'name': linux_CACHE_NAME},
             {'path': 'cache/git_cache', 'name': 'git_chromium'},
             {'path': 'cache/out', 'name': 'build_chromium'},
         ],
@@ -1244,22 +1177,24 @@ class SwarmingTest(BaseTest):
     props_def_first = copy.deepcopy(props_def)
     props_def_first[u'dimensions'].append({
         u'key': u'caches',
-        u'value': LINUX_CHROMIUM_REL_NG_CACHE_NAME,
+        u'value': linux_CACHE_NAME,
     })
     props_def_first[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
     expected_task_def = {
         'name':
-            'bb-1-chromium-linux_chromium_rel_ng-canary',
+            'bb-1-chromium-linux-canary',
         'priority':
             '108',
         'tags': [
+            'build_address:luci.chromium.try/linux/1',
             'buildbucket_bucket:chromium/try',
             'buildbucket_build_id:1',
             'buildbucket_hostname:cr-buildbucket.appspot.com',
             'buildbucket_template_canary:1',
             'buildbucket_template_revision:template_rev',
-            'builder:linux_chromium_rel_ng',
+            'builder:linux',
             'buildertag:yes',
+            'buildset:1',
             'commontag:yes',
             (
                 'log_location:logdog://luci-logdog-dev.appspot.com/chromium/'
@@ -1288,7 +1223,7 @@ class SwarmingTest(BaseTest):
         'pubsub_userdata':
             json.dumps({
                 'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-                'swarming_hostname': 'chromium-swarm.appspot.com',
+                'swarming_hostname': 'swarming.example.com',
                 'build_id': 1L,
             },
                        sort_keys=True),
@@ -1297,17 +1232,20 @@ class SwarmingTest(BaseTest):
         'numerical_value_for_coverage_in_format_obj':
             42,
     }
-    self.assertEqual(ununicode(actual_task_def), expected_task_def)
+    self.assertEqual(test_util.ununicode(actual_task_def), expected_task_def)
 
     self.assertEqual(
         set(build.tags), {
-            'builder:linux_chromium_rel_ng',
+            'build_address:luci.chromium.try/linux/1',
+            'builder:linux',
+            'buildset:1',
             'swarming_dimension:cores:8',
             'swarming_dimension:os:Ubuntu',
             'swarming_dimension:pool:Chrome',
-            'swarming_hostname:chromium-swarm.appspot.com',
-            'swarming_tag:builder:linux_chromium_rel_ng',
+            'swarming_hostname:swarming.example.com',
+            'swarming_tag:builder:linux',
             'swarming_tag:buildertag:yes',
+            'swarming_tag:buildset:1',
             'swarming_tag:commontag:yes',
             'swarming_tag:priority:108',
             'swarming_tag:recipe_name:recipe',
@@ -1317,13 +1255,8 @@ class SwarmingTest(BaseTest):
     )
 
   def test_create_task_async_no_canary_template_explicit(self):
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-        canary_preference=model.CanaryPreference.CANARY,
-    )
+    build = test_util.build()
+    build.canary_preference = model.CanaryPreference.CANARY
 
     self.task_template_canary = None
     with self.assertRaises(errors.InvalidInputError):
@@ -1354,8 +1287,9 @@ class SwarmingTest(BaseTest):
                 },
             }],
             'tags': [
-                'builder:linux_chromium_rel_ng',
+                'builder:linux',
                 'buildertag:yes',
+                'buildset:1',
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:recipe',
@@ -1364,30 +1298,22 @@ class SwarmingTest(BaseTest):
         },
     }
 
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-        tags=['builder:linux_chromium_rel_ng'],
-        canary_preference=model.CanaryPreference.AUTO,
-    )
+    build = test_util.build()
+    build.canary_preference = model.CanaryPreference.AUTO
     swarming.create_task_async(build).get_result()
 
     self.assertFalse(build.proto.infra.buildbucket.canary)
     should_use_canary_template.assert_called_with(54)
 
   def test_create_task_async_override_cfg(self):
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {
-                'override_builder_cfg': {
-                    # Override cores dimension.
-                    'dimensions': ['cores:16'],
-                    'recipe': {'name': 'bob'},
-                },
-            }
+    build = test_util.build()
+    build.parameters['swarming'] = {
+        'override_builder_cfg': {
+            # Override cores dimension.
+            'dimensions': ['cores:16'],
+            'recipe': {'name': 'bob'},
         },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    }
 
     self.json_response = {
         'task_id': 'deadbeef',
@@ -1405,8 +1331,9 @@ class SwarmingTest(BaseTest):
                 },
             }],
             'tags': [
-                'builder:linux_chromium_rel_ng',
+                'builder:linux',
                 'buildertag:yes',
+                'buildset:1',
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:bob',
@@ -1424,92 +1351,58 @@ class SwarmingTest(BaseTest):
     )
 
   def test_create_task_async_override_cfg_malformed(self):
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {'override_builder_cfg': []},
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    build = test_util.build()
+    build.parameters['swarming'] = {'override_builder_cfg': []}
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {'override_builder_cfg': {'name': 'x'}},
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    build = test_util.build()
+    build.parameters['swarming'] = {'override_builder_cfg': {'name': 'x'}}
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {'override_builder_cfg': {'mixins': ['x']}},
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    build = test_util.build()
+    build.parameters['swarming'] = {'override_builder_cfg': {'mixins': ['x']}}
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {'override_builder_cfg': {'blabla': 'x'}},
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    build = test_util.build()
+    build.parameters['swarming'] = {'override_builder_cfg': {'blabla': 'x'}}
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
     # Remove a required dimension.
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {'override_builder_cfg': {'dimensions': ['pool:']}},
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    build = test_util.build()
+    build.parameters['swarming'] = {
+        'override_builder_cfg': {'dimensions': ['pool:']}
+    }
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
     # Override build numbers
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {'override_builder_cfg': {'build_numbers': False}},
-        },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    build = test_util.build()
+    build.parameters['swarming'] = {
+        'override_builder_cfg': {'build_numbers': False}
+    }
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_on_leased_build(self):
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-        tags=['builder:linux_chromium_rel_ng'],
-        lease_key=12345,
-    )
+    build = test_util.build()
+    build.lease_key = 12345
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_without_milo_hostname(self):
     self.settings.swarming.milo_hostname = ''
-    build = mkBuild(
-        parameters={
-            model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-            'swarming': {
-                'override_builder_cfg': {
-                    # Override cores dimension.
-                    'dimensions': ['cores:16'],
-                    'recipe': {'name': 'bob'},
-                },
-            },
+    build = test_util.build()
+    build.parameters['swarming'] = {
+        'override_builder_cfg': {
+            # Override cores dimension.
+            'dimensions': ['cores:16'],
+            'recipe': {'name': 'bob'},
         },
-        tags=['builder:linux_chromium_rel_ng'],
-    )
+    }
 
     self.json_response = {
         'task_id': 'deadbeef',
@@ -1524,8 +1417,9 @@ class SwarmingTest(BaseTest):
                 },
             }],
             'tags': [
-                'builder:linux_chromium_rel_ng',
+                'builder:linux',
                 'buildertag:yes',
+                'buildset:1',
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:bob',
@@ -1538,10 +1432,10 @@ class SwarmingTest(BaseTest):
 
   def test_cancel_task(self):
     self.json_response = {'ok': True}
-    swarming.cancel_task('chromium-swarm.appspot.com', 'deadbeef')
+    swarming.cancel_task('swarming.example.com', 'deadbeef')
     net.json_request_async.assert_called_with(
         (
-            'https://chromium-swarm.appspot.com/'
+            'https://swarming.example.com/'
             '_ah/api/swarming/v1/task/deadbeef/cancel'
         ),
         method='POST',
@@ -1559,272 +1453,241 @@ class SwarmingTest(BaseTest):
     }
     swarming.cancel_task('swarming.example.com', 'deadbeef')
 
-  @mock.patch('swarming.swarming._load_build_run_result_async', autospec=True)
-  def test_sync(self, load_build_run_result_async):
-    load_build_run_result_async.return_value = future((None, None))
-    cases = [
-        {
-            'task_result': None,
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.INFRA_FAILURE,
-            'complete_time': utils.utcnow(),
-        },
-        {
-            'task_result': {'state': 'PENDING'},
-            'status': model.BuildStatus.SCHEDULED,
-        },
-        {
-            'task_result': {
-                'state': 'RUNNING',
-                'started_ts': '2018-01-29T21:15:02.649750',
-            },
-            'status': model.BuildStatus.STARTED,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-        },
-        {
-            'task_result': {
-                'state': 'COMPLETED',
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
-            },
-            'build_run_result': {},
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.SUCCESS,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state':
-                    'COMPLETED',
-                'started_ts':
-                    '2018-01-29T21:15:02.649750',
-                'completed_ts':
-                    '2018-01-30T00:15:18.162860',
-                'bot_dimensions': [
-                    {'key': 'os', 'value': ['Ubuntu', 'Trusty']},
-                    {'key': 'pool', 'value': ['luci.chromium.try']},
-                    {'key': 'id', 'value': ['bot1']},
-                ],
-            },
-            'build_run_result': {
-                'annotationUrl':
-                    'logdog://logdog.example.com/chromium/prefix/+/annotations',
-                'annotations':
-                    json.loads(
-                        json_format.MessageToJson(
-                            annotations_pb2.Step(
-                                substep=[
-                                    annotations_pb2.Step.Substep(
-                                        step=annotations_pb2.Step(
-                                            name='bot_update',
-                                            status=annotations_pb2.SUCCESS,
-                                        ),
-                                    ),
-                                ],
-                            )
-                        )
-                    ),
-            },
-            'status':
-                model.BuildStatus.COMPLETED,
-            'result':
-                model.BuildResult.SUCCESS,
-            'bot_dimensions': [
-                common_pb2.StringPair(key='id', value='bot1'),
-                common_pb2.StringPair(key='os', value='Trusty'),
-                common_pb2.StringPair(key='os', value='Ubuntu'),
-                common_pb2.StringPair(key='pool', value='luci.chromium.try'),
-            ],
-            'start_time':
-                datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time':
-                datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-            'build_steps': [
-                step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS)
-            ],
-        },
-        {
-            'task_result': {
-                'state': 'COMPLETED',
-                'failure': True,
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
-            },
-            'build_run_result': {},
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.BUILD_FAILURE,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'COMPLETED',
-                'failure': True,
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
-            },
-            'build_run_result': {
-                'infraFailure': {
-                    'type': 'BOOTSTRAPPER_ERROR',
-                    'text': 'it is not good',
-                },
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.INFRA_FAILURE,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'COMPLETED',
-                'failure': True,
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
-            },
-            'build_run_result': None,
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.INFRA_FAILURE,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'COMPLETED',
-                'failure': True,
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
-            },
-            'build_run_result_error': swarming._BUILD_RUN_RESULT_CORRUPTED,
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.INFRA_FAILURE,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'COMPLETED',
-                'failure': True,
-                'internal_failure': True,
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.INFRA_FAILURE,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'BOT_DIED',
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'abandoned_ts': '2018-01-30T00:15:18.162860',
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.INFRA_FAILURE,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'TIMED_OUT',
-                'started_ts': '2018-01-29T21:15:02.649750',
-                'completed_ts': '2018-01-30T00:15:18.162860',
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.FAILURE,
-            'failure_reason': model.FailureReason.INFRA_FAILURE,
-            'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'EXPIRED',
-                'abandoned_ts': '2018-01-30T00:15:18.162860',
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.CANCELED,
-            'cancelation_reason': model.CancelationReason.TIMEOUT,
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'KILLED',
-                'abandoned_ts': '2018-01-30T00:15:18.162860',
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.CANCELED,
-            'cancelation_reason': model.CancelationReason.CANCELED_EXPLICITLY,
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'CANCELED',
-                'abandoned_ts': '2018-01-30T00:15:18.162860',
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.CANCELED,
-            'cancelation_reason': model.CancelationReason.CANCELED_EXPLICITLY,
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-        {
-            'task_result': {
-                'state': 'NO_RESOURCE',
-                'abandoned_ts': '2018-01-30T00:15:18.162860',
-            },
-            'status': model.BuildStatus.COMPLETED,
-            'result': model.BuildResult.CANCELED,
-            'cancelation_reason': model.CancelationReason.TIMEOUT,
-            'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
-        },
-    ]
+  @parameterized.expand([
+      ({
+          'task_result': None,
+          'status': common_pb2.INFRA_FAILURE,
+          'complete_time': NOW,
+      },),
+      ({
+          'task_result': {'state': 'PENDING'},
+          'status': common_pb2.SCHEDULED,
+      },),
+      ({
+          'task_result': {
+              'state': 'RUNNING',
+              'started_ts': '2018-01-29T21:15:02.649750',
+          },
+          'status': common_pb2.STARTED,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+      },),
+      ({
+          'task_result': {
+              'state': 'COMPLETED',
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'completed_ts': '2018-01-30T00:15:18.162860',
+          },
+          'build_run_result': {},
+          'status': common_pb2.SUCCESS,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state':
+                  'COMPLETED',
+              'started_ts':
+                  '2018-01-29T21:15:02.649750',
+              'completed_ts':
+                  '2018-01-30T00:15:18.162860',
+              'bot_dimensions': [
+                  {'key': 'os', 'value': ['Ubuntu', 'Trusty']},
+                  {'key': 'pool', 'value': ['luci.chromium.try']},
+                  {'key': 'id', 'value': ['bot1']},
+              ],
+          },
+          'build_run_result': {
+              'annotationUrl':
+                  'logdog://logdog.example.com/chromium/prefix/+/annotations',
+              'annotations':
+                  json.loads(
+                      json_format.MessageToJson(
+                          annotations_pb2.Step(
+                              substep=[
+                                  annotations_pb2.Step.Substep(
+                                      step=annotations_pb2.Step(
+                                          name='bot_update',
+                                          status=annotations_pb2.SUCCESS,
+                                      ),
+                                  ),
+                              ],
+                          )
+                      )
+                  ),
+          },
+          'status':
+              common_pb2.SUCCESS,
+          'bot_dimensions': [
+              common_pb2.StringPair(key='id', value='bot1'),
+              common_pb2.StringPair(key='os', value='Trusty'),
+              common_pb2.StringPair(key='os', value='Ubuntu'),
+              common_pb2.StringPair(key='pool', value='luci.chromium.try'),
+          ],
+          'start_time':
+              datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time':
+              datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'build_steps': [
+              step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS)
+          ],
+      },),
+      ({
+          'task_result': {
+              'state': 'COMPLETED',
+              'failure': True,
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'completed_ts': '2018-01-30T00:15:18.162860',
+          },
+          'build_run_result': {},
+          'status': common_pb2.FAILURE,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'COMPLETED',
+              'failure': True,
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'completed_ts': '2018-01-30T00:15:18.162860',
+          },
+          'build_run_result': {
+              'infraFailure': {
+                  'type': 'BOOTSTRAPPER_ERROR',
+                  'text': 'it is not good',
+              },
+          },
+          'status': common_pb2.INFRA_FAILURE,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'COMPLETED',
+              'failure': True,
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'completed_ts': '2018-01-30T00:15:18.162860',
+          },
+          'build_run_result': None,
+          'status': common_pb2.INFRA_FAILURE,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'COMPLETED',
+              'failure': True,
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'completed_ts': '2018-01-30T00:15:18.162860',
+          },
+          'build_run_result_error': swarming._BUILD_RUN_RESULT_CORRUPTED,
+          'status': common_pb2.INFRA_FAILURE,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'COMPLETED',
+              'failure': True,
+              'internal_failure': True,
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'completed_ts': '2018-01-30T00:15:18.162860',
+          },
+          'status': common_pb2.INFRA_FAILURE,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'BOT_DIED',
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'abandoned_ts': '2018-01-30T00:15:18.162860',
+          },
+          'status': common_pb2.INFRA_FAILURE,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'TIMED_OUT',
+              'started_ts': '2018-01-29T21:15:02.649750',
+              'completed_ts': '2018-01-30T00:15:18.162860',
+          },
+          'status': common_pb2.INFRA_FAILURE,
+          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'EXPIRED',
+              'abandoned_ts': '2018-01-30T00:15:18.162860',
+          },
+          'status': common_pb2.INFRA_FAILURE,
+          'resource_exhaustion': True,
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'KILLED',
+              'abandoned_ts': '2018-01-30T00:15:18.162860',
+          },
+          'status': common_pb2.CANCELED,
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'CANCELED',
+              'abandoned_ts': '2018-01-30T00:15:18.162860',
+          },
+          'status': common_pb2.CANCELED,
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+      ({
+          'task_result': {
+              'state': 'NO_RESOURCE',
+              'abandoned_ts': '2018-01-30T00:15:18.162860',
+          },
+          'status': common_pb2.INFRA_FAILURE,
+          'resource_exhaustion': True,
+          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+      },),
+  ])
+  def test_sync(self, case):
+    logging.info('test case: %s', case)
+    self.patch(
+        'swarming.swarming._load_build_run_result_async',
+        autospec=True,
+        return_value=future((
+            case.get('build_run_result'),
+            case.get('build_run_result_error', None),
+        )),
+    )
+    build = test_util.build(id=1)
+    build.put()
 
-    for case in cases:
-      build = mkBuild(canary=False)
-      build.put()
-      steps_key = model.BuildSteps.key_for(build.key)
+    swarming._sync_build_async(
+        1, case['task_result'], 'luci.chromium.ci', 'linux-rel'
+    ).get_result()
 
-      # This is cleanup after prev test in this func.
-      # TODO(nodir): split the test.
-      steps_key.delete()
+    build = build.key.get()
+    self.assertEqual(build.proto.status, case['status'])
+    self.assertEqual(
+        build.proto.infra_failure_reason.resource_exhaustion,
+        case.get('resource_exhaustion', False)
+    )
+    self.assertEqual(build.start_time, case.get('start_time'))
+    self.assertEqual(build.complete_time, case.get('complete_time'))
+    self.assertEqual(
+        list(build.proto.infra.swarming.bot_dimensions),
+        case.get('bot_dimensions', [])
+    )
 
-      load_build_run_result_async.return_value = future((
-          case.get('build_run_result'),
-          case.get('build_run_result_error', None),
-      ))
-      swarming._sync_build_async(
-          1, case['task_result'], 'luci.chromium.ci', 'linux-rel'
-      ).get_result()
-
-      build = build.key.get()
-      self.assertEqual(build.status, case['status'])
-      self.assertEqual(build.result, case.get('result'))
-      self.assertEqual(build.failure_reason, case.get('failure_reason'))
-      self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
-      self.assertEqual(build.start_time, case.get('start_time'))
-      self.assertEqual(build.complete_time, case.get('complete_time'))
-      self.assertEqual(
-          list(build.proto.infra.swarming.bot_dimensions),
-          case.get('bot_dimensions', [])
-      )
-
-      expected_steps = case.get('build_steps') or []
-      actual_build_steps = steps_key.get()
-      self.assertTrue(
-          build.status != model.BuildStatus.COMPLETED or
-          actual_build_steps is not None
-      )
-      step_container = build_pb2.Build()
-      if actual_build_steps:
-        step_container = actual_build_steps.step_container
-      self.assertEqual(list(step_container.steps), expected_steps)
+    expected_steps = case.get('build_steps') or []
+    actual_build_steps = model.BuildSteps.key_for(build.key).get()
+    self.assertTrue(not build.is_ended or actual_build_steps is not None)
+    step_container = build_pb2.Build()
+    if actual_build_steps:
+      step_container = actual_build_steps.step_container
+    self.assertEqual(list(step_container.steps), expected_steps)
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_async(self, fetch_isolate_async):
@@ -1976,12 +1839,7 @@ class SwarmingTest(BaseTest):
     self.assertIsNone(run_result)
 
   def test_generate_build_url(self):
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'linux_chromium_rel_ng'},
-        swarming_hostname='swarming.example.com',
-        swarming_task_id='deadbeef',
-    )
-
+    build = test_util.build(id=1)
     self.assertEqual(
         swarming._generate_build_url('milo.example.com', build),
         'https://milo.example.com/b/1',
@@ -2040,21 +1898,20 @@ class SubNotifyTest(BaseTest):
     self.assertEqual(
         self.handler.unpack_msg({
             'messageId':
-                '1',
-            'data':
-                b64json({
-                    'task_id':
-                        'deadbeef',
-                    'userdata':
-                        json.dumps({
-                            'created_ts': 1448841600000000,
-                            'swarming_hostname': 'chromium-swarm.appspot.com',
-                            'build_id': 1L,
-                        })
-                })
+                '1', 'data':
+                    b64json({
+                        'task_id':
+                            'deadbeef',
+                        'userdata':
+                            json.dumps({
+                                'created_ts': 1448841600000000,
+                                'swarming_hostname': 'swarming.example.com',
+                                'build_id': 1L,
+                            })
+                    })
         }), (
-            'chromium-swarm.appspot.com', datetime.datetime(2015, 11, 30),
-            'deadbeef', 1
+            'swarming.example.com', datetime.datetime(2015, 11, 30), 'deadbeef',
+            1
         )
     )
 
@@ -2070,7 +1927,7 @@ class SubNotifyTest(BaseTest):
             'userdata':
                 json.dumps({
                     'created_ts': 1448841600000,
-                    'swarming_hostname': 'chromium-swarm.appspot.com',
+                    'swarming_hostname': 'swarming.example.com',
                 })
         },
 
@@ -2095,7 +1952,7 @@ class SubNotifyTest(BaseTest):
                 'deadbeef',
             'userdata':
                 json.dumps({
-                    'swarming_hostname': 'chromium-swarm.appspot.com',
+                    'swarming_hostname': 'swarming.example.com',
                 }),
         },
         {
@@ -2104,7 +1961,7 @@ class SubNotifyTest(BaseTest):
             'userdata':
                 json.dumps({
                     'created_ts': 'foo',
-                    'swarming_hostname': 'chromium-swarm.appspot.com',
+                    'swarming_hostname': 'swarming.example.com',
                 }),
         },
     ]
@@ -2115,13 +1972,7 @@ class SubNotifyTest(BaseTest):
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_post(self, load_task_result_async):
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'release'},
-        tags=['builder:linux_chromium_rel_ng'],
-        swarming_hostname='chromium-swarm.appspot.com',
-        swarming_task_id='deadbeef',
-        canary=False,
-    )
+    build = test_util.build(id=1)
     build.put()
 
     self.handler.request = mock.Mock(
@@ -2135,12 +1986,9 @@ class SubNotifyTest(BaseTest):
                             'deadbeef',
                         'userdata':
                             json.dumps({
-                                'build_id':
-                                    1L,
-                                'created_ts':
-                                    1448841600000000,
-                                'swarming_hostname':
-                                    'chromium-swarm.appspot.com',
+                                'build_id': 1L,
+                                'created_ts': 1448841600000000,
+                                'swarming_hostname': 'swarming.example.com',
                             }),
                     }),
             }
@@ -2154,16 +2002,10 @@ class SubNotifyTest(BaseTest):
     self.handler.post()
 
     build = build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(build.result, model.BuildResult.SUCCESS)
+    self.assertEqual(build.proto.status, common_pb2.SUCCESS)
 
   def test_post_with_different_swarming_hostname(self):
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'release'},
-        tags=['builder:linux_chromium_rel_ng'],
-        swarming_hostname='chromium-swarm.appspot.com',
-        swarming_task_id='deadbeef',
-    )
+    build = test_util.build(id=1)
     build.put()
 
     self.handler.request = mock.Mock(
@@ -2182,7 +2024,7 @@ class SubNotifyTest(BaseTest):
                                 'created_ts':
                                     1448841600000000,
                                 'swarming_hostname':
-                                    'chromium-swarm.appspot.com.au',
+                                    'different-chromium.example.com',
                             }),
                     }),
             }
@@ -2193,12 +2035,7 @@ class SubNotifyTest(BaseTest):
       self.handler.post()
 
   def test_post_with_different_task_id(self):
-    build = mkBuild(
-        parameters={model.BUILDER_PARAMETER: 'release'},
-        tags=['builder:release'],
-        swarming_hostname='chromium-swarm.appspot.com',
-        swarming_task_id='deadbeef',
-    )
+    build = test_util.build(id=1)
     build.put()
 
     self.handler.request = mock.Mock(
@@ -2211,12 +2048,9 @@ class SubNotifyTest(BaseTest):
                         'task_id':
                             'deadbeefffffffffff', 'userdata':
                                 json.dumps({
-                                    'build_id':
-                                        1L,
-                                    'created_ts':
-                                        1448841600000000,
-                                    'swarming_hostname':
-                                        'chromium-swarm.appspot.com',
+                                    'build_id': 1L,
+                                    'created_ts': 1448841600000000,
+                                    'swarming_hostname': 'swarming.example.com',
                                 })
                     }),
             }
@@ -2236,12 +2070,9 @@ class SubNotifyTest(BaseTest):
                     b64json({
                         'userdata':
                             json.dumps({
-                                'build_id':
-                                    1L,
-                                'created_ts':
-                                    1448841600000000,
-                                'swarming_hostname':
-                                    'chromium-swarm.appspot.com',
+                                'build_id': 1L,
+                                'created_ts': 1448841600000000,
+                                'swarming_hostname': 'swarming.example.com',
                             })
                     }),
             }
@@ -2262,10 +2093,8 @@ class SubNotifyTest(BaseTest):
                             'deadbeef',
                         'userdata':
                             json.dumps({
-                                'created_ts':
-                                    1448841600000000,
-                                'swarming_hostname':
-                                    'chromium-swarm.appspot.com',
+                                'created_ts': 1448841600000000,
+                                'swarming_hostname': 'swarming.example.com',
                             }),
                     }),
             }
@@ -2277,7 +2106,7 @@ class SubNotifyTest(BaseTest):
   def test_post_without_build(self):
     userdata = {
         'created_ts': 1448841600000000,
-        'swarming_hostname': 'chromium-swarm.appspot.com',
+        'swarming_hostname': 'swarming.example.com',
         'build_id': 1L,
     }
     msg_data = {
@@ -2329,21 +2158,6 @@ class CronUpdateTest(BaseTest):
 
   def setUp(self):
     super(CronUpdateTest, self).setUp()
-    self.build = mkBuild(
-        start_time=self.now + datetime.timedelta(seconds=1),
-        parameters={
-            model.BUILDER_PARAMETER: 'release',
-        },
-        tags=['builder:release'],
-        swarming_hostname='chromium-swarm.appsot.com',
-        swarming_task_id='deadeef',
-        status=model.BuildStatus.STARTED,
-        lease_key=123,
-        lease_expiration_date=self.now + datetime.timedelta(minutes=5),
-        leasee=auth.Anonymous,
-        canary=False,
-    )
-    self.build.put()
     self.now += datetime.timedelta(minutes=5)
 
     self.patch(
@@ -2358,10 +2172,15 @@ class CronUpdateTest(BaseTest):
         'state': 'RUNNING',
     })
 
-    build = self.build
+    build = test_util.build()
+    build.leasee = auth.Anonymous
+    build.lease_key = 123
+    build.lease_expiration_date = self.now + datetime.timedelta(hours=1)
+    build.put()
+
     swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.STARTED)
+    self.assertEqual(build.proto.status, common_pb2.STARTED)
     self.assertIsNotNone(build.lease_key)
     self.assertIsNone(build.complete_time)
     self.assertIsNotNone(build.result_details)
@@ -2372,25 +2191,21 @@ class CronUpdateTest(BaseTest):
 
     swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(build.result, model.BuildResult.SUCCESS)
+    self.assertEqual(build.proto.status, common_pb2.SUCCESS)
     self.assertIsNone(build.lease_key)
-    self.assertIsNotNone(build.complete_time)
     self.assertIsNotNone(build.result_details)
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_sync_build_async_no_task(self, load_task_result_async):
     load_task_result_async.return_value = future(None)
 
-    build = self.build
+    build = test_util.build()
+    build.put()
     swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(build.result, model.BuildResult.FAILURE)
-    self.assertEqual(build.failure_reason, model.FailureReason.INFRA_FAILURE)
+    self.assertEqual(build.proto.status, common_pb2.INFRA_FAILURE)
     self.assertIsNotNone(build.result_details)
     self.assertIsNone(build.lease_key)
-    self.assertIsNotNone(build.complete_time)
 
 
 class TestApplyIfTags(BaseTest):
@@ -2476,18 +2291,3 @@ class TestApplyIfTags(BaseTest):
 
 def b64json(data):
   return base64.b64encode(json.dumps(data))
-
-
-def mkBuild(**kwargs):
-  args = dict(
-      id=1,
-      proto=build_pb2.Build(),
-      bucket_id='chromium/try',
-      create_time=utils.utcnow(),
-      created_by=auth.Identity('user', 'john@example.com'),
-      canary_preference=model.CanaryPreference.PROD,
-      parameters={},
-      input_properties=struct_pb2.Struct(),
-  )
-  args.update(kwargs)
-  return model.Build(**args)

@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import contextlib
 import datetime
 import itertools
 import mock
@@ -12,12 +11,11 @@ from google.appengine.ext import ndb
 from components import utils
 
 from proto import build_pb2
+from test import test_util
 from testing_utils import testing
 import bulkproc
 import main
 import model
-import search
-import v2
 
 
 class TestBase(testing.AppengineTestCase):
@@ -53,11 +51,8 @@ class StartTest(TestBase):
 
     day_date = lambda day: day0 + datetime.timedelta(days=day)
     builds = [
-        model.Build(
-            id=model.create_build_ids(day_date(day), 1, randomness=False)[0],
-            bucket_id='chromium/try',
-            create_time=day_date(day),
-        ) for day in xrange(3)
+        test_util.build(create_time=test_util.dt2ts(day_date(day)))
+        for day in xrange(3)
     ]
     ndb.put_multi(builds)
     proc = {'name': 'foo', 'payload': 'bar'}
@@ -116,11 +111,8 @@ class StartTest(TestBase):
     day0 = model.BEGINING_OF_THE_WORLD + datetime.timedelta(days=7)
     day_date = lambda day: day0 + datetime.timedelta(days=day)
     ndb.put_multi([
-        model.Build(
-            id=model.create_build_ids(day_date(day), 1, randomness=False)[0],
-            bucket_id='chromium/try',
-            create_time=day_date(day),
-        ) for day in xrange(150)
+        test_util.build(create_time=test_util.dt2ts(day_date(day)))
+        for day in xrange(150)
     ])
 
     self.post({
@@ -145,16 +137,7 @@ class SegmentTest(TestBase):
 
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_partial(self, enqueue_tasks):
-    ndb.put_multi([
-        model.Build(
-            id=i,
-            bucket_id='chromium/try',
-            tags=[
-                'buildset:%d' % (i % 3),
-                'a:b',
-            ],
-        ) for i in xrange(50, 60)
-    ])
+    ndb.put_multi([test_util.build(id=i) for i in xrange(50, 60)])
 
     def process(builds, payload):
       # process 5 builds
@@ -195,11 +178,7 @@ class SegmentTest(TestBase):
 
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_full(self, enqueue_tasks):
-    ndb.put_multi([
-        model.Build(
-            id=i, bucket_id='chromium/try', tags=['buildset:%d' % (i % 3)]
-        ) for i in xrange(50, 52)
-    ])
+    ndb.put_multi([test_util.build(id=i) for i in xrange(50, 52)])
     self.post({
         'job_id': 'jobid',
         'iteration': 0,
@@ -214,11 +193,7 @@ class SegmentTest(TestBase):
 
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_segment_attempt_2(self, enqueue_tasks):
-    ndb.put_multi([
-        model.Build(
-            id=i, bucket_id='chromium/try', tags=['buildset:%d' % (i % 3)]
-        ) for i in xrange(50, 60)
-    ])
+    ndb.put_multi([test_util.build(id=i) for i in xrange(50, 60)])
 
     # process 5 builds
     self.proc['func'] = lambda builds, _: list(itertools.islice(builds, 5))

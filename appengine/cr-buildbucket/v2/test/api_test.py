@@ -10,7 +10,6 @@ import datetime
 from google.appengine.ext import ndb
 from google.protobuf import field_mask_pb2
 from google.protobuf import text_format
-from google.rpc import status_pb2
 
 from components import auth
 from components import prpc
@@ -28,7 +27,6 @@ from test import test_util
 from v2 import api
 from v2 import validation
 import bbutil
-import buildtags
 import creation
 import errors
 import model
@@ -75,23 +73,6 @@ class BaseTestCase(testing.AppengineTestCase):
       self.assertIsNone(res)
     return res
 
-  def new_build_v1(
-      self, bucket_id='chromium/try', builder_name='linux-try', **kwargs
-  ):
-    build_kwargs = dict(
-        id=model.create_build_ids(self.now, 1)[0],
-        bucket_id=bucket_id,
-        parameters={
-            model.BUILDER_PARAMETER: builder_name,
-        },
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
-        created_by=auth.Identity('user', 'johndoe@example.com'),
-    )
-    build_kwargs['parameters'].update(kwargs.pop('parameters', {}))
-    build_kwargs.update(kwargs)
-    return model.Build(**build_kwargs)
-
 
 class RpcImplTests(BaseTestCase):
 
@@ -135,7 +116,9 @@ class RpcImplTests(BaseTestCase):
   @mock.patch('service.get_async', autospec=True)
   def test_trimming_exclude(self, get_async):
     get_async.return_value = future(
-        self.new_build_v1(input_properties=bbutil.dict_to_struct({'a': 'b'})),
+        test_util.build(
+            input=dict(properties=bbutil.dict_to_struct({'a': 'b'}))
+        ),
     )
     req = rpc_pb2.GetBuildRequest(id=1)
     res = self.call(self.api.GetBuild, req)
@@ -144,7 +127,9 @@ class RpcImplTests(BaseTestCase):
   @mock.patch('service.get_async', autospec=True)
   def test_trimming_include(self, get_async):
     get_async.return_value = future(
-        self.new_build_v1(input_properties=bbutil.dict_to_struct({'a': 'b'})),
+        test_util.build(
+            input=dict(properties=bbutil.dict_to_struct({'a': 'b'}))
+        ),
     )
     req = rpc_pb2.GetBuildRequest(id=1, fields=dict(paths=['input.properties']))
     res = self.call(self.api.GetBuild, req)
@@ -154,13 +139,13 @@ class RpcImplTests(BaseTestCase):
 class ToBuildMessagesTests(BaseTestCase):
 
   def test_steps(self):
-    build_v1 = self.new_build_v1()
+    build = test_util.build()
     steps = [
         step_pb2.Step(name='a', status=common_pb2.SUCCESS),
         step_pb2.Step(name='b', status=common_pb2.STARTED),
     ]
     model.BuildSteps(
-        key=model.BuildSteps.key_for(build_v1.key),
+        key=model.BuildSteps.key_for(build.key),
         step_container=build_pb2.Build(steps=steps),
     ).put()
 
@@ -168,7 +153,7 @@ class ToBuildMessagesTests(BaseTestCase):
         field_mask_pb2.FieldMask(paths=['steps']),
         build_pb2.Build.DESCRIPTOR,
     )
-    actual = api.builds_to_v2_async([build_v1], mask).get_result()
+    actual = api.builds_to_v2_async([build], mask).get_result()
 
     self.assertEqual(len(actual), 1)
     self.assertEqual(list(actual[0].steps), steps)
@@ -179,7 +164,7 @@ class GetBuildTests(BaseTestCase):
 
   @mock.patch('service.get_async', autospec=True)
   def test_by_id(self, get_async):
-    get_async.return_value = future(self.new_build_v1(id=54))
+    get_async.return_value = future(test_util.build(id=54))
     req = rpc_pb2.GetBuildRequest(id=54)
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.id, 54)
@@ -187,20 +172,14 @@ class GetBuildTests(BaseTestCase):
 
   @mock.patch('search.search_async', autospec=True)
   def test_by_number(self, search_async):
-    build_v1 = self.new_build_v1(
-        bucket_id='chromium/try',
-        builder_name='linux-try',
-        tags=[
-            buildtags.build_address_tag('luci.chromium.try', 'linux-try', 2),
-        ],
-    )
-    search_async.return_value = future(([build_v1], None))
     builder_id = build_pb2.BuilderID(
         project='chromium', bucket='try', builder='linux-try'
     )
+    build = test_util.build(id=1, builder=builder_id, number=2)
+    search_async.return_value = future(([build], None))
     req = rpc_pb2.GetBuildRequest(builder=builder_id, build_number=2)
     res = self.call(self.api.GetBuild, req)
-    self.assertEqual(res.id, build_v1.key.id())
+    self.assertEqual(res.id, 1)
     self.assertEqual(res.builder, builder_id)
     self.assertEqual(res.number, 2)
 
@@ -239,8 +218,8 @@ class SearchTests(BaseTestCase):
 
   @mock.patch('search.search_async', autospec=True)
   def test_basic(self, search_async):
-    builds_v1 = [self.new_build_v1(id=54), self.new_build_v1(id=55)]
-    search_async.return_value = future((builds_v1, 'next page token'))
+    builds = [test_util.build(id=54), test_util.build(id=55)]
+    search_async.return_value = future((builds, 'next page token'))
 
     req = rpc_pb2.SearchBuildsRequest(
         predicate=dict(
@@ -292,62 +271,53 @@ class UpdateBuildTests(BaseTestCase):
       metadata.append((api.BUILD_TOKEN_HEADER, token))
     return build_req, ctx
 
-  @contextlib.contextmanager
-  def mock_build(self, build_id):
-    build = model.Build(
-        id=build_id,
-        status=model.BuildStatus.STARTED,
-        bucket_id='chromium/try',
-        created_by=auth.Identity('user', 'foo@google.com'),
-        create_time=utils.utcnow(),
-        start_time=utils.utcnow(),
-    )
-    build.put()
-    yield build
-
   def test_update_steps(self):
-    with self.mock_build(build_id=123) as build:
-      build_proto = build_pb2.Build(id=123)
-      with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
-        text = protoutil.parse_multiline(f.read())
-        text_format.Merge(text, build_proto)
+    build = test_util.build(id=123, status=common_pb2.STARTED)
+    build.put()
 
-      req, ctx = self._mk_update_req(build_proto)
-      req.fields.paths[:] = ['id', 'steps']
-      self.call(self.api.UpdateBuild, req, ctx=ctx)
+    build_proto = build_pb2.Build(id=123)
+    with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
+      text = protoutil.parse_multiline(f.read())
+      text_format.Merge(text, build_proto)
 
-      persisted = model.BuildSteps.key_for(build.key).get()
-      self.assertEqual(persisted.step_container.steps, build_proto.steps)
+    req, ctx = self._mk_update_req(build_proto)
+    req.fields.paths[:] = ['id', 'steps']
+    self.call(self.api.UpdateBuild, req, ctx=ctx)
+
+    persisted = model.BuildSteps.key_for(build.key).get()
+    self.assertEqual(persisted.step_container.steps, build_proto.steps)
 
   def test_update_properties(self):
-    with self.mock_build(build_id=123) as build:
-      expected_props = {'a': 1}
-      build_steps = model.BuildSteps(
-          key=model.BuildSteps.key_for(build.key),
-          step_container=build_pb2.Build(steps=[dict(name='bot_update')],),
-      )
-      build_steps.put()
+    build = test_util.build(id=123, status=common_pb2.STARTED)
+    build.put()
 
-      build_proto = build_pb2.Build(id=123)
-      build_proto.output.properties.update(expected_props)
+    expected_props = {'a': 1}
+    build_steps = model.BuildSteps(
+        key=model.BuildSteps.key_for(build.key),
+        step_container=build_pb2.Build(steps=[dict(name='bot_update')],),
+    )
+    build_steps.put()
 
-      req, ctx = self._mk_update_req(build_proto)
-      req.update_mask.paths[:] = ['build.output.properties']
-      req.fields.paths[:] = ['id', 'steps', 'output.properties']
-      self.call(self.api.UpdateBuild, req, ctx=ctx)
+    build_proto = build_pb2.Build(id=123)
+    build_proto.output.properties.update(expected_props)
 
-      expected = copy.deepcopy(build_proto)
-      expected.MergeFrom(build_steps.step_container)
+    req, ctx = self._mk_update_req(build_proto)
+    req.update_mask.paths[:] = ['build.output.properties']
+    req.fields.paths[:] = ['id', 'steps', 'output.properties']
+    self.call(self.api.UpdateBuild, req, ctx=ctx)
 
-      build = build.key.get()
-      self.assertEqual(
-          build.result_details[model.PROPERTIES_PARAMETER], expected_props
-      )
+    expected = copy.deepcopy(build_proto)
+    expected.MergeFrom(build_steps.step_container)
 
-      out_props = model.BuildOutputProperties.key_for(build.key).get()
-      self.assertEqual(
-          test_util.msg_to_dict(out_props.properties), expected_props
-      )
+    build = build.key.get()
+    self.assertEqual(
+        build.result_details[model.PROPERTIES_PARAMETER], expected_props
+    )
+
+    out_props = model.BuildOutputProperties.key_for(build.key).get()
+    self.assertEqual(
+        test_util.msg_to_dict(out_props.properties), expected_props
+    )
 
   def test_missing_token(self):
     build = build_pb2.Build(
@@ -435,9 +405,10 @@ class ScheduleBuildTests(BaseTestCase):
   @mock.patch('creation.add_async', autospec=True)
   def test_schedule(self, add_async):
     add_async.return_value = future(
-        self.new_build_v1(
-            id=54, bucket_id='chromium/try', builder_name='linux'
-        )
+        test_util.build(
+            id=54,
+            builder=dict(project='chromium', bucket='try', builder='linux'),
+        ),
     )
     req = rpc_pb2.ScheduleBuildRequest(
         builder=dict(project='chromium', bucket='try', builder='linux'),
@@ -468,10 +439,9 @@ class BatchTests(BaseTestCase):
   @mock.patch('search.search_async', autospec=True)
   def test_get_and_search(self, search_async, get_async):
     search_async.return_value = future(([
-        self.new_build_v1(id=1),
-        self.new_build_v1(id=2)
+        test_util.build(id=1), test_util.build(id=2)
     ], ''))
-    get_async.return_value = future(self.new_build_v1(id=3))
+    get_async.return_value = future(test_util.build(id=3))
 
     req = rpc_pb2.BatchRequest(
         requests=[
@@ -539,7 +509,7 @@ class BatchTests(BaseTestCase):
   @mock.patch('creation.add_many_async', autospec=True)
   def test_schedule_build_requests(self, add_many_async):
     add_many_async.return_value = future([
-        (self.new_build_v1(id=42), None),
+        (test_util.build(id=42), None),
         (None, errors.InvalidInputError('bad')),
     ])
 

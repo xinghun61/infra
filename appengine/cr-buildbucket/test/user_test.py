@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import collections
-
 from components import auth
 from testing_utils import testing
 import mock
@@ -11,6 +9,7 @@ import mock
 from google.appengine.ext import ndb
 
 from proto.config import project_config_pb2
+from test import test_util
 from test.test_util import future
 import config
 import errors
@@ -198,7 +197,7 @@ class UserTest(testing.AppengineTestCase):
 
   def test_can_view_build(self):
     self.mock_role(Acl.READER)
-    build = model.Build(bucket_id='chromium/try')
+    build = test_util.build()
     self.assertTrue(user.can_view_build_async(build).get_result())
     self.assertFalse(user.can_lease_build_async(build).get_result())
 
