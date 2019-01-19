@@ -1,0 +1,54 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/mr-app/mr-app.html">
+<test-fixture id="basic">
+  <template>
+    <mr-app></mr-app>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  // TODO(zhangtiff): Flesh out these tests once we figure out
+  // how to make Redux store changes propagate back to elements.
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+
+      // TODO(zhangtiff): Remove this once Polymer pages stop needing
+      //   window.prpcCall.
+      window.prpcCall = (service, method, message) => {
+        return new Promise((resolve, reject) => {
+          resolve();
+        });
+      };
+    });
+
+    test('renders', function(done) {
+      flush(() => {
+        assert.isDefined(element, 'element is defined');
+        done();
+      });
+    });
+
+    test('_loadApprovalPage loads approval page', function(done) {
+      element._loadApprovalPage({
+        query: {id: '234'},
+        params: {project: 'chromium'},
+      });
+
+      flush(() => {
+        const approvalElement = Polymer.dom(element.root).querySelector('mr-approval-page');
+        assert.isDefined(approvalElement, 'approval element is defined');
+        assert.equal(approvalElement.projectName, 'chromium');
+        assert.equal(approvalElement.issueId, 234);
+        done();
+      });
+    });
+  });
+})();
+</script>

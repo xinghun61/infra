@@ -21,6 +21,13 @@
       element = fixture('basic');
     });
 
+    test('renders', function(done) {
+      flush(() => {
+        assert.isDefined(element, 'element is defined');
+        done();
+      });
+    });
+
     test('fetching issue makes loading show', function() {
       assert.isFalse(store.getState().fetchingIssue);
 

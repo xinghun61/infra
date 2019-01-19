@@ -91,9 +91,8 @@ deps:
 		deployed_node_modules/chart.js/dist/Chart.min.js
 
 vulcanize: clean_vulcanized
-	$(call VULCANIZE, elements/flt/mr-approval-page/mr-approval-page)
+	$(call VULCANIZE, elements/mr-app/mr-app)
 	$(call VULCANIZE, elements/chdir/mr-profile-page/mr-profile-page)
-	$(call VULCANIZE, elements/mr-bar-chart/mr-bar-chart)
 	$(call VULCANIZE, elements/mr-bulk-approval-update/mr-bulk-approval-update)
 
 clean_vulcanized:

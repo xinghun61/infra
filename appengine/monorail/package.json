@@ -17,6 +17,8 @@
   "dependencies": {
     "chart.js": "^2.7.2",
     "noclosure-resin-bridge": "^1.0.0",
+    "page": "^1.11.3",
+    "qs": "^6.6.0",
     "redux": "^4.0.0",
     "reselect": "^3.0.1"
   }

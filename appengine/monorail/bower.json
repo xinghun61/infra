@@ -11,7 +11,6 @@
   ],
   "dependencies": {
     "accessibility-developer-tools": "https://github.com/GoogleChrome/accessibility-developer-tools.git#3616c094e090174f70b53ca4cea25529522abffb",
-    "app-route": "https://github.com/PolymerElements/app-route.git#017cd03c3c1fa22f5331d1d516a03aae879ee426",
     "async": "https://github.com/caolan/async.git#a47eef3dac38d593180b1e2eaed7b512b022cb9f",
     "chai": "https://github.com/chaijs/chai.git#57c85f624a7e19ffaf1a2c7d07d81180db17bec7",
     "font-roboto": "https://github.com/PolymerElements/font-roboto.git#014b084ae51314648053e792cf6c870946942953",

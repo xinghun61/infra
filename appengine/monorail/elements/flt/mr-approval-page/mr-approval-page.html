@@ -1,9 +1,5 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../../bower_components/polymer-resin/standalone/polymer-resin.html">
-<script src="../../../node_modules/noclosure-resin-bridge/index.js"></script>
 
-<link rel="import" href="../../../bower_components/app-route/app-location.html">
-<link rel="import" href="../../../bower_components/app-route/app-route.html">
 <link rel="import" href="../../../bower_components/chopsui/chops-header.html">
 
 <link rel="import" href="../mr-approval-page/mr-issue-header.html">
@@ -11,16 +7,9 @@
 <link rel="import" href="../mr-metadata/mr-issue-metadata.html">
 <link rel="import" href="../mr-launch-overview/mr-launch-overview.html">
 <link rel="import" href="../../redux/redux-mixin.html">
-<link rel="import" href="../../mr-header/mr-header.html">
 
 <dom-module id="mr-approval-page">
   <template>
-    <script>
-      security.polymer_resin.install({
-        'allowedIdentifierPrefixes': [''],
-        'safeTypesBridge': security.polymer_resin.noclosure_bridge,
-      });
-    </script>
     <style>
       .container-main {
         overflow: hidden;
@@ -96,48 +85,28 @@
         }
       }
     </style>
-    <app-location
-      route="{{route}}"
-      query-params="{{queryParams}}"
-      url-space-regex="^/p/(\w+)/issues/approval"
-    ></app-location>
-    <app-route
-      route="{{route}}"
-      pattern="/p/:project/issues/approval"
-      data="{{routeData}}"
-    ></app-route>
-    <mr-header
-      project-name="[[projectName]]"
-      user="[[user]]"
-      login-url="[[loginUrl]]"
-      logout-url="[[logoutUrl]]"
-    >
-      <span slot="subheader">&gt; Feature Launch Issue</span>
-    </mr-header>
-    <main>
-      <template is="dom-if" if="[[_showLoading(issueLoaded, fetchIssueError)]]">
-        <div class="container-outside">
-          Loading...
+    <template is="dom-if" if="[[_showLoading(issueLoaded, fetchIssueError)]]">
+      <div class="container-outside">
+        Loading...
+      </div>
+    </template>
+    <template is="dom-if" if="[[fetchIssueError]]">
+      <div class="container-outside">
+        [[fetchIssueError.description]]
+      </div>
+    </template>
+    <template is="dom-if" if="[[issueLoaded]]">
+      <mr-issue-header></mr-issue-header>
+      <div class="container-outside">
+        <aside class="metadata-container">
+          <mr-issue-metadata></mr-issue-metadata>
+        </aside>
+        <div class="container-main">
+          <mr-issue-details class="main-item"></mr-issue-details>
+          <mr-launch-overview class="main-item"></mr-launch-overview>
         </div>
-      </template>
-      <template is="dom-if" if="[[fetchIssueError]]">
-        <div class="container-outside">
-          [[fetchIssueError.description]]
-        </div>
-      </template>
-      <template is="dom-if" if="[[issueLoaded]]">
-        <mr-issue-header></mr-issue-header>
-        <div class="container-outside">
-          <aside class="metadata-container">
-            <mr-issue-metadata></mr-issue-metadata>
-          </aside>
-          <div class="container-main">
-            <mr-issue-details class="main-item"></mr-issue-details>
-            <mr-launch-overview class="main-item"></mr-launch-overview>
-          </div>
-        </div>
-      </template>
-    </main>
+      </div>
+    </template>
   </template>
   <script src="./mr-approval-page.js"></script>
 </dom-module>

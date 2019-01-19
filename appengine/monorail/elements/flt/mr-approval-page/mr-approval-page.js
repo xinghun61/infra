@@ -1,3 +1,7 @@
+// Copyright 2018 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 'use strict';
 
 /**
@@ -42,11 +46,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         type: String,
         statePath: 'fetchIssueError',
       },
-      loginUrl: String,
-      logoutUrl: String,
-      queryParams: Object,
-      route: String,
-      routeData: Object,
       user: {
         type: String,
         observer: '_userChanged',
@@ -55,17 +54,12 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         type: Object,
         statePath: 'user',
       },
-      _userMenuItems: {
-        type: Array,
-        computed: '_computeUserMenuItems(_user.email, loginUrl, logoutUrl)',
-      },
     };
   }
 
   static get observers() {
     return [
       '_issueIdChanged(issueId, projectName)',
-      '_routeChanged(routeData, queryParams)',
     ];
   }
 
@@ -116,14 +110,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
     actionCreator.fetchIsStarred(this.dispatch.bind(this), message);
   }
 
-  _routeChanged(routeData, queryParams) {
-    this.dispatch({
-      type: actionType.UPDATE_ISSUE_REF,
-      issueId: Number.parseInt(queryParams.id),
-      projectName: routeData.project,
-    });
-  }
-
   _userChanged(user) {
     this.dispatch({type: actionType.FETCH_USER_START});
 
@@ -156,20 +142,6 @@ class MrApprovalPage extends ReduxMixin(Polymer.Element) {
         error,
       });
     });
-  }
-
-  _computeUserMenuItems(userEmail, loginUrl, logoutUrl) {
-    return [
-      {text: 'Switch accounts', url: loginUrl},
-      {separator: true},
-      {text: 'Profile', url: `/u/${userEmail}`},
-      {text: 'Updates', url: `/u/${userEmail}/updates`},
-      {text: 'Settings', url: '/hosting/settings'},
-      {text: 'Saved queries', url: `/u/${userEmail}/queries`},
-      {text: 'Hotlists', url: `/u/${userEmail}/hotlists`},
-      {separator: true},
-      {text: 'Sign out', url: logoutUrl},
-    ];
   }
 }
 

@@ -1,0 +1,30 @@
+<link rel="import" href="../../bower_components/polymer-resin/standalone/polymer-resin.html">
+<script src="../../node_modules/noclosure-resin-bridge/index.js"></script>
+<script src="../../node_modules/page/page.js"></script>
+<script src="../../node_modules/qs/dist/qs.js"></script>
+
+<link rel="import" href="../flt/mr-approval-page/mr-approval-page.html">
+<link rel="import" href="../mr-header/mr-header.html">
+
+<dom-module id="mr-app">
+  <template>
+    <script>
+      security.polymer_resin.install({
+        'allowedIdentifierPrefixes': [''],
+        'safeTypesBridge': security.polymer_resin.noclosure_bridge,
+      });
+    </script>
+    <mr-header
+      project-name="[[projectName]]"
+      user="[[user]]"
+      login-url="[[loginUrl]]"
+      logout-url="[[logoutUrl]]"
+    >
+      <template is="dom-if" if="[[subheader]]">
+        <span slot="subheader">&gt; [[subheader]]</span>
+      </template>
+    </mr-header>
+    <main></main>
+  </template>
+  <script src="./mr-app.js"></script>
+</dom-module>
