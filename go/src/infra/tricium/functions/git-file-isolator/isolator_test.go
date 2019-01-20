@@ -12,36 +12,6 @@ import (
 )
 
 func TestHelperFunctions(t *testing.T) {
-	// TODO(crbug.com/904007): Remove tests for isSkipped after adding
-	// .gitattributes files.
-	Convey("isSkipped skips generated expectations files", t, func() {
-		So(isSkipped("infra/recipes/recipes/foo.expected/bar.json"), ShouldBeTrue)
-		So(isSkipped("infra/recipes/recipes/foo.expected/bar.json"), ShouldBeTrue)
-		So(isSkipped("third_party/blink/web_tests/a/b/foo-expected.txt"), ShouldBeTrue)
-	})
-
-	Convey("isSkipped skips generated proto files", t, func() {
-		So(isSkipped("infra/infra/project/protos/foo_pb2.py"), ShouldBeTrue)
-		So(isSkipped("infra/infra/project/protos/foo.pb.go"), ShouldBeTrue)
-		So(isSkipped("infra/recipes/recipes/foo.expected/bar.json"), ShouldBeTrue)
-		So(isSkipped("third_party/blink/web_tests/a/b/foo-expected.txt"), ShouldBeTrue)
-	})
-
-	Convey("isSkipped skips third_party files except those in blink", t, func() {
-		So(isSkipped("third_party/foo/a/b/bar.cc"), ShouldBeTrue)
-		So(isSkipped("third_party/blink/renderer/bar.cc"), ShouldBeFalse)
-	})
-
-	Convey("isSkipped returns false for paths that shouldn't match", t, func() {
-		So(isSkipped("a/b/c/foo.cc"), ShouldBeFalse)
-		So(isSkipped("README.md"), ShouldBeFalse)
-		So(isSkipped("foothird_partybar.md"), ShouldBeFalse)
-		So(isSkipped("x/expected.json"), ShouldBeFalse)
-		So(isSkipped("x/expected.txt"), ShouldBeFalse)
-		So(isSkipped("x/expected.html"), ShouldBeFalse)
-		So(isSkipped("x/pb.go"), ShouldBeFalse)
-	})
-
 	Convey("possibleGitattributesPaths lists all relevant paths", t, func() {
 		So(
 			possibleGitattributesPaths([]string{"one/two/foo.c"}),

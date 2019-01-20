@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
 	"sort"
 	"strings"
 
@@ -113,8 +112,6 @@ func filterSkippedFiles(files []*tricium.Data_File, dir string) []*tricium.Data_
 	for _, file := range files {
 		if skipped.Has(file.Path) {
 			log.Printf("Skipping file %q based on git attributes.", file.Path)
-		} else if isSkipped(file.Path) {
-			log.Printf("Skipping file %q based on patterns.", file.Path)
 		} else {
 			filtered = append(filtered, file)
 		}
@@ -279,28 +276,4 @@ func isRegularFile(p string) bool {
 		return false
 	}
 	return true
-}
-
-// A set of patterns to match paths that we initially know we want to skip.
-//
-// TODO(crbug.com/904007): Remove this after adding .gitattributes files.
-var (
-	thirdParty         = regexp.MustCompile(`^third_party/`)
-	thirdPartyBlink    = regexp.MustCompile(`^third_party/blink/`)
-	webTestExpectation = regexp.MustCompile(`web_tests/.+-expected\.(txt|png|wav)$`)
-	recipeExpectation  = regexp.MustCompile(`\.expected/.*\.json$`)
-	pdfiumExpectation  = regexp.MustCompile(`_expected\.txt$`)
-	protoGenerated     = regexp.MustCompile(`(\.pb.go|_pb2.py)$`)
-)
-
-// isSkipped checks whether a path matches a short list of possible known
-// generated file types that exist in Chromium and related projects.
-//
-// TODO(crbug.com/904007): Remove this after adding .gitattributes files.
-func isSkipped(p string) bool {
-	return ((thirdParty.MatchString(p) && !thirdPartyBlink.MatchString(p)) ||
-		webTestExpectation.MatchString(p) ||
-		pdfiumExpectation.MatchString(p) ||
-		recipeExpectation.MatchString(p) ||
-		protoGenerated.MatchString(p))
 }
