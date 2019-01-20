@@ -140,9 +140,16 @@ def RunSteps(api, source_repo, target_repo):
   # point at HEAD it wouldn't be.
   api.git('branch', '-f', 'master-original', 'HEAD~')
 
-  # We've effectively deleted the commit that was at HEAD before. This means
-  # that we've diverged from the remote repo, and hence must do a force push.
-  api.git('push', '--all', '--force', target_repo)
+  api.git('push',
+          # skip-validation is necessary as without it we cannot push >=10k
+          # commits at once.
+          '--push-option=skip-validation',
+          # We've effectively deleted the commit that was at HEAD before. This
+          # means that we've diverged from the remote repo, and hence must do a
+          # force push.
+          '--force',
+          '--all',
+          target_repo)
 
 def ShouldGenerateNewCommit(api, target_repo):
   """

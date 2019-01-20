@@ -173,8 +173,9 @@
     "cmd": [
       "git",
       "push",
-      "--all",
+      "--push-option=skip-validation",
       "--force",
+      "--all",
       "https://chromium.googlesource.com/codesearch/src_mirror"
     ],
     "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
