@@ -94,6 +94,8 @@ def RunSteps(api, source_repo, target_repo):
   for path, entry in deps.iteritems():
     url = entry['url']
     rev = entry['rev']
+    if rev is None:
+      rev = 'master'
 
     # Filter out any DEPS that point outside of the repo, as there's no way to
     # represent this with submodules.
