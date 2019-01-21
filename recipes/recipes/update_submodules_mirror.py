@@ -108,6 +108,12 @@ def RunSteps(api, source_repo, target_repo):
     # Filter out the root repo itself, which shows up for some reason.
     if path == source_checkout_name:
       continue
+    # Filter out deps that are nested within other deps. Submodules can't
+    # represent this.
+    if any(path != other_path and path.startswith(other_path + '/')
+           for other_path in deps.iterkeys()):
+      continue
+
     # json.loads returns unicode but the recipe framework can only handle str.
     path = str(path[len(source_checkout_name):])
 
@@ -223,6 +229,19 @@ fake_deps_with_symbolic_ref = """
   "src/v8": {
     "url": "https://chromium.googlesource.com/v8/v8.git",
     "rev": "origin/master"
+  }
+}
+"""
+
+fake_deps_with_nested_dep = """
+{
+  "src/third_party/gsutil": {
+    "url": "https://chromium.googlesource.com/external/gsutil/src.git",
+    "rev": "5cba434b828da428a906c8197a23c9ae120d2636"
+  },
+  "src/third_party/gsutil/boto": {
+    "url": "https://chromium.googlesource.com/external/boto.git",
+    "rev": "98fc59a5896f4ea990a4d527548204fed8f06c64"
   }
 }
 """
@@ -350,4 +369,24 @@ def GenTests(api):
                         '91c13923c1d136dc688527fa39583ef61a3277f7\t' +
                         'refs/heads/master',
                         stream='stdout'))
+  )
+
+  yield (
+      api.test('nested_deps') +
+      api.properties(
+          source_repo='https://chromium.googlesource.com/chromium/src',
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror'
+      ) +
+      api.step_data('Check for existing source checkout dir',
+                    api.raw_io.stream_output('src', stream='stdout')) +
+      api.step_data('Check for new commits.Find latest commit to target repo',
+                    api.json.output({'log': [
+                        {
+                            'commit': 'a' * 40,
+                            'author': {'name': 'Someone else'},
+                        },
+                    ]})) +
+      api.step_data('gclient evaluate DEPS',
+                    api.raw_io.stream_output(fake_deps_with_nested_dep,
+                                             stream='stdout'))
   )
