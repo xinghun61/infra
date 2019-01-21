@@ -43,7 +43,7 @@ class NavBar extends LitElement {
   bug() {
     return html`<li class="bug">
         <a style="background-color:#00d3f3"
-          href="${constants.BUGLIST}">File Bug</a>
+          href="${constants.BugList}">File Bug</a>
       </li>`;
   };
 

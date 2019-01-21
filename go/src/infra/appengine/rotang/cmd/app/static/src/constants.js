@@ -14,7 +14,6 @@ export const Shifts = {
     return result;
   },
 };
-export const BUGLIST = 'https://bugs.chromium.org/p/chromium/issues/list?can=2&q=component%3AInfra%3ESheriffing%3ERotations+&colspec=ID+Pri+M+Stars+ReleaseBlock+Component+Status+Owner+Summary+OS+Modified&x=m&y=releaseblock&cells=ids';
 export const TimeZones = [
   {name: 'America/Los_Angeles', description: 'Mountain View'},
   {name: 'America/New_York', description: 'New York'},
@@ -23,4 +22,4 @@ export const TimeZones = [
   {name: 'Europe/Paris', description: 'Paris'},
   {name: 'Europe/Stockholm', description: 'Stockholm'},
 ];
-export const BugList = 'https://bugs.chromium.org/p/chromium/issues/list?can=2&q=component%3AInfra%3ESheriffing%3ERotations+&colspec=ID+Pri+M+Stars+ReleaseBlock+Component+Status+Owner+Summary+OS+Modified&x=m&y=releaseblock&cells=ids';
+export const BugList = 'https://bugs.chromium.org/p/chromium/issues/entry?components=Infra%3EProdTech%3ERotations';
