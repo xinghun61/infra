@@ -374,6 +374,7 @@ indexes:
   properties:
   - name: server_host
   - name: project
+  - name: visible
   - name: commit_position
     direction: desc
   - name: commit_timestamp

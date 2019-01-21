@@ -48,6 +48,10 @@ class PostsubmitReport(ndb.Model):
 
   build_id = ndb.IntegerProperty(indexed=False)
 
+  # Used to control is a report is visible to the users, and the main use cause
+  # is to quanrantine a 'bad' report. All the reports are visible to admins.
+  visible = ndb.BooleanProperty(indexed=True, default=False)
+
 
 class PresubmitReport(ndb.Model):
   """Represents a presubmit code coverage report."""

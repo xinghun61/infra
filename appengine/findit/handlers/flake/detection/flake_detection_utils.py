@@ -278,7 +278,8 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   return flake_dict
 
 
-def GetFlakesByFilter(flake_filter, luci_project, limit=None):
+def GetFlakesByFilter(flake_filter, luci_project,
+                      limit=None):  # pragma: no cover.
   """Gets flakes by the given filter, then sorts them by the flake score.
 
   Args:

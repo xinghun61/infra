@@ -10,6 +10,9 @@ import re
 import urlparse
 import zlib
 
+import cloudstorage
+
+from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 from google.protobuf import json_format
@@ -21,6 +24,7 @@ from gae_libs.handlers.base_handler import BaseHandler, Permission
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.cache_decorator import Cached
 from libs.deps import chrome_dependency_fetcher
+from model import entity_util
 from model.proto.gen.code_coverage_pb2 import CoverageReport
 from model.code_coverage import CoverageData
 from model.code_coverage import DependencyRepository
@@ -46,8 +50,11 @@ _ALLOWED_GITILES_HOST = set([
 # The regex to extract the build id from the url path.
 _BUILD_ID_REGEX = re.compile(r'.*/build/(\d+)$')
 
+# Cloud storage bucket used to store the source files fetched from gitile.
+_SOURCE_FILE_GS_BUCKET = 'source-files-for-coverage'
 
-def _GetValidatedData(gs_url):
+
+def _GetValidatedData(gs_url):  # pragma: no cover.
   """Returns the json data from the given GS url after validation.
 
   Returns:
@@ -76,7 +83,7 @@ def _GetValidatedData(gs_url):
   return data
 
 
-def _DecompressLines(line_ranges):
+def _DecompressLines(line_ranges):  # pragma: no cover.
   """Decompress the lines data to a flat format.
 
   For example:
@@ -120,7 +127,7 @@ def _DecompressLines(line_ranges):
   return decompressed_lines
 
 
-def _RetrieveManifest(repo_url, revision, os_platform):
+def _RetrieveManifest(repo_url, revision, os_platform):  # pragma: no cover.
   """Returns the manifest of all the dependencies for the given revision.
 
   Args:
@@ -140,7 +147,7 @@ def _RetrieveManifest(repo_url, revision, os_platform):
 
   root_dir = 'src/'
 
-  def AddDependencyToManifest(path, url, revision):
+  def AddDependencyToManifest(path, url, revision):  # pragma: no cover.
     if path.startswith(root_dir):
       path = path[len(root_dir):]
     assert not path.startswith('//')
@@ -176,12 +183,160 @@ def _RetrieveManifest(repo_url, revision, os_platform):
   return manifest
 
 
-class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
+def _GetMatchedDependencyRepository(report, file_path):  # pragma: no cover.
+  """Gets the matched dependency in the manifest of the report.
+
+  Args:
+    report (PostsubmitReport): The report that the file is associated with.
+    file_path (str): Source absolute path to the file.
+
+  Returns:
+    A DependencyRepository if a matched one is found and it is whitelisted,
+    otherwise None.
+  """
+  assert file_path.startswith('//'), 'All file path should start with "//".'
+
+  dependency = None
+  for dep in report.manifest:
+    if file_path.startswith(dep.path):
+      dependency = dep
+      break
+
+  if not dependency or dependency.server_host not in _ALLOWED_GITILES_HOST:
+    return None
+
+  return dependency
+
+
+def _ComposeSourceFileGsPath(report, file_path, revision):
+  """Composes a cloud storage path for a specific revision of a source file.
+
+  Args:
+    report (PostsubmitReport): The report that the file is associated with.
+    file_path (str): Source absolute path to the file.
+    revision (str): The gitile revision of the file in its own repo.
+
+  Returns:
+    Cloud storage path to the file, in the format /bucket/object. For example,
+    /source-files-for-coverage/chromium.googlesource.com/v8/v8/src/date.cc/1234.
+  """
+  assert file_path.startswith('//'), 'All file path should start with "//".'
+  assert revision, 'A valid revision is required'
+
+  dependency = _GetMatchedDependencyRepository(report, file_path)
+  assert dependency, (
+      '%s file does not belong to any dependency repository' % file_path)
+
+  # Calculate the relative path to the root of the dependency repository itself.
+  relative_file_path = file_path[len(dependency.path):]
+  return '/%s/%s/%s/%s/%s' % (_SOURCE_FILE_GS_BUCKET, dependency.server_host,
+                              dependency.project, relative_file_path, revision)
+
+
+def _IsFileAvailableInGs(gs_path):  # pragma: no cover.
+  """Returns True if the specified object exists, otherwise False.
+
+  Args:
+    gs_path (str): Path to the file, in the format /bucket/object.
+
+  Returns:
+    True if the object exists, otherwise False.
+  """
+  try:
+    _ = cloudstorage.stat(gs_path)
+    return True
+  except cloudstorage.NotFoundError:
+    return False
+
+
+def _GetFileContentFromGs(gs_path):  # pragma: no cover.
+  """Reads the content of a file in cloud storage.
+
+  This method is more expensive than |_IsFileAvailableInGs|, so if the goal is
+  to check if a file exists, |_IsFileAvailableInGs| is preferred.
+
+  Args:
+    gs_path (str): Path to the file, in the format /bucket/object.
+
+  Returns:
+    The content of the file if it exists, otherwise None."""
+  try:
+    with cloudstorage.open(gs_path) as f:
+      return f.read()
+  except cloudstorage.NotFoundError:
+    return None
+
+
+def _WriteFileContentToGs(gs_path, content):  # pragma: no cover.
+  """Writes the content of a file to cloud storage.
+
+  Args:
+    gs_path (str): Path to the file, in the format /bucket/object.
+    content (str): Content of the file.
+  """
+  write_retry_params = cloudstorage.RetryParams(backoff_factor=2)
+  with cloudstorage.open(
+      gs_path, 'w', content_type='text/plain',
+      retry_params=write_retry_params) as f:
+    f.write(content)
+
+
+def _GetFileContentFromGitiles(report, file_path,
+                               revision):  # pragma: no cover.
+  """Fetches the content of a specific revision of a file from gitiles.
+
+  Args:
+    report (PostsubmitReport): The report that the file is associated with.
+    file_path (str): Source absolute path to the file.
+    revision (str): The gitile revision of the file.
+
+  Returns:
+    The content of the source file."""
+  assert file_path.startswith('//'), 'All file path should start with "//".'
+  assert revision, 'A valid revision is required'
+
+  dependency = _GetMatchedDependencyRepository(report, file_path)
+  assert dependency, (
+      '%s file does not belong to any dependency repository' % file_path)
+
+  # Calculate the relative path to the root of the dependency repository itself.
+  relative_file_path = file_path[len(dependency.path):]
+  repo = CachedGitilesRepository(FinditHttpClient(), dependency.project_url)
+  return repo.GetSource(relative_file_path, revision)
+
+
+class FetchSourceFile(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
+
+  def HandlePost(self):
+    report_key = self.request.get('report_key')
+    path = self.request.get('path')
+    revision = self.request.get('revision')
+
+    assert report_key, 'report_key is required'
+    assert path, 'path is required'
+    assert revision, 'revision is required'
+
+    report = entity_util.GetEntityFromUrlsafeKey(report_key)
+    assert report, (
+        'Postsubmit report does not exist for urlsafe key' % report_key)
+
+    file_content = _GetFileContentFromGitiles(report, path, revision)
+    if not file_content:
+      logging.error(
+          'Failed to get file from gitiles for %s@%s' % (path, revision))
+      return
+
+    gs_path = _ComposeSourceFileGsPath(report, path, revision)
+    _WriteFileContentToGs(gs_path, file_content)
+
+
+class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
+  PERMISSION_LEVEL = Permission.ADMIN
 
   def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, build_id):
     # Load the commit log first so that we could fail fast before redo all.
-    repo_url = 'https://%s/%s' % (commit.host, commit.project)
+    repo_url = 'https://%s/%s.git' % (commit.host, commit.project)
     change_log = CachedGitilesRepository(FinditHttpClient(),
                                          repo_url).GetChangeLog(commit.id)
     assert change_log is not None, 'Failed to retrieve the commit log'
@@ -189,6 +344,19 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     # Load the manifest based on the DEPS file.
     # TODO (crbug.com/921714): output the manifest as a build output property.
     manifest = _RetrieveManifest(repo_url, commit.id, 'unix')
+    report = PostsubmitReport(
+        key=ndb.Key(PostsubmitReport,
+                    '%s$%s$%s' % (commit.host, commit.project, commit.id)),
+        server_host=commit.host,
+        project=commit.project,
+        revision=commit.id,
+        commit_position=change_log.commit_position,
+        commit_timestamp=change_log.committer.time,
+        manifest=manifest,
+        summary_metrics=data.get('summaries'),
+        build_id=build_id,
+        visible=False)
+    report.put()
 
     code_revision_index = '%s-%s' % (commit.project, commit.id)
 
@@ -240,6 +408,10 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
                 'summaries': group_data['summaries'],
             })
 
+          if actual_data_type == 'files' and 'revision' in group_data:
+            self._FetchAndSaveFileIfNecessary(report, group_data['path'],
+                                              group_data['revision'])
+
           coverage_data = CoverageData.Create(commit.host, code_revision_index,
                                               actual_data_type,
                                               group_data['path'], group_data)
@@ -258,18 +430,38 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         component_summaries = []
         logging.info('Summary of all components are saved to datastore.')
 
-    # Create a repository-level record so that it shows up on UI.
-    PostsubmitReport(
-        key=ndb.Key(PostsubmitReport,
-                    '%s$%s$%s' % (commit.host, commit.project, commit.id)),
-        server_host=commit.host,
-        project=commit.project,
-        revision=commit.id,
-        commit_position=change_log.commit_position,
-        commit_timestamp=change_log.committer.time,
-        manifest=manifest,
-        summary_metrics=data.get('summaries'),
-        build_id=build_id).put()
+    report.visible = True
+    report.put()
+
+  def _FetchAndSaveFileIfNecessary(self, report, path, revision):
+    """Fetches the file from gitiles and store to cloud storage if not exist.
+
+    Args:
+      report (PostsubmitReport): The report that the file is associated with.
+      path (str): Source absolute path to the file.
+      revision (str): The gitile revision of the file in its own repo.
+    """
+    assert path.startswith('//'), 'All file path should start with "//"'
+    assert revision, 'A valid revision is required'
+
+    gs_path = _ComposeSourceFileGsPath(report, path, revision)
+    if _IsFileAvailableInGs(gs_path):
+      return
+
+    # Fetch the source files from gitile and save it in gs so that coverage
+    # file view can be quickly rendered.
+    url = ('/coverage/task/fetch-source-file')
+    params = {
+        'report_key': report.key.urlsafe(),
+        'path': path,
+        'revision': revision
+    }
+    taskqueue.add(
+        method='POST',
+        url=url,
+        target='code-coverage-backend',
+        queue_name='code-coverage-fetch-source-file',
+        params=params)
 
   def _ProcessCLPatchData(self, patch, data, build_id):
     # For a CL/patch, we save the entire data in one entity.
@@ -354,7 +546,7 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     return self.HandlePost()  # For local testing purpose.
 
 
-def _IsServePresubmitCoverageDataEnabled():
+def _IsServePresubmitCoverageDataEnabled():  # pragma: no cover.
   """Returns True if the feature to serve presubmit coverage data is enabled.
 
   Returns:
@@ -365,26 +557,7 @@ def _IsServePresubmitCoverageDataEnabled():
       'serve_presubmit_coverage_data', False)
 
 
-def _GetFileContent(report, file_path):
-  """Returns the content of the given file for the given report."""
-  assert file_path.startswith('//'), 'All file path should start with "//".'
-
-  dependency = None
-  for dep in report.manifest:
-    if file_path.startswith(dep.path):
-      dependency = dep
-      break
-
-  if not dependency or dependency.server_host not in _ALLOWED_GITILES_HOST:
-    return None
-
-  # Calculate the relative path to the root of the dependency repository itself.
-  path = file_path[len(dependency.path):]
-  repo = CachedGitilesRepository(FinditHttpClient(), dependency.project_url)
-  return repo.GetSource(path, dependency.revision)
-
-
-def _GetPathRootAndSeparatorFromDataType(data_type):
+def _GetPathRootAndSeparatorFromDataType(data_type):  # pragma: no cover.
   """Returns the path of the root and path separator for the given data type."""
   if data_type in ('files', 'dirs'):
     return '//', '/'
@@ -393,7 +566,7 @@ def _GetPathRootAndSeparatorFromDataType(data_type):
   return None, None
 
 
-def _GetNameToPathSeparator(path, data_type):
+def _GetNameToPathSeparator(path, data_type):  # pragma: no cover.
   """Returns a list of [name, sub_path] for the given path.
 
   Example:
@@ -443,7 +616,7 @@ def _GetNameToPathSeparator(path, data_type):
   return path_parts
 
 
-class ServeCodeCoverageData(BaseHandler):
+class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
@@ -525,8 +698,9 @@ class ServeCodeCoverageData(BaseHandler):
 
       if not revision:
         query = PostsubmitReport.query(
-            PostsubmitReport.server_host == host, PostsubmitReport.project ==
-            project).order(-PostsubmitReport.commit_position).order(
+            PostsubmitReport.server_host == host,
+            PostsubmitReport.project == project, PostsubmitReport.visible ==
+            True).order(-PostsubmitReport.commit_position).order(
                 -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
         data = [e._to_dict() for e in entities]
@@ -556,7 +730,7 @@ class ServeCodeCoverageData(BaseHandler):
         if not entity:
           return BaseHandler.CreateError('Requested path does not exist', 404)
 
-        metadata = entity.data if entity else None
+        metadata = entity.data
         data = {
             'commit_position': report.commit_position,
             'metadata': metadata,
@@ -566,7 +740,18 @@ class ServeCodeCoverageData(BaseHandler):
         if data_type == 'files':
           line_to_data = collections.defaultdict(dict)
 
-          file_content = _GetFileContent(report, path)
+          if 'revision' in metadata:
+            gs_path = _ComposeSourceFileGsPath(report, path,
+                                               metadata['revision'])
+            file_content = _GetFileContentFromGs(gs_path)
+            if not file_content:
+              # Fetching files from Gitiles is slow, only use it as a backup.
+              file_content = _GetFileContentFromGitiles(report, path,
+                                                        metadata['revision'])
+          else:
+            # If metadata['revision'] is empty, it means that the file is not
+            # a source file.
+            file_content = None
 
           if not file_content:
             line_to_data[1]['line'] = '!!!!No source code available!!!!'

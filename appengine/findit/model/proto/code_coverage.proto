@@ -108,6 +108,7 @@ message File {
   // The git hash (up to the revision in the checkout) of the commit in Gitiles
   // when the file was most recently changed.
   // E.g. fc7b1de555d4b1fe5b7ff2e4c99662a10cf4ddd6.
+  // Empty if the file not tracked by gitiles, such as generated source files.
   string revision = 7;
 
   // The UNIX timestamp of the committer date for the revision above.

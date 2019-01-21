@@ -63,3 +63,10 @@ queue:
   target: code-coverage-backend
   retry_parameters:
     task_retry_limit: 5
+
+- name: code-coverage-fetch-source-file
+  rate: 5/s
+  max_concurrent_requests: 5
+  target: code-coverage-backend
+  retry_parameters:
+    task_retry_limit: 3
