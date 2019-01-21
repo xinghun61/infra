@@ -25,13 +25,15 @@ var mtvTime = func() *time.Location {
 
 // Generators contain the currently registered rotation Generators.
 type Generators struct {
-	registred map[string]rotang.RotaGenerator
+	registred     map[string]rotang.RotaGenerator
+	shiftModifier map[string]rotang.ShiftModifier
 }
 
 // New creates a new Generators collection.
 func New() *Generators {
 	return &Generators{
-		registred: make(map[string]rotang.RotaGenerator),
+		registred:     make(map[string]rotang.RotaGenerator),
+		shiftModifier: make(map[string]rotang.ShiftModifier),
 	}
 }
 
@@ -56,6 +58,11 @@ func (a *Generators) Register(algo rotang.RotaGenerator) {
 	a.registred[algo.Name()] = algo
 }
 
+// RegisterModifier registers a new shift modifier.
+func (a *Generators) RegisterModifier(modifier rotang.ShiftModifier) {
+	a.shiftModifier[modifier.Name()] = modifier
+}
+
 // Fetch fetches the specified generator.
 func (a *Generators) Fetch(name string) (rotang.RotaGenerator, error) {
 	gen, ok := a.registred[name]
@@ -65,10 +72,28 @@ func (a *Generators) Fetch(name string) (rotang.RotaGenerator, error) {
 	return gen, nil
 }
 
+// FetchModifier fetches the specified modifier.
+func (a *Generators) FetchModifier(name string) (rotang.ShiftModifier, error) {
+	mod, ok := a.shiftModifier[name]
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "modifier: %q not found", name)
+	}
+	return mod, nil
+}
+
 // List returns a list of all registered Generators.
 func (a *Generators) List() []string {
 	var res []string
 	for k := range a.registred {
+		res = append(res, k)
+	}
+	return res
+}
+
+// ListModifiers returns a list of all registered Generators.
+func (a *Generators) ListModifiers() []string {
+	var res []string
+	for k := range a.shiftModifier {
 		res = append(res, k)
 	}
 	return res

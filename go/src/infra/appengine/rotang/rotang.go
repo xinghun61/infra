@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"context"
+
 	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/server/router"
 	"golang.org/x/oauth2"
@@ -58,6 +59,10 @@ type ShiftConfig struct {
 	ShiftMembers int
 	// Generator used to schedule new shifts.
 	Generator string
+	// Modifiers is used to modify shifts produced by the Generator.
+	Modifiers []string
+	// TZ TimeZone used.
+	TZ time.Location
 }
 
 // Shift represents a shift in a 24h rotation.
@@ -190,6 +195,12 @@ type ShiftStorer interface {
 type RotaGenerator interface {
 	Name() string
 	Generate(sc *Configuration, start time.Time, previous []ShiftEntry, members []Member, shiftsToSchedule int) ([]ShiftEntry, error)
+}
+
+// ShiftModifier is used to modify shifts produced by the Generator.
+type ShiftModifier interface {
+	Name() string
+	Modify(sc *ShiftConfig, shifts []ShiftEntry) ([]ShiftEntry, error)
 }
 
 // MailSender is used to send E-mails.
