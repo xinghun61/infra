@@ -6,6 +6,7 @@ syntax = "proto3";
 
 package bigquery;
 
+import "google/protobuf/duration.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
@@ -35,6 +36,7 @@ message TestMessage {
     // This field is not included in BQ row if it does not have nums,
     // i.e. we don't send empty arrays.
     RepeatedContainer repeated_container = 15;
+    google.protobuf.Duration duration = 16;
 }
 
 message NestedMessage {

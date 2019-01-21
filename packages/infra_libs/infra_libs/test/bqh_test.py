@@ -8,6 +8,7 @@ import mock
 import unittest
 from mock import patch
 
+from google.protobuf import duration_pb2
 from google.protobuf import empty_pb2
 from google.protobuf import struct_pb2
 from google.protobuf import timestamp_pb2
@@ -78,6 +79,8 @@ class TestBigQueryHelper(unittest.TestCase):
     ts0.FromDatetime(dt0)
     ts1 = timestamp_pb2.Timestamp()
     ts1.FromDatetime(dt1)
+    dur = duration_pb2.Duration()
+    dur.FromTimedelta(datetime.timedelta(seconds=2, microseconds=3))
 
     msg = testmessage_pb2.TestMessage(
         str='a',
@@ -105,6 +108,7 @@ class TestBigQueryHelper(unittest.TestCase):
         timestamps=[ts0, ts1],
 
         repeated_container=testmessage_pb2.RepeatedContainer(nums=[1, 2]),
+        duration=dur,
     )
     row = bqh.message_to_dict(msg)
 
@@ -132,6 +136,8 @@ class TestBigQueryHelper(unittest.TestCase):
       'timestamps': [dt0.isoformat(), dt1.isoformat()],
 
       'repeated_container': {'nums': [1L, 2L]},
+
+      'duration': 2.000003,
     }
 
     # compare structs as JSON values, not strings.
