@@ -24,6 +24,7 @@ import (
 )
 
 const progName = "skylab"
+const defaultTaskPriority = 140
 
 type commonFlags struct {
 	debug bool

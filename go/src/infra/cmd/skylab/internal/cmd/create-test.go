@@ -141,7 +141,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		Name:       taskName,
 		Tags:       tags,
 		TaskSlices: slices,
-		Priority:   1,
+		Priority:   defaultTaskPriority,
 	}
 
 	ctx := cli.GetContext(a, c, env)
