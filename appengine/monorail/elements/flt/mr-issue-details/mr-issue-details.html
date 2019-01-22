@@ -34,12 +34,13 @@
       }
     </style>
     <mr-inline-editor
+      id="editDescription"
       heading-level=2
       content="[[_description.content]]"
       title="Feature description"
       edit-text="Edit description"
       placeholder="Feature description"
-      on-save="[[_updateDescription]]"
+      on-save="_updateDescriptionHandler"
     >
       <mr-comment-content content="[[_description.content]]"></mr-comment-content>
     </mr-inline-editor>

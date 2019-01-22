@@ -22,6 +22,27 @@
       assert.deepEqual(element.getDelta(), {});
     });
 
+    test('toggling checkbox toggles sendEmail', function(done) {
+      element.sendEmail = false;
+
+      flush(() => {
+        const checkbox = element.shadowRoot.querySelector('#sendEmail');
+
+        checkbox.click();
+        assert.equal(checkbox.checked, true);
+        assert.equal(element.sendEmail, true);
+
+        checkbox.click();
+        assert.equal(checkbox.checked, false);
+        assert.equal(element.sendEmail, false);
+
+        checkbox.click();
+        assert.equal(checkbox.checked, true);
+        assert.equal(element.sendEmail, true);
+        done();
+      });
+    });
+
     test('changing status produces delta change', function(done) {
       element.statuses = [
         {'status': 'New'},

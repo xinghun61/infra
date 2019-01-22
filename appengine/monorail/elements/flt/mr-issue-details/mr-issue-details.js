@@ -33,39 +33,22 @@ class MrIssueDetails extends ReduxMixin(Polymer.Element) {
         type: Array,
         computed: '_filterComments(comments)',
       },
-      _updateDescription: {
-        type: Function,
-        value: function() {
-          return this._updateDescriptionHandler.bind(this);
-        },
-      },
     };
   }
 
-  _updateDescriptionHandler(content) {
-    this._updateIssue(content, null, true);
-  }
-
-  _updateIssue(commentData, delta, isDescription) {
+  _updateDescriptionHandler(evt) {
+    if (!evt || !evt.detail) return;
     const message = {
       trace: {token: this.token},
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
       },
-      commentContent: commentData || '',
+      commentContent: evt.detail.commentContent,
+      isDescription: true,
+      sendEmail: evt.detail.sendEmail,
     };
 
-    if (delta) {
-      message.delta = delta;
-    }
-
-    if (isDescription) {
-      message.isDescription = true;
-    }
-
-    // TODO(zhangtiff): monorail:4418, allow option of not sending email
-    message.sendEmail = true;
     actionCreator.updateIssue(this.dispatch.bind(this), message);
   }
 

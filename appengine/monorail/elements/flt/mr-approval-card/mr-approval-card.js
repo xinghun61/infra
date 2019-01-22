@@ -195,13 +195,19 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
   save() {
     const form = this.$.metadataForm;
     const data = form.getDelta();
+    const sendEmail = form.sendEmail;
     const loads = form.loadAttachments();
     const delta = this._generateDelta(data);
 
     Promise.all(loads).then((uploads) => {
       if (data.comment || Object.keys(delta).length > 0 ||
           uploads.length > 0) {
-        this._updateApproval(data.comment, delta, uploads);
+        this._updateApproval({
+          commentContent: data.comment,
+          approvalDelta: delta,
+          uploads: uploads,
+          sendEmail: sendEmail,
+        });
       }
     }).catch((reason) => {
       console.error('loading file for attachment: ', reason);
@@ -249,35 +255,22 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     this.opened = !this.opened;
   }
 
-  _updateApproval(commentData, delta, uploads, isDescription) {
+  _updateApproval(messageBody) {
+    if (!messageBody || !Object.keys(messageBody).length) return;
     const baseMessage = {
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
       },
     };
-    const message = Object.assign({}, baseMessage, {
+    const message = Object.assign({
       fieldRef: {
         type: fieldTypes.APPROVAL_TYPE,
         fieldName: this.fieldName,
       },
-      commentContent: commentData || '',
-    });
-
-    message.approvalDelta = delta || {};
-
-    if (isDescription) {
-      message.isDescription = true;
-    }
-
-    if (uploads && uploads.length) {
-      message.uploads = uploads;
-    }
+    }, baseMessage, messageBody);
 
     this.dispatch({type: actionType.UPDATE_APPROVAL_START});
-
-    // TODO(zhangtiff): monorail:4418, allow option of not sending email
-    message.sendEmail = true;
 
     window.prpcCall(
       'monorail.Issues', 'UpdateApproval', message
@@ -385,8 +378,12 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     }
   }
 
-  _updateSurveyHandler(content) {
-    this._updateApproval(content, null, null, true);
+  _updateSurveyHandler(content, sendEmail) {
+    this._updateApproval({
+      commentContent: content,
+      isDescription: true,
+      sendEmail: sendEmail,
+    });
   }
 
   _toString(bool) {

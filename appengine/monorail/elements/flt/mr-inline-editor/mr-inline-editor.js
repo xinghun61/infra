@@ -18,7 +18,10 @@ class MrInlineEditor extends Polymer.Element {
         type: String,
         observer: '_processRawContent',
       },
-      _displayedContent: String,
+      _displayedContent: {
+        type: String,
+        value: '',
+      },
       editing: {
         type: Boolean,
         value: false,
@@ -36,11 +39,14 @@ class MrInlineEditor extends Polymer.Element {
         type: Array,
         value: () => [],
       },
+      sendEmail: {
+        type: Boolean,
+        value: true,
+      },
       title: {
         type: String,
         value: 'Editable content',
       },
-      onSave: Function,
     };
   }
 
@@ -48,7 +54,7 @@ class MrInlineEditor extends Polymer.Element {
     const chunks = content.trim().split(/(<b>[^<\n]+<\/b>)/m);
     let boldLines = [];
     let cleanContent = '';
-    chunks.forEach(chunk => {
+    chunks.forEach((chunk) => {
       if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
         const cleanChunk = chunk.slice(3, -4).trim();
         cleanContent += cleanChunk;
@@ -74,25 +80,32 @@ class MrInlineEditor extends Polymer.Element {
   }
 
   save() {
-    if (this.onSave) {
-      const newContentMarked = this._markupNewContent();
-      this.onSave(newContentMarked);
-    }
+    const newContentMarked = this._markupNewContent();
+
+    this.dispatchEvent(new CustomEvent('save', {detail: {
+      commentContent: newContentMarked,
+      sendEmail: this.sendEmail,
+    }}));
     this.cancel();
   }
 
   _markupNewContent() {
     const lines = this._displayedContent.trim().split('\n');
-    let markedLines = lines.map(line => {
+    const markedLines = lines.map((line) => {
       let markedLine = line;
-      const matchingBoldLine = this._boldLines.find(boldLine => (line.startsWith(boldLine)));
+      const matchingBoldLine = this._boldLines.find(
+        (boldLine) => (line.startsWith(boldLine)));
       if (matchingBoldLine) {
-        markedLine = `<b>${matchingBoldLine}</b>${line.slice(matchingBoldLine.length)}`;
+        markedLine =
+          `<b>${matchingBoldLine}</b>${line.slice(matchingBoldLine.length)}`;
       }
       return markedLine;
     });
     return markedLines.join('\n');
   }
 
+  _sendEmailChecked(evt) {
+    this.sendEmail = evt.detail.checked;
+  }
 }
 customElements.define(MrInlineEditor.is, MrInlineEditor);

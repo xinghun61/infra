@@ -1,0 +1,49 @@
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/chops/chops-checkbox/chops-checkbox.html">
+<test-fixture id="basic">
+  <template>
+    <chops-checkbox></chops-checkbox>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders', function(done) {
+      flush(() => {
+        assert.isDefined(element, 'element is defined');
+        done();
+      });
+    });
+
+    test('clicking checkbox dispatches checked-change event', function(done) {
+      element.checked = false;
+      window.CustomEvent = sinon.stub();
+      element.dispatchEvent = sinon.stub();
+
+      element.shadowRoot.querySelector('#checkbox').click();
+
+      flush(() => {
+        assert.deepEqual(window.CustomEvent.args[0][0], 'checked-change');
+        assert.deepEqual(window.CustomEvent.args[0][1], {
+          detail: {checked: true},
+        });
+
+        assert.isTrue(window.CustomEvent.calledOnce);
+        assert.isTrue(element.dispatchEvent.calledOnce);
+
+        done();
+      });
+    });
+  });
+})();
+</script>

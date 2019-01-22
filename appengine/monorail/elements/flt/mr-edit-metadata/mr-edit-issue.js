@@ -63,6 +63,7 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
   save() {
     const form = Polymer.dom(this.root).querySelector('#metadataForm');
     const data = form.getDelta();
+    data.sendEmail = form.sendEmail;
     const message = this._generateMessage(data);
 
     // Add files to message.
@@ -87,6 +88,10 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
         localId: this.issueId,
       },
     };
+
+    if (data.sendEmail) {
+      message.sendEmail = true;
+    }
 
     let delta = {};
 
@@ -180,8 +185,6 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
       message.delta = delta;
     }
 
-    // TODO(zhangtiff): monorail:4418, allow option of not sending email
-    message.sendEmail = true;
     return message;
   }
 

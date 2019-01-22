@@ -3,6 +3,7 @@
 <link rel="import" href="../../../bower_components/vaadin-upload/vaadin-upload.html">
 <link rel="import" href="../../../bower_components/vaadin-upload/theme/lumo/vaadin-upload.html">
 
+<link rel="import" href="../../chops/chops-checkbox/chops-checkbox.html">
 <link rel="import" href="../../mr-error/mr-error.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 <link rel="import" href="../shared/metadata-mixin.html">
@@ -33,6 +34,9 @@
         font-weight: bold;
         word-wrap: break-word;
         text-align: right;
+      }
+      label.checkbox {
+        text-align: left;
       }
       textarea {
         width: 100%;
@@ -260,7 +264,7 @@
           ></mr-edit-field>
         </template>
 
-        <span></span>
+        <span hidden$="[[!_nicheFieldCount]]"></span>
         <button type="button" class="toggle" on-click="toggleNicheFields" hidden$="[[!_nicheFieldCount]]">
           <span hidden$="[[showNicheFields]]">
             Show all fields ([[_nicheFieldCount]] currently hidden)
@@ -269,6 +273,13 @@
             Hide niche fields ([[_nicheFieldCount]] currently shown)
           </span>
         </button>
+
+        <span></span>
+        <chops-checkbox
+          id="sendEmail"
+          on-checked-change="_sendEmailChecked"
+          checked="[[sendEmail]]"
+        >Send email</chops-checkbox>
       </div>
       <div class="edit-actions">
         <chops-button

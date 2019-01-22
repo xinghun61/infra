@@ -20,7 +20,7 @@
       element = fixture('basic');
     });
 
-    test('_updateIssue generates description change', function(done) {
+    test('_updateDescriptionHandler generates description change', function(done) {
       window.actionCreator = {
         updateIssue: sinon.stub(),
       };
@@ -28,7 +28,11 @@
       element.token = '1234';
       element.issueId = 5;
       element.projectName = 'chromium';
-      element._updateIssue('comment data', null, true);
+      element._updateDescriptionHandler({detail: {
+          commentContent: 'comment data',
+          sendEmail: true,
+        }
+      });
 
       flush(() => {
         assert.deepEqual(actionCreator.updateIssue.args[0][1], {
@@ -44,6 +48,48 @@
         assert.isTrue(actionCreator.updateIssue.calledOnce);
         done();
       });
+    });
+
+    test('sendEmail toggles email sending for description changes', function() {
+      window.actionCreator = {
+        updateIssue: sinon.stub(),
+      };
+
+      element.token = 'abcd';
+      element.issueId = 10;
+      element.projectName = 'chromium';
+
+      const editor = element.shadowRoot.querySelector('#editDescription');
+
+      editor.sendEmail = false;
+      editor.save();
+
+      assert.deepEqual(actionCreator.updateIssue.args[0][1], {
+        trace: {token: 'abcd'},
+        issueRef: {
+          projectName: 'chromium',
+          localId: 10,
+        },
+        commentContent: '',
+        isDescription: true,
+        sendEmail: false,
+      });
+      assert.isTrue(actionCreator.updateIssue.calledOnce);
+
+      editor.sendEmail = true;
+      editor.save();
+
+      assert.deepEqual(actionCreator.updateIssue.args[1][1], {
+        trace: {token: 'abcd'},
+        issueRef: {
+          projectName: 'chromium',
+          localId: 10,
+        },
+        commentContent: '',
+        isDescription: true,
+        sendEmail: true,
+      });
+      assert.isTrue(actionCreator.updateIssue.calledTwice);
     });
   });
 })();

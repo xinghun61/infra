@@ -123,13 +123,19 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
   }
 
   save() {
-    const data = this.$.metadataForm.getDelta();
+    const metadata = this.$.metadataForm;
+    const data = metadata.getDelta();
     let message = {
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
       },
     };
+
+    if (metadata.sendEmail) {
+      message.sendEmail = true;
+    }
+
     let delta = {};
 
     const fieldValuesAdded = data.fieldValuesAdded || [];
@@ -153,8 +159,6 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       message.delta = delta;
     }
 
-    // TODO(zhangtiff): monorail:4418, allow option of not sending email
-    message.sendEmail = true;
     if (message.commentContent || message.delta) {
       actionCreator.updateIssue(this.dispatch.bind(this), message);
     }

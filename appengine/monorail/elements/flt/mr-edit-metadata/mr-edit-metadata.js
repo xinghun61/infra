@@ -84,6 +84,10 @@ class MrEditMetadata extends MetadataMixin(Polymer.Element) {
         value: false,
       },
       error: String,
+      sendEmail: {
+        type: Boolean,
+        value: true,
+      },
       _statusesGrouped: {
         type: Array,
         computed: '_computeStatusesGrouped(statuses, isApproval)',
@@ -356,6 +360,10 @@ class MrEditMetadata extends MetadataMixin(Polymer.Element) {
   _wrapList(item) {
     if (!item) return [];
     return [item];
+  }
+
+  _sendEmailChecked(evt) {
+    this.sendEmail = evt.detail.checked;
   }
 }
 

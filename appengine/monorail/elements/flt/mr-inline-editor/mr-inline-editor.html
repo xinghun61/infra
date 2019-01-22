@@ -1,6 +1,8 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../../bower_components/chopsui/chops-button.html">
+
+<link rel="import" href="../../chops/chops-checkbox/chops-checkbox.html">
 <link rel="import" href="../shared/mr-flt-styles.html">
 
 <dom-module id="mr-inline-editor">
@@ -28,6 +30,11 @@
         width: 100%;
         box-sizing: border-box;
       }
+      .edit-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
       textarea.content {
         min-height: var(--mr-inline-editor-textarea-min-height);
         max-height: var(--mr-inline-editor-textarea-max-height);
@@ -44,24 +51,31 @@
           [[editText]]
         </chops-button>
       </template>
-      <template is="dom-if" if="[[editing]]">
-        <div>
-          <chops-button on-click="save" class="emphasized">
-            <i class="material-icons">create</i>
-            Save changes
-          </chops-button>
-          <chops-button on-click="cancel">
-            <i class="material-icons">close</i>
-            Cancel changes
-          </chops-button>
-        </div>
-      </template>
     </div>
     <textarea id="textEditor"
         class="content"
         value="{{_displayedContent::input}}"
         hidden$="[[!editing]]"
         placeholder$="[[placeholder]]"></textarea>
+    <template is="dom-if" if="[[editing]]">
+      <div class="edit-controls">
+        <chops-checkbox
+          id="sendEmail"
+          on-checked-change="_sendEmailChecked"
+          checked="[[sendEmail]]"
+        >Send email</chops-checkbox>
+        <div>
+          <chops-button id="discard" on-click="cancel" class="de-emphasized">
+            <i class="material-icons">close</i>
+            Discard changes
+          </chops-button>
+          <chops-button id="save" on-click="save" class="emphasized">
+            <i class="material-icons">create</i>
+            Save changes
+          </chops-button>
+        </div>
+      </div>
+    </template>
     <div class="content" hidden$="[[editing]]">
       <slot></slot>
     </div>
