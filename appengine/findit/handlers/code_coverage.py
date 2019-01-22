@@ -305,6 +305,53 @@ def _GetFileContentFromGitiles(report, file_path,
   return repo.GetSource(relative_file_path, revision)
 
 
+def _IsReportSuspicious(report):  # pragma: no cover.
+  """Returns True if the newly generated report is suspicious to be incorrect.
+
+  A report is determined to be suspicious if and only if the absolute difference
+  between its line coverage percentage and the most recent visible report is
+  greater than 1.00%.
+
+  Args:
+    report (PostsubmitReport): The report to be evaluated.
+
+  Returns:
+    True if the report is suspicious, otherwise False.
+  """
+
+  def _GetLineCoveragePercentage(report):
+    line_coverage_percentage = None
+    summary = report.summary_metrics
+    for feature_summary in summary:
+      if feature_summary['name'] != 'line':
+        continue
+
+      line_coverage_percentage = float(
+          feature_summary['covered']) / feature_summary['total']
+
+    assert line_coverage_percentage is not None, (
+        'Given report has invalid summary')
+    return line_coverage_percentage
+
+  most_recent_visible_reports = PostsubmitReport.query(
+      PostsubmitReport.server_host == report.server_host,
+      PostsubmitReport.project == report.project, PostsubmitReport.visible ==
+      True).order(-PostsubmitReport.commit_position).order(
+          -PostsubmitReport.commit_timestamp).fetch(1)
+  if not most_recent_visible_reports:
+    logging.warn('No existing visible reports to use for reference, the new '
+                 'report is determined as not suspicious by default')
+    return False
+
+  most_recent_visible_report = most_recent_visible_reports[0]
+  if abs(
+      _GetLineCoveragePercentage(report) -
+      _GetLineCoveragePercentage(most_recent_visible_report)) > 0.01:
+    return True
+
+  return False
+
+
 class FetchSourceFile(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
@@ -430,8 +477,9 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         component_summaries = []
         logging.info('Summary of all components are saved to datastore.')
 
-    report.visible = True
-    report.put()
+    if not _IsReportSuspicious(report):
+      report.visible = True
+      report.put()
 
   def _FetchAndSaveFileIfNecessary(self, report, path, revision):
     """Fetches the file from gitiles and store to cloud storage if not exist.
@@ -698,9 +746,8 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
 
       if not revision:
         query = PostsubmitReport.query(
-            PostsubmitReport.server_host == host,
-            PostsubmitReport.project == project, PostsubmitReport.visible ==
-            True).order(-PostsubmitReport.commit_position).order(
+            PostsubmitReport.server_host == host, PostsubmitReport.project ==
+            project).order(-PostsubmitReport.commit_position).order(
                 -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
         data = [e._to_dict() for e in entities]

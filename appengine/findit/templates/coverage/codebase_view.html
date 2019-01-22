@@ -31,7 +31,11 @@
       <table>
         <thead>
           <tr class="coverage-header">
-            <th colspan="6">{{project}}</th>
+            {% if user_info.is_admin %}
+              <th colspan="7">{{project}}</th>
+            {% else %}
+              <th colspan="6">{{project}}</th>
+            {% endif %}
           </tr>
           <tr>
             <th>Commit Position</th>
@@ -40,38 +44,46 @@
             <th>Function</th>
             <th>Region</th>
             <th>Data Source</th>
+            {% if user_info.is_admin %}
+              <th>Is Visible</th>
+            {% endif %}
           </tr>
         </thead>
 
         <tbody>
         {% for datum in data %}
-          <tr>
-            <td>
-              {{datum.commit_position}}
-            </td>
-            <td><a href="./coverage?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Link</a></td>
-            {% for name in ('line', 'function', 'region') %}
-              {% set found = False %}
+          {% if user_info.is_admin or datum.visible %}
+            <tr>
               <td>
-              {% for metric in datum.summary_metrics %}
-                {% if not found and metric.name == name %}
-                  {% set found = True %}
-                  {% set percent = metric.covered*100.0/metric.total %}
-                  {% if percent > 99.999999 %}
-                    {{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
-                  {% elif percent > 9.999999 %}
-                    &nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
-                  {% else %}
-                    &nbsp;&nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
-                  {% endif %}
-                {% endif %}
-              {% endfor %}
+                {{datum.commit_position}}
               </td>
-            {% endfor %}
-            <td>
-              <a href="https://ci.chromium.org/b/{{datum.build_id}}">Build</a>
-            </td>
-          </tr>
+              <td><a href="./coverage?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Link</a></td>
+              {% for name in ('line', 'function', 'region') %}
+                {% set found = False %}
+                <td>
+                {% for metric in datum.summary_metrics %}
+                  {% if not found and metric.name == name %}
+                    {% set found = True %}
+                    {% set percent = metric.covered*100.0/metric.total %}
+                    {% if percent > 99.999999 %}
+                      {{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% elif percent > 9.999999 %}
+                      &nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% else %}
+                      &nbsp;&nbsp;{{ '{0:.2f}%'.format(percent) }} ({{metric.covered}}/{{metric.total}})
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                </td>
+              {% endfor %}
+              <td>
+                <a href="https://ci.chromium.org/b/{{datum.build_id}}">Build</a>
+              </td>
+              {% if user_info.is_admin %}
+                <td>{{datum.visible}}</td>
+              {% endif %}
+            </tr>
+          {% endif %}
         {% endfor %}
         </tbody>
       </table>
