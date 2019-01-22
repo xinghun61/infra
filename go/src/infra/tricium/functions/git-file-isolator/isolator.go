@@ -40,13 +40,12 @@ func main() {
 		log.Printf("Warning: Many files (%d). See crbug.com/919672", len(input.Files))
 	}
 
-	// Set up temporary directory.
+	// Set up the temporary directory where we'll check out the files to.
+	// The temporary directory should be cleaned up before exiting.
 	tempDir, err := ioutil.TempDir("", "git-file-isolator")
 	if err != nil {
 		log.Fatalf("Failed to setup temporary directory: %v", err)
 	}
-
-	// Clean up.
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
 			log.Fatalf("Failed to clean up temporary directory %q: %v", tempDir, err)
@@ -77,6 +76,7 @@ func main() {
 		log.Fatalf("Empty files list after filtering.")
 	}
 
+	// Check out the files into the temporary directory.
 	c := exec.Command("git", "checkout", "FETCH_HEAD", "--")
 	c.Dir = tempDir
 	for _, file := range files {
@@ -100,7 +100,7 @@ func main() {
 	log.Printf("Wrote RESULTS data to path %q.", p)
 }
 
-// filterSkippedFiles returns files to copy to the output directory.
+// filterSkippedFiles filters out files we don't want to analyze.
 func filterSkippedFiles(files []*tricium.Data_File, dir string) []*tricium.Data_File {
 	var paths []string
 	for _, file := range files {
@@ -149,13 +149,12 @@ func checkoutGitattributes(paths []string, dir string) {
 	}
 }
 
-// possibleGitattributesPaths returns a sorted list of possible .gitattributes
-// file paths that could apply to the given list of files.
+// possibleGitattributesPaths returns a sorted slice of possible .gitattributes
+// file paths that could apply to the given paths in the repo.
 //
-// Note that all paths are assumed to be relative paths with parts separated
-// by "/", since this is what is in the tricium.Data_File type, and this is
-// what is given by ...
-//
+// Note that all paths are assumed to be relative paths with parts separated by
+// "/", since this is what is used in the tricium.Data_File type, and this is
+// also what is expected in the output of git ls-tree and other git commands.
 func possibleGitattributesPaths(paths []string) []string {
 	var out []string
 	for d := range ancestorDirectories(paths) {
@@ -165,12 +164,13 @@ func possibleGitattributesPaths(paths []string) []string {
 	return out
 }
 
-// ancestorDirectories lists "ancestor directories" of a list of paths.
+// ancestorDirectories returns a set of all ancestor directories of all of the
+// given paths.
 //
-// This means directories of the given files, and their parent directories, and
-// the parent directories of those, etc. The input paths are expected to be
-// relative file paths, and the output will always contain empty string, which
-// signifies "base directory".
+// An ancestor directory here means means directories of the given files, and
+// their parent directories, and the parent directories of those, and so on.
+// The input paths are expected to be relative file paths, and the output will
+// always contain empty string, which signifies "base directory".
 func ancestorDirectories(paths []string) stringset.Set {
 	out := stringset.Set{}
 	out.Add("")
@@ -190,7 +190,7 @@ func ancestorDirectories(paths []string) stringset.Set {
 //
 // This method requires the .gitattributes files to be checked out. Files will
 // be skipped if the attribute tricium is unset (i.e. -tricium), and will be
-// included  if the tricium attribute is unspecified or explicitly set.
+// included if the tricium attribute is unspecified or explicitly set.
 func skippedByGitattributes(paths []string, dir string) stringset.Set {
 	c := exec.Command("git", "check-attr", "-z", "tricium", "--")
 	c.Args = append(c.Args, paths...)
@@ -202,8 +202,8 @@ func skippedByGitattributes(paths []string, dir string) stringset.Set {
 	}
 
 	// The output of `git check-attr -z <attr> -- ...` is a flat null-separated
-	// sequence of fields for all specified files, like:
-	//   path, attribute, value, path, attribute, value, ...
+	// sequence of fields for all specified files, that looks like:
+	//     path, attribute, value, path, attribute, value, ...
 	skipped := stringset.Set{}
 	fields := splitNull(string(out))
 	if len(fields)%3 != 0 {
@@ -211,9 +211,9 @@ func skippedByGitattributes(paths []string, dir string) stringset.Set {
 	}
 	for i := 0; i+2 < len(fields); i += 3 {
 		p, v := fields[i], fields[i+2]
-		// Unsetting the attribute explicitly (with -tricium) means skip.
-		// If the value is unspecified, it will be included by default.
-		// See https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/tricium/docs/user-guide.md.
+		// Unsetting the attribute explicitly (with -tricium) means skip. If
+		// the value is unspecified, it will be included by default. See:
+		// https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/tricium/docs/user-guide.md
 		if v == "unset" {
 			skipped.Add(p)
 		}
@@ -227,12 +227,12 @@ func splitNull(s string) []string {
 	return parts[:len(parts)-1]
 }
 
-// copyFiles copies over all files that we want to analyze.
+// copyFiles copies files that we want to analyze to the output directory.
 //
-// Files that we don't want to analyze, or that couldn't be copied,
+// Special files like symlinks and files that couldn't be copied
 // are filtered out; if an error occurs, we exit with a fatal error.
 //
-// The list of copied files is returned.
+// The list of successfully copied files is returned.
 func copyFiles(inputDir, outputDir string, files []*tricium.Data_File) []*tricium.Data_File {
 	var out []*tricium.Data_File
 	for _, file := range files {
@@ -265,6 +265,8 @@ func copyFiles(inputDir, outputDir string, files []*tricium.Data_File) []*triciu
 	return out
 }
 
+// isRegularFile checks whether the given path is a regular file,
+// and not a symlink or other special file. Returns false on error.
 func isRegularFile(p string) bool {
 	fileInfo, err := os.Lstat(p)
 	if err != nil {
