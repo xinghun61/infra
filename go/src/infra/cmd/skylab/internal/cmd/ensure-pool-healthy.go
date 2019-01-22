@@ -26,11 +26,11 @@ import (
 
 // EnsurePoolHealthy subcommand: Balance DUT pools
 var EnsurePoolHealthy = &subcommands.Command{
-	UsageLine: "ensure-pool-healthy [-dryrun] [-all-models] [-s spare] target [model...]",
+	UsageLine: "ensure-pool-healthy [-dryrun] [-all-models] [-spare SPARE] TARGET [MODEL ...]",
 	ShortDesc: "Ensure DUT pool is healthy",
 	LongDesc: `
-Ensure that given models' target pool contains healthy DUTs.
-If needed, swap in healthy DUTs from spare pool.`,
+Ensure that given MODELs' TARGET pool contains healthy DUTs.
+If needed, swap in healthy DUTs from SPARE pool.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &ensurePoolHealthyRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
