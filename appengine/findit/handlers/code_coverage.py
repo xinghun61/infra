@@ -332,7 +332,7 @@ class FetchSourceFile(BaseHandler):
 
 
 class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, build_id):
     # Load the commit log first so that we could fail fast before redo all.
