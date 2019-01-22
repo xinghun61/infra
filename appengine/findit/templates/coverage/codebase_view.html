@@ -34,7 +34,7 @@
             <th colspan="6">{{project}}</th>
           </tr>
           <tr>
-            <th>Revision</th>
+            <th>Commit Position</th>
             <th>Report</th>
             <th>Line</th>
             <th>Function</th>
@@ -47,9 +47,9 @@
         {% for datum in data %}
           <tr>
             <td>
-              <a href="https://crrev.com/{{datum.revision}}">{{datum.commit_position}}</a>
+              {{datum.commit_position}}
             </td>
-            <td><a href="./coverage?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Tests</a></td>
+            <td><a href="./coverage?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Link</a></td>
             {% for name in ('line', 'function', 'region') %}
               {% set found = False %}
               <td>
