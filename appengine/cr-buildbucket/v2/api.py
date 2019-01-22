@@ -199,6 +199,7 @@ def build_predicate_to_search_query(predicate):
 def get_build_async(req, _ctx, mask):
   """Retrieves a build by id or number."""
   validation.validate_get_build_request(req)
+  logging.info('Build id: %s', req.id)
 
   if req.id:
     build_v1 = yield service.get_async(req.id)
@@ -224,6 +225,7 @@ def get_build_async(req, _ctx, mask):
 def search_builds_async(req, _ctx, mask):
   """Searches for builds."""
   validation.validate_search_builds_request(req)
+  logging.info('Predicate: %s', req.predicate)
   q = build_predicate_to_search_query(req.predicate)
   q.max_builds = req.page_size or None
   q.start_cursor = req.page_token
