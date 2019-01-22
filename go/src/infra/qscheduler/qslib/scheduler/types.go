@@ -45,6 +45,7 @@ func newStateFromProto(sp *StateProto) *state {
 	s.queuedRequests = make(map[RequestID]*request, len(sp.QueuedRequests))
 	for rid, req := range sp.QueuedRequests {
 		s.queuedRequests[RequestID(rid)] = &request{
+			ID:                  RequestID(rid),
 			accountID:           AccountID(req.AccountId),
 			confirmedTime:       tutils.Timestamp(req.ConfirmedTime),
 			enqueueTime:         tutils.Timestamp(req.EnqueueTime),

@@ -121,6 +121,9 @@ type worker struct {
 // AddRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
 func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequest, t time.Time) {
+	if requestID == "" {
+		panic("empty request id")
+	}
 	if _, ok := s.getRequest(requestID); ok {
 		// Request already exists, simply notify that it should be idle at the
 		// given time.
@@ -132,6 +135,7 @@ func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequ
 			confirmedTime:       tutils.Timestamp(r.ConfirmedTime),
 			enqueueTime:         tutils.Timestamp(r.EnqueueTime),
 			provisionableLabels: stringset.NewFromSlice(r.ProvisionableLabels...),
+			baseLabels:          stringset.NewFromSlice(r.BaseLabels...),
 		}
 		rr.confirm(t)
 		s.queuedRequests[requestID] = rr
@@ -225,6 +229,9 @@ func (s *state) getRequest(requestID RequestID) (r *request, ok bool) {
 // to time t.
 func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time,
 	r *request) {
+	if requestID == "" {
+		panic("empty request ID")
+	}
 	s.ensureCache()
 	allegedWorkerID, isRunning := s.runningRequestsCache[requestID]
 	if allegedWorkerID == workerID {

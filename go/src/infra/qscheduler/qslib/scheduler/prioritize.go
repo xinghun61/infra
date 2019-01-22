@@ -15,22 +15,39 @@
 package scheduler
 
 import (
+	"container/list"
 	"sort"
 )
 
-// prioritizedRequest represents a request along with the computed priority
-// for it (based on quota account balance, max fanout for that account, and
-// FIFO ordering).
-type prioritizedRequest struct {
-	RequestID RequestID
-	Priority  int
-	Request   *request
-	// Flag used within scheduler to indicate that a request is already handled.
-	Scheduled bool
+// requestList is a wrapper around container/list.List that is type safe as a linked list of
+// *request valued nodes.
+type requestList struct {
+	*list.List
 }
 
-// orderedRequests represents a priority-sorted slice of requests.
-type orderedRequests []prioritizedRequest
+// requestNode is a wrapper around container/list.Element that is type safe as a *request valued
+// node.
+type requestNode struct {
+	*list.Element
+}
+
+func (r *requestList) Head() requestNode {
+	elem := r.Front()
+	return requestNode{elem}
+}
+
+func (r *requestList) PushBack(req *request) requestNode {
+	return requestNode{r.List.PushBack(req)}
+}
+
+func (n requestNode) Value() *request {
+	return n.Element.Value.(*request)
+}
+
+func (n requestNode) Next() requestNode {
+	elem := n.Element.Next()
+	return requestNode{elem}
+}
 
 // prioritizeRequests computes the priority of requests from state.Requests.
 //
@@ -38,91 +55,44 @@ type orderedRequests []prioritizedRequest
 //   - Quota account balances: requests are assigned a priority based on what
 //     buckets their account has positive balance for.
 //   - Max fanout: for any given account, if there are more than the max fanout
-//     number of running or higher-priority enqueued jobs, then further jobs
-//     will be deprioritized to the FreeBucket.
+//     number of requests already running, requests for that account will be
+//     deprioritized to the FreeBucket.
 //   - FIFO ordering as a tiebreaker.
 //
 // This function does not modify state or config.
-func (s *Scheduler) prioritizeRequests() orderedRequests {
+func (s *Scheduler) prioritizeRequests(jobsUntilThrottled map[AccountID]int) [NumPriorities + 1]requestList {
 	state := s.state
-	config := s.config
-	// TODO Use container/heap rather than slices to make this faster.
 
-	// Initial pass: compute priority for each task based purely on account
-	// balance.
-	requests := make(orderedRequests, 0, len(state.queuedRequests))
-	for id, req := range state.queuedRequests {
-		accoutBalance := state.balances[req.accountID]
-		p := BestPriorityFor(accoutBalance)
-		requests = append(requests, prioritizedRequest{
-			Priority:  p,
-			Request:   req,
-			RequestID: id,
+	var prioritized [NumPriorities + 1][]*request
+	// Preallocate slices at each priority level to avoid the need for any resizing later.
+	for i := range prioritized {
+		prioritized[i] = make([]*request, 0, len(s.state.queuedRequests))
+	}
+
+	for _, req := range state.queuedRequests {
+		if req.ID == "" {
+			panic("empty request ID")
+		}
+		var p int
+		if jobsUntilThrottled[req.accountID] <= 0 {
+			p = FreeBucket
+		} else {
+			p = BestPriorityFor(state.balances[req.accountID])
+		}
+
+		prioritized[p] = append(prioritized[p], req)
+	}
+
+	var output [NumPriorities + 1]requestList
+	for priority, p := range prioritized {
+		output[priority] = requestList{&list.List{}}
+		sort.SliceStable(p, func(i, j int) bool {
+			return p[i].enqueueTime.Before(p[j].enqueueTime)
 		})
-	}
-
-	less := func(i, j int) bool { return requestsLess(requests[i], requests[j]) }
-
-	// Sort requests by priority, then demote in priority those that are beyond
-	// an account's MaxFanout (because we want to demote the lowest priority jobs
-	// that we can), and sort again.
-	// TODO(akeshet): Use a heap instead of a slice here, then use heap fix when demoting
-	// a job to avoid needing to re sort the full list.
-	sort.SliceStable(requests, less)
-	demoteTasksBeyondFanout(requests, state, config)
-	sort.SliceStable(requests, less)
-	return requests
-}
-
-// requestsLess is a helper function used when sorting prioritized requests
-//
-// It compares items at index i and j, using first their priority, then
-// their enqueue time as tiebreaker.
-func requestsLess(a, b prioritizedRequest) bool {
-	if a.Priority == b.Priority {
-		timeA := a.Request.enqueueTime
-		timeB := b.Request.enqueueTime
-		return timeA.Before(timeB)
-	}
-	return a.Priority < b.Priority
-}
-
-// forPriority takes an already sorted prioritizedRequests slice, and
-// returns the sub slice of it for the given priority
-// TODO(akeshet): Consider turning this into a generator, so that it can iterate only
-// once through the list rather than once per priority level.
-func (s orderedRequests) forPriority(priority int) orderedRequests {
-	start := sort.Search(len(s), func(i int) bool { return s[i].Priority >= priority })
-	end := sort.Search(len(s), func(i int) bool { return s[i].Priority > priority })
-	return s[start:end]
-}
-
-// demoteTasksBeyondFanout enforces that no account will have more than that
-// account's MaxFanout tasks running concurrently (aside from in the
-// FreeBucket).
-//
-// TODO(akeshet): Possible optimizations:
-//   - Pass in a heap instead of a sorted slice, and when demoting a job, demote
-//     it and heap fix it. Rather than modify the slice and re-sort. This should
-//     be a bit faster, because this function is likely to only demote a
-//     fraction of jobs in the slice.
-func demoteTasksBeyondFanout(prioritizedRequests orderedRequests, state *state, config *Config) {
-	tasksPerAccount := make(map[AccountID]int)
-	for _, w := range state.workers {
-		if !w.isIdle() {
-			tasksPerAccount[w.runningTask.request.accountID]++
+		for _, r := range p {
+			output[priority].PushBack(r)
 		}
 	}
 
-	for i, r := range prioritizedRequests {
-		id := r.Request.accountID
-		// Jobs without a valid account id / config are already assigned
-		// to the free bucket, so ignore them here.
-		if c, ok := config.AccountConfigs[string(id)]; ok {
-			if c.MaxFanout > 0 && tasksPerAccount[id] >= int(c.MaxFanout) {
-				prioritizedRequests[i].Priority = FreeBucket
-			}
-			tasksPerAccount[id]++
-		}
-	}
+	return output
 }

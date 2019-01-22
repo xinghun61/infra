@@ -28,7 +28,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"sort"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"go.chromium.org/luci/common/data/stringset"
 )
@@ -133,6 +136,9 @@ func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *Accoun
 // AddRequest enqueues a new task request.
 func (s *Scheduler) AddRequest(ctx context.Context, requestID RequestID, request *TaskRequest, t time.Time) error {
 	s.ensureMaps()
+	if requestID == "" {
+		return errors.New("empty request id")
+	}
 	s.state.addRequest(ctx, requestID, request, t)
 	return nil
 }
@@ -256,39 +262,8 @@ func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t tim
 // calculation.
 func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
 	s.ensureMaps()
-	state := s.state
-	config := s.config
-	requests := s.prioritizeRequests()
-	var output []*Assignment
-
-	// Proceed through multiple passes of the scheduling algorithm, from highest
-	// to lowest priority requests (high priority = low p).
-	for p := int(0); p < NumPriorities; p++ {
-		// TODO(akeshet): There are a number of ways to optimize this loop eventually.
-		// For instance:
-		// - Bail out if there are no more idle workers and no more
-		//   running jobs beyond a given
-		jobsAtP := requests.forPriority(p)
-		// Step 1: Match any requests to idle workers that have matching
-		// provisionable labels.
-		output = append(output, matchIdleBotsWithLabels(state, jobsAtP)...)
-		// Step 2: Match request to any remaining idle workers, regardless of
-		// provisionable labels.
-		output = append(output, matchIdleBots(state, jobsAtP)...)
-		// Step 3: Demote (out of this level) or promote (into this level) any
-		// already running tasks that qualify.
-		reprioritizeRunningTasks(state, config, p)
-		// Step 4: Preempt any lower priority running tasks.
-		output = append(output, preemptRunningTasks(state, jobsAtP, p)...)
-	}
-
-	// A final pass matches free jobs (in the FreeBucket) to any remaining
-	// idle workers. The reprioritize and preempt stages do not apply here.
-	freeJobs := requests.forPriority(FreeBucket)
-	output = append(output, matchIdleBotsWithLabels(state, freeJobs)...)
-	output = append(output, matchIdleBots(state, freeJobs)...)
-
-	return output, nil
+	pass := s.newRun()
+	return pass.Run()
 }
 
 // GetRequest returns the (waiting or running) request for a given ID.
@@ -299,76 +274,191 @@ func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequest, ok bool) {
 	return nil, false
 }
 
-// matchIdleBotsWithLabels matches requests with idle workers that already
-// share all of that request's provisionable labels.
-func matchIdleBotsWithLabels(s *state, requestsAtP orderedRequests) []*Assignment {
+// schedulerRun stores values that are used within a single run of the scheduling algorithm.
+// Its fields may be mutated during the run, as requests get assigned to workers.
+type schedulerRun struct {
+	// idleWorkers is a collection of currently idle workers.
+	idleWorkers map[WorkerID]*worker
+
+	// requestsPerPriority is a per-priority linked list of queued requests, sorted by FIFO order within
+	// each priority level. It takes into account throttling of any requests whose account was
+	// already at the fanout limit when the pass was started, but not newly throttled accounts
+	// as a result of newly assigned requests/workers.
+	requestsPerPriority [NumPriorities + 1]requestList
+
+	// jobsUntilThrottled is the number of additional requests that each account may run before reaching
+	// its fanout limit and becoming throttled (at which point its other requests are demoted to FreeBucket).
+	jobsUntilThrottled map[AccountID]int
+
+	scheduler *Scheduler
+}
+
+func (run *schedulerRun) Run() ([]*Assignment, error) {
 	var output []*Assignment
-	for i, request := range requestsAtP {
-		if request.Scheduled {
-			// This should not be possible, because matching by label is the first
-			// pass at a given priority label, so no requests should be already scheduled.
-			// Nevertheless, handle it.
-			continue
+	// Proceed through multiple passes of the scheduling algorithm, from highest
+	// to lowest priority requests (high priority = low p).
+	for p := 0; p < NumPriorities; p++ {
+		// Step 1: Match any requests to idle workers that have matching
+		// provisionable labels.
+		output = append(output, run.matchIdleBots(p, provisionAwareMatch)...)
+		// Step 2: Match request to any remaining idle workers, regardless of
+		// provisionable labels.
+		output = append(output, run.matchIdleBots(p, basicMatch)...)
+		// Step 3: Demote (out of this level) or promote (into this level) any
+		// already running tasks that qualify.
+		run.reprioritizeRunningTasks(p)
+		// Step 4: Preempt any lower priority running tasks.
+		output = append(output, run.preemptRunningTasks(p)...)
+		// Step 5: Give any requests that were throttled in this pass a chance to be scheduled
+		// during the final FreeBucket pass.
+		run.moveThrottledRequests(p)
+	}
+
+	// A final pass matches free jobs (in the FreeBucket) to any remaining
+	// idle workers. The reprioritize and preempt stages do not apply here.
+	// TODO(akeshet): Consider a final sorting step here, so that FIFO ordering is respected among
+	// FreeBucket jobs, including those that were moved the the throttled list during the pass above.
+	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch)...)
+	output = append(output, run.matchIdleBots(FreeBucket, basicMatch)...)
+
+	return output, nil
+}
+
+// assignRequestToWorker updates the information in scheduler pass to reflect the fact that the given request
+// (from the given priority) was assigned to a worker.
+func (run *schedulerRun) assignRequestToWorker(w WorkerID, request requestNode, priority int) {
+	delete(run.idleWorkers, w)
+	run.jobsUntilThrottled[request.Value().accountID]--
+	run.requestsPerPriority[priority].Remove(request.Element)
+}
+
+// newRun initializes a scheduler pass.
+func (s *Scheduler) newRun() *schedulerRun {
+	// Note: We are using len(s.state.workers) as a capacity hint for this map. In reality,
+	// that is the upper bound, and in normal workload (in which fleet is highly utilized) most
+	// scheduler passes will have only a few idle workers.
+	idleWorkers := make(map[WorkerID]*worker, len(s.state.workers))
+	remainingBeforeThrottle := make(map[AccountID]int)
+	for aid, ac := range s.config.AccountConfigs {
+		if ac.MaxFanout == 0 {
+			remainingBeforeThrottle[AccountID(aid)] = math.MaxInt32
+		} else {
+			remainingBeforeThrottle[AccountID(aid)] = int(ac.MaxFanout)
 		}
-		for wid, worker := range s.workers {
-			if worker.isIdle() && worker.labels.Contains(request.Request.provisionableLabels) {
-				m := &Assignment{
-					Type:      AssignmentIdleWorker,
-					WorkerID:  wid,
-					RequestID: request.RequestID,
-					Priority:  request.Priority,
-					Time:      s.lastUpdateTime,
-				}
-				output = append(output, m)
-				s.applyAssignment(m)
-				requestsAtP[i] = prioritizedRequest{Scheduled: true}
-				break
+	}
+
+	for wid, w := range s.state.workers {
+		if w.isIdle() {
+			idleWorkers[wid] = w
+		} else {
+			aid := w.runningTask.request.accountID
+			if aid != "" {
+				remainingBeforeThrottle[aid]--
 			}
 		}
 	}
-	return output
+
+	return &schedulerRun{
+		idleWorkers:         idleWorkers,
+		requestsPerPriority: s.prioritizeRequests(remainingBeforeThrottle),
+		jobsUntilThrottled:  remainingBeforeThrottle,
+		scheduler:           s,
+	}
 }
 
-// matchIdleBots matches requests with any idle workers.
-func matchIdleBots(state *state, requestsAtP []prioritizedRequest) []*Assignment {
-	var output []*Assignment
+// matchLevel describes whether a request matches a worker and how good of a match it is.
+type matchLevel struct {
+	// canMatch indicates if the request can run on the worker.
+	canMatch bool
 
-	// TODO(akeshet): Use maybeIdle to communicate back to caller that there is no need
-	// to call matchIdleBots again, or to attempt FreeBucket scheduling.
-	// Even though maybeIdle is unused, the logic to compute it is non-trivial
-	// so leaving it in place and suppressing unused variable message.
-	maybeIdle := false
-	var _ = maybeIdle // Drop this once maybeIdle is used.
+	// quality is a heuristic for the quality a match, used to break ties between multiple
+	// requests that can match a worker.
+	//
+	// A higher number is a better quality.
+	quality int
+}
 
-	idleWorkersIds := make([]WorkerID, 0, len(state.workers))
-	for wid, worker := range state.workers {
-		if worker.isIdle() {
-			idleWorkersIds = append(idleWorkersIds, wid)
-			maybeIdle = true
+// matchListItem is an item in a quality-sorted list of request to worker matches.
+type matchListItem struct {
+	matchLevel
+
+	// request is the request for this item.
+	request *request
+
+	// node is the node into the original linked list of requests that this
+	// item corresponds to.
+	node requestNode
+}
+
+// matcher is the type for functions that evaluates request to worker matching.
+type matcher func(*worker, *request) matchLevel
+
+// basicMatch is a matcher function that considers only whether all of the base labels of the
+// given request are satisfied by the worker.
+//
+// The quality heuristic is the number of the base labels in the request (the more, the better).
+// This heuristic allows requests that have higher specificity to be preferentially matched to the
+// workers that can support them.
+func basicMatch(w *worker, r *request) matchLevel {
+	if w.labels.Contains(r.baseLabels) {
+		quality := len(r.baseLabels)
+		return matchLevel{true, quality}
+	}
+	return matchLevel{false, 0}
+}
+
+// provisionAwareMatch is a matcher function that requires both the base labels and the provisionable
+// labels of the request to be satisfied by the worker.
+func provisionAwareMatch(w *worker, r *request) matchLevel {
+	if !w.labels.Contains(r.provisionableLabels) {
+		return matchLevel{false, 0}
+	}
+	return basicMatch(w, r)
+}
+
+// computeWorkerMatch computes the match level for all given requests against a single worker,
+// and returns the matchable requests sorted by match quality.
+func computeWorkerMatch(w *worker, requests requestList, mf matcher) []matchListItem {
+	matches := make([]matchListItem, 0, requests.Len())
+	for current := requests.Head(); current.Element != nil; current = current.Next() {
+		m := mf(w, current.Value())
+		if m.canMatch {
+			matches = append(matches, matchListItem{matchLevel: m, request: current.Value(), node: current})
 		}
 	}
+	sort.SliceStable(matches, func(i, j int) bool {
+		return matches[i].quality > matches[j].quality
+	})
+	return matches
+}
 
-	for r, w := 0, 0; r < len(requestsAtP) && w < len(idleWorkersIds); r++ {
-		request := requestsAtP[r]
-		wid := idleWorkersIds[w]
-		if request.Scheduled {
-			// Skip this entry, it is already scheduled.
-			continue
+// matchIdleBots matches requests with idle workers.
+func (run *schedulerRun) matchIdleBots(priority int, mf matcher) []*Assignment {
+	var output []*Assignment
+	for wid, w := range run.idleWorkers {
+		// Try to match.
+		candidates := run.requestsPerPriority[priority]
+		matches := computeWorkerMatch(w, candidates, mf)
+		// select first non-throttled match
+		for _, match := range matches {
+			// Enforce fanout (except for Freebucket).
+			if run.jobsUntilThrottled[match.request.accountID] <= 0 && priority != FreeBucket {
+				continue
+			}
+
+			m := &Assignment{
+				Type:      AssignmentIdleWorker,
+				WorkerID:  wid,
+				RequestID: match.request.ID,
+				Priority:  priority,
+				Time:      run.scheduler.state.lastUpdateTime,
+			}
+			run.assignRequestToWorker(wid, match.node, priority)
+			run.scheduler.state.applyAssignment(m)
+			output = append(output, m)
+			break
 		}
-		m := &Assignment{
-			Type:      AssignmentIdleWorker,
-			WorkerID:  wid,
-			RequestID: request.RequestID,
-			Priority:  request.Priority,
-			Time:      state.lastUpdateTime,
-		}
-		output = append(output, m)
-		state.applyAssignment(m)
-		requestsAtP[r] = prioritizedRequest{Scheduled: true}
-		w++
-		if w == len(idleWorkersIds) {
-			maybeIdle = false
-		}
+
 	}
 	return output
 }
@@ -384,7 +474,9 @@ func matchIdleBots(state *state, requestsAtP []prioritizedRequest) []*Assignment
 //
 // Running tasks are promoted if their quota account has a sufficiently positive
 // balance and a recharge rate that can sustain them at this level.
-func reprioritizeRunningTasks(state *state, config *Config, priority int) {
+func (run *schedulerRun) reprioritizeRunningTasks(priority int) {
+	state := run.scheduler.state
+	config := run.scheduler.config
 	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
 	// should be demoted immediately to the FreeBucket (probably their account
 	// was deleted while running).
@@ -472,7 +564,8 @@ func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []
 // preemptRunningTasks interrupts lower priority already-running tasks, and
 // replaces them with higher priority tasks. When doing so, it also reimburses
 // the account that had been charged for the task.
-func preemptRunningTasks(state *state, jobsAtP []prioritizedRequest, priority int) []*Assignment {
+func (run *schedulerRun) preemptRunningTasks(priority int) []*Assignment {
+	state := run.scheduler.state
 	var output []*Assignment
 	candidates := make([]*worker, 0, len(state.workers))
 	// Accounts that are already running a lower priority job are not
@@ -490,35 +583,51 @@ func preemptRunningTasks(state *state, jobsAtP []prioritizedRequest, priority in
 
 	sortAscendingCost(candidates)
 
-	for rI, cI := 0, 0; rI < len(jobsAtP) && cI < len(candidates); rI++ {
-		request := jobsAtP[rI]
-		candidate := candidates[cI]
-		if request.Scheduled {
-			continue
+	for _, worker := range candidates {
+		candidateRequests := run.requestsPerPriority[priority]
+		matches := computeWorkerMatch(worker, candidateRequests, basicMatch)
+
+		// Select first matching request from an account that is:
+		// - non-throttled
+		// - non-banned
+		// - has sufficient balance to refund cost of preempted job
+		for _, m := range matches {
+			r := m.request
+			if bannedAccounts[r.accountID] {
+				continue
+			}
+			if run.jobsUntilThrottled[r.accountID] <= 0 {
+				continue
+			}
+			if !worker.runningTask.cost.Less(state.balances[r.accountID]) {
+				continue
+			}
+			mut := &Assignment{
+				Type:        AssignmentPreemptWorker,
+				Priority:    priority,
+				RequestID:   m.request.ID,
+				TaskToAbort: worker.runningTask.request.ID,
+				WorkerID:    worker.ID,
+				Time:        state.lastUpdateTime,
+			}
+			run.assignRequestToWorker(worker.ID, m.node, priority)
+			state.applyAssignment(mut)
+			output = append(output, mut)
 		}
-		requestAccountID := request.Request.accountID
-		if _, ok := bannedAccounts[requestAccountID]; ok {
-			continue
-		}
-		cost := candidate.runningTask.cost
-		requestAccountBalance, ok := state.balances[requestAccountID]
-		if !ok || less(requestAccountBalance, cost) {
-			continue
-		}
-		mut := &Assignment{
-			Type:        AssignmentPreemptWorker,
-			Priority:    priority,
-			RequestID:   request.RequestID,
-			TaskToAbort: candidate.runningTask.request.ID,
-			WorkerID:    candidate.ID,
-			Time:        state.lastUpdateTime,
-		}
-		output = append(output, mut)
-		state.applyAssignment(mut)
-		request.Scheduled = true
-		cI++
 	}
 	return output
+}
+
+// moveThrottledRequests moves jobs that got throttled at a given prioty level to the FreeBucket priority level
+// in the scheduler pass, to give them a second chance to be scheduled if there are any idle workers left
+// once the FreeBucket pass is reached.
+func (run *schedulerRun) moveThrottledRequests(priority int) {
+	for current := run.requestsPerPriority[priority].Head(); current.Element != nil; current = current.Next() {
+		if run.jobsUntilThrottled[current.Value().accountID] <= 0 {
+			run.requestsPerPriority[FreeBucket].PushBack(current.Value())
+			run.requestsPerPriority[priority].Remove(current.Element)
+		}
+	}
 }
 
 // ensureMaps ensures that all maps in scheduler or its child structs are
