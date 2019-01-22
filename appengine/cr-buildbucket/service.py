@@ -121,7 +121,7 @@ def peek(bucket_ids, max_builds=None, start_cursor=None):
     return ([], None)
 
   q = model.Build.query(
-      model.Build.status_v2 == common_pb2.SCHEDULED,
+      model.Build.status_legacy == model.BuildStatus.SCHEDULED,
       model.Build.is_leased == False,
       model.Build.bucket_id.IN(active_buckets),
   )
@@ -131,7 +131,7 @@ def peek(bucket_ids, max_builds=None, start_cursor=None):
   # satisfying the query.
   def local_predicate(b):
     return (
-        b.status_v2 == common_pb2.SCHEDULED and not b.is_leased and
+        b.status_legacy == model.BuildStatus.SCHEDULED and not b.is_leased and
         b.bucket_id in active_buckets
     )
 
