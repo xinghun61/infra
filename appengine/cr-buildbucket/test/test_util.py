@@ -22,7 +22,6 @@ import bbutil
 import buildtags
 import config
 import model
-import v2
 
 
 def ununicode(jsonish):  # pragma: no cover
@@ -151,6 +150,7 @@ def build(**build_proto_fields):  # pragma: no cover
       recipe=proto.infra.recipe,
       url='https://ci.example.com/%d' % proto.id,
   )
+  ret.update_v1_status_fields()
   if proto.input.HasField('gitiles_commit'):
     ret.input_gitiles_commit = proto.input.gitiles_commit
 
@@ -159,7 +159,6 @@ def build(**build_proto_fields):  # pragma: no cover
         'repo_url': 'https://chromium.googlesource.com/chromium/src',
     }]
 
-  v2.status_to_v1(proto, ret)
   if proto.HasField('start_time'):
     ret.start_time = proto.start_time.ToDatetime()
   if proto.HasField('end_time'):

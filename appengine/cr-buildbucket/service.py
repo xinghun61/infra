@@ -17,6 +17,7 @@ from components import utils
 import gae_ts_mon
 
 from proto import build_pb2
+from proto import common_pb2
 import buildtags
 import config
 import errors
@@ -120,7 +121,7 @@ def peek(bucket_ids, max_builds=None, start_cursor=None):
     return ([], None)
 
   q = model.Build.query(
-      model.Build.status == model.BuildStatus.SCHEDULED,
+      model.Build.status_v2 == common_pb2.SCHEDULED,
       model.Build.is_leased == False,
       model.Build.bucket_id.IN(active_buckets),
   )
@@ -130,7 +131,7 @@ def peek(bucket_ids, max_builds=None, start_cursor=None):
   # satisfying the query.
   def local_predicate(b):
     return (
-        b.status == model.BuildStatus.SCHEDULED and not b.is_leased and
+        b.status_v2 == common_pb2.SCHEDULED and not b.is_leased and
         b.bucket_id in active_buckets
     )
 
@@ -173,7 +174,7 @@ def lease(build_id, lease_expiration_date=None):
   def try_lease():
     build = _get_leasable_build(build_id)
 
-    if build.status != model.BuildStatus.SCHEDULED or build.is_leased:
+    if build.proto.status != common_pb2.SCHEDULED or build.is_leased:
       return False, build
 
     build.lease_expiration_date = lease_expiration_date
@@ -211,9 +212,9 @@ def reset(build_id):
     build = _get_leasable_build(build_id)
     if not user.can_reset_build_async(build).get_result():
       raise user.current_identity_cannot('reset build %s', build.key.id())
-    if build.status == model.BuildStatus.COMPLETED:
+    if build.is_ended:
       raise errors.BuildIsCompletedError('Cannot reset a completed build')
-    build.status = model.BuildStatus.SCHEDULED
+    build.proto.status = common_pb2.SCHEDULED
     build.status_changed_time = utils.utcnow()
     build.clear_lease()
     build.url = None
@@ -246,22 +247,22 @@ def start(build_id, lease_key, url, canary):
   def txn():
     build = _get_leasable_build(build_id)
 
-    if build.status == model.BuildStatus.STARTED:
+    if build.proto.status == common_pb2.STARTED:
       if build.url == url:
         return False, build
       build.url = url
       build.put()
       return True, build
 
-    if build.status == model.BuildStatus.COMPLETED:
+    if build.is_ended:
       raise errors.BuildIsCompletedError('Cannot start a completed build')
 
-    assert build.status == model.BuildStatus.SCHEDULED
+    assert build.proto.status == common_pb2.SCHEDULED
 
     _check_lease(build, lease_key)
 
     build.start_time = utils.utcnow()
-    build.status = model.BuildStatus.STARTED
+    build.proto.status = common_pb2.STARTED
     build.status_changed_time = build.start_time
     build.url = url
     build.canary = canary
@@ -315,7 +316,7 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
     build = yield model.Build.get_by_id_async(build_id)
     if build is None:
       raise errors.BuildNotFoundError()
-    if build.status == model.BuildStatus.COMPLETED:
+    if build.is_ended:
       msg = ''
       if (build.result == model.BuildResult.CANCELED and
           build.cancelation_reason == model.CancelationReason.TIMEOUT):
@@ -380,26 +381,20 @@ def _put_output_properties_async(build_key, legacy_result_details):
 
 
 def _complete(
-    build_id,
-    lease_key,
-    result,
-    result_details,
-    failure_reason=None,
-    url=None,
-    new_tags=None
+    build_id, lease_key, status, result_details, url=None, new_tags=None
 ):
   """Marks a build as completed. Used by succeed and fail methods."""
   validate_lease_key(lease_key)
   validate_url(url)
   buildtags.validate_tags(new_tags, 'append')
-  assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
+  assert model.is_terminal_status(status), status
 
   @ndb.transactional
   def txn():
     build = _get_leasable_build(build_id)
 
-    if build.status == model.BuildStatus.COMPLETED:
-      if (build.result == result and build.failure_reason == failure_reason and
+    if build.is_ended:
+      if (build.proto.status == status and
           build.result_details == result_details and build.url == url):
         return False, build
       raise errors.BuildIsCompletedError(
@@ -407,14 +402,12 @@ def _complete(
       )
     _check_lease(build, lease_key)
 
-    build.status = model.BuildStatus.COMPLETED
+    build.proto.status = status
     build.status_changed_time = utils.utcnow()
     build.complete_time = utils.utcnow()
-    build.result = result
     if url is not None:  # pragma: no branch
       build.url = url
     build.result_details = result_details
-    build.failure_reason = failure_reason
     if new_tags:
       build.tags.extend(new_tags)
       build.tags = sorted(set(build.tags))
@@ -448,7 +441,7 @@ def succeed(build_id, lease_key, result_details=None, url=None, new_tags=None):
   return _complete(
       build_id,
       lease_key,
-      model.BuildResult.SUCCESS,
+      common_pb2.SUCCESS,
       result_details,
       url=url,
       new_tags=new_tags
@@ -476,15 +469,17 @@ def fail(
   Returns:
     The failed Build.
   """
-  failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
+  if not failure_reason or failure_reason == model.FailureReason.BUILD_FAILURE:
+    status = common_pb2.FAILURE
+  else:
+    status = common_pb2.INFRA_FAILURE
   return _complete(
       build_id,
       lease_key,
-      model.BuildResult.FAILURE,
+      status,
       result_details,
-      failure_reason,
       url=url,
-      new_tags=new_tags
+      new_tags=new_tags,
   )
 
 
@@ -510,16 +505,14 @@ def cancel(build_id, human_reason=None, result_details=None):
       raise errors.BuildNotFoundError()
     if not user.can_cancel_build_async(build).get_result():
       raise user.current_identity_cannot('cancel build %s', build.key.id())
-    if build.status == model.BuildStatus.COMPLETED:
-      if build.result == model.BuildResult.CANCELED:
-        return False, build
+    if build.proto.status == common_pb2.CANCELED:
+      return False, build
+    if build.is_ended:
       raise errors.BuildIsCompletedError('Cannot cancel a completed build')
     now = utils.utcnow()
-    build.status = model.BuildStatus.COMPLETED
+    build.proto.status = common_pb2.CANCELED
     build.status_changed_time = now
-    build.result = model.BuildResult.CANCELED
     build.result_details = result_details
-    build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     build.cancel_reason_v2 = build_pb2.CancelReason(
         message=human_reason,
         canceled_by=auth.get_current_identity().to_bytes(),
@@ -579,7 +572,7 @@ def _task_delete_many_builds(bucket_id, status, tags=None, created_by=None):
   @ndb.transactional_tasklet
   def txn(key):
     build = yield key.get_async()
-    if not build or build.status != status:  # pragma: no cover
+    if not build or build.status_legacy != status:  # pragma: no cover
       raise ndb.Return(False)
     futs = [key.delete_async()]
     if build.swarming_hostname and build.swarming_task_id:  # pragma: no branch
@@ -600,7 +593,7 @@ def _task_delete_many_builds(bucket_id, status, tags=None, created_by=None):
   tags = tags or []
   created_by = user.parse_identity(created_by)
   q = model.Build.query(
-      model.Build.bucket_id == bucket_id, model.Build.status == status
+      model.Build.bucket_id == bucket_id, model.Build.status_legacy == status
   )
   for t in tags:
     q = q.filter(model.Build.tags == t)

@@ -17,7 +17,6 @@ import config
 import model
 import sequence
 import user
-import v2
 
 
 class SwarmbucketApiTest(testing.EndpointsTestCase):

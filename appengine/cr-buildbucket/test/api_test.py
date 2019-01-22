@@ -14,7 +14,6 @@ sys.path.insert(
     0, os.path.join(REPO_ROOT_DIR, 'luci', 'appengine', 'third_party_local')
 )
 
-from google.protobuf import struct_pb2
 from google.protobuf import text_format
 
 from components import auth
@@ -35,7 +34,6 @@ import errors
 import model
 import search
 import service
-import v2
 import user
 
 

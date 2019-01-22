@@ -375,7 +375,7 @@ def _query_search_async(q):
   elif q.status is not None:
     s = model.BuildStatus.lookup_by_number(q.status.number)
     expected_statuses_v1 = (s,)
-    dq = dq.filter(model.Build.status == s)
+    dq = dq.filter(model.Build.status_legacy == s)
 
   dq = filter_if(model.Build.result, q.result)
   dq = filter_if(model.Build.failure_reason, q.failure_reason)
@@ -401,7 +401,8 @@ def _query_search_async(q):
     if q.status_is_v2:
       if build.status_v2 != q.status:  # pragma: no cover
         return False
-    elif expected_statuses_v1 and build.status not in expected_statuses_v1:
+    elif (expected_statuses_v1 and
+          build.status_legacy not in expected_statuses_v1):
       return False  # pragma: no cover
     if q.bucket_ids and build.bucket_id not in q.bucket_ids:
       return False
@@ -544,7 +545,7 @@ def _tag_index_search_async(q):
     scalar_filters.append(('incomplete', True))
   elif q.status is not None:
     scalar_filters.append(
-        ('status', model.BuildStatus.lookup_by_number(q.status.number))
+        ('status_legacy', model.BuildStatus.lookup_by_number(q.status.number))
     )
 
   # Find the builds.

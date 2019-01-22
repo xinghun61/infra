@@ -42,7 +42,7 @@ def _fix_build_async(build_key):  # pragma: no cover
   if not build:
     return
 
-  if build.status != model.BuildStatus.COMPLETED:
+  if not build.is_ended:
     return
   build.proto = v2.build_to_v2(build)
   build.proto.ClearField('id')

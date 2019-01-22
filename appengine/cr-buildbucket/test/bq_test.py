@@ -9,7 +9,6 @@ import os
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
-from components import auth
 from components import net
 from test import test_util
 from testing_utils import testing
@@ -22,7 +21,6 @@ from test import test_util
 import bq
 import bqh
 import model
-import v2
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 APP_ROOT_DIR = os.path.dirname(THIS_DIR)

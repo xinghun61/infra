@@ -28,7 +28,7 @@ BUILD_STORAGE_DURATION = datetime.timedelta(days=30 * 18)  # ~18mo
 BUILDER_EXPIRATION_DURATION = datetime.timedelta(weeks=4)
 
 # Key in Build.parameters that specifies the builder name.
-# TODO(nodir): remove, in favor of a new property in model.Build.
+# TODO(nodir): remove, in favor of a new property in Build.
 BUILDER_PARAMETER = 'builder_name'
 PROPERTIES_PARAMETER = 'properties'  # TODO(nodir): move to api_common.py.
 
@@ -101,6 +101,12 @@ class BucketState(ndb.Model):
   is_paused = ndb.BooleanProperty()
 
 
+def is_terminal_status(status):  # pragma: no cover
+  return status not in (
+      common_pb2.STATUS_UNSPECIFIED, common_pb2.SCHEDULED, common_pb2.STARTED
+  )
+
+
 class Build(ndb.Model):
   """Describes a build.
 
@@ -159,16 +165,13 @@ class Build(ndb.Model):
   # They are used to index builds.
   # TODO(crbug.com/917851): make them computed.
 
-  # A proto.common_pb2.Status corresponding to self.status.
-  # This is needed to index builds by V2 status because status_v2->status_v1
-  # function also depends on infra_failure_reason, i.e. without this it is
-  # impossible to take a V2 status and translate it to Datastore query over
-  # V1 status.
-  status_v2 = ndb.ComputedProperty(lambda self: self._compute_v2_status())
+  status_v2 = ndb.ComputedProperty(lambda self: self.proto.status)
 
-  incomplete = ndb.ComputedProperty(
-      lambda self: self.status != BuildStatus.COMPLETED
-  )
+  @property
+  def is_ended(self):  # pragma: no cover
+    return is_terminal_status(self.proto.status)
+
+  incomplete = ndb.ComputedProperty(lambda self: not self.is_ended)
 
   # A container of builds, defines a security domain.
   # Format: "<project_id>/<bucket_name>".
@@ -203,7 +206,9 @@ class Build(ndb.Model):
 
   # == Legacy properties =======================================================
 
-  status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
+  status_legacy = msgprop.EnumProperty(
+      BuildStatus, default=BuildStatus.SCHEDULED, name='status'
+  )
 
   status_changed_time = ndb.DateTimeProperty(auto_now_add=True)
 
@@ -220,7 +225,7 @@ class Build(ndb.Model):
   # a URL to a build-system-specific build, viewable by a human.
   url = ndb.StringProperty(indexed=False)
 
-  # Completion-time properties.
+  # V1 status properties. Computed by _pre_put_hook.
   result = msgprop.EnumProperty(BuildResult)
   result_details = datastore_utils.DeterministicJsonProperty(json_type=dict)
   cancelation_reason = msgprop.EnumProperty(CancelationReason)
@@ -290,15 +295,10 @@ class Build(ndb.Model):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
     config.validate_bucket_id(self.bucket_id)
-    is_started = self.status == BuildStatus.STARTED
-    is_completed = self.status == BuildStatus.COMPLETED
-    is_canceled = self.result == BuildResult.CANCELED
-    is_failure = self.result == BuildResult.FAILURE
+    is_started = self.proto.status == common_pb2.STARTED
+    is_ended = self.is_ended
     is_leased = self.lease_key is not None
-    assert (self.result is not None) == is_completed
-    assert (self.cancelation_reason is not None) == is_canceled
-    assert (self.failure_reason is not None) == is_failure
-    assert not (is_completed and is_leased)
+    assert not (is_ended and is_leased)
     assert (self.lease_expiration_date is not None) == is_leased
     assert (self.leasee is not None) == is_leased
     # no cover due to a bug in coverage (https://stackoverflow.com/a/35325514)
@@ -307,7 +307,7 @@ class Build(ndb.Model):
     assert (not self.tags or
             all(tag_delm in t for t in self.tags))  # pragma: no cover
     assert self.create_time
-    assert (self.complete_time is not None) == is_completed
+    assert (self.complete_time is not None) == is_ended
     assert not is_started or self.start_time
     assert not self.start_time or self.start_time >= self.create_time
     assert not self.complete_time or self.complete_time >= self.create_time
@@ -320,22 +320,52 @@ class Build(ndb.Model):
     self.initial_tags = sorted(set(self.initial_tags))
     self.tags = sorted(set(self.tags))
 
+    self.update_v1_status_fields()
     if self.proto:  # pragma: no branch
       # TODO(crbug.com/917851): once all entities have proto property,
       # update proto fields directly and remove this code.
       # This code updates only fields that are changed after creation.
       # Fields immutable after creation must be set already.
-      status_to_v2(self, self.proto)
       self.proto.update_time.FromDatetime(self.update_time)
       if self.start_time:  # pragma: no branch
         self.proto.start_time.FromDatetime(self.start_time)
       if self.complete_time:  # pragma: no branch
         self.proto.end_time.FromDatetime(self.complete_time)
 
-  def _compute_v2_status(self):
-    build_v2 = build_pb2.Build()
-    status_to_v2(self, build_v2)
-    return build_v2.status
+  def update_v1_status_fields(self):
+    """Updates V1 status fields."""
+    self.status_legacy = None
+    self.result = None
+    self.failure_reason = None
+    self.cancelation_reason = None
+
+    status_v2 = self.proto.status
+    if status_v2 == common_pb2.SCHEDULED:
+      self.status_legacy = BuildStatus.SCHEDULED
+    elif status_v2 == common_pb2.STARTED:
+      self.status_legacy = BuildStatus.STARTED
+    elif status_v2 == common_pb2.SUCCESS:
+      self.status_legacy = BuildStatus.COMPLETED
+      self.result = BuildResult.SUCCESS
+    elif status_v2 == common_pb2.FAILURE:
+      self.status_legacy = BuildStatus.COMPLETED
+      self.result = BuildResult.FAILURE
+      self.failure_reason = FailureReason.BUILD_FAILURE
+    elif status_v2 == common_pb2.INFRA_FAILURE:
+      self.status_legacy = BuildStatus.COMPLETED
+      if self.proto.infra_failure_reason.resource_exhaustion:
+        # In python implementation, V2 resource exhaustion is V1 timeout.
+        self.result = BuildResult.CANCELED
+        self.cancelation_reason = CancelationReason.TIMEOUT
+      else:
+        self.result = BuildResult.FAILURE
+        self.failure_reason = FailureReason.INFRA_FAILURE
+    elif status_v2 == common_pb2.CANCELED:
+      self.status_legacy = BuildStatus.COMPLETED
+      self.result = BuildResult.CANCELED
+      self.cancelation_reason = CancelationReason.CANCELED_EXPLICITLY
+    else:  # pragma: no cover
+      assert False, status_v2
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""
@@ -430,7 +460,7 @@ def _id_time_segment(dtime):
 def create_build_ids(dtime, count, randomness=True):
   """Returns a range of valid build ids, as integers and based on a datetime.
 
-  See model.Build's docstring, "Build key" section.
+  See Build's docstring, "Build key" section.
   """
   # Build ID bits: "0N{43}R{16}V{4}"
   # where N is now bits, R is random bits and V is version bits.
@@ -454,12 +484,3 @@ def build_id_range(create_time_low, create_time_high):
     # convert exclusive to inclusive
     id_low = _id_time_segment(create_time_high - _TIME_RESOLUTION)
   return id_low, id_high
-
-
-status_to_v2 = None
-
-
-def set_status_to_v2(fn):
-  global status_to_v2
-  assert status_to_v2 is None
-  status_to_v2 = fn

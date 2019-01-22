@@ -18,7 +18,6 @@ import errors
 import model
 import search
 import user
-import v2
 
 
 class ValidateQueryTests(testing.AppengineTestCase):

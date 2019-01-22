@@ -23,7 +23,6 @@ import model
 import notifications
 import service
 import user
-import v2
 
 
 class BuildBucketServiceTest(testing.AppengineTestCase):
@@ -523,6 +522,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     build = service.fail(1, build.lease_key)
     self.assertEqual(build.proto.status, common_pb2.FAILURE)
     self.assertEqual(build.status_changed_time, utils.utcnow())
+
+  def test_infra_fail(self):
+    build = self.new_started_build(id=1)
+    build = service.fail(
+        1, build.lease_key, failure_reason=model.FailureReason.INFRA_FAILURE
+    )
+    self.assertEqual(build.proto.status, common_pb2.INFRA_FAILURE)
 
   def test_fail_with_details(self):
     build = self.new_started_build(id=1)

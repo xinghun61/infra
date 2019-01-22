@@ -4,7 +4,6 @@
 
 import datetime
 
-from google.appengine.ext import ndb
 import mock
 import gae_ts_mon
 
@@ -15,7 +14,6 @@ from proto import common_pb2
 import config
 import metrics
 import model
-import v2
 
 
 class MetricsTest(testing.AppengineTestCase):

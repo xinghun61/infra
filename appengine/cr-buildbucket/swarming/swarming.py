@@ -56,6 +56,7 @@ from . import flatten_swarmingcfg
 from . import isolate
 from . import swarmingcfg as swarmingcfg_module
 from proto import build_pb2
+from proto import common_pb2
 from proto import launcher_pb2
 from proto.config import project_config_pb2
 from v2 import tokens
@@ -1118,17 +1119,13 @@ def _sync_build_in_memory(
   # build_run_result is dict parsed from BuildRunResult JSONPB. May be None.
   # https://chromium.googlesource.com/infra/infra/+/924a4fa83c1c1018635544e5783f18eeb2ea2edc/go/src/infra/tools/kitchen/proto/result.proto
 
-  if build.status == model.BuildStatus.COMPLETED:  # pragma: no cover
+  if build.is_ended:  # pragma: no cover
     # Completed builds are immutable.
     return False
 
   now = utils.utcnow()
 
-  old_status = build.status
-  build.status = None
-  build.result = None
-  build.failure_reason = None
-  build.cancelation_reason = None
+  old_status = build.proto.status
   build.result_details = {'swarming': {'bot_dimensions': {}}}
 
   if build.proto:  # pragma: no branch
@@ -1161,75 +1158,66 @@ def _sync_build_in_memory(
   }
   state = (task_result or {}).get('state')
   if build_run_result_error:
-    build.status = model.BuildStatus.COMPLETED
-    build.result = model.BuildResult.FAILURE
-    build.failure_reason = model.FailureReason.INFRA_FAILURE
+    build.proto.status = common_pb2.INFRA_FAILURE
     errmsg = '%s returned by the swarming task is bad: %s.' % (
         _BUILD_RUN_RESULT_FILENAME, build_run_result_error
     )
   elif state is None:
-    build.status = model.BuildStatus.COMPLETED
-    build.result = model.BuildResult.FAILURE
-    build.failure_reason = model.FailureReason.INFRA_FAILURE
+    build.proto.status = common_pb2.INFRA_FAILURE
     errmsg = (
         'Swarming task %s on %s unexpectedly disappeared' %
         (build.swarming_task_id, build.swarming_hostname)
     )
   elif state == 'PENDING':
-    if build.status == model.BuildStatus.STARTED:  # pragma: no cover
+    if build.proto.status == common_pb2.STARTED:  # pragma: no cover
       # Most probably, race between PubSub push handler and Cron job.
       # With swarming, a build cannot go from STARTED back to PENDING,
       # so ignore this.
       return False
-    build.status = model.BuildStatus.SCHEDULED
+    build.proto.status = common_pb2.SCHEDULED
   elif state == 'RUNNING':
-    build.status = model.BuildStatus.STARTED
+    build.proto.status = common_pb2.STARTED
   elif state in terminal_states:
-    build.status = model.BuildStatus.COMPLETED
     if state in ('CANCELED', 'KILLED'):
-      build.result = model.BuildResult.CANCELED
-      build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
+      build.proto.status = common_pb2.CANCELED
     elif state in ('EXPIRED', 'NO_RESOURCE'):
       # Task did not start.
-      build.result = model.BuildResult.CANCELED
-      build.cancelation_reason = model.CancelationReason.TIMEOUT
+      build.proto.status = common_pb2.INFRA_FAILURE
+      build.proto.infra_failure_reason.resource_exhaustion = True
     elif state == 'TIMED_OUT':
       # Task started, but timed out.
-      build.result = model.BuildResult.FAILURE
-      build.failure_reason = model.FailureReason.INFRA_FAILURE
+      build.proto.status = common_pb2.INFRA_FAILURE
     elif state == 'BOT_DIED' or task_result.get('internal_failure'):
-      build.result = model.BuildResult.FAILURE
-      build.failure_reason = model.FailureReason.INFRA_FAILURE
+      build.proto.status = common_pb2.INFRA_FAILURE
     elif build_run_result is None:
       # There must be a build_run_result, otherwise it is an infra failure.
-      build.result = model.BuildResult.FAILURE
-      build.failure_reason = model.FailureReason.INFRA_FAILURE
+      build.proto.status = common_pb2.INFRA_FAILURE
     elif task_result.get('failure'):
-      build.result = model.BuildResult.FAILURE
       if build_run_result.get('infraFailure'):
-        build.failure_reason = model.FailureReason.INFRA_FAILURE
+        build.proto.status = common_pb2.INFRA_FAILURE
       else:
-        build.failure_reason = model.FailureReason.BUILD_FAILURE
+        build.proto.status = common_pb2.FAILURE
     else:
       assert state == 'COMPLETED'
-      build.result = model.BuildResult.SUCCESS
+      build.proto.status = common_pb2.SUCCESS
   else:  # pragma: no cover
     assert False, 'Unexpected task state: %s' % state
 
-  if build.status == old_status:  # pragma: no cover
+  if build.proto.status == old_status:  # pragma: no cover
     return False
   build.status_changed_time = now
   logging.info(
-      'Build %s status: %s -> %s', build.key.id(), old_status, build.status
+      'Build %s status: %s -> %s', build.key.id(), old_status,
+      build.proto.status
   )
 
   def ts(key):
     v = (task_result or {}).get(key)
     return _parse_ts(v) if v else None
 
-  if build.status == model.BuildStatus.STARTED:
+  if build.proto.status == common_pb2.STARTED:
     build.start_time = ts('started_ts') or now
-  elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+  elif build.is_ended:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
     build.start_time = ts('started_ts') or build.start_time
@@ -1332,9 +1320,9 @@ def _sync_build_async(build_id, task_result, bucket_id, builder):
 
     futures = [build.put_async()]
 
-    if build.status == model.BuildStatus.STARTED:
+    if build.proto.status == common_pb2.STARTED:
       futures.append(events.on_build_starting_async(build))
-    elif build.status == model.BuildStatus.COMPLETED:  # pragma: no cover
+    elif build.is_ended:  # pragma: no cover
       # This code is coverd by tests, but pycover reports coverage incorrectly!
       futures.append(events.on_build_completing_async(build))
       if build_steps:
@@ -1345,9 +1333,9 @@ def _sync_build_async(build_id, task_result, bucket_id, builder):
 
   build = yield txn_async()
   if build:
-    if build.status == model.BuildStatus.STARTED:
+    if build.proto.status == common_pb2.STARTED:
       events.on_build_started(build)
-    elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+    elif build.is_ended:  # pragma: no branch
       events.on_build_completed(build)
 
 
@@ -1504,7 +1492,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
         model.Build.swarming_task_id != None,
         # We cannot have a second negation filter, so use IN.
         # This will result in two datastore queries, which is fine.
-        model.Build.status.IN([
+        model.Build.status_legacy.IN([
             model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED
         ])
     )

@@ -58,7 +58,7 @@ _BUILD_FIELDS = {
     'cancelation_reason': str_attr_field('cancelation_reason'),
     'failure_reason': str_attr_field('failure_reason'),
     'result': str_attr_field('result'),
-    'status': str_attr_field('status'),
+    'status': str_attr_field('status_legacy'),
     'user_agent': BuildMetricField(
         value_type=str,
         field_type=gae_ts_mon.StringField,
@@ -255,7 +255,7 @@ def set_build_count_metric_async(
   q = model.Build.query(
       model.Build.bucket_id == bucket_id,
       model.Build.tags == 'builder:%s' % builder,
-      model.Build.status == status,
+      model.Build.status_legacy == status,
       model.Build.experimental == experimental,
   )
   try:
@@ -278,7 +278,7 @@ def set_build_latency(bucket_id, bucket_field, builder, must_be_never_leased):
   q = model.Build.query(
       model.Build.bucket_id == bucket_id,
       model.Build.tags == 'builder:%s' % builder,
-      model.Build.status == model.BuildStatus.SCHEDULED,
+      model.Build.status_legacy == model.BuildStatus.SCHEDULED,
       model.Build.experimental == False,
   )
   if must_be_never_leased:

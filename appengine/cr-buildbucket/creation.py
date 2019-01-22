@@ -148,7 +148,6 @@ class BuildRequest(_BuildRequestBase):
         initial_tags=tags,
         tags=tags,
         input_properties=sbr.properties,
-        status=model.BuildStatus.SCHEDULED,
         parameters=copy.deepcopy(self.parameters or {}),
         created_by=created_by,
         create_time=now,

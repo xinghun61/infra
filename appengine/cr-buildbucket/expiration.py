@@ -20,6 +20,7 @@ import webapp2
 from components import decorators
 from components import utils
 
+from proto import common_pb2
 import events
 import model
 
@@ -45,11 +46,9 @@ def expire_build_leases():
     if not is_expired:  # pragma: no cover
       raise ndb.Return(False, build)
 
-    assert build.status != model.BuildStatus.COMPLETED, (
-        'Completed build is leased'
-    )
+    assert not build.is_ended, 'Completed build is leased'
     build.clear_lease()
-    build.status = model.BuildStatus.SCHEDULED
+    build.proto.status = common_pb2.SCHEDULED
     build.status_changed_time = now
     build.url = None
     yield build.put_async(), events.on_build_resetting_async(build)
@@ -81,21 +80,20 @@ class CronExpireBuilds(webapp2.RequestHandler):  # pragma: no cover
 def expire_builds():
   """Finds old incomplete builds and marks them as TIMEOUT."""
 
-  expected_statuses = (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED)
+  expected_statuses = (common_pb2.SCHEDULED, common_pb2.STARTED)
 
   @ndb.transactional_tasklet
   def txn_async(build_key):
     now = utils.utcnow()
     build = yield build_key.get_async()
-    if not build or build.status not in expected_statuses:
+    if not build or build.status_v2 not in expected_statuses:
       raise ndb.Return(False, build)  # pragma: no cover
 
     build.clear_lease()
-    build.status = model.BuildStatus.COMPLETED
+    build.proto.status = common_pb2.INFRA_FAILURE
+    build.proto.infra_failure_reason.resource_exhaustion = True
     build.complete_time = now
     build.status_changed_time = now
-    build.result = model.BuildResult.CANCELED
-    build.cancelation_reason = model.CancelationReason.TIMEOUT
     yield build.put_async(), events.on_build_completing_async(build)
     raise ndb.Return(True, build)
 
@@ -112,7 +110,7 @@ def expire_builds():
   q = model.Build.query(
       model.Build.key > ndb.Key(model.Build, id_low),
       # Cannot use >1 inequality filters per query.
-      model.Build.status.IN(expected_statuses),
+      model.Build.status_v2.IN(expected_statuses),
   )
   q.map_async(update_async, keys_only=True).get_result()
 

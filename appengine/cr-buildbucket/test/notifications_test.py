@@ -9,7 +9,6 @@ from components import utils
 utils.fix_protobuf_package()
 
 from google.appengine.ext import ndb
-from google.protobuf import struct_pb2
 
 import webtest
 
@@ -22,7 +21,6 @@ import api_common
 import main
 import model
 import notifications
-import v2
 
 
 class NotificationsTest(testing.AppengineTestCase):

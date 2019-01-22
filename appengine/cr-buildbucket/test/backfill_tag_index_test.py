@@ -9,7 +9,6 @@ from test.test_util import future_exception
 from testing_utils import testing
 import backfill_tag_index
 import search
-import v2
 
 
 class BackfillTagIndexTest(testing.AppengineTestCase):

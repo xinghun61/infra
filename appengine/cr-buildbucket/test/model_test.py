@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import unittest
 
 from google.appengine.ext import ndb
 
@@ -12,7 +13,6 @@ from test import test_util
 from proto import build_pb2
 from proto import common_pb2
 import model
-import v2
 
 
 class BuildTest(testing.AppengineTestCase):
@@ -68,16 +68,87 @@ class BuildTest(testing.AppengineTestCase):
   def test_proto_population(self):
     build = model.Build(
         bucket_id='chromium/try',
-        proto=build_pb2.Build(),
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
+        proto=build_pb2.Build(status=common_pb2.SUCCESS),
         create_time=datetime.datetime(2019, 1, 1),
         start_time=datetime.datetime(2019, 1, 2),
         complete_time=datetime.datetime(2019, 1, 3),
         update_time=datetime.datetime(2019, 1, 3),
     )
     build.put()
-    self.assertEqual(build.proto.status, common_pb2.SUCCESS)
     self.assertEqual(build.proto.start_time.ToDatetime(), build.start_time)
     self.assertEqual(build.proto.end_time.ToDatetime(), build.complete_time)
     self.assertEqual(build.proto.update_time.ToDatetime(), build.update_time)
+
+
+class TestStatusConversion(unittest.TestCase):
+
+  def compare(self, build):
+    actual = model.Build(proto=build.proto)
+    actual.update_v1_status_fields()
+    self.assertEqual(actual.status_legacy, build.status_legacy)
+    self.assertEqual(actual.result, build.result)
+    self.assertEqual(actual.failure_reason, build.failure_reason)
+    self.assertEqual(actual.cancelation_reason, build.cancelation_reason)
+
+  def test_started(self):
+    self.compare(
+        model.Build(
+            proto=build_pb2.Build(status=common_pb2.STARTED),
+            status_legacy=model.BuildStatus.STARTED,
+        ),
+    )
+
+  def test_success(self):
+    self.compare(
+        model.Build(
+            proto=build_pb2.Build(status=common_pb2.SUCCESS),
+            status_legacy=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.SUCCESS
+        ),
+    )
+
+  def test_build_failure(self):
+    self.compare(
+        model.Build(
+            proto=build_pb2.Build(status=common_pb2.FAILURE),
+            status_legacy=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.FAILURE,
+            failure_reason=model.FailureReason.BUILD_FAILURE
+        ),
+    )
+
+  def test_infra_failure(self):
+    self.compare(
+        model.Build(
+            proto=build_pb2.Build(
+                status=common_pb2.INFRA_FAILURE,
+                infra_failure_reason=dict(resource_exhaustion=False)
+            ),
+            status_legacy=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.FAILURE,
+            failure_reason=model.FailureReason.INFRA_FAILURE
+        ),
+    )
+
+  def test_canceled(self):
+    self.compare(
+        model.Build(
+            proto=build_pb2.Build(status=common_pb2.CANCELED),
+            status_legacy=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.CANCELED,
+            cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY
+        ),
+    )
+
+  def test_timeout(self):
+    self.compare(
+        model.Build(
+            proto=build_pb2.Build(
+                status=common_pb2.INFRA_FAILURE,
+                infra_failure_reason=dict(resource_exhaustion=True)
+            ),
+            status_legacy=model.BuildStatus.COMPLETED,
+            result=model.BuildResult.CANCELED,
+            cancelation_reason=model.CancelationReason.TIMEOUT
+        ),
+    )

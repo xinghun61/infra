@@ -18,7 +18,6 @@ from components import net
 from components import utils
 import bqh
 
-import annotations
 import model
 import v2
 
@@ -37,7 +36,7 @@ def enqueue_bq_export_async(build):  # pragma: no cover
   """Enqueues a pull task to export a completed build to BigQuery."""
   assert ndb.in_transaction()
   assert build
-  assert build.status == model.BuildStatus.COMPLETED
+  assert build.is_ended
 
   yield enqueue_pull_task_async(
       'bq-export-experimental' if build.experimental else 'bq-export-prod',
@@ -148,7 +147,7 @@ def _build_to_v2(bid, build, build_steps):
     logging.error('skipping build %d: not found', bid)
     return None, False
 
-  if build.status != model.BuildStatus.COMPLETED:
+  if not build.is_ended:
     logging.error('will retry build: not complete\n%d', bid)
     return None, True
 

@@ -13,9 +13,7 @@ from test import test_util
 from test.test_util import future
 import config
 import errors
-import model
 import user
-import v2
 
 # Shortcuts
 Bucket = project_config_pb2.Bucket

@@ -20,6 +20,8 @@ from test import test_util
 import bbutil
 import model
 
+# TODO(crbug.com/917851): delete this file.
+
 
 class V2BuildsTest(unittest.TestCase):
   maxDiff = None
@@ -73,14 +75,20 @@ class V2BuildsTest(unittest.TestCase):
         'arr': [1, 2],
     })
     output_properties = {'x': 1}
-    build = mkbuild(
+    build = model.Build(
+        id=1,
+        proto=build_pb2.Build(
+            status=common_pb2.SUCCESS,
+            infra_failure_reason=dict(),  # coverage
+        ),
+        bucket_id='chromium/try',
+        parameters={model.BUILDER_PARAMETER: 'linux-rel'},
+        created_by=auth.Identity('user', 'john@example.com'),
         create_time=dt0,
         start_time=dt1,
         complete_time=dt2,
         update_time=dt2,
         tags=['a:b', 'c:d'],
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.SUCCESS,
         input_properties=input_properties,
         result_details={
             'properties': output_properties,
@@ -165,6 +173,7 @@ class V2BuildsTest(unittest.TestCase):
         ),
         created_by='user:john@example.com',
         steps=steps,
+        infra_failure_reason=dict(),
     )
     # Compare messages as dicts.
     # assertEqual has better support for dicts.
@@ -272,110 +281,10 @@ class V2BuildsTest(unittest.TestCase):
       builds.build_to_v2(build)
 
 
-class TestStatusConversion(unittest.TestCase):
-
-  def compare(self, build_v1, build_v2, test_to_v1=True):
-    actual_v2 = build_pb2.Build()
-    builds.status_to_v2(build_v1, actual_v2)
-    self.assertEqual(actual_v2, build_v2)
-
-    if not test_to_v1:
-      return
-
-    actual_v1 = model.Build()
-    builds.status_to_v1(build_v2, actual_v1)
-    self.assertEqual(actual_v1.status, build_v1.status)
-    self.assertEqual(actual_v1.result, build_v1.result)
-    self.assertEqual(actual_v1.failure_reason, build_v1.failure_reason)
-    self.assertEqual(actual_v1.cancelation_reason, build_v1.cancelation_reason)
-
-  def test_empty(self):
-    self.compare(model.Build(), build_pb2.Build(status=common_pb2.SCHEDULED))
-
-  def test_started(self):
-    self.compare(
-        model.Build(status=model.BuildStatus.STARTED),
-        build_pb2.Build(status=common_pb2.STARTED)
-    )
-
-  def test_success(self):
-    self.compare(
-        model.Build(
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.SUCCESS
-        ),
-        build_pb2.Build(status=common_pb2.SUCCESS),
-    )
-
-  def test_build_failure(self):
-    self.compare(
-        model.Build(
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.FAILURE,
-            failure_reason=model.FailureReason.BUILD_FAILURE
-        ),
-        build_pb2.Build(status=common_pb2.FAILURE),
-    )
-
-  def test_generic_failure(self):
-    self.compare(
-        model.Build(
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.FAILURE
-        ),
-        build_pb2.Build(
-            status=common_pb2.INFRA_FAILURE,
-            infra_failure_reason=build_pb2.InfraFailureReason(
-                resource_exhaustion=False,
-            )
-        ),
-        test_to_v1=False
-    )
-
-  def test_infra_failure(self):
-    self.compare(
-        model.Build(
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.FAILURE,
-            failure_reason=model.FailureReason.INFRA_FAILURE
-        ),
-        build_pb2.Build(
-            status=common_pb2.INFRA_FAILURE,
-            infra_failure_reason=build_pb2.InfraFailureReason(
-                resource_exhaustion=False,
-            )
-        )
-    )
-
-  def test_canceled(self):
-    self.compare(
-        model.Build(
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.CANCELED,
-            cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY
-        ),
-        build_pb2.Build(status=common_pb2.CANCELED),
-    )
-
-  def test_timeout(self):
-    self.compare(
-        model.Build(
-            status=model.BuildStatus.COMPLETED,
-            result=model.BuildResult.CANCELED,
-            cancelation_reason=model.CancelationReason.TIMEOUT
-        ),
-        build_pb2.Build(
-            status=common_pb2.INFRA_FAILURE,
-            infra_failure_reason=build_pb2.InfraFailureReason(
-                resource_exhaustion=True
-            )
-        )
-    )
-
-
 def mkbuild(**kwargs):
   args = dict(
       id=1,
+      proto=build_pb2.Build(status=common_pb2.SCHEDULED),
       bucket_id='chromium/try',
       parameters={model.BUILDER_PARAMETER: 'linux-rel'},
       created_by=auth.Identity('user', 'john@example.com'),

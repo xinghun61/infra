@@ -173,7 +173,7 @@ def build_to_message(build, include_lease_key=False):
       # TODO(nodir): move requested properties out from model.Build.parameters
       # to a build_pb2.Build stored in model.Build.
       parameters_json=json.dumps(build.parameters, sort_keys=True),
-      status=build.status,
+      status=build.status_legacy,
       result=build.result,
       result_details_json=json.dumps(build.result_details),
       cancelation_reason=build.cancelation_reason,

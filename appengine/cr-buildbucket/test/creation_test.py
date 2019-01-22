@@ -25,7 +25,6 @@ import model
 import search
 import swarming
 import user
-import v2
 
 
 class CreationTest(testing.AppengineTestCase):
