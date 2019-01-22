@@ -9,32 +9,43 @@ STAGING_APPID := "findit-for-me-staging"
 # Should come with infra repository, if this step fails run
 # ...$ gclient sync
 PROTOC := "../../cipd/protoc"
-MODULES := default frontend waterfall-backend flake-detection-backend
+FINDIT_MODULES := default frontend waterfall-backend flake-detection-backend auto-action-backend
+CODE_COVERAGE_MODULES := code-coverage-frontend code-coverage-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
 LOCAL_HASH := `git rev-parse --short HEAD`
 # If there are multiple active versions just use the latest one.
-REMOTE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID)|tail -n 1`
-REMOTE_HASH := `python -c "print '$$($(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID))'.split('-')[:2][-1]"`
+REMOTE_FINDIT_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "default:" | awk '{print $$2}'`
+REMOTE_FINDIT_HASH := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "default:" | awk '{print $$2}' | cut -d '-' -f2`
+REMOTE_COVERAGE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "code-coverage-backend:" | awk '{print $$2}'`
+REMOTE_COVERAGE_HASH := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "code-coverage-backend:" | awk '{print $$2}' | cut -d '-' -f2`
 
 
 help:
-	@echo "To deploy a new version of findit, check out the appropriate" \
+	@echo "Findit:"
+	@echo "To deploy a new version of Findit, check out the appropriate" \
 	      "revision and run \`gclient sync\` then run" \
-	      "\`make deploy-prod\` for production or \`make deploy-staging\`"\
+	      "\`make deploy-findit-prod\` for production or \`make deploy-findit-staging\`"\
 	      "for staging."
-	@echo "To migrate the traffic to the newly deployed version use " \
-	      "\`make migrate\`, this is only necessary for production."
-	@echo "To revert to the previous version, use the command displayed " \
-	      "by make when running the line above, or better yet, use the" \
-	      "web interface to make the previous release default."
+	@echo "To set the newly version as default or revert to a previous one, " \
+	      "please migrate traffic for modules: $(FINDIT_MODULES)"
+	@echo "https://pantheon.corp.google.com/appengine/versions?project=findit-for-me"
+	@echo
+	@echo "Code Coverage:"
+	@echo "To deploy a new version of Code Coverage, check out the appropriate" \
+	      "revision and run \`gclient sync\` then run" \
+	      "\`make deploy-coverage-prod\` for production or \`make deploy-coverage-staging\`"\
+	      "for staging."
+	@echo "To set the newly version as default or revert to a previous one, " \
+	      "please migrate traffic for modules: $(CODE_COVERAGE_MODULES)"
+	@echo "https://pantheon.corp.google.com/appengine/versions?project=findit-for-me"
 	@echo
 	@echo "To format code use \`make format\`"
 	@echo "To run tests use \`make test\`"
-	@echo "To run findit locally use \`make run\`"
+	@echo "To run all modules locally use \`make run\`"
 
 
 ##### App Engine ###
-deploy-prod: _deploy
+deploy-findit-prod: _deploy_findit
 	@echo "New version '$(LOCAL_VERSION)' of Findit was" \
 	      "deployed to $(APPID)."
 	@echo
@@ -45,24 +56,22 @@ deploy-prod: _deploy
 	@echo "Please also force a re-run of a recent flake analysis on dashboard: "\
 	"https://$(LOCAL_VERSION)-dot-frontend-"\
 	"dot-$(APPID).appspot.com/waterfall/list-flakes"
-	@echo "ensure that the analyses are run in the new-version waterfall" \
-	      "frontend & backend and gives correct results,"
-	@echo "and then set the new version as default for four modules" \
-	      "default, frontend, waterfall-backend and flake-detection-backend."
-	@echo "You can do this by running \`make migrate\`"
+	@echo "Ensure that the analyses are run in the new versions and givens " \
+	      "correct results, "
+	      "and then set the new version as default for these modules " \
+	      "$(FINDIT_MODULES)."
 	@echo
-	@echo "If the release is for findit-for-me, please email" \
-	      "chrome-findit with the following:"
-	@echo "Subject: Release: findit-for-me updated to" \
-	      "$(LOCAL_VERSION)"
+	@echo "If the release is for production, please email" \
+	      "chrome-findit@ with the following:"
+	@echo "Subject: "$(LOCAL_VERSION)" deployed for Findit"
+
 	@echo "Hi all,"
 	@echo
-	@echo "The app findit-for-me was updated from" \
-	      "$(REMOTE_VERSION) to $(LOCAL_VERSION)"
+	@echo "$(LOCAL_VERSION) was deployed to Findit. Previous version is " \
+	      "$(REMOTE_FINDIT_VERSION)"
 	@echo "Changelogs:"
 	@echo "https://chromium.googlesource.com/infra/infra/+log/"\
-	"$(REMOTE_HASH)..$(LOCAL_HASH)"\
-	"/appengine/findit?pretty=fuller"
+	"$(REMOTE_FINDIT_HASH)..$(LOCAL_HASH)/appengine/findit?pretty=fuller"
 	@echo
 	@echo "If your bug fixes/features are included in the release," \
 	      "please verify on ${app_id} and mark them as verified on" \
@@ -71,17 +80,28 @@ deploy-prod: _deploy
 	@echo "Thanks,"
 	@echo "Released by $(USER)@"
 
-deploy-staging: test
-	@$(INFRAPYTHON) $(GAE_PY) upload -A $(STAGING_APPID);
+deploy-findit-staging: test
+	@$(INFRAPYTHON) $(GAE_PY) upload -A $(STAGING_APPID) $(FINDIT_MODULES);
 
-_deploy: test
-	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID);
+_deploy_findit: test
+	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(FINDIT_MODULES);
+
+deploy-coverage-staging: test
+	@$(INFRAPYTHON) $(GAE_PY) upload -A $(STAGING_APPID) $(CODE_COVERAGE_MODULES);
+	@echo "New version is https://$(LOCAL_VERSION)-dot-code-coverage-frontend-"\
+	"dot-$(STAGING_APPID).appspot.com/p/chromium/coverage"
+
+_deploy_coverage: test
+	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(CODE_COVERAGE_MODULES);
+	@echo "New version is https://$(LOCAL_VERSION)-dot-code-coverage-frontend-"\
+	"dot-$(APPID).appspot.com/p/chromium/coverage"
 
 migrate:
-	@echo "To revert to the previous version run the following command:"
-	@echo "\`$(INFRAPYTHON) $(GAE_PY) switch -A $(APPID) " \
-	"$(REMOTE_VERSION) \`"
-	$(INFRAPYTHON) $(GAE_PY) switch -A $(APPID)
+	@echo "Please use the Google Cloud Console to migrate traffic to new versions"
+	      "https://pantheon.corp.google.com/appengine/versions?project=findit-for-me"
+	@echo
+	@echo "Findit modules: $(FINDIT_MODULES)"
+	@echo "Code Coverage modules: $(CODE_COVERAGE_MODULES)"
 
 
 ##### Development ###
@@ -127,5 +147,6 @@ ifndef TMPDIR
 TMPDIR :=  $(shell mktemp -d)
 endif
 
-.PHONY: _deploy test update \
-        help migrate deploy-prod deploy-staging
+.PHONY: _deploy_findit test update \
+        help migrate deploy-findit-prod deploy-findit-staging \
+        deploy-coverage-prod deploy-coverage-staging
