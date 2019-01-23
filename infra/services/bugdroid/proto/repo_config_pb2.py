@@ -8,7 +8,6 @@ from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
-from google.protobuf import descriptor_pb2
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -20,9 +19,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='repo_config.proto',
   package='bugdroid',
   syntax='proto2',
-  serialized_pb=_b('\n\x11repo_config.proto\x12\x08\x62ugdroid\"\"\n\x04Pair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xab\x03\n\x04Repo\x12\x11\n\trepo_name\x18\x01 \x01(\t\x12%\n\trepo_type\x18\x02 \x01(\x0e\x32\x12.bugdroid.RepoType\x12\x10\n\x08repo_url\x18\x03 \x01(\t\x12\x17\n\x0f\x64\x65\x66\x61ult_project\x18\x04 \x01(\t\x12+\n\x0curl_template\x18\x05 \x01(\x0e\x32\x15.bugdroid.UrlTemplate\x12\x34\n\x11path_url_template\x18\x06 \x01(\x0e\x32\x19.bugdroid.PathUrlTemplate\x12\x13\n\x0bsvn_project\x18\x07 \x01(\t\x12\x19\n\x0bpublic_bugs\x18\x08 \x01(\x08:\x04true\x12\x12\n\nrefs_regex\x18\t \x03(\t\x12\x14\n\x0c\x66ilter_regex\x18\n \x03(\t\x12\x15\n\rno_merge_refs\x18\x0b \x03(\t\x12\x13\n\x0bpaths_regex\x18\x0c \x03(\t\x12\x14\n\x0cmust_succeed\x18\r \x03(\t\x12\x18\n\ttest_mode\x18\x0e \x01(\x08:\x05\x66\x61lse\x12%\n\rissues_labels\x18\x0f \x03(\x0b\x32\x0e.bugdroid.Pair\",\n\x0bRepoConfigs\x12\x1d\n\x05repos\x18\x01 \x03(\x0b\x32\x0e.bugdroid.Repo*(\n\x08RepoType\x12\x07\n\x03svn\x10\x00\x12\x07\n\x03git\x10\x01\x12\n\n\x06gerrit\x10\x02*+\n\x0bUrlTemplate\x12\x06\n\x02\x63r\x10\x00\x12\n\n\x06\x63r_int\x10\x01\x12\x08\n\x04nacl\x10\x02*-\n\x0fPathUrlTemplate\x12\n\n\x06viewvc\x10\x00\x12\x0e\n\nviewvc_int\x10\x01')
+  serialized_options=None,
+  serialized_pb=_b('\n\x11repo_config.proto\x12\x08\x62ugdroid\"\"\n\x04Pair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\xbf\x03\n\x04Repo\x12\x11\n\trepo_name\x18\x01 \x01(\t\x12%\n\trepo_type\x18\x02 \x01(\x0e\x32\x12.bugdroid.RepoType\x12\x10\n\x08repo_url\x18\x03 \x01(\t\x12\x17\n\x0f\x64\x65\x66\x61ult_project\x18\x04 \x01(\t\x12+\n\x0curl_template\x18\x05 \x01(\x0e\x32\x15.bugdroid.UrlTemplate\x12\x34\n\x11path_url_template\x18\x06 \x01(\x0e\x32\x19.bugdroid.PathUrlTemplate\x12\x13\n\x0bsvn_project\x18\x07 \x01(\t\x12\x19\n\x0bpublic_bugs\x18\x08 \x01(\x08:\x04true\x12\x12\n\nrefs_regex\x18\t \x03(\t\x12\x14\n\x0c\x66ilter_regex\x18\n \x03(\t\x12\x15\n\rno_merge_refs\x18\x0b \x03(\t\x12\x13\n\x0bpaths_regex\x18\x0c \x03(\t\x12\x14\n\x0cmust_succeed\x18\r \x03(\t\x12\x18\n\ttest_mode\x18\x0e \x01(\x08:\x05\x66\x61lse\x12%\n\rissues_labels\x18\x0f \x03(\x0b\x32\x0e.bugdroid.Pair\x12\x12\n\nskip_paths\x18\x10 \x01(\x08\",\n\x0bRepoConfigs\x12\x1d\n\x05repos\x18\x01 \x03(\x0b\x32\x0e.bugdroid.Repo*(\n\x08RepoType\x12\x07\n\x03svn\x10\x00\x12\x07\n\x03git\x10\x01\x12\n\n\x06gerrit\x10\x02*+\n\x0bUrlTemplate\x12\x06\n\x02\x63r\x10\x00\x12\n\n\x06\x63r_int\x10\x01\x12\x08\n\x04nacl\x10\x02*-\n\x0fPathUrlTemplate\x12\n\n\x06viewvc\x10\x00\x12\x0e\n\nviewvc_int\x10\x01')
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _REPOTYPE = _descriptor.EnumDescriptor(
   name='RepoType',
@@ -32,21 +31,21 @@ _REPOTYPE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='svn', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='git', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='gerrit', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=543,
-  serialized_end=583,
+  serialized_options=None,
+  serialized_start=563,
+  serialized_end=603,
 )
 _sym_db.RegisterEnumDescriptor(_REPOTYPE)
 
@@ -59,21 +58,21 @@ _URLTEMPLATE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='cr', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='cr_int', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='nacl', index=2, number=2,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=585,
-  serialized_end=628,
+  serialized_options=None,
+  serialized_start=605,
+  serialized_end=648,
 )
 _sym_db.RegisterEnumDescriptor(_URLTEMPLATE)
 
@@ -86,17 +85,17 @@ _PATHURLTEMPLATE = _descriptor.EnumDescriptor(
   values=[
     _descriptor.EnumValueDescriptor(
       name='viewvc', index=0, number=0,
-      options=None,
+      serialized_options=None,
       type=None),
     _descriptor.EnumValueDescriptor(
       name='viewvc_int', index=1, number=1,
-      options=None,
+      serialized_options=None,
       type=None),
   ],
   containing_type=None,
-  options=None,
-  serialized_start=630,
-  serialized_end=675,
+  serialized_options=None,
+  serialized_start=650,
+  serialized_end=695,
 )
 _sym_db.RegisterEnumDescriptor(_PATHURLTEMPLATE)
 
@@ -125,21 +124,21 @@ _PAIR = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='value', full_name='bugdroid.Pair.value', index=1,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
@@ -163,119 +162,126 @@ _REPO = _descriptor.Descriptor(
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='repo_type', full_name='bugdroid.Repo.repo_type', index=1,
       number=2, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='repo_url', full_name='bugdroid.Repo.repo_url', index=2,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='default_project', full_name='bugdroid.Repo.default_project', index=3,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='url_template', full_name='bugdroid.Repo.url_template', index=4,
       number=5, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='path_url_template', full_name='bugdroid.Repo.path_url_template', index=5,
       number=6, type=14, cpp_type=8, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='svn_project', full_name='bugdroid.Repo.svn_project', index=6,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='public_bugs', full_name='bugdroid.Repo.public_bugs', index=7,
       number=8, type=8, cpp_type=7, label=1,
       has_default_value=True, default_value=True,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='refs_regex', full_name='bugdroid.Repo.refs_regex', index=8,
       number=9, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='filter_regex', full_name='bugdroid.Repo.filter_regex', index=9,
       number=10, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='no_merge_refs', full_name='bugdroid.Repo.no_merge_refs', index=10,
       number=11, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='paths_regex', full_name='bugdroid.Repo.paths_regex', index=11,
       number=12, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='must_succeed', full_name='bugdroid.Repo.must_succeed', index=12,
       number=13, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='test_mode', full_name='bugdroid.Repo.test_mode', index=13,
       number=14, type=8, cpp_type=7, label=1,
       has_default_value=True, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
       name='issues_labels', full_name='bugdroid.Repo.issues_labels', index=14,
       number=15, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='skip_paths', full_name='bugdroid.Repo.skip_paths', index=15,
+      number=16, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
   serialized_start=68,
-  serialized_end=495,
+  serialized_end=515,
 )
 
 
@@ -292,21 +298,21 @@ _REPOCONFIGS = _descriptor.Descriptor(
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
-      options=None),
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
   ],
-  options=None,
+  serialized_options=None,
   is_extendable=False,
   syntax='proto2',
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=497,
-  serialized_end=541,
+  serialized_start=517,
+  serialized_end=561,
 )
 
 _REPO.fields_by_name['repo_type'].enum_type = _REPOTYPE
@@ -320,6 +326,7 @@ DESCRIPTOR.message_types_by_name['RepoConfigs'] = _REPOCONFIGS
 DESCRIPTOR.enum_types_by_name['RepoType'] = _REPOTYPE
 DESCRIPTOR.enum_types_by_name['UrlTemplate'] = _URLTEMPLATE
 DESCRIPTOR.enum_types_by_name['PathUrlTemplate'] = _PATHURLTEMPLATE
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Pair = _reflection.GeneratedProtocolMessageType('Pair', (_message.Message,), dict(
   DESCRIPTOR = _PAIR,

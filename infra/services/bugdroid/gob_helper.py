@@ -440,13 +440,15 @@ class GitilesHelper(RestApiHelper):
                          filtered_count, filter_ref)
 
     paths_dict = {}
-    if with_paths or filter_paths:
+    # TODO(crbug.com/924677): Replace explicit chromium/src, moving with_paths
+    # to bugdroid config, and eventually restore paths for chromium changes.
+    if 'chromium/src' not in self._api_url and (with_paths or filter_paths):
       path_filter = None
       if filter_paths:
         path_filter = re.compile('|'.join(filter_paths))
       for log_item in [x for x in json_dict['log'] if not x.get('IGNORED')]:
         commit = log_item['commit']
-        paths = self.GetCommitDetails(commit).get('tree_diff')
+        paths = self.GetCommitDetails(commit).get('tree_diff', [])
         # If this commit doesn't affect the requested path(s), then remove it
         # from the results.
         if (path_filter and

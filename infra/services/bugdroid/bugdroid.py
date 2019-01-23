@@ -210,7 +210,8 @@ class Bugdroid(object):
           interval_in_minutes=interval_minutes,
           logger=logger,
           run_once=self.run_once,
-          datadir=self.datadir)
+          datadir=self.datadir,
+          with_paths=not config.skip_paths)
     elif t == 'gerrit':
       poller = gerrit_poller.GerritPoller(
           config.repo_url,

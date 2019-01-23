@@ -89,6 +89,10 @@ message Repo {
   // Dict of issue labels to apply to certain types of commit
   // (e.g "merge") from this repo
   repeated Pair issues_labels = 15;
+
+  // Whether to skip including paths of changed files in the comment posted to
+  // monorail.
+  optional bool skip_paths = 16;
 }
 
 message RepoConfigs {
