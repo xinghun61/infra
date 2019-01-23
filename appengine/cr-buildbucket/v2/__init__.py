@@ -5,13 +5,7 @@
 """V2-specific code.
 
 This module contains Buildbucket v2 specific code, while the rest of the
-code in this app is v1. In particular, this file implements a function that
-converts a v1 Build datastore entity to buildbucket.v2.Build message.
+code in this app is v1.
+
+TODO(nodir): invert this: move v2 files to the root and move legacy to legacy/
 """
-
-# Pylint doesn't like wildcard imports.
-# pylint: disable=W0401
-
-from . import builds
-from .builds import *
-import model
