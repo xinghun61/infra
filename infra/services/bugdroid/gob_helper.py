@@ -440,9 +440,7 @@ class GitilesHelper(RestApiHelper):
                          filtered_count, filter_ref)
 
     paths_dict = {}
-    # TODO(crbug.com/924677): Replace explicit chromium/src, moving with_paths
-    # to bugdroid config, and eventually restore paths for chromium changes.
-    if 'chromium/src' not in self._api_url and (with_paths or filter_paths):
+    if with_paths or filter_paths:
       path_filter = None
       if filter_paths:
         path_filter = re.compile('|'.join(filter_paths))
