@@ -19,6 +19,7 @@ class MrApp extends ReduxMixin(Polymer.Element) {
     return {
       loginUrl: String,
       logoutUrl: String,
+      projectName: String,
       subheader: String,
       user: String,
       _boundLoadApprovalPage: {
@@ -73,6 +74,7 @@ class MrApp extends ReduxMixin(Polymer.Element) {
       projectName: ctx.params.project,
     });
 
+    this.projectName = ctx.params.project;
     this.subheader = 'Feature Launch Issue';
 
     this.loadWebComponent('mr-approval-page', {
