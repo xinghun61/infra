@@ -48,4 +48,8 @@ def _fix_build_async(build_key):  # pragma: no cover
   build.proto.ClearField('id')
   build.proto.ClearField('steps')
   build.proto.output.ClearField('properties')
+
+  if build.result_details:
+    build.result_details.pop('annotations', None)
+
   yield build.put_async()
