@@ -24,7 +24,7 @@ import (
 
 // CreateTest subcommand: create a test task.
 var CreateTest = &subcommands.Command{
-	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-client-test] [-tag KEY:VALUE...] [-keyval KEY:VALUE] [-test-args ARGS] TEST_NAME [DIMENSION_KEY:VALUE...]",
+	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-timeout-mins TIMEOUT_MINS] [-client-test] [-tag KEY:VALUE...] [-keyval KEY:VALUE] [-test-args ARGS] TEST_NAME [DIMENSION_KEY:VALUE...]",
 	ShortDesc: "Create a test task, with the given test name and swarming dimensions",
 	LongDesc:  "Create a test task, with the given test name and swarming dimensions.",
 	CommandRun: func() subcommands.CommandRun {
@@ -39,6 +39,7 @@ var CreateTest = &subcommands.Command{
 		// format (e.g. DUT_POOL_BVT) or in a human readable format, e.g. bvt. Provide a
 		// list of common choices.
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
+		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "Time (counting from when the task starts) after which task will be killed if it hasn't completed.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
 		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval", "Autotest keyval for test. Key may not contain : character. May be specified multiple times.")
 		c.Flags.StringVar(&c.testArgs, "test-args", "", "Test arguments string (meaning depends on test).")
@@ -49,17 +50,18 @@ var CreateTest = &subcommands.Command{
 
 type createTestRun struct {
 	subcommands.CommandRunBase
-	authFlags authcli.Flags
-	envFlags  envFlags
-	client    bool
-	image     string
-	board     string
-	model     string
-	pool      string
-	tags      []string
-	keyvals   []string
-	testArgs  string
-	qsAccount string
+	authFlags   authcli.Flags
+	envFlags    envFlags
+	client      bool
+	image       string
+	board       string
+	model       string
+	pool        string
+	timeoutMins int
+	tags        []string
+	keyvals     []string
+	testArgs    string
+	qsAccount   string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -127,7 +129,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	e := c.envFlags.Env()
 
 	logdogURL := generateAnnotationURL(e)
-	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions, keyvals, c.testArgs)
+	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions, keyvals, c.testArgs, c.timeoutMins)
 	if err != nil {
 		return errors.Annotate(err, "create test").Err()
 	}
@@ -189,23 +191,22 @@ func toKeyvalMap(keyvals []string) (map[string]string, error) {
 	return m, nil
 }
 
-func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair) *swarming.SwarmingRpcsTaskSlice {
+func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeoutMins int) *swarming.SwarmingRpcsTaskSlice {
 	return &swarming.SwarmingRpcsTaskSlice{
 		// TODO(akeshet): Determine correct expiration time.
 		ExpirationSecs:  30,
 		WaitForCapacity: false,
 		Properties: &swarming.SwarmingRpcsTaskProperties{
-			Command:    command,
-			Dimensions: dimensions,
-			// TODO(akeshet): Make execution timeout a commandline argument.
-			ExecutionTimeoutSecs: 20 * 60,
+			Command:              command,
+			Dimensions:           dimensions,
+			ExecutionTimeoutSecs: int64(timeoutMins * 60),
 		},
 	}
 }
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
 func getSlices(taskName string, clientTest bool, annotationURL string, provisionableDimensions []string,
-	dimensions []string, keyvals map[string]string, testArgs string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+	dimensions []string, keyvals map[string]string, testArgs string, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	basePairs, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
@@ -217,7 +218,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 
 	s0cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, nil, testArgs)
 	s0Dims := append(basePairs, provisionablePairs...)
-	s0 := taskSlice(s0cmd, s0Dims)
+	s0 := taskSlice(s0cmd, s0Dims, timeoutMins)
 
 	if len(provisionableDimensions) == 0 {
 		return []*swarming.SwarmingRpcsTaskSlice{s0}, nil
@@ -225,7 +226,7 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 
 	s1cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, provisionableDimensions, testArgs)
 	s1Dims := basePairs
-	s1 := taskSlice(s1cmd, s1Dims)
+	s1 := taskSlice(s1cmd, s1Dims, timeoutMins)
 
 	return []*swarming.SwarmingRpcsTaskSlice{s0, s1}, nil
 }
