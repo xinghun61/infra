@@ -12,8 +12,6 @@ from test import test_util
 
 from proto import build_pb2
 from proto import common_pb2
-from proto import step_pb2
-import bbutil
 import model
 
 
@@ -154,37 +152,3 @@ class TestStatusConversion(unittest.TestCase):
             cancelation_reason=model.CancelationReason.TIMEOUT
         ),
     )
-
-
-class ToBuildProtosTests(testing.AppengineTestCase):
-
-  def test_steps(self):
-    build = test_util.build()
-    steps = [
-        step_pb2.Step(name='a', status=common_pb2.SUCCESS),
-        step_pb2.Step(name='b', status=common_pb2.STARTED),
-    ]
-    model.BuildSteps(
-        key=model.BuildSteps.key_for(build.key),
-        step_container=build_pb2.Build(steps=steps),
-    ).put()
-
-    actual = model.builds_to_protos_async([build], load_steps=True).get_result()
-
-    self.assertEqual(len(actual), 1)
-    self.assertEqual(list(actual[0].steps), steps)
-
-  def test_out_props(self):
-    props = bbutil.dict_to_struct({'a': 'b'})
-    build = test_util.build()
-    model.BuildOutputProperties(
-        key=model.BuildOutputProperties.key_for(build.key),
-        properties=props,
-    ).put()
-
-    actual = model.builds_to_protos_async([
-        build
-    ], load_output_properties=True).get_result()
-
-    self.assertEqual(len(actual), 1)
-    self.assertEqual(actual[0].output.properties, props)

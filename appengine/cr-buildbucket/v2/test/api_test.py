@@ -2,16 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import copy
 import os
 import datetime
 
 from google.appengine.ext import ndb
+from google.protobuf import field_mask_pb2
 from google.protobuf import text_format
 
 from components import auth
 from components import prpc
 from components import protoutil
+from components import utils
 from components.prpc import context as prpc_context
 from testing_utils import testing
 import mock
@@ -19,6 +22,7 @@ import mock
 from proto import build_pb2
 from proto import common_pb2
 from proto import rpc_pb2
+from proto import step_pb2
 from test import test_util
 from v2 import api
 from v2 import validation
@@ -130,6 +134,29 @@ class RpcImplTests(BaseTestCase):
     req = rpc_pb2.GetBuildRequest(id=1, fields=dict(paths=['input.properties']))
     res = self.call(self.api.GetBuild, req)
     self.assertEqual(res.input.properties.items(), [('a', 'b')])
+
+
+class ToBuildMessagesTests(BaseTestCase):
+
+  def test_steps(self):
+    build = test_util.build()
+    steps = [
+        step_pb2.Step(name='a', status=common_pb2.SUCCESS),
+        step_pb2.Step(name='b', status=common_pb2.STARTED),
+    ]
+    model.BuildSteps(
+        key=model.BuildSteps.key_for(build.key),
+        step_container=build_pb2.Build(steps=steps),
+    ).put()
+
+    mask = protoutil.Mask.from_field_mask(
+        field_mask_pb2.FieldMask(paths=['steps']),
+        build_pb2.Build.DESCRIPTOR,
+    )
+    actual = api.builds_to_v2_async([build], mask).get_result()
+
+    self.assertEqual(len(actual), 1)
+    self.assertEqual(list(actual[0].steps), steps)
 
 
 class GetBuildTests(BaseTestCase):
