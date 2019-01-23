@@ -106,7 +106,7 @@ func TestCreateListAccount(t *testing.T) {
 				}
 				resp, err := view.ListAccounts(ctx, &req)
 				Convey("then it returns no results.", func() {
-					So(resp, ShouldResemble, &qscheduler.ListAccountsResponse{})
+					So(resp.Accounts, ShouldBeEmpty)
 					So(err, ShouldBeNil)
 				})
 			})

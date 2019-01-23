@@ -97,6 +97,10 @@ func New(t time.Time) *Scheduler {
 
 // NewFromProto returns a new Scheduler from proto representation.
 func NewFromProto(s *SchedulerProto) *Scheduler {
+	c := s.Config
+	if c.AccountConfigs == nil {
+		c.AccountConfigs = make(map[string]*AccountConfig)
+	}
 	return &Scheduler{newStateFromProto(s.State), s.Config}
 }
 
@@ -125,7 +129,6 @@ func (e *UpdateOrderError) Error() string {
 //
 // If an account with that id already exists, then it is overwritten.
 func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *AccountConfig, initialBalance []float64) error {
-	s.ensureMaps()
 	s.config.AccountConfigs[string(id)] = config
 	bal := balance{}
 	copy(bal[:], initialBalance)
@@ -135,7 +138,6 @@ func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *Accoun
 
 // AddRequest enqueues a new task request.
 func (s *Scheduler) AddRequest(ctx context.Context, requestID RequestID, request *TaskRequest, t time.Time) error {
-	s.ensureMaps()
 	if requestID == "" {
 		return errors.New("empty request id")
 	}
@@ -146,7 +148,6 @@ func (s *Scheduler) AddRequest(ctx context.Context, requestID RequestID, request
 // IsAssigned returns whether the given request is currently assigned to the
 // given worker. It is provided for a consistency checks.
 func (s *Scheduler) IsAssigned(requestID RequestID, workerID WorkerID) bool {
-	s.ensureMaps()
 	if w, ok := s.state.workers[workerID]; ok {
 		if !w.isIdle() {
 			return w.runningTask.request.ID == requestID
@@ -159,7 +160,6 @@ func (s *Scheduler) IsAssigned(requestID RequestID, workerID WorkerID) bool {
 // updates quota account balances accordingly, based on running jobs,
 // account policies, and the time elapsed since the last update.
 func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
-	s.ensureMaps()
 	state := s.state
 	config := s.config
 	t0 := state.lastUpdateTime
@@ -227,7 +227,6 @@ type IdleWorker struct {
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
 func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time) error {
-	s.ensureMaps()
 	s.state.markIdle(workerID, labels, t)
 	return nil
 }
@@ -240,7 +239,6 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stri
 //
 // Note: calls to NotifyRequest come from task update pubsub messages from swarming.
 func (s *Scheduler) NotifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) error {
-	s.ensureMaps()
 	s.state.notifyRequest(ctx, requestID, workerID, t)
 	return nil
 }
@@ -250,7 +248,6 @@ func (s *Scheduler) NotifyRequest(ctx context.Context, requestID RequestID, work
 //
 // Supplied requestID must not be "".
 func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t time.Time) error {
-	s.ensureMaps()
 	s.state.abortRequest(ctx, requestID, t)
 	return nil
 }
@@ -261,7 +258,6 @@ func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t tim
 // TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
 // calculation.
 func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
-	s.ensureMaps()
 	pass := s.newRun()
 	return pass.Run()
 }
@@ -627,26 +623,6 @@ func (run *schedulerRun) moveThrottledRequests(priority int) {
 			run.requestsPerPriority[FreeBucket].PushBack(current.Value())
 			run.requestsPerPriority[priority].Remove(current.Element)
 		}
-	}
-}
-
-// ensureMaps ensures that all maps in scheduler or its child structs are
-// non-nil, and initializes them otherwise.
-//
-// This is necessary because protobuf deserialization of an empty map returns a nil map.
-// TODO(akeshet): After the proto-decoupling refactor is completed, remove this method.
-func (s *Scheduler) ensureMaps() {
-	if s.config.AccountConfigs == nil {
-		s.config.AccountConfigs = make(map[string]*AccountConfig)
-	}
-	if s.state.balances == nil {
-		s.state.balances = make(map[AccountID]balance)
-	}
-	if s.state.queuedRequests == nil {
-		s.state.queuedRequests = make(map[RequestID]*request)
-	}
-	if s.state.workers == nil {
-		s.state.workers = make(map[WorkerID]*worker)
 	}
 }
 
