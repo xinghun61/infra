@@ -47,14 +47,6 @@ class StartTest(TestBase):
   @mock.patch('bulkproc.enqueue_tasks', autospec=True)
   def test_start(self, enqueue_tasks):
     # create a build a day for 3 days
-    day0 = model.BEGINING_OF_THE_WORLD + datetime.timedelta(days=7)
-
-    day_date = lambda day: day0 + datetime.timedelta(days=day)
-    builds = [
-        test_util.build(create_time=test_util.dt2ts(day_date(day)))
-        for day in xrange(3)
-    ]
-    ndb.put_multi(builds)
     proc = {'name': 'foo', 'payload': 'bar'}
     self.post({
         'proc': proc,
@@ -62,65 +54,44 @@ class StartTest(TestBase):
 
     # Expect a segment for each day.
     seg_path_prefix = bulkproc.PATH_PREFIX + 'segment/'
-    enqueue_tasks.assert_called_with(
-        'bulkproc', [
-            (
-                None,
-                seg_path_prefix + 'seg:0-percent:0',
-                utils.encode_to_json({
-                    'job_id': 'taskname',
-                    'iteration': 0,
-                    'seg_index': 0,
-                    'seg_start': builds[2].key.id(),
-                    'seg_end': builds[1].key.id() - 1,
-                    'started_ts': utils.datetime_to_timestamp(self.now),
-                    'proc': proc,
-                }),
-            ),
-            (
-                None,
-                seg_path_prefix + 'seg:1-percent:0',
-                utils.encode_to_json({
-                    'job_id': 'taskname',
-                    'iteration': 0,
-                    'seg_index': 1,
-                    'seg_start': builds[1].key.id(),
-                    'seg_end': builds[0].key.id() - 1,
-                    'started_ts': utils.datetime_to_timestamp(self.now),
-                    'proc': proc,
-                }),
-            ),
-            (
-                None,
-                seg_path_prefix + 'seg:2-percent:0',
-                utils.encode_to_json({
-                    'job_id': 'taskname',
-                    'iteration': 0,
-                    'seg_index': 2,
-                    'seg_start': builds[0].key.id(),
-                    'seg_end': builds[0].key.id() + bulkproc.SEGMENT_SIZE - 1,
-                    'started_ts': utils.datetime_to_timestamp(self.now),
-                    'proc': proc,
-                }),
-            ),
-        ]
+    self.assertEqual(enqueue_tasks.call_count, 24)
+    all_tasks = []
+    for (queue_name, tasks), _ in enqueue_tasks.call_args_list:
+      self.assertEqual(queue_name, 'bulkproc')
+      all_tasks.extend(tasks)
+    self.assertEqual(len(all_tasks), 2165)
+    self.assertEqual(
+        all_tasks[0],
+        (
+            None,
+            seg_path_prefix + 'seg:0-percent:0',
+            utils.encode_to_json({
+                'job_id': 'taskname',
+                'iteration': 0,
+                'seg_index': 0,
+                'seg_start': 8991624996803575808,
+                'seg_end': 8991647646045175807,
+                'started_ts': utils.datetime_to_timestamp(self.now),
+                'proc': proc,
+            }),
+        ),
     )
-
-  @mock.patch('bulkproc.enqueue_tasks', autospec=True)
-  def test_start_many_tasks(self, enqueue_tasks):
-    day0 = model.BEGINING_OF_THE_WORLD + datetime.timedelta(days=7)
-    day_date = lambda day: day0 + datetime.timedelta(days=day)
-    ndb.put_multi([
-        test_util.build(create_time=test_util.dt2ts(day_date(day)))
-        for day in xrange(150)
-    ])
-
-    self.post({
-        'shards': 100,
-        'proc': {'name': 'foo', 'payload': 'bar'},
-    })
-
-    self.assertEqual(enqueue_tasks.call_count, 2)
+    self.assertEqual(
+        all_tasks[1],
+        (
+            None,
+            seg_path_prefix + 'seg:1-percent:0',
+            utils.encode_to_json({
+                'job_id': 'taskname',
+                'iteration': 0,
+                'seg_index': 1,
+                'seg_start': 8991647646045175808,
+                'seg_end': 8991670295286775807,
+                'started_ts': utils.datetime_to_timestamp(self.now),
+                'proc': proc,
+            }),
+        ),
+    )
 
 
 class SegmentTest(TestBase):

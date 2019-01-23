@@ -27,8 +27,8 @@ _MAX_BUILD_ID = 2L**63 - 1
 # See register().
 PROCESSOR_REGISTRY = {}
 
-# Chunk all builds into segments each worth of 1 day.
-SEGMENT_SIZE = model.ONE_MS_BUILD_ID_RANGE * 1000 * 60 * 60 * 24
+# Chunk all builds into segments each worth of 6h
+SEGMENT_SIZE = model.ONE_MS_BUILD_ID_RANGE * 1000 * 60 * 60 * 6
 
 
 def register(name, processor, entity_kind='Build', keys_only=False):
@@ -119,17 +119,11 @@ class TaskStart(TaskBase):
   def do(self, payload):
     proc = payload['proc']
 
-    first, = model.Build.query().fetch(1, keys_only=True) or [None]
-    if not first:  # pragma: no cover
-      logging.warning('no builds to backfill')
-      return
-    # Do not require -key index by using created_time index.
-    # This still determines the range on the Build entity, although
-    # proc may specify a different entity kind.
-    q = model.Build.query().order(model.Build.create_time)
-    last, = q.fetch(1, keys_only=True)
-
-    space_start, space_end = first.id(), last.id()
+    now = utils.utcnow()
+    space_start, space_end = model.build_id_range(
+        now - model.BUILD_STORAGE_DURATION,
+        now + datetime.timedelta(days=1),
+    )
     assert space_end <= _MAX_BUILD_ID
     space_size = space_end - space_start + 1
 
