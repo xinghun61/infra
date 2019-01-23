@@ -184,9 +184,10 @@ class TaskSegment(TaskBase):
   """
 
   # Maximum number of entities to process in a single iteration.
-  # Value 3000 is derived from experimentation on the dev server.
-  # It prevents "Exceeded soft private memory limit" error.
-  ENTITY_LIMIT = 3000
+  # Value 1000 is derived from experimentation on the dev server.
+  # It prevents "Exceeded soft private memory limit" and "RequestTooLargeError"
+  # errors.
+  ENTITY_LIMIT = 1000
 
   def do(self, payload):
     attempt = int(self.request.headers.get('X-AppEngine-TaskExecutionCount', 0))
