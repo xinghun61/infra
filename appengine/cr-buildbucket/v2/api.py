@@ -174,8 +174,7 @@ def build_predicate_to_search_query(predicate):
 
   # Filter by gerrit changes.
   buildsets = [
-      buildtags.gerrit_change_buildset(c.host, c.change, c.patchset)
-      for c in predicate.gerrit_changes
+      buildtags.gerrit_change_buildset(c) for c in predicate.gerrit_changes
   ]
   q.tags.extend(buildtags.unparse(buildtags.BUILDSET_KEY, b) for b in buildsets)
 

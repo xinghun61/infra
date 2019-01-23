@@ -140,6 +140,140 @@ class V1ApiTest(testing.EndpointsTestCase):
     self.assertEqual(resp['build']['bucket'], req['bucket'])
     self.assertIn('a:b', resp['build']['tags'])
 
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put_with_commit(self, add_async):
+    buildset = (
+        'commit/gitiles/gitiles.example.com/chromium/src/+/'
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    )
+    buildset_tag = 'buildset:' + buildset
+    gitiles_ref_tag = 'gitiles_ref:refs/heads/master'
+
+    gitiles_commit = common_pb2.GitilesCommit(
+        host='gitiles.example.com',
+        project='chromium/src',
+        ref='refs/heads/master',
+        id='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    )
+    build = test_util.build(
+        id=1,
+        input=dict(gitiles_commit=gitiles_commit),
+        tags=[dict(key='t', value='0')],
+    )
+    build.tags.append(buildset_tag)
+    build.tags.append(gitiles_ref_tag)
+    build.tags.sort()
+    add_async.return_value = future(build)
+
+    req = {
+        'client_operation_id': '42',
+        'bucket': 'luci.chromium.try',
+        'tags': [buildset_tag, gitiles_ref_tag, 't:0'],
+        'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
+    }
+    resp = self.call_api('put', req).json_body
+    add_async.assert_called_once_with(
+        creation.BuildRequest(
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(
+                    project='chromium',
+                    bucket='try',
+                    builder='linux',
+                ),
+                gitiles_commit=gitiles_commit,
+                tags=[dict(key='t', value='0')],
+                request_id='42',
+                properties=dict(),
+            ),
+            parameters={model.BUILDER_PARAMETER: 'linux'},
+        )
+    )
+    self.assertEqual(resp['build']['id'], '1')
+    self.assertIn(buildset_tag, resp['build']['tags'])
+    self.assertIn(gitiles_ref_tag, resp['build']['tags'])
+    self.assertIn('t:0', resp['build']['tags'])
+
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put_with_gerrit_change(self, add_async):
+    buildset = 'patch/gerrit/gerrit.example.com/1234/5'
+    buildset_tag = 'buildset:' + buildset
+
+    cl = common_pb2.GerritChange(
+        host='gerrit.example.com',
+        change=1234,
+        patchset=5,
+    )
+    build = test_util.build(
+        id=1,
+        input=dict(gerrit_changes=[cl]),
+        tags=[dict(key='t', value='0')],
+    )
+    build.tags.append(buildset_tag)
+    build.tags.sort()
+    add_async.return_value = future(build)
+
+    req = {
+        'client_operation_id': '42',
+        'bucket': 'luci.chromium.try',
+        'tags': [buildset_tag, 't:0'],
+        'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
+    }
+    resp = self.call_api('put', req).json_body
+    add_async.assert_called_once_with(
+        creation.BuildRequest(
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(
+                    project='chromium',
+                    bucket='try',
+                    builder='linux',
+                ),
+                gerrit_changes=[cl],
+                tags=[dict(key='t', value='0')],
+                request_id='42',
+                properties=dict(),
+            ),
+            parameters={model.BUILDER_PARAMETER: 'linux'},
+        )
+    )
+    self.assertEqual(resp['build']['id'], '1')
+    self.assertIn(buildset_tag, resp['build']['tags'])
+    self.assertIn('t:0', resp['build']['tags'])
+
+  @mock.patch('creation.add_async', autospec=True)
+  def test_put_with_generic_buildset(self, add_async):
+    tags = [
+        dict(key='buildset', value='x'),
+        dict(key='t', value='0'),
+    ]
+    build = test_util.build(id=1, tags=tags)
+    add_async.return_value = future(build)
+
+    req = {
+        'client_operation_id': '42',
+        'bucket': 'luci.chromium.try',
+        'tags': ['buildset:x', 't:0'],
+        'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
+    }
+    resp = self.call_api('put', req).json_body
+    add_async.assert_called_once_with(
+        creation.BuildRequest(
+            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
+                builder=dict(
+                    project='chromium',
+                    bucket='try',
+                    builder='linux',
+                ),
+                tags=tags,
+                request_id='42',
+                properties=dict(),
+            ),
+            parameters={model.BUILDER_PARAMETER: 'linux'},
+        )
+    )
+    self.assertEqual(resp['build']['id'], '1')
+    self.assertIn('buildset:x', resp['build']['tags'])
+    self.assertIn('t:0', resp['build']['tags'])
+
   def test_put_with_invalid_request(self):
     req = {
         'bucket': 'luci.chromium.try',

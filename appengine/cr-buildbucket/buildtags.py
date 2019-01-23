@@ -11,6 +11,8 @@ covered by other modules.
 import errors
 import re
 
+from proto import common_pb2
+
 DELIMITER = ':'
 
 BUILDER_KEY = 'builder'
@@ -75,8 +77,42 @@ def build_address(bucket, builder, number):  # pragma: no cover
   return '%s/%s/%d' % (bucket, builder, number)
 
 
-def gerrit_change_buildset(host, change, patchset):  # pragma: no cover
-  return 'patch/gerrit/%s/%d/%d' % (host, change, patchset)
+def gitiles_commit_buildset(gitiles_commit):  # pragma: no cover
+  return 'commit/gitiles/%s/%s/+/%s' % (
+      gitiles_commit.host, gitiles_commit.project, gitiles_commit.id
+  )
+
+
+def gerrit_change_buildset(gerrit_change):  # pragma: no cover
+  return 'patch/gerrit/%s/%d/%d' % (
+      gerrit_change.host, gerrit_change.change, gerrit_change.patchset
+  )
+
+
+def parse_gitiles_commit_buildset(buildset):  # pragma: no cover
+  # Example:
+  #   commit/gitiles/chromium.googlesource.com/chromium/src/+/
+  #   4fa74ef7511f4167d15a5a6d464df06e41ffbd70
+  m = RE_BUILDSET_GITILES_COMMIT.match(buildset)
+  if not m:
+    return None
+  return common_pb2.GitilesCommit(
+      host=m.group(1),
+      project=m.group(2),
+      id=m.group(3),
+  )
+
+
+def parse_gerrit_change_buildset(buildset):  # pragma: no cover
+  # Example: patch/gerrit/chromium-review.googlesource.com/677784/5
+  m = RE_BUILDSET_GERRIT_CL.match(buildset)
+  if not m:
+    return None
+  return common_pb2.GerritChange(
+      host=m.group(1),
+      change=int(m.group(2)),
+      patchset=int(m.group(3)),
+  )
 
 
 def git_commit_buildset(commit_hash):  # pragma: no cover

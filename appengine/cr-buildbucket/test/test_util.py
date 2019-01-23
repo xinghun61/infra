@@ -154,7 +154,7 @@ def build(**build_proto_fields):  # pragma: no cover
   if proto.input.HasField('gitiles_commit'):
     ret.input_gitiles_commit = proto.input.gitiles_commit
 
-    build.parameters['changes'] = [{
+    ret.parameters['changes'] = [{
         'author': {'email': 'bob@example.com'},
         'repo_url': 'https://chromium.googlesource.com/chromium/src',
     }]

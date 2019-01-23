@@ -139,8 +139,8 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_add_with_gitiles_commit(self):
     gitiles_commit = common_pb2.GitilesCommit(
-        host='chromium.googlesource.com',
-        project='infra/luci/luci-go',
+        host='gitiles.example.com',
+        project='chromium/src',
         ref='refs/heads/master',
         id='b7a757f457487cd5cfe2dae83f65c5bc10e288b7',
         position=1,
@@ -149,6 +149,24 @@ class CreationTest(testing.AppengineTestCase):
     build = self.add(dict(gitiles_commit=gitiles_commit))
     self.assertEqual(build.proto.input.gitiles_commit, gitiles_commit)
     self.assertEqual(build.input_gitiles_commit, gitiles_commit)
+    self.assertIn(
+        (
+            'buildset:commit/gitiles/gitiles.example.com/chromium/src/+/'
+            'b7a757f457487cd5cfe2dae83f65c5bc10e288b7'
+        ),
+        build.tags,
+    )
+    self.assertIn('gitiles_ref:refs/heads/master', build.tags)
+
+  def test_add_with_gerrit_change(self):
+    cl = common_pb2.GerritChange(
+        host='gerrit.example.com',
+        change=1234,
+        patchset=5,
+    )
+    build = self.add(dict(gerrit_changes=[cl]))
+    self.assertEqual(build.proto.input.gerrit_changes[:], [cl])
+    self.assertIn('buildset:patch/gerrit/gerrit.example.com/1234/5', build.tags)
 
   def test_add_with_priority(self):
     build = self.add(dict(priority=42))

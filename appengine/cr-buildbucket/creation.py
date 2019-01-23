@@ -135,9 +135,21 @@ class BuildRequest(_BuildRequestBase):
     sbr = self.schedule_build_request
 
     build_proto = self.create_build_proto(created_by, now)
-    tags = sorted(
-        set(buildtags.unparse(t.key, t.value) for t in build_proto.tags)
-    )
+
+    initial_tags = {buildtags.unparse(t.key, t.value) for t in build_proto.tags}
+    tags = set(initial_tags)
+
+    # For backward compatibility, add commit/cl/builder-based tags.
+    if sbr.HasField('gitiles_commit'):
+      bs = buildtags.gitiles_commit_buildset(sbr.gitiles_commit)
+      tags.add(buildtags.unparse(buildtags.BUILDSET_KEY, bs))
+      if sbr.gitiles_commit.ref:  # pragma: no branch
+        tags.add('gitiles_ref:%s' % sbr.gitiles_commit.ref)
+    for cl in sbr.gerrit_changes:
+      bs = buildtags.gerrit_change_buildset(cl)
+      tags.add(buildtags.unparse(buildtags.BUILDSET_KEY, bs))
+    if sbr.builder.builder:  # pragma: no branch
+      tags.add(buildtags.builder_tag(sbr.builder.builder))
 
     # TODO(crbug.com/917851): remove property assignments that are reduntant
     # with build.proto.
@@ -145,8 +157,8 @@ class BuildRequest(_BuildRequestBase):
         id=build_id,
         proto=build_proto,
         bucket_id=self.bucket_id,
-        initial_tags=tags,
-        tags=tags,
+        initial_tags=sorted(initial_tags),
+        tags=sorted(tags),
         input_properties=sbr.properties,
         parameters=copy.deepcopy(self.parameters or {}),
         created_by=created_by,
@@ -179,13 +191,6 @@ class BuildRequest(_BuildRequestBase):
       build.lease_expiration_date = self.lease_expiration_date
       build.leasee = created_by
       build.regenerate_lease_key()
-
-    # Auto-add builder tag.
-    # Note that we leave build.initial_tags intact.
-    if sbr.builder.builder:  # pragma: no branch
-      builder_tag = buildtags.builder_tag(sbr.builder.builder)
-      if builder_tag not in build.tags:
-        build.tags.append(builder_tag)
 
     return build
 

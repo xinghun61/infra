@@ -7,13 +7,15 @@
 This code changes each time something needs to be migrated once.
 """
 
+import logging
+import copy
+
 from google.appengine.ext import ndb
 
 from components import utils
 
+import api_common
 import bulkproc
-import model
-import v2
 
 PROC_NAME = 'fix_builds'
 
@@ -42,14 +44,29 @@ def _fix_build_async(build_key):  # pragma: no cover
   if not build:
     return
 
-  if build.status_legacy != model.BuildStatus.COMPLETED:
-    return
-  build.proto = v2.build_to_v2(build)
-  build.proto.ClearField('id')
-  build.proto.ClearField('steps')
-  build.proto.output.ClearField('properties')
+  old = copy.deepcopy(build.proto)
+  tags, gitiles_commit, gerrit_changes = api_common.parse_v1_tags(
+      build.initial_tags
+  )
 
-  if build.result_details:
-    build.result_details.pop('annotations', None)
+  new = build.proto
+  new.ClearField('tags')
+  new.input.ClearField('gitiles_commit')
+  new.input.ClearField('gerrit_changes')
 
-  yield build.put_async()
+  new.tags.extend(tags)
+  if gitiles_commit:
+    new.input.gitiles_commit.CopyFrom(gitiles_commit)
+  new.input.gerrit_changes.extend(gerrit_changes)
+
+  if new != old:
+    compare = (
+        ('tags', old.tags, new.tags),
+        ('gitiles_commit', old.input.gitiles_commit, new.input.gitiles_commit),
+        ('gerrit_changes', old.input.gerrit_changes, new.input.gerrit_changes),
+    )
+    for title, old_v, new_v in compare:
+      if old_v != new_v:
+        logging.info('%s: %s: %s -> %s', build.key.id(), title, old_v, new_v)
+
+    yield build.put_async()

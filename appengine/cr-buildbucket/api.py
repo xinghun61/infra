@@ -20,6 +20,7 @@ import gae_ts_mon
 
 from v2 import validation
 from proto import build_pb2
+from proto import common_pb2
 from proto import rpc_pb2
 import api_common
 import backfill_tag_index
@@ -140,9 +141,14 @@ def put_request_message_to_build_request(put_request):
       put_request.bucket
   )
 
-  for t in put_request.tags:
-    key, value = buildtags.parse(t)
-    sbr.tags.add(key=key, value=value)
+  # Parse tags. Extract gitiles commit and gerrit changes.
+  tags, gitiles_commit, gerrit_changes = api_common.parse_v1_tags(
+      put_request.tags
+  )
+  sbr.tags.extend(tags)
+  if gitiles_commit:
+    sbr.gitiles_commit.CopyFrom(gitiles_commit)
+  sbr.gerrit_changes.extend(gerrit_changes)
 
   # Read PubSub callback.
   pubsub_callback_auth_token = None
