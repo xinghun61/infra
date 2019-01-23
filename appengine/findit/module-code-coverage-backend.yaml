@@ -11,7 +11,7 @@ basic_scaling:
 
 handlers:
 # For cron jobs and task queues, enforce admin permission.
-- url: /coverage/(cron|task)/.*
+- url: .*/coverage/(cron|task)/.*
   script: coverage_main.code_coverage_backend_web_application
   secure: always
   login: admin

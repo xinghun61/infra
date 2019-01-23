@@ -9,7 +9,7 @@
 <link rel="import" href="./auth-login.html">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" >
 
-<dom-module id="findit-app">
+<dom-module id="coverage-app">
   <template>
     <style>
       :host {
@@ -58,36 +58,22 @@
       <app-header slot="header" fixed>
         <app-toolbar>
           <paper-tabs no-bar>
-            <a href="/"><img id="logo" src="/images/findit.png"></a>
-            <paper-tab><a href="/">Home</a></paper-tab>
+            <img id="logo" src="/images/findit.png">
             <paper-tab><a href="/p/chromium/coverage">Code Coverage</a></paper-tab>
-            <paper-tab><a href="/ranked-flakes">Ranked Flakes</a></paper-tab>
-            <paper-tab><a href="/flake/report">Flake Report</a></paper-tab>
-            <paper-tab><a href="/waterfall/list-flakes">Flake Analyses</a></paper-tab>
-            <paper-tab><a href="/waterfall/list-failures">Failures</a></paper-tab>
-            <paper-tab>
-              <a href="https://sites.google.com/corp/chromium.org/cat/findit">SitePage</a>
-            </paper-tab>
-            <paper-tab><a href="/trooper">Trooper</a></paper-tab>
             <template is="dom-if" if="[[userInfo.is_admin]]">
-              <paper-tab>|<a href="/waterfall/try-job-dashboard">Jobs</a></paper-tab>
-              <paper-tab><a href="/waterfall/pipeline-errors-dashboard">PipelineErrors</a></paper-tab>
-              <paper-tab><a href="/waterfall/auto-revert-metrics">RevertMetric</a></paper-tab>
+              <paper-tab><a href="/trooper">Trooper</a></paper-tab>
               <paper-tab><a href="/waterfall/config">Config</a></paper-tab>
             </template>
           </paper-tabs>
           <div main-title flex></div>
           <paper-tabs no-bar>
             <paper-tab>
-            <auth-login is-admin="[[userInfo.is_admin]]" email="[[userInfo.email]]" login-url="[[userInfo.login_url]]" logout-url="[[userInfo.logout_url]]" login-required="[[loginRequired]]"></auth-login>
-          </paper-tab>
+              <auth-login is-admin="[[userInfo.is_admin]]" email="[[userInfo.email]]" login-url="[[userInfo.login_url]]" logout-url="[[userInfo.logout_url]]" login-required="[[loginRequired]]"></auth-login>
+            </paper-tab>
           </paper-tabs>
         </app-toolbar>
       </app-header>
       <div id="main-content">
-        <template is="dom-if" if="[[pageHeader]]">
-          <h1>[[pageHeader]]</h1>
-        </template>
         <slot></slot>
       <div>
     </app-header-layout>
@@ -98,13 +84,9 @@
      'use strict';
 
      Polymer({
-       is: 'findit-app',
+       is: 'coverage-app',
 
        properties: {
-         pageHeader: {
-           type: String,
-           value: undefined,
-         },
          loginRequired: {
            type: Boolean,
            value: false,
@@ -127,7 +109,7 @@
          })(window,document,'script','https://storage.googleapis.com/crdx-feedback.appspot.com/feedback.js','crdx');
 
          let comment = encodeURIComponent('Page URL: ' + window.location.href + '\n\n Description:\n');
-         let components = this.components || 'Tools>Test>FindIt';
+         let components = this.components || 'Tools>CodeCoverage';
          crdx('setFeedbackButtonLink', 'https://bugs.chromium.org/p/chromium/issues/entry?labels=Pri-2&status=Unconfirmed&components=' + components + '&comment=' + comment);
        },
      });

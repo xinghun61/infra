@@ -12,8 +12,8 @@ from handlers import code_coverage
 
 # "code-coverage-backend" module.
 code_coverage_backend_handler_mappings = [
-    ('/coverage/task/fetch-source-file', code_coverage.FetchSourceFile),
-    ('/coverage/task/process-data/.*', code_coverage.ProcessCodeCoverageData),
+    ('.*/coverage/task/fetch-source-file', code_coverage.FetchSourceFile),
+    ('.*/coverage/task/process-data/.*', code_coverage.ProcessCodeCoverageData),
 ]
 code_coverage_backend_web_application = webapp2.WSGIApplication(
     code_coverage_backend_handler_mappings, debug=False)
@@ -22,8 +22,8 @@ if appengine_util.IsInProductionApp():
 
 # "code-coverage-frontend" module.
 code_coverage_frontend_handler_mappings = [
-    ('/coverage', code_coverage.ServeCodeCoverageData),
     ('/coverage/api/coverage-data', code_coverage.ServeCodeCoverageData),
+    ('.*/coverage.*', code_coverage.ServeCodeCoverageData),
 ]
 code_coverage_frontend_web_application = webapp2.WSGIApplication(
     code_coverage_frontend_handler_mappings, debug=False)

@@ -751,8 +751,8 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
                 -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
         data = [e._to_dict() for e in entities]
-        template = 'coverage/codebase_view.html'
-        data_type = 'codebase'
+        template = 'coverage/project_view.html'
+        data_type = 'project'
       else:
         key = ndb.Key(PostsubmitReport, '%s$%s$%s' % (host, project, revision))
         report = key.get()

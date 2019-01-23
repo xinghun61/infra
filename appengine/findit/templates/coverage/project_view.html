@@ -16,7 +16,7 @@
     }
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/coverage-app.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script>
     $(function() {
@@ -26,7 +26,7 @@
 </head>
 
 <body>
-  <findit-app id="app" components="Tools>CodeCoverage" page-header="Code Coverage">
+  <coverage-app id="app">
     <div>
       <table>
         <thead>
@@ -57,7 +57,9 @@
               <td>
                 {{datum.commit_position}}
               </td>
-              <td><a href="./coverage?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Link</a></td>
+                <td>
+                  <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Link</a>
+                </td>
               {% for name in ('line', 'function', 'region') %}
                 {% set found = False %}
                 <td>
@@ -88,5 +90,5 @@
         </tbody>
       </table>
     </div>
-  </findit-app>
+  </coverage-app>
 </body>

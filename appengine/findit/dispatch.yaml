@@ -20,16 +20,7 @@ dispatch:
   - url: "*/auto-action/task/*"
     module: auto-action-backend
 
-  - url: "*/flake/detection/*"
-    module: frontend
-
-  - url: "*/flake/occurrences"
-    module: frontend
-
-  - url: "*/flake/report"
-    module: frontend
-
-  - url: "*/flake/report/component"
+  - url: "*/flake/*"
     module: frontend
 
   - url: "*/ranked-flakes"
@@ -44,7 +35,23 @@ dispatch:
   - url: "*/waterfall/*"
     module: frontend
 
-  - url: "*/coverage*"
+  # With the current chops url schema /p/PROJECT/feature, we can't always add a
+  # routing rule for each new project, because the limit of routing rule is 20.
+  # https://cloud.google.com/appengine/docs/standard/python/reference/dispatch-yaml#limits
+  #
+  # We have two options in the long run:
+  # 1. Have one single frontend that serves all user requests, and different
+  #    backend for different analysis pipelines. If the frontend changes too
+  #    often due to backend upgrade, this might couple the deployment of
+  #    different analysis pipelines.
+  # 2. Have different frontend/backend combination, and use a different url
+  #    schema /feature/project. But this is inconsistent with the existing url
+  #    schema for chops, while we can decouple deployments of the different
+  #    analysis pipelines.
+  #
+  # If a change is needed, we can add a url redirection handler in the default
+  # module, and register a (old_url_regex, new_url_pattern) there.
+  - url: "*/p/chromium/coverage*"
     module: code-coverage-frontend
 
   - url: "*/trooper"

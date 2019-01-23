@@ -10,7 +10,7 @@ automatic_scaling:
   max_concurrent_requests: 25
 
 handlers:
-- url: /coverage.*
+- url: .*/coverage.*
   script: coverage_main.code_coverage_frontend_web_application
   secure: always
 
