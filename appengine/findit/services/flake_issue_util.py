@@ -301,7 +301,8 @@ def GetFlakesWithEnoughOccurrences():
   Returns:
     A list of tuples whose first element is a flake entity, second element is
     number of corresponding recent and unreported occurrences, third element is
-    the flake issue the flake links to if exist.
+    the flake issue the flake links to if exist. And this list is sorted by each
+    flake's flake_score_last_week in descending order.
   """
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
   occurrences = FlakeOccurrence.query(
@@ -346,9 +347,15 @@ def GetFlakesWithEnoughOccurrences():
         'flake_issue': flake_issue
     }
 
-  return [(key_to_flake[flake_key], info['occurrences'], info['flake_issue'])
-          for flake_key, info in flake_key_to_enough_unreported_occurrences
-          .iteritems()]
+  flake_tuples_to_report = [
+      (key_to_flake[flake_key], info['occurrences'], info['flake_issue']) for
+      flake_key, info in flake_key_to_enough_unreported_occurrences.iteritems()
+  ]
+
+  return sorted(
+      flake_tuples_to_report,
+      key=lambda tup: tup[0].flake_score_last_week,
+      reverse=True)
 
 
 def GetAndUpdateMergedIssue(flake_issue):

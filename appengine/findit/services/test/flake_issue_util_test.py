@@ -76,7 +76,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
                    normalized_step_name,
                    normalized_test_name,
                    test_label_name,
-                   test_suite_name=None):
+                   test_suite_name=None,
+                   flake_score_last_week=0):
     flake = Flake.Create(
         luci_project='chromium',
         normalized_step_name=normalized_step_name,
@@ -84,6 +85,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
         test_label_name=test_label_name)
     if test_suite_name:
       flake.tags.append('suite::%s' % test_suite_name)
+    flake.flake_score_last_week = flake_score_last_week
     flake.put()
     return flake
 
@@ -125,10 +127,21 @@ class FlakeReportUtilTest(WaterfallTestCase):
 
   # This test tests that getting flakes with enough occurrences works properly.
   def testGetFlakesWithEnoughOccurrences(self):
+    flake_with_higher_score = self._CreateFlake(
+        'step1', 'test1', 'test_label1', flake_score_last_week=100)
+    self._CreateFlakeOccurrence(111, 'step1_1', 'test1_1', 98765,
+                                flake_with_higher_score.key)
+    self._CreateFlakeOccurrence(222, 'step1_2', 'test1_2', 98764,
+                                flake_with_higher_score.key)
+    self._CreateFlakeOccurrence(333, 'step1_3', 'test1_3', 98763,
+                                flake_with_higher_score.key)
+
     flakes_with_occurrences = flake_issue_util.GetFlakesWithEnoughOccurrences()
-    self.assertEqual(1, len(flakes_with_occurrences))
-    self.assertEqual(3, len(flakes_with_occurrences[0][1]))
-    self.assertIsNone(flakes_with_occurrences[0][2])
+    self.assertEqual(2, len(flakes_with_occurrences))
+    self.assertEqual(3, len(flakes_with_occurrences[1][1]))
+    self.assertIsNone(flakes_with_occurrences[1][2])
+    self.assertEqual(flake_with_higher_score.key,
+                     flakes_with_occurrences[0][0].key)
 
   # This test tests that in order for a flake to have enough occurrences, there
   # needs to be at least 3 (_MIN_REQUIRED_FALSELY_REJECTED_CLS_24H) occurrences
