@@ -54,5 +54,9 @@ dispatch:
   - url: "*/p/chromium/coverage*"
     module: code-coverage-frontend
 
+  # TODO(crbug.com/924573): Remove once the migration is done.
+  - url: "*/coverage*"
+    module: code-coverage-frontend
+
   - url: "*/trooper"
     module: frontend

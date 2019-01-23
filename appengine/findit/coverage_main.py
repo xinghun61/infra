@@ -22,6 +22,7 @@ if appengine_util.IsInProductionApp():
 
 # "code-coverage-frontend" module.
 code_coverage_frontend_handler_mappings = [
+    # TODO(crbug.com/924573): Migrate to '.*/coverage/api/coverage-data'.
     ('/coverage/api/coverage-data', code_coverage.ServeCodeCoverageData),
     ('.*/coverage.*', code_coverage.ServeCodeCoverageData),
 ]
