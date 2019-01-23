@@ -884,6 +884,8 @@ CREATE TABLE IssueSnapshot (
   FOREIGN KEY (owner_id) REFERENCES User(user_id),
   FOREIGN KEY (status_id) REFERENCES StatusDef(id),
   INDEX (shard, project_id, period_start, period_end),
+  INDEX by_period_start (shard, project_id, status_id, period_start),
+  INDEX by_period_end (shard, project_id, status_id, period_end),
   KEY (issue_id, period_start, period_end)
 ) ENGINE=INNODB;
 

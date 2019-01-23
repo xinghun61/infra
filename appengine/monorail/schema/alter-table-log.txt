@@ -1626,3 +1626,9 @@ CREATE TABLE LinkedAccountInvite (
 
 ALTER TABLE UserGroupSettings ADD COLUMN notify_members BOOLEAN DEFAULT TRUE;
 ALTER TABLE UserGroupSettings ADD COLUMN notify_group BOOLEAN DEFAULT FALSE;
+
+=================================================================
+2019-01-23: Add two new indexes to IssueSnapshot for performance.
+
+CREATE INDEX by_period_start ON IssueSnapshot (shard, project_id, status_id, period_start);
+CREATE INDEX by_period_end ON IssueSnapshot (shard, project_id, status_id, period_end);
