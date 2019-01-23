@@ -66,12 +66,7 @@ class BigQueryExportTest(testing.AppengineTestCase):
         key=model.BuildSteps.key_for(builds[0].key),
         step_container=build_pb2.Build(
             steps=[
-                dict(
-                    name='bot_update',
-                    status=common_pb2.SUCCESS,
-                    summary_markdown='summary_markdown',
-                    logs=[dict(name='stdout')],
-                ),
+                step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS),
             ],
         ),
     ).put()
@@ -109,10 +104,41 @@ class BigQueryExportTest(testing.AppengineTestCase):
         [1, 2],
     )
 
-    step = actual_payload['rows'][0]['json']['steps'][0]
-    self.assertEqual(step['name'], 'bot_update')
-    self.assertEqual(step['summary_markdown'], '')
-    self.assertNotIn('logs', step)
+  @mock.patch('v2.build_to_v2', autospec=True)
+  @mock.patch(
+      'google.appengine.api.taskqueue.Queue.delete_tasks', autospec=True
+  )
+  def test_cron_export_builds_to_bq_exception(self, delete_tasks, build_to_v2):
+    builds = [
+        test_util.build(id=i + 1, status=common_pb2.SUCCESS) for i in xrange(3)
+    ]
+    ndb.put_multi(builds)
+
+    tasks = [
+        taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))
+        for b in builds
+    ]
+    self.queue.add(tasks)
+
+    def build_to_v2_mock(build, *_, **__):
+      if build is builds[1]:
+        raise Exception()
+      return build_pb2.Build()
+
+    build_to_v2.side_effect = build_to_v2_mock
+
+    bq._process_pull_task_batch(self.queue.name, 'builds')
+
+    self.assertTrue(net.json_request.called)
+    actual_payload = net.json_request.call_args[1]['payload']
+    self.assertEqual(len(actual_payload['rows']), 2)
+
+    # assert second task is not deleted
+    deleted = delete_tasks.call_args[0][1]
+    self.assertEqual(
+        [t.payload for t in deleted],
+        [tasks[0].payload, tasks[2].payload],
+    )
 
   def test_cron_export_builds_to_bq_not_found(self):
     self.queue.add([

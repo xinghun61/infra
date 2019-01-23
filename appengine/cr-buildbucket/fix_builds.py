@@ -12,6 +12,8 @@ from google.appengine.ext import ndb
 from components import utils
 
 import bulkproc
+import model
+import v2
 
 PROC_NAME = 'fix_builds'
 
@@ -39,5 +41,15 @@ def _fix_build_async(build_key):  # pragma: no cover
   build = yield build_key.get_async()
   if not build:
     return
+
+  if build.status_legacy != model.BuildStatus.COMPLETED:
+    return
+  build.proto = v2.build_to_v2(build)
+  build.proto.ClearField('id')
+  build.proto.ClearField('steps')
+  build.proto.output.ClearField('properties')
+
+  if build.result_details:
+    build.result_details.pop('annotations', None)
 
   yield build.put_async()
