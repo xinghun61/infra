@@ -63,8 +63,8 @@ type IdleWorker struct {
 	// ID is the ID of the idle worker.
 	ID WorkerID
 
-	// ProvisionableLabels is the set of provisionable labels of the idle worker.
-	ProvisionableLabels stringset.Set
+	// Labels is the set of labels of the idle worker.
+	Labels stringset.Set
 }
 
 // Assignment represents a scheduler-initated operation to assign a task to a worker.
@@ -141,7 +141,7 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 		wid := w.ID
 		q, ok := state.WorkerQueues[string(wid)]
 		if !ok || !s.IsAssigned(RequestID(q.TaskToAssign), wid) {
-			if err := s.MarkIdle(ctx, wid, w.ProvisionableLabels, t); err != nil {
+			if err := s.MarkIdle(ctx, wid, w.Labels, t); err != nil {
 				return nil, err
 			}
 			delete(state.WorkerQueues, string(wid))
@@ -176,7 +176,7 @@ func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, w
 			// using the determination used within the Scheduler, because we have the
 			// newest info about worker dimensions here.
 			r, _ := s.GetRequest(RequestID(q.TaskToAssign))
-			provisionRequired := !w.ProvisionableLabels.HasAll(r.ProvisionableLabels...)
+			provisionRequired := !w.Labels.HasAll(r.ProvisionableLabels...)
 
 			assignments = append(assignments, Assignment{
 				RequestID:         RequestID(q.TaskToAssign),

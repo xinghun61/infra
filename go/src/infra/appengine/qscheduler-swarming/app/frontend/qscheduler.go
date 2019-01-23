@@ -77,10 +77,8 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
 			idles[i] = &reconciler.IdleWorker{
-				ID: WorkerID(v.BotId),
-				// TODO(akeshet): Compute provisionable labels properly. This should actually
-				// be the workers label set minus the scheduler pool's label set.
-				ProvisionableLabels: stringset.NewFromSlice(v.Dimensions...),
+				ID:     WorkerID(v.BotId),
+				Labels: stringset.NewFromSlice(v.Dimensions...),
 			}
 		}
 

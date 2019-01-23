@@ -76,7 +76,7 @@ func TestOneAssignment(t *testing.T) {
 
 			Convey("when AssignTasks is called for a worker that has the task's provisionable label", func() {
 				wid := WorkerID("Worker1")
-				as, _ := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid, ProvisionableLabels: labels})
+				as, _ := r.AssignTasks(ctx, s, t0, &IdleWorker{ID: wid, Labels: labels})
 
 				Convey("then it is given the assigned task with no provision required.", func() {
 					So(as, ShouldHaveLength, 1)

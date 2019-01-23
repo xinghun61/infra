@@ -63,7 +63,7 @@ func Example() {
 	// Notify the reconciler of a new idle worker, and fetch an assignment
 	// for it. This will fetch Request1 to run on it.
 	workerID := WorkerID("Worker1")
-	idleWorker := &reconciler.IdleWorker{ID: workerID, ProvisionableLabels: labels}
+	idleWorker := &reconciler.IdleWorker{ID: workerID, Labels: labels}
 	a, _ := r.AssignTasks(ctx, s, time.Now(), idleWorker)
 
 	fmt.Printf("%s was assigned %s.\n", a[0].WorkerID, a[0].RequestID)
