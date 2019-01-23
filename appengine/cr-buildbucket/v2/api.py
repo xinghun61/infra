@@ -34,7 +34,6 @@ import model
 import search
 import service
 import user
-import v2
 
 # Header for passing token to authenticate build messages, e.g. UpdateBuild RPC.
 # Lowercase because metadata is stored in lowercase.
@@ -130,20 +129,19 @@ def bucket_id_string(builder_id):
   return config.format_bucket_id(builder_id.project, builder_id.bucket)
 
 
-@ndb.tasklet
-def builds_to_v2_async(builds, build_mask):
-  """Converts model.Build instances to build_pb2.Build messages."""
-  builds_msgs = map(v2.build_to_v2, builds)
+def builds_to_protos_async(builds, build_mask=None):
+  """Converts model.Build instances to build_pb2.Build messages.
 
-  if build_mask and build_mask.includes('steps'):  # pragma: no branch
-    build_steps_list = yield ndb.get_multi_async([
-        model.BuildSteps.key_for(b.key) for b in builds
-    ])
-    for b, build_steps in zip(builds_msgs, build_steps_list):
-      if build_steps:  # pragma: no branch
-        b.steps.extend(build_steps.step_container.steps)
-
-  raise ndb.Return(builds_msgs)
+  Mutates builds's proto by populating id and optionally populating steps and
+  output properties depending on whether they are requested by the build_mask.
+  """
+  return model.builds_to_protos_async(
+      builds,
+      load_steps=build_mask and build_mask.includes('steps'),
+      load_output_properties=(
+          build_mask and build_mask.includes('output.properties')
+      ),
+  )
 
 
 def build_predicate_to_search_query(predicate):
@@ -217,7 +215,7 @@ def get_build_async(req, _ctx, mask):
 
   if not build_v1:
     raise not_found()
-  raise ndb.Return((yield builds_to_v2_async([build_v1], mask))[0])
+  raise ndb.Return((yield builds_to_protos_async([build_v1], mask))[0])
 
 
 @rpc_impl_async('SearchBuilds')
@@ -234,7 +232,7 @@ def search_builds_async(req, _ctx, mask):
   raise ndb.Return(
       rpc_pb2.SearchBuildsResponse(
           builds=(
-              yield builds_to_v2_async(builds_v1, mask.submask('builds.*'))
+              yield builds_to_protos_async(builds_v1, mask.submask('builds.*'))
           ),
           next_page_token=cursor,
       ),
@@ -329,7 +327,7 @@ def schedule_build_async(req, _ctx, mask):
 
   build_req = creation.BuildRequest(schedule_build_request=req)
   build_v1 = yield creation.add_async(build_req)
-  raise ndb.Return((yield builds_to_v2_async([build_v1], mask))[0])
+  raise ndb.Return((yield builds_to_protos_async([build_v1], mask))[0])
 
 
 # A pair of request and response.
@@ -387,7 +385,10 @@ def schedule_build_multi(batch):
       rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
       rr.response.error.message = ex.message
     else:
-      rr.response.schedule_build.MergeFrom(v2.build_to_v2(build))
+      # Since this is a new build, no other entities need to be loaded
+      # and we use model.Build.proto directly.
+      rr.response.schedule_build.MergeFrom(build.proto)
+      rr.response.schedule_build.id = build.key.id()
 
 
 # Maps an rpc_pb2.BatchRequest.Request field name to an async function

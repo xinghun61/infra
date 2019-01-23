@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import itertools
 import random
 
 from components import auth
@@ -484,3 +485,39 @@ def build_id_range(create_time_low, create_time_high):
     # convert exclusive to inclusive
     id_low = _id_time_segment(create_time_high - _TIME_RESOLUTION)
   return id_low, id_high
+
+
+@ndb.tasklet
+def builds_to_protos_async(
+    builds, load_steps=False, load_output_properties=False
+):
+  """Converts Build objects to build_pb2.Build messages.
+
+  Mutates builds' "proto" field values and returns them.
+  """
+  if load_steps:
+    steps_futs = [BuildSteps.key_for(b.key).get_async() for b in builds]
+  else:
+    steps_futs = itertools.repeat(None)
+
+  if load_output_properties:
+    out_props_futs = [
+        BuildOutputProperties.key_for(b.key).get_async() for b in builds
+    ]
+  else:
+    out_props_futs = itertools.repeat(None)
+
+  for b, steps_fut, out_props_fut in zip(builds, steps_futs, out_props_futs):
+    b.proto.id = b.key.id()
+
+    if steps_fut:
+      steps = yield steps_fut
+      if steps:  # pragma: no branch
+        b.proto.steps.extend(steps.step_container.steps)
+
+    if out_props_fut:
+      out_props = yield out_props_fut
+      if out_props:  # pragma: no branch
+        b.proto.output.properties.CopyFrom(out_props.properties)
+
+  raise ndb.Return([b.proto for b in builds])
