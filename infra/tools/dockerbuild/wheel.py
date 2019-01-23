@@ -288,6 +288,7 @@ SPECS.update({s.spec.tag: s for s in assert_sorted('Universal',
   Universal('Django', '1.9'),
   Universal('GitPython', '2.1.9'),
   Universal('Jinja2', '2.10'),
+  Universal('aenum', '2.1.2'),
   Universal('appdirs', '1.4.3'),
   Universal('argparse', '1.4.0'),  # Includes fixes missing from stdlib 2.7.6
   Universal('asn1crypto', '0.22.0'),

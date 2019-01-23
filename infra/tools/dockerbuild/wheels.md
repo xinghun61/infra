@@ -186,6 +186,20 @@ wheel: <
 * *manylinux-x64*
 * *manylinux-x86*
 
+## **aenum**
+
+### 2.1.2
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/aenum-py2_py3"
+  version: "version:2.1.2"
+>
+```
+
+
+* *universal*
+
 ## **apache-beam**
 
 ### 2.0.0
@@ -1058,12 +1072,12 @@ wheel: <
 
 ## **infra_libs**
 
-### 1.4.3
+### 2.0.0
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/infra_libs-py2"
-  version: "version:1.4.3"
+  version: "version:2.0.0"
 >
 ```
 
