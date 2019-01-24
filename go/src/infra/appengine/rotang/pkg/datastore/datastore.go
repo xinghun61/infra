@@ -47,13 +47,13 @@ type DsMember struct {
 	TZ     string
 }
 
-// _ make sure Store confirms with the Storer and TokenStore interfaces.
+// _ make sure Store confirms with the ConfigStorer and MemberStorer interfaces.
 var (
 	_ rotang.ConfigStorer = &Store{}
 	_ rotang.MemberStorer = &Store{}
 )
 
-// Store represents a datatore entity.
+// Store represents a datastore entity.
 type Store struct {
 }
 

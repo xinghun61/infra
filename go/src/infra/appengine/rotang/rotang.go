@@ -6,6 +6,7 @@
 package rotang
 
 import (
+	"net/http"
 	"time"
 
 	"context"
@@ -174,9 +175,10 @@ type MemberStorer interface {
 
 // TokenStorer is used to store OAuth2 tokens.
 type TokenStorer interface {
-	CreateToken(ctx context.Context, email string, token *oauth2.Token) error
-	Token(ctx context.Context, email string) (*oauth2.Token, error)
-	DeleteToken(ctx context.Context, email string) error
+	CreateToken(ctx context.Context, id, config string, token *oauth2.Token) error
+	Token(ctx context.Context, id string) (*oauth2.Token, error)
+	Client(ctx context.Context, id string) (*http.Client, error)
+	DeleteToken(ctx context.Context, id string) error
 }
 
 // ShiftStorer is used to store Shift entries.

@@ -29,6 +29,8 @@ import (
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 	"google.golang.org/appengine"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	gcal "google.golang.org/api/calendar/v3"
 )
@@ -70,27 +72,40 @@ func requireGoogler(ctx *router.Context, next router.Handler) {
 	}
 }
 
-func legacyCred() (func(context.Context) (*http.Client, error), error) {
-	b, err := ioutil.ReadFile(sheriffConfig)
-	if err != nil {
-		return nil, err
-	}
-	config, err := google.ConfigFromJSON(b, gcal.CalendarScope)
-	if err != nil {
-		return nil, err
-	}
+const legacyTokenID = "LegacyToken"
 
-	t, err := ioutil.ReadFile(sheriffToken)
-	if err != nil {
-		return nil, err
-	}
-
+func dsLegacyCred(ts func(context.Context) rotang.TokenStorer) func(context.Context) (*http.Client, error) {
 	return func(ctx context.Context) (*http.Client, error) {
-		return config.Client(ctx, &oauth2.Token{
-			RefreshToken: string(t),
-			TokenType:    "Bearer",
-		}), nil
-	}, nil
+		clt, err := ts(ctx).Client(ctx, legacyTokenID)
+		if err != nil {
+			if status.Code(err) != codes.NotFound {
+				return nil, err
+			}
+			logging.Warningf(ctx, "token: %q not found in datastore, trying to fetch from token files")
+			b, err := ioutil.ReadFile(sheriffConfig)
+			if err != nil {
+				return nil, err
+			}
+			config, err := google.ConfigFromJSON(b, gcal.CalendarScope)
+			if err != nil {
+				return nil, err
+			}
+
+			t, err := ioutil.ReadFile(sheriffToken)
+			if err != nil {
+				return nil, err
+			}
+			token := &oauth2.Token{
+				RefreshToken: string(t),
+				TokenType:    "Bearer",
+			}
+			if err := ts(ctx).CreateToken(ctx, legacyTokenID, string(b), token); err != nil {
+				return nil, err
+			}
+			clt = config.Client(ctx, token)
+		}
+		return clt, nil
+	}
 }
 
 func serviceDefaultCred(scope string) func(context.Context) (*http.Client, error) {
@@ -119,10 +134,10 @@ func init() {
 		log.Fatal("env PROD_ENV must be set to one of `production`, `local` or `staging`")
 	}
 
-	lcred, err := legacyCred()
-	if err != nil {
-		log.Fatal(err)
-	}
+	lcred := dsLegacyCred(func(ctx context.Context) rotang.TokenStorer {
+		return datastore.New(ctx)
+	})
+
 	cred := serviceDefaultCred(gcal.CalendarScope)
 	if prodENV == "local" {
 		cred = lcred
