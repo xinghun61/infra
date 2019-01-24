@@ -139,3 +139,19 @@ flake_detection_issues = gae_ts_mon.CounterMetric(
     'Number of issues created or updated by Flake Detection', [
         gae_ts_mon.StringField('operation'),
     ])
+
+code_coverage_cq_errors = gae_ts_mon.CounterMetric(
+    'code-coverage/cq-bot-errors',
+    'Number of cq builds with coverage data step failures', [
+        gae_ts_mon.StringField('project'),
+        gae_ts_mon.StringField('bucket'),
+        gae_ts_mon.StringField('builder'),
+    ])
+
+code_coverage_full_reports = gae_ts_mon.CounterMetric(
+    'code-coverage/full-reports',
+    'Number of whole-codebase coverage reports', [
+        gae_ts_mon.StringField('host'),
+        gae_ts_mon.StringField('project'),
+        gae_ts_mon.StringField('ref'),
+    ])

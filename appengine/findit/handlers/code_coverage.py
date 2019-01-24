@@ -17,6 +17,7 @@ from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 from google.protobuf import json_format
 
+from common import monitoring
 from common.findit_http_client import FinditHttpClient
 from common.waterfall.buildbucket_client import GetV2Build
 from gae_libs.caches import PickledMemCache
@@ -480,6 +481,11 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     if not _IsReportSuspicious(report):
       report.visible = True
       report.put()
+      monitoring.code_coverage_full_reports.increment({
+          'host': commit.host,
+          'project': commit.project,
+          'ref': commit.ref or 'refs/heads/master',
+      })
 
   def _FetchAndSaveFileIfNecessary(self, report, path, revision):
     """Fetches the file from gitiles and store to cloud storage if not exist.
@@ -547,6 +553,12 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
       properties = dict(build.output.properties.items())
       gs_bucket = properties.get('coverage_gs_bucket')
       gs_path = properties.get('coverage_metadata_gs_path')
+      if properties.get('process_coverage_data_failure'):
+        monitoring.code_coverage_cq_errors.increment({
+            'project': build.builder.project,
+            'bucket': build.builder.bucket,
+            'builder': build.builder.builder,
+        })
     else:
       # TODO(crbug.com/922104): There is an issue that when there are too many
       # test targets (350+ fuzzers), build output properties would exceed
