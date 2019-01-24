@@ -1,5 +1,5 @@
 <div class="list">
-  <h4 style="display:inline">Projects</h4>
+  <h4 style="display:inline">List of Projects</h4>
   [if-any projects]
     <div class="pagination">
         [if-any pagination.prev_url]<a href="[pagination.prev_url]"><b>&lsaquo;</b> Prev</a>[end]
