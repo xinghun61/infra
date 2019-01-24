@@ -5,15 +5,17 @@
 package harness
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
 	"path/filepath"
 	"time"
 
+	"go.chromium.org/luci/common/errors"
+
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/libs/skylab/inventory"
 )
 
 const (
@@ -23,48 +25,21 @@ const (
 
 // loadDUTName returns the Swarming bot's DUT's name.
 func loadDUTName(b *swarming.Bot) (string, error) {
-	// TODO(pprabhu): This implementation delegates to inventory tools to
-	// dump the inventory information into json, reads hostname off that.
-	// Instead, support directly reading inventory here.
 	ddir, err := readSymlinkTargetWithRetry(b.Inventory.DataDir)
 	if err != nil {
-		return "", err
+		return "", errors.Annotate(err, "load DUT name").Err()
 	}
-	p := filepath.Join(b.Inventory.ToolsDir, "print_dut_dimensions")
-	cmd := exec.Command(
-		p,
-		"--datadir", ddir,
-		"--environment", b.Env,
-		"--id", b.DUTID,
-	)
-	blob, err := cmd.Output()
+	lab, err := inventory.LoadLab(ddir)
 	if err != nil {
-		return "", err
+		return "", errors.Annotate(err, "load DUT name").Err()
 	}
-	n, err := getDutNameFromDimensions(blob)
-	if err != nil {
-		return "", err
+	for _, d := range lab.GetDuts() {
+		c := d.GetCommon()
+		if c.GetId() == b.DUTID {
+			return c.GetHostname(), nil
+		}
 	}
-	return n, nil
-}
-
-// getDutNameFromDimensions extracts the DUT name from dimensions printed by the inventory tool.
-func getDutNameFromDimensions(blob []byte) (string, error) {
-	// We simply need the DUT name from the hostInfo.
-	var d struct {
-		DUTName []string `json:"dut_name"`
-	}
-	err := json.Unmarshal(blob, &d)
-	if err != nil {
-		return "", fmt.Errorf("Failed to parse DUT dimensions: %s", err)
-	}
-	if len(d.DUTName) == 0 {
-		return "", fmt.Errorf("No DUT with hostname %s in skylab inventory", d.DUTName)
-	}
-	if len(d.DUTName) > 1 {
-		return "", fmt.Errorf("More than one DUT with hostname %s in skylab inventory", d.DUTName)
-	}
-	return d.DUTName[0], nil
+	return "", errors.Reason("load DUT name: no DUT").Err()
 }
 
 // loadDUTHostInfo returns the host information for the swarming bot’s assigned DUT.
