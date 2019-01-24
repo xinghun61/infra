@@ -87,7 +87,7 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 			fmt.Sprintf("log_location:%s", log),
 			fmt.Sprintf("luci_project:%s", e.LUCIProject),
 			"pool:ChromeOSSkylab",
-			"skylab:manual_trigger",
+			"skylab-tool:repair",
 		},
 		slices,
 		25)
