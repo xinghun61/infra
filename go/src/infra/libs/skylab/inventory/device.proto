@@ -43,38 +43,48 @@ message ChameleonDevice {
   required CommonDeviceSpecs common = 1;
 }
 
-// NEXT TAG: 11
+//
+// Keep sorted by field name.
+//
+// NEXT TAG: 12
 message CommonDeviceSpecs {
-  required string id = 1;
+  // These are opaque keyvals for skylab services. Devices may arbitrarily
+  // define any attributes they want.
+  repeated KeyValue attributes = 9;
+
+  // A device may be locked for multiple reasons by multiple people. All locks
+  // need to be removed for the device to go back into circulation.
+  repeated DeviceLock device_locks = 6;
+
+  optional Environment environment = 10;
+
   required string hostname = 2;
 
   // An invariant property corresponding to the hardware deployed for this
   // device.
   optional string hwid = 3;
-  // An invariant about the distros inventory tag associated with the device.
-  // For ChromeOS devices, this can be read off of vboot.
-  optional string serial_number = 4;
+
+  required string id = 1;
+
+  // The scheduling system uses these to target jobs at the right kinds of
+  // devices.
+  optional SchedulableLabels labels = 8;
 
   optional Location location = 5;
-
-  // A device may be locked for multiple reasons by multiple people. All locks
-  // need to be removed for the device to go back into circulation.
-  repeated DeviceLock device_locks = 6;
 
   // Deprecated: This is needed for the master AFE in the autotest infra to
   // forward RPCs to the relevant shard for a device.
   // Not to be used in skylab.
   optional Shard owner_shard = 7 [deprecated = true];
 
-  // The scheduling system uses these to target jobs at the right kinds of
-  // devices.
-  optional SchedulableLabels labels = 8;
+  // An invariant about the distros inventory tag associated with the device.
+  // For ChromeOS devices, this can be read off of vboot.
+  optional string serial_number = 4;
 
-  // These are opaque keyvals for skylab services. Devices may arbitrarily
-  // define any attributes they want.
-  repeated KeyValue attributes = 9;
-
-  optional Environment environment = 10;
+  // Similar to a useless machine, if set to true, automatic inventory
+  // updates should set this back to false.  This can be used to test
+  // that automated updates are firing correctly.
+  optional bool useless_switch = 11;
 }
 
 // NEXT TAG: 5
@@ -116,13 +126,28 @@ message Shard {
 // semantically known to the inventory service to allow filtering based on them.
 // (i.e., no "extra_labels" field down here)
 //
+// Keep sorted by field name.
+//
 // NEXT TAG: 23
 message SchedulableLabels {
-  // TODO(pprabhu) Both of these should be enums, that are shared from
-  // stable_versions.proto But there are 171 of them... (guess it doesn't
-  // matter, make 'em enums)
-  optional string platform = 1;
+  // Whether this device supports ARC execution environment.
+  optional bool arc = 20;
+
+  // TODO(pprabhu) This should be an enum shared with stable_versions.proto
+  // But there are 171 of them...
   optional string board = 2;
+
+  optional HardwareCapabilities capabilities = 5;
+
+  // Similar to device phases, but for the cr50 module onboard.
+  //
+  // NEXT TAG: 3
+  enum CR50_Phase {
+    CR50_PHASE_INVALID = 0;
+    CR50_PHASE_PREPVT = 1;
+    CR50_PHASE_PVT = 2;
+  }
+  optional CR50_Phase cr50_phase = 22;
 
   // critical_pools are pool labels that the builders are dependent on, and that
   // the cros-infra team is responsible for managing explicitly. All other pool
@@ -139,11 +164,21 @@ message SchedulableLabels {
   }
   repeated DUTPool critical_pools = 3;
 
-  repeated string self_serve_pools = 4;
+  // NEXT TAG: 3
+  enum CTSABI {
+    CTS_ABI_INVALID = 0;
+    CTS_ABI_ARM = 1;
+    CTS_ABI_X86 = 2;
+  }
+  repeated CTSABI cts_abi = 14;
 
-  optional HardwareCapabilities capabilities = 5;
-  optional TestCoverageHints test_coverage_hints = 18;
-  optional Peripherals peripherals = 19;
+  // NEXT TAG: 3
+  enum CTSCPU {
+    CTS_CPU_INVALID = 0;
+    CTS_CPU_ARM = 1;
+    CTS_CPU_X86 = 2;
+  }
+  repeated CTSCPU cts_cpu = 21;
 
   // NEXT TAG: 2
   enum ECType {
@@ -156,33 +191,15 @@ message SchedulableLabels {
 
   // NEXT TAG: 4
   enum OSType {
-      OS_TYPE_INVALID = 0;
-      OS_TYPE_ANDROID = 1;
-      OS_TYPE_CROS = 2;
-      OS_TYPE_JETSTREAM = 3;
-      OS_TYPE_MOBLAB = 4;
+    OS_TYPE_INVALID = 0;
+    OS_TYPE_ANDROID = 1;
+    OS_TYPE_CROS = 2;
+    OS_TYPE_JETSTREAM = 3;
+    OS_TYPE_MOBLAB = 4;
   }
   optional OSType os_type = 15;
 
-  // Whether this device supports ARC execution environment.
-  optional bool arc = 20;
-
-  // NEXT TAG: 3
-  enum CTSABI {
-      CTS_ABI_INVALID = 0;
-      CTS_ABI_ARM = 1;
-      CTS_ABI_X86 = 2;
-  }
-  repeated CTSABI cts_abi = 14;
-
-  // NEXT TAG: 3
-  enum CTSCPU {
-      CTS_CPU_INVALID = 0;
-      CTS_CPU_ARM = 1;
-      CTS_CPU_X86 = 2;
-  }
-  repeated CTSCPU cts_cpu = 21;
-
+  optional Peripherals peripherals = 19;
 
   // Devices go through the phases EVT -> DVT -> PVT during early development.
   // Post launch devices are in the MP phase.
@@ -191,74 +208,74 @@ message SchedulableLabels {
   //
   // NEXT TAG: 9
   enum Phase {
-      PHASE_INVALID = 0;
-      PHASE_EVT = 1;
-      PHASE_EVT2 = 2;
-      PHASE_DVT = 3;
-      PHASE_DVT2 = 4;
-      PHASE_PVT = 5;
-      PHASE_PVT2 = 6;
-      PHASE_PVT3 = 7;
-      PHASE_MP = 8;
+    PHASE_INVALID = 0;
+    PHASE_EVT = 1;
+    PHASE_EVT2 = 2;
+    PHASE_DVT = 3;
+    PHASE_DVT2 = 4;
+    PHASE_PVT = 5;
+    PHASE_PVT2 = 6;
+    PHASE_PVT3 = 7;
+    PHASE_MP = 8;
   }
   optional Phase phase = 16;
 
-  // Similar to device phases, but for the cr50 module onboard.
-  //
-  // NEXT TAG: 3
-  enum CR50_Phase {
-      CR50_PHASE_INVALID = 0;
-      CR50_PHASE_PREPVT = 1;
-      CR50_PHASE_PVT = 2;
-  }
-  optional CR50_Phase cr50_phase = 22;
+  // TODO(pprabhu) This should be an enum shared with stable_versions.proto
+  // But there are 171 of them...
+  optional string platform = 1;
+
+  repeated string self_serve_pools = 4;
+
+  optional TestCoverageHints test_coverage_hints = 18;
 
   repeated string variant = 17;
 }
 
+// Keep sorted by field name.
+//
 // NEXT TAG: 18
 message HardwareCapabilities {
-  optional string modem = 1;
+  optional bool atrus = 17;
+  optional bool bluetooth = 7;
 
   // NEXT TAG: 5
   enum Carrier {
-      CARRIER_INVALID = 0;
-      CARRIER_ATT = 1;
-      CARRIER_TMOBILE = 2;
-      CARRIER_VERIZON = 3;
-      CARRIER_SPRINT = 4;
+    CARRIER_INVALID = 0;
+    CARRIER_ATT = 1;
+    CARRIER_TMOBILE = 2;
+    CARRIER_VERIZON = 3;
+    CARRIER_SPRINT = 4;
   }
   optional Carrier carrier = 16;
 
-  optional string telephony = 2;
+  optional bool detachablebase = 12;
+  optional bool flashrom = 14;
   optional string gpu_family = 3;
   optional string graphics = 4;
-  optional string storage = 5;
-  optional string power = 6;
-  optional bool bluetooth = 7;
+  optional bool hotwording = 15;
   optional bool internal_display = 8;
+  optional bool lucidsleep = 13;
+  optional string modem = 1;
+  optional string power = 6;
+  optional string storage = 5;
+  optional string telephony = 2;
   optional bool webcam = 9;
   optional bool touchpad = 10;
 
   // NEXT TAG: 9
   enum VideoAcceleration {
-      VIDEO_ACCELERATION_INVALID = 0;
-      VIDEO_ACCELERATION_H264 = 1;
-      VIDEO_ACCELERATION_ENC_H264 = 2;
-      VIDEO_ACCELERATION_VP8 = 3;
-      VIDEO_ACCELERATION_ENC_VP8 = 4;
-      VIDEO_ACCELERATION_VP9 = 5;
-      VIDEO_ACCELERATION_ENC_VP9 = 6;
-      VIDEO_ACCELERATION_VP9_2 = 7;
-      VIDEO_ACCELERATION_ENC_VP9_2 = 8;
+    VIDEO_ACCELERATION_INVALID = 0;
+    VIDEO_ACCELERATION_H264 = 1;
+    VIDEO_ACCELERATION_ENC_H264 = 2;
+    VIDEO_ACCELERATION_VP8 = 3;
+    VIDEO_ACCELERATION_ENC_VP8 = 4;
+    VIDEO_ACCELERATION_VP9 = 5;
+    VIDEO_ACCELERATION_ENC_VP9 = 6;
+    VIDEO_ACCELERATION_VP9_2 = 7;
+    VIDEO_ACCELERATION_ENC_VP9_2 = 8;
   }
   repeated VideoAcceleration video_acceleration = 11;
 
-  optional bool detachablebase = 12;
-  optional bool lucidsleep = 13;
-  optional bool flashrom = 14;
-  optional bool hotwording = 15;
-  optional bool atrus = 17;
 }
 
 // Peripherals list peripherals connected to the device in the lab.
@@ -266,76 +283,80 @@ message HardwareCapabilities {
 // These peripherals are not addressable as devices themselves. For peripherals
 // that have complex connections with devices, create a separate device and
 // connections with other devices.
+//
+// Keep sorted by field names.
+//
 // NEXT TAG: 12
 message Peripherals {
-    optional bool audio_loopback_dongle = 1;
-    optional bool servo = 2;
-    optional bool stylus = 3;
+  optional bool audio_board = 6;
+  // The DUT is housed in an audio box to record / replay audio for audio
+  // testing.
+  optional bool audio_box = 7;
+  optional bool audio_loopback_dongle = 1;
+  // Is this device connected to a chameleon (GVC head).
+  optional bool chameleon = 5;
 
-    // Is this device inside a hermetic wifi cell.
-    optional bool wificell = 4;
+  // NEXT TAG: 6
+  enum ChameleonType {
+    CHAMELEON_TYPE_INVALID = 0;
+    CHAMELEON_TYPE_BT_HID = 1;
+    CHAMELEON_TYPE_DP = 2;
+    CHAMELEON_TYPE_DP_HDMI = 3;
+    CHAMELEON_TYPE_VGA = 4;
+    CHAMELEON_TYPE_HDMI = 5;
+  }
+  optional ChameleonType chameleon_type = 10;
 
-    // Is this device connected to a chameleon (GVC head).
-    optional bool chameleon = 5;
-
-    // NEXT TAG: 6
-    enum ChameleonType {
-        CHAMELEON_TYPE_INVALID = 0;
-        CHAMELEON_TYPE_BT_HID = 1;
-        CHAMELEON_TYPE_DP = 2;
-        CHAMELEON_TYPE_DP_HDMI = 3;
-        CHAMELEON_TYPE_VGA = 4;
-        CHAMELEON_TYPE_HDMI = 5;
-    }
-    optional ChameleonType chameleon_type = 10;
-
-    optional bool audio_board = 6;
-
-    // The DUT is housed in an audio box to record / replay audio for audio
-    // testing.
-    optional bool audio_box = 7;
-    optional bool mimo = 8;
-    optional bool huddly = 9;
-
-    // Whether DUT WiFi antenna is connected conductively or OTA.
-    optional bool conductive = 11;
+  // Whether DUT WiFi antenna is connected conductively or OTA.
+  optional bool conductive = 11;
+  optional bool huddly = 9;
+  optional bool mimo = 8;
+  optional bool servo = 2;
+  optional bool stylus = 3;
+  // Is this device inside a hermetic wifi cell.
+  optional bool wificell = 4;
 }
 
 // These labels are used by the CI system to provide test coverage hints to
 // Skylab.
 //
+// TODO(pprabhu) Most of these should instead be self-servo pools.
+// Migrate the test requests to use pools and then deprecate these fields in
+// favor of pools.
+//
+// Keep sorted by field name.
+//
 // NEXT TAG: 12
 message TestCoverageHints {
-    // Related to sparse CTS testing. See b/70309087
-    enum CTSSparse {
-        CTS_SPARSE_INVALID = 0;
-        CTS_SPARSE_2 = 1;
-        CTS_SPARSE_3 = 2;
-        CTS_SPARSE_5 = 3;
-    }
-    repeated CTSSparse cts_sparse = 1;
+  optional bool chaos_dut = 7;
+  optional bool chromesign = 11;
 
-    // TODO(pprabhu) These labels should instead be self-servo pools.
-    // Migrate the test requests to use pools and then deprecate these fields
-    // in favor of pools.
-    optional bool test_hdmiaudio = 2;
-    optional bool test_audiojack = 3;
-    optional bool test_usbaudio = 4;
-    optional bool test_usbprinting = 5;
-    optional bool usb_detect = 6;
-    optional bool chaos_dut = 7;
-    optional bool recovery_test = 8;
-    // Whether the DUT has the hangout app installed.
-    // This is a software feature of the DUT that is not provisioned as part of
-    // the test setup, hence the DUT must be labelled explicitly as supporting
-    // this feature.  Should probably be a SoftwareFeature for the DUT.
-    optional bool hangout_app = 9;
-    // Whether the DUT has the meet app installed.
-    // This is a software feature of the DUT that is not provisioned as part of
-    // the test setup, hence the DUT must be labelled explicitly as supporting
-    // this feature.  Should probably be a SoftwareFeature for the DUT.
-    optional bool meet_app = 10;
-    optional bool chromesign = 11;
+  // Related to sparse CTS testing. See b/70309087
+  // NEXT TAG: 4
+  enum CTSSparse {
+    CTS_SPARSE_INVALID = 0;
+    CTS_SPARSE_2 = 1;
+    CTS_SPARSE_3 = 2;
+    CTS_SPARSE_5 = 3;
+  }
+  repeated CTSSparse cts_sparse = 1;
+
+  // Whether the DUT has the hangout app installed.
+  // This is a software feature of the DUT that is not provisioned as part of
+  // the test setup, hence the DUT must be labelled explicitly as supporting
+  // this feature.  Should probably be a SoftwareFeature for the DUT.
+  optional bool hangout_app = 9;
+  // Whether the DUT has the meet app installed.
+  // This is a software feature of the DUT that is not provisioned as part of
+  // the test setup, hence the DUT must be labelled explicitly as supporting
+  // this feature.  Should probably be a SoftwareFeature for the DUT.
+  optional bool meet_app = 10;
+  optional bool recovery_test = 8;
+  optional bool test_audiojack = 3;
+  optional bool test_hdmiaudio = 2;
+  optional bool test_usbaudio = 4;
+  optional bool test_usbprinting = 5;
+  optional bool usb_detect = 6;
 }
 
 // NEXT TAG: 3

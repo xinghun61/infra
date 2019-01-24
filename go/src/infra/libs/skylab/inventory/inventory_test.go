@@ -83,8 +83,8 @@ func TestWriteLabPythonifies(t *testing.T) {
 	want := strings.Split(`
   duts {
     common {
-      id: "some-dut"
       hostname: "some-dut"
+      id: "some-dut"
     }
 	}`, "\n")
 	want = stripWhitespace(want)
