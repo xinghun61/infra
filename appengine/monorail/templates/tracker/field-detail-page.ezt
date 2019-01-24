@@ -290,11 +290,9 @@
     <td></td>
     <td>
       [if-any allow_edit]
-        <input type="submit" name="submit" value="Submit changes">
-        <input type="submit" name="deletefield" value="Delete Field"
-               style="margin-left:1em" id="deletefield">
-        <input type="submit" name="cancel" value="Cancel"
-               style="margin-left:1em">
+        <input type="submit" name="submit" value="Save changes">
+        <input type="submit" class="secondary" name="deletefield" value="Delete Field"
+               id="deletefield">
       [end]
     </td>
   </tr>

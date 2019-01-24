@@ -7,25 +7,33 @@
 
 @charset "utf-8";
 
+:root {
+  --monorail-metadata-open-bg: var(--chops-light-green-50);
+  --monorail-metadata-closed-bg: var(--chops-blue-gray-50);
+  --mr-flipper-link-color: #00c;
+}
+
 body {
-    background: #fff;
-    font: 82% arial, sans-serif;
     margin: 0 0 3px 0;
     min-width: 768px;
 }
 
 #monobar {
-    background: #f1f1f1;
+    background: var(--chops-primary-header-bg);
     margin: 0;
     padding: 0;
-    border-bottom: 1px solid #ccc;
 }
 
 #monobar th {
-    border-right: 1px solid #ccc;
     white-space: nowrap;
     vertical-align: middle;
     font-weight: normal;
+}
+
+.sidebar {
+    background: var(--chops-sidebar-bg);
+    border: var(--chops-normal-border);
+    padding: 4px;
 }
 
 .padded {
@@ -78,10 +86,11 @@ body {
 }
 
 .subt {
-    background: #e3e9ff;
+    background: var(--chops-secondary-header-bg);
     margin: 0;
-    padding: 2px 1em;
-    border-bottom: 1px solid #ddd;
+    padding: 4px 1em;
+    border: var(--chops-normal-border);
+    border-width: 1px 0 1px 0;
 }
 
 a:link, a:focus {
@@ -92,35 +101,40 @@ a:active {
     color: red;
 }
 
-select, input {
-    font-family: arial, sans-serif;
-}
-
 input[type="text"] {
     border-color: #999 #ccc #ccc;
     border-style: solid;
     border-width: 1px;
-    padding: 2px 1px;
+    padding: 3px 3px;
 }
 
 input[type=button], input[type=reset], input[type=submit], .buttonify {
     font-size: 100%;
-    background: url("/static/images/button-bg.gif") repeat-x scroll left top #E3E3E3;
-    background: -webkit-gradient(linear,0% 40%,0% 70%,from(#F9F9F9),to(#E3E3E3));
-    background: -moz-linear-gradient(top,  #fff,  #ddd);
+    background: var(--chops-button-bg);
+    color: var(--chops-button-color) !important;
 
-    vertical-align: baseline;
-    padding: 1px 3px 1px 3px;
-    border: 1px solid #aaa;
-    border-top-color: #ccc;
-    border-bottom-color: #888;
-    border-radius: 3px;
+    padding: 6.1px 10px;
+    margin-right: .6em;
+    border: var(--chops-button-border);
+    border-radius: var(--chops-button-radius);
+    box-shadow: var(--chops-shadow);
     cursor: pointer;
     text-decoration: none;
+    text-transform: uppercase;
 }
 
-.buttonify {
-    color: #000 !important;
+.subt input[type=button], .subt input[type=reset], .subt input[type=submit], .subt .buttonify {
+    padding: 3px 6px;
+}
+
+input[type=submit], input[type=button].primary, a.primary {
+    background: var(--chops-primary-button-bg);
+    color: var(--chops-primary-button-color) !important;
+}
+
+input[type=submit].secondary {
+    background: var(--chops-button-bg);
+    color: var(--chops-button-color) !important;
 }
 
 @-moz-document url-prefix() {
@@ -134,28 +148,28 @@ input[type=button]:hover, input[type=reset]:hover, input[type=submit]:hover, .bu
     text-decoration: none !important;
 }
 
-.capsule_left {
-    border-right: 0;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+.choice_chip {
+    padding: 4px 10px;
+    margin-left: 6px;
+    background: var(--chops-choice-bg);
+    color: var(--chops-choice-color);
+    border-radius: 50vh;
+    text-decoration: none;
 }
 
-.capsule_right {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
+.active_choice {
+    background: var(--chops-active-choice-bg);
+    color: var(--chops-active-choice-color);
 }
 
-.capsule_middle {
-    border-radius: 0;
-    border-right: 0;
+a.choice_chip, a.choice_chip:visited {
+    color: var(--chops-choice-color);
 }
 
-.mode_button_active, .buttonify:active,
-input[type=button]:active, input[type=reset]:active, input[type=submit]:active {
-    background: url("/static/images/button-bg.gif") repeat-x scroll left bottom #bbb;
-    background: -webkit-gradient(linear,0% 40%,0% 70%,from(#e3e3e3),to(#f9f9f9));
-    background: -moz-linear-gradient(top,  #e3e3e3,  #f9f9f9);
-    border-color: #aaa;
+input[type=button]:active, input[type=reset]:active, input[type=submit]:active,
+input.primary:active, .buttonify:active {
+  background: var(--chops-gray-600);
+  color: white !important;
 }
 
 textarea {
@@ -166,10 +180,6 @@ textarea {
 
 td td, th th, th td, td th {
     font-size: 100%;
-}
-
-pre {
-    font-size: 110%;
 }
 
 form {
@@ -208,7 +218,7 @@ table {
 .derived { font-style: italic; }
 
 .bubble_bg {
-    background: #e5ecf9;
+    background: #eee;
     margin-bottom: 0.6em;
 }
 
@@ -236,8 +246,8 @@ table {
 
 h4 {
     color: #222;
-    font-size: 18pt;
-    margin: 1.5em 0 .5em 0;
+    font-size: 16pt;
+    margin: .4em;
     padding: 0;
 }
 
@@ -251,7 +261,7 @@ h4 {
 
 #maincol {
     padding:4px;
-    background: #fff;
+    background: var(--chops-page-bg);
 }
 
 .isf a, .at a, .isf a:visited, .at a:visited {
@@ -289,10 +299,17 @@ h4 {
 }
 
 .notice, .error {
-    background: #fff1a8;
     font-weight: bold;
     padding: 4px 16px;
     border-radius: 4px;
+}
+
+.notice {
+    background: var(--chops-notice-bubble-bg);
+}
+
+.error {
+    background: var(--chops-error-bubble-bg);
 }
 
 .adminonly {
@@ -301,13 +318,13 @@ h4 {
 }
 
 .fielderror {
-    color: #a00;
+    color: var(--chops-field-error-color);
     font-weight: bold;
     padding: 4px;
 }
 
 .tip, .help {
-    background: #e5ecf9;
+    background: var(--chops-help-bubble-bg);
     font-size: 92%;
     margin: 5px;
     padding: 6px;
@@ -378,9 +395,8 @@ h4 {
 }
 
 div.h4, table.h4 {
-    background-color: #e5ecf9;
+    background-color: var(--chops-secondary-header-bg);
     margin-bottom: 2px;
-    border-top: 1px solid #3366cc;
     padding: 2px;
     font-weight: bold;
     position: relative;
@@ -414,14 +430,9 @@ h2 {
 
 h3 {
     font-size: medium;
-    background: #e5ecf9;
-    border-top: 1px solid #3366cc;
+    background: #eee;
     padding: 0.5ex 0.5em 0.5ex 0.5em;
     margin-right: 2em;
-}
-
-h4 {
-    font-size: small;
 }
 
 img {
@@ -447,8 +458,7 @@ img {
 
 #title {
     margin-left: 171px;
-    border-top: 1px solid #3366cc;
-    background-color: #e5ecf9;
+    background-color: #eee;
     font-size: large;
     font-weight: bold;
     padding-left: 3px;
@@ -462,6 +472,7 @@ img {
     padding-top: 1em;
     margin: 3.5em 0em;
     color: #999;
+    background: var(--chops-footer-bg);
 }
 
 #footer a,
@@ -493,7 +504,7 @@ img {
 .cue {
     margin-top: -4px;
     padding: 1px;
-    background: #f9edbe;
+    background: var(--chops-notice-bubble-bg);
     border: 1px solid #f0c36d;
 }
 .cue td span {
@@ -502,12 +513,11 @@ img {
     padding: 0 1em;
 }
 
-.results tr td { border: 0; }
-.results tr:last-child td { border-bottom: 1px solid #f8f8f8 }
-.striped tr:nth-child(even) { background: #f8f8f8; }
+.results tr td { border-bottom: var(--chops-table-divider); }
+.resultstable tr td { border-bottom: var(--chops-table-divider); }
 
 .results th, .results_lite th {
-    background: #e3e9ff;
+    background: var(--chops-table-header-bg);
     text-align: left;
     padding: 3px;
     border: 0;
@@ -521,8 +531,11 @@ img {
     margin-right: 4px;
 }
 .results td { cursor: pointer }
-.results td { padding: 4px; }
+.results td { padding: 6px; }
 .results td a { color: #000; text-decoration: none; }
+#project_list .results td { padding: 18px; }
+#project_list table.results td.id { text-align: left; }
+
 .results td.id a,
 .results td.project a,
 .results td.url a { color: #0000cc; text-decoration: underline; white-space: nowrap; }
@@ -530,15 +543,12 @@ img {
 .results td.project a:visited,
 .results td.url a:visited { color: purple; text-decoration: underline; }
 .results td.id a:hover, .results td.project a:hover, .results td.url a:hover { color: red; text-decoration: underline; }
-table.results .hoverTarget:hover { color: #009; background-color: #f8f8ff; }
 table.results .hoverTarget:hover a { color: #009; }
 .results .label { font-size: 80% }
-.results .selected { background-color: #ffe; }
-.results .selected:nth-child(even) { background-color: #f8f8e8; }
+.results .selected { background-color: var(--chops-selected-bg); }
 .results td tt { color: #999; font-style: italic; font-weight: bold; }
 .results .displayproperties { font-size: 80%; color: #666; }
 
-.results .grid td { border: solid #f1f1f1; border-width: 0 1px 1px 0; }
 .results .grid .gridtile tr { border: 0; }
 .results .grid .gridtile td { border: 0; }
 

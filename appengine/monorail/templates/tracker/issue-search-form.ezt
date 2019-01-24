@@ -7,7 +7,7 @@
  [end]
  [is offer_new_issue "Yes"]
   <span class="inIssueEntry" style="margin-right:.4em">
-   <a class="buttonify" href="[issue_entry_url]">New issue</a>
+   <a class="buttonify primary" href="[issue_entry_url]">New issue</a>
   </span>
  [end]
 

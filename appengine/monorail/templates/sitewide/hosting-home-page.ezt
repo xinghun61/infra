@@ -6,35 +6,29 @@
 
 [define prod_hosting_base_url]/hosting/[end]
 
-<div style="padding-top:30px;">
-  <div style="margin-top:3em; text-align:center;">
-    [# TODO: Provide an text alternative to the logo.]
-    <p style="font-size:large;">Monorail, Monorail, Monorail!</p>
-
-    <div style="text-align:center;margin:1em">
-      [if-any read_only][else]
+[if-any read_only][else]
+  [if-any can_create_project learn_more_link]
+    <div style="margin-top:3em; text-align:center;">
+      <div style="text-align:center;margin:1em">
         [if-any can_create_project]
           <a href="/hosting/createProject">Create a new project</a>
         [end]
-      [end]
 
-      [if-any learn_more_link]
-        <a href="[learn_more_link]">Learn more about [site_name]</a>
-      [end]
-    </div>
-
-    <p style="text-align:center;padding:0; margin:2em">
-      <div id="controls">
-        [include "../sitewide/project-list-controls.ezt" arg1]
+        [if-any learn_more_link]
+          <a href="[learn_more_link]">Learn more about [site_name]</a>
+        [end]
       </div>
+    </div>
+  [end]
+[end]
 
-    </p>
-  </div>
+<div id="controls">
+  [include "../sitewide/project-list-controls.ezt" arg1]
 </div>
 
-<div style="margin:2em">
+<div id="project_list">
   [if-any projects]
-    <table id="resultstable" class="resultstable striped" width="100%" border="0" cellspacing="0" cellpadding="18px">
+    <table id="resultstable" class="resultstable results" width="100%" border="0" cellspacing="0" cellpadding="18">
       <tr>
         [if-any logged_in_user]<th></th>[end]
         <th style="text-align:left">Name</th>

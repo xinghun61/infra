@@ -106,7 +106,7 @@
   </table>
   <div class="list-foot"></div>
   [if-any perms.EditProject]
-    <p><a href="/p/[projectname]/fields/create" class="buttonify">Add field</a></p>
+    <p><a href="/p/[projectname]/fields/create" class="buttonify primary">Add field</a></p>
   [end]
  </div>
 

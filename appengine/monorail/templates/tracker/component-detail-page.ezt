@@ -108,9 +108,9 @@
         <div>
           <span style="float:left;">
             <input type="submit" name="submit" id="submit_btn" value="Submit changes">
-            <input type="submit" name="deletecomponent" value="Delete component"
+            <input type="submit" class="secondary" name="deletecomponent" value="Delete component"
                    [if-any allow_delete][else]disabled[end]
-                   style="margin-left:2em" id="deletecomponent">
+                   id="deletecomponent">
           </span>
           <span style="float:right;">
             <a href="/p/[projectname]/components/create?component=[component_def.path]">Create new subcomponent</a>

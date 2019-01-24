@@ -26,9 +26,8 @@
 .subpopup { border-width: 1px 2px 2px 1px; }
 
 .group_row td {
-    background: #f1f1f1;
+    background: var(--chops-table-header-bg);
     cursor: pointer;
-    cursor: hand;
 }
 
 div.gridtile td.id {
@@ -43,8 +42,8 @@ div.gridtile {
     background: white;
 }
 
-tr.grid {
-    border: 1px solid #bbb;
+tr.grid td {
+    border-right: var(--chops-table-divider);
 }
 
 .results .grid th {

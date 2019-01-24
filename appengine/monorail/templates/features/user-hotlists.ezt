@@ -13,7 +13,7 @@
     [if-any viewing_self]
     <div>
       <a href="/hosting/createHotlist" title="Create a new hotlist">
-        <input type="button" value="Create hotlist">
+        <input type="button" class="primary" value="Create hotlist">
       </a>
     </div><br>
     [end]

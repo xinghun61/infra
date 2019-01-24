@@ -67,7 +67,7 @@
   </table>
 
   [if-any perms.EditProject]
-    <p><a href="/p/[projectname]/templates/create" class="buttonify" style="padding: 1px">Add template</a></p>
+    <p><a href="/p/[projectname]/templates/create" class="buttonify primary">Add template</a></p>
   [end]
 </div>
 

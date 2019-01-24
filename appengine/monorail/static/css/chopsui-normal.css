@@ -1,0 +1,64 @@
+:root {
+  /* Subset of https://material.io/design/color/the-color-system.html */
+  --chops-red-50: #ffebee;
+  --chops-red-700: #d32f2f;
+  --chops-blue-50: #e3f2fd;
+  --chops-blue-700: #1976d2;
+  --chops-green-50: #e8f5e9;
+  --chops-light-green-50: #f1f8e9;
+  --chops-yellow-50: #fffde7;
+  --chops-orange-50: #fff3e0;
+  --chops-gray-50: #fafafa;
+  --chops-gray-200: #eee;
+  --chops-gray-300: #e0e0e0;
+  --chops-gray-600: #757575;
+  --chops-blue-gray-50: #eceff1;  /* Similar to grimoire. */
+
+  --chops-primary-header-bg: white;
+  --chops-secondary-header-bg: var(--chops-blue-gray-50);
+  --chops-sidebar-bg: var(--chops-blue-gray-50);
+  --chops-page-bg: white;
+  --chops-footer-bg: white;
+
+  --chops-normal-border: 1px solid hsl(0, 0%, 88%);
+  --chops-radius: 6px;
+  --chops-shadow: none;
+
+  --chops-primary-button-bg: var(--chops-blue-700);
+  --chops-primary-button-color: white;
+  --chops-button-bg: var(--chops-blue-gray-50);
+  --chops-button-color: black;
+  --chops-button-border: none;
+  --chops-button-radius: 4px;
+  --chops-choice-bg: var(--chops-blue-gray-50);
+  --chops-choice-color: var(--chops-gray-600);
+  --chops-active-choice-bg: var(--chops-blue-50);
+  --chops-active-choice-color: var(--chops-blue-700);
+
+  --chops-error-bubble-bg: var(--chops-red-50);
+  --chops-notice-bubble-bg: var(--chops-orange-50);
+  --chops-help-bubble-bg: var(--chops-blue-50);
+  --chops-field-error-color: var(--chops-red-700);
+  --chops-selected-bg: var(--chops-yellow-50);
+
+  --chops-card-heading-bg: var(--chops-secondary-header-bg);
+  --chops-card-details-bg: var(--chops-gray-50);
+  --chops-card-border: var(--chops-normal-border);
+  --chops-card-content-bg: white;
+
+  --chops-table-header-bg: var(--chops-secondary-header-bg);
+  --chops-table-row-bg: white;
+  --chops-table-divider: var(--chops-normal-border);
+}
+
+
+body {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', 'Noto', sans-serif;
+  line-height: 1.6;
+  font-size: 14px;
+  min-width: 300px;
+  background: var(--chops-page-bg);
+}

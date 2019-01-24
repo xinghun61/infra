@@ -26,7 +26,7 @@
   <td class="vt" style="width:12em; padding:0" rowspan="2" id="issuemeta">
    <div id="meta-float">
 
-   <div class="h3 issuemetaheader">
+   <div class="issuemetaheader" style="text-align: center">
      [define user_can_star]false[end]
      [if-any page_perms.SetStar]
       [if-any read_only][else]
@@ -38,18 +38,9 @@
        </a>
       [end]
      [end]
-     <h1 class="not_styled_as_heading">
-       Issue [issue.local_id]
-       <a href="[issue.crbug_url]" class="material-icons" title="crbug link">link</a>
-     </h1>
-
-   </div> [# end issuemetaheader]
-
-   <div class="issuemetaheader">
     Starred by [issue.star_count]
     [is issue.star_count "1"] user [else] users [end]
-   </div>
-
+   </div> [# end issuemetaheader]
 
    [if-any noisy]
     <br>
@@ -73,7 +64,8 @@
   </div> [# end meta-float]
 
   </td>
-  <td width="90%" class="vt issueheader" id="summary-float">
+  <td width="90%" class="vt" id="summary-float">
+   <div class="issueheader">
     [if-any issue.flagged_spam_bool]
      <div id="spam_banner">You have reported this issue as spam. To undo this, click the flag again.</div>
     [else][if-any issue.is_spam_bool]
@@ -98,15 +90,19 @@
    </div>
 
    <div>
-    <h1 class="not_styled_as_heading"><span class="h3" style="padding:4px">[issue.summary]</span></h1>
+    <a href="[issue.crbug_url]" class="material-icons" title="crbug link">link</a>
+    <h1 class="not_styled_as_heading"><span class="h3" style="padding:4px">
+      Issue [issue.local_id]:
+      [issue.summary]
+    </span></h1>
     <div style="padding:4px">
-      [if-any first_description.creator_role]<span class="role_label">Project Member</span>[end]
       Reported by
       [include "../framework/user-link.ezt" first_description.creator],
       <span class="date" title="[first_description.date_tooltip] UTC">
         [first_description.date_string]
         [if-any first_description.date_relative]([first_description.date_relative])[end]
       </span>
+      [if-any first_description.creator_role]<span class="role_label">Project Member</span>[end]
       [# Note: initial issue description cannot have come via email]
       [if-any page_perms.EditIssue]
       <div style="float:right; margin-right:.3em; text-align:right" class="ichcommands">
@@ -114,6 +110,7 @@
       </div>
       [end][# page_perms.EditIssue]
     </div>
+   </div>
   </td>
  </tr>
 
@@ -129,8 +126,7 @@
  [if-any logged_in_user][else]
   <tr>
    <td></td>
-   <td class="vt issuecomment">
-     <div class="issuecommentheader" style="margin-bottom:1em"></div>
+   <td class="vt" style="padding:1em">
      <span class="indicator">&#9658;</span>
      <h2 class="not_styled_as_heading"><a href="[login_url]" >Sign in</a> to add a comment</h2>
    </td>

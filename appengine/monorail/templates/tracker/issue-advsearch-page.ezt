@@ -14,7 +14,7 @@
        </select>
     </td>
     <td width="25%" align="center" rowspan="3">
-     <input type="submit" name="btn" value="Search" style="font-weight:bold; font-size:120%">
+     <input type="submit" name="btn" value="Search" style="font-size:120%">
     </td>
    </tr>
    <tr class="focus"><td width="25%"></td>

@@ -3,7 +3,7 @@
 [# TODO: add UI element permissions when I add editing elements to this page. ]
 [define show_star][if-any project_stars_enabled][if-any logged_in_user][if-any read_only][else]yes[end][end][end][end]
 
-<div style="font-size:140%; margin-top:1em">Project: <b>[projectname]</b></div>
+<h4>Project: [projectname]</h4>
 <div class="section">
   <div><i>[project_summary]</i></div>
 

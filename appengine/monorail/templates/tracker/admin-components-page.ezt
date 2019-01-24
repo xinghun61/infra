@@ -28,10 +28,10 @@
  <div class="list-foot"></div>
  [if-any perms.EditProject]
    <form action="adminComponents.do" method="POST">
-     <a href="/p/[projectname]/components/create" class="buttonify">Create component</a>
+     <a href="/p/[projectname]/components/create" class="buttonify primary">Create component</a>
      <input type="hidden" name="delete_components">
      <input type="hidden" name="token" value="[form_token]">
-     <input type="submit" name="deletebtn" value="Delete Component(s)" style="margin-left:2em" disabled>
+     <input type="submit" class="secondary" name="deletebtn" value="Delete Component(s)" disabled>
    </form>
    <div id="deletebtnsfeedback" class="fielderror" style="margin-left:1em">
      [if-any failed_perm]
@@ -107,10 +107,10 @@
  <div class="list-foot"></div>
  [if-any perms.EditProject]
    <form action="adminComponents.do" method="POST">
-     <a href="/p/[projectname]/components/create" class="buttonify">Create component</a>
+     <a href="/p/[projectname]/components/create" class="buttonify primary">Create component</a>
      <input type="hidden" name="delete_components">
      <input type="hidden" name="token" value="[form_token]">
-     <input type="submit" name="deletebtn" value="Delete Component(s)" style="margin-left:2em" disabled>
+     <input type="submit" class="secondary" name="deletebtn" value="Delete Component(s)" disabled>
    </form>
  [end]
 

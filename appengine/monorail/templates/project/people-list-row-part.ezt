@@ -23,7 +23,7 @@
      </td>
   [end][end]
 
-  <td style="white-space:nowrap">
+  <td style="white-space:nowrap; text-align:left;" class="id">
      <a href="[detail_url]"
       >[pagination.visible_results.user.display_name]</a>
       [if-any pagination.visible_results.viewing_self]

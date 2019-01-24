@@ -3,39 +3,32 @@
 [define category2_css]css/ph_detail.css[end]
 [include "../framework/master-header.ezt" "showtabs"]
 
-<table width="100%" cellpadding="0" cellspacing="0" border="0" class="hotlist-issues-page" id="meta-container">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" class="hotlist-issues-page" id="meta-container"
+       style="margin: 1em">
 <tbody class="collapse">
   <tr>
-    <td nowrap="nowrap" style="min-width:9em" class="issuemetaheader">
-      [if-any read_only][else]
-        <a id="hotlist_star"
-        style="color:[if-any hotlist.is_starred]cornflowerblue[else]gray[end]"
-        title="[if-any hotlist.is_starred]Un-s[else]S[end]tar this hotlist">
-        [if-any hotlist.is_starred]&#9733;[else]&#9734;[end]
-        </a>
-      [end]
-      <a href="[hotlist.url]">Hotlist [hotlist.name]</a>
-    </td>
-    <td width="80%" style="border-right: 2px solid white" class="issueheader">
-      <span class="h3" style="padding-left:4px">Summary: </span> [hotlist.summary]
-    </td>
-  </tr>
-  <tr>
-    <td nowrap="nowrap" class="issuemetaheader">
-      Followed by [hotlist.num_followers]
-    </td>
-     <td width="80%" style="border-right: 2px solid white" class="issueheader">
-      <span style="padding-left:4px">Description:</span> [hotlist.description]
-     </td>
-  </tr>
-
-  <tr>
-    <td id="issuemeta">
+    <td nowrap="nowrap" style="min-width:9em;" class="sidebar">
+      <div style="text-align: center">
+       [if-any read_only][else]
+         <a id="hotlist_star"
+         style="color:[if-any hotlist.is_starred]cornflowerblue[else]gray[end]"
+         title="[if-any hotlist.is_starred]Un-s[else]S[end]tar this hotlist">
+         [if-any hotlist.is_starred]&#9733;[else]&#9734;[end]
+         </a>
+       [end]
+       Followed by [hotlist.num_followers]
+      </div>
       <div id="meta-float">
         [include "hotlist-meta-part.ezt"]
       </div>
     </td>
+    <td width="80%" class="vt" style="padding-left: 1em">
+      <h1 style="margin-top: 0"><a href="[hotlist.url]">Hotlist [hotlist.name]</a></h1>
+      <div>Summary: [hotlist.summary]</div>
+      Description: [hotlist.description]
+     </td>
   </tr>
+
 
 </tbody>
 </table>

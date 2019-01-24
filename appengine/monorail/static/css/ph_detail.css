@@ -13,7 +13,7 @@ pre.prettyprint {
 }
 
 .role_label {
-  background-color: #8ae;
+  background-color: var(--chops-gray-600);
   border-radius: 3px;
   color: white;
   display: inline-block;
@@ -21,6 +21,22 @@ pre.prettyprint {
   font-size: 75%;
   font-weight: bold;
   line-height: 14px;
+  vertical-align: text-bottom;
+}
+
+.date {
+  margin-right: 1em;
+}
+
+.issuedescription pre {
+  margin: 0 12px;
+  max-width: 80em;
+}
+
+.issuecomment pre.issue_text {
+  border-top: var(--chops-card-border);
+  margin: 0;
+  padding: 6px 0 8px 8px;
 }
 
 .issuedescription pre, .issuecomment pre {
@@ -28,6 +44,14 @@ pre.prettyprint {
     white-space: -moz-pre-wrap;
     white-space: -pre-wrap;
     white-space: -o-pre-wrap;
+    font-family: 'Roboto', 'Noto', sans-serif;
+}
+
+.issuecomment {
+    margin: 1.5em 1em;
+    border: var(--chops-card-border);
+    border-radius: var(--chops-radius);
+    box-shadow: var(--chops-shadow);
 }
 
 .issuedescription pre a, .issuecomment pre a {
@@ -49,7 +73,9 @@ pre.prettyprint {
     top: 0;
   }
   #summary-float {
-    border-bottom: 2px solid white;
+    margin: 0;
+    padding: 0;
+    border-bottom: 2px solid var(--chops-page-bg);
     height: 0;
   }
   #meta-float {
@@ -63,13 +89,22 @@ pre.prettyprint {
 .expand .ifCollapse { display: none }
 .inplace input { width: 100%; }
 .inplace td { border: 0; }
-td.issueheader { background: #e5ecf9; }
+.issueheader {
+  background: var(--monorail-metadata-open-bg);
+  border: var(--chops-normal-border);
+  padding: 2px;
+  border-left: 0;
+}
+
+.closed_colors .issueheader {
+  background: var(--monorail-metadata-closed-bg);
+}
 
 #flipper-box {
     float: right;
     height: 3em;
     padding: 4px;
-    border-left: 2px solid white
+    border-left: var(--chops-normal-border);
 }
 
 #flipper-box div {
@@ -78,16 +113,16 @@ td.issueheader { background: #e5ecf9; }
 }
 
 .closed_colors {
-  --mr-flipper-link-color: #fff;
+  --mr-flipper-link-color: #00c;
 }
 
 .closed_colors td.issueheader, .closed_colors td.issueheader a {
-    background: #888; color: #fff;
+  background: #888;
 }
 
 #spam_banner {
     border: 1px solid red;
-    background: #fdd;
+    background: var(--chops-red-50);
     padding: .5em;
     color: #000;
     margin: 2px;
@@ -100,28 +135,23 @@ td.issueheader { background: #e5ecf9; }
 
 .issuepage { margin-top: 0; }
 .issuepage td { padding: 2px; }
-.issuecomment { margin-top: 1em;}
+.issuecomment {
+  max-width: 80em;
+}
 
 .issuecommentheader {
-    background: #e5ecf9;
+    background: var(--chops-card-heading-bg);
     padding: 3px;
 }
 
-.closed_colors .issuecommentheader { background: #eee;}
-
 .issuedescription pre, .issuecomment pre {
-    max-width: 80em;
-    padding: 0 0 3px .7em;
+    padding-top: 6px;
 }
 
 .issuedescription pre b, .issuecomment pre b {
     font-size: 110%;
     font-weight: bolder;
     padding: 3px 0 3px 0;
-}
-
-.issue_text {
-  font-family: monospace;
 }
 
 .issue_text:focus {
@@ -131,7 +161,7 @@ td.issueheader { background: #e5ecf9; }
 .author { padding-left: 4px; }
 
 .ichcommands a {
-    color: #aaa;
+    color: var(--chops-gray-600);
     text-decoration: none;
 }
 
@@ -168,21 +198,20 @@ td.issueheader { background: #e5ecf9; }
     min-width: 14em;
 }
 
-.issuemetaheader a.material-icons {
+.issueheader a.material-icons {
     padding: 0 5px;
     text-decoration: none;
     color: grey;
-    position: absolute;
-    top: calc(50% - 12px);
+    float: right;
 }
 
 #issuemeta {
-    background: #eef8ee;
-    border-right: 3px solid #fff;
+    background: var(--monorail-metadata-open-bg);
+    border: var(--chops-normal-border);
 }
 
 .closed_colors #issuemeta {
-    background: #eee;
+    background: var(--monorail-metadata-closed-bg);
 }
 
 #issuemeta table td, #issuemeta table th {
@@ -223,14 +252,15 @@ td.issueheader { background: #e5ecf9; }
 }
 
 .updates {
-    margin: 0 7px 5px 7px;
-    background: #f2f6ff;
-    font-size: 90%;
-    padding: 5px;
-    border-radius: 0 0 10px 10px;
+    background: var(--chops-card-details-bg);
+    border-top: var(--chops-card-border);
 }
 
-.closed_colors .updates { background: #f4f4f4;}
+.updates table {
+    width: 100%;
+    font-size: 90%;
+    padding: 5px;
+}
 
 .fakelink {
     color: #0000cc;
@@ -240,14 +270,18 @@ td.issueheader { background: #e5ecf9; }
 }
 
 .undef { color: #666; }
-table.advquery { border: 3px solid #e5ecf9;}
+table.advquery {
+    border: var(--chops-card-border);
+    border-radius: var(--chops-radius);
+    box-shadow: var(--chops-shadow);
+}
 
 table.advquery td {
     white-space: nowrap;
     padding: 2px;
 }
 
-.focus td { background: #e5ecf9; }
+.focus td { background: var(--chops-card-heading-bg); }
 
 .eg {
     color: #666;
@@ -259,7 +293,7 @@ div td .novel { color: #430; }
 div td .blockingsubmit { color: #a03; }
 div td .exclconflict { color: #a03; }
 div td .questionmark { color: #a03; }
-.delcom { background: #e8e8e8; }
+.issuecomment .delcom { background: #e8e8e8; border-radius: var(--chops-radius); }
 .numberentry { text-align: right; }
 
 .rollovercontrol { display: none; }
@@ -377,8 +411,6 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   scroll: auto;
 }
 
-.issuecomment { padding-top: 1px; }
-.updates { margin-bottom: 2px; }
 #hc_controls { float: right; }
 #hc_controls a.paginate { margin-left: 1px; }
 #hc_controls a.close { margin-left: 3px; }
@@ -511,12 +543,8 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
 
 .drag_container th {
   color: #00c;
-  background: #e3e9ff;
+  background: var(--chops-table-header-bg);
   text-align: left;
-}
-
-.drag_item:hover[draggable=true] {
-  background: #f0f0f0 !important;
 }
 
 .drag_item.top td {

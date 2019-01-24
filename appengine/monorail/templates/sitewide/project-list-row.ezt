@@ -17,7 +17,7 @@ hold the current project.]
 [end]
 
 [# Project name link to this project]
-<td style="white-space:nowrap">
+<td style="white-space:nowrap" class="id">
   <a href="[projects.relative_home_url]/" style="font-size:medium">
     [projects.project_name]
   </a>

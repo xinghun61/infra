@@ -2,7 +2,6 @@
 
   <div class="issuecommentheader">
     <span class="author">
-      [if-any comments.creator_role]<span class="role_label">Project Member</span>[end]
       <h3 class="not_styled_as_heading">
         <a name="c[comments.sequence]" id="c_ts[comments.timestamp]"
            href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
@@ -13,82 +12,17 @@
           [if-any comments.date_relative]([comments.date_relative])[end]
         </span>
       </h3>
+      [if-any comments.creator_role]<span class="role_label">Project Member</span>[end]
     [if-any page_perms.ViewInboundMessages comments.can_delete_bool][if-any comments.inbound_message]
       via <a target="_blank" href="original?id=[issue.local_id]&seq=[comments.sequence]">email</a>
     [end][end]
+    [include "issue-comment-commands-part.ezt" arg0]
   </div>[#issuecommentheader]
 
   <div class="issuecommentbody" tabIndex="0">
-    [if-any read_only][else]
-     <div style="float:right; margin-right:.3em; text-align:right" class="ichcommands">
-      <span id='comment-action-loading-[comments.sequence]'
-       class='loading' style='display:none;'>Processing</span>
-
-      [if-any comments.flagged_spam_bool]
-        [define comment_status]Spam[end]
-      [else][if-any comments.is_deleted_bool]
-        [define comment_status]Deleted[end]
-      [else]
-        [define comment_status]Normal[end]
-      [end][end]
-
-      [if-any comments.can_delete_bool][if-any arg0]
-        <div id="hc[comments.sequence]-controls"
-             class="[is comment_status "Normal"][else]hidden[end]"
-             style="display: contents">
-          <a style="font-size: 0.9em" href="#"
-             class="delComment"
-             data-local-id="[issue.local_id]"
-             data-sequence-num="[comments.sequence]"
-             data-mark-deleted="true">
-            Delete comment
-          </a>
-          <a style="font-size: 0.9em; color: gray; text-decoration: none;"
-             class="spamflag flagComment"
-             data-local-id="[issue.local_id]"
-             data-sequence-num="[comments.sequence]"
-             data-mark-spam="true"
-             title="Flag as spam">
-            &#9872;
-          </a>
-        </div>
-        <div id="hc[comments.sequence]-deleted-controls"
-             class="[is comment_status "Deleted"][else]hidden[end]"
-             style="display: contents">
-          <div style="font-size: 0.9em">
-            This comment is not visible to normal users.
-          </div>
-          <a style="font-size: 0.9em" href="#"
-             class="delComment"
-             data-local-id="[issue.local_id]"
-             data-sequence-num="[comments.sequence]"
-             data-mark-deleted="false">
-            Undelete comment
-          </a>
-        </div>
-      [end][end]
-      [if-any page_perms.FlagSpam]
-        <div id="hc[comments.sequence]-spam-controls"
-             class="[is comment_status "Spam"][else]hidden[end]"
-             style="display: contents">
-          <div style="font-size: 0.9em">
-            This comment is not visible to normal users.
-          </div>
-          <a style="font-size: 0.9em; color: red;" href="#"
-             class="spamflag flagComment"
-             data-local-id="[issue.local_id]"
-             data-sequence-num="[comments.sequence]"
-             data-mark-spam="false"
-             title="Un-flag as spam">
-            Un-flag this comment as spam &#9873;
-          </a>
-        </div>
-      [end]
-     </div>
-    [end]
-
     [if-any comments.amendments comments.description_num]
-     <table class="updates">
+     <div class="updates">
+     <table>
       <tr><td class="box-inner">
        [for comments.amendments]
         [include "issue-comment-amendment-part.ezt" comments.amendments]
@@ -99,6 +33,7 @@
        [end]
       </td></tr>
      </table>
+     </div>
     [end]
 
 [if-any comments.description_num][else]

@@ -11,7 +11,7 @@
   padding: 0;
   margin: 0;
   padding-left: 1em;
-  background-color: #e5ecf9;
+  background: var(--chops-table-header-bg);
   line-height: 160%;
 }
 ul.activity-stream {
@@ -25,14 +25,8 @@ ul.activity-stream li {
   z-index: 0;
   clear: both;
 }
-ul.activity-stream li.even {
-  background-color: #f8f8f8;
-}
-ul.activity-stream li:hover {
-  background-color: #f2f6ff;
-}
-ul.activity-stream li:last-child {
-    border-bottom: 1px solid #f8f8f8;
+ul.activity-stream li {
+  border-bottom: var(--chops-normal-border);
 }
 ul.activity-stream span.date {
   float: left;

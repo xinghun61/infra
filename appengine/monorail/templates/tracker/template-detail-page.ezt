@@ -219,7 +219,7 @@
       <td></td>
       <td>
         <input id="submit_btn" type="submit" name="submit" value="Save template">
-        <input id="delete_btn" type="submit" name="deletetemplate" value="Delete Template">
+        <input id="delete_btn" type="submit" class="secondary" name="deletetemplate" value="Delete Template">
       </td>
     </tr>
   [end]
