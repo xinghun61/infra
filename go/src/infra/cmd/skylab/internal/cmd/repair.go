@@ -65,33 +65,32 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 
 func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environment, host string) (taskID string, err error) {
 	log := generateAnnotationURL(e)
-	r := &swarming.SwarmingRpcsNewTaskRequest{
-		EvaluateOnly: false,
-		Name:         "admin_repair",
-		Priority:     25,
-		Tags: []string{
+	slices := []*swarming.SwarmingRpcsTaskSlice{{
+		ExpirationSecs: 600,
+		Properties: &swarming.SwarmingRpcsTaskProperties{
+			Command: []string{
+				"/opt/infra-tools/skylab_swarming_worker",
+				"-task-name", "admin_repair",
+				"-logdog-annotation-url", log,
+			},
+			Dimensions: []*swarming.SwarmingRpcsStringPair{
+				{Key: "pool", Value: "ChromeOSSkylab"},
+				{Key: "dut_name", Value: host},
+			},
+			ExecutionTimeoutSecs: 5400,
+		},
+		WaitForCapacity: true,
+	}}
+	r := newTaskRequest(
+		"admin_repair",
+		[]string{
 			fmt.Sprintf("log_location:%s", log),
 			fmt.Sprintf("luci_project:%s", e.LUCIProject),
 			"pool:ChromeOSSkylab",
 			"skylab:manual_trigger",
 		},
-		TaskSlices: []*swarming.SwarmingRpcsTaskSlice{{
-			ExpirationSecs: 600,
-			Properties: &swarming.SwarmingRpcsTaskProperties{
-				Command: []string{
-					"/opt/infra-tools/skylab_swarming_worker",
-					"-task-name", "admin_repair",
-					"-logdog-annotation-url", log,
-				},
-				Dimensions: []*swarming.SwarmingRpcsStringPair{
-					{Key: "pool", Value: "ChromeOSSkylab"},
-					{Key: "dut_name", Value: host},
-				},
-				ExecutionTimeoutSecs: 5400,
-			},
-			WaitForCapacity: true,
-		}},
-	}
+		slices,
+		25)
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
 	resp, err := s.Tasks.New(r).Context(ctx).Do()

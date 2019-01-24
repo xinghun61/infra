@@ -47,6 +47,7 @@ func getApplication() *cli.Application {
 			subcommands.Section("Tasks"),
 			cmd.CreateTest,
 			cmd.Repair,
+			cmd.RerunTasks,
 		},
 	}
 }
