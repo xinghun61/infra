@@ -244,10 +244,8 @@ class ScheduleBuildRequestTests(BaseTestCase):
   def test_valid(self):
     msg = rpc_pb2.ScheduleBuildRequest(
         request_id='request id',
-        builder=build_pb2.BuilderID(
-            project='chromium', bucket='try', builder='linux-rel'
-        ),
-        gitiles_commit=common_pb2.GitilesCommit(
+        builder=dict(project='chromium', bucket='try', builder='linux-rel'),
+        gitiles_commit=dict(
             host='gerrit.example.com',
             project='project',
             id='a' * 40,
@@ -255,26 +253,22 @@ class ScheduleBuildRequestTests(BaseTestCase):
             position=1,
         ),
         gerrit_changes=[
-            common_pb2.GerritChange(
-                host='gerrit.example.com', change=1, patchset=1
-            ),
-            common_pb2.GerritChange(
-                host='gerrit.example.com', change=2, patchset=2
-            ),
+            dict(host='gerrit.example.com', change=1, patchset=1),
+            dict(host='gerrit.example.com', change=2, patchset=2),
         ],
         tags=[
-            common_pb2.StringPair(key='a', value='a1'),
-            common_pb2.StringPair(key='a', value='a2'),
-            common_pb2.StringPair(key='b', value='b1'),
+            dict(key='a', value='a1'),
+            dict(key='a', value='a2'),
+            dict(key='b', value='b1'),
         ],
         dimensions=[
-            common_pb2.StringPair(key='d1', value='dv1'),
-            common_pb2.StringPair(key='d1', value='dv2'),
-            common_pb2.StringPair(key='d2', value='dv3'),
-            common_pb2.StringPair(key='d3', value=''),
+            dict(key='d1', value='dv1'),
+            dict(key='d1', value='dv2'),
+            dict(key='d2', value='dv3'),
+            dict(key='d3', value=''),
         ],
         priority=100,
-        notify=notification_pb2.NotificationConfig(
+        notify=dict(
             pubsub_topic='projects/project_id/topics/topic_id',
             user_data='blob',
         ),
@@ -351,7 +345,7 @@ class ScheduleBuildRequestTests(BaseTestCase):
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
-        tags=[common_pb2.StringPair()]
+        tags=[dict()]
     )
     self.assert_invalid(msg, r'tags: Invalid tag ":": starts with ":"')
 
@@ -361,7 +355,7 @@ class ScheduleBuildRequestTests(BaseTestCase):
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
-        dimensions=[common_pb2.StringPair()]
+        dimensions=[dict()]
     )
     self.assert_invalid(msg, r'dimensions\[0\]\.key: required')
 

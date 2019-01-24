@@ -124,11 +124,7 @@ class V2BuildsTest(unittest.TestCase):
 
     expected = build_pb2.Build(
         id=1,
-        builder=build_pb2.BuilderID(
-            project='chromium',
-            bucket='try',
-            builder='linux-rel',
-        ),
+        builder=dict(project='chromium', bucket='try', builder='linux-rel'),
         number=0,
         create_time=ts0,
         start_time=ts1,
@@ -136,37 +132,33 @@ class V2BuildsTest(unittest.TestCase):
         update_time=ts2,
         status=common_pb2.SUCCESS,
         tags=[
-            common_pb2.StringPair(key='a', value='b'),
-            common_pb2.StringPair(key='c', value='d'),
+            dict(key='a', value='b'),
+            dict(key='c', value='d'),
         ],
-        input=build_pb2.Build.Input(
+        input=dict(
             properties=input_properties,
             experimental=True,
         ),
-        output=build_pb2.Build.Output(
-            properties=bbutil.dict_to_struct(output_properties),
-        ),
-        infra=build_pb2.BuildInfra(
-            buildbucket=build_pb2.BuildInfra.Buildbucket(canary=False,),
-            swarming=build_pb2.BuildInfra.Swarming(
+        output=dict(properties=bbutil.dict_to_struct(output_properties),),
+        infra=dict(
+            buildbucket=dict(canary=False,),
+            swarming=dict(
                 hostname='swarming.example.com',
                 task_id='deadbeef',
                 task_service_account='service-account@example.com',
                 bot_dimensions=[
-                    common_pb2.StringPair(key='id', value='bot1'),
-                    common_pb2.StringPair(key='os', value='Trusty'),
-                    common_pb2.StringPair(key='os', value='Ubuntu'),
-                    common_pb2.StringPair(
-                        key='pool', value='luci.chromium.try'
-                    ),
+                    dict(key='id', value='bot1'),
+                    dict(key='os', value='Trusty'),
+                    dict(key='os', value='Ubuntu'),
+                    dict(key='pool', value='luci.chromium.try'),
                 ],
             ),
-            logdog=build_pb2.BuildInfra.LogDog(
+            logdog=dict(
                 hostname='logs.chromium.org',
                 project='chromium',
                 prefix='buildbucket/cr-buildbucket.example.com/81271231ba012',
             ),
-            recipe=build_pb2.BuildInfra.Recipe(
+            recipe=dict(
                 cipd_package='recipe_bundles/build',
                 name='chromium',
             ),
@@ -214,36 +206,32 @@ class V2BuildsTest(unittest.TestCase):
 
     expected = build_pb2.Build(
         number=1,
-        tags=[
-            common_pb2.StringPair(key='buildset', value='bs'),
-        ],
-        input=build_pb2.Build.Input(
-            gitiles_commit=common_pb2.GitilesCommit(
+        tags=[dict(key='buildset', value='bs')],
+        input=dict(
+            gitiles_commit=dict(
                 host='chromium.googlesource.com',
                 project='infra/luci/luci-go',
                 id='b7a757f457487cd5cfe2dae83f65c5bc10e288b7',
             ),
             gerrit_changes=[
-                common_pb2.GerritChange(
+                dict(
                     host='chromium-review.googlesource.com',
                     change=677784,
                     patchset=5,
                 ),
             ],
         ),
-        infra=build_pb2.BuildInfra(
-            buildbucket=build_pb2.BuildInfra.Buildbucket(
+        infra=dict(
+            buildbucket=dict(
                 service_config_revision=(
                     '8f8d0f72e3689c4e4a943c52a8805c24563c8b2d'
                 ),
             ),
-            swarming=build_pb2.BuildInfra.Swarming(
+            swarming=dict(
                 priority=100,
                 task_dimensions=[
-                    common_pb2.StringPair(key='os', value='Ubuntu'),
-                    common_pb2.StringPair(
-                        key='pool', value='luci.chromium.try'
-                    ),
+                    dict(key='os', value='Ubuntu'),
+                    dict(key='pool', value='luci.chromium.try'),
                 ],
             ),
         ),
