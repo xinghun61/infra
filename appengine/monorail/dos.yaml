@@ -154,3 +154,5 @@ blacklist:
     description: someone repeatedly posting to template/detail.do 2019-01-13
   - subnet: 191.180.60.133
     description: someone making lots of requests with bad XSRF token
+  - subnet: 2001:41d0:a:200f::1
+    description: someone fuzzing us 2019-01-24
