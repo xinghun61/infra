@@ -107,9 +107,24 @@ message InspectPoolResponse {
         // Priority is the current quotascheduler priority that the task is
         // running at.
         int32 priority = 3;
+
+        // AccountID is the account id of the request.
+        string account_id = 4;
     }
 
     // RunningTasks is a description of the running tasks according to
     // quotascheduler.
     repeated RunningTask running_tasks = 5;
+
+    message WaitingTask {
+        // Id is the id of the request.
+        string id = 1;
+
+        // AccountID is the account id of the request.
+        string account_id = 2;
+    }
+
+    // WaitingTasks is a description of the tasks that are waiting
+    // according to quotascheduler.
+    repeated WaitingTask waiting_tasks = 6;
 }

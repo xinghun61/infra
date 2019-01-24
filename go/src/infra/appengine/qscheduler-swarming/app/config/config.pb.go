@@ -84,7 +84,7 @@ type Auth struct {
 	// AdminGroup is the luci-auth group controlling access to the administrative
 	// endpoints of this server (the QSchedulerAdmin API).
 	//
-	// Members of this group also recieve QSchedulerView access.
+	// Members of this group also receive QSchedulerView access.
 	AdminGroup string `protobuf:"bytes,1,opt,name=admin_group,json=adminGroup,proto3" json:"admin_group,omitempty"`
 	// SwarmingGroup is the luci-auth group controlling access to the scheduler
 	// endpoints of this server (the swarming.ExternalScheduler API).
