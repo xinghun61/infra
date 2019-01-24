@@ -22,6 +22,7 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/appengine/qscheduler-swarming/app/frontend/internal/operations"
 	"infra/qscheduler/qslib/tutils"
 	swarming "infra/swarming"
 )
@@ -79,6 +80,7 @@ func TestAssignTasks(t *testing.T) {
 	})
 }
 
+// TODO(akeshet): Move this to whichever package GetProvisionableLabels ends up in.
 func TestGetProvisionableLabels(t *testing.T) {
 	cases := []struct {
 		caseName        string
@@ -138,7 +140,7 @@ func TestGetProvisionableLabels(t *testing.T) {
 				n.Task.Slices = append(n.Task.Slices, newSlice)
 			}
 			Convey("when getProvisionableLabels is called, it returns expected value and error.", func() {
-				got, gotError := getProvisionableLabels(n)
+				got, gotError := operations.ProvisionableLabels(n)
 				So(got, ShouldResemble, c.expected)
 				if c.errorExpected {
 					So(gotError, ShouldNotBeNil)
@@ -186,7 +188,7 @@ func TestGetAccountId(t *testing.T) {
 		Convey("When a task has "+c.name, t, func() {
 			Convey("then getAccountID returns the correct value / error.", func() {
 				i := &swarming.NotifyTasksItem{Task: &swarming.TaskSpec{Tags: c.tags}}
-				a, err := getAccountID(i)
+				a, err := operations.GetAccountID(i)
 				So(a, ShouldEqual, c.expectedAccount)
 				if c.errorExpected {
 					So(err, ShouldNotBeNil)

@@ -16,23 +16,15 @@ package frontend
 
 import (
 	"context"
-	"fmt"
-	"sort"
 
 	"infra/appengine/qscheduler-swarming/app/entities"
+	"infra/appengine/qscheduler-swarming/app/frontend/internal/operations"
 	swarming "infra/swarming"
 
-	"github.com/pkg/errors"
-
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/common/data/stringset"
-	"go.chromium.org/luci/common/data/strpair"
-	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/grpcutil"
 
-	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
-	"infra/qscheduler/qslib/tutils"
 )
 
 // WorkerID is a type alias for WorkerID
@@ -44,21 +36,35 @@ type RequestID = scheduler.RequestID
 // AccountID is a type alias for AccountID
 type AccountID = scheduler.AccountID
 
-// AccountIDTagKey is the key used in Task tags to specify which quotascheduler
-// account the task should be charged to.
-const AccountIDTagKey = "qs_account"
-
 // QSchedulerServerImpl implements the QSchedulerServer interface.
-type QSchedulerServerImpl struct {
-	// TODO(akeshet): Implement in-memory cache of SchedulerPool struct, so that
-	// we don't need to load and re-persist its state on every call.
-	// TODO(akeshet): Implement request batching for AssignTasks and NotifyTasks.
-	// TODO(akeshet): Determine if go.chromium.org/luci/server/caching has a
-	// solution for in-memory caching like this.
-}
+//
+// This implementation is only expected to scale to ~1QPS of mutating
+// operations, because it handles each request in its own datastore
+// transaction.
+type QSchedulerServerImpl struct{}
 
-// TODO(akeshet): Here, and in qscheduler_admin, and generally in all rpc handlers, add a
-// GRPCifyAndLogErr call.
+// singleOperationRunner returns a read-modify-write function for an operation.
+//
+// The returned function is suitable to be used with
+// datastore.RunInTransaction.
+func singleOperationRunner(op operations.Operation, schedulerID string) func(context.Context) error {
+	return func(ctx context.Context) error {
+		sp, err := entities.Load(ctx, schedulerID)
+		if err != nil {
+			return err
+		}
+
+		if err = op(ctx, sp); err != nil {
+			return err
+		}
+
+		if err := entities.Save(ctx, sp); err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
 
 // AssignTasks implements QSchedulerServer.
 func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.AssignTasksRequest) (resp *swarming.AssignTasksResponse, err error) {
@@ -66,51 +72,13 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	var response *swarming.AssignTasksResponse
+	op, result := operations.AssignTasks(r)
 
-	doAssign := func(ctx context.Context) error {
-		sp, err := entities.Load(ctx, r.SchedulerId)
-		if err != nil {
-			return err
-		}
-
-		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
-		for i, v := range r.IdleBots {
-			idles[i] = &reconciler.IdleWorker{
-				ID:     WorkerID(v.BotId),
-				Labels: stringset.NewFromSlice(v.Dimensions...),
-			}
-		}
-
-		schedulerAssignments, err := sp.Reconciler.AssignTasks(ctx, sp.Scheduler, tutils.Timestamp(r.Time), idles...)
-		if err != nil {
-			return nil
-		}
-
-		assignments := make([]*swarming.TaskAssignment, len(schedulerAssignments))
-		for i, v := range schedulerAssignments {
-			slice := int32(0)
-			if v.ProvisionRequired {
-				slice = 1
-			}
-			assignments[i] = &swarming.TaskAssignment{
-				BotId:       string(v.WorkerID),
-				TaskId:      string(v.RequestID),
-				SliceNumber: slice,
-			}
-		}
-		if err := entities.Save(ctx, sp); err != nil {
-			return err
-		}
-		response = &swarming.AssignTasksResponse{Assignments: assignments}
-		return nil
-	}
-
-	if err := datastore.RunInTransaction(ctx, doAssign, nil); err != nil {
+	if err := datastore.RunInTransaction(ctx, singleOperationRunner(op, r.SchedulerId), nil); err != nil {
 		return nil, err
 	}
 
-	return response, nil
+	return result.Response, result.Error
 }
 
 // GetCancellations implements QSchedulerServer.
@@ -138,132 +106,10 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	doNotify := func(ctx context.Context) error {
-		sp, err := entities.Load(ctx, r.SchedulerId)
-		if err != nil {
-			return err
-		}
+	op, result := operations.NotifyTasks(r)
 
-		if sp.Config == nil {
-			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
-		}
-
-		for _, n := range r.Notifications {
-			var t reconciler.TaskInstant_State
-			var ok bool
-			if t, ok = toTaskInstantState(n.Task.State); !ok {
-				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
-				logging.Warningf(ctx, err)
-				sp.Reconciler.TaskError(n.Task.Id, err)
-				continue
-			}
-
-			var provisionableLabels []string
-			var accountID string
-			// ProvisionableLabels attribute only matters for TaskInstant_WAITING state,
-			// because the scheduler pays no attention to label or RUNNING or ABSENT
-			// tasks.
-			if t == reconciler.TaskInstant_WAITING {
-				if provisionableLabels, err = getProvisionableLabels(n); err != nil {
-					logging.Warningf(ctx, err.Error())
-					sp.Reconciler.TaskError(n.Task.Id, err.Error())
-					continue
-				}
-
-				if accountID, err = getAccountID(n); err != nil {
-					logging.Warningf(ctx, err.Error())
-					sp.Reconciler.TaskError(n.Task.Id, err.Error())
-					continue
-				}
-			}
-
-			// TODO(akeshet): Validate that new tasks have dimensions that match the
-			// worker pool dimensions for this scheduler pool.
-			update := &reconciler.TaskInstant{
-				AccountId: accountID,
-				// TODO(akeshet): implement me properly. This should be a separate field
-				// of the task state, not the notification time.
-				EnqueueTime:         n.Time,
-				ProvisionableLabels: provisionableLabels,
-				RequestId:           n.Task.Id,
-				Time:                n.Time,
-				State:               t,
-				WorkerId:            n.Task.BotId,
-			}
-			if err := sp.Reconciler.Notify(ctx, sp.Scheduler, update); err != nil {
-				sp.Reconciler.TaskError(n.Task.Id, err.Error())
-				logging.Warningf(ctx, err.Error())
-				continue
-			}
-			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update %+v", r.SchedulerId, update)
-		}
-		return entities.Save(ctx, sp)
-	}
-
-	if err := datastore.RunInTransaction(ctx, doNotify, nil); err != nil {
+	if err := datastore.RunInTransaction(ctx, singleOperationRunner(op, r.SchedulerId), nil); err != nil {
 		return nil, err
 	}
-	return &swarming.NotifyTasksResponse{}, nil
-}
-
-// getProvisionableLabels determines the provisionable labels for a given task,
-// based on the dimensions of its slices.
-func getProvisionableLabels(n *swarming.NotifyTasksItem) ([]string, error) {
-	switch len(n.Task.Slices) {
-	case 1:
-		return []string{}, nil
-	case 2:
-		s1 := stringset.NewFromSlice(n.Task.Slices[0].Dimensions...)
-		s2 := stringset.NewFromSlice(n.Task.Slices[1].Dimensions...)
-		// s2 must be a subset of s1 (i.e. the first slice must be more specific about dimensions than the second one)
-		// otherwise this is an error.
-		if flaws := s2.Difference(s1); flaws.Len() != 0 {
-			return nil, errors.Errorf("Invalid slice dimensions; task's 2nd slice dimensions are not a subset of 1st slice dimensions.")
-		}
-
-		var provisionable sort.StringSlice
-		provisionable = s1.Difference(s2).ToSlice()
-		provisionable.Sort()
-		return provisionable, nil
-	default:
-		return nil, errors.Errorf("Invalid slice count %d; quotascheduler only supports 1-slice or 2-slice tasks.", len(n.Task.Slices))
-	}
-}
-
-// getAccountID determines the account id for a given task, based on its tags.
-func getAccountID(n *swarming.NotifyTasksItem) (string, error) {
-	m := strpair.ParseMap(n.Task.Tags)
-	accounts := m[AccountIDTagKey]
-	switch len(accounts) {
-	case 0:
-		return "", nil
-	case 1:
-		return accounts[0], nil
-	default:
-		return "", errors.Errorf("Too many account tags.")
-	}
-}
-
-func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, bool) {
-	cInt := int(s) &^ int(swarming.TaskStateCategory_TASK_STATE_MASK)
-	category := swarming.TaskStateCategory(cInt)
-
-	// These category cases occur in the same order as they are defined in
-	// swarming.proto. Please preserve that when adding new cases.
-	switch category {
-	case swarming.TaskStateCategory_CATEGORY_PENDING:
-		return reconciler.TaskInstant_WAITING, true
-	case swarming.TaskStateCategory_CATEGORY_RUNNING:
-		return reconciler.TaskInstant_RUNNING, true
-	// The following categories all translate to "ABSENT", because they are all
-	// equivalent to the task being neither running nor waiting.
-	case swarming.TaskStateCategory_CATEGORY_TRANSIENT_DONE,
-		swarming.TaskStateCategory_CATEGORY_EXECUTION_DONE,
-		swarming.TaskStateCategory_CATEGORY_NEVER_RAN_DONE:
-		return reconciler.TaskInstant_ABSENT, true
-
-	// Invalid state.
-	default:
-		return reconciler.TaskInstant_NULL, false
-	}
+	return result.Response, result.Error
 }
