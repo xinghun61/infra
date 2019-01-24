@@ -6,6 +6,9 @@ import datetime
 import json
 import mock
 
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
+
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from infra_api_clients import crrev
@@ -413,3 +416,23 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual('8948345336480880560',
                      build_util._GetBuildIDForLUCIBuild(json.dumps(data_json)))
+
+  @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=None)
+  def testGetBuilderInfoForLUCIBuildNoBuildInfo(self, _):
+    self.assertEqual((None, None),
+                     build_util.GetBuilderInfoForLUCIBuild('9087654321'))
+
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  def testGetBuilderInfoForLUCIBuild(self, mock_v2_build):
+    build_id = 87654321
+    mock_build = Build(
+        id=build_id,
+        builder=BuilderID(
+            project='chromium',
+            bucket='try',
+            builder='b',
+        ),
+    )
+    mock_v2_build.return_value = mock_build
+    self.assertEqual(('chromium', 'try'),
+                     build_util.GetBuilderInfoForLUCIBuild('87654321'))

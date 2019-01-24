@@ -27,10 +27,12 @@ from model.flake.flake import Flake
 from model.flake.flake import TestLocation
 from model.flake import flake_type
 from model.flake.flake_type import FlakeType
+from model.wf_build import WfBuild
 from services import bigquery_helper
 from services import monitoring
 from services import step_util
 from services import swarmed_test_util
+from waterfall import build_util
 
 _MAP_FLAKY_TESTS_QUERY_PATH = {
     FlakeType.CQ_FALSE_REJECTION:
@@ -130,7 +132,6 @@ def _GetTestSuiteForOccurrence(row, normalized_test_name, normalized_step_name):
 
 def _CreateFlakeOccurrenceFromRow(row, flake_type_enum):
   """Creates a FlakeOccurrence from a row fetched from BigQuery."""
-  gerrit_project = row['gerrit_project']
   luci_project = row['luci_project']
   luci_builder = row['luci_builder']
   step_ui_name = row['step_ui_name']
@@ -151,6 +152,7 @@ def _CreateFlakeOccurrenceFromRow(row, flake_type_enum):
       normalized_test_name=normalized_test_name)
   flake_key = ndb.Key(Flake, flake_id)
 
+  gerrit_project = row['gerrit_project']
   build_id = row['build_id']
   luci_bucket = row['luci_bucket']
   time_happened = row['test_start_msec']
@@ -525,5 +527,67 @@ def QueryAndStoreFlakes(flake_type_enum):
     # Updates memecache for the new last_cq_hidden_flake_query_time.
     _CacheLastCQHiddenFlakeQueryTime(time_util.GetUTCNow())
 
+  monitoring.OnFlakeDetectionDetectNewOccurrences(
+      flake_type=flake_type_desc, num_occurrences=len(new_occurrences))
+
+
+def StoreDetectedCIFlakes(master_name, builder_name, build_number, flaky_tests):
+  """Stores detected CL flakes to datastore.
+
+  Args:
+    master_name(str): Name of the master.
+    builder_name(str): Name of the builder.
+    build_number(int): Number of the build.
+    flaky_tests(dict): A dict of flaky tests, in the format:
+    {
+      'step1': ['test1', 'test2', ...],
+      ...
+    }
+  """
+  build = WfBuild.Get(master_name, builder_name, build_number)
+  if not build or not build.build_id:
+    logging.error(
+        'Could not save CI flake on %s/%s/%d since the build or build_id'
+        ' is missing.', master_name, builder_name, build_number)
+    return
+
+  luci_project, luci_bucket = build_util.GetBuilderInfoForLUCIBuild(
+      build.build_id)
+
+  if not luci_project or not luci_bucket:
+    logging.debug('Could not get luci_project or luci_bucket from'
+                  ' build %s/%s/%d.', master_name, builder_name, build_number)
+    return
+
+  row = {
+      'luci_project': luci_project,
+      'luci_bucket': luci_bucket,
+      'luci_builder': builder_name,
+      'legacy_master_name': master_name,
+      'legacy_build_number': build_number,
+      'build_id': int(build.build_id),
+      'test_start_msec': time_util.GetUTCNow(),
+      # No affected gerrit cls for CI flakes, set related fields to None.
+      'gerrit_project': None,
+      'gerrit_cl_id': -1
+  }
+
+  local_flakes = []
+  local_flake_occurrences = []
+  for step, step_flaky_tests in flaky_tests.iteritems():
+    row['step_ui_name'] = step
+    for flaky_test in step_flaky_tests:
+      row['test_name'] = flaky_test
+      local_flakes.append(_CreateFlakeFromRow(row))
+      local_flake_occurrences.append(
+          _CreateFlakeOccurrenceFromRow(row, FlakeType.CI_FAILED_STEP))
+
+  _StoreMultipleLocalEntities(local_flakes)
+
+  new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
+  _UpdateFlakeMetadata(new_occurrences)
+
+  flake_type_desc = flake_type.FLAKE_TYPE_DESCRIPTIONS.get(
+      FlakeType.CI_FAILED_STEP, 'N/A')
   monitoring.OnFlakeDetectionDetectNewOccurrences(
       flake_type=flake_type_desc, num_occurrences=len(new_occurrences))

@@ -72,6 +72,11 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
             'impacted_cl_count': 0,
             'occurrence_count': 0
         },
+        {
+            'flake_type': 'ci failed step',
+            'impacted_cl_count': 0,
+            'occurrence_count': 0
+        },
     ]
 
     luci_project = 'chromium'

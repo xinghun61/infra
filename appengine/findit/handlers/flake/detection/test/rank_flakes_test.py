@@ -113,6 +113,11 @@ class RankFlakesTest(WaterfallTestCase):
               'flake_type': 'cq hidden flake',
               'impacted_cl_count': 0,
               'occurrence_count': 0
+          },
+          {
+              'flake_type': 'ci failed step',
+              'impacted_cl_count': 0,
+              'occurrence_count': 0
           }
       ]
 
@@ -145,7 +150,7 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)]
         },
                    default=str), response.body)
 
@@ -210,7 +215,7 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)]
         },
                    default=str), response.body)
 
@@ -246,7 +251,7 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)]
         },
                    default=str), response.body)
 
@@ -282,7 +287,7 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)]
         },
                    default=str), response.body)
 
@@ -318,6 +323,6 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)]
         },
                    default=str), response.body)

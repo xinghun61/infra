@@ -22,11 +22,15 @@ class FlakeType(messages.Enum):
   # A flaky test that failed some test runs then pass.
   CQ_HIDDEN_FLAKE = 3
 
+  # A flaky test that caused failed test steps in CI builds.
+  CI_FAILED_STEP = 4
+
 
 FLAKE_TYPE_DESCRIPTIONS = {
     FlakeType.CQ_FALSE_REJECTION: 'cq false rejection',
     FlakeType.RETRY_WITH_PATCH: 'cq retry with patch',
-    FlakeType.CQ_HIDDEN_FLAKE: 'cq hidden flake'
+    FlakeType.CQ_HIDDEN_FLAKE: 'cq hidden flake',
+    FlakeType.CI_FAILED_STEP: 'ci failed step'
 }
 
 # Weights for each type of flakes.
@@ -35,5 +39,6 @@ FLAKE_TYPE_DESCRIPTIONS = {
 FLAKE_TYPE_WEIGHT = {
     FlakeType.CQ_FALSE_REJECTION: 100,
     FlakeType.RETRY_WITH_PATCH: 10,
-    FlakeType.CQ_HIDDEN_FLAKE: 1
+    FlakeType.CQ_HIDDEN_FLAKE: 1,
+    FlakeType.CI_FAILED_STEP: 10
 }

@@ -5,12 +5,13 @@
 import json
 import logging
 
+from google.protobuf.field_mask_pb2 import FieldMask
+
 from common import constants
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from infra_api_clients import crrev
-from infra_api_clients import logdog_util
 from libs import time_util
 from model.isolated_target import IsolatedTarget
 from model.wf_build import WfBuild
@@ -273,3 +274,18 @@ def IteratePreviousBuildsFrom(master_name, builder_name, build_number,
       # 404 means we hit a gap. Otherwise there is something wrong.
       raise Exception('Failed to download build data for build %s/%s/%d' %
                       (master_name, builder_name, n))
+
+
+def GetBuilderInfoForLUCIBuild(build_id):
+  """Gets a build's project and bucket info.
+
+  Args:
+    build_id(str): Buildbucket id of a LUCI build.
+  """
+  build_proto = buildbucket_client.GetV2Build(
+      build_id, fields=FieldMask(paths=['builder']))
+  if not build_proto:
+    logging.exception('Error retrieving buildbucket build id: %s', build_id)
+    return None, None
+
+  return build_proto.builder.project, build_proto.builder.bucket

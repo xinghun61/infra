@@ -15,7 +15,7 @@ from model.flake.flake import Flake
 from model.flake.flake import TAG_DELIMITER
 from model.flake.flake import TestLocation as NDBTestLocation
 from model.flake.flake_type import FlakeType
-from waterfall.test.wf_testcase import WaterfallTestCase
+from model.wf_build import WfBuild
 from services import bigquery_helper
 from services import step_util
 from services.flake_detection import detect_flake_occurrences
@@ -23,6 +23,8 @@ from services.flake_detection.detect_flake_occurrences import (
     QueryAndStoreFlakes)
 from services.flake_detection.detect_flake_occurrences import (
     _UpdateFlakeMetadata)
+from waterfall import build_util
+from waterfall.test.wf_testcase import WaterfallTestCase
 
 
 class DetectFlakesOccurrencesTest(WaterfallTestCase):
@@ -706,6 +708,36 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
     all_flake_occurrences = FlakeOccurrence.query().fetch()
     self.assertEqual(4, len(all_flake_occurrences))
+
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
+  @mock.patch.object(
+      detect_flake_occurrences,
+      '_GetChromiumDirectoryToComponentMapping',
+      return_value={})
+  @mock.patch.object(
+      build_util,
+      'GetBuilderInfoForLUCIBuild',
+      return_value=('chromium', 'try'))
+  def testStoreDetectedCIFlakes(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.build_id = '87654321'
+    build.put()
+
+    flaky_tests = {'s': ['t1', 't2']}
+
+    detect_flake_occurrences.StoreDetectedCIFlakes(master_name, builder_name,
+                                                   build_number, flaky_tests)
+
+    flake = Flake.Get('chromium', 'normalized_step_name', 't1')
+    self.assertIsNotNone(flake)
+
+    occurrences = FlakeOccurrence.query(ancestor=flake.key).fetch()
+    self.assertEqual(1, len(occurrences))
+    self.assertEqual(FlakeType.CI_FAILED_STEP, occurrences[0].flake_type)
 
   @mock.patch.object(
       step_util, 'GetCanonicalStepName', return_value='webgl_conformance_tests')
