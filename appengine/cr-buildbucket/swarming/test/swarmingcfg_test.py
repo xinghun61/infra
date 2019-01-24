@@ -258,7 +258,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
             ),
             'builder b2: cache #4: path: cannot contain ".."',
             'builder b2: cache #5: path: cannot start with "/"',
-            'builder b2: priority: must be in [0, 200] range; got 300',
+            'builder b2: priority: must be in [20, 255] range; got 300',
         ],
     )
 
