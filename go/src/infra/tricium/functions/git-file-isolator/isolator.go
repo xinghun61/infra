@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"io/ioutil"
 	"log"
@@ -60,10 +61,12 @@ func main() {
 			"--no-recurse-submodules", input.Repository, input.Ref),
 	}
 	for _, c := range cmds {
+		var stderr bytes.Buffer
 		c.Dir = tempDir
+		c.Stderr = &stderr
 		log.Printf("Running cmd: %s", c.Args)
 		if err := c.Run(); err != nil {
-			log.Fatalf("Failed to run command: %v, cmd: %s", err, c.Args)
+			log.Fatalf("Failed to run command %s\n%v\nStderr: %s", c.Args, err, stderr.String())
 		}
 	}
 
