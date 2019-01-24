@@ -298,6 +298,18 @@ wheel: <
 
 * *universal*
 
+### 18.2.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/attrs-py2_py3"
+  version: "version:18.2.0"
+>
+```
+
+
+* *universal*
+
 ## **backport_ipaddress**
 
 ### 0.1
