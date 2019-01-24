@@ -38,6 +38,16 @@ def _fix_builds(build_keys):  # pragma: no cover
     pass
 
 
+EXCLUDE_TAGS = {
+    'build_address',
+    'builder',
+    'swarming_dimension',
+    'swarming_hostname',
+    'swarming_tag',
+    'swarming_task_id',
+}
+
+
 @ndb.transactional_tasklet
 def _fix_build_async(build_key):  # pragma: no cover
   build = yield build_key.get_async()
@@ -45,9 +55,8 @@ def _fix_build_async(build_key):  # pragma: no cover
     return
 
   old = copy.deepcopy(build.proto)
-  tags, gitiles_commit, gerrit_changes = api_common.parse_v1_tags(
-      build.initial_tags
-  )
+  tags, gitiles_commit, gerrit_changes = api_common.parse_v1_tags(build.tags)
+  tags = [t for t in tags if t.key not in EXCLUDE_TAGS]
 
   new = build.proto
   new.ClearField('tags')
