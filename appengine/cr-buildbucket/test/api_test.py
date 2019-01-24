@@ -327,13 +327,24 @@ class V1ApiTest(testing.EndpointsTestCase):
   def test_retry(self, add_async):
     orig_build = test_util.build(
         id=1,
-        input=dict(properties=bbutil.dict_to_struct({'foo': 'bar'})),
+        input=dict(
+            properties=bbutil.dict_to_struct({'foo': 'bar'}),
+            gitiles_commit=dict(
+                host='gitiles.example.com',
+                project='chromium/src',
+                id='a' * 40,
+            ),
+        ),
     )
+    orig_build.parameters.pop('changes')
     orig_build.put()
 
     retried_build = test_util.build(
         id=2,
-        input=dict(properties=bbutil.dict_to_struct({'foo': 'bar'})),
+        input=dict(
+            properties=orig_build.proto.input.properties,
+            gitiles_commit=orig_build.proto.input.gitiles_commit,
+        ),
     )
     retried_build.retry_of = 1
     add_async.return_value = future(retried_build)
@@ -361,6 +372,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                 properties=orig_build.proto.input.properties,
                 tags=orig_build.proto.tags,
                 canary=common_pb2.NO,
+                gitiles_commit=orig_build.proto.input.gitiles_commit,
             ),
             parameters={model.BUILDER_PARAMETER: 'linux'},
             lease_expiration_date=None,

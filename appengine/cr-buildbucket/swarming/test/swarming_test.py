@@ -637,6 +637,8 @@ class SwarmingTest(BaseTest):
         ),
         input=dict(properties=bbutil.dict_to_struct({'a': 'b'})),
     )
+    build.tags = ['builder:linux', 'buildset:1']
+
     build.parameters['changes'] = [{
         'author': {'email': 'bob@example.com'},
         'repo_url': 'https://chromium.googlesource.com/chromium/src',
@@ -717,10 +719,14 @@ class SwarmingTest(BaseTest):
                         'created_by':
                             'anonymous:anonymous',
                         'created_ts':
-                            utils.datetime_to_timestamp(build.create_time),
+                            1448841600000000,
                         'id':
                             '1',
-                        'tags': ['buildset:1'],
+                        'tags': [
+                            'build_address:luci.chromium.try/linux/1',
+                            'builder:linux',
+                            'buildset:1',
+                        ],
                     },
                 },
                 'buildername': 'linux',
@@ -813,7 +819,7 @@ class SwarmingTest(BaseTest):
             'projects/testbed-test/topics/swarming',
         'pubsub_userdata':
             json.dumps({
-                'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+                'created_ts': 1448841600000000,
                 'swarming_hostname': 'swarming.example.com',
                 'build_id': 1L,
             },
@@ -1060,6 +1066,7 @@ class SwarmingTest(BaseTest):
     )
 
     build = test_util.build(id=1)
+    build.tags = ['builder:linux', 'buildset:1']
     build.canary_preference = model.CanaryPreference.CANARY
 
     self.json_response = {
@@ -1127,10 +1134,14 @@ class SwarmingTest(BaseTest):
                         'created_by':
                             'anonymous:anonymous',
                         'created_ts':
-                            utils.datetime_to_timestamp(build.create_time),
+                            1448841600000000,
                         'id':
                             '1',
-                        'tags': ['buildset:1'],
+                        'tags': [
+                            'build_address:luci.chromium.try/linux/1',
+                            'builder:linux',
+                            'buildset:1',
+                        ],
                     },
                 },
                 '$recipe_engine/runtime': {

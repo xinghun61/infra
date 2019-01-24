@@ -51,7 +51,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
           swarming {
             hostname: "swarming.example.com"
             builders {
-              name: "linux_chromium_rel_ng"
+              name: "linux"
               swarming_host: "swarming.example.com"
               category: "Chromium"
               build_numbers: YES
@@ -66,7 +66,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
               auto_builder_dimension: YES
             }
             builders {
-              name: "win_chromium_rel_ng"
+              name: "windows"
               category: "Chromium"
               swarming_host: "swarming.example.com"
             }
@@ -156,7 +156,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'builders': [
                     {
                         'name':
-                            'linux_chromium_rel_ng',
+                            'linux',
                         'category':
                             'Chromium',
                         'properties_json':
@@ -164,12 +164,11 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'swarming_hostname':
                             'swarming.example.com',
                         'swarming_dimensions': [
-                            'baz:baz', 'builder:linux_chromium_rel_ng',
-                            'foo:bar'
+                            'baz:baz', 'builder:linux', 'foo:bar'
                         ],
                     },
                     {
-                        'name': 'win_chromium_rel_ng',
+                        'name': 'windows',
                         'category': 'Chromium',
                         'properties_json': json.dumps({}),
                         'swarming_hostname': 'swarming.example.com',
@@ -214,7 +213,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'builders': [
                     {
                         'name':
-                            'linux_chromium_rel_ng',
+                            'linux',
                         'category':
                             'Chromium',
                         'properties_json':
@@ -222,12 +221,13 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'swarming_hostname':
                             'swarming.example.com',
                         'swarming_dimensions': [
-                            'baz:baz', 'builder:linux_chromium_rel_ng',
-                            'foo:bar'
+                            'baz:baz',
+                            'builder:linux',
+                            'foo:bar',
                         ],
                     },
                     {
-                        'name': 'win_chromium_rel_ng',
+                        'name': 'windows',
                         'category': 'Chromium',
                         'properties_json': json.dumps({}),
                         'swarming_hostname': 'swarming.example.com',
@@ -258,12 +258,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     req = {
         'build_request': {
-            'bucket':
-                'luci.chromium.try',
-            'parameters_json':
-                json.dumps({
-                    model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-                }),
+            'bucket': 'luci.chromium.try',
+            'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
         },
     }
     resp = self.call_api('get_task_def', req).json_body
@@ -283,12 +279,20 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'buildbucket': {
                     'hostname': 'cr-buildbucket.appspot.com',
                     'build': {
-                        'project': 'chromium',
-                        'bucket': 'luci.chromium.try',
-                        'created_by': 'anonymous:anonymous',
-                        'created_ts': 1448841600000000,
-                        'id': '1',
-                        'tags': [],
+                        'project':
+                            'chromium',
+                        'bucket':
+                            'luci.chromium.try',
+                        'created_by':
+                            'anonymous:anonymous',
+                        'created_ts':
+                            1448841600000000,
+                        'id':
+                            '1',
+                        'tags': [
+                            'build_address:luci.chromium.try/linux/1',
+                            'builder:linux',
+                        ],
                     },
                 },
                 '$recipe_engine/runtime': {
@@ -297,7 +301,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 },
                 'foo': 'bar',
                 'baz': 1,
-                'buildername': 'linux_chromium_rel_ng',
+                'buildername': 'linux',
                 'buildnumber': 1,
             }),
             u'-logdog-project',
@@ -321,29 +325,29 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         },
         u'dimensions': [
             {u'key': u'baz', u'value': u'baz'},
-            {u'key': u'builder', u'value': u'linux_chromium_rel_ng'},
+            {u'key': u'builder', u'value': u'linux'},
             {u'key': u'foo', u'value': u'bar'},
         ],
         u'caches': [{
             u'path':
                 u'cache/builder',
             u'name': (
-                u'builder_c7a0b323f25e60c6973918a075aad0b9d7f9c43afe40287662a27'
-                '9d8745874ac'
+                u'builder_ccadafffd20293e0378d1f94d214c63a0f8342d1161454ef0acfa'
+                '0405178106b'
             ),
         }],
     }
     expected_task_def = {
         u'name':
-            u'bb-1-chromium-linux_chromium_rel_ng',
+            u'bb-1-chromium-linux',
         u'tags': [
-            u'build_address:luci.chromium.try/linux_chromium_rel_ng/1',
+            u'build_address:luci.chromium.try/linux/1',
             u'buildbucket_bucket:chromium/try',
             u'buildbucket_build_id:1',
             u'buildbucket_hostname:cr-buildbucket.appspot.com',
             u'buildbucket_template_canary:0',
             u'buildbucket_template_revision:rev',
-            u'builder:linux_chromium_rel_ng',
+            u'builder:linux',
             u'recipe_name:presubmit',
             u'recipe_repository:https://example.com',
         ],
@@ -363,12 +367,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
   def test_get_task_def_bad_request(self):
     req = {
         'build_request': {
-            'bucket':
-                ')))',
-            'parameters_json':
-                json.dumps({
-                    model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-                }),
+            'bucket': ')))',
+            'parameters_json': json.dumps({
+                model.BUILDER_PARAMETER: 'linux',
+            }),
         },
     }
     self.call_api('get_task_def', req, status=400)
@@ -390,25 +392,21 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     req = {
         'build_id': '8982540789124571952',
         'build_request': {
-            'bucket':
-                'secret.bucket',
-            'parameters_json':
-                json.dumps({
-                    model.BUILDER_PARAMETER: 'linux_chromium_rel_ng',
-                }),
+            'bucket': 'secret.bucket',
+            'parameters_json': json.dumps({
+                model.BUILDER_PARAMETER: 'linux',
+            }),
         },
     }
 
     self.call_api('get_task_def', req, status=403)
 
   def test_set_next_build_number(self):
-    seq = sequence.NumberSequence(
-        id='chromium/try/linux_chromium_rel_ng', next_number=10
-    )
+    seq = sequence.NumberSequence(id='chromium/try/linux', next_number=10)
     seq.put()
     req = {
         'bucket': 'luci.chromium.try',
-        'builder': 'linux_chromium_rel_ng',
+        'builder': 'linux',
         'next_number': 20,
     }
 

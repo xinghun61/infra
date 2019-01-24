@@ -316,11 +316,7 @@ def _buildbucket_property(build):
           'created_by': build.created_by.to_bytes(),
           'created_ts': utils.datetime_to_timestamp(build.create_time),
           'id': str(build.key.id()),
-          # Note: this includes only user-specified tags.
-          # It does not include auto-generated tags, such as "swarming_tag".
-          # This is a bit different from Buildbot-Buildbucket integration.
-          # In practice, however, only "buildset" tag is read from this list.
-          'tags': build.initial_tags,
+          'tags': build.tags,
       },
   }
 
@@ -886,6 +882,7 @@ def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
             build.proto.number,
         )
     )
+    build.tags.sort()
 
   build.url = _generate_build_url(settings.milo_hostname, build)
 

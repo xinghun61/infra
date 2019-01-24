@@ -427,28 +427,18 @@ class BuildBucketApi(remote.Service):
 
     check_scheduling_permissions([build.bucket_id])
 
-    # Remove properties from parameters.
-    prop_dict = build.parameters.pop(model.PROPERTIES_PARAMETER, {})
-
     # Prepare v2 request.
     sbr = rpc_pb2.ScheduleBuildRequest(
+        builder=build.proto.builder,
         request_id=request.client_operation_id,
         canary=model.CANARY_PREFERENCE_TO_TRINARY[
             (build.canary_preference or model.CanaryPreference.AUTO)],
-        properties=bbutil.dict_to_struct(prop_dict),
+        properties=build.proto.input.properties,
+        tags=build.proto.tags,
+        gerrit_changes=build.proto.input.gerrit_changes[:],
     )
-
-    # Read builder id.
-    sbr.builder.project, sbr.builder.bucket = config.parse_bucket_id(
-        build.bucket_id
-    )
-    if model.BUILDER_PARAMETER in build.parameters:  # pragma: no branch
-      sbr.builder.builder = build.parameters[model.BUILDER_PARAMETER]
-
-    # Read tags.
-    for t in build.initial_tags:
-      key, value = buildtags.parse(t)
-      sbr.tags.add(key=key, value=value)
+    if build.proto.input.HasField('gitiles_commit'):  # pragma: no branch
+      sbr.gitiles_commit.CopyFrom(build.proto.input.gitiles_commit)
 
     # Read PubSub callback.
     pubsub_callback_auth_token = None
@@ -460,10 +450,14 @@ class BuildBucketApi(remote.Service):
       with _wrap_validation_error():
         validation.validate_notification_config(sbr.notify)
 
+    # Remove properties from parameters.
+    params = build.parameters.copy()
+    params.pop(model.PROPERTIES_PARAMETER, None)
+
     # Create the build.
     build_req = creation.BuildRequest(
         schedule_build_request=sbr,
-        parameters=build.parameters,
+        parameters=params,
         lease_expiration_date=lease_expiration_date,
         retry_of=request.id,
         pubsub_callback_auth_token=pubsub_callback_auth_token,
