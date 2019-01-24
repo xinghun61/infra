@@ -56,8 +56,8 @@ deploy-findit-prod: _deploy_findit
 	@echo "Please also force a re-run of a recent flake analysis on dashboard: "\
 	"https://$(LOCAL_VERSION)-dot-frontend-"\
 	"dot-$(APPID).appspot.com/waterfall/list-flakes"
-	@echo "Ensure that the analyses are run in the new versions and givens " \
-	      "correct results, "
+	@echo "Ensure that the analyses are run in the new versions and give " \
+	      "correct results, " \
 	      "and then set the new version as default for these modules " \
 	      "$(FINDIT_MODULES)."
 	@echo
