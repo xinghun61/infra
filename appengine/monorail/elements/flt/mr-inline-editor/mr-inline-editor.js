@@ -89,6 +89,14 @@ class MrInlineEditor extends Polymer.Element {
     this.cancel();
   }
 
+  /**
+   * Public API for setting content in this component,
+   * currently mostly used for tests.
+   **/
+  setContent(content) {
+    this._displayedContent = content;
+  }
+
   _markupNewContent() {
     const lines = this._displayedContent.trim().split('\n');
     const markedLines = lines.map((line) => {

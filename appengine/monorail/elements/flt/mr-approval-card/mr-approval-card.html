@@ -135,7 +135,7 @@
         title$="[[fieldName]] Survey"
         edit-text="Edit responses"
         placeholder="Survey content and answer"
-        on-save="[[_updateSurvey]]"
+        on-save="_updateSurveyHandler"
       >
         <div class="survey">
           <mr-comment-content content="[[_survey.content]]"></mr-comment-content>

@@ -178,12 +178,6 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
         type: String,
         computed: '_computeStatusIcon(class)',
       },
-      _updateSurvey: {
-        type: Function,
-        value: function() {
-          return this._updateSurveyHandler.bind(this);
-        },
-      },
     };
   }
 
@@ -378,11 +372,12 @@ class MrApprovalCard extends ReduxMixin(Polymer.Element) {
     }
   }
 
-  _updateSurveyHandler(content, sendEmail) {
+  _updateSurveyHandler(evt) {
+    if (!evt || !evt.detail) return;
     this._updateApproval({
-      commentContent: content,
+      commentContent: evt.detail.commentContent,
       isDescription: true,
-      sendEmail: sendEmail,
+      sendEmail: evt.detail.sendEmail,
     });
   }
 
