@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock/testclock"
 
@@ -100,7 +101,7 @@ func TestFeedback(t *testing.T) {
 		So(ds.Put(ctx, selection2), ShouldBeNil)
 
 		Convey("Feedback request for unknown category", func() {
-			st, et, _ := parseTimeRange(ctx, "", "")
+			st, et, _ := parseTimeRange(ctx, nil, nil)
 			count, reports, err := feedback(ctx, "Hello", st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 0)
@@ -108,7 +109,7 @@ func TestFeedback(t *testing.T) {
 		})
 
 		Convey("Feedback request for known analyzer name", func() {
-			st, et, _ := parseTimeRange(ctx, "", "")
+			st, et, _ := parseTimeRange(ctx, nil, nil)
 			count, reports, err := feedback(ctx, functionName, st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 2)
@@ -123,7 +124,7 @@ func TestFeedback(t *testing.T) {
 		})
 
 		Convey("Feedback request for subcategory", func() {
-			st, et, _ := parseTimeRange(ctx, "", "")
+			st, et, _ := parseTimeRange(ctx, nil, nil)
 			count, reports, err := feedback(ctx, category1, st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 1)
@@ -140,33 +141,33 @@ func TestParseTimeRange(t *testing.T) {
 		ctx, _ = testclock.UseTime(ctx, now)
 
 		Convey("No start or end specified", func() {
-			st, et, err := parseTimeRange(ctx, "", "")
+			st, et, err := parseTimeRange(ctx, nil, nil)
 			So(st, ShouldEqual, epoch)
 			So(et, ShouldEqual, now)
 			So(err, ShouldBeNil)
 		})
 
 		Convey("Both start and end time specified", func() {
-			st, et, err := parseTimeRange(ctx, "2016-11-05T00:00:00Z", "2016-11-08T00:00:00Z")
+			start := time.Date(2016, 11, 5, 0, 0, 0, 0, time.UTC)
+			end := time.Date(2016, 11, 8, 0, 0, 0, 0, time.UTC)
+			startTimestamp, err := ptypes.TimestampProto(start)
 			So(err, ShouldBeNil)
-			So(st, ShouldEqual, time.Date(2016, 11, 5, 0, 0, 0, 0, time.UTC))
-			So(et, ShouldEqual, time.Date(2016, 11, 8, 0, 0, 0, 0, time.UTC))
-		})
-
-		Convey("Dates without times", func() {
-			_, _, err := parseTimeRange(ctx, "2016-11-05", "2016-11-08")
-			So(err, ShouldNotBeNil)
-		})
-
-		Convey("Sub-second precisions", func() {
-			st, et, err := parseTimeRange(ctx, "2016-11-05T00:00:00.000Z", "2016-11-08T00:00:00.000Z")
+			endTimestamp, err := ptypes.TimestampProto(end)
 			So(err, ShouldBeNil)
-			So(st, ShouldEqual, time.Date(2016, 11, 5, 0, 0, 0, 0, time.UTC))
-			So(et, ShouldEqual, time.Date(2016, 11, 8, 0, 0, 0, 0, time.UTC))
+			st, et, err := parseTimeRange(ctx, startTimestamp, endTimestamp)
+			So(err, ShouldBeNil)
+			So(st, ShouldEqual, start)
+			So(et, ShouldEqual, end)
 		})
 
 		Convey("Reversed time", func() {
-			_, _, err := parseTimeRange(ctx, "2016-11-08T00:00:00Z", "2016-11-05T00:00:00Z")
+			start := time.Date(2016, 11, 8, 0, 0, 0, 0, time.UTC)
+			end := time.Date(2016, 11, 5, 0, 0, 0, 0, time.UTC)
+			startTimestamp, err := ptypes.TimestampProto(start)
+			So(err, ShouldBeNil)
+			endTimestamp, err := ptypes.TimestampProto(end)
+			So(err, ShouldBeNil)
+			_, _, err = parseTimeRange(ctx, startTimestamp, endTimestamp)
 			So(err, ShouldNotBeNil)
 		})
 	})

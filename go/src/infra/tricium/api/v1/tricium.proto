@@ -6,6 +6,7 @@ syntax = "proto3";
 
 package tricium;
 
+import "google/protobuf/timestamp.proto";
 import "infra/tricium/api/v1/data.proto";
 import "infra/tricium/api/v1/platform.proto";
 
@@ -251,19 +252,18 @@ message FeedbackRequest {
   // Start of time period to report feedback for.
   //
   // Feedback for comments created from this time (inclusive) will be included.
-  // Must be before end_time. The format for both start_time and end_time is
-  // RFC 3339, e.g. "2006-01-02T08:04:05Z".
+  // Must be before end_time.
   //
-  // Optional field. Defaults to epoch start of time (Jan 1, 1970).
-  string start_time = 2;
+  // Optional field. If not specified, this means "go as far back as possible".
+  google.protobuf.Timestamp start_time = 2;
 
   // End of time period to report feedback for.
   //
-  // Feedback from comments created before this time will be included. Must be
-  // after start_time.
+  // Feedback for comments created up until this time (exclusive) will be included.
+  // Must be after start_time.
   //
   // Optional field. Defaults to now.
-  string end_time = 3;
+  google.protobuf.Timestamp end_time = 3;
 }
 
 message FeedbackResponse {

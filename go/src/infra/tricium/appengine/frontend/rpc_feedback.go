@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
@@ -25,6 +27,7 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 		err = grpcutil.GRPCifyAndLogErr(c, err)
 	}()
 	logging.Fields{
+		"project":   req.Project,
 		"category":  req.Category,
 		"startTime": req.StartTime,
 		"endTime":   req.EndTime,
@@ -45,30 +48,28 @@ func (r *TriciumServer) Feedback(c context.Context, req *tricium.FeedbackRequest
 
 // parseTimeRange returns the parsed time range and checks for validity.
 //
-// Start and end time can be empty, in which case the intent is to have
+// Start and end time can be nil, in which case the intent is to have
 // an open-ended range. No start or end is meant to mean "all time".
-//
-// The returned error should be tagged for gRPC by the caller.
-func parseTimeRange(c context.Context, start, end string) (time.Time, time.Time, error) {
-	stime := time.Unix(0, 0).UTC() // Beginning of Unix time.
-	etime := clock.Now(c).UTC()
+func parseTimeRange(c context.Context, startTimestamp, endTimestamp *timestamp.Timestamp) (time.Time, time.Time, error) {
+	startTime := time.Unix(0, 0).UTC()
+	endTime := clock.Now(c).UTC()
 	var err error
-	if start != "" {
-		stime, err = time.Parse(time.RFC3339, start)
+	if startTimestamp != nil {
+		startTime, err = ptypes.Timestamp(startTimestamp)
 		if err != nil {
-			return stime, etime, errors.Annotate(err, "invalid start_time").Err()
+			return startTime, endTime, errors.Annotate(err, "failed to convert start_time").Err()
 		}
 	}
-	if end != "" {
-		etime, err = time.Parse(time.RFC3339, end)
+	if endTimestamp != nil {
+		endTime, err = ptypes.Timestamp(endTimestamp)
 		if err != nil {
-			return stime, etime, errors.Annotate(err, "invalid end_time").Err()
+			return startTime, endTime, errors.Annotate(err, "failed to convert end_time").Err()
 		}
 	}
-	if etime.Before(stime) {
-		return stime, etime, errors.New("start_time/end_time out of order")
+	if endTime.Before(startTime) {
+		return startTime, endTime, errors.New("start_time/end_time out of order")
 	}
-	return stime, etime, nil
+	return startTime, endTime, nil
 }
 
 func feedback(c context.Context, category string, stime, etime time.Time) (int, int, error) {
