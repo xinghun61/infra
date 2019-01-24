@@ -188,9 +188,19 @@ func toKeyvalMap(keyvals []string) (map[string]string, error) {
 
 func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeoutMins int) *swarming.SwarmingRpcsTaskSlice {
 	return &swarming.SwarmingRpcsTaskSlice{
-		// TODO(akeshet): Determine correct expiration time.
-		ExpirationSecs:  30,
-		WaitForCapacity: false,
+		// We want all slices to wait, at least a little while, for bots with
+		// metching dimensions.
+		// For slice 0: This allows the task to try to re-use provisionable
+		// labels that get set by previous tasks with the same label that are
+		// about to finish.
+		// For slice 1: This allows the task to wait for devices to get
+		// repaired, if there are no devices with dut_state:ready.
+		WaitForCapacity: true,
+		// Slice 0 should have a fairly short expiration time, to reduce
+		// overhead for tasks that are the first ones enqueue with a particular
+		// provisionable label. This value will be overwritten for the final
+		// slice of a task.
+		ExpirationSecs: 30,
 		Properties: &swarming.SwarmingRpcsTaskProperties{
 			Command:              command,
 			Dimensions:           dimensions,
@@ -202,6 +212,8 @@ func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, 
 // getSlices generates and returns the set of swarming task slices for the given test task.
 func getSlices(taskName string, clientTest bool, annotationURL string, provisionableDimensions []string,
 	dimensions []string, keyvals map[string]string, testArgs string, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
+
 	basePairs, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
@@ -213,17 +225,21 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 
 	s0cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, nil, testArgs)
 	s0Dims := append(basePairs, provisionablePairs...)
-	s0 := taskSlice(s0cmd, s0Dims, timeoutMins)
+	slices[0] = taskSlice(s0cmd, s0Dims, timeoutMins)
 
-	if len(provisionableDimensions) == 0 {
-		return []*swarming.SwarmingRpcsTaskSlice{s0}, nil
+	// Note: This is the common case.
+	if len(provisionableDimensions) != 0 {
+		s1cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, provisionableDimensions, testArgs)
+		s1Dims := basePairs
+		slices = append(slices, taskSlice(s1cmd, s1Dims, timeoutMins))
 	}
 
-	s1cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, provisionableDimensions, testArgs)
-	s1Dims := basePairs
-	s1 := taskSlice(s1cmd, s1Dims, timeoutMins)
+	finalSlice := slices[len(slices)-1]
+	// TODO(akeshet): Determine the correct expiration time, or make it a
+	// commandline argument.
+	finalSlice.ExpirationSecs = int64(timeoutMins * 60)
 
-	return []*swarming.SwarmingRpcsTaskSlice{s0, s1}, nil
+	return slices, nil
 }
 
 // skylabWorkerCommand returns a commandline slice for skylab_swarming_worker, as it should
