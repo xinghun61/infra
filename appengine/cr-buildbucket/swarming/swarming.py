@@ -297,6 +297,23 @@ def _prepare_builder_config(builder_cfg, swarming_param):
 
 
 def _buildbucket_property(build):
+  """Returns value for '$recipe_engine/buildbucket' build property.
+
+  Code that reads it:
+  https://cs.chromium.org/chromium/infra/recipes-py/recipe_modules/buildbucket
+  """
+  # Exclude some fields from the property.
+  export = copy.deepcopy(build.proto)
+  export.ClearField('status')
+  export.ClearField('update_time')
+  export.input.ClearField('properties')
+  export.infra.buildbucket.ClearField('requested_properties')
+  return {
+      'build': json_format.MessageToDict(export),
+  }
+
+
+def _buildbucket_property_legacy(build):
   """Returns value for 'buildbucket' build property.
 
   The format of the returned value corresponds the one used in
@@ -308,6 +325,7 @@ def _buildbucket_property(build):
   [1]:
   https://chromium.googlesource.com/chromium/tools/build/+/82373bb503dca5f91cd0988d49df38394fdf8b0b/scripts/master/buildbucket/integration.py#329
   """
+  # TODO(crbug.com/859231): remove this function.
   return {
       'hostname': app_identity.get_default_version_hostname(),
       'build': {
@@ -541,8 +559,8 @@ def _setup_recipes(build, builder_cfg, params):
   if 'buildername' not in props:
     props['buildername'] = builder_cfg.name
 
-  # TODO(nodir): use v2 format here.
-  props['buildbucket'] = _buildbucket_property(build)
+  props['$recipe_engine/buildbucket'] = _buildbucket_property(build)
+  props['buildbucket'] = _buildbucket_property_legacy(build)
 
   assert isinstance(build.experimental, bool)
   props.get_or_create_struct('$recipe_engine/runtime').update({

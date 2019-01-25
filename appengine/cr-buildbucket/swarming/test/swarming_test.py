@@ -734,6 +734,32 @@ class SwarmingTest(BaseTest):
                 'predefined-property': 'x',
                 'predefined-property-bool': True,
                 'repository': 'https://chromium.googlesource.com/chromium/src',
+                '$recipe_engine/buildbucket': {
+                    'build': {
+                        'id': '1',
+                        'builder': {
+                            'project': 'chromium',
+                            'bucket': 'try',
+                            'builder': 'linux',
+                        },
+                        'number': 1,
+                        'tags': [{'value': '1', 'key': 'buildset'}],
+                        'infra': {
+                            'buildbucket': {
+                                'serviceConfigRevision': 'template_rev'
+                            },
+                            'recipe': {'name': 'recipe'},
+                            'swarming': {
+                                'hostname': 'swarming.example.com',
+                                'taskId': 'deadbeef',
+                                'taskServiceAccount': 'service@example.com'
+                            },
+                        },
+                        'createdBy': 'anonymous:anonymous',
+                        'input': {},
+                        'createTime': '2015-11-30T00:00:00Z',
+                    },
+                },
                 '$recipe_engine/runtime': {
                     'is_experimental': False,
                     'is_luci': True,
@@ -1146,6 +1172,33 @@ class SwarmingTest(BaseTest):
                             'builder:linux',
                             'buildset:1',
                         ],
+                    },
+                },
+                '$recipe_engine/buildbucket': {
+                    'build': {
+                        'id': '1',
+                        'builder': {
+                            'project': 'chromium',
+                            'bucket': 'try',
+                            'builder': 'linux',
+                        },
+                        'number': 1,
+                        'tags': [{'value': '1', 'key': 'buildset'}],
+                        'infra': {
+                            'buildbucket': {
+                                'serviceConfigRevision': 'template_rev',
+                                'canary': True,
+                            },
+                            'recipe': {'name': 'recipe'},
+                            'swarming': {
+                                'hostname': 'swarming.example.com',
+                                'taskId': 'deadbeef',
+                                'taskServiceAccount': 'service@example.com'
+                            },
+                        },
+                        'createdBy': 'anonymous:anonymous',
+                        'input': {},
+                        'createTime': '2015-11-30T00:00:00Z',
                     },
                 },
                 '$recipe_engine/runtime': {

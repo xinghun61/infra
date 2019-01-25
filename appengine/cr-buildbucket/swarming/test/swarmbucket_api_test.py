@@ -295,6 +295,24 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         ],
                     },
                 },
+                '$recipe_engine/buildbucket': {
+                    'build': {
+                        'builder': {
+                            'project': 'chromium',
+                            'bucket': 'try',
+                            'builder': 'linux',
+                        },
+                        'number': 1,
+                        'infra': {
+                            'buildbucket': {'serviceConfigRevision': 'rev'},
+                            'recipe': {'name': 'presubmit'},
+                            'swarming': {'hostname': 'swarming.example.com'},
+                        },
+                        'createdBy': 'anonymous:anonymous',
+                        'input': {},
+                        'createTime': '2015-11-30T00:00:00Z',
+                    },
+                },
                 '$recipe_engine/runtime': {
                     'is_experimental': False,
                     'is_luci': True,
