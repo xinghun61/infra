@@ -94,6 +94,29 @@ func mainInner(a *args) error {
 	ctx = gologger.StdConfig.Use(ctx)
 	b := swarming.NewBotFromEnv()
 	log.Printf("Swarming bot config: %#v", b)
+	var annotWriter io.Writer
+	annotWriter = os.Stdout
+	if a.logdogAnnotationURL != "" {
+		// Set up FIFO, pipe, and goroutines like so:
+		//
+		//        worker -> LogDog pipe
+		//                      ^
+		// lucifer -> FIFO -go-/
+		//
+		// Both the worker and Lucifer need to write to LogDog.
+		log.Printf("Setting up LogDog stream")
+		streamAddr, err := types.ParseURL(a.logdogAnnotationURL)
+		if err != nil {
+			return errors.Wrapf(err, "invalid LogDog annotation URL %s",
+				a.logdogAnnotationURL)
+		}
+		lc, err := openLogDog(ctx, streamAddr)
+		if err != nil {
+			return err
+		}
+		defer lc.Close()
+		annotWriter = lc.Stdout()
+	}
 	return harness.Run(b,
 		func(b *swarming.Bot, i *harness.Info) error {
 			ta := lucifer.TaskArgs{
@@ -101,30 +124,7 @@ func mainInner(a *args) error {
 				GCPProject: gcpProject,
 				ResultsDir: i.ResultsDir,
 			}
-			var annotWriter io.Writer
-			annotWriter = os.Stdout
-
 			if a.logdogAnnotationURL != "" {
-				// Set up FIFO, pipe, and goroutines like so:
-				//
-				//        worker -> LogDog pipe
-				//                      ^
-				// lucifer -> FIFO -go-/
-				//
-				// Both the worker and Lucifer need to write to LogDog.
-				log.Printf("Setting up LogDog stream")
-				streamAddr, err := types.ParseURL(a.logdogAnnotationURL)
-				if err != nil {
-					return errors.Wrapf(err, "invalid LogDog annotation URL %s",
-						a.logdogAnnotationURL)
-				}
-				lc, err := openLogDog(ctx, streamAddr)
-				if err != nil {
-					return err
-				}
-				defer lc.Close()
-				annotWriter = lc.Stdout()
-
 				fifoPath := filepath.Join(i.ResultsDir, "logdog.fifo")
 				fc, err := fifo.NewCopier(annotWriter, fifoPath)
 				if err != nil {
