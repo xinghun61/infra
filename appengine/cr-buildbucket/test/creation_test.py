@@ -107,6 +107,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.key.id())
 
     build = build.key.get()
+    self.assertEqual(build.proto.id, build.key.id())
     self.assertEqual(build.proto.builder, builder_id)
     self.assertEqual(
         build.proto.created_by,

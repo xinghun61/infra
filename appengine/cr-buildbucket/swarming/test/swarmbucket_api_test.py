@@ -297,6 +297,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 },
                 '$recipe_engine/buildbucket': {
                     'build': {
+                        'id': '1',
                         'builder': {
                             'project': 'chromium',
                             'bucket': 'try',

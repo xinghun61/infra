@@ -387,7 +387,6 @@ def schedule_build_multi(batch):
       # Since this is a new build, no other entities need to be loaded
       # and we use model.Build.proto directly.
       rr.response.schedule_build.MergeFrom(build.proto)
-      rr.response.schedule_build.id = build.key.id()
 
 
 # Maps an rpc_pb2.BatchRequest.Request field name to an async function

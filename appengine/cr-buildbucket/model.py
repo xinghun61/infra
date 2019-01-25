@@ -148,7 +148,6 @@ class Build(ndb.Model):
   # legacy.
   #
   # Does not include:
-  #   id: stored in __key__
   #   output.properties: see BuildOutputProperties
   #   steps: see BuildSteps.
   #
@@ -501,6 +500,7 @@ def builds_to_protos_async(
     out_props_futs = itertools.repeat(None)
 
   for b, steps_fut, out_props_fut in zip(builds, steps_futs, out_props_futs):
+    # Old builds do not have proto.id
     b.proto.id = b.key.id()
 
     if steps_fut:

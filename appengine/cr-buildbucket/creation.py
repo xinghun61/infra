@@ -100,7 +100,7 @@ class BuildRequest(_BuildRequestBase):
     bid = self.schedule_build_request.builder
     return config.format_bucket_id(bid.project, bid.bucket)
 
-  def create_build_proto(self, created_by, now):
+  def create_build_proto(self, build_id, created_by, now):
     """Converts the request to a build_pb2.Build.
 
     Assumes self is valid.
@@ -108,6 +108,7 @@ class BuildRequest(_BuildRequestBase):
     sbr = self.schedule_build_request
 
     build_proto = build_pb2.Build(
+        id=build_id,
         builder=sbr.builder,
         tags=sbr.tags,
         status=common_pb2.SCHEDULED,
@@ -140,7 +141,7 @@ class BuildRequest(_BuildRequestBase):
     """
     sbr = self.schedule_build_request
 
-    build_proto = self.create_build_proto(created_by, now)
+    build_proto = self.create_build_proto(build_id, created_by, now)
 
     tags = {buildtags.unparse(t.key, t.value) for t in build_proto.tags}
     # For backward compatibility, add commit/cl/builder-based tags.
