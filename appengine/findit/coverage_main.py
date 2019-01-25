@@ -24,7 +24,12 @@ if appengine_util.IsInProductionApp():
 code_coverage_frontend_handler_mappings = [
     # TODO(crbug.com/924573): Migrate to '.*/coverage/api/coverage-data'.
     ('/coverage/api/coverage-data', code_coverage.ServeCodeCoverageData),
-    ('.*/coverage.*', code_coverage.ServeCodeCoverageData),
+    # These mappings are separated so that ts_mon data (e.g. latency) is
+    # groupable by view. (instead of a single entry like .*/coverage.*)
+    ('.*/coverage', code_coverage.ServeCodeCoverageData),
+    ('.*/coverage/component', code_coverage.ServeCodeCoverageData),
+    ('.*/coverage/dir', code_coverage.ServeCodeCoverageData),
+    ('.*/coverage/file', code_coverage.ServeCodeCoverageData),
 ]
 code_coverage_frontend_web_application = webapp2.WSGIApplication(
     code_coverage_frontend_handler_mappings, debug=False)
