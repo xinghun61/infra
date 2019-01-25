@@ -110,7 +110,6 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		return nil, err
 	}
 
-	// TODO(akeshet): Add API to Scheduler so we can decouple from the proto representation.
 	sProto := sp.Scheduler.ToProto()
 	runningCount, idleCount := 0, 0
 	running := make([]*qscheduler.InspectPoolResponse_RunningTask, 0, len(sProto.State.Workers))
