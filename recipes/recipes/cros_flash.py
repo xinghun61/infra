@@ -48,6 +48,9 @@ CROS_SSH_PASSWORD = 'test0000'
 # Path to an RSA key pair used for SSH auth with the DUT.
 SWARMING_BOT_SSH_ID = '/b/id_rsa'
 
+# Branch to sync the local ChromeOS checkout to.
+CROS_BRANCH = 'release-R72-11316.B'
+
 
 def RunSteps(api):
   gs_image_bucket = api.properties.get('gs_image_bucket')
@@ -93,7 +96,7 @@ def RunSteps(api):
     # Move into the named cache, and fetch a full ChromiumOS checkout.
     cros_checkout_path = api.path['cache'].join('builder')
     with api.context(cwd=cros_checkout_path):
-      api.chromite.checkout(repo_sync_args=['-j4'])
+      api.chromite.checkout(repo_sync_args=['-j4'], branch=CROS_BRANCH)
 
       # Pass in --nouse-image below so the chroot is simply encased in a dir.
       # It'll otherwise try creating and mounting an image file (which can be a
