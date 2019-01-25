@@ -1920,6 +1920,18 @@ wheel: <
 
 * *universal*
 
+### 4.1.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pytest-py2_py3"
+  version: "version:4.1.1"
+>
+```
+
+
+* *universal*
+
 ## **pytest-cov**
 
 ### 2.5.1
@@ -1928,6 +1940,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/pytest-cov-py2_py3"
   version: "version:2.5.1"
+>
+```
+
+
+* *universal*
+
+### 2.6.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pytest-cov-py2_py3"
+  version: "version:2.6.1"
 >
 ```
 
@@ -2043,6 +2067,30 @@ wheel: <
 * *linux-mips*
 * *linux-mips64*
 * *linux-mipsel*
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
+* *windows-x64*
+* *windows-x86*
+
+### 1.9.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/scandir/${vpython_platform}"
+  version: "version:1.9.0"
+>
+```
+
+
+* *linux-arm64*
+* *linux-armv6*
+* *linux-mips*
+* *linux-mips64*
+* *linux-mipsel*
+* *mac-x64*
 * *manylinux-x64*
 * *manylinux-x64-ucs2*
 * *manylinux-x86*
