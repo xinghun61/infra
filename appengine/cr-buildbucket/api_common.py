@@ -19,48 +19,6 @@ import logging
 import model
 
 
-def parse_v1_tags(v1_tags):  # pragma: no cover
-  """Parses V1 tags.
-
-  TODO(nodir): move to api.py and remove "pragma: no cover".
-  This function is in api_common.py only because fix_builds.py needs it
-  temporarily, and presubmit does not accept cyclic imports.
-
-  Returns a tuple of:
-    v2_tags: list of StringPair
-    gitiles_commit: common_pb2.GitilesCommit or None
-    gerrit_changes: list of common_pb2.GerritChange.
-  """
-  v2_tags = []
-  gitiles_commit = None
-  gitiles_ref = None
-  gerrit_changes = []
-
-  for t in v1_tags:
-    key, value = buildtags.parse(t)
-
-    if key == 'gitiles_ref':
-      gitiles_ref = value
-      continue
-
-    if key == buildtags.BUILDSET_KEY:
-      gitiles_commit = buildtags.parse_gitiles_commit_buildset(value)
-      if gitiles_commit:
-        continue
-
-      cl = buildtags.parse_gerrit_change_buildset(value)
-      if cl:
-        gerrit_changes.append(cl)
-        continue
-
-    v2_tags.append(common_pb2.StringPair(key=key, value=value))
-
-  if gitiles_commit and gitiles_ref:
-    gitiles_commit.ref = gitiles_ref
-
-  return v2_tags, gitiles_commit, gerrit_changes
-
-
 def format_luci_bucket(bucket_id):
   """Returns V1 luci bucket name, e.g. "luci.chromium.try"."""
   return 'luci.%s.%s' % config.parse_bucket_id(bucket_id)

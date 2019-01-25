@@ -198,43 +198,56 @@ class V1ApiTest(testing.EndpointsTestCase):
     buildset = 'patch/gerrit/gerrit.example.com/1234/5'
     buildset_tag = 'buildset:' + buildset
 
-    cl = common_pb2.GerritChange(
-        host='gerrit.example.com',
-        change=1234,
-        patchset=5,
+    props = {'patch_project': 'repo'}
+    expected_sbr = rpc_pb2.ScheduleBuildRequest(
+        builder=dict(
+            project='chromium',
+            bucket='try',
+            builder='linux',
+        ),
+        gerrit_changes=[
+            dict(
+                host='gerrit.example.com',
+                project='repo',
+                change=1234,
+                patchset=5,
+            )
+        ],
+        tags=[dict(key='t', value='0')],
+        request_id='42',
+        properties=bbutil.dict_to_struct(props),
     )
+    expected_request = creation.BuildRequest(
+        schedule_build_request=expected_sbr,
+        parameters={model.BUILDER_PARAMETER: 'linux'},
+    )
+
     build = test_util.build(
         id=1,
-        input=dict(gerrit_changes=[cl]),
-        tags=[dict(key='t', value='0')],
+        input=dict(
+            gerrit_changes=expected_sbr.gerrit_changes,
+            properties=expected_sbr.properties,
+        ),
+        tags=expected_sbr.tags,
     )
     build.tags.append(buildset_tag)
     build.tags.sort()
     add_async.return_value = future(build)
 
     req = {
-        'client_operation_id': '42',
-        'bucket': 'luci.chromium.try',
+        'client_operation_id':
+            '42',
+        'bucket':
+            'luci.chromium.try',
         'tags': [buildset_tag, 't:0'],
-        'parameters_json': json.dumps({model.BUILDER_PARAMETER: 'linux'}),
+        'parameters_json':
+            json.dumps({
+                model.BUILDER_PARAMETER: 'linux',
+                model.PROPERTIES_PARAMETER: props,
+            }),
     }
     resp = self.call_api('put', req).json_body
-    add_async.assert_called_once_with(
-        creation.BuildRequest(
-            schedule_build_request=rpc_pb2.ScheduleBuildRequest(
-                builder=dict(
-                    project='chromium',
-                    bucket='try',
-                    builder='linux',
-                ),
-                gerrit_changes=[cl],
-                tags=[dict(key='t', value='0')],
-                request_id='42',
-                properties=dict(),
-            ),
-            parameters={model.BUILDER_PARAMETER: 'linux'},
-        )
-    )
+    add_async.assert_called_once_with(expected_request)
     self.assertEqual(resp['build']['id'], '1')
     self.assertIn(buildset_tag, resp['build']['tags'])
     self.assertIn('t:0', resp['build']['tags'])

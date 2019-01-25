@@ -106,6 +106,44 @@ class BucketMessage(messages.Message):
   error = messages.MessageField(ErrorMessage, 10)
 
 
+def parse_v1_tags(v1_tags):
+  """Parses V1 tags.
+
+  Returns a tuple of:
+    v2_tags: list of StringPair
+    gitiles_commit: common_pb2.GitilesCommit or None
+    gerrit_changes: list of common_pb2.GerritChange.
+  """
+  v2_tags = []
+  gitiles_commit = None
+  gitiles_ref = None
+  gerrit_changes = []
+
+  for t in v1_tags:
+    key, value = buildtags.parse(t)
+
+    if key == 'gitiles_ref':
+      gitiles_ref = value
+      continue
+
+    if key == buildtags.BUILDSET_KEY:
+      gitiles_commit = buildtags.parse_gitiles_commit_buildset(value)
+      if gitiles_commit:
+        continue
+
+      cl = buildtags.parse_gerrit_change_buildset(value)
+      if cl:
+        gerrit_changes.append(cl)
+        continue
+
+    v2_tags.append(common_pb2.StringPair(key=key, value=value))
+
+  if gitiles_commit and gitiles_ref:
+    gitiles_commit.ref = gitiles_ref
+
+  return v2_tags, gitiles_commit, gerrit_changes
+
+
 def put_request_message_to_build_request(put_request):
   """Converts PutRequest to BuildRequest.
 
@@ -142,13 +180,17 @@ def put_request_message_to_build_request(put_request):
   )
 
   # Parse tags. Extract gitiles commit and gerrit changes.
-  tags, gitiles_commit, gerrit_changes = api_common.parse_v1_tags(
-      put_request.tags
-  )
+  tags, gitiles_commit, gerrit_changes = parse_v1_tags(put_request.tags)
   sbr.tags.extend(tags)
   if gitiles_commit:
     sbr.gitiles_commit.CopyFrom(gitiles_commit)
   sbr.gerrit_changes.extend(gerrit_changes)
+
+  # Populate Gerrit project from patch_project property.
+  # V2 API users will have to provide this.
+  patch_project = props.get('patch_project')
+  if len(sbr.gerrit_changes) == 1 and isinstance(patch_project, basestring):
+    sbr.gerrit_changes[0].project = patch_project
 
   # Read PubSub callback.
   pubsub_callback_auth_token = None
