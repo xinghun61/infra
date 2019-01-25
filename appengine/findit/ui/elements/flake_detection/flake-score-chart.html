@@ -54,7 +54,12 @@
           let formula_str = flake.flake_score_last_week + ' = ';
           for (let i = 0; i < flake.flake_counts_last_week.length; i++) {
               let count = flake.flake_counts_last_week[i];
-              formula_str += count.impacted_cl_count + ' * ' + this._getWeight(count.flake_type, weights);
+              if (count.flake_type == 'ci failed step') {
+                formula_str += count.occurrence_count + ' * ' + this._getWeight(count.flake_type, weights);
+              } else {
+                formula_str += count.impacted_cl_count + ' * ' + this._getWeight(count.flake_type, weights);
+              }
+
               if (i < flake.flake_counts_last_week.length - 1) {
                  formula_str += ' + ';
               }
@@ -84,13 +89,20 @@
               height: 200,
               vAxes: { 0: { title: 'Counts' } },
               chartArea: {
-                  right: 100
+                  right: 30 * weights.length,
               },
               annotations: {
                   alwaysOutside: true
               },
               vAxis: { baseline: 0 }
           }
+        },
+
+        _getCLCountRepInGraph: function (count) {
+          if (count.flake_type == 'ci failed step') {
+            return 'N/A';
+          }
+          return count.impacted_cl_count;
         },
 
         _getChartDataFromFlake: function (flake, weights) {

@@ -117,6 +117,22 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     occurrence4.time_detected = datetime(2018, 1, 2, 2)
     occurrence4.put()
 
+    occurrence5 = FlakeOccurrence.Create(
+        flake_type=FlakeType.CI_FAILED_STEP,
+        build_id=127,
+        step_ui_name=step_ui_name,
+        test_name=test_name,
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder='luci builder 2',
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number,
+        time_happened=datetime(2018, 1, 2, 2),
+        gerrit_cl_id=-1,
+        parent_flake_key=flake.key)
+    occurrence5.time_detected = datetime(2018, 1, 2, 2)
+    occurrence5.put()
+
     culprit1 = FlakeCulprit.Create('chromium', 'rev1', 123456, 'culprit_url')
     culprit1.put()
 
@@ -252,6 +268,23 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                     'time_happened': '2018-01-02 02:00:00 UTC',
                     'time_detected': '2018-01-02 02:00:00 UTC',
                     'gerrit_cl_id': gerrit_cl_id
+                },
+                {
+                    'flake_type': 'ci failed step',
+                    'build_id': '127',
+                    'step_ui_name': step_ui_name,
+                    'test_name': test_name,
+                    'tags': [],
+                    'build_configuration': {
+                        'luci_project': 'chromium',
+                        'luci_bucket': 'try',
+                        'luci_builder': 'luci builder 2',
+                        'legacy_master_name': 'buildbot master',
+                        'legacy_build_number': 999
+                    },
+                    'time_happened': '2018-01-02 02:00:00 UTC',
+                    'time_detected': '2018-01-02 02:00:00 UTC',
+                    'gerrit_cl_id': -1,
                 },
                 {
                     'flake_type': 'cq hidden flake',
