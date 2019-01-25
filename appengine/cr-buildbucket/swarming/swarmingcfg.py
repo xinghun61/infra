@@ -275,8 +275,8 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
   with ctx.prefix('recipe: '):
     _validate_recipe_cfg(builder.recipe, ctx, final=final)
 
-  if builder.priority and (builder.priority < 20 or builder.priority > 255):
-    ctx.error('priority: must be in [20, 255] range; got %d', builder.priority)
+  if builder.priority > 200:
+    ctx.error('priority: must be in [0, 200] range; got %d', builder.priority)
 
   if builder.service_account:
     with ctx.prefix('service_account: '):
