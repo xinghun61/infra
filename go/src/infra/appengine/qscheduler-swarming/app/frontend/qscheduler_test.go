@@ -35,7 +35,9 @@ func TestAssignTasks(t *testing.T) {
 		sch := &QSchedulerServerImpl{}
 		_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
 			PoolId: poolID,
-			Config: &qscheduler.SchedulerPoolConfig{},
+			Config: &qscheduler.SchedulerPoolConfig{
+				Labels: []string{"label1"},
+			},
 		})
 		So(err, ShouldBeNil)
 
@@ -65,7 +67,7 @@ func TestAssignTasks(t *testing.T) {
 					SchedulerId: poolID,
 					Time:        tutils.TimestampProto(time.Now()),
 					IdleBots: []*swarming.IdleBot{
-						{BotId: botID},
+						{BotId: botID, Dimensions: []string{"label1"}},
 					},
 				}
 				resp, err := sch.AssignTasks(ctx, &req)
@@ -75,6 +77,23 @@ func TestAssignTasks(t *testing.T) {
 					So(resp.Assignments[0].BotId, ShouldEqual, botID)
 					So(resp.Assignments[0].TaskId, ShouldEqual, taskID)
 				})
+			})
+		})
+
+		Convey("when AssignTasks is called with an idle bot that doesn't have needed dimensions", func() {
+			botID := "Bot1"
+			req := swarming.AssignTasksRequest{
+				SchedulerId: poolID,
+				Time:        tutils.TimestampProto(time.Now()),
+				IdleBots: []*swarming.IdleBot{
+					{BotId: botID},
+				},
+			}
+			resp, err := sch.AssignTasks(ctx, &req)
+			Convey("then an error is returned.", func() {
+				So(resp, ShouldBeNil)
+				So(err, ShouldNotBeNil)
+				So(err.Error(), ShouldContainSubstring, "does not have all scheduler dimensions")
 			})
 		})
 	})

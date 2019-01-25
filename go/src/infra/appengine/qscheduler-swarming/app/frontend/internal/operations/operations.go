@@ -31,6 +31,9 @@ import (
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // AccountIDTagKey is the key used in Task tags to specify which quotascheduler
@@ -64,6 +67,10 @@ func AssignTasks(r *swarming.AssignTasksRequest) (Operation, *AssignResult) {
 		}()
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
+			s := stringset.NewFromSlice(v.Dimensions...)
+			if !s.HasAll(state.Config.Labels...) {
+				return status.Errorf(codes.InvalidArgument, "bot with id %s does not have all scheduler dimensions", v.BotId)
+			}
 			idles[i] = &reconciler.IdleWorker{
 				ID:     scheduler.WorkerID(v.BotId),
 				Labels: stringset.NewFromSlice(v.Dimensions...),
