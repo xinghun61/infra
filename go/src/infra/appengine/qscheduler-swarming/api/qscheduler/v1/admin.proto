@@ -35,7 +35,12 @@ service QSchedulerView {
 }
 
 message CreateSchedulerPoolRequest {
-    // PoolId is the unique id of this scheduler pool.
+    // TODO(akeshet): The client shouldn't be creating this id. It should be
+    // creating a scheduler pool for a given name, and the id should be generated
+    // by admin service and returned. Punting on this for now because the naming
+    // and organization scheme for scheduler pools is not yet established. (i.e.
+    // will we have some hierarchical structure to these pools? will there be
+    // sub-pools?).
     string pool_id = 1;
 
     // Config is the scheduler configuration for the scheduler to create.
@@ -48,7 +53,9 @@ message CreateAccountRequest {
     // PoolID is the id of the scheduler to create an account within.
     string pool_id = 1;
 
-    // AccountId is the unique id of the account (within the given pool).
+    // TODO(akeshet): Similar to pool_id above, account_id should be generated
+    // on the server, not client. Instead, pass in some kind of path or
+    // hierarchical account name. Punting until this is figured out better.
     string account_id = 2;
 
     // Config is the quota account config for the quota account to create.
