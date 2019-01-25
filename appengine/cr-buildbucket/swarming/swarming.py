@@ -455,6 +455,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   if not task_template:
     raise TemplateNotFound('task template is not configured')
 
+  build.proto.infra.buildbucket.service_config_revision = task_template_rev
   build.proto.infra.buildbucket.canary = build.canary
 
   build.swarming_hostname = builder_cfg.swarming_host

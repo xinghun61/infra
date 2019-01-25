@@ -122,8 +122,23 @@ class CreationTest(testing.AppengineTestCase):
     prop_struct = bbutil.dict_to_struct(props)
     build = self.add(dict(properties=prop_struct))
     self.assertEqual(build.proto.input.properties, prop_struct)
+    self.assertEqual(
+        build.proto.infra.buildbucket.requested_properties, prop_struct
+    )
     self.assertEqual(test_util.msg_to_dict(build.input_properties), props)
     self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
+
+  def test_add_with_dimensions(self):
+    dims = [
+        common_pb2.RequestedDimension(
+            key='d', value='1', expiration=dict(seconds=60)
+        ),
+        common_pb2.RequestedDimension(key='d', value='1'),
+    ]
+    build = self.add(dict(dimensions=dims))
+    self.assertEqual(
+        list(build.proto.infra.buildbucket.requested_dimensions), dims
+    )
 
   def test_add_with_notify(self):
     build = self.add(

@@ -115,7 +115,13 @@ class BuildRequest(_BuildRequestBase):
         input=dict(
             properties=sbr.properties,
             gerrit_changes=sbr.gerrit_changes,
-        )
+        ),
+        infra=dict(
+            buildbucket=dict(
+                requested_properties=sbr.properties,
+                requested_dimensions=sbr.dimensions,
+            ),
+        ),
     )
     build_proto.create_time.FromDatetime(now)
 

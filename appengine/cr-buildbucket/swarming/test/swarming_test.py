@@ -865,6 +865,10 @@ class SwarmingTest(BaseTest):
     )
 
     self.assertEqual(
+        build.proto.infra.buildbucket.service_config_revision, 'template_rev'
+    )
+
+    self.assertEqual(
         build.proto.infra.logdog.hostname, 'luci-logdog-dev.appspot.com'
     )
     self.assertEqual(build.proto.infra.logdog.project, 'chromium')
