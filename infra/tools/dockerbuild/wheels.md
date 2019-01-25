@@ -451,6 +451,20 @@ wheel: <
 
 * *universal*
 
+## **colorama**
+
+### 0.4.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/colorama-py2_py3"
+  version: "version:0.4.1"
+>
+```
+
+
+* *universal*
+
 ## **configparser**
 
 ### 3.5.0
