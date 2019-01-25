@@ -14,9 +14,6 @@ FLAKY_TEST_LABEL = 'Test-Flaky'
 # Label used to identify issues filed against Findit due to wrong results.
 TEST_FINDIT_WRONG_LABEL = 'Test-Findit-Wrong'
 
-# Component used to identify issues related to flaky tests.
-FLAKY_TEST_COMPONENT = 'Tests>Flaky'
-
 # Customized field for flaky test.
 FLAKY_TEST_CUSTOMIZED_FIELD = 'Flaky-Test'
 

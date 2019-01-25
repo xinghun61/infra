@@ -179,8 +179,7 @@ def _GetOpenIssueIdForFlakyTestBySummary(test_name,
   example: 'suite.test needs to be rewritten', so at least one of the following
   additional identifiers is also required:
   1. The issue has label: Test-Flaky.
-  2. The issue has component: Tests>Flaky.
-  3. The issue has one of the issue_constants.FLAKY_TEST_SUMMARY_KEYWORDS in
+  2. The issue has one of the issue_constants.FLAKY_TEST_SUMMARY_KEYWORDS in
      the summary.
 
   Args:
@@ -193,9 +192,6 @@ def _GetOpenIssueIdForFlakyTestBySummary(test_name,
 
   def _is_issue_related_to_flake(issue):
     if issue_constants.FLAKY_TEST_LABEL in issue.labels:
-      return True
-
-    if issue_constants.FLAKY_TEST_COMPONENT in issue.components:
       return True
 
     return any(keyword in issue.summary.lower()
