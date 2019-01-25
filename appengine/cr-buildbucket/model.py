@@ -256,12 +256,6 @@ class Build(ndb.Model):
   # Stores buildbucket.v2.Build.input.properties.
   input_properties = datastore_utils.ProtobufProperty(struct_pb2.Struct)
 
-  # a list of tags, where each tag is a string
-  # with ":" symbol. The first occurrence of ":" splits tag name and tag
-  # value. Contains only tags specified by the build request. Old Build
-  # entities do not have this field.
-  initial_tags = ndb.StringProperty(repeated=True, indexed=False)
-
   update_time = ndb.DateTimeProperty(auto_now=True)
   create_time = ndb.DateTimeProperty(auto_now_add=True)
   created_by = auth.IdentityProperty()
@@ -318,7 +312,6 @@ class Build(ndb.Model):
     )
 
     self.experimental = bool(self.experimental)
-    self.initial_tags = sorted(set(self.initial_tags))
     self.tags = sorted(set(self.tags))
 
     self.update_v1_status_fields()

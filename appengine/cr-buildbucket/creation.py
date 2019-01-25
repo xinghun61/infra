@@ -142,9 +142,7 @@ class BuildRequest(_BuildRequestBase):
 
     build_proto = self.create_build_proto(created_by, now)
 
-    initial_tags = {buildtags.unparse(t.key, t.value) for t in build_proto.tags}
-    tags = set(initial_tags)
-
+    tags = {buildtags.unparse(t.key, t.value) for t in build_proto.tags}
     # For backward compatibility, add commit/cl/builder-based tags.
     if sbr.HasField('gitiles_commit'):
       bs = buildtags.gitiles_commit_buildset(sbr.gitiles_commit)
@@ -163,7 +161,6 @@ class BuildRequest(_BuildRequestBase):
         id=build_id,
         proto=build_proto,
         bucket_id=self.bucket_id,
-        initial_tags=sorted(initial_tags),
         tags=sorted(tags),
         input_properties=sbr.properties,
         parameters=copy.deepcopy(self.parameters or {}),

@@ -108,8 +108,8 @@ def build(**build_proto_fields):  # pragma: no cover
       proto.builder.project, proto.builder.bucket
   )
 
-  initial_tags = {buildtags.unparse(t.key, t.value) for t in proto.tags}
-  tags = initial_tags | {'builder:%s' % proto.builder.builder}
+  tags = {buildtags.unparse(t.key, t.value) for t in proto.tags}
+  tags.add('builder:%s' % proto.builder.builder)
   if proto.number:
     tags.add(
         buildtags.build_address_tag(
@@ -126,7 +126,6 @@ def build(**build_proto_fields):  # pragma: no cover
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,
       tags=sorted(tags),
-      initial_tags=sorted(initial_tags),
       experimental=proto.input.experimental or None,
       swarming_task_id=proto.infra.swarming.task_id,
       input_properties=proto.input.properties,
