@@ -1,8 +1,8 @@
 hash: e4fa99f67faa7d19ca6f8a504cc3fee38d8cea505786c49f574c28c6f90cc1fd
-updated: 2019-01-15T17:58:56.968498737-08:00
+updated: 2019-01-25T11:02:49.793590855-08:00
 imports:
 - name: cloud.google.com/go
-  version: 105f0564f8d67e66e7ea5ecc5a6e46dad440aa09
+  version: 52299f000fab02ff521d180fd9f101ceb44d0f38
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -11,12 +11,12 @@ imports:
   - spanner
   - storage
 - name: contrib.go.opencensus.io/exporter/stackdriver
-  version: 2b7f4fc93daf5ec3048fa4fc1c15573466711a17
+  version: 0e2df90c35d1575910dc0a44da7d7b08ae76290f
   repo: https://chromium.googlesource.com/external/github.com/census-ecosystem/opencensus-go-exporter-stackdriver.git
   subpackages:
   - propagation
 - name: github.com/andygrunwald/go-gerrit
-  version: 19ef3e9332a4653f2e831be2a7c4458e612f2364
+  version: 174420ebee6cb397f25bd5623b250cff9e5aec9a
   repo: https://chromium.googlesource.com/external/github.com/andygrunwald/go-gerrit.git
 - name: github.com/aryann/difflib
   version: e206f873d14a916d3d26c40ab667bca123f365a3
@@ -25,7 +25,7 @@ imports:
   version: f9ffefc3facfbe0caee3fea233cbb6e8208f4541
   repo: https://chromium.googlesource.com/external/github.com/asaskevich/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: beaa15b1b227b0e5d2b904af59c1824a1fc9d1e2
+  version: cc667b0847937bb8ac35a2efc99d72372b4e413a
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/beorn7/perks
   version: 3a771d992973f24aa725d07868b467d1ddfceafb
@@ -42,7 +42,7 @@ imports:
   version: 1e4cf3da559842a91afcb6ea6141451e6c30c618
   repo: https://chromium.googlesource.com/external/github.com/cenkalti/backoff.git
 - name: github.com/chromedp/cdproto
-  version: 8e3eef48e6c806d0d3ca5be66f393661a191e2cd
+  version: b964b704bb6f6594eaf3d3176c99f8218dbb1220
   repo: https://chromium.googlesource.com/external/github.com/chromedp/cdproto.git
   subpackages:
   - '...'
@@ -66,7 +66,7 @@ imports:
   subpackages:
   - spew
 - name: github.com/disintegration/imaging
-  version: fa79ab36ab53691a1881bdcd56ef604f66a22112
+  version: 6b1a0e7447cb1ebaca4b10543571bdb6e3e324c6
   repo: https://chromium.googlesource.com/external/github.com/disintegration/imaging.git
 - name: github.com/docker/docker
   version: 49bf474f9ed7ce7143a59d1964ff7b7fd9b52178
@@ -78,7 +78,7 @@ imports:
   version: 9f541cc9db5d55bce703bd99987c9d5cb8eea45e
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
 - name: github.com/emirpasic/gods
-  version: 7c131f6714175bd4ce484da1f348260c79db3069
+  version: 729073a73ce2057955fafa2a8f0ac62b99e950c9
   repo: https://chromium.googlesource.com/external/github.com/emirpasic/gods.git
 - name: github.com/fedesog/webdriver
   version: 99f36c92eaefc54f71c24e685f5128c693ca940c
@@ -111,7 +111,7 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/mock
-  version: e698a2ea17fee71b248fc2bba82fc544c2017f93
+  version: c20582278a829e4b3259747a3ce0eceb1763ee13
   repo: https://chromium.googlesource.com/external/github.com/golang/mock.git
   subpackages:
   - gomock
@@ -152,7 +152,7 @@ imports:
   version: f0984319b44273e83de132089ae42b1810f4933b
   repo: https://chromium.googlesource.com/external/github.com/gorhill/cronexpr.git
 - name: github.com/gorilla/mux
-  version: 08e7f807d38d6a870193019bb439056118661505
+  version: a7962380ca08b5a188038c69871b8d3fbdf31e89
   repo: https://chromium.googlesource.com/external/github.com/gorilla/mux.git
 - name: github.com/gorilla/websocket
   version: 95ba29eb981bbb27d92e1f70bf8a1949452d926b
@@ -263,7 +263,7 @@ imports:
   version: c182affec369e30f25d3eb8cd8a478dee585ae7d
   repo: https://chromium.googlesource.com/external/github.com/matttproud/golang_protobuf_extensions.git
 - name: github.com/Microsoft/go-winio
-  version: 6c8aa416ae893afe5671c38161833ff14ae6d6c0
+  version: 75bf6ca3d7cb77506c52495e61472c131a254d56
   repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
 - name: github.com/mitchellh/go-homedir
   version: ae18d6b8b3205b561c79e8e5f69bff09736185f4
@@ -283,16 +283,16 @@ imports:
   subpackages:
   - difflib
 - name: github.com/prometheus/client_golang
-  version: 18d13eacc9cce330610a70daf4ed0fef2e846589
+  version: 26e258bb9c9a94c26d4a46ff302ec7e855b82e10
   repo: https://chromium.googlesource.com/external/github.com/prometheus/client_golang.git
 - name: github.com/prometheus/client_model
   version: 56726106282f1985ea77d5305743db7231b0c0a8
   repo: https://chromium.googlesource.com/external/github.com/prometheus/client_model.git
 - name: github.com/prometheus/common
-  version: b1c43a6df3aedba268353d940b5974f05037ed5c
+  version: cfeb6f9992ffa54aaa4f2170ade4067ee478b250
   repo: https://chromium.googlesource.com/external/github.com/prometheus/common.git
 - name: github.com/prometheus/procfs
-  version: b1a0a9a36d7453ba0f62578b99712f3a6c5f82d1
+  version: bf6a532e95b1f7a62adf0ab5050a5bb2237ad2f4
   repo: https://chromium.googlesource.com/external/github.com/prometheus/procfs.git
 - name: github.com/sergi/go-diff
   version: da645544ed44df016359bd4c0e3dc60ee3a0da43
@@ -369,17 +369,17 @@ imports:
   version: cf5003e89e5a68181295c9383cd3329ef85549ac
   repo: https://chromium.googlesource.com/external/github.com/zeebo/bencode.git
 - name: go.opencensus.io
-  version: 950a67f393d867cfbe91414063b69e511f42fefb
+  version: 4baeb639308e8502f1bd4d713236b7978ab8f125
   repo: https://chromium.googlesource.com/external/github.com/census-instrumentation/opencensus-go.git
   subpackages:
   - plugin/grpc
 - name: go.skia.org/infra
-  version: 450365c3c6ba891a435ef353969fb5813432cfc7
+  version: 29b2f6f37fc271606e5ebe58610c25119135417a
   repo: https://skia.googlesource.com/buildbot.git
   subpackages:
   - gold-client/cmd/goldctl
 - name: go.starlark.net
-  version: d37220ea0f192e8167c26989f8ae23a66aba2d71
+  version: 1258e4d4fdc57c0ea22860101f7c77c9482ac626
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
   version: 1cf306ea29af714ae6f446eda4fc3ac8abb37e6d
@@ -387,12 +387,12 @@ imports:
   subpackages:
   - gerrit
 - name: golang.org/x/crypto
-  version: ff983b9c42bc9fbf91556e191cc8efb585c16908
+  version: 057139ce5d2bdbe6fe73c53679e24e9cf007f637
   repo: https://go.googlesource.com/crypto.git
   subpackages:
   - ssh/terminal
 - name: golang.org/x/image
-  version: cd38e8056d9b27bb2f265effa37fb0ea6b8a7f0f
+  version: 183bebdce1b249c42a7cf6772817e8c2e873b966
   repo: https://chromium.googlesource.com/external/github.com/golang/image.git
   subpackages:
   - bmp
@@ -406,7 +406,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 915654e7eabcea33ae277abbecf52f0d8b7a9fdc
+  version: d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -432,7 +432,7 @@ imports:
   version: e6919f6577db79269a6443b9dc46d18f2238fb5d
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 2e4132e53b93d8d81f7a076566396511238b89b0
+  version: cc6a436ffe6b424fffa1d91862c9b664d8407828
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -445,7 +445,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 07f56c9e3ab5a140a4a33db7502c2c59359b6d50
+  version: 59f8eae6bc597bfd5d5b292134c4b19d8955ed8a
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -474,13 +474,13 @@ imports:
   - urlfetch
   - user
 - name: google.golang.org/genproto
-  version: db91494dd46c1fdcbbde05e5ff5eb56df8f7d79a
+  version: 8819c946db4494a2259bf100a377f51aa585d893
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
   subpackages:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: a1ead1ef6c567a16c2ed91e6c127b6162e4561b5
+  version: 92256663429001d1193c774a44898e892d16e630
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
@@ -492,7 +492,7 @@ imports:
   version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
   repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
 - name: gopkg.in/russross/blackfriday.v2
-  version: 8bfdaf1a436429305573f9af5d87598ae609529a
+  version: 792d13404204e12d4c292c77184f47ad325fcfdc
   repo: https://chromium.googlesource.com/external/github.com/russross/blackfriday.git
 - name: gopkg.in/src-d/go-billy.v4
   version: 40f7491e8a4a5cf7ab1d17f7679d94938ca4a714
