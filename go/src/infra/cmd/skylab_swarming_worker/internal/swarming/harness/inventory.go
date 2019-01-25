@@ -7,7 +7,6 @@ package harness
 import (
 	"fmt"
 	"log"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -44,25 +43,24 @@ func loadDUTName(b *swarming.Bot) (string, error) {
 
 // loadDUTHostInfo returns the host information for the swarming bot’s assigned DUT.
 func loadDUTHostInfo(b *swarming.Bot) (*hostinfo.HostInfo, error) {
-	// TODO(pprabhu) This implementation delegates to inventory tools to convert the inventory
-	// data to autotest's host_info format. Instead, support directly reading inventory here.
 	ddir, err := readSymlinkTargetWithRetry(b.Inventory.DataDir)
 	if err != nil {
-		return nil, err
+		return nil, errors.Annotate(err, "load DUT host info").Err()
 	}
-	p := filepath.Join(b.Inventory.ToolsDir, "print_dut_host_info")
-	cmd := exec.Command(
-		p,
-		"--datadir", ddir,
-		"--environment", b.Env,
-		"--id", b.DUTID,
-	)
-	r, err := cmd.Output()
+
+	lab, err := inventory.LoadLab(ddir)
 	if err != nil {
-		log.Printf("Failed to run command %#v", cmd)
-		return nil, fmt.Errorf("Failed to obtain host info for DUT: %s", err)
+		return nil, errors.Annotate(err, "load DUT host info").Err()
 	}
-	return hostinfo.Unmarshal(r)
+	for _, d := range lab.GetDuts() {
+		c := d.GetCommon()
+		if c.GetId() != b.DUTID {
+			continue
+		}
+		hi := hostinfo.ConvertDut(d)
+		return hi, nil
+	}
+	return nil, errors.Reason("load DUT host info: no info found for DUT %s", b.DUTID).Err()
 }
 
 // readSymlinkTargetWithRetry dereferences the symlink pointing to the data directory.
