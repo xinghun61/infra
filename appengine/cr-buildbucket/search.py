@@ -350,7 +350,7 @@ def _query_search_async(q):
           return project_id
 
         # Note: get_accessible_buckets_async is memcached per user for 10m.
-        q.bucket_id = {
+        q.bucket_ids = {
             bid for bid in q.bucket_ids if get_project_id(bid) == q.project
         }
       if not q.bucket_ids:
@@ -363,6 +363,9 @@ def _query_search_async(q):
   for t in q.tags:
     dq = dq.filter(model.Build.tags == t)
   filter_if = lambda p, v: dq if v is None else dq.filter(p == v)
+
+  if q.bucket_ids is None and q.project:
+    dq = dq.filter(model.Build.project == q.project)
 
   expected_statuses_v1 = None
   if q.status_is_v2:

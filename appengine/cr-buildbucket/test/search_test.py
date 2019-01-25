@@ -173,6 +173,17 @@ class SearchTest(testing.AppengineTestCase):
     self.assertEqual(builds, [build1])
 
   def test_filter_by_project(self):
+    user.get_accessible_buckets_async.return_value = future({
+        'chromium/try', 'v8/try'
+    })
+    build = self.put_build(builder=dict(project='chromium'))
+    self.put_build(builder=dict(project='v8'))
+
+    builds, _ = self.search(project='chromium')
+    self.assertEqual(builds, [build])
+
+  def test_filter_by_project_admin(self):
+    user.get_accessible_buckets_async.return_value = future(None)
     build = self.put_build(builder=dict(project='chromium'))
     self.put_build(builder=dict(project='v8'))
 
