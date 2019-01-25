@@ -274,15 +274,17 @@ def _should_use_canary_template(percentage):  # pragma: no cover
   return random.randint(0, 99) < percentage
 
 
-def _prepare_builder_config(builder_cfg, swarming_param):
+def _prepare_builder_config(build, builder_cfg):
   """Returns final version of builder config to use for |build|.
 
   Expects arguments to be valid.
   """
+
   # Builders are already flattened in the datastore.
   result = builder_cfg
 
   # Apply overrides in the swarming parameter.
+  swarming_param = (build.parameters or {}).get(_PARAM_SWARMING) or {}
   override_builder_cfg_data = swarming_param.get('override_builder_cfg', {})
   if override_builder_cfg_data:
     override_builder_cfg = project_config_pb2.Builder()
@@ -293,6 +295,21 @@ def _prepare_builder_config(builder_cfg, swarming_param):
     )
     flatten_swarmingcfg.merge_builder(result, override_builder_cfg)
     swarmingcfg_module.validate_builder_cfg(result, [], True, ctx)
+
+  # Apply V2 requested dimensions.
+  if build.proto.infra.buildbucket.requested_dimensions:
+    # Piggy back on V1 merging impl until starlark-based config obsolete it.
+    dim_str = flatten_swarmingcfg.format_dimension
+    flatten_swarmingcfg.merge_builder(
+        result,
+        project_config_pb2.Builder(
+            dimensions=[
+                dim_str(d.key, d.value, d.expiration.seconds)
+                for d in build.proto.infra.buildbucket.requested_dimensions
+            ]
+        )
+    )
+
   return result
 
 
@@ -446,7 +463,6 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   validate_input_properties(
       build.input_properties, allow_reserved=bool(build.retry_of)
   )
-  swarming_param = params.get(_PARAM_SWARMING) or {}
 
   # Use canary template?
   assert isinstance(build.canary_preference, model.CanaryPreference)
@@ -459,7 +475,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   else:
     build.canary = build.canary_preference == model.CanaryPreference.CANARY
 
-  builder_cfg = _prepare_builder_config(builder_cfg, swarming_param)
+  builder_cfg = _prepare_builder_config(build, builder_cfg)
 
   try:
     task_template_rev, task_template, build.canary = (

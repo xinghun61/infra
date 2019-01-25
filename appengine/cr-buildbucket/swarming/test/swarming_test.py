@@ -1418,6 +1418,52 @@ class SwarmingTest(BaseTest):
         actual_task_def['task_slices'][0]['properties']['dimensions'],
     )
 
+  def test_create_task_async_override_dimensions(self):
+    build = test_util.build(
+        infra=dict(
+            buildbucket=dict(
+                requested_dimensions=[
+                    dict(key='cores', value='16'),
+                ]
+            ),
+        ),
+    )
+
+    self.json_response = {
+        'task_id': 'deadbeef',
+        'request': {
+            'task_slices': [{
+                'expiration_secs': 3600,
+                'properties': {
+                    'execution_timeout_secs':
+                        1800,
+                    'dimensions': [
+                        {'key': 'cores', 'value': '16'},
+                        {'key': 'os', 'value': 'Ubuntu'},
+                        {'key': 'pool', 'value': 'Chrome'},
+                    ],
+                },
+            }],
+            'tags': [
+                'builder:linux',
+                'buildertag:yes',
+                'buildset:1',
+                'commontag:yes',
+                'priority:108',
+                'recipe_name:bob',
+                'recipe_repository:https://example.com/repo',
+            ],
+        },
+    }
+
+    swarming.create_task_async(build).get_result()
+
+    actual_task_def = net.json_request_async.call_args[1]['payload']
+    self.assertIn(
+        {'key': 'cores', 'value': '16'},
+        actual_task_def['task_slices'][0]['properties']['dimensions'],
+    )
+
   def test_create_task_async_override_cfg_malformed(self):
     build = test_util.build()
     build.parameters['swarming'] = {'override_builder_cfg': []}
