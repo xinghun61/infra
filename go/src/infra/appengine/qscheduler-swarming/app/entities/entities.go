@@ -22,6 +22,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/logging"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -111,6 +112,11 @@ func Save(ctx context.Context, q *QSchedulerState) error {
 		ReconcilerData: rd,
 		ConfigData:     cd,
 	}
+
+	logging.Infof(ctx, "attempting to Put datastore entitiy for pool %s"+
+		"with (Scheduler, Reconciler, Config) size of (%d, %d, %d) bytes",
+		entity.QSPoolID, len(entity.SchedulerData), len(entity.ReconcilerData),
+		len(entity.ConfigData))
 
 	if err := datastore.Put(ctx, entity); err != nil {
 		e := errors.Wrap(err, "unable to Put scheduler state")
