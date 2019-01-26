@@ -526,8 +526,8 @@ class ConfigTest(testing.AppengineTestCase):
         name: "luci.chromium.continuous"
         acl_sets: "public"
         swarming {
-          hostname: "swarming.example.com"
           builder_defaults {
+            swarming_host: "swarming.example.com"
             dimensions: "pool:P"
           }
           builders {

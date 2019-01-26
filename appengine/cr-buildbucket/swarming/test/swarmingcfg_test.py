@@ -43,8 +43,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
   def test_valid(self):
     self.cfg_test(
         '''
-          hostname: "example.com"
           builder_defaults {
+            swarming_host: "example.com"
             swarming_tags: "master:master.a"
             dimensions: "cores:8"
             dimensions: "60:cores:64"
@@ -73,6 +73,20 @@ class ProjectCfgTest(testing.AppengineTestCase):
             name: "release cipd"
             recipe {
               cipd_package: "some/package"
+              name: "foo"
+            }
+          }
+        ''', '', []
+    )
+
+  def test_valid_global_swarming_hostname(self):
+    self.cfg_test(
+        '''
+          hostname: "example.com"
+          builders {
+            name: "release"
+            recipe {
+              repository: "https://x.com"
               name: "foo"
             }
           }
@@ -134,8 +148,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-            'hostname: unspecified',
             'builder #1: name: unspecified',
+            'builder #1: swarming_host: unspecified',
             'builder #1: recipe: name: unspecified',
             'builder #1: recipe: specify either cipd_package or repository',
         ],
@@ -143,8 +157,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builder_defaults {
+            swarming_host: "swarming.example.com"
             recipe {
               name: "meeper"
               repository: "https://example.com"
@@ -165,9 +179,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: ":/:"
+            swarming_host: "swarming.example.com"
           }
         ''',
         '',
@@ -179,11 +193,11 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: "veeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeery"
                   "looooooooooooooooooooooooooooooooooooooooooooooooooooooooong"
                   "naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaame"
+            swarming_host: "swarming.example.com"
           }
         ''',
         '',
@@ -198,10 +212,10 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builder_defaults {name: "x"}
           builders {
             name: "release"
+            swarming_host: "swarming.example.com"
             dimensions: "pool:a"
             recipe {
               repository: "https://x.com"
@@ -217,9 +231,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "https://example.com"
           task_template_canary_percentage { value: 102 }
           builder_defaults {
+            swarming_host: "https://swarming.example.com"
             swarming_tags: "wrong"
           }
           builders {
@@ -238,8 +252,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-            'hostname: must not contain "://"',
             'task_template_canary_percentage.value must must be in [0, 100]',
+            'builder_defaults: swarming_host: must not contain "://"',
             'builder_defaults: tag #1: does not have ":": wrong',
             'builder #1: tag #1: does not have ":": wrong2',
             (
@@ -264,9 +278,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: "rel"
+            swarming_host: "swarming.example.com"
             caches { path: "a" name: "a" }
             caches { path: "a" name: "a" }
           }
@@ -280,9 +294,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: "rel"
+            swarming_host: "swarming.example.com"
             caches { path: "a" name: "a" wait_for_warm_cache_secs: 61 }
           }
         ''',
@@ -295,9 +309,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: "rel"
+            swarming_host: "swarming.example.com"
             caches { path: "a" name: "a" wait_for_warm_cache_secs: 59 }
           }
         ''',
@@ -310,9 +324,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: "rel"
+            swarming_host: "swarming.example.com"
             caches { path: "a" name: "a" wait_for_warm_cache_secs: 60 }
             caches { path: "b" name: "b" wait_for_warm_cache_secs: 120 }
             caches { path: "c" name: "c" wait_for_warm_cache_secs: 180 }
@@ -332,9 +346,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: "b"
+            swarming_host: "swarming.example.com"
             service_account: "not an email"
           }
         ''',
@@ -347,9 +361,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "example.com"
           builders {
             name: "b"
+            swarming_host: "swarming.example.com"
             expiration_secs: 158400  # 44h
             execution_timeout_secs: 14400  # 4h
           }
@@ -431,9 +445,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
   def test_default_recipe(self):
     self.cfg_test(
         '''
-          hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             dimensions: "pool:default"
+            swarming_host: "swarming.example.com"
             recipe {
               repository: "https://x.com"
               name: "foo"
@@ -455,9 +469,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
   def test_default_recipe_bad(self):
     self.cfg_test(
         '''
-          hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             dimensions: "pool:default"
+            swarming_host: "swarming.example.com"
             recipe {
               name: "foo"
               properties: "a"
@@ -472,9 +486,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
   def test_cipd_and_repository_bad(self):
     self.cfg_test(
         '''
-          hostname: "chromium-swarm.appspot.com"
           builders {
             name: "debug"
+            swarming_host: "swarming.example.com"
             dimensions: "pool:default"
             recipe {
               name: "foo"
@@ -493,8 +507,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
   def test_clear_recipe_repository(self):
     self.cfg_test(
         '''
-          hostname: "chromium-swarm.appspot.com"
           builder_defaults {
+            swarming_host: "swarming.example.com"
             recipe {
               name: "foo"
               repository: "https://example.com"
@@ -659,9 +673,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
           buckets {
             name: "a"
             swarming {
-              hostname: "chromium-swarm.appspot.com"
               builders {
                 name: "release"
+                swarming_host: "swarming.example.com"
                 mixins: "b"
                 mixins: "c"
               }

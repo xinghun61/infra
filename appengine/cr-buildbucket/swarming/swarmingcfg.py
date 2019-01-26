@@ -236,6 +236,10 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
     except errors.InvalidInputError as ex:
       ctx.error('name: %s', ex.message)
 
+  if final or builder.swarming_host:
+    with ctx.prefix('swarming_host: '):
+      _validate_hostname(builder.swarming_host, ctx)
+
   for i, t in enumerate(builder.swarming_tags):
     with ctx.prefix('tag #%d: ', i + 1):
       _validate_tag(t, ctx)
@@ -379,19 +383,21 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
         on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text)
     )
 
-  with ctx.prefix('hostname: '):
-    _validate_hostname(swarming.hostname, ctx)
-
   if swarming.task_template_canary_percentage.value > 100:
     ctx.error('task_template_canary_percentage.value must must be in [0, 100]')
+
+  builder_defaults = copy.copy(swarming.builder_defaults)
+  builder_defaults.swarming_host = (
+      builder_defaults.swarming_host or swarming.hostname
+  )
 
   should_try_merge = mixins_are_valid
   if swarming.HasField('builder_defaults'):
     with ctx.prefix('builder_defaults: '):
-      if swarming.builder_defaults.name:
+      if builder_defaults.name:
         ctx.error('name: not allowed')
       subctx = make_subctx()
-      validate_builder_cfg(swarming.builder_defaults, mixins, False, subctx)
+      validate_builder_cfg(builder_defaults, mixins, False, subctx)
       if subctx.result().has_errors:
         should_try_merge = False
 
@@ -406,9 +412,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
         continue
 
       merged = copy.deepcopy(b)
-      flatten_swarmingcfg.flatten_builder(
-          merged, swarming.builder_defaults, mixins
-      )
+      flatten_swarmingcfg.flatten_builder(merged, builder_defaults, mixins)
       if merged.name in seen:
         ctx.error('name: duplicate')
       else:
