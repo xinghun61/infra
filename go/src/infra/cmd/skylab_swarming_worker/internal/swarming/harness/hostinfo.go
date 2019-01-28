@@ -73,10 +73,6 @@ func updateBotInfoFromHostInfo(hiPath string, bi *botinfo.BotInfo) error {
 
 var provisionableLabelKeys = map[string]struct{}{
 	"cros-version": {},
-	// TODO(pprabhu) Remove. This is not really a provisionable label.
-	// Only here for development purposes while cros-version is being added properly
-	// to autoserv.
-	"storage": {},
 }
 
 func updateProvisionableDimension(label string, bi *botinfo.BotInfo) {
