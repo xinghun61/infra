@@ -127,4 +127,15 @@ message InspectPoolResponse {
     // WaitingTasks is a description of the tasks that are waiting
     // according to quotascheduler.
     repeated WaitingTask waiting_tasks = 6;
+
+    message IdleBot {
+        // Id is the id of the bot.
+        string id = 1;
+
+        // Dimensions are the dimensions of the bot.
+        repeated string dimensions = 2;
+    }
+
+    // IdleBots is a description of the idle bots according to quotascheduler.
+    repeated IdleBot idle_bots = 7;
 }

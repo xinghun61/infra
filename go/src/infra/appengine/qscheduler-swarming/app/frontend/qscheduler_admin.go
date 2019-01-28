@@ -114,6 +114,7 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 	sProto := sp.Scheduler.ToProto()
 	runningCount, idleCount := 0, 0
 	running := make([]*qscheduler.InspectPoolResponse_RunningTask, 0, len(sProto.State.Workers))
+	idle := make([]*qscheduler.InspectPoolResponse_IdleBot, 0, len(sProto.State.Workers))
 	for wid, w := range sProto.State.Workers {
 		if w.RunningTask != nil {
 			runningCount++
@@ -125,6 +126,10 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 			})
 		} else {
 			idleCount++
+			idle = append(idle, &qscheduler.InspectPoolResponse_IdleBot{
+				Id:         wid,
+				Dimensions: w.Labels,
+			})
 		}
 	}
 
@@ -142,6 +147,7 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		NumRunningTasks: int32(runningCount),
 		RunningTasks:    running,
 		WaitingTasks:    waiting,
+		IdleBots:        idle,
 		AccountBalances: sProto.State.Balances,
 	}
 
