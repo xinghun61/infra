@@ -19,6 +19,9 @@ func ConvertDut(d *inventory.DeviceUnderTest) *HostInfo {
 }
 
 func convertDutAttributes(hi *HostInfo, d *inventory.DeviceUnderTest) {
+	if hi.Attributes == nil {
+		hi.Attributes = make(map[string]string)
+	}
 	for _, a := range d.GetCommon().GetAttributes() {
 		hi.Attributes[a.GetKey()] = a.GetValue()
 	}
