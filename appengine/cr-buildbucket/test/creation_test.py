@@ -126,7 +126,6 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(
         build.proto.infra.buildbucket.requested_properties, prop_struct
     )
-    self.assertEqual(test_util.msg_to_dict(build.input_properties), props)
     self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
 
   def test_add_with_dimensions(self):

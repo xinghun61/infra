@@ -61,8 +61,9 @@ class BuildRequest(_BuildRequestBase):
     Args:
       schedule_build_request (rpc_pb2.ScheduleBuildRequest): the request.
       parameters (dict): value for model.Build.parameters.
-        Must not have "properties", which moved to model.Build.input_properties,
-        and must be passed as schedule_build_request.properties.
+        Must not have "properties", which moved to
+        model.Build.proto.input.properties, and must be passed as
+        schedule_build_request.properties.
       lease_expiration_date (datetime.datetime): if not None, the build is
         created as leased and its lease_key is not None.
       retry_of (int): value for model.Build.retry_of attribute.
@@ -168,7 +169,6 @@ class BuildRequest(_BuildRequestBase):
         proto=build_proto,
         bucket_id=self.bucket_id,
         tags=[buildtags.unparse(k, v) for k, v in sorted(tags)],
-        input_properties=sbr.properties,
         parameters=copy.deepcopy(self.parameters or {}),
         created_by=created_by,
         create_time=now,

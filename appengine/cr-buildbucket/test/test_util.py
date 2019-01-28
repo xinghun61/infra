@@ -104,6 +104,12 @@ def build(**build_proto_fields):  # pragma: no cover
     proto.end_time.FromDatetime(now)
   proto.update_time.FromDatetime(now)
 
+  if (proto.input.properties and
+      not proto.infra.buildbucket.HasField('requested_properties')):
+    proto.infra.buildbucket.requested_properties.CopyFrom(
+        proto.input.properties
+    )
+
   bucket_id = config.format_bucket_id(
       proto.builder.project, proto.builder.bucket
   )
@@ -128,7 +134,6 @@ def build(**build_proto_fields):  # pragma: no cover
       tags=sorted(tags),
       experimental=proto.input.experimental or None,
       swarming_task_id=proto.infra.swarming.task_id,
-      input_properties=proto.input.properties,
       parameters={
           model.BUILDER_PARAMETER:
               proto.builder.builder,

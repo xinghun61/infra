@@ -406,7 +406,7 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
 
   master = None
   props_list = (
-      build.input_properties,
+      build.proto.input.properties,
       bbutil.dict_to_struct(
           flatten_swarmingcfg.read_properties(builder_cfg.recipe)
       ),
@@ -461,7 +461,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   params = build.parameters or {}
   validate_build_parameters(params)
   validate_input_properties(
-      build.input_properties, allow_reserved=bool(build.retry_of)
+      build.proto.input.properties, allow_reserved=bool(build.retry_of)
   )
 
   # Use canary template?
@@ -566,9 +566,12 @@ def _setup_recipes(build, builder_cfg, params):
 
   # Properties specified in build parameters must override those in builder
   # config.
-  props = struct_pb2.Struct()
+  props = build.proto.input.properties
+  props.Clear()
   props.update(flatten_swarmingcfg.read_properties(builder_cfg.recipe))
-  bbutil.update_struct(props, build.input_properties or struct_pb2.Struct())
+  bbutil.update_struct(
+      props, build.proto.infra.buildbucket.requested_properties
+  )
 
   # In order to allow some builders to behave like other builders, we allow
   # builders to explicitly set buildername.
@@ -639,7 +642,6 @@ def _setup_recipes(build, builder_cfg, params):
         'recipe_repository:' + builder_cfg.recipe.repository
     )
 
-  build.input_properties = props
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
 

@@ -80,6 +80,7 @@ class V2BuildsTest(unittest.TestCase):
         proto=build_pb2.Build(
             status=common_pb2.SUCCESS,
             infra_failure_reason=dict(),  # coverage
+            input=dict(properties=input_properties),
         ),
         bucket_id='chromium/try',
         parameters={model.BUILDER_PARAMETER: 'linux-rel'},
@@ -89,7 +90,6 @@ class V2BuildsTest(unittest.TestCase):
         complete_time=dt2,
         update_time=dt2,
         tags=['a:b', 'c:d'],
-        input_properties=input_properties,
         result_details={
             'properties': output_properties,
             'swarming': {

@@ -49,7 +49,7 @@ def build_to_v2(build, build_steps=None):
       update_time=_dt2ts(build.update_time),
       cancel_reason=build.cancel_reason_v2,
       input=build_pb2.Build.Input(
-          properties=build.input_properties,
+          properties=build.proto.input.properties,
           experimental=build.experimental,
           gitiles_commit=build.input_gitiles_commit,
       ),

@@ -252,9 +252,6 @@ class Build(ndb.Model):
   #
   # TODO(crbug.com/917851): delete these properties or move to "derived".
 
-  # Stores buildbucket.v2.Build.input.properties.
-  input_properties = datastore_utils.ProtobufProperty(struct_pb2.Struct)
-
   update_time = ndb.DateTimeProperty(auto_now=True)
   create_time = ndb.DateTimeProperty(auto_now_add=True)
   created_by = auth.IdentityProperty()

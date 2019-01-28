@@ -902,7 +902,7 @@ class SwarmingTest(BaseTest):
         build.proto.infra.logdog.prefix,
         'buildbucket/cr-buildbucket.appspot.com/1'
     )
-    self.assertEqual(build.input_properties['predefined-property'], 'x')
+    self.assertEqual(build.proto.input.properties['predefined-property'], 'x')
     self.assertEqual(build.proto.infra.recipe.name, 'recipe')
 
     # Test delegation token params.
