@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
@@ -63,8 +64,7 @@ func (c *inspectRun) Run(a subcommands.Application, args []string, env subcomman
 		return 1
 	}
 
-	// TODO(akeshet): Come up with a prettier format than stringified proto.
-	fmt.Println(resp)
+	fmt.Println(proto.MarshalTextString(resp))
 
 	return 0
 }
