@@ -157,6 +157,7 @@ def RunSteps(api, source_repo, target_repo):
           # force push.
           '--force',
           '--all',
+          '--tags',
           target_repo)
 
 def ShouldGenerateNewCommit(api, target_repo):

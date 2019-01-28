@@ -1122,7 +1122,7 @@ triggered by Tricium.
 
 &mdash; **def [RunSteps](/recipes/recipes/update_submodules_mirror.py#37)(api, source_repo, target_repo):**
 
-&mdash; **def [ShouldGenerateNewCommit](/recipes/recipes/update_submodules_mirror.py#162)(api, target_repo):**
+&mdash; **def [ShouldGenerateNewCommit](/recipes/recipes/update_submodules_mirror.py#163)(api, target_repo):**
 
 See if we can avoid running the rest of the recipe, if there's no new
 commits to incorporate into the mirror. We should be conservative in the
