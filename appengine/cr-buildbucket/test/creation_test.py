@@ -165,14 +165,15 @@ class CreationTest(testing.AppengineTestCase):
     build = self.add(dict(gitiles_commit=gitiles_commit))
     self.assertEqual(build.proto.input.gitiles_commit, gitiles_commit)
     self.assertEqual(build.input_gitiles_commit, gitiles_commit)
-    self.assertIn(
-        (
-            'buildset:commit/gitiles/gitiles.example.com/chromium/src/+/'
-            'b7a757f457487cd5cfe2dae83f65c5bc10e288b7'
-        ),
-        build.tags,
+    bs = (
+        'commit/gitiles/gitiles.example.com/chromium/src/+/'
+        'b7a757f457487cd5cfe2dae83f65c5bc10e288b7'
     )
+    self.assertIn('buildset:' + bs, build.tags)
     self.assertIn('gitiles_ref:refs/heads/master', build.tags)
+    self.assertIn(
+        common_pb2.StringPair(key='buildset', value=bs), build.proto.tags
+    )
 
   def test_add_with_gerrit_change(self):
     cl = common_pb2.GerritChange(
@@ -182,7 +183,11 @@ class CreationTest(testing.AppengineTestCase):
     )
     build = self.add(dict(gerrit_changes=[cl]))
     self.assertEqual(build.proto.input.gerrit_changes[:], [cl])
-    self.assertIn('buildset:patch/gerrit/gerrit.example.com/1234/5', build.tags)
+    bs = 'patch/gerrit/gerrit.example.com/1234/5'
+    self.assertIn('buildset:' + bs, build.tags)
+    self.assertIn(
+        common_pb2.StringPair(key='buildset', value=bs), build.proto.tags
+    )
 
   def test_add_with_priority(self):
     build = self.add(dict(priority=42))

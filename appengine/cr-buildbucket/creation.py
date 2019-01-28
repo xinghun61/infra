@@ -107,10 +107,20 @@ class BuildRequest(_BuildRequestBase):
     """
     sbr = self.schedule_build_request
 
+    tags = {(t.key, t.value) for t in sbr.tags}
+
+    # Automatically add commit/CL-based buildsets.
+    if sbr.HasField('gitiles_commit'):
+      bs = buildtags.gitiles_commit_buildset(sbr.gitiles_commit)
+      tags.add((buildtags.BUILDSET_KEY, bs))
+    for cl in sbr.gerrit_changes:
+      bs = buildtags.gerrit_change_buildset(cl)
+      tags.add((buildtags.BUILDSET_KEY, bs))
+
     build_proto = build_pb2.Build(
         id=build_id,
         builder=sbr.builder,
-        tags=sbr.tags,
+        tags=[dict(key=k, value=v) for k, v in sorted(tags)],
         status=common_pb2.SCHEDULED,
         created_by=created_by.to_bytes(),
         input=dict(
@@ -143,18 +153,13 @@ class BuildRequest(_BuildRequestBase):
 
     build_proto = self.create_build_proto(build_id, created_by, now)
 
-    tags = {buildtags.unparse(t.key, t.value) for t in build_proto.tags}
-    # For backward compatibility, add commit/cl/builder-based tags.
-    if sbr.HasField('gitiles_commit'):
-      bs = buildtags.gitiles_commit_buildset(sbr.gitiles_commit)
-      tags.add(buildtags.unparse(buildtags.BUILDSET_KEY, bs))
-      if sbr.gitiles_commit.ref:  # pragma: no branch
-        tags.add('gitiles_ref:%s' % sbr.gitiles_commit.ref)
-    for cl in sbr.gerrit_changes:
-      bs = buildtags.gerrit_change_buildset(cl)
-      tags.add(buildtags.unparse(buildtags.BUILDSET_KEY, bs))
+    tags = {(t.key, t.value) for t in build_proto.tags}
+
+    # Add some legacy tags for backward compatibility.
+    if sbr.gitiles_commit.ref:  # pragma: no branch
+      tags.add(('gitiles_ref', sbr.gitiles_commit.ref))
     if sbr.builder.builder:  # pragma: no branch
-      tags.add(buildtags.builder_tag(sbr.builder.builder))
+      tags.add((buildtags.BUILDER_KEY, sbr.builder.builder))
 
     # TODO(crbug.com/917851): remove property assignments that are reduntant
     # with build.proto.
@@ -162,7 +167,7 @@ class BuildRequest(_BuildRequestBase):
         id=build_id,
         proto=build_proto,
         bucket_id=self.bucket_id,
-        tags=sorted(tags),
+        tags=[buildtags.unparse(k, v) for k, v in sorted(tags)],
         input_properties=sbr.properties,
         parameters=copy.deepcopy(self.parameters or {}),
         created_by=created_by,
