@@ -24,7 +24,7 @@ import (
 
 // CreateTest subcommand: create a test task.
 var CreateTest = &subcommands.Command{
-	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-timeout-mins TIMEOUT_MINS] [-client-test] [-tag KEY:VALUE...] [-keyval KEY:VALUE] [-test-args ARGS] TEST_NAME [DIMENSION_KEY:VALUE...]",
+	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-timeout-mins TIMEOUT_MINS] [-client-test] [-tag KEY:VALUE...] [-provision-label LABEL...] [-keyval KEY:VALUE] [-test-args ARGS] TEST_NAME [DIMENSION_KEY:VALUE...]",
 	ShortDesc: "Create a test task, with the given test name and swarming dimensions",
 	LongDesc:  "Create a test task, with the given test name and swarming dimensions.",
 	CommandRun: func() subcommands.CommandRun {
@@ -44,24 +44,26 @@ var CreateTest = &subcommands.Command{
 		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval", "Autotest keyval for test. Key may not contain : character. May be specified multiple times.")
 		c.Flags.StringVar(&c.testArgs, "test-args", "", "Test arguments string (meaning depends on test).")
 		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "QuotaScheduler account to use for this task (optional)")
+		c.Flags.Var(flag.StringSlice(&c.provisionLabels), "provision-label", "Additional provisionable labels to use for the test (e.g. cheets-version:git_pi-arc/cheets_x86_64). May be specified multiple times (optional)")
 		return c
 	},
 }
 
 type createTestRun struct {
 	subcommands.CommandRunBase
-	authFlags   authcli.Flags
-	envFlags    envFlags
-	client      bool
-	image       string
-	board       string
-	model       string
-	pool        string
-	timeoutMins int
-	tags        []string
-	keyvals     []string
-	testArgs    string
-	qsAccount   string
+	authFlags       authcli.Flags
+	envFlags        envFlags
+	client          bool
+	image           string
+	board           string
+	model           string
+	pool            string
+	timeoutMins     int
+	tags            []string
+	keyvals         []string
+	testArgs        string
+	qsAccount       string
+	provisionLabels []string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -116,9 +118,12 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	dimensions = append(dimensions, userDimensions...)
 
-	provisionableLabels := make([]string, 0, 1)
+	var provisionableLabels []string
 	if c.image != "" {
 		provisionableLabels = append(provisionableLabels, "provisionable-cros-version:"+c.image)
+	}
+	for _, p := range c.provisionLabels {
+		provisionableLabels = append(provisionableLabels, "provisionable-"+p)
 	}
 
 	keyvals, err := toKeyvalMap(c.keyvals)
