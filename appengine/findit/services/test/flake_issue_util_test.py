@@ -89,10 +89,15 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.put()
     return flake
 
-  def _CreateFlakeOccurrence(self, build_id, step_ui_name, test_name,
-                             gerrit_cl_id, parent_flake_key):
+  def _CreateFlakeOccurrence(self,
+                             build_id,
+                             step_ui_name,
+                             test_name,
+                             gerrit_cl_id,
+                             parent_flake_key,
+                             flake_type=FlakeType.CQ_FALSE_REJECTION):
     flake_occurrence = FlakeOccurrence.Create(
-        flake_type=FlakeType.CQ_FALSE_REJECTION,
+        flake_type=flake_type,
         build_id=build_id,
         step_ui_name=step_ui_name,
         test_name=test_name,
@@ -1591,3 +1596,22 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         2018, 12, 18, 12, 0, 0)  # Over 24 hours old.
     flake_issue_3.put()
     self.assertEqual(3, flake_issue_util.GetRemainingDailyUpdatesCount())
+
+  def testFlakeHasEnoughCIOccurrences(self):
+    flake_issue = FlakeIssue.Create('chromium', 1)
+    flake_issue.put()
+
+    flake = self._CreateFlake('s', 'suite.t', 'suite.t')
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    occurrences = [
+        self._CreateFlakeOccurrence(1, 's', 'suite.t', -1, flake.key,
+                                    FlakeType.CI_FAILED_STEP),
+        self._CreateFlakeOccurrence(2, 's', 'suite.t', -1, flake.key,
+                                    FlakeType.CI_FAILED_STEP),
+        self._CreateFlakeOccurrence(3, 's', 'suite.t', -1, flake.key,
+                                    FlakeType.CI_FAILED_STEP),
+    ]
+
+    self.assertTrue(flake_issue_util._FlakeHasEnoughOccurrences(occurrences))

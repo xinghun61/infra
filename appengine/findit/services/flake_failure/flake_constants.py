@@ -58,6 +58,9 @@ DEFAULT_MAX_SWARMING_TASK_RETRIES_PER_DATA_POINT = 3
 # by a specific uncommitted CL.
 DEFAULT_MINIMUM_REQUIRED_IMPACTED_CLS_PER_DAY = 3
 
+# Default required ci occurrence count in past 24 hours to report the bug.
+DEFAULT_MINIMUM_REQUIRED_CI_OCCURRENCES_PER_DAY = 3
+
 # Default minimum confidence score to post notifications to code reviews.
 DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_ENDPOINTS = 0.7
 

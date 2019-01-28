@@ -67,8 +67,8 @@ grouped together to avoid duplications, and it uses the following criteria:
 ## Bug Filing Criteria
 To avoid being noisy, a flaky test is only reported to Monorail if all the
 following requirements are met:
-* At least 3 unreported flake occurrences that are associated with different CLs
-  within the past 24 hours.
+* At least 3 unreported CQ flake occurrences that are associated with different CLs
+  or 3 unreported CI flake occurrences within the past 24 hours.
 * Any bug can only be created or updated at most once within any 24 hours
   window.
 * At most 30 bugs can be created or updated within any 24 hours window.
