@@ -12,7 +12,7 @@
     [end]
     <th colspan="2" style="text-align:left">Query:</th>
     [is arg0 "user"]
-      <th style="text-align:left">Subsciption options:</th>
+      <th style="text-align:left">Subscription options:</th>
     [end]
     <th></th>
    </tr>
