@@ -81,50 +81,9 @@ type Assignment struct {
 	ProvisionRequired bool
 }
 
-// Scheduler is the interface with which reconciler interacts with a scheduler.
-// One implementation of this interface (the quotascheduler) is provided
-// by qslib/scheduler.Scheduler.
-type Scheduler interface {
-	// UpdateTime informs the scheduler of the current time.
-	UpdateTime(ctx context.Context, t time.Time) error
-
-	// MarkIdle informs the scheduler that a given worker is idle, with
-	// given labels.
-	MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time) error
-
-	// RunOnce runs through one round of the scheduling algorithm, and determines
-	// and returns work assignments.
-	RunOnce(ctx context.Context) ([]*scheduler.Assignment, error)
-
-	// AddRequest adds a task request to the queue.
-	AddRequest(ctx context.Context, requestID RequestID, request *scheduler.TaskRequest, t time.Time) error
-
-	// IsAssigned returns whether the given request is currently assigned to the
-	// given worker.
-	IsAssigned(requestID RequestID, workerID WorkerID) bool
-
-	// NotifyRequest informs the scheduler authoritatively that the given request
-	// was running on the given worker (or was idle, for workerID = "") at the
-	// given time.
-	//
-	// Supplied requestID must not be "".
-	//
-	// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-	NotifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) error
-
-	// GetRequest returns the (waiting or running) request for a given ID.
-	GetRequest(rid RequestID) (req *scheduler.TaskRequest, ok bool)
-
-	// AbortRequest informs the scheduler authoritatively that the given request
-	// is stopped (not running on a worker, and not in the queue) at the given time.
-	//
-	// Supplied requestID must not be "".
-	AbortRequest(ctx context.Context, requestID RequestID, t time.Time) error
-}
-
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
-func (state *State) AssignTasks(ctx context.Context, s Scheduler, t time.Time, workers ...*IdleWorker) ([]Assignment, error) {
+func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, workers ...*IdleWorker) ([]Assignment, error) {
 	state.ensureMaps()
 	s.UpdateTime(ctx, t)
 
@@ -238,7 +197,7 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 // scheduler operations have been completed (otherwise: subsequent AssignTasks or
 // Cancellations will return stale data until internal timeouts within reconciler
 // expire).
-func (state *State) Notify(ctx context.Context, s Scheduler, updates ...*TaskInstant) error {
+func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, updates ...*TaskInstant) error {
 	state.ensureMaps()
 	sort.Slice(updates, func(i, j int) bool {
 		return tutils.Timestamp(updates[i].Time).Before(tutils.Timestamp(updates[j].Time))

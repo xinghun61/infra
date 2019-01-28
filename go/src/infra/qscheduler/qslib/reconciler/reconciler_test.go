@@ -30,15 +30,6 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 )
 
-// TestQuotaschedulerInterface ensures that scheduler.Scheduler is a valid
-// implementation of the Scheduler interface.
-func TestQuotaschedulerInterface(t *testing.T) {
-	var s interface{} = &scheduler.Scheduler{}
-	if _, ok := s.(Scheduler); !ok {
-		t.Errorf("Scheduler interface should be implemented by *scheduler.Scheduler")
-	}
-}
-
 func assertAssignments(t *testing.T, description string,
 	got []Assignment, want []Assignment) {
 	t.Helper()
