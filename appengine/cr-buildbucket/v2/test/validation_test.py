@@ -262,10 +262,9 @@ class ScheduleBuildRequestTests(BaseTestCase):
             dict(key='b', value='b1'),
         ],
         dimensions=[
+            dict(key='d1', value='dv1', expiration=dict(seconds=60)),
             dict(key='d1', value='dv1'),
-            dict(key='d1', value='dv2'),
-            dict(key='d2', value='dv3'),
-            dict(key='d3', value=''),
+            dict(key='d2', value='dv2'),
         ],
         priority=100,
         notify=dict(
@@ -275,6 +274,19 @@ class ScheduleBuildRequestTests(BaseTestCase):
     )
     msg.properties.update({'a': 1, '$recipe_engine/runtime': {'b': 1}})
     self.assert_valid(msg)
+
+  def test_repeating_dimension_key_and_expiration(self):
+    msg = rpc_pb2.ScheduleBuildRequest(
+        request_id='request id',
+        builder=dict(project='chromium', bucket='try', builder='linux-rel'),
+        dimensions=[
+            dict(key='a', value='b', expiration=dict(seconds=60)),
+            dict(key='a', value='b', expiration=dict(seconds=60)),
+        ],
+    )
+    self.assert_invalid(
+        msg, r'dimensions: key "a" and expiration 60s are not unique'
+    )
 
   def test_empty(self):
     msg = rpc_pb2.ScheduleBuildRequest()
@@ -883,3 +895,47 @@ class PredicateOutputGitilesCommitTests(BaseTestCase):
     ]
     for msg in variants:
       self.assert_invalid(msg, r'unsupported set of fields')
+
+
+class RequestedDimensionTests(BaseTestCase):
+  func_name = 'validate_requested_dimension'
+
+  def test_valid(self):
+    msg = common_pb2.RequestedDimension(key='a', value='b')
+    self.assert_valid(msg)
+
+  def test_valid_with_expiration(self):
+    msg = common_pb2.RequestedDimension(
+        key='a', value='b', expiration=dict(seconds=60)
+    )
+    self.assert_valid(msg)
+
+  def test_valid_with_no_key(self):
+    msg = common_pb2.RequestedDimension(key='', value='b')
+    self.assert_invalid(msg, r'key: required')
+
+  def test_valid_with_no_value(self):
+    msg = common_pb2.RequestedDimension(key='a', value='')
+    self.assert_invalid(msg, r'value: required')
+
+  def test_valid_with_caches(self):
+    msg = common_pb2.RequestedDimension(key='caches', value='b')
+    self.assert_invalid(msg, r'key: value "caches" is invalid')
+
+  def test_valid_with_negative_seconds(self):
+    msg = common_pb2.RequestedDimension(
+        key='a', value='b', expiration=dict(seconds=-1)
+    )
+    self.assert_invalid(msg, r'seconds: must not be negative')
+
+  def test_valid_with_42_seconds(self):
+    msg = common_pb2.RequestedDimension(
+        key='a', value='b', expiration=dict(seconds=42)
+    )
+    self.assert_invalid(msg, r'seconds: must be a multiple of 60')
+
+  def test_valid_with_nanos(self):
+    msg = common_pb2.RequestedDimension(
+        key='a', value='b', expiration=dict(nanos=1)
+    )
+    self.assert_invalid(msg, r'nanos: must be 0')

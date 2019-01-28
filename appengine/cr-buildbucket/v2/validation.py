@@ -172,6 +172,25 @@ def validate_search_builds_request(req):
   _validate_paged_request(req)
 
 
+def validate_requested_dimension(dim):
+  """Validates common_pb2.RequestedDimension."""
+  _check_truth(dim, 'key', 'value')
+
+  if dim.key == 'caches':
+    _enter_err('key', 'value "caches" is invalid; define caches instead')
+
+  with _enter('expiration'):
+
+    with _enter('seconds'):
+      if dim.expiration.seconds < 0:
+        _err('must not be negative')
+      if dim.expiration.seconds % 60 != 0:
+        _err('must be a multiple of 60')
+
+    if dim.expiration.nanos:
+      _enter_err('nanos', 'must be 0')
+
+
 def validate_schedule_build_request(
     req,
     require_request_id=True,
@@ -205,7 +224,18 @@ def validate_schedule_build_request(
   with _enter('tags'):
     validate_tags(req.tags, 'new')
 
-  _check_repeated(req, 'dimensions', lambda d: _check_truth(d, 'key'))
+  _check_repeated(req, 'dimensions', validate_requested_dimension)
+
+  key_exp = set()
+  with _enter('dimensions'):
+    for d in req.dimensions:
+      t = (d.key, d.expiration.seconds)
+      if t in key_exp:
+        _err(
+            'key "%s" and expiration %ds are not unique', d.key,
+            d.expiration.seconds
+        )
+      key_exp.add(t)
 
   if req.priority < 0 or req.priority > 255:
     _enter_err('priority', 'must be in [0, 255]')
