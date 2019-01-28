@@ -63,10 +63,15 @@ func Run(b *swarming.Bot, f Func) (err error) {
 		}
 	}()
 
-	hiPath, err := prepareHostInfo(b, &i)
+	hi, err := loadDUTHostInfo(b)
 	if err != nil {
 		// This can happen if the DUT disappeared from the
 		// inventory after the task was scheduled.
+		return errors.Wrap(err, "load host info failed")
+	}
+	addBotInfoToHostInfo(hi, i.BotInfo)
+	hiPath, err := dumpHostInfo(i.DUTName, i.ResultsDir, hi)
+	if err != nil {
 		return errors.Wrap(err, "prepare host info failed")
 	}
 	defer func() {

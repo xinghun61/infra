@@ -16,24 +16,16 @@ import (
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
-	"infra/cmd/skylab_swarming_worker/internal/swarming"
 )
 
-// prepareHostInfo prepopulates the results directory with the host
-// info stores required for autoserv. It returns the path to host info file created.
-func prepareHostInfo(b *swarming.Bot, i *Info) (string, error) {
-	hi, err := loadDUTHostInfo(b)
-	if err != nil {
-		return "", err
-	}
-	bi := i.BotInfo
+// addBotInfoToHostInfo adds dynamic botinfo to hostinfo.
+func addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *botinfo.BotInfo) {
 	for label, value := range bi.ProvisionableLabels {
 		hi.Labels = append(hi.Labels, fmt.Sprintf("%s:%s", label, value))
 	}
 	for attribute, value := range bi.ProvisionableAttributes {
 		hi.Attributes[attribute] = value
 	}
-	return dumpHostInfo(i.DUTName, i.ResultsDir, hi)
 }
 
 // hostInfoSubDir is the filename of the directory for storing host info.
