@@ -27,8 +27,6 @@ from pipelines.test_failure.run_swarming_tasks_pipeline import (
     RunSwarmingTasksPipeline)
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
-from pipelines.trigger_flake_analyses_pipeline import (
-    TriggerFlakeAnalysesPipeline)
 from services import build_failure_analysis
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
@@ -167,6 +165,3 @@ class AnalyzeTestFailurePipeline(GeneratorPipeline):
                                                 build_number).key.urlsafe())
         yield report_event_pipeline.ReportAnalysisEventPipeline(
             report_event_input)
-
-      # Trigger flake analysis on flaky tests, if any.
-      yield TriggerFlakeAnalysesPipeline(pipeline_input.build_key)
