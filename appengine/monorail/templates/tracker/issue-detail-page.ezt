@@ -95,7 +95,7 @@
       Issue [issue.local_id]:
       [issue.summary]
     </span></h1>
-    <div style="padding:4px">
+    <div style="padding:2px 4px">
       Reported by
       [include "../framework/user-link.ezt" first_description.creator],
       <span class="date" title="[first_description.date_tooltip] UTC">

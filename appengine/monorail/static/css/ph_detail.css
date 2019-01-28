@@ -36,7 +36,7 @@ pre.prettyprint {
 .issuecomment pre.issue_text {
   border-top: var(--chops-card-border);
   margin: 0;
-  padding: 6px 0 8px 8px;
+  padding: 5px 0 6px 8px;
 }
 
 .issuedescription pre, .issuecomment pre {
@@ -48,7 +48,7 @@ pre.prettyprint {
 }
 
 .issuecomment {
-    margin: 1.5em 1em;
+    margin: 1.3em 1em;
     border: var(--chops-card-border);
     border-radius: var(--chops-radius);
     box-shadow: var(--chops-shadow);
@@ -141,7 +141,7 @@ pre.prettyprint {
 
 .issuecommentheader {
     background: var(--chops-card-heading-bg);
-    padding: 3px;
+    padding: 2px 3px 3px 3px;
 }
 
 .issuedescription pre, .issuecomment pre {
@@ -259,7 +259,7 @@ pre.prettyprint {
 .updates table {
     width: 100%;
     font-size: 90%;
-    padding: 5px;
+    padding: 4px;
 }
 
 .fakelink {

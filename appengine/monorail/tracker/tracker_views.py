@@ -372,7 +372,7 @@ _TEMPLATE_TEXT_RE = re.compile('^(<b>[^<]+</b>)', re.MULTILINE)
 
 def _ParseTextRuns(content):
   """Convert the user's comment to a list of TextRun objects."""
-  chunks = _TEMPLATE_TEXT_RE.split(content)
+  chunks = _TEMPLATE_TEXT_RE.split(content.strip())
   runs = [_ChunkToRun(chunk) for chunk in chunks]
   return runs
 
