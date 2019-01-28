@@ -821,6 +821,7 @@ def _CreateIssuesForFlakes(flake_groups_to_create_issue):
       # can update an issue at most once every 24 hours.
       flake_issue = GetFlakeIssue(flake_group.flakes[0])
       flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
+      flake_issue.last_updated_time_in_monorail = time_util.GetUTCNow()
       flake_issue.put()
     except HttpError as error:
       # Benign exceptions (HttpError 403) may happen when FindIt tries to
@@ -881,6 +882,7 @@ def _UpdateIssuesForFlakes(flake_groups_to_update_issue):
       # can update an issue at most once every 24 hours.
       flake_issue = flake_group.flake_issue
       flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
+      flake_issue.last_updated_time_in_monorail = time_util.GetUTCNow()
       flake_issue.put()
     except HttpError as error:
       # Benign exceptions (HttpError 403) may happen when FindIt tries to

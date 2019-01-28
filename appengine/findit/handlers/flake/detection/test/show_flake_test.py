@@ -66,7 +66,6 @@ class ShowFlakeTest(WaterfallTestCase):
     flake.test_location = TestLocation()
     flake.test_location.file_path = '../../some/test/path/a.cc'
     flake.test_location.line_number = 42
-
     flake.flake_issue_key = flake_issue.key
     flake.put()
 

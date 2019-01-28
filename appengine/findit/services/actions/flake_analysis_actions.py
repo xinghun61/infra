@@ -235,6 +235,7 @@ def UpdateMonorailBugWithCulprit(analysis_urlsafe_key):
       issue_generator.FlakeAnalysisIssueGenerator(analysis))
   flake_issue_to_update.last_updated_time_with_analysis_results = (
       time_util.GetUTCNow())
+  flake_issue_to_update.last_updated_time_in_monorail = time_util.GetUTCNow()
   flake_issue_to_update.put()
 
   monitoring.flake_analyses.increment({

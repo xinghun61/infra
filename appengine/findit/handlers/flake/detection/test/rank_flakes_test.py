@@ -25,12 +25,14 @@ class RankFlakesTest(WaterfallTestCase):
 
     self.flake_issue0 = FlakeIssue.Create(
         monorail_project='chromium', issue_id=900)
-    self.flake_issue0.last_updated_time = datetime.datetime(2018, 1, 1)
+    self.flake_issue0.last_updated_time_in_monorail = datetime.datetime(
+        2018, 1, 1)
     self.flake_issue0.put()
 
     self.flake_issue1 = FlakeIssue.Create(
         monorail_project='chromium', issue_id=1000)
-    self.flake_issue1.last_updated_time = datetime.datetime(2018, 1, 1)
+    self.flake_issue1.last_updated_time_in_monorail = datetime.datetime(
+        2018, 1, 1)
     self.flake_issue1.merge_destination_key = self.flake_issue0.key
     self.flake_issue1.put()
 
@@ -85,11 +87,15 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake1_dict['flake_issue'] = self.flake_issue0.to_dict()
     self.flake1_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
+    self.flake1_dict['flake_issue']['last_updated_time_in_monorail'] = (
+        '274 days, 01:00:00')
 
     self.flake3_dict = self.flake3.to_dict()
     self.flake3_dict['flake_issue'] = self.flake_issue0.to_dict()
     self.flake3_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
+    self.flake3_dict['flake_issue']['last_updated_time_in_monorail'] = (
+        '274 days, 01:00:00')
 
     self.flake4_dict = self.flake4.to_dict()
 
@@ -128,7 +134,6 @@ class RankFlakesTest(WaterfallTestCase):
         '/ranked-flakes', params={
             'format': 'json',
         }, status=200)
-
     self.assertEqual(
         json.dumps({
             'flakes_data': [self.flake3_dict, self.flake4_dict],
@@ -265,7 +270,6 @@ class RankFlakesTest(WaterfallTestCase):
             'format': 'json',
         },
         status=200)
-
     self.assertEqual(
         json.dumps({
             'flakes_data': [self.flake3_dict, self.flake1_dict],

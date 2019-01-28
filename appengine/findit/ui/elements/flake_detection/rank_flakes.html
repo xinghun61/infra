@@ -7,22 +7,13 @@
   <template>
     <style>
       table {
-        border-collapse: collapse;
         border: 1px solid gray;
       }
 
       table th {
         padding: 5px;
         color: #FFF;
-        background-color: #4285F4;
         white-space: nowrap;
-      }
-
-     .num-header {
-        text-align: right;
-     }
-
-     .str-header {
         text-align: left;
       }
 
@@ -42,18 +33,36 @@
       rank-flake-item {
         display: table-row;
       }
+
+      .group-header {
+        text-align: center;
+      }
+
+      .flake-header {
+        background-color: #4285F4;
+      }
+
+      .bug-header {
+        background-color: #669DF6;
+      }
     </style>
     <div class="table-scroll">
       <table width="95%">
         <tr>
-          <th width="10%">Flake Score
+          <th class="group-header flake-header" width="65%" colspan="3">Flake</th>
+          <th class="group-header bug-header" width="35%" colspan="3">Bug</th>
+        </tr>
+        <tr>
+          <th class="flake-header" width="10%">Score
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Flake Score = Sum(# of impacted CLs * Weight).</paper-tooltip></th>
-          <th class="str-header" width="65%">Test Name
+          <th class="flake-header" width="40%">Test Name
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Name of a flaky test, or a group of parameterized tests.</paper-tooltip></th>
-          <th class="num-header" width="15%">Last Occurred
+          <th class="flake-header" width="15%">Last Occurred
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Time since last occurrence.</paper-tooltip>
           </th>
-          <th class="num-header" width="10%">Bug</th>
+          <th class="bug-header" width="10%">Id</th>
+          <th class="bug-header" width="10%">Status</th>
+          <th class="bug-header" width="15%">Last Updated</th>
         </tr>
         <template is="dom-repeat" items="[[flakes]]" as="flake">
           <rank-flake-item flake=[[flake]] weights=[[weights]]></rank-flake-item>

@@ -15,6 +15,7 @@
         vertical-align: top;
         overflow: hidden;
         text-overflow: ellipsis;
+        text-align: left;
       }
 
       .rank-button {
@@ -22,28 +23,32 @@
         margin: 0px;
         color: #00f;
       }
-
-      .num-content {
-        text-align: right;
-      }
-
-      .str-content {
-        text-align: left;
-      }
     </style>
-      <td class="num-content"><paper-button class="rank-button" on-tap="showDialog"><u>[[flake.flake_score_last_week]]</u></paper-button>
+      <td><paper-button class="rank-button" on-tap="showDialog"><u>[[flake.flake_score_last_week]]</u></paper-button>
       <flake-score-chart class="flake_dialog" flake={{flake}} weights=[[weights]]></flake-score-chart>
       </td>
-      <td class="str-content">
+      <td>
         <a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a>
         <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake.test_label_name]]</paper-tooltip>
       </td>
-      <td class="num-content">[[flake.time_delta]] ago</td>
-      <td class="num-content">
-        <template is="dom-if" if="[[hasBug(flake)]]">
-            <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
+      <td>[[flake.time_delta]] ago</td>
+      <template is="dom-if" if="[[hasBug(flake)]]">
+        <td width="10%">
+          <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>
+        </td>
+        <td width="10%">[[flake.flake_issue.status]]</td>
+        <template is="dom-if" if="[[_hasBugUpdateTime(flake)]]">
+          <td width="15%">[[flake.flake_issue.last_updated_time_in_monorail]] ago</td>
         </template>
-      </td>
+        <template is="dom-if" if="[[!_hasBugUpdateTime(flake)]]">
+          <td width="15%"></td>
+        </template>
+      </template>
+      <template is="dom-if" if="[[! hasBug(flake)]]">
+        <td width="10%"></td>
+        <td width="10%"></td>
+        <td width="15%"></td>
+      </template>
     </template>
   <script>
     (function () {
@@ -63,6 +68,11 @@
         hasBug: function (flake) {
           return (flake.flake_issue != null &&
           flake.flake_issue.issue_id != null);
+        },
+
+        _hasBugUpdateTime: function(flake) {
+          return (flake.flake_issue != null &&
+          flake.flake_issue.last_updated_time_in_monorail != null);
         },
 
         showDialog: function (e) {

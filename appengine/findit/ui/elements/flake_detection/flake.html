@@ -58,11 +58,16 @@
             <flake-score-chart class="flake_dialog" flake={{flake_json}} weights=[[weights]]></flake-score-chart>
           </td>
         </tr>
-        <template is="dom-if" if="[[hasBug(flake_json)]]">
+        <template is="dom-if" if="[[_hasBug(flake_json)]]">
           <tr>
               <td>Bug:</td>
               <td>
                 <a href="[[flake_json.flake_issue.issue_link]]">[[flake_json.flake_issue.issue_id]]</a>
+                ([[flake_json.flake_issue.status]].
+                <template is="dom-if" if="[[_hasBugUpdateTime(flake_json)]]">
+                  Updated [[flake_json.flake_issue.last_updated_time_in_monorail]] ago
+                </template>
+                )
               </td>
           </tr>
           <template is="dom-repeat" items="{{flake_json.culprits}}" as="culprit">
@@ -129,9 +134,14 @@
           }
         },
 
-        hasBug: function(flake) {
+        _hasBug: function(flake) {
           return (flake.flake_issue_key != null && flake.flake_issue != null &&
           flake.flake_issue.issue_id != null);
+        },
+
+        _hasBugUpdateTime: function(flake) {
+          return (flake.flake_issue != null &&
+          flake.flake_issue.last_updated_time_in_monorail != null);
         },
 
         _allOccurrencesShown() {

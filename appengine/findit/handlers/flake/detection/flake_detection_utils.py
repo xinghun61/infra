@@ -223,6 +223,14 @@ def _FetchFlakeOccurrences(flake, flake_type, max_occurrence_count):
   return occurrences_query.fetch()
 
 
+def _GetLastUpdatedTimeDelta(flake_issue):
+  """Uses the latest update time we can get as last_updated_time_in_monorail."""
+  last_updated_time = flake_issue.last_updated_time_in_monorail or None
+  return (time_util.FormatTimedelta(
+      time_util.GetUTCNow() - last_updated_time, with_days=True)
+          if last_updated_time else None)
+
+
 def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   """Gets information for a detected flakes.
   Gets occurrences of the flake and the attached monorail issue.
@@ -272,6 +280,8 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
     flake_dict['flake_issue'] = flake_issue.to_dict()
     flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         flake_issue.monorail_project, flake_issue.issue_id)
+    flake_dict['flake_issue'][
+        'last_updated_time_in_monorail'] = _GetLastUpdatedTimeDelta(flake_issue)
 
     flake_dict['culprits'], flake_dict['sample_analysis'] = (
         _GetFlakeAnalysesResults(flake_issue.issue_id))
@@ -421,6 +431,9 @@ def GenerateFlakesData(flakes):
       flake_dict['flake_issue'] = flake_issue.to_dict()
       flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
           flake_issue.monorail_project, flake_issue.issue_id)
+      flake_dict['flake_issue'][
+          'last_updated_time_in_monorail'] = _GetLastUpdatedTimeDelta(
+              flake_issue)
 
     flake_dict['flake_urlsafe_key'] = flake.key.urlsafe()
     flake_dict['time_delta'] = time_util.FormatTimedelta(

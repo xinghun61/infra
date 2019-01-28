@@ -24,6 +24,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
   def testGetFlakeInformation(self, _):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
     flake_issue.last_updated_time_by_flake_detection = datetime(2018, 1, 1)
+    flake_issue.last_updated_time_in_monorail = datetime(2018, 1, 2)
+    flake_issue.status = 'Started'
     flake_issue.put()
 
     luci_project = 'chromium'
@@ -210,12 +212,12 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             'merge_destination_key':
                 None,
             'last_updated_time_in_monorail':
-                None,
+                '1 day, 00:00:00',
             'last_updated_time_with_analysis_results':
                 None,
             'labels': [],
             'status':
-                None,
+                'Started',
         },
         'component':
             'Mock>Component',
