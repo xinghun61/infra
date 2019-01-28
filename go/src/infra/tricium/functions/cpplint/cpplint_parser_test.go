@@ -92,7 +92,7 @@ func TestPylintParsingFunctions(t *testing.T) {
 
 		Convey("Building the filter argument", func() {
 			So(filterArg("-whitespace/braces"), ShouldEqual, "-whitespace/braces")
-			So(filterArg(""), ShouldEqual, "-whitespace,-build/header_guard")
+			So(filterArg(""), ShouldEqual, "-whitespace")
 		})
 	})
 }

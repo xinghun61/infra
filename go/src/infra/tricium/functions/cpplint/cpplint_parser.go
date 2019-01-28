@@ -56,6 +56,19 @@ func main() {
 	}
 	log.Printf("Read FILES data.")
 
+	// Cpplint header guard paths are based on the path from the root of the
+	// repo. For Tricium analyzers with FILES data, we don't actually have a
+	// repository, just a collection of files.
+	//
+	// As a hack, to tell cpplint where the root of the repository should be,
+	// we can call git init in the input directory.
+	cmd := exec.Command("git", "init")
+	cmd.Dir = *inputDir
+	log.Printf("Running cmd: %s", cmd.Args)
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Failed to run command %s", err)
+	}
+
 	// Construct Command to run.
 	cmdName := filepath.Join(exPath, pythonPath)
 	cmdArgs := []string{
@@ -67,9 +80,10 @@ func main() {
 		cmdArgs = append(cmdArgs, "--root", *rootFlag)
 	}
 	for _, file := range input.Files {
-		cmdArgs = append(cmdArgs, filepath.Join(*inputDir, file.Path))
+		cmdArgs = append(cmdArgs, file.Path)
 	}
-	cmd := exec.Command(cmdName, cmdArgs...)
+	cmd = exec.Command(cmdName, cmdArgs...)
+	cmd.Dir = *inputDir
 	log.Printf("Command: %s", cmd.Args)
 
 	// Cpplint prints warnings to stderr.
@@ -113,7 +127,6 @@ func filterArg(filterFlag string) string {
 	}
 	filters := []string{
 		"-whitespace",
-		"-build/header_guard", // --root must be specified for this check.
 	}
 	return strings.Join(filters, ",")
 }
