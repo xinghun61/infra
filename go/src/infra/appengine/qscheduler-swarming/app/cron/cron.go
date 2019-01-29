@@ -61,10 +61,6 @@ func refreshSchedulers(c *router.Context) error {
 		// idle bots.
 		req := &swarming.AssignTasksRequest{SchedulerId: sid, Time: ts}
 
-		// TODO(akeshet): Consider forwarding these requests as their own RPCs or task queue entries.
-		// TODO(akeshet): Make this AssignTasks call be lazy and give up if first transaction attempt fails
-		// (because the point of this cron is just to ensure that scheduler is refreshed at some minimum
-		// rate; any transaction contention would indicate that the scheduler is already being refreshed).
 		s := &frontend.QSchedulerServerImpl{}
 		if _, err := s.AssignTasks(ctx, req); err != nil {
 			return errors.Wrap(err, "unable to refresh scheduler via AssignTasks")
