@@ -99,6 +99,20 @@ wheel: <
 
 * *universal*
 
+## **Markdown**
+
+### 3.0.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/markdown-py2_py3"
+  version: "version:3.0.1"
+>
+```
+
+
+* *universal*
+
 ## **MarkupSafe**
 
 ### 1.0
