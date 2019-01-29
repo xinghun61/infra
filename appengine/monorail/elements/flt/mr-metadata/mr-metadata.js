@@ -23,6 +23,10 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
       blocking: Array,
       owner: Object,
       phaseName: String,
+      isApproval: {
+        type: Boolean,
+        value: false,
+      },
       projectName: {
         type: String,
         statePath: 'projectName',
@@ -73,7 +77,15 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
         type: Boolean,
         computed: '_canRerankBlockedOnIssues(issuePermissions)',
       },
+      showUserHotlists: {
+        type: Boolean,
+        computed: '_computeShowUserHotlists(user, isApproval)',
+      },
     };
+  }
+
+  _computeShowUserHotlists(user, isApproval) {
+    return user && !isApproval;
   }
 
   _blockedOnTableRows(blockerReferences, blockedOn) {

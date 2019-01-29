@@ -170,7 +170,7 @@
       </tr>
     </template>
 
-    <template is="dom-if" if="[[sortedBlockedOn]]">
+    <template is="dom-if" if="[[sortedBlockedOn.length]]">
       <tr>
         <th>BlockedOn:</th>
         <td>
@@ -190,17 +190,17 @@
           </chops-button>
         </td>
       </tr>
+      <chops-dialog id="viewBlockedOnDialog">
+        <mr-issue-table
+          id="viewBlockedOnTable"
+          columns="[[blockedOnTableColumns]]"
+          rows="[[blockedOnTableRows]]"
+          on-reorder="reorderBlockedOn"
+          rerank-enabled="[[blockedOnIssuesRerankEnabled]]"
+        >
+        </mr-issue-table>
+      </chops-dialog>
     </template>
-    <chops-dialog id="viewBlockedOnDialog">
-      <mr-issue-table
-        id="viewBlockedOnTable"
-        columns="[[blockedOnTableColumns]]"
-        rows="[[blockedOnTableRows]]"
-        on-reorder="reorderBlockedOn"
-        rerank-enabled="[[blockedOnIssuesRerankEnabled]]"
-      >
-      </mr-issue-table>
-    </chops-dialog>
 
     <template is="dom-if" if="[[blocking]]">
       <tr>
@@ -228,7 +228,7 @@
       </tr>
     </template>
 
-    <template is="dom-if" if="[[user]]">
+    <template is="dom-if" if="[[showUserHotlists]]">
       <tr>
         <th>
           Your Hotlists:
