@@ -8,7 +8,6 @@ import (
 	"io"
 
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
-	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
 )
 
@@ -16,10 +15,10 @@ type luciferResult struct {
 	TestsFailed int
 }
 
-func runLuciferJob(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
+func runLuciferJob(i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
 	panic("not supported on windows")
 }
 
-func runLuciferAdminTask(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
+func runLuciferAdminTask(i *harness.Info, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
 	panic("not supported on windows")
 }

@@ -24,10 +24,11 @@ import (
 // Func is run by Run.  It is called with a Bot and the path to the
 // results directory.  The Bot will have BotInfo loaded, and the
 // BotInfo will be written back when the swarmingFunc returns.
-type Func func(*swarming.Bot, *Info) error
+type Func func(*Info) error
 
 // Info holds information about the Swarming harness.
 type Info struct {
+	*swarming.Bot
 	ResultsDir string
 	DUTName    string
 	BotInfo    *botinfo.BotInfo
@@ -36,7 +37,9 @@ type Info struct {
 // Run calls a function with a Swarming harness, which prepares and
 // cleans up the results directory and host info.
 func Run(b *swarming.Bot, f Func) (err error) {
-	i := Info{}
+	i := Info{
+		Bot: b,
+	}
 	i.DUTName, err = loadDUTName(b)
 	if err != nil {
 		return errors.Wrap(err, "load DUT name")
@@ -79,7 +82,7 @@ func Run(b *swarming.Bot, f Func) (err error) {
 			err = errors.Wrap(err2, "dimensions update from host info failed")
 		}
 	}()
-	return f(b, &i)
+	return f(&i)
 }
 
 // prepareResultsDir creates the results dir needed for autoserv.

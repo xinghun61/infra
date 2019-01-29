@@ -30,24 +30,24 @@ type luciferResult struct {
 	TestsFailed int
 }
 
-func runLuciferJob(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
-	cmd := lucifer.TestCommand(b.LuciferConfig(), r)
+func runLuciferJob(i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
+	cmd := lucifer.TestCommand(i.LuciferConfig(), r)
 	c := make(chan os.Signal, 1)
 	defer close(c)
 	signal.Notify(c, unix.SIGTERM, unix.SIGINT)
 	defer signal.Stop(c)
 	go listenAndAbort(c, r.AbortSock)
-	return runLuciferCommand(b, i, w, cmd)
+	return runLuciferCommand(i, w, cmd)
 }
 
-func runLuciferAdminTask(b *swarming.Bot, i *harness.Info, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
-	cmd := lucifer.AdminTaskCommand(b.LuciferConfig(), r)
+func runLuciferAdminTask(i *harness.Info, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
+	cmd := lucifer.AdminTaskCommand(i.LuciferConfig(), r)
 	c := make(chan os.Signal)
 	defer close(c)
 	signal.Notify(c, unix.SIGTERM, unix.SIGINT)
 	defer signal.Stop(c)
 	go listenAndAbort(c, r.AbortSock)
-	return runLuciferCommand(b, i, w, cmd)
+	return runLuciferCommand(i, w, cmd)
 }
 
 // listenAndAbort sends an abort to an abort socket when signals are
@@ -75,7 +75,7 @@ func abort(path string) error {
 }
 
 // runLuciferCommand runs a Lucifer exec.Cmd and processes Lucifer events.
-func runLuciferCommand(b *swarming.Bot, i *harness.Info, w io.Writer, cmd *exec.Cmd) (*luciferResult, error) {
+func runLuciferCommand(i *harness.Info, w io.Writer, cmd *exec.Cmd) (*luciferResult, error) {
 	log.Printf("Running %s %s", cmd.Path, strings.Join(cmd.Args, " "))
 	cmd.Stderr = os.Stderr
 
@@ -96,7 +96,7 @@ func runLuciferCommand(b *swarming.Bot, i *harness.Info, w io.Writer, cmd *exec.
 	}
 	err := event.RunCommand(cmd, f)
 	annotations.BuildStep(w, "Epilog")
-	annotations.StepLink(w, "Task results (Stainless)", resultsURL(b))
+	annotations.StepLink(w, "Task results (Stainless)", resultsURL(i.Bot))
 	annotations.StepClosed(w)
 	return r, err
 }
