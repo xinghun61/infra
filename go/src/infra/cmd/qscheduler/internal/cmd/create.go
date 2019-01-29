@@ -20,14 +20,13 @@ import (
 
 // Create subcommand: Create a qscheduler pool.
 var Create = &subcommands.Command{
-	UsageLine: "create",
+	UsageLine: "create [-label KEY:VALUE...] POOL_ID",
 	ShortDesc: "Create a qscheduler pool",
 	LongDesc:  "Create a qscheduler pool.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &createRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.StringVar(&c.poolID, "id", "", "Scheduler ID to create.")
 		c.Flags.Var(flag.StringSlice(&c.labels), "label",
 			"Label that will be used by all tasks and bots for this scheduler, specified in "+
 				"the form foo:bar. May be specified multiple times.")
@@ -41,15 +40,23 @@ type createRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 
-	poolID string
 	labels []string
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	if c.poolID == "" {
-		fmt.Fprintf(os.Stderr, "Must specify id.\n")
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "missing POOL_ID\n")
+		c.Flags.Usage()
 		return 1
 	}
+
+	if len(args) > 1 {
+		fmt.Fprintf(os.Stderr, "too many arguments\n")
+		c.Flags.Usage()
+		return 1
+	}
+
+	poolID := args[0]
 
 	for _, l := range c.labels {
 		_, v := strpair.Parse(l)
@@ -68,7 +75,7 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 	}
 
 	req := &qscheduler.CreateSchedulerPoolRequest{
-		PoolId: c.poolID,
+		PoolId: poolID,
 		Config: &qscheduler.SchedulerPoolConfig{Labels: c.labels},
 	}
 
@@ -78,7 +85,7 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
-	fmt.Printf("Created scheduler %s\n", c.poolID)
+	fmt.Printf("Created scheduler %s\n", poolID)
 
 	return 0
 }

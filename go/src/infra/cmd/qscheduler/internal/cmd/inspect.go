@@ -19,15 +19,13 @@ import (
 
 // Inspect subcommand: Inspect a qscheduler pool.
 var Inspect = &subcommands.Command{
-	UsageLine: "inspect",
+	UsageLine: "inspect POOL_ID",
 	ShortDesc: "Inspect a qscheduler pool",
 	LongDesc:  "Inspect a qscheduler pool.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &inspectRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.StringVar(&c.poolID, "id", "", "Scheduler ID to inspect.")
-
 		return c
 	},
 }
@@ -36,17 +34,24 @@ type inspectRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 	envFlags  envFlags
-
-	poolID string
 }
 
 func (c *inspectRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := cli.GetContext(a, c, env)
 
-	if c.poolID == "" {
-		fmt.Fprintf(os.Stderr, "Must specify id.\n")
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "missing POOL_ID\n")
+		c.Flags.Usage()
 		return 1
 	}
+
+	if len(args) > 1 {
+		fmt.Fprintf(os.Stderr, "too many arguments\n")
+		c.Flags.Usage()
+		return 1
+	}
+
+	poolID := args[0]
 
 	viewService, err := newViewClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {
@@ -55,7 +60,7 @@ func (c *inspectRun) Run(a subcommands.Application, args []string, env subcomman
 	}
 
 	req := &qscheduler.InspectPoolRequest{
-		PoolId: c.poolID,
+		PoolId: poolID,
 	}
 
 	resp, err := viewService.InspectPool(ctx, req)

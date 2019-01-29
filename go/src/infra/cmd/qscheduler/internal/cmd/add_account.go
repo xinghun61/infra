@@ -21,15 +21,13 @@ import (
 
 // AddAccount subcommand: add an account.
 var AddAccount = &subcommands.Command{
-	UsageLine: "add-account",
+	UsageLine: "add-account [-rate RATE...] [-charge-time CHARGE_TIME] [-fanout FANOUT] POOL_ID ACCOUNT_ID",
 	ShortDesc: "Add a quota account",
 	LongDesc:  "Add a quota account",
 	CommandRun: func() subcommands.CommandRun {
 		c := &addAccountRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.StringVar(&c.poolID, "id", "", "Scheduler ID to modify.")
-		c.Flags.StringVar(&c.accountID, "account", "", "Account ID to create.")
 		c.Flags.Var(flag.StringSlice(&c.chargeRates), "rate", "Quota recharge rate for a given priority level. "+
 			"May be specified multiple times, to specify charge rate at P0, P1, P2, ...")
 		c.Flags.Float64Var(&c.chargeTime, "charge-time", 0,
@@ -44,23 +42,26 @@ type addAccountRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 
-	poolID      string
-	accountID   string
 	chargeRates []string
 	chargeTime  float64
 	fanout      int
 }
 
 func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	if c.poolID == "" {
-		fmt.Fprintf(os.Stderr, "Must specify id.\n")
+	if len(args) < 2 {
+		fmt.Fprintf(os.Stderr, "not enough arguments\n")
+		c.Flags.Usage()
 		return 1
 	}
 
-	if c.accountID == "" {
-		fmt.Fprintf(os.Stderr, "Must specify account id.\n")
+	if len(args) > 2 {
+		fmt.Fprintf(os.Stderr, "too many arguments\n")
+		c.Flags.Usage()
 		return 1
 	}
+
+	poolID := args[0]
+	accountID := args[1]
 
 	chargeRateFloats := make([]float64, len(c.chargeRates))
 	for i, c := range c.chargeRates {
@@ -81,8 +82,8 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 	}
 
 	req := &qscheduler.CreateAccountRequest{
-		AccountId: c.accountID,
-		PoolId:    c.poolID,
+		AccountId: accountID,
+		PoolId:    poolID,
 		Config: &scheduler.AccountConfig{
 			ChargeRate:       chargeRateFloats,
 			MaxChargeSeconds: c.chargeTime,
@@ -96,6 +97,6 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 		return 1
 	}
 
-	fmt.Printf("Added account %s to scheduler %s.\n", c.accountID, c.poolID)
+	fmt.Printf("Added account %s to scheduler %s.\n", accountID, poolID)
 	return 0
 }
