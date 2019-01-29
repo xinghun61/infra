@@ -8,37 +8,31 @@
 package harness
 
 import (
-	"fmt"
-	"io/ioutil"
 	"log"
-	"os"
-	"path/filepath"
-	"time"
 
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/resultsdir"
 )
 
 // Info holds information about the Swarming harness.
 type Info struct {
 	*swarming.Bot
-	ResultsDir   string
-	DUTName      string
-	BotInfo      *botinfo.BotInfo
-	hostInfoPath string
+	ResultsDir       string
+	resultsDirCloser *resultsdir.Closer
+	DUTName          string
+	BotInfo          *botinfo.BotInfo
+	hostInfoPath     string
 }
 
 // Close closes and flushes out the harness resources.  This is safe
 // to call multiple times.
 func (i *Info) Close() error {
 	var errs []error
-	if i.ResultsDir != "" {
-		if err := sealResultsDir(i.ResultsDir); err != nil {
-			errs = append(errs, err)
-		}
-		i.ResultsDir = ""
+	if err := i.resultsDirCloser.Close(); err != nil {
+		errs = append(errs, err)
 	}
 	if i.hostInfoPath != "" && i.BotInfo != nil {
 		if err := updateBotInfoFromHostInfo(i.hostInfoPath, i.BotInfo); err != nil {
@@ -80,12 +74,13 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	}
 	i.BotInfo = bi
 
-	rd, err := prepareResultsDir(b)
+	i.ResultsDir = b.ResultsDir()
+	rdc, err := resultsdir.Open(i.ResultsDir)
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	i.ResultsDir = rd
-	log.Printf("Created results directory %s", rd)
+	i.resultsDirCloser = rdc
+	log.Printf("Created results directory %s", i.ResultsDir)
 
 	hi, err := loadDUTHostInfo(b)
 	if err != nil {
@@ -98,27 +93,4 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	}
 	i.hostInfoPath = hiPath
 	return i, nil
-}
-
-// prepareResultsDir creates the results dir needed for autoserv.
-func prepareResultsDir(b *swarming.Bot) (string, error) {
-	p := b.ResultsDir()
-	if err := os.MkdirAll(p, 0755); err != nil {
-		return "", errors.Annotate(err, "prepare results dir %s", p).Err()
-	}
-	return p, nil
-}
-
-const gsOffloaderMarker = ".ready_for_offload"
-
-// sealResultsDir drops a special timestamp file in the results directory notifying
-// gs_offloader to offload the directory. The results directory should not
-// be touched once sealed.
-func sealResultsDir(d string) error {
-	ts := []byte(fmt.Sprintf("%d", time.Now().Unix()))
-	tsfile := filepath.Join(d, gsOffloaderMarker)
-	if err := ioutil.WriteFile(tsfile, ts, 0666); err != nil {
-		return errors.Annotate(err, "seal results dir %s", d).Err()
-	}
-	return nil
 }
