@@ -32,7 +32,10 @@ message LineRange {
   // |31         |10          |
   // |32         |10          |
   // |33         |1           |   --->  LineRange(33, ?, 1)
-  uint64 count = 3;
+  //
+  // TODO(crbug.com/925886): As of Jan 28th, 2019, there could be negative
+  // |count| in the metadata.
+  int64 count = 3;
 }
 
 
@@ -94,10 +97,10 @@ message File {
   // The code coverage info of the lines in the file.
   // If a line is not executable or not instrumented to collect coverage info,
   // it is not coverable and won't be included here.
-  repeated LineRange line_ranges = 3;
+  repeated LineRange lines = 3;
 
-  // The uncovered code blocks within a line.
-  ColumnRanges column_ranges = 4;
+  // The uncovered code blocks in the file.
+  repeated ColumnRanges uncovered_blocks = 4;
 
   // The code branch info for if/else/etc.
   repeated Branch branches = 5;

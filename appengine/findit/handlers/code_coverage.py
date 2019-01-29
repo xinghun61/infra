@@ -78,7 +78,7 @@ def _GetValidatedData(gs_url):  # pragma: no cover.
   # Validate that the data is in good format.
   logging.info('Validating coverage data...')
   report = CoverageReport()
-  json_format.ParseDict(data, report, ignore_unknown_fields=True)
+  json_format.ParseDict(data, report, ignore_unknown_fields=False)
   del report  # Explicitly delete the proto message to release memory.
   logging.info('Finished validating coverage data.')
 
