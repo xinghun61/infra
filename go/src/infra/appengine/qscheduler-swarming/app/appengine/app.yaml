@@ -2,6 +2,10 @@ service: default
 runtime: go
 api_version: go1
 
+manual_scaling:
+  instances: 1
+instance_class: B8
+
 handlers:
 - url: /internal/.*
   script: _go_app
