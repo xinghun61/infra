@@ -15,18 +15,22 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	hbotinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/resultsdir"
 )
 
 // Info holds information about the Swarming harness.
 type Info struct {
 	*swarming.Bot
-	ResultsDir       string
+
+	ResultsDir string
+	DUTName    string
+	BotInfo    *botinfo.BotInfo
+
 	resultsDirCloser *resultsdir.Closer
-	DUTName          string
-	BotInfo          *botinfo.BotInfo
 	botInfoStore     *hbotinfo.Store
-	hostInfoPath     string
+	borrower         *hostinfo.Borrower
+	hostInfoFile     *hostinfo.File
 }
 
 // Close closes and flushes out the harness resources.  This is safe
@@ -36,11 +40,11 @@ func (i *Info) Close() error {
 	if err := i.resultsDirCloser.Close(); err != nil {
 		errs = append(errs, err)
 	}
-	if i.hostInfoPath != "" && i.BotInfo != nil {
-		if err := updateBotInfoFromHostInfo(i.hostInfoPath, i.BotInfo); err != nil {
-			errs = append(errs, err)
-		}
-		i.hostInfoPath = ""
+	if err := i.hostInfoFile.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := i.borrower.Close(); err != nil {
+		errs = append(errs, err)
 	}
 	if err := i.botInfoStore.Close(); err != nil {
 		errs = append(errs, err)
@@ -85,11 +89,13 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	addBotInfoToHostInfo(hi, i.BotInfo)
-	hiPath, err := dumpHostInfo(i.DUTName, i.ResultsDir, hi)
+
+	i.borrower = hostinfo.BorrowBotInfo(hi, i.BotInfo)
+
+	hif, err := hostinfo.Expose(hi, i.ResultsDir, i.DUTName)
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	i.hostInfoPath = hiPath
+	i.hostInfoFile = hif
 	return i, nil
 }
