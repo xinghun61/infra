@@ -163,19 +163,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	return nil
 }
 
-// toPairs converts a slice of strings in foo:bar form to a slice of swarming rpc string pairs.
-func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
-	pairs := make([]*swarming.SwarmingRpcsStringPair, len(dimensions))
-	for i, d := range dimensions {
-		k, v := strpair.Parse(d)
-		if v == "" {
-			return nil, fmt.Errorf("malformed dimension with key '%s' has no value", k)
-		}
-		pairs[i] = &swarming.SwarmingRpcsStringPair{Key: k, Value: v}
-	}
-	return pairs, nil
-}
-
 func toKeyvalMap(keyvals []string) (map[string]string, error) {
 	m := make(map[string]string, len(keyvals))
 	for _, s := range keyvals {

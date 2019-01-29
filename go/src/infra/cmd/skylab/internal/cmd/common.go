@@ -18,6 +18,7 @@ import (
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab/internal/site"
@@ -149,4 +150,17 @@ func newTaskRequest(taskName string, tags []string, slices []*swarming.SwarmingR
 		TaskSlices: slices,
 		Priority:   priority,
 	}
+}
+
+// toPairs converts a slice of strings in foo:bar form to a slice of swarming rpc string pairs.
+func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
+	pairs := make([]*swarming.SwarmingRpcsStringPair, len(dimensions))
+	for i, d := range dimensions {
+		k, v := strpair.Parse(d)
+		if v == "" {
+			return nil, fmt.Errorf("malformed dimension with key '%s' has no value", k)
+		}
+		pairs[i] = &swarming.SwarmingRpcsStringPair{Key: k, Value: v}
+	}
+	return pairs, nil
 }

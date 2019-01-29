@@ -46,6 +46,7 @@ func getApplication() *cli.Application {
 			cmd.ResizePool,
 			subcommands.Section("Tasks"),
 			cmd.CreateTest,
+			cmd.CreateSuite,
 			cmd.Repair,
 			cmd.RerunTasks,
 		},
