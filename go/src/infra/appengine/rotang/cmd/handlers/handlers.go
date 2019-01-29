@@ -123,7 +123,11 @@ func (h *State) modifyRotation(ctx *router.Context) (templates.Args, error) {
 	if err := json.NewEncoder(&genBuf).Encode(h.generators.List()); err != nil {
 		return nil, err
 	}
-	return templates.Args{"Rota": rotaName, "Config": rota, "ConfigJSON": resBuf.String(), "Generators": genBuf.String()}, nil
+	var modBuf bytes.Buffer
+	if err := json.NewEncoder(&modBuf).Encode(h.generators.ListModifiers()); err != nil {
+		return nil, err
+	}
+	return templates.Args{"Rota": rotaName, "Config": rota, "ConfigJSON": resBuf.String(), "Generators": genBuf.String(), "Modifiers": modBuf.String()}, nil
 }
 
 // rota authenticates the request and fetches the rotation configuration.

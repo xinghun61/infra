@@ -28,6 +28,12 @@ type SplitShifts struct {
 	Shifts  []rotang.ShiftEntry
 }
 
+// Modifier is used to send the Modifiers state to the shift generator element.
+type Modifier struct {
+	Name    string
+	Checked bool
+}
+
 // HandleManageShifts presents the shift management page.
 func (h *State) HandleManageShifts(ctx *router.Context) {
 	if err := ctx.Context.Err(); err != nil {
@@ -46,46 +52,33 @@ func (h *State) HandleManageShifts(ctx *router.Context) {
 }
 
 func (h *State) manageShiftsGET(ctx *router.Context, t time.Time) (templates.Args, error) {
-	if err := ctx.Request.ParseForm(); err != nil {
-		return nil, err
-	}
-
-	rotaName := ctx.Request.FormValue("name")
-	if rotaName == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "`name` not set")
-	}
-	rotas, err := h.configStore(ctx.Context).RotaConfig(ctx.Context, rotaName)
+	cfg, err := h.rota(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(rotas) != 1 {
-		return nil, status.Errorf(codes.OutOfRange, "unexpected number of rotations returned")
-	}
-	rota := rotas[0]
-
-	if !adminOrOwner(ctx, rota) {
+	if !adminOrOwner(ctx, cfg) {
 		return nil, status.Errorf(codes.Unauthenticated, "not admin or owner")
 	}
 
-	shifts, err := h.shiftStore(ctx.Context).AllShifts(ctx.Context, rota.Config.Name)
+	shifts, err := h.shiftStore(ctx.Context).AllShifts(ctx.Context, cfg.Config.Name)
 	if err != nil && status.Code(err) != codes.NotFound {
 		return nil, err
 	}
 
-	history, current := handleShifts(shifts, rota.Members, t)
+	history, current := handleShifts(shifts, cfg.Members, t)
 
 	// Since this is to be presented in a UI it might be nice
 	// to have it ordered by start time of the ShiftSplit.
-	arrangeShiftByStart(rota, history)
-	arrangeShiftByStart(rota, current)
+	arrangeShiftByStart(cfg, history)
+	arrangeShiftByStart(cfg, current)
 
 	hRota := RotaShifts{
-		Rota:        rotaName,
+		Rota:        cfg.Config.Name,
 		SplitShifts: history,
 	}
 	cRota := RotaShifts{
-		Rota:        rotaName,
+		Rota:        cfg.Config.Name,
 		SplitShifts: current,
 	}
 
@@ -98,23 +91,43 @@ func (h *State) manageShiftsGET(ctx *router.Context, t time.Time) (templates.Arg
 	if err := cEnc.Encode(cRota); err != nil {
 		return nil, err
 	}
+
 	generators := h.generators.List()
 	for i := range generators {
-		if generators[i] == rota.Config.Shifts.Generator {
+		if generators[i] == cfg.Config.Shifts.Generator {
 			generators[0], generators[i] = generators[i], generators[0]
 		}
 	}
 
-	gEnc := json.NewEncoder(&gBuf)
-	if err := gEnc.Encode(generators); err != nil {
+	if err := json.NewEncoder(&gBuf).Encode(generators); err != nil {
+		return nil, err
+	}
+
+	var modifiers []Modifier
+	for _, m := range h.generators.ListModifiers() {
+		checked := false
+		for _, c := range cfg.Config.Shifts.Modifiers {
+			if c == m {
+				checked = true
+				break
+			}
+		}
+		modifiers = append(modifiers, Modifier{
+			Name:    m,
+			Checked: checked,
+		})
+	}
+	var mBuf bytes.Buffer
+	if err := json.NewEncoder(&mBuf).Encode(modifiers); err != nil {
 		return nil, err
 	}
 
 	return templates.Args{
-		"Rota":       rota.Config.Name,
+		"Rota":       cfg.Config.Name,
 		"History":    hBuf.String(),
 		"Current":    cBuf.String(),
 		"Generators": gBuf.String(),
+		"Modifiers":  mBuf.String(),
 	}, nil
 }
 

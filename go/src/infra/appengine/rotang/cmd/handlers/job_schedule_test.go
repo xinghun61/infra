@@ -498,6 +498,197 @@ func TestScheduleShifts(t *testing.T) {
 			},
 		},
 	}, {
+		name: "With Modifier",
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/"),
+		},
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:             "Test Rota",
+				Enabled:          true,
+				Expiration:       2,
+				ShiftsToSchedule: 2,
+				Shifts: rotang.ShiftConfig{
+					StartTime:    midnight,
+					Length:       5,
+					Skip:         2,
+					Generator:    "Fair",
+					Modifiers:    []string{"WeekendSkip"},
+					ShiftMembers: 1,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: fullDay,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "oncaller1@oncall.com",
+					ShiftName: "MTV All Day",
+				}, {
+					Email:     "oncaller2@oncall.com",
+					ShiftName: "MTV All Day",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "oncaller1@oncall.com",
+			},
+			{
+				Email: "oncaller2@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(16 * fullDay),
+				EndTime:   midnight.Add(21 * fullDay),
+				EvtID:     "0",
+				Comment:   genComment,
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(23 * fullDay),
+				EndTime:   midnight.Add(28 * fullDay),
+				EvtID:     "1",
+				Comment:   genComment,
+			},
+		},
+	}, {
+		name: "Unknown Modifier",
+		fail: true,
+		ctx: &router.Context{
+			Context: ctx,
+			Request: getRequest("/"),
+		},
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:             "Test Rota",
+				Enabled:          true,
+				Expiration:       2,
+				ShiftsToSchedule: 2,
+				Shifts: rotang.ShiftConfig{
+					StartTime:    midnight,
+					Length:       5,
+					Skip:         2,
+					Generator:    "Fair",
+					Modifiers:    []string{"Unknown"},
+					ShiftMembers: 1,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: fullDay,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "oncaller1@oncall.com",
+					ShiftName: "MTV All Day",
+				}, {
+					Email:     "oncaller2@oncall.com",
+					ShiftName: "MTV All Day",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "oncaller1@oncall.com",
+			},
+			{
+				Email: "oncaller2@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(14 * fullDay),
+				EndTime:   midnight.Add(19 * fullDay),
+				EvtID:     "0",
+				Comment:   genComment,
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(21 * fullDay),
+				EndTime:   midnight.Add(26 * fullDay),
+				EvtID:     "1",
+				Comment:   genComment,
+			},
+		},
+	}, {
 		name: "Split shifts",
 		ctx: &router.Context{
 			Context: ctx,

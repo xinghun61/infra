@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
 )
 
@@ -21,21 +23,6 @@ func (h *State) HandleGenerate(ctx *router.Context) {
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
-	}
-
-	nrSchedStr := ctx.Request.FormValue("nrShifts")
-	if nrSchedStr == "" {
-		nrSchedStr = strconv.Itoa(rota.Config.ShiftsToSchedule)
-	}
-	nrSched, err := strconv.Atoi(nrSchedStr)
-	if err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	generator := ctx.Request.FormValue("generator")
-	if generator == "" {
-		generator = rota.Config.Shifts.Generator
 	}
 
 	var start time.Time
@@ -55,12 +42,6 @@ func (h *State) HandleGenerate(ctx *router.Context) {
 		}
 	}
 
-	g, err := h.generators.Fetch(generator)
-	if err != nil {
-		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	memberStore := h.memberStore(ctx.Context)
 
 	var members []rotang.Member
@@ -73,10 +54,49 @@ func (h *State) HandleGenerate(ctx *router.Context) {
 		members = append(members, *m)
 	}
 
+	nrSchedStr := ctx.Request.FormValue("nrShifts")
+	if nrSchedStr == "" {
+		nrSchedStr = strconv.Itoa(rota.Config.ShiftsToSchedule)
+	}
+	nrSched, err := strconv.Atoi(nrSchedStr)
+	if err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	generator := ctx.Request.FormValue("generator")
+	if generator == "" {
+		generator = rota.Config.Shifts.Generator
+	}
+	g, err := h.generators.Fetch(generator)
+	if err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	ss, err := g.Generate(rota, start, shifts, members, nrSched)
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	// TODO(olakar): Remove this when rotation TZ is implemented.
+	rota.Config.Shifts.TZ = *mtvTime
+
+	modifiers := strings.Split(ctx.Request.FormValue("modifiers"), ",")
+	for _, m := range modifiers {
+		if m == "" {
+			continue
+		}
+		mod, err := h.generators.FetchModifier(m)
+		if err != nil {
+			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if ss, err = mod.Modify(&rota.Config.Shifts, ss); err != nil {
+			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		logging.Infof(ctx.Context, "modifier: %q applied to generated shifts for rota: %q", m, rota.Config.Name)
 	}
 
 	res := RotaShifts{

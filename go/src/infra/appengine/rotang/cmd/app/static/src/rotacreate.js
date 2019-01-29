@@ -20,6 +20,7 @@ class RotaCreate extends LitElement {
     return {
       config: {type: RotaConfig},
       generators: {type: RotaConfig},
+      modifiers: {type: RotaConfig},
       members: {},
       shifts: {},
       showAddMember: {},
@@ -457,6 +458,35 @@ class RotaCreate extends LitElement {
     `;
   }
 
+  fillModifiers() {
+    if (!this.modifiers) {
+      return;
+    }
+    if (!this.configFixed) {
+      return html`
+        ${this.modifiers && this.modifiers.map((m, i) => html`
+          <input type="checkbox" name="${m}"
+            value="${m} id="modifier-${i}"><small>${m}</small><br>
+        `)}
+      `;
+    }
+    let res = html``;
+    for (let i = 0; i < this.modifiers.length; i++) {
+      if (this.config.Cfg.Config.Shifts.Modifiers &&
+        this.config.Cfg.Config.Shifts.Modifiers.indexOf(this.modifiers[i])
+          != -1) {
+        res = html`${res}<input type="checkbox" name="${this.modifiers[i]}"
+          value="${this.modifiers[i]}" id="modifier-${i}"
+            checked><small>${this.modifiers[i]}</small><br>`;
+        continue;
+      }
+      res = html`${res}<input type="checkbox" name="${this.modifiers[i]}"
+        value="${this.modifiers[i]}" id="modifier-${i}">
+          <small>${this.modifiers[i]}</small><br>`;
+    }
+    return res;
+  }
+
   shiftConfig() {
     return html`
       <table>
@@ -509,6 +539,10 @@ class RotaCreate extends LitElement {
               required>
                 <small><i> nr of members to schedule</i></small>
             </td>
+          <tr><td>Modifiers:</td>
+            <td>
+              ${this.fillModifiers()}
+            </td>
           <tr><td>Generator:</td>
             <td>
               ${this.fillGenerators()}
@@ -520,6 +554,7 @@ class RotaCreate extends LitElement {
         ${this.shiftsList()}
       `;
   }
+
 
   buildRotaMembers() {
     let rotaMembers = [];
@@ -579,6 +614,19 @@ class RotaCreate extends LitElement {
     return fixedShifts;
   }
 
+  buildModifiers() {
+    if (!this.modifiers) {
+      return;
+    }
+    const modifiers = [];
+    for (let i = 0; i < this.modifiers.length; i++) {
+      if (this.shadowRoot.getElementById(`modifier-${i}`).checked) {
+        modifiers.push(this.shadowRoot.getElementById(`modifier-${i}`).value);
+      }
+    }
+    return modifiers;
+  }
+
   async buildConfig() {
     const configuration = {
       Config: {
@@ -603,6 +651,7 @@ class RotaCreate extends LitElement {
           ShiftMembers: Number(this.shadowRoot.getElementById('shiftMembers')
             .value),
           Generator: this.shadowRoot.getElementById('shiftGenerator').value,
+          Modifiers: this.buildModifiers(),
           Shifts: this.buildShifts(),
         },
         Expiration: Number(this.shadowRoot.getElementById('expiration').value),

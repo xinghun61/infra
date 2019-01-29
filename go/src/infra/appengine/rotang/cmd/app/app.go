@@ -159,6 +159,9 @@ func init() {
 	gs.Register(algo.NewFair())
 	gs.Register(algo.NewRandomGen())
 
+	// And the modifiers.
+	gs.RegisterModifier(algo.NewWeekendSkip())
+
 	opts := handlers.Options{
 		ProjectID:      appengine.AppID,
 		BackupCred:     serviceDefaultCred(datastoreScope),

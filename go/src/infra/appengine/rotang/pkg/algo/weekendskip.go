@@ -21,6 +21,11 @@ func (w *WeekendSkip) Name() string {
 	return "WeekendSkip"
 }
 
+// Description describes the ShiftModifier.
+func (w *WeekendSkip) Description() string {
+	return "Does not schedule shifts on weekends ,  Sat & Sun."
+}
+
 // Modify modifies provided shifts to avoid weekends.
 // Eg.
 //   Shift Fri - Sat

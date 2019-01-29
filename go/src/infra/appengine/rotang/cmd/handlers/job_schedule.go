@@ -63,6 +63,21 @@ func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t
 	if err != nil {
 		return err
 	}
+
+	// TODO(olakar): Remove this when rotation TZ is implemented.
+	cfg.Config.Shifts.TZ = *mtvTime
+
+	for _, m := range cfg.Config.Shifts.Modifiers {
+		mod, err := h.generators.FetchModifier(m)
+		if err != nil {
+			return err
+		}
+		if ss, err = mod.Modify(&cfg.Config.Shifts, ss); err != nil {
+			return err
+		}
+		logging.Infof(ctx.Context, "modifier: %q applied to generated shifts for rota: %q", m, cfg.Config.Name)
+	}
+
 	if err := h.shiftStore(ctx.Context).AddShifts(ctx.Context, cfg.Config.Name, ss); err != nil {
 		return err
 	}

@@ -131,6 +131,181 @@ func TestHandleGenerate(t *testing.T) {
 			},
 		},
 	}, {
+		name: "Modifiers",
+		user: "test@testing.com",
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+			Request: httptest.NewRequest("POST", "/generate", nil),
+		},
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:   "Test Rota",
+				Owners: []string{"test@testing.com"},
+				Shifts: rotang.ShiftConfig{
+					StartTime: midnight,
+					Length:    1,
+					Generator: "Fair",
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: fullDay,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv1@oncall.com",
+				},
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv2@oncall.com",
+				},
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv3@oncall.com",
+				},
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv4@oncall.com",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "mtv1@oncall.com",
+			},
+			{
+				Email: "mtv2@oncall.com",
+			},
+			{
+				Email: "mtv3@oncall.com",
+			},
+			{
+				Email: "mtv4@oncall.com",
+			},
+		},
+		values: url.Values{
+			"name":      {"Test Rota"},
+			"nrShifts":  {"2"},
+			"generator": {"Fair"},
+			"startTime": {"2018-10-03"},
+			"modifiers": {"WeekendSkip"},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight,
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "MTV All Day",
+						Email:     "mtv1@oncall.com",
+					},
+				},
+			}, {
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(fullDay),
+				EndTime:   midnight.Add(2 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "MTV All Day",
+						Email:     "mtv2@oncall.com",
+					},
+				},
+			},
+		},
+	}, {
+		name: "Unknown modifier",
+		fail: true,
+		user: "test@testing.com",
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+			Request: httptest.NewRequest("POST", "/generate", nil),
+		},
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:   "Test Rota",
+				Owners: []string{"test@testing.com"},
+				Shifts: rotang.ShiftConfig{
+					StartTime: midnight,
+					Length:    1,
+					Generator: "Fair",
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: fullDay,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv1@oncall.com",
+				},
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv2@oncall.com",
+				},
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv3@oncall.com",
+				},
+				{
+					ShiftName: "MTV All Day",
+					Email:     "mtv4@oncall.com",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "mtv1@oncall.com",
+			},
+			{
+				Email: "mtv2@oncall.com",
+			},
+			{
+				Email: "mtv3@oncall.com",
+			},
+			{
+				Email: "mtv4@oncall.com",
+			},
+		},
+		values: url.Values{
+			"name":      {"Test Rota"},
+			"nrShifts":  {"2"},
+			"generator": {"Fair"},
+			"startTime": {"2018-10-03"},
+			"modifiers": {"Unknown"},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight,
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "MTV All Day",
+						Email:     "mtv1@oncall.com",
+					},
+				},
+			}, {
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(fullDay),
+				EndTime:   midnight.Add(2 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "MTV All Day",
+						Email:     "mtv2@oncall.com",
+					},
+				},
+			},
+		},
+	}, {
 		name: "Rota not set",
 		fail: true,
 		user: "test@testing.com",

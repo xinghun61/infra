@@ -8,6 +8,7 @@ class RotaShiftGenerate extends LitElement {
       shifts: {type: constants.Shifts},
       rota: {type: String},
       generators: {type: constants.Shifts},
+      modifiers: {type: constants.Shifts},
       updateState: {},
     };
   }
@@ -38,6 +39,7 @@ class RotaShiftGenerate extends LitElement {
     formBody.append('nrShifts', numberElement);
     formBody.append('startTime', startElement);
     formBody.append('generator', generatorElement);
+    formBody.append('modifiers', this.buildModifiers());
     try {
       const res = await fetch('generate', {
         method: 'POST',
@@ -129,6 +131,36 @@ class RotaShiftGenerate extends LitElement {
     `;
   }
 
+  fillModifiers() {
+    if (!this.modifiers) {
+      return;
+    }
+    const template = `<input type="checkbox" name=${m.Name}
+          value="${m.Name}" id="modifier-${i}" ${checked}>
+          <small>${m.Name}</small><br>`;
+    const res = this.modifiers.map((mod, i) => {
+      let checked = ''; // eslint-disable-line no-unused-vars
+      if (m.Checked) {
+        checked = 'checked';
+      }
+      return html`${template}`;
+    });
+    return html`<span class="flex-container">${res}</span>`;
+  }
+
+  buildModifiers() {
+    const modifiers = [];
+    if (!this.modifiers) {
+      return modifiers;
+    }
+    for (let i = 0; i < this.modifiers.length; i++) {
+      if (this.shadowRoot.getElementById(`modifier-${i}`).checked) {
+        modifiers.push(this.shadowRoot.getElementById(`modifier-${i}`).value);
+      }
+    }
+    return modifiers;
+  }
+
   shiftsTemplate(splitIdx, ss) {
     return ss.Shifts.map((i, shiftIdx) => html`
       <tr>
@@ -209,6 +241,9 @@ class RotaShiftGenerate extends LitElement {
         .shifts tr:nth-child(even) {
           background-color: hsl(0, 0%, 95%);
         };
+        .flex-container {
+          display: flex;
+        }
       </style>
       <fieldset>
       <form>
@@ -232,6 +267,9 @@ class RotaShiftGenerate extends LitElement {
                 </div>
               <td>Generator:
                 ${this.fillGenerators()}
+              </td>
+              <td>Modifiers:
+                ${this.fillModifiers()}
               </td>
             </tr>
           </tbody>

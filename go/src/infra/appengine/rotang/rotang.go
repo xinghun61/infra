@@ -202,6 +202,7 @@ type RotaGenerator interface {
 // ShiftModifier is used to modify shifts produced by the Generator.
 type ShiftModifier interface {
 	Name() string
+	Description() string
 	Modify(sc *ShiftConfig, shifts []ShiftEntry) ([]ShiftEntry, error)
 }
 

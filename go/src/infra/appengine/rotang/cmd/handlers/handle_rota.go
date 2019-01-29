@@ -60,7 +60,12 @@ func (h *State) HandleRotaCreate(ctx *router.Context) {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	templates.MustRender(ctx.Context, ctx.Writer, "pages/rotacreate.html", templates.Args{"Generators": genBuf.String()})
+	var modBuf bytes.Buffer
+	if err := json.NewEncoder(&modBuf).Encode(h.generators.List()); err != nil {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	templates.MustRender(ctx.Context, ctx.Writer, "pages/rotacreate.html", templates.Args{"Generators": genBuf.String(), "Modifiers": modBuf.String()})
 }
 
 func (h *State) validateConfig(ctx *router.Context, jr *jsonRota) error {

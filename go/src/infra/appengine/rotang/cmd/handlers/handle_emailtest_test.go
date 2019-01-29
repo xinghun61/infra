@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
+
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
@@ -174,5 +175,4 @@ func TestHandleEmailTestJSON(t *testing.T) {
 
 		})
 	}
-
 }
