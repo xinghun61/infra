@@ -77,6 +77,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
                    normalized_test_name,
                    test_label_name,
                    test_suite_name=None,
+                   canonical_step_name=None,
                    flake_score_last_week=0):
     flake = Flake.Create(
         luci_project='chromium',
@@ -85,6 +86,9 @@ class FlakeReportUtilTest(WaterfallTestCase):
         test_label_name=test_label_name)
     if test_suite_name:
       flake.tags.append('suite::%s' % test_suite_name)
+    flake.tags = [
+        'test_type::{}'.format(canonical_step_name or normalized_step_name)
+    ]
     flake.flake_score_last_week = flake_score_last_week
     flake.put()
     return flake
@@ -1200,13 +1204,15 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(flake_issue_util, 'GetAndUpdateMergedIssue')
   def testGetFlakeGroupsForActionsOnBugs(self, mock_get_merged_issue):
     # New flake, no linked issue.
-    flake1 = self._CreateFlake('s1', 'suite1.t1', 'suite1.t1', 'suite1')
+    flake1 = self._CreateFlake(
+        's1', 'suite1.t1', 'suite1.t1', 'suite1', canonical_step_name='s1_c')
     occurrences1 = [
         self._CreateFlakeOccurrence(1, 's1', 'suite1.t1', 12345, flake1.key),
         self._CreateFlakeOccurrence(2, 's1', 'suite1.t1', 12346, flake1.key)
     ]
     # New flake, no linked issue, same group as flake1.
-    flake2 = self._CreateFlake('s1', 'suite1.t2', 'suite1.t2', 'suite1')
+    flake2 = self._CreateFlake(
+        's1', 'suite1.t2', 'suite1.t2', 'suite1', canonical_step_name='s1_c')
     occurrences2 = [
         self._CreateFlakeOccurrence(1, 's1', 'suite1.t2', 12345, flake2.key),
         self._CreateFlakeOccurrence(2, 's1', 'suite1.t2', 12346, flake2.key)

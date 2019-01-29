@@ -258,13 +258,19 @@ class Flake(ndb.Model):
     return test_name_util.ReplaceAllPrefixesFromGtestNameWithMask(
         test_name_util.ReplaceParametersFromGtestNameWithMask(test_name))
 
-  def GetTestSuiteName(self):
-    """Gets suite name of the test from tags."""
+  def GetTagValue(self, tag_name):
+    """Gets value of requested tag."""
+    requested_tag = '{tag_name}{separator}'.format(
+        tag_name=tag_name, separator=TAG_DELIMITER)
     for tag in (self.tags or []):
-      if tag.startswith('suite::'):
-        return tag.split('::')[1]
+      if tag.startswith(requested_tag):
+        return tag.split(TAG_DELIMITER, 1)[1]
 
     return None
+
+  def GetTestSuiteName(self):
+    """Gets suite name of the test from tags."""
+    return self.GetTagValue('suite')
 
   def GetIssue(self, up_to_date=False, key_only=False):
     """Returns the associated FlakeIssue.
@@ -294,8 +300,4 @@ class Flake(ndb.Model):
     if self.component:
       return self.component
 
-    for tag in self.tags or []:
-      if tag.startswith('component{separator}'.format(separator=TAG_DELIMITER)):
-        return tag.split(TAG_DELIMITER)[1]
-
-    return DEFAULT_COMPONENT
+    return self.GetTagValue('component') or DEFAULT_COMPONENT

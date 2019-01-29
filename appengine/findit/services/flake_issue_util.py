@@ -50,8 +50,8 @@ class FlakeGroupByOccurrences(FlakeGroup):
   def __init__(self, flake, occurrences):
     super(FlakeGroupByOccurrences, self).__init__(occurrences,
                                                   flake.luci_project)
-    self.normalized_step_name = flake.normalized_step_name
-    self.test_suite_name = flake.GetTestSuiteName()
+    self.canonical_step_name = flake.GetTagValue(
+        'test_type') or flake.normalized_step_name
     self.flakes.append(flake)
     self.builds = self._GenerateBuildsList(occurrences)
 
@@ -88,8 +88,7 @@ class FlakeGroupByOccurrences(FlakeGroup):
   def ToDict(self):
     # For unittest purpose.
     return {
-        'normalized_step_name': self.normalized_step_name,
-        'test_suite_name': self.test_suite_name,
+        'canonical_step_name': self.canonical_step_name,
         'flakes': self.flakes,
         'builds': self.builds,
         'num_occurrences': self.num_occurrences
@@ -401,9 +400,9 @@ def _AddFlakeToGroupWithIssue(flake_groups_to_update_issue, flake_issue, flake,
 
 
 def _AddFlakeToGroupWithoutIssue(flake_groups_to_add_issue, flake, occurrences):
-  basic_group_key = '{}@{}@{}'.format(flake.luci_project,
-                                      flake.normalized_step_name,
-                                      flake.GetTestSuiteName())
+  basic_group_key = '{}@{}'.format(
+      flake.luci_project,
+      flake.GetTagValue('test_type') or flake.normalized_step_name)
 
   grouped = False
   for flake_group in flake_groups_to_add_issue[basic_group_key]:
@@ -428,27 +427,26 @@ def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
 
   Cases:
     1. Flake1 and Flake2 don't link to any FlakeIssue. They have the same
-      luci_project, normalized_step_name and test_suite_name, and they failed
+      luci_project and canonical_step_name, and they failed
       in the same builds, group them together in a FlakeGroupByOccurrence.
     2. Flake3 doesn't link to any FlakeIssue. It has the same
-      luci_project, normalized_step_name and test_suite_name, but it failed
+      luci_project, and canonical_step_name, but it failed
       in different builds from Flake1 and Flake2, make Flake3 in a different
       FlakeGroupByOccurrence.
     3. Flake4 doesn't link to any FlakeIssue. It failed in the same builds as
-       Flake1 and Flake2 but it has different normalized_step_name
-       or test_suite_name, make Flake4 in a different FlakeGroupByOccurrence.
+       Flake1 and Flake2 but it has different canonical_step_name, make Flake4
+       in a different FlakeGroupByOccurrence.
     4. Flake5 and Flake6 link to the same FlakeIssue, and the issue is still
-      open. Even though the flakes have different normalized_step_name or
-      test_suite_name, they are still in the same group of
-      FlakeGroupByFlakeIssue.
+      open. Even though the flakes have different canonical_step_name, they are
+      still in the same group of FlakeGroupByFlakeIssue.
     5. Flake7 and Flake8 link to the same FlakeIssue but it is closed. So look
-      for groups for each of them by their luci_project, normalized_step_name,
-      test_suite_name and failed builds separately.
+      for groups for each of them by their luci_project, canonical_step_name and
+      failed builds separately.
   Returns:
      ([FlakeGroupByOccurrence], [FlakeGroupByFlakeIssue]): groups of flakes.
   """
   # Groups of flakes that need the same new bug.
-  # Keyed by luci_project, normalized_step_name and test_suite_name.
+  # Keyed by luci_project, canonical_step_name and test_suite_name.
   # Since we will group flakes only when they happen in the same builds,
   # it's possible to have different FlakeGroupByOccurrences with the same key,
   # so use a list to save them.
@@ -765,20 +763,17 @@ def _CreateIssueForFlakeGroup(flake_group):
   issue_generator = FlakeDetectionGroupIssueGenerator(
       flake_group.flakes,
       flake_group.num_occurrences,
-      normalized_step_name=flake_group.normalized_step_name,
-      test_suite_name=flake_group.test_suite_name)
+      canonical_step_name=flake_group.canonical_step_name)
   issue_id = monorail_util.CreateIssueWithIssueGenerator(
       issue_generator=issue_generator)
   if not issue_id:
-    logging.warning('Failed to create monorail bug for flake group: %s@%s.',
-                    flake_group.normalized_step_name,
-                    flake_group.test_suite_name)
+    logging.warning('Failed to create monorail bug for flake group: %s.',
+                    flake_group.canonical_step_name)
     return None
   logging.info(
-      '%s was created for flake_group: %s@%s.',
+      '%s was created for flake_group: %s.',
       FlakeIssue.GetLinkForIssue(issue_generator.GetMonorailProject(),
-                                 issue_id), flake_group.normalized_step_name,
-      flake_group.test_suite_name)
+                                 issue_id), flake_group.canonical_step_name)
   for flake in flake_group.flakes:
     _AssignIssueToFlake(issue_id, flake)
 

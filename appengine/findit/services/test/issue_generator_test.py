@@ -15,7 +15,7 @@ from services import issue_generator
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 _EXPECTED_GROUP_DESC = textwrap.dedent("""
-suite* in step is flaky.
+Tests in step is flaky.
 
 Findit has detected 5 flake occurrences of tests below within
 the past 24 hours:
@@ -130,8 +130,7 @@ class IssueGeneratorTest(WaterfallTestCase):
     issue_generator_new = issue_generator.FlakeDetectionGroupIssueGenerator(
         flakes=[flake0, flake1, flake2],
         num_occurrences=5,
-        normalized_step_name=normalized_step_name,
-        test_suite_name='suite')
+        canonical_step_name=normalized_step_name)
 
     flake_issue = FlakeIssue.Create(luci_project, 12345)
     flake_issue.put()
@@ -144,7 +143,7 @@ class IssueGeneratorTest(WaterfallTestCase):
     return issue_generator_new if new_issue else issue_generator_old
 
   def testGetSummary(self):
-    self.assertEqual('Flakes are found in suite in step.',
+    self.assertEqual('Flakes are found in step.',
                      self._GetIssueGenertor().GetSummary())
 
   def testGetDescription(self):
@@ -162,7 +161,7 @@ class IssueGeneratorTest(WaterfallTestCase):
         'status=Unconfirmed&labels=Pri-1,Test-Findit-Wrong&'
         'components=Tools%3ETest%3EFindit%3EFlakiness&'
         'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20result%3A%20'
-        'suite* in step&comment=Link%20to%20flake%20details%3A%20https://findit'
+        'Tests in step&comment=Link%20to%20flake%20details%3A%20https://findit'
         '-for-me.appspot.com/ranked-flakes?bug_id={}').format(
             flake_issue.issue_id)
     expected_description = _EXPECTED_GROUP_FIRST_COMMENT.format(
@@ -186,11 +185,6 @@ class IssueGeneratorTest(WaterfallTestCase):
     expected_description = _EXPECTED_GROUP_COMMENT.format(
         bug_id, sheriff_queue_message, wrong_result_link)
     self.assertEqual(expected_description, issue_generator_old.GetComment())
-
-  def testGetFlakyTestCustomizedFieldGroup(self):
-    field = self._GetIssueGenertor().GetFlakyTestCustomizedField()
-    self.assertEqual('Flaky-Test-Suite', field.field_name)
-    self.assertEqual('suite', field.field_value)
 
   def testGetFlakyTestCustomizedFieldGroupWithIssue(self):
     self.assertIsNone(

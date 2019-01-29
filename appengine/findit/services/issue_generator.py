@@ -111,7 +111,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
 ############### Below are bug templates for flake groups. ###############
 # Bug template for a group of detected flakes.
 _FLAKE_DETECTION_GROUP_BUG_DESCRIPTION = textwrap.dedent("""
-{test_suite_name}* in {normalized_step_name} is flaky.
+Tests in {canonical_step_name} is flaky.
 
 Findit has detected {num_occurrences} flake occurrences of tests below within
 the past 24 hours:
@@ -511,7 +511,7 @@ class FlakeDetectionIssueGenerator(FlakyTestIssueGenerator):
     self._num_occurrences = num_occurrences
 
   def GetStepName(self):
-    return self._flake.normalized_step_name
+    return self._flake.canonical_step_name
 
   def GetTestName(self):
     return self._flake.normalized_test_name
@@ -608,8 +608,7 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
   def __init__(self,
                flakes,
                num_occurrences,
-               normalized_step_name=None,
-               test_suite_name=None,
+               canonical_step_name=None,
                flake_issue=None,
                flakes_with_same_occurrences=True):
     """
@@ -621,10 +620,8 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
         2. If updating a bug, numbers might be different, in that case we will
           use the smallest number(but still qualified to update the bug) of
           occurrences within the group.
-      normalized_step_name (str): The flakes in a group should be in the same
-        binary name.
-      test_suite_name (str): The flakes in a group should be in the same test
-        suite.
+      canonical_step_name (str): The flakes in a group should be in the same
+        step name.
       flake_issue (FlakeIssue): The FlakeIssue entity for the shared bug of the
         group.
       flakes_with_same_occurrences (bool): Flag for if flakes in the group have
@@ -634,8 +631,7 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
     super(FlakeDetectionGroupIssueGenerator, self).__init__()
     self._flakes = flakes
     self._num_occurrences = num_occurrences
-    self._normalized_step_name = normalized_step_name
-    self._test_suite_name = test_suite_name
+    self._canonical_step_name = canonical_step_name
     self._flake_issue = flake_issue
     self._flakes_with_same_occurrences = flakes_with_same_occurrences
 
@@ -667,8 +663,8 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
     return url_template % (suffix, self._flake_issue.issue_id)
 
   def _GetIssueSummaryForWrongResultLink(self):
-    if self._normalized_step_name and self._test_suite_name:
-      return '%s* in %s' % (self._test_suite_name, self._normalized_step_name)
+    if self._canonical_step_name:
+      return 'Tests in {}'.format(self._canonical_step_name)
     return self._flake_issue.issue_id if self._flake_issue else None
 
   def _GetFooter(self):
@@ -688,17 +684,15 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
         self._flakes[0].luci_project)
 
   def GetSummary(self):
-    return 'Flakes are found in {test_suite_name} in {normalized_step_name}.' \
-           ''.format(test_suite_name=self._test_suite_name,
-                     normalized_step_name=self._normalized_step_name)
+    return 'Flakes are found in {canonical_step_name}.'.format(
+        canonical_step_name=self._canonical_step_name)
 
   def GetDescription(self):
     previous_tracking_bug_id = self.GetPreviousTrackingBugId()
     previous_tracking_bug_text = _FLAKE_DETECTION_PREVIOUS_TRACKING_BUG.format(
         previous_tracking_bug_id) if previous_tracking_bug_id else ''
     return _FLAKE_DETECTION_GROUP_BUG_DESCRIPTION.format(
-        normalized_step_name=self._normalized_step_name,
-        test_suite_name=self._test_suite_name,
+        canonical_step_name=self._canonical_step_name,
         num_occurrences=self._GetNumOccurrences(),
         flake_list=self._GenerateFlakeList(),
         previous_tracking_bug_text=previous_tracking_bug_text)
@@ -726,9 +720,6 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
         footer=self._GetFooter())
 
   def GetFlakyTestCustomizedField(self):
-    if self._test_suite_name:
-      return CustomizedField(issue_constants.FLAKY_TEST_GROUP_CUSTOMIZED_FIELD,
-                             self._test_suite_name)
     return None
 
   def SetFlakeIssue(self, flake_issue):
