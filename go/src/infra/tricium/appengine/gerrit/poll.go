@@ -190,8 +190,6 @@ func pollGerritProject(c context.Context, luciProject string, repo *tricium.Repo
 		logging.Warningf(c, "There were changes beyond the limit %d. Some will be skipped.", maxChanges)
 	}
 
-	changes = filterChangesWithFlags(changes)
-
 	// No changes found.
 	if len(changes) == 0 {
 		logging.Infof(c, "Poll done for %q. No changes found.", luciProject)
@@ -256,39 +254,14 @@ func pollGerritProject(c context.Context, luciProject string, repo *tricium.Repo
 	}
 	logging.Infof(c, "Poll done for %q. Processed %d change(s).", luciProject, len(changes))
 
+	// Filter out the changes that we don't actually want to process.
+	diff = filterChanges(c, repo, diff)
+
 	// Convert diff to Analyze requests.
 	//
 	// Running after the transaction because each seen change will result in one
 	// enqueued task and there is a limit on the number of action in a transaction.
 	return enqueueAnalyzeRequests(c, luciProject, repo, diff)
-}
-
-// filterChangesWithFlags filters out the changes where the current revision's footer
-// contains the flag that indicates Tricium should be skipped.
-func filterChangesWithFlags(changes []gr.ChangeInfo) []gr.ChangeInfo {
-	var filtered = changes[:0]
-	var falseValues = []string{"disable", "skip", "no", "none", "false"}
-	for _, change := range changes {
-		var flags map[string]string
-
-		if change.Revisions[change.CurrentRevision].Commit != nil {
-			flags = extractFooterFlags(change.Revisions[change.CurrentRevision].Commit.Message)
-		}
-		value, _ := flags["tricium"]
-
-		isFalse := false
-		for _, falseVal := range falseValues {
-			if value == falseVal {
-				isFalse = true
-				break
-			}
-		}
-
-		if !isFalse {
-			filtered = append(filtered, change)
-		}
-	}
-	return filtered
 }
 
 // extractUpdates extracts change updates, which determines what to analyze.
@@ -376,11 +349,40 @@ func isOpen(change gr.ChangeInfo) bool {
 	return change.Status == "NEW"
 }
 
-// enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
+// filterChanges filters out changes that shouldn't be processed,
+// and furthermore filters out files from changes that shouldn't be processed.
 //
-// Changes that shouldn't be analyzed will be skipped; this includes changes by
-// owners that aren't whitelisted, as well as empty changes, such as those
-// containing only deleted files.
+// Changes that shouldn't be analyzed include:
+//   - changes by owners that aren't whitelisted
+//   - changes with a "Tricium: no" CL description flag
+//   - TODO(crbug.com/807036): Trivial patchsets with no code change
+//
+// Files that shouldn't be processed are
+//
+// Changes with only deleted files are also filtered out below
+// in enqueueAnalyzeRequests, where the list of files is also
+// transformed.
+func filterChanges(c context.Context, repo *tricium.RepoDetails, changes []gr.ChangeInfo) []gr.ChangeInfo {
+	var toProcess []gr.ChangeInfo
+	for _, change := range changes {
+		if hasSkipCommand(change) {
+			logging.Fields{
+				"changeID": change.ID,
+			}.Infof(c, "Skipping change with skip footer.")
+			continue
+		}
+		if !isAuthorAllowed(c, change, repo.WhitelistedGroup) {
+			logging.Fields{
+				"changeID": change.ID,
+			}.Infof(c, "Skipping change with non-whitelisted author.")
+			continue
+		}
+		toProcess = append(toProcess, change)
+	}
+	return toProcess
+}
+
+// enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
 func enqueueAnalyzeRequests(c context.Context, luciProject string, repo *tricium.RepoDetails, changes []gr.ChangeInfo) error {
 	if len(changes) == 0 {
 		return nil
@@ -388,34 +390,17 @@ func enqueueAnalyzeRequests(c context.Context, luciProject string, repo *tricium
 	logging.Infof(c, "Preparing to enqueue Analyze requests for %d changes for project %q.",
 		len(changes), luciProject)
 	gerritProject := repo.GetGerritProject()
-	changes = filterByWhitelist(c, repo.WhitelistedGroup, changes)
+
 	var tasks []*tq.Task
 	for _, change := range changes {
-		var files []*tricium.Data_File
 		curRev := change.Revisions[change.CurrentRevision]
-		for k, v := range curRev.Files {
-			status := statusFromCode(c, v.Status)
-			if status == tricium.Data_DELETED {
-				continue // Never consider deleted files; they don't exist after the patch.
-			}
-			files = append(files, &tricium.Data_File{
-				Path:     k,
-				Status:   status,
-				IsBinary: v.Binary,
-			})
-		}
+		files := triciumFiles(c, curRev.Files)
 		if len(files) == 0 {
 			logging.Fields{
 				"changeID": change.ID,
-			}.Infof(c, "Not making Analyze request for change; changes has no files.")
+			}.Infof(c, "Skipping change with no files.")
 			continue
 		}
-		// Sorting files according to their paths to account for random
-		// enumeration in go maps. This is to get consistent behavior for the
-		// same input.
-		sort.Slice(files, func(i, j int) bool {
-			return files[i].Path < files[j].Path
-		})
 		req := &tricium.AnalyzeRequest{
 			Project: luciProject,
 			Files:   files,
@@ -444,63 +429,83 @@ func enqueueAnalyzeRequests(c context.Context, luciProject string, repo *tricium
 	return nil
 }
 
-// filterByWhitelist filters the list of changes to analyze based on
-// whitelisted groups.
+// triciumFiles returns the list of tricium.Data_File to analyze for
+// a change given the list of files from Gerrit.
+func triciumFiles(c context.Context, grFiles map[string]*gr.FileInfo) []*tricium.Data_File {
+	var files []*tricium.Data_File
+	for k, v := range grFiles {
+		status := statusFromCode(c, v.Status)
+		if status == tricium.Data_DELETED {
+			continue // Never consider deleted files; they don't exist after the patch.
+		}
+		files = append(files, &tricium.Data_File{
+			Path:     k,
+			Status:   status,
+			IsBinary: v.Binary,
+		})
+	}
+	// Sorting files according to their paths to account for random
+	// enumeration in go maps. This is to get consistent behavior for the
+	// same input.
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Path < files[j].Path
+	})
+	return files
+}
+
+// isAuthorAllowed checks whether the author of the CL is whitelisted.
 //
 // A CL is analyzed if the owner (author) of the CL is in at least one of the
 // the whitelist groups for this repo as specified in the project config.
 // If there are no whitelisted groups, then there is no filtering.
-func filterByWhitelist(c context.Context, whitelistedGroups []string, changes []gr.ChangeInfo) []gr.ChangeInfo {
-	if len(whitelistedGroups) == 0 {
-		return changes
+//
+// If there is an error, this function logs an error and returns false.
+func isAuthorAllowed(c context.Context, change gr.ChangeInfo, whitelist []string) bool {
+	if len(whitelist) == 0 {
+		return true
 	}
-
 	// The auth DB should be set in state by middleware.
 	state := auth.GetState(c)
 	if state == nil {
 		logging.Errorf(c, "failed to check auth, no State in context.")
-		return nil
+		return false
 	}
 	authDB := state.DB()
 	if authDB == nil {
 		logging.Errorf(c, "Failed to check auth, nil auth DB in State.")
-		return nil
+		return false
 	}
+	email := change.Owner.Email
+	// If we fail to check the whitelist for a user, we'll
+	// log an error and consider the owner to be not whitelisted.
+	ident, err := identity.MakeIdentity("user:" + email)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to create identity for %q.", email)
+		return false
+	}
+	authOK, err := authDB.IsMember(c, ident, whitelist)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to check auth for %q.", email)
+		return false
+	}
+	return authOK
+}
 
-	// To avoid making multiple checks for the same CL owner, we keep track
-	// of owners we've already checked.
-	owners := map[string]bool{}
-	whitelistedChanges := make([]gr.ChangeInfo, 0, len(changes))
-	for _, change := range changes {
-		email := change.Owner.Email
-		whitelisted, ok := owners[email]
-		if !ok {
-			// If we fail to check the whitelist for a user, we'll
-			// log an error and consider the owner not whitelisted.
-			owners[email] = false
-			ident, err := identity.MakeIdentity("user:" + email)
-			if err != nil {
-				logging.WithError(err).Errorf(c, "Failed to create identity for %q.", email)
-				continue
-			}
-			authOK, err := authDB.IsMember(c, ident, whitelistedGroups)
-			if err != nil {
-				logging.WithError(err).Errorf(c, "Failed to check auth for %q.", email)
-			}
-			whitelisted = authOK
-			if !whitelisted {
-				logging.Fields{
-					"email":  email,
-					"groups": whitelistedGroups,
-				}.Infof(c, "Owner not whitelisted; skipping Analyze.")
-			}
-			owners[email] = whitelisted
-		}
-		if whitelisted {
-			whitelistedChanges = append(whitelistedChanges, change)
+// hasSkipCommand checks whether the CL description contains a footer flag that
+// indicates that this change should be skipped.
+func hasSkipCommand(change gr.ChangeInfo) bool {
+	var skipValues = []string{"disable", "skip", "no", "none", "false"}
+	var flags map[string]string
+	if change.Revisions[change.CurrentRevision].Commit != nil {
+		flags = extractFooterFlags(change.Revisions[change.CurrentRevision].Commit.Message)
+	}
+	triciumValue, _ := flags["tricium"]
+	for _, skipValue := range skipValues {
+		if triciumValue == skipValue {
+			return true
 		}
 	}
-	return whitelistedChanges
+	return false
 }
 
 // extractFooterFlags extracts the Flag: Value and Flag=Value footers from the CL description.
