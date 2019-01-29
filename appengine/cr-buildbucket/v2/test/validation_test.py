@@ -313,7 +313,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
     properties = [
         {'buildbucket': 1},
         {'buildername': 1},
-        {'blamelist': 1},
         {'$recipe_engine/runtime': {'is_luci': 1}},
         {'$recipe_engine/runtime': {'is_experimental': 1}},
     ]

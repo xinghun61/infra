@@ -40,9 +40,6 @@ RESERVED_PROPERTY_PATHS = [
     # Prohibited.
     ['buildername'],
 
-    # Deperecated, prohibited.
-    ['blamelist'],
-
     # Deprecated in favor of api.buildbucket.build_input.gitiles_commit,
     # https://chromium.googlesource.com/infra/luci/recipes-py/+/master/recipe_modules/buildbucket/api.py
     # Prohibited.
