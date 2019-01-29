@@ -993,9 +993,6 @@ def create_task_async(build):
     key, value = buildtags.parse(t)
     if key == 'log_location':
       host, project, prefix, _ = logdog.parse_url(value)
-      build.logdog_hostname = host
-      build.logdog_project = project
-      build.logdog_prefix = prefix
       build.proto.infra.logdog.hostname = host
       build.proto.infra.logdog.project = project
       build.proto.infra.logdog.prefix = prefix

@@ -147,9 +147,6 @@ def build(**build_proto_fields):  # pragma: no cover
       cancel_reason_v2=proto.cancel_reason,
       swarming_hostname=proto.infra.swarming.hostname,
       service_account=proto.infra.swarming.task_service_account,
-      logdog_hostname=proto.infra.logdog.hostname,
-      logdog_project=proto.infra.logdog.project,
-      logdog_prefix=proto.infra.logdog.prefix,
       url='https://ci.example.com/%d' % proto.id,
   )
   ret.update_v1_status_fields()

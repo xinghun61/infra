@@ -271,12 +271,6 @@ class Build(ndb.Model):
   swarming_hostname = ndb.StringProperty()
   service_account = ndb.StringProperty()
 
-  # LogDog integration
-
-  logdog_hostname = ndb.StringProperty()
-  logdog_project = ndb.StringProperty()
-  logdog_prefix = ndb.StringProperty()
-
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
