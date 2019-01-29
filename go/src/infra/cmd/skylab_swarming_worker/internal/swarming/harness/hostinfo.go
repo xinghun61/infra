@@ -51,24 +51,36 @@ func dumpHostInfo(dutName string, resultsDir string, hi *hostinfo.HostInfo) (str
 	return storeFile, nil
 }
 
-// updateBotInfoFromHostInfo reads in update host information from the concluded task and
-// updates the bot dimensions with provisioned labels.
-func updateBotInfoFromHostInfo(hiPath string, bi *botinfo.BotInfo) error {
+func loadHostInfo(hiPath string) (*hostinfo.HostInfo, error) {
 	blob, err := ioutil.ReadFile(hiPath)
 	if err != nil {
-		return errors.Wrap(err, "failed to read host info from results")
+		return nil, errors.Wrap(err, "failed to read host info from results")
 	}
 	hi, err := hostinfo.Unmarshal(blob)
 	if err != nil {
-		return errors.Wrap(err, "failed to unmarshal host info from results")
+		return nil, errors.Wrap(err, "failed to unmarshal host info from results")
 	}
+	return hi, nil
+}
+
+// updateBotInfoFromHostInfo reads in update host information from the concluded task and
+// updates the bot dimensions with provisioned labels.
+func updateBotInfoFromHostInfo(hiPath string, bi *botinfo.BotInfo) error {
+	hi, err := loadHostInfo(hiPath)
+	if err != nil {
+		return err
+	}
+	addBotInfoToHostInfo(hi, bi)
+	return nil
+}
+
+func addHostInfoToBotInfo(hi *hostinfo.HostInfo, bi *botinfo.BotInfo) {
 	for _, label := range hi.Labels {
 		updateProvisionableDimension(label, bi)
 	}
 	for attribute, value := range hi.Attributes {
 		updateProvisionableAttributes(attribute, value, bi)
 	}
-	return nil
 }
 
 var provisionableLabelKeys = map[string]struct{}{
