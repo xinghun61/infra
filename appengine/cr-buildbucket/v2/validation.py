@@ -33,6 +33,7 @@ PUBSUB_USER_DATA_MAX_LENGTH = 4096
 RESERVED_PROPERTY_PATHS = [
     # Reserved for buildbucket internals.
     ['buildbucket'],
+    ['$recipe_engine/buildbucket'],
 
     # Deprecated in favor of api.buildbucket.builder.builder,
     # https://chromium.googlesource.com/infra/luci/recipes-py/+/master/recipe_modules/buildbucket/api.py
@@ -45,7 +46,6 @@ RESERVED_PROPERTY_PATHS = [
     # Deprecated in favor of api.buildbucket.build_input.gitiles_commit,
     # https://chromium.googlesource.com/infra/luci/recipes-py/+/master/recipe_modules/buildbucket/api.py
     # Prohibited.
-    ['revision'],
     ['branch'],
     ['repository'],
 
