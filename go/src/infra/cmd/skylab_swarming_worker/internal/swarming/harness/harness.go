@@ -15,83 +15,97 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
+	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 )
 
-// Func is run by Run.  It is called with a Bot and the path to the
-// results directory.  The Bot will have BotInfo loaded, and the
-// BotInfo will be written back when the swarmingFunc returns.
-type Func func(*Info) error
-
 // Info holds information about the Swarming harness.
 type Info struct {
 	*swarming.Bot
-	ResultsDir string
-	DUTName    string
-	BotInfo    *botinfo.BotInfo
+	ResultsDir   string
+	DUTName      string
+	BotInfo      *botinfo.BotInfo
+	hostInfoPath string
 }
 
-// Run calls a function with a Swarming harness, which prepares and
-// cleans up the results directory and host info.
-func Run(b *swarming.Bot, f Func) (err error) {
-	i := Info{
-		Bot: b,
-	}
-	i.DUTName, err = loadDUTName(b)
-	if err != nil {
-		return errors.Wrap(err, "load DUT name")
-	}
-
-	i.BotInfo, err = loadBotInfo(b)
-	if err != nil {
-		return errors.Wrap(err, "load bot info")
-	}
-	defer func() {
-		if err2 := dumpBotInfo(b, i.BotInfo); err == nil && err2 != nil {
-			err = errors.Wrap(err2, "dump bot info")
-		}
-	}()
-
-	i.ResultsDir, err = prepareResultsDir(b)
-	if err != nil {
-		return errors.Wrap(err, "prepare results dir")
-	}
-	defer func() {
+// Close closes and flushes out the harness resources.  This is safe
+// to call multiple times.
+func (i *Info) Close() error {
+	var errs []error
+	if i.ResultsDir != "" {
 		if err := sealResultsDir(i.ResultsDir); err != nil {
-			log.Printf("Failed to seal results directory %s", i.ResultsDir)
-			log.Print("Logs will not be offloaded to GS")
+			errs = append(errs, err)
 		}
-	}()
+		i.ResultsDir = ""
+	}
+	if i.hostInfoPath != "" && i.BotInfo != nil {
+		if err := updateBotInfoFromHostInfo(i.hostInfoPath, i.BotInfo); err != nil {
+			errs = append(errs, err)
+		}
+		i.hostInfoPath = ""
+	}
+	if i.BotInfo != nil {
+		if err := dumpBotInfo(i.Bot, i.BotInfo); err == nil {
+			errs = append(errs, err)
+		}
+		i.BotInfo = nil
+	}
+	if len(errs) > 0 {
+		return errors.Annotate(errors.MultiError(errs), "close harness").Err()
+	}
+	return nil
+}
+
+// Open opens and sets up the bot and task harness needed for Autotest
+// jobs.  An Info struct is returned with necessary fields, which must
+// be closed.
+func Open(b *swarming.Bot) (i *Info, err error) {
+	i = &Info{Bot: b}
+	defer func(i *Info) {
+		if err != nil {
+			i.Close()
+		}
+	}(i)
+	dutName, err := loadDUTName(b)
+	if err != nil {
+		return nil, errors.Annotate(err, "open harness").Err()
+	}
+	i.DUTName = dutName
+
+	bi, err := loadBotInfo(b)
+	if err != nil {
+		return nil, errors.Annotate(err, "open harness").Err()
+	}
+	i.BotInfo = bi
+
+	rd, err := prepareResultsDir(b)
+	if err != nil {
+		return nil, errors.Annotate(err, "open harness").Err()
+	}
+	i.ResultsDir = rd
+	log.Printf("Created results directory %s", rd)
 
 	hi, err := loadDUTHostInfo(b)
 	if err != nil {
-		// This can happen if the DUT disappeared from the
-		// inventory after the task was scheduled.
-		return errors.Wrap(err, "load host info failed")
+		return nil, errors.Annotate(err, "open harness").Err()
 	}
 	addBotInfoToHostInfo(hi, i.BotInfo)
 	hiPath, err := dumpHostInfo(i.DUTName, i.ResultsDir, hi)
 	if err != nil {
-		return errors.Wrap(err, "prepare host info failed")
+		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	defer func() {
-		if err2 := updateBotInfoFromHostInfo(hiPath, i.BotInfo); err == nil && err2 != nil {
-			err = errors.Wrap(err2, "dimensions update from host info failed")
-		}
-	}()
-	return f(&i)
+	i.hostInfoPath = hiPath
+	return i, nil
 }
 
 // prepareResultsDir creates the results dir needed for autoserv.
 func prepareResultsDir(b *swarming.Bot) (string, error) {
 	p := b.ResultsDir()
 	if err := os.MkdirAll(p, 0755); err != nil {
-		return "", err
+		return "", errors.Annotate(err, "prepare results dir %s", p).Err()
 	}
-	log.Printf("Created results directory %s", p)
 	return p, nil
 }
 
@@ -103,5 +117,8 @@ const gsOffloaderMarker = ".ready_for_offload"
 func sealResultsDir(d string) error {
 	ts := []byte(fmt.Sprintf("%d", time.Now().Unix()))
 	tsfile := filepath.Join(d, gsOffloaderMarker)
-	return ioutil.WriteFile(tsfile, ts, 0666)
+	if err := ioutil.WriteFile(tsfile, ts, 0666); err != nil {
+		return errors.Annotate(err, "seal results dir %s", d).Err()
+	}
+	return nil
 }

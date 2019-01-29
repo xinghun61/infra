@@ -98,35 +98,39 @@ func mainInner(a *args) error {
 		return err
 	}
 	defer annotWriter.Close()
-	return harness.Run(b,
-		func(i *harness.Info) error {
-			ta := lucifer.TaskArgs{
-				AbortSock:  filepath.Join(i.ResultsDir, "abort_sock"),
-				GCPProject: gcpProject,
-				ResultsDir: i.ResultsDir,
-			}
-			if a.logdogAnnotationURL != "" {
-				// Set up FIFO, pipe, and goroutines like so:
-				//
-				//        worker -> LogDog pipe
-				//                      ^
-				// lucifer -> FIFO -go-/
-				//
-				// Both the worker and Lucifer need to write to LogDog.
-				fifoPath := filepath.Join(i.ResultsDir, "logdog.fifo")
-				fc, err := fifo.NewCopier(annotWriter, fifoPath)
-				if err != nil {
-					return err
-				}
-				defer fc.Close()
-				ta.LogDogFile = fifoPath
-			}
-			if err := runLuciferTask(i, a, annotWriter, ta); err != nil {
-				return errors.Wrap(err, "run lucifer task")
-			}
-			return nil
-		},
-	)
+	i, err := harness.Open(b)
+	if err != nil {
+		return err
+	}
+	defer i.Close()
+	ta := lucifer.TaskArgs{
+		AbortSock:  filepath.Join(i.ResultsDir, "abort_sock"),
+		GCPProject: gcpProject,
+		ResultsDir: i.ResultsDir,
+	}
+	if a.logdogAnnotationURL != "" {
+		// Set up FIFO, pipe, and goroutines like so:
+		//
+		//        worker -> LogDog pipe
+		//                      ^
+		// lucifer -> FIFO -go-/
+		//
+		// Both the worker and Lucifer need to write to LogDog.
+		fifoPath := filepath.Join(i.ResultsDir, "logdog.fifo")
+		fc, err := fifo.NewCopier(annotWriter, fifoPath)
+		if err != nil {
+			return err
+		}
+		defer fc.Close()
+		ta.LogDogFile = fifoPath
+	}
+	if err := runLuciferTask(i, a, annotWriter, ta); err != nil {
+		return errors.Wrap(err, "run lucifer task")
+	}
+	if err := i.Close(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func runLuciferTask(i *harness.Info, a *args, logdogOutput io.Writer, ta lucifer.TaskArgs) error {
