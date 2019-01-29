@@ -161,13 +161,13 @@
           <mr-edit-field
             id="ownerInput"
             type="USER_TYPE"
-            ac-type="owner"
             initial-values="[[_wrapList(ownerName)]]"
           ></mr-edit-field>
 
           <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
           <mr-edit-field
             id="ccInput"
+            name="cc"
             type="USER_TYPE"
             initial-values="[[_mapUserRefsToNames(cc)]]"
             multi
@@ -176,6 +176,7 @@
           <label for="componentsInput" on-click="_clickLabelForCustomInput">Components:</label>
           <mr-edit-field
             id="componentsInput"
+            name="component"
             type="STR_TYPE"
             initial-values="[[_mapComponentRefsToNames(components)]]"
             ac-type="component"
@@ -189,6 +190,7 @@
             id="approversInput"
             type="USER_TYPE"
             initial-values="[[_mapUserRefsToNames(approvers)]]"
+            name="approver"
             multi
           ></mr-edit-field>
         </template>
@@ -245,6 +247,7 @@
           <mr-edit-field
             id="blockedOnInput"
             initial-values="[[_mapBlockerRefsToIdStrings(blockedOn, projectName)]]"
+            name="blocked-on"
             multi
           ></mr-edit-field>
 
@@ -252,6 +255,7 @@
           <mr-edit-field
             id="blockingInput"
             initial-values="[[_mapBlockerRefsToIdStrings(blocking, projectName)]]"
+            name="blocking"
             multi
           ></mr-edit-field>
 
@@ -260,6 +264,7 @@
             id="labelsInput"
             ac-type="label"
             initial-values="[[labelNames]]"
+            name="label"
             multi
           ></mr-edit-field>
         </template>

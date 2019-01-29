@@ -12,27 +12,175 @@
 (function() {
   'use strict';
 
-  suite('basic tests', function() {
-    var element;
+  suite('single input', function() {
+    let element;
 
     setup(function() {
       element = fixture('basic');
     });
 
-    test('edit input updates value when initialValues change', function() {
-      element.initialValues = ['hello'];
+    test('input updates when initialValues change', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        assert.equal(element.getValue(), 'hello');
+        done();
+      });
+    });
 
-      assert.equal(element.getValue(), 'hello');
+    test('initial value does not change after setValue', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        element.setValue('world');
+        assert.deepEqual(element.initialValues, ['hello']);
+        done();
+      });
+    });
 
-      // Simulate user input.
-      element.shadowRoot.querySelector('#editInput').value = 'jackalope';
-      // User input should not be overridden by the initialValue variable.
-      assert.equal(element.getValue(), 'jackalope');
-      // Initial values should not change based on user input.
-      assert.deepEqual(element.initialValues, ['hello']);
+    test('input updates when setValue is called', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        element.setValue('world');
+        assert.equal(element.getValue(), 'world');
+        done();
+      });
+    });
 
-      element.initialValues = ['change values'];
-      assert.equal(element.getValue(), 'change values');
+    test('initial value does not change after user input', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#editInput').value = 'jackalope';
+        assert.deepEqual(element.initialValues, ['hello']);
+        done();
+      });
+    });
+
+    test('get value after user input', function(done) {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#editInput').value = 'jackalope';
+        assert.equal(element.getValue(), 'jackalope');
+        done();
+    });
+
+    test('input value was added', function(done) {
+      flush(() => {
+        // Simulate user input.
+        element.shadowRoot.querySelector('#editInput').value = 'jackalope';
+        assert.deepEqual(element.getValuesAdded(), ['jackalope']);
+        done();
+      });
+    });
+
+    test('input value was removed', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#editInput').value = '';
+        assert.deepEqual(element.getValuesRemoved(), ['hello']);
+        done();
+      });
+    });
+
+    test('input value was changed', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#editInput').value = 'world';
+        assert.deepEqual(element.getValuesAdded(), ['world']);
+        done();
+      });
+    });
+  });
+
+  suite('multiple input', function() {
+    let element;
+
+    setup(function() {
+      element = fixture('basic');
+      element.multi = true;
+    });
+
+    test('input updates when initialValues change', function(done) {
+      flush(() => {
+        element.initialValues = ['hello', 'world'];
+        assert.deepEqual(element.getValues(), ['hello', 'world']);
+        done();
+      });
+    });
+
+    test('initial value does not change after setValue', function(done) {
+      flush(() => {
+        element.initialValues = ['hello', 'world'];
+        element.setValue(['jaunty', 'jackalope']);
+        assert.deepEqual(element.initialValues, ['hello', 'world']);
+        done();
+      });
+    });
+
+    test('input updates when setValue is called', function(done) {
+      flush(() => {
+        element.initialValues = ['hello', 'world'];
+        element.setValue(['jaunty', 'jackalope']);
+        assert.deepEqual(element.getValues(), ['jaunty', 'jackalope']);
+        done();
+      });
+    });
+
+    test('initial value does not change after user input', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#multi1').value = 'heron';
+        assert.deepEqual(element.initialValues, ['hello']);
+        done();
+      });
+    });
+
+    test('get value after user input', function(done) {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#multi1').value = 'heron';
+        assert.deepEqual(element.getValues(), ['hello', 'heron']);
+        done();
+    });
+
+    test('input value was added', function(done) {
+      flush(() => {
+        // Simulate user input.
+        element.shadowRoot.querySelector('#multi0').value = 'jackalope';
+        assert.deepEqual(element.getValuesAdded(), ['jackalope']);
+        done();
+      });
+    });
+
+    test('input value was removed', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#multi0').value = '';
+        assert.deepEqual(element.getValuesRemoved(), ['hello']);
+        done();
+      });
+    });
+
+    test('input value was changed', function(done) {
+      flush(() => {
+        element.initialValues = ['hello'];
+        // Simulate user input.
+        element.shadowRoot.querySelector('#multi0').value = 'world';
+        assert.deepEqual(element.getValuesAdded(), ['world']);
+        assert.deepEqual(element.getValuesRemoved(), ['hello']);
+        done();
+      });
+    });
+  });
+
+  suite('other', function() {
+    let element;
+
+    setup(function() {
+      element = fixture('basic');
     });
 
     test('edit select updates value when initialValues change', function(done) {

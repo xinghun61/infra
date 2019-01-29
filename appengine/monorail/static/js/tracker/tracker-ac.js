@@ -30,6 +30,11 @@ var TKR_labelMultiStore;
 /**
  * This is an autocomplete store that holds issue components.
  */
+var TKR_componentStore;
+
+/**
+ * Like TKR_componentStore but adds a trailing comma instead of replacing.
+ */
 var TKR_componentListStore;
 
 /**
@@ -711,21 +716,30 @@ function TKR_setUpComponentStore(componentDefs) {
     docdict[component.name] = component.doc;
   }
 
-  TKR_componentListStore = new _AC_SimpleStore(componentWords, docdict);
-  TKR_componentListStore.commaCompletes = false;
-
-  TKR_componentListStore.completions = function(prefix, tofilter) {
+  const completions = function(prefix, tofilter) {
     let fullList = TKR_fullComplete(prefix, componentDefs);
     if (fullList) return fullList;
     return _AC_SimpleStore.prototype.completions.call(this, prefix, tofilter);
   };
-
-  TKR_componentListStore.substitute = TKR_acSubstituteWithComma;
-
-  TKR_componentListStore.completable = function(inputValue, cursor) {
+  const completable = function(inputValue, cursor) {
     if (inputValue == '') return '*component';
     return _AC_SimpleStore.prototype.completable.call(this, inputValue, cursor);
   };
+
+  TKR_componentStore = new _AC_SimpleStore(componentWords, docdict);
+  TKR_componentStore.commaCompletes = false;
+  TKR_componentStore.substitute =
+  function(inputValue, cursor, completable, completion) {
+    return completion.value;
+  };
+  TKR_componentStore.completions = completions;
+  TKR_componentStore.completable = completable;
+
+  TKR_componentListStore = new _AC_SimpleStore(componentWords, docdict);
+  TKR_componentListStore.commaCompletes = false;
+  TKR_componentListStore.substitute = TKR_acSubstituteWithComma;
+  TKR_componentListStore.completions = completions;
+  TKR_componentListStore.completable = completable;
 }
 
 

@@ -19,10 +19,6 @@ class MrEditField extends Polymer.Element {
       // data types such as components, and labels.
       // String specifying what kind of autocomplete to add to this field.
       acType: String,
-      delimiter: {
-        type: String,
-        value: ',',
-      },
       type: String,
       multi: {
         type: Boolean,
@@ -32,6 +28,7 @@ class MrEditField extends Polymer.Element {
       initialValues: {
         type: Array,
         value: () => [],
+        observer: 'reset',
       },
       // For enum fields, the possible options that you have. Each entry is a
       // label type with an additional optionName field added.
@@ -41,12 +38,7 @@ class MrEditField extends Polymer.Element {
       },
       _acType: {
         type: String,
-        computed: '_computeAcType(acType, type, multi)',
-      },
-      _initialValue: {
-        type: String,
-        computed: '_joinValues(initialValues)',
-        observer: 'reset',
+        computed: '_computeAcType(acType, type)',
       },
       // Set to true if a field uses a standard input instead of any sort of
       // fancier edit type.
@@ -55,17 +47,32 @@ class MrEditField extends Polymer.Element {
         computed: '_computeFieldIsBasic(type)',
         value: true,
       },
+      _multiInputs: {
+        type: Array,
+        value: [''],
+      },
+      _initialValue: {
+        type: String,
+        computed: '_computeInitialValue(initialValues)',
+      },
+      _multiGridClass: {
+        type: String,
+        value: 'multi-grid',
+        computed: '_computeMultiGridClass(type)',
+      },
     };
   }
 
   focus() {
-    if (this._fieldIsBasic) {
+    if (this._fieldIsBasic && !this.multi) {
       this._getInput().focus();
     }
   }
 
   reset() {
+    this._multiInputs = this.initialValues.concat(['']);
     if (!this.isConnected) return;
+    Polymer.flush();
     this.setValue(this.initialValues);
   }
 
@@ -73,58 +80,73 @@ class MrEditField extends Polymer.Element {
     if (!Array.isArray(v)) {
       v = [v];
     }
-    const input = this._getInput();
-    if (this._fieldIsBasic) {
-      input.value = this._joinValues(v);
-    }
-    if (this._fieldIsEnum(this.type)) {
-      if (this.multi) {
-        Polymer.dom(this.root).querySelectorAll('.enum-input').forEach(
-          (checkbox) => {
-            checkbox.checked = this._optionInValues(
-              v, checkbox.value);
-          }
-        );
-      } else {
-        const options = Array.from(input.querySelectorAll('option'));
-        input.selectedIndex = options.findIndex((option) => {
-          return this._computeIsSelected(this._joinValues(v), option.value);
-        });
-      }
+    if (this.multi && this._fieldIsBasic) {
+      Polymer.dom(this.root).querySelectorAll('.multi').forEach((input, i) => {
+        if (i < v.length) {
+          input.value = v[i];
+        } else {
+          input.value = '';
+        }
+      });
+    } else if (this.multi) {
+      Polymer.dom(this.root).querySelectorAll('.enum-input').forEach(
+        (checkbox) => {
+          checkbox.checked = this._optionInValues(v, checkbox.value);
+        }
+      );
+    } else if (this._fieldIsBasic && v.length) {
+      this._getInput().value = v[0];
+    } else if (v.length) {
+      const input = this._getInput();
+      const options = Array.from(input.querySelectorAll('option'));
+      input.selectedIndex = options.findIndex((option) => {
+        return this._computeIsSelected(v[0], option.value);
+      });
     }
   }
 
   getValuesAdded() {
-    if (!this.multi && !this.getValue().length) return [];
+    if (!this.getValues().length) return [];
     return fltHelpers.arrayDifference(this.getValues(), this.initialValues,
       this._equalsIgnoreCase);
   }
 
   getValuesRemoved() {
-    if (!this.multi && this.getValue().length > 0) return [];
+    if (!this.multi && this.getValues().length > 0) return [];
     return fltHelpers.arrayDifference(this.initialValues, this.getValues(),
       this._equalsIgnoreCase);
   }
 
   getValues() {
-    const val = this._getInput().value;
-    if (this.multi) {
-      if (this._fieldIsEnum(this.type)) {
-        const checkboxes = Array.from(Polymer.dom(this.root).querySelectorAll(
-          '.enum-input'));
-        return checkboxes.filter((c) => c.checked).map((c) => c.value.trim());
-      } else {
-        let valueList = val.split(this.delimiter);
-        valueList = valueList.map((s) => (s.trim()));
-        valueList = valueList.filter((s) => (s.length > 0));
-        return valueList;
+    const valueList = [];
+    if (!this.multi) {
+      const val = this._getInput().value.trim();
+      if (val) {
+        valueList.push(val);
       }
+    } else if (this._fieldIsEnum(this.type)) {
+      Polymer.dom(this.root).querySelectorAll('.enum-input').forEach((c) => {
+        if (c.checked) {
+          valueList.push(c.value.trim());
+        }
+      });
+    } else {
+      Polymer.dom(this.root).querySelectorAll('.multi').forEach((input) => {
+        const val = input.value.trim();
+        if (val.length) {
+          valueList.push(val);
+        }
+      });
     }
-    return [val.trim()];
+    return valueList;
   }
 
   getValue() {
     return this._getInput().value.trim();
+  }
+
+  _addEntry() {
+    this.push('_multiInputs', '');
   }
 
   _equalsIgnoreCase(a, b) {
@@ -137,32 +159,12 @@ class MrEditField extends Polymer.Element {
     return !(this._fieldIsEnum(type));
   }
 
-  _fieldIsDate(type) {
-    return type === fieldTypes.DATE_TYPE;
-  }
-
   _fieldIsEnum(type) {
     return type === fieldTypes.ENUM_TYPE;
   }
 
-  _fieldIsInt(type) {
-    return type === fieldTypes.INT_TYPE;
-  }
-
-  _fieldIsStr(type) {
-    return type === fieldTypes.STR_TYPE;
-  }
-
   _fieldIsUser(type) {
     return type === fieldTypes.USER_TYPE;
-  }
-
-  _fieldIsUrl(type) {
-    return type === fieldTypes.URL_TYPE;
-  }
-
-  _joinValues(values) {
-    return values.join(',');
   }
 
   _getInput() {
@@ -180,9 +182,9 @@ class MrEditField extends Polymer.Element {
     return initialValue === optionName;
   }
 
-  _computeAcType(acType, type, multi) {
-    if (type === fieldTypes.USER_TYPE) {
-      return multi ? 'member' : 'owner';
+  _computeAcType(acType, type) {
+    if (this._fieldIsUser(type)) {
+      return 'owner';
     }
     return acType;
   }
@@ -191,6 +193,18 @@ class MrEditField extends Polymer.Element {
     if (acType) return 'off';
     return '';
   }
+
+  _computeMultiGridClass(type) {
+    if (this._fieldIsUser(type)) {
+      return 'user-multi-grid';
+    }
+    return 'multi-grid';
+  }
+
+  _computeInitialValue(initialValues) {
+    return (initialValues.length ? initialValues[0] : '');
+  }
+
 }
 
 customElements.define(MrEditField.is, MrEditField);
