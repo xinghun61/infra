@@ -18,8 +18,17 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class FetchSourceFileTest(WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
       ('/coverage/task/fetch-source-file', code_coverage.FetchSourceFile),
+      ('/coverage/task/process-data/.*', code_coverage.ProcessCodeCoverageData),
   ],
                                        debug=True)
+
+  def testPermissionInProcessCodeCoverageData(self):
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+    response = self.test_app.post(
+        '/coverage/task/process-data/123?format=json', status=401)
+    self.assertEqual(('Either not log in yet or no permission. '
+                      'Please log in with your @google.com account.'),
+                     response.json_body.get('error_message'))
 
   @mock.patch.object(code_coverage, '_WriteFileContentToGs')
   @mock.patch.object(GitilesRepository, 'GetSource', return_value='test')
