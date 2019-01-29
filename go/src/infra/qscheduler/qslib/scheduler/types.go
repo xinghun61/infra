@@ -100,7 +100,7 @@ func (s *state) toProto() *StateProto {
 		balances[string(aid)] = &StateProto_Balance{Value: bCopy[:]}
 	}
 
-	queuedRequests := make(map[string]*TaskRequest, len(s.queuedRequests))
+	queuedRequests := make(map[string]*TaskRequestProto, len(s.queuedRequests))
 	for rid, rq := range s.queuedRequests {
 		queuedRequests[string(rid)] = requestProto(rq)
 	}

@@ -76,8 +76,8 @@ type request struct {
 
 // requestProto converts a request to a TaskRequest proto. It is a convenience method.
 // Note: TaskRequest does not include the request's ID, so this conversion is lossy.
-func requestProto(r *request) *TaskRequest {
-	return &TaskRequest{
+func requestProto(r *request) *TaskRequestProto {
+	return &TaskRequestProto{
 		AccountId:           string(r.accountID),
 		ConfirmedTime:       tutils.TimestampProto(r.confirmedTime),
 		EnqueueTime:         tutils.TimestampProto(r.enqueueTime),
@@ -120,7 +120,7 @@ type worker struct {
 
 // AddRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequest, t time.Time) {
+func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequestProto, t time.Time) {
 	if requestID == "" {
 		panic("empty request id")
 	}

@@ -22,8 +22,8 @@ import (
 
 // NewRequest creates a new TaskRequest.
 func NewRequest(accountID AccountID, provisionableLabels []string,
-	baseLabels []string, enqueueTime time.Time) *TaskRequest {
-	return &TaskRequest{
+	baseLabels []string, enqueueTime time.Time) *TaskRequestProto {
+	return &TaskRequestProto{
 		AccountId:           string(accountID),
 		ConfirmedTime:       tutils.TimestampProto(enqueueTime),
 		EnqueueTime:         tutils.TimestampProto(enqueueTime),

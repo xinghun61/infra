@@ -137,7 +137,7 @@ func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *Accoun
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, requestID RequestID, request *TaskRequest, t time.Time) error {
+func (s *Scheduler) AddRequest(ctx context.Context, requestID RequestID, request *TaskRequestProto, t time.Time) error {
 	if requestID == "" {
 		return errors.New("empty request id")
 	}
@@ -263,7 +263,7 @@ func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
 }
 
 // GetRequest returns the (waiting or running) request for a given ID.
-func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequest, ok bool) {
+func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequestProto, ok bool) {
 	if r, ok := s.state.getRequest(rid); ok {
 		return requestProto(r), ok
 	}

@@ -23,7 +23,7 @@ import "google/protobuf/timestamp.proto";
 message StateProto {
   // QueuedRequests is the set of Requests that are waiting to be assigned to a
   // worker, keyed by request id.
-  map<string, TaskRequest> queued_requests = 1;
+  map<string, TaskRequestProto> queued_requests = 1;
 
   message Balance {
     repeated double value = 1;
@@ -40,10 +40,10 @@ message StateProto {
   google.protobuf.Timestamp last_update_time = 4;
 }
 
-// TaskRequest represents a requested task in the queue, and refers to the
+// TaskRequestProto represents a requested task in the queue, and refers to the
 // quota account to run it against. This representation intentionally
 // excludes most of the details of a Swarming task request.
-message TaskRequest {
+message TaskRequestProto {
   // AccountId is the id of the account that this request charges to.
   string account_id = 1;
 
@@ -69,7 +69,7 @@ message TaskRun {
   repeated double cost = 1;
 
   // Request is the request that this running task corresponds to.
-  TaskRequest request = 2;
+  TaskRequestProto request = 2;
 
   // RequestId is the request id of the request that this running task
   // corresponds to.

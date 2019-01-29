@@ -297,7 +297,7 @@ func TestApplyIdleAssignment(t *testing.T) {
 		ctx := context.Background()
 		s := newState(time.Unix(0, 0))
 		tp := tutils.TimestampProto(time.Unix(0, 0))
-		s.addRequest(ctx, "t1", &TaskRequest{ConfirmedTime: tp, EnqueueTime: tp}, time.Unix(0, 0))
+		s.addRequest(ctx, "t1", &TaskRequestProto{ConfirmedTime: tp, EnqueueTime: tp}, time.Unix(0, 0))
 		s.markIdle("w1", stringset.New(0), time.Unix(0, 0))
 
 		Convey("when an idle-worker-assignment is applied with a given priority", func() {
