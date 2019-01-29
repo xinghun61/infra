@@ -15,8 +15,6 @@ syntax = "proto3";
 package scheduler;
 
 import "google/protobuf/timestamp.proto";
-import "infra/qscheduler/qslib/scheduler/task.proto";
-import "infra/qscheduler/qslib/scheduler/worker.proto";
 
 // StateProto represents the overall state of a quota scheduler worker pool,
 // account set, and task queue. This is represented separately from
@@ -40,4 +38,68 @@ message StateProto {
   // LastUpdateTime is the last time at which UpdateTime was called on a scheduler,
   // and corresponds to the when the quota account balances were updated.
   google.protobuf.Timestamp last_update_time = 4;
+}
+
+// TaskRequest represents a requested task in the queue, and refers to the
+// quota account to run it against. This representation intentionally
+// excludes most of the details of a Swarming task request.
+message TaskRequest {
+  // AccountId is the id of the account that this request charges to.
+  string account_id = 1;
+
+  // EnqueueTime is the time at which the request was enqueued.
+  google.protobuf.Timestamp enqueue_time = 2;
+
+  // The set of Provisionable Labels for this task.
+  repeated string provisionable_labels = 3;
+
+  // ConfirmedTime is the most recent time at which the Request state was
+  // provided or confirmed by external authority (via a call to Enforce or
+  // AddRequest).
+  google.protobuf.Timestamp confirmed_time = 4;
+
+  // The set of base labels for this task.
+  repeated string base_labels = 5;
+}
+
+// TaskRun represents a task that has been assigned to a worker and is
+// now running.
+message TaskRun {
+  // Cost is the total cost that has been incurred on this task while running.
+  repeated double cost = 1;
+
+  // Request is the request that this running task corresponds to.
+  TaskRequest request = 2;
+
+  // RequestId is the request id of the request that this running task
+  // corresponds to.
+  string request_id = 3;
+
+  // Priority is the current priority level of the running task.
+  int32 priority = 4;
+}
+
+// Worker represents a resource that can run 1 task at a time. This corresponds
+// to the swarming concept of a Bot. This representation considers only the
+// subset of Labels that are Provisionable (can be changed by running a task),
+// because the quota scheduler algorithm is expected to run against a pool of
+// otherwise homogenous workers.
+message Worker {
+  // Labels represents the set of labels that this worker possesses.
+  repeated string labels = 1;
+
+  // RunningTask is, if non-nil, the task that is currently running on the
+  // worker.
+  TaskRun running_task = 2;
+
+  // ConfirmedTime is the most recent time at which the Worker state was
+  // directly confirmed as idle by external authority (via a call to MarkIdle or
+  // NotifyRequest).
+  google.protobuf.Timestamp confirmed_time = 3;
+
+  // TODO(akeshet): Add the concept of an Inactive worker, which will exist
+  // in the scheduler State object, but will be ignored for scheduling purposes.
+  // Instead of deleting workers when they are neither running nor idle, we will
+  // retain them so we can remember their confirmed time, allowing us to ignore
+  // backward-in-time updates.
 }
