@@ -96,11 +96,6 @@ class BuildRequest(_BuildRequestBase):
         ((identity or auth.get_current_identity()).to_bytes(), req_id)
     )
 
-  @property
-  def bucket_id(self):
-    bid = self.schedule_build_request.builder
-    return config.format_bucket_id(bid.project, bid.bucket)
-
   def create_build_proto(self, build_id, created_by, now):
     """Converts the request to a build_pb2.Build.
 
@@ -167,7 +162,6 @@ class BuildRequest(_BuildRequestBase):
     build = model.Build(
         id=build_id,
         proto=build_proto,
-        bucket_id=self.bucket_id,
         tags=[buildtags.unparse(k, v) for k, v in sorted(tags)],
         parameters=copy.deepcopy(self.parameters or {}),
         created_by=created_by,
@@ -300,10 +294,12 @@ def add_many_async(build_request_list):
     """Creates/updates model.Builder entities."""
     builder_ids = set()
     for b in new_builds.itervalues():
-      builder = b.parameters.get(model.BUILDER_PARAMETER)
-      if builder:  # pragma: no branch
-        project_id, bucket_name = config.parse_bucket_id(b.bucket_id)
-        builder_ids.add('%s:%s:%s' % (project_id, bucket_name, builder))
+      builder_id = b.proto.builder
+      if builder_id.builder:  # pragma: no branch
+        builder_ids.add(
+            '%s:%s:%s' %
+            (builder_id.project, builder_id.bucket, builder_id.builder)
+        )
     keys = [ndb.Key(model.Builder, bid) for bid in builder_ids]
     builders = yield ndb.get_multi_async(keys)
 

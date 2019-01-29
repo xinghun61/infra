@@ -127,7 +127,6 @@ def build(**build_proto_fields):  # pragma: no cover
   ret = model.Build(
       id=proto.id,
       proto=proto,
-      bucket_id=bucket_id,
       created_by=auth.Identity.from_bytes(proto.created_by),
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,

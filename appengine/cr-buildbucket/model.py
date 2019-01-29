@@ -177,12 +177,12 @@ class Build(ndb.Model):
   # Format: "<project_id>/<bucket_name>".
   # "luci.<project_id>." prefix is stripped from bucket name,
   # e.g. "chromium/try", not "chromium/luci.chromium.try".
-  bucket_id = ndb.StringProperty()
+  bucket_id = ndb.ComputedProperty(
+      lambda self: config.format_bucket_id(
+          self.proto.builder.project, self.proto.builder.bucket))
 
   # ID of the LUCI project to which this build belongs.
-  project = ndb.ComputedProperty(
-      lambda self: config.parse_bucket_id(self.bucket_id)[0]
-  )
+  project = ndb.ComputedProperty(lambda self: self.proto.builder.project)
 
   # Superset of proto.tags. May contain auto-added tags.
   # A list of colon-separated key-value pairs.
@@ -282,7 +282,8 @@ class Build(ndb.Model):
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
-    config.validate_bucket_id(self.bucket_id)
+    config.validate_project_id(self.proto.builder.project)
+    config.validate_bucket_name(self.proto.builder.bucket)
     is_started = self.proto.status == common_pb2.STARTED
     is_ended = self.is_ended
     is_leased = self.lease_key is not None

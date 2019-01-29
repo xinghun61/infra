@@ -114,8 +114,9 @@ class CreationTest(testing.AppengineTestCase):
         auth.get_current_identity().to_bytes()
     )
 
-    self.assertEqual(build.bucket_id, 'chromium/try')
-    self.assertEqual(build.parameters[model.BUILDER_PARAMETER], 'linux')
+    self.assertEqual(build.proto.builder.project, 'chromium')
+    self.assertEqual(build.proto.builder.bucket, 'try')
+    self.assertEqual(build.proto.builder.builder, 'linux')
     self.assertEqual(build.created_by, auth.get_current_identity())
 
   def test_add_with_properties(self):
@@ -285,7 +286,7 @@ class CreationTest(testing.AppengineTestCase):
     ]).get_result()
 
     self.assertIsNone(ex0)
-    self.assertEqual(b0.bucket_id, 'chromium/try')
+    self.assertEqual(b0.parameters['i'], 0)
 
     self.assertIsNotNone(ex1)
     self.assertIsNone(b1)

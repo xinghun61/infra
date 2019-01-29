@@ -164,11 +164,9 @@ def build_to_message(build, include_lease_key=False):
   assert build.key
   assert build.key.id()
 
-  project_id, _ = config.parse_bucket_id(build.bucket_id)
-
   msg = BuildMessage(
       id=build.key.id(),
-      project=project_id,
+      project=build.proto.builder.project,
       bucket=legacy_bucket_name(build.bucket_id, build.is_luci),
       tags=build.tags,
       # TODO(nodir): move requested properties out from model.Build.parameters
