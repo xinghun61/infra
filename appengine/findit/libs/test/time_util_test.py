@@ -147,6 +147,11 @@ class TimeUtilTest(unittest.TestCase):
         datetime(2017, 4, 27, 8, 0, 0),
         time_util.ConvertPSTToUTC(datetime(2017, 4, 27, 0, 0, 0)))
 
+  def testConvertUTCToPST(self):
+    self.assertEqual(
+        datetime(2017, 4, 27, 0, 0, 0),
+        time_util.ConvertUTCToPST(datetime(2017, 4, 27, 8, 0, 0)))
+
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 4, 27, 8, 0, 0))
   def testGetDateDaysFromNowBefore(self, _):

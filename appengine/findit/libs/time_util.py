@@ -18,6 +18,11 @@ def ConvertPSTToUTC(pst_datetime):
   return pst_datetime + timedelta(hours=8)
 
 
+def ConvertUTCToPST(utc_datetime):
+  # For simplicity, assume UTC is PST + 8 hours.
+  return utc_datetime - timedelta(hours=8)
+
+
 def GetUTCNow():  # pragma: no cover.
   """Returns the datetime.utcnow. This is to mock for testing."""
   return datetime.utcnow()

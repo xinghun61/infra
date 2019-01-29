@@ -25,6 +25,7 @@ from gae_libs.handlers.base_handler import BaseHandler, Permission
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.cache_decorator import Cached
 from libs.deps import chrome_dependency_fetcher
+from libs.time_util import ConvertUTCToPST
 from model import entity_util
 from model.proto.gen.code_coverage_pb2 import CoverageReport
 from model.code_coverage import CoverageData
@@ -763,6 +764,13 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
                 -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
         data = [e._to_dict() for e in entities]
+
+        # TODO(crbug.com/926237): Move the conversion to client side and use
+        # local timezone.
+        for report in data:
+          report['commit_timestamp'] = ConvertUTCToPST(
+              report['commit_timestamp'])
+
         template = 'coverage/project_view.html'
         data_type = 'project'
       else:
