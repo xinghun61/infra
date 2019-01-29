@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/maruel/subcommands"
@@ -16,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
+	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -33,6 +35,7 @@ var CreateSuite = &subcommands.Command{
 		c.Flags.StringVar(&c.model, "model", "", "Model to run suite on.")
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run suite on.")
 		c.Flags.StringVar(&c.image, "image", "", "Fully specified image name to run suite against, e.g. reef-canary/R73-11580.0.0")
+		c.Flags.Var(flagx.NewChoice(&c.priority, sortedPriorityKeys()...), "priority", fmt.Sprint("Specify the priority of the suite. A high value means this suite will be executed in a low priority. It should be a string in ", sortedPriorities()))
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for suite; may be specified multiple times.")
 		return c
 	},
@@ -46,6 +49,7 @@ type createSuiteRun struct {
 	model     string
 	pool      string
 	image     string
+	priority  string
 	tags      []string
 }
 
@@ -67,7 +71,11 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	suiteName := c.Flags.Arg(0)
 
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}
-	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, dimensions)
+	if c.priority == "" {
+		c.priority = defaultTaskPriorityKey
+	}
+	priority := taskPriorityMap[c.priority]
+	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, priority, dimensions)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -84,7 +92,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	}
 
 	taskName := c.image + "-" + suiteName
-	taskID, err := createSuiteTask(ctx, s, taskName, slices, tags)
+	taskID, err := createSuiteTask(ctx, s, taskName, priority, slices, tags)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -124,22 +132,23 @@ func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPai
 	}
 }
 
-func getSuiteSlices(board string, model string, pool string, image string, suiteName string, dimensions []string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSuiteSlices(board string, model string, pool string, image string, suiteName string, priority int, dimensions []string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	dims, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
-	cmd := getRunSuiteCmd(board, model, pool, image, suiteName)
+	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, priority)
 	return []*swarming.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims)}, nil
 }
 
-func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string) []string {
+func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, priority int) []string {
 	cmd := []string{
 		"/usr/local/autotest/bin/run_suite_skylab",
 		"--build", image,
 		"--board", board,
 		"--pool", pool,
 		"--suite_name", suiteName,
+		"--priority", strconv.Itoa(priority),
 		// By default the script creates the suite and return immediately, to avoid task timeout.
 		"--create_and_return"}
 	if model != "" {
@@ -148,8 +157,8 @@ func getRunSuiteCmd(board string, model string, pool string, image string, suite
 	return cmd
 }
 
-func createSuiteTask(ctx context.Context, s *swarming.Service, taskName string, slices []*swarming.SwarmingRpcsTaskSlice, tags []string) (taskID string, err error) {
-	req := newTaskRequest(taskName, tags, slices, defaultTaskPriority)
+func createSuiteTask(ctx context.Context, s *swarming.Service, taskName string, priority int, slices []*swarming.SwarmingRpcsTaskSlice, tags []string) (taskID string, err error) {
+	req := newTaskRequest(taskName, tags, slices, int64(priority))
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
 	resp, err := s.Tasks.New(req).Context(ctx).Do()

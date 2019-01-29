@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"sort"
 
 	"github.com/google/uuid"
 	"github.com/maruel/subcommands"
@@ -25,7 +26,25 @@ import (
 )
 
 const progName = "skylab"
-const defaultTaskPriority = 140
+
+type taskPriority struct {
+	name  string
+	level int
+}
+
+var taskPriorityMap = map[string]int{
+	"Weekly":    230,
+	"CTS":       215,
+	"Daily":     200,
+	"PostBuild": 170,
+	"Default":   140,
+	"Build":     110,
+	"PFQ":       80,
+	"CQ":        50,
+	"Super":     49,
+}
+var defaultTaskPriorityKey = "Default"
+var defaultTaskPriority = taskPriorityMap[defaultTaskPriorityKey]
 
 type commonFlags struct {
 	debug bool
@@ -163,4 +182,25 @@ func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
 		pairs[i] = &swarming.SwarmingRpcsStringPair{Key: k, Value: v}
 	}
 	return pairs, nil
+}
+
+func sortedPriorities() []taskPriority {
+	s := make([]taskPriority, 0, len(taskPriorityMap))
+	for k, v := range taskPriorityMap {
+		s = append(s, taskPriority{k, v})
+	}
+
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].level < s[j].level
+	})
+	return s
+}
+
+func sortedPriorityKeys() []string {
+	sp := sortedPriorities()
+	k := make([]string, 0, len(sp))
+	for _, p := range sp {
+		k = append(k, p.name)
+	}
+	return k
 }
