@@ -55,6 +55,7 @@ func testSetup(t *testing.T) *State {
 	gs.Register(algo.NewRandomGen())
 	// Register Modifiers.
 	gs.RegisterModifier(algo.NewWeekendSkip())
+	gs.RegisterModifier(algo.NewSplitShift())
 
 	fake := &fakeCal{}
 

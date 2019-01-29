@@ -161,6 +161,7 @@ func init() {
 
 	// And the modifiers.
 	gs.RegisterModifier(algo.NewWeekendSkip())
+	gs.RegisterModifier(algo.NewSplitShift())
 
 	opts := handlers.Options{
 		ProjectID:      appengine.AppID,
