@@ -28,10 +28,11 @@ from libs.deps import chrome_dependency_fetcher
 from libs.time_util import ConvertUTCToPST
 from model import entity_util
 from model.proto.gen.code_coverage_pb2 import CoverageReport
-from model.code_coverage import CoverageData
 from model.code_coverage import DependencyRepository
 from model.code_coverage import PostsubmitReport
-from model.code_coverage import PresubmitReport
+from model.code_coverage import FileCoverageData
+from model.code_coverage import PresubmitCoverageData
+from model.code_coverage import SummaryCoverageData
 from waterfall import waterfall_config
 
 # List of Gerrit projects that the Code Coverage service supports.
@@ -307,7 +308,7 @@ def _GetFileContentFromGitiles(report, file_path,
   return repo.GetSource(relative_file_path, revision)
 
 
-def _IsReportSuspicious(report):  # pragma: no cover.
+def _IsReportSuspicious(report):
   """Returns True if the newly generated report is suspicious to be incorrect.
 
   A report is determined to be suspicious if and only if the absolute difference
@@ -325,21 +326,23 @@ def _IsReportSuspicious(report):  # pragma: no cover.
     line_coverage_percentage = None
     summary = report.summary_metrics
     for feature_summary in summary:
-      if feature_summary['name'] != 'line':
-        continue
-
-      line_coverage_percentage = float(
-          feature_summary['covered']) / feature_summary['total']
+      if feature_summary['name'] == 'line':
+        line_coverage_percentage = float(
+            feature_summary['covered']) / feature_summary['total']
+        break
 
     assert line_coverage_percentage is not None, (
         'Given report has invalid summary')
     return line_coverage_percentage
 
+  target_server_host = report.gitiles_commit.server_host
+  target_project = report.gitiles_commit.project
   most_recent_visible_reports = PostsubmitReport.query(
-      PostsubmitReport.server_host == report.server_host,
-      PostsubmitReport.project == report.project, PostsubmitReport.visible ==
-      True).order(-PostsubmitReport.commit_position).order(
-          -PostsubmitReport.commit_timestamp).fetch(1)
+      PostsubmitReport.gitiles_commit.server_host == target_server_host,
+      PostsubmitReport.gitiles_commit.project == target_project,
+      PostsubmitReport.visible == True).order(
+          -PostsubmitReport.commit_position).order(
+              -PostsubmitReport.commit_timestamp).fetch(1)
   if not most_recent_visible_reports:
     logging.warn('No existing visible reports to use for reference, the new '
                  'report is determined as not suspicious by default')
@@ -380,7 +383,7 @@ class FetchSourceFile(BaseHandler):
     _WriteFileContentToGs(gs_path, file_content)
 
 
-class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
+class ProcessCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
   def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, build_id):
@@ -391,13 +394,13 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     assert change_log is not None, 'Failed to retrieve the commit log'
 
     # Load the manifest based on the DEPS file.
-    # TODO (crbug.com/921714): output the manifest as a build output property.
+    # TODO(crbug.com/921714): output the manifest as a build output property.
     manifest = _RetrieveManifest(repo_url, commit.id, 'unix')
-    report = PostsubmitReport(
-        key=ndb.Key(PostsubmitReport,
-                    '%s$%s$%s' % (commit.host, commit.project, commit.id)),
+
+    report = PostsubmitReport.Create(
         server_host=commit.host,
         project=commit.project,
+        ref=commit.ref,
         revision=commit.id,
         commit_position=change_log.commit_position,
         commit_timestamp=change_log.committer.time,
@@ -406,8 +409,6 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
         build_id=build_id,
         visible=False)
     report.put()
-
-    code_revision_index = '%s-%s' % (commit.project, commit.id)
 
     # Save the file-level, directory-level and line-level coverage data.
     for data_type in ('dirs', 'components', 'files', 'file_shards'):
@@ -428,7 +429,7 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
 
         ndb.put_multi(entries)
         total += len(entries)
-        logging.info('Dumped %d CoverageData entries of type %s', total,
+        logging.info('Dumped %d coverage data entries of type %s', total,
                      actual_data_type)
 
         return [], total
@@ -461,9 +462,24 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
             self._FetchAndSaveFileIfNecessary(report, group_data['path'],
                                               group_data['revision'])
 
-          coverage_data = CoverageData.Create(commit.host, code_revision_index,
-                                              actual_data_type,
-                                              group_data['path'], group_data)
+          if actual_data_type == 'files':
+            coverage_data = FileCoverageData.Create(
+                server_host=commit.host,
+                project=commit.project,
+                ref=commit.ref,
+                revision=commit.id,
+                path=group_data['path'],
+                data=group_data)
+          else:
+            coverage_data = SummaryCoverageData.Create(
+                server_host=commit.host,
+                project=commit.project,
+                ref=commit.ref,
+                revision=commit.id,
+                data_type=actual_data_type,
+                path=group_data['path'],
+                data=group_data)
+
           entities.append(coverage_data)
           entities, total = FlushEntries(entities, total, last=False)
         del dataset  # Explicitly release memory.
@@ -471,11 +487,17 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
 
       if component_summaries:
         component_summaries.sort(key=lambda x: x['path'])
-        CoverageData.Create(commit.host, code_revision_index, 'components',
-                            '>>', {
-                                'dirs': component_summaries,
-                                'path': '>>'
-                            }).put()
+        SummaryCoverageData.Create(
+            server_host=commit.host,
+            project=commit.project,
+            ref=commit.ref,
+            revision=commit.id,
+            data_type='components',
+            path='>>',
+            data={
+                'dirs': component_summaries,
+                'path': '>>'
+            }).put()
         component_summaries = []
         logging.info('Summary of all components are saved to datastore.')
 
@@ -520,17 +542,12 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
 
   def _ProcessCLPatchData(self, patch, data, build_id):
     # For a CL/patch, we save the entire data in one entity.
-    CoverageData.Create(patch.host, '%s-%s' % (patch.change, patch.patchset),
-                        'patch', 'ALL', data).put()
-    PresubmitReport(
-        key=ndb.Key(
-            PresubmitReport, '%s$%s$%s$%s' % (patch.host, patch.change,
-                                              patch.patchset, build_id)),
+    PresubmitCoverageData.Create(
         server_host=patch.host,
-        project=patch.project,
         change=patch.change,
         patchset=patch.patchset,
-        build_id=build_id).put()
+        build_id=build_id,
+        data=data).put()
 
   def _processCodeCoverageData(self, build_id):
     build = GetV2Build(
@@ -579,6 +596,7 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
 
     full_gs_dir = 'https://storage.googleapis.com/%s/%s' % (gs_bucket, gs_path)
     gs_url = '%s/all.json.gz' % full_gs_dir
+
     data = _GetValidatedData(gs_url)
 
     # Save the data in json.
@@ -607,7 +625,7 @@ class ProcessCodeCoverageData(BaseHandler):  # pragma: no cover.
     return self.HandlePost()  # For local testing purpose.
 
 
-def _IsServePresubmitCoverageDataEnabled():  # pragma: no cover.
+def _IsServePresubmitCoverageDataEnabled():
   """Returns True if the feature to serve presubmit coverage data is enabled.
 
   Returns:
@@ -618,7 +636,7 @@ def _IsServePresubmitCoverageDataEnabled():  # pragma: no cover.
       'serve_presubmit_coverage_data', False)
 
 
-def _GetPathRootAndSeparatorFromDataType(data_type):  # pragma: no cover.
+def _GetPathRootAndSeparatorFromDataType(data_type):
   """Returns the path of the root and path separator for the given data type."""
   if data_type in ('files', 'dirs'):
     return '//', '/'
@@ -627,7 +645,7 @@ def _GetPathRootAndSeparatorFromDataType(data_type):  # pragma: no cover.
   return None, None
 
 
-def _GetNameToPathSeparator(path, data_type):  # pragma: no cover.
+def _GetNameToPathSeparator(path, data_type):
   """Returns a list of [name, sub_path] for the given path.
 
   Example:
@@ -677,12 +695,13 @@ def _GetNameToPathSeparator(path, data_type):  # pragma: no cover.
   return path_parts
 
 
-class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
+class ServeCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
     host = self.request.get('host', 'chromium.googlesource.com')
     project = self.request.get('project', 'chromium/src')
+    ref = self.request.get('ref', 'refs/heads/master')
 
     change = self.request.get('change')
     patchset = self.request.get('patchset')
@@ -726,8 +745,8 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
             allowed_origin='*',
             **kwargs)
 
-      code_revision_index = '%s-%s' % (change, patchset)
-      entity = CoverageData.Get(host, code_revision_index, 'patch', 'ALL')
+      entity = PresubmitCoverageData.Get(
+          server_host=host, change=change, patchset=patchset)
       if not entity:
         return BaseHandler.CreateError(
             'Requested coverage data is not found.', 404, allowed_origin='*')
@@ -759,9 +778,10 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
 
       if not revision:
         query = PostsubmitReport.query(
-            PostsubmitReport.server_host == host, PostsubmitReport.project ==
-            project).order(-PostsubmitReport.commit_position).order(
-                -PostsubmitReport.commit_timestamp)
+            PostsubmitReport.gitiles_commit.server_host == host,
+            PostsubmitReport.gitiles_commit.project == project).order(
+                -PostsubmitReport.commit_position).order(
+                    -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
         data = [e._to_dict() for e in entities]
 
@@ -774,8 +794,8 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
         template = 'coverage/project_view.html'
         data_type = 'project'
       else:
-        key = ndb.Key(PostsubmitReport, '%s$%s$%s' % (host, project, revision))
-        report = key.get()
+        report = PostsubmitReport.Get(
+            server_host=host, project=project, ref=ref, revision=revision)
         if not report:
           return BaseHandler.CreateError('Report record not found', 404)
 
@@ -792,8 +812,22 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
 
           template = 'coverage/file_view.html'
 
-        code_revision_index = '%s-%s' % (project, revision)
-        entity = CoverageData.Get(host, code_revision_index, data_type, path)
+        if data_type == 'files':
+          entity = FileCoverageData.Get(
+              server_host=host,
+              project=project,
+              ref=ref,
+              revision=revision,
+              path=path)
+        else:
+          entity = SummaryCoverageData.Get(
+              server_host=host,
+              project=project,
+              ref=ref,
+              revision=revision,
+              data_type=data_type,
+              path=path)
+
         if not entity:
           return BaseHandler.CreateError('Requested path does not exist', 404)
 
@@ -844,6 +878,7 @@ class ServeCodeCoverageData(BaseHandler):  # pragma: no cover.
           'data': {
               'host': host,
               'project': project,
+              'ref': ref,
               'revision': revision,
               'path': path,
               'path_root': path_root,

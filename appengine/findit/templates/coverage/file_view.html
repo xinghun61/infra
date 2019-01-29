@@ -91,7 +91,7 @@
 <body>
   <coverage-app id="app">
     <div style="font-size:18px">
-    Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&revision={{revision}}&path=>>">Component View</a>
+    Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>">Component View</a>
     <br>
     <br>
     </div>
@@ -101,7 +101,7 @@
           <th colspan="3">
             <a href="/p/chromium/coverage?host={{host}}&project={{project}}">{{project}}</a>
             - {{data.commit_position or revision}}
-            - <a href="/p/chromium/coverage?host={{host}}&project={{project}}&revision={{revision}}&path={{path_root}}">{{path_root}}</a>{% for name, sub_path in path_parts %}<a style="padding-left:.3ex;" title="{{sub_path}}" href="/p/chromium/coverage/{{'dir' if name.endswith('/') else 'file'}}?host={{host}}&project={{project}}&revision={{revision}}&path={{sub_path}}">{{name}}</a>{% endfor %}
+            - <a href="/p/chromium/coverage?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path={{path_root}}">{{path_root}}</a>{% for name, sub_path in path_parts %}<a style="padding-left:.3ex;" title="{{sub_path}}" href="/p/chromium/coverage/{{'dir' if name.endswith('/') else 'file'}}?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path={{sub_path}}">{{name}}</a>{% endfor %}
           </th>
         </tr>
         <tr>

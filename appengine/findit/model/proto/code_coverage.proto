@@ -141,7 +141,7 @@ message CoverageSummary {
 message GroupCoverageSummary {
   // Two cases:
   // * The full path of the directory relative to the root of the code base.
-  //   For a directory, this should end with a "/", e.g. "base/".
+  //   For a directory, this should end with a "/", e.g. "//base/".
   //   For the root directory, this should be "//".
   // * The full path of the crbug component like "Blink>Storage>AppCache".
   string path = 1;

@@ -31,7 +31,7 @@
       <table>
         <thead>
           <tr class="coverage-header">
-            {% if user_info.is_admin %}
+            {% if user_info and user_info.is_admin %}
               <th colspan="8">{{project}}</th>
             {% else %}
               <th colspan="7">{{project}}</th>
@@ -45,7 +45,7 @@
             <th>Function</th>
             <th>Region</th>
             <th>Data Source</th>
-            {% if user_info.is_admin %}
+            {% if user_info and user_info.is_admin %}
               <th>Is Visible</th>
             {% endif %}
           </tr>
@@ -53,7 +53,7 @@
 
         <tbody>
         {% for datum in data %}
-          {% if user_info.is_admin or datum.visible %}
+          {% if user_info and user_info.is_admin or datum.visible %}
             <tr>
               <td>
                 {{datum.commit_position}}
@@ -62,7 +62,7 @@
                 {{datum.commit_timestamp}}
               </td>
               <td>
-                <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&revision={{datum.revision}}&path=//">Link</a>
+                <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&revision={{datum.revision}}&path=//">Link</a>
               </td>
               {% for name in ('line', 'function', 'region') %}
                 {% set found = False %}
@@ -85,7 +85,7 @@
               <td>
                 <a href="https://ci.chromium.org/b/{{datum.build_id}}">Build</a>
               </td>
-              {% if user_info.is_admin %}
+              {% if user_info and user_info.is_admin %}
                 <td>{{datum.visible}}</td>
               {% endif %}
             </tr>
