@@ -635,7 +635,17 @@ class SwarmingTest(BaseTest):
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux'
         ),
-        input=dict(properties=bbutil.dict_to_struct({'a': 'b'})),
+        input=dict(
+            properties=bbutil.dict_to_struct({'a': 'b'}),
+            gerrit_changes=[
+                dict(
+                    host='chromium-review.googlesource.com',
+                    project='chromium/src',
+                    change=1234,
+                    patchset=5,
+                ),
+            ],
+        ),
     )
     build.tags = ['builder:linux', 'buildset:1']
 
@@ -744,6 +754,14 @@ class SwarmingTest(BaseTest):
                         },
                         'number': 1,
                         'tags': [{'value': '1', 'key': 'buildset'}],
+                        'input': {
+                            'gerritChanges': [{
+                                'host': 'chromium-review.googlesource.com',
+                                'project': 'chromium/src',
+                                'change': '1234',
+                                'patchset': '5',
+                            }],
+                        },
                         'infra': {
                             'buildbucket': {
                                 'serviceConfigRevision': 'template_rev'
@@ -756,7 +774,6 @@ class SwarmingTest(BaseTest):
                             },
                         },
                         'createdBy': 'anonymous:anonymous',
-                        'input': {},
                         'createTime': '2015-11-30T00:00:00Z',
                     },
                 },

@@ -47,7 +47,6 @@ from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.protobuf import json_format
-from google.protobuf import struct_pb2
 import webapp2
 
 from third_party import annotations_pb2
@@ -609,6 +608,16 @@ def _setup_recipes(build, builder_cfg, params):
     # property.
     emails = [c.get('author', {}).get('email') for c in changes]
     props['blamelist'] = filter(None, emails)
+
+  # Add repository property, for backward compatibility.
+  # TODO(crbug.com/877161): remove it.
+  if len(build.proto.input.gerrit_changes) == 1:
+    cl = build.proto.input.gerrit_changes[0]
+    suffix = '-review.googlesource.com'
+    if cl.host.endswith(suffix) and cl.project:  # pragma: no branch
+      props['repository'] = 'https://%s.googlesource.com/%s' % (
+          cl.host[:-len(suffix)], cl.project
+      )
 
   extra_task_template_params = {
       'recipe': builder_cfg.recipe.name,
