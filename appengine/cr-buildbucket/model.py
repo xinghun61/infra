@@ -266,7 +266,6 @@ class Build(ndb.Model):
   canary = ndb.BooleanProperty()
 
   complete_time = ndb.DateTimeProperty()
-  cancel_reason_v2 = datastore_utils.ProtobufProperty(build_pb2.CancelReason)
 
   swarming_hostname = ndb.StringProperty()
   service_account = ndb.StringProperty()

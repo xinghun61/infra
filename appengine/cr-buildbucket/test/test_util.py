@@ -144,7 +144,6 @@ def build(**build_proto_fields):  # pragma: no cover
       },
       canary_preference=model.CanaryPreference.PROD,
       canary=proto.infra.buildbucket.canary,
-      cancel_reason_v2=proto.cancel_reason,
       swarming_hostname=proto.infra.swarming.hostname,
       service_account=proto.infra.swarming.task_service_account,
       url='https://ci.example.com/%d' % proto.id,

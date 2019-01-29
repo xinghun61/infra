@@ -500,6 +500,8 @@ def cancel(build_id, human_reason=None, result_details=None):
 
   @ndb.transactional
   def txn():
+    identity_str = auth.get_current_identity().to_bytes()
+
     build = model.Build.get_by_id(build_id)
     if build is None:
       raise errors.BuildNotFoundError()
@@ -513,12 +515,8 @@ def cancel(build_id, human_reason=None, result_details=None):
     build.proto.status = common_pb2.CANCELED
     build.status_changed_time = now
     build.result_details = result_details
-    build.cancel_reason_v2 = build_pb2.CancelReason(
-        message=human_reason,
-        canceled_by=auth.get_current_identity().to_bytes(),
-    )
-    if build.proto:  # pragma: no branch
-      build.proto.cancel_reason.CopyFrom(build.cancel_reason_v2)
+    build.proto.cancel_reason.message = human_reason or ''
+    build.proto.cancel_reason.canceled_by = identity_str
     build.complete_time = now
     build.clear_lease()
     futs = [
