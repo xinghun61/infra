@@ -1002,8 +1002,9 @@ def create_task_async(build):
     dt = buildtags.unparse(d['key'], d['value'])
     build.tags.append(buildtags.unparse(buildtags.SWARMING_DIMENSION_KEY, dt))
 
-  build.service_account = task_req.get('service_account', '')
-  build.proto.infra.swarming.task_service_account = build.service_account
+  build.proto.infra.swarming.task_service_account = task_req.get(
+      'service_account', ''
+  )
 
   # Mark the build as leased.
   exp = sum(int(t['expiration_secs']) for t in task_def['task_slices'])

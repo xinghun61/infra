@@ -268,7 +268,6 @@ class Build(ndb.Model):
   complete_time = ndb.DateTimeProperty()
 
   swarming_hostname = ndb.StringProperty()
-  service_account = ndb.StringProperty()
 
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""

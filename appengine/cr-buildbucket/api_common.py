@@ -190,7 +190,7 @@ def build_to_message(build, include_lease_key=False):
       canary_preference=build.canary_preference,
       canary=build.canary,
       experimental=build.experimental,
-      service_account=build.service_account,
+      service_account=build.proto.infra.swarming.task_service_account,
       # when changing this function, make sure build_to_dict would still work
   )
 
