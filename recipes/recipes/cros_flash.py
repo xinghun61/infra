@@ -96,7 +96,13 @@ def RunSteps(api):
     # Move into the named cache, and fetch a full ChromiumOS checkout.
     cros_checkout_path = api.path['cache'].join('builder')
     with api.context(cwd=cros_checkout_path):
-      api.chromite.checkout(repo_sync_args=['-j4'], branch=CROS_BRANCH)
+      try:
+        api.chromite.checkout(repo_sync_args=['-c', '-j2'], branch=CROS_BRANCH)
+      except api.step.StepFailure as f:
+        # repo has a tendency to flake when syncing. If it fails, continue on
+        # with the build. Anything problematic in the checkout should be caught
+        # by the subsequent build-chroot step.
+        f.result.presentation.status = api.step.WARNING
 
       # Pass in --nouse-image below so the chroot is simply encased in a dir.
       # It'll otherwise try creating and mounting an image file (which can be a
@@ -152,6 +158,18 @@ def GenTests(api):
         gs_image_bucket='cros-image-bucket',
         gs_image_path='some/image/path.tar.xz',
     ) +
+    api.post_process(post_process.StatusSuccess) +
+    api.post_process(post_process.DropExpectation)
+  )
+
+  yield (
+    api.test('sync_failure') +
+    api.platform('linux', 64) +
+    api.properties(
+        gs_image_bucket='cros-image-bucket',
+        gs_image_path='some/image/path.bin',
+    ) +
+    api.override_step_data('repo sync', retcode=1) +
     api.post_process(post_process.StatusSuccess) +
     api.post_process(post_process.DropExpectation)
   )
