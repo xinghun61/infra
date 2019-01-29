@@ -11,9 +11,7 @@ from protorpc import messages
 
 from components import utils
 
-from proto import common_pb2
 import bbutil
-import buildtags
 import config
 import logging
 import model
@@ -158,11 +156,18 @@ def _properties_to_dict(properties):
   return as_dict
 
 
-def build_to_message(build, include_lease_key=False):
+def build_to_message(build, build_output_properties, include_lease_key=False):
   """Converts model.Build to BuildMessage."""
   assert build
   assert build.key
   assert build.key.id()
+
+  result_details = (build.result_details or {}).copy()
+  result_details['properties'] = {}
+  if build_output_properties:
+    result_details['properties'] = _properties_to_dict(
+        build_output_properties.properties
+    )
 
   msg = BuildMessage(
       id=build.key.id(),
@@ -174,7 +179,7 @@ def build_to_message(build, include_lease_key=False):
       parameters_json=json.dumps(build.parameters, sort_keys=True),
       status=build.status_legacy,
       result=build.result,
-      result_details_json=json.dumps(build.result_details),
+      result_details_json=json.dumps(result_details),
       cancelation_reason=build.cancelation_reason,
       failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
@@ -201,7 +206,7 @@ def build_to_message(build, include_lease_key=False):
   return msg
 
 
-def build_to_dict(build, include_lease_key=False):
+def build_to_dict(build, build_output_properties, include_lease_key=False):
   """Converts a build to an externally consumable dict.
 
   This function returns a dict that a BuildMessage would be encoded to.
@@ -211,7 +216,9 @@ def build_to_dict(build, include_lease_key=False):
   # knowledge of many protorpc and endpoints implementation details.
   # Not worth it.
 
-  msg = build_to_message(build, include_lease_key=include_lease_key)
+  msg = build_to_message(
+      build, build_output_properties, include_lease_key=include_lease_key
+  )
 
   # Special cases
   result = {

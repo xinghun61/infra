@@ -70,9 +70,10 @@ class TaskPublishNotification(webapp2.RequestHandler):
     build = model.Build.get_by_id(body['id'])
     if not build:  # pragma: no cover
       return
+    out_props = model.BuildOutputProperties.key_for(build.key).get()
 
     message = {
-        'build': api_common.build_to_dict(build),
+        'build': api_common.build_to_dict(build, out_props),
         'hostname': app_identity.get_default_version_hostname(),
     }
     attrs = {'build_id': str(build.key.id())}

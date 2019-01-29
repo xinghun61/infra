@@ -811,23 +811,24 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.succeed', autospec=True)
   def test_succeed_with_result_details(self, succeed):
-    props = {'p': '0'}
-    build = test_util.build(
-        id=1,
-        tags=[dict(key='t', value='0')],
-        output=dict(properties=bbutil.dict_to_struct(props)),
-    )
+    build = test_util.build(id=1, tags=[dict(key='t', value='0')])
     succeed.return_value = build
+
+    props = {'p': '0'}
+    model.BuildOutputProperties(
+        key=model.BuildOutputProperties.key_for(build.key),
+        properties=bbutil.dict_to_struct(props)
+    ).put()
+    result_details = {'properties': props}
+
     req = {
         'id': '1',
         'lease_key': 42,
-        'result_details_json': json.dumps({
-            'properties': props,
-        }),
+        'result_details_json': json.dumps(result_details),
     }
     res = self.call_api('succeed', req).json_body
     _, kwargs = service.succeed.call_args
-    self.assertEqual(kwargs['result_details'], build.result_details)
+    self.assertEqual(kwargs['result_details'], result_details)
     self.assertEqual(
         res['build']['result_details_json'], req['result_details_json']
     )
@@ -843,7 +844,6 @@ class V1ApiTest(testing.EndpointsTestCase):
         'id': '1',
         'lease_key': 42,
         'failure_reason': 'INFRA_FAILURE',
-        'result_details_json': json.dumps(build.result_details),
         'new_tags': ['t:0'],
     }
     res = self.call_api('fail', req).json_body
@@ -857,9 +857,6 @@ class V1ApiTest(testing.EndpointsTestCase):
     )
     self.assertEqual(res['build']['id'], '1')
     self.assertEqual(res['build']['failure_reason'], req['failure_reason'])
-    self.assertEqual(
-        res['build']['result_details_json'], req['result_details_json']
-    )
 
   ####### CANCEL ###############################################################
 
@@ -873,14 +870,19 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('service.cancel', autospec=True)
   def test_cancel_with_details(self, cancel):
-    props = {'p': 0}
-    build = test_util.build(
-        id=1, output=dict(properties=bbutil.dict_to_struct(props))
-    )
+    build = test_util.build(id=1)
     cancel.return_value = build
-    req = {'id': '1', 'result_details_json': json.dumps(build.result_details)}
+
+    props = {'a': 'b'}
+    model.BuildOutputProperties(
+        key=model.BuildOutputProperties.key_for(build.key),
+        properties=bbutil.dict_to_struct(props)
+    ).put()
+    result_details = {'properties': props}
+
+    req = {'id': '1', 'result_details_json': json.dumps(result_details)}
     res = self.call_api('cancel', req).json_body
-    cancel.assert_called_once_with(1, result_details=build.result_details)
+    cancel.assert_called_once_with(1, result_details=result_details)
     self.assertEqual(
         res['build']['result_details_json'], req['result_details_json']
     )

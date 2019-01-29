@@ -220,10 +220,28 @@ def put_request_message_to_build_request(put_request):
   )
 
 
+def builds_to_messages(builds, include_lease_key=False):
+  """Converts model.Build objects to BuildMessage objects.
+
+  Fetches model.BuildOutputProperties.
+  """
+  out_props_list = ndb.get_multi([
+      model.BuildOutputProperties.key_for(b.key) for b in builds
+  ])
+  return [
+      api_common.build_to_message(
+          b, out_props, include_lease_key=include_lease_key
+      ) for b, out_props in zip(builds, out_props_list)
+  ]
+
+
+def build_to_message(build, include_lease_key=False):
+  return builds_to_messages([build], include_lease_key=include_lease_key)[0]
+
+
 def build_to_response_message(build, include_lease_key=False):
-  return BuildResponseMessage(
-      build=api_common.build_to_message(build, include_lease_key)
-  )
+  msg = build_to_message(build, include_lease_key=include_lease_key)
+  return BuildResponseMessage(build=msg)
 
 
 def id_resource_container(body_message_class=message_types.VoidMessage):
@@ -434,9 +452,7 @@ class BuildBucketApi(remote.Service):
     for (i, _), (build, ex) in zip(build_reqs, results):
       one_res = res.results[i]
       if build:
-        one_res.build = api_common.build_to_message(
-            build, include_lease_key=True
-        )
+        one_res.build = build_to_message(build, include_lease_key=True)
       elif isinstance(ex, errors.Error):
         one_res.error = exception_to_error_message(ex)
       else:
@@ -563,7 +579,7 @@ class BuildBucketApi(remote.Service):
         )
     ).get_result()
     return self.SearchResponseMessage(
-        builds=map(api_common.build_to_message, builds),
+        builds=builds_to_messages(builds),
         next_cursor=next_cursor,
     )
 
@@ -592,8 +608,8 @@ class BuildBucketApi(remote.Service):
         start_cursor=request.start_cursor,
     )
     return self.SearchResponseMessage(
-        builds=map(api_common.build_to_message, builds),
-        next_cursor=next_cursor
+        builds=builds_to_messages(builds),
+        next_cursor=next_cursor,
     )
 
   ####### LEASE ################################################################
@@ -848,7 +864,7 @@ class BuildBucketApi(remote.Service):
       one_res = res.OneResult(build_id=build_id)
       try:
         build = service.cancel(build_id, result_details=result_details)
-        one_res.build = api_common.build_to_message(build)
+        one_res.build = build_to_message(build)
       except errors.Error as ex:
         one_res.error = exception_to_error_message(ex)
       res.results.append(one_res)

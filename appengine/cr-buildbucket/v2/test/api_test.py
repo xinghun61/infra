@@ -267,7 +267,7 @@ class UpdateBuildTests(BaseTestCase):
     expected_props = {'a': 1}
     build_steps = model.BuildSteps(
         key=model.BuildSteps.key_for(build.key),
-        step_container=build_pb2.Build(steps=[dict(name='bot_update')],),
+        step_container=build_pb2.Build(steps=[dict(name='bot_update')]),
     )
     build_steps.put()
 
@@ -281,11 +281,6 @@ class UpdateBuildTests(BaseTestCase):
 
     expected = copy.deepcopy(build_proto)
     expected.MergeFrom(build_steps.step_container)
-
-    build = build.key.get()
-    self.assertEqual(
-        build.result_details[model.PROPERTIES_PARAMETER], expected_props
-    )
 
     out_props = model.BuildOutputProperties.key_for(build.key).get()
     self.assertEqual(

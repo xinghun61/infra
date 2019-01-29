@@ -12,6 +12,7 @@ from test import test_util
 from testing_utils import testing
 
 import api_common
+import bbutil
 import config
 import model
 
@@ -30,7 +31,7 @@ class ApiCommonTests(testing.AppengineTestCase):
     build = test_util.build()
     build.lease_key = 1
     build.lease_expiration_date = yesterday
-    msg = api_common.build_to_message(build)
+    msg = api_common.build_to_message(build, None)
     self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
   def test_build_to_dict(self):
@@ -50,7 +51,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'created_ts': '1483228800000000',
         'id': '8991715593768927232',
         'parameters_json': props_json,
-        'result_details_json': json.dumps({'properties': {}}),
+        'result_details_json': json.dumps({'properties': {'a': 'b'}}),
         'status': 'SCHEDULED',
         'status_changed_ts': '1483228800000000',
         'tags': tags,
@@ -60,9 +61,15 @@ class ApiCommonTests(testing.AppengineTestCase):
         'service_account': 'service@example.com',
         'url': 'https://ci.example.com/8991715593768927232',
     }
+
+    out_props = model.BuildOutputProperties(
+        properties=bbutil.dict_to_struct({'a': 'b'})
+    )
     self.assertEqual(
         expected,
-        test_util.ununicode(api_common.build_to_dict(test_util.build()))
+        test_util.ununicode(
+            api_common.build_to_dict(test_util.build(), out_props)
+        )
     )
 
   def test_build_to_dict_non_luci(self):
@@ -70,7 +77,7 @@ class ApiCommonTests(testing.AppengineTestCase):
     build.proto.infra.swarming.hostname = ''
     build.swarming_hostname = None
 
-    actual = api_common.build_to_dict(build)
+    actual = api_common.build_to_dict(build, None)
     self.assertEqual(actual['project'], 'chromium')
     self.assertEqual(actual['bucket'], 'master.chromium')
 

@@ -298,11 +298,6 @@ def update_build_async(req, ctx, _mask):
               properties=build_proto.output.properties,
           )
       )
-      # TODO(nodir): remove code below.
-      build.result_details = build.result_details or {}
-      build.result_details[model.PROPERTIES_PARAMETER] = json.loads(
-          json_format.MessageToJson(build_proto.output.properties)
-      )
 
     # Store and convert back to build_pb2.Build proto for return.
     yield ndb.put_multi_async(to_put)

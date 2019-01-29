@@ -139,9 +139,6 @@ def build(**build_proto_fields):  # pragma: no cover
           model.PROPERTIES_PARAMETER:
               bbutil.struct_to_dict(proto.input.properties),
       },
-      result_details={
-          'properties': bbutil.struct_to_dict(proto.output.properties),
-      },
       canary_preference=model.CanaryPreference.PROD,
       canary=proto.infra.buildbucket.canary,
       swarming_hostname=proto.infra.swarming.hostname,

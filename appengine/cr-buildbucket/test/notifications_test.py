@@ -18,6 +18,7 @@ from testing_utils import testing
 
 from test import test_util
 import api_common
+import bbutil
 import main
 import model
 import notifications
@@ -63,9 +64,15 @@ class NotificationsTest(testing.AppengineTestCase):
         auth_token='secret',
     )
 
+    out_props = model.BuildOutputProperties(
+        key=model.BuildOutputProperties.key_for(build.key),
+        properties=bbutil.dict_to_struct({'a': 'b'})
+    )
+
     @ndb.transactional
     def txn():
       build.put()
+      out_props.put()
       notifications.enqueue_notifications_async(build).get_result()
 
     txn()
@@ -102,7 +109,7 @@ class NotificationsTest(testing.AppengineTestCase):
     pubsub.publish.assert_called_with(
         'projects/testbed-test/topics/builds',
         json.dumps({
-            'build': api_common.build_to_dict(build),
+            'build': api_common.build_to_dict(build, out_props),
             'hostname': 'buildbucket.example.com',
         },
                    sort_keys=True),
@@ -117,7 +124,7 @@ class NotificationsTest(testing.AppengineTestCase):
     pubsub.publish.assert_called_with(
         'projects/example/topics/buildbucket',
         json.dumps({
-            'build': api_common.build_to_dict(build),
+            'build': api_common.build_to_dict(build, out_props),
             'hostname': 'buildbucket.example.com',
             'user_data': 'hello',
         },
@@ -161,7 +168,7 @@ class NotificationsTest(testing.AppengineTestCase):
     pubsub.publish.assert_called_with(
         'projects/testbed-test/topics/builds',
         json.dumps({
-            'build': api_common.build_to_dict(build),
+            'build': api_common.build_to_dict(build, None),
             'hostname': 'buildbucket.example.com',
         },
                    sort_keys=True),
