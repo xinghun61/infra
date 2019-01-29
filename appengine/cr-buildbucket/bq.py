@@ -100,30 +100,26 @@ def _process_pull_task_batch(queue_name, dataset):
     return
 
   build_ids = [json.loads(t.payload)['id'] for t in tasks]
+
   # IDs of builds that we could not save and want to retry later.
   ids_to_retry = set()
+  # model.Build objects to insert to BigQuery.
+  to_insert = []
 
-  # Fetch builds and steps for the tasks and convert them to v2 format.
-  build_keys = [ndb.Key(model.Build, bid) for bid in build_ids]
-  futs = zip(
-      build_ids,
-      ndb.get_multi_async(build_keys),
-      ndb.get_multi_async(map(model.BuildSteps.key_for, build_keys)),
-  )
-  v2_builds = []
-  for bid, build_fut, build_steps_fut in futs:
-    v2_build, retry = _build_to_v2(
-        bid, build_fut.get_result(), build_steps_fut.get_result()
-    )
-    if retry:
+  builds = ndb.get_multi(ndb.Key(model.Build, bid) for bid in build_ids)
+  for bid, b in zip(build_ids, builds):
+    if not b:
+      logging.error('skipping build %d: not found', bid)
+    elif not b.is_ended:
+      logging.error('will retry build: not complete\n%d', bid)
       ids_to_retry.add(bid)
-    elif v2_build:  # pragma: no branch
-      v2_builds.append(v2_build)
+    else:
+      to_insert.append(b)
 
   row_count = 0
-  if v2_builds:
-    not_inserted_ids = _export_builds(dataset, v2_builds, lease_deadline)
-    row_count = len(v2_builds) - len(not_inserted_ids)
+  if to_insert:
+    not_inserted_ids = _export_builds(dataset, to_insert, lease_deadline)
+    row_count = len(to_insert) - len(not_inserted_ids)
     ids_to_retry.update(not_inserted_ids)
 
   if ids_to_retry:
@@ -138,32 +134,8 @@ def _process_pull_task_batch(queue_name, dataset):
   )
 
 
-def _build_to_v2(bid, build, build_steps):
-  """Returns (v2_build, should_retry) tuple.
-
-  Logs reasons for returning v2_build=None or retry=True.
-  """
-  if not build:
-    logging.error('skipping build %d: not found', bid)
-    return None, False
-
-  if not build.is_ended:
-    logging.error('will retry build: not complete\n%d', bid)
-    return None, True
-
-  try:
-    build_v2 = v2.build_to_v2(build, build_steps)
-    for s in build_v2.steps:
-      s.summary_markdown = ''
-      s.ClearField('logs')
-    return build_v2, False
-  except Exception:
-    logging.exception('failed to convert build to v2\nBuild id: %d', bid)
-    return None, True
-
-
-def _export_builds(dataset, v2_builds, deadline):
-  """Saves v2 builds to BigQuery.
+def _export_builds(dataset, builds, deadline):
+  """Saves builds to BigQuery.
 
   Logs insert errors and returns a list of ids of builds that could not be
   inserted.
@@ -171,7 +143,18 @@ def _export_builds(dataset, v2_builds, deadline):
   table_name = 'completed_BETA'  # TODO(nodir): remove beta suffix.
   # BigQuery API doc:
   # https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
-  logging.info('sending %d rows', len(v2_builds))
+  logging.info('sending %d rows', len(builds))
+
+  build_protos = model.builds_to_protos_async(
+      builds, load_steps=True, load_output_properties=True
+  ).get_result()
+
+  # Clear fields that we don't want in BigQuery.
+  for b in build_protos:
+    for s in b.steps:
+      s.summary_markdown = ''
+      s.ClearField('logs')
+
   res = net.json_request(
       url=((
           'https://www.googleapis.com/bigquery/v2/'
@@ -190,7 +173,7 @@ def _export_builds(dataset, v2_builds, deadline):
           'rows': [{
               'insertId': str(b.id),
               'json': bqh.message_to_dict(b),
-          } for b in v2_builds],
+          } for b in build_protos],
       },
       scopes=bqh.INSERT_ROWS_SCOPE,
       # deadline parameter here is duration in seconds.
@@ -199,7 +182,7 @@ def _export_builds(dataset, v2_builds, deadline):
 
   failed_ids = []
   for err in res.get('insertErrors', []):
-    b = v2_builds[err['index']]
+    b = build_protos[err['index']]
     failed_ids.append(b.id)
     logging.error('failed to insert row for build %d: %r', b.id, err['errors'])
   return failed_ids

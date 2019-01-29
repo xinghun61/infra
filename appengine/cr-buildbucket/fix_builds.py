@@ -7,14 +7,10 @@
 This code changes each time something needs to be migrated once.
 """
 
-import logging
-import copy
-
 from google.appengine.ext import ndb
 
 from components import utils
 
-import api_common
 import bulkproc
 
 PROC_NAME = 'fix_builds'
@@ -38,44 +34,10 @@ def _fix_builds(build_keys):  # pragma: no cover
     pass
 
 
-EXCLUDE_TAGS = {
-    'build_address',
-    'builder',
-    'swarming_dimension',
-    'swarming_hostname',
-    'swarming_tag',
-    'swarming_task_id',
-}
-
-
 @ndb.transactional_tasklet
 def _fix_build_async(build_key):  # pragma: no cover
   build = yield build_key.get_async()
   if not build:
     return
 
-  old = copy.deepcopy(build.proto)
-  tags, gitiles_commit, gerrit_changes = api_common.parse_v1_tags(build.tags)
-  tags = [t for t in tags if t.key not in EXCLUDE_TAGS]
-
-  new = build.proto
-  new.ClearField('tags')
-  new.input.ClearField('gitiles_commit')
-  new.input.ClearField('gerrit_changes')
-
-  new.tags.extend(tags)
-  if gitiles_commit:
-    new.input.gitiles_commit.CopyFrom(gitiles_commit)
-  new.input.gerrit_changes.extend(gerrit_changes)
-
-  if new != old:
-    compare = (
-        ('tags', old.tags, new.tags),
-        ('gitiles_commit', old.input.gitiles_commit, new.input.gitiles_commit),
-        ('gerrit_changes', old.input.gerrit_changes, new.input.gerrit_changes),
-    )
-    for title, old_v, new_v in compare:
-      if old_v != new_v:
-        logging.info('%s: %s: %s -> %s', build.key.id(), title, old_v, new_v)
-
-    yield build.put_async()
+  yield build.put_async()
