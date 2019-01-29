@@ -162,8 +162,6 @@ class CreationTest(testing.AppengineTestCase):
     )
 
     build = self.add(dict(gitiles_commit=gitiles_commit))
-    self.assertEqual(build.proto.input.gitiles_commit, gitiles_commit)
-    self.assertEqual(build.input_gitiles_commit, gitiles_commit)
     bs = (
         'commit/gitiles/gitiles.example.com/chromium/src/+/'
         'b7a757f457487cd5cfe2dae83f65c5bc10e288b7'

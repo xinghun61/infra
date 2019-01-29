@@ -255,9 +255,6 @@ class Build(ndb.Model):
   update_time = ndb.DateTimeProperty(auto_now=True)
   create_time = ndb.DateTimeProperty(auto_now_add=True)
   created_by = auth.IdentityProperty()
-  input_gitiles_commit = datastore_utils.ProtobufProperty(
-      common_pb2.GitilesCommit
-  )
 
   # when the build started. Unknown for old builds.
   start_time = ndb.DateTimeProperty()

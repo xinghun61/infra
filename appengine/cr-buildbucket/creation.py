@@ -185,10 +185,6 @@ class BuildRequest(_BuildRequestBase):
         sbr.properties
     )
 
-    # Do not assign build.input_gitiles_commit unless it is actually set.
-    if sbr.HasField('gitiles_commit'):
-      build.input_gitiles_commit = sbr.gitiles_commit
-
     if sbr.HasField('notify'):
       build.pubsub_callback = model.PubSubCallback(
           topic=sbr.notify.pubsub_topic,
