@@ -559,9 +559,9 @@ def _setup_recipes(build, builder_cfg, params):
   Returns:
     extra_swarming_tags, extra_cipd_packages, extra_task_template_params
   """
-  build.recipe = build.proto.infra.recipe
-  build.recipe.cipd_package = builder_cfg.recipe.cipd_package
-  build.recipe.name = builder_cfg.recipe.name
+  recipe = build.proto.infra.recipe
+  recipe.cipd_package = builder_cfg.recipe.cipd_package
+  recipe.name = builder_cfg.recipe.name
 
   # Properties specified in build parameters must override those in builder
   # config.

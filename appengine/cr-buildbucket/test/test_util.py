@@ -150,7 +150,6 @@ def build(**build_proto_fields):  # pragma: no cover
       logdog_hostname=proto.infra.logdog.hostname,
       logdog_project=proto.infra.logdog.project,
       logdog_prefix=proto.infra.logdog.prefix,
-      recipe=proto.infra.recipe,
       url='https://ci.example.com/%d' % proto.id,
   )
   ret.update_v1_status_fields()
