@@ -96,6 +96,10 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
         start_waterfall_try_job_inputs, None)
 
+    self.MockGeneratorPipeline(
+        analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline, build_key,
+        None)
+
     report_event_input = report_event_pipeline.ReportEventInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
     self.MockGeneratorPipeline(
@@ -166,6 +170,10 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockGeneratorPipeline(
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
         start_waterfall_try_job_inputs, None)
+
+    self.MockGeneratorPipeline(
+        analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline, build_key,
+        None)
 
     pipeline_input = AnalyzeTestFailureInput(
         build_key=BuildKey(
