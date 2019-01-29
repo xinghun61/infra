@@ -14,6 +14,7 @@ import (
 
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	hbotinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/resultsdir"
 )
 
@@ -24,6 +25,7 @@ type Info struct {
 	resultsDirCloser *resultsdir.Closer
 	DUTName          string
 	BotInfo          *botinfo.BotInfo
+	botInfoStore     *hbotinfo.Store
 	hostInfoPath     string
 }
 
@@ -40,11 +42,8 @@ func (i *Info) Close() error {
 		}
 		i.hostInfoPath = ""
 	}
-	if i.BotInfo != nil {
-		if err := dumpBotInfo(i.Bot, i.BotInfo); err == nil {
-			errs = append(errs, err)
-		}
-		i.BotInfo = nil
+	if err := i.botInfoStore.Close(); err != nil {
+		errs = append(errs, err)
 	}
 	if len(errs) > 0 {
 		return errors.Annotate(errors.MultiError(errs), "close harness").Err()
@@ -68,11 +67,11 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	}
 	i.DUTName = dutName
 
-	bi, err := loadBotInfo(b)
+	bi, err := hbotinfo.Open(b)
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	i.BotInfo = bi
+	i.botInfoStore, i.BotInfo = bi, &bi.BotInfo
 
 	i.ResultsDir = b.ResultsDir()
 	rdc, err := resultsdir.Open(i.ResultsDir)
