@@ -27,9 +27,9 @@ type Info struct {
 	DUTName    string
 	BotInfo    *botinfo.BotInfo
 
-	resultsDirCloser *resultsdir.Closer
 	botInfoStore     *hbotinfo.Store
 	borrower         *hostinfo.Borrower
+	resultsDirCloser *resultsdir.Closer
 	hostInfoFile     *hostinfo.File
 }
 
@@ -37,10 +37,10 @@ type Info struct {
 // to call multiple times.
 func (i *Info) Close() error {
 	var errs []error
-	if err := i.resultsDirCloser.Close(); err != nil {
+	if err := i.hostInfoFile.Close(); err != nil {
 		errs = append(errs, err)
 	}
-	if err := i.hostInfoFile.Close(); err != nil {
+	if err := i.resultsDirCloser.Close(); err != nil {
 		errs = append(errs, err)
 	}
 	if err := i.borrower.Close(); err != nil {
@@ -77,6 +77,13 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	}
 	i.botInfoStore, i.BotInfo = bi, &bi.BotInfo
 
+	hi, err := loadDUTHostInfo(b)
+	if err != nil {
+		return nil, errors.Annotate(err, "open harness").Err()
+	}
+
+	i.borrower = hostinfo.BorrowBotInfo(hi, i.BotInfo)
+
 	i.ResultsDir = b.ResultsDir()
 	rdc, err := resultsdir.Open(i.ResultsDir)
 	if err != nil {
@@ -84,13 +91,6 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	}
 	i.resultsDirCloser = rdc
 	log.Printf("Created results directory %s", i.ResultsDir)
-
-	hi, err := loadDUTHostInfo(b)
-	if err != nil {
-		return nil, errors.Annotate(err, "open harness").Err()
-	}
-
-	i.borrower = hostinfo.BorrowBotInfo(hi, i.BotInfo)
 
 	hif, err := hostinfo.Expose(hi, i.ResultsDir, i.DUTName)
 	if err != nil {
