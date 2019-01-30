@@ -7,11 +7,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/appengine/sheriff-o-matic/som/client"
-	"infra/appengine/sheriff-o-matic/som/client/mock"
-	testhelper "infra/appengine/sheriff-o-matic/som/client/test"
-	"infra/monitoring/messages"
-
 	"go.chromium.org/gae/impl/dummy"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
@@ -23,7 +18,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -32,12 +26,6 @@ func TestLogDiffJSONHandler(t *testing.T) {
 		c := newTestContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", clock.Now(c), nil}
-		})
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
 		})
 
 		q := datastore.NewQuery("LogDiff")
@@ -74,12 +62,6 @@ func TestLogDiffJSONHandler(t *testing.T) {
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", clock.Now(c), nil}
 		})
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
 
 		q := datastore.NewQuery("LogDiff")
 		results := []*LogDiff{}
@@ -115,12 +97,6 @@ func TestLogDiffJSONHandler(t *testing.T) {
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", clock.Now(c), nil}
 		})
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
 
 		q := datastore.NewQuery("LogDiff")
 		results := []*LogDiff{}
@@ -151,12 +127,6 @@ func TestLogDiffJSONHandler(t *testing.T) {
 		c := newTestContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", clock.Now(c), nil}
-		})
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
 		})
 
 		q := datastore.NewQuery("LogDiff")
@@ -192,12 +162,6 @@ func TestLogDiffJSONHandler(t *testing.T) {
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", clock.Now(c), nil}
 		})
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
 
 		q := datastore.NewQuery("LogDiff")
 		results := []*LogDiff{}
@@ -231,12 +195,6 @@ func TestLogDiffJSONHandler(t *testing.T) {
 		c := newTestContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", clock.Now(c), nil}
-		})
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
 		})
 
 		q := datastore.NewQuery("LogDiff")
@@ -276,18 +234,6 @@ func TestLogdiffWorker(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = setUpGitiles(c)
-		mockCtrl := gomock.NewController(t)
-		bbMock := mock.NewMockBuildbotClient(mockCtrl)
-		biMock := mock.NewMockBuildInfoClient(mockCtrl)
-		c = client.WithMiloBuildbot(c, bbMock)
-		c = client.WithMiloBuildInfo(c, biMock)
-
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
 
 		q := datastore.NewQuery("LogDiff")
 		results := []*LogDiff{}
@@ -330,18 +276,6 @@ func TestLogdiffWorker(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = setUpGitiles(c)
-		mockCtrl := gomock.NewController(t)
-		bbMock := mock.NewMockBuildbotClient(mockCtrl)
-		biMock := mock.NewMockBuildInfoClient(mockCtrl)
-		c = client.WithMiloBuildbot(c, bbMock)
-		c = client.WithMiloBuildInfo(c, biMock)
-
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
 
 		q := datastore.NewQuery("LogDiff")
 		results := []*LogDiff{}
@@ -384,18 +318,6 @@ func TestLogdiffWorker(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = setUpGitiles(c)
-		mockCtrl := gomock.NewController(t)
-		bbMock := mock.NewMockBuildbotClient(mockCtrl)
-		biMock := mock.NewMockBuildInfoClient(mockCtrl)
-		c = client.WithMiloBuildbot(c, bbMock)
-		c = client.WithMiloBuildInfo(c, biMock)
-
-		c = client.WithReader(c, testhelper.MockReader{
-			StdioForStepValue: []string{" ", " "},
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
 
 		q := datastore.NewQuery("LogDiff")
 		results := []*LogDiff{}

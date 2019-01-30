@@ -29,6 +29,11 @@ var getOAuthClient = func(c context.Context) (*http.Client, error) {
 // GetRevRangeHandler returns a revision range queury for gitiles, given one or
 // two commit positions.
 func GetRevRangeHandler(ctx *router.Context) {
+	crRev := client.NewCrRev("https://cr-rev.appspot.com")
+	getRevRangeHandler(ctx, crRev)
+}
+
+func getRevRangeHandler(ctx *router.Context, crRev client.CrRev) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	start := p.ByName("start")
@@ -43,7 +48,6 @@ func GetRevRangeHandler(ctx *router.Context) {
 
 	// TODO: nix this double layer of caching.
 	if err == memcache.ErrCacheMiss {
-		crRev := client.GetCrRev(c)
 		startRev, err := crRev.GetRedirect(c, start)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())

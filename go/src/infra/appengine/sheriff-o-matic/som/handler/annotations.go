@@ -384,7 +384,7 @@ func FileBugHandler(ctx *router.Context) {
 		},
 	}
 
-	mr := client.GetMonorail(c)
+	mr := client.NewMonorail(c, "https://monorail-prod.appspot.com")
 
 	res, err := mr.InsertIssue(c, fileBugReq)
 	if err != nil {

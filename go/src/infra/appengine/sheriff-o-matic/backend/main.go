@@ -8,13 +8,20 @@ package som
 import (
 	"net/http"
 
+	"infra/appengine/sheriff-o-matic/som/analyzer"
+	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/handler"
 
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
+)
+
+const (
+	prodAppID = "sheriff-o-matic"
 )
 
 // base is the root of the middleware chain.
@@ -26,12 +33,32 @@ func base() router.MiddlewareChain {
 			server.CookieAuth,
 		},
 	}
-	return standard.Base().Extend(a.GetMiddleware()).Extend(prodServiceClients)
+	return standard.Base().Extend(a.GetMiddleware()).Extend(withServiceClients)
 }
 
-func prodServiceClients(ctx *router.Context, next router.Handler) {
-	ctx.Context = client.WithProdClients(ctx.Context)
+func withServiceClients(ctx *router.Context, next router.Handler) {
+	a := analyzer.New(5, 100)
+	setServiceClients(ctx, a)
+	ctx.Context = handler.WithAnalyzer(ctx.Context, a)
 	next(ctx)
+}
+
+func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
+	if info.AppID(ctx.Context) == prodAppID {
+		logReader, findIt, miloClient, crBug, _, testResults := client.ProdClients(ctx.Context)
+		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		a.CrBug = crBug
+		a.Milo = miloClient
+		a.FindIt = findIt
+		a.TestResults = testResults
+	} else {
+		logReader, findIt, miloClient, crBug, _, testResults := client.StagingClients(ctx.Context)
+		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		a.CrBug = crBug
+		a.Milo = miloClient
+		a.FindIt = findIt
+		a.TestResults = testResults
+	}
 }
 
 //// Routes.
@@ -39,6 +66,7 @@ func init() {
 	r := router.New()
 	basemw := base()
 	standard.InstallHandlers(r)
+
 	r.GET("/_cron/analyze/:tree", basemw, handler.GetAnalyzeHandler)
 	r.POST("/_ah/queue/logdiff", basemw, handler.LogdiffWorker)
 	r.GET("/_ah/queue/addannotationtrees", basemw, handler.AnnotationTreeWorker)

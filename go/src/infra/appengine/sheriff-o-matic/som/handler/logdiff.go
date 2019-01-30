@@ -143,15 +143,17 @@ func LogdiffWorker(ctx *router.Context) {
 	buildNum1 := int64(lo1)
 	buildNum2 := int64(lo2)
 
+	logreader := client.NewLogReader()
+
 	logchan := make(chan *logerr)
 	go func() {
-		ret, err := client.StdioForStep(c, Master, builder, "steps", buildNum1)
+		ret, err := logreader.StdioForStep(c, Master, builder, "steps", buildNum1)
 		logchan <- &logerr{
 			log: ret,
 			err: err,
 		}
 	}()
-	res2, err := client.StdioForStep(c, Master, builder, "steps", buildNum2)
+	res2, err := logreader.StdioForStep(c, Master, builder, "steps", buildNum2)
 
 	res1 := <-logchan
 

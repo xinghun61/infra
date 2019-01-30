@@ -7,7 +7,6 @@ import (
 
 	"infra/monitoring/messages"
 
-	"infra/appengine/sheriff-o-matic/som/client"
 	clientTest "infra/appengine/sheriff-o-matic/som/client/test"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -98,7 +97,8 @@ func TestOfficialImportantFailures(t *testing.T) {
 			},
 		}
 		a := newTestAnalyzer(0, 10)
-		ctx := client.WithReader(context.Background(), mr)
+		a.Milo = mr
+		ctx := context.Background()
 
 		Convey("basic", func() {
 			failures, err := a.officialImportantFailures(ctx, nil, "", []int64{1})

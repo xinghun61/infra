@@ -22,39 +22,39 @@ func TestRevRangeHandler(t *testing.T) {
 
 	c := gaetesting.TestingContext()
 	c = gologger.StdConfig.Use(c)
-	c = client.WithCrRev(c, fakeCrRev.Server.URL)
+	crRev := client.NewCrRev(fakeCrRev.Server.URL)
 
 	Convey("get rev range", t, func() {
 		Convey("ok", func() {
 			c = authtest.MockAuthConfig(c)
 			w := httptest.NewRecorder()
-			GetRevRangeHandler(&router.Context{
+			getRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
 				Request: makeGetRequest(),
 				Params:  makeParams("start", "123", "end", "456"),
-			})
+			}, crRev)
 
 			So(w.Code, ShouldEqual, 301)
 		})
 		Convey("bad oauth", func() {
 			w := httptest.NewRecorder()
-			GetRevRangeHandler(&router.Context{
+			getRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
 				Request: makeGetRequest(),
 				Params:  makeParams("start", "123", "end", "456"),
-			})
+			}, crRev)
 			So(w.Code, ShouldEqual, http.StatusMovedPermanently)
 		})
 		Convey("bad request", func() {
 			w := httptest.NewRecorder()
 
-			GetRevRangeHandler(&router.Context{
+			getRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
 				Request: makeGetRequest(),
-			})
+			}, crRev)
 
 			So(w.Code, ShouldEqual, 400)
 		})

@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -24,7 +23,6 @@ import (
 	"infra/monitoring/messages"
 	"infra/monorail"
 
-	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/milo/api/proto"
@@ -40,37 +38,11 @@ const (
 	timeout    = 5 * time.Second
 	miloScheme = "https"
 	miloHost   = "ci.chromium.org"
-
-	clientReaderKey = contextKey("infra-client-reader")
-
-	crRevKey         = contextKey("infra-client-crrev")
-	buildBotKey      = contextKey("infra-client-buildbot")
-	finditKey        = contextKey("infra-client-findit")
-	gerritKey        = contextKey("infra-client-gerrit")
-	logdogKey        = contextKey("infra-client-logdog")
-	miloBuildbotKey  = contextKey("infra-client-milo-buildbot")
-	miloBuildInfoKey = contextKey("infra-client-milo-buildinfo")
-	monorailKey      = contextKey("infra-client-monorail")
-	swarmingKey      = contextKey("infra-client-swarming")
-	testResultsKey   = contextKey("infra-client-testrestults")
 )
 
 var (
 	expvars = expvar.NewMap("client")
 )
-
-// WithReader returns a context with its reader set to r.
-func WithReader(ctx context.Context, r readerType) context.Context {
-	return context.WithValue(ctx, clientReaderKey, r)
-}
-
-// getReader returns the current client.Reader for the context, or nil.
-func getReader(ctx context.Context) readerType {
-	if reader, ok := ctx.Value(clientReaderKey).(readerType); ok {
-		return reader
-	}
-	return nil
-}
 
 // BuilderURLDeprecated returns the builder URL for the given master and builder.
 // TODO(zhangtiff): Delete in favor of using BuilderURL().
@@ -121,52 +93,10 @@ func StepURL(master *messages.MasterLocation, builder, step string, buildNum int
 	return &newURL
 }
 
-// readerType provides access to read status information from various parts of chrome
-// developer infrastructure. TODO(seanmccullough): Change all of these to start lowercase
-// now that the type isn't exported.
-type readerType interface {
-	Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error)
-
-	BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error)
-
-	StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error)
-
-	CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error)
-
-	Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error)
-}
-
 // Writer writes out data to other services, most notably sheriff-o-matic.
 type Writer interface {
 	// PostAlerts posts alerts to Sheriff-o-Matic.
 	PostAlerts(ctx context.Context, alerts *messages.AlertsSummary) error
-}
-
-// Build fetches the build summary for master, builder and buildNum
-// from ci.chromium.org.
-func Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	return getReader(ctx).Build(ctx, master, builder, buildNum)
-}
-
-// BuildExtract fetches build information for master from CBE.
-func BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
-	return getReader(ctx).BuildExtract(ctx, master)
-}
-
-// StdioForStep fetches the standard output for a given build step, and an error if any
-// occurred.
-func StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	return getReader(ctx).StdioForStep(ctx, master, builder, step, buildNum)
-}
-
-// CrbugItems fetches a list of open issues from crbug matching the given label.
-func CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
-	return getReader(ctx).CrbugItems(ctx, label)
-}
-
-// Findit fetches items from the findit service, which identifies possible culprit CLs for a failed build.
-func Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	return getReader(ctx).Findit(ctx, master, builder, buildNum, failedSteps)
 }
 
 type trackingHTTPClient struct {
@@ -178,14 +108,6 @@ type trackingHTTPClient struct {
 	totalErrs  int64
 	totalBytes int64
 	currReqs   int64
-}
-
-type reader struct {
-	hc *trackingHTTPClient
-	// bCache is a map of build cache key to Build message.
-	bCache map[string]*messages.Build
-	// bLock protects bCache
-	bLock sync.Mutex
 }
 
 type writer struct {
@@ -215,27 +137,26 @@ type Test struct {
 	Builders []string `json:"builders"`
 }
 
-func newReader(ctx context.Context, httpClient *http.Client) (*reader, error) {
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-	}
-
-	r := &reader{
-		hc: &trackingHTTPClient{
-			c: httpClient,
-		},
-		bCache: map[string]*messages.Build{},
-	}
-
-	return r, nil
-}
-
 func cacheKeyForBuild(master *messages.MasterLocation, builder string, number int64) string {
 	return filepath.FromSlash(
 		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master.String()), url.QueryEscape(builder), number))
 }
 
-func (r *reader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
+type logReader struct {
+	hc *trackingHTTPClient
+}
+
+// NewLogReader returns a default LogReader implementation.
+func NewLogReader() LogReader {
+	return &logReader{
+		hc: &trackingHTTPClient{
+			c: http.DefaultClient,
+		},
+	}
+}
+
+// So logReader implements LogReader.
+func (r *logReader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
 	URL := &url.URL{
 		Scheme: miloScheme,
 		Host:   miloHost,
@@ -259,7 +180,13 @@ func contains(arr []string, s string) bool {
 	return false
 }
 
-func (r *reader) CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
+// CrBugs is a minimal Monorail client for fetching issues.
+type CrBugs struct {
+	hc *trackingHTTPClient
+}
+
+// CrbugItems returns a slice of issues that match label.
+func (cr *CrBugs) CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
 	v := url.Values{}
 	v.Add("can", "open")
 	v.Add("maxResults", "100")
@@ -269,7 +196,7 @@ func (r *reader) CrbugItems(ctx context.Context, label string) ([]messages.Crbug
 	expvars.Add("CrbugIssues", 1)
 	defer expvars.Add("CrbugIssues", -1)
 	res := &messages.CrbugSearchResults{}
-	if code, err := r.hc.getJSON(ctx, URL, res); err != nil {
+	if code, err := cr.hc.getJSON(ctx, URL, res); err != nil {
 		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
@@ -280,17 +207,6 @@ func (r *reader) CrbugItems(ctx context.Context, label string) ([]messages.Crbug
 // FinditAPIResponse represents a response from the findit api.
 type FinditAPIResponse struct {
 	Results []*messages.FinditResult `json:"results"`
-}
-
-func (r *reader) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	findit := GetFindit(ctx)
-
-	ret, err := findit.Findit(ctx, master, builder, buildNum, failedSteps)
-	if err != nil {
-		return nil, err
-	}
-
-	return ret, nil
 }
 
 func cacheable(b *messages.Build) bool {
@@ -513,8 +429,8 @@ func getAsSelfOAuthClient(c context.Context) (*http.Client, error) {
 	return &http.Client{Transport: t}, nil
 }
 
-// WithMonorail registers a new Monorail client instance pointed at baseURL.
-func WithMonorail(c context.Context, baseURL string) context.Context {
+// NewMonorail registers a new Monorail client instance pointed at baseURL.
+func NewMonorail(c context.Context, baseURL string) monorail.MonorailClient {
 	client, err := getAsSelfOAuthClient(c)
 
 	if err != nil {
@@ -523,24 +439,12 @@ func WithMonorail(c context.Context, baseURL string) context.Context {
 
 	mr := monorail.NewEndpointsClient(client, baseURL+"/_ah/api/monorail/v1/")
 
-	c = context.WithValue(c, monorailKey, mr)
-	return c
+	return mr
 }
 
-// GetMonorail returns the currently registered monorail client, or panics.
-func GetMonorail(c context.Context) monorail.MonorailClient {
-	v := c.Value(monorailKey)
-	ret, ok := v.(monorail.MonorailClient)
-	if !ok {
-		panic("No Monorail client set in context")
-	}
-	return ret
-}
-
-// WithProdClients returns a context for connecting to production services.
-func WithProdClients(ctx context.Context) context.Context {
-	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
-	ctx = WithFindit(ctx, "https://findit-for-me.appspot.com")
+// ProdClients returns a set of service clients pointed at production.
+func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
+	findIt := NewFindit("https://findit-for-me.appspot.com")
 
 	client, err := getAsSelfOAuthClient(ctx)
 	if err != nil {
@@ -556,52 +460,38 @@ func WithProdClients(ctx context.Context) context.Context {
 		Options: opts,
 	}
 	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
-	miloBuildInfo := milo.NewBuildInfoPRPCClient(miloPRPCClient)
-	ctx = WithMiloBuildbot(ctx, miloBuildbot)
-	ctx = WithMiloBuildInfo(ctx, miloBuildInfo)
 
-	ctx = WithMonorail(ctx, "https://monorail-prod.appspot.com")
-	ctx = WithTestResults(ctx, "https://test-results.appspot.com")
+	monorailClient := NewMonorail(ctx, "https://monorail-prod.appspot.com")
+	testResultsClient := NewTestResults("https://test-results.appspot.com")
+	miloClient := &miloClient{BuildBot: miloBuildbot}
+	crBugs := &CrBugs{}
 
-	reader, err := newReader(ctx, &http.Client{Transport: urlfetch.Get(ctx)})
-	if err != nil {
-		panic(fmt.Sprintf("creating newReader: %v", err))
-	}
-	memcachingReader := NewMemcacheReader(reader)
-	ctx = WithReader(ctx, memcachingReader)
-
-	return ctx
+	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
 }
 
-// WithStagingClients returns a context for connecting to staging services.
-func WithStagingClients(ctx context.Context) context.Context {
-	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
-	ctx = WithFindit(ctx, "https://findit-for-me-staging.appspot.com")
+// StagingClients returns a set of service clients pointed at production.
+func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
+	findIt := NewFindit("https://findit-for-me-staging.appspot.com")
 
 	client, err := getAsSelfOAuthClient(ctx)
 	if err != nil {
 		panic("No OAuth client in context")
 	}
 
+	opts := prpc.DefaultOptions()
+	opts.PerRPCTimeout = 10 * time.Minute
+
 	miloPRPCClient := &prpc.Client{
 		C:       client,
 		Host:    "luci-milo.appspot.com",
-		Options: prpc.DefaultOptions(),
+		Options: opts,
 	}
 	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
-	miloBuildInfo := milo.NewBuildInfoPRPCClient(miloPRPCClient)
-	ctx = WithMiloBuildbot(ctx, miloBuildbot)
-	ctx = WithMiloBuildInfo(ctx, miloBuildInfo)
 
-	ctx = WithMonorail(ctx, "https://monorail-staging.appspot.com")
-	ctx = WithTestResults(ctx, "https://test-results.appspot.com")
+	monorailClient := NewMonorail(ctx, "https://monorail-staging.appspot.com")
+	testResultsClient := NewTestResults("https://test-results.appspot.com")
+	miloClient := &miloClient{BuildBot: miloBuildbot}
+	crBugs := &CrBugs{}
 
-	reader, err := newReader(ctx, &http.Client{Transport: urlfetch.Get(ctx)})
-	if err != nil {
-		panic(fmt.Sprintf("creating newReader: %v", err))
-	}
-	memcachingReader := NewMemcacheReader(reader)
-	ctx = WithReader(ctx, memcachingReader)
-
-	return ctx
+	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
 }

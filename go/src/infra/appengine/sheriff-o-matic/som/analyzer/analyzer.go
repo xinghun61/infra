@@ -99,12 +99,19 @@ type Analyzer struct {
 	rslck             *sync.Mutex
 	revisionSummaries map[string]messages.RevisionSummary
 
-	reasonFinder   step.ReasonFinder
 	regrangeFinder regrange.Finder
 
 	// Now is useful for mocking the system clock in testing and simulating time
 	// during replay.
 	Now func() time.Time
+
+	StepAnalyzers step.BuildStepAnalyzers
+
+	// Mock these out in tests.
+	Milo        client.Milo
+	CrBug       client.CrBug
+	FindIt      client.FindIt
+	TestResults client.TestResults
 }
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
@@ -120,7 +127,6 @@ func New(minBuilds, maxBuilds int) *Analyzer {
 		Gatekeeper:             &GatekeeperRules{},
 		rslck:                  &sync.Mutex{},
 		revisionSummaries:      map[string]messages.RevisionSummary{},
-		reasonFinder:           step.ReasonsForFailures,
 		regrangeFinder:         regrange.Default,
 		Now: func() time.Time {
 			return time.Now()
@@ -270,7 +276,7 @@ func (a *Analyzer) lastBuilds(ctx context.Context, master *messages.MasterLocati
 		logging.Infof(ctx, "Checking last %s/%s build ID: %d", master.Name(), builderName, buildNum)
 
 		var build *messages.Build
-		build, err = client.Build(ctx, master, builderName, buildNum)
+		build, err = a.Milo.Build(ctx, master, builderName, buildNum)
 		if err != nil {
 			return
 		}
@@ -458,7 +464,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	// right now are internal and not supported by findit.
 	finditResults := []*messages.FinditResult{}
 	if tree == "chromium" {
-		finditResults, err = client.Findit(ctx, master, builderName, latestBuild, stepNames)
+		finditResults, err = a.FindIt.Findit(ctx, master, builderName, latestBuild, stepNames)
 		if err != nil {
 			logging.Errorf(ctx, "while getting findit results for build: %s", err)
 		}
@@ -505,7 +511,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 					}
 
 					if tree == "chromium" {
-						f, err := client.Findit(ctx, master, builderName, buildNum, stepNames)
+						f, err := a.FindIt.Findit(ctx, master, builderName, buildNum, stepNames)
 						if err != nil {
 							logging.Errorf(ctx, "while getting findit results for build: %s", err)
 						} else {
@@ -680,7 +686,7 @@ func (a *Analyzer) findImportantFailures(ctx context.Context, master *messages.M
 // stepFailures returns the steps that have failed recently on builder builderName.
 func (a *Analyzer) stepFailures(ctx context.Context, master *messages.MasterLocation, builderName string, bID int64) ([]*messages.BuildStep, error) {
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
-	b, err := client.Build(ctx, master, builderName, bID)
+	b, err := a.Milo.Build(ctx, master, builderName, bID)
 	if err != nil || b == nil {
 		logging.Errorf(ctx, "Error fetching build %s/%s/%d: %v", master, builderName, bID, err)
 		return nil, err
@@ -741,7 +747,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 
 	// Might not need full capacity buffer, since some failures are ignored below.
 	rs := make(chan res, len(filteredFailures))
-	reasons := a.reasonFinder(ctx, filteredFailures, tree)
+	reasons := a.StepAnalyzers.ReasonsForFailures(ctx, filteredFailures, tree)
 
 	wg := sync.WaitGroup{}
 	scannedFailures := []*messages.BuildStep{}

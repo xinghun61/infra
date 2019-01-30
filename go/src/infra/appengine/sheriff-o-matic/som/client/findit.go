@@ -49,17 +49,7 @@ func (f *findit) Findit(ctx context.Context, master *messages.MasterLocation, bu
 	return res.Results, nil
 }
 
-// WithFindit registers a findit client pointed at host.
-func WithFindit(ctx context.Context, host string) context.Context {
-	f := &findit{simpleClient{Host: host, Client: nil}}
-	return context.WithValue(ctx, finditKey, f)
-}
-
-// GetFindit returns the currently registered Findit client, or panics.
-func GetFindit(ctx context.Context) *findit {
-	ret, ok := ctx.Value(finditKey).(*findit)
-	if !ok {
-		panic("No findit client set in context")
-	}
-	return ret
+// NewFindit registers a findit client pointed at host.
+func NewFindit(host string) FindIt {
+	return &findit{simpleClient{Host: host, Client: nil}}
 }

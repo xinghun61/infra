@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	"infra/appengine/sheriff-o-matic/som/client"
 	testclient "infra/appengine/sheriff-o-matic/som/client/test"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monitoring/messages"
@@ -59,8 +58,6 @@ func TestMain(t *testing.T) {
 		monorailMux := http.NewServeMux()
 		monorailServer := httptest.NewServer(monorailMux)
 		defer monorailServer.Close()
-		c = client.WithMonorail(c, monorailServer.URL)
-
 		tok, err := xsrf.Token(c)
 		So(err, ShouldBeNil)
 		Convey("/api/v1", func() {

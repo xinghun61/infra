@@ -7,38 +7,47 @@ import (
 
 	"go.chromium.org/luci/common/logging"
 
+	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/monitoring/messages"
 )
 
-// This array MUST be kept in sorted order of "importance". The last analyzer which
-// returns a reason for the step failure will be used for the final reason.
-// If this is breaking, feel free to re-write; this should be sufficient for now.
-var (
-	analyzers = []Analyzer{
-		basicAnalyzer,
-		compileFailureAnalyzer,
-		testFailureAnalyzer,
-		botAnalyzer,
+// DefaultStepAnalyzers returns a set of default step analyzers.
+func DefaultStepAnalyzers(logReader client.LogReader, findIt client.FindIt, testResults client.TestResults) BuildStepAnalyzers {
+	return []BuildStepAnalyzer{
+		&basicStepAnalyzer{},
+		&compileFailureAnalyzer{
+			logReader: logReader,
+		},
+		&testFailureAnalyzer{
+			findit: findIt,
+			trc:    testResults,
+		},
+		&botAnalyzer{},
 	}
-)
+}
 
-// Analyzer reasons about a BuildStep and produces a set of reasons for the
+// BuildStepAnalyzer reasons about a BuildStep and produces a set of reasons for the
 // failure.  Each item in the returned array, if not nil, is the most
 // informative reason that we know for the given step.
 // If the analyzer returns errors, the reasons provided by it are only
 // considered invalid for the build steps which the analyzer had errors
 // processing.
-type Analyzer func(ctx context.Context, failures []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error)
+type BuildStepAnalyzer interface {
+	Analyze(ctx context.Context, failures []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error)
+}
 
 // ReasonFinder is a function which finds reasons for a set of build steps.
 type ReasonFinder func(ctx context.Context, failures []*messages.BuildStep, tree string) []messages.ReasonRaw
 
+// BuildStepAnalyzers is an ordered list of StepAnalyzers.
+type BuildStepAnalyzers []BuildStepAnalyzer
+
 // ReasonsForFailures is the default reason finder for package step.
-func ReasonsForFailures(ctx context.Context, failures []*messages.BuildStep, tree string) []messages.ReasonRaw {
+func (analyzers BuildStepAnalyzers) ReasonsForFailures(ctx context.Context, failures []*messages.BuildStep, tree string) []messages.ReasonRaw {
 	reasons := make([]messages.ReasonRaw, len(failures))
 
 	for _, fa := range analyzers {
-		res, errs := fa(ctx, failures, tree)
+		res, errs := fa.Analyze(ctx, failures, tree)
 		if errs != nil {
 			logging.Errorf(ctx, "Got errors while analyzing with %v: %s", fa, errs)
 		}
@@ -81,7 +90,9 @@ func (b *basicFailure) Title(bses []*messages.BuildStep) string {
 	return fmt.Sprintf("%s failing on multiple builders", f.Step.Name)
 }
 
-func basicAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
+type basicStepAnalyzer struct{}
+
+func (b *basicStepAnalyzer) Analyze(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 
 	for i, f := range fs {

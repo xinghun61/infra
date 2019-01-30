@@ -50,19 +50,7 @@ func (cr *crRev) GetRedirect(c context.Context, pos string) (map[string]string, 
 	return m, nil
 }
 
-// WithCrRev registers a crrev client with the context.
-func WithCrRev(c context.Context, baseURL string) context.Context {
-	cr := &crRev{Host: baseURL, Client: nil}
-	c = context.WithValue(c, crRevKey, cr)
-	return c
-}
-
-// GetCrRev creturns the crrev client previously registered with the context,
-// or panics.
-func GetCrRev(c context.Context) *crRev {
-	ret, ok := c.Value(crRevKey).(*crRev)
-	if !ok {
-		panic("No crrev client set in context")
-	}
-	return ret
+// NewCrRev returns a crrev client.
+func NewCrRev(baseURL string) CrRev {
+	return &crRev{Host: baseURL, Client: nil}
 }

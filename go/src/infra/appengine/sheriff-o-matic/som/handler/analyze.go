@@ -73,13 +73,27 @@ func (a bySeverity) Less(i, j int) bool {
 	return a[i].Severity < a[j].Severity
 }
 
+type ctxKeyType string
+
+var analyzerCtxKey = ctxKeyType("analyzer")
+
+// WithAnalyzer returns a context with a attached as a context value.
+func WithAnalyzer(ctx context.Context, a *analyzer.Analyzer) context.Context {
+	return context.WithValue(ctx, analyzerCtxKey, a)
+}
+
 // GetAnalyzeHandler enqueues a request to run an analysis on a particular tree.
 // This is usually hit by appengine cron rather than manually.
 func GetAnalyzeHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	tree := p.ByName("tree")
-	alertsSummary, err := generateAlerts(ctx)
+	a, ok := c.Value(analyzerCtxKey).(*analyzer.Analyzer)
+	if !ok {
+		errStatus(c, w, http.StatusInternalServerError, "no analyzer set in Context")
+		return
+	}
+	alertsSummary, err := generateAlerts(ctx, a)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,7 +115,7 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	w.Write([]byte("ok"))
 }
 
-func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
+func generateAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.AlertsSummary, error) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -124,7 +138,6 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 		return nil, nil
 	}
 
-	a := analyzer.New(5, 100)
 	a.Gatekeeper = gkRules
 
 	alerts := []messages.Alert{}
@@ -142,7 +155,7 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 		for masterLoc := range treeCfg.Masters {
 			masterLoc := masterLoc
 			go func() {
-				buildExtract, err := client.BuildExtract(c, &masterLoc)
+				buildExtract, err := a.Milo.BuildExtract(c, &masterLoc)
 				r := res{err: err}
 				if err == nil {
 					r.alerts = a.MasterAlerts(c, &masterLoc, buildExtract)
@@ -204,7 +217,7 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 		if !isTestFailure(alert) {
 			continue
 		}
-		if err := attachTestResults(c, &alert); err != nil {
+		if err := attachTestResults(c, &alert, a.TestResults); err != nil {
 			logging.WithError(err).Errorf(c, "attaching results")
 		}
 	}
@@ -233,8 +246,7 @@ func alertCategory(a *messages.Alert) string {
 	return cat
 }
 
-func attachTestResults(c context.Context, alert *messages.Alert) error {
-	trc := client.GetTestResults(c)
+func attachTestResults(c context.Context, alert *messages.Alert, trc client.TestResults) error {
 	bf, ok := alert.Extension.(messages.BuildFailure)
 	if !ok {
 		return fmt.Errorf("couldn't cast to a BuildFailure: %+v", bf)

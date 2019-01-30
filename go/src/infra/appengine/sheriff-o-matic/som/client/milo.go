@@ -17,35 +17,18 @@ import (
 	milo "go.chromium.org/luci/milo/api/proto"
 )
 
-// WithMiloBuildbot adds a milo Buildbot client instance to the context.
-func WithMiloBuildbot(c context.Context, mc milo.BuildbotClient) context.Context {
-	return context.WithValue(c, miloBuildbotKey, mc)
+type miloClient struct {
+	BuildBot milo.BuildbotClient
 }
 
-// GetMiloBuildbot returns the currently registered Milo Buidlbot client, or panics.
-func GetMiloBuildbot(c context.Context) milo.BuildbotClient {
-	v := c.Value(miloBuildbotKey)
-	ret, ok := v.(milo.BuildbotClient)
-	if !ok {
-		panic("error reading milo buildbot service dependency")
-	}
-	return ret
-}
-
-// WithMiloBuildInfo adds a milo BuildInfo client instance to the context.
-func WithMiloBuildInfo(c context.Context, mc milo.BuildInfoClient) context.Context {
-	return context.WithValue(c, miloBuildInfoKey, mc)
-}
-func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	bbClient := GetMiloBuildbot(ctx)
-
+func (r *miloClient) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	req := &milo.BuildbotBuildRequest{
 		Master:            master.Name(),
 		Builder:           builder,
 		BuildNum:          buildNum,
 		ExcludeDeprecated: true,
 	}
-	resp, err := bbClient.GetBuildbotBuildJSON(ctx, req)
+	resp, err := r.BuildBot.GetBuildbotBuildJSON(ctx, req)
 	if err != nil {
 		logging.Errorf(ctx, "error getting build %s/%s/%d: %v", master.Name(), builder, buildNum, err)
 		return nil, err
@@ -73,14 +56,12 @@ func stripUnusedFields(b *messages.Build) {
 	b.SourceStamp.Changes = strippedChanges
 }
 
-func (r *reader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
-	bbClient := GetMiloBuildbot(ctx)
-
+func (r *miloClient) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
 	req := &milo.MasterRequest{
 		Name:              master.Name(),
 		ExcludeDeprecated: true,
 	}
-	resp, err := bbClient.GetCompressedMasterJSON(ctx, req)
+	resp, err := r.BuildBot.GetCompressedMasterJSON(ctx, req)
 	if err != nil {
 		logging.Errorf(ctx, "error getting build extract for %s: %v", master.Name(), err)
 		return nil, err

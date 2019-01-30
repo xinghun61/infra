@@ -65,13 +65,11 @@ func (trc *testResults) TestResults(ctx context.Context, master *messages.Master
 	return tr, nil
 }
 
-// WithTestResults registers a new test-results client pointed at host.
-func WithTestResults(ctx context.Context, host string) context.Context {
-	trc := &testResults{
+// NewTestResults returns a new test-results client pointed at host.
+func NewTestResults(host string) TestResults {
+	return &testResults{
 		simpleClient: simpleClient{Host: host, Client: nil},
 	}
-
-	return context.WithValue(ctx, testResultsKey, trc)
 }
 
 // cacheKnownData caches known test results data from the given server.
@@ -103,15 +101,6 @@ func (trc *testResults) cacheKnownData(ctx context.Context) error {
 		}
 	})
 	return errResult
-}
-
-// GetTestResults returns the currently registered test-results client, or panics.
-func GetTestResults(ctx context.Context) *testResults {
-	ret, ok := ctx.Value(testResultsKey).(*testResults)
-	if !ok {
-		panic("No test-results client set in context")
-	}
-	return ret
 }
 
 // GetTestResultHistory returns the result history of a given test.

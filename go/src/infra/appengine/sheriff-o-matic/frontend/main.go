@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"strings"
 
+	"infra/appengine/sheriff-o-matic/som/analyzer"
+	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/handler"
 
@@ -138,16 +140,30 @@ func base(includeCookie bool) router.MiddlewareChain {
 	if includeCookie {
 		a.Methods = append(a.Methods, server.CookieAuth)
 	}
-	return standard.Base().Extend(a.GetMiddleware()).Extend(serviceClients)
+	return standard.Base().Extend(a.GetMiddleware()).Extend(withServiceClients)
 }
 
-func serviceClients(ctx *router.Context, next router.Handler) {
-	if info.AppID(ctx.Context) == prodAppID {
-		ctx.Context = client.WithProdClients(ctx.Context)
-	} else {
-		ctx.Context = client.WithStagingClients(ctx.Context)
-	}
+func withServiceClients(ctx *router.Context, next router.Handler) {
+	a := analyzer.New(5, 100)
+	setServiceClients(ctx, a)
+	ctx.Context = handler.WithAnalyzer(ctx.Context, a)
 	next(ctx)
+}
+
+func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
+	if info.AppID(ctx.Context) == prodAppID {
+		logReader, findIt, miloClient, crBug, _, testResults := client.ProdClients(ctx.Context)
+		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		a.CrBug = crBug
+		a.Milo = miloClient
+		a.FindIt = findIt
+	} else {
+		logReader, findIt, miloClient, crBug, _, testResults := client.StagingClients(ctx.Context)
+		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		a.CrBug = crBug
+		a.Milo = miloClient
+		a.FindIt = findIt
+	}
 }
 
 func requireGoogler(c *router.Context, next router.Handler) {

@@ -433,13 +433,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					finditFake := testhelper.NewFakeServer()
 					defer finditFake.Server.Close()
 					te.LayoutTestExpectations = map[string]string{}
-
+					findit := client.NewFindit(finditFake.Server.URL)
 					c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 						return giMock{dummy.Info(), "", time.Now(), nil}
 					})
 
 					c = setUpGitiles(c)
-					c = client.WithFindit(c, finditFake.Server.URL)
 
 					testResultsFake.JSONResponse = test.testResults
 
@@ -463,9 +462,10 @@ func TestTestStepFailureAlerts(t *testing.T) {
 						"/data/builders": knownResults,
 					}
 
-					c = client.WithTestResults(c, testResultsFake.Server.URL)
+					testResults := client.NewTestResults(testResultsFake.Server.URL)
 					finditFake.JSONResponse = &client.FinditAPIResponse{Results: test.finditResults}
-					gotResult, gotErr := testFailureAnalyzer(c, test.failures, "chromium.perf")
+					tfa := &testFailureAnalyzer{findit, testResults}
+					gotResult, gotErr := tfa.Analyze(c, test.failures, "chromium.perf")
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})

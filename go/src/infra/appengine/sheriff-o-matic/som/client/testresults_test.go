@@ -1,6 +1,7 @@
 package client
 
 import (
+	"net/url"
 	"testing"
 
 	"infra/monitoring/messages"
@@ -10,10 +11,18 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func urlParse(s string, t *testing.T) *url.URL {
+	p, err := url.Parse(s)
+	if err != nil {
+		t.Errorf("failed to parse %s: %s", s, err)
+	}
+	return p
+}
+
 func TestTestResults(t *testing.T) {
 	Convey("test test results", t, func() {
 		trc := &testResults{}
-		ctx := context.WithValue(context.Background(), testResultsKey, trc)
+		ctx := context.Background()
 		Convey("cache tests", func() {
 			trc.knownResults = knownResults{}
 			trc.knownResults["test.master"] = map[string][]string{

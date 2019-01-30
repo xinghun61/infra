@@ -46,9 +46,11 @@ func TestDeviceAnalyzer(t *testing.T) {
 		messages.ResultInfraFailure,
 	}
 
+	ba := &botAnalyzer{}
+
 	Convey("test analyze", t, func() {
 		Convey("no failures", func() {
-			reasons, err := botAnalyzer(nil, makeSteps([]messages.Step{}), "")
+			reasons, err := ba.Analyze(nil, makeSteps([]messages.Step{}), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{})
@@ -62,7 +64,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -86,7 +88,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -110,7 +112,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -137,7 +139,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -175,7 +177,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -228,7 +230,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -285,7 +287,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -352,7 +354,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := botAnalyzer(nil, makeSteps(steps), "")
+			reasons, err := ba.Analyze(nil, makeSteps(steps), "")
 
 			So(err, ShouldBeNil)
 			// only 5 reasons, because ok_test passed.

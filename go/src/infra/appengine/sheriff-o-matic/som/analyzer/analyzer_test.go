@@ -15,7 +15,6 @@ import (
 
 	"infra/appengine/sheriff-o-matic/som/analyzer/regrange"
 	analyzertest "infra/appengine/sheriff-o-matic/som/analyzer/test"
-	"infra/appengine/sheriff-o-matic/som/client"
 	clientTest "infra/appengine/sheriff-o-matic/som/client/test"
 	"infra/appengine/test-results/model"
 	"infra/libs/testing/ansidiff"
@@ -65,8 +64,8 @@ func (f *fakeReasonRaw) Severity() messages.Severity {
 type fakeAnalyzer struct {
 }
 
-func (f *fakeAnalyzer) Analyze(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw {
-	return fakeFinder(ctx, failures, "")
+func (f *fakeAnalyzer) Analyze(ctx context.Context, failures []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
+	return fakeFinder(ctx, failures, tree), nil
 }
 
 func fakeFinder(ctx context.Context, failures []*messages.BuildStep, tree string) []messages.ReasonRaw {
@@ -79,8 +78,12 @@ func fakeFinder(ctx context.Context, failures []*messages.BuildStep, tree string
 
 func newTestAnalyzer(minBuilds, maxBuilds int) *Analyzer {
 	a := New(minBuilds, maxBuilds)
-	a.reasonFinder = fakeFinder
 	a.regrangeFinder = regrange.Default
+	a.StepAnalyzers = append(a.StepAnalyzers, &fakeAnalyzer{})
+	a.Milo = nil
+	a.CrBug = nil
+	a.FindIt = nil
+
 	return a
 }
 
@@ -139,7 +142,8 @@ func TestMasterAlerts(t *testing.T) {
 
 	mc := &clientTest.MockReader{}
 	a := newTestAnalyzer(0, 10)
-	ctx := client.WithReader(context.Background(), mc)
+	a.Milo = mc
+	ctx := context.Background()
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
@@ -194,7 +198,8 @@ func TestBuilderAlerts(t *testing.T) {
 
 	mc := &clientTest.MockReader{}
 	a := newTestAnalyzer(0, 10)
-	ctx := client.WithReader(context.Background(), mc)
+	a.Milo = mc
+	ctx := context.Background()
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
@@ -381,10 +386,9 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			test := test
 			Convey(test.name, func() {
 				a.Now = fakeNow(test.time)
-				ctx = client.WithReader(ctx, clientTest.MockReader{
+				a.Milo = clientTest.MockReader{
 					Builds: test.builds,
-				})
-
+				}
 				gotAlerts, gotErrs := a.builderAlerts(ctx, "tree", &messages.MasterLocation{URL: *urlParse("https://ci.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
 				So(gotAlerts, ShouldResemble, test.wantAlerts)
 				So(gotErrs, ShouldResemble, test.wantErrs)
@@ -1040,12 +1044,12 @@ func TestBuilderStepAlerts(t *testing.T) {
 				if test.testData != nil {
 					builds = test.testData.Builds
 				}
-
-				ctx = client.WithReader(ctx, clientTest.MockReader{
+				mc := clientTest.MockReader{
 					Builds:        builds,
 					FinditResults: test.finditData,
-				})
-
+				}
+				a.Milo = mc
+				a.FindIt = mc
 				So(test.buildsAtFault, ShouldHaveLength, len(test.wantAlerts))
 				So(test.stepsAtFault, ShouldHaveLength, len(test.wantAlerts))
 
@@ -1135,8 +1139,9 @@ func TestStepFailures(t *testing.T) {
 		}
 
 		mc := &clientTest.MockReader{}
-		ctx := client.WithReader(context.Background(), mc)
+		ctx := context.Background()
 		a := newTestAnalyzer(0, 10)
+		a.Milo = mc
 
 		for _, test := range tests {
 			test := test
@@ -1533,7 +1538,7 @@ func TestStepFailureAlerts(t *testing.T) {
 		}
 
 		mc := &clientTest.MockReader{}
-		ctx := client.WithReader(context.Background(), mc)
+		ctx := context.Background()
 
 		a := newTestAnalyzer(0, 10)
 		a.Now = fakeNow(time.Unix(0, 0))

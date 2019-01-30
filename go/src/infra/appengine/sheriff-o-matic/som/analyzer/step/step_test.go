@@ -15,10 +15,17 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func makeFakeAnalyzer(data []messages.ReasonRaw, errs []error) Analyzer {
-	return func(context.Context, []*messages.BuildStep, string) ([]messages.ReasonRaw, []error) {
-		return data, errs
-	}
+type fakeBuildStepAnalyzer struct {
+	data []messages.ReasonRaw
+	errs []error
+}
+
+func (f fakeBuildStepAnalyzer) Analyze(ctx context.Context, steps []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
+	return f.data, f.errs
+}
+
+func makeFakeBuildStepAnalyzer(data []messages.ReasonRaw, errs []error) BuildStepAnalyzer {
+	return &fakeBuildStepAnalyzer{data, errs}
 }
 
 func TestReasonsForFailures(t *testing.T) {
@@ -26,42 +33,41 @@ func TestReasonsForFailures(t *testing.T) {
 	Convey("ReasonsForFailure", t, func() {
 		Convey("one analyzer", func() {
 			Convey("nil", func() {
-				analyzers = []Analyzer{makeFakeAnalyzer(nil, nil)}
-
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
+				analyzers := BuildStepAnalyzers{makeFakeBuildStepAnalyzer(nil, nil)}
+				So(analyzers.ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					nil,
 				})
 			})
 
 			Convey("not nil", func() {
-				analyzers = []Analyzer{
-					makeFakeAnalyzer([]messages.ReasonRaw{
+				analyzers := BuildStepAnalyzers{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "foo"},
 					}, nil),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
+				So(analyzers.ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 				})
 			})
 
 			Convey("some nil", func() {
-				analyzers = []Analyzer{
-					makeFakeAnalyzer([]messages.ReasonRaw{
+				analyzers := BuildStepAnalyzers{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "foo"},
 						nil,
 					}, nil),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
+				So(analyzers.ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
 			})
 
 			Convey("some errors", func() {
-				analyzers = []Analyzer{
-					makeFakeAnalyzer([]messages.ReasonRaw{
+				analyzers := BuildStepAnalyzers{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "foo"},
 						nil,
 					}, []error{
@@ -70,15 +76,15 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
+				So(analyzers.ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
 			})
 
 			Convey("errors hide reasons", func() {
-				analyzers = []Analyzer{
-					makeFakeAnalyzer([]messages.ReasonRaw{
+				analyzers := BuildStepAnalyzers{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "foo"},
 						&basicFailure{Name: "bar"},
 					}, []error{
@@ -87,41 +93,42 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
+				So(analyzers.ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
 			})
 		})
+
 		Convey("two analyzer", func() {
 			Convey("both not nil", func() {
-				analyzers = []Analyzer{
-					makeFakeAnalyzer([]messages.ReasonRaw{
+				analyzers := BuildStepAnalyzers{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "foo"},
 					}, nil),
-					makeFakeAnalyzer([]messages.ReasonRaw{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "baz"},
 					}, nil),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
+				So(analyzers.ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "baz"},
 				})
 			})
 
 			Convey("both not nil, second errors", func() {
-				analyzers = []Analyzer{
-					makeFakeAnalyzer([]messages.ReasonRaw{
+				analyzers := BuildStepAnalyzers{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "foo"},
 					}, nil),
-					makeFakeAnalyzer([]messages.ReasonRaw{
+					makeFakeBuildStepAnalyzer([]messages.ReasonRaw{
 						&basicFailure{Name: "baz"},
 					}, []error{
 						errors.New("bad thing"),
 					}),
 				}
 
-				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
+				So(analyzers.ReasonsForFailures(ctx, []*messages.BuildStep{nil}, ""), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 				})
 			})
@@ -129,10 +136,11 @@ func TestReasonsForFailures(t *testing.T) {
 	})
 }
 
-func TestBasicAnalyzer(t *testing.T) {
-	Convey("basicAnalyzer", t, func() {
+func TestBasicStepAnalyzer(t *testing.T) {
+	Convey("basicStepAnalyzer", t, func() {
 		Convey("basic", func() {
-			reasons, err := basicAnalyzer(nil, []*messages.BuildStep{
+			ba := &basicStepAnalyzer{}
+			reasons, err := ba.Analyze(nil, []*messages.BuildStep{
 				{
 					Step: &messages.Step{
 						Name: "foo",

@@ -108,9 +108,14 @@ type TestWithResult struct {
 	Artifacts    []ArtifactLink             `json:"artifacts"`
 }
 
+type testFailureAnalyzer struct {
+	findit client.FindIt
+	trc    client.TestResults
+}
+
 // testFailureAnalyzer analyzes steps to see if there is any data in the tests
 // server which corresponds to the failure.
-func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
+func (tfa *testFailureAnalyzer) Analyze(ctx context.Context, fs []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 	builderConfigs, err := te.LoadBuilderConfigs(ctx)
 	if err != nil {
@@ -118,7 +123,7 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree str
 	}
 
 	for i, f := range fs {
-		rslt, err := testAnalyzeFailure(ctx, f)
+		rslt, err := testAnalyzeFailure(ctx, f, tfa.findit, tfa.trc)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -132,7 +137,7 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree str
 		}
 		for t, r := range failure.Tests {
 			if tree == "chromium.perf" {
-				artifacts, err := getArtifactsForTest(ctx, f, r.TestName)
+				artifacts, err := getArtifactsForTest(ctx, f, r.TestName, tfa.trc)
 				if err != nil {
 					logging.Errorf(ctx, "couldn't get test artifacts for %+v: %v", r.TestName, err)
 				} else {
@@ -159,10 +164,9 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep, tree str
 	return results, nil
 }
 
-func getArtifactsForTest(ctx context.Context, f *messages.BuildStep, name string) ([]ArtifactLink, error) {
+func getArtifactsForTest(ctx context.Context, f *messages.BuildStep, name string, trc client.TestResults) ([]ArtifactLink, error) {
 	ret := []ArtifactLink{}
 	suiteName := GetTestSuite(f)
-	trc := client.GetTestResults(ctx)
 	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, suiteName, f.Build.Number)
 	if err != nil {
 		return nil, err
@@ -206,13 +210,13 @@ func (slice tests) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep) (messages.ReasonRaw, error) {
-	suiteName, failedTests, err := getTestNames(ctx, f)
+func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep, findit client.FindIt, trc client.TestResults) (messages.ReasonRaw, error) {
+	suiteName, failedTests, err := getTestNames(ctx, f, trc)
 	if err != nil {
 		return nil, err
 	}
 
-	testsWithFinditResults, err := getFinditResultsForTests(ctx, f, failedTests)
+	testsWithFinditResults, err := getFinditResultsForTests(ctx, f, failedTests, findit)
 	if err != nil {
 		logging.Errorf(ctx, "Error calling Findit, but continuing: %v", err)
 	}
@@ -270,13 +274,12 @@ func GetTestSuite(bs *messages.BuildStep) string {
 	return testSuite
 }
 
-func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string, error) {
+func getTestNames(ctx context.Context, f *messages.BuildStep, trc client.TestResults) (string, []string, error) {
 	name := GetTestSuite(f)
 	if name == "" {
 		return name, nil, nil
 	}
 
-	trc := client.GetTestResults(ctx)
 	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
 
 	if testResults == nil || len(testResults.Tests) == 0 || err != nil {
@@ -332,7 +335,7 @@ func unexpectedFailures(testResults *model.FullResult) []string {
 }
 
 // Read Findit results and get suspected cls or check if flaky for each test.
-func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failedTests []string) ([]TestWithResult, error) {
+func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failedTests []string, findit client.FindIt) ([]TestWithResult, error) {
 	TestsWithFinditResults := []TestWithResult{}
 
 	if failedTests == nil || len(failedTests) == 0 {
@@ -343,7 +346,6 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 	if name == "" {
 		return nil, nil
 	}
-	findit := client.GetFindit(ctx)
 
 	finditResults, err := findit.Findit(ctx, f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
 	if err != nil {

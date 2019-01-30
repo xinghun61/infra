@@ -11,7 +11,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/client/test"
 	"infra/monitoring/messages"
 
@@ -110,13 +109,14 @@ extern const DECLSPEC_SELECTANY CD3D11_VIDEO_DEFAULT D3D11_VIDEO_DEFAULT;
 			}
 
 			mc := &test.MockReader{}
-			ctx := client.WithReader(context.Background(), mc)
-
+			ctx := context.Background()
+			cfa := &compileFailureAnalyzer{}
+			cfa.logReader = mc
 			for _, test := range tests {
 				test := test
 				Convey(test.name, func() {
 					mc.StdioForStepValue = strings.Split(test.stdio, "\n")
-					gotResult, gotErr := compileFailureAnalyzer(ctx, test.failures, "")
+					gotResult, gotErr := cfa.Analyze(ctx, test.failures, "")
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})

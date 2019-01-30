@@ -7,7 +7,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/luci/common/logging"
@@ -78,7 +77,7 @@ func getVersionNumberFromProperties(b *messages.Build) (string, error) {
 func (a *Analyzer) officialImportantFailures(ctx context.Context, master *messages.MasterLocation, builderName string, recentBuildIDs []int64) ([]*messages.BuildStep, error) {
 	buildPerVersion := make(map[string]int64)
 	for _, buildNum := range recentBuildIDs {
-		b, err := client.Build(ctx, master, builderName, buildNum)
+		b, err := a.Milo.Build(ctx, master, builderName, buildNum)
 		if err != nil {
 			return nil, err
 		}

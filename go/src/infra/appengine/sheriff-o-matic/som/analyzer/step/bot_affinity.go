@@ -76,11 +76,13 @@ func (p *botFailure) Title(bses []*messages.BuildStep) string {
 	return fmt.Sprintf("bot affinity %s is broken on %s/%s, affecting %d tests", p.devicesStr(), f.Master.Name(), p.Builder, len(bses))
 }
 
+type botAnalyzer struct{}
+
 // botAnalyzer looks for failures where it look like the bot which ran the
 // tests has infrastructure issues. It does this by looking for annotations on
 // the step which was run to determine which bots were affected, and by only
 // analyzing steps which were infrastructure failures.
-func botAnalyzer(ctx context.Context, failures []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
+func (b *botAnalyzer) Analyze(ctx context.Context, failures []*messages.BuildStep, tree string) ([]messages.ReasonRaw, []error) {
 	if len(failures) == 0 {
 		return []messages.ReasonRaw{}, nil
 	}

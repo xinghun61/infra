@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"time"
 
@@ -42,8 +43,10 @@ var getBugsFromMonorail = func(c context.Context, q string,
 	defer cancel()
 
 	logging.Infof(c, "about to get mr client")
-	mr := client.GetMonorail(c)
-	logging.Infof(c, "mr client: %v", mr)
+	monorailMux := http.NewServeMux()
+	monorailServer := httptest.NewServer(monorailMux)
+	defer monorailServer.Close()
+	mr := client.NewMonorail(c, monorailServer.URL)
 
 	// TODO(martiniss): make this look up request info based on Tree datastore
 	// object

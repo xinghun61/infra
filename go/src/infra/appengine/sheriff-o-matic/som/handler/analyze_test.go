@@ -14,7 +14,6 @@ import (
 	"infra/appengine/sheriff-o-matic/som/analyzer"
 	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
-	"infra/appengine/sheriff-o-matic/som/client/mock"
 	testhelper "infra/appengine/sheriff-o-matic/som/client/test"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monitoring/messages"
@@ -31,8 +30,6 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/luci/common/logging/gologger"
-
-	"github.com/golang/mock/gomock"
 )
 
 func newTestContext() context.Context {
@@ -212,7 +209,9 @@ func TestGenerateAlerts(t *testing.T) {
 			Request: makeGetRequest(),
 			Params:  makeParams("tree", "unknown.tree"),
 		}
-		_, _ = generateAlerts(ctx)
+
+		a := analyzer.New(5, 100)
+		_, _ = generateAlerts(ctx, a)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
@@ -227,19 +226,6 @@ func TestGenerateAlerts(t *testing.T) {
 		c = gologger.StdConfig.Use(c)
 		c = authtest.MockAuthConfig(c)
 
-		mockCtrl := gomock.NewController(t)
-		bbMock := mock.NewMockBuildbotClient(mockCtrl)
-		biMock := mock.NewMockBuildInfoClient(mockCtrl)
-
-		c = client.WithMiloBuildbot(c, bbMock)
-		c = client.WithMiloBuildInfo(c, biMock)
-
-		c = client.WithReader(c, testhelper.MockReader{
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
-
 		w := httptest.NewRecorder()
 		r := makeGetRequest()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
@@ -253,7 +239,13 @@ func TestGenerateAlerts(t *testing.T) {
 			Request: r,
 			Params:  makeParams("tree", "chromium"),
 		}
-		_, _ = generateAlerts(ctx)
+		a := analyzer.New(5, 100)
+		a.Milo = testhelper.MockReader{
+			BuildExtracts: map[string]*messages.BuildExtract{
+				"chromium": {},
+			},
+		}
+		_, _ = generateAlerts(ctx, a)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
 	})
@@ -264,11 +256,6 @@ func TestGenerateAlerts(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = urlfetch.Set(c, &testhelper.MockGitilesTransport{})
-		c = client.WithReader(c, testhelper.MockReader{
-			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": {},
-			},
-		})
 		w := httptest.NewRecorder()
 		r := makeGetRequest()
 
@@ -278,7 +265,15 @@ func TestGenerateAlerts(t *testing.T) {
 			Request: r,
 			Params:  makeParams("tree", "chromium"),
 		}
-		_, err := generateAlerts(ctx)
+
+		a := analyzer.New(5, 100)
+		a.Milo = testhelper.MockReader{
+			BuildExtracts: map[string]*messages.BuildExtract{
+				"chromium": {},
+			},
+		}
+
+		_, err := generateAlerts(ctx, a)
 
 		So(err, ShouldNotBeNil)
 	})
@@ -568,10 +563,10 @@ func TestAttachTestResults(t *testing.T) {
 		}
 		fakeTRServer.JSONResponse = testHistory
 
-		c = client.WithTestResults(c, fakeTRServer.Server.URL)
+		testResults := client.NewTestResults(fakeTRServer.Server.URL)
 		Convey("empty alert", func() {
 			alert := &messages.Alert{}
-			err := attachTestResults(c, alert)
+			err := attachTestResults(c, alert, testResults)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -600,7 +595,7 @@ func TestAttachTestResults(t *testing.T) {
 					},
 				},
 			}
-			err := attachTestResults(c, alert)
+			err := attachTestResults(c, alert, testResults)
 			So(err, ShouldBeNil)
 			alertTestResults := alert.Extension.(messages.BuildFailure).Reason.Raw.(*step.TestFailure).AlertTestResults
 			So(alertTestResults, ShouldNotBeEmpty)
