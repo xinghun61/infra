@@ -1167,7 +1167,7 @@ def _sync_build_in_memory(
   now = utils.utcnow()
 
   old_status = build.proto.status
-  build.result_details = {'swarming': {'bot_dimensions': {}}}
+  build.result_details = {}
 
   build.proto.infra.swarming.ClearField('bot_dimensions')
   for d in (task_result or {}).get('bot_dimensions', []):

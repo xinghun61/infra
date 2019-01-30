@@ -169,6 +169,12 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
         build_output_properties.properties
     )
 
+  if build.proto.infra.swarming.bot_dimensions:
+    by_key = {}
+    for d in build.proto.infra.swarming.bot_dimensions:
+      by_key.setdefault(d.key, []).append(d.value)
+    result_details.setdefault('swarming', {})['bot_dimensions'] = by_key
+
   msg = BuildMessage(
       id=build.key.id(),
       project=build.proto.builder.project,

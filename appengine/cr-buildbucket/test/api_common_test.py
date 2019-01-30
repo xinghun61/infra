@@ -45,31 +45,63 @@ class ApiCommonTests(testing.AppengineTestCase):
         'buildset:1',
     ]
     expected = {
-        'project': 'chromium',
-        'bucket': 'luci.chromium.try',
-        'created_by': 'anonymous:anonymous',
-        'created_ts': '1483228800000000',
-        'id': '8991715593768927232',
-        'parameters_json': props_json,
-        'result_details_json': json.dumps({'properties': {'a': 'b'}}),
-        'status': 'SCHEDULED',
-        'status_changed_ts': '1483228800000000',
-        'tags': tags,
-        'utcnow_ts': '1483228800000000',
-        'canary_preference': 'PROD',
-        'canary': False,
-        'service_account': 'service@example.com',
-        'url': 'https://ci.example.com/8991715593768927232',
+        'project':
+            'chromium',
+        'bucket':
+            'luci.chromium.try',
+        'created_by':
+            'anonymous:anonymous',
+        'created_ts':
+            '1483228800000000',
+        'id':
+            '8991715593768927232',
+        'parameters_json':
+            props_json,
+        'result_details_json':
+            json.dumps({
+                'properties': {'a': 'b'},
+                'swarming': {
+                    'bot_dimensions': {
+                        'dim1': ['v1', 'v2'],
+                        'dim2': ['v1'],
+                    },
+                },
+            }),
+        'status':
+            'SCHEDULED',
+        'status_changed_ts':
+            '1483228800000000',
+        'tags':
+            tags,
+        'utcnow_ts':
+            '1483228800000000',
+        'canary_preference':
+            'PROD',
+        'canary':
+            False,
+        'service_account':
+            'service@example.com',
+        'url':
+            'https://ci.example.com/8991715593768927232',
     }
 
     out_props = model.BuildOutputProperties(
         properties=bbutil.dict_to_struct({'a': 'b'})
     )
+    build = test_util.build(
+        infra=dict(
+            swarming=dict(
+                bot_dimensions=[
+                    dict(key='dim1', value='v1'),
+                    dict(key='dim1', value='v2'),
+                    dict(key='dim2', value='v1'),
+                ]
+            ),
+        ),
+    )
     self.assertEqual(
         expected,
-        test_util.ununicode(
-            api_common.build_to_dict(test_util.build(), out_props)
-        )
+        test_util.ununicode(api_common.build_to_dict(build, out_props))
     )
 
   def test_build_to_dict_non_luci(self):
