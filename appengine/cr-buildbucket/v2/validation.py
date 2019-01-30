@@ -169,7 +169,7 @@ def validate_search_builds_request(req):
   _validate_paged_request(req)
 
 
-def validate_requested_dimension(dim):
+def validate_requested_dimension(dim, expiration_support=True):
   """Validates common_pb2.RequestedDimension."""
   _check_truth(dim, 'key', 'value')
 
@@ -177,6 +177,8 @@ def validate_requested_dimension(dim):
     _enter_err('key', 'value "caches" is invalid; define caches instead')
 
   with _enter('expiration'):
+    if not expiration_support and dim.HasField('expiration'):
+      _err('not supported')
 
     with _enter('seconds'):
       if dim.expiration.seconds < 0:
@@ -221,7 +223,11 @@ def validate_schedule_build_request(
   with _enter('tags'):
     validate_tags(req.tags, 'new')
 
-  _check_repeated(req, 'dimensions', validate_requested_dimension)
+  # TODO(crbug.com/926538): add support for dimension expiration
+  _check_repeated(
+      req, 'dimensions',
+      lambda d: validate_requested_dimension(d, expiration_support=False)
+  )
 
   key_exp = set()
   with _enter('dimensions'):

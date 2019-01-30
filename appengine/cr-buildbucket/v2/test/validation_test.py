@@ -262,7 +262,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
             dict(key='b', value='b1'),
         ],
         dimensions=[
-            dict(key='d1', value='dv1', expiration=dict(seconds=60)),
             dict(key='d1', value='dv1'),
             dict(key='d2', value='dv2'),
         ],
@@ -280,13 +279,23 @@ class ScheduleBuildRequestTests(BaseTestCase):
         request_id='request id',
         builder=dict(project='chromium', bucket='try', builder='linux-rel'),
         dimensions=[
-            dict(key='a', value='b', expiration=dict(seconds=60)),
-            dict(key='a', value='b', expiration=dict(seconds=60)),
+            dict(key='a', value='b'),
+            dict(key='a', value='b'),
         ],
     )
     self.assert_invalid(
-        msg, r'dimensions: key "a" and expiration 60s are not unique'
+        msg, r'dimensions: key "a" and expiration 0s are not unique'
     )
+
+  def test_expiration_not_suported(self):
+    msg = rpc_pb2.ScheduleBuildRequest(
+        request_id='request id',
+        builder=dict(project='chromium', bucket='try', builder='linux-rel'),
+        dimensions=[
+            dict(key='a', value='b', expiration=dict(seconds=10)),
+        ],
+    )
+    self.assert_invalid(msg, r'dimensions\[0\]\.expiration: not supported')
 
   def test_empty(self):
     msg = rpc_pb2.ScheduleBuildRequest()
