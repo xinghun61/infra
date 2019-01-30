@@ -62,7 +62,7 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	i = &Info{Bot: b}
 	defer func(i *Info) {
 		if err != nil {
-			i.Close()
+			_ = i.Close()
 		}
 	}(i)
 	dutName, err := loadDUTName(b)
