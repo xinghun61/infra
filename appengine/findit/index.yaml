@@ -380,6 +380,15 @@ indexes:
   - name: commit_timestamp
     direction: desc
 
+- kind: PostsubmitReport
+  properties:
+  - name: gitiles_commit.project
+  - name: gitiles_commit.server_host
+  - name: commit_position
+    direction: desc
+  - name: commit_timestamp
+    direction: desc
+
 # For Flake report
 - kind: ComponentFlakinessReport
   properties:
