@@ -23,7 +23,7 @@ import (
 
 // CreateSuite subcommand: create a suite task.
 var CreateSuite = &subcommands.Command{
-	UsageLine: "create-suite -board BOARD -pool POOL -image IMAGE [-model MODEL] [-tag KEY:VALUE...] SUITE_NAME",
+	UsageLine: "create-suite -board BOARD -pool POOL -image IMAGE [-model MODEL] [-priority PRIORITY] [-timeout-mins TIMEOUT_MINS] [-tag KEY:VALUE...] SUITE_NAME",
 	ShortDesc: "Create a suite task, with the given suite name.",
 	LongDesc:  "Create a suite task, with the given suite name.",
 	CommandRun: func() subcommands.CommandRun {
@@ -36,6 +36,7 @@ var CreateSuite = &subcommands.Command{
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run suite on.")
 		c.Flags.StringVar(&c.image, "image", "", "Fully specified image name to run suite against, e.g. reef-canary/R73-11580.0.0")
 		c.Flags.Var(flagx.NewChoice(&c.priority, sortedPriorityKeys()...), "priority", fmt.Sprint("Specify the priority of the suite. A high value means this suite will be executed in a low priority. It should be a string in ", sortedPriorities()))
+		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "Time (counting from when the task starts) after which task will be killed if it hasn't completed.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for suite; may be specified multiple times.")
 		return c
 	},
@@ -43,14 +44,15 @@ var CreateSuite = &subcommands.Command{
 
 type createSuiteRun struct {
 	subcommands.CommandRunBase
-	authFlags authcli.Flags
-	envFlags  envFlags
-	board     string
-	model     string
-	pool      string
-	image     string
-	priority  string
-	tags      []string
+	authFlags   authcli.Flags
+	envFlags    envFlags
+	board       string
+	model       string
+	pool        string
+	image       string
+	priority    string
+	timeoutMins int
+	tags        []string
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -75,7 +77,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		c.priority = defaultTaskPriorityKey
 	}
 	priority := taskPriorityMap[c.priority]
-	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, priority, dimensions)
+	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, priority, c.timeoutMins, dimensions)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -120,28 +122,28 @@ func (c *createSuiteRun) validateArgs() error {
 	return nil
 }
 
-func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair) *swarming.SwarmingRpcsTaskSlice {
+func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeoutMins int) *swarming.SwarmingRpcsTaskSlice {
 	return &swarming.SwarmingRpcsTaskSlice{
 		ExpirationSecs:  300,
 		WaitForCapacity: false,
 		Properties: &swarming.SwarmingRpcsTaskProperties{
 			Command:              command,
 			Dimensions:           dimensions,
-			ExecutionTimeoutSecs: 60 * 60,
+			ExecutionTimeoutSecs: int64(timeoutMins * 60),
 		},
 	}
 }
 
-func getSuiteSlices(board string, model string, pool string, image string, suiteName string, priority int, dimensions []string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSuiteSlices(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int, dimensions []string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	dims, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
-	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, priority)
-	return []*swarming.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims)}, nil
+	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, priority, timeoutMins)
+	return []*swarming.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims, timeoutMins)}, nil
 }
 
-func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, priority int) []string {
+func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int) []string {
 	cmd := []string{
 		"/usr/local/autotest/bin/run_suite_skylab",
 		"--build", image,
@@ -149,6 +151,7 @@ func getRunSuiteCmd(board string, model string, pool string, image string, suite
 		"--pool", pool,
 		"--suite_name", suiteName,
 		"--priority", strconv.Itoa(priority),
+		"--timeout_mins", strconv.Itoa(timeoutMins),
 		// By default the script creates the suite and return immediately, to avoid task timeout.
 		"--create_and_return"}
 	if model != "" {
