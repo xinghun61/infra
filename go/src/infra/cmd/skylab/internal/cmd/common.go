@@ -184,6 +184,21 @@ func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
 	return pairs, nil
 }
 
+func toKeyvalMap(keyvals []string) (map[string]string, error) {
+	m := make(map[string]string, len(keyvals))
+	for _, s := range keyvals {
+		k, v := strpair.Parse(s)
+		if v == "" {
+			return nil, fmt.Errorf("malformed keyval with key '%s' has no value", k)
+		}
+		if _, ok := m[k]; ok {
+			return nil, fmt.Errorf("keyval with key %s specified more than once", k)
+		}
+		m[k] = v
+	}
+	return m, nil
+}
+
 func sortedPriorities() []taskPriority {
 	s := make([]taskPriority, 0, len(taskPriorityMap))
 	for k, v := range taskPriorityMap {

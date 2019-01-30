@@ -15,7 +15,6 @@ import (
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/cli"
-	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
@@ -161,21 +160,6 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarmingTaskURL(e, resp.TaskId))
 	return nil
-}
-
-func toKeyvalMap(keyvals []string) (map[string]string, error) {
-	m := make(map[string]string, len(keyvals))
-	for _, s := range keyvals {
-		k, v := strpair.Parse(s)
-		if v == "" {
-			return nil, fmt.Errorf("malformed keyval with key '%s' has no value", k)
-		}
-		if _, ok := m[k]; ok {
-			return nil, fmt.Errorf("keyval with key %s specified more than once", k)
-		}
-		m[k] = v
-	}
-	return m, nil
 }
 
 func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, timeoutMins int) *swarming.SwarmingRpcsTaskSlice {
