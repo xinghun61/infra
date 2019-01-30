@@ -157,10 +157,11 @@ def RunSteps(api, source_repo, target_repo):
           # force push.
           '--force',
           '--all',
-          target_repo)
+          target_repo,
+          name='git push --all')
   # You can't use --all and --tags at the same time for some reason.
   # --mirror pushes both, but it also pushes remotes, which we don't want.
-  api.git('push', '--tags', target_repo)
+  api.git('push', '--tags', target_repo, name='git push --tags')
 
 def ShouldGenerateNewCommit(api, target_repo):
   """

@@ -187,7 +187,7 @@
     ],
     "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
-    "name": "git push"
+    "name": "git push --all"
   },
   {
     "cmd": [
@@ -198,7 +198,7 @@
     ],
     "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
-    "name": "git push (2)"
+    "name": "git push --tags"
   },
   {
     "jsonResult": null,
