@@ -91,7 +91,7 @@ deploy-coverage-staging: test
 	@echo "New version is https://$(LOCAL_VERSION)-dot-code-coverage-frontend-"\
 	"dot-$(STAGING_APPID).appspot.com/p/chromium/coverage"
 
-_deploy_coverage: test
+deploy-coverage-prod: test
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(CODE_COVERAGE_MODULES);
 	@echo "New version is https://$(LOCAL_VERSION)-dot-code-coverage-frontend-"\
 	"dot-$(APPID).appspot.com/p/chromium/coverage"
