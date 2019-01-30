@@ -40,7 +40,7 @@ class MrApp extends ReduxMixin(Polymer.Element) {
     page('*', (ctx, next) => {
       // Run query string parsing on all routes.
       // Based on: https://visionmedia.github.io/page.js/#plugins
-      ctx.query = Qs.parse(location.search.slice(1));
+      ctx.query = Qs.parse(ctx.querystring);
 
       next();
     });

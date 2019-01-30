@@ -53,6 +53,25 @@
         done();
       });
     });
+
+    test('does not redirects to approval page for regular issues', function() {
+      element.issue = {
+        projectName: 'test',
+        localId: 11,
+      };
+      const link = Polymer.dom(element.root).querySelector('#bugLink');
+      assert.include(link.href.trim(), '/p/test/issues/detail?id=11');
+    });
+
+    test('redirects to approval page for approval issues', function() {
+      element.issue = {
+        projectName: 'test',
+        localId: 11,
+        approvalValues: [],
+      };
+      const link = Polymer.dom(element.root).querySelector('#bugLink');
+      assert.include(link.href.trim(), '/p/test/issues/approval?id=11');
+    });
   });
 })();
 </script>

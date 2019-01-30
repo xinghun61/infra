@@ -19,12 +19,21 @@ class MrBugLink extends Polymer.Element {
         reflectToAttribute: true,
       },
       projectName: String,
+      issueUrl: {
+        type: String,
+        computed: '_computeIssueUrl(issue)',
+      },
     };
   }
 
   _hideProjectName(mainProjectName, localProjectName) {
     if (!mainProjectName || !localProjectName) return true;
     return mainProjectName.toLowerCase() === localProjectName.toLowerCase();
+  }
+
+  _computeIssueUrl(issue) {
+    const issueType = issue.approvalValues ? 'approval' : 'detail';
+    return `/p/${issue.projectName}/issues/${issueType}?id=${issue.localId}`;
   }
 }
 customElements.define(MrBugLink.is, MrBugLink);
