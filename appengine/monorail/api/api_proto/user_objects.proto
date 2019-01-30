@@ -10,6 +10,16 @@ syntax = "proto3";
 
 package monorail;
 
+// TODO(jojwang): monorail:1701, fill User with all info necessary for
+// creating a user profile page.
+// Next available tag: 4
+message User {
+  string email = 1;
+  int64 user_id = 2;
+  bool is_site_admin = 3;
+}
+
+
 // Next available tag: 6
 message Commit {
   string commit_sha = 1;
@@ -18,3 +28,12 @@ message Commit {
   string commit_message = 4;
   string commit_repo_url = 5;
 }
+
+
+// Next available tag: 3
+message UserPrefValue {
+  string name = 1;
+  string value = 2;
+}
+
+

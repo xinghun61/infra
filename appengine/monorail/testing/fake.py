@@ -435,6 +435,7 @@ class UserService(object):
         ("mysha1",  3784859778, 1, "hi", "repo")]
     self.invite_rows = []
     self.linked_account_rows = []
+    self.prefs_dict = {}  # {user_id: UserPrefs}
 
   def TestAddUser(self, email, user_id, add_user=True, banned=False):
     """Add a user to the fake UserService instance.
@@ -613,6 +614,24 @@ class UserService(object):
       user.vacation_message = vacation_message
 
     return self.UpdateUser(cnxn, user_id, user)
+
+  def GetUsersPrefs(self, cnxn, user_ids, use_cache=True):
+    for user_id in user_ids:
+      if user_id not in self.prefs_dict:
+        self.prefs_dict[user_id] = user_pb2.UserPrefs(user_id=user_id)
+    return self.prefs_dict
+
+  def GetUserPrefs(self, cnxn, user_id, use_cache=True):
+    """Return a UserPrefs PB for the requested user ID."""
+    prefs_dict = self.GetUsersPrefs(cnxn, [user_id], use_cache=use_cache)
+    return prefs_dict[user_id]
+
+  def SetUserPrefs(self, cnxn, user_id, pref_values):
+    userprefs = self.GetUserPrefs(cnxn, user_id)
+    names_to_overwrite = {upv.name for upv in pref_values}
+    userprefs.prefs = [upv for upv in userprefs.prefs
+                       if upv.name not in names_to_overwrite]
+    userprefs.prefs.extend(pref_values)
 
   def GetRecentlyVisitedHotlists(self, _cnxn, user_id):
     try:

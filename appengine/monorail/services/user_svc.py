@@ -24,6 +24,7 @@ from services import caches
 
 
 USER_TABLE_NAME = 'User'
+USERPREFS_TABLE_NAME = 'UserPrefs'
 ACTIONLIMIT_TABLE_NAME = 'ActionLimit'
 DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
 HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
@@ -38,6 +39,7 @@ USER_COLS = [
     'banned', 'after_issue_update', 'keep_people_perms_open',
     'preview_on_hover', 'ignore_action_limits', 'obscure_email',
     'last_visit_timestamp', 'email_bounce_timestamp', 'vacation_message']
+USERPREFS_COLS = ['user_id', 'name', 'value']
 ACTIONLIMIT_COLS = [
     'user_id', 'action_kind', 'recent_count', 'reset_timestamp',
     'lifetime_count', 'lifetime_limit', 'period_soft_limit',
@@ -56,12 +58,6 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
         cache_manager, 'user', 'user:', user_pb2.User,
         max_size=settings.user_cache_max_size)
     self.user_service = user_service
-
-  def _CheckCompatibility(self, value):
-    """Ignore old-format cached Users that lack user_id."""
-    # TODO(jrobbins): remove this method after the version has been deployed
-    # and memcache has been cleared.
-    return value.user_id is not None
 
   def _DeserializeUsersByID(
       self, user_rows, actionlimit_rows, dismissedcue_rows, linkedaccount_rows):
@@ -165,6 +161,53 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
         user_rows, actionlimit_rows, dismissedcues_rows, linkedaccount_rows)
 
 
+class UserPrefsTwoLevelCache(caches.AbstractTwoLevelCache):
+  """Class to manage RAM and memcache for UserPrefs PBs."""
+
+  def __init__(self, cache_manager, user_service):
+    super(UserPrefsTwoLevelCache, self).__init__(
+        cache_manager, 'user', 'userprefs:', user_pb2.UserPrefs,
+        max_size=settings.user_cache_max_size)
+    self.user_service = user_service
+
+  def _DeserializeUserPrefsByID(self, userprefs_rows):
+    """Convert database row tuples into UserPrefs PBs.
+
+    Args:
+      userprefs_rows: rows from the UserPrefs DB table.
+
+    Returns:
+      A dict {user_id: userprefs} for all the users in userprefs_rows.
+    """
+    result_dict = {}
+
+    # Make one UserPrefs PB for each row in userprefs_rows.
+    for row in userprefs_rows:
+      (user_id, name, value) = row
+      if user_id not in result_dict:
+        userprefs = user_pb2.UserPrefs(user_id=user_id)
+        result_dict[user_id] = userprefs
+      else:
+        userprefs = result_dict[user_id]
+      userprefs.prefs.append(user_pb2.UserPrefValue(name=name, value=value))
+
+    return result_dict
+
+  def FetchItems(self, cnxn, keys):
+    """On RAM and memcache miss, retrieve UserPrefs objects from the database.
+
+    Args:
+      cnxn: connection to SQL database.
+      keys: list of user IDs to retrieve.
+
+    Returns:
+      A dict {user_id: userprefs} for each user.
+    """
+    userprefs_rows = self.user_service.userprefs_tbl.Select(
+        cnxn, cols=USERPREFS_COLS, user_id=keys)
+    return self._DeserializeUserPrefsByID(userprefs_rows)
+
+
 class UserService(object):
   """The persistence layer for all user data."""
 
@@ -175,6 +218,7 @@ class UserService(object):
       cache_manager: local cache with distributed invalidation.
     """
     self.user_tbl = sql.SQLTableManager(USER_TABLE_NAME)
+    self.userprefs_tbl = sql.SQLTableManager(USERPREFS_TABLE_NAME)
     self.actionlimit_tbl = sql.SQLTableManager(ACTIONLIMIT_TABLE_NAME)
     self.dismissedcues_tbl = sql.SQLTableManager(DISMISSEDCUES_TABLE_NAME)
     self.hotlistvisithistory_tbl = sql.SQLTableManager(
@@ -193,6 +237,9 @@ class UserService(object):
 
     # Like a dictionary {user_id: user_pb}
     self.user_2lc = UserTwoLevelCache(cache_manager, self)
+
+    # Like a dictionary {user_id: userprefs}
+    self.userprefs_2lc = UserPrefsTwoLevelCache(cache_manager, self)
 
   ### Creating users
 
@@ -589,7 +636,10 @@ class UserService(object):
     self.user_2lc.InvalidateKeys(cnxn, [parent_id, child_id])
 
   ### User settings
+  # Settings are details about a user account that are usually needed
+  # every time that user is displayed to another user.
 
+  # TODO(jrobbins): Move most of these into UserPrefs.
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,
@@ -679,6 +729,30 @@ class UserService(object):
               (new_hard_limit >= 0 and new_hard_limit != old_hard_limit)):
             actionlimit.CustomizeLimit(user, action_type, new_soft_limit,
                                        new_hard_limit, new_lifetime_limit)
+
+  ### User preferences
+  # These are separate from settings in the User objects because they are
+  # only needed for the currently signed in user.
+
+  def GetUsersPrefs(self, cnxn, user_ids, use_cache=True):
+    """Return {user_id: userprefs} for the requested user IDs."""
+    prefs_dict, misses = self.userprefs_2lc.GetAll(
+        cnxn, user_ids, use_cache=use_cache)
+    # Make sure that every user is represented in the result.
+    for user_id in misses:
+      prefs_dict[user_id] = user_pb2.UserPrefs(user_id=user_id)
+    return prefs_dict
+
+  def GetUserPrefs(self, cnxn, user_id, use_cache=True):
+    """Return a UserPrefs PB for the requested user ID."""
+    prefs_dict = self.GetUsersPrefs(cnxn, [user_id], use_cache=use_cache)
+    return prefs_dict[user_id]
+
+  def SetUserPrefs(self, cnxn, user_id, pref_values):
+    """Store the given list of UserPrefValues."""
+    userprefs_rows = [(user_id, upv.name, upv.value) for upv in pref_values]
+    self.userprefs_tbl.InsertRows(cnxn, userprefs_rows, replace=True)
+    self.userprefs_2lc.InvalidateKeys(cnxn, [user_id])
 
 
 def _ActionLimitToRow(user_id, action_kind, al):

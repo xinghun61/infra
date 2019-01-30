@@ -187,3 +187,20 @@ def IsValidHotlistName(s):
   """Return true if the given string is a valid hotlist name."""
   return (RE_HOTLIST_NAME.match(s) and
           len(s) <= framework_constants.MAX_HOTLIST_NAME_LENGTH)
+
+
+USER_PREF_DEFS = {
+  'code_font': re.compile('(true|false)'),
+  }
+MAX_PREF_VALUE_LENGTH = 80
+
+
+def ValidatePref(name, value):
+  """Return an error message if the server does not support a pref value."""
+  if name not in USER_PREF_DEFS:
+    return 'Unknown pref name: %r' % name
+  if len(value) > MAX_PREF_VALUE_LENGTH:
+    return 'Value for pref name %r is too long' % name
+  if not USER_PREF_DEFS[name].match(value):
+    return 'Invalid pref value %r for %r' % (value, name)
+  return None

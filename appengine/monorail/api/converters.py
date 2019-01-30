@@ -20,7 +20,6 @@ from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import project_objects_pb2
 from api.api_proto import user_objects_pb2
-from api.api_proto import users_pb2
 from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
@@ -32,6 +31,7 @@ from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from proto import tracker_pb2
+from proto import user_pb2
 
 
 # Convert and ingest objects in issue_objects.proto.
@@ -135,11 +135,18 @@ def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id,
 
 def ConvertUsers(users):
   return [
-      users_pb2.User(
+      user_objects_pb2.User(
           user_id=user.user_id,
           email=user.email,
           is_site_admin=user.is_site_admin)
       for user in users]
+
+
+def ConvertPrefValues(userprefvalues):
+  """Convert a list of protorpc UserPrefValue to protoc UserPrefValues."""
+  return [
+      user_objects_pb2.UserPrefValue(name=upv.name, value=upv.value)
+      for upv in userprefvalues]
 
 
 def ConvertLabels(explicit_labels, derived_labels):
@@ -464,6 +471,12 @@ def IngestUserRefs(cnxn, user_refs, user_service, autocreate=False):
   result = [emails_to_ids.get(user_ref.display_name, user_ref.user_id)
             for user_ref in user_refs]
   return result
+
+
+def IngestPrefValues(pref_values):
+  """Return protorpc UserPrefValues for the given values."""
+  return [user_pb2.UserPrefValue(name=upv.name, value=upv.value)
+          for upv in pref_values]
 
 
 def IngestComponentRefs(comp_refs, config, ignore_missing_objects=False):

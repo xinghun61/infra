@@ -16,7 +16,7 @@ from api.api_proto import common_pb2
 from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
 from api.api_proto import issues_pb2
-from api.api_proto import users_pb2
+from api.api_proto import user_objects_pb2
 from framework import exceptions
 from framework import permissions
 from proto import tracker_pb2
@@ -252,7 +252,7 @@ class ConverterFunctionsTest(unittest.TestCase):
            user_id=333L, is_derived=False, display_name='banned@example.com')],
       actual)
 
-  def testConvertUser(self):
+  def testConvertUsers(self):
     """We can convert lists of protorpc Users to protoc Users."""
     user1 = user_pb2.User(user_id=1, email='user1@example.com')
     user2 = user_pb2.User(
@@ -261,9 +261,24 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(len(actual), 2)
     self.assertItemsEqual(
         actual,
-        [users_pb2.User(user_id=1, email='user1@example.com'),
-         users_pb2.User(user_id=2, email='user2@example.com',
+        [user_objects_pb2.User(user_id=1, email='user1@example.com'),
+         user_objects_pb2.User(user_id=2, email='user2@example.com',
                         is_site_admin=True)])
+
+  def testConvetPrefValues(self):
+    """We can convert a list of UserPrefValues from protorpc to protoc."""
+    self.assertEqual(
+        [],
+        converters.ConvertPrefValues([]))
+
+    userprefvalues = [
+        user_pb2.UserPrefValue(name='foo_1', value='bar_1'),
+        user_pb2.UserPrefValue(name='foo_2', value='bar_2')]
+    actual = converters.ConvertPrefValues(userprefvalues)
+    expected = [
+        user_objects_pb2.UserPrefValue(name='foo_1', value='bar_1'),
+        user_objects_pb2.UserPrefValue(name='foo_2', value='bar_2')]
+    self.assertEqual(expected, actual)
 
   def testConvertLabels(self):
     """We can convert labels."""
@@ -926,6 +941,21 @@ class ConverterFunctionsTest(unittest.TestCase):
     actual = converters.IngestUserRefs(
         self.cnxn, [ref1, ref2, ref3], self.services.user)
     self.assertEqual([111L, 222L, 333L], actual)
+
+  def testIngestPrefValues(self):
+    """We can convert a list of UserPrefValues from protoc to protorpc."""
+    self.assertEqual(
+        [],
+        converters.IngestPrefValues([]))
+
+    userprefvalues = [
+        user_objects_pb2.UserPrefValue(name='foo_1', value='bar_1'),
+        user_objects_pb2.UserPrefValue(name='foo_2', value='bar_2')]
+    actual = converters.IngestPrefValues(userprefvalues)
+    expected = [
+        user_pb2.UserPrefValue(name='foo_1', value='bar_1'),
+        user_pb2.UserPrefValue(name='foo_2', value='bar_2')]
+    self.assertEqual(expected, actual)
 
   def testIngestComponentRefs(self):
     """We can look up component IDs for a list of protoc UserRefs."""

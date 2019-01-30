@@ -60,8 +60,9 @@ from tracker import rerank_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
-from proto import tracker_pb2
 from proto import project_pb2
+from proto import tracker_pb2
+from proto import user_pb2
 
 
 # TODO(jrobbins): break this file into one facade plus ~5
@@ -1431,6 +1432,36 @@ class WorkEnv(object):
         'updating settings for %s with %s' % (self.mc.auth.user_id, kwargs)):
       self.services.user.UpdateUserSettings(
           self.mc.cnxn, self.mc.auth.user_id, self.mc.auth.user_pb, **kwargs)
+
+  def GetUserPrefs(self, user_id):
+    """Get the UserPrefs for the specified user."""
+    # Anon user always has default prefs.
+    if not user_id:
+      return user_pb2.UserPrefs(user_id=0)
+    if user_id != self.mc.auth.user_id:
+      if not self.mc.perms.HasPerm(permissions.EDIT_OTHER_USERS, None, None):
+        raise permissions.PermissionException(
+            'Only site admins may see other users\' preferences')
+    with self.mc.profiler.Phase('Getting prefs for %s' % user_id):
+      userprefs = self.services.user.GetUserPrefs(self.mc.cnxn, user_id)
+      return userprefs
+
+  def SetUserPrefs(self, user_id, prefs):
+    """Set zero or more UserPrefValue for the specified user."""
+    # Anon user always has default prefs.
+    if not user_id:
+      raise exceptions.InputException('Anon cannot have prefs')
+    if user_id != self.mc.auth.user_id:
+      if not self.mc.perms.HasPerm(permissions.EDIT_OTHER_USERS, None, None):
+        raise permissions.PermissionException(
+            'Only site admins may set other users\' preferences')
+    for pref in prefs:
+      error_msg = framework_bizobj.ValidatePref(pref.name, pref.value)
+      if error_msg:
+        raise exceptions.InputException(error_msg)
+    with self.mc.profiler.Phase(
+        'setting prefs for %s' % (self.mc.auth.user_id)):
+      self.services.user.SetUserPrefs(self.mc.cnxn, user_id, prefs)
 
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()

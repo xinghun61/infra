@@ -24,64 +24,6 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-// TODO(jojwang): monorail:1701, fill User with all info necessary for
-// creating a user profile page.
-// Next available tag: 4
-type User struct {
-	Email                string   `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	UserId               int64    `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	IsSiteAdmin          bool     `protobuf:"varint,3,opt,name=is_site_admin,json=isSiteAdmin,proto3" json:"is_site_admin,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *User) Reset()         { *m = User{} }
-func (m *User) String() string { return proto.CompactTextString(m) }
-func (*User) ProtoMessage()    {}
-func (*User) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{0}
-}
-
-func (m *User) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_User.Unmarshal(m, b)
-}
-func (m *User) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_User.Marshal(b, m, deterministic)
-}
-func (m *User) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_User.Merge(m, src)
-}
-func (m *User) XXX_Size() int {
-	return xxx_messageInfo_User.Size(m)
-}
-func (m *User) XXX_DiscardUnknown() {
-	xxx_messageInfo_User.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_User proto.InternalMessageInfo
-
-func (m *User) GetEmail() string {
-	if m != nil {
-		return m.Email
-	}
-	return ""
-}
-
-func (m *User) GetUserId() int64 {
-	if m != nil {
-		return m.UserId
-	}
-	return 0
-}
-
-func (m *User) GetIsSiteAdmin() bool {
-	if m != nil {
-		return m.IsSiteAdmin
-	}
-	return false
-}
-
 // Next available tag: 3
 type ListReferencedUsersRequest struct {
 	Trace                *RequestTrace `protobuf:"bytes,1,opt,name=trace,proto3" json:"trace,omitempty"`
@@ -95,7 +37,7 @@ func (m *ListReferencedUsersRequest) Reset()         { *m = ListReferencedUsersR
 func (m *ListReferencedUsersRequest) String() string { return proto.CompactTextString(m) }
 func (*ListReferencedUsersRequest) ProtoMessage()    {}
 func (*ListReferencedUsersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{1}
+	return fileDescriptor_e517996dd141ad63, []int{0}
 }
 
 func (m *ListReferencedUsersRequest) XXX_Unmarshal(b []byte) error {
@@ -141,7 +83,7 @@ func (m *ListReferencedUsersResponse) Reset()         { *m = ListReferencedUsers
 func (m *ListReferencedUsersResponse) String() string { return proto.CompactTextString(m) }
 func (*ListReferencedUsersResponse) ProtoMessage()    {}
 func (*ListReferencedUsersResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{2}
+	return fileDescriptor_e517996dd141ad63, []int{1}
 }
 
 func (m *ListReferencedUsersResponse) XXX_Unmarshal(b []byte) error {
@@ -182,7 +124,7 @@ func (m *GetUserRequest) Reset()         { *m = GetUserRequest{} }
 func (m *GetUserRequest) String() string { return proto.CompactTextString(m) }
 func (*GetUserRequest) ProtoMessage()    {}
 func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{3}
+	return fileDescriptor_e517996dd141ad63, []int{2}
 }
 
 func (m *GetUserRequest) XXX_Unmarshal(b []byte) error {
@@ -230,7 +172,7 @@ func (m *GetMembershipsRequest) Reset()         { *m = GetMembershipsRequest{} }
 func (m *GetMembershipsRequest) String() string { return proto.CompactTextString(m) }
 func (*GetMembershipsRequest) ProtoMessage()    {}
 func (*GetMembershipsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{4}
+	return fileDescriptor_e517996dd141ad63, []int{3}
 }
 
 func (m *GetMembershipsRequest) XXX_Unmarshal(b []byte) error {
@@ -277,7 +219,7 @@ func (m *GetMembershipsResponse) Reset()         { *m = GetMembershipsResponse{}
 func (m *GetMembershipsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetMembershipsResponse) ProtoMessage()    {}
 func (*GetMembershipsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{5}
+	return fileDescriptor_e517996dd141ad63, []int{4}
 }
 
 func (m *GetMembershipsResponse) XXX_Unmarshal(b []byte) error {
@@ -320,7 +262,7 @@ func (m *GetUserCommitsRequest) Reset()         { *m = GetUserCommitsRequest{} }
 func (m *GetUserCommitsRequest) String() string { return proto.CompactTextString(m) }
 func (*GetUserCommitsRequest) ProtoMessage()    {}
 func (*GetUserCommitsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{6}
+	return fileDescriptor_e517996dd141ad63, []int{5}
 }
 
 func (m *GetUserCommitsRequest) XXX_Unmarshal(b []byte) error {
@@ -380,7 +322,7 @@ func (m *GetUserCommitsResponse) Reset()         { *m = GetUserCommitsResponse{}
 func (m *GetUserCommitsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetUserCommitsResponse) ProtoMessage()    {}
 func (*GetUserCommitsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{7}
+	return fileDescriptor_e517996dd141ad63, []int{6}
 }
 
 func (m *GetUserCommitsResponse) XXX_Unmarshal(b []byte) error {
@@ -421,7 +363,7 @@ func (m *GetUserStarCountRequest) Reset()         { *m = GetUserStarCountRequest
 func (m *GetUserStarCountRequest) String() string { return proto.CompactTextString(m) }
 func (*GetUserStarCountRequest) ProtoMessage()    {}
 func (*GetUserStarCountRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{8}
+	return fileDescriptor_e517996dd141ad63, []int{7}
 }
 
 func (m *GetUserStarCountRequest) XXX_Unmarshal(b []byte) error {
@@ -468,7 +410,7 @@ func (m *GetUserStarCountResponse) Reset()         { *m = GetUserStarCountRespon
 func (m *GetUserStarCountResponse) String() string { return proto.CompactTextString(m) }
 func (*GetUserStarCountResponse) ProtoMessage()    {}
 func (*GetUserStarCountResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{9}
+	return fileDescriptor_e517996dd141ad63, []int{8}
 }
 
 func (m *GetUserStarCountResponse) XXX_Unmarshal(b []byte) error {
@@ -510,7 +452,7 @@ func (m *StarUserRequest) Reset()         { *m = StarUserRequest{} }
 func (m *StarUserRequest) String() string { return proto.CompactTextString(m) }
 func (*StarUserRequest) ProtoMessage()    {}
 func (*StarUserRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{10}
+	return fileDescriptor_e517996dd141ad63, []int{9}
 }
 
 func (m *StarUserRequest) XXX_Unmarshal(b []byte) error {
@@ -564,7 +506,7 @@ func (m *StarUserResponse) Reset()         { *m = StarUserResponse{} }
 func (m *StarUserResponse) String() string { return proto.CompactTextString(m) }
 func (*StarUserResponse) ProtoMessage()    {}
 func (*StarUserResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{11}
+	return fileDescriptor_e517996dd141ad63, []int{10}
 }
 
 func (m *StarUserResponse) XXX_Unmarshal(b []byte) error {
@@ -605,7 +547,7 @@ func (m *SetExpandPermsPreferenceRequest) Reset()         { *m = SetExpandPermsP
 func (m *SetExpandPermsPreferenceRequest) String() string { return proto.CompactTextString(m) }
 func (*SetExpandPermsPreferenceRequest) ProtoMessage()    {}
 func (*SetExpandPermsPreferenceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{12}
+	return fileDescriptor_e517996dd141ad63, []int{11}
 }
 
 func (m *SetExpandPermsPreferenceRequest) XXX_Unmarshal(b []byte) error {
@@ -651,7 +593,7 @@ func (m *SetExpandPermsPreferenceResponse) Reset()         { *m = SetExpandPerms
 func (m *SetExpandPermsPreferenceResponse) String() string { return proto.CompactTextString(m) }
 func (*SetExpandPermsPreferenceResponse) ProtoMessage()    {}
 func (*SetExpandPermsPreferenceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{13}
+	return fileDescriptor_e517996dd141ad63, []int{12}
 }
 
 func (m *SetExpandPermsPreferenceResponse) XXX_Unmarshal(b []byte) error {
@@ -673,6 +615,187 @@ func (m *SetExpandPermsPreferenceResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_SetExpandPermsPreferenceResponse proto.InternalMessageInfo
 
 // Next available tag: 3
+type GetUserPrefsRequest struct {
+	Trace *RequestTrace `protobuf:"bytes,1,opt,name=trace,proto3" json:"trace,omitempty"`
+	// Site admins may get prefs for specific users.  Otherwise, it gets
+	// prefs for the signed-in user.
+	UserRef              *UserRef `protobuf:"bytes,2,opt,name=user_ref,json=userRef,proto3" json:"user_ref,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetUserPrefsRequest) Reset()         { *m = GetUserPrefsRequest{} }
+func (m *GetUserPrefsRequest) String() string { return proto.CompactTextString(m) }
+func (*GetUserPrefsRequest) ProtoMessage()    {}
+func (*GetUserPrefsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e517996dd141ad63, []int{13}
+}
+
+func (m *GetUserPrefsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetUserPrefsRequest.Unmarshal(m, b)
+}
+func (m *GetUserPrefsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetUserPrefsRequest.Marshal(b, m, deterministic)
+}
+func (m *GetUserPrefsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetUserPrefsRequest.Merge(m, src)
+}
+func (m *GetUserPrefsRequest) XXX_Size() int {
+	return xxx_messageInfo_GetUserPrefsRequest.Size(m)
+}
+func (m *GetUserPrefsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetUserPrefsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetUserPrefsRequest proto.InternalMessageInfo
+
+func (m *GetUserPrefsRequest) GetTrace() *RequestTrace {
+	if m != nil {
+		return m.Trace
+	}
+	return nil
+}
+
+func (m *GetUserPrefsRequest) GetUserRef() *UserRef {
+	if m != nil {
+		return m.UserRef
+	}
+	return nil
+}
+
+// Next available tag: 2
+type GetUserPrefsResponse struct {
+	Prefs                []*UserPrefValue `protobuf:"bytes,1,rep,name=prefs,proto3" json:"prefs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *GetUserPrefsResponse) Reset()         { *m = GetUserPrefsResponse{} }
+func (m *GetUserPrefsResponse) String() string { return proto.CompactTextString(m) }
+func (*GetUserPrefsResponse) ProtoMessage()    {}
+func (*GetUserPrefsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e517996dd141ad63, []int{14}
+}
+
+func (m *GetUserPrefsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetUserPrefsResponse.Unmarshal(m, b)
+}
+func (m *GetUserPrefsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetUserPrefsResponse.Marshal(b, m, deterministic)
+}
+func (m *GetUserPrefsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetUserPrefsResponse.Merge(m, src)
+}
+func (m *GetUserPrefsResponse) XXX_Size() int {
+	return xxx_messageInfo_GetUserPrefsResponse.Size(m)
+}
+func (m *GetUserPrefsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetUserPrefsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetUserPrefsResponse proto.InternalMessageInfo
+
+func (m *GetUserPrefsResponse) GetPrefs() []*UserPrefValue {
+	if m != nil {
+		return m.Prefs
+	}
+	return nil
+}
+
+// Next available tag: 5
+type SetUserPrefsRequest struct {
+	Trace *RequestTrace `protobuf:"bytes,1,opt,name=trace,proto3" json:"trace,omitempty"`
+	// Site admins may set prefs for specific users.  Otherwise, it sets
+	// prefs for the signed-in user.
+	UserRef *UserRef `protobuf:"bytes,2,opt,name=user_ref,json=userRef,proto3" json:"user_ref,omitempty"`
+	// The given prefs add to or overwrite current user prefs.
+	Prefs                []*UserPrefValue `protobuf:"bytes,3,rep,name=prefs,proto3" json:"prefs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
+}
+
+func (m *SetUserPrefsRequest) Reset()         { *m = SetUserPrefsRequest{} }
+func (m *SetUserPrefsRequest) String() string { return proto.CompactTextString(m) }
+func (*SetUserPrefsRequest) ProtoMessage()    {}
+func (*SetUserPrefsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e517996dd141ad63, []int{15}
+}
+
+func (m *SetUserPrefsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SetUserPrefsRequest.Unmarshal(m, b)
+}
+func (m *SetUserPrefsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SetUserPrefsRequest.Marshal(b, m, deterministic)
+}
+func (m *SetUserPrefsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetUserPrefsRequest.Merge(m, src)
+}
+func (m *SetUserPrefsRequest) XXX_Size() int {
+	return xxx_messageInfo_SetUserPrefsRequest.Size(m)
+}
+func (m *SetUserPrefsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetUserPrefsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetUserPrefsRequest proto.InternalMessageInfo
+
+func (m *SetUserPrefsRequest) GetTrace() *RequestTrace {
+	if m != nil {
+		return m.Trace
+	}
+	return nil
+}
+
+func (m *SetUserPrefsRequest) GetUserRef() *UserRef {
+	if m != nil {
+		return m.UserRef
+	}
+	return nil
+}
+
+func (m *SetUserPrefsRequest) GetPrefs() []*UserPrefValue {
+	if m != nil {
+		return m.Prefs
+	}
+	return nil
+}
+
+// Next available tag: 1
+type SetUserPrefsResponse struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *SetUserPrefsResponse) Reset()         { *m = SetUserPrefsResponse{} }
+func (m *SetUserPrefsResponse) String() string { return proto.CompactTextString(m) }
+func (*SetUserPrefsResponse) ProtoMessage()    {}
+func (*SetUserPrefsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e517996dd141ad63, []int{16}
+}
+
+func (m *SetUserPrefsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_SetUserPrefsResponse.Unmarshal(m, b)
+}
+func (m *SetUserPrefsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_SetUserPrefsResponse.Marshal(b, m, deterministic)
+}
+func (m *SetUserPrefsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SetUserPrefsResponse.Merge(m, src)
+}
+func (m *SetUserPrefsResponse) XXX_Size() int {
+	return xxx_messageInfo_SetUserPrefsResponse.Size(m)
+}
+func (m *SetUserPrefsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_SetUserPrefsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SetUserPrefsResponse proto.InternalMessageInfo
+
+// Next available tag: 3
 type InviteLinkedParentRequest struct {
 	Trace                *RequestTrace `protobuf:"bytes,1,opt,name=trace,proto3" json:"trace,omitempty"`
 	Email                string        `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
@@ -685,7 +808,7 @@ func (m *InviteLinkedParentRequest) Reset()         { *m = InviteLinkedParentReq
 func (m *InviteLinkedParentRequest) String() string { return proto.CompactTextString(m) }
 func (*InviteLinkedParentRequest) ProtoMessage()    {}
 func (*InviteLinkedParentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{14}
+	return fileDescriptor_e517996dd141ad63, []int{17}
 }
 
 func (m *InviteLinkedParentRequest) XXX_Unmarshal(b []byte) error {
@@ -731,7 +854,7 @@ func (m *InviteLinkedParentResponse) Reset()         { *m = InviteLinkedParentRe
 func (m *InviteLinkedParentResponse) String() string { return proto.CompactTextString(m) }
 func (*InviteLinkedParentResponse) ProtoMessage()    {}
 func (*InviteLinkedParentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{15}
+	return fileDescriptor_e517996dd141ad63, []int{18}
 }
 
 func (m *InviteLinkedParentResponse) XXX_Unmarshal(b []byte) error {
@@ -765,7 +888,7 @@ func (m *AcceptLinkedChildRequest) Reset()         { *m = AcceptLinkedChildReque
 func (m *AcceptLinkedChildRequest) String() string { return proto.CompactTextString(m) }
 func (*AcceptLinkedChildRequest) ProtoMessage()    {}
 func (*AcceptLinkedChildRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{16}
+	return fileDescriptor_e517996dd141ad63, []int{19}
 }
 
 func (m *AcceptLinkedChildRequest) XXX_Unmarshal(b []byte) error {
@@ -811,7 +934,7 @@ func (m *AcceptLinkedChildResponse) Reset()         { *m = AcceptLinkedChildResp
 func (m *AcceptLinkedChildResponse) String() string { return proto.CompactTextString(m) }
 func (*AcceptLinkedChildResponse) ProtoMessage()    {}
 func (*AcceptLinkedChildResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e517996dd141ad63, []int{17}
+	return fileDescriptor_e517996dd141ad63, []int{20}
 }
 
 func (m *AcceptLinkedChildResponse) XXX_Unmarshal(b []byte) error {
@@ -833,7 +956,6 @@ func (m *AcceptLinkedChildResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_AcceptLinkedChildResponse proto.InternalMessageInfo
 
 func init() {
-	proto.RegisterType((*User)(nil), "monorail.User")
 	proto.RegisterType((*ListReferencedUsersRequest)(nil), "monorail.ListReferencedUsersRequest")
 	proto.RegisterType((*ListReferencedUsersResponse)(nil), "monorail.ListReferencedUsersResponse")
 	proto.RegisterType((*GetUserRequest)(nil), "monorail.GetUserRequest")
@@ -847,6 +969,10 @@ func init() {
 	proto.RegisterType((*StarUserResponse)(nil), "monorail.StarUserResponse")
 	proto.RegisterType((*SetExpandPermsPreferenceRequest)(nil), "monorail.SetExpandPermsPreferenceRequest")
 	proto.RegisterType((*SetExpandPermsPreferenceResponse)(nil), "monorail.SetExpandPermsPreferenceResponse")
+	proto.RegisterType((*GetUserPrefsRequest)(nil), "monorail.GetUserPrefsRequest")
+	proto.RegisterType((*GetUserPrefsResponse)(nil), "monorail.GetUserPrefsResponse")
+	proto.RegisterType((*SetUserPrefsRequest)(nil), "monorail.SetUserPrefsRequest")
+	proto.RegisterType((*SetUserPrefsResponse)(nil), "monorail.SetUserPrefsResponse")
 	proto.RegisterType((*InviteLinkedParentRequest)(nil), "monorail.InviteLinkedParentRequest")
 	proto.RegisterType((*InviteLinkedParentResponse)(nil), "monorail.InviteLinkedParentResponse")
 	proto.RegisterType((*AcceptLinkedChildRequest)(nil), "monorail.AcceptLinkedChildRequest")
@@ -856,54 +982,56 @@ func init() {
 func init() { proto.RegisterFile("api/api_proto/users.proto", fileDescriptor_e517996dd141ad63) }
 
 var fileDescriptor_e517996dd141ad63 = []byte{
-	// 745 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x5d, 0x4f, 0xdb, 0x4a,
-	0x10, 0x25, 0x84, 0x7c, 0x4d, 0x20, 0xc0, 0xde, 0x7b, 0xc1, 0x31, 0xb7, 0xc2, 0x2c, 0xa0, 0xa6,
-	0x15, 0x82, 0x36, 0xa8, 0x0f, 0x7d, 0x44, 0x51, 0x85, 0xa8, 0x40, 0x42, 0x06, 0x1e, 0xaa, 0x4a,
-	0x44, 0x4e, 0x3c, 0x29, 0xdb, 0xc6, 0x1f, 0xdd, 0x5d, 0x57, 0xfd, 0x07, 0xfd, 0x31, 0xed, 0x8f,
-	0xac, 0xbc, 0xb6, 0xe3, 0xc4, 0x71, 0x52, 0x14, 0x55, 0xbc, 0x65, 0x77, 0xcf, 0x9c, 0x33, 0x33,
-	0x99, 0x39, 0x09, 0x34, 0x2d, 0x9f, 0x9d, 0x58, 0x3e, 0xeb, 0xfa, 0xdc, 0x93, 0xde, 0x49, 0x20,
-	0x90, 0x8b, 0x63, 0xf5, 0x99, 0x54, 0x1d, 0xcf, 0xf5, 0xb8, 0xc5, 0x86, 0xba, 0x31, 0x0d, 0xea,
-	0x7a, 0xbd, 0xcf, 0xd8, 0x97, 0x31, 0x56, 0xd7, 0x27, 0x11, 0x7d, 0xcf, 0x71, 0x3c, 0x37, 0x7a,
-	0xa3, 0x1f, 0x60, 0xe5, 0x4e, 0x20, 0x27, 0xff, 0x42, 0x09, 0x1d, 0x8b, 0x0d, 0xb5, 0x82, 0x51,
-	0x68, 0xd5, 0xcc, 0xe8, 0x40, 0xb6, 0xa1, 0xa2, 0xf8, 0x98, 0xad, 0x2d, 0x1b, 0x85, 0x56, 0xd1,
-	0x2c, 0x87, 0xc7, 0x0b, 0x9b, 0x50, 0x58, 0x63, 0xa2, 0x2b, 0x98, 0xc4, 0xae, 0x65, 0x3b, 0xcc,
-	0xd5, 0x8a, 0x46, 0xa1, 0x55, 0x35, 0xeb, 0x4c, 0xdc, 0x30, 0x89, 0x67, 0xe1, 0x15, 0xed, 0x81,
-	0x7e, 0xc9, 0x84, 0x34, 0x71, 0x80, 0x1c, 0xdd, 0x3e, 0xda, 0xa1, 0x90, 0x30, 0xf1, 0x6b, 0x80,
-	0x42, 0x92, 0x23, 0x28, 0x49, 0x6e, 0xf5, 0x51, 0x09, 0xd6, 0xdb, 0x5b, 0xc7, 0x49, 0x41, 0xc7,
-	0x31, 0xe2, 0x36, 0x7c, 0x35, 0x23, 0x10, 0xd9, 0x82, 0xb2, 0xca, 0x48, 0x68, 0xcb, 0x46, 0xb1,
-	0x55, 0x33, 0xe3, 0x13, 0xed, 0xc0, 0x4e, 0xae, 0x86, 0xf0, 0x3d, 0x57, 0x20, 0x39, 0x80, 0x92,
-	0x6a, 0x9a, 0x56, 0x30, 0x8a, 0xad, 0x7a, 0xbb, 0x91, 0x8a, 0x84, 0x38, 0x33, 0x7a, 0xa4, 0x43,
-	0x68, 0x9c, 0xa3, 0x54, 0x37, 0x0b, 0x25, 0x77, 0x04, 0x55, 0xd5, 0x25, 0x8e, 0x03, 0xd5, 0xa6,
-	0x7a, 0x7b, 0x33, 0x23, 0x84, 0x03, 0x53, 0x35, 0xd2, 0xc4, 0x01, 0x15, 0xf0, 0xdf, 0x39, 0xca,
-	0x2b, 0x74, 0x7a, 0xc8, 0xc5, 0x03, 0xf3, 0xc5, 0x53, 0x88, 0xbe, 0x87, 0xad, 0xac, 0x68, 0xdc,
-	0xa2, 0x57, 0x00, 0x9f, 0xb8, 0x17, 0xf8, 0x21, 0x51, 0xd2, 0xa7, 0x1c, 0xa6, 0x9a, 0x02, 0x99,
-	0x38, 0x10, 0xf4, 0x67, 0x41, 0x55, 0x10, 0xbe, 0x74, 0x3c, 0xc7, 0x61, 0x72, 0xc1, 0x0a, 0x46,
-	0x23, 0xb7, 0x3c, 0x3e, 0x72, 0x87, 0xd0, 0x18, 0x70, 0xcf, 0xe9, 0x4a, 0xe6, 0xa0, 0x90, 0x96,
-	0xe3, 0xab, 0xd1, 0xaa, 0x98, 0x6b, 0xe1, 0xed, 0x6d, 0x72, 0x49, 0x9e, 0xc3, 0x7a, 0xe0, 0x4a,
-	0x36, 0x1c, 0xc3, 0xad, 0x28, 0x5c, 0x43, 0x5d, 0x8f, 0x80, 0xf4, 0x4a, 0x55, 0x3e, 0x91, 0x6c,
-	0x5c, 0xf9, 0x29, 0xac, 0xaa, 0x0e, 0xf6, 0xa3, 0xfb, 0xb8, 0xf6, 0x8d, 0x34, 0xe9, 0x28, 0xc0,
-	0xac, 0x07, 0x69, 0x30, 0x0d, 0x60, 0x3b, 0xa6, 0xbb, 0x91, 0x16, 0xef, 0x78, 0x81, 0x2b, 0x9f,
-	0xe2, 0xfb, 0x7b, 0x0b, 0xda, 0xb4, 0x6c, 0x5c, 0xc7, 0x33, 0x00, 0x21, 0xad, 0xb0, 0x8e, 0xc0,
-	0x95, 0x4a, 0x7c, 0xcd, 0xac, 0x89, 0x04, 0x46, 0x7f, 0x14, 0x60, 0x3d, 0x0c, 0x7a, 0xa2, 0xf9,
-	0x26, 0x1a, 0x54, 0x42, 0x71, 0x8e, 0x76, 0x6c, 0x0a, 0xc9, 0x91, 0xbe, 0x86, 0x8d, 0x34, 0x91,
-	0xc7, 0x25, 0xcf, 0x61, 0xf7, 0x06, 0xe5, 0xbb, 0xef, 0xbe, 0xe5, 0xda, 0xd7, 0xc8, 0x1d, 0x71,
-	0xcd, 0x93, 0x55, 0x5f, 0xac, 0x96, 0x3d, 0x58, 0x45, 0xc5, 0xd6, 0xf5, 0x43, 0x3a, 0x55, 0x4f,
-	0xd5, 0xac, 0x63, 0xaa, 0x40, 0x29, 0x18, 0xb3, 0x35, 0xa3, 0xb4, 0x69, 0x17, 0x9a, 0x17, 0xee,
-	0x37, 0x26, 0xf1, 0x92, 0xb9, 0x5f, 0xd0, 0xbe, 0xb6, 0x38, 0x2e, 0x3a, 0x08, 0xb9, 0x6b, 0x40,
-	0xff, 0x07, 0x3d, 0x4f, 0x20, 0x96, 0xbf, 0x07, 0xed, 0xac, 0xdf, 0x47, 0x5f, 0x46, 0xaf, 0x9d,
-	0x07, 0x36, 0xb4, 0xff, 0xa6, 0xfa, 0x0e, 0x34, 0x73, 0xf8, 0x23, 0xf1, 0xf6, 0xaf, 0x32, 0x94,
-	0x94, 0xcd, 0x92, 0x37, 0x50, 0x89, 0xa7, 0x92, 0x68, 0xa9, 0xcc, 0xa4, 0x97, 0xea, 0x19, 0xd3,
-	0xa5, 0x4b, 0xc4, 0x86, 0x7f, 0x72, 0x4c, 0x9b, 0x1c, 0xa4, 0xc0, 0xd9, 0xbf, 0x1b, 0xfa, 0xe1,
-	0x1f, 0x50, 0x71, 0x87, 0x96, 0xc8, 0x9d, 0x72, 0xf5, 0x31, 0xcb, 0x23, 0xbb, 0x13, 0x39, 0x4e,
-	0x3b, 0xb0, 0x6e, 0xcc, 0x06, 0x64, 0x68, 0xc7, 0xfc, 0x24, 0x43, 0x3b, 0x6d, 0x8b, 0x19, 0xda,
-	0x1c, 0x2b, 0xa2, 0x4b, 0xe4, 0x23, 0x6c, 0x64, 0x17, 0x9c, 0xec, 0x4d, 0xc5, 0x65, 0x3d, 0x47,
-	0xa7, 0xf3, 0x20, 0x23, 0xf2, 0x0e, 0x54, 0x93, 0xc5, 0x23, 0xcd, 0x34, 0x22, 0xe3, 0x0a, 0xba,
-	0x9e, 0xf7, 0x34, 0x22, 0x11, 0xa0, 0xcd, 0x5a, 0x0b, 0xf2, 0x62, 0x2c, 0x72, 0xfe, 0xba, 0xea,
-	0x2f, 0x1f, 0x03, 0x1d, 0x89, 0x5a, 0x40, 0xa6, 0xd7, 0x80, 0xec, 0xa7, 0x1c, 0x33, 0xb7, 0x50,
-	0x3f, 0x98, 0x0f, 0x1a, 0x49, 0xdc, 0xc3, 0xe6, 0xd4, 0xac, 0x93, 0xb1, 0xbe, 0xce, 0x5a, 0x34,
-	0x7d, 0x7f, 0x2e, 0x26, 0xe1, 0xef, 0x95, 0xd5, 0x1f, 0xad, 0xd3, 0xdf, 0x01, 0x00, 0x00, 0xff,
-	0xff, 0x24, 0x0a, 0x4e, 0x65, 0xcd, 0x09, 0x00, 0x00,
+	// 776 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0xdd, 0x4e, 0xdb, 0x4a,
+	0x10, 0x26, 0xe4, 0x84, 0x24, 0x13, 0x08, 0xb0, 0x70, 0x82, 0xb3, 0x1c, 0x0e, 0x61, 0x01, 0x35,
+	0xad, 0x28, 0xb4, 0xa0, 0x5e, 0xf4, 0xb2, 0x8a, 0x10, 0x6a, 0x05, 0x2a, 0x72, 0xa0, 0x37, 0x95,
+	0x88, 0x9c, 0x64, 0x53, 0xdc, 0xc6, 0x3f, 0xec, 0xae, 0xab, 0xbe, 0x41, 0x5f, 0xa3, 0xf7, 0x7d,
+	0x97, 0x3e, 0x53, 0xe5, 0xb5, 0x1d, 0xff, 0xa7, 0x28, 0xaa, 0x72, 0x97, 0xdd, 0xf9, 0xe6, 0xfb,
+	0x66, 0x66, 0x3d, 0x33, 0x81, 0xa6, 0x66, 0xeb, 0x27, 0x9a, 0xad, 0xf7, 0x6c, 0x66, 0x09, 0xeb,
+	0xc4, 0xe1, 0x94, 0xf1, 0x63, 0xf9, 0x1b, 0x55, 0x0c, 0xcb, 0xb4, 0x98, 0xa6, 0x8f, 0x71, 0x2b,
+	0x0d, 0xea, 0x59, 0xfd, 0xcf, 0x74, 0x20, 0x7c, 0x2c, 0xc6, 0x71, 0xc4, 0xc0, 0x32, 0x0c, 0xcb,
+	0xf4, 0x6c, 0xa4, 0x0f, 0xf8, 0x52, 0xe7, 0x42, 0xa5, 0x23, 0xca, 0xa8, 0x39, 0xa0, 0xc3, 0x5b,
+	0x57, 0x44, 0xa5, 0x0f, 0x0e, 0xe5, 0x02, 0x1d, 0x41, 0x49, 0x30, 0x6d, 0x40, 0x95, 0x42, 0xab,
+	0xd0, 0xae, 0x9d, 0x36, 0x8e, 0x03, 0xd5, 0x63, 0x1f, 0x71, 0xe3, 0x5a, 0x55, 0x0f, 0x84, 0x1a,
+	0xb0, 0x44, 0x0d, 0x4d, 0x1f, 0x73, 0x65, 0xb1, 0x55, 0x6c, 0x57, 0x55, 0xff, 0x44, 0x3a, 0xb0,
+	0x9d, 0xa9, 0xc1, 0x6d, 0xcb, 0xe4, 0x14, 0x1d, 0x40, 0x49, 0x66, 0xa6, 0x14, 0x5a, 0xc5, 0x76,
+	0xed, 0xb4, 0x1e, 0x8a, 0xb8, 0x38, 0xd5, 0x33, 0x92, 0x31, 0xd4, 0x2f, 0xa8, 0x90, 0x37, 0x33,
+	0x05, 0x77, 0x04, 0x15, 0x59, 0x1a, 0x46, 0x47, 0xca, 0xa2, 0x74, 0x58, 0x4f, 0x08, 0xd1, 0x91,
+	0x5a, 0x76, 0xbc, 0x1f, 0x84, 0xc3, 0xbf, 0x17, 0x54, 0x5c, 0x51, 0xa3, 0x4f, 0x19, 0xbf, 0xd7,
+	0x6d, 0x3e, 0x0f, 0xd1, 0x77, 0xd0, 0x48, 0x8a, 0xfa, 0x25, 0x7a, 0x01, 0xf0, 0x89, 0x59, 0x8e,
+	0xed, 0x12, 0x05, 0x75, 0xca, 0x60, 0xaa, 0x4a, 0x90, 0x4a, 0x47, 0x9c, 0xfc, 0x2c, 0xc8, 0x0c,
+	0x5c, 0x4b, 0xc7, 0x32, 0x0c, 0x5d, 0xcc, 0x98, 0xc1, 0x26, 0x94, 0xe4, 0x2b, 0xca, 0xf0, 0xab,
+	0xaa, 0x77, 0x40, 0x87, 0x50, 0x1f, 0x31, 0xcb, 0xe8, 0x09, 0xdd, 0xa0, 0x5c, 0x68, 0x86, 0xad,
+	0x14, 0x5b, 0x85, 0x76, 0x59, 0x5d, 0x71, 0x6f, 0x6f, 0x82, 0x4b, 0xf4, 0x04, 0x56, 0x1d, 0x53,
+	0xe8, 0xe3, 0x08, 0xee, 0x1f, 0x89, 0xab, 0xcb, 0xeb, 0x09, 0x90, 0x5c, 0xc9, 0xcc, 0x63, 0xc1,
+	0xfa, 0x99, 0x9f, 0xc1, 0xb2, 0xac, 0xe0, 0xc0, 0xbb, 0xf7, 0x73, 0x5f, 0x0b, 0x83, 0xf6, 0x1c,
+	0xd4, 0x9a, 0x13, 0x3a, 0x13, 0x07, 0xb6, 0x7c, 0xba, 0xae, 0xd0, 0x58, 0xc7, 0x72, 0x4c, 0x31,
+	0x8f, 0xf7, 0x7b, 0x0d, 0x4a, 0x5a, 0xd6, 0xcf, 0x63, 0x07, 0x80, 0x0b, 0xcd, 0xcd, 0xc3, 0x31,
+	0x85, 0x14, 0x5f, 0x51, 0xab, 0x3c, 0x80, 0x91, 0xef, 0x05, 0x58, 0x75, 0x9d, 0xe6, 0xf4, 0x7d,
+	0x23, 0x05, 0xca, 0xae, 0x38, 0xa3, 0x43, 0xf9, 0x72, 0x15, 0x35, 0x38, 0x92, 0x97, 0xb0, 0x16,
+	0x06, 0xf2, 0xb8, 0xe0, 0x19, 0xec, 0x76, 0xa9, 0x38, 0xff, 0x66, 0x6b, 0xe6, 0xf0, 0x9a, 0x32,
+	0x83, 0x5f, 0xb3, 0xa0, 0xd5, 0x67, 0xcb, 0x65, 0x0f, 0x96, 0xa9, 0x64, 0xeb, 0xd9, 0x2e, 0x9d,
+	0xcc, 0xa7, 0xa2, 0xd6, 0x68, 0xa8, 0x40, 0x08, 0xb4, 0xf2, 0x35, 0xbd, 0xb0, 0xc9, 0x03, 0x6c,
+	0xf8, 0xef, 0xe1, 0x1a, 0xe7, 0xd2, 0xc2, 0xe7, 0xb0, 0x19, 0x97, 0xf4, 0x2b, 0xf8, 0x1c, 0x4a,
+	0x76, 0xa4, 0x77, 0xb7, 0xe2, 0x14, 0x2e, 0xf6, 0x83, 0x36, 0x76, 0xa8, 0xea, 0xa1, 0xc8, 0x8f,
+	0x02, 0x6c, 0x74, 0xe7, 0x1b, 0x7a, 0x18, 0x62, 0xf1, 0x51, 0x21, 0x36, 0x60, 0xb3, 0x9b, 0x91,
+	0x29, 0xe9, 0x41, 0xf3, 0xad, 0xf9, 0x55, 0x17, 0xf4, 0x52, 0x37, 0xbf, 0xd0, 0xe1, 0xb5, 0xc6,
+	0xe8, 0xac, 0xdd, 0x97, 0x39, 0x7b, 0xc8, 0x7f, 0x80, 0xb3, 0x04, 0x7c, 0xf9, 0x3b, 0x50, 0xde,
+	0x0c, 0x06, 0xd4, 0x16, 0x9e, 0xb5, 0x73, 0xaf, 0x8f, 0x87, 0x7f, 0x53, 0x7d, 0x1b, 0x9a, 0x19,
+	0xfc, 0x9e, 0xf8, 0xe9, 0xaf, 0x32, 0x94, 0xe4, 0x6e, 0x43, 0xaf, 0xa0, 0xec, 0x7f, 0x07, 0x48,
+	0x09, 0x65, 0xe2, 0x0b, 0x0c, 0x27, 0x36, 0x1d, 0x59, 0x40, 0x43, 0xd8, 0xc8, 0xd8, 0x94, 0xe8,
+	0x20, 0x04, 0xe6, 0x2f, 0x6b, 0x7c, 0xf8, 0x07, 0x94, 0x5f, 0xa1, 0x05, 0x74, 0x2b, 0x57, 0x69,
+	0x64, 0xcf, 0xa0, 0xdd, 0x58, 0x8c, 0xe9, 0xb5, 0x87, 0x5b, 0xf9, 0x80, 0x04, 0x6d, 0x64, 0x88,
+	0x27, 0x68, 0xd3, 0xbb, 0x28, 0x41, 0x9b, 0x31, 0xff, 0xc9, 0x02, 0xfa, 0x08, 0x6b, 0xc9, 0xa9,
+	0x8a, 0xf6, 0x52, 0x7e, 0xc9, 0x41, 0x8f, 0xc9, 0x34, 0xc8, 0x84, 0xbc, 0x03, 0x95, 0x60, 0xda,
+	0xa1, 0x66, 0xe8, 0x91, 0x18, 0xc5, 0x18, 0x67, 0x99, 0x26, 0x24, 0xef, 0x61, 0x39, 0xda, 0xf4,
+	0x68, 0x27, 0x25, 0x1d, 0x6d, 0x62, 0xfc, 0x7f, 0x9e, 0x39, 0x4a, 0xd8, 0xcd, 0x21, 0xec, 0x4e,
+	0x27, 0xec, 0x66, 0x13, 0x72, 0x50, 0xf2, 0xa6, 0x25, 0x7a, 0x1a, 0xf3, 0x9e, 0x36, 0xc5, 0xf1,
+	0xb3, 0xc7, 0x40, 0x27, 0xa2, 0x1a, 0xa0, 0x74, 0xa3, 0xa2, 0xfd, 0x90, 0x23, 0x77, 0x4e, 0xe0,
+	0x83, 0xe9, 0xa0, 0x89, 0xc4, 0x1d, 0xac, 0xa7, 0xba, 0x11, 0x45, 0x5e, 0x3e, 0x6f, 0x14, 0xe0,
+	0xfd, 0xa9, 0x98, 0x80, 0xbf, 0xbf, 0x24, 0xff, 0x24, 0x9f, 0xfd, 0x0e, 0x00, 0x00, 0xff, 0xff,
+	0x51, 0xd4, 0xff, 0xdc, 0x89, 0x0b, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -924,6 +1052,9 @@ type UsersClient interface {
 	GetUserCommits(ctx context.Context, in *GetUserCommitsRequest, opts ...grpc.CallOption) (*GetUserCommitsResponse, error)
 	GetUserStarCount(ctx context.Context, in *GetUserStarCountRequest, opts ...grpc.CallOption) (*GetUserStarCountResponse, error)
 	StarUser(ctx context.Context, in *StarUserRequest, opts ...grpc.CallOption) (*StarUserResponse, error)
+	GetUserPrefs(ctx context.Context, in *GetUserPrefsRequest, opts ...grpc.CallOption) (*GetUserPrefsResponse, error)
+	SetUserPrefs(ctx context.Context, in *SetUserPrefsRequest, opts ...grpc.CallOption) (*SetUserPrefsResponse, error)
+	// TODO(jrobbins): Merge this into SetUserPrefs.
 	SetExpandPermsPreference(ctx context.Context, in *SetExpandPermsPreferenceRequest, opts ...grpc.CallOption) (*SetExpandPermsPreferenceResponse, error)
 	InviteLinkedParent(ctx context.Context, in *InviteLinkedParentRequest, opts ...grpc.CallOption) (*InviteLinkedParentResponse, error)
 	AcceptLinkedChild(ctx context.Context, in *AcceptLinkedChildRequest, opts ...grpc.CallOption) (*AcceptLinkedChildResponse, error)
@@ -984,6 +1115,24 @@ func (c *usersPRPCClient) GetUserStarCount(ctx context.Context, in *GetUserStarC
 func (c *usersPRPCClient) StarUser(ctx context.Context, in *StarUserRequest, opts ...grpc.CallOption) (*StarUserResponse, error) {
 	out := new(StarUserResponse)
 	err := c.client.Call(ctx, "monorail.Users", "StarUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersPRPCClient) GetUserPrefs(ctx context.Context, in *GetUserPrefsRequest, opts ...grpc.CallOption) (*GetUserPrefsResponse, error) {
+	out := new(GetUserPrefsResponse)
+	err := c.client.Call(ctx, "monorail.Users", "GetUserPrefs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersPRPCClient) SetUserPrefs(ctx context.Context, in *SetUserPrefsRequest, opts ...grpc.CallOption) (*SetUserPrefsResponse, error) {
+	out := new(SetUserPrefsResponse)
+	err := c.client.Call(ctx, "monorail.Users", "SetUserPrefs", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1079,6 +1228,24 @@ func (c *usersClient) StarUser(ctx context.Context, in *StarUserRequest, opts ..
 	return out, nil
 }
 
+func (c *usersClient) GetUserPrefs(ctx context.Context, in *GetUserPrefsRequest, opts ...grpc.CallOption) (*GetUserPrefsResponse, error) {
+	out := new(GetUserPrefsResponse)
+	err := c.cc.Invoke(ctx, "/monorail.Users/GetUserPrefs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *usersClient) SetUserPrefs(ctx context.Context, in *SetUserPrefsRequest, opts ...grpc.CallOption) (*SetUserPrefsResponse, error) {
+	out := new(SetUserPrefsResponse)
+	err := c.cc.Invoke(ctx, "/monorail.Users/SetUserPrefs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *usersClient) SetExpandPermsPreference(ctx context.Context, in *SetExpandPermsPreferenceRequest, opts ...grpc.CallOption) (*SetExpandPermsPreferenceResponse, error) {
 	out := new(SetExpandPermsPreferenceResponse)
 	err := c.cc.Invoke(ctx, "/monorail.Users/SetExpandPermsPreference", in, out, opts...)
@@ -1114,6 +1281,9 @@ type UsersServer interface {
 	GetUserCommits(context.Context, *GetUserCommitsRequest) (*GetUserCommitsResponse, error)
 	GetUserStarCount(context.Context, *GetUserStarCountRequest) (*GetUserStarCountResponse, error)
 	StarUser(context.Context, *StarUserRequest) (*StarUserResponse, error)
+	GetUserPrefs(context.Context, *GetUserPrefsRequest) (*GetUserPrefsResponse, error)
+	SetUserPrefs(context.Context, *SetUserPrefsRequest) (*SetUserPrefsResponse, error)
+	// TODO(jrobbins): Merge this into SetUserPrefs.
 	SetExpandPermsPreference(context.Context, *SetExpandPermsPreferenceRequest) (*SetExpandPermsPreferenceResponse, error)
 	InviteLinkedParent(context.Context, *InviteLinkedParentRequest) (*InviteLinkedParentResponse, error)
 	AcceptLinkedChild(context.Context, *AcceptLinkedChildRequest) (*AcceptLinkedChildResponse, error)
@@ -1231,6 +1401,42 @@ func _Users_StarUser_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Users_GetUserPrefs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserPrefsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServer).GetUserPrefs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/monorail.Users/GetUserPrefs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServer).GetUserPrefs(ctx, req.(*GetUserPrefsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Users_SetUserPrefs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetUserPrefsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServer).SetUserPrefs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/monorail.Users/SetUserPrefs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServer).SetUserPrefs(ctx, req.(*SetUserPrefsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Users_SetExpandPermsPreference_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetExpandPermsPreferenceRequest)
 	if err := dec(in); err != nil {
@@ -1312,6 +1518,14 @@ var _Users_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StarUser",
 			Handler:    _Users_StarUser_Handler,
+		},
+		{
+			MethodName: "GetUserPrefs",
+			Handler:    _Users_GetUserPrefs_Handler,
+		},
+		{
+			MethodName: "SetUserPrefs",
+			Handler:    _Users_SetUserPrefs_Handler,
 		},
 		{
 			MethodName: "SetExpandPermsPreference",

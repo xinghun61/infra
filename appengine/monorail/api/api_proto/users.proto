@@ -17,19 +17,12 @@ service Users {
   rpc GetUserCommits (GetUserCommitsRequest) returns (GetUserCommitsResponse) {}
   rpc GetUserStarCount (GetUserStarCountRequest) returns (GetUserStarCountResponse) {}
   rpc StarUser (StarUserRequest) returns (StarUserResponse) {}
+  rpc GetUserPrefs (GetUserPrefsRequest) returns (GetUserPrefsResponse) {}
+  rpc SetUserPrefs (SetUserPrefsRequest) returns (SetUserPrefsResponse) {}
+  // TODO(jrobbins): Merge this into SetUserPrefs.
   rpc SetExpandPermsPreference (SetExpandPermsPreferenceRequest) returns (SetExpandPermsPreferenceResponse) {}
   rpc InviteLinkedParent (InviteLinkedParentRequest) returns (InviteLinkedParentResponse) {}
   rpc AcceptLinkedChild (AcceptLinkedChildRequest) returns (AcceptLinkedChildResponse) {}
-}
-
-
-// TODO(jojwang): monorail:1701, fill User with all info necessary for
-// creating a user profile page.
-// Next available tag: 4
-message User {
-  string email = 1;
-  int64 user_id = 2;
-  bool is_site_admin = 3;
 }
 
 
@@ -115,6 +108,37 @@ message SetExpandPermsPreferenceRequest {
 
 // Next available tag: 1
 message SetExpandPermsPreferenceResponse {
+}
+
+
+// Next available tag: 3
+message GetUserPrefsRequest {
+  RequestTrace trace = 1;
+  // Site admins may get prefs for specific users.  Otherwise, it gets
+  // prefs for the signed-in user.
+  UserRef user_ref = 2;
+}
+
+
+// Next available tag: 2
+message GetUserPrefsResponse {
+  repeated UserPrefValue prefs = 1;
+}
+
+
+// Next available tag: 5
+message SetUserPrefsRequest {
+  RequestTrace trace = 1;
+  // Site admins may set prefs for specific users.  Otherwise, it sets
+  // prefs for the signed-in user.
+  UserRef user_ref = 2;
+  // The given prefs add to or overwrite current user prefs.
+  repeated UserPrefValue prefs = 3;
+}
+
+
+// Next available tag: 1
+message SetUserPrefsResponse {
 }
 
 

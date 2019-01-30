@@ -112,6 +112,34 @@ class UsersServicer(monorail_servicer.MonorailServicer):
     result = users_pb2.SetExpandPermsPreferenceResponse()
     return result
 
+  def _SignedInOrSpecifiedUser(self, mc, request):
+    """If request specifies a user, return it.  Otherwise signed-in user."""
+    user_id = mc.auth.user_id
+    if request.HasField('user_ref'):
+      user_id = converters.IngestUserRef(
+          mc.cnxn, request.user_ref, self.services.user)
+    return user_id
+
+  @monorail_servicer.PRPCMethod
+  def GetUserPrefs(self, mc, request):
+    """Get a user's preferences."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      userprefs = we.GetUserPrefs(self._SignedInOrSpecifiedUser(mc, request))
+
+    result = users_pb2.GetUserPrefsResponse(
+        prefs=converters.ConvertPrefValues(userprefs.prefs))
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def SetUserPrefs(self, mc, request):
+    """Add to or set a users preferences."""
+    with work_env.WorkEnv(mc, self.services) as we:
+      pref_values = converters.IngestPrefValues(request.prefs)
+      we.SetUserPrefs(self._SignedInOrSpecifiedUser(mc, request), pref_values)
+
+    result = users_pb2.SetUserPrefsResponse()
+    return result
+
   @monorail_servicer.PRPCMethod
   def InviteLinkedParent(self, mc, request):
     """Create a linked account invite."""

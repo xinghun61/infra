@@ -19,10 +19,55 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n api/api_proto/user_objects.proto\x12\x08monorail\"u\n\x06\x43ommit\x12\x12\n\ncommit_sha\x18\x01 \x01(\t\x12\x11\n\tauthor_id\x18\x02 \x01(\x03\x12\x13\n\x0b\x63ommit_time\x18\x03 \x01(\x07\x12\x16\n\x0e\x63ommit_message\x18\x04 \x01(\t\x12\x17\n\x0f\x63ommit_repo_url\x18\x05 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n api/api_proto/user_objects.proto\x12\x08monorail\"=\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x15\n\ris_site_admin\x18\x03 \x01(\x08\"u\n\x06\x43ommit\x12\x12\n\ncommit_sha\x18\x01 \x01(\t\x12\x11\n\tauthor_id\x18\x02 \x01(\x03\x12\x13\n\x0b\x63ommit_time\x18\x03 \x01(\x07\x12\x16\n\x0e\x63ommit_message\x18\x04 \x01(\t\x12\x17\n\x0f\x63ommit_repo_url\x18\x05 \x01(\t\",\n\rUserPrefValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\tb\x06proto3')
 )
 
 
+
+
+_USER = _descriptor.Descriptor(
+  name='User',
+  full_name='monorail.User',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='email', full_name='monorail.User.email', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='user_id', full_name='monorail.User.user_id', index=1,
+      number=2, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='is_site_admin', full_name='monorail.User.is_site_admin', index=2,
+      number=3, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=46,
+  serialized_end=107,
+)
 
 
 _COMMIT = _descriptor.Descriptor(
@@ -79,12 +124,59 @@ _COMMIT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=46,
-  serialized_end=163,
+  serialized_start=109,
+  serialized_end=226,
 )
 
+
+_USERPREFVALUE = _descriptor.Descriptor(
+  name='UserPrefValue',
+  full_name='monorail.UserPrefValue',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='name', full_name='monorail.UserPrefValue.name', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='value', full_name='monorail.UserPrefValue.value', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=228,
+  serialized_end=272,
+)
+
+DESCRIPTOR.message_types_by_name['User'] = _USER
 DESCRIPTOR.message_types_by_name['Commit'] = _COMMIT
+DESCRIPTOR.message_types_by_name['UserPrefValue'] = _USERPREFVALUE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
+
+User = _reflection.GeneratedProtocolMessageType('User', (_message.Message,), dict(
+  DESCRIPTOR = _USER,
+  __module__ = 'api.api_proto.user_objects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.User)
+  ))
+_sym_db.RegisterMessage(User)
 
 Commit = _reflection.GeneratedProtocolMessageType('Commit', (_message.Message,), dict(
   DESCRIPTOR = _COMMIT,
@@ -92,6 +184,13 @@ Commit = _reflection.GeneratedProtocolMessageType('Commit', (_message.Message,),
   # @@protoc_insertion_point(class_scope:monorail.Commit)
   ))
 _sym_db.RegisterMessage(Commit)
+
+UserPrefValue = _reflection.GeneratedProtocolMessageType('UserPrefValue', (_message.Message,), dict(
+  DESCRIPTOR = _USERPREFVALUE,
+  __module__ = 'api.api_proto.user_objects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.UserPrefValue)
+  ))
+_sym_db.RegisterMessage(UserPrefValue)
 
 
 # @@protoc_insertion_point(module_scope)

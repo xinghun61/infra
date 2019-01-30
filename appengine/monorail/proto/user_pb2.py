@@ -126,6 +126,19 @@ class User(messages.Message):
   linked_child_ids = messages.IntegerField(49, repeated=True)
 
 
+class UserPrefValue(messages.Message):
+  """Holds a single non-default user pref."""
+  name = messages.StringField(1, required=True)
+  value = messages.StringField(2)
+
+
+class UserPrefs(messages.Message):
+  """In-memory business object for representing user preferences."""
+  user_id = messages.IntegerField(1, required=True)
+  prefs = messages.MessageField(UserPrefValue, 2, repeated=True)
+
+
+
 def MakeUser(user_id, email=None, obscure_email=False):
   """Create and return a new user record in RAM."""
   user = User(user_id=user_id, obscure_email=bool(obscure_email))

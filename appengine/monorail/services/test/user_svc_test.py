@@ -436,6 +436,58 @@ class UserServiceTest(unittest.TestCase):
         banned_reason='Turned spammer')
     self.mox.VerifyAll()
 
+  def testGetUsersPrefs(self):
+    self.user_service.userprefs_tbl = Mock()
+    self.user_service.userprefs_tbl.Select.return_value = [
+        (111L, 'code_font', 'true'),
+        (111L, 'keep_perms_open', 'true'),
+        # Note: user 222L has not set any prefs.
+        (333L, 'code_font', 'false')]
+
+    prefs_dict = self.user_service.GetUsersPrefs(self.cnxn, [111L, 222L, 333L])
+
+    expected = {
+      111L: user_pb2.UserPrefs(
+          user_id=111L,
+          prefs=[user_pb2.UserPrefValue(name='code_font', value='true'),
+                 user_pb2.UserPrefValue(name='keep_perms_open', value='true')]),
+      222L: user_pb2.UserPrefs(user_id=222L),
+      333L: user_pb2.UserPrefs(
+          user_id=333L,
+          prefs=[user_pb2.UserPrefValue(name='code_font', value='false')]),
+      }
+    self.assertEqual(expected, prefs_dict)
+
+  def testGetUserPrefs(self):
+    self.user_service.userprefs_tbl = Mock()
+    self.user_service.userprefs_tbl.Select.return_value = [
+        (111L, 'code_font', 'true'),
+        (111L, 'keep_perms_open', 'true'),
+        # Note: user 222L has not set any prefs.
+        (333L, 'code_font', 'false')]
+
+    userprefs = self.user_service.GetUserPrefs(self.cnxn, 111L)
+    expected = user_pb2.UserPrefs(
+        user_id=111L,
+        prefs=[user_pb2.UserPrefValue(name='code_font', value='true'),
+               user_pb2.UserPrefValue(name='keep_perms_open', value='true')])
+    self.assertEqual(expected, userprefs)
+
+    userprefs = self.user_service.GetUserPrefs(self.cnxn, 222L)
+    expected = user_pb2.UserPrefs(user_id=222L)
+    self.assertEqual(expected, userprefs)
+
+  def testSetUserPrefs(self):
+    self.user_service.userprefs_tbl = Mock()
+    pref_values = [user_pb2.UserPrefValue(name='code_font', value='true'),
+                   user_pb2.UserPrefValue(name='keep_perms_open', value='true')]
+    self.user_service.SetUserPrefs(self.cnxn, 111L, pref_values)
+    self.user_service.userprefs_tbl.InsertRows.assert_called_once_with(
+        self.cnxn,
+        [(111L, 'code_font', 'true'),
+         (111L, 'keep_perms_open', 'true')],
+        replace=True)
+
 
 class UserServiceFunctionsTest(unittest.TestCase):
 

@@ -19,6 +19,8 @@ from api.api_proto import user_objects_pb2
 from framework import authdata
 from framework import exceptions
 from framework import monorailcontext
+from framework import permissions
+from proto import user_pb2
 from testing import fake
 from services import service_manager
 
@@ -205,6 +207,160 @@ class UsersServicerTest(unittest.TestCase):
 
     user = self.services.user.GetUser(self.cnxn, self.user.user_id)
     self.assertFalse(user.keep_people_perms_open)
+
+  def testGetUserPrefs_Anon(self):
+    """Anon always has empty prefs."""
+    request = users_pb2.GetUserPrefsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester=None)
+    response = self.CallWrapped(self.users_svcr.GetUserPrefs, mc, request)
+
+    self.assertEqual(0, len(response.prefs))
+
+  def testGetUserPrefs_Mine_Empty(self):
+    """User who never set any pref gets empty prefs."""
+    request = users_pb2.GetUserPrefsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.users_svcr.GetUserPrefs, mc, request)
+
+    self.assertEqual(0, len(response.prefs))
+
+  def testGetUserPrefs_Mine_Some(self):
+    """User who set a pref gets it back."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    request = users_pb2.GetUserPrefsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.users_svcr.GetUserPrefs, mc, request)
+
+    self.assertEqual(1, len(response.prefs))
+    self.assertEqual('code_font', response.prefs[0].name)
+    self.assertEqual('true', response.prefs[0].value)
+
+  def testGetUserPrefs_Other_Allowed(self):
+    """A site admin can read another user's prefs."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    self.user_2.is_site_admin = True
+
+    request = users_pb2.GetUserPrefsRequest()
+    request.user_ref.display_name = 'owner@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.users_svcr.GetUserPrefs, mc, request)
+
+    self.assertEqual(1, len(response.prefs))
+    self.assertEqual('code_font', response.prefs[0].name)
+    self.assertEqual('true', response.prefs[0].value)
+
+  def testGetUserPrefs_Other_Denied(self):
+    """A non-admin cannot read another user's prefs."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    # user2 is not a site admin.
+
+    request = users_pb2.GetUserPrefsRequest()
+    request.user_ref.display_name = 'owner@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.users_svcr.GetUserPrefs, mc, request)
+
+  def testSetUserPrefs_Anon(self):
+    """Anon cannot set prefs."""
+    request = users_pb2.SetUserPrefsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester=None)
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.users_svcr.SetUserPrefs, mc, request)
+
+  def testSetUserPrefs_Mine_Empty(self):
+    """Setting zero prefs is a no-op.."""
+    request = users_pb2.SetUserPrefsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.users_svcr.SetUserPrefs, mc, request)
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(0, len(prefs_after.prefs))
+
+  def testSetUserPrefs_Mine_Add(self):
+    """User can set a preference for the first time."""
+    request = users_pb2.SetUserPrefsRequest(
+        prefs=[user_objects_pb2.UserPrefValue(name='code_font', value='true')])
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.users_svcr.SetUserPrefs, mc, request)
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('true', prefs_after.prefs[0].value)
+
+  def testSetUserPrefs_Mine_Overwrite(self):
+    """User can change the value of a pref."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    request = users_pb2.SetUserPrefsRequest(
+        prefs=[user_objects_pb2.UserPrefValue(name='code_font', value='false')])
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    self.CallWrapped(self.users_svcr.SetUserPrefs, mc, request)
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('false', prefs_after.prefs[0].value)
+
+  def testSetUserPrefs_Other_Allowed(self):
+    """A site admin can update another user's prefs."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    self.user_2.is_site_admin = True
+
+    request = users_pb2.SetUserPrefsRequest(
+        prefs=[user_objects_pb2.UserPrefValue(name='code_font', value='false')])
+    request.user_ref.display_name = 'owner@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    self.CallWrapped(self.users_svcr.SetUserPrefs, mc, request)
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('false', prefs_after.prefs[0].value)
+
+  def testSetUserPrefs_Other_Denied(self):
+    """A non-admin cannot set another user's prefs."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    # user2 is not a site admin.
+
+    request = users_pb2.SetUserPrefsRequest(
+        prefs=[user_objects_pb2.UserPrefValue(name='code_font', value='false')])
+    request.user_ref.display_name = 'owner@example.com'
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.users_svcr.SetUserPrefs, mc, request)
+
+    # Regardless of any exception, the preferences remain unchanged.
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('true', prefs_after.prefs[0].value)
 
   def testInviteLinkedParent_NotFound(self):
     """Reject attempt to invite a user that does not exist."""

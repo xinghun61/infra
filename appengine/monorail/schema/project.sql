@@ -8,21 +8,27 @@
 -- Create project-related tables in monorail db.
 
 
+-- The User table has the mapping from user_id to email addresses, and
+-- user settings information that is needed almost every time that
+-- we load a user.  E.g., when showing issue owners on the list page.
 CREATE TABLE User (
   user_id INT UNSIGNED NOT NULL,
   email VARCHAR(255) NOT NULL,  -- lowercase
 
   is_site_admin BOOLEAN DEFAULT FALSE,
   obscure_email BOOLEAN DEFAULT TRUE,
-  notify_issue_change BOOLEAN DEFAULT TRUE,
-  notify_starred_issue_change BOOLEAN DEFAULT TRUE,
-  email_compact_subject BOOLEAN DEFAULT FALSE,
-  email_view_widget BOOLEAN DEFAULT TRUE,
-  notify_starred_ping BOOLEAN DEFAULT FALSE,
+
+  -- TODO(jrobbins): Move some of these to UserPrefs.
+  notify_issue_change BOOLEAN DEFAULT TRUE,  -- Pref
+  notify_starred_issue_change BOOLEAN DEFAULT TRUE,  -- Pref
+  email_compact_subject BOOLEAN DEFAULT FALSE,  -- Pref
+  email_view_widget BOOLEAN DEFAULT TRUE,  -- Pref
+  notify_starred_ping BOOLEAN DEFAULT FALSE,  -- Pref
   banned VARCHAR(80),
-  after_issue_update ENUM ('up_to_list', 'stay_same_issue', 'next_in_list'),
-  keep_people_perms_open BOOLEAN DEFAULT FALSE,
-  preview_on_hover BOOLEAN DEFAULT TRUE,
+  after_issue_update ENUM (
+      'up_to_list', 'stay_same_issue', 'next_in_list'),  -- Pref
+  keep_people_perms_open BOOLEAN DEFAULT FALSE,  -- Pref
+  preview_on_hover BOOLEAN DEFAULT TRUE,  -- Pref
   ignore_action_limits BOOLEAN DEFAULT FALSE,
   last_visit_timestamp INT,
   email_bounce_timestamp INT,
@@ -31,6 +37,22 @@ CREATE TABLE User (
   PRIMARY KEY (user_id),
   UNIQUE KEY (email)
 ) ENGINE=INNODB;
+
+
+-- The UserPrefs table has open-ended key/value pairs that affect how
+-- we present information to that user when we generate a web page for
+-- that user or send an email to that user.  E.g., ("code_font",
+-- "true") would mean that issue content should be shown to that user
+-- in a monospace font.  Only non-default preference values are
+-- stored: users who have never set any preferences will have no rows.
+CREATE TABLE UserPrefs (
+  user_id INT UNSIGNED NOT NULL,
+  name VARCHAR(40),
+  value VARCHAR(80),
+
+  UNIQUE KEY (user_id, name)
+) ENGINE=INNODB;
+
 
 CREATE TABLE UserCommits (
   commit_sha VARCHAR(40),

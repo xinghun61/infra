@@ -311,3 +311,30 @@ class AllProjectMembersTest(unittest.TestCase):
     p.contributor_ids.extend([7, 8, 9])
     self.assertEqual(framework_bizobj.AllProjectMembers(p),
                      [1, 2, 3, 4, 5, 6, 7, 8, 9])
+
+
+class ValidatePrefTest(unittest.TestCase):
+
+  def testUnknown(self):
+    msg = framework_bizobj.ValidatePref('shoe_size', 'true')
+    self.assertIn('shoe_size', msg)
+    self.assertIn('Unknown', msg)
+
+    msg = framework_bizobj.ValidatePref('', 'true')
+    self.assertIn('Unknown', msg)
+
+  def testTooLong(self):
+    msg = framework_bizobj.ValidatePref('code_font', 'x' * 100)
+    self.assertIn('code_font', msg)
+    self.assertIn('too long', msg)
+
+  def testKnownValid(self):
+    self.assertIsNone(framework_bizobj.ValidatePref('code_font', 'true'))
+    self.assertIsNone(framework_bizobj.ValidatePref('code_font', 'false'))
+
+  def testKnownInvalid(self):
+    msg = framework_bizobj.ValidatePref('code_font', '')
+    self.assertIn('Invalid', msg)
+
+    msg = framework_bizobj.ValidatePref('code_font', 'sometimes')
+    self.assertIn('Invalid', msg)

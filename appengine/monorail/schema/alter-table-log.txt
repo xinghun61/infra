@@ -1632,3 +1632,15 @@ ALTER TABLE UserGroupSettings ADD COLUMN notify_group BOOLEAN DEFAULT FALSE;
 
 CREATE INDEX by_period_start ON IssueSnapshot (shard, project_id, status_id, period_start);
 CREATE INDEX by_period_end ON IssueSnapshot (shard, project_id, status_id, period_end);
+
+
+================================================================
+2019-01-25: Start a more flexible way of storing user preferences.
+
+CREATE TABLE UserPrefs (
+  user_id INT UNSIGNED NOT NULL,
+  name VARCHAR(40),
+  value VARCHAR(80),
+
+  UNIQUE KEY (user_id, name)
+) ENGINE=INNODB;

@@ -21,6 +21,7 @@ from framework import permissions
 from features import send_notifications
 from proto import project_pb2
 from proto import tracker_pb2
+from proto import user_pb2
 from services import features_svc
 from services import usergroup_svc
 from services import service_manager
@@ -1861,6 +1862,165 @@ class WorkEnvTest(unittest.TestCase):
       with self.assertRaises(exceptions.InputException):
         we.UpdateUserSettings(keep_people_perms_open=True)
 
+  def testGetUserPrefs_Anon(self):
+    """Anon always has empty prefs."""
+    with self.work_env as we:
+      userprefs = we.GetUserPrefs(0)
+
+    self.assertEqual(0, userprefs.user_id)
+    self.assertEqual([], userprefs.prefs)
+
+  def testGetUserPrefs_Mine_Empty(self):
+    """User who never set any pref gets empty prefs."""
+    self.SignIn()
+    with self.work_env as we:
+      userprefs = we.GetUserPrefs(111L)
+
+    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual([], userprefs.prefs)
+
+  def testGetUserPrefs_Mine_Some(self):
+    """User who set a pref gets it back."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    self.SignIn()
+    with self.work_env as we:
+      userprefs = we.GetUserPrefs(111L)
+
+    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(1, len(userprefs.prefs))
+    self.assertEqual('code_font', userprefs.prefs[0].name)
+    self.assertEqual('true', userprefs.prefs[0].value)
+
+  def testGetUserPrefs_Other_Allowed(self):
+    """A site admin can read another user's prefs."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    self.SignIn(user_id=self.admin_user.user_id)
+
+    with self.work_env as we:
+      userprefs = we.GetUserPrefs(111L)
+
+    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(1, len(userprefs.prefs))
+    self.assertEqual('code_font', userprefs.prefs[0].name)
+    self.assertEqual('true', userprefs.prefs[0].value)
+
+  def testGetUserPrefs_Other_Denied(self):
+    """A non-admin cannot read another user's prefs."""
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    # user2 is not a site admin.
+    self.SignIn(222L)
+
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.GetUserPrefs(111L)
+
+  def testSetUserPrefs_Anon(self):
+    """Anon cannot set prefs."""
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        we.SetUserPrefs(0, [])
+
+  def testSetUserPrefs_Mine_Empty(self):
+    """Setting zero prefs is a no-op.."""
+    self.SignIn(111L)
+
+    with self.work_env as we:
+      we.SetUserPrefs(111L, [])
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(0, len(prefs_after.prefs))
+
+  def testSetUserPrefs_Mine_Add(self):
+    """User can set a preference for the first time."""
+    self.SignIn(111L)
+
+    with self.work_env as we:
+      we.SetUserPrefs(
+          111L,
+          [user_pb2.UserPrefValue(name='code_font', value='true')])
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('true', prefs_after.prefs[0].value)
+
+  def testSetUserPrefs_Mine_Overwrite(self):
+    """User can change the value of a pref."""
+    self.SignIn(111L)
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+
+    with self.work_env as we:
+      we.SetUserPrefs(
+          111L,
+          [user_pb2.UserPrefValue(name='code_font', value='false')])
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('false', prefs_after.prefs[0].value)
+
+  def testSetUserPrefs_Mine_Bad(self):
+    """User cannot set a preference value that is not valid."""
+    self.SignIn(111L)
+
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException):
+        we.SetUserPrefs(
+            111L,
+            [user_pb2.UserPrefValue(name='code_font', value='sorta')])
+      with self.assertRaises(exceptions.InputException):
+        we.SetUserPrefs(
+            111L,
+            [user_pb2.UserPrefValue(name='sign', value='gemini')])
+
+    # Regardless of exceptions, nothing was actually stored.
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(0, len(prefs_after.prefs))
+
+  def testSetUserPrefs_Other_Allowed(self):
+    """A site admin can update another user's prefs."""
+    self.SignIn(user_id=self.admin_user.user_id)
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+
+    with self.work_env as we:
+      we.SetUserPrefs(
+          111L,
+          [user_pb2.UserPrefValue(name='code_font', value='false')])
+
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('false', prefs_after.prefs[0].value)
+
+  def testSetUserPrefs_Other_Denied(self):
+    """A non-admin cannot set another user's prefs."""
+    # user2 is not a site admin.
+    self.SignIn(222L)
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.SetUserPrefs(
+            111L,
+            [user_pb2.UserPrefValue(name='code_font', value='false')])
+
+    # Regardless of any exception, the preferences remain unchanged.
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    self.assertEqual(1, len(prefs_after.prefs))
+    self.assertEqual('code_font', prefs_after.prefs[0].name)
+    self.assertEqual('true', prefs_after.prefs[0].value)
 
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
