@@ -27,7 +27,12 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type CreateSchedulerPoolRequest struct {
-	// PoolId is the unique id of this scheduler pool.
+	// TODO(akeshet): The client shouldn't be creating this id. It should be
+	// creating a scheduler pool for a given name, and the id should be generated
+	// by admin service and returned. Punting on this for now because the naming
+	// and organization scheme for scheduler pools is not yet established. (i.e.
+	// will we have some hierarchical structure to these pools? will there be
+	// sub-pools?).
 	PoolId string `protobuf:"bytes,1,opt,name=pool_id,json=poolId,proto3" json:"pool_id,omitempty"`
 	// Config is the scheduler configuration for the scheduler to create.
 	Config               *SchedulerPoolConfig `protobuf:"bytes,2,opt,name=config,proto3" json:"config,omitempty"`
@@ -109,7 +114,9 @@ var xxx_messageInfo_CreateSchedulerPoolResponse proto.InternalMessageInfo
 type CreateAccountRequest struct {
 	// PoolID is the id of the scheduler to create an account within.
 	PoolId string `protobuf:"bytes,1,opt,name=pool_id,json=poolId,proto3" json:"pool_id,omitempty"`
-	// AccountId is the unique id of the account (within the given pool).
+	// TODO(akeshet): Similar to pool_id above, account_id should be generated
+	// on the server, not client. Instead, pass in some kind of path or
+	// hierarchical account name. Punting until this is figured out better.
 	AccountId string `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	// Config is the quota account config for the quota account to create.
 	Config               *scheduler.AccountConfig `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`

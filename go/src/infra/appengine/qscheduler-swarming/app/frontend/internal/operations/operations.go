@@ -153,20 +153,15 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (Operation, *NotifyResult) {
 					sp.Reconciler.TaskError(n.Task.Id, err.Error())
 					continue
 				}
-
-				lastSlice := n.Task.Slices[len(n.Task.Slices)-1]
-				s := stringset.NewFromSlice(lastSlice.Dimensions...)
-				if !s.HasAll(sp.Config.Labels...) {
-					msg := fmt.Sprintf("task dimensions %s does not contain all of scheduler dimensions %s", lastSlice.Dimensions, sp.Config.Labels)
-					logging.Warningf(ctx, msg)
-					sp.Reconciler.TaskError(n.Task.Id, msg)
-					continue
-				}
 			}
 
+			// TODO(akeshet): Validate that new tasks have dimensions that match the
+			// worker pool dimensions for this scheduler pool.
 			update := &reconciler.TaskInstant{
-				AccountId:           accountID,
-				EnqueueTime:         n.Task.EnqueuedTime,
+				AccountId: accountID,
+				// TODO(akeshet): implement me properly. This should be a separate field
+				// of the task state, not the notification time.
+				EnqueueTime:         n.Time,
 				ProvisionableLabels: provisionableLabels,
 				RequestId:           n.Task.Id,
 				Time:                n.Time,
