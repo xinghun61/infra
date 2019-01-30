@@ -137,11 +137,11 @@ func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *Accoun
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, requestID RequestID, request *TaskRequestProto, t time.Time) error {
-	if requestID == "" {
+func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time) error {
+	if request.ID == "" {
 		return errors.New("empty request id")
 	}
-	s.state.addRequest(ctx, requestID, request, t)
+	s.state.addRequest(ctx, request, t)
 	return nil
 }
 
@@ -178,7 +178,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 
 	for _, w := range state.workers {
 		if !w.isIdle() {
-			id := w.runningTask.request.accountID
+			id := w.runningTask.request.AccountID
 			c := jobsPerAcct[id]
 			if c == nil {
 				c = make([]int, NumPriorities)
@@ -263,11 +263,8 @@ func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
 }
 
 // GetRequest returns the (waiting or running) request for a given ID.
-func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequestProto, ok bool) {
-	if r, ok := s.state.getRequest(rid); ok {
-		return requestProto(r), ok
-	}
-	return nil, false
+func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequest, ok bool) {
+	return s.state.getRequest(rid)
 }
 
 // schedulerRun stores values that are used within a single run of the scheduling algorithm.
@@ -324,7 +321,7 @@ func (run *schedulerRun) Run() ([]*Assignment, error) {
 // (from the given priority) was assigned to a worker.
 func (run *schedulerRun) assignRequestToWorker(w WorkerID, request requestNode, priority int) {
 	delete(run.idleWorkers, w)
-	run.jobsUntilThrottled[request.Value().accountID]--
+	run.jobsUntilThrottled[request.Value().AccountID]--
 	run.requestsPerPriority[priority].Remove(request.Element)
 }
 
@@ -347,7 +344,7 @@ func (s *Scheduler) newRun() *schedulerRun {
 		if w.isIdle() {
 			idleWorkers[wid] = w
 		} else {
-			aid := w.runningTask.request.accountID
+			aid := w.runningTask.request.AccountID
 			if aid != "" {
 				remainingBeforeThrottle[aid]--
 			}
@@ -379,7 +376,7 @@ type matchListItem struct {
 	matchLevel
 
 	// request is the request for this item.
-	request *request
+	request *TaskRequest
 
 	// node is the node into the original linked list of requests that this
 	// item corresponds to.
@@ -387,7 +384,7 @@ type matchListItem struct {
 }
 
 // matcher is the type for functions that evaluates request to worker matching.
-type matcher func(*worker, *request) matchLevel
+type matcher func(*worker, *TaskRequest) matchLevel
 
 // basicMatch is a matcher function that considers only whether all of the base labels of the
 // given request are satisfied by the worker.
@@ -395,9 +392,9 @@ type matcher func(*worker, *request) matchLevel
 // The quality heuristic is the number of the base labels in the request (the more, the better).
 // This heuristic allows requests that have higher specificity to be preferentially matched to the
 // workers that can support them.
-func basicMatch(w *worker, r *request) matchLevel {
-	if w.labels.Contains(r.baseLabels) {
-		quality := len(r.baseLabels)
+func basicMatch(w *worker, r *TaskRequest) matchLevel {
+	if w.labels.Contains(r.BaseLabels) {
+		quality := len(r.BaseLabels)
 		return matchLevel{true, quality}
 	}
 	return matchLevel{false, 0}
@@ -405,8 +402,8 @@ func basicMatch(w *worker, r *request) matchLevel {
 
 // provisionAwareMatch is a matcher function that requires both the base labels and the provisionable
 // labels of the request to be satisfied by the worker.
-func provisionAwareMatch(w *worker, r *request) matchLevel {
-	if !w.labels.Contains(r.provisionableLabels) {
+func provisionAwareMatch(w *worker, r *TaskRequest) matchLevel {
+	if !w.labels.Contains(r.ProvisionableLabels) {
 		return matchLevel{false, 0}
 	}
 	return basicMatch(w, r)
@@ -438,7 +435,7 @@ func (run *schedulerRun) matchIdleBots(priority int, mf matcher) []*Assignment {
 		// select first non-throttled match
 		for _, match := range matches {
 			// Enforce fanout (except for Freebucket).
-			if run.jobsUntilThrottled[match.request.accountID] <= 0 && priority != FreeBucket {
+			if run.jobsUntilThrottled[match.request.AccountID] <= 0 && priority != FreeBucket {
 				continue
 			}
 
@@ -535,7 +532,7 @@ func workersAt(ws map[WorkerID]*worker, priority int, accountID AccountID) []*wo
 	ans := make([]*worker, 0, len(ws))
 	for _, worker := range ws {
 		if !worker.isIdle() &&
-			worker.runningTask.request.accountID == accountID &&
+			worker.runningTask.request.AccountID == accountID &&
 			worker.runningTask.priority == priority {
 			ans = append(ans, worker)
 		}
@@ -549,7 +546,7 @@ func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []
 	ans := make([]*worker, 0, len(ws))
 	for _, worker := range ws {
 		if !worker.isIdle() &&
-			worker.runningTask.request.accountID == accountID &&
+			worker.runningTask.request.AccountID == accountID &&
 			worker.runningTask.priority > priority {
 			ans = append(ans, worker)
 		}
@@ -573,7 +570,7 @@ func (run *schedulerRun) preemptRunningTasks(priority int) []*Assignment {
 	for _, worker := range state.workers {
 		if !worker.isIdle() && worker.runningTask.priority > priority {
 			candidates = append(candidates, worker)
-			bannedAccounts[worker.runningTask.request.accountID] = true
+			bannedAccounts[worker.runningTask.request.AccountID] = true
 		}
 	}
 
@@ -589,13 +586,13 @@ func (run *schedulerRun) preemptRunningTasks(priority int) []*Assignment {
 		// - has sufficient balance to refund cost of preempted job
 		for _, m := range matches {
 			r := m.request
-			if bannedAccounts[r.accountID] {
+			if bannedAccounts[r.AccountID] {
 				continue
 			}
-			if run.jobsUntilThrottled[r.accountID] <= 0 {
+			if run.jobsUntilThrottled[r.AccountID] <= 0 {
 				continue
 			}
-			if !worker.runningTask.cost.Less(state.balances[r.accountID]) {
+			if !worker.runningTask.cost.Less(state.balances[r.AccountID]) {
 				continue
 			}
 			mut := &Assignment{
@@ -619,7 +616,7 @@ func (run *schedulerRun) preemptRunningTasks(priority int) []*Assignment {
 // once the FreeBucket pass is reached.
 func (run *schedulerRun) moveThrottledRequests(priority int) {
 	for current := run.requestsPerPriority[priority].Head(); current.Element != nil; current = current.Next() {
-		if run.jobsUntilThrottled[current.Value().accountID] <= 0 {
+		if run.jobsUntilThrottled[current.Value().AccountID] <= 0 {
 			run.requestsPerPriority[FreeBucket].PushBack(current.Value())
 			run.requestsPerPriority[priority].Remove(current.Element)
 		}

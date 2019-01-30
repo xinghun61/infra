@@ -33,8 +33,8 @@ func TestClone(t *testing.T) {
 				"account2": {3, 4, 5},
 			},
 			workers: map[WorkerID]*worker{
-				"worker1": {ID: "worker1", runningTask: &taskRun{cost: balance{11, 12, 13}, request: &request{ID: "r1"}}},
-				"worker2": {ID: "worker2", runningTask: &taskRun{cost: balance{13, 14, 15}, request: &request{ID: "r2"}}},
+				"worker1": {ID: "worker1", runningTask: &taskRun{cost: balance{11, 12, 13}, request: &TaskRequest{ID: "r1"}}},
+				"worker2": {ID: "worker2", runningTask: &taskRun{cost: balance{13, 14, 15}, request: &TaskRequest{ID: "r2"}}},
 			},
 		}
 		Convey("when state is Cloned", func() {

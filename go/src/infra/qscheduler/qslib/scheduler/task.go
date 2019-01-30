@@ -17,18 +17,18 @@ package scheduler
 import (
 	"time"
 
-	"infra/qscheduler/qslib/tutils"
+	"go.chromium.org/luci/common/data/stringset"
 )
 
-// NewRequest creates a new TaskRequest.
-func NewRequest(accountID AccountID, provisionableLabels []string,
-	baseLabels []string, enqueueTime time.Time) *TaskRequestProto {
-	return &TaskRequestProto{
-		AccountId:           string(accountID),
-		ConfirmedTime:       tutils.TimestampProto(enqueueTime),
-		EnqueueTime:         tutils.TimestampProto(enqueueTime),
-		ProvisionableLabels: provisionableLabels,
-		BaseLabels:          baseLabels,
+// NewTaskRequest creates a new TaskRequest.
+func NewTaskRequest(id RequestID, accountID AccountID, provisionableLabels []string,
+	baseLabels []string, enqueueTime time.Time) *TaskRequest {
+	return &TaskRequest{
+		AccountID:           accountID,
+		BaseLabels:          stringset.NewFromSlice(baseLabels...),
+		ProvisionableLabels: stringset.NewFromSlice(provisionableLabels...),
+		EnqueueTime:         enqueueTime,
+		ID:                  id,
 	}
 }
 
@@ -36,7 +36,7 @@ func NewRequest(accountID AccountID, provisionableLabels []string,
 // is consistent with authoritative source as of this time). The update is
 // only applied if it is a forward-in-time update or if the existing time
 // was undefined.
-func (r *request) confirm(t time.Time) {
+func (r *TaskRequest) confirm(t time.Time) {
 	if r.confirmedTime.Before(t) {
 		r.confirmedTime = t
 	}

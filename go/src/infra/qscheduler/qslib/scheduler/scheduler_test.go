@@ -38,8 +38,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		s := New(tm)
 		s.MarkIdle(ctx, "w0", stringset.New(0), tm)
 		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("label1"), tm)
-		s.AddRequest(ctx, "t1", NewRequest("a1", []string{"label1"}, nil, tm), tm)
-		s.AddRequest(ctx, "t2", NewRequest("a1", []string{"label2"}, nil, tm), tm)
+		s.AddRequest(ctx, NewTaskRequest("t1", "a1", []string{"label1"}, nil, tm), tm)
+		s.AddRequest(ctx, NewTaskRequest("t2", "a1", []string{"label2"}, nil, tm), tm)
 		c := NewAccountConfig(0, 0, nil)
 		s.AddAccount(ctx, "a1", c, []float64{2, 0, 0})
 		Convey("when scheduling jobs", func() {
@@ -68,7 +68,7 @@ func TestMatchAccountless(t *testing.T) {
 
 		Convey("and a request with no account", func() {
 			rid := RequestID("req")
-			err := s.AddRequest(ctx, rid, NewRequest("", nil, nil, tm), tm)
+			err := s.AddRequest(ctx, NewTaskRequest(rid, "", nil, nil, tm), tm)
 			So(err, ShouldBeNil)
 			Convey("when scheduling is run", func() {
 				muts, err := s.RunOnce(ctx)
@@ -95,8 +95,8 @@ func TestMatchThrottledAccountJobs(t *testing.T) {
 		s.AddAccount(ctx, aid, NewAccountConfig(1, 0, nil), []float64{1})
 		var r1 RequestID = "Request1"
 		var r2 RequestID = "Request2"
-		s.AddRequest(ctx, r1, NewRequest(aid, nil, nil, tm), tm)
-		s.AddRequest(ctx, r2, NewRequest(aid, nil, nil, tm), tm)
+		s.AddRequest(ctx, NewTaskRequest(r1, aid, nil, nil, tm), tm)
+		s.AddRequest(ctx, NewTaskRequest(r2, aid, nil, nil, tm), tm)
 		var w1 WorkerID = "Worker1"
 		var w2 WorkerID = "Worker2"
 		s.MarkIdle(ctx, w1, nil, tm)
@@ -125,9 +125,9 @@ func TestMatchProvisionableLabel(t *testing.T) {
 		s.AddAccount(ctx, aid, NewAccountConfig(1, 1, nil), []float64{1})
 		for i := 0; i < 500; i++ {
 			id := RequestID(fmt.Sprintf("t%d", i))
-			s.AddRequest(ctx, id, NewRequest(aid, []string{"a"}, nil, tm), tm)
+			s.AddRequest(ctx, NewTaskRequest(id, aid, []string{"a"}, nil, tm), tm)
 		}
-		s.AddRequest(ctx, reqB, NewRequest(aid, []string{"b"}, nil, tm), tm)
+		s.AddRequest(ctx, NewTaskRequest(reqB, aid, []string{"b"}, nil, tm), tm)
 
 		Convey("and an idle worker with labels 'b' and 'c'", func() {
 			wid := WorkerID("workerID")
@@ -156,7 +156,7 @@ func TestBaseLabelMatch(t *testing.T) {
 		var rid RequestID = "RequestID"
 		s.AddAccount(ctx, aid, NewAccountConfig(0, 0, nil), []float64{1})
 		s.MarkIdle(ctx, wid, nil, tm)
-		s.AddRequest(ctx, rid, NewRequest(aid, nil, []string{"unsatisfied_label"}, tm), tm)
+		s.AddRequest(ctx, NewTaskRequest(rid, aid, nil, []string{"unsatisfied_label"}, tm), tm)
 		Convey("when scheduling jobs", func() {
 			m, _ := s.RunOnce(ctx)
 			Convey("no requests should be assigned to workers.", func() {
@@ -186,10 +186,10 @@ func TestMatchRareLabel(t *testing.T) {
 			s.AddAccount(ctx, aid, NewAccountConfig(0, 0, nil), []float64{1})
 			for i := 0; i < 10; i++ {
 				id := RequestID(fmt.Sprintf("CommonRequest%d", i))
-				s.AddRequest(ctx, id, NewRequest(aid, nil, []string{commonLabel}, tm), tm)
+				s.AddRequest(ctx, NewTaskRequest(id, aid, nil, []string{commonLabel}, tm), tm)
 			}
 			var rareRequest RequestID = "RareRequest"
-			s.AddRequest(ctx, rareRequest, NewRequest(aid, nil, []string{commonLabel, rareLabel}, tm), tm)
+			s.AddRequest(ctx, NewTaskRequest(rareRequest, aid, nil, []string{commonLabel, rareLabel}, tm), tm)
 			Convey("when scheduling jobs", func() {
 				muts, _ := s.RunOnce(ctx)
 				Convey("then all jobs are scheduled to workers, including the rare requests and workers.", func() {
@@ -259,14 +259,14 @@ func TestSchedulerPreempt(t *testing.T) {
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
 			wid := WorkerID(fmt.Sprintf("w%d", i))
-			s.AddRequest(ctx, rid, NewRequest("a1", nil, nil, tm0), tm0)
+			s.AddRequest(ctx, NewTaskRequest(rid, "a1", nil, nil, tm0), tm0)
 			s.MarkIdle(ctx, wid, stringset.New(0), tm0)
 			s.state.applyAssignment(&Assignment{RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker, Priority: 1})
 		}
 		s.state.workers["w1"].runningTask.cost = balance{0, 1, 0}
 		Convey("given a new P0 request from a different account", func() {
 			s.AddAccount(ctx, "a2", NewAccountConfig(0, 0, nil), nil)
-			s.AddRequest(ctx, "r3", NewRequest("a2", nil, nil, tm0), tm0)
+			s.AddRequest(ctx, NewTaskRequest("r3", "a2", nil, nil, tm0), tm0)
 			Convey("given sufficient balance", func() {
 				s.state.balances["a2"] = balance{1}
 				Convey("when scheduling", func() {
@@ -290,7 +290,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		})
 
 		Convey("given a new P0 request from the same account", func() {
-			s.AddRequest(ctx, "r3", NewRequest("a1", nil, nil, tm0), tm0)
+			s.AddRequest(ctx, NewTaskRequest("r3", "a1", nil, nil, tm0), tm0)
 			Convey("when scheduling", func() {
 				got, _ := s.RunOnce(ctx)
 				Convey("then nothing happens.", func() {
@@ -384,8 +384,8 @@ func TestUpdateBalance(t *testing.T) {
 		Convey("when 2 tasks for the account are running", func() {
 			r1 := RequestID("request 1")
 			r2 := RequestID("request 2")
-			s.AddRequest(ctx, r1, requestProto(&request{r1, aID, t0, nil, nil, t0}), t0)
-			s.AddRequest(ctx, r2, requestProto(&request{r2, aID, t0, nil, nil, t0}), t0)
+			s.AddRequest(ctx, NewTaskRequest(r1, aID, nil, nil, t0), t0)
+			s.AddRequest(ctx, NewTaskRequest(r2, aID, nil, nil, t0), t0)
 			s.MarkIdle(ctx, "w1", nil, t0)
 			s.MarkIdle(ctx, "w2", nil, t0)
 			s.state.applyAssignment(&Assignment{Priority: 0, RequestID: r1, WorkerID: "w1", Type: AssignmentIdleWorker})
@@ -409,8 +409,8 @@ func TestAddRequest(t *testing.T) {
 	ctx := context.Background()
 	tm := time.Unix(0, 0)
 	s := New(tm)
-	r := NewRequest("a1", nil, nil, tm)
-	s.AddRequest(ctx, "r1", r, tm)
+	r := NewTaskRequest("r1", "a1", nil, nil, tm)
+	s.AddRequest(ctx, r, tm)
 	if _, ok := s.state.queuedRequests["r1"]; !ok {
 		t.Errorf("AddRequest did not enqueue request.")
 	}
@@ -419,7 +419,7 @@ func TestAddRequest(t *testing.T) {
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
 func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri int, tm time.Time) {
-	s.AddRequest(ctx, rid, NewRequest(aid, []string{}, nil, tm), tm)
+	s.AddRequest(ctx, NewTaskRequest(rid, aid, []string{}, nil, tm), tm)
 	s.MarkIdle(ctx, wid, stringset.New(0), tm)
 	s.state.applyAssignment(&Assignment{Priority: pri, RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker})
 }

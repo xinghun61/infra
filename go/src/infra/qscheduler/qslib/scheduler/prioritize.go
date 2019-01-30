@@ -36,12 +36,12 @@ func (r *requestList) Head() requestNode {
 	return requestNode{elem}
 }
 
-func (r *requestList) PushBack(req *request) requestNode {
+func (r *requestList) PushBack(req *TaskRequest) requestNode {
 	return requestNode{r.List.PushBack(req)}
 }
 
-func (n requestNode) Value() *request {
-	return n.Element.Value.(*request)
+func (n requestNode) Value() *TaskRequest {
+	return n.Element.Value.(*TaskRequest)
 }
 
 func (n requestNode) Next() requestNode {
@@ -63,10 +63,10 @@ func (n requestNode) Next() requestNode {
 func (s *Scheduler) prioritizeRequests(jobsUntilThrottled map[AccountID]int) [NumPriorities + 1]requestList {
 	state := s.state
 
-	var prioritized [NumPriorities + 1][]*request
+	var prioritized [NumPriorities + 1][]*TaskRequest
 	// Preallocate slices at each priority level to avoid the need for any resizing later.
 	for i := range prioritized {
-		prioritized[i] = make([]*request, 0, len(s.state.queuedRequests))
+		prioritized[i] = make([]*TaskRequest, 0, len(s.state.queuedRequests))
 	}
 
 	for _, req := range state.queuedRequests {
@@ -74,10 +74,10 @@ func (s *Scheduler) prioritizeRequests(jobsUntilThrottled map[AccountID]int) [Nu
 			panic("empty request ID")
 		}
 		var p int
-		if jobsUntilThrottled[req.accountID] <= 0 {
+		if jobsUntilThrottled[req.AccountID] <= 0 {
 			p = FreeBucket
 		} else {
-			p = BestPriorityFor(state.balances[req.accountID])
+			p = BestPriorityFor(state.balances[req.AccountID])
 		}
 
 		prioritized[p] = append(prioritized[p], req)
@@ -87,7 +87,7 @@ func (s *Scheduler) prioritizeRequests(jobsUntilThrottled map[AccountID]int) [Nu
 	for priority, p := range prioritized {
 		output[priority] = requestList{&list.List{}}
 		sort.SliceStable(p, func(i, j int) bool {
-			return p[i].enqueueTime.Before(p[j].enqueueTime)
+			return p[i].EnqueueTime.Before(p[j].EnqueueTime)
 		})
 		for _, r := range p {
 			output[priority].PushBack(r)

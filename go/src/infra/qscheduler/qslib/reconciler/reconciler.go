@@ -135,7 +135,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 			// using the determination used within the Scheduler, because we have the
 			// newest info about worker dimensions here.
 			r, _ := s.GetRequest(RequestID(q.TaskToAssign))
-			provisionRequired := !w.Labels.HasAll(r.ProvisionableLabels...)
+			provisionRequired := !w.Labels.Contains(r.ProvisionableLabels)
 
 			assignments = append(assignments, Assignment{
 				RequestID:         RequestID(q.TaskToAssign),
@@ -211,10 +211,10 @@ func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, updates 
 
 		switch update.State {
 		case TaskInstant_WAITING:
-			req := scheduler.NewRequest(AccountID(update.AccountId), update.ProvisionableLabels, nil,
+			req := scheduler.NewTaskRequest(RequestID(update.RequestId), AccountID(update.AccountId), update.ProvisionableLabels, nil,
 				tutils.Timestamp(update.EnqueueTime))
 			// TODO(akeshet): Handle error from AddRequest.
-			s.AddRequest(ctx, RequestID(update.RequestId), req, tutils.Timestamp(update.Time))
+			s.AddRequest(ctx, req, tutils.Timestamp(update.Time))
 
 		case TaskInstant_RUNNING:
 			wid := WorkerID(update.WorkerId)

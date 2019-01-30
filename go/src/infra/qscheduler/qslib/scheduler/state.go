@@ -28,7 +28,7 @@ import (
 type state struct {
 	// queuedRequests is the set of Requests that are waiting to be assigned to a
 	// worker, keyed by request id.
-	queuedRequests map[RequestID]*request
+	queuedRequests map[RequestID]*TaskRequest
 
 	// balance of all quota accounts for this pool, keyed by account id.
 	// TODO(akeshet): Turn this into map[string]*balance, and then get rid of a bunch of
@@ -51,22 +51,22 @@ type state struct {
 	// about them.
 }
 
-// request represents a queued or running task request.
-type request struct {
+// TaskRequest represents a queued or running task TaskRequest.
+type TaskRequest struct {
 	// ID is the ID of this request.
 	ID RequestID
 
-	// accountID is the id of the account that this request charges to.
-	accountID AccountID
+	// AccountID is the id of the account that this request charges to.
+	AccountID AccountID
 
-	// enqueueTime is the time at which the request was enqueued.
-	enqueueTime time.Time
+	// EnqueueTime is the time at which the request was enqueued.
+	EnqueueTime time.Time
 
-	// provisionableLabels is the set of Provisionable Labels for this task.
-	provisionableLabels stringset.Set
+	// ProvisionableLabels is the set of Provisionable Labels for this task.
+	ProvisionableLabels stringset.Set
 
-	// baseLabels is the set of base labels for this task.
-	baseLabels stringset.Set
+	// BaseLabels is the set of base labels for this task.
+	BaseLabels stringset.Set
 
 	// confirmedTime is the most recent time at which the Request state was
 	// provided or confirmed by external authority (via a call to Enforce or
@@ -76,13 +76,13 @@ type request struct {
 
 // requestProto converts a request to a TaskRequest proto. It is a convenience method.
 // Note: TaskRequest does not include the request's ID, so this conversion is lossy.
-func requestProto(r *request) *TaskRequestProto {
+func requestProto(r *TaskRequest) *TaskRequestProto {
 	return &TaskRequestProto{
-		AccountId:           string(r.accountID),
+		AccountId:           string(r.AccountID),
 		ConfirmedTime:       tutils.TimestampProto(r.confirmedTime),
-		EnqueueTime:         tutils.TimestampProto(r.enqueueTime),
-		ProvisionableLabels: r.provisionableLabels.ToSlice(),
-		BaseLabels:          r.baseLabels.ToSlice(),
+		EnqueueTime:         tutils.TimestampProto(r.EnqueueTime),
+		ProvisionableLabels: r.ProvisionableLabels.ToSlice(),
+		BaseLabels:          r.BaseLabels.ToSlice(),
 	}
 }
 
@@ -94,7 +94,7 @@ type taskRun struct {
 	cost balance
 
 	// request is the request that this running task corresponds to.
-	request *request
+	request *TaskRequest
 
 	// priority is the current priority level of the running task.
 	priority int
@@ -120,25 +120,17 @@ type worker struct {
 
 // AddRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *state) addRequest(ctx context.Context, requestID RequestID, r *TaskRequestProto, t time.Time) {
-	if requestID == "" {
+func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time) {
+	if r.ID == "" {
 		panic("empty request id")
 	}
-	if _, ok := s.getRequest(requestID); ok {
+	if _, ok := s.getRequest(r.ID); ok {
 		// Request already exists, simply notify that it should be idle at the
 		// given time.
-		s.notifyRequest(ctx, requestID, "", t)
+		s.notifyRequest(ctx, r.ID, "", t)
 	} else {
-		rr := &request{
-			ID:                  requestID,
-			accountID:           AccountID(r.AccountId),
-			confirmedTime:       tutils.Timestamp(r.ConfirmedTime),
-			enqueueTime:         tutils.Timestamp(r.EnqueueTime),
-			provisionableLabels: stringset.NewFromSlice(r.ProvisionableLabels...),
-			baseLabels:          stringset.NewFromSlice(r.BaseLabels...),
-		}
-		rr.confirm(t)
-		s.queuedRequests[requestID] = rr
+		r.confirm(t)
+		s.queuedRequests[r.ID] = r
 	}
 }
 
@@ -215,7 +207,7 @@ func (s *state) abortRequest(ctx context.Context, requestID RequestID, t time.Ti
 // getRequest looks up the given requestID among either the running or queued
 // tasks, and returns (the request if it exists, boolean indication if
 // request exists).
-func (s *state) getRequest(requestID RequestID) (r *request, ok bool) {
+func (s *state) getRequest(requestID RequestID) (r *TaskRequest, ok bool) {
 	s.ensureCache()
 	if wid, ok := s.runningRequestsCache[requestID]; ok {
 		return s.workers[wid].runningTask.request, true
@@ -228,7 +220,7 @@ func (s *state) getRequest(requestID RequestID) (r *request, ok bool) {
 // only be called for requests that were already determined to be stale relative
 // to time t.
 func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time,
-	r *request) {
+	r *TaskRequest) {
 	if requestID == "" {
 		panic("empty request ID")
 	}
@@ -309,10 +301,10 @@ func (s *state) applyAssignment(m *Assignment) {
 		worker := s.workers[m.WorkerID]
 		cost = worker.runningTask.cost
 		// Refund the cost of the preempted task.
-		s.refundAccount(worker.runningTask.request.accountID, cost)
+		s.refundAccount(worker.runningTask.request.AccountID, cost)
 
 		// Charge the preempting account for the cost of the preempted task.
-		s.chargeAccount(s.queuedRequests[m.RequestID].accountID, cost)
+		s.chargeAccount(s.queuedRequests[m.RequestID].AccountID, cost)
 
 		// Remove the preempted job from worker.
 		oldRequestID := worker.runningTask.request.ID

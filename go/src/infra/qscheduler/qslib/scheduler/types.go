@@ -33,7 +33,7 @@ func NewConfig() *Config {
 func newState(t time.Time) *state {
 	return &state{
 		balances:       map[AccountID]balance{},
-		queuedRequests: map[RequestID]*request{},
+		queuedRequests: map[RequestID]*TaskRequest{},
 		workers:        map[WorkerID]*worker{},
 		lastUpdateTime: t,
 	}
@@ -42,15 +42,15 @@ func newState(t time.Time) *state {
 func newStateFromProto(sp *StateProto) *state {
 	s := &state{}
 	s.lastUpdateTime = tutils.Timestamp(sp.LastUpdateTime)
-	s.queuedRequests = make(map[RequestID]*request, len(sp.QueuedRequests))
+	s.queuedRequests = make(map[RequestID]*TaskRequest, len(sp.QueuedRequests))
 	for rid, req := range sp.QueuedRequests {
-		s.queuedRequests[RequestID(rid)] = &request{
+		s.queuedRequests[RequestID(rid)] = &TaskRequest{
 			ID:                  RequestID(rid),
-			accountID:           AccountID(req.AccountId),
+			AccountID:           AccountID(req.AccountId),
 			confirmedTime:       tutils.Timestamp(req.ConfirmedTime),
-			enqueueTime:         tutils.Timestamp(req.EnqueueTime),
-			provisionableLabels: stringset.NewFromSlice(req.ProvisionableLabels...),
-			baseLabels:          stringset.NewFromSlice(req.BaseLabels...),
+			EnqueueTime:         tutils.Timestamp(req.EnqueueTime),
+			ProvisionableLabels: stringset.NewFromSlice(req.ProvisionableLabels...),
+			BaseLabels:          stringset.NewFromSlice(req.BaseLabels...),
 		}
 	}
 
@@ -64,13 +64,13 @@ func newStateFromProto(sp *StateProto) *state {
 			tr = &taskRun{
 				cost:     cost,
 				priority: int(w.RunningTask.Priority),
-				request: &request{
+				request: &TaskRequest{
 					ID:                  RequestID(w.RunningTask.RequestId),
-					accountID:           AccountID(w.RunningTask.Request.AccountId),
+					AccountID:           AccountID(w.RunningTask.Request.AccountId),
 					confirmedTime:       tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
-					enqueueTime:         tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
-					provisionableLabels: stringset.NewFromSlice(w.RunningTask.Request.ProvisionableLabels...),
-					baseLabels:          stringset.NewFromSlice(w.RunningTask.Request.BaseLabels...),
+					EnqueueTime:         tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
+					ProvisionableLabels: stringset.NewFromSlice(w.RunningTask.Request.ProvisionableLabels...),
+					BaseLabels:          stringset.NewFromSlice(w.RunningTask.Request.BaseLabels...),
 				},
 			}
 			s.runningRequestsCache[RequestID(w.RunningTask.RequestId)] = WorkerID(wid)
