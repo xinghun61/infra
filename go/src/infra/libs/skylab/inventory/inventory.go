@@ -11,9 +11,32 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"go.chromium.org/luci/common/errors"
 )
+
+// ReadSymlink dereferences the symlink pointing to the data
+// directory.  This symlink can be missing for small amounts of time
+// on the servers, but once the symlink has been dereferenced, the
+// target directory is guaranteed to exist for ~15 minutes.
+func ReadSymlink(p string) (string, error) {
+	const attempts = 4
+	sleep := 10 * time.Millisecond
+	var errs []error
+	for i := 0; i < attempts; i++ {
+		t, err := filepath.EvalSymlinks(p)
+		if err != nil {
+			errs = append(errs, err)
+			time.Sleep(sleep)
+			sleep *= 2
+			continue
+		}
+		return t, nil
+	}
+	err := errors.MultiError(errs)
+	return "", errors.Annotate(err, "read inventory symlink %s: too many tries", p).Err()
+}
 
 var suffixReplacements = map[string]string{
 	": <": " {",
