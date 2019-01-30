@@ -6,8 +6,7 @@ package hostinfo
 
 import (
 	"infra/libs/skylab/inventory"
-
-	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo/labels"
+	"infra/libs/skylab/inventory/autotest/labels"
 )
 
 // ConvertDut converts the inventory DUT struct to Autotest hostinfo.
