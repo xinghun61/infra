@@ -783,13 +783,21 @@ class ServeCodeCoverageData(BaseHandler):
                 -PostsubmitReport.commit_position).order(
                     -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
-        data = [e._to_dict() for e in entities]
 
         # TODO(crbug.com/926237): Move the conversion to client side and use
         # local timezone.
-        for report in data:
-          report['commit_timestamp'] = ConvertUTCToPST(
-              report['commit_timestamp'])
+        data = []
+        for entity in entities:
+          data.append({
+              'gitiles_commit': {
+                  'revision': entity.gitiles_commit.revision,
+              },
+              'commit_position': entity.commit_position,
+              'commit_timestamp': ConvertUTCToPST(entity.commit_timestamp),
+              'summary_metrics': entity.summary_metrics,
+              'build_id': entity.build_id,
+              'visible': entity.visible,
+          })
 
         template = 'coverage/project_view.html'
         data_type = 'project'
