@@ -1,7 +1,7 @@
 'use strict';
 
 // Match: projectName:localIdFormat
-const ISSUE_ID_REGEX = /([A-Za-z]+)?:?(\d+)/;
+const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
 
 /**
  * `<mr-edit-issue>`
