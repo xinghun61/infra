@@ -23,7 +23,7 @@ import (
 
 // CreateSuite subcommand: create a suite task.
 var CreateSuite = &subcommands.Command{
-	UsageLine: "create-suite -board BOARD -pool POOL -image IMAGE [-model MODEL] [-priority PRIORITY] [-timeout-mins TIMEOUT_MINS] [-tag KEY:VALUE...] SUITE_NAME",
+	UsageLine: "create-suite -board BOARD -pool POOL -image IMAGE [-model MODEL] [-priority PRIORITY] [-timeout-mins TIMEOUT_MINS] [max-retries MAX_RETRIES] [-tag KEY:VALUE...] SUITE_NAME",
 	ShortDesc: "Create a suite task, with the given suite name.",
 	LongDesc:  "Create a suite task, with the given suite name.",
 	CommandRun: func() subcommands.CommandRun {
@@ -37,6 +37,7 @@ var CreateSuite = &subcommands.Command{
 		c.Flags.StringVar(&c.image, "image", "", "Fully specified image name to run suite against, e.g. reef-canary/R73-11580.0.0")
 		c.Flags.Var(flagx.NewChoice(&c.priority, sortedPriorityKeys()...), "priority", fmt.Sprint("Specify the priority of the suite. A high value means this suite will be executed in a low priority. It should be a string in ", sortedPriorities()))
 		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "Time (counting from when the task starts) after which task will be killed if it hasn't completed.")
+		c.Flags.IntVar(&c.maxRetries, "max-retries", 0, "Maximum retries allowed in total for all child tests of this suite. No retry if it is 0.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for suite; may be specified multiple times.")
 		return c
 	},
@@ -52,6 +53,7 @@ type createSuiteRun struct {
 	image       string
 	priority    string
 	timeoutMins int
+	maxRetries  int
 	tags        []string
 }
 
@@ -77,7 +79,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		c.priority = defaultTaskPriorityKey
 	}
 	priority := taskPriorityMap[c.priority]
-	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, priority, c.timeoutMins, dimensions)
+	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, priority, c.timeoutMins, c.maxRetries, dimensions)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -134,16 +136,16 @@ func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPai
 	}
 }
 
-func getSuiteSlices(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int, dimensions []string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSuiteSlices(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int, maxRetries int, dimensions []string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	dims, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
-	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, priority, timeoutMins)
+	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, priority, timeoutMins, maxRetries)
 	return []*swarming.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims, timeoutMins)}, nil
 }
 
-func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int) []string {
+func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int, maxRetries int) []string {
 	cmd := []string{
 		"/usr/local/autotest/bin/run_suite_skylab",
 		"--build", image,
@@ -156,6 +158,10 @@ func getRunSuiteCmd(board string, model string, pool string, image string, suite
 		"--create_and_return"}
 	if model != "" {
 		cmd = append(cmd, "--model", model)
+	}
+	if maxRetries > 0 {
+		cmd = append(cmd, "--test_retry")
+		cmd = append(cmd, "--max_retries", strconv.Itoa(maxRetries))
 	}
 	return cmd
 }
