@@ -120,7 +120,6 @@ input[type=button], input[type=reset], input[type=submit], .buttonify {
     box-shadow: var(--chops-shadow);
     cursor: pointer;
     text-decoration: none;
-    text-transform: uppercase;
 }
 
 .subt input[type=button], .subt input[type=reset], .subt input[type=submit], .subt .buttonify {

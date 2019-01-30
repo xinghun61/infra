@@ -34,7 +34,7 @@
 
         [if-any arg2]
           <td valign="top" align="right">
-            <input type="submit" value="Undelete" class="delAttachment"
+            <input type="submit" value="Undelete" class="delAttachment secondary"
                    data-mark-deleted="false"
                    data-local-id="[issue.local_id]"
                    data-sequence-num="[arg0]"
@@ -74,7 +74,7 @@
 
         [if-any arg2]
           <td valign="top" align="right">
-            <input type="submit" value="Delete" class="delAttachment"
+            <input type="submit" value="Delete" class="delAttachment secondary"
                    data-mark-deleted="true"
                    data-local-id="[issue.local_id]"
                    data-sequence-num="[arg0]"
