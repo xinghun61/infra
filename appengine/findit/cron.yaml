@@ -24,15 +24,17 @@ cron:
   # Business hours PDT expressed in UTC.
   schedule: every 5 minutes from 16:00 to 00:00
 
-- description: Query and store flakes that caused false rejections on cq.
+- description: Query and store flakes on cq.
   url: /flake/detection/cron/detect-cq-false-rejection-flakes
-  schedule: every 10 minutes
+  schedule: every 30 minutes
   retry_parameters:
     job_retry_limit: 0
 
-- description: Count false rejection occurrences and impacted CLs for each flake
+- description: Count occurrences and impacted CLs for each flake
   url: /flake/detection/cron/update-flake-counts
-  schedule: every 10 minutes
+  schedule: every 30 minutes
+  retry_parameters:
+    job_retry_limit: 0
 
 - description: Prepare weekly flakiness report by component and test from flake occurrences
   url: /flake/detection/cron/generate-flakiness-report
