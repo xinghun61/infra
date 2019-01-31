@@ -6,8 +6,10 @@ import logging
 
 from common import constants
 from gae_libs import appengine_util
+from libs import time_util
 from monorail_api import Issue
 from monorail_api import IssueTrackerAPI
+from services.constants import DAYS_IN_A_WEEK
 from services import issue_constants
 
 
@@ -33,6 +35,31 @@ def GetOpenIssues(query, monorail_project):
     return []
 
   return [issue for issue in issues if issue.open]
+
+
+def IsIssueClosedWithinAWeek(issue):
+  """Checks if a monorail issue is closed (excepted Merged) within a week."""
+  return (issue.status in issue_constants.CLOSED_STATUSES_NO_DUPLICATE and
+          issue.closed > time_util.GetDateDaysBeforeNow(DAYS_IN_A_WEEK))
+
+
+def GetIssuesClosedWithinAWeek(query, monorail_project):
+  """Searches for bugs that match the query and closed within a week.
+
+  Args:
+    query: A query to search for bugs on Monorail.
+    monorail_project: The monorail project to search for.
+
+  Returns:
+    A list of recently closed bugs that match the query.
+  """
+  issue_tracker_api = IssueTrackerAPI(
+      monorail_project, use_staging=appengine_util.IsStaging())
+  issues = issue_tracker_api.getIssues(query)
+  if not issues:
+    return []
+
+  return [issue for issue in issues if IsIssueClosedWithinAWeek(issue)]
 
 
 def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
@@ -174,12 +201,13 @@ def CreateIssueWithIssueGenerator(issue_generator):
   return issue_id
 
 
-def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
+def UpdateIssueWithIssueGenerator(issue_id, issue_generator, reopen=False):
   """Updates an existing issue with a given issue generator.
 
   Args:
     issue_id: Id of the issue to be updated.
     issue_generator: A FlakyTestIssueGenerator object.
+    reopen: True to reopen a closed bug, otherwise False.
   """
   issue = GetMergedDestinationIssueForId(issue_id,
                                          issue_generator.GetMonorailProject())
@@ -203,6 +231,10 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator):
   if not issue.owner:
     # Assign a potential owner if one is not already set.
     issue.owner = issue_generator.GetAutoAssignOwner()
+
+  if reopen and issue.status in issue_constants.CLOSED_STATUSES_NO_DUPLICATE:
+    # Reopens a closed issue.
+    issue.status = 'Assigned' if issue.owner else 'Available'
 
   UpdateBug(issue, issue_generator.GetComment(),
             issue_generator.GetMonorailProject())

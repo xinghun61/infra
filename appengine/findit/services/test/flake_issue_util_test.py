@@ -261,12 +261,16 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that when a flake has no flake issue attached, it creates
   # a new issue and attach it to the flake.
   @mock.patch.object(
+      flake_issue_util,
+      'SearchRecentlyClosedIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(
       flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=None)
   @mock.patch.object(monorail_util, 'UpdateBug')
   @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testCreateIssue(self, mock_issue, mock_create_bug_fn, mock_update_bug_fn,
-                      _):
+                      *_):
     mock_issue.return_value = Issue({
         'status': 'Untriaged',
         'priority': 1,
@@ -504,7 +508,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # if it ONLY has the test name inside the summary.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(monorail_util, 'GetOpenIssues')
   def testSearchOpenIssueFlakyTestInSummaryNotFound(
@@ -526,7 +530,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # it has the test name inside the summary and the 'Test-Flaky' label.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(monorail_util, 'GetOpenIssues')
   def testSearchOpenIssueFlakyTestInSummaryWithFlakeLabel(
@@ -548,7 +552,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # it has the test name inside the summary and any of the flake keywords.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(monorail_util, 'GetOpenIssues')
   def testSearchOpenIssueFlakyTestInSummaryWithKeywordFlake(
@@ -570,7 +574,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # it has the test name inside the summary and any of the flake keywords.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(monorail_util, 'GetOpenIssues')
   def testSearchOpenIssueFlakyTestInSummaryWithKeywordFlaky(
@@ -592,7 +596,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # it has the test name inside the summary and any of the flake keywords.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(monorail_util, 'GetOpenIssues')
   def testSearchOpenIssueFlakyTestInSummaryWithKeywordFlakiness(
@@ -614,7 +618,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # if has the Test-FIndit-Wrong label.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(monorail_util, 'GetOpenIssues')
   def testSearchOpenIssueFlakyTestInSummaryWithTestFinditWrongLabel(
@@ -635,9 +639,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # This test tests that an open issue related to flaky tests will be found if
   # it has the test name inside the Flaky-Test customized field.
   @mock.patch.object(
-      flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestBySummary',
-      return_value=None)
+      flake_issue_util, '_GetIssueIdForFlakyTestBySummary', return_value=None)
   @mock.patch.object(monorail_util, 'GetOpenIssues')
   def testSearchOpenIssueFlakyTestInCustomizedField(
       self, mock_get_open_issues, mock_get_issue_id_by_summary):
@@ -656,12 +658,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # Monorail and if it is found, then skip searching for customized field.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(
-      flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestBySummary',
-      return_value=12345)
+      flake_issue_util, '_GetIssueIdForFlakyTestBySummary', return_value=12345)
   def testSearchAndFoundOpenIssueBySummary(
       self, mock_get_issue_id_by_summary,
       mock_get_issue_id_by_customized_field):
@@ -677,12 +677,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # if it is not found, then searches for customized field.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=12345)
   @mock.patch.object(
-      flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestBySummary',
-      return_value=None)
+      flake_issue_util, '_GetIssueIdForFlakyTestBySummary', return_value=None)
   def testSearchAndFoundOpenIssueByCustomizedField(
       self, mock_get_issue_id_by_summary,
       mock_get_issue_id_by_customized_field):
@@ -700,12 +698,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   # found, returns None.
   @mock.patch.object(
       flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestByCustomizedField',
+      '_GetIssueIdForFlakyTestByCustomizedField',
       return_value=None)
   @mock.patch.object(
-      flake_issue_util,
-      '_GetOpenIssueIdForFlakyTestBySummary',
-      return_value=None)
+      flake_issue_util, '_GetIssueIdForFlakyTestBySummary', return_value=None)
   def testSearchAndNotFoundOpenIssue(self, mock_get_issue_id_by_summary,
                                      mock_get_issue_id_by_customized_field):
     self.assertEqual(
@@ -741,8 +737,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
                                                        'chromium'))
 
   @mock.patch.object(
+      flake_issue_util,
+      'SearchRecentlyClosedIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(
       flake_issue_util, 'SearchOpenIssueIdForFlakyTest', return_value=True)
-  def testOpenIssueAlreadyExistsForFlakyTest(self, _):
+  def testOpenIssueAlreadyExistsForFlakyTest(self, *_):
     self.assertTrue(flake_issue_util.OpenIssueAlreadyExistsForFlakyTest('t'))
 
   def testGetFlakeIssueDataInconsistent(self):
@@ -761,8 +761,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
 
     self.assertIsNone(flake_issue_util.GetFlakeIssue(flake))
 
+  @mock.patch.object(
+      time_util,
+      'GetDateDaysBeforeNow',
+      return_value=datetime.datetime(2019, 1, 28))
   @mock.patch.object(flake_issue_util, 'GetAndUpdateMergedIssue')
-  def testGetFlakeGroupsForActionsOnBugs(self, mock_get_merged_issue):
+  def testGetFlakeGroupsForActionsOnBugs(self, mock_get_merged_issue, _):
     # New flake, no linked issue.
     flake1 = self._CreateFlake(
         's1', 'suite1.t1', 'suite1.t1', 'suite1', canonical_step_name='s1_c')
@@ -821,6 +825,28 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         self._CreateFlakeOccurrence(1, 's3', 'suite3.t7', 12345, flake7.key),
         self._CreateFlakeOccurrence(2, 's3', 'suite3.t7', 12346, flake7.key)
     ]
+    # Old flake, issue closed within a week.
+    flake_issue3 = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=67893)
+    flake_issue3.put()
+    flake8 = self._CreateFlake('s3', 'suite3.t8', 'suite3.t8')
+    flake8.flake_issue_key = flake_issue3.key
+    flake8.put()
+    occurrences8 = [
+        self._CreateFlakeOccurrence(1, 's3', 'suite3.t8', 12345, flake8.key),
+        self._CreateFlakeOccurrence(2, 's3', 'suite3.t8', 12346, flake8.key)
+    ]
+    # Old flake, issue closed over a week.
+    flake_issue4 = FlakeIssue.Create(
+        monorail_project='chromium', issue_id=67894)
+    flake_issue4.put()
+    flake9 = self._CreateFlake('s3', 'suite3.t9', 'suite3.t9')
+    flake9.flake_issue_key = flake_issue4.key
+    flake9.put()
+    occurrences9 = [
+        self._CreateFlakeOccurrence(1, 's3', 'suite3.t9', 12345, flake9.key),
+        self._CreateFlakeOccurrence(2, 's3', 'suite3.t9', 12346, flake9.key)
+    ]
 
     flake_group1 = flake_issue_util.FlakeGroupByOccurrences(
         flake1, occurrences1)
@@ -838,27 +864,69 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_group5 = flake_issue_util.FlakeGroupByFlakeIssue(
         flake_issue2, flake7, occurrences7, flake_issue2)
 
+    flake_group6 = flake_issue_util.FlakeGroupByFlakeIssue(
+        flake_issue3, flake8, occurrences8, flake_issue3)
+
+    flake_group7 = flake_issue_util.FlakeGroupByOccurrences(
+        flake9, occurrences9)
+
     flake_tuples_to_report = [(flake1, occurrences1, None),
                               (flake2, occurrences2, None),
                               (flake3, occurrences3, None),
                               (flake4, occurrences4, None),
                               (flake5, occurrences5, flake_issue1),
                               (flake6, occurrences6, flake_issue1),
-                              (flake7, occurrences7, flake_issue2)]
+                              (flake7, occurrences7, flake_issue2),
+                              (flake8, occurrences8, flake_issue3),
+                              (flake9, occurrences9, flake_issue4)]
 
-    mock_get_merged_issue.return_value.open = True
+    def MockedGetmergedIssue(flake_issue):
+      issue_id_to_monorail_issue = {
+          flake_issue1.key:
+              Issue({
+                  'id': '56789',
+                  'status': 'Available',
+                  'updated': '2018-12-10T0:0:0',
+                  'state': 'open'
+              }),
+          flake_issue2.key:
+              Issue({
+                  'id': '67890',
+                  'status': 'Available',
+                  'updated': '2018-12-10T0:0:0',
+                  'state': 'open'
+              }),
+          flake_issue3.key:
+              Issue({
+                  'id': '67893',
+                  'status': 'Fixed',
+                  'closed': '2019-1-29T2:0:0',
+              }),
+          flake_issue4.key:
+              Issue({
+                  'id': '67894',
+                  'status': 'Fixed',
+                  'closed': '2018-12-10T0:0:0',
+              })
+      }
+      return issue_id_to_monorail_issue[flake_issue.key]
+
+    mock_get_merged_issue.side_effect = MockedGetmergedIssue
 
     flake_groups_without_issue, flake_groups_with_issue = (
         flake_issue_util.GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report))
 
-    self.assertItemsEqual(
-        [flake_group1.ToDict(),
-         flake_group2.ToDict(),
-         flake_group3.ToDict()],
-        [group.ToDict() for group in flake_groups_without_issue])
+    self.assertItemsEqual([
+        flake_group1.ToDict(),
+        flake_group2.ToDict(),
+        flake_group3.ToDict(),
+        flake_group7.ToDict()
+    ], [group.ToDict() for group in flake_groups_without_issue])
 
     self.assertItemsEqual(
-        [flake_group4.ToDict(), flake_group5.ToDict()],
+        [flake_group4.ToDict(),
+         flake_group5.ToDict(),
+         flake_group6.ToDict()],
         [group.ToDict() for group in flake_groups_with_issue])
 
   # This test is for when the issue linked to flakes is closed, should not
@@ -1048,8 +1116,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
 
   def testGetIssueStatusesNeedingUpdating(self):
     self.assertEqual([
-        None, 'Assigned', 'Available', 'ExternalDependency'
-        'Started', 'Unconfirmed', 'Untriaged'
+        None, 'Assigned', 'Available', 'ExternalDependency', 'Started',
+        'Unconfirmed', 'Untriaged'
     ], flake_issue_util._GetIssueStatusesNeedingUpdating())
 
   def testGetFlakeIssuesNeedingUpdating(self):
@@ -1074,12 +1142,14 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     # 2. FlakeIssue 2 status is 'Available'.
     # 3. Bug 2 in monorail was manually merged into bug 3, which is to be
     #    detected and updated accordingly.
+    # 4. FlakeIssue 4 is closed, should detach it from flakes.
     #
     # Expected result:
     # 1. FlakeIssue 3 is created and set to 'Assigned'.
     # 2. FlakeIssue 2's status is set to 'Duplicate'.
     # 3. FlakeIssue 2's |merge_destination_key| is set to FlakeIssue3's key.
     # 4. FlakeIssue 1's |merge_destination_key| is set to FlakeIssue3's key.
+    # 5. Flakes link to FlakeIssue 4 now link to no FlakeIssue.
 
     # |flake_issue_2| is what's active according to Findit, but is out of date
     # with Monorail.
@@ -1093,6 +1163,14 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_issue_1.status = 'Duplicate'
     flake_issue_1.merge_destination_key = flake_issue_2.key
     flake_issue_1.put()
+
+    flake_issue_4 = FlakeIssue.Create('chromium', 4)
+    flake_issue_4.status = 'Started'
+    flake_issue_4.put()
+
+    flake = self._CreateFlake('s', 'suite.t1', 'suite.t2')
+    flake.flake_issue_key = flake_issue_4.key
+    flake.put()
 
     expected_labels = ['Type-Bug', 'Pri-2']
     expected_last_updated_time = datetime.datetime(2018, 12, 10)
@@ -1112,10 +1190,20 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         'updated': '2018-12-10T0:0:0',
     })
 
+    monorail_issue_4 = Issue({
+        'id': '4',
+        'labels': expected_labels,
+        'status': 'Fixed',
+        'closed': '2018-12-10T0:0:0',
+    })
+
     def MockedGetMonorailIssueForIssueId(issue_id, _):
-      if issue_id == 2:
-        return monorail_issue_2
-      return monorail_issue_3
+      issue_id_to_monorail_issue = {
+          2: monorail_issue_2,
+          3: monorail_issue_3,
+          4: monorail_issue_4
+      }
+      return issue_id_to_monorail_issue[issue_id]
 
     mocked_issue.side_effect = MockedGetMonorailIssueForIssueId
     mocked_merged_issue.return_value = monorail_issue_3
@@ -1138,6 +1226,10 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(expected_labels, flake_issue_3.labels)
     self.assertEqual(expected_last_updated_time,
                      flake_issue_3.last_updated_time_in_monorail)
+
+    flake_link_to_issue4 = Flake.query(
+        Flake.flake_issue_key == flake_issue_4.key).fetch()
+    self.assertEqual([], flake_link_to_issue4)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 12, 20))

@@ -40,6 +40,10 @@ FLAKY_TEST_GROUP_CUSTOMIZED_FIELD_QUERY_TEMPLATE = (
     '%s={} is:open' % FLAKY_TEST_GROUP_CUSTOMIZED_FIELD)
 
 OPEN_STATUSES = [
-    'Assigned', 'Available', 'ExternalDependency'
-    'Started', 'Unconfirmed', 'Untriaged'
+    'Assigned', 'Available', 'ExternalDependency', 'Started', 'Unconfirmed',
+    'Untriaged'
+]
+
+CLOSED_STATUSES_NO_DUPLICATE = [
+    'Fixed', 'Verified', 'WontFix', 'Closed', 'Archived'
 ]

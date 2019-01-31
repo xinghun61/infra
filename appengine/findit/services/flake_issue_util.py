@@ -153,25 +153,31 @@ class FlakeGroupByFlakeIssue(FlakeGroup):
     }
 
 
-def _GetOpenIssueIdForFlakyTestByCustomizedField(test_name,
-                                                 monorail_project='chromium'):
+def _GetIssueIdForFlakyTestByCustomizedField(test_name,
+                                             monorail_project='chromium',
+                                             is_open=True):
   """Returns flaky tests related issue by searching customized field.
 
   Args:
     test_name: The name of the test to search for.
     monorail_project: The Monorail project to search for.
+    is_open: True if the issue must be open, False if the issue is just closed.
 
   Returns:
     Id of the issue if it exists, otherwise None.
   """
   query = issue_constants.FLAKY_TEST_CUSTOMIZED_FIELD_QUERY_TEMPLATE.format(
       test_name)
-  open_issues = monorail_util.GetOpenIssues(query, monorail_project)
-  return open_issues[0].id if open_issues else None
+  if is_open:
+    issues = monorail_util.GetOpenIssues(query, monorail_project)
+  else:
+    issues = monorail_util.GetIssuesClosedWithinAWeek(query, monorail_project)
+  return issues[0].id if issues else None
 
 
-def _GetOpenIssueIdForFlakyTestBySummary(test_name,
-                                         monorail_project='chromium'):
+def _GetIssueIdForFlakyTestBySummary(test_name,
+                                     monorail_project='chromium',
+                                     is_open=True):
   """Returns flaky tests related issue by searching summary.
 
   Note that searching for |test_name| in the summary alone is not enough, for
@@ -184,6 +190,7 @@ def _GetOpenIssueIdForFlakyTestBySummary(test_name,
   Args:
     test_name: The name of the test to search for.
     monorail_project: The Monorail project to search for.
+    is_open: True if the issue must be open, False if the issue is just closed.
 
   Returns:
     Minimum id among the matched issues if exists, otherwise None.
@@ -200,15 +207,19 @@ def _GetOpenIssueIdForFlakyTestBySummary(test_name,
     return issue_constants.TEST_FINDIT_WRONG_LABEL not in issue.labels
 
   query = issue_constants.FLAKY_TEST_SUMMARY_QUERY_TEMPLATE.format(test_name)
-  open_issues = monorail_util.GetOpenIssues(query, monorail_project)
-  flaky_test_open_issues = [
-      issue for issue in open_issues if (_is_issue_related_to_flake(issue) and
-                                         _is_not_test_findit_wrong_issue(issue))
+
+  if is_open:
+    issues = monorail_util.GetOpenIssues(query, monorail_project)
+  else:
+    issues = monorail_util.GetIssuesClosedWithinAWeek(query, monorail_project)
+  flaky_test_issues = [
+      issue for issue in issues if (_is_issue_related_to_flake(issue) and
+                                    _is_not_test_findit_wrong_issue(issue))
   ]
-  if not flaky_test_open_issues:
+  if not flaky_test_issues:
     return None
 
-  return min([issue.id for issue in flaky_test_open_issues])
+  return min([issue.id for issue in flaky_test_issues])
 
 
 def OpenIssueAlreadyExistsForFlakyTest(test_name, monorail_project='chromium'):
@@ -234,11 +245,30 @@ def SearchOpenIssueIdForFlakyTest(test_name, monorail_project='chromium'):
   Returns:
     Id of the issue if it exists, otherwise None.
   """
+  # Prefers issues without customized field because it means that the bugs were
+  # created manually by develoepers, so it is more likely to gain attentions.
+  # Also prefers open issues.
+  return (_GetIssueIdForFlakyTestBySummary(test_name, monorail_project) or
+          _GetIssueIdForFlakyTestByCustomizedField(test_name, monorail_project))
+
+
+def SearchRecentlyClosedIssueIdForFlakyTest(test_name,
+                                            monorail_project='chromium'):
+  """Searches for issue which is closed within a week for a flake on Monorail.
+
+  Args:
+    test_name: The test name to search for.
+    monorail_project: The Monorail project to search for.
+
+  Returns:
+    Id of the issue if it exists, otherwise None.
+  """
   # Prefer issues without customized field because it means that the bugs were
   # created manually by develoepers, so it is more likely to gain attentions.
-  return (_GetOpenIssueIdForFlakyTestBySummary(test_name, monorail_project) or
-          _GetOpenIssueIdForFlakyTestByCustomizedField(test_name,
-                                                       monorail_project))
+  return (_GetIssueIdForFlakyTestBySummary(
+      test_name, monorail_project, is_open=False) or
+          _GetIssueIdForFlakyTestByCustomizedField(
+              test_name, monorail_project, is_open=False))
 
 
 def GetFlakeIssue(flake):
@@ -386,11 +416,12 @@ def _AddFlakeToGroupWithIssue(flake_groups_to_update_issue, flake_issue, flake,
     return True
 
   merged_monorail_issue = GetAndUpdateMergedIssue(flake_issue)
-  if not merged_monorail_issue.open:
+  if not (merged_monorail_issue.open or
+          monorail_util.IsIssueClosedWithinAWeek(merged_monorail_issue)):
+    # Only creates new group of flakes by FlakeIssue if the issue is still
+    # open or closed within a week.
     return False
 
-  # Only creates new group of flakes by FlakeIssue if the issue is still
-  # open.
   updated_flake_issue = flake_issue.GetMostUpdatedIssue()
 
   flake_group = FlakeGroupByFlakeIssue(updated_flake_issue, flake, occurrences,
@@ -439,9 +470,18 @@ def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
     4. Flake5 and Flake6 link to the same FlakeIssue, and the issue is still
       open. Even though the flakes have different canonical_step_name, they are
       still in the same group of FlakeGroupByFlakeIssue.
-    5. Flake7 and Flake8 link to the same FlakeIssue but it is closed. So look
-      for groups for each of them by their luci_project, canonical_step_name and
-      failed builds separately.
+    5. Flake7 and Flake8 link to the same FlakeIssue which is closed (
+      not merged) within a week. Even though the flakes have different
+      canonical_step_name, they are still in the same group of
+      FlakeGroupByFlakeIssue.
+    6. Flake9 and Flake10 link to the same FlakeIssue but it is closed over a
+      week. So look for groups for each of them by their luci_project,
+      canonical_step_name and failed builds separately.
+
+  Note: case 5 and 6 should be very rare since closed issues will be detached
+  from flakes. Still handles these cases in case flake issues and monorail bugs
+  are out of sync for any reason.
+
   Returns:
      ([FlakeGroupByOccurrence], [FlakeGroupByFlakeIssue]): groups of flakes.
   """
@@ -560,6 +600,14 @@ def ReportFlakesToFlakeAnalyzer(flake_tuples_to_report):
       AnalyzeDetectedFlakeOccurrence(flake, occurrence, issue_id)
 
 
+def _DetachClosedIssueFromFlakes(flake_issue):
+  """Detaches closed flake issue from flakes."""
+  flakes = Flake.query(Flake.flake_issue_key == flake_issue.key).fetch()
+  for flake in flakes:
+    flake.flake_issue_key = None
+  ndb.put_multi(flakes)
+
+
 # TODO(crbug.com/916278): Transactional
 def _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue):
   """Updates a FlakeIssue with its corresponding Monorail issue."""
@@ -622,7 +670,8 @@ def _UpdateMergeDestinationAndIssueLeaves(flake_issue, merged_monorail_issue):
       int(merged_monorail_issue.id), flake_issue.monorail_project)
   assert merged_flake_issue, (
       'Failed to get or create FlakeIssue for merged_issue %s' %
-      FlakeIssue.GetLinkForIssue(flake_issue.monorail_project, merged_issue_id))
+      FlakeIssue.GetLinkForIssue(flake_issue.monorail_project,
+                                 merged_monorail_issue.id))
 
   merged_flake_issue_key = merged_flake_issue.key
   flake_issue.merge_destination_key = merged_flake_issue_key
@@ -664,9 +713,15 @@ def _CreateIssueForFlake(issue_generator, target_flake):
   """
   monorail_project = issue_generator.GetMonorailProject()
 
-  # Re-use an existing open bug if possible.
+  # Re-uses an existing open bug if possible.
   issue_id = SearchOpenIssueIdForFlakyTest(target_flake.normalized_test_name,
                                            monorail_project)
+
+  if not issue_id:
+    # Reopens a recently closed bug if possible.
+    issue_id = SearchRecentlyClosedIssueIdForFlakyTest(
+        target_flake.normalized_test_name, monorail_project)
+
   if issue_id:
     logging.info(
         'An existing issue %s was found, attach it to flake: %s and update it '
@@ -675,7 +730,7 @@ def _CreateIssueForFlake(issue_generator, target_flake):
         target_flake.key)
     _AssignIssueToFlake(issue_id, target_flake)
     monorail_util.UpdateIssueWithIssueGenerator(
-        issue_id=issue_id, issue_generator=issue_generator)
+        issue_id=issue_id, issue_generator=issue_generator, reopen=True)
     return issue_id
 
   logging.info('No existing open issue was found, create a new one.')
@@ -781,7 +836,9 @@ def _UpdateFlakeIssueForFlakeGroup(flake_group):
 
   flake_issue = flake_group.flake_issue
   monorail_util.UpdateIssueWithIssueGenerator(
-      issue_id=flake_issue.issue_id, issue_generator=issue_generator)
+      issue_id=flake_issue.issue_id,
+      issue_generator=issue_generator,
+      reopen=True)
   return flake_issue.issue_id
 
 
@@ -804,7 +861,8 @@ def _UpdateIssuesForFlakes(flake_groups_to_update_issue):
         issue_generator.SetPreviousTrackingBugId(flake_group.previous_issue_id)
         monorail_util.UpdateIssueWithIssueGenerator(
             issue_id=flake_group.flake_issue.issue_id,
-            issue_generator=issue_generator)
+            issue_generator=issue_generator,
+            reopen=True)
       else:
         _UpdateFlakeIssueForFlakeGroup(flake_group)
       # Update FlakeIssue's last_updated_time_by_flake_detection property. This
@@ -853,7 +911,6 @@ def _GetIssueStatusesNeedingUpdating():
 def _GetFlakeIssuesNeedingUpdating():
   """Returns a list of all FlakeIssue entities needing updating."""
   issue_statuses_needing_updates = _GetIssueStatusesNeedingUpdating()
-
   # Query and update issues by oldest first that's still open in case there are
   # exceptions when trying to update issues.
   flake_issues_query = FlakeIssue.query().filter(
@@ -885,7 +942,6 @@ def SyncOpenFlakeIssuesWithMonorail():
     # result in 4xx errors and exponential backoff should be used.
     monorail_issue = monorail_util.GetMonorailIssueForIssueId(
         issue_id, monorail_project)
-
     if (not monorail_issue or monorail_issue.id is None or
         int(monorail_issue.id) != issue_id):  # pragma: no cover
       # No cover due to being unexpected, but log a warning regardless and skip.
@@ -894,3 +950,7 @@ def SyncOpenFlakeIssuesWithMonorail():
       continue
 
     _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue)
+
+    if monorail_issue.status in issue_constants.CLOSED_STATUSES_NO_DUPLICATE:
+      # Issue is closed, detaches it from flakes.
+      _DetachClosedIssueFromFlakes(flake_issue)

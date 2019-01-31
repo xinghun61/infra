@@ -431,3 +431,79 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_update_bug_fn.assert_called_once_with(issue, 'Random comment',
                                                'chromium')
+
+  @mock.patch.object(
+      time_util,
+      'GetDateDaysBeforeNow',
+      return_value=datetime.datetime(2019, 1, 29))
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetIssuesClosedWithinAWeek(self, mock_api, _):
+    expected_issue = Issue({
+        'status': 'Fixed',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'closed': '2019-01-29T02:00:00'
+    })
+    monorail_issues = [
+        expected_issue,
+        Issue({
+            'status': 'Fixed',
+            'summary': 'summary',
+            'description': 'description',
+            'projectId': 'chromium',
+            'labels': [],
+            'fieldValues': [],
+            'closed': '2019-01-20T02:00:00'
+        }),
+        Issue({
+            'status': 'Available',
+            'summary': 'summary',
+            'description': 'description',
+            'projectId': 'chromium',
+            'labels': [],
+            'fieldValues': [],
+            'state': 'open'
+        })
+    ]
+    mock_api.return_value.getIssues.return_value = monorail_issues
+    self.assertEqual([expected_issue],
+                     monorail_util.GetIssuesClosedWithinAWeek(
+                         'query', 'chromium'))
+
+  @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
+  @mock.patch.object(monorail_util, 'UpdateBug')
+  @mock.patch.object(monorail_util, 'CreateBug')
+  def testUpdateIssueWithIssueGeneratorReopen(
+      self, mock_create_bug_fn, mock_update_bug_fn, mock_get_merged_issue):
+    issue_id = 12345
+    issue = Issue({
+        'status': 'Fixed',
+        'summary': 'summary',
+        'description': 'description',
+        'projectId': 'chromium',
+        'labels': [],
+        'fieldValues': [],
+        'state': 'open',
+        'owner': {
+            'name': 'owner@chromium.org'
+        }
+    })
+    mock_get_merged_issue.return_value = issue
+
+    test_issue_generator = TestIssueGenerator()
+    monorail_util.UpdateIssueWithIssueGenerator(
+        issue_id=issue_id, issue_generator=test_issue_generator, reopen=True)
+
+    self.assertFalse(mock_create_bug_fn.called)
+    mock_update_bug_fn.assert_called_once_with(
+        issue, 'comment without previous tracking bug id.', 'chromium')
+    issue = mock_update_bug_fn.call_args_list[0][0][0]
+    self.assertEqual(['label1'], issue.labels)
+    self.assertEqual(1, len(issue.field_values))
+    self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
+    self.assertEqual('suite.test',
+                     issue.field_values[0].to_dict()['fieldValue'])
+    self.assertEqual('Assigned', issue.status)
