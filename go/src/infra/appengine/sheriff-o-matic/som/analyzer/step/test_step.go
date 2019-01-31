@@ -146,16 +146,18 @@ func (tfa *testFailureAnalyzer) Analyze(ctx context.Context, fs []*messages.Buil
 				}
 			}
 
-			config, ok := builderConfigs[f.Build.BuilderName]
-			if !ok {
-				logging.Warningf(ctx, "no config (out of %d) for %s", len(builderConfigs), f.Build.BuilderName)
-				continue
-			}
-			exps, err := getExpectationsForTest(ctx, r.TestName, config)
-			if err != nil {
-				logging.Errorf(ctx, "couldn't get test expectations for %+v: %v", r.TestName, err)
-			} else {
-				failure.Tests[t].Expectations = exps
+			if false { // Re-enable once we figure out why responses are timing out.
+				config, ok := builderConfigs[f.Build.BuilderName]
+				if !ok {
+					logging.Warningf(ctx, "no config (out of %d) for %s", len(builderConfigs), f.Build.BuilderName)
+					continue
+				}
+				exps, err := getExpectationsForTest(ctx, r.TestName, config)
+				if err != nil {
+					logging.Errorf(ctx, "couldn't get test expectations for %+v: %v", r.TestName, err)
+				} else {
+					failure.Tests[t].Expectations = exps
+				}
 			}
 		}
 		results[i] = failure
