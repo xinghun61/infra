@@ -15,6 +15,7 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	hbotinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/dutinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/resultsdir"
 )
@@ -28,7 +29,9 @@ type Info struct {
 	BotInfo    *botinfo.BotInfo
 
 	botInfoStore     *hbotinfo.Store
-	borrower         *hostinfo.Borrower
+	dutInfoStore     *dutinfo.Store
+	hostInfoProxy    *hostinfo.Proxy
+	hostInfoBorrower *hostinfo.Borrower
 	resultsDirCloser *resultsdir.Closer
 	hostInfoFile     *hostinfo.File
 }
@@ -43,7 +46,13 @@ func (i *Info) Close() error {
 	if err := i.resultsDirCloser.Close(); err != nil {
 		errs = append(errs, err)
 	}
-	if err := i.borrower.Close(); err != nil {
+	if err := i.hostInfoBorrower.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := i.hostInfoProxy.Close(); err != nil {
+		errs = append(errs, err)
+	}
+	if err := i.dutInfoStore.Close(); err != nil {
 		errs = append(errs, err)
 	}
 	if err := i.botInfoStore.Close(); err != nil {
@@ -77,12 +86,16 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	}
 	i.botInfoStore, i.BotInfo = bi, &bi.BotInfo
 
-	hi, err := loadDUTHostInfo(b)
+	dis, err := dutinfo.Load(b, nil)
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
+	i.dutInfoStore = dis
 
-	i.borrower = hostinfo.BorrowBotInfo(hi, i.BotInfo)
+	i.hostInfoProxy = hostinfo.FromDUT(dis.DUT)
+	hi := i.hostInfoProxy.HostInfo
+
+	i.hostInfoBorrower = hostinfo.BorrowBotInfo(hi, i.BotInfo)
 
 	i.ResultsDir = b.ResultsDir()
 	rdc, err := resultsdir.Open(i.ResultsDir)
