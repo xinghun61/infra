@@ -27,12 +27,13 @@ from model.wf_swarming_task import WfSwarmingTask
 from services import constants
 from services import monitoring
 from services import step_util
+from services import swarmed_test_util
+from services import swarming
+from services.flake_detection import detect_flake_occurrences
 from services.parameters import BuildKey
 from services.parameters import TestFailureInfo
 from services.parameters import TestHeuristicAnalysisOutput
 from services.parameters import TestHeuristicResult
-from services import swarmed_test_util
-from services import swarming
 from services.test_failure import test_failure_analysis
 from services.test_failure import test_swarming
 from waterfall.test import wf_testcase
@@ -666,11 +667,12 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
           'canonical_step_name': 'step2',
           'isolate_target_name': 'step2'
       })
+  @mock.patch.object(detect_flake_occurrences, 'StoreDetectedCIFlakes')
   @mock.patch.object(test_failure_analysis,
                      'UpdateAnalysisWithFlakesFoundBySwarmingReruns')
   @mock.patch.object(monitoring, 'OnFlakeIdentified')
-  def testCollectSwarmingTaskResultsAllFlaky(self, mock_monitoring,
-                                             mock_update_analysis, _):
+  def testCollectSwarmingTaskResultsAllFlaky(
+      self, mock_monitoring, mock_update_analysis, mock_save_flakes, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 17
@@ -707,6 +709,8 @@ class TestSwarmingTest(wf_testcase.WaterfallTestCase):
     mock_update_analysis.assert_called_once_with(master_name, builder_name,
                                                  build_number, flake_tests)
     mock_monitoring.assert_called_once_with('step2', 'step2', 'skip', 1)
+    mock_save_flakes.assert_called_once_with(master_name, builder_name,
+                                             build_number, flake_tests)
 
   @mock.patch.object(
       test_swarming, 'NeedANewSwarmingTask', side_effect=[True, False])

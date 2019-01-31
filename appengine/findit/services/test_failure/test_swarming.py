@@ -23,6 +23,7 @@ from services import monitoring
 from services import step_util
 from services import swarmed_test_util
 from services import swarming
+from services.flake_detection import detect_flake_occurrences
 from services.test_failure import test_failure_analysis
 from waterfall import waterfall_config
 
@@ -388,6 +389,10 @@ def GetConsistentFailuresWhenAllTasksComplete(collect_consistent_failure_inputs,
     # Not all tasks completed, don't return any information about consistent
     # failures.
     return None
+
+  # Reports all flakes to Flake Detector.
+  detect_flake_occurrences.StoreDetectedCIFlakes(master_name, builder_name,
+                                                 build_number, flake_failures)
 
   for step_name, tests in non_reproducible_flaky_tests.iteritems():
     if tests:
