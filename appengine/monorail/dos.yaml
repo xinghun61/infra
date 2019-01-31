@@ -156,3 +156,5 @@ blacklist:
     description: someone making lots of requests with bad XSRF token
   - subnet: 2001:41d0:a:200f::1
     description: someone fuzzing us 2019-01-24
+  - subnet: 108.170.6.26
+    description: someone crawling p/oss-fuzz/issues
