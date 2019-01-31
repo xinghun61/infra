@@ -564,32 +564,37 @@ func ToProto(info *NinjaLog) []*npb.NinjaTask {
 		return buildConfigs[i].Key < buildConfigs[j].Key
 	})
 
-	// Parse ninja's commandline to extract build targets.
 	var targets []string
 
-	// We assume info.Metadata.Cmdline[0] is ninja or ninja.exe
-	for i := 1; i < len(info.Metadata.Cmdline); i++ {
-		arg := info.Metadata.Cmdline[i]
-		switch arg {
-		case "-C", "-f", "-j", "-k", "-l", "-d", "-t", "-w":
-			i++
-			continue
-		case "--version", "-v", "--verbose", "-n", "-h", "--help":
-			continue
-		}
+	if len(info.Metadata.Targets) != 0 {
+		targets = info.Metadata.Targets
+	} else {
+		// Parse ninja's commandline to extract build targets, if targets is not given.
 
-		if strings.HasPrefix(arg, "-C") ||
-			strings.HasPrefix(arg, "-f") ||
-			strings.HasPrefix(arg, "-j") ||
-			strings.HasPrefix(arg, "-k") ||
-			strings.HasPrefix(arg, "-l") ||
-			strings.HasPrefix(arg, "-d") ||
-			strings.HasPrefix(arg, "-t") ||
-			strings.HasPrefix(arg, "-w") {
-			continue
-		}
+		// We assume info.Metadata.Cmdline[0] is ninja or ninja.exe
+		for i := 1; i < len(info.Metadata.Cmdline); i++ {
+			arg := info.Metadata.Cmdline[i]
+			switch arg {
+			case "-C", "-f", "-j", "-k", "-l", "-d", "-t", "-w":
+				i++
+				continue
+			case "--version", "-v", "--verbose", "-n", "-h", "--help":
+				continue
+			}
 
-		targets = append(targets, arg)
+			if strings.HasPrefix(arg, "-C") ||
+				strings.HasPrefix(arg, "-f") ||
+				strings.HasPrefix(arg, "-j") ||
+				strings.HasPrefix(arg, "-k") ||
+				strings.HasPrefix(arg, "-l") ||
+				strings.HasPrefix(arg, "-d") ||
+				strings.HasPrefix(arg, "-t") ||
+				strings.HasPrefix(arg, "-w") {
+				continue
+			}
+
+			targets = append(targets, arg)
+		}
 	}
 
 	for _, s := range steps {
