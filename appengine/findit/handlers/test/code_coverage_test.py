@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2019 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -535,3 +536,20 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     mock_get_file_from_gs.assert_called_with(
         '/source-files-for-coverage/chromium.googlesource.com/chromium/'
         'src.git/dir/test.cc/bbbbb')
+
+  @mock.patch.object(code_coverage, '_GetFileContentFromGs')
+  def testServeFullRepoFileViewWithNonAsciiChars(self, mock_get_file_from_gs):
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
+    mock_get_file_from_gs.return_value = 'line one\n═══════════╪'
+    report = _CreateSamplePostsubmitReport()
+    report.put()
+
+    file_coverage_data = _CreateSampleFileCoverageData()
+    file_coverage_data.put()
+
+    request_url = ('/p/chromium/coverage/file?host=%s&project=%s&ref=%s'
+                   '&revision=%s&path=%s') % (
+                       'chromium.googlesource.com', 'chromium/src',
+                       'refs/heads/master', 'aaaaa', '//dir/test.cc')
+    response = self.test_app.get(request_url)
+    self.assertEqual(200, response.status_int)

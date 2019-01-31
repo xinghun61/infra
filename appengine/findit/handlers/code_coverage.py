@@ -868,7 +868,11 @@ class ServeCodeCoverageData(BaseHandler):
           else:
             file_lines = file_content.splitlines()
             for i, line in enumerate(file_lines):
-              line_to_data[i + 1]['line'] = line
+              # According to http://jinja.pocoo.org/docs/2.10/api/#unicode,
+              # Jinja requires passing unicode objects or ASCII-only bytestring,
+              # and given that it is possible for source files to have non-ASCII
+              # chars, thus converting lines to unicode.
+              line_to_data[i + 1]['line'] = unicode(line, 'utf8')
               line_to_data[i + 1]['count'] = -1
 
             for line in metadata['lines']:
