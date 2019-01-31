@@ -228,8 +228,8 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
   }
 
   openViewBlockedOn() {
-    this.$.viewBlockedOnTable.reset();
-    this.$.viewBlockedOnDialog.open();
+    Polymer.dom(this.root).querySelector('#viewBlockedOnTable').reset();
+    Polymer.dom(this.root).querySelector('#viewBlockedOnDialog').open();
   }
 
   reorderBlockedOn(e) {
