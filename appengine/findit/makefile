@@ -45,7 +45,8 @@ help:
 
 
 ##### App Engine ###
-deploy-findit-prod: _deploy_findit
+deploy-findit-prod: test
+	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(FINDIT_MODULES);
 	@echo "New version '$(LOCAL_VERSION)' of Findit was" \
 	      "deployed to $(APPID)."
 	@echo
@@ -83,18 +84,15 @@ deploy-findit-prod: _deploy_findit
 deploy-findit-staging: test
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(STAGING_APPID) $(FINDIT_MODULES);
 
-_deploy_findit: test
-	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(FINDIT_MODULES);
+deploy-coverage-prod: test
+	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(CODE_COVERAGE_MODULES);
+	@echo "New version is https://$(LOCAL_VERSION)-dot-code-coverage-frontend-"\
+	"dot-$(APPID).appspot.com/p/chromium/coverage"
 
 deploy-coverage-staging: test
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(STAGING_APPID) $(CODE_COVERAGE_MODULES);
 	@echo "New version is https://$(LOCAL_VERSION)-dot-code-coverage-frontend-"\
 	"dot-$(STAGING_APPID).appspot.com/p/chromium/coverage"
-
-deploy-coverage-prod: test
-	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(CODE_COVERAGE_MODULES);
-	@echo "New version is https://$(LOCAL_VERSION)-dot-code-coverage-frontend-"\
-	"dot-$(APPID).appspot.com/p/chromium/coverage"
 
 migrate:
 	@echo "Please use the Google Cloud Console to migrate traffic to new versions"
