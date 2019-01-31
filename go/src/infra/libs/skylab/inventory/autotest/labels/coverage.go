@@ -13,6 +13,9 @@ import (
 func init() {
 	converters = append(converters, boolTestCoverageHintsConverter)
 	converters = append(converters, otherTestCoverageHintsConverter)
+
+	reverters = append(reverters, boolTestCoverageHintsReverter)
+	reverters = append(reverters, otherTestCoverageHintsReverter)
 }
 
 func boolTestCoverageHintsConverter(ls *inventory.SchedulableLabels) []string {
@@ -58,6 +61,60 @@ func otherTestCoverageHintsConverter(ls *inventory.SchedulableLabels) []string {
 		const plen = 11 // len("CTS_SPARSE_")
 		lv := "sparse_coverage_" + strings.ToLower(v.String()[plen:])
 		labels = append(labels, lv)
+	}
+	return labels
+}
+
+func boolTestCoverageHintsReverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	h := ls.GetTestCoverageHints()
+	for i := 0; i < len(labels); i++ {
+		v := labels[i]
+		switch v {
+		case "chaos_dut":
+			*h.ChaosDut = true
+		case "chromesign":
+			*h.Chromesign = true
+		case "hangout_app":
+			*h.HangoutApp = true
+		case "meet_app":
+			*h.MeetApp = true
+		case "recovery_test":
+			*h.RecoveryTest = true
+		case "test_audiojack":
+			*h.TestAudiojack = true
+		case "test_hdmiaudio":
+			*h.TestHdmiaudio = true
+		case "test_usbaudio":
+			*h.TestUsbaudio = true
+		case "test_usbprinting":
+			*h.TestUsbprinting = true
+		case "usb_detect":
+			*h.UsbDetect = true
+		default:
+			continue
+		}
+		labels = removeLabel(labels, i)
+		i--
+	}
+	return labels
+}
+
+func otherTestCoverageHintsReverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	h := ls.GetTestCoverageHints()
+	for i := 0; i < len(labels); i++ {
+		v := labels[i]
+		switch {
+		case strings.HasPrefix(v, "sparse_coverage_"):
+			const plen = 16 // len("sparse_coverage_")
+			vn := "CTS_SPARSE_" + strings.ToUpper(v[plen:])
+			type t = inventory.TestCoverageHints_CTSSparse
+			vals := inventory.TestCoverageHints_CTSSparse_value
+			h.CtsSparse = append(h.CtsSparse, t(vals[vn]))
+		default:
+			continue
+		}
+		labels = removeLabel(labels, i)
+		i--
 	}
 	return labels
 }

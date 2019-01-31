@@ -14,19 +14,7 @@ import (
 	"infra/libs/skylab/inventory"
 )
 
-func TestConvertEmpty(t *testing.T) {
-	t.Parallel()
-	ls := inventory.SchedulableLabels{}
-	got := Convert(&ls)
-	if len(got) > 0 {
-		t.Errorf("Got nonempty labels %#v", got)
-	}
-}
-
-func TestConvertFull(t *testing.T) {
-	t.Parallel()
-	var ls inventory.SchedulableLabels
-	text := `
+const fullTextProto = `
 variant: "somevariant"
 test_coverage_hints {
   usb_detect: true
@@ -64,8 +52,8 @@ cts_cpu: 1
 cts_cpu: 2
 cts_abi: 1
 cts_abi: 2
-critical_pools: 1
 critical_pools: 2
+critical_pools: 1
 cr50_phase: 2
 capabilities {
   webcam: true
@@ -90,70 +78,109 @@ capabilities {
 board: "boardval"
 arc: true
 `
-	if err := proto.UnmarshalText(text, &ls); err != nil {
+
+var fullLabels = []string{
+	"arc",
+	"atrus",
+	"audio_board",
+	"audio_box",
+	"audio_loopback_dongle",
+	"bluetooth",
+	"board:boardval",
+	"carrier:tmobile",
+	"chameleon",
+	"chameleon:dp_hdmi",
+	"chaos_dut",
+	"chromesign",
+	"conductive:True",
+	"cr50:pvt",
+	"cts_abi_arm",
+	"cts_abi_x86",
+	"cts_cpu_arm",
+	"cts_cpu_x86",
+	"detachablebase",
+	"ec:cros",
+	"flashrom",
+	"gpu_family:gpufamilyval",
+	"graphics:graphicsval",
+	"hangout_app",
+	"hotwording",
+	"huddly",
+	"hw_video_acc_enc_vp9",
+	"hw_video_acc_enc_vp9_2",
+	"internal_display",
+	"lucidsleep",
+	"meet_app",
+	"mimo",
+	"model:modelval",
+	"modem:modemval",
+	"os:cros",
+	"phase:DVT2",
+	"platform:platformval",
+	"pool:bvt",
+	"pool:cq",
+	"pool:poolval",
+	"power:powerval",
+	"recovery_test",
+	"servo",
+	"sparse_coverage_3",
+	"storage:storageval",
+	"stylus",
+	"telephony:telephonyval",
+	"test_audiojack",
+	"test_hdmiaudio",
+	"test_usbaudio",
+	"test_usbprinting",
+	"touchpad",
+	"usb_detect",
+	"variant:somevariant",
+	"webcam",
+	"wificell",
+}
+
+func TestConvertEmpty(t *testing.T) {
+	t.Parallel()
+	ls := inventory.SchedulableLabels{}
+	got := Convert(&ls)
+	if len(got) > 0 {
+		t.Errorf("Got nonempty labels %#v", got)
+	}
+}
+
+func TestConvertFull(t *testing.T) {
+	t.Parallel()
+	var ls inventory.SchedulableLabels
+	if err := proto.UnmarshalText(fullTextProto, &ls); err != nil {
 		t.Fatalf("Error unmarshalling example text: %s", err)
 	}
 	got := Convert(&ls)
 	sort.Sort(sort.StringSlice(got))
-	want := []string{
-		"arc",
-		"atrus",
-		"audio_board",
-		"audio_box",
-		"audio_loopback_dongle",
-		"bluetooth",
-		"board:boardval",
-		"carrier:tmobile",
-		"chameleon",
-		"chameleon:dp_hdmi",
-		"chaos_dut",
-		"chromesign",
-		"conductive:True",
-		"cr50:pvt",
-		"cts_abi_arm",
-		"cts_abi_x86",
-		"cts_cpu_arm",
-		"cts_cpu_x86",
-		"detachablebase",
-		"ec:cros",
-		"flashrom",
-		"gpu_family:gpufamilyval",
-		"graphics:graphicsval",
-		"hangout_app",
-		"hotwording",
-		"huddly",
-		"hw_video_acc_enc_vp9",
-		"hw_video_acc_enc_vp9_2",
-		"internal_display",
-		"lucidsleep",
-		"meet_app",
-		"mimo",
-		"model:modelval",
-		"modem:modemval",
-		"os:cros",
-		"phase:DVT2",
-		"platform:platformval",
-		"pool:bvt",
-		"pool:cq",
-		"pool:poolval",
-		"power:powerval",
-		"recovery_test",
-		"servo",
-		"sparse_coverage_3",
-		"storage:storageval",
-		"stylus",
-		"telephony:telephonyval",
-		"test_audiojack",
-		"test_hdmiaudio",
-		"test_usbaudio",
-		"test_usbprinting",
-		"touchpad",
-		"usb_detect",
-		"variant:somevariant",
-		"webcam",
-		"wificell",
-	}
+	want := make([]string, len(fullLabels))
+	copy(want, fullLabels)
 	if diff := pretty.Compare(want, got); diff != "" {
+		t.Errorf("labels differ -want +got, %s", diff)
+	}
+}
+
+func TestRevertEmpty(t *testing.T) {
+	t.Parallel()
+	want := newScheduableLabels()
+	got := Revert(nil)
+	if diff := pretty.Compare(want, *got); diff != "" {
+		t.Errorf("labels differ -want +got, %s", diff)
+	}
+}
+
+func TestRevertFull(t *testing.T) {
+	t.Parallel()
+	var want inventory.SchedulableLabels
+	if err := proto.UnmarshalText(fullTextProto, &want); err != nil {
+		t.Fatalf("Error unmarshalling example text: %s", err)
+	}
+	labels := make([]string, len(fullLabels))
+	copy(labels, fullLabels)
+	got := Revert(labels)
+	if diff := pretty.Compare(want, *got); diff != "" {
 		t.Errorf("labels differ -want +got, %s", diff)
 	}
 }

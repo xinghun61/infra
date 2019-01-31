@@ -14,6 +14,10 @@ func init() {
 	converters = append(converters, boolCapabilitiesConverter)
 	converters = append(converters, stringCapabilitiesConverter)
 	converters = append(converters, otherCapabilitiesConverter)
+
+	reverters = append(reverters, boolCapabilitiesReverter)
+	reverters = append(reverters, stringCapabilitiesReverter)
+	reverters = append(reverters, otherCapabilitiesReverter)
 }
 
 func boolCapabilitiesConverter(ls *inventory.SchedulableLabels) []string {
@@ -68,12 +72,12 @@ func stringCapabilitiesConverter(ls *inventory.SchedulableLabels) []string {
 		lv := "power:" + v
 		labels = append(labels, lv)
 	}
-	if v := c.GetTelephony(); v != "" {
-		lv := "telephony:" + v
-		labels = append(labels, lv)
-	}
 	if v := c.GetStorage(); v != "" {
 		lv := "storage:" + v
+		labels = append(labels, lv)
+	}
+	if v := c.GetTelephony(); v != "" {
+		lv := "telephony:" + v
 		labels = append(labels, lv)
 	}
 	return labels
@@ -91,6 +95,92 @@ func otherCapabilitiesConverter(ls *inventory.SchedulableLabels) []string {
 		const plen = 19 // len("VIDEO_ACCELERATION_")
 		lv := "hw_video_acc_" + strings.ToLower(v.String()[plen:])
 		labels = append(labels, lv)
+	}
+	return labels
+}
+
+func boolCapabilitiesReverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	c := ls.GetCapabilities()
+	for i := 0; i < len(labels); i++ {
+		v := labels[i]
+		switch v {
+		case "atrus":
+			*c.Atrus = true
+		case "bluetooth":
+			*c.Bluetooth = true
+		case "detachablebase":
+			*c.Detachablebase = true
+		case "flashrom":
+			*c.Flashrom = true
+		case "hotwording":
+			*c.Hotwording = true
+		case "internal_display":
+			*c.InternalDisplay = true
+		case "lucidsleep":
+			*c.Lucidsleep = true
+		case "touchpad":
+			*c.Touchpad = true
+		case "webcam":
+			*c.Webcam = true
+		default:
+			continue
+		}
+		labels = removeLabel(labels, i)
+		i--
+	}
+	return labels
+}
+
+func stringCapabilitiesReverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	c := ls.GetCapabilities()
+	for i := 0; i < len(labels); i++ {
+		k, v := splitLabel(labels[i])
+		switch k {
+		case "gpu_family":
+			*c.GpuFamily = v
+		case "graphics":
+			*c.Graphics = v
+		case "modem":
+			*c.Modem = v
+		case "power":
+			*c.Power = v
+		case "storage":
+			*c.Storage = v
+		case "telephony":
+			*c.Telephony = v
+		default:
+			continue
+		}
+		labels = removeLabel(labels, i)
+		i--
+	}
+	return labels
+}
+
+func otherCapabilitiesReverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	c := ls.GetCapabilities()
+	for i := 0; i < len(labels); i++ {
+		k, v := splitLabel(labels[i])
+		switch k {
+		case "carrier":
+			vn := "CARRIER_" + strings.ToUpper(v)
+			type t = inventory.HardwareCapabilities_Carrier
+			vals := inventory.HardwareCapabilities_Carrier_value
+			*c.Carrier = t(vals[vn])
+		default:
+			switch {
+			case strings.HasPrefix(k, "hw_video_acc_"):
+				const plen = 13 // len("hw_video_acc_")
+				vn := "VIDEO_ACCELERATION_" + strings.ToUpper(k[plen:])
+				type t = inventory.HardwareCapabilities_VideoAcceleration
+				vals := inventory.HardwareCapabilities_VideoAcceleration_value
+				c.VideoAcceleration = append(c.VideoAcceleration, t(vals[vn]))
+			default:
+				continue
+			}
+		}
+		labels = removeLabel(labels, i)
+		i--
 	}
 	return labels
 }

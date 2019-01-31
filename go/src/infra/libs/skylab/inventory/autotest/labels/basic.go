@@ -11,6 +11,7 @@ import (
 )
 
 func init() {
+	reverters = append(reverters, basicReverter)
 	converters = append(converters, basicConverter)
 }
 
@@ -45,6 +46,44 @@ func basicConverter(ls *inventory.SchedulableLabels) []string {
 	for _, v := range ls.GetVariant() {
 		lv := "variant:" + v
 		labels = append(labels, lv)
+	}
+	return labels
+}
+
+func basicReverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	for i := 0; i < len(labels); i++ {
+		k, v := splitLabel(labels[i])
+		switch k {
+		case "board":
+			*ls.Board = v
+		case "model":
+			*ls.Model = v
+		case "platform":
+			*ls.Platform = v
+		case "ec":
+			switch v {
+			case "cros":
+				*ls.EcType = inventory.SchedulableLabels_EC_TYPE_CHROME_OS
+			default:
+				continue
+			}
+		case "os":
+			vn := "OS_TYPE_" + strings.ToUpper(v)
+			type t = inventory.SchedulableLabels_OSType
+			vals := inventory.SchedulableLabels_OSType_value
+			*ls.OsType = t(vals[vn])
+		case "phase":
+			vn := "PHASE_" + strings.ToUpper(v)
+			type t = inventory.SchedulableLabels_Phase
+			vals := inventory.SchedulableLabels_Phase_value
+			*ls.Phase = t(vals[vn])
+		case "variant":
+			ls.Variant = append(ls.Variant, v)
+		default:
+			continue
+		}
+		labels = removeLabel(labels, i)
+		i--
 	}
 	return labels
 }

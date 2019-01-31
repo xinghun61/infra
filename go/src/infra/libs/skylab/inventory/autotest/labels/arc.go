@@ -8,6 +8,7 @@ import "infra/libs/skylab/inventory"
 
 func init() {
 	converters = append(converters, arcConverter)
+	reverters = append(reverters, arcReverter)
 }
 
 func arcConverter(ls *inventory.SchedulableLabels) []string {
@@ -15,4 +16,16 @@ func arcConverter(ls *inventory.SchedulableLabels) []string {
 		return []string{"arc"}
 	}
 	return nil
+}
+
+func arcReverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	for i, label := range labels {
+		if label != "arc" {
+			continue
+		}
+		*ls.Arc = true
+		labels = removeLabel(labels, i)
+		break
+	}
+	return labels
 }

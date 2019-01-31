@@ -12,6 +12,7 @@ import (
 
 func init() {
 	converters = append(converters, cr50Converter)
+	reverters = append(reverters, cr50Reverter)
 }
 
 func cr50Converter(ls *inventory.SchedulableLabels) []string {
@@ -20,6 +21,24 @@ func cr50Converter(ls *inventory.SchedulableLabels) []string {
 		const plen = 11 // len("CR50_PHASE_")
 		lv := "cr50:" + strings.ToLower(v.String()[plen:])
 		labels = append(labels, lv)
+	}
+	return labels
+}
+
+func cr50Reverter(ls *inventory.SchedulableLabels, labels []string) []string {
+	for i := 0; i < len(labels); i++ {
+		k, v := splitLabel(labels[i])
+		switch k {
+		case "cr50":
+			vn := "CR50_PHASE_" + strings.ToUpper(v)
+			type t = inventory.SchedulableLabels_CR50_Phase
+			vals := inventory.SchedulableLabels_CR50_Phase_value
+			*ls.Cr50Phase = t(vals[vn])
+		default:
+			continue
+		}
+		labels = removeLabel(labels, i)
+		i--
 	}
 	return labels
 }
