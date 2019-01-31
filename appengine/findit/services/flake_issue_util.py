@@ -656,60 +656,6 @@ def UpdateIssueLeaves(flake_issue_key, merged_flake_issue_key):
   ndb.put_multi(issue_leaves)
 
 
-def CreateOrUpdateIssue(issue_generator, luci_project='chromium'):
-  """Updates an issue if it exists, otherwise creates a new one.
-
-  This method uses the best-effort to search the existing FlakeIssue entities
-  and open issues on Monorail that are related to the flaky tests and reuse them
-  if found, otherwise, creates a new issue and attach it to a Flake Model entity
-  so that the newly created issue can be reused in the future.
-
-  Args:
-    issue_generator: A FlakyTestIssueGenerator object.
-    luci_project: Name of the LUCI project that the flaky test is in, it is
-                  used for searching existing Flake and FlakeIssue entities.
-
-  Returns:
-    Id of the issue that was eventually created or updated.
-  """
-  step_name = issue_generator.GetStepName()
-  test_name = issue_generator.GetTestName()
-  test_label_name = issue_generator.GetTestLabelName()
-
-  target_flake = Flake.Get(luci_project, step_name, test_name)
-  if not target_flake:
-    target_flake = Flake.Create(luci_project, step_name, test_name,
-                                test_label_name)
-    target_flake.put()
-
-  monorail_project = issue_generator.GetMonorailProject()
-  flake_issue = GetFlakeIssue(target_flake)
-
-  previous_tracking_bug_id = None
-
-  if flake_issue:
-    merged_issue = GetAndUpdateMergedIssue(flake_issue)
-    if flake_issue.issue_id != merged_issue.id:
-      previous_tracking_bug_id = flake_issue.issue_id
-
-    if merged_issue.open:
-      logging.info(
-          'Currently attached issue %s is open, update flake: %s with new '
-          'occurrences.',
-          FlakeIssue.GetLinkForIssue(monorail_project, merged_issue.id),
-          target_flake.key)
-      issue_generator.SetPreviousTrackingBugId(previous_tracking_bug_id)
-      monorail_util.UpdateIssueWithIssueGenerator(
-          issue_id=merged_issue.id, issue_generator=issue_generator)
-      return merged_issue.id
-
-  logging.info(
-      'flake %s has no issue attached or the attached issue was closed.' %
-      target_flake.key)
-
-  return _CreateIssueForFlake(issue_generator, target_flake)
-
-
 def _CreateIssueForFlake(issue_generator, target_flake):
   """Creates a monorail bug for a single flake.
 
@@ -840,7 +786,7 @@ def _UpdateFlakeIssueForFlakeGroup(flake_group):
 
 
 def _UpdateIssuesForFlakes(flake_groups_to_update_issue):
-  """Creates monorail bugs.
+  """Updates monorail bugs.
 
   The issues have been updated when generating flake groups, so in this function
   directly updates the issues.
