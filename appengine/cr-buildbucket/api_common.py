@@ -163,8 +163,8 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   assert build.key.id()
 
   result_details = (build.result_details or {}).copy()
-  result_details['properties'] = {}
-  if build_output_properties:
+  result_details.setdefault('properties', {})
+  if build_output_properties and not result_details['properties']:
     result_details['properties'] = _properties_to_dict(
         build_output_properties.properties
     )
