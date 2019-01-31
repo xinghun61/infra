@@ -124,33 +124,30 @@
               </thead>
               <tbody>
                 <tr>
-                  <td>test_type</td>
+                  <td>builder</td>
                   <td>
-                    <a href="/ranked-flakes?flake_filter=test_type::network_service_browser_tests">test_type::network_service_browser_tests</a> matches tests in the step "network_service_browser_tests", "network_service_browser_tests on Mac", etc<br>
+                    <a href="/ranked-flakes?flake_filter=builder::win7_chromium_rel_ng">builder::win7_chromium_rel_ng</a> <br>
                   </td>
                 </tr>
                 <tr>
-                  <td>component</td>
+                  <td>master</td>
                   <td>
-                    <a href="/ranked-flakes?flake_filter=component::Blink>Accessibility">component::Blink>Accessibility</a> matches tests whose source files match COMPONENT definition in <a href="https://cs.chromium.org/chromium/src/third_party/blink/renderer/modules/accessibility/OWNERS?q=COMPONENT">OWNERS</a> file. If an OWNERS file in a sub-directory define another sub-component, those tests for the sub-component are NOT included here<br>
+                    <a href="/ranked-flakes?flake_filter=master::tryserver.chromium.android">master::tryserver.chromium.android</a> <br>
                   </td>
                 </tr>
                 <tr>
-                  <td>directory</td>
+                  <td>bucket</td>
                   <td>
-                    <a href="/ranked-flakes?flake_filter=directory::base/">directory::base/</a> matches tests defined in the source file within the directory base/. Arbitrary level of directories are supported except the root directory of the code base<br>
+                    <a href="/ranked-flakes?flake_filter=bucket::try">bucket::try</a> <br>
                   </td>
                 </tr>
                 <tr>
-                  <td>watchlist</td>
+                  <td>suite</td>
                   <td>
-                    <a href="/ranked-flakes?flake_filter=watchlist::accessibility">watchlist::accessibility</a> matches tests whose source files match the accessibility watchlist in src/WATCHLISTS<br>
-                  </td>
-                </tr>
-                <tr>
-                  <td>binary</td>
-                  <td>
-                    <a href="/ranked-flakes?flake_filter=binary::browser_tests">binary::browser_tests</a> matches tests in all steps using browser_tests binary, e.g. "browser_tests", "network_service_browser_tests on Mac", etc<br>
+                    <a href="/ranked-flakes?flake_filter=suite::GCMConnectionHandlerImplTest">suite::GCMConnectionHandlerImplTest</a> matches gtest GCMConnectionHandlerImplTest.*<br>
+                    <a href="/ranked-flakes?flake_filter=suite::FullscreenVideoTest">suite::FullscreenVideoTest</a> matches Java tests *.FullscreenVideoTest#test*<br>
+                    <a href="/ranked-flakes?flake_filter=suite::third_party/blink/web_tests/fast/events">suite::third_party/blink/web_tests/fast/events</a> matches Blink layout tests fast/events/*. The immediate directory of a Blink layout tests is chosen as the suite name of the test<br>
+                    <a href="/ranked-flakes?flake_filter=suite::webgl_conformance_tests">suite::webgl_conformance_tests</a> matches Telemetry-based gpu tests gpu_tests.webgl_conformance_integration_test.* Canonical step name is used as suite for Telemetry-based gpu tests. <br>
                   </td>
                 </tr>
                 <tr>
@@ -160,17 +157,39 @@
                   </td>
                 </tr>
                 <tr>
-                  <td>suite</td>
+                  <td>test_type</td>
                   <td>
-                    <a href="/ranked-flakes?flake_filter=suite::GCMConnectionHandlerImplTest">suite::GCMConnectionHandlerImplTest</a> matches gtest GCMConnectionHandlerImplTest.*<br>
-                    <a href="/ranked-flakes?flake_filter=suite::FullscreenVideoTest">suite::FullscreenVideoTest</a> matches Java tests *.FullscreenVideoTest#test*<br>
-                    <a href="/ranked-flakes?flake_filter=suite::third_party/blink/web_tests/fast/events">suite::third_party/blink/web_tests/fast/events</a> matches Blink layout tests fast/events/*. The immediate directory of a Blink layout tests is chosen as the suite name of the test<br>
+                    <a href="/ranked-flakes?flake_filter=test_type::browser_tests">test_type::browser_tests</a> matches tests in the step "browser_tests", "browser_tests on Mac", etc<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>binary</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=binary::browser_tests">binary::browser_tests</a> matches tests in all steps using browser_tests binary, e.g. "browser_tests", "network_service_browser_tests on Mac", etc<br>
                   </td>
                 </tr>
                 <tr>
                   <td>source</td>
                   <td>
                     <a href="/ranked-flakes?flake_filter=source::base/hash_unittest.cc">source::base/hash_unittest.cc</a> matches tests defined in the source file base/hash_unittest.cc<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>directory</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=directory::base/">directory::base/</a> matches tests defined in the source file within the directory base/. Arbitrary level of directories are supported except the root directory of the code base<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>component</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=component::Blink>Accessibility">component::Blink>Accessibility</a> matches tests whose source files match COMPONENT definition in <a href="https://cs.chromium.org/chromium/src/third_party/blink/renderer/modules/accessibility/OWNERS?q=COMPONENT">OWNERS</a> file. If an OWNERS file in a sub-directory define another sub-component, those tests for the sub-component are NOT included here<br>
+                  </td>
+                </tr>
+                <tr>
+                  <td>watchlist</td>
+                  <td>
+                    <a href="/ranked-flakes?flake_filter=watchlist::accessibility">watchlist::accessibility</a> matches tests whose source files match the accessibility watchlist in src/WATCHLISTS<br>
                   </td>
                 </tr>
               </tbody>
