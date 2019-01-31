@@ -18,6 +18,7 @@ This document contains information on how to use the RotaNG web interface.
     - [History](#history)
     - [Current](#current)
     - [Generate](#generate)
+  - [Shift Modifiers](#shift-modifiers)
 - [Developer Information](./DEVINFO.md)
 - [Migrate Information](./SWITCH.md)
 
@@ -230,6 +231,10 @@ Already scheduled shifts will be unaffected , you'll have to swap  with someone 
 
     Number of members to schedule per shift.
 
+  * *Modifiers*
+
+    See [Shift Modifiers](#shift-modifiers)
+
   * **Generator**
 
     What generator to use when scheduling new shifts.
@@ -253,3 +258,31 @@ Shows upcoming shifts. As an owner you can modify shifts here. Rules for how man
 Schedules new shifts. Leaving the `StartTime` empty will continue scheduling from last current shift. If `ShiftsToSchedule` is left empty
 the configuration setting will be used.
 
+### Shift Modifiers
+
+Shift Modifiers are applied after the shift Generator is run. If set in the rotation configuration they'll be applied default to
+all generated shifts.
+
+They can also be temporarily enabled/disabled when managing shifts from the `Rotations -> Shifts` button.
+
+Currently two modifiers exists.
+
+#### WeekendSkip
+
+This modifier moves generated shifts away from weekends , Saturday&Sunday.
+
+Eg.
+
+A shift scheduled for Friday - Saturday will be split up into two shifts , one for Friday and one for Monday.
+A shift scheduled for Saturday - Sunday would be moved to Monday - Tuesday.
+
+#### SplitShift
+
+This modifier splits the generated shifts into 1 day shifts.
+
+Eg.
+
+A shift scheduled for Monday - Wednesday would be turned into three one day shifts; Monday, Tuesday and Wednesday.
+
+This lays the groundwork for single day swaps instead of having to swap a full shift.
+The UI will need to catch up to make this useful.

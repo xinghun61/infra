@@ -135,15 +135,15 @@ class RotaShiftGenerate extends LitElement {
     if (!this.modifiers) {
       return;
     }
-    const template = `<input type="checkbox" name=${m.Name}
-          value="${m.Name}" id="modifier-${i}" ${checked}>
-          <small>${m.Name}</small><br>`;
     const res = this.modifiers.map((mod, i) => {
-      let checked = ''; // eslint-disable-line no-unused-vars
-      if (m.Checked) {
-        checked = 'checked';
+      const name = html`<small>${mod.Name}</small><br>`;
+      if (mod.Checked) {
+        return html`<input type="checkbox" name="${mod.Name}"
+          value="${mod.Name}" id="modifier-${i}"
+          checked>${name}`;
       }
-      return html`${template}`;
+      return html`<input type="checkbox" name="${mod.Name}" value="${mod.Name}"
+        id="modifier-${i}">${name}`;
     });
     return html`<span class="flex-container">${res}</span>`;
   }

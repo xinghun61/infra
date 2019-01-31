@@ -470,20 +470,16 @@ class RotaCreate extends LitElement {
         `)}
       `;
     }
-    let res = html``;
-    for (let i = 0; i < this.modifiers.length; i++) {
+    const res = this.modifiers.map((mod, i) => {
+      const name = html`<small>${mod}</small><br>`;
       if (this.config.Cfg.Config.Shifts.Modifiers &&
-        this.config.Cfg.Config.Shifts.Modifiers.indexOf(this.modifiers[i])
-          != -1) {
-        res = html`${res}<input type="checkbox" name="${this.modifiers[i]}"
-          value="${this.modifiers[i]}" id="modifier-${i}"
-            checked><small>${this.modifiers[i]}</small><br>`;
-        continue;
+        this.config.Cfg.Config.Shifts.Modifiers.indexOf(mod) != -1) {
+        return html`<input type="checkbox" name="${mod}" value="${mod}"
+          id="modifier-${i}" checked>${name}`;
       }
-      res = html`${res}<input type="checkbox" name="${this.modifiers[i]}"
-        value="${this.modifiers[i]}" id="modifier-${i}">
-          <small>${this.modifiers[i]}</small><br>`;
-    }
+      return html`<input type="checkbox" name="${mod}" value="${mod}"
+        id="modifier-${i}">${name}`;
+    });
     return res;
   }
 

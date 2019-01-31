@@ -22,4 +22,4 @@ export const TimeZones = [
   {name: 'Europe/Paris', description: 'Paris'},
   {name: 'Europe/Stockholm', description: 'Stockholm'},
 ];
-export const BugList = 'https://bugs.chromium.org/p/chromium/issues/entry?components=Infra%3EProdTech%3ERotations';
+export const BugList = 'https://bugs.chromium.org/p/chromium/issues/entry?components=Infra%3EProdTech%3ERotation';
