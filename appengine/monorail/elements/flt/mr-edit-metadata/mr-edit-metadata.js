@@ -143,7 +143,10 @@ class MrEditMetadata extends MetadataMixin(Polymer.Element) {
   }
 
   discard() {
-    this.dispatchEvent(new CustomEvent('discard'));
+    const isDirty = Object.keys(this.getDelta()).length !== 0;
+    if (!isDirty || confirm('Discard your changes?')) {
+      this.dispatchEvent(new CustomEvent('discard'));
+    }
   }
 
   loadAttachments() {
