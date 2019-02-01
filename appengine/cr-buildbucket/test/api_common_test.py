@@ -11,6 +11,7 @@ utils.fix_protobuf_package()
 from test import test_util
 from testing_utils import testing
 
+from proto import common_pb2
 import api_common
 import bbutil
 import config
@@ -46,53 +47,44 @@ class ApiCommonTests(testing.AppengineTestCase):
         'swarming_hostname:swarming.example.com',
         'swarming_task_id:deadbeef',
     ]
+    result_details = {
+        'properties': {'a': 'b'},
+        'swarming': {
+            'bot_dimensions': {
+                'dim1': ['v1', 'v2'],
+                'dim2': ['v1'],
+            },
+        },
+        'error': {'message': 'bad'},
+    }
     expected = {
-        'project':
-            'chromium',
-        'bucket':
-            'luci.chromium.try',
-        'created_by':
-            'anonymous:anonymous',
-        'created_ts':
-            '1483228800000000',
-        'id':
-            '8991715593768927232',
-        'parameters_json':
-            props_json,
-        'result_details_json':
-            json.dumps({
-                'properties': {'a': 'b'},
-                'swarming': {
-                    'bot_dimensions': {
-                        'dim1': ['v1', 'v2'],
-                        'dim2': ['v1'],
-                    },
-                },
-            }),
-        'status':
-            'SCHEDULED',
-        'status_changed_ts':
-            '1483228800000000',
-        'tags':
-            tags,
-        'utcnow_ts':
-            '1483228800000000',
-        'updated_ts':
-            '1483228800000000',
-        'canary_preference':
-            'PROD',
-        'canary':
-            False,
-        'service_account':
-            'service@example.com',
-        'url':
-            'https://ci.example.com/8991715593768927232',
+        'project': 'chromium',
+        'bucket': 'luci.chromium.try',
+        'created_by': 'anonymous:anonymous',
+        'created_ts': '1483228800000000',
+        'completed_ts': '1483228800000000',
+        'id': '8991715593768927232',
+        'parameters_json': props_json,
+        'result_details_json': json.dumps(result_details),
+        'status': 'COMPLETED',
+        'result': 'FAILURE',
+        'failure_reason': 'INFRA_FAILURE',
+        'status_changed_ts': '1483228800000000',
+        'tags': tags,
+        'utcnow_ts': '1483228800000000',
+        'updated_ts': '1483228800000000',
+        'canary_preference': 'PROD',
+        'canary': False,
+        'service_account': 'service@example.com',
+        'url': 'https://ci.example.com/8991715593768927232',
     }
 
     out_props = model.BuildOutputProperties(
         properties=bbutil.dict_to_struct({'a': 'b'})
     )
     build = test_util.build(
+        status=common_pb2.INFRA_FAILURE,
+        output=dict(summary_markdown='bad'),
         infra=dict(
             swarming=dict(
                 bot_dimensions=[

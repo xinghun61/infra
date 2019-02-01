@@ -1154,19 +1154,16 @@ def _sync_build_in_memory(
     return False
 
   now = utils.utcnow()
-
   old_status = build.proto.status
-  build.result_details = {}
+  bp = build.proto
+  sw = bp.infra.swarming
 
-  build.proto.infra.swarming.ClearField('bot_dimensions')
+  sw.ClearField('bot_dimensions')
   for d in (task_result or {}).get('bot_dimensions', []):
     assert isinstance(d['value'], list)
     for v in d['value']:
-      build.proto.infra.swarming.bot_dimensions.add(key=d['key'], value=v)
-  build.proto.infra.swarming.bot_dimensions.sort(key=lambda d: (d.key, d.value))
-
-  # error message to include in result_details. Used only if build is complete.
-  errmsg = ''
+      sw.bot_dimensions.add(key=d['key'], value=v)
+  sw.bot_dimensions.sort(key=lambda d: (d.key, d.value))
 
   terminal_states = {
       'EXPIRED',
@@ -1179,84 +1176,81 @@ def _sync_build_in_memory(
   }
   state = (task_result or {}).get('state')
   if build_run_result_error:
-    build.proto.status = common_pb2.INFRA_FAILURE
-    errmsg = '%s returned by the swarming task is bad: %s.' % (
-        _BUILD_RUN_RESULT_FILENAME, build_run_result_error
+    bp.status = common_pb2.INFRA_FAILURE
+    bp.output.summary_markdown = (
+        '`%s` returned by the swarming task is bad: %s.' %
+        (_BUILD_RUN_RESULT_FILENAME, build_run_result_error)
     )
   elif state is None:
-    build.proto.status = common_pb2.INFRA_FAILURE
-    sw = build.proto.infra.swarming
-    errmsg = (
+    bp.status = common_pb2.INFRA_FAILURE
+    bp.output.summary_markdown = (
         'Swarming task %s on %s unexpectedly disappeared' %
         (sw.task_id, sw.hostname)
     )
   elif state == 'PENDING':
-    if build.proto.status == common_pb2.STARTED:  # pragma: no cover
+    if bp.status == common_pb2.STARTED:  # pragma: no cover
       # Most probably, race between PubSub push handler and Cron job.
       # With swarming, a build cannot go from STARTED back to PENDING,
       # so ignore this.
       return False
-    build.proto.status = common_pb2.SCHEDULED
+    bp.status = common_pb2.SCHEDULED
   elif state == 'RUNNING':
-    build.proto.status = common_pb2.STARTED
+    bp.status = common_pb2.STARTED
   elif state in terminal_states:
     if state in ('CANCELED', 'KILLED'):
-      build.proto.status = common_pb2.CANCELED
+      bp.status = common_pb2.CANCELED
     elif state in ('EXPIRED', 'NO_RESOURCE'):
       # Task did not start.
-      build.proto.status = common_pb2.INFRA_FAILURE
-      build.proto.infra_failure_reason.resource_exhaustion = True
+      bp.status = common_pb2.INFRA_FAILURE
+      bp.infra_failure_reason.resource_exhaustion = True
     elif state == 'TIMED_OUT':
       # Task started, but timed out.
-      build.proto.status = common_pb2.INFRA_FAILURE
+      bp.status = common_pb2.INFRA_FAILURE
     elif state == 'BOT_DIED' or task_result.get('internal_failure'):
-      build.proto.status = common_pb2.INFRA_FAILURE
+      bp.status = common_pb2.INFRA_FAILURE
     elif build_run_result is None:
       # There must be a build_run_result, otherwise it is an infra failure.
-      build.proto.status = common_pb2.INFRA_FAILURE
+      bp.status = common_pb2.INFRA_FAILURE
     elif task_result.get('failure'):
       if build_run_result.get('infraFailure'):
-        build.proto.status = common_pb2.INFRA_FAILURE
+        bp.status = common_pb2.INFRA_FAILURE
       else:
-        build.proto.status = common_pb2.FAILURE
+        bp.status = common_pb2.FAILURE
     else:
       assert state == 'COMPLETED'
-      build.proto.status = common_pb2.SUCCESS
+      bp.status = common_pb2.SUCCESS
   else:  # pragma: no cover
     assert False, 'Unexpected task state: %s' % state
 
-  if build.proto.status == old_status:  # pragma: no cover
+  if bp.status == old_status:  # pragma: no cover
     return False
   build.status_changed_time = now
   logging.info(
-      'Build %s status: %s -> %s', build.key.id(), old_status,
-      build.proto.status
+      'Build %s status: %s -> %s', build.key.id(), old_status, bp.status
   )
 
   def ts(key):
     v = (task_result or {}).get(key)
     return _parse_ts(v) if v else None
 
-  if build.proto.status == common_pb2.STARTED:
-    build.proto.start_time.FromDatetime(ts('started_ts') or now)
+  if bp.status == common_pb2.STARTED:
+    bp.start_time.FromDatetime(ts('started_ts') or now)
   elif build.is_ended:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
 
     started_ts = ts('started_ts')
     if started_ts:
-      build.proto.start_time.FromDatetime(started_ts)
-    build.proto.end_time.FromDatetime(
-        ts('completed_ts') or ts('abandoned_ts') or now
-    )
+      bp.start_time.FromDatetime(started_ts)
+    bp.end_time.FromDatetime(ts('completed_ts') or ts('abandoned_ts') or now)
     if build_run_result:
       ann = build_run_result.get('annotations') or {}
-      build.result_details['ui'] = {
-          'info': '\n'.join(ann.get('text', [])),
+      build.result_details = {
+          # TODO(nodir): remove this as soon as Milo switches to buildbucket
+          # v2 API.
+          'ui': {'info': '\n'.join(ann.get('text', []))},
+          'properties': _extract_properties(ann),
       }
-      build.result_details['properties'] = _extract_properties(ann)
-    if errmsg:
-      build.result_details['error'] = {'message': errmsg}
   return True
 
 

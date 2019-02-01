@@ -2259,7 +2259,6 @@ class CronUpdateTest(BaseTest):
     self.assertEqual(build.proto.status, common_pb2.STARTED)
     self.assertIsNotNone(build.lease_key)
     self.assertFalse(build.proto.HasField('end_time'))
-    self.assertIsNotNone(build.result_details)
 
     load_task_result_async.return_value = future({
         'state': 'COMPLETED',
@@ -2269,7 +2268,6 @@ class CronUpdateTest(BaseTest):
     build = build.key.get()
     self.assertEqual(build.proto.status, common_pb2.SUCCESS)
     self.assertIsNone(build.lease_key)
-    self.assertIsNotNone(build.result_details)
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_sync_build_async_no_task(self, load_task_result_async):
@@ -2280,7 +2278,7 @@ class CronUpdateTest(BaseTest):
     swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
     self.assertEqual(build.proto.status, common_pb2.INFRA_FAILURE)
-    self.assertIsNotNone(build.result_details)
+    self.assertTrue(build.proto.output.summary_markdown)
     self.assertIsNone(build.lease_key)
 
   def test_sync_build_async_non_swarming(self):

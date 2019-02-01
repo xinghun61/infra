@@ -485,7 +485,7 @@ def fail(
   )
 
 
-def cancel(build_id, human_reason=None, result_details=None):
+def cancel(build_id, summary_markdown='', result_details=None):
   """Cancels build. Does not require a lease key.
 
   The current user has to have a permission to cancel a build in the
@@ -493,7 +493,7 @@ def cancel(build_id, human_reason=None, result_details=None):
 
   Args:
     build_id: id of the build to cancel.
-    human_reason (basestring): explanation of cancelation for a human.
+    summary_markdown (basestring): human-readable explanation.
     result_details (dict): build result description.
 
   Returns:
@@ -517,7 +517,7 @@ def cancel(build_id, human_reason=None, result_details=None):
     build.proto.status = common_pb2.CANCELED
     build.status_changed_time = now
     build.result_details = result_details
-    build.proto.cancel_reason.message = human_reason or ''
+    build.proto.output.summary_markdown = summary_markdown
     build.proto.cancel_reason.canceled_by = identity_str
     build.proto.end_time.FromDatetime(now)
     build.clear_lease()

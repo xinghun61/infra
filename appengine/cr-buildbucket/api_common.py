@@ -11,6 +11,7 @@ from protorpc import messages
 
 from components import utils
 
+from proto import common_pb2
 import bbutil
 import config
 import logging
@@ -169,21 +170,28 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
         build_output_properties.properties
     )
 
-  if build.proto.infra.swarming.bot_dimensions:
+  bp = build.proto
+  sw = bp.infra.swarming
+
+  if bp.status != common_pb2.SUCCESS and bp.output.summary_markdown:
+    result_details['error'] = {
+        'message': bp.output.summary_markdown,
+    }
+
+  if sw.bot_dimensions:
     by_key = {}
-    for d in build.proto.infra.swarming.bot_dimensions:
+    for d in sw.bot_dimensions:
       by_key.setdefault(d.key, []).append(d.value)
     result_details.setdefault('swarming', {})['bot_dimensions'] = by_key
 
   tags = set(build.tags)
   if build.is_luci:
-    sw = build.proto.infra.swarming
     tags.add('swarming_hostname:%s' % sw.hostname)
     tags.add('swarming_task_id:%s' % sw.task_id)
 
   msg = BuildMessage(
       id=build.key.id(),
-      project=build.proto.builder.project,
+      project=bp.builder.project,
       bucket=legacy_bucket_name(build.bucket_id, build.is_luci),
       tags=sorted(tags),
       # TODO(nodir): move requested properties out from model.Build.parameters
@@ -196,10 +204,10 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
       url=build.url,
-      created_ts=proto_to_timestamp(build.proto.create_time),
-      started_ts=proto_to_timestamp(build.proto.start_time),
-      updated_ts=proto_to_timestamp(build.proto.update_time),
-      completed_ts=proto_to_timestamp(build.proto.end_time),
+      created_ts=proto_to_timestamp(bp.create_time),
+      started_ts=proto_to_timestamp(bp.start_time),
+      updated_ts=proto_to_timestamp(bp.update_time),
+      completed_ts=proto_to_timestamp(bp.end_time),
       created_by=build.created_by.to_bytes() if build.created_by else None,
       status_changed_ts=utils.datetime_to_timestamp(build.status_changed_time),
       utcnow_ts=utils.datetime_to_timestamp(utils.utcnow()),
@@ -207,7 +215,7 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       canary_preference=build.canary_preference,
       canary=build.canary,
       experimental=build.experimental,
-      service_account=build.proto.infra.swarming.task_service_account,
+      service_account=sw.task_service_account,
       # when changing this function, make sure build_to_dict would still work
   )
 

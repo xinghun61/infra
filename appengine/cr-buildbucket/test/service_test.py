@@ -149,15 +149,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   @mock.patch('swarming.cancel_task_async', autospec=True)
   def test_cancel(self, cancel_task_async):
     test_util.build(id=1).put()
-    build = service.cancel(1, human_reason='nope')
+    build = service.cancel(1, summary_markdown='nope')
     self.assertEqual(build.proto.status, common_pb2.CANCELED)
     self.assertEqual(build.proto.end_time.ToDatetime(), utils.utcnow())
+    self.assertEqual(build.proto.output.summary_markdown, 'nope')
     self.assertEqual(
         build.proto.cancel_reason,
-        build_pb2.CancelReason(
-            message='nope',
-            canceled_by=self.current_identity.to_bytes(),
-        ),
+        build_pb2.CancelReason(canceled_by=self.current_identity.to_bytes()),
     )
     cancel_task_async.assert_called_with('swarming.example.com', 'deadbeef')
     self.assertEqual(build.status_changed_time, utils.utcnow())
