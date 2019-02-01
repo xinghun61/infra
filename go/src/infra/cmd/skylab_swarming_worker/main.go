@@ -98,7 +98,12 @@ func mainInner(a *args) error {
 		return err
 	}
 	defer annotWriter.Close()
-	i, err := harness.Open(b)
+	var i *harness.Info
+	if updatesInventory(a.taskName) {
+		i, err = harness.Open(b, harness.UpdateInventory())
+	} else {
+		i, err = harness.Open(b)
+	}
 	if err != nil {
 		return err
 	}
@@ -131,6 +136,12 @@ func mainInner(a *args) error {
 		return err
 	}
 	return nil
+}
+
+// updatesInventory returns true if the task should update the inventory
+func updatesInventory(taskName string) bool {
+	task, _ := getAdminTask(taskName)
+	return task == "repair"
 }
 
 func runLuciferTask(i *harness.Info, a *args, logdogOutput io.Writer, ta lucifer.TaskArgs) error {
