@@ -2,21 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// +build darwin linux
-
 package main
 
 import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
 	"os/exec"
-	"os/signal"
 	"strings"
-
-	"golang.org/x/sys/unix"
 
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
@@ -32,46 +26,16 @@ type luciferResult struct {
 
 func runLuciferJob(i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
 	cmd := lucifer.TestCommand(i.LuciferConfig(), r)
-	c := make(chan os.Signal, 1)
-	defer close(c)
-	signal.Notify(c, unix.SIGTERM, unix.SIGINT)
-	defer signal.Stop(c)
-	go listenAndAbort(c, r.AbortSock)
+	f := event.ForwardAbortSignal(r.AbortSock)
+	defer f.Close()
 	return runLuciferCommand(i, w, cmd)
 }
 
 func runLuciferAdminTask(i *harness.Info, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
 	cmd := lucifer.AdminTaskCommand(i.LuciferConfig(), r)
-	c := make(chan os.Signal)
-	defer close(c)
-	signal.Notify(c, unix.SIGTERM, unix.SIGINT)
-	defer signal.Stop(c)
-	go listenAndAbort(c, r.AbortSock)
+	f := event.ForwardAbortSignal(r.AbortSock)
+	defer f.Close()
 	return runLuciferCommand(i, w, cmd)
-}
-
-// listenAndAbort sends an abort to an abort socket when signals are
-// received.  This function is intended to be used as a goroutine for
-// handling signals.  This function returns when the channel is
-// closed.
-func listenAndAbort(c <-chan os.Signal, path string) {
-	for range c {
-		if err := abort(path); err != nil {
-			log.Printf("Error sending abort for signal: %s", err)
-		}
-	}
-}
-
-// abort sends an abort datagram to the socket at the given path.
-func abort(path string) error {
-	c, err := net.Dial("unixgram", path)
-	if err != nil {
-		return err
-	}
-	// The value sent does not matter.
-	b := []byte("abort")
-	_, err = c.Write(b)
-	return err
 }
 
 // runLuciferCommand runs a Lucifer exec.Cmd and processes Lucifer events.
