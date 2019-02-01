@@ -41,7 +41,7 @@ def on_build_started(build):  # pragma: no cover
   assert not ndb.in_transaction()
   logging.info('Build %s was started. URL: %s', build.key.id(), build.url)
   metrics.inc_started_builds(build)
-  if build.start_time is not None:
+  if build.proto.HasField('start_time'):
     metrics.add_build_scheduling_duration(build)
 
 
@@ -61,7 +61,7 @@ def on_build_completed(build):  # pragma: no cover
   )
   metrics.inc_completed_builds(build)
   metrics.add_build_cycle_duration(build)
-  if build.start_time:
+  if build.proto.HasField('start_time'):
     metrics.add_build_run_duration(build)
 
 

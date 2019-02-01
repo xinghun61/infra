@@ -16,6 +16,7 @@ utils.fix_protobuf_package()
 
 from google import protobuf
 from google.protobuf import json_format
+from google.protobuf import timestamp_pb2
 
 from components import auth
 from components import net
@@ -48,6 +49,10 @@ linux_CACHE_NAME = (
 )
 
 NOW = datetime.datetime(2015, 11, 30)
+
+
+def tspb(seconds, nanos=0):
+  return timestamp_pb2.Timestamp(seconds=seconds, nanos=nanos)
 
 
 class BaseTest(testing.AppengineTestCase):
@@ -1590,7 +1595,7 @@ class SwarmingTest(BaseTest):
       ({
           'task_result': None,
           'status': common_pb2.INFRA_FAILURE,
-          'complete_time': NOW,
+          'end_time': test_util.dt2ts(NOW),
       },),
       ({
           'task_result': {'state': 'PENDING'},
@@ -1602,7 +1607,7 @@ class SwarmingTest(BaseTest):
               'started_ts': '2018-01-29T21:15:02.649750',
           },
           'status': common_pb2.STARTED,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
       },),
       ({
           'task_result': {
@@ -1612,8 +1617,8 @@ class SwarmingTest(BaseTest):
           },
           'build_run_result': {},
           'status': common_pb2.SUCCESS,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1657,9 +1662,9 @@ class SwarmingTest(BaseTest):
               common_pb2.StringPair(key='pool', value='luci.chromium.try'),
           ],
           'start_time':
-              datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time':
-              datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+              tspb(seconds=1517260502, nanos=649750000),
+          'end_time':
+              tspb(seconds=1517271318, nanos=162860000),
           'build_steps': [
               step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS)
           ],
@@ -1673,8 +1678,8 @@ class SwarmingTest(BaseTest):
           },
           'build_run_result': {},
           'status': common_pb2.FAILURE,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1690,8 +1695,8 @@ class SwarmingTest(BaseTest):
               },
           },
           'status': common_pb2.INFRA_FAILURE,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1702,8 +1707,8 @@ class SwarmingTest(BaseTest):
           },
           'build_run_result': None,
           'status': common_pb2.INFRA_FAILURE,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1714,8 +1719,8 @@ class SwarmingTest(BaseTest):
           },
           'build_run_result_error': swarming._BUILD_RUN_RESULT_CORRUPTED,
           'status': common_pb2.INFRA_FAILURE,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1726,8 +1731,8 @@ class SwarmingTest(BaseTest):
               'completed_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.INFRA_FAILURE,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1736,8 +1741,8 @@ class SwarmingTest(BaseTest):
               'abandoned_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.INFRA_FAILURE,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1746,8 +1751,8 @@ class SwarmingTest(BaseTest):
               'completed_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.INFRA_FAILURE,
-          'start_time': datetime.datetime(2018, 1, 29, 21, 15, 2, 649750),
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'start_time': tspb(seconds=1517260502, nanos=649750000),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1756,7 +1761,7 @@ class SwarmingTest(BaseTest):
           },
           'status': common_pb2.INFRA_FAILURE,
           'resource_exhaustion': True,
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1764,7 +1769,7 @@ class SwarmingTest(BaseTest):
               'abandoned_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.CANCELED,
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1772,7 +1777,7 @@ class SwarmingTest(BaseTest):
               'abandoned_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.CANCELED,
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
           'task_result': {
@@ -1781,7 +1786,7 @@ class SwarmingTest(BaseTest):
           },
           'status': common_pb2.INFRA_FAILURE,
           'resource_exhaustion': True,
-          'complete_time': datetime.datetime(2018, 1, 30, 0, 15, 18, 162860),
+          'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
   ])
   def test_sync(self, case):
@@ -1802,16 +1807,17 @@ class SwarmingTest(BaseTest):
     ).get_result()
 
     build = build.key.get()
-    self.assertEqual(build.proto.status, case['status'])
+    bp = build.proto
+    self.assertEqual(bp.status, case['status'])
     self.assertEqual(
-        build.proto.infra_failure_reason.resource_exhaustion,
+        bp.infra_failure_reason.resource_exhaustion,
         case.get('resource_exhaustion', False)
     )
-    self.assertEqual(build.start_time, case.get('start_time'))
-    self.assertEqual(build.complete_time, case.get('complete_time'))
+
+    self.assertEqual(bp.start_time, case.get('start_time', tspb(0)))
+    self.assertEqual(bp.end_time, case.get('end_time', tspb(0)))
     self.assertEqual(
-        list(build.proto.infra.swarming.bot_dimensions),
-        case.get('bot_dimensions', [])
+        list(bp.infra.swarming.bot_dimensions), case.get('bot_dimensions', [])
     )
 
     expected_steps = case.get('build_steps') or []
@@ -2284,7 +2290,7 @@ class CronUpdateTest(BaseTest):
     build = build.key.get()
     self.assertEqual(build.proto.status, common_pb2.STARTED)
     self.assertIsNotNone(build.lease_key)
-    self.assertIsNone(build.complete_time)
+    self.assertFalse(build.proto.HasField('end_time'))
     self.assertIsNotNone(build.result_details)
 
     load_task_result_async.return_value = future({

@@ -151,10 +151,6 @@ def build(**build_proto_fields):  # pragma: no cover
         'repo_url': 'https://chromium.googlesource.com/chromium/src',
     }]
 
-  if proto.HasField('start_time'):
-    ret.start_time = proto.start_time.ToDatetime()
-  if proto.HasField('end_time'):
-    ret.complete_time = proto.end_time.ToDatetime()
   return ret
 
 

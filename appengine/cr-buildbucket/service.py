@@ -261,9 +261,10 @@ def start(build_id, lease_key, url, canary):
 
     _check_lease(build, lease_key)
 
-    build.start_time = utils.utcnow()
+    now = utils.utcnow()
+    build.proto.start_time.FromDatetime(now)
     build.proto.status = common_pb2.STARTED
-    build.status_changed_time = build.start_time
+    build.status_changed_time = now
     build.url = url
     build.canary = canary
     _fut_results(build.put_async(), events.on_build_starting_async(build))
@@ -402,9 +403,10 @@ def _complete(
       )
     _check_lease(build, lease_key)
 
+    now = utils.utcnow()
     build.proto.status = status
-    build.status_changed_time = utils.utcnow()
-    build.complete_time = utils.utcnow()
+    build.status_changed_time = now
+    build.proto.end_time.FromDatetime(now)
     if url is not None:  # pragma: no branch
       build.url = url
     build.result_details = result_details
@@ -517,7 +519,7 @@ def cancel(build_id, human_reason=None, result_details=None):
     build.result_details = result_details
     build.proto.cancel_reason.message = human_reason or ''
     build.proto.cancel_reason.canceled_by = identity_str
-    build.complete_time = now
+    build.proto.end_time.FromDatetime(now)
     build.clear_lease()
     futs = [
         build.put_async(),

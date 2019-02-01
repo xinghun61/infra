@@ -71,16 +71,12 @@ class BuildTest(testing.AppengineTestCase):
     build = model.Build(
         proto=build_pb2.Build(
             builder=dict(project='chromium', bucket='try', builder='linux'),
-            status=common_pb2.SUCCESS,
+            status=common_pb2.SCHEDULED,
             create_time=test_util.dt2ts(datetime.datetime(2019, 1, 1)),
         ),
-        start_time=datetime.datetime(2019, 1, 2),
-        complete_time=datetime.datetime(2019, 1, 3),
         update_time=datetime.datetime(2019, 1, 3),
     )
     build.put()
-    self.assertEqual(build.proto.start_time.ToDatetime(), build.start_time)
-    self.assertEqual(build.proto.end_time.ToDatetime(), build.complete_time)
     self.assertEqual(build.proto.update_time.ToDatetime(), build.update_time)
 
 

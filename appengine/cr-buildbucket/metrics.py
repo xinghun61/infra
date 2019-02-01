@@ -148,7 +148,7 @@ def _adder(metric_suffix, description, fields, bucketer, units, value_fn):
 
   def add(build):  # pragma: no cover
     metric = metric_exp if build.experimental else metric_prod
-    metric.add(value_fn(build), fields_for(build))
+    metric.add(value_fn(build.proto), fields_for(build))
 
   return add
 
@@ -191,20 +191,27 @@ inc_heartbeat_failures = gae_ts_mon.CounterMetric(
     'buildbucket/builds/heartbeats', 'Failures to extend a build lease', []
 ).increment
 
-# requires the argument to have non-None create_time and complete_time.
+
+def _ts_delta_sec(start, end):  # pragma: no cover
+  assert start.seconds
+  assert end.seconds
+  return end.seconds - start.seconds
+
+
+# requires the argument to have create_time and end_time.
 add_build_cycle_duration = _duration_adder(  # pragma: no branch
     'cycle_durations', 'Duration between build creation and completion',
-    lambda b: (b.complete_time - b.create_time).total_seconds())
+    lambda b: _ts_delta_sec(b.create_time, b.end_time))
 
-# requires the argument to have non-None start_time and complete_time.
+# requires the argument to have start_time and end_time.
 add_build_run_duration = _duration_adder(  # pragma: no branch
     'run_durations', 'Duration between build start and completion',
-    lambda b: (b.complete_time - b.start_time).total_seconds())
+    lambda b: _ts_delta_sec(b.start_time, b.end_time))
 
-# requires the argument to have non-None create_time and start_time.
+# requires the argument to have create_time and start_time.
 add_build_scheduling_duration = _duration_adder(  # pragma: no branch
     'scheduling_durations', 'Duration between build creation and start',
-    lambda b: (b.start_time - b.create_time).total_seconds())
+    lambda b: _ts_delta_sec(b.create_time, b.start_time))
 
 BUILD_COUNT_PROD = gae_ts_mon.GaugeMetric(
     _METRIC_PREFIX_PROD + 'count', 'Number of pending/running prod builds',

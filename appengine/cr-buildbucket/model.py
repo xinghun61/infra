@@ -259,16 +259,11 @@ class Build(ndb.Model):
   update_time = ndb.DateTimeProperty(auto_now=True)
   created_by = auth.IdentityProperty()
 
-  # when the build started. Unknown for old builds.
-  start_time = ndb.DateTimeProperty()
-
   # True if canary build infrastructure is used to run this build.
   # It may be None only in SCHEDULED state. Otherwise it must be True or False.
   # If canary_preference is CANARY, this field value does not have to be True,
   # e.g. if the build infrastructure does not have a canary.
   canary = ndb.BooleanProperty()
-
-  complete_time = ndb.DateTimeProperty()
 
   swarming_hostname = ndb.StringProperty()
 
@@ -285,12 +280,6 @@ class Build(ndb.Model):
     # This code updates only fields that are changed after creation.
     # Fields immutable after creation must be set already.
     self.proto.update_time.FromDatetime(self.update_time)
-    self.proto.ClearField('start_time')
-    if self.start_time:  # pragma: no branch
-      self.proto.start_time.FromDatetime(self.start_time)
-    self.proto.ClearField('end_time')
-    if self.complete_time:  # pragma: no branch
-      self.proto.end_time.FromDatetime(self.complete_time)
 
     is_started = self.proto.status == common_pb2.STARTED
     is_ended = self.is_ended

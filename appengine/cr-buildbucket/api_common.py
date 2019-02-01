@@ -103,8 +103,8 @@ def datetime_to_timestamp_safe(value):
 
 
 def proto_to_timestamp(ts):
-  # TODO(nodir): add "null" check when proto_to_timestamp is used for "nullable"
-  # time fields.
+  if not ts.seconds:
+    return None
   return utils.datetime_to_timestamp(ts.ToDatetime())
 
 
@@ -197,9 +197,9 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       lease_key=build.lease_key if include_lease_key else None,
       url=build.url,
       created_ts=proto_to_timestamp(build.proto.create_time),
-      started_ts=datetime_to_timestamp_safe(build.start_time),
+      started_ts=proto_to_timestamp(build.proto.start_time),
       updated_ts=datetime_to_timestamp_safe(build.update_time),
-      completed_ts=datetime_to_timestamp_safe(build.complete_time),
+      completed_ts=proto_to_timestamp(build.proto.end_time),
       created_by=build.created_by.to_bytes() if build.created_by else None,
       status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
       utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),

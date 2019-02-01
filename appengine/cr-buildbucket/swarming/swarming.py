@@ -1253,12 +1253,17 @@ def _sync_build_in_memory(
     return _parse_ts(v) if v else None
 
   if build.proto.status == common_pb2.STARTED:
-    build.start_time = ts('started_ts') or now
+    build.proto.start_time.FromDatetime(ts('started_ts') or now)
   elif build.is_ended:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
-    build.start_time = ts('started_ts') or build.start_time
-    build.complete_time = ts('completed_ts') or ts('abandoned_ts') or now
+
+    started_ts = ts('started_ts')
+    if started_ts:
+      build.proto.start_time.FromDatetime(started_ts)
+    build.proto.end_time.FromDatetime(
+        ts('completed_ts') or ts('abandoned_ts') or now
+    )
     if build_run_result:
       ann = build_run_result.get('annotations') or {}
       build.result_details['ui'] = {
