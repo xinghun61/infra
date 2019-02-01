@@ -884,26 +884,6 @@ class SwarmingTest(BaseTest):
             'build_address:luci.chromium.try/linux/1',
             'builder:linux',
             'buildset:1',
-            'swarming_dimension:cores:8',
-            'swarming_dimension:os:Ubuntu',
-            'swarming_dimension:pool:Chrome',
-            'swarming_hostname:swarming.example.com',
-            ('swarming_tag:build_address:luci.chromium.try/'
-             'linux/1'),
-            'swarming_tag:builder:linux',
-            'swarming_tag:buildertag:yes',
-            'swarming_tag:buildset:1',
-            'swarming_tag:commontag:yes',
-            (
-                'swarming_tag:log_location:'
-                'logdog://luci-logdog-dev.appspot.com/'
-                'chromium/buildbucket/cr-buildbucket.appspot.com/1/+/'
-                'annotations'
-            ),
-            'swarming_tag:priority:108',
-            'swarming_tag:recipe_name:recipe',
-            'swarming_tag:recipe_repository:https://example.com/repo',
-            'swarming_task_id:deadbeef',
         }
     )
     self.assertEqual(build.url, 'https://milo.example.com/b/1')
@@ -1331,18 +1311,6 @@ class SwarmingTest(BaseTest):
             'build_address:luci.chromium.try/linux/1',
             'builder:linux',
             'buildset:1',
-            'swarming_dimension:cores:8',
-            'swarming_dimension:os:Ubuntu',
-            'swarming_dimension:pool:Chrome',
-            'swarming_hostname:swarming.example.com',
-            'swarming_tag:builder:linux',
-            'swarming_tag:buildertag:yes',
-            'swarming_tag:buildset:1',
-            'swarming_tag:commontag:yes',
-            'swarming_tag:priority:108',
-            'swarming_tag:recipe_name:recipe',
-            'swarming_tag:recipe_repository:https://example.com/repo',
-            'swarming_task_id:deadbeef',
         }
     )
 

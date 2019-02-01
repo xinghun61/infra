@@ -175,11 +175,17 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       by_key.setdefault(d.key, []).append(d.value)
     result_details.setdefault('swarming', {})['bot_dimensions'] = by_key
 
+  tags = set(build.tags)
+  if build.is_luci:
+    sw = build.proto.infra.swarming
+    tags.add('swarming_hostname:%s' % sw.hostname)
+    tags.add('swarming_task_id:%s' % sw.task_id)
+
   msg = BuildMessage(
       id=build.key.id(),
       project=build.proto.builder.project,
       bucket=legacy_bucket_name(build.bucket_id, build.is_luci),
-      tags=build.tags,
+      tags=sorted(tags),
       # TODO(nodir): move requested properties out from model.Build.parameters
       # to a build_pb2.Build stored in model.Build.
       parameters_json=json.dumps(build.parameters, sort_keys=True),

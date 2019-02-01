@@ -986,10 +986,6 @@ def create_task_async(build):
 
   sw.task_id = task_id
 
-  build.tags.extend([
-      'swarming_hostname:%s' % sw.hostname,
-      'swarming_task_id:%s' % sw.task_id,
-  ])
   task_req = res.get('request', {})
   for t in task_req.get('tags', []):
     key, value = buildtags.parse(t)
@@ -998,11 +994,6 @@ def create_task_async(build):
       build.proto.infra.logdog.hostname = host
       build.proto.infra.logdog.project = project
       build.proto.infra.logdog.prefix = prefix
-    build.tags.append(buildtags.unparse(buildtags.SWARMING_TAG_KEY, t))
-  task_slices = task_req.get('task_slices') or [{}]
-  for d in task_slices[0].get('properties', {}).get('dimensions', []):
-    dt = buildtags.unparse(d['key'], d['value'])
-    build.tags.append(buildtags.unparse(buildtags.SWARMING_DIMENSION_KEY, dt))
 
   sw.task_service_account = task_req.get('service_account', '')
 

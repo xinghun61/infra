@@ -43,6 +43,8 @@ class ApiCommonTests(testing.AppengineTestCase):
         'build_address:luci.chromium.try/linux/1',
         'builder:linux',
         'buildset:1',
+        'swarming_hostname:swarming.example.com',
+        'swarming_task_id:deadbeef',
     ]
     expected = {
         'project':
