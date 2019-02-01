@@ -2315,6 +2315,16 @@ class CronUpdateTest(BaseTest):
     self.assertIsNotNone(build.result_details)
     self.assertIsNone(build.lease_key)
 
+  def test_sync_build_async_non_swarming(self):
+    build = test_util.build(status=common_pb2.SCHEDULED)
+    build.proto.infra.ClearField('swarming')
+    build.put()
+
+    swarming.CronUpdateBuilds().update_build_async(build).get_result()
+
+    build = build.key.get()
+    self.assertEqual(build.proto.status, common_pb2.SCHEDULED)
+
 
 class TestApplyIfTags(BaseTest):
 

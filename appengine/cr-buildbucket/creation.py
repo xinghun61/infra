@@ -388,20 +388,20 @@ def add_many_async(build_request_list):
 
   @ndb.tasklet
   def cancel_swarming_tasks_async(cancel_all):
-    futures = [(
-        b, swarming.cancel_task_async(b.swarming_hostname, b.swarming_task_id)
-    ) for i, b in new_builds.iteritems() if (
-        b.swarming_hostname and b.swarming_task_id and
-        (cancel_all or results[i][1])
-    )]
+    futures = []
+    for i, b in new_builds.iteritems():
+      sw = b.proto.infra.swarming
+      if sw.hostname and sw.task_id and (cancel_all or results[i][1]):
+        futures.append((b, swarming.cancel_task_async(sw.hostname, sw.task_id)))
     for b, fut in futures:
       try:
         yield fut
       except Exception:
         # This is best effort.
+        sw = b.proto.infra.swarming
         logging.exception(
-            'could not cancel swarming task\nTask: %s/%s', b.swarming_hostname,
-            b.swarming_task_id
+            'could not cancel swarming task\nTask: %s/%s', sw.hostname,
+            sw.task_id
         )
 
   yield check_cached_builds_async()

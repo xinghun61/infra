@@ -198,7 +198,7 @@ class SwarmbucketApi(remote.Service):
 
       return GetTaskDefinitionResponseMessage(
           task_definition=task_def_json,
-          swarming_host=build.swarming_hostname,
+          swarming_host=build.proto.infra.swarming.hostname,
       )
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(

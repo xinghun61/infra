@@ -448,7 +448,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   integration. See
   https://chromium.googlesource.com/chromium/tools/build/+/eff4ceb/scripts/master/buildbucket/README.md#Build-parameters
 
-  Sets build.swarming_hostname and build.canary attributes.
+  Mutates build.proto.infra.swarming and build.canary.
 
   Raises:
     errors.InvalidInputError if build.parameters are invalid.
@@ -492,10 +492,8 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   build.proto.infra.buildbucket.service_config_revision = task_template_rev
   build.proto.infra.buildbucket.canary = build.canary
 
-  build.swarming_hostname = builder_cfg.swarming_host
+  assert builder_cfg.swarming_host
   build.proto.infra.swarming.hostname = builder_cfg.swarming_host
-  if not build.swarming_hostname:  # pragma: no cover
-    raise Error('swarming hostname is not configured')
   h = hashlib.sha256('%s/%s' % (build.bucket_id, builder_cfg.name)).hexdigest()
   task_template_params = {
       'builder_hash': h,
@@ -506,7 +504,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
       'cache_dir': _CACHE_DIR,
       'hostname': app_identity.get_default_version_hostname(),
       'project': build.project,
-      'swarming_hostname': build.swarming_hostname,
+      'swarming_hostname': build.proto.infra.swarming.hostname,
   }
   extra_swarming_tags = []
   extra_cipd_packages = []
@@ -858,7 +856,7 @@ def _setup_swarming_request_pubsub(task, build):
       {
           'build_id': build.key.id(),
           'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-          'swarming_hostname': build.swarming_hostname,
+          'swarming_hostname': build.proto.infra.swarming.hostname,
       },
       sort_keys=True,
   )
@@ -915,7 +913,7 @@ def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
   If configured, generates a build number and updates the build.
   Creates a swarming task definition.
 
-  Sets build attributes: swarming_hostname, canary and url.
+  Sets build.proto.infra.swarming.hostname, canary and url.
   May add "build_address" tag.
 
   Returns a task_def dict.
@@ -962,10 +960,10 @@ def create_task_async(build):
 
   task_def = yield _prepare_task_def_async(build, builder_cfg, settings, False)
 
-  assert build.swarming_hostname
+  sw = build.proto.infra.swarming
   res = yield _call_api_async(
       impersonate=True,
-      hostname=build.swarming_hostname,
+      hostname=sw.hostname,
       path='tasks/new',
       method='POST',
       payload=task_def,
@@ -986,12 +984,11 @@ def create_task_async(build):
   task_id = res['task_id']
   logging.info('Created a swarming task %s', task_id)
 
-  build.swarming_task_id = task_id
-  build.proto.infra.swarming.task_id = task_id
+  sw.task_id = task_id
 
   build.tags.extend([
-      'swarming_hostname:%s' % build.swarming_hostname,
-      'swarming_task_id:%s' % task_id,
+      'swarming_hostname:%s' % sw.hostname,
+      'swarming_task_id:%s' % sw.task_id,
   ])
   task_req = res.get('request', {})
   for t in task_req.get('tags', []):
@@ -1007,9 +1004,7 @@ def create_task_async(build):
     dt = buildtags.unparse(d['key'], d['value'])
     build.tags.append(buildtags.unparse(buildtags.SWARMING_DIMENSION_KEY, dt))
 
-  build.proto.infra.swarming.task_service_account = task_req.get(
-      'service_account', ''
-  )
+  sw.task_service_account = task_req.get('service_account', '')
 
   # Mark the build as leased.
   exp = sum(int(t['expiration_secs']) for t in task_def['task_slices'])
@@ -1027,10 +1022,8 @@ def create_task_async(build):
 
 def _generate_build_url(milo_hostname, build):
   if not milo_hostname:
-    return (
-        'https://%s/task?id=%s' %
-        (build.swarming_hostname, build.swarming_task_id)
-    )
+    sw = build.proto.infra.swarming
+    return 'https://%s/task?id=%s' % (sw.hostname, sw.task_id)
 
   return 'https://%s/b/%d' % (milo_hostname, build.key.id())
 
@@ -1201,9 +1194,10 @@ def _sync_build_in_memory(
     )
   elif state is None:
     build.proto.status = common_pb2.INFRA_FAILURE
+    sw = build.proto.infra.swarming
     errmsg = (
         'Swarming task %s on %s unexpectedly disappeared' %
-        (build.swarming_task_id, build.swarming_hostname)
+        (sw.task_id, sw.hostname)
     )
   elif state == 'PENDING':
     if build.proto.status == common_pb2.STARTED:  # pragma: no cover
@@ -1461,15 +1455,16 @@ class SubNotify(webapp2.RequestHandler):
       )
 
     # Ensure the loaded build is associated with the task.
-    if build.swarming_hostname != hostname:
+    sw = build.proto.infra.swarming
+    if hostname != sw.hostname:
       self.stop(
-          'swarming_hostname %s of build %s does not match %s',
-          build.swarming_hostname, build_id, hostname
+          'swarming_hostname %s of build %s does not match %s', sw.hostname,
+          build_id, hostname
       )
-    if build.swarming_task_id != task_id:
+    if task_id != sw.task_id:
       self.stop(
-          'swarming_task_id %s of build %s does not match %s',
-          build.swarming_task_id, build_id, task_id
+          'swarming_task_id %s of build %s does not match %s', sw.task_id,
+          build_id, task_id
       )
     assert build.parameters
 
@@ -1515,13 +1510,16 @@ class CronUpdateBuilds(webapp2.RequestHandler):
 
   @ndb.tasklet
   def update_build_async(self, build):
-    result = yield _load_task_result_async(
-        build.swarming_hostname, build.swarming_task_id
-    )
+    sw = build.proto.infra.swarming
+    if not sw.hostname:
+      return
+    assert sw.task_id
+
+    result = yield _load_task_result_async(sw.hostname, sw.task_id)
     if not result:
       logging.error(
-          'Task %s/%s referenced by build %s is not found',
-          build.swarming_hostname, build.swarming_task_id, build.key.id()
+          'Task %s/%s referenced by build %s is not found', sw.hostname,
+          sw.task_id, build.key.id()
       )
     yield _sync_build_async(
         build.key.id(), result, build.bucket_id,
@@ -1530,14 +1528,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
-    q = model.Build.query(
-        model.Build.swarming_task_id != None,
-        # We cannot have a second negation filter, so use IN.
-        # This will result in two datastore queries, which is fine.
-        model.Build.status_legacy.IN([
-            model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED
-        ])
-    )
+    q = model.Build.query(model.Build.incomplete == True)
     q.map_async(self.update_build_async).get_result()
 
 

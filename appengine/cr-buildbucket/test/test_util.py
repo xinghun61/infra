@@ -132,7 +132,6 @@ def build(**build_proto_fields):  # pragma: no cover
       status_changed_time=now,
       tags=sorted(tags),
       experimental=proto.input.experimental or None,
-      swarming_task_id=proto.infra.swarming.task_id,
       parameters={
           model.BUILDER_PARAMETER:
               proto.builder.builder,
@@ -141,7 +140,6 @@ def build(**build_proto_fields):  # pragma: no cover
       },
       canary_preference=model.CanaryPreference.PROD,
       canary=proto.infra.buildbucket.canary,
-      swarming_hostname=proto.infra.swarming.hostname,
       url='https://ci.example.com/%d' % proto.id,
   )
   ret.update_v1_status_fields()

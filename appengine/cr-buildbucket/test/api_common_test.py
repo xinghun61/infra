@@ -108,8 +108,7 @@ class ApiCommonTests(testing.AppengineTestCase):
 
   def test_build_to_dict_non_luci(self):
     build = test_util.build(builder=dict(bucket='master.chromium'))
-    build.proto.infra.swarming.hostname = ''
-    build.swarming_hostname = None
+    build.proto.infra.ClearField('swarming')
 
     actual = api_common.build_to_dict(build, None)
     self.assertEqual(actual['project'], 'chromium')

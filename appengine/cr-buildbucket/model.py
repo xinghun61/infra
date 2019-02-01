@@ -197,11 +197,9 @@ class Build(ndb.Model):
   # search results unless explicitly requested.
   experimental = ndb.BooleanProperty()
 
-  swarming_task_id = ndb.StringProperty()
-
   @property
   def is_luci(self):  # pragma: no cover
-    return bool(self.swarming_hostname)
+    return self.proto.infra.HasField('swarming')
 
   @property
   def is_ended(self):  # pragma: no cover
@@ -264,8 +262,6 @@ class Build(ndb.Model):
   # If canary_preference is CANARY, this field value does not have to be True,
   # e.g. if the build infrastructure does not have a canary.
   canary = ndb.BooleanProperty()
-
-  swarming_hostname = ndb.StringProperty()
 
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""

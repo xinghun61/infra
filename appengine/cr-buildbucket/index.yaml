@@ -44,12 +44,6 @@ indexes:
   - name: never_leased
   - name: create_time
 
-# Search for incomplete builds associated with swarming tasks
-- kind: Build
-  properties:
-  - name: status
-  - name: swarming_task_id
-
 # metrics.set_build_latency needs this index
 - kind: Build
   properties:

@@ -274,8 +274,9 @@ class CreationTest(testing.AppengineTestCase):
         return future_exception(
             net.Error('', status_code=400, response='bad request')
         )
-      b.swarming_hostname = self.chromium_try.swarming.hostname
-      b.swarming_task_id = 'deadbeef'
+      sw = b.proto.infra.swarming
+      sw.hostname = self.chromium_try.swarming.hostname
+      sw.task_id = 'deadbeef'
       return future(None)
 
     swarming.create_task_async.side_effect = create_task_async
@@ -408,8 +409,9 @@ class CreationTest(testing.AppengineTestCase):
   def test_add_with_tag_index_contention(self, add_to_tag_index_async):
 
     def mock_create_task_async(build):
-      build.swarming_hostname = 'swarming.example.com'
-      build.swarming_task_id = str(build.proto.number)
+      sw = build.proto.infra.swarming
+      sw.hostname = 'swarming.example.com'
+      sw.task_id = str(build.proto.number)
       return future(None)
 
     swarming.create_task_async.side_effect = mock_create_task_async
