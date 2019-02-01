@@ -12,6 +12,9 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 
+	"infra/libs/skylab/inventory"
+
+	"infra/cmd/skylab_swarming_worker/internal/admin"
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	hbotinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
@@ -67,7 +70,8 @@ func (i *Info) Close() error {
 // Open opens and sets up the bot and task harness needed for Autotest
 // jobs.  An Info struct is returned with necessary fields, which must
 // be closed.
-func Open(b *swarming.Bot) (i *Info, err error) {
+func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
+	c := makeConfig(o)
 	i = &Info{Bot: b}
 	defer func(i *Info) {
 		if err != nil {
@@ -86,7 +90,20 @@ func Open(b *swarming.Bot) (i *Info, err error) {
 	}
 	i.botInfoStore, i.BotInfo = bi, &bi.BotInfo
 
-	dis, err := dutinfo.Load(b, nil)
+	var uf dutinfo.UpdateFunc
+	if c.updateInventory {
+		uf = func(old, new *inventory.DeviceUnderTest) error {
+			oc, nc := old.GetCommon(), new.GetCommon()
+			if oc.GetId() != nc.GetId() {
+				return errors.Reason("update inventory labels: aborting because DUT ID was changed").Err()
+			}
+			if err := admin.UpdateLabels(oc.GetId(), oc.GetLabels(), nc.GetLabels()); err != nil {
+				return errors.Annotate(err, "update inventory labels").Err()
+			}
+			return nil
+		}
+	}
+	dis, err := dutinfo.Load(b, uf)
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
