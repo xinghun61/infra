@@ -8,6 +8,7 @@ import random
 
 from components import auth
 from components import datastore_utils
+from components import utils
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
 from google.protobuf import struct_pb2
@@ -256,7 +257,6 @@ class Build(ndb.Model):
   #
   # TODO(crbug.com/917851): delete these properties or move to "derived".
 
-  update_time = ndb.DateTimeProperty(auto_now=True)
   created_by = auth.IdentityProperty()
 
   # True if canary build infrastructure is used to run this build.
@@ -274,12 +274,7 @@ class Build(ndb.Model):
     config.validate_bucket_name(self.proto.builder.bucket)
 
     self.update_v1_status_fields()
-
-    # TODO(crbug.com/917851): once all entities have proto property,
-    # update proto fields directly and remove this code.
-    # This code updates only fields that are changed after creation.
-    # Fields immutable after creation must be set already.
-    self.proto.update_time.FromDatetime(self.update_time)
+    self.proto.update_time.FromDatetime(utils.utcnow())
 
     is_started = self.proto.status == common_pb2.STARTED
     is_ended = self.is_ended

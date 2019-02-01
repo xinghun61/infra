@@ -75,6 +75,8 @@ class ApiCommonTests(testing.AppengineTestCase):
             tags,
         'utcnow_ts':
             '1483228800000000',
+        'updated_ts':
+            '1483228800000000',
         'canary_preference':
             'PROD',
         'canary':

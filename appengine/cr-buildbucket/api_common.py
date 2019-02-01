@@ -96,12 +96,6 @@ class BuildMessage(messages.Message):
   service_account = messages.StringField(25)
 
 
-def datetime_to_timestamp_safe(value):
-  if value is None:
-    return None
-  return utils.datetime_to_timestamp(value)
-
-
 def proto_to_timestamp(ts):
   if not ts.seconds:
     return None
@@ -198,11 +192,11 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       url=build.url,
       created_ts=proto_to_timestamp(build.proto.create_time),
       started_ts=proto_to_timestamp(build.proto.start_time),
-      updated_ts=datetime_to_timestamp_safe(build.update_time),
+      updated_ts=proto_to_timestamp(build.proto.update_time),
       completed_ts=proto_to_timestamp(build.proto.end_time),
       created_by=build.created_by.to_bytes() if build.created_by else None,
-      status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
-      utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
+      status_changed_ts=utils.datetime_to_timestamp(build.status_changed_time),
+      utcnow_ts=utils.datetime_to_timestamp(utils.utcnow()),
       retry_of=build.retry_of,
       canary_preference=build.canary_preference,
       canary=build.canary,
