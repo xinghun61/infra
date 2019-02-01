@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sort"
 
-	"infra/appengine/qscheduler-swarming/app/entities"
+	"infra/appengine/qscheduler-swarming/app/state"
 	swarming "infra/swarming"
 
 	"github.com/pkg/errors"
@@ -41,7 +41,7 @@ import (
 const AccountIDTagKey = "qs_account"
 
 // Operation is the type for functions that examine and mutate a state.
-type Operation func(ctx context.Context, state *entities.QSchedulerState) error
+type Operation func(ctx context.Context, state *state.QScheduler) error
 
 // AssignResult holds an eventual result or error from an AssignTasks operation.
 type AssignResult struct {
@@ -61,7 +61,7 @@ func (a *AssignResult) SetError(err error) {
 // the operation has run.
 func AssignTasks(r *swarming.AssignTasksRequest) (Operation, *AssignResult) {
 	var response AssignResult
-	return func(ctx context.Context, state *entities.QSchedulerState) (err error) {
+	return func(ctx context.Context, state *state.QScheduler) (err error) {
 		defer func() {
 			response.Error = err
 		}()
@@ -116,7 +116,7 @@ func (a *NotifyResult) SetError(err error) {
 // and result object that will get the results after the operation is run.
 func NotifyTasks(r *swarming.NotifyTasksRequest) (Operation, *NotifyResult) {
 	var response NotifyResult
-	return func(ctx context.Context, sp *entities.QSchedulerState) (err error) {
+	return func(ctx context.Context, sp *state.QScheduler) (err error) {
 		defer func() {
 			response.Error = err
 		}()

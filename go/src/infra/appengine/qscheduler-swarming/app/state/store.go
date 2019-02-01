@@ -1,4 +1,4 @@
-// Copyright 2018 The LUCI Authors.
+// Copyright 2019 The LUCI Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entities
+package state
 
 import (
 	"context"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -32,29 +31,11 @@ import (
 	"infra/qscheduler/qslib/scheduler"
 )
 
-// QSchedulerState encapsulates the state of a scheduler.
-type QSchedulerState struct {
-	SchedulerID string
-	Scheduler   *scheduler.Scheduler
-	Reconciler  *reconciler.State
-	Config      *qscheduler.SchedulerPoolConfig
-}
-
-// New returns a new QSchedulerState instance.
-func New(id string, t time.Time) *QSchedulerState {
-	return &QSchedulerState{
-		SchedulerID: id,
-		Scheduler:   scheduler.New(t),
-		Reconciler:  reconciler.New(),
-		Config:      &qscheduler.SchedulerPoolConfig{},
-	}
-}
-
 const stateEntityKind = "qschedulerStateEntity"
 
-// qschedulerStateEntity is the datastore entity used to store state for a given
+// datastoreEntity is the datastore entity used to store state for a given
 // qscheduler pool, in a few protobuf binaries.
-type qschedulerStateEntity struct {
+type datastoreEntity struct {
 	_kind string `gae:"$kind,qschedulerStateEntity"`
 
 	QSPoolID string `gae:"$id"`
@@ -70,6 +51,16 @@ type qschedulerStateEntity struct {
 	// ConfigData is the SchedulerPoolConfig object, serialized to protobuf
 	// binary format.
 	ConfigData []byte `gae:",noindex"`
+}
+
+// Store implements a persistent store for QScheduler state.
+type Store struct {
+	entityID string
+}
+
+// NewStore creates a new store.
+func NewStore(entityID string) *Store {
+	return &Store{entityID: entityID}
 }
 
 // List returns the full list of scheduler ids.
@@ -88,7 +79,7 @@ func List(ctx context.Context) ([]string, error) {
 }
 
 // Save persists the given SchdulerPool to datastore.
-func Save(ctx context.Context, q *QSchedulerState) error {
+func (s *Store) Save(ctx context.Context, q *QScheduler) error {
 	var sd, rd, cd []byte
 	var err error
 	if sd, err = proto.Marshal(q.Scheduler.ToProto()); err != nil {
@@ -106,8 +97,8 @@ func Save(ctx context.Context, q *QSchedulerState) error {
 		return status.Error(codes.Internal, e.Error())
 	}
 
-	entity := &qschedulerStateEntity{
-		QSPoolID:       q.SchedulerID,
+	entity := &datastoreEntity{
+		QSPoolID:       s.entityID,
 		SchedulerData:  sd,
 		ReconcilerData: rd,
 		ConfigData:     cd,
@@ -127,30 +118,30 @@ func Save(ctx context.Context, q *QSchedulerState) error {
 }
 
 // Load loads the SchedulerPool with the given id from datastore and returns it.
-func Load(ctx context.Context, poolID string) (*QSchedulerState, error) {
-	dst := &qschedulerStateEntity{QSPoolID: poolID}
+func (s *Store) Load(ctx context.Context) (*QScheduler, error) {
+	dst := &datastoreEntity{QSPoolID: s.entityID}
 	if err := datastore.Get(ctx, dst); err != nil {
 		e := errors.Wrap(err, "unable to get state entity")
 		return nil, status.Error(codes.NotFound, e.Error())
 	}
 
 	r := new(reconciler.State)
-	s := new(scheduler.SchedulerProto)
+	sp := new(scheduler.SchedulerProto)
 	c := new(qscheduler.SchedulerPoolConfig)
 	if err := proto.Unmarshal(dst.ReconcilerData, r); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Reconciler")
 	}
-	if err := proto.Unmarshal(dst.SchedulerData, s); err != nil {
+	if err := proto.Unmarshal(dst.SchedulerData, sp); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Scheduler")
 	}
 	if err := proto.Unmarshal(dst.ConfigData, c); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Config")
 	}
 
-	return &QSchedulerState{
+	return &QScheduler{
 		SchedulerID: dst.QSPoolID,
 		Reconciler:  r,
-		Scheduler:   scheduler.NewFromProto(s),
+		Scheduler:   scheduler.NewFromProto(sp),
 		Config:      c,
 	}, nil
 }

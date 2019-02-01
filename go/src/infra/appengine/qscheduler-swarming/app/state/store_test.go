@@ -1,4 +1,4 @@
-// Copyright 2018 The LUCI Authors.
+// Copyright 2019 The LUCI Authors.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package entities
+package state
 
 import (
 	"testing"
@@ -41,14 +41,14 @@ func TestSaveLoadList(t *testing.T) {
 		})
 
 		Convey("when two Schedulers are saved", func() {
-			s1 := "s1"
-			s2 := "s2"
+			s1 := NewStore("s1")
+			s2 := NewStore("s2")
 			t1 := time.Unix(0, 0)
 			t2 := time.Unix(1, 0)
-			So(Save(ctx, New(s1, t1)), ShouldBeNil)
-			So(Save(ctx, New(s2, t2)), ShouldBeNil)
+			So(s1.Save(ctx, New("s1", t1)), ShouldBeNil)
+			So(s2.Save(ctx, New("s2", t2)), ShouldBeNil)
 			Convey("when Load is called on one", func() {
-				l, err := Load(ctx, s1)
+				l, err := s1.Load(ctx)
 				Convey("then it returns the saved value.", func() {
 					So(err, ShouldBeNil)
 					So(l, ShouldNotBeNil)
@@ -60,8 +60,8 @@ func TestSaveLoadList(t *testing.T) {
 				Convey("then both scheduler ids are returned.", func() {
 					So(err, ShouldBeNil)
 					So(l, ShouldHaveLength, 2)
-					So(l, ShouldContain, s1)
-					So(l, ShouldContain, s2)
+					So(l, ShouldContain, "s1")
+					So(l, ShouldContain, "s2")
 				})
 			})
 		})

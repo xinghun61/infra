@@ -22,7 +22,7 @@ import (
 	"go.chromium.org/luci/grpc/grpcutil"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
-	"infra/appengine/qscheduler-swarming/app/entities"
+	"infra/appengine/qscheduler-swarming/app/state"
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
@@ -46,13 +46,14 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 	if r.Config == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "missing config")
 	}
-	sp := entities.QSchedulerState{
+	sp := state.QScheduler{
 		SchedulerID: r.PoolId,
 		Reconciler:  reconciler.New(),
 		Scheduler:   scheduler.New(time.Now()),
 		Config:      r.Config,
 	}
-	if err := entities.Save(ctx, &sp); err != nil {
+	store := state.NewStore(r.PoolId)
+	if err := store.Save(ctx, &sp); err != nil {
 		return nil, err
 	}
 	return &qscheduler.CreateSchedulerPoolResponse{}, nil
@@ -65,14 +66,15 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 	}()
 
 	do := func(ctx context.Context) error {
-		sp, err := entities.Load(ctx, r.PoolId)
+		store := state.NewStore(r.PoolId)
+		sp, err := store.Load(ctx)
 		if err != nil {
 			return err
 		}
 		if err := sp.Scheduler.AddAccount(ctx, AccountID(r.AccountId), r.Config, nil); err != nil {
 			return err
 		}
-		return entities.Save(ctx, sp)
+		return store.Save(ctx, sp)
 	}
 
 	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
@@ -87,7 +89,8 @@ func (s *QSchedulerViewServerImpl) ListAccounts(ctx context.Context, r *qschedul
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	sp, err := entities.Load(ctx, r.PoolId)
+	store := state.NewStore(r.PoolId)
+	sp, err := store.Load(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +108,8 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	sp, err := entities.Load(ctx, r.PoolId)
+	store := state.NewStore(r.PoolId)
+	sp, err := store.Load(ctx)
 	if err != nil {
 		return nil, err
 	}

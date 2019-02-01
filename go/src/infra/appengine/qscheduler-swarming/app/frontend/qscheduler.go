@@ -17,8 +17,8 @@ package frontend
 import (
 	"context"
 
-	"infra/appengine/qscheduler-swarming/app/entities"
 	"infra/appengine/qscheduler-swarming/app/frontend/internal/operations"
+	"infra/appengine/qscheduler-swarming/app/state"
 	swarming "infra/swarming"
 
 	"go.chromium.org/gae/service/datastore"
@@ -49,7 +49,8 @@ type QSchedulerServerImpl struct{}
 // datastore.RunInTransaction.
 func singleOperationRunner(op operations.Operation, schedulerID string) func(context.Context) error {
 	return func(ctx context.Context) error {
-		sp, err := entities.Load(ctx, schedulerID)
+		store := state.NewStore(schedulerID)
+		sp, err := store.Load(ctx)
 		if err != nil {
 			return err
 		}
@@ -58,7 +59,7 @@ func singleOperationRunner(op operations.Operation, schedulerID string) func(con
 			return err
 		}
 
-		if err := entities.Save(ctx, sp); err != nil {
+		if err := store.Save(ctx, sp); err != nil {
 			return err
 		}
 
@@ -87,7 +88,8 @@ func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	sp, err := entities.Load(ctx, r.SchedulerId)
+	store := state.NewStore(r.SchedulerId)
+	sp, err := store.Load(ctx)
 	if err != nil {
 		return nil, err
 	}
