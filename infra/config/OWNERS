@@ -1,2 +1,4 @@
 per-file recipes.cfg=recipe-roller@chromium.org
-per-file cq.cfg=tandrii@chromium.org
+iannucci@chromium.org
+nodir@chromium.org
+tandrii@chromium.org
