@@ -71,9 +71,9 @@ class BuildTest(testing.AppengineTestCase):
     build = model.Build(
         proto=build_pb2.Build(
             builder=dict(project='chromium', bucket='try', builder='linux'),
-            status=common_pb2.SUCCESS
+            status=common_pb2.SUCCESS,
+            create_time=test_util.dt2ts(datetime.datetime(2019, 1, 1)),
         ),
-        create_time=datetime.datetime(2019, 1, 1),
         start_time=datetime.datetime(2019, 1, 2),
         complete_time=datetime.datetime(2019, 1, 3),
         update_time=datetime.datetime(2019, 1, 3),

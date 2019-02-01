@@ -184,6 +184,10 @@ class Build(ndb.Model):
   # ID of the LUCI project to which this build belongs.
   project = ndb.ComputedProperty(lambda self: self.proto.builder.project)
 
+  # Making this property computed is not-entirely trivial because
+  # ComputedProperty saves it as int, as opposed to datetime.datetime.
+  create_time = ndb.DateTimeProperty()
+
   # Superset of proto.tags. May contain auto-added tags.
   # A list of colon-separated key-value pairs.
   tags = ndb.StringProperty(repeated=True)
@@ -253,7 +257,6 @@ class Build(ndb.Model):
   # TODO(crbug.com/917851): delete these properties or move to "derived".
 
   update_time = ndb.DateTimeProperty(auto_now=True)
-  create_time = ndb.DateTimeProperty(auto_now_add=True)
   created_by = auth.IdentityProperty()
 
   # when the build started. Unknown for old builds.
@@ -274,6 +277,21 @@ class Build(ndb.Model):
     super(Build, self)._pre_put_hook()
     config.validate_project_id(self.proto.builder.project)
     config.validate_bucket_name(self.proto.builder.bucket)
+
+    self.update_v1_status_fields()
+
+    # TODO(crbug.com/917851): once all entities have proto property,
+    # update proto fields directly and remove this code.
+    # This code updates only fields that are changed after creation.
+    # Fields immutable after creation must be set already.
+    self.proto.update_time.FromDatetime(self.update_time)
+    self.proto.ClearField('start_time')
+    if self.start_time:  # pragma: no branch
+      self.proto.start_time.FromDatetime(self.start_time)
+    self.proto.ClearField('end_time')
+    if self.complete_time:  # pragma: no branch
+      self.proto.end_time.FromDatetime(self.complete_time)
+
     is_started = self.proto.status == common_pb2.STARTED
     is_ended = self.is_ended
     is_leased = self.lease_key is not None
@@ -285,30 +303,19 @@ class Build(ndb.Model):
     tag_delm = buildtags.DELIMITER
     assert (not self.tags or
             all(tag_delm in t for t in self.tags))  # pragma: no cover
-    assert self.create_time
-    assert (self.complete_time is not None) == is_ended
-    assert not is_started or self.start_time
-    assert not self.start_time or self.start_time >= self.create_time
-    assert not self.complete_time or self.complete_time >= self.create_time
-    assert (
-        not self.complete_time or not self.start_time or
-        self.complete_time >= self.start_time
-    )
 
+    assert self.proto.HasField('create_time')
+    assert self.proto.HasField('end_time') == is_ended
+    assert not is_started or self.proto.HasField('start_time')
+
+    def _ts_less(ts1, ts2):
+      return ts1.seconds and ts2.seconds and ts1.ToDatetime() < ts2.ToDatetime()
+
+    assert not _ts_less(self.proto.start_time, self.proto.create_time)
+    assert not _ts_less(self.proto.end_time, self.proto.create_time)
+    assert not _ts_less(self.proto.end_time, self.proto.start_time)
     self.experimental = bool(self.experimental)
     self.tags = sorted(set(self.tags))
-
-    self.update_v1_status_fields()
-    if self.proto:  # pragma: no branch
-      # TODO(crbug.com/917851): once all entities have proto property,
-      # update proto fields directly and remove this code.
-      # This code updates only fields that are changed after creation.
-      # Fields immutable after creation must be set already.
-      self.proto.update_time.FromDatetime(self.update_time)
-      if self.start_time:  # pragma: no branch
-        self.proto.start_time.FromDatetime(self.start_time)
-      if self.complete_time:  # pragma: no branch
-        self.proto.end_time.FromDatetime(self.complete_time)
 
   def update_v1_status_fields(self):
     """Updates V1 status fields."""

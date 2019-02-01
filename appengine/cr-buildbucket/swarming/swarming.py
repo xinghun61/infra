@@ -342,13 +342,14 @@ def _buildbucket_property_legacy(build):
   https://chromium.googlesource.com/chromium/tools/build/+/82373bb503dca5f91cd0988d49df38394fdf8b0b/scripts/master/buildbucket/integration.py#329
   """
   # TODO(crbug.com/859231): remove this function.
+  created_ts = api_common.proto_to_timestamp(build.proto.create_time)
   return {
       'hostname': app_identity.get_default_version_hostname(),
       'build': {
           'project': build.project,
           'bucket': api_common.format_luci_bucket(build.bucket_id),
           'created_by': build.created_by.to_bytes(),
-          'created_ts': utils.datetime_to_timestamp(build.create_time),
+          'created_ts': created_ts,
           'id': str(build.key.id()),
           'tags': build.tags,
       },

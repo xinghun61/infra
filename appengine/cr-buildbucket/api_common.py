@@ -102,6 +102,12 @@ def datetime_to_timestamp_safe(value):
   return utils.datetime_to_timestamp(value)
 
 
+def proto_to_timestamp(ts):
+  # TODO(nodir): add "null" check when proto_to_timestamp is used for "nullable"
+  # time fields.
+  return utils.datetime_to_timestamp(ts.ToDatetime())
+
+
 def legacy_bucket_name(bucket_id, is_luci):
   if is_luci:
     # In V1, LUCI builds use a "long" bucket name, e.g. "luci.chromium.try"
@@ -190,7 +196,7 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
       url=build.url,
-      created_ts=datetime_to_timestamp_safe(build.create_time),
+      created_ts=proto_to_timestamp(build.proto.create_time),
       started_ts=datetime_to_timestamp_safe(build.start_time),
       updated_ts=datetime_to_timestamp_safe(build.update_time),
       completed_ts=datetime_to_timestamp_safe(build.complete_time),
