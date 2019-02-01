@@ -26,7 +26,7 @@ func (p *Proxy) Close() error {
 	if p.dut == nil {
 		return nil
 	}
-	// TODO(ayatane): Update inventory info with hostinfo
+	hostinfo.RevertDut(p.dut, p.HostInfo)
 	p.dut = nil
 	return nil
 }

@@ -30,3 +30,23 @@ func convertDutLabels(hi *HostInfo, d *inventory.DeviceUnderTest) {
 	sl := d.GetCommon().GetLabels()
 	hi.Labels = labels.Convert(sl)
 }
+
+// RevertDut reverts the Autotest hostinfo back to an inventory DUT struct.
+func RevertDut(d *inventory.DeviceUnderTest, hi *HostInfo) {
+	revertDutAttributes(d, hi)
+	revertDutLabels(d, hi)
+}
+
+func revertDutAttributes(d *inventory.DeviceUnderTest, hi *HostInfo) {
+	c := d.GetCommon()
+	c.Attributes = nil
+	for k, v := range hi.Attributes {
+		k, v := k, v
+		c.Attributes = append(c.Attributes, &inventory.KeyValue{Key: &k, Value: &v})
+	}
+}
+
+func revertDutLabels(d *inventory.DeviceUnderTest, hi *HostInfo) {
+	c := d.GetCommon()
+	c.Labels = labels.Revert(hi.Labels)
+}
