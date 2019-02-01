@@ -112,6 +112,11 @@ class MrEditMetadata extends MetadataMixin(Polymer.Element) {
     };
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this.dispatch({type: actionType.UPDATE_FORMS_TO_CHECK, form: this});
+  }
+
   reset() {
     this.$.editForm.reset();
 
