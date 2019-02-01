@@ -188,6 +188,12 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   if build.is_luci:
     tags.add('swarming_hostname:%s' % sw.hostname)
     tags.add('swarming_task_id:%s' % sw.task_id)
+    # Milo uses this.
+    logdog = bp.infra.logdog
+    tags.add(
+        'swarming_tag:log_location:logdog://%s/%s/%s/+/annotations' %
+        (logdog.hostname, logdog.project, logdog.prefix)
+    )
 
   msg = BuildMessage(
       id=build.key.id(),

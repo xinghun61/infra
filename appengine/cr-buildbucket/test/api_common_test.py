@@ -45,6 +45,10 @@ class ApiCommonTests(testing.AppengineTestCase):
         'builder:linux',
         'buildset:1',
         'swarming_hostname:swarming.example.com',
+        (
+            'swarming_tag:log_location:'
+            'logdog://logdog.example.com/chromium/bb/+/annotations'
+        ),
         'swarming_task_id:deadbeef',
     ]
     result_details = {

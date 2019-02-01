@@ -771,6 +771,11 @@ class SwarmingTest(BaseTest):
                             'buildbucket': {
                                 'serviceConfigRevision': 'template_rev'
                             },
+                            'logdog': {
+                                'hostname': 'logdog.example.com',
+                                'project': 'chromium',
+                                'prefix': 'bb',
+                            },
                             'recipe': {'name': 'recipe'},
                             'swarming': {
                                 'hostname': 'swarming.example.com',
@@ -1192,6 +1197,11 @@ class SwarmingTest(BaseTest):
                             'buildbucket': {
                                 'serviceConfigRevision': 'template_rev',
                                 'canary': True,
+                            },
+                            'logdog': {
+                                'hostname': 'logdog.example.com',
+                                'project': 'chromium',
+                                'prefix': 'bb',
                             },
                             'recipe': {'name': 'recipe'},
                             'swarming': {

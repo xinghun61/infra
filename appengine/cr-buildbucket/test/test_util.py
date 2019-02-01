@@ -79,6 +79,11 @@ BUILD_DEFAULTS = build_pb2.Build(
             task_id='deadbeef',
             task_service_account='service@example.com',
         ),
+        logdog=dict(
+            hostname='logdog.example.com',
+            project='chromium',
+            prefix='bb',
+        ),
     ),
 )
 
