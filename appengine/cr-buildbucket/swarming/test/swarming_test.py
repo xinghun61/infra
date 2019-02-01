@@ -920,6 +920,8 @@ class SwarmingTest(BaseTest):
         'buildbucket/cr-buildbucket.appspot.com/1'
     )
     self.assertEqual(build.proto.input.properties['predefined-property'], 'x')
+    self.assertNotIn('buildbucket', build.proto.input.properties)
+    self.assertNotIn('$recipe_engine/buildbucket', build.proto.input.properties)
     self.assertEqual(build.proto.infra.recipe.name, 'recipe')
 
     # Test delegation token params.

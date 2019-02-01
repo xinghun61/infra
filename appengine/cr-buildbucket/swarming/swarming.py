@@ -577,9 +577,6 @@ def _setup_recipes(build, builder_cfg, params):
   if 'buildername' not in props:
     props['buildername'] = builder_cfg.name
 
-  props['$recipe_engine/buildbucket'] = _buildbucket_property(build)
-  props['buildbucket'] = _buildbucket_property_legacy(build)
-
   assert isinstance(build.experimental, bool)
   props.get_or_create_struct('$recipe_engine/runtime').update({
       'is_luci': True,
@@ -619,9 +616,16 @@ def _setup_recipes(build, builder_cfg, params):
           cl.host[:-len(suffix)], cl.project
       )
 
+  # Make a copy of properties before setting "buildbucket" property.
+  # They are buildbucket implementation detail, reduntant for users of
+  # build proto and take a lot of space.
+  recipe_props = copy.copy(props)
+  recipe_props['$recipe_engine/buildbucket'] = _buildbucket_property(build)
+  # TODO(nodir): remove legacy "buildbucket" property.
+  recipe_props['buildbucket'] = _buildbucket_property_legacy(build)
   extra_task_template_params = {
       'recipe': builder_cfg.recipe.name,
-      'properties_json': api_common.properties_to_json(props),
+      'properties_json': api_common.properties_to_json(recipe_props),
       'checkout_dir': _KITCHEN_CHECKOUT,
   }
   extra_swarming_tags = [
