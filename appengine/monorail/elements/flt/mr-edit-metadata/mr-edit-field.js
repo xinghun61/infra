@@ -98,14 +98,18 @@ class MrEditField extends Polymer.Element {
           checkbox.checked = this._optionInValues(v, checkbox.value);
         }
       );
-    } else if (this._fieldIsBasic && v.length) {
-      this._getInput().value = v[0];
-    } else if (v.length) {
+    } else if (this._fieldIsBasic) {
+      this._getInput().value = v.length > 0 ? v[0] : '';
+    } else {
       const input = this._getInput();
       const options = Array.from(input.querySelectorAll('option'));
-      input.selectedIndex = options.findIndex((option) => {
-        return this._computeIsSelected(v[0], option.value);
-      });
+      if (v.length == 0) {
+        input.selectedIndex = null;
+      } else {
+        input.selectedIndex = options.findIndex((option) => {
+          return this._computeIsSelected(v[0], option.value);
+        });
+      }
     }
   }
 
