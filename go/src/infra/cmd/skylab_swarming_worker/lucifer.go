@@ -15,27 +15,12 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/event"
-	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
 )
 
 type luciferResult struct {
 	TestsFailed int
-}
-
-func runLuciferJob(i *harness.Info, w io.Writer, r lucifer.TestArgs) (*luciferResult, error) {
-	cmd := lucifer.TestCommand(i.LuciferConfig(), r)
-	f := event.ForwardAbortSignal(r.AbortSock)
-	defer f.Close()
-	return runLuciferCommand(i, w, cmd)
-}
-
-func runLuciferAdminTask(i *harness.Info, w io.Writer, r lucifer.AdminTaskArgs) (*luciferResult, error) {
-	cmd := lucifer.AdminTaskCommand(i.LuciferConfig(), r)
-	f := event.ForwardAbortSignal(r.AbortSock)
-	defer f.Close()
-	return runLuciferCommand(i, w, cmd)
 }
 
 // runLuciferCommand runs a Lucifer exec.Cmd and processes Lucifer events.

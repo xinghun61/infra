@@ -39,6 +39,7 @@ import (
 	"go.chromium.org/luci/common/logging/gologger"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest/constants"
+	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/fifo"
 	"infra/cmd/skylab_swarming_worker/internal/flagx"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
@@ -188,7 +189,10 @@ func runTest(i *harness.Info, a *args, logdogOutput io.Writer, ta lucifer.TaskAr
 		XProvisionLabels: a.xProvisionLabels,
 	}
 
-	lr, err := runLuciferJob(i, logdogOutput, r)
+	cmd := lucifer.TestCommand(i.LuciferConfig(), r)
+	f := event.ForwardAbortSignal(r.AbortSock)
+	defer f.Close()
+	lr, err := runLuciferCommand(i, logdogOutput, cmd)
 	if err != nil {
 		return errors.Wrap(err, "run lucifer failed")
 	}
@@ -252,7 +256,10 @@ func runAdminTask(i *harness.Info, name string, logdogOutput io.Writer, ta lucif
 		Task:     name,
 	}
 
-	if _, err := runLuciferAdminTask(i, logdogOutput, r); err != nil {
+	cmd := lucifer.AdminTaskCommand(i.LuciferConfig(), r)
+	f := event.ForwardAbortSignal(r.AbortSock)
+	defer f.Close()
+	if _, err := runLuciferCommand(i, logdogOutput, cmd); err != nil {
 		return errors.Wrap(err, "run lucifer failed")
 	}
 	return nil
