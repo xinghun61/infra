@@ -49,6 +49,10 @@ class ApiCommonTests(testing.AppengineTestCase):
             'swarming_tag:log_location:'
             'logdog://logdog.example.com/chromium/bb/+/annotations'
         ),
+        'swarming_tag:luci_project:chromium',
+        'swarming_tag:os:Ubuntu',
+        'swarming_tag:recipe_name:trybot',
+        'swarming_tag:recipe_package:infra/recipes',
         'swarming_task_id:deadbeef',
     ]
     result_details = {
@@ -56,7 +60,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'swarming': {
             'bot_dimensions': {
                 'dim1': ['v1', 'v2'],
-                'dim2': ['v1'],
+                'os': ['Ubuntu'],
             },
         },
         'error': {'message': 'bad'},
@@ -94,8 +98,8 @@ class ApiCommonTests(testing.AppengineTestCase):
                 bot_dimensions=[
                     dict(key='dim1', value='v1'),
                     dict(key='dim1', value='v2'),
-                    dict(key='dim2', value='v1'),
-                ]
+                    dict(key='os', value='Ubuntu'),
+                ],
             ),
         ),
     )

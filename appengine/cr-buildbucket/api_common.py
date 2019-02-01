@@ -172,6 +172,8 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
 
   bp = build.proto
   sw = bp.infra.swarming
+  logdog = bp.infra.logdog
+  recipe = bp.infra.recipe
 
   if bp.status != common_pb2.SUCCESS and bp.output.summary_markdown:
     result_details['error'] = {
@@ -188,12 +190,21 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   if build.is_luci:
     tags.add('swarming_hostname:%s' % sw.hostname)
     tags.add('swarming_task_id:%s' % sw.task_id)
-    # Milo uses this.
-    logdog = bp.infra.logdog
+
+    # Milo uses swarming tags.
+    tags.add('swarming_tag:recipe_name:%s' % recipe.name)
+    tags.add('swarming_tag:recipe_package:%s' % recipe.cipd_package)
     tags.add(
         'swarming_tag:log_location:logdog://%s/%s/%s/+/annotations' %
         (logdog.hostname, logdog.project, logdog.prefix)
     )
+    tags.add('swarming_tag:luci_project:%s' % bp.builder.project)
+
+    # Try to find OS
+    for d in sw.bot_dimensions:
+      if d.key == 'os':
+        tags.add('swarming_tag:os:%s' % d.value)
+        break
 
   msg = BuildMessage(
       id=build.key.id(),

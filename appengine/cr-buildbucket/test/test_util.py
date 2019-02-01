@@ -84,6 +84,10 @@ BUILD_DEFAULTS = build_pb2.Build(
             project='chromium',
             prefix='bb',
         ),
+        recipe=dict(
+            cipd_package='infra/recipes',
+            name='trybot',
+        ),
     ),
 )
 
