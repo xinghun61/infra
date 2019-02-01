@@ -110,15 +110,17 @@ class IssueGeneratorTest(WaterfallTestCase):
     self.assertTrue('longstanding' in comment, comment)
 
   # Tests for FlakeDetectionGroupIssueGenerator.
-  def _GetIssueGenertor(self, new_issue=True):
+  def _GetIssueGenerator(self, new_issue=True):
     luci_project = 'chromium'
     normalized_step_name = 'step'
 
     flake0 = Flake.Create(luci_project, normalized_step_name, 'suite.test0',
                           'suite.test0')
+    flake0.tags = ['component::Blink']
     flake0.put()
     flake1 = Flake.Create(luci_project, normalized_step_name, 'suite.test1',
                           'suite.test1')
+    flake1.tags = ['component::Blink/Infra']
     flake1.put()
     flake2 = Flake.Create(luci_project, normalized_step_name, 'suite.test2',
                           'suite.test2')
@@ -142,17 +144,21 @@ class IssueGeneratorTest(WaterfallTestCase):
 
     return issue_generator_new if new_issue else issue_generator_old
 
+  def testGetComponents(self):
+    self.assertItemsEqual(['Blink', 'Blink/Infra'],
+                          self._GetIssueGenerator().GetComponents())
+
   def testGetSummary(self):
     self.assertEqual('Flakes are found in step.',
-                     self._GetIssueGenertor().GetSummary())
+                     self._GetIssueGenerator().GetSummary())
 
   def testGetDescription(self):
     expected_description = _EXPECTED_GROUP_DESC
     self.assertEqual(expected_description,
-                     self._GetIssueGenertor().GetDescription())
+                     self._GetIssueGenerator().GetDescription())
 
   def testGetFirstCommentWhenBugJustCreated(self):
-    issue_generator_new = self._GetIssueGenertor()
+    issue_generator_new = self._GetIssueGenerator()
     flake_issue = FlakeIssue.Create('chromium', 12345)
     flake_issue.put()
     issue_generator_new.SetFlakeIssue(flake_issue)
@@ -170,7 +176,7 @@ class IssueGeneratorTest(WaterfallTestCase):
                      issue_generator_new.GetFirstCommentWhenBugJustCreated())
 
   def testGetComment(self):
-    issue_generator_old = self._GetIssueGenertor(new_issue=False)
+    issue_generator_old = self._GetIssueGenerator(new_issue=False)
     bug_id = issue_generator_old._flake_issue.issue_id
     wrong_result_link = (
         'https://bugs.chromium.org/p/chromium/issues/entry?'
@@ -188,10 +194,10 @@ class IssueGeneratorTest(WaterfallTestCase):
 
   def testGetFlakyTestCustomizedFieldGroupWithIssue(self):
     self.assertIsNone(
-        self._GetIssueGenertor(new_issue=False).GetFlakyTestCustomizedField())
+        self._GetIssueGenerator(new_issue=False).GetFlakyTestCustomizedField())
 
   def testGetMonorailProjectGroup(self):
-    self.assertEqual('chromium', self._GetIssueGenertor().GetMonorailProject())
+    self.assertEqual('chromium', self._GetIssueGenerator().GetMonorailProject())
 
   def testGetAutoAssignOwnerNoCulprit(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

@@ -177,15 +177,13 @@ def CreateIssueWithIssueGenerator(issue_generator):
   Returns:
     The id of the newly created issue.
   """
-  labels = issue_generator.GetLabels()
-  labels.append(issue_generator.GetPriority())
-
   issue_info = {
       'status': issue_generator.GetStatus(),
       'summary': issue_generator.GetSummary(),
       'description': issue_generator.GetDescription(),
       'projectId': issue_generator.GetMonorailProject(),
-      'labels': labels
+      'labels': issue_generator.GetLabels(),
+      'components': issue_generator.GetComponents()
   }
   field_value = issue_generator.GetFlakyTestCustomizedField()
   if field_value:

@@ -9,6 +9,7 @@ from google.appengine.ext import ndb
 
 from gae_libs.appengine_util import IsStaging
 from model import entity_util
+from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from monorail_api import CustomizedField
@@ -329,6 +330,10 @@ class BaseFlakeIssueGenerator(object):
     """
     return None
 
+  def GetComponents(self):
+    """Gets the components of reported flakes."""
+    return []
+
   def GetStatus(self):
     """Gets status for the issue to be created.
 
@@ -477,6 +482,11 @@ class FlakeAnalysisIssueGenerator(FlakyTestIssueGenerator):
     # Currently, flake analysis only works on Chromium project.
     return 'chromium'
 
+  def GetComponents(self):
+    flake = self._analysis.flake_key.get() if self._analysis.flake_key else None
+    component = flake.GetComponent() if flake else None
+    return [component] if component else []
+
   def GetDescription(self):
     return _GenerateMessageText(self._analysis)
 
@@ -493,6 +503,8 @@ class FlakeAnalysisIssueGenerator(FlakyTestIssueGenerator):
     flaky_test_labels = self._GetCommonFlakyTestLabel()
     flaky_test_labels.append(priority)
     flaky_test_labels.append(issue_constants.FINDIT_ANALYZED_LABEL_TEXT)
+    if self.GetAutoAssignOwner():
+      flaky_test_labels.remove(issue_constants.SHERIFF_CHROMIUM_LABEL)
     return flaky_test_labels
 
   def OnIssueCreated(self):
@@ -522,6 +534,10 @@ class FlakeDetectionIssueGenerator(FlakyTestIssueGenerator):
   def GetMonorailProject(self):
     return FlakeIssue.GetMonorailProjectFromLuciProject(
         self._flake.luci_project)
+
+  def GetComponents(self):
+    component = self._flake.GetComponent()
+    return [component] if component != DEFAULT_COMPONENT else []
 
   def GetDescription(self):
     previous_tracking_bug_id = self.GetPreviousTrackingBugId()
@@ -558,6 +574,8 @@ class FlakeDetectionIssueGenerator(FlakyTestIssueGenerator):
 
   def GetLabels(self):
     flaky_test_labels = self._GetCommonFlakyTestLabel()
+    priority = self.GetPriority()
+    flaky_test_labels.append(priority)
     flaky_test_labels.append(issue_constants.FLAKE_DETECTION_LABEL_TEXT)
     return flaky_test_labels
 
@@ -683,6 +701,11 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
     return FlakeIssue.GetMonorailProjectFromLuciProject(
         self._flakes[0].luci_project)
 
+  def GetComponents(self):
+    """Assigns multiple components to bugs of flake groups."""
+    components = [flake.GetComponent() for flake in self._flakes]
+    return list(set(components) - {DEFAULT_COMPONENT})
+
   def GetSummary(self):
     return 'Flakes are found in {canonical_step_name}.'.format(
         canonical_step_name=self._canonical_step_name)
@@ -733,6 +756,8 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
 
   def GetLabels(self):
     flaky_test_labels = self._GetCommonFlakyTestLabel()
+    priority = self.GetPriority()
+    flaky_test_labels.append(priority)
     flaky_test_labels.append(issue_constants.FLAKE_DETECTION_LABEL_TEXT)
     return flaky_test_labels
 

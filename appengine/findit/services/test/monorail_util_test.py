@@ -57,7 +57,7 @@ class TestIssueGenerator(issue_generator.FlakyTestIssueGenerator):
     return False
 
   def GetLabels(self):
-    return ['label1', 'Sheriff-Chromium']
+    return ['label1', 'Sheriff-Chromium', 'Pri-1']
 
 
 class MonorailUtilTest(wf_testcase.WaterfallTestCase):

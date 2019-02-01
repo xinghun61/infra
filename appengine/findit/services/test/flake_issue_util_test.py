@@ -82,9 +82,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
         test_label_name=test_label_name)
     if test_suite_name:
       flake.tags.append('suite::%s' % test_suite_name)
-    flake.tags = [
-        'test_type::{}'.format(canonical_step_name or normalized_step_name)
-    ]
+    flake.tags.append('test_type::{}'.format(canonical_step_name or
+                                             normalized_step_name))
     flake.flake_score_last_week = flake_score_last_week
     flake.put()
     return flake
@@ -278,6 +277,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
         'id': '666666',
     })
     flake = Flake.query().fetch()[0]
+    flake.tags.append('component::Blink')
+    flake.put()
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
     groups_wo_issue, groups_w_issue = (
@@ -314,8 +315,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
                                                    expected_wrong_result_link)
 
     expected_labels = [
-        'Sheriff-Chromium', 'Type-Bug', 'Test-Flaky', 'Test-Findit-Detected',
-        'Pri-1'
+        'Type-Bug', 'Test-Flaky', 'Test-Findit-Detected', 'Pri-1',
+        'Sheriff-Chromium'
     ]
 
     self.assertTrue(mock_create_bug_fn.called)
@@ -324,7 +325,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(expected_status, issue.status)
     self.assertEqual(expected_summary, issue.summary)
     self.assertEqual(expected_description, issue.description)
-    self.assertEqual(expected_labels, issue.labels)
+    self.assertItemsEqual(expected_labels, issue.labels)
+    self.assertEqual(['Blink'], issue.components)
     self.assertEqual(1, len(issue.field_values))
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
     self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
@@ -987,8 +989,6 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
   @mock.patch.object(
-      monorail_util, 'CreateIssueWithIssueGenerator', return_value=234567)
-  @mock.patch.object(
       monorail_util,
       'GetMonorailIssueForIssueId',
       return_value=Issue({
@@ -1001,9 +1001,12 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
       FlakeDetectionGroupIssueGenerator,
       'GetFirstCommentWhenBugJustCreated',
       return_value='group link')
+  @mock.patch.object(monorail_util, 'CreateBug', return_value=234567)
   @mock.patch.object(monorail_util, 'PostCommentOnMonorailBug')
-  def testCreateIssueForAGroup(self, mock_first_comment, *_):
+  def testCreateIssueForAGroup(self, mock_first_comment, mock_create_bug, *_):
     flake1 = self._CreateFlake('s1', 'suite1.t1', 'suite1.t1')
+    flake1.tags.append('component::Blink')
+    flake1.put()
     occurrences1 = [
         self._CreateFlakeOccurrence(1, 's1', 'suite1.t1', 12345, flake1.key),
         self._CreateFlakeOccurrence(2, 's1', 'suite1.t1', 12346, flake1.key)
@@ -1024,6 +1027,14 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
         datetime.datetime(2018, 1, 2),
         flake_issue.last_updated_time_by_flake_detection)
     self.assertTrue(mock_first_comment.called)
+
+    expected_labels = [
+        'Type-Bug', 'Test-Flaky', 'Test-Findit-Detected', 'Pri-1',
+        'Sheriff-Chromium'
+    ]
+    issue = mock_create_bug.call_args_list[0][0][0]
+    self.assertEqual(['Blink'], issue.components)
+    self.assertItemsEqual(expected_labels, issue.labels)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
