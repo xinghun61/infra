@@ -54,6 +54,10 @@ class MrEditMetadata extends MetadataMixin(Polymer.Element) {
         type: Array,
         value: () => [],
       },
+      derivedLabels: {
+        type: Array,
+        value: [],
+      },
       phaseName: String,
       projectConfig: {
         type: String,
@@ -96,6 +100,14 @@ class MrEditMetadata extends MetadataMixin(Polymer.Element) {
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
+      },
+      _ccNames: {
+        type: Array,
+        computed: '_computeCCNames(cc)',
+      },
+      _derivedCCs: {
+        type: Array,
+        computed: '_computeDerivedCCs(cc)',
       },
     };
   }
@@ -323,6 +335,16 @@ class MrEditMetadata extends MetadataMixin(Polymer.Element) {
 
   _idForField(name) {
     return `${name}Input`;
+  }
+
+  _computeCCNames(users) {
+    if (!users) return [];
+    return this._mapUserRefsToNames(users.filter((u) => !u.isDerived));
+  }
+
+  _computeDerivedCCs(users) {
+    if (!users) return [];
+    return this._mapUserRefsToNames(users.filter((u) => u.isDerived));
   }
 
   _mapUserRefsToNames(users) {

@@ -49,6 +49,10 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',
       },
+      _derivedLabels: {
+        type: Array,
+        computed: '_computeDerivedLabels(issue.labelRefs)',
+      },
       _fieldDefs: {
         type: Array,
         statePath: selectors.fieldDefsForIssue,
@@ -205,7 +209,12 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
 
   _computeLabelNames(labels) {
     if (!labels) return [];
-    return labels.map((l) => l.label);
+    return labels.filter((l) => !l.isDerived).map((l) => l.label);
+  }
+
+  _computeDerivedLabels(labels) {
+    if (!labels) return [];
+    return labels.filter((l) => l.isDerived).map((l) => l.label);
   }
 
   _omitEmptyDisplayName(displayName) {

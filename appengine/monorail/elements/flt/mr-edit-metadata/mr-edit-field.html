@@ -23,6 +23,10 @@
         width: auto;
         height: auto;
       }
+      .derived {
+        font-style: italic;
+        color: #222;
+      }
       .multi-grid {
         width: 95%;
         display: grid;
@@ -72,6 +76,11 @@
     <template is="dom-if" if="[[_fieldIsBasic]]">
       <template is="dom-if" if="[[multi]]">
         <div id="multi-grid" class$="[[_multiGridClass]]">
+          <template is="dom-repeat" items="[[derivedValues]]">
+            <div class="derived" title$="Derived: [[item]]">
+              [[item]]
+            </div>
+          </template>
           <template is="dom-repeat" items="[[_multiInputs]]">
             <input
               id$="multi[[index]]"

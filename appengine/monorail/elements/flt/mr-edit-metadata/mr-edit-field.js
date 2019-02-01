@@ -30,6 +30,10 @@ class MrEditField extends Polymer.Element {
         value: () => [],
         observer: 'reset',
       },
+      derivedValues: {
+        type: Array,
+        value: [],
+      },
       // For enum fields, the possible options that you have. Each entry is a
       // label type with an additional optionName field added.
       options: {

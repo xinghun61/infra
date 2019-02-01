@@ -169,7 +169,8 @@
             id="ccInput"
             name="cc"
             type="USER_TYPE"
-            initial-values="[[_mapUserRefsToNames(cc)]]"
+            initial-values="[[_ccNames]]"
+            derived-values="[[_derivedCCs]]"
             multi
           ></mr-edit-field>
 
@@ -264,6 +265,7 @@
             id="labelsInput"
             ac-type="label"
             initial-values="[[labelNames]]"
+            derived-values="[[derivedLabels]]"
             name="label"
             multi
           ></mr-edit-field>
