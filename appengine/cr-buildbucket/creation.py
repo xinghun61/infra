@@ -157,8 +157,6 @@ class BuildRequest(_BuildRequestBase):
     if sbr.builder.builder:  # pragma: no branch
       tags.add((buildtags.BUILDER_KEY, sbr.builder.builder))
 
-    # TODO(crbug.com/917851): remove property assignments that are reduntant
-    # with build.proto.
     build = model.Build(
         id=build_id,
         proto=build_proto,

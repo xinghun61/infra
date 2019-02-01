@@ -164,7 +164,6 @@ class Build(ndb.Model):
   #
   # These properties are derived from "proto" properties.
   # They are used to index builds.
-  # TODO(crbug.com/917851): make them computed.
 
   status_v2 = ndb.ComputedProperty(lambda self: self.proto.status)
 
@@ -174,6 +173,9 @@ class Build(ndb.Model):
 
   incomplete = ndb.ComputedProperty(lambda self: not self.is_ended)
 
+  # ID of the LUCI project to which this build belongs.
+  project = ndb.ComputedProperty(lambda self: self.proto.builder.project)
+
   # A container of builds, defines a security domain.
   # Format: "<project_id>/<bucket_name>".
   # "luci.<project_id>." prefix is stripped from bucket name,
@@ -182,11 +184,13 @@ class Build(ndb.Model):
       lambda self: config.format_bucket_id(
           self.proto.builder.project, self.proto.builder.bucket))
 
-  # ID of the LUCI project to which this build belongs.
-  project = ndb.ComputedProperty(lambda self: self.proto.builder.project)
+  # TODO(nodir): add builder_id property for fast search by builder.
 
+  # Value of proto.create_time.
   # Making this property computed is not-entirely trivial because
   # ComputedProperty saves it as int, as opposed to datetime.datetime.
+  # TODO(nodir): remove usages of create_time indices, rely on build id ordering
+  # instead.
   create_time = ndb.DateTimeProperty()
 
   # Superset of proto.tags. May contain auto-added tags.
@@ -195,7 +199,14 @@ class Build(ndb.Model):
 
   # If True, the build won't affect monitoring and won't be surfaced in
   # search results unless explicitly requested.
+  # TODO(nodir): make it computed from proto.
   experimental = ndb.BooleanProperty()
+
+  # Value of proto.created_by.
+  # Making this property computed is not-entirely trivial because
+  # ComputedProperty saves it as string, but IdentityProperty stores it
+  # as a blob property.
+  created_by = auth.IdentityProperty()
 
   @property
   def is_luci(self):  # pragma: no cover
@@ -252,16 +263,15 @@ class Build(ndb.Model):
   never_leased = ndb.BooleanProperty()
 
   # == Properties redundant with "proto" =======================================
-  #
-  # TODO(crbug.com/917851): delete these properties or move to "derived".
-
-  created_by = auth.IdentityProperty()
 
   # True if canary build infrastructure is used to run this build.
   # It may be None only in SCHEDULED state. Otherwise it must be True or False.
   # If canary_preference is CANARY, this field value does not have to be True,
   # e.g. if the build infrastructure does not have a canary.
+  # TODO(nodir): make it computed from proto.infra.buildbucket.canary.
   canary = ndb.BooleanProperty()
+
+  # ============================================================================
 
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
@@ -278,11 +288,9 @@ class Build(ndb.Model):
     assert not (is_ended and is_leased)
     assert (self.lease_expiration_date is not None) == is_leased
     assert (self.leasee is not None) == is_leased
-    # no cover due to a bug in coverage (https://stackoverflow.com/a/35325514)
 
     tag_delm = buildtags.DELIMITER
-    assert (not self.tags or
-            all(tag_delm in t for t in self.tags))  # pragma: no cover
+    assert not self.tags or all(tag_delm in t for t in self.tags)
 
     assert self.proto.HasField('create_time')
     assert self.proto.HasField('end_time') == is_ended
