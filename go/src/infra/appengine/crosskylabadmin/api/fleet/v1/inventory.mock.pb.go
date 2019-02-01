@@ -154,6 +154,26 @@ func (mr *MockInventoryClientMockRecorder) ListServers(ctx, in interface{}, opts
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServers", reflect.TypeOf((*MockInventoryClient)(nil).ListServers), varargs...)
 }
 
+// UpdateDutLabels mocks base method
+func (m *MockInventoryClient) UpdateDutLabels(ctx context.Context, in *UpdateDutLabelsRequest, opts ...grpc.CallOption) (*UpdateDutLabelsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateDutLabels", varargs...)
+	ret0, _ := ret[0].(*UpdateDutLabelsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDutLabels indicates an expected call of UpdateDutLabels
+func (mr *MockInventoryClientMockRecorder) UpdateDutLabels(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDutLabels", reflect.TypeOf((*MockInventoryClient)(nil).UpdateDutLabels), varargs...)
+}
+
 // MockInventoryServer is a mock of InventoryServer interface
 type MockInventoryServer struct {
 	ctrl     *gomock.Controller
@@ -265,4 +285,19 @@ func (m *MockInventoryServer) ListServers(arg0 context.Context, arg1 *ListServer
 func (mr *MockInventoryServerMockRecorder) ListServers(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServers", reflect.TypeOf((*MockInventoryServer)(nil).ListServers), arg0, arg1)
+}
+
+// UpdateDutLabels mocks base method
+func (m *MockInventoryServer) UpdateDutLabels(arg0 context.Context, arg1 *UpdateDutLabelsRequest) (*UpdateDutLabelsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateDutLabels", arg0, arg1)
+	ret0, _ := ret[0].(*UpdateDutLabelsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateDutLabels indicates an expected call of UpdateDutLabels
+func (mr *MockInventoryServerMockRecorder) UpdateDutLabels(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDutLabels", reflect.TypeOf((*MockInventoryServer)(nil).UpdateDutLabels), arg0, arg1)
 }

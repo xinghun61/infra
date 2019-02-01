@@ -308,3 +308,11 @@ func (is *ServerImpl) ListServers(ctx context.Context, req *fleet.ListServersReq
 
 	return nil, status.Error(codes.Unimplemented, "ListServers not yet implemented")
 }
+
+// UpdateDutLabels implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutLabelsRequest) (resp *fleet.UpdateDutLabelsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	return nil, status.Error(codes.Unimplemented, "not yet implemented")
+}

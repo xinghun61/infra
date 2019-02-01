@@ -124,3 +124,20 @@ func (s *DecoratedInventory) ListServers(c context.Context, req *ListServersRequ
 	}
 	return
 }
+
+func (s *DecoratedInventory) UpdateDutLabels(c context.Context, req *UpdateDutLabelsRequest) (rsp *UpdateDutLabelsResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "UpdateDutLabels", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.UpdateDutLabels(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "UpdateDutLabels", rsp, err)
+	}
+	return
+}
