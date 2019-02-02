@@ -310,4 +310,9 @@ message UpdateDutLabelsRequest {
   string context = 4;
 }
 
-message UpdateDutLabelsResponse {}
+message UpdateDutLabelsResponse {
+  // url is a URL associated with the label update.
+  //
+  // It is usually a Gerrit or Gitiles URL.
+  string url = 1;
+}
