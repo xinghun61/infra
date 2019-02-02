@@ -1,4 +1,23 @@
-'use strict';
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
+import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
+
+import '../../chops/chops-dialog/chops-dialog.js';
+import '../../chops/chops-timestamp/chops-timestamp.js';
+import '../../mr-bug-link/mr-bug-link.js';
+import '../../mr-user-link/mr-user-link.js';
+import {actionCreator} from '../../redux/redux-mixin.js';
+import {selectors} from '../../redux/selectors.js';
+import {MetadataMixin} from '../shared/metadata-mixin.js';
+import '../shared/mr-flt-styles.js';
+import './mr-field-values.js';
+import './mr-issue-table.js';
+import './mr-update-issue-hotlists.js';
 
 /**
  * `<mr-metadata>`
@@ -6,7 +25,288 @@
  * Generalized metadata for either approvals or issues.
  *
  */
-class MrMetadata extends MetadataMixin(Polymer.Element) {
+export class MrMetadata extends MetadataMixin(PolymerElement) {
+  static get template() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      <style include="mr-flt-styles">
+        :host {
+          display: table;
+          table-layout: fixed;
+          width: 100%;
+        }
+        td, th {
+          padding: 0.5em 4px;
+          vertical-align: top;
+          text-overflow: ellipsis;
+          overflow: hidden;
+        }
+        td {
+          width: 60%;
+        }
+        th {
+          text-align: left;
+          width: 40%;
+        }
+        .group-separator {
+          border-top: 1px solid hsl(120, 15%, 85%);
+        }
+        .group-title {
+          font-weight: normal;
+          font-style: oblique;
+          border-bottom: 1px solid hsl(120, 15%, 85%);
+          text-align: center;
+        }
+      </style>
+      <template is="dom-if" if="[[approvalStatus]]">
+        <tr>
+          <th>Status:</th>
+          <td>
+            [[approvalStatus]]
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[approvers.length]]">
+        <tr>
+          <th>Approvers:</th>
+          <td>
+            <template is="dom-repeat" items="[[approvers]]">
+              <mr-user-link
+                display-name="[[item.displayName]]"
+                user-id="[[item.userId]]"
+              ></mr-user-link><br />
+            </template>
+          </td>
+        </tr>
+      </template>
+      <template is="dom-if" if="[[setter]]">
+        <th>Setter:</th>
+        <td>
+          <mr-user-link
+            display-name="[[setter.displayName]]"
+            user-id="[[setter.userId]]"
+          ></mr-user-link>
+        </td>
+      </template>
+
+      <template is="dom-if" if="[[owner]]">
+        <tr>
+          <th>Owner:</th>
+          <td>
+            <mr-user-link
+              display-name="[[owner.displayName]]"
+              user-id="[[owner.userId]]"
+            ></mr-user-link>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[cc.length]]">
+        <tr>
+          <th>CC:</th>
+          <td>
+            <template is="dom-repeat" items="[[cc]]">
+              <mr-user-link
+                display-name="[[item.displayName]]"
+                user-id="[[item.userId]]"
+              ></mr-user-link><br />
+            </template>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[issueStatus]]">
+        <tr>
+          <th>Status:</th>
+          <td>
+            [[issueStatus.status]]
+            <em hidden$="[[!issueStatus.meansOpen]]">
+              (Open)
+            </em>
+            <em hidden$="[[issueStatus.meansOpen]]">
+              (Closed)
+            </em>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[components.length]]">
+        <tr>
+          <th>Components:</th>
+          <td>
+            <template is="dom-repeat" items="[[components]]">
+              <a href$="/p/[[projectName]]/issues/list?q=component:[[item.path]]"
+                title$="[[item.path]] = [[item.docstring]]"
+              >
+                [[item.path]]
+              </a>
+            </template>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-repeat" items="[[_fieldDefsWithGroups]]" as="group">
+        <tr>
+          <th class="group-title" colspan="2">
+            [[group.groupName]]
+          </th>
+        </tr>
+        <template is="dom-repeat" items="[[group.fieldDefs]]" as="field">
+          <tr hidden$="[[_fieldIsHidden(fieldValueMap, field)]]">
+            <th title$="[[field.fieldRef.fieldName]]">[[field.fieldRef.fieldName]]:</th>
+            <td>
+              <mr-field-values
+                name="[[field.fieldRef.fieldName]]"
+                type="[[field.fieldRef.type]]"
+                values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+                project-name="[[projectName]]"
+              ></mr-field-values>
+            </td>
+          </tr>
+        </template>
+        <tr>
+          <th class="group-separator" colspan="2"></th>
+        </tr>
+      </template>
+
+      <template is="dom-repeat" items="[[_fieldDefsWithoutGroup]]" as="field">
+        <tr hidden$="[[_fieldIsHidden(fieldValueMap, field)]]">
+          <th title$="[[field.fieldRef.fieldName]]">[[field.fieldRef.fieldName]]:</th>
+          <td>
+            <mr-field-values
+              name="[[field.fieldRef.fieldName]]"
+              type="[[field.fieldRef.type]]"
+              values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName)]]"
+              project-name="[[projectName]]"
+            ></mr-field-values>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[sortedBlockedOn.length]]">
+        <tr>
+          <th>BlockedOn:</th>
+          <td>
+            <template is="dom-repeat" items="[[sortedBlockedOn]]">
+              <mr-bug-link
+                project-name="[[projectName]]"
+                issue="[[_getIssueForRef(blockerReferences, item)]]"
+                is-closed$="[[_getIsClosedForRef(blockerReferences, item)]]"
+              >
+              </mr-bug-link>
+              <br />
+            </template>
+            <chops-button
+              on-click="openViewBlockedOn">
+              <i class="material-icons">view_list</i>
+              &nbsp;View details
+            </chops-button>
+          </td>
+        </tr>
+        <chops-dialog id="viewBlockedOnDialog">
+          <mr-issue-table
+            id="viewBlockedOnTable"
+            columns="[[blockedOnTableColumns]]"
+            rows="[[blockedOnTableRows]]"
+            on-reorder="reorderBlockedOn"
+            rerank-enabled="[[blockedOnIssuesRerankEnabled]]"
+          >
+          </mr-issue-table>
+        </chops-dialog>
+      </template>
+
+      <template is="dom-if" if="[[blocking]]">
+        <tr>
+          <th>Blocking:</th>
+          <td>
+            <template is="dom-repeat" items="[[blocking]]">
+              <mr-bug-link
+                project-name="[[projectName]]"
+                issue="[[_getIssueForRef(blockerReferences, item)]]"
+                is-closed$="[[_getIsClosedForRef(blockerReferences, item)]]"
+              >
+              </mr-bug-link>
+              <br />
+            </template>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[modifiedTimestamp]]">
+        <tr>
+          <th>Modified:</th>
+          <td>
+            <chops-timestamp timestamp="[[modifiedTimestamp]]" short></chops-timestamp>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[showUserHotlists]]">
+        <tr>
+          <th>
+            Your Hotlists:
+          </th>
+          <td>
+            <template is="dom-if" if="[[hotlistsByRole.user.length]]">
+              <template is="dom-repeat" items="[[hotlistsByRole.user]]">
+                <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
+                  title$="[[item.name]] - [[item.summary]]">
+                  [[item.name]]
+                </a>
+                <br />
+              </template>
+            </template>
+            <chops-button
+              on-click="openUpdateHotlists">
+              <i class="material-icons">create</i>
+              Update your hotlists
+            </chops-button>
+          </td>
+        </tr>
+      </template>
+      <chops-dialog id="updateHotlistsDialog">
+        <mr-update-issue-hotlists
+          id="updateHotlistsForm"
+          on-discard="closeUpdateHotlists"
+          on-save="saveUpdateHotlists"
+        >
+        </mr-update-issue-hotlists>
+      </chops-dialog>
+
+      <template is="dom-if" if="[[hotlistsByRole.participants.length]]">
+        <tr>
+          <th>Participant's Hotlists:</th>
+          <td>
+            <template is="dom-repeat" items="[[hotlistsByRole.participants]]">
+              <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
+                title$="[[item.name]] - [[item.summary]]">
+                [[item.name]]
+              </a>
+              <br />
+            </template>
+          </td>
+        </tr>
+      </template>
+
+      <template is="dom-if" if="[[hotlistsByRole.others.length]]">
+        <tr>
+          <th>Other Hotlists:</th>
+          <td>
+            <template is="dom-repeat" items="[[hotlistsByRole.others]]">
+              <a href$="/u/[[item.ownerRef.userId]]/hotlists/[[item.name]]"
+                title$="[[item.name]] - [[item.summary]]">
+                [[item.name]]
+              </a>
+              <br />
+            </template>
+          </td>
+        </tr>
+      </template>
+    `;
+  }
+
   static get is() {
     return 'mr-metadata';
   }
@@ -22,41 +322,21 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
       blockedOn: Array,
       blocking: Array,
       owner: Object,
-      phaseName: String,
       isApproval: {
         type: Boolean,
         value: false,
       },
-      projectName: {
-        type: String,
-        statePath: 'projectName',
-      },
-      issueId: {
-        type: Number,
-        statePath: 'issueId',
-      },
-      user: {
-        type: Object,
-        statePath: 'user',
-      },
-      issuePermissions: {
-        type: Object,
-        statePath: 'issuePermissions',
-      },
-      blockerReferences: {
-        type: Object,
-        statePath: 'blockerReferences',
-      },
+      projectName: String,
+      issueId: Number,
+      user: Object,
+      issuePermissions: Object,
+      blockerReferences: Object,
       role: {
         type: String,
         value: 'table',
         reflectToAttribute: true,
-        readOnly: true,
       },
-      issueHotlists: {
-        type: Array,
-        statePath: 'issueHotlists',
-      },
+      issueHotlists: Array,
       hotlistsByRole: {
         type: Object,
         computed: '_splitIssueHotlistsByRole(issueHotlists, user, owner, cc)',
@@ -81,6 +361,19 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
         type: Boolean,
         computed: '_computeShowUserHotlists(user, isApproval)',
       },
+      fieldValueMap: Object,
+    };
+  }
+
+  static mapStateToProps(state, element) {
+    return {
+      projectName: state.projectName,
+      issueId: state.issueId,
+      user: state.user,
+      issuePermissions: state.issuePermissions,
+      blockerReferences: state.blockerReferences,
+      issueHotlists: state.issueHotlists,
+      fieldValueMap: selectors.issueFieldValueMap(state),
     };
   }
 
@@ -218,9 +511,9 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
     }
 
     Promise.all(promises).then((results) => {
-      actionCreator.fetchIssueHotlists(this.dispatch.bind(this), issueRef);
+      actionCreator.fetchIssueHotlists(this.dispatchAction.bind(this), issueRef);
       actionCreator.fetchUserHotlists(
-        this.dispatch.bind(this), this.user.email);
+        this.dispatchAction.bind(this), this.user.email);
       this.$.updateHotlistsDialog.close();
     }, (error) => {
       this.$.updateHotlistsForm.error = error.description;
@@ -254,7 +547,7 @@ class MrMetadata extends MetadataMixin(Polymer.Element) {
       });
 
     reorderRequest.then((response) => {
-      actionCreator.fetchIssue(this.dispatch.bind(this), {
+      actionCreator.fetchIssue(this.dispatchAction.bind(this), {
         issueRef: {
           projectName: this.projectName,
           localId: this.issueId,

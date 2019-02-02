@@ -3,12 +3,13 @@
 <meta charset="utf-8">
 <script src="/bower_components/web-component-tester/browser.js"></script>
 
-<script src="/static/js/autolink.js"></script>
-<script>
+<script type="module">
   'use strict';
-  const components = window.__autolink.Components;
-  const createIssueRefRun = window.__autolink.createIssueRefRun;
-  const markupAutolinks = window.__autolink.markupAutolinks;
+  import {autolink} from '/static/js/autolink.js';
+
+  const components = autolink.Components;
+  const createIssueRefRun = autolink.createIssueRefRun;
+  const markupAutolinks = autolink.markupAutolinks;
   suite('crbug component functions', function() {
     const {lookup, extractRefs, refRegs, replacer} = components.get('01-tracker-crbug');
 

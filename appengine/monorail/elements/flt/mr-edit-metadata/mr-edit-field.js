@@ -1,4 +1,19 @@
-'use strict';
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
+import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
+import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
+
+import '../../chops/chops-button/chops-button.js';
+import {fieldTypes} from '../../shared/field-types.js';
+import {fltHelpers} from '../shared/flt-helpers.js';
+import '../shared/flt-helpers.js';
+import '../shared/mr-flt-styles.js';
 
 /**
  * `<mr-edit-field>`
@@ -6,7 +21,112 @@
  * A single edit input for a fieldDef + the values of the field.
  *
  */
-class MrEditField extends Polymer.Element {
+export class MrEditField extends PolymerElement {
+  static get template() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      <style include="mr-flt-styles">
+        :host {
+          display: block;
+        }
+        :host([hidden]) {
+          display: none;
+        }
+        input,
+        select {
+          @apply --mr-edit-field-styles;
+        }
+        input[type="checkbox"] {
+          width: auto;
+          height: auto;
+        }
+        .derived {
+          font-style: italic;
+          color: #222;
+        }
+        .multi-grid {
+          width: 95%;
+          display: grid;
+          grid-column-gap: 1%;
+          grid-row-gap: 3px;
+          grid-template-columns: 24% 24% 24% 25%;
+        }
+        .user-multi-grid {
+          width: 95%;
+          display: grid;
+          grid-column-gap: 1%;
+          grid-row-gap: 3px;
+          grid-template-columns: 32% 33% 33%;
+        }
+      </style>
+      <template is="dom-if" if="[[_fieldIsEnum(type)]]">
+        <template is="dom-if" if="[[multi]]">
+          <template is="dom-repeat" items="[[options]]" as="option">
+            <label title$="[[option.docstring]]">
+              <input
+                class="enum-input"
+                type="checkbox"
+                name$="[[name]]"
+                value$="[[option.optionName]]"
+                checked$="[[_optionInValues(initialValues, option.optionName)]]"
+              />
+              [[option.optionName]]
+            </label>
+          </template>
+        </template>
+        <select id="editSelect" hidden$="[[multi]]">
+          <option value="">----</option>
+          <template is="dom-repeat" items="[[options]]" as="option">
+            <option
+              value$="[[option.optionName]]"
+              selected$="[[_computeIsSelected(_initialValue, option.optionName)]]"
+            >
+              [[option.optionName]]
+              <template is="dom-if" if="[[option.docstring]]">
+                - [[option.docstring]]
+              </template>
+            </option>
+          </template>
+        </select>
+      </template>
+
+      <template is="dom-if" if="[[_fieldIsBasic]]">
+        <template is="dom-if" if="[[multi]]">
+          <div id="multi-grid" class$="[[_multiGridClass]]">
+            <template is="dom-repeat" items="[[derivedValues]]">
+              <div class="derived" title$="Derived: [[item]]">
+                [[item]]
+              </div>
+            </template>
+            <template is="dom-repeat" items="[[_multiInputs]]">
+              <input
+                id$="multi[[index]]"
+                class="multi"
+                aria-label$="[[name]] input #[[index]]"
+                value$="[[item]]"
+                data-ac-type$="[[_acType]]"
+                autocomplete$="[[_computeDomAutocomplete(_acType)]]"
+                style="width: unset"
+              />
+            </template>
+          </div>
+          <chops-button on-click="_addEntry" class="de-emphasized">
+            <i class="material-icons">add</i>
+            Add entry
+          </chops-button>
+        </template>
+        <input
+          id="editInput"
+          hidden$="[[multi]]"
+          value$="[[_initialValue]]"
+          data-ac-type$="[[_acType]]"
+          autocomplete$="[[_computeDomAutocomplete(_acType)]]"
+        />
+      </template>
+    `;
+  }
+
   static get is() {
     return 'mr-edit-field';
   }
@@ -76,7 +196,7 @@ class MrEditField extends Polymer.Element {
   reset() {
     this._multiInputs = this.initialValues.concat(['']);
     if (!this.isConnected) return;
-    Polymer.flush();
+    flush();
     this.setValue(this.initialValues);
   }
 
@@ -85,7 +205,7 @@ class MrEditField extends Polymer.Element {
       v = [v];
     }
     if (this.multi && this._fieldIsBasic) {
-      Polymer.dom(this.root).querySelectorAll('.multi').forEach((input, i) => {
+      dom(this.root).querySelectorAll('.multi').forEach((input, i) => {
         if (i < v.length) {
           input.value = v[i];
         } else {
@@ -93,7 +213,7 @@ class MrEditField extends Polymer.Element {
         }
       });
     } else if (this.multi) {
-      Polymer.dom(this.root).querySelectorAll('.enum-input').forEach(
+      dom(this.root).querySelectorAll('.enum-input').forEach(
         (checkbox) => {
           checkbox.checked = this._optionInValues(v, checkbox.value);
         }
@@ -133,13 +253,13 @@ class MrEditField extends Polymer.Element {
         valueList.push(val);
       }
     } else if (this._fieldIsEnum(this.type)) {
-      Polymer.dom(this.root).querySelectorAll('.enum-input').forEach((c) => {
+      dom(this.root).querySelectorAll('.enum-input').forEach((c) => {
         if (c.checked) {
           valueList.push(c.value.trim());
         }
       });
     } else {
-      Polymer.dom(this.root).querySelectorAll('.multi').forEach((input) => {
+      dom(this.root).querySelectorAll('.multi').forEach((input) => {
         const val = input.value.trim();
         if (val.length) {
           valueList.push(val);
@@ -177,9 +297,9 @@ class MrEditField extends Polymer.Element {
 
   _getInput() {
     if (this._fieldIsEnum(this.type) && !this.multi) {
-      return Polymer.dom(this.root).querySelector('#editSelect');
+      return dom(this.root).querySelector('#editSelect');
     }
-    return Polymer.dom(this.root).querySelector('#editInput');
+    return dom(this.root).querySelector('#editInput');
   }
 
   _optionInValues(values, optionName) {

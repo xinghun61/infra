@@ -1,4 +1,17 @@
-'use strict';
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
+import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
+import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
+
+import {selectors} from '../../redux/selectors.js';
+import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import './mr-edit-metadata.js';
+import '../shared/mr-flt-styles.js';
 
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
@@ -9,7 +22,32 @@ const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
  * Issue editing form.
  *
  */
-class MrEditIssue extends ReduxMixin(Polymer.Element) {
+export class MrEditIssue extends ReduxMixin(PolymerElement) {
+  static get template() {
+    return html`
+      <style include="mr-flt-styles"></style>
+      <mr-edit-metadata
+        id="metadataForm"
+        owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
+        cc="[[issue.ccRefs]]"
+        status="[[issue.statusRef.status]]"
+        statuses="[[projectConfig.statusDefs]]"
+        summary="[[issue.summary]]"
+        components="[[issue.componentRefs]]"
+        field-defs="[[_fieldDefs]]"
+        field-values="[[issue.fieldValues]]"
+        blocked-on="[[issue.blockedOnIssueRefs]]"
+        blocking="[[issue.blockingIssueRefs]]"
+        label-names="[[_labelNames]]"
+        derived-labels="[[_derivedLabels]]"
+        on-save="save"
+        on-discard="reset"
+        disabled="[[updatingIssue]]"
+        error="[[updateIssueError.description]]"
+      ></mr-edit-metadata>
+    `;
+  }
+
   static get is() {
     return 'mr-edit-issue';
   }
@@ -18,33 +56,13 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
     return {
       issue: {
         type: Object,
-        statePath: 'issue',
         observer: 'reset',
       },
-      issueId: {
-        type: Number,
-        statePath: 'issueId',
-      },
-      projectName: {
-        type: String,
-        statePath: 'projectName',
-      },
-      projectConfig: {
-        type: Object,
-        statePath: 'projectConfig',
-      },
-      statuses: {
-        type: Array,
-        statePath: 'projectConfig.statusDefs',
-      },
-      updatingIssue: {
-        type: Boolean,
-        statePath: 'updatingIssue',
-      },
-      updateIssueError: {
-        type: Object,
-        statePath: 'updateIssueError',
-      },
+      issueId: Number,
+      projectName: String,
+      projectConfig: Object,
+      updatingIssue: Boolean,
+      updateIssueError: Object,
       _labelNames: {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',
@@ -53,19 +71,28 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
         type: Array,
         computed: '_computeDerivedLabels(issue.labelRefs)',
       },
-      _fieldDefs: {
-        type: Array,
-        statePath: selectors.fieldDefsForIssue,
-      },
+      _fieldDefs: Array,
+    };
+  }
+
+  static mapStateToProps(state, element) {
+    return {
+      issue: state.issue,
+      issueId: state.issueId,
+      projectName: state.projectName,
+      projectConfig: state.projectConfig,
+      updatingIssue: state.updatingIssue,
+      updateIssueError: state.updateIssueError,
+      _fieldDefs: selectors.fieldDefsForIssue(state),
     };
   }
 
   reset() {
-    Polymer.dom(this.root).querySelector('#metadataForm').reset();
+    dom(this.root).querySelector('#metadataForm').reset();
   }
 
   save() {
-    const form = Polymer.dom(this.root).querySelector('#metadataForm');
+    const form = dom(this.root).querySelector('#metadataForm');
     const data = form.getDelta();
     data.sendEmail = form.sendEmail;
     const message = this._generateMessage(data);
@@ -78,7 +105,7 @@ class MrEditIssue extends ReduxMixin(Polymer.Element) {
       }
 
       if (message.commentContent || message.delta || message.uploads) {
-        actionCreator.updateIssue(this.dispatch.bind(this), message);
+        actionCreator.updateIssue(this.dispatchAction.bind(this), message);
       }
     }).catch((reason) => {
       console.error('loading file for attachment: ', reason);

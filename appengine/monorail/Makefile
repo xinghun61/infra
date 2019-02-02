@@ -12,16 +12,12 @@ PRODID= monorail-prod
 GAE_PY?= python gae.py
 DEV_APPSERVER_FLAGS?=
 
+WEBPACK_PATH := ./node_modules/webpack-cli/bin/cli.js
+
 FRONTEND_MODULES?= default
 BACKEND_MODULES?= besearch latency-insensitive
 
 BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD)
-
-VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
-CRISPER_PATH = ./node_modules/crisper/bin/crisper
-VULCANIZE = $(VULCANIZE_PATH) $(1).html --inline-script \
-		| $(CRISPER_PATH) \
-		--html $(1).vulcanized.html --js $(1).vulcanized.js --only-split
 
 PY_DIRS = api,features,framework,project,proto,search,services,sitewide,testing,tracker
 
@@ -64,21 +60,21 @@ test_coverage:
 # Commands for running locally using dev_appserver.
 serve: deps config_local
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS)
+	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS)& $(WEBPACK_PATH) --watch
 
 serve_email: deps config_local
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
+	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True& $(WEBPACK_PATH) --watch
 
 # The _remote commands expose the app on 0.0.0.0, so that it is externally
 # accessible by hostname:port, rather than just localhost:port.
 serve_remote: deps config_local
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS)
+	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS)& $(WEBPACK_PATH) --watch
 
 serve_remote_email: config_local
 	@echo "---[Starting SDK AppEngine Server]---"
-	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
+	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True& $(WEBPACK_PATH) --watch
 
 run: serve
 
@@ -90,16 +86,12 @@ deps:
 	cp node_modules/chart.js/dist/Chart.min.js \
 		deployed_node_modules/chart.js/dist/Chart.min.js
 
-vulcanize: clean_vulcanized
-	$(call VULCANIZE, elements/mr-app/mr-app)
-	$(call VULCANIZE, elements/chdir/mr-profile-page/mr-profile-page)
-	$(call VULCANIZE, elements/mr-bulk-approval-update/mr-bulk-approval-update)
-
-clean_vulcanized:
-	find . -name "*.vulcanized.*" -delete
+build_js:
+	$(WEBPACK_PATH)
 
 clean_deps:
 	rm -rf bower_components
+	rm -rf node_modules
 
 node_deps:
 	npm install
@@ -112,6 +104,9 @@ wct: bower_deps
 
 wct_debug: bower_deps
 	npx run-wct --debug
+
+karma: bower_deps
+	npx karma start
 
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py
@@ -137,25 +132,22 @@ config_local:
 	m4 module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
 # For deploying demo versions, e.g. context for a code review.
-deploy_demo: clean_deps deps vulcanize config_demo
+deploy_demo: clean_deps deps build_js config_demo
 	@echo "---[Demo $(STAGEID)]---"
 	$(GAE_PY) upload --tag $(BRANCH_NAME) -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
-	make clean_vulcanized
 
 # AppEngine apps can be tested locally and in non-default versions upload to
 # the main app-id, but it is still sometimes useful to have a completely
 # separate app-id.  E.g., for testing inbound email, load testing, or using
 # throwaway databases.
-deploy_staging: clean_deps deps vulcanize config_staging
+deploy_staging: clean_deps deps build_js config_staging
 	@echo "---[Staging $(STAGEID)]---"
 	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
-	make clean_vulcanized
 
 # This is our production server that users actually use.
-deploy_prod: clean_deps deps vulcanize config_prod
+deploy_prod: clean_deps deps build_js config_prod
 	@echo "---[Deploying prod instance $(PRODID)]---"
 	$(GAE_PY) upload -A $(PRODID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
-	make clean_vulcanized
 
 # Note that we do not provide a command-line way to make the newly-uploaded
 # version the default version. This is for two reasons: a) You should be using

@@ -1,9 +1,11 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
-// Use of this source code is govered by a BSD-style
-// license that can be found in the LICENSE file or at
-// https://developers.google.com/open-source/licenses/bsd
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
 
-'use strict';
+import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
 
 /**
  * `<chops-checkbox>`
@@ -12,7 +14,69 @@
  * around a native checkbox to allow easy sharing of styles.
  *
  */
-class ChopsCheckbox extends Polymer.Element {
+export class ChopsCheckbox extends PolymerElement {
+  static get template() {
+    return html`
+      <style>
+        :host {
+          --chops-checkbox-color: hsl(219, 70%, 51%);
+          /* A bit brighter than Chrome's default focus color to
+           * avoid blending into the checkbox's blue. */
+          --chops-checkbox-focus-color: hsl(193, 82%, 63%);
+          --chops-checkbox-size: 16px;
+          --chops-checkbox-check-size: 18px;
+        }
+        label {
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+        }
+        input[type="checkbox"] {
+          /* We need the checkbox to be hidden but still accessible. */
+          opacity: 0;
+          width: 0;
+          height: 0;
+          position: absolute;
+          top: -9999;
+          left: -9999;
+        }
+        label::before {
+          width: var(--chops-checkbox-size);
+          height: var(--chops-checkbox-size);
+          margin-right: 8px;
+          box-sizing: border-box;
+          content: "\\2713";
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #222;
+          border-radius: 2px;
+          background: #fff;
+          font-size: var(--chops-checkbox-check-size);
+          padding: 0;
+          color: transparent;
+        }
+        input[type="checkbox"]:focus + label::before {
+          /* Make sure an outline shows around this element for
+           * accessibility.
+           */
+           box-shadow: 0 0 5px 1px var(--chops-checkbox-focus-color);
+        }
+        input[type="checkbox"]:checked + label::before {
+          background: var(--chops-checkbox-color);
+          border-color: var(--chops-checkbox-color);
+          color: #fff;
+        }
+      </style>
+      <!-- Note: Avoiding 2-way data binding to futureproof this code
+        for LitElement. -->
+      <input id="checkbox" type="checkbox" checked\$="[[checked]]" on-change="_checkedChangeHandler">
+      <label for="checkbox">
+        <slot></slot>
+      </label>
+    `;
+  }
+
   static get is() {
     return 'chops-checkbox';
   }

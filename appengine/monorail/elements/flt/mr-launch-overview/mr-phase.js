@@ -1,4 +1,20 @@
-'use strict';
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
+import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
+
+import '../../chops/chops-dialog/chops-dialog.js';
+import {selectors} from '../../redux/selectors.js';
+import {actionCreator} from '../../redux/redux-mixin.js';
+import '../mr-approval-card/mr-approval-card.js';
+import '../mr-edit-metadata/mr-edit-metadata.js';
+import '../mr-metadata/mr-field-values.js';
+import {MetadataMixin} from '../shared/metadata-mixin.js';
+import '../shared/mr-flt-styles.js';
 
 const TARGET_PHASE_MILESTONE_MAP = {
   'Beta': 'feature_freeze',
@@ -24,7 +40,82 @@ const PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full'];
  * This is the component for a single phase.
  *
  */
-class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
+export class MrPhase extends MetadataMixin(PolymerElement) {
+  static get template() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <style include="mr-flt-styles">
+        :host {
+          display: block;
+        }
+        chops-dialog {
+          font-size: 85%;
+          --chops-dialog-theme: {
+            width: 500px;
+            max-width: 100%;
+          };
+        }
+        h2 {
+          margin: 0;
+          font-size: 105%;
+          font-weight: normal;
+          padding: 0.5em 8px;
+          box-sizing: border-box;
+          display: flex;
+          align-items: center;
+          flex-direction: row;
+          justify-content: space-between;
+        }
+        h2 em {
+          margin-left: 16px;
+          font-size: 80%;
+        }
+        .phase-edit {
+          padding: 0.1em 8px;
+        }
+      </style>
+      <h2>
+        <span>
+          Approvals<span hidden\$="[[_isEmpty(phaseName)]]">:
+            [[phaseName]]
+          </span>
+          <span hidden\$="[[!_setPhaseFields.length]]">
+            -
+            <template is="dom-repeat" items="[[_setPhaseFields]]" as="field">
+              [[field.fieldRef.fieldName]]
+              <mr-field-values
+                name="[[field.fieldRef.fieldName]]"
+                type="[[field.fieldRef.type]]"
+                values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+                project-name="[[projectName]]"
+              ></mr-field-values><span hidden\$="[[_isLastItem(_setPhaseFields.length, index)]]">;
+            </span></template>
+            <em hidden\$="[[!_nextDate]]">
+              [[_dateDescriptor]]
+              <chops-timestamp timestamp="[[_nextDate]]"></chops-timestamp>
+            </em>
+          </span>
+        </span>
+        <chops-button hidden\$="[[_isEmpty(phaseName)]]" on-click="edit" class="de-emphasized phase-edit">
+          <i class="material-icons">create</i>
+          Edit
+        </chops-button>
+      </h2>
+      <template is="dom-repeat" items="[[approvals]]">
+        <mr-approval-card approvers="[[item.approverRefs]]" setter="[[item.setterRef]]" field-name="[[item.fieldRef.fieldName]]" phase-name="[[phaseName]]" status-enum="[[item.status]]" survey="[[item.survey]]" survey-template="[[item.surveyTemplate]]" urls="[[item.urls]]" labels="[[item.labels]]" users="[[item.users]]"></mr-approval-card>
+      </template>
+      <template is="dom-if" if="[[!approvals.length]]">
+        No tasks for this phase.
+      </template>
+      <chops-dialog id="editPhase" aria-labelledby="phaseDialogTitle">
+        <h3 id="phaseDialogTitle" class="medium-heading">
+          Editing phase: [[phaseName]]
+        </h3>
+        <mr-edit-metadata id="metadataForm" field-defs="[[fieldDefs]]" field-values="[[fieldValues]]" phase-name="[[phaseName]]" disabled="[[updatingIssue]]" error="[[updateIssueError.description]]" on-save="save" on-discard="cancel" is-approval="" disable-attachments=""></mr-edit-metadata>
+      </chops-dialog>
+    `;
+  }
+
   static get is() {
     return 'mr-phase';
   }
@@ -33,30 +124,19 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     return {
       issue: {
         type: Object,
-        statePath: 'issue',
         observer: 'reset',
       },
-      projectName: {
-        type: String,
-        statePath: 'projectName',
-      },
-      issueId: {
-        type: Number,
-        statePath: 'issueId',
-      },
+      projectName: String,
+      issueId: Number,
       phaseName: {
         type: String,
         value: '',
       },
       updatingIssue: {
         type: Boolean,
-        statePath: 'updatingIssue',
         observer: '_updatingIssueChanged',
       },
-      updateIssueError: {
-        type: Object,
-        statePath: 'updateIssueError',
-      },
+      updateIssueError: Object,
       // Possible values: Target, Approved, Launched.
       _status: {
         type: String,
@@ -77,18 +157,14 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
       },
       _fetchedMilestone: {
         type: Number,
-        computed: `_computeFetchedMilestone(_targetMilestone, _approvedMilestone,
-          _launchedMilestone)`,
+        computed: `_computeFetchedMilestone(_targetMilestone,
+          _approvedMilestone, _launchedMilestone)`,
         observer: '_fetchMilestoneData',
       },
       approvals: Array,
-      fieldDefs: {
-        type: Array,
-        statePath: selectors.fieldDefsForPhases,
-      },
+      fieldDefs: Array,
       fieldValueMap: {
         type: Object,
-        statePath: selectors.issueFieldValueMap,
         value: () => {},
       },
       _nextDate: {
@@ -106,6 +182,18 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
         computed: '_computeSetPhaseFields(fieldDefs, fieldValueMap, phaseName)',
       },
       _milestoneData: Object,
+    };
+  }
+
+  static mapStateToProps(state, element) {
+    return {
+      issue: state.issue,
+      issueId: state.issueId,
+      projectName: state.projectName,
+      updatingIssue: state.updatingIssue,
+      updateIssueError: state.updateIssueError,
+      fieldDefs: selectors.fieldDefsForPhases(state),
+      fieldValueMap: selectors.issueFieldValueMap(state),
     };
   }
 
@@ -160,7 +248,7 @@ class MrPhase extends MetadataMixin(ReduxMixin(Polymer.Element)) {
     }
 
     if (message.commentContent || message.delta) {
-      actionCreator.updateIssue(this.dispatch.bind(this), message);
+      actionCreator.updateIssue(this.dispatchAction.bind(this), message);
     }
   }
 

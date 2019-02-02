@@ -1,4 +1,11 @@
-'use strict';
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
+import '../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
 
 /**
  * `<mr-dropdown>`
@@ -6,9 +13,82 @@
  * Dropdown menu for Monorail.
  *
  */
-// TODO(zhangtiff): generalize this menu for other drop downs. Right
-// now this is designed only for the login dropdown.
-class MrDropdown extends Polymer.Element {
+export class MrDropdown extends PolymerElement {
+  static get template() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <style>
+        :host {
+          position: relative;
+          display: inline-block;
+          cursor: pointer;
+          height: 100%;
+        }
+        :host(:not([opened])) .menu {
+          display: none;
+          visibility: hidden;
+        }
+        i.material-icons {
+          display: inline-block;
+          color: hsl(0, 0%, 39%);
+          margin: 2px;
+        }
+        .anchor {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .menu {
+          position: absolute;
+          min-width: 120%;
+          right: 0px;
+          top: 98%;
+          display: block;
+          background: white;
+          border: 1px solid hsl(0, 0%, 80%);
+          z-index: 10;
+          box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
+        }
+        .menu hr {
+          width: 96%;
+          margin: 0.25em 2%;
+          border: 0;
+          height: 1px;
+          background: hsl(0, 0%, 80%);
+        }
+        .menu a {
+          box-sizing: border-box;
+          text-decoration: none;
+          font-size: 16px;
+          white-space: nowrap;
+          display: block;
+          width: 100%;
+          padding: 0.25em 8px;
+          transition: 0.2s background ease-in-out;
+        }
+        .menu a:hover {
+          background: hsl(0, 0%, 90%);
+        }
+      </style>
+      <div class="anchor" on-click="toggle">
+        <i class="material-icons expand-icon">[[icon]]</i>
+        [[text]]
+      </div>
+      <div class="menu">
+        <template is="dom-repeat" items="[[items]]">
+          <hr hidden\$="[[!item.separator]]">
+          <template is="dom-if" if="[[!item.separator]]">
+            <a href\$="[[item.url]]" on-click="_onClick" data-idx\$="[[index]]">
+              [[item.text]]
+            </a>
+          </template>
+        </template>
+      </div>
+    `;
+  }
+
   static get is() {
     return 'mr-dropdown';
   }

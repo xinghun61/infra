@@ -1,6 +1,51 @@
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+import './mr-day-icon.js';
+import {html} from '../../../node_modules/@polymer/polymer/lib/utils/html-tag.js';
+import {PolymerElement} from '../../../node_modules/@polymer/polymer/polymer-element.js';
 
-'use strict';
-class MrActivityTable extends Polymer.Element {
+export class MrActivityTable extends PolymerElement {
+  static get template() {
+    return html`
+      <style>
+        :host {
+          display: grid;
+          /* 8 columns = 7 days of the week + 1 column to label the week */
+          grid-auto-flow: column;
+          grid-auto-columns: auto auto auto auto auto auto auto auto auto auto auto auto auto;
+          grid-template-rows: auto auto auto auto auto auto auto;
+          margin: auto;
+          width: 90%;
+          text-align: center;
+          line-height: 110%;
+          justify-items: center;
+          min-height: 30%;
+        }
+        :host[hidden] {
+          display: none;
+        }
+        span {
+          font-size: 10px;
+          place-self: center;
+        }
+      </style>
+
+      <template is="dom-repeat" items="[[daysOfWeek]]">
+        <span>[[item]]</span>
+      </template>
+      <template is="dom-repeat" items="[[startWeekday]]">
+        <span></span>
+      </template>
+      <template is="dom-repeat" items="[[activityArray]]" as="day">
+        <mr-day-icon activity-level="[[day.activityNum]]" on-tap="_onDaySelected" selected="[[_computeIsSelected(selectedDate, day.date)]]" commits="[[day.commits]]" comments="[[day.comments]]" date="[[day.date]]">
+        </mr-day-icon>
+      </template>
+    `;
+  }
+
   static get is() {
     return 'mr-activity-table';
   }
@@ -50,17 +95,17 @@ class MrActivityTable extends Polymer.Element {
       months: {
         type: Array,
         value: () => {
-          var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-          var now = new Date();
+          let monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          let now = new Date();
           return [monthNames[now.getMonth()],
-                  monthNames[now.getMonth() - 1],
-                  monthNames[now.getMonth() - 2]];
-        }
+            monthNames[now.getMonth() - 1],
+            monthNames[now.getMonth() - 2]];
+        },
       },
       selectedDate: {
         type: Number,
         notify: true,
-      }
+      },
     };
   }
 
@@ -69,7 +114,7 @@ class MrActivityTable extends Polymer.Element {
   }
 
   _onDaySelected(event) {
-    if(this.selectedDate == event.target.date){
+    if (this.selectedDate == event.target.date) {
       this.selectedDate = undefined;
     } else {
       this.selectedDate = event.target.date;
@@ -80,8 +125,8 @@ class MrActivityTable extends Polymer.Element {
     let startDate = new Date(this.activityArray[0].date * 1000);
     let startWeekdayNum = startDate.getDay()-1;
     let emptyDays = [];
-    for(let i = 0; i < startWeekdayNum; i++) {
-      emptyDays.push(" ");
+    for (let i = 0; i < startWeekdayNum; i++) {
+      emptyDays.push(' ');
     }
     this.startWeekday = emptyDays;
   }
@@ -92,20 +137,20 @@ class MrActivityTable extends Polymer.Element {
       now.getUTCFullYear(),
       now.getUTCMonth(),
       now.getUTCDate(),
-      24,0,0));
+      24, 0, 0));
     let todayEndTime = today.getTime() / 1000;
     return todayEndTime;
   }
 
   computeActivityArray(commits, comments, todayUnixEndTime) {
-    if(!todayUnixEndTime){
+    if (!todayUnixEndTime) {
       return [];
     }
     commits = commits || [];
     comments = comments || [];
 
     let activityArray = [];
-    for(let i = 0; i < 93; i++) {
+    for (let i = 0; i < 93; i++) {
       let arrayDate = (todayUnixEndTime - ((i) * 86400));
       activityArray.push({
         commits: 0,
@@ -117,7 +162,7 @@ class MrActivityTable extends Polymer.Element {
 
     for (let i = 0; i < commits.length; i++) {
       let day = Math.floor((todayUnixEndTime - commits[i].commitTime) / 86400);
-      if(day > 92){
+      if (day > 92) {
         break;
       }
       activityArray[day].commits++;
@@ -126,7 +171,7 @@ class MrActivityTable extends Polymer.Element {
 
     for (let i = 0; i < comments.length; i++) {
       let day = Math.floor((todayUnixEndTime - comments[i].timestamp) / 86400);
-      if(day > 92){
+      if (day > 92) {
         break;
       }
       activityArray[day].comments++;

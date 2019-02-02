@@ -1,4 +1,15 @@
-'use strict';
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
+
+import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
+
+import '../../chops/chops-button/chops-button.js';
+import '../../chops/chops-checkbox/chops-checkbox.js';
+import '../shared/mr-flt-styles.js';
 
 /**
  * `<mr-inline-editor>`
@@ -7,7 +18,75 @@
  * survey.
  *
  */
-class MrInlineEditor extends Polymer.Element {
+export class MrInlineEditor extends PolymerElement {
+  static get template() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <style include="mr-flt-styles">
+        :host {
+          display: block;
+          width: 100%;
+          color: hsl(0, 0%, 30%);
+          box-sizing: border-box;
+          word-wrap: break-word;
+          --mr-inline-editor-textarea-min-height: 200px;
+          --mr-inline-editor-textarea-max-height: 500px;
+        }
+        [role="heading"] {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          @apply --mr-inline-editor-header-style;
+        }
+        .content {
+          padding: 0.5em 0;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .edit-controls {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+        textarea.content {
+          min-height: var(--mr-inline-editor-textarea-min-height);
+          max-height: var(--mr-inline-editor-textarea-max-height);
+          border: 1px solid hsl(219, 60%, 71%);
+          padding: 0.5em 4px;
+        }
+      </style>
+      <div class="medium-heading" role="heading" aria-level\$="[[headingLevel]]">
+        [[title]]
+
+        <template is="dom-if" if="[[!editing]]">
+          <chops-button on-click="edit">
+            <i class="material-icons">create</i>
+            [[editText]]
+          </chops-button>
+        </template>
+      </div>
+      <textarea id="textEditor" class="content" value="{{_displayedContent::input}}" hidden\$="[[!editing]]" placeholder\$="[[placeholder]]"></textarea>
+      <template is="dom-if" if="[[editing]]">
+        <div class="edit-controls">
+          <chops-checkbox id="sendEmail" on-checked-change="_sendEmailChecked" checked="[[sendEmail]]">Send email</chops-checkbox>
+          <div>
+            <chops-button id="discard" on-click="cancel" class="de-emphasized">
+              <i class="material-icons">close</i>
+              Discard changes
+            </chops-button>
+            <chops-button id="save" on-click="save" class="emphasized">
+              <i class="material-icons">create</i>
+              Save changes
+            </chops-button>
+          </div>
+        </div>
+      </template>
+      <div class="content" hidden\$="[[editing]]">
+        <slot></slot>
+      </div>
+    `;
+  }
+
   static get is() {
     return 'mr-inline-editor';
   }

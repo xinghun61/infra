@@ -1,15 +1,10 @@
 [define title]Approval Issue [local_id][end]
 [include "../framework/polymer-header.ezt"]
 
-[if-any dev_mode]
-<link rel="import" href="/elements/mr-app/mr-app.html?version=[app_version]" nonce="[nonce]">
-[else]
-<link rel="import" href="/elements/mr-app/mr-app.vulcanized.html?version=[app_version]" nonce="[nonce]">
-<script src="/elements/mr-app/mr-app.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
-[end]
+<script src="/elements/mr-app/mr-app.min.js?version=[app_version]" nonce="[nonce]" type="module"></script>
 
 <mr-app [if-any logged_in_user]
-  user="[logged_in_user.email]"[end]
+  user-display-name="[logged_in_user.email]"[end]
   login-url="[login_url]"
   logout-url="[logout_url]"
 ></mr-app>

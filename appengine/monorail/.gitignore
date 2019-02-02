@@ -9,10 +9,12 @@
 index\.yaml
 REVISION
 .coverage
+coverage
 htmlcov
 .DS_Store
 workspace.xml
 elements/**/*\.vulcanized.*
+elements/**/*\.min.js
 bower_components
 node_modules
 deployed_node_modules

@@ -1,5 +1,14 @@
-'use strict';
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
 
+import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
+
+import '../../mr-user-link/mr-user-link.js';
+import {fieldTypes} from '../../shared/field-types.js';
 /**
  * `<mr-field-values>`
  *
@@ -7,7 +16,34 @@
  * according to their type.
  *
  */
-class MrFieldValues extends Polymer.Element {
+export class MrFieldValues extends PolymerElement {
+  static get template() {
+    return html`
+      <template is="dom-if" if="[[_fieldIsUrl(type)]]">
+        <template is="dom-repeat" items="[[values]]" as="value">
+          <a href\$="[[value]]">[[value]]</a>
+        </template>
+      </template>
+
+      <template is="dom-if" if="[[_fieldIsUser(type)]]">
+        <template is="dom-repeat" items="[[values]]" as="value">
+          <mr-user-link user-id="[[value]]" display-name="[[value]]"></mr-user-link>
+        </template>
+      </template>
+
+      <template is="dom-if" if="[[_fieldIsRemainingTypes(type)]]">
+        <template is="dom-repeat" items="[[values]]" as="value">
+          <a href\$="/p/[[projectName]]/issues/list?q=[[name]]=&quot;[[value]]&quot;">
+            [[value]]</a><span hidden\$="[[_isLastItem(values.length, index)]]">,</span>
+        </template>
+      </template>
+
+      <template is="dom-if" if="[[!values.length]]">
+        ----
+      </template>
+    `;
+  }
+
   static get is() {
     return 'mr-field-values';
   }

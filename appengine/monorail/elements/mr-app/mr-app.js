@@ -1,8 +1,19 @@
-// Copyright 2019 The Chromium Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style license that can be
-// found in the LICENSE file.
+/* Copyright 2019 The Chromium Authors. All Rights Reserved.
+ *
+ * Use of this source code is governed by a BSD-style
+ * license that can be found in the LICENSE file.
+ */
 
-'use strict';
+import '../../node_modules/polymer-resin/standalone/polymer-resin.js';
+import 'noclosure-resin-bridge';
+import {dom} from '../../node_modules/@polymer/polymer/lib/legacy/polymer.dom.js';
+import {PolymerElement, html} from '@polymer/polymer';
+import page from 'page';
+import qs from 'qs';
+
+import {ReduxMixin, actionType} from '../redux/redux-mixin.js';
+import '../flt/mr-approval-page/mr-approval-page.js';
+import '../mr-header/mr-header.js';
 
 /**
  * `<mr-app>`
@@ -10,7 +21,24 @@
  * The container component for all pages under the Monorail Polymer SPA.
  *
  */
-class MrApp extends ReduxMixin(Polymer.Element) {
+export class MrApp extends ReduxMixin(PolymerElement) {
+  static get template() {
+    return html`
+      <script>
+        security.polymer_resin.install({
+          'allowedIdentifierPrefixes': [''],
+          'safeTypesBridge': security.polymer_resin.noclosure_bridge,
+        });
+      </script>
+      <mr-header project-name="[[projectName]]" user-display-name="[[userDisplayName]]" login-url="[[loginUrl]]" logout-url="[[logoutUrl]]">
+        <template is="dom-if" if="[[subheader]]">
+          <span slot="subheader">&gt; [[subheader]]</span>
+        </template>
+      </mr-header>
+      <main></main>
+    `;
+  }
+
   static get is() {
     return 'mr-app';
   }
@@ -21,21 +49,22 @@ class MrApp extends ReduxMixin(Polymer.Element) {
       logoutUrl: String,
       projectName: String,
       subheader: String,
-      user: String,
+      userDisplayName: String,
       _boundLoadApprovalPage: {
         type: Function,
         value: function() {
           return this._loadApprovalPage.bind(this);
         },
       },
-      formsToCheck: {
-        type: Array,
-        statePath: 'formsToCheck',
-      },
-      prevContext: {
-        type: Object,
-        statePath: 'prevContext',
-      },
+      formsToCheck: Array,
+      prevContext: Object,
+    };
+  }
+
+  static mapStateToProps(state, element) {
+    return {
+      formsToCheck: state.formsToCheck,
+      prevContext: state.prevContext,
     };
   }
 
@@ -50,7 +79,7 @@ class MrApp extends ReduxMixin(Polymer.Element) {
         // If this.prevContext is present, that means that we don't want to
         // navigate away from the last page, so we're restoring it.
         Object.assign(ctx, this.prevContext);
-        this.dispatch({type: actionType.SET_CONTEXT, prevContext: null});
+        this.dispatchAction({type: actionType.SET_CONTEXT, prevContext: null});
         // Set ctx.handled to false, so we don't push the state to browser's
         // history.
         ctx.handled = false;
@@ -60,21 +89,22 @@ class MrApp extends ReduxMixin(Polymer.Element) {
       }
       // Run query string parsing on all routes.
       // Based on: https://visionmedia.github.io/page.js/#plugins
-      ctx.query = Qs.parse(ctx.querystring);
+      ctx.query = qs.parse(ctx.querystring);
 
       next();
     });
     page('/p/:project/issues/approval', this._boundLoadApprovalPage);
     page.exit('*', (ctx, next) => {
-      const isDirty = this.formsToCheck.some((form) =>
-        (Object.keys(form.getDelta()).length !== 0));
+      const isDirty = this.formsToCheck.some((form) => {
+        return (Object.keys(form.getDelta()).length !== 0);
+      });
       if (!isDirty || confirm('Discard your changes?')) {
         // Clear the forms to be checked, since we're navigating away.
-        this.dispatch({type: actionType.CLEAR_FORMS_TO_CHECK});
+        this.dispatchAction({type: actionType.CLEAR_FORMS_TO_CHECK});
       } else {
         // Store the current context, so that on the next page load we can
         // restore it.
-        this.dispatch({type: actionType.SET_CONTEXT, prevContext: ctx});
+        this.dispatchAction({type: actionType.SET_CONTEXT, prevContext: ctx});
       }
       next();
     });
@@ -90,7 +120,7 @@ class MrApp extends ReduxMixin(Polymer.Element) {
       }
     }
 
-    const main = Polymer.dom(this.root).querySelector('main');
+    const main = dom(this.root).querySelector('main');
     if (main) {
       // Clone the main tag without copying its children.
       const mainClone = main.cloneNode(false);
@@ -101,7 +131,7 @@ class MrApp extends ReduxMixin(Polymer.Element) {
   }
 
   _loadApprovalPage(ctx, next) {
-    this.dispatch({
+    this.dispatchAction({
       type: actionType.UPDATE_ISSUE_REF,
       issueId: Number.parseInt(ctx.query.id),
       projectName: ctx.params.project,
@@ -112,7 +142,7 @@ class MrApp extends ReduxMixin(Polymer.Element) {
 
     this.loadWebComponent('mr-approval-page', {
       'projectName': ctx.params.project,
-      'user': this.user,
+      'userDisplayName': this.userDisplayName,
     });
   }
 }
