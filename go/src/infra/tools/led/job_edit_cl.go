@@ -6,8 +6,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -80,62 +78,6 @@ func (g *gerritCL) loadRemoteData(ctx context.Context, authClient *http.Client) 
 	return nil
 }
 
-type rietveldCL struct {
-	// rietveld == https://host
-	host string
-
-	// issue == str(issue)
-	issue uint64
-
-	// patchset == str(patchset)
-	patchset uint64
-
-	// patch_project
-	project string
-
-	// blamelist == [blame]
-	blame string
-}
-
-func (r *rietveldCL) getProperties() map[string]interface{} {
-	return map[string]interface{}{
-		"rietveld":      "https://" + r.host,
-		"issue":         strconv.FormatUint(r.issue, 10),
-		"patchset":      strconv.FormatUint(r.patchset, 10),
-		"patch_project": r.project,
-		"blamelist":     []string{r.blame},
-		"patch_storage": "rietveld",
-	}
-}
-
-func (r *rietveldCL) loadRemoteData(ctx context.Context, authClient *http.Client) error {
-	rsp, err := authClient.Get(fmt.Sprintf("https://%s/api/%d", r.host, r.issue))
-	if err != nil {
-		return err
-	}
-	defer rsp.Body.Close()
-
-	type rietveldDetail struct {
-		OwnerEmail string   `json:"owner_email"`
-		Project    string   `json:"project"`
-		Patchsets  []uint64 `json:"patchsets"`
-	}
-	detail := &rietveldDetail{}
-	if err := json.NewDecoder(rsp.Body).Decode(detail); err != nil {
-		return err
-	}
-	r.project = detail.Project
-	r.blame = detail.OwnerEmail
-	if r.patchset == 0 {
-		if len(detail.Patchsets) == 0 {
-			return errors.New("rietveld patchset not specified and CL has no patchsets")
-		}
-		r.patchset = detail.Patchsets[len(detail.Patchsets)-1]
-	}
-
-	return nil
-}
-
 type cl interface {
 	loadRemoteData(ctx context.Context, authClient *http.Client) error
 	getProperties() map[string]interface{}
@@ -166,33 +108,6 @@ func parseGerrit(p *url.URL, toks []string) (ret *gerritCL, err error) {
 	default:
 		err = errors.New("unrecognized URL")
 	}
-	return
-}
-
-func parseRietveldURL(p *url.URL) (ret *rietveldCL, err error) {
-	ret = &rietveldCL{host: p.Host}
-	toks := urlTrimSplit(p.Path)
-	if len(toks) < 1 {
-		err = errors.Reason("len(path segments) < 1; %q", p.Path).Err()
-		return
-	}
-
-	ret.issue, err = strconv.ParseUint(toks[0], 10, 0)
-	if err != nil {
-		err = errors.Annotate(err, "issue is not a number: %q", p.Path).Err()
-		return
-	}
-
-	if p.Fragment == "" {
-		return
-	}
-	if !strings.HasPrefix(p.Fragment, "ps") {
-		err = errors.Reason("URL has #fagment, but doesn't start with `ps`: %q", p.Fragment).Err()
-		return
-	}
-
-	_, err = fmt.Sscanf(p.Fragment, "ps%d", &ret.patchset)
-	err = errors.Annotate(err, "parsing patchset url #fragment").Err()
 	return
 }
 
@@ -234,16 +149,12 @@ func parseCrChangeListURL(clURL string) (cl, error) {
 		return ret, err
 	}
 
-	// https://<rietveld_host>/<issue>
-	// https://<rietveld_host>/<issue>/#ps<patchset>
-	ret, err := parseRietveldURL(p)
-	err = errors.Annotate(err, "bad format for rietveld URL: %q", clURL).Err()
-	return ret, err
+	return nil, errors.Reason("Unknown changelist URL format: %q", clURL).Err()
 }
 
 // ChromiumCL edits the chromium-recipe-specific properties pertaining to
 // a "tryjob" CL. These properties include things like "patch_storage", "issue",
-// "rietveld", etc.
+// etc.
 func (ejd *EditJobDefinition) ChromiumCL(ctx context.Context, authClient *http.Client, patchsetURL string) {
 	if patchsetURL == "" {
 		return
