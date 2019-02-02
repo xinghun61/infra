@@ -128,7 +128,7 @@ message Shard {
 //
 // Keep sorted by field name.
 //
-// NEXT TAG: 23
+// NEXT TAG: 24
 message SchedulableLabels {
   // Whether this device supports ARC execution environment.
   optional bool arc = 20;
@@ -153,7 +153,7 @@ message SchedulableLabels {
   // the cros-infra team is responsible for managing explicitly. All other pool
   // labels used for adhoc labeling of DUTs go into self_serve_pools.
   //
-  // NEXT TAG: 6
+  // NEXT TAG: 8
   enum DUTPool {
     DUT_POOL_INVALID = 0;
     DUT_POOL_CQ = 1;
@@ -161,6 +161,8 @@ message SchedulableLabels {
     DUT_POOL_SUITES = 3;
     DUT_POOL_CTS = 4;
     DUT_POOL_CTS_PERBUILD = 5;
+    DUT_POOL_CONTINUOUS = 6;
+    DUT_POOL_ARC_PRESUBMIT = 7;
   }
   repeated DUTPool critical_pools = 3;
 
@@ -227,6 +229,12 @@ message SchedulableLabels {
   repeated string self_serve_pools = 4;
 
   optional TestCoverageHints test_coverage_hints = 18;
+
+  // useless_switch does nothing.  Like a useless machine, if set to
+  // true, automatic label updates should set this back to false.
+  // This can be used to test that automated updates are firing
+  // correctly.
+  optional bool useless_switch = 23;
 
   repeated string variant = 17;
 }
