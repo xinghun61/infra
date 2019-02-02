@@ -303,6 +303,11 @@ message UpdateDutLabelsRequest {
   // new_labels are the new labels for the DUT.  This should be a
   // serialized protobuf of inventory.SchedulableLabels.
   bytes new_labels = 3;
+  // context is some string to provide context for the update.  This
+  // should contain a URL to the task that triggered the change.  This
+  // should not be capitalized since it will get formatted with other
+  // information.
+  string context = 4;
 }
 
 message UpdateDutLabelsResponse {}
