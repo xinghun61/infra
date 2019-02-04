@@ -74,7 +74,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *AssignResult
 			}
 		}
 
-		schedulerAssignments, err := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), idles...)
+		schedulerAssignments, err := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), scheduler.NullMetricsSink, idles...)
 		if err != nil {
 			return err
 		}
@@ -165,7 +165,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *NotifyResult
 				State:               t,
 				WorkerId:            n.Task.BotId,
 			}
-			if err := sp.Reconciler.Notify(ctx, sp.Scheduler, update); err != nil {
+			if err := sp.Reconciler.Notify(ctx, sp.Scheduler, scheduler.NullMetricsSink, update); err != nil {
 				sp.Reconciler.TaskError(n.Task.Id, err.Error())
 				logging.Warningf(ctx, err.Error())
 				continue

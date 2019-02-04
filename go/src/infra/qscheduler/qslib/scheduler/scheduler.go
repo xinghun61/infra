@@ -137,7 +137,7 @@ func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *Accoun
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time) error {
+func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time, m MetricsSink) error {
 	if request.ID == "" {
 		return errors.New("empty request id")
 	}
@@ -226,7 +226,7 @@ type IdleWorker struct {
 // of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time) error {
+func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time, m MetricsSink) error {
 	s.state.markIdle(workerID, labels, t)
 	return nil
 }
@@ -238,7 +238,7 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stri
 // Supplied requestID must not be "".
 //
 // Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-func (s *Scheduler) NotifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) error {
+func (s *Scheduler) NotifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) error {
 	s.state.notifyRequest(ctx, requestID, workerID, t)
 	return nil
 }
@@ -247,7 +247,7 @@ func (s *Scheduler) NotifyRequest(ctx context.Context, requestID RequestID, work
 // is stopped (not running on a worker, and not in the queue) at the given time.
 //
 // Supplied requestID must not be "".
-func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t time.Time) error {
+func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) error {
 	s.state.abortRequest(ctx, requestID, t)
 	return nil
 }
@@ -257,7 +257,7 @@ func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t tim
 //
 // TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
 // calculation.
-func (s *Scheduler) RunOnce(ctx context.Context) ([]*Assignment, error) {
+func (s *Scheduler) RunOnce(ctx context.Context, m MetricsSink) ([]*Assignment, error) {
 	pass := s.newRun()
 	return pass.Run()
 }

@@ -83,7 +83,7 @@ type Assignment struct {
 
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
-func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, workers ...*IdleWorker) ([]Assignment, error) {
+func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, metrics scheduler.MetricsSink, workers ...*IdleWorker) ([]Assignment, error) {
 	state.ensureMaps()
 	s.UpdateTime(ctx, t)
 
@@ -100,7 +100,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 		wid := w.ID
 		q, ok := state.WorkerQueues[string(wid)]
 		if !ok || !s.IsAssigned(RequestID(q.TaskToAssign), wid) {
-			if err := s.MarkIdle(ctx, wid, w.Labels, t); err != nil {
+			if err := s.MarkIdle(ctx, wid, w.Labels, t, metrics); err != nil {
 				return nil, err
 			}
 			delete(state.WorkerQueues, string(wid))
@@ -109,7 +109,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 
 	// Call scheduler, and update worker queues based on assignments that it
 	// yielded.
-	newAssignments, err := s.RunOnce(ctx)
+	newAssignments, err := s.RunOnce(ctx, metrics)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +197,7 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 // scheduler operations have been completed (otherwise: subsequent AssignTasks or
 // Cancellations will return stale data until internal timeouts within reconciler
 // expire).
-func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, updates ...*TaskInstant) error {
+func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, updates ...*TaskInstant) error {
 	state.ensureMaps()
 	sort.Slice(updates, func(i, j int) bool {
 		return tutils.Timestamp(updates[i].Time).Before(tutils.Timestamp(updates[j].Time))
@@ -214,7 +214,7 @@ func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, updates 
 			req := scheduler.NewTaskRequest(RequestID(update.RequestId), AccountID(update.AccountId), update.ProvisionableLabels, nil,
 				tutils.Timestamp(update.EnqueueTime))
 			// TODO(akeshet): Handle error from AddRequest.
-			s.AddRequest(ctx, req, tutils.Timestamp(update.Time))
+			s.AddRequest(ctx, req, tutils.Timestamp(update.Time), metrics)
 
 		case TaskInstant_RUNNING:
 			wid := WorkerID(update.WorkerId)
@@ -222,7 +222,7 @@ func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, updates 
 			updateTime := tutils.Timestamp(update.Time)
 			// This NotifyRequest call ensures scheduler state consistency with
 			// the latest update.
-			s.NotifyRequest(ctx, rid, wid, updateTime)
+			s.NotifyRequest(ctx, rid, wid, updateTime, metrics)
 			if q, ok := state.WorkerQueues[string(wid)]; ok {
 				if !updateTime.Before(tutils.Timestamp(q.EnqueueTime)) {
 					delete(state.WorkerQueues, string(wid))
@@ -239,7 +239,7 @@ func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, updates 
 		case TaskInstant_ABSENT:
 			rid := RequestID(update.RequestId)
 			updateTime := tutils.Timestamp(update.Time)
-			s.AbortRequest(ctx, rid, updateTime)
+			s.AbortRequest(ctx, rid, updateTime, metrics)
 			// TODO(akeshet): Add an inverse map from aborting request -> previous
 			// worker to avoid the need for this iteration through all workers.
 			for wid, q := range state.WorkerQueues {
