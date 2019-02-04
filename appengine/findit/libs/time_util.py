@@ -40,9 +40,9 @@ def GetUTCNowTimestamp():  # pragma: no cover.
 
 def GetPreviousWeekMonday():
   """Gets midnight of previous week Monday."""
-  utc_now = GetUTCNow()
-  current_weekday = utc_now.weekday()
-  return GetMidnight(utc_now - timedelta(days=current_weekday, weeks=1))
+  pst_now = GetPSTNow()
+  current_weekday = pst_now.weekday()
+  return GetMidnight(pst_now - timedelta(days=current_weekday, weeks=1))
 
 
 def RemoveMicrosecondsFromDelta(delta):
