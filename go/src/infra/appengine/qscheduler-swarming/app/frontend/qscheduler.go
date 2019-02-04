@@ -17,11 +17,10 @@ package frontend
 import (
 	"context"
 
-	"infra/appengine/qscheduler-swarming/app/frontend/internal/operations"
 	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/operations"
 	swarming "infra/swarming"
 
-	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/grpc/grpcutil"
 
 	"infra/qscheduler/qslib/scheduler"
@@ -43,30 +42,6 @@ type AccountID = scheduler.AccountID
 // transaction.
 type QSchedulerServerImpl struct{}
 
-// singleOperationRunner returns a read-modify-write function for an operation.
-//
-// The returned function is suitable to be used with
-// datastore.RunInTransaction.
-func singleOperationRunner(op operations.Operation, schedulerID string) func(context.Context) error {
-	return func(ctx context.Context) error {
-		store := state.NewStore(schedulerID)
-		sp, err := store.Load(ctx)
-		if err != nil {
-			return err
-		}
-
-		if err = op(ctx, sp); err != nil {
-			return err
-		}
-
-		if err := store.Save(ctx, sp); err != nil {
-			return err
-		}
-
-		return nil
-	}
-}
-
 // AssignTasks implements QSchedulerServer.
 func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.AssignTasksRequest) (resp *swarming.AssignTasksResponse, err error) {
 	defer func() {
@@ -75,7 +50,8 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 
 	op, result := operations.AssignTasks(r)
 
-	if err := datastore.RunInTransaction(ctx, singleOperationRunner(op, r.SchedulerId), nil); err != nil {
+	store := state.NewStore(r.SchedulerId)
+	if err := store.RunOperationInTransaction(ctx, op); err != nil {
 		return nil, err
 	}
 
@@ -110,7 +86,8 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 
 	op, result := operations.NotifyTasks(r)
 
-	if err := datastore.RunInTransaction(ctx, singleOperationRunner(op, r.SchedulerId), nil); err != nil {
+	store := state.NewStore(r.SchedulerId)
+	if err := store.RunOperationInTransaction(ctx, op); err != nil {
 		return nil, err
 	}
 	return result.Response, result.Error

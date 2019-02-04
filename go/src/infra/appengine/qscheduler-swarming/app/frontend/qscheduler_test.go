@@ -22,7 +22,7 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
-	"infra/appengine/qscheduler-swarming/app/frontend/internal/operations"
+	"infra/appengine/qscheduler-swarming/app/state/operations"
 	"infra/qscheduler/qslib/tutils"
 	swarming "infra/swarming"
 )

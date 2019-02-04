@@ -12,15 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package state
+package types
 
 import (
+	"context"
 	"time"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 )
+
+// Operation is the type for functions that examine and mutate a state.
+type Operation func(ctx context.Context, state *QScheduler) error
 
 // QScheduler encapsulates the state of a scheduler.
 type QScheduler struct {
@@ -31,8 +35,8 @@ type QScheduler struct {
 	Config      *qscheduler.SchedulerPoolConfig
 }
 
-// New returns a new QSchedulerState instance.
-func New(id string, t time.Time) *QScheduler {
+// NewQScheduler returns a new QSchedulerState instance.
+func NewQScheduler(id string, t time.Time) *QScheduler {
 	return &QScheduler{
 		SchedulerID: id,
 		Scheduler:   scheduler.New(t),

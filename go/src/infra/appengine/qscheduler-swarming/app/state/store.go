@@ -27,6 +27,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -34,7 +35,7 @@ import (
 const stateEntityKind = "qschedulerStateEntity"
 
 // datastoreEntity is the datastore entity used to store state for a given
-// qscheduler pool, in a few protobuf binaries.
+// types.QScheduler pool, in a few protobuf binaries.
 type datastoreEntity struct {
 	_kind string `gae:"$kind,qschedulerStateEntity"`
 
@@ -53,7 +54,7 @@ type datastoreEntity struct {
 	ConfigData []byte `gae:",noindex"`
 }
 
-// Store implements a persistent store for QScheduler state.
+// Store implements a persistent store for types.QScheduler state.
 type Store struct {
 	entityID string
 }
@@ -79,7 +80,7 @@ func List(ctx context.Context) ([]string, error) {
 }
 
 // Save persists the given SchdulerPool to datastore.
-func (s *Store) Save(ctx context.Context, q *QScheduler) error {
+func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 	var sd, rd, cd []byte
 	var err error
 	if sd, err = proto.Marshal(q.Scheduler.ToProto()); err != nil {
@@ -118,7 +119,7 @@ func (s *Store) Save(ctx context.Context, q *QScheduler) error {
 }
 
 // Load loads the SchedulerPool with the given id from datastore and returns it.
-func (s *Store) Load(ctx context.Context) (*QScheduler, error) {
+func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 	dst := &datastoreEntity{QSPoolID: s.entityID}
 	if err := datastore.Get(ctx, dst); err != nil {
 		e := errors.Wrap(err, "unable to get state entity")
@@ -138,10 +139,37 @@ func (s *Store) Load(ctx context.Context) (*QScheduler, error) {
 		return nil, errors.Wrap(err, "unable to unmarshal Config")
 	}
 
-	return &QScheduler{
+	return &types.QScheduler{
 		SchedulerID: dst.QSPoolID,
 		Reconciler:  r,
 		Scheduler:   scheduler.NewFromProto(sp),
 		Config:      c,
 	}, nil
+}
+
+// RunOperationInTransaction runs the given operation in a transaction on this store.
+func (s *Store) RunOperationInTransaction(ctx context.Context, op types.Operation) error {
+	return datastore.RunInTransaction(ctx, operationRunner(op, s), nil)
+}
+
+// operationRunner returns a read-modify-write function for an operation.
+//
+// The returned function is suitable to be used with datastore.RunInTransaction.
+func operationRunner(op types.Operation, store *Store) func(context.Context) error {
+	return func(ctx context.Context) error {
+		sp, err := store.Load(ctx)
+		if err != nil {
+			return err
+		}
+
+		if err = op(ctx, sp); err != nil {
+			return err
+		}
+
+		if err := store.Save(ctx, sp); err != nil {
+			return err
+		}
+
+		return nil
+	}
 }

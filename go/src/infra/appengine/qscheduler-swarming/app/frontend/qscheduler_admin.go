@@ -23,6 +23,7 @@ import (
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/state"
+	"infra/appengine/qscheduler-swarming/app/state/types"
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
@@ -46,7 +47,7 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 	if r.Config == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "missing config")
 	}
-	sp := state.QScheduler{
+	sp := types.QScheduler{
 		SchedulerID: r.PoolId,
 		Reconciler:  reconciler.New(),
 		Scheduler:   scheduler.New(time.Now()),

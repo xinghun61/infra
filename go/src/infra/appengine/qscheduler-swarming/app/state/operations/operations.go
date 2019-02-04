@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"sort"
 
-	"infra/appengine/qscheduler-swarming/app/state"
 	swarming "infra/swarming"
 
 	"github.com/pkg/errors"
@@ -28,6 +27,7 @@ import (
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/logging"
 
+	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
@@ -39,9 +39,6 @@ import (
 // AccountIDTagKey is the key used in Task tags to specify which quotascheduler
 // account the task should be charged to.
 const AccountIDTagKey = "qs_account"
-
-// Operation is the type for functions that examine and mutate a state.
-type Operation func(ctx context.Context, state *state.QScheduler) error
 
 // AssignResult holds an eventual result or error from an AssignTasks operation.
 type AssignResult struct {
@@ -59,9 +56,9 @@ func (a *AssignResult) SetError(err error) {
 //
 // The result object will have the operation response stored in it after
 // the operation has run.
-func AssignTasks(r *swarming.AssignTasksRequest) (Operation, *AssignResult) {
+func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *AssignResult) {
 	var response AssignResult
-	return func(ctx context.Context, state *state.QScheduler) (err error) {
+	return func(ctx context.Context, state *types.QScheduler) (err error) {
 		defer func() {
 			response.Error = err
 		}()
@@ -114,9 +111,9 @@ func (a *NotifyResult) SetError(err error) {
 
 // NotifyTasks returns an operation that will perform the given Notify request,
 // and result object that will get the results after the operation is run.
-func NotifyTasks(r *swarming.NotifyTasksRequest) (Operation, *NotifyResult) {
+func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *NotifyResult) {
 	var response NotifyResult
-	return func(ctx context.Context, sp *state.QScheduler) (err error) {
+	return func(ctx context.Context, sp *types.QScheduler) (err error) {
 		defer func() {
 			response.Error = err
 		}()
