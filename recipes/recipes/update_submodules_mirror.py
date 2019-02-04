@@ -117,6 +117,8 @@ def RunSteps(api, source_repo, target_repo):
     # json.loads returns unicode but the recipe framework can only handle str.
     path = str(path[len(source_checkout_name):])
 
+    path = path.rstrip('/')
+
     if not SHA1_RE.match(rev):
       if rev.startswith('origin/'):
         rev = rev[len('origin/'):]
@@ -246,6 +248,15 @@ fake_deps_with_nested_dep = """
   "src/third_party/gsutil/boto": {
     "url": "https://chromium.googlesource.com/external/boto.git",
     "rev": "98fc59a5896f4ea990a4d527548204fed8f06c64"
+  }
+}
+"""
+
+fake_deps_with_trailing_slash = """
+{
+  "src/v8/": {
+    "url": "https://chromium.googlesource.com/v8/v8.git",
+    "rev": "4ad2459561d76217c9b7aff412c5c086b491078a"
   }
 }
 """
@@ -392,5 +403,25 @@ def GenTests(api):
                     ]})) +
       api.step_data('gclient evaluate DEPS',
                     api.raw_io.stream_output(fake_deps_with_nested_dep,
+                                             stream='stdout'))
+  )
+
+  yield (
+      api.test('trailing_slash') +
+      api.properties(
+          source_repo='https://chromium.googlesource.com/chromium/src',
+          target_repo='https://chromium.googlesource.com/codesearch/src_mirror'
+      ) +
+      api.step_data('Check for existing source checkout dir',
+                    api.raw_io.stream_output('src', stream='stdout')) +
+      api.step_data('Check for new commits.Find latest commit to target repo',
+                    api.json.output({'log': [
+                        {
+                            'commit': 'a' * 40,
+                            'author': {'name': 'Someone else'},
+                        },
+                    ]})) +
+      api.step_data('gclient evaluate DEPS',
+                    api.raw_io.stream_output(fake_deps_with_trailing_slash,
                                              stream='stdout'))
   )
