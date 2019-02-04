@@ -257,8 +257,11 @@ class FlakeReportUtilTest(WaterfallTestCase):
     self.assertFalse(mock_create_bug_fn.called)
     self.assertFalse(mock_update_bug_fn.called)
 
-  # This test tests that when a flake has no flake issue attached, it creates
-  # a new issue and attach it to the flake.
+  # This test tests that:
+  # 1. when a flake has no flake issue attached, it creates a new issue and
+  # attach it to the flake.
+  # 2. If there's no more bug can be created nor updated, but an existing bug
+  # is found for a flake, link the bug to the flake without updating it.
   @mock.patch.object(
       flake_issue_util,
       'SearchRecentlyClosedIssueIdForFlakyTest',
@@ -269,7 +272,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testCreateIssue(self, mock_issue, mock_create_bug_fn, mock_update_bug_fn,
-                      *_):
+                      mock_search_open_bug, _):
     mock_issue.return_value = Issue({
         'status': 'Untriaged',
         'priority': 1,
@@ -281,9 +284,22 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.put()
     occurrences = FlakeOccurrence.query(
         FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
+
+    flake1 = self._CreateFlake('step0', 'test0', 'test_label1')
+    occurrences1 = [
+        self._CreateFlakeOccurrence(111, 'step1', 'test01', 98765, flake1.key),
+        self._CreateFlakeOccurrence(222, 'step2', 'test02', 98764, flake1.key),
+        self._CreateFlakeOccurrence(333, 'step3', 'test03', 98763, flake1.key)
+    ]
+
+    def MockSearchOpenBug(test_name, _monorail_project):
+      return 12345 if test_name == 'test0' else None
+
+    mock_search_open_bug.side_effect = MockSearchOpenBug
+
     groups_wo_issue, groups_w_issue = (
-        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
-                                                          None)]))
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs(
+            [(flake, occurrences, None), (flake1, occurrences1, None)]))
     flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
 
     expected_status = 'Untriaged'
@@ -331,16 +347,17 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual('Flaky-Test', issue.field_values[0].to_dict()['fieldName'])
     self.assertEqual('test', issue.field_values[0].to_dict()['fieldValue'])
 
-    fetched_flakes = Flake.query().fetch()
-    fetched_flake_issues = FlakeIssue.query().fetch()
-    self.assertEqual(1, len(fetched_flakes))
-    self.assertEqual(1, len(fetched_flake_issues))
-    self.assertEqual(66666, fetched_flake_issues[0].issue_id)
+    flake = Flake.Get('chromium', 'step', 'test')
+    flake_issue = FlakeIssue.Get('chromium', 66666)
     self.assertEqual(
         datetime.datetime(2018, 1, 2),
-        fetched_flake_issues[0].last_updated_time_by_flake_detection)
-    self.assertEqual(fetched_flakes[0].flake_issue_key,
-                     fetched_flake_issues[0].key)
+        flake_issue.last_updated_time_by_flake_detection)
+    self.assertEqual(flake.flake_issue_key, flake_issue.key)
+
+    flake1 = Flake.Get('chromium', 'step0', 'test0')
+    flake_issue1 = FlakeIssue.Get('chromium', 12345)
+    self.assertIsNone(flake_issue1.last_updated_time_by_flake_detection)
+    self.assertEqual(flake1.flake_issue_key, flake_issue1.key)
 
   # This test tests that when a flake has a flake issue attached and the issue
   # is still open, it directly updates the issue.
@@ -1019,7 +1036,7 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     flake_group = flake_issue_util.FlakeGroupByOccurrences(flake1, occurrences1)
     flake_group.AddFlakeIfBelong(flake2, occurrences2)
 
-    flake_issue_util._CreateIssuesForFlakes([flake_group])
+    flake_issue_util._CreateIssuesForFlakes([flake_group], 30)
 
     flake_issue = flake_issue_util.GetFlakeIssue(flake1)
     self.assertEqual(234567, flake_issue.issue_id)

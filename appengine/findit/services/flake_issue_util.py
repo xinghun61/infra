@@ -555,7 +555,7 @@ def ReportFlakesToMonorail(flake_groups_to_add_issue,
   # Fulfills the needs of creating bugs first, then updating bugs.
   num_of_issues_to_create = min(
       len(flake_groups_to_add_issue), total_remaining_issue_num)
-  _CreateIssuesForFlakes(flake_groups_to_add_issue[:num_of_issues_to_create])
+  _CreateIssuesForFlakes(flake_groups_to_add_issue, num_of_issues_to_create)
 
   remaining_issue_num_update = (
       total_remaining_issue_num - num_of_issues_to_create)
@@ -706,11 +706,16 @@ def UpdateIssueLeaves(flake_issue_key, merged_flake_issue_key):
   ndb.put_multi(issue_leaves)
 
 
-def _CreateIssueForFlake(issue_generator, target_flake):
+def _CreateIssueForFlake(issue_generator, target_flake, create_or_update_bug):
   """Creates a monorail bug for a single flake.
 
   This function is used to create bugs for detected flakes and flake analysis
   results.
+
+  Args:
+    create_or_update_bug (bool): True to create or update monorail bug,
+      otherwise False. Should always look for existing bugs for flakes, even if
+      cannot update the bug.
   """
   monorail_project = issue_generator.GetMonorailProject()
 
@@ -724,15 +729,19 @@ def _CreateIssueForFlake(issue_generator, target_flake):
         target_flake.normalized_test_name, monorail_project)
 
   if issue_id:
-    logging.info(
-        'An existing issue %s was found, attach it to flake: %s and update it '
-        'with new occurrences.',
-        FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
-        target_flake.key)
+    logging.info('An existing issue %s was found, attach it to flake: %s.',
+                 FlakeIssue.GetLinkForIssue(monorail_project, issue_id),
+                 target_flake.key)
     _AssignIssueToFlake(issue_id, target_flake)
-    monorail_util.UpdateIssueWithIssueGenerator(
-        issue_id=issue_id, issue_generator=issue_generator, reopen=True)
+
+    if create_or_update_bug:
+      monorail_util.UpdateIssueWithIssueGenerator(
+          issue_id=issue_id, issue_generator=issue_generator, reopen=True)
     return issue_id
+
+  if not create_or_update_bug:
+    # No existing bug found, and cannot create bug, bail out.
+    return None
 
   logging.info('No existing open issue was found, create a new one.')
   issue_id = monorail_util.CreateIssueWithIssueGenerator(
@@ -786,12 +795,18 @@ def _CreateIssueForFlakeGroup(flake_group):
   return issue_id
 
 
-def _CreateIssuesForFlakes(flake_groups_to_create_issue):
+def _CreateIssuesForFlakes(flake_groups_to_create_issue,
+                           num_of_issues_to_create):
   """Creates monorail bugs.
 
   Args:
     flake_groups_to_create_issue([FlakeGroupByOccurrences]]): A list of flake
       groups that are not yet linked with a FlakeIssue.
+    num_of_issues_to_create(int): Total number for
+      - New bugs created
+      - Existing bugs found, linked to flakes and then updated.
+      Note that it's possible that more bugs are found and linked to flakes, but
+      will not be updated because of the limit.
   """
   for flake_group in flake_groups_to_create_issue:
     try:
@@ -799,16 +814,25 @@ def _CreateIssuesForFlakes(flake_groups_to_create_issue):
         # A single flake in group, uses this flake's info to create the bug.
         issue_generator = FlakeDetectionIssueGenerator(
             flake_group.flakes[0], flake_group.num_occurrences)
-        _CreateIssueForFlake(issue_generator, flake_group.flakes[0])
+        issue_id = _CreateIssueForFlake(
+            issue_generator,
+            flake_group.flakes[0],
+            create_or_update_bug=num_of_issues_to_create > 0)
       else:
-        _CreateIssueForFlakeGroup(flake_group)
-      # Update FlakeIssue's last_updated_time_by_flake_detection property. This
-      # property is only applicable to Flake Detection because Flake Detection
-      # can update an issue at most once every 24 hours.
-      flake_issue = GetFlakeIssue(flake_group.flakes[0])
-      flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
-      flake_issue.last_updated_time_in_monorail = time_util.GetUTCNow()
-      flake_issue.put()
+        issue_id = _CreateIssueForFlakeGroup(flake_group)
+      if issue_id:
+        # A monorail bug has been created or updated.
+        num_of_issues_to_create -= 1
+
+        # Updates FlakeIssue's last updated_time_by_flake_detection property.
+        # This property is only applicable to Flake Detection because Flake
+        # Detection can update an issue at most once every 24 hours.
+        # Also change last_updated_time_in_monorail to keep in sync.
+        flake_issue = GetFlakeIssue(flake_group.flakes[0])
+        flake_issue.last_updated_time_by_flake_detection = time_util.GetUTCNow()
+        flake_issue.last_updated_time_in_monorail = time_util.GetUTCNow()
+        flake_issue.put()
+
     except HttpError as error:
       # Benign exceptions (HttpError 403) may happen when FindIt tries to
       # update an issue that it doesn't have permission to. Do not raise
