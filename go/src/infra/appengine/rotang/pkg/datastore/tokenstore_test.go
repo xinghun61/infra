@@ -3,9 +3,11 @@ package datastore
 import (
 	"context"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
+	"go.chromium.org/luci/server/router"
 	"golang.org/x/oauth2"
 )
 
@@ -153,7 +155,7 @@ func TestTokenClient(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		ctx      context.Context
+		ctx      *router.Context
 		token    *oauth2.Token
 		client   *http.Client
 		id       string
@@ -161,16 +163,25 @@ func TestTokenClient(t *testing.T) {
 	}{{
 		name: "Canceled context",
 		fail: true,
-		ctx:  ctxCancel,
+		ctx: &router.Context{
+			Request: httptest.NewRequest("GET", "/", nil),
+			Context: ctxCancel,
+		},
 	}, {
 		name: "No ID",
 		fail: true,
-		ctx:  ctx,
+		ctx: &router.Context{
+			Request: httptest.NewRequest("GET", "/", nil),
+			Context: ctx,
+		},
 	}, {
 		name: "No config entry",
 		fail: true,
-		ctx:  ctx,
-		id:   "Test Token",
+		ctx: &router.Context{
+			Request: httptest.NewRequest("GET", "/", nil),
+			Context: ctx,
+		},
+		id: "Test Token",
 		existing: []DsToken{
 			{
 				ID: "Test Token",
@@ -191,8 +202,11 @@ func TestTokenClient(t *testing.T) {
 	}, {
 		name: "Broken config",
 		fail: true,
-		ctx:  ctx,
-		id:   "Test Token",
+		ctx: &router.Context{
+			Request: httptest.NewRequest("GET", "/", nil),
+			Context: ctx,
+		},
+		id: "Test Token",
 		existing: []DsToken{
 			{
 				ID: "Test Token",
@@ -213,8 +227,11 @@ func TestTokenClient(t *testing.T) {
 		},
 	}, {
 		name: "Success",
-		ctx:  ctx,
-		id:   "Test Token",
+		ctx: &router.Context{
+			Request: httptest.NewRequest("GET", "/", nil),
+			Context: ctx,
+		},
+		id: "Test Token",
 		existing: []DsToken{
 			{
 				ID: "Test Token",

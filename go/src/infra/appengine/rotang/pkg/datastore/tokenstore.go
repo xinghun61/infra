@@ -6,8 +6,10 @@ import (
 	"net/http"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/server/router"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -90,8 +92,8 @@ func (t *Store) Token(ctx context.Context, id string) (*oauth2.Token, error) {
 }
 
 // Client fetches the requested http.Client from Datastore.
-func (t *Store) Client(ctx context.Context, id string) (*http.Client, error) {
-	dst, err := t.dsToken(ctx, id)
+func (t *Store) Client(ctx *router.Context, id string) (*http.Client, error) {
+	dst, err := t.dsToken(ctx.Context, id)
 	if err != nil {
 		if err == datastore.ErrNoSuchEntity {
 			return nil, status.Errorf(codes.NotFound, "token for id: %q not found", id)
@@ -105,7 +107,7 @@ func (t *Store) Client(ctx context.Context, id string) (*http.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return config.Client(ctx, &dst.Token), nil
+	return config.Client(appengine.NewContext(ctx.Request), &dst.Token), nil
 }
 
 // DeleteToken deletes the specified token from tokenstore.

@@ -13,7 +13,6 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
 
-	"google.golang.org/appengine"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -22,13 +21,13 @@ import (
 
 // Calendar implements the rotang.Calenderer interface.
 type Calendar struct {
-	credentials func(context.Context) (*http.Client, error)
+	credentials func(*router.Context) (*http.Client, error)
 }
 
 var _ rotang.Calenderer = &Calendar{}
 
 // New creates a new Calendar.
-func New(credFunc func(context.Context) (*http.Client, error)) *Calendar {
+func New(credFunc func(*router.Context) (*http.Client, error)) *Calendar {
 	return &Calendar{
 		credentials: credFunc,
 	}
@@ -39,7 +38,7 @@ func (c *Calendar) CreateEvent(ctx *router.Context, cfg *rotang.Configuration, s
 	if err := ctx.Context.Err(); err != nil {
 		return nil, err
 	}
-	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	client, err := c.credentials(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +97,7 @@ func (c *Calendar) Events(ctx *router.Context, cfg *rotang.Configuration, from, 
 	if err := ctx.Context.Err(); err != nil {
 		return nil, err
 	}
-	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	client, err := c.credentials(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +124,7 @@ func (c *Calendar) TrooperShifts(ctx *router.Context, calendar, match string, fr
 	if err := ctx.Context.Err(); err != nil {
 		return nil, err
 	}
-	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	client, err := c.credentials(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +179,7 @@ func (c *Calendar) TrooperOncall(ctx *router.Context, calendar, match string, t 
 	if err := ctx.Context.Err(); err != nil {
 		return nil, err
 	}
-	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	client, err := c.credentials(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -378,7 +377,7 @@ func (c *Calendar) UpdateEvent(ctx *router.Context, cfg *rotang.Configuration, u
 		return nil, err
 	}
 
-	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	client, err := c.credentials(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -422,7 +421,7 @@ func (c *Calendar) DeleteEvent(ctx *router.Context, cfg *rotang.Configuration, s
 		return err
 	}
 
-	client, err := c.credentials(appengine.NewContext(ctx.Request))
+	client, err := c.credentials(ctx)
 	if err != nil {
 		return err
 	}

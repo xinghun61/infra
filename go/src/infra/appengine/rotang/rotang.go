@@ -177,7 +177,7 @@ type MemberStorer interface {
 type TokenStorer interface {
 	CreateToken(ctx context.Context, id, config string, token *oauth2.Token) error
 	Token(ctx context.Context, id string) (*oauth2.Token, error)
-	Client(ctx context.Context, id string) (*http.Client, error)
+	Client(ctx *router.Context, id string) (*http.Client, error)
 	DeleteToken(ctx context.Context, id string) error
 }
 

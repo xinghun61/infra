@@ -28,11 +28,11 @@ func newTestContext() context.Context {
 	return ctx
 }
 
-func fakeFailCred(ctx context.Context) (*http.Client, error) {
+func fakeFailCred(ctx *router.Context) (*http.Client, error) {
 	return nil, status.Errorf(codes.Internal, "test fail")
 }
 
-func fakePassCred(ctx context.Context) (*http.Client, error) {
+func fakePassCred(ctx *router.Context) (*http.Client, error) {
 	return &http.Client{}, nil
 }
 
@@ -78,7 +78,7 @@ func TestCreateEvent(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		credFunc func(context.Context) (*http.Client, error)
+		credFunc func(*router.Context) (*http.Client, error)
 		ctx      *router.Context
 		cfg      *rotang.Configuration
 		shifts   []rotang.ShiftEntry
@@ -251,7 +251,7 @@ func TestEvent(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		credFunc func(context.Context) (*http.Client, error)
+		credFunc func(*router.Context) (*http.Client, error)
 		ctx      *router.Context
 		cfg      *rotang.Configuration
 		shift    *rotang.ShiftEntry
@@ -324,7 +324,7 @@ func TestTrooperOncaller(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		credFunc func(context.Context) (*http.Client, error)
+		credFunc func(*router.Context) (*http.Client, error)
 		ctx      *router.Context
 		testTime time.Time
 		match    string
@@ -477,7 +477,7 @@ func TestTrooperShifts(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		credFunc func(context.Context) (*http.Client, error)
+		credFunc func(*router.Context) (*http.Client, error)
 		ctx      *router.Context
 		from     time.Time
 		to       time.Time
@@ -532,7 +532,7 @@ func TestEvents(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		credFunc func(context.Context) (*http.Client, error)
+		credFunc func(*router.Context) (*http.Client, error)
 		ctx      *router.Context
 		cfg      *rotang.Configuration
 		from     time.Time
@@ -1510,7 +1510,7 @@ func TestUpdateEvent(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		credFunc func(context.Context) (*http.Client, error)
+		credFunc func(*router.Context) (*http.Client, error)
 		ctx      *router.Context
 		cfg      *rotang.Configuration
 		shift    *rotang.ShiftEntry
@@ -1569,7 +1569,7 @@ func TestDeleteEvent(t *testing.T) {
 	tests := []struct {
 		name     string
 		fail     bool
-		credFunc func(context.Context) (*http.Client, error)
+		credFunc func(*router.Context) (*http.Client, error)
 		ctx      *router.Context
 		cfg      *rotang.Configuration
 		shift    *rotang.ShiftEntry

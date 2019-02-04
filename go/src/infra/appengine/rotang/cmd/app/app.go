@@ -74,14 +74,14 @@ func requireGoogler(ctx *router.Context, next router.Handler) {
 
 const legacyTokenID = "LegacyToken"
 
-func dsLegacyCred(ts func(context.Context) rotang.TokenStorer) func(context.Context) (*http.Client, error) {
-	return func(ctx context.Context) (*http.Client, error) {
-		clt, err := ts(ctx).Client(ctx, legacyTokenID)
+func dsLegacyCred(ts func(context.Context) rotang.TokenStorer) func(*router.Context) (*http.Client, error) {
+	return func(ctx *router.Context) (*http.Client, error) {
+		clt, err := ts(ctx.Context).Client(ctx, legacyTokenID)
 		if err != nil {
 			if status.Code(err) != codes.NotFound {
 				return nil, err
 			}
-			logging.Warningf(ctx, "token: %q not found in datastore, trying to fetch from token files")
+			logging.Warningf(ctx.Context, "token: %q not found in datastore, trying to fetch from token files")
 			b, err := ioutil.ReadFile(sheriffConfig)
 			if err != nil {
 				return nil, err
@@ -99,18 +99,18 @@ func dsLegacyCred(ts func(context.Context) rotang.TokenStorer) func(context.Cont
 				RefreshToken: string(t),
 				TokenType:    "Bearer",
 			}
-			if err := ts(ctx).CreateToken(ctx, legacyTokenID, string(b), token); err != nil {
+			if err := ts(ctx.Context).CreateToken(ctx.Context, legacyTokenID, string(b), token); err != nil {
 				return nil, err
 			}
-			clt = config.Client(ctx, token)
+			clt = config.Client(appengine.NewContext(ctx.Request), token)
 		}
 		return clt, nil
 	}
 }
 
-func serviceDefaultCred(scope string) func(context.Context) (*http.Client, error) {
-	return func(ctx context.Context) (*http.Client, error) {
-		return google.DefaultClient(ctx, scope)
+func serviceDefaultCred(scope string) func(*router.Context) (*http.Client, error) {
+	return func(ctx *router.Context) (*http.Client, error) {
+		return google.DefaultClient(appengine.NewContext(ctx.Request), scope)
 	}
 }
 

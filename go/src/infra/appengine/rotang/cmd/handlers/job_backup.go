@@ -36,16 +36,16 @@ func (h *State) JobBackup(ctx *router.Context) {
 		return
 	}
 
-	appCTX := appengine.NewContext(ctx.Request)
-	logging.Infof(ctx.Context, "ID: %q", h.projectID(appCTX))
-
-	client, err := h.backupCred(appCTX)
+	client, err := h.backupCred(ctx)
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	now := clock.Now(ctx.Context)
+
+	appCTX := appengine.NewContext(ctx.Request)
+	logging.Infof(ctx.Context, "ID: %q", h.projectID(appCTX))
 
 	var jsonReq bytes.Buffer
 	enc := json.NewEncoder(&jsonReq)

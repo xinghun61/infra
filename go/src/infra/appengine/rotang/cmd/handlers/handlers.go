@@ -207,7 +207,7 @@ type State struct {
 	calendar       rotang.Calenderer
 	legacyCalendar rotang.Calenderer
 	generators     *algo.Generators
-	backupCred     func(context.Context) (*http.Client, error)
+	backupCred     func(*router.Context) (*http.Client, error)
 	memberStore    func(context.Context) rotang.MemberStorer
 	shiftStore     func(context.Context) rotang.ShiftStorer
 	configStore    func(context.Context) rotang.ConfigStorer
@@ -225,7 +225,7 @@ type Options struct {
 	Generators     *algo.Generators
 	MailSender     rotang.MailSender
 	MailAddress    string
-	BackupCred     func(context.Context) (*http.Client, error)
+	BackupCred     func(*router.Context) (*http.Client, error)
 
 	MemberStore func(context.Context) rotang.MemberStorer
 	ConfigStore func(context.Context) rotang.ConfigStorer

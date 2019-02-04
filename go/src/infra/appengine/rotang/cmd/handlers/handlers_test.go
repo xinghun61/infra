@@ -38,7 +38,7 @@ func getRequest(url string) *http.Request {
 	return req
 }
 
-func defaultClient(_ context.Context) (*http.Client, error) {
+func defaultClient(_ *router.Context) (*http.Client, error) {
 	return http.DefaultClient, nil
 }
 
