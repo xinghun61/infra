@@ -69,4 +69,6 @@ var provisionableLabelKeys = map[string]struct{}{
 
 var provisionableAttributeKeys = map[string]struct{}{
 	"job_repo_url": {},
+	// Used to cache away changes to RPM power outlet state.
+	"outlet_changed": {},
 }
