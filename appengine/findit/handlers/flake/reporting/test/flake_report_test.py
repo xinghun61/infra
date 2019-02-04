@@ -53,6 +53,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         'id': 'ComponentA',
         'test_count': 4,
         'bug_count': 3,
+        'new_bug_count': 0,
         'impacted_cl_counts': {
             'cq_false_rejection': 3,
             'retry_with_patch': 0,
@@ -69,6 +70,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         'id': 'ComponentB',
         'test_count': 7,
         'bug_count': 1,
+        'new_bug_count': 0,
         'impacted_cl_counts': {
             'cq_false_rejection': 2,
             'retry_with_patch': 0,
@@ -85,6 +87,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
         'id': 'Unknown',
         'test_count': 1,
         'bug_count': 6,
+        'new_bug_count': 0,
         'impacted_cl_counts': {
             'cq_false_rejection': 1,
             'retry_with_patch': 0,
@@ -102,6 +105,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
             'id': '2018-08-27@chromium',
             'test_count': 6,
             'bug_count': 4,
+        'new_bug_count': 0,
             'impacted_cl_counts': {
                 'cq_false_rejection': 3,
                 'retry_with_patch': 0,
@@ -113,29 +117,38 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
                 'total': 8
             }
         },
-        'top_components': [{
-            'rank_by':
-                'test_count',
-            'components': [
-                component_b_dict, component_a_dict, component_unknown_dict
-            ]
-        },
-                           {
-                               'rank_by':
-                                   'bug_count',
-                               'components': [
-                                   component_unknown_dict, component_a_dict,
-                                   component_b_dict
-                               ]
-                           },
-                           {
-                               'rank_by':
-                                   'false_rejected_cl_count',
-                               'components': [
-                                   component_a_dict, component_b_dict,
-                                   component_unknown_dict
-                               ]
-                           }],
+        'top_components': [
+            {
+                'rank_by':
+                    'test_count',
+                'components': [
+                    component_b_dict, component_a_dict, component_unknown_dict
+                ]
+            },
+            {
+                'rank_by':
+                    'bug_count',
+                'components': [
+                    component_unknown_dict, component_a_dict,
+                    component_b_dict
+                ]
+            },
+            {
+                'rank_by':
+                    'false_rejected_cl_count',
+                'components': [
+                    component_a_dict, component_b_dict,
+                    component_unknown_dict
+                ]
+            },
+            {
+                'rank_by':
+                    'new_bug_count',
+                'components': [
+                    component_a_dict, component_b_dict,
+                    component_unknown_dict
+                ]
+            }],
         'component':
             '',
         'luci_project':

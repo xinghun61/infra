@@ -41,6 +41,10 @@ class ReportRow(ndb.Model):
   """Base class for report elements."""
   # Aggregate counts for a subset of flake occurrences."""
   bug_count = ndb.IntegerProperty()
+  # Counts of flake bugs created no earlier than report time.
+  # Will count both auto-created and manually-created bugs.
+  # Will only count bugs if they are not merged into other bugs.
+  new_bug_count = ndb.IntegerProperty()
   impacted_cl_counts = ndb.StructuredProperty(_TypeCount, repeated=True)
   occurrence_counts = ndb.StructuredProperty(_TypeCount, repeated=True)
   test_count = ndb.IntegerProperty()
@@ -75,6 +79,7 @@ class ReportRow(ndb.Model):
         parent=parent,
         id=d['_id'],
         bug_count=CountIfCollection(d.get('_bugs', 0)),
+        new_bug_count=CountIfCollection(d.get('_new_bugs', 0)),
         impacted_cl_counts=[
             _TypeCount(flake_type=flake_type, count=CountIfCollection(cl_ids))
             for flake_type, cl_ids in d.get('_impacted_cls', {}).iteritems()
@@ -137,6 +142,7 @@ class ReportRow(ndb.Model):
     return {
         'id': self.key.id(),
         'bug_count': self.bug_count,
+        'new_bug_count': self.new_bug_count,
         'impacted_cl_counts': impacted_cl_summary,
         'occurrence_counts': occurrence_summary,
         'test_count': self.test_count,

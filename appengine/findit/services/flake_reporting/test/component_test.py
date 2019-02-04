@@ -25,6 +25,8 @@ def _GetOrCreateFlakeIssue(bug_id):
     return issue
 
   issue = FlakeIssue.Create(monorail_project, bug_id)
+  if bug_id >= 123458:
+    issue.create_time_in_monorail = datetime(2018, 9, 1)
   issue.put()
   return issue
 
@@ -194,6 +196,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     report = TotalFlakinessReport.Get(report_date, 'chromium')
     self.assertEqual(6, report.test_count)
     self.assertEqual(4, report.bug_count)
+    self.assertEqual(3, report.new_bug_count)
 
     expected_report_counts = {
         FlakeType.CQ_FALSE_REJECTION: (7, 3),
@@ -213,6 +216,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     component_report_A = ComponentFlakinessReport.Get(report.key, 'ComponentA')
     self.assertEqual(4, component_report_A.test_count)
     self.assertEqual(3, component_report_A.bug_count)
+    self.assertEqual(2, component_report_A.new_bug_count)
 
     expected_A_counts = {
         FlakeType.CQ_FALSE_REJECTION: (5, 3),
@@ -233,6 +237,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
         report.key, 'Unknown')
     self.assertEqual(1, component_report_unknown.test_count)
     self.assertEqual(1, component_report_unknown.bug_count)
+    self.assertEqual(1, component_report_unknown.new_bug_count)
 
     expected_Unknown_counts = {
         FlakeType.CQ_FALSE_REJECTION: (1, 1),
@@ -253,6 +258,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
                                                         'testB')
     self.assertEqual(1, component_test_report_A_B.test_count)
     self.assertEqual(1, component_test_report_A_B.bug_count)
+    self.assertEqual(0, component_test_report_A_B.new_bug_count)
 
     expected_A_B_counts = {
         FlakeType.CQ_FALSE_REJECTION: (2, 2),
@@ -278,6 +284,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     report = TotalFlakinessReport.Get(report_date, 'chromium')
     self.assertEqual(6, report.test_count)
     self.assertEqual(4, report.bug_count)
+    self.assertEqual(3, report.new_bug_count)
 
     expected_report_counts = {
         FlakeType.CQ_FALSE_REJECTION: (7, 3),
@@ -297,6 +304,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
     component_report_A = ComponentFlakinessReport.Get(report.key, 'ComponentA')
     self.assertEqual(4, component_report_A.test_count)
     self.assertEqual(3, component_report_A.bug_count)
+    self.assertEqual(2, component_report_A.new_bug_count)
 
     expected_A_counts = {
         FlakeType.CQ_FALSE_REJECTION: (5, 3),
@@ -317,6 +325,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
         report.key, 'Unknown')
     self.assertEqual(1, component_report_unknown.test_count)
     self.assertEqual(1, component_report_unknown.bug_count)
+    self.assertEqual(1, component_report_unknown.new_bug_count)
 
     expected_Unknown_counts = {
         FlakeType.CQ_FALSE_REJECTION: (1, 1),

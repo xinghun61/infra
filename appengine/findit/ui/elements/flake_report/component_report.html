@@ -151,6 +151,7 @@
               </th>
               <th>Flaky Test Count</th>
               <th>Bug Count</th>
+              <th>New Bug Count</th>
               <th>Falsely Rejected CL Count</th>
               <th>Total Impacted CLs</th>
               <th>Total Flake Occurrences</th>
@@ -160,6 +161,7 @@
                 <td>[[report.report_time]]</td>
                 <td>[[report.test_count]]</td>
                 <td>[[report.bug_count]]</td>
+                <td>[[report.new_bug_count]]</td>
                 <td>[[report.impacted_cl_counts.cq_false_rejection]]</td>
                 <td>[[report.impacted_cl_counts.total]]</td>
                 <td>[[report.occurrence_counts.total]]</td>
@@ -243,25 +245,28 @@
                   width: '70%',
                   height: '70%'
               },
-              vAxis: { baseline: 0 },
               seriesType: 'line',
               pointSize: 5,
               series: {
-                0: {
-                  color: '#174ea6',
-                  type: 'area'},
-                1: {
-                  color: '#1a73e8',
-                  type: 'area'},
-                2: {
-                  color: '#dc3912',
-                  type: 'bars'
-                },
-                3: {
-                  color: '#0d652d'
-                },
-                4: {
-                  color: '#e37400'}}
+                  0: {
+                    color: '#174ea6',
+                    type: 'area'},
+                  1: {
+                    color: '#1a73e8',
+                    type: 'area'},
+                  2: {
+                    color: '#dc3912',
+                    type: 'bars'
+                  },
+                  3: {
+                    color: '#e37400',
+                    type: 'bars'
+                  },
+                  4: {
+                    color: '#0d652d'},
+                  5: {
+                    color: '#9b42f4'}
+              }
           }
         },
 
@@ -279,6 +284,7 @@
               'False Rejected CL',
               'Distinct Impacted CL',
               'Bug',
+              'New Bug',
               'Occurrences',
               'Flaky Test'
             ]);
@@ -288,6 +294,7 @@
                 report.impacted_cl_counts.cq_false_rejection,
                 report.impacted_cl_counts.total,
                 report.bug_count,
+                report.new_bug_count,
                 report.occurrence_counts.total,
                 report.test_count
               ];

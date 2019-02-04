@@ -633,7 +633,8 @@ def _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue):
       status=monorail_issue.status,
       labels=monorail_issue.labels,
       last_updated_time_in_monorail=(monorail_issue.closed or
-                                     monorail_issue.updated))
+                                     monorail_issue.updated),
+      create_time_in_monorail=monorail_issue.created)
 
 
 def _GetOrCreateFlakeIssue(issue_id, monorail_project):
@@ -671,7 +672,7 @@ def _UpdateMergeDestinationAndIssueLeaves(flake_issue, merged_monorail_issue):
   assert merged_flake_issue, (
       'Failed to get or create FlakeIssue for merged_issue %s' %
       FlakeIssue.GetLinkForIssue(flake_issue.monorail_project,
-                                 merged_monorail_issue.id))
+                                 merged_flake_issue.id))
 
   merged_flake_issue_key = merged_flake_issue.key
   flake_issue.merge_destination_key = merged_flake_issue_key

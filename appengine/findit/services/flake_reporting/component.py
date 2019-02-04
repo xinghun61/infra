@@ -103,6 +103,7 @@ def _NewTally(id_string):
   tally = {
       '_id': id_string,
       '_bugs': set(),
+      '_new_bugs': set(),
       '_impacted_cls': {},
       '_occurrences': {},
       '_tests': set()
@@ -115,20 +116,26 @@ def _NewTally(id_string):
   return tally
 
 
-def _AddFlakeToTally(tally, flake):
-  tally['_bugs'].add(flake.GetIssue(up_to_date=True, key_only=True))
+def _AddFlakeToTally(tally, flake, report_date):
+  flake_issue = flake.GetIssue(up_to_date=True)
+  if flake_issue:
+    tally['_bugs'].add(flake_issue.key)
+    if (flake_issue.create_time_in_monorail and
+        flake_issue.create_time_in_monorail >= report_date):
+      tally['_new_bugs'].add(flake_issue.key)
   tally['_tests'].add(flake.normalized_test_name)
   for flake_count in flake.flake_counts_last_week:
     tally['_occurrences'][flake_count
                           .flake_type] += flake_count.occurrence_count
 
 
-def _AddFlakesToCounters(counters, flake_info_dict, start, save_test_report):
-  """Queries all flakes that have happened after start time and adds their info
+def _AddFlakesToCounters(counters, flake_info_dict, report_time,
+                         save_test_report):
+  """Queries all flakes that have happened after report_time and adds their info
     to counters.
   """
   query = Flake.query()
-  query = query.filter(Flake.last_occurred_time >= start)
+  query = query.filter(Flake.last_occurred_time >= report_time)
 
   cursor = None
   more = True
@@ -138,8 +145,8 @@ def _AddFlakesToCounters(counters, flake_info_dict, start, save_test_report):
       luci_project = flake.luci_project
       if luci_project not in counters:
         counters[luci_project] = _NewTally(
-            TotalFlakinessReport.MakeId(start, luci_project))
-      _AddFlakeToTally(counters[luci_project], flake)
+            TotalFlakinessReport.MakeId(report_time, luci_project))
+      _AddFlakeToTally(counters[luci_project], flake, report_time)
 
       component = flake.GetComponent()
       test = flake.normalized_test_name
@@ -151,12 +158,13 @@ def _AddFlakesToCounters(counters, flake_info_dict, start, save_test_report):
 
       if component not in counters[luci_project]:
         counters[luci_project][component] = _NewTally(component)
-      _AddFlakeToTally(counters[luci_project][component], flake)
+      _AddFlakeToTally(counters[luci_project][component], flake, report_time)
 
       if save_test_report:  # pragma: no branch.
         if test not in counters[luci_project][component]:
           counters[luci_project][component][test] = _NewTally(test)
-        _AddFlakeToTally(counters[luci_project][component][test], flake)
+        _AddFlakeToTally(counters[luci_project][component][test], flake,
+                         report_time)
 
 
 def _UpdateDuplicatedClsBetweenTypes(counters):

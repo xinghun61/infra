@@ -215,6 +215,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 '1 day, 00:00:00',
             'last_updated_time_with_analysis_results':
                 None,
+            'create_time_in_monorail':
+                None,
             'labels': [],
             'status':
                 'Started',

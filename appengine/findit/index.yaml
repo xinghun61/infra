@@ -414,6 +414,12 @@ indexes:
   - name: false_rejected_cl_count
     direction: desc
 
+- kind: ComponentFlakinessReport
+  ancestor: yes
+  properties:
+  - name: new_bug_count
+    direction: desc
+
 - kind: TotalFlakinessReport
   properties:
   - name: tags

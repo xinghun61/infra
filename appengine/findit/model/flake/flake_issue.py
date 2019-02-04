@@ -52,6 +52,9 @@ class FlakeIssue(ndb.Model):
   # The bug's labels, e.g. ['Type-Bug', 'Pri-2']. Useful for display purposes.
   labels = ndb.StringProperty(repeated=True)
 
+  # Time when the bug is created in monorail.
+  create_time_in_monorail = ndb.DateTimeProperty()
+
   @property
   def closed(self):
     return (self.status is not None and

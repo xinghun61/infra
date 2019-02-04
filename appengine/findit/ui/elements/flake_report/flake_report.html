@@ -69,24 +69,29 @@
     </style>
     <table width="98%">
       <tr>
-        <th class="main-header" width="20%">Top 10 Components</th>
-        <th class="main-header rank_by" id="rank_test" width="16%">
+        <th class="main-header" width="16%">Top 10 Components</th>
+        <th class="main-header rank_by" id="rank_test" width="14%">
           <paper-button noink id="0" on-tap="selectRankBy">Flaky Tests
             <iron-icon id="0" icon="arrow-downward"></iron-icon></paper-button>
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Rank top flakes by number of flaky tests.</paper-tooltip>
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Count of distinct tests have appeared flaky.</paper-tooltip>
         </th>
-        <th class="main-header" id="rank_bug" width="16%">
+        <th class="main-header" id="rank_bug" width="14%">
           <paper-button noink id="1" on-tap="selectRankBy">Flake Bugs
             <iron-icon id="1" icon="arrow-downward"></iron-icon></paper-button>
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Rank top flakes by number of flaky bugs.</paper-tooltip>
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Count of bugs for flaky tests that occurred.</paper-tooltip>
         </th>
-        <th class="main-header" id="rank_false_rejection" width="16%">
+        <th class="main-header" id="rank_new_bug" width="14%">
+          <paper-button noink id="1" on-tap="selectRankBy">New Bugs
+            <iron-icon id="1" icon="arrow-downward"></iron-icon></paper-button>
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Count of newly created bugs for flaky tests that occurred.</paper-tooltip>
+        </th>
+        <th class="main-header" id="rank_false_rejection" width="14%">
           <paper-button noink id="2" on-tap="selectRankBy">False Rejects
             <iron-icon id="2" icon="arrow-downward"></iron-icon></paper-button>
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Rank top flakes by number of falsely rejected CLs.</paper-tooltip>
+          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Count of falsely rejected CLs because of flaky tests.</paper-tooltip>
         </th>
-        <th class="main-header" width="16%">Total Impacted CLs</th>
-        <th class="main-header" width="16%">Total Flake Occurrences</th>
+        <th class="main-header" width="14%">Total Impacted CLs</th>
+        <th class="main-header" width="14%">Total Flake Occurrences</th>
       </tr>
     </table>
     <iron-pages selected="{{selected}}">
@@ -98,12 +103,13 @@
     </iron-pages>
     <table width="98%" id="total-report-table">
       <tr>
-        <th width="20%"><a target="_blank" href="report/component?total=1">Total</a></th>
-        <td width="16%"><b>[[total_report.test_count]]</b></td>
-        <td width="16%"><b>[[total_report.bug_count]]</b></td>
-        <td width="16%"><b>[[total_report.impacted_cl_counts.cq_false_rejection]]</b></td>
-        <td width="16%"><b>[[total_report.impacted_cl_counts.total]]</b></td>
-        <td width="16%"><b>[[total_report.occurrence_counts.total]]</b></td>
+        <th width="16%"><a target="_blank" href="report/component?total=1">Total</a></th>
+        <td width="14%"><b>[[total_report.test_count]]</b></td>
+        <td width="14%"><b>[[total_report.bug_count]]</b></td>
+        <td width="14%"><b>[[total_report.new_bug_count]]</b></td>
+        <td width="14%"><b>[[total_report.impacted_cl_counts.cq_false_rejection]]</b></td>
+        <td width="14%"><b>[[total_report.impacted_cl_counts.total]]</b></td>
+        <td width="14%"><b>[[total_report.occurrence_counts.total]]</b></td>
       </tr>
     </table>
   </template>

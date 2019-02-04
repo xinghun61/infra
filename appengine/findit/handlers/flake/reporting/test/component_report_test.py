@@ -124,6 +124,7 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
 
     expected_component_reports = {
         'bug_count': 3,
+        'new_bug_count': 0,
         'test_count': 4,
         'impacted_cl_counts': {
             'cq_false_rejection': 3,
@@ -177,6 +178,7 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
 
     expected_report_json = {
         'bug_count': 4,
+        'new_bug_count': 0,
         'test_count': 6,
         'impacted_cl_counts': {
             'cq_false_rejection': 3,

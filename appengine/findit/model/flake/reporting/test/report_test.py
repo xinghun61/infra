@@ -31,6 +31,7 @@ class ReportTest(wf_testcase.WaterfallTestCase):
         'id': '2018-08-27@chromium',
         'test_count': 6,
         'bug_count': 4,
+        'new_bug_count': 0,
         'impacted_cl_counts': {
             'cq_false_rejection': 3,
             'retry_with_patch': 0,
