@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/gerrit"
 	"go.chromium.org/luci/common/proto/gitiles"
@@ -314,5 +315,70 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-	return nil, status.Error(codes.Unimplemented, "not yet implemented")
+	store, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	req2 := updateDutLabelsRequest{
+		dutID:   req.GetDutId(),
+		context: req.GetContext(),
+	}
+	if err := proto.Unmarshal(req.GetOldLabels(), req2.old); err != nil {
+		return nil, err
+	}
+	if err := proto.Unmarshal(req.GetNewLabels(), req2.new); err != nil {
+		return nil, err
+	}
+	err = retry.Retry(
+		ctx,
+		transientErrorRetries(),
+		func() error {
+			var err error
+			resp, err = updateDutLabels(ctx, store, req2)
+			return err
+		},
+		retry.LogCallback(ctx, "updateDutLabels"),
+	)
+	return resp, err
+}
+
+type updateDutLabelsRequest struct {
+	dutID    string
+	old, new *inventory.SchedulableLabels
+	context  string
+}
+
+func updateDutLabels(ctx context.Context, s *store.GitStore, req updateDutLabelsRequest) (*fleet.UpdateDutLabelsResponse, error) {
+	var resp fleet.UpdateDutLabelsResponse
+	if err := s.Refresh(ctx); err != nil {
+		return nil, errors.Annotate(err, "updateDutLabels").Err()
+	}
+
+	dut, ok := getDUTByID(s.Lab, req.dutID)
+	if !ok {
+		return nil, errors.Reason("updateDutLabels: no DUT found").Err()
+	}
+	labels := dut.GetCommon().GetLabels()
+
+	if req.old.GetUselessSwitch() != labels.GetUselessSwitch() {
+		return nil, errors.Reason("updateDutLabels: stale labels").Err()
+	}
+	labels.UselessSwitch = req.new.UselessSwitch
+
+	url, err := s.Commit(ctx, fmt.Sprintf("Update DUT labels for %s", req.context))
+	if err != nil {
+		return nil, errors.Annotate(err, "updateDutLabels").Err()
+	}
+	resp.Url = url
+
+	return &resp, nil
+}
+
+func getDUTByID(lab *inventory.Lab, id string) (*inventory.DeviceUnderTest, bool) {
+	for _, d := range lab.GetDuts() {
+		if d.GetCommon().GetId() == id {
+			return d, true
+		}
+	}
+	return nil, false
 }
