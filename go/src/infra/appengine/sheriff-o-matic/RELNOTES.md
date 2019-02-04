@@ -1,3 +1,18 @@
+# Release Notes sheriff-o-matic 2019-02-04
+
+- 5 commits, 0 bugs affected since a145103 (2018-12-11T00:27:42Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - agable@chromium.org
+
+## Changes in this release
+
+- [[som] Disable fetching test expectations from gitiles](https://chromium-review.googlesource.com/c/1448115) (seanmccullough@chromium.org)
+- [[som] client package refactoring](https://chromium-review.googlesource.com/c/1438015) (seanmccullough@chromium.org)
+- [[SoM] Cleanup getGatekeeperTrees to not be a var](https://chromium-review.googlesource.com/c/1413614) (agable@chromium.org)
+- [[som] Update README.md, Make targets for testing](https://chromium-review.googlesource.com/c/1412044) (seanmccullough@chromium.org)
+- [[SoM, chopsui, monorail] install chops-wct-runner via npm](https://chromium-review.googlesource.com/c/1372324) (seanmccullough@chromium.org)
+
 # Release Notes sheriff-o-matic 2018-12-10
 
 - 8 commits, 2 bugs affected since c189064 (2018-11-08T23:59:53Z)
