@@ -52,6 +52,8 @@ func (eng *recipeEngine) commandRun(ctx context.Context, tdir string, env enviro
 	args = append(args,
 		"run",
 		"--properties-file", propertiesPath,
+		// TODO(iannucci): Remove `--workdir` entirely and make the recipe engine
+		// operate in $CWD.
 		"--workdir", eng.workDir,
 	)
 	if eng.outputResultJSONFile != "" {
@@ -61,6 +63,7 @@ func (eng *recipeEngine) commandRun(ctx context.Context, tdir string, env enviro
 
 	// Build the final exec.Cmd.
 	recipeCmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	recipeCmd.Dir = eng.workDir
 	recipeCmd.Env = env.Sorted()
 	return recipeCmd, nil
 }

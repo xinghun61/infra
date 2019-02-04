@@ -41,11 +41,6 @@ var flagTestCases = []struct {
 	},
 
 	{
-		flags:       []string{"-workdir", ""},
-		errValidate: "-workdir is required",
-	},
-
-	{
 		flags: []string{
 			"-repository", "meep",
 			"-recipe", "cool_recipe",

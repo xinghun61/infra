@@ -93,12 +93,16 @@ func TestCook(t *testing.T) {
 			So(err, ShouldBeNil)
 			defer os.RemoveAll(tdir)
 
+			// OS X has symlinks in its TempDir return values by default.
+			tdir, err = filepath.EvalSymlinks(tdir)
+			So(err, ShouldBeNil)
+
 			// Prepare paths
 			recipeRepoDir := filepath.Join(tdir, "recipe_repo")
 			checkoutPath := filepath.Join(tdir, "checkout")
 			logdogFilePath := filepath.Join(tdir, "logdog-debug-file.txt")
 			resultFilePath := filepath.Join(tdir, "result.json")
-			workdirPath := filepath.Join(tdir, "workdir")
+			workdirPath := filepath.Join(tdir, "k")
 			kitchenTempDir := filepath.Join(tdir, "tmp")
 			cacheDirPath := filepath.Join(tdir, "cache-dir")
 
@@ -106,6 +110,12 @@ func TestCook(t *testing.T) {
 
 			// Prepare recipe dir.
 			So(setupRecipeRepo(c, env, recipeRepoDir), ShouldBeNil)
+
+			// Kitchen works relative to its cwd
+			cwd, err := os.Getwd()
+			So(err, ShouldBeNil)
+			So(os.Chdir(tdir), ShouldBeNil)
+			defer os.Chdir(cwd)
 
 			run := func(mockRecipeResult *recipe_engine.Result, recipeExitCode int) *build.BuildRunResult {
 				// Mock recipes.py result
@@ -136,7 +146,6 @@ func TestCook(t *testing.T) {
 					"-recipe", "kitchen_test",
 					"-properties", string(propertiesJSON),
 					"-checkout-dir", checkoutPath,
-					"-workdir", workdirPath,
 					"-temp-dir", kitchenTempDir,
 					"-cache-dir", cacheDirPath,
 					"-logdog-annotation-url", "logdog://logdog.example.com/chromium/prefix/+/annotations",

@@ -13,7 +13,6 @@ import (
 
 const (
 	defaultCheckoutDir = "kitchen-checkout"
-	defaultWorkDir     = "kitchen-workdir"
 )
 
 // CookFlags are all of the flags necessary for the kitchen 'cook' command.
@@ -35,7 +34,6 @@ type CookFlags struct {
 	OutputResultJSONPath string `json:"output_result_json"`
 
 	RecipeName string `json:"recipe_name"`
-	WorkDir    string `json:"work_dir"`
 
 	SystemAccount string `json:"system_account"`
 
@@ -78,12 +76,6 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		defaultCheckoutDir,
 		"The directory to check out the repository to or to look for bundled recipes. It must either: not exist, be empty, "+
 			"be a valid Git repository, or be a recipe bundle.")
-
-	fs.StringVar(
-		&c.WorkDir,
-		"workdir",
-		defaultWorkDir,
-		`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
 
 	if c.Properties == nil {
 		c.Properties = PropertyFlag{}
@@ -171,7 +163,6 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 func (c *CookFlags) Dump() []string {
 	ret := flagDumper{}
 
-	ret.strDefault("workdir", c.WorkDir, defaultWorkDir)
 	ret.str("repository", c.RepositoryURL)
 	ret.str("revision", c.Revision)
 	ret.strDefault("checkout-dir", c.CheckoutDir, defaultCheckoutDir)

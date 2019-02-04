@@ -37,10 +37,6 @@ func inputError(format string, args ...interface{}) error {
 // Normalize normalizes the contents of CookFlags, returning non-nil if there is
 // an error.
 func (c *CookFlags) Normalize() error {
-	if c.WorkDir == "" {
-		return inputError("-workdir is required")
-	}
-
 	if c.RepositoryURL != "" && c.Revision == "" {
 		c.Revision = "HEAD"
 	} else if c.RepositoryURL == "" && c.Revision != "" {

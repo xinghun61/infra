@@ -80,7 +80,6 @@ func (c *cookRun) normalizeFlags() error {
 		return err
 	}
 
-	c.engine.workDir = c.WorkDir
 	c.engine.recipeName = c.RecipeName
 
 	return nil
@@ -157,8 +156,12 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	}
 
 	// Setup our working directory. This is cwd for the recipe itself.
+	// Previously this was unnecessarially configurable; Now we hard-code it to
+	// "$CWD/k", which is the shortest path we can make. This is important to
+	// allow tasks on Windows to have as many characters as possible; otherwise
+	// they run into MAX_PATH issues.
 	var err error
-	c.engine.workDir, err = prepareRecipeRunWorkDir(c.engine.workDir)
+	c.engine.workDir, err = prepareRecipeRunWorkDir("k")
 	if err != nil {
 		return fail(errors.Annotate(err, "failed to prepare workdir").Err())
 	}
