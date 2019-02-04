@@ -5,7 +5,7 @@
 package harness
 
 type config struct {
-	updateInventory bool
+	adminServiceURL string
 }
 
 func makeConfig(os []Option) config {
@@ -20,8 +20,9 @@ func makeConfig(os []Option) config {
 type Option func(*config)
 
 // UpdateInventory returns an Option that enables inventory updates.
-func UpdateInventory() Option {
+// The admin service URL for updating needs to be provided.
+func UpdateInventory(adminServiceURL string) Option {
 	return func(c *config) {
-		c.updateInventory = true
+		c.adminServiceURL = adminServiceURL
 	}
 }

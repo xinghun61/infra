@@ -60,6 +60,7 @@ func main() {
 type args struct {
 	taskName            string
 	logdogAnnotationURL string
+	adminServiceURL     string
 	xClientTest         bool
 	xKeyvals            map[string]string
 	xProvisionLabels    []string
@@ -73,6 +74,8 @@ func parseArgs() *args {
 		"Name of the task to run. For autotest, this is the NAME attribute in control file")
 	flag.StringVar(&a.logdogAnnotationURL, "logdog-annotation-url", "",
 		"LogDog annotation URL, like logdog://HOST/PROJECT/PREFIX/+/annotations")
+	flag.StringVar(&a.adminServiceURL, "admin-service-url", "",
+		"Admin service URL, used by repair to update labels")
 	flag.BoolVar(&a.xClientTest, "client-test", false,
 		"This is a client side test")
 	flag.Var(lflag.CommaList(&a.xProvisionLabels), "provision-labels",
@@ -101,7 +104,7 @@ func mainInner(a *args) error {
 	defer annotWriter.Close()
 	var i *harness.Info
 	if updatesInventory(a.taskName) {
-		i, err = harness.Open(b, harness.UpdateInventory())
+		i, err = harness.Open(b, harness.UpdateInventory(a.adminServiceURL))
 	} else {
 		i, err = harness.Open(b)
 	}

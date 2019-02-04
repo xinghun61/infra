@@ -5,10 +5,19 @@
 // Package admin provides bindings for the crosskylabadmin API
 package admin
 
-import "infra/libs/skylab/inventory"
+import (
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/libs/skylab/inventory"
+)
+
+// NewInventoryClient creates a new inventory RPC client.
+func NewInventoryClient(url string) (*fleet.InventoryClient, error) {
+	// TODO(ayatane): implement
+	return nil, nil
+}
 
 // UpdateLabels calls the admin service update labels API.
-func UpdateLabels(dutID string, old, new *inventory.SchedulableLabels) error {
+func UpdateLabels(c *fleet.InventoryClient, dutID string, old, new *inventory.SchedulableLabels) error {
 	// TODO(ayatane): implement
 	return nil
 }

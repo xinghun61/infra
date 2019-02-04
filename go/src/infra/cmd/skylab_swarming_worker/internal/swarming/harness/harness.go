@@ -91,13 +91,17 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 	i.botInfoStore, i.BotInfo = bi, &bi.BotInfo
 
 	var uf dutinfo.UpdateFunc
-	if c.updateInventory {
+	if c.adminServiceURL != "" {
 		uf = func(old, new *inventory.DeviceUnderTest) error {
 			oc, nc := old.GetCommon(), new.GetCommon()
 			if oc.GetId() != nc.GetId() {
 				return errors.Reason("update inventory labels: aborting because DUT ID was changed").Err()
 			}
-			if err := admin.UpdateLabels(oc.GetId(), oc.GetLabels(), nc.GetLabels()); err != nil {
+			client, err := admin.NewInventoryClient(c.adminServiceURL)
+			if err != nil {
+				return errors.Annotate(err, "update inventory labels").Err()
+			}
+			if err := admin.UpdateLabels(client, oc.GetId(), oc.GetLabels(), nc.GetLabels()); err != nil {
 				return errors.Annotate(err, "update inventory labels").Err()
 			}
 			return nil
