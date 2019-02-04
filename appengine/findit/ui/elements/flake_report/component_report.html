@@ -236,7 +236,8 @@
           return {
               title: 'Weekly flake trend on ' + component,
               hAxes: { 0: { title: 'Weeks' } },
-              vAxes: { 0: { title: 'Counts' } },
+              vAxes: { 0: { title: 'Counts',
+                            logScale: true} },
               chartArea: {
                   right: '20%',
                   width: '70%',
@@ -253,10 +254,11 @@
                   color: '#1a73e8',
                   type: 'area'},
                 2: {
-                  color: '#0d652d'
+                  color: '#dc3912',
+                  type: 'bars'
                 },
                 3: {
-                  color: '#dc3912'
+                  color: '#0d652d'
                 },
                 4: {
                   color: '#e37400'}}
@@ -276,8 +278,8 @@
               'Week',
               'False Rejected CL',
               'Distinct Impacted CL',
-              'Occurrences',
               'Bug',
+              'Occurrences',
               'Flaky Test'
             ]);
             for (let report of this._getReversedComponentReports(component_reports)) {
@@ -285,8 +287,8 @@
                 report.report_time,
                 report.impacted_cl_counts.cq_false_rejection,
                 report.impacted_cl_counts.total,
-                report.occurrence_counts.total,
                 report.bug_count,
+                report.occurrence_counts.total,
                 report.test_count
               ];
               data.push(row);
