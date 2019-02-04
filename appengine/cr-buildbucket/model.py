@@ -465,32 +465,36 @@ def builds_to_protos_async(
 ):
   """Converts Build objects to build_pb2.Build messages.
 
-  Mutates builds' "proto" field values and returns them.
+  builds must be a list of (model.Build, build_pb2.Build) tuples,
+  where the build_pb2.Build is the destination.
   """
   if load_steps:
-    steps_futs = [BuildSteps.key_for(b.key).get_async() for b in builds]
+    steps_futs = [BuildSteps.key_for(b.key).get_async() for b, _ in builds]
   else:
     steps_futs = itertools.repeat(None)
 
   if load_output_properties:
     out_props_futs = [
-        BuildOutputProperties.key_for(b.key).get_async() for b in builds
+        BuildOutputProperties.key_for(b.key).get_async() for b, _ in builds
     ]
   else:
     out_props_futs = itertools.repeat(None)
 
-  for b, steps_fut, out_props_fut in zip(builds, steps_futs, out_props_futs):
+  for (b, d), steps_f, out_props_f in zip(builds, steps_futs, out_props_futs):
+    d.CopyFrom(b.proto)
     # Old builds do not have proto.id
-    b.proto.id = b.key.id()
+    d.id = b.key.id()
 
-    if steps_fut:
-      steps = yield steps_fut
+    if steps_f:
+      steps = yield steps_f
       if steps:  # pragma: no branch
-        b.proto.steps.extend(steps.step_container.steps)
+        # This deep-copies steps
+        # TODO(nodir): parse proto bytes here, not on entity loading.
+        d.steps.extend(steps.step_container.steps)
 
-    if out_props_fut:
-      out_props = yield out_props_fut
+    if out_props_f:
+      out_props = yield out_props_f
       if out_props:  # pragma: no branch
-        b.proto.output.properties.CopyFrom(out_props.properties)
-
-  raise ndb.Return([b.proto for b in builds])
+        # This deep-copies output properties.
+        # TODO(nodir): parse proto bytes here, not on entity loading.
+        d.output.properties.CopyFrom(out_props.properties)

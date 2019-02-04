@@ -18,8 +18,8 @@ from components import net
 from components import utils
 import bqh
 
+from proto import build_pb2
 import model
-import v2
 
 
 # Mocked in tests.
@@ -145,13 +145,16 @@ def _export_builds(dataset, builds, deadline):
   # https://cloud.google.com/bigquery/docs/reference/rest/v2/tabledata/insertAll
   logging.info('sending %d rows', len(builds))
 
-  build_protos = model.builds_to_protos_async(
-      builds, load_steps=True, load_output_properties=True
+  pairs = [(b, build_pb2.Build()) for b in builds]
+  model.builds_to_protos_async(
+      pairs,
+      load_steps=True,
+      load_output_properties=True,
   ).get_result()
 
   # Clear fields that we don't want in BigQuery.
-  for b in build_protos:
-    for s in b.steps:
+  for _, proto in pairs:
+    for s in proto.steps:
       s.summary_markdown = ''
       s.ClearField('logs')
 
@@ -171,9 +174,9 @@ def _export_builds(dataset, builds, deadline):
           'ignoreUnknownValues':
               False,
           'rows': [{
-              'insertId': str(b.id),
-              'json': bqh.message_to_dict(b),
-          } for b in build_protos],
+              'insertId': str(p.id),
+              'json': bqh.message_to_dict(p),
+          } for _, p in pairs],
       },
       scopes=bqh.INSERT_ROWS_SCOPE,
       # deadline parameter here is duration in seconds.
@@ -182,7 +185,7 @@ def _export_builds(dataset, builds, deadline):
 
   failed_ids = []
   for err in res.get('insertErrors', []):
-    b = build_protos[err['index']]
-    failed_ids.append(b.id)
-    logging.error('failed to insert row for build %d: %r', b.id, err['errors'])
+    _, bp = pairs[err['index']]
+    failed_ids.append(bp.id)
+    logging.error('failed to insert row for build %d: %r', bp.id, err['errors'])
   return failed_ids

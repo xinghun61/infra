@@ -76,13 +76,14 @@ class RpcImplTests(BaseTestCase):
 
     @api.rpc_impl_async('GetBuild')
     @ndb.tasklet
-    def get_build_async(_req, _ctx, _mask):
+    def get_build_async(_req, _res, _ctx, _mask):
       raise ex
 
     ctx = prpc_context.ServicerContext()
     req = rpc_pb2.GetBuildRequest(id=1)
+    res = build_pb2.Build()
     # pylint: disable=no-value-for-parameter
-    get_build_async(req, ctx).get_result()
+    get_build_async(req, res, ctx).get_result()
     self.assertEqual(ctx.code, expected_code)
     self.assertEqual(ctx.details, expected_details)
 

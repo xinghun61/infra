@@ -144,6 +144,11 @@ class TestStatusConversion(unittest.TestCase):
 
 class ToBuildProtosTests(testing.AppengineTestCase):
 
+  def to_proto(self, build, **kwargs):
+    proto = build_pb2.Build()
+    model.builds_to_protos_async([(build, proto)], **kwargs).get_result()
+    return proto
+
   def test_steps(self):
     build = test_util.build()
     steps = [
@@ -155,10 +160,8 @@ class ToBuildProtosTests(testing.AppengineTestCase):
         step_container=build_pb2.Build(steps=steps),
     ).put()
 
-    actual = model.builds_to_protos_async([build], load_steps=True).get_result()
-
-    self.assertEqual(len(actual), 1)
-    self.assertEqual(list(actual[0].steps), steps)
+    actual = self.to_proto(build, load_steps=True)
+    self.assertEqual(list(actual.steps), steps)
 
   def test_out_props(self):
     props = bbutil.dict_to_struct({'a': 'b'})
@@ -168,9 +171,5 @@ class ToBuildProtosTests(testing.AppengineTestCase):
         properties=props,
     ).put()
 
-    actual = model.builds_to_protos_async([
-        build
-    ], load_output_properties=True).get_result()
-
-    self.assertEqual(len(actual), 1)
-    self.assertEqual(actual[0].output.properties, props)
+    actual = self.to_proto(build, load_output_properties=True)
+    self.assertEqual(actual.output.properties, props)
