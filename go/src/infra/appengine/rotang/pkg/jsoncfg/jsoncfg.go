@@ -7,6 +7,7 @@ package jsoncfg
 
 import (
 	"encoding/json"
+	"sort"
 	"time"
 
 	"infra/appengine/rotang"
@@ -35,6 +36,9 @@ type JSONRota struct {
 	Configuration JSONConfiguration `json:"rotation_config"`
 	PSTRotation   JSONMembers       `json:"rotation_list_pacific"`
 	EURotation    JSONMembers       `json:"rotation_list_default"`
+	EMEARotation  JSONMembers       `json:"rotation_list_emea"`
+	APACRotation  JSONMembers       `json:"rotation_list_apac"`
+	ESTRotation   JSONMembers       `json:"rotation_list_est"`
 	OtherRotation JSONMembers       `json:"rotation_list_other"`
 }
 
@@ -43,6 +47,9 @@ type JSONMultiConfigRota struct {
 	Configuration []JSONConfiguration `json:"rotation_config"`
 	PSTRotation   JSONMembers         `json:"rotation_list_pacific"`
 	EURotation    JSONMembers         `json:"rotation_list_default"`
+	EMEARotation  JSONMembers         `json:"rotation_list_emea"`
+	APACRotation  JSONMembers         `json:"rotation_list_apac"`
+	ESTRotation   JSONMembers         `json:"rotation_list_est"`
 }
 
 // JSONConfiguration contains the configuration part of the rotation.
@@ -62,6 +69,8 @@ type JSONConfiguration struct {
 const (
 	defaultShiftsToSchedule = 4
 	pacificTZ               = "US/Pacific"
+	estTZ                   = "EST"
+	apacTZ                  = "Australia/Sydney"
 	euTZ                    = "UTC"
 	defaultShiftName        = "MTV all day"
 )
@@ -82,8 +91,31 @@ func handleJSON(data []byte) (*JSONRota, error) {
 		jsonRota.Configuration = multiConf.Configuration[0]
 		jsonRota.PSTRotation = multiConf.PSTRotation
 		jsonRota.EURotation = multiConf.EURotation
+		jsonRota.EMEARotation = multiConf.EMEARotation
+		jsonRota.APACRotation = multiConf.APACRotation
+		jsonRota.ESTRotation = multiConf.ESTRotation
+
 	}
 	return &jsonRota, nil
+}
+
+func handleJSONMembers(loc *time.Location, members []rotang.Member) ([]rotang.Member, []rotang.ShiftMember) {
+	var (
+		mbs          []rotang.Member
+		shiftMembers []rotang.ShiftMember
+	)
+	for _, m := range members {
+		mbs = append(mbs, rotang.Member{
+			Name:  m.Name,
+			Email: m.Email,
+			TZ:    *loc,
+		})
+		shiftMembers = append(shiftMembers, rotang.ShiftMember{
+			Email:     m.Email,
+			ShiftName: defaultShiftName,
+		})
+	}
+	return mbs, shiftMembers
 }
 
 // BuildConfigurationFromJSON converts the Sheriff json configuration
@@ -102,34 +134,47 @@ func BuildConfigurationFromJSON(data []byte) (*rotang.Configuration, []rotang.Me
 	if err != nil {
 		return nil, nil, err
 	}
+	estLocation, err := time.LoadLocation(estTZ)
+	if err != nil {
+		return nil, nil, err
+	}
+	apacLocation, err := time.LoadLocation(apacTZ)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	var (
-		mbs          []rotang.Member
+		members      []rotang.Member
 		shiftMembers []rotang.ShiftMember
 	)
 
-	for _, m := range jsonRota.PSTRotation.Members {
-		mbs = append(mbs, rotang.Member{
-			Name:  m.Name,
-			Email: m.Email,
-			TZ:    *usLocation,
-		})
-		shiftMembers = append(shiftMembers, rotang.ShiftMember{
-			Email:     m.Email,
-			ShiftName: defaultShiftName,
-		})
+	for _, tm := range []struct {
+		loc     *time.Location
+		members []rotang.Member
+	}{{
+		loc:     usLocation,
+		members: jsonRota.PSTRotation.Members,
+	}, {
+		loc:     euLocation,
+		members: append(jsonRota.EURotation.Members, append(jsonRota.OtherRotation.Members, jsonRota.EMEARotation.Members...)...),
+	}, {
+		loc:     apacLocation,
+		members: jsonRota.APACRotation.Members,
+	}, {
+		loc:     estLocation,
+		members: jsonRota.ESTRotation.Members,
+	}} {
+		m, s := handleJSONMembers(tm.loc, tm.members)
+		members = append(members, m...)
+		shiftMembers = append(shiftMembers, s...)
 	}
-	for _, m := range append(jsonRota.EURotation.Members, jsonRota.OtherRotation.Members...) {
-		mbs = append(mbs, rotang.Member{
-			Name:  m.Name,
-			Email: m.Email,
-			TZ:    *euLocation,
-		})
-		shiftMembers = append(shiftMembers, rotang.ShiftMember{
-			Email:     m.Email,
-			ShiftName: defaultShiftName,
-		})
-	}
+
+	sort.Slice(members, func(i, j int) bool {
+		return members[i].Name < members[j].Name
+	})
+	sort.Slice(shiftMembers, func(i, j int) bool {
+		return shiftMembers[i].Email < shiftMembers[j].Email
+	})
 
 	return &rotang.Configuration{
 		Config: rotang.Config{
@@ -159,5 +204,5 @@ func BuildConfigurationFromJSON(data []byte) (*rotang.Configuration, []rotang.Me
 			},
 		},
 		Members: shiftMembers,
-	}, mbs, nil
+	}, members, nil
 }

@@ -91,6 +91,71 @@ var (
 				]
 			}
 		}`
+	buildSheriffRotation = `
+	{
+		"rotation_config": {
+			"calendar_name": "somecal@group.calendar.google.com",
+			"event_description": "Build sheriffs for the Chrome tree.",
+			"event_title": "Build Sheriff",
+			"expiration_threshold": 28,
+			"owners": [
+				"owner1@google.com",
+				"owner2@google.com"
+			],
+			"people_per_rotation": 4,
+			"reminder_email_body": "Reminder of build sheriffing stuff",
+			"reminder_email_subject": "Chrome build sheriff reminder",
+			"rotation_length": 2
+		},
+		"rotation_list_emea": {
+			"person": [
+				{
+					"email_address": "emea1@google.com",
+					"full_name": "Emea One"
+				},
+				{
+					"email_address": "emea2@google.com",
+					"full_name": "Emea Two"
+				}
+			]
+		},
+		"rotation_list_apac": {
+			"person": [
+				{
+					"email_address": "apac1@google.com",
+					"full_name": "Apac One"
+				},
+				{
+					"email_address": "apac2@google.com",
+					"full_name": "Apac Two"
+				}
+			]
+		},
+		"rotation_list_est": {
+			"person": [
+				{
+					"email_address": "est1@google.com",
+					"full_name": "Est One"
+				},
+				{
+					"email_address": "est2@google.com",
+					"full_name": "Est Two"
+				}
+			]
+		},
+		"rotation_list_pacific": {
+			"person": [
+				{
+					"email_address": "pacific1@google.com",
+					"full_name": "Pacific One"
+				},
+				{
+					"email_address": "pacific2@google.com",
+					"full_name": "Pacific Two"
+				}
+			]
+		}
+	}`
 )
 
 func TestReadJson(t *testing.T) {
@@ -101,6 +166,14 @@ func TestReadJson(t *testing.T) {
 	euLocation, err := time.LoadLocation(euTZ)
 	if err != nil {
 		t.Fatalf("time.LoadLocation(%q) failed: %v", euTZ, err)
+	}
+	estLocation, err := time.LoadLocation(estTZ)
+	if err != nil {
+		t.Fatalf("time.LoadLocation(%q) failed: %v", estTZ, err)
+	}
+	apacLocation, err := time.LoadLocation(apacTZ)
+	if err != nil {
+		t.Fatalf("time.LoadLocation(%q) failed: %v", apacTZ, err)
 	}
 
 	tests := []struct {
@@ -141,15 +214,15 @@ func TestReadJson(t *testing.T) {
 				},
 				Members: []rotang.ShiftMember{
 					{
+						Email:     "anothersheriff@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
 						Email:     "letestbot@google.com",
 						ShiftName: "MTV all day",
 					},
 					{
 						Email:     "testsheriff@google.com",
-						ShiftName: "MTV all day",
-					},
-					{
-						Email:     "anothersheriff@google.com",
 						ShiftName: "MTV all day",
 					},
 				},
@@ -206,11 +279,11 @@ func TestReadJson(t *testing.T) {
 				},
 				Members: []rotang.ShiftMember{
 					{
-						Email:     "test+one@google.com",
+						Email:     "test+four@google.com",
 						ShiftName: "MTV all day",
 					},
 					{
-						Email:     "test+two@google.com",
+						Email:     "test+one@google.com",
 						ShiftName: "MTV all day",
 					},
 					{
@@ -218,12 +291,17 @@ func TestReadJson(t *testing.T) {
 						ShiftName: "MTV all day",
 					},
 					{
-						Email:     "test+four@google.com",
+						Email:     "test+two@google.com",
 						ShiftName: "MTV all day",
 					},
 				},
 			},
 			wantMembers: []rotang.Member{
+				{
+					Name:  "Another codesearch wiz",
+					Email: "test+four@google.com",
+					TZ:    *euLocation,
+				},
 				{
 					Name:  "Test Bot",
 					Email: "test+one@google.com",
@@ -239,10 +317,112 @@ func TestReadJson(t *testing.T) {
 					Email: "test+three@google.com",
 					TZ:    *euLocation,
 				},
+			},
+		}, {
+			name:   "Build Sheriff",
+			jsonIn: buildSheriffRotation,
+			wantConfig: rotang.Configuration{
+				Config: rotang.Config{
+					Description:      "Build sheriffs for the Chrome tree.",
+					Name:             "Build Sheriff",
+					Calendar:         "somecal@group.calendar.google.com",
+					TokenID:          defaultTokenID,
+					ShiftsToSchedule: 4,
+					Owners:           []string{"owner1@google.com", "owner2@google.com"},
+					Expiration:       28,
+					Email: rotang.Email{
+						Body:             "Reminder of build sheriffing stuff",
+						Subject:          "Chrome build sheriff reminder",
+						DaysBeforeNotify: 0,
+					},
+					Shifts: rotang.ShiftConfig{
+						StartTime:    mtvMidnight,
+						ShiftMembers: 4,
+						Length:       2,
+						Generator:    "Legacy",
+						Shifts: []rotang.Shift{
+							{
+								Name:     "MTV all day",
+								Duration: time.Duration(24 * time.Hour),
+							},
+						},
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "apac1@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "apac2@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "emea1@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "emea2@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "est1@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "est2@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "pacific1@google.com",
+						ShiftName: "MTV all day",
+					},
+					{
+						Email:     "pacific2@google.com",
+						ShiftName: "MTV all day",
+					},
+				},
+			},
+			wantMembers: []rotang.Member{
 				{
-					Name:  "Another codesearch wiz",
-					Email: "test+four@google.com",
+					Name:  "Apac One",
+					Email: "apac1@google.com",
+					TZ:    *apacLocation,
+				},
+				{
+					Name:  "Apac Two",
+					Email: "apac2@google.com",
+					TZ:    *apacLocation,
+				},
+				{
+					Name:  "Emea One",
+					Email: "emea1@google.com",
 					TZ:    *euLocation,
+				},
+				{
+					Name:  "Emea Two",
+					Email: "emea2@google.com",
+					TZ:    *euLocation,
+				},
+				{
+					Name:  "Est One",
+					Email: "est1@google.com",
+					TZ:    *estLocation,
+				},
+				{
+					Name:  "Est Two",
+					Email: "est2@google.com",
+					TZ:    *estLocation,
+				},
+				{
+					Name:  "Pacific One",
+					Email: "pacific1@google.com",
+					TZ:    *usLocation,
+				},
+				{
+					Name:  "Pacific Two",
+					Email: "pacific2@google.com",
+					TZ:    *usLocation,
 				},
 			},
 		},
@@ -257,10 +437,10 @@ func TestReadJson(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		if diff := pretty.Compare(config, tst.wantConfig); diff != "" {
+		if diff := pretty.Compare(tst.wantConfig, config); diff != "" {
 			t.Errorf("%s: BuildConfiguration() differs -want +got: \n%s", tst.name, diff)
 		}
-		if diff := pretty.Compare(members, tst.wantMembers); diff != "" {
+		if diff := pretty.Compare(tst.wantMembers, members); diff != "" {
 			t.Errorf("%s: BuildConfiguration() differs -want +got \n%s", tst.name, diff)
 		}
 	}
