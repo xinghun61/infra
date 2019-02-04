@@ -1,0 +1,81 @@
+// Copyright 2019 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+syntax = "proto3";
+package metrics;
+
+import "google/protobuf/timestamp.proto";
+
+// TaskEvent represents a quotascheduler event that happened to a particular
+// task, for metrics purposes.
+//
+// This proto is intended to be used as a schema for a BigQuery table, in which
+// events are logged.
+message TaskEvent {
+  // TaskId is the task ID that the event happened to.
+  string task_id = 1;
+
+  // Time is the time at which the event happened.
+  google.protobuf.Timestamp time = 2;
+
+  // BaseLabels are the base labels of the task.
+  repeated string base_labels = 3;
+
+  // ProvisionableLabels are the provisionable labels of the task.
+  repeated string provisionable_labels = 4;
+
+  // AccountId is the account that the task will be charged to.
+  string account_id = 5;
+
+  enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_ENQUEUED = 1;
+    EVENT_TYPE_ASSIGNED = 2;
+    EVENT_TYPE_PREEMPTED = 3;
+    EVENT_TYPE_REPRIORITIZED = 4;
+  }
+
+  // EventType is the type of event that occurred.
+  EventType event_type = 6;
+
+  // EnqueuedDetails represents event details that are specific to the
+  // ENQUEUED event type.
+  message EnqueuedDetails {
+
+  }
+
+  // AssignedDetails represents event details that are specific to the
+  // ASSIGNED event type.
+  message AssignedDetails {
+
+  }
+
+  // PreemptedDetails represents event details that are specific to the
+  // PREEMPTED event type.
+  message PreemptedDetails {
+
+  }
+
+  // ReprioritizedDetails represents event details that are specific to the
+  // PREPRIORITIZED event type.
+  message ReprioritizedDetails {
+
+  }
+
+  oneof details {
+    EnqueuedDetails enqueued_details = 7;
+    AssignedDetails assigned_details = 8;
+    PreemptedDetails preempted_details = 9;
+    ReprioritizedDetails reprioritized_details = 10;
+  }
+}
