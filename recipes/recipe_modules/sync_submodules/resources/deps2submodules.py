@@ -37,6 +37,9 @@ def SanitizeDeps(submods, path_prefix, disable_path_prefix=False):
   """
   ret = {}
   for name, value in submods.iteritems():
+    # Strip trailing slashes, which git update-index can't handle.
+    name = name.rstrip('/')
+
     if not disable_path_prefix and not name.startswith(path_prefix):
       # Won't check prefix if disabled path_prefix
       logging.warning('Dropping submodule "%s", because it is outside the '
