@@ -22,11 +22,9 @@ func editCrCLCmd(authOpts auth.Options) *subcommands.Command {
 		ShortDesc: "sets Chromium CL-related properties on this JobDefinition (for experimenting with tryjob recipes)",
 		LongDesc: `This allows you to edit a JobDefinition for some tryjob recipe
 (e.g. chromium_tryjob), and associate a changelist with it, as if the recipe
-was triggered via Gerrit or Rietveld.
+was triggered via Gerrit.
 
 Recognized URLs:
-	https://<rietveld_host>/<issue>
-	https://<rietveld_host>/<issue>/#ps<patchset>
 	https://<gerrit_host>/c/<path/to/project>/+/<issue>/<patchset>
 	https://<gerrit_host>/c/<path/to/project>/+/<issue>/<patchset>
 	https://<gerrit_host>/c/<issue>
@@ -35,16 +33,13 @@ Recognized URLs:
 	https://<gerrit_host>/#/c/<issue>/<patchset>
 	https://<googlesource_host>/<issue>
 
-This command is more "art" than "science", and knows about a lot of the
-(sometimes strange) conventions of the current chromium recipes. If you're
-developing a new try recipe and are considering how to add a patchset as input
-to the recipe, we would recommend picking a single property (say, 'patch_url'),
-and then using e.g.
-  'led edit -p patch_url="https://just.a.regular/url/to/the/patch"'
-To set the patchset.
+This command manipulates the property:
+  $recipe_engine/buildbucket['build']['input']['gerritChanges'][atIndex]
 
-Maybe one day we'll reform the chromium recipes to have this level of sanity,
-but until that time, this subcommand will be the nexus of weirdness.`,
+For tasks consuming multiple input CLs, you can adjust which of the CLs you wish
+to change by using the "-at-index" flag. By default this command modifies the
+first CL on the task.
+`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdEditCl{}
@@ -52,6 +47,9 @@ but until that time, this subcommand will be the nexus of weirdness.`,
 
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
+
+			ret.Flags.IntVar(&ret.atIndex, "at-index", 0,
+				"For tasks taking multiple CLs; allows setting the CL at an index other than 0.")
 
 			return ret
 		},
@@ -65,6 +63,7 @@ type cmdEditCl struct {
 	authFlags authcli.Flags
 
 	changelistURL string
+	atIndex       int
 }
 
 func (c *cmdEditCl) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -100,7 +99,7 @@ func (c *cmdEditCl) Run(a subcommands.Application, args []string, env subcommand
 
 	err = editMode(ctx, func(jd *JobDefinition) error {
 		ejd := jd.Edit()
-		ejd.ChromiumCL(ctx, authClient, c.changelistURL)
+		ejd.ChromiumCL(ctx, authClient, c.changelistURL, c.atIndex)
 		return ejd.Finalize()
 	})
 	if err != nil {
