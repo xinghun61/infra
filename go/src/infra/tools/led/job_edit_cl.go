@@ -78,11 +78,6 @@ func (g *gerritCL) loadRemoteData(ctx context.Context, authClient *http.Client) 
 	return nil
 }
 
-type cl interface {
-	loadRemoteData(ctx context.Context, authClient *http.Client) error
-	getProperties() map[string]interface{}
-}
-
 func urlTrimSplit(path string) []string {
 	ret := strings.Split(strings.Trim(path, "/"), "/")
 	// empty paths can return a single empty token
@@ -111,7 +106,7 @@ func parseGerrit(p *url.URL, toks []string) (ret *gerritCL, err error) {
 	return
 }
 
-func parseCrChangeListURL(clURL string) (cl, error) {
+func parseCrChangeListURL(clURL string) (*gerritCL, error) {
 	p, err := url.Parse(clURL)
 	if err != nil {
 		err = errors.Annotate(err, "URL_TO_CHANGELIST is invalid").Err()
