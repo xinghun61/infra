@@ -20,8 +20,9 @@ class TestPython(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
-    cls._expected_version = (
-      os.environ['_3PP_VERSION'] + '+' + os.environ['_3PP_PATCH_VERSION'])
+    cls._expected_version = os.environ['_3PP_VERSION']
+    if '_3PP_PATCH_VERSION' in os.environ:
+      cls._expected_version += '+' + os.environ['_3PP_PATCH_VERSION']
     cls._is_windows = os.name == 'nt'
     cls._exe_suffix = '.exe' if cls._is_windows else ''
 

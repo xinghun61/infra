@@ -1,10 +1,4 @@
 create {
-  platform_re: "windows-.*"
-  unsupported: true
-}
-
-create {
-  source { patch_version: "chromium.1" }
   verify { test: "python_test.py" }
 }
 
@@ -16,6 +10,7 @@ create {
       tag_pattern: "v%s",
     }
     patch_dir: "patches"
+    patch_version: "chromium.1"
   }
   build {
     # no binutils on mac since it includes some tools like 'ar' that we don't
@@ -77,5 +72,17 @@ create {
   }
 }
 
+create {
+  # We don't run 32bit windows hosts anymore, so don't bother.
+  platform_re: "windows-amd64"
+  source { script { name: "fetch.py" } }
+  build {
+    tool: "lessmsi"
+    tool: "pip_bootstrap"
+
+    install: "install_win.sh"
+  }
+  verify { test: "python_test.py" }
+}
 
 upload { pkg_prefix: "tools" }

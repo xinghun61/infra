@@ -9,26 +9,20 @@ set -o pipefail
 
 PREFIX="$1"
 
-# The commandline for lessmsi is a bit weird. We MUST provide an absolute
-# windows path which ends with slash in order for it to extract to our present
-# location. Otherwise it will assume we're passing it a path of a file in the
-# msi archive that we want to extract.
-lessmsi x install.msi $(cygpath -w $(pwd))"\\"
+# Remove all .msi bits we don't want.
+rm -vrf -- *_d.msi *_pdb.msi test.msi tcl*.msi doc.msi dev.msi launcher.msi \
+  path.msi pip.msi tools.msi
 
-rm -vrf SourceDir/Windows
-rm -vrf SourceDir/tcl
-rm -vrf SourceDir/Doc
-rm -vrf SourceDir/DLLs/tcl*.*
-rm -vrf SourceDir/DLLs/tk*.*
-rm -vrf SourceDir/include
-rm -vrf SourceDir/libs
-rm -vrf SourceDir/Lib/test
-rm -vrf SourceDir/Lib/tkinter
-rm -vrf SourceDir/Tools/Scripts
+# Extract the rest of the msi's to the current directory.
+for x in *.msi; do
+  lessmsi x "$x" "$(cygpath -w "$(pwd)")\\"
+done
 
+# Move the meat where we actually want it.
 mkdir "$PREFIX/bin"
 mv SourceDir/* "$PREFIX/bin"
 
+# Install pip_bootstrap things.
 "$PREFIX/bin/python.exe" "$(where pip_bootstrap.py)" "$PREFIX/bin"
 
 # This is full of .exe shims which don't work correctly unless you put
