@@ -22,60 +22,133 @@ import "google/protobuf/timestamp.proto";
 // This proto is intended to be used as a schema for a BigQuery table, in which
 // events are logged.
 message TaskEvent {
-  // TaskId is the task ID that the event happened to.
-  string task_id = 1;
-
-  // Time is the time at which the event happened.
-  google.protobuf.Timestamp time = 2;
-
-  // BaseLabels are the base labels of the task.
-  repeated string base_labels = 3;
-
-  // ProvisionableLabels are the provisionable labels of the task.
-  repeated string provisionable_labels = 4;
-
-  // AccountId is the account that the task will be charged to.
-  string account_id = 5;
 
   enum EventType {
-    EVENT_TYPE_UNSPECIFIED = 0;
-    EVENT_TYPE_ENQUEUED = 1;
-    EVENT_TYPE_ASSIGNED = 2;
-    EVENT_TYPE_PREEMPTED = 3;
-    EVENT_TYPE_REPRIORITIZED = 4;
+    // Invalid or unspecified event type.
+    UNSPECIFIED = 0;
+
+    // Task was enqueued.
+    ENQUEUED = 1;
+
+    // Task was assigned to a bot.
+    ASSIGNED = 2;
+
+    // Task (which was previously assigned to a bot) was interrupted by another
+    // task.
+    PREEMPTED = 3;
+
+    // Task (which was previously assigned to a bot) changed its running
+    // priority.
+    REPRIORITIZED = 4;
+
+    // Task (which was previously assigned to a bot) completed on that bot,
+    // because the bot reported itself as idle.
+    COMPLETED = 5;
   }
 
   // EventType is the type of event that occurred.
-  EventType event_type = 6;
+  EventType event_type = 1;
+
+  // SchedulerId is the ID of the scheduler in which the event occurred.
+  string scheduler_id = 2;
+
+  // TaskId is the task ID that the event happened to.
+  string task_id = 3;
+
+  // Time is the time at which the event happened.
+  google.protobuf.Timestamp time = 4;
+
+  // BaseLabels are the base labels of the task.
+  repeated string base_labels = 5;
+
+  // ProvisionableLabels are the provisionable labels of the task.
+  repeated string provisionable_labels = 6;
+
+  // AccountId is the quotascheduler account that the task will be charged to.
+  string account_id = 7;
+
+  // AccountValid indicates whether this task's quotascheduler account is valid
+  // (exists) at this time.
+  bool account_valid = 8;
+
+  // AccountBalance is the task's quotascheduler account's balance at this time.
+  repeated double account_balance = 9;
+
+  // Cost is the total quota cost accumulated so far to the quotascheduler
+  // account, when running this task.
+  repeated double cost = 10;
+
+  // BotId is the bot that the event occurred on (relevant for all event
+  // types except for ENQUEUED).
+  string bot_id = 11;
+
+  // BotDimensions are the dimensions of the bot (if relevant).
+  repeated string bot_dimensions = 12;
+
+  // Reserved field values for additional non-details fields to be added.
+  reserved 13 to 99;
 
   // EnqueuedDetails represents event details that are specific to the
   // ENQUEUED event type.
-  message EnqueuedDetails {
-
-  }
+  message EnqueuedDetails { }
 
   // AssignedDetails represents event details that are specific to the
   // ASSIGNED event type.
   message AssignedDetails {
+    // ProvisionRequired is whether provision is required to run this task
+    // on the bot (i.e. if a slice other than the 0th slice was selected).
+    bool provision_required = 1;
 
+    // Priority is the qscheduler priority that the task is running at.
+    int32 priority = 2;
+
+    // Preempting is true if this task preempted another one that was already
+    // running on the bot.
+    bool preempting = 3;
+
+    // PreemptionCost is the cost paid by this task's account in order to
+    // preempt the previous task on this bot, if this was a preempting
+    // assignment.
+    repeated double preemption_cost = 4;
   }
 
   // PreemptedDetails represents event details that are specific to the
   // PREEMPTED event type.
   message PreemptedDetails {
+    // PreemptingAccountId is the account id of the task that preempted this
+    // task.
+    string preempting_account_id = 1;
 
+    // PreemptingTaskId is the task id of the task that preempted this task.
+    string preempting_task_id = 2;
+
+    // Priority is the priority that this task was running at prior to being
+    // preempted.
+    int32 priority = 3;
+
+    // PreemptingPriority is the priority of the task that preempted this task.
+    int32 preempting_priority = 4;
   }
 
   // ReprioritizedDetails represents event details that are specific to the
   // PREPRIORITIZED event type.
   message ReprioritizedDetails {
+    // OldPriority is the previous priority the task was running at.
+    int32 old_priority = 1;
 
+    // NewPriority is the new priority the task is running at.
+    int32 new_priority = 2;
   }
 
+  // ReprioritizedDetails represents event details that are specific to the
+  // COMPLETED event type.
+  message CompletedDetails { }
+
   oneof details {
-    EnqueuedDetails enqueued_details = 7;
-    AssignedDetails assigned_details = 8;
-    PreemptedDetails preempted_details = 9;
-    ReprioritizedDetails reprioritized_details = 10;
+    EnqueuedDetails enqueued_details = 100;
+    AssignedDetails assigned_details = 101;
+    PreemptedDetails preempted_details = 102;
+    ReprioritizedDetails reprioritized_details = 103;
+    CompletedDetails completed_details = 104;
   }
 }
