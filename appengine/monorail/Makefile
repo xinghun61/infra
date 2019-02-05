@@ -6,6 +6,7 @@
 # Makefile to simplify some common AppEngine actions.
 # Use 'make help' for a list of commands.
 
+DEVID = monorail-dev
 STAGEID= monorail-staging
 PRODID= monorail-prod
 
@@ -121,20 +122,19 @@ config_staging:
 	m4 -DSTAGING < module-besearch.yaml.m4 > module-besearch.yaml
 	m4 -DSTAGING < module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
-config_demo:
-	m4 -DDEMO < app.yaml.m4 > app.yaml
-	m4 -DDEMO < module-besearch.yaml.m4 > module-besearch.yaml
-	m4 -DDEMO < module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
+config_dev:
+	m4 -DDEV < app.yaml.m4 > app.yaml
+	m4 -DDEV < module-besearch.yaml.m4 > module-besearch.yaml
+	m4 -DDEV < module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
 config_local:
 	m4 app.yaml.m4 > app.yaml
 	m4 module-besearch.yaml.m4 > module-besearch.yaml
 	m4 module-latency-insensitive.yaml.m4 > module-latency-insensitive.yaml
 
-# For deploying demo versions, e.g. context for a code review.
-deploy_demo: clean_deps deps build_js config_demo
-	@echo "---[Demo $(STAGEID)]---"
-	$(GAE_PY) upload --tag $(BRANCH_NAME) -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
+deploy_dev: clean_deps deps build_js config_dev
+	@echo "---[Dev $(DEVID)]---"
+	$(GAE_PY) upload --tag $(BRANCH_NAME) -A $(DEVID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
 
 # AppEngine apps can be tested locally and in non-default versions upload to
 # the main app-id, but it is still sometimes useful to have a completely

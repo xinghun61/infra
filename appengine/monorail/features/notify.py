@@ -888,8 +888,8 @@ class OutboundEmailTask(jsonfeed.InternalTask):
     body = email_params.get('body')
     html_body = email_params.get('html_body')
 
-    if settings.dev_mode:
-      to_format = settings.send_dev_email_to
+    if settings.local_mode:
+      to_format = settings.send_local_email_to
     else:
       to_format = settings.send_all_email_to
 

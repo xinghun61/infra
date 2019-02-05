@@ -37,10 +37,10 @@ feedback_email = 'jrobbins+monorail.feedback@chromium.org'
 # it would normally be sent to.
 send_all_email_to = 'monorail-staging-emails+all+%(user)s+%(domain)s@google.com'
 
-# For debugging when running the dev server locally: send all outbound
+# For debugging when running the server locally: send all outbound
 # email to this address rather than to the actual address that
 # it would normally be sent to.
-send_dev_email_to = (
+send_local_email_to = (
     send_all_email_to or
     'monorail-staging-emails+dev+%(user)s+%(domain)s@google.com')
 
@@ -55,8 +55,15 @@ send_noreply_email_as = 'monorail+noreply@chromium.org'
 
 # The default is to look for a database named "monorail" in replicas
 # named "replica-00" .. "replica-09"
+# Replica names for -prod, -staging, and -dev may diverge if replicas ever fail.
+# In such cases the db_replica_names list can be overwritten in Part 5.
 db_database_name = 'monorail'
-db_replica_names = ['configure replicas per GAE instance in settings.py']
+db_master_name = 'master-g2'
+db_replica_names = [
+        'replica-g2-00', 'replica-g2-01', 'replica-g2-02', 'replica-g2-03',
+        'replica-g2-04', 'replica-g2-05', 'replica-g2-06', 'replica-g2-07',
+        'replica-g2-08', 'replica-g2-09']
+db_region = 'us-central1'
 
 # The default connection pool size for mysql connections.
 db_cnxn_pool_size = 5
@@ -161,9 +168,9 @@ enable_quick_edit = True
 ####
 # Part 4: Settings that you can usually leave as-is.
 
-# dev_mode makes the server slower and more dynamic for easier debugging.
+# local_mode makes the server slower and more dynamic for easier debugging.
 # E.g., template files are reloaded on each request.
-dev_mode = os.environ['SERVER_SOFTWARE'].startswith('Development')
+local_mode = os.environ['SERVER_SOFTWARE'].startswith('Development')
 unit_test_mode = os.environ['SERVER_SOFTWARE'].startswith('test')
 
 # If we assume 1KB each, then this would be 400 MB for this cache in frontends
@@ -264,11 +271,6 @@ recognized_codesite_projects = [
 
 ####
 # Part 5:  Instance-specific settings that override lines above.
-
-# We usually use a DB instance named "master" for writes.
-db_master_name = 'master'
-db_region = None  # First generation DB does not specify this.
-
 # This ID is for -staging and other misc deployments. Prod is defined below.
 analytics_id = 'UA-55762617-20'
 
@@ -282,46 +284,35 @@ else:
     banner_message = 'This staging site does not send emails.'
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
-    db_master_name = 'master-g2'
-    db_region = 'us-central1'
-    db_replica_names = [
-        'replica-g2-00', 'replica-g2-01', 'replica-g2-02', 'replica-g2-03',
-        'replica-g2-04', 'replica-g2-05', 'replica-g2-06', 'replica-g2-07',
-        'replica-g2-08', 'replica-g2-09']
+
+  elif app_id == 'monorail-dev':
+    site_name = 'Monorail Dev'
+    banner_message = 'This dev site does not send emails.'
+    # The Google Cloud SQL databases to use.
+    db_cloud_project = app_id
+
 
   elif app_id == 'monorail-prod':
     send_all_email_to = None  # Deliver it to the intended users.
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
     analytics_id = 'UA-55762617-14'
-    db_master_name = 'master-g2'
-    db_region = 'us-central1'
-    db_replica_names = [
-        'replica-g2-00', 'replica-g2-01', 'replica-g2-02', 'replica-g2-03',
-        'replica-g2-04', 'replica-g2-05', 'replica-g2-06', 'replica-g2-07',
-        'replica-g2-08', 'replica-g2-09']
 
-if dev_mode:
-  site_name = 'Monorail Dev'
+if local_mode:
+  site_name = 'Monorail Local'
   num_logical_shards = 10
 
 # Combine the customized info above to make the name of the master DB instance.
-if db_region:
-  db_instance = db_cloud_project + ':' + db_region + ':' + db_master_name
-else:
-  db_instance = db_cloud_project + ':' + db_master_name
+db_instance = db_cloud_project + ':' + db_region + ':' + db_master_name
 
 # Format string for the name of the physical database replicas.
-if db_region:
-  physical_db_name_format = (
-      db_cloud_project + ':' + db_region + ':%s')
-else:
-  physical_db_name_format = db_cloud_project + ':%s'
+physical_db_name_format = (db_cloud_project + ':' + db_region + ':%s')
 
 # preferred domains to display
 preferred_domains = {
     'monorail-prod.appspot.com': 'bugs.chromium.org',
-    'monorail-staging.appspot.com': 'bugs-staging.chromium.org'}
+    'monorail-staging.appspot.com': 'bugs-staging.chromium.org',
+    'monorail-dev.appspot.com': 'bugs-dev.chromium.org'}
 
 # Borg robot service account
 borg_service_account = 'chrome-infra-prod-borg@system.gserviceaccount.com'
@@ -333,7 +324,7 @@ classifier_project_id = 'project-id-testing-only'
 if 'APPLICATION_ID' not in os.environ:
   os.environ['APPLICATION_ID'] = 'testing-app'
 
-if dev_mode:
+if local_mode:
   # There is no local stub for ML Engine.
   classifier_project_id = 'monorail-staging'
 else:

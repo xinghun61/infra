@@ -143,12 +143,12 @@ class MonorailConnectionTest(unittest.TestCase):
 
   def setUp(self):
     self.cnxn = sql.MonorailConnection()
-    self.orig_dev_mode = settings.dev_mode
+    self.orig_local_mode = settings.local_mode
     self.orig_num_logical_shards = settings.num_logical_shards
-    settings.dev_mode = False
+    settings.local_mode = False
 
   def tearDown(self):
-    settings.dev_mode = self.orig_dev_mode
+    settings.local_mode = self.orig_local_mode
     settings.num_logical_shards = self.orig_num_logical_shards
 
   def testGetMasterConnection(self):

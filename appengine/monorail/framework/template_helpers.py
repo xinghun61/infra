@@ -183,7 +183,7 @@ class MonorailTemplate(object):
     # We don't operate directly on self.template to avoid races.
     template = self.template
 
-    if template is None or settings.dev_mode:
+    if template is None or settings.local_mode:
       start = time.time()
       template = ezt.Template(
           fname=self.template_path,

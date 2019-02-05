@@ -96,7 +96,7 @@ def monorail_api_method(
         logging.info('kwargs is %r', kwargs)
         auth_client_ids, auth_emails = (
             client_config_svc.GetClientConfigSvc().GetClientIDEmails())
-        if settings.dev_mode:
+        if settings.local_mode:
           auth_client_ids.append(endpoints.API_EXPLORER_CLIENT_ID)
         if self._services is None:
           self._set_services(service_manager.set_up_services())

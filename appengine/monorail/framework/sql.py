@@ -72,7 +72,7 @@ def cnxn_ctor(instance, database):
   if settings.unit_test_mode:
     raise ValueError('unit tests should not need real database connections')
   try:
-    if settings.dev_mode:
+    if settings.local_mode:
       start_time = time.time()
       cnxn = MySQLdb.connect(
         host='127.0.0.1', port=3306, db=database, user='root', charset='utf8')

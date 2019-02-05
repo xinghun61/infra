@@ -666,7 +666,7 @@ def real_wait_any(active_rpcs):
 
   Instead, we do the same check, without blocking on any individual RPC.
   """
-  if settings.dev_mode:
+  if settings.local_mode:
     # The development server has very different code for RPCs than the
     # code used in the hosted environment.
     return apiproxy_stub_map.UserRPC.wait_any(active_rpcs)

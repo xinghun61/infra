@@ -84,7 +84,7 @@ def GetEmailKey():
 
 def GetRecaptchaPublicKey():
   """Return our public API key for reCAPTCHA."""
-  if settings.dev_mode:
+  if settings.local_mode:
     return '6LebzNMSAAAAAMY8b_FaZvp8wymUO5Jsa0pIX7HO'
 
   result = GetSecrets().recaptcha_public_key
@@ -97,7 +97,7 @@ def GetRecaptchaPublicKey():
 
 def GetRecaptchaPrivateKey():
   """Return our private API key for reCAPTCHA."""
-  if settings.dev_mode:
+  if settings.local_mode:
     return '6LebzNMSAAAAAHNVNiP2I7aNMv2AmxY5nReE2LZ4'
 
   result = GetSecrets().recaptcha_private_key

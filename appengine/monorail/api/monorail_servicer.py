@@ -123,9 +123,9 @@ class MonorailServicer(object):
     """Return the email address of the signed in user or None."""
     # When running on localhost, allow request to specify test account.
     if hasattr(request, 'trace') and request.trace.test_account:
-      if not settings.dev_mode:
+      if not settings.local_mode:
         raise exceptions.InputException(
-            'test_account only accepted in dev_mode')
+            'test_account only accepted in local_mode')
       if not request.trace.test_account.endswith('@example.com'):
         raise exceptions.InputException(
             'test_account must end with @example.com')
@@ -173,7 +173,7 @@ class MonorailServicer(object):
     """Raise an exception if we don't want to process this request."""
     # For local development, we accept any request.
     # TODO(jrobbins): make this more realistic by requiring a fake XSRF token.
-    if settings.dev_mode:
+    if settings.local_mode:
       return
 
     # Check if the user is whitelisted.

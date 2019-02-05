@@ -233,8 +233,8 @@ class MonorailServicerTest(unittest.TestCase):
   def testGetRequester_TestAccountOnDev(self):
     """For integration testing, we can set test_account on dev_server."""
     try:
-      orig_dev_mode = settings.dev_mode
-      settings.dev_mode = True
+      orig_local_mode = settings.local_mode
+      settings.local_mode = True
 
       # pylint: disable=attribute-defined-outside-init
       self.request.trace = testing_helpers.Blank(
@@ -248,7 +248,7 @@ class MonorailServicerTest(unittest.TestCase):
       with self.assertRaises(exceptions.InputException):
         self.svcr.GetRequester(self.request)
     finally:
-      settings.dev_mode = orig_dev_mode
+      settings.local_mode = orig_local_mode
 
   def testAssertBaseChecks_SiteIsReadOnly_Write(self):
     """We reject writes and allow reads when site is read-only."""
@@ -370,14 +370,14 @@ class MonorailServicerTest(unittest.TestCase):
     # The token set in setUp() works with self.auth.
     self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
 
-    # Passing no request.trace.token is OK in dev_mode
+    # Passing no request.trace.token is OK in local_mode
     try:
-      orig_dev_mode = settings.dev_mode
-      settings.dev_mode = True
+      orig_local_mode = settings.local_mode
+      settings.local_mode = True
       self.request.trace.token = ''
       self.svcr.AssertWhitelistedOrXSRF(mc, self.request)
     finally:
-      settings.dev_mode = orig_dev_mode
+      settings.local_mode = orig_local_mode
 
     # We detect a missing token.
     self.request.trace.token = ''

@@ -6,6 +6,7 @@
 [if-any read_only][include "../framework/read-only-rejection.ezt"]
 [else]
 
+
 <script src="/elements/mr-bulk-approval-update/mr-bulk-approval-update.min.js?version=[app_version]" nonce="[nonce]"></script>
 
 <div style="margin-top: 0; padding: 3px;" class="closed">

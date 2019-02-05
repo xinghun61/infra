@@ -276,10 +276,10 @@ class MonorailRequest(MonorailRequestBase):
     prod_debug_allowed = self.perms.HasPerm(
         permissions.VIEW_DEBUG, self.auth.user_id, None)
     self.debug_enabled = (request.params.get('debug') and
-                          (settings.dev_mode or prod_debug_allowed))
+                          (settings.local_mode or prod_debug_allowed))
     # temporary option for perf testing on staging instance.
     if request.params.get('disable_cache'):
-      if settings.dev_mode or 'staging' in request.host:
+      if settings.local_mode or 'staging' in request.host:
         self.use_cached_searches = False
 
   def _CalcDefaultQuery(self):

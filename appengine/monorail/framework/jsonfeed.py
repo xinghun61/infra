@@ -66,7 +66,7 @@ class JsonFeed(servlet.Servlet):
           logging.info('using token path "xhr"')
           xsrf.ValidateToken(mr.token, mr.auth.user_id, xsrf.XHR_SERVLET_PATH)
 
-      if self.CHECK_SAME_APP and not settings.dev_mode:
+      if self.CHECK_SAME_APP and not settings.local_mode:
         calling_app_id = request.headers.get('X-Appengine-Inbound-Appid')
         if calling_app_id != app_identity.get_application_id():
           self.response.status = httplib.FORBIDDEN

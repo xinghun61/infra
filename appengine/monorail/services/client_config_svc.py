@@ -136,7 +136,7 @@ class ClientConfigService(object):
       force_load = True
 
     if force_load:
-      if settings.dev_mode or settings.unit_test_mode:
+      if settings.local_mode or settings.unit_test_mode:
         self._ReadFromFilesystem()
       else:
         self._ReadFromDatastore()

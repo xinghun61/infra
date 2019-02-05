@@ -297,7 +297,7 @@ class Servlet(webapp2.RequestHandler):
     try:
       csp_header = 'Content-Security-Policy'
       csp_scheme = 'https:'
-      if settings.dev_mode:
+      if settings.local_mode:
         csp_header = 'Content-Security-Policy-Report-Only'
         csp_scheme = 'http:'
       user_agent_str = self.mr.request.headers.get('User-Agent', '')
@@ -654,7 +654,7 @@ class Servlet(webapp2.RequestHandler):
         'True': ezt.boolean(True),
         'False': ezt.boolean(False),
 
-        'dev_mode': ezt.boolean(settings.dev_mode),
+        'local_mode': ezt.boolean(settings.local_mode),
         'script_prefix_dir': settings.script_prefix_dir,
 
         'site_name': settings.site_name,

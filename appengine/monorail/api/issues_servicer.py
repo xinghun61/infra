@@ -109,7 +109,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def ListIssues(self, mc, request):
     """Return the list of issues for projects that satisfy the given query."""
-    use_cached_searches = not settings.dev_mode
+    use_cached_searches = not settings.local_mode
     with work_env.WorkEnv(mc, self.services) as we:
       start, max_items = converters.IngestPagination(request.pagination)
       pipeline = we.ListIssues(
