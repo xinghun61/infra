@@ -48,16 +48,11 @@ export class MrEditField extends PolymerElement {
         .multi-grid {
           width: 95%;
           display: grid;
-          grid-column-gap: 1%;
-          grid-row-gap: 3px;
-          grid-template-columns: 24% 24% 24% 25%;
+          grid-gap: 4px;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         }
-        .user-multi-grid {
-          width: 95%;
-          display: grid;
-          grid-column-gap: 1%;
-          grid-row-gap: 3px;
-          grid-template-columns: 32% 33% 33%;
+        .multi-grid > input {
+          width: unset;
         }
       </style>
       <template is="dom-if" if="[[_fieldIsEnum(type)]]">
@@ -93,7 +88,7 @@ export class MrEditField extends PolymerElement {
 
       <template is="dom-if" if="[[_fieldIsBasic]]">
         <template is="dom-if" if="[[multi]]">
-          <div id="multi-grid" class$="[[_multiGridClass]]">
+          <div id="multi-grid" class="multi-grid">
             <template is="dom-repeat" items="[[derivedValues]]">
               <div class="derived" title$="Derived: [[item]]">
                 [[item]]
@@ -107,7 +102,6 @@ export class MrEditField extends PolymerElement {
                 value$="[[item]]"
                 data-ac-type$="[[_acType]]"
                 autocomplete$="[[_computeDomAutocomplete(_acType)]]"
-                style="width: unset"
               />
             </template>
           </div>
@@ -178,11 +172,6 @@ export class MrEditField extends PolymerElement {
       _initialValue: {
         type: String,
         computed: '_computeInitialValue(initialValues)',
-      },
-      _multiGridClass: {
-        type: String,
-        value: 'multi-grid',
-        computed: '_computeMultiGridClass(type)',
       },
     };
   }
@@ -320,13 +309,6 @@ export class MrEditField extends PolymerElement {
   _computeDomAutocomplete(acType) {
     if (acType) return 'off';
     return '';
-  }
-
-  _computeMultiGridClass(type) {
-    if (this._fieldIsUser(type)) {
-      return 'user-multi-grid';
-    }
-    return 'multi-grid';
   }
 
   _computeInitialValue(initialValues) {
