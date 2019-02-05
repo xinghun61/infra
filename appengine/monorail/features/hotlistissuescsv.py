@@ -6,8 +6,10 @@
 """Implemention of the hotlist issues list output as a CSV file."""
 
 from features import hotlistissues
+from framework import framework_views
 from framework import csv_helpers
 from framework import permissions
+from framework import xsrf
 
 
 # TODO(jojwang): can be refactored even more, see similarities with
@@ -26,6 +28,22 @@ class HotlistIssuesCsv(hotlistissues.HotlistIssues):
     if not mr.auth.user_id:
       raise permissions.PermissionException(
           'Anonymous users are not allowed to download hotlist CSV')
+
+    owner_id = mr.hotlist.owner_ids[0]  # only one owner allowed
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user,
+        [owner_id])
+    owner = users_by_id[owner_id]
+
+    # Try to validate XSRF by either user email or user ID.
+    try:
+      xsrf.ValidateToken(
+          mr.token, mr.auth.user_id,
+          '/u/%s/hotlists/%s.do' % (owner.email, mr.hotlist.name))
+    except xsrf.TokenIncorrect:
+      xsrf.ValidateToken(
+          mr.token, mr.auth.user_id,
+          '/u/%s/hotlists/%s.do' % (owner.user_id, mr.hotlist.name))
 
     # Sets headers to allow the response to be downloaded.
     self.content_type = 'text/csv; charset=UTF-8'
