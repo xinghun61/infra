@@ -53,6 +53,7 @@ func TestAssignTasks(t *testing.T) {
 							Slices: []*swarming.SliceSpec{
 								{},
 							},
+							EnqueuedTime: tutils.TimestampProto(time.Now()),
 						},
 					},
 				},
