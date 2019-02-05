@@ -14,8 +14,8 @@ CODE_COVERAGE_MODULES := code-coverage-frontend code-coverage-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
 LOCAL_HASH := `git rev-parse --short HEAD`
 # If there are multiple active versions just use the latest one.
-REMOTE_FINDIT_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "default:" | awk '{print $$2}'`
-REMOTE_FINDIT_HASH := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "default:" | awk '{print $$2}' | cut -d '-' -f2`
+REMOTE_FINDIT_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -A $(APPID) | grep "default:" | awk '{print $$2}'`
+REMOTE_FINDIT_HASH := `$(INFRAPYTHON) $(GAE_PY) active -A $(APPID) | grep "default:" | awk '{print $$2}' | cut -d '-' -f2`
 REMOTE_COVERAGE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "code-coverage-backend:" | awk '{print $$2}'`
 REMOTE_COVERAGE_HASH := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "code-coverage-backend:" | awk '{print $$2}' | cut -d '-' -f2`
 
@@ -45,6 +45,16 @@ help:
 
 
 ##### App Engine ###
+findit-predeploy:
+	@echo "Uncommitted local changes (Commit, revert or delete):"
+	@git status --porcelain
+	@echo
+	@echo "Changes in local branch. (Upload/land/pull/switch to master to avoid deploying tainted version)"
+	@git log origin/master..HEAD --pretty=oneline .
+	@echo
+	@echo "Deployable Changes. (git pull and client sync if not current)"
+	@git log $(REMOTE_FINDIT_HASH)..HEAD --pretty=oneline .
+
 deploy-findit-prod: test
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(FINDIT_MODULES);
 	@echo "New version '$(LOCAL_VERSION)' of Findit was" \
@@ -147,4 +157,4 @@ endif
 
 .PHONY: _deploy_findit test update \
         help migrate deploy-findit-prod deploy-findit-staging \
-        deploy-coverage-prod deploy-coverage-staging
+        deploy-coverage-prod deploy-coverage-staging findit-predeploy
