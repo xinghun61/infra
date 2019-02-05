@@ -9,7 +9,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import '../../mr-comment-content/mr-comment-content.js';
-import {actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 /**
  * `<mr-comments>`
  *
@@ -17,7 +17,7 @@ import {actionCreator} from '../../redux/redux-mixin.js';
  * feature launch tracking page.
  *
  */
-export class MrComments extends PolymerElement {
+export class MrComments extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <style>

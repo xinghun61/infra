@@ -13,7 +13,6 @@ export const actionType = {
   UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
   UPDATE_FORMS_TO_CHECK: 'UPDATE_FORMS_TO_CHECK',
   CLEAR_FORMS_TO_CHECK: 'CLEAR_FORMS_TO_CHECK',
-  SET_CONTEXT: 'SET_CONTEXT',
 
   // AJAX request state.
   FETCH_PROJECT_CONFIG_START: 'FETCH_PROJECT_CONFIG_START',
@@ -307,9 +306,6 @@ export const initial = {
   // Fields to be checked for user changes before leaving the page.
   // TODO(ehmaldonado): Figure out a way to keep redux state serializable.
   formsToCheck: [],
-  // The context of the last page. If is not null, it means we want to
-  // preserve it and don't want to navigate away.
-  prevContext: null,
 
   fetchingUser: false,
   fetchUserError: null,
@@ -384,9 +380,6 @@ export const reducer = (state, action) => {
 
     case actionType.CLEAR_FORMS_TO_CHECK:
       return Object.assign({}, state, {formsToCheck: []});
-
-    case actionType.SET_CONTEXT:
-      return Object.assign({}, state, {prevContext: action.prevContext});
 
     // Request for getting configuration settings for a project.
     case actionType.FETCH_PROJECT_CONFIG_START:

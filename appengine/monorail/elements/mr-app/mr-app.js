@@ -57,7 +57,10 @@ export class MrApp extends ReduxMixin(PolymerElement) {
         },
       },
       formsToCheck: Array,
-      prevContext: Object,
+      _currentContext: {
+        type: Object,
+        value: {},
+      },
     };
   }
 
@@ -75,26 +78,17 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     //   page loads.
 
     page('*', (ctx, next) => {
-      if (this.prevContext !== null) {
-        // If this.prevContext is present, that means that we don't want to
-        // navigate away from the last page, so we're restoring it.
-        Object.assign(ctx, this.prevContext);
-        this.dispatchAction({type: actionType.SET_CONTEXT, prevContext: null});
+      // We're not really navigating anywhere, so don't do anything.
+      if (ctx.path === this._currentContext.path) {
+        Object.assign(ctx, this._currentContext);
         // Set ctx.handled to false, so we don't push the state to browser's
         // history.
         ctx.handled = false;
-        // We don't call next to avoid loading whatever page was supposed to
-        // load next.
         return;
       }
-      // Run query string parsing on all routes.
-      // Based on: https://visionmedia.github.io/page.js/#plugins
-      ctx.query = qs.parse(ctx.querystring);
 
-      next();
-    });
-    page('/p/:project/issues/approval', this._boundLoadApprovalPage);
-    page.exit('*', (ctx, next) => {
+      // Check if there were forms with unsaved data before loading the next
+      // page.
       const isDirty = this.formsToCheck.some((form) => {
         return (Object.keys(form.getDelta()).length !== 0);
       });
@@ -102,12 +96,23 @@ export class MrApp extends ReduxMixin(PolymerElement) {
         // Clear the forms to be checked, since we're navigating away.
         this.dispatchAction({type: actionType.CLEAR_FORMS_TO_CHECK});
       } else {
-        // Store the current context, so that on the next page load we can
-        // restore it.
-        this.dispatchAction({type: actionType.SET_CONTEXT, prevContext: ctx});
+        Object.assign(ctx, this._currentContext);
+        // Set ctx.handled to false, so we don't push the state to browser's
+        // history.
+        ctx.handled = false;
+        // We don't call next to avoid loading whatever page was supposed to
+        // load next.
+        return;
       }
+
+      // Run query string parsing on all routes.
+      // Based on: https://visionmedia.github.io/page.js/#plugins
+      ctx.query = qs.parse(ctx.querystring);
+      this._currentContext = ctx;
+
       next();
     });
+    page('/p/:project/issues/approval', this._boundLoadApprovalPage);
     page();
   }
 
