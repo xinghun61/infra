@@ -16,11 +16,13 @@ import (
 	"infra/libs/skylab/inventory"
 
 	"infra/cmd/skylab_swarming_worker/internal/admin"
+	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	hbotinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
+
+	h_botinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/dutinfo"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/hostinfo"
+	h_hostinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/resultsdir"
 )
 
@@ -31,6 +33,10 @@ type Info struct {
 	ResultsDir string
 	DUTName    string
 	BotInfo    *botinfo.BotInfo
+
+	// err tracks errors during setup to simplify error handling
+	// logic.
+	err error
 
 	closers []io.Closer
 }
@@ -61,52 +67,102 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 			_ = i.Close()
 		}
 	}(i)
-	dutName, err := loadDUTName(b)
-	if err != nil {
-		return nil, errors.Annotate(err, "open harness").Err()
+	i.DUTName = i.getDUTName(b)
+	i.BotInfo = i.loadBotInfo(b)
+	d := i.loadDUTInfo(b, c.adminServiceURL)
+	hi := i.makeHostInfo(d)
+	i.addBotInfoToHostInfo(hi, i.BotInfo)
+	i.ResultsDir = i.makeResultsDir(b)
+	log.Printf("Created results directory %s", i.ResultsDir)
+	i.exposeHostInfo(hi, i.ResultsDir, i.DUTName)
+	if i.err != nil {
+		return nil, errors.Annotate(i.err, "open harness").Err()
 	}
-	i.DUTName = dutName
+	return i, nil
+}
 
-	bi, err := hbotinfo.Open(b)
+func (i *Info) getDUTName(b *swarming.Bot) string {
+	if i.err != nil {
+		return ""
+	}
+	dutName, err := loadDUTName(b)
+	i.err = err
+	return dutName
+}
+
+func (i *Info) loadBotInfo(b *swarming.Bot) *botinfo.BotInfo {
+	if i.err != nil {
+		return nil
+	}
+	bi, err := h_botinfo.Open(b)
 	if err != nil {
-		return nil, errors.Annotate(err, "open harness").Err()
+		i.err = err
+		return nil
 	}
 	i.closers = append(i.closers, bi)
-	i.BotInfo = &bi.BotInfo
+	return &bi.BotInfo
+}
 
+func (i *Info) loadDUTInfo(b *swarming.Bot, adminServiceURL string) *inventory.DeviceUnderTest {
+	if i.err != nil {
+		return nil
+	}
 	var uf dutinfo.UpdateFunc
-	if c.adminServiceURL != "" {
+	if adminServiceURL != "" {
 		uf = func(old, new *inventory.DeviceUnderTest) error {
-			return adminUpdateLabels(c.adminServiceURL, old, new)
+			return adminUpdateLabels(adminServiceURL, old, new)
 		}
 	}
 	dis, err := dutinfo.Load(b, uf)
 	if err != nil {
-		return nil, errors.Annotate(err, "open harness").Err()
+		i.err = err
+		return nil
 	}
 	i.closers = append(i.closers, dis)
+	return dis.DUT
+}
 
-	hip := hostinfo.FromDUT(dis.DUT)
+func (i *Info) makeHostInfo(d *inventory.DeviceUnderTest) *hostinfo.HostInfo {
+	if i.err != nil {
+		return nil
+	}
+	hip := h_hostinfo.FromDUT(d)
 	i.closers = append(i.closers, hip)
-	hi := hip.HostInfo
+	return hip.HostInfo
+}
 
-	hib := hostinfo.BorrowBotInfo(hi, i.BotInfo)
+func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *botinfo.BotInfo) {
+	if i.err != nil {
+		return
+	}
+	hib := h_hostinfo.BorrowBotInfo(hi, bi)
 	i.closers = append(i.closers, hib)
+}
 
-	i.ResultsDir = b.ResultsDir()
-	rdc, err := resultsdir.Open(i.ResultsDir)
+func (i *Info) makeResultsDir(b *swarming.Bot) string {
+	if i.err != nil {
+		return ""
+	}
+	path := b.ResultsDir()
+	rdc, err := resultsdir.Open(path)
 	if err != nil {
-		return nil, errors.Annotate(err, "open harness").Err()
+		i.err = err
+		return ""
 	}
 	i.closers = append(i.closers, rdc)
-	log.Printf("Created results directory %s", i.ResultsDir)
+	return path
+}
 
-	hif, err := hostinfo.Expose(hi, i.ResultsDir, i.DUTName)
+func (i *Info) exposeHostInfo(hi *hostinfo.HostInfo, resultsDir string, dutName string) {
+	if i.err != nil {
+		return
+	}
+	hif, err := h_hostinfo.Expose(hi, resultsDir, dutName)
 	if err != nil {
-		return nil, errors.Annotate(err, "open harness").Err()
+		i.err = err
+		return
 	}
 	i.closers = append(i.closers, hif)
-	return i, nil
 }
 
 // adminUpdateLabels calls the admin service RPC service to update DUT labels.
