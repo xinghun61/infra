@@ -239,7 +239,8 @@ def search_builds_async(req, res, _ctx, mask):
   q.max_builds = req.page_size or None
   q.start_cursor = req.page_token
 
-  builds, res.next_page_token = yield search.search_async(q)
+  builds, next_page_token = yield search.search_async(q)
+  res.next_page_token = next_page_token or ''
   yield builds_to_protos_async(
       [(b, res.builds.add()) for b in builds],
       mask.submask('builds.*'),
