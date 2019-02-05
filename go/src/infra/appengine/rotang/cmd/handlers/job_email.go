@@ -42,10 +42,10 @@ func (h *State) JobEmail(ctx *router.Context) {
 
 // notifyEmail figures out if a notification should be sent for the specified shift.
 func (h *State) notifyEmail(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
-	if cfg.Config.Email.DaysBeforeNotify == 0 || !cfg.Config.Enabled {
+	if !cfg.Config.Email.Enabled || !cfg.Config.Enabled {
 		msg := "config not Enabled"
 		if cfg.Config.Enabled {
-			msg = "DaysBeforeNotify set to 0"
+			msg = "e-mail notifications disabled"
 		}
 		logging.Infof(ctx.Context, "notifyEmail: %q not considered due to %s", cfg.Config.Name, msg)
 		return nil
@@ -60,7 +60,13 @@ func (h *State) notifyEmail(ctx *router.Context, cfg *rotang.Configuration, t ti
 	}
 	for _, s := range shifts {
 		logging.Debugf(ctx.Context, "notifyEmail: %q considering shift: %v with expTime: %v", cfg.Config.Name, s, expTime)
-		if (s.StartTime.After(expTime) || s.StartTime.Equal(expTime)) && s.StartTime.Before(expTime.Add(fullDay)) {
+		// startAfterExpiry checks that the shift StartTime is Equal or After the expiry time.
+		startAfterExpiry := s.StartTime.After(expTime) || s.StartTime.Equal(expTime)
+		// startInsideDay handles sending only one mail per shift.
+		startInsideDay := s.StartTime.Before(expTime.Add(fullDay))
+		// notifyZero DatesBeforeNotify 0, then just check we're in the same day as ShiftStart.
+		notifyZero := t.Equal(expTime)
+		if (notifyZero || startAfterExpiry) && startInsideDay {
 			logging.Debugf(ctx.Context, "notifyEmail: %q matched shift: %v with expTime: %v", cfg.Config.Name, s, expTime)
 			for _, m := range s.OnCall {
 				if err := h.sendMail(ctx, cfg, &s, m.Email); err != nil {

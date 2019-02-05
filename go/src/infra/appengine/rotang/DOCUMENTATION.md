@@ -210,6 +210,10 @@ Already scheduled shifts will be unaffected , you'll have to swap  with someone 
 
     Note: *No mails will be produced until the rotation is enabled.*
 
+  * **Email Notify Enable**
+
+    Used to Enable/Disable sending mail notifications.
+
   * **Members**
 
     Manage members of the rotation.

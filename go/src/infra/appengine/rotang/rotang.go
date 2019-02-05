@@ -98,6 +98,8 @@ type Email struct {
 	Body string
 	// DaysBeforeWarn sets the number of days before an on-call shift the notification e-mail is sent.
 	DaysBeforeNotify int
+	// Enabled enables/disables sending notification emails.
+	Enabled bool
 }
 
 // ShiftMember holds the information needed for a member of a shift.

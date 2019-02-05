@@ -138,6 +138,16 @@ class RotaCreate extends LitElement {
               required>
             </td>
           </tr>
+          <tr>
+            <td>
+              Email Notify Enable:
+            </td>
+            <td>
+              ${this.config.Cfg.Config.Email.Enabled ?
+    html`<input id="emailEnable" type="checkbox" checked>`
+    : html`<input id="emailEnable" type="checkbox">`}
+            </td>
+          </tr>
         </tbody>
       </table>
     `;
@@ -229,6 +239,14 @@ class RotaCreate extends LitElement {
           <td>
             <input id="emailNotify" type="number"  name="EmailNotify"
             required>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            Email Notify Enable:
+          </td>
+          <td>
+              <input id="emailEnable" type="checkbox">
           </td>
         </tr>
       </tbody>
@@ -637,6 +655,8 @@ class RotaCreate extends LitElement {
             this.shadowRoot.getElementById('emailBodyTemplate').value,
           DaysBeforeNotify:
             Number(this.shadowRoot.getElementById('emailNotify').value),
+          Enabled:
+            this.shadowRoot.getElementById('emailEnable').checked,
         },
         ShiftsToSchedule:
           Number(this.shadowRoot.getElementById('shiftsToSchedule').value),
