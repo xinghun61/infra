@@ -111,6 +111,11 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		if err != nil {
 			return fail(errors.Annotate(err, "could not find bundled recipes").Err())
 		}
+		// LookPath can return an absolute OR relative path. Use Abs to make sure.
+		recipesPath, err = filepath.Abs(recipesPath)
+		if err != nil {
+			return fail(errors.Annotate(err, "could not convert bundled recipes to abspath").Err())
+		}
 		c.engine.cmdPrefix = []string{recipesPath}
 	} else {
 		// Run initial git fetch in system account context (which is always present
