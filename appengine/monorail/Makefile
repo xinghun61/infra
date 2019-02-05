@@ -87,7 +87,7 @@ deps:
 		deployed_node_modules/chart.js/dist/Chart.min.js
 
 build_js:
-	$(WEBPACK_PATH)
+	$(WEBPACK_PATH) --mode=production
 
 clean_deps:
 	rm -rf bower_components
