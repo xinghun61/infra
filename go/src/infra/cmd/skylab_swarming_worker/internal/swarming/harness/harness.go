@@ -93,18 +93,7 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 	var uf dutinfo.UpdateFunc
 	if c.adminServiceURL != "" {
 		uf = func(old, new *inventory.DeviceUnderTest) error {
-			oc, nc := old.GetCommon(), new.GetCommon()
-			if oc.GetId() != nc.GetId() {
-				return errors.Reason("update inventory labels: aborting because DUT ID was changed").Err()
-			}
-			client, err := admin.NewInventoryClient(c.adminServiceURL)
-			if err != nil {
-				return errors.Annotate(err, "update inventory labels").Err()
-			}
-			if err := admin.UpdateLabels(client, oc.GetId(), oc.GetLabels(), nc.GetLabels()); err != nil {
-				return errors.Annotate(err, "update inventory labels").Err()
-			}
-			return nil
+			return adminUpdateLabels(c.adminServiceURL, old, new)
 		}
 	}
 	dis, err := dutinfo.Load(b, uf)
@@ -132,4 +121,20 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 	}
 	i.hostInfoFile = hif
 	return i, nil
+}
+
+// adminUpdateLabels calls the admin service RPC service to update DUT labels.
+func adminUpdateLabels(adminServiceURL string, old, new *inventory.DeviceUnderTest) error {
+	oc, nc := old.GetCommon(), new.GetCommon()
+	if oc.GetId() != nc.GetId() {
+		return errors.Reason("update inventory labels: aborting because DUT ID was changed").Err()
+	}
+	client, err := admin.NewInventoryClient(adminServiceURL)
+	if err != nil {
+		return errors.Annotate(err, "update inventory labels").Err()
+	}
+	if err := admin.UpdateLabels(client, oc.GetId(), oc.GetLabels(), nc.GetLabels()); err != nil {
+		return errors.Annotate(err, "update inventory labels").Err()
+	}
+	return nil
 }
