@@ -23,11 +23,13 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
 
+	"google.golang.org/appengine/delay"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/state/types"
+	"infra/qscheduler/qslib/metrics"
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -162,7 +164,9 @@ func operationRunner(op types.Operation, store *Store) func(context.Context) err
 			return err
 		}
 
-		if err = op(ctx, sp); err != nil {
+		m := newMetricsSink(store.entityID)
+
+		if err = op(ctx, sp, m); err != nil {
 			return err
 		}
 
@@ -170,6 +174,34 @@ func operationRunner(op types.Operation, store *Store) func(context.Context) err
 			return err
 		}
 
+		// This call emits a task queue entry if and only if the datastore
+		// transaction completes successfully.
+		eList := &metrics.EventList{Events: m.taskEvents}
+		eventBytes, err := proto.Marshal(eList)
+		if err != nil {
+			return err
+		}
+		flushMetrics.Call(ctx, eventBytes)
+
 		return nil
 	}
+}
+
+var flushMetrics *delay.Function
+
+func init() {
+	flushMetrics = delay.Func("flushMetrics", doFlush)
+}
+
+func doFlush(ctx context.Context, eventsProto []byte) error {
+	events := &metrics.EventList{}
+	if err := proto.Unmarshal(eventsProto, events); err != nil {
+		return err
+	}
+
+	logging.Debugf(ctx, "Flushing events: \n%s", proto.MarshalTextString(events))
+
+	// TODO(akeshet): Write event records to BigQuery table.
+
+	return nil
 }

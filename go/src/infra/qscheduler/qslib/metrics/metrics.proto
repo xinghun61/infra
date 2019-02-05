@@ -152,3 +152,8 @@ message TaskEvent {
     CompletedDetails completed_details = 104;
   }
 }
+
+// EventList wraps a repeated TaskEvent.
+message EventList {
+  repeated TaskEvent events = 1;
+}

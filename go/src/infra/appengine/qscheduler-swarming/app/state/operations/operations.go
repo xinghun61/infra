@@ -46,7 +46,7 @@ const AccountIDTagKey = "qs_account"
 // the operation has run.
 func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.AssignTasksResponse) {
 	var response swarming.AssignTasksResponse
-	return func(ctx context.Context, state *types.QScheduler) (err error) {
+	return func(ctx context.Context, state *types.QScheduler, metrics scheduler.MetricsSink) (err error) {
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
 			s := stringset.NewFromSlice(v.Dimensions...)
@@ -59,7 +59,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 			}
 		}
 
-		schedulerAssignments, err := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), scheduler.NullMetricsSink, idles...)
+		schedulerAssignments, err := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), metrics, idles...)
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 // and result object that will get the results after the operation is run.
 func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.NotifyTasksResponse) {
 	var response swarming.NotifyTasksResponse
-	return func(ctx context.Context, sp *types.QScheduler) (err error) {
+	return func(ctx context.Context, sp *types.QScheduler, metrics scheduler.MetricsSink) (err error) {
 		if sp.Config == nil {
 			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
 		}
@@ -134,7 +134,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				State:               t,
 				WorkerId:            n.Task.BotId,
 			}
-			if err := sp.Reconciler.Notify(ctx, sp.Scheduler, scheduler.NullMetricsSink, update); err != nil {
+			if err := sp.Reconciler.Notify(ctx, sp.Scheduler, metrics, update); err != nil {
 				sp.Reconciler.TaskError(n.Task.Id, err.Error())
 				logging.Warningf(ctx, err.Error())
 				continue
