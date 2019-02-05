@@ -23,11 +23,11 @@ import (
 // TestBestPriority tests that BestPriorityFor behaves correctly.
 func TestBestPriority(t *testing.T) {
 	t.Parallel()
-	expects := []int{
+	expects := []Priority{
 		FreeBucket,
 		1,
 	}
-	actuals := []int{
+	actuals := []Priority{
 		BestPriorityFor(balance{0, 0, 0}),
 		BestPriorityFor(balance{0, 1, 0}),
 	}

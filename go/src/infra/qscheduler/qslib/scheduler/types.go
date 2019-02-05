@@ -63,7 +63,7 @@ func newStateFromProto(sp *StateProto) *state {
 			copy(cost[:], w.RunningTask.Cost)
 			tr = &taskRun{
 				cost:     cost,
-				priority: int(w.RunningTask.Priority),
+				priority: Priority(w.RunningTask.Priority),
 				request: &TaskRequest{
 					ID:                  RequestID(w.RunningTask.RequestId),
 					AccountID:           AccountID(w.RunningTask.Request.AccountId),

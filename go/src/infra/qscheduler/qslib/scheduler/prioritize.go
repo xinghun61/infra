@@ -73,7 +73,7 @@ func (s *Scheduler) prioritizeRequests(jobsUntilThrottled map[AccountID]int) [Nu
 		if req.ID == "" {
 			panic("empty request ID")
 		}
-		var p int
+		var p Priority
 		if jobsUntilThrottled[req.AccountID] <= 0 {
 			p = FreeBucket
 		} else {

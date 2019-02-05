@@ -97,7 +97,7 @@ type taskRun struct {
 	request *TaskRequest
 
 	// priority is the current priority level of the running task.
-	priority int
+	priority Priority
 }
 
 // worker represents a running or idle worker capable of running tasks.
@@ -312,7 +312,7 @@ func (s *state) applyAssignment(m *Assignment) {
 	}
 
 	// Start the new task run.
-	s.startRunning(m.RequestID, m.WorkerID, int(m.Priority), cost)
+	s.startRunning(m.RequestID, m.WorkerID, m.Priority, cost)
 }
 
 // validateAssignment ensures that all the expected preconditions of the given
@@ -375,7 +375,7 @@ func (s *state) chargeAccount(accountID AccountID, cost balance) {
 // startRunning starts the given requestID on the given workerID.
 // It does not validate inputs, so it should only be called if that worker
 // and request currently exist and are idle.
-func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority int, initialCost balance) {
+func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority Priority, initialCost balance) {
 	s.ensureCache()
 
 	rt := &taskRun{

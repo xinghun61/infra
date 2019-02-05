@@ -17,7 +17,7 @@ package scheduler
 const (
 	// FreeBucket is the free priority bucket, where jobs may run even if they have
 	// no quota account or have an empty quota account.
-	FreeBucket int = NumPriorities
+	FreeBucket Priority = NumPriorities
 
 	// PromoteThreshold is the account balance at which the scheduler will consider
 	// promoting jobs.
@@ -33,10 +33,10 @@ const (
 //
 // If the account is out of quota, or if the supplied balance is a nil
 // pointer, then this returns FreeBucket.
-func BestPriorityFor(b balance) int {
+func BestPriorityFor(b balance) Priority {
 	for priority, value := range b {
 		if value > 0 {
-			return int(priority)
+			return Priority(priority)
 		}
 	}
 	return FreeBucket

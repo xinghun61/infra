@@ -106,8 +106,8 @@ func TestMatchThrottledAccountJobs(t *testing.T) {
 			So(err, ShouldBeNil)
 			Convey("then both requests should be assigned to a worker, but 1 of them at FreeBucket priority.", func() {
 				So(m, ShouldHaveLength, 2)
-				priorities := map[int]bool{m[0].Priority: true, m[1].Priority: true}
-				So(priorities, ShouldResemble, map[int]bool{0: true, FreeBucket: true})
+				priorities := map[Priority]bool{m[0].Priority: true, m[1].Priority: true}
+				So(priorities, ShouldResemble, map[Priority]bool{0: true, FreeBucket: true})
 			})
 		})
 	})
@@ -418,7 +418,7 @@ func TestAddRequest(t *testing.T) {
 
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
-func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri int, tm time.Time) {
+func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri Priority, tm time.Time) {
 	s.AddRequest(ctx, NewTaskRequest(rid, aid, []string{}, nil, tm), tm, NullMetricsSink)
 	s.MarkIdle(ctx, wid, stringset.New(0), tm, NullMetricsSink)
 	s.state.applyAssignment(&Assignment{Priority: pri, RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker})

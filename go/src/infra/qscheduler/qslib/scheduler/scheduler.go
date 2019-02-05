@@ -56,6 +56,9 @@ type RequestID string
 // AssignmentType is an enum of scheduler assignment types.
 type AssignmentType int
 
+// Priority is a qscheduler priority level.
+type Priority int
+
 const (
 	// AssignmentIdleWorker indicates assigning a task to a currently idle worker.
 	AssignmentIdleWorker AssignmentType = iota
@@ -81,7 +84,7 @@ type Assignment struct {
 	TaskToAbort RequestID
 
 	// Priority at which the task will run.
-	Priority int
+	Priority Priority
 
 	// Time is the time at which this Assignment was determined.
 	Time time.Time
@@ -290,7 +293,7 @@ func (run *schedulerRun) Run() ([]*Assignment, error) {
 	var output []*Assignment
 	// Proceed through multiple passes of the scheduling algorithm, from highest
 	// to lowest priority requests (high priority = low p).
-	for p := 0; p < NumPriorities; p++ {
+	for p := Priority(0); p < NumPriorities; p++ {
 		// Step 1: Match any requests to idle workers that have matching
 		// provisionable labels.
 		output = append(output, run.matchIdleBots(p, provisionAwareMatch)...)
@@ -319,7 +322,7 @@ func (run *schedulerRun) Run() ([]*Assignment, error) {
 
 // assignRequestToWorker updates the information in scheduler pass to reflect the fact that the given request
 // (from the given priority) was assigned to a worker.
-func (run *schedulerRun) assignRequestToWorker(w WorkerID, request requestNode, priority int) {
+func (run *schedulerRun) assignRequestToWorker(w WorkerID, request requestNode, priority Priority) {
 	delete(run.idleWorkers, w)
 	run.jobsUntilThrottled[request.Value().AccountID]--
 	run.requestsPerPriority[priority].Remove(request.Element)
@@ -426,7 +429,7 @@ func computeWorkerMatch(w *worker, requests requestList, mf matcher) []matchList
 }
 
 // matchIdleBots matches requests with idle workers.
-func (run *schedulerRun) matchIdleBots(priority int, mf matcher) []*Assignment {
+func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher) []*Assignment {
 	var output []*Assignment
 	for wid, w := range run.idleWorkers {
 		// Try to match.
@@ -467,7 +470,7 @@ func (run *schedulerRun) matchIdleBots(priority int, mf matcher) []*Assignment {
 //
 // Running tasks are promoted if their quota account has a sufficiently positive
 // balance and a recharge rate that can sustain them at this level.
-func (run *schedulerRun) reprioritizeRunningTasks(priority int) {
+func (run *schedulerRun) reprioritizeRunningTasks(priority Priority) {
 	state := run.scheduler.state
 	config := run.scheduler.config
 	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
@@ -505,7 +508,7 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority int) {
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *state, candidates []*worker, chargeRate float64, priority int) {
+func doDemote(state *state, candidates []*worker, chargeRate float64, priority Priority) {
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
@@ -517,7 +520,7 @@ func doDemote(state *state, candidates []*worker, chargeRate float64, priority i
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *state, candidates []*worker, chargeRate float64, priority int) {
+func doPromote(state *state, candidates []*worker, chargeRate float64, priority Priority) {
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
@@ -528,7 +531,7 @@ func doPromote(state *state, candidates []*worker, chargeRate float64, priority 
 
 // workersAt is a helper function that returns the workers with a given
 // account id and running.
-func workersAt(ws map[WorkerID]*worker, priority int, accountID AccountID) []*worker {
+func workersAt(ws map[WorkerID]*worker, priority Priority, accountID AccountID) []*worker {
 	ans := make([]*worker, 0, len(ws))
 	for _, worker := range ws {
 		if !worker.isIdle() &&
@@ -542,7 +545,7 @@ func workersAt(ws map[WorkerID]*worker, priority int, accountID AccountID) []*wo
 
 // workersBelow is a helper function that returns the workers with a given
 // account id and below a given running.
-func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []*worker {
+func workersBelow(ws map[WorkerID]*worker, priority Priority, accountID AccountID) []*worker {
 	ans := make([]*worker, 0, len(ws))
 	for _, worker := range ws {
 		if !worker.isIdle() &&
@@ -557,7 +560,7 @@ func workersBelow(ws map[WorkerID]*worker, priority int, accountID AccountID) []
 // preemptRunningTasks interrupts lower priority already-running tasks, and
 // replaces them with higher priority tasks. When doing so, it also reimburses
 // the account that had been charged for the task.
-func (run *schedulerRun) preemptRunningTasks(priority int) []*Assignment {
+func (run *schedulerRun) preemptRunningTasks(priority Priority) []*Assignment {
 	state := run.scheduler.state
 	var output []*Assignment
 	candidates := make([]*worker, 0, len(state.workers))
@@ -614,7 +617,7 @@ func (run *schedulerRun) preemptRunningTasks(priority int) []*Assignment {
 // moveThrottledRequests moves jobs that got throttled at a given prioty level to the FreeBucket priority level
 // in the scheduler pass, to give them a second chance to be scheduled if there are any idle workers left
 // once the FreeBucket pass is reached.
-func (run *schedulerRun) moveThrottledRequests(priority int) {
+func (run *schedulerRun) moveThrottledRequests(priority Priority) {
 	for current := run.requestsPerPriority[priority].Head(); current.Element != nil; current = current.Next() {
 		if run.jobsUntilThrottled[current.Value().AccountID] <= 0 {
 			run.requestsPerPriority[FreeBucket].PushBack(current.Value())
