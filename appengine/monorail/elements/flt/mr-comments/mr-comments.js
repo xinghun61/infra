@@ -129,7 +129,9 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           </template>
         </div>
       </template>
-      <slot></slot>
+      <template is="dom-if" if="[[_shouldOfferEdit(issuePermissions, editPermission)]]">
+        <slot></slot>
+      </template>
     `;
   }
 
@@ -151,6 +153,8 @@ export class MrComments extends ReduxMixin(PolymerElement) {
         type: Number,
         value: 4,
       },
+      editPermission: String,
+      issuePermissions: Object,
       _commentsHidden: {
         type: Boolean,
         value: true,
@@ -168,6 +172,12 @@ export class MrComments extends ReduxMixin(PolymerElement) {
         type: Object,
         value: {},
       },
+    };
+  }
+
+  static mapStateToProps(state, element) {
+    return {
+      issuePermissions: state.issuePermissions,
     };
   }
 
@@ -277,6 +287,10 @@ export class MrComments extends ReduxMixin(PolymerElement) {
 
   _showDiff(comment) {
     return comment.descriptionNum || comment.amendments;
+  }
+
+  _shouldOfferEdit(issuePermissions, editPermission) {
+    return (issuePermissions || []).includes(editPermission);
   }
 }
 customElements.define(MrComments.is, MrComments);
