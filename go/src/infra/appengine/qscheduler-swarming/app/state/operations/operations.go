@@ -40,28 +40,13 @@ import (
 // account the task should be charged to.
 const AccountIDTagKey = "qs_account"
 
-// AssignResult holds an eventual result or error from an AssignTasks operation.
-type AssignResult struct {
-	Response *swarming.AssignTasksResponse
-	Error    error
-}
-
-// SetError nulls out any Response and sets the given error.
-func (a *AssignResult) SetError(err error) {
-	a.Response = nil
-	a.Error = err
-}
-
 // AssignTasks returns an operation that will perform the given Assign request.
 //
 // The result object will have the operation response stored in it after
 // the operation has run.
-func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *AssignResult) {
-	var response AssignResult
+func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.AssignTasksResponse) {
+	var response swarming.AssignTasksResponse
 	return func(ctx context.Context, state *types.QScheduler) (err error) {
-		defer func() {
-			response.Error = err
-		}()
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
 			s := stringset.NewFromSlice(v.Dimensions...)
@@ -92,32 +77,16 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *AssignResult
 			}
 		}
 
-		response.Response = &swarming.AssignTasksResponse{Assignments: assignments}
+		response = swarming.AssignTasksResponse{Assignments: assignments}
 		return nil
 	}, &response
 }
 
-// NotifyResult holds an eventual result or error from a NotifyTasks operation.
-type NotifyResult struct {
-	Response *swarming.NotifyTasksResponse
-	Error    error
-}
-
-// SetError nulls out any Response and sets the given error.
-func (a *NotifyResult) SetError(err error) {
-	a.Response = nil
-	a.Error = err
-}
-
 // NotifyTasks returns an operation that will perform the given Notify request,
 // and result object that will get the results after the operation is run.
-func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *NotifyResult) {
-	var response NotifyResult
+func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.NotifyTasksResponse) {
+	var response swarming.NotifyTasksResponse
 	return func(ctx context.Context, sp *types.QScheduler) (err error) {
-		defer func() {
-			response.Error = err
-		}()
-
 		if sp.Config == nil {
 			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
 		}
@@ -172,7 +141,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *NotifyResult
 			}
 			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update %+v", r.SchedulerId, update)
 		}
-		response.Response = &swarming.NotifyTasksResponse{}
+		response = swarming.NotifyTasksResponse{}
 		return nil
 	}, &response
 }

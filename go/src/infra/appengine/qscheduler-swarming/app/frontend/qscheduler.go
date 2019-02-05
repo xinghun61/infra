@@ -55,7 +55,7 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 		return nil, err
 	}
 
-	return result.Response, result.Error
+	return result, err
 }
 
 // GetCancellations implements QSchedulerServer.
@@ -90,5 +90,5 @@ func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.Noti
 	if err := store.RunOperationInTransaction(ctx, op); err != nil {
 		return nil, err
 	}
-	return result.Response, result.Error
+	return result, nil
 }
