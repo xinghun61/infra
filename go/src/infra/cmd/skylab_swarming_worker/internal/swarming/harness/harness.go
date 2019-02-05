@@ -8,6 +8,7 @@
 package harness
 
 import (
+	"io"
 	"log"
 
 	"go.chromium.org/luci/common/errors"
@@ -31,35 +32,17 @@ type Info struct {
 	DUTName    string
 	BotInfo    *botinfo.BotInfo
 
-	botInfoStore     *hbotinfo.Store
-	dutInfoStore     *dutinfo.Store
-	hostInfoProxy    *hostinfo.Proxy
-	hostInfoBorrower *hostinfo.Borrower
-	resultsDirCloser *resultsdir.Closer
-	hostInfoFile     *hostinfo.File
+	closers []io.Closer
 }
 
 // Close closes and flushes out the harness resources.  This is safe
 // to call multiple times.
 func (i *Info) Close() error {
 	var errs []error
-	if err := i.hostInfoFile.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := i.resultsDirCloser.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := i.hostInfoBorrower.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := i.hostInfoProxy.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := i.dutInfoStore.Close(); err != nil {
-		errs = append(errs, err)
-	}
-	if err := i.botInfoStore.Close(); err != nil {
-		errs = append(errs, err)
+	for n := len(i.closers) - 1; n >= 0; n-- {
+		if err := i.closers[n].Close(); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	if len(errs) > 0 {
 		return errors.Annotate(errors.MultiError(errs), "close harness").Err()
@@ -88,7 +71,8 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	i.botInfoStore, i.BotInfo = bi, &bi.BotInfo
+	i.closers = append(i.closers, bi)
+	i.BotInfo = &bi.BotInfo
 
 	var uf dutinfo.UpdateFunc
 	if c.adminServiceURL != "" {
@@ -100,26 +84,28 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	i.dutInfoStore = dis
+	i.closers = append(i.closers, dis)
 
-	i.hostInfoProxy = hostinfo.FromDUT(dis.DUT)
-	hi := i.hostInfoProxy.HostInfo
+	hip := hostinfo.FromDUT(dis.DUT)
+	i.closers = append(i.closers, hip)
+	hi := hip.HostInfo
 
-	i.hostInfoBorrower = hostinfo.BorrowBotInfo(hi, i.BotInfo)
+	hib := hostinfo.BorrowBotInfo(hi, i.BotInfo)
+	i.closers = append(i.closers, hib)
 
 	i.ResultsDir = b.ResultsDir()
 	rdc, err := resultsdir.Open(i.ResultsDir)
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	i.resultsDirCloser = rdc
+	i.closers = append(i.closers, rdc)
 	log.Printf("Created results directory %s", i.ResultsDir)
 
 	hif, err := hostinfo.Expose(hi, i.ResultsDir, i.DUTName)
 	if err != nil {
 		return nil, errors.Annotate(err, "open harness").Err()
 	}
-	i.hostInfoFile = hif
+	i.closers = append(i.closers, hif)
 	return i, nil
 }
 
