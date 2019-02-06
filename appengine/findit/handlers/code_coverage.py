@@ -56,6 +56,14 @@ _BUILD_ID_REGEX = re.compile(r'.*/build/(\d+)$')
 # Cloud storage bucket used to store the source files fetched from gitile.
 _SOURCE_FILE_GS_BUCKET = 'source-files-for-coverage'
 
+# Dependencies to skip adding to manifest. Maps root repo url to list of
+# dependency paths (relative to the root of the checkout).
+_BLACKLISTED_DEPS = {
+    'https://chromium.googlesource.com/chromium/src.git': [
+        'src/ios/third_party/webkit/src'
+    ],
+}
+
 
 def _GetValidatedData(gs_url):  # pragma: no cover.
   """Returns the json data from the given GS url after validation.
@@ -180,6 +188,9 @@ def _RetrieveManifest(repo_url, revision, os_platform):  # pragma: no cover.
       CachedGitilesRepository.Factory(FinditHttpClient()))
   deps = dep_fetcher.GetDependency(revision, os_platform)
   for path, dep in deps.iteritems():
+    # Remove clause when crbug.com/929315 gets fixed.
+    if path in _BLACKLISTED_DEPS.get(repo_url, []):
+      continue
     AddDependencyToManifest(path, dep.repo_url, dep.revision)
 
   manifest.sort(key=lambda x: len(x.path), reverse=True)
