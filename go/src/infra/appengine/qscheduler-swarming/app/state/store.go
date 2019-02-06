@@ -34,28 +34,6 @@ import (
 	"infra/qscheduler/qslib/scheduler"
 )
 
-const stateEntityKind = "qschedulerStateEntity"
-
-// datastoreEntity is the datastore entity used to store state for a given
-// types.QScheduler pool, in a few protobuf binaries.
-type datastoreEntity struct {
-	_kind string `gae:"$kind,qschedulerStateEntity"`
-
-	QSPoolID string `gae:"$id"`
-
-	// SchedulerData is the qslib/scheduler.Scheduler object serialized to
-	// protobuf binary format.
-	SchedulerData []byte `gae:",noindex"`
-
-	// ReconcilerData is the qslib/reconciler.State object serialized to protobuf
-	// binary format.
-	ReconcilerData []byte `gae:",noindex"`
-
-	// ConfigData is the SchedulerPoolConfig object, serialized to protobuf
-	// binary format.
-	ConfigData []byte `gae:",noindex"`
-}
-
 // Store implements a persistent store for types.QScheduler state.
 type Store struct {
 	entityID string
@@ -154,6 +132,33 @@ func (s *Store) RunOperationInTransaction(ctx context.Context, op types.Operatio
 	return datastore.RunInTransaction(ctx, operationRunner(op, s), nil)
 }
 
+// RunRevertableOperationInTransaction runs the given operation in a transaction on this store.
+func (s *Store) RunRevertableOperationInTransaction(ctx context.Context, op types.RevertableOperation) error {
+	return datastore.RunInTransaction(ctx, revertableOperationRunner(op, s), nil)
+}
+
+const stateEntityKind = "qschedulerStateEntity"
+
+// datastoreEntity is the datastore entity used to store state for a given
+// qscheduler pool, in a few protobuf binaries.
+type datastoreEntity struct {
+	_kind string `gae:"$kind,qschedulerStateEntity"`
+
+	QSPoolID string `gae:"$id"`
+
+	// SchedulerData is the qslib/scheduler.Scheduler object serialized to
+	// protobuf binary format.
+	SchedulerData []byte `gae:",noindex"`
+
+	// ReconcilerData is the qslib/reconciler.State object serialized to protobuf
+	// binary format.
+	ReconcilerData []byte `gae:",noindex"`
+
+	// ConfigData is the SchedulerPoolConfig object, serialized to protobuf
+	// binary format.
+	ConfigData []byte `gae:",noindex"`
+}
+
 // operationRunner returns a read-modify-write function for an operation.
 //
 // The returned function is suitable to be used with datastore.RunInTransaction.
@@ -204,4 +209,41 @@ func doFlush(ctx context.Context, eventsProto []byte) error {
 	// TODO(akeshet): Write event records to BigQuery table.
 
 	return nil
+}
+
+// revertableOperationRunner returns a read-modify-write function for a revertable operation.
+//
+// Revertable operations return a boolean to indicate that their mutations to state
+// should be reverted rather than saved.
+//
+// The returned function is suitable to be used with datastore.RunInTransaction.
+func revertableOperationRunner(op types.RevertableOperation, store *Store) func(context.Context) error {
+	return func(ctx context.Context) error {
+		sp, err := store.Load(ctx)
+		if err != nil {
+			return err
+		}
+
+		m := newMetricsSink(store.entityID)
+
+		revert := op(ctx, sp, m)
+		if revert {
+			return nil
+		}
+
+		if err := store.Save(ctx, sp); err != nil {
+			return err
+		}
+
+		// This call emits a task queue entry if and only if the datastore
+		// transaction completes successfully.
+		eList := &metrics.EventList{Events: m.taskEvents}
+		eventBytes, err := proto.Marshal(eList)
+		if err != nil {
+			return err
+		}
+		flushMetrics.Call(ctx, eventBytes)
+
+		return nil
+	}
 }
