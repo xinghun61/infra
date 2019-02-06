@@ -21,21 +21,20 @@ import (
 // This includes updating and removing project configs when necessary and
 // updating the service config if necessary.
 //
-// TODO(qyearsley): Validate configs upon ingestion. Apart from validating each
-// project config independently, we can also check whether any two projects
-// contain the same repo URL.
+// TODO(crbug.com/915375) Check for overlapping repos specified between projects.
 func UpdateAllConfigs(c context.Context) error {
-	return parallel.FanOutIn(func(taskC chan<- func() error) {
-		taskC <- func() error {
-			return updateAllProjectConfigs(c)
-		}
-		taskC <- func() error {
-			return updateServiceConfig(c)
-		}
-	})
+	// Update service config first which is needed for project config validation.
+	if err := updateServiceConfig(c); err != nil {
+		return err
+	}
+	sc, err := getServiceConfig(c)
+	if err != nil {
+		return err
+	}
+	return updateAllProjectConfigs(c, sc)
 }
 
-func updateAllProjectConfigs(c context.Context) error {
+func updateAllProjectConfigs(c context.Context, sc *tricium.ServiceConfig) error {
 	// List projects to update and delete.
 	fetchedRevisions, err := fetchProjectConfigRevisions(c)
 	if err != nil {
@@ -53,7 +52,7 @@ func updateAllProjectConfigs(c context.Context) error {
 		for _, name := range changed {
 			name := name
 			taskC <- func() error {
-				return updateProjectConfig(c, name)
+				return updateProjectConfig(c, sc, name)
 			}
 		}
 		taskC <- func() error {
@@ -83,17 +82,22 @@ func listDead(stored, fetched map[string]string) []string {
 	return dead
 }
 
-// updateProjectConfig updates and stores one project config.
-func updateProjectConfig(c context.Context, name string) error {
+// updateProjectConfig updates, validates, and stores one project config.
+func updateProjectConfig(c context.Context, sc *tricium.ServiceConfig, name string) error {
 	pc, revision, err := fetchProjectConfig(c, name)
 	if err != nil {
+		return err
+	}
+	vpc, err := Validate(sc, pc)
+	if err != nil {
+		logging.Warningf(c, `Project "%s" config validation error: %v`, name, err)
 		return err
 	}
 	logging.Fields{
 		"revision": revision,
 		"project":  name,
 	}.Infof(c, "Found new project config.")
-	return setProjectConfig(c, name, revision, pc)
+	return setProjectConfig(c, name, revision, vpc)
 }
 
 // updateServiceConfig updates and stores a new service config.

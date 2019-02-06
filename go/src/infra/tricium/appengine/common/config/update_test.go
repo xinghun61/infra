@@ -30,6 +30,10 @@ var exampleConfig = map[config.Set]memory.Files{
 			  type: GIT_FILE_DETAILS
 			  is_platform_specific: false
 			}
+			data_details {
+			  type: FILES
+			  is_platform_specific: false
+			}
 			functions {
 			  type: ISOLATOR
 			  name: "GitFileIsolator"
@@ -51,6 +55,76 @@ var exampleConfig = map[config.Set]memory.Files{
 			  }
 			}
 
+			buildbucket_server_host: "cr-buildbucket-dev.appspot.com"
+			swarming_server: "https://chromium-swarm.appspot.com"
+			isolate_server: "https://isolateserver.appspot.com"
+		`,
+	},
+	"projects/infra": {
+		"app.cfg": `
+			acls {
+			  role: REQUESTER
+			  group: "tricium-infra-requesters"
+			}
+
+			service_account: "tricium-dev@appspot.gserviceaccount.com"
+			swarming_service_account: "swarming@tricium-dev.iam.gserviceaccount.com"
+		`,
+	},
+	"projects/playground": {
+		"app.cfg": `
+			acls {
+			  role: REQUESTER
+			  group: "tricium-playground-requesters"
+			}
+
+			selections {
+			  function: "GitFileIsolator"
+			  platform: UBUNTU
+			}
+
+			service_account: "tricium-dev@appspot.gserviceaccount.com"
+			swarming_service_account: "swarming@tricium-dev.iam.gserviceaccount.com"
+		`,
+	},
+}
+
+var invalidConfig = map[config.Set]memory.Files{
+	"services/app": {
+		"service.cfg": `
+			platforms {
+			  name: UBUNTU
+			  dimensions: "pool:tricium"
+			  dimensions: "os:Ubuntu"
+			  has_runtime: true
+			}
+
+			data_details {
+			  type: GIT_FILE_DETAILS
+			  is_platform_specific: false
+			}
+			functions {
+			  type: ISOLATOR
+			  name: "GitFileIsolator"
+			  needs: GIT_FILE_DETAILS
+			  provides: FILES
+			  impls {
+			    runtime_platform: UBUNTU
+			    provides_for_platform: UBUNTU
+			    cmd {
+			      exec: "isolator"
+			      args: "--output=${ISOLATED_OUTDIR}"
+			    }
+			    deadline: 900
+			    cipd_packages {
+			      package_name: "infra/tricium/function/git-file-isolator"
+			      path: "."
+			      version: "live"
+			    }
+			  }
+			}
+
+			buildbucket_server_host: "cr-buildbucket-dev.appspot.com"
 			swarming_server: "https://chromium-swarm.appspot.com"
 			isolate_server: "https://isolateserver.appspot.com"
 		`,
@@ -128,7 +202,7 @@ func TestUpdateConfigs(t *testing.T) {
 
 			rev, err := getStoredServiceConfigRevision(ctx)
 			So(err, ShouldBeNil)
-			So(rev, ShouldEqual, "5ffee516cf8e7a15f4610792c02000b98dd490a3")
+			So(rev, ShouldEqual, "7561c8cb9120a1a527b693a9489e6ee326aecb1c")
 
 			sc, err := getServiceConfig(ctx)
 			So(err, ShouldBeNil)
@@ -166,7 +240,13 @@ func TestUpdateConfigs(t *testing.T) {
 			})
 			rev, err = getStoredServiceConfigRevision(ctx)
 			So(err, ShouldBeNil)
-			So(rev, ShouldEqual, "5ffee516cf8e7a15f4610792c02000b98dd490a3")
+			So(rev, ShouldEqual, "7561c8cb9120a1a527b693a9489e6ee326aecb1c")
+		})
+
+		Convey("Updating an invalid config", func() {
+			ctx := WithConfigService(triciumtest.Context(), memory.New(invalidConfig))
+			So(common.AppID(ctx), ShouldEqual, "app")
+			So(UpdateAllConfigs(ctx), ShouldNotBeNil)
 		})
 	})
 }
