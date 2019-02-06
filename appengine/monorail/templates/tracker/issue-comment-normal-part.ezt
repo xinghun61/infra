@@ -1,8 +1,8 @@
 <div class="cursor_off vt issuecomment">
 
   <div class="issuecommentheader">
-    <span class="author">
-      <h3 class="not_styled_as_heading">
+    <h3 class="not_styled_as_heading">
+      <span class="author">
         <a name="c[comments.sequence]" id="c_ts[comments.timestamp]"
            href="[project_home_url]/issues/detail?id=[issue.local_id]#c[comments.sequence]">Comment [comments.sequence]</a>
         by

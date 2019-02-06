@@ -14,7 +14,7 @@
   [if-any comments.can_delete_bool][if-any arg0]
     <div id="hc[comments.sequence]-controls"
          class="[is comment_status "Normal"][else]hidden[end]"
-         style="display: contents">
+         >
       <a style="font-size: 0.9em" href="#"
          class="delComment"
          data-local-id="[issue.local_id]"
@@ -33,7 +33,7 @@
     </div>
     <div id="hc[comments.sequence]-deleted-controls"
          class="[is comment_status "Deleted"][else]hidden[end]"
-         style="display: contents">
+         >
       <div style="font-size: 0.9em">
         This comment is not visible to normal users.
       </div>
@@ -49,7 +49,7 @@
   [if-any page_perms.FlagSpam]
     <div id="hc[comments.sequence]-spam-controls"
          class="[is comment_status "Spam"][else]hidden[end]"
-         style="display: contents">
+         >
       <div style="font-size: 0.9em">
         This comment is not visible to normal users.
       </div>
