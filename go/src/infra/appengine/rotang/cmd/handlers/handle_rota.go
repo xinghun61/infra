@@ -61,7 +61,7 @@ func (h *State) HandleRotaCreate(ctx *router.Context) {
 		return
 	}
 	var modBuf bytes.Buffer
-	if err := json.NewEncoder(&modBuf).Encode(h.generators.List()); err != nil {
+	if err := json.NewEncoder(&modBuf).Encode(h.generators.ListModifiers()); err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
