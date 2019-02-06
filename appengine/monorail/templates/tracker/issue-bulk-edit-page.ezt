@@ -7,8 +7,6 @@
 [else]
 
 
-<script src="/elements/mr-bulk-approval-update/mr-bulk-approval-update.min.js?version=[app_version]" nonce="[nonce]"></script>
-
 <div style="margin-top: 0; padding: 3px;" class="closed">
  <form action="bulkedit.do" method="POST" style="margin: 0; padding: 0" enctype="multipart/form-data"
        id="bulk_form">

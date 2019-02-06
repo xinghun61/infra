@@ -12,7 +12,7 @@ const config = {
   entry: {
     'elements/mr-app/mr-app': './elements/mr-app/mr-app.js',
     'elements/chdir/mr-profile-page/mr-profile-page': './elements/chdir/mr-profile-page/mr-profile-page.js',
-    'elements/mr-bulk-approval-update/mr-bulk-approval-update': './elements/mr-bulk-approval-update/mr-bulk-approval-update.js',
+    'elements/ezt-element-package': './elements/ezt-element-package.js',
   },
   devtool: 'inline-source-map',
   plugins: [],

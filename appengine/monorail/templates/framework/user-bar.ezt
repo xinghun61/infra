@@ -1,9 +1,10 @@
 <span style="padding: 0 1em">
   [if-any logged_in_user]
-    <span id="account-menu">
-      <b><a href="#">[logged_in_user.email]</a></b>
-      <small>&#9660;</small>
-    </span>
+    <mr-account-dropdown
+      user-display-name="[logged_in_user.email]"
+      login-url="[login_url]"
+      logout-url="[logout_url]"
+    ></mr-account-dropdown>
   [else]
     <a href="[login_url]"><u>Sign in</u></a>
   [end]

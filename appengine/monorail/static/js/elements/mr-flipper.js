@@ -103,7 +103,7 @@ class MrFlipper extends HTMLElement {
           justify-content: center;
           flex-direction: column;
           // TODO(zhangtiff): Replace this with a global link color variable.
-          --mr-flipper-link-color: #00c;
+          --mr-flipper-link-color: var(--chops-link-color);
         }
         a {
           display: block;

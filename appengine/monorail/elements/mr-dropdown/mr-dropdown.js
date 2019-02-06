@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '../../node_modules/@polymer/polymer/polymer-legacy.js';
+import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 /**
@@ -37,6 +37,7 @@ export class MrDropdown extends PolymerElement {
           display: flex;
           align-items: center;
           justify-content: center;
+          color: var(--chops-link-color);
         }
         .menu {
           position: absolute;
@@ -51,7 +52,7 @@ export class MrDropdown extends PolymerElement {
         }
         .menu hr {
           width: 96%;
-          margin: 0.25em 2%;
+          margin: 0 2%;
           border: 0;
           height: 1px;
           background: hsl(0, 0%, 80%);
@@ -71,8 +72,8 @@ export class MrDropdown extends PolymerElement {
         }
       </style>
       <div class="anchor" on-click="toggle">
-        <i class="material-icons expand-icon">[[icon]]</i>
         [[text]]
+        <i class="material-icons expand-icon">[[icon]]</i>
       </div>
       <div class="menu">
         <template is="dom-repeat" items="[[items]]">
@@ -113,7 +114,7 @@ export class MrDropdown extends PolymerElement {
   _onClick(e) {
     const idx = e.target.dataset.idx;
     if (idx !== undefined && this.items[idx].handle) {
-      this.items[idx].handle();
+      this.items[idx].handler();
     }
     this.close();
   }

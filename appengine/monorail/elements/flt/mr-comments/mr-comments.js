@@ -7,6 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import '../../mr-comment-content/mr-comment-content.js';
+import '../../mr-dropdown/mr-dropdown.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 /**
  * `<mr-comments>`
@@ -235,7 +236,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       options.push({
         url: '#',
         text: text,
-        handle: this._toggleHideDeletedComment.bind(this, comment),
+        handler: this._toggleHideDeletedComment.bind(this, comment),
       });
       options.push({separator: true});
     }
@@ -244,7 +245,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       options.push({
         url: '#',
         text: text,
-        handle: this._deleteComment.bind(this, comment),
+        handler: this._deleteComment.bind(this, comment),
       });
     }
     if (comment.canFlag) {
@@ -252,7 +253,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       options.push({
         url: '#',
         text: text,
-        handle: this._flagComment.bind(this, comment),
+        handler: this._flagComment.bind(this, comment),
       });
     }
     return options;

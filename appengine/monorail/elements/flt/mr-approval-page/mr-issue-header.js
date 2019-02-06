@@ -5,6 +5,7 @@
 import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
+import '../../../static/js/elements/mr-flipper.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';

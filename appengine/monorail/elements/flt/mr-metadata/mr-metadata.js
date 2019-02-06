@@ -4,6 +4,7 @@
 
 import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
@@ -519,8 +520,8 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
   }
 
   openViewBlockedOn() {
-    Polymer.dom(this.root).querySelector('#viewBlockedOnTable').reset();
-    Polymer.dom(this.root).querySelector('#viewBlockedOnDialog').open();
+    dom(this.root).querySelector('#viewBlockedOnTable').reset();
+    dom(this.root).querySelector('#viewBlockedOnDialog').open();
   }
 
   reorderBlockedOn(e) {

@@ -24,6 +24,9 @@
   --chops-radius: 6px;
   --chops-shadow: none;
 
+  /* TODO(zhangtiff): Replace this with Material Design blue once all
+   * instances of links styled with #00c have been replaced. */
+  --chops-link-color: #00c;
   --chops-primary-button-bg: var(--chops-blue-700);
   --chops-primary-button-color: white;
   --chops-button-bg: var(--chops-gray-200);
