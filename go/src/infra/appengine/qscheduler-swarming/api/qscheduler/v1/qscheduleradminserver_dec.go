@@ -56,3 +56,20 @@ func (s *DecoratedQSchedulerAdmin) CreateAccount(c context.Context, req *CreateA
 	}
 	return
 }
+
+func (s *DecoratedQSchedulerAdmin) Wipe(c context.Context, req *WipeRequest) (rsp *WipeResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "Wipe", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.Wipe(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "Wipe", rsp, err)
+	}
+	return
+}

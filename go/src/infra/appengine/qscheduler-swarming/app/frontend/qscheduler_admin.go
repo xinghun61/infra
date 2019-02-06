@@ -84,6 +84,29 @@ func (s *QSchedulerAdminServerImpl) CreateAccount(ctx context.Context, r *qsched
 	return &qscheduler.CreateAccountResponse{}, nil
 }
 
+// Wipe implements QSchedulerAdminServer.
+func (s *QSchedulerAdminServerImpl) Wipe(ctx context.Context, r *qscheduler.WipeRequest) (resp *qscheduler.WipeResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	do := func(ctx context.Context) error {
+		store := state.NewStore(r.PoolId)
+		sp, err := store.Load(ctx)
+		if err != nil {
+			return err
+		}
+		sp.Scheduler = scheduler.New(time.Now())
+		sp.Reconciler = reconciler.New()
+		return store.Save(ctx, sp)
+	}
+
+	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+		return nil, err
+	}
+	return &qscheduler.WipeResponse{}, nil
+}
+
 // ListAccounts implements QSchedulerAdminServer.
 func (s *QSchedulerViewServerImpl) ListAccounts(ctx context.Context, r *qscheduler.ListAccountsRequest) (resp *qscheduler.ListAccountsResponse, err error) {
 	defer func() {

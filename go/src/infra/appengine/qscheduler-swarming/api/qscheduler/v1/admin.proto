@@ -21,6 +21,13 @@ service QSchedulerAdmin {
     // CreateAccount creates a quota account within a scheduler, with the
     // given configuration options.
     rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+
+    // Wipe wipes out the state of a scheduler.
+    //
+    // This endpoint is intended for debug purposes, and may go away at any
+    // point. May have significant correctness or performance impact on
+    // scheduler.
+    rpc Wipe(WipeRequest) returns (WipeResponse);
 }
 
 // QSchedulerView is a inspection / viewing API for quotascheduler. All calls
@@ -63,6 +70,13 @@ message CreateAccountRequest {
 }
 
 message CreateAccountResponse {}
+
+message WipeRequest {
+        // PoolID is the id of the scheduler to wipe.
+        string pool_id = 1;
+}
+
+message WipeResponse {}
 
 message ListAccountsRequest {
     // PoolID is the id of the scheduler to list accounts from.

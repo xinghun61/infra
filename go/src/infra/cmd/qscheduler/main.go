@@ -38,6 +38,7 @@ func getApplication() *cli.Application {
 			subcommands.Section("Administration"),
 			cmd.Create,
 			cmd.AddAccount,
+			cmd.Wipe,
 
 			subcommands.Section("View"),
 			cmd.Inspect,
