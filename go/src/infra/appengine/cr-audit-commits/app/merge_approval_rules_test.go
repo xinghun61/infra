@@ -179,7 +179,7 @@ func TestMergeApprovalRules(t *testing.T) {
 		})
 		Convey("Change to commit is committed by a Chrome TPM", func() {
 			rc.CommitMessage = "This change's committer is a Chrome TPM"
-			rc.CommitterAccount = "amineer@chromium.org"
+			rc.CommitterAccount = "cmasso@chromium.org"
 			// Run rule
 			rr := OnlyMergeApprovedChange(ctx, ap, rc, testClients)
 			// Check result code
