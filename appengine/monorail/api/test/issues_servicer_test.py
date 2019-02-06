@@ -420,7 +420,9 @@ class IssuesServicerTest(unittest.TestCase):
     request.issue_ref.local_id = 1
     request.comment_content = 'test comment'
     request.uploads.extend([
-          issues_pb2.AttachmentUpload(filename='a.txt', content='aaaaa')])
+          issue_objects_pb2.AttachmentUpload(
+              filename='a.txt',
+              content='aaaaa')])
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     mc.LookupLoggedInUserPerms(self.project)
@@ -807,7 +809,7 @@ class IssuesServicerTest(unittest.TestCase):
     """Missing Approval Field Def throwns exception."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     field_ref = common_pb2.FieldRef(field_name='LegalApproval')
-    approval_delta = issues_pb2.ApprovalDelta(
+    approval_delta = issue_objects_pb2.ApprovalDelta(
         status=issue_objects_pb2.REVIEW_REQUESTED)
     request = issues_pb2.UpdateApprovalRequest(
         issue_ref=issue_ref, field_ref=field_ref, approval_delta=approval_delta)
@@ -826,7 +828,7 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     request = issues_pb2.BulkUpdateApprovalsRequest(
         field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
-        approval_delta=issues_pb2.ApprovalDelta())
+        approval_delta=issue_objects_pb2.ApprovalDelta())
     with self.assertRaises(exceptions.InputException):
       self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
 
@@ -838,7 +840,7 @@ class IssuesServicerTest(unittest.TestCase):
     request = issues_pb2.BulkUpdateApprovalsRequest(
         issue_refs=issue_refs,
         field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
-        approval_delta=issues_pb2.ApprovalDelta())
+        approval_delta=issue_objects_pb2.ApprovalDelta())
     with self.assertRaises(exceptions.InputException):
       self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
 
@@ -850,7 +852,7 @@ class IssuesServicerTest(unittest.TestCase):
     request = issues_pb2.BulkUpdateApprovalsRequest(
         issue_refs=issue_refs,
         field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
-        approval_delta=issues_pb2.ApprovalDelta())
+        approval_delta=issue_objects_pb2.ApprovalDelta())
     with self.assertRaises(exceptions.InputException):
       self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
 
@@ -862,7 +864,7 @@ class IssuesServicerTest(unittest.TestCase):
     request = issues_pb2.BulkUpdateApprovalsRequest(
         issue_refs=issue_refs,
         field_ref=common_pb2.FieldRef(field_name='LegalApproval'),
-        approval_delta=issues_pb2.ApprovalDelta())
+        approval_delta=issue_objects_pb2.ApprovalDelta())
     with self.assertRaises(exceptions.NoSuchFieldDefException):
       self.CallWrapped(self.issues_svcr.BulkUpdateApprovals, mc, request)
 
@@ -873,7 +875,7 @@ class IssuesServicerTest(unittest.TestCase):
         field_defs=[self.fd_3])
     self.services.config.StoreConfig(self.cnxn, config)
     field_ref = common_pb2.FieldRef(field_name='LegalApproval')
-    approval_delta = issues_pb2.ApprovalDelta()
+    approval_delta = issue_objects_pb2.ApprovalDelta()
     issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
                   common_pb2.IssueRef(project_name='proj', local_id=2)]
     request = issues_pb2.BulkUpdateApprovalsRequest(
@@ -891,7 +893,7 @@ class IssuesServicerTest(unittest.TestCase):
         field_defs=[self.fd_3])
     self.services.config.StoreConfig(self.cnxn, config)
     field_ref = common_pb2.FieldRef(field_name='LegalApproval')
-    approval_delta = issues_pb2.ApprovalDelta()
+    approval_delta = issue_objects_pb2.ApprovalDelta()
     issue_refs = [common_pb2.IssueRef(project_name='proj', local_id=1),
                   common_pb2.IssueRef(project_name='proj', local_id=2)]
     request = issues_pb2.BulkUpdateApprovalsRequest(
@@ -921,7 +923,7 @@ class IssuesServicerTest(unittest.TestCase):
                   common_pb2.IssueRef(project_name='proj', local_id=2)]
     request = issues_pb2.BulkUpdateApprovalsRequest(
         issue_refs=issue_refs, field_ref=field_ref,
-        approval_delta=issues_pb2.ApprovalDelta(
+        approval_delta=issue_objects_pb2.ApprovalDelta(
             status=issue_objects_pb2.APPROVED),
         comment_content='new bulk comment')
     mc = monorailcontext.MonorailContext(
@@ -988,7 +990,7 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     field_ref = common_pb2.FieldRef(field_name='LegalApproval')
-    approval_delta = issues_pb2.ApprovalDelta(
+    approval_delta = issue_objects_pb2.ApprovalDelta(
         status=issue_objects_pb2.REVIEW_REQUESTED,
         approver_refs_add=[
           common_pb2.UserRef(user_id=222L, display_name='approver2@example.com')
@@ -1007,7 +1009,9 @@ class IssuesServicerTest(unittest.TestCase):
     request.issue_ref.project_name = 'proj'
     request.issue_ref.local_id = 1
     request.uploads.extend([
-          issues_pb2.AttachmentUpload(filename='a.txt', content='aaaaa')])
+          issue_objects_pb2.AttachmentUpload(
+              filename='a.txt',
+              content='aaaaa')])
     request.send_email = True
 
     mc = monorailcontext.MonorailContext(
@@ -1065,7 +1069,7 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     field_ref = common_pb2.FieldRef(field_name='LegalApproval')
-    approval_delta = issues_pb2.ApprovalDelta()
+    approval_delta = issue_objects_pb2.ApprovalDelta()
 
     request = issues_pb2.UpdateApprovalRequest(
         issue_ref=issue_ref, field_ref=field_ref, approval_delta=approval_delta,
@@ -1278,7 +1282,7 @@ class IssuesServicerTest(unittest.TestCase):
   def testPresubmitIssue_NoDerivedFields(self, mockGetFilterRules):
     """When no rules match, we respond with just owner availability."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
@@ -1302,7 +1306,7 @@ class IssuesServicerTest(unittest.TestCase):
   def testPresubmitIssue_IncompleteOwnerEmail(self, mockGetFilterRules):
     """User is in the process of typing in the proposed owner."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(display_name='owner@examp'))
 
     mockGetFilterRules.return_value = []
@@ -1322,7 +1326,7 @@ class IssuesServicerTest(unittest.TestCase):
     """Proposed owner has a vacation message set."""
     self.user_1.vacation_message = 'In Galapagos Islands'
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
@@ -1346,7 +1350,7 @@ class IssuesServicerTest(unittest.TestCase):
     """Proposed owner not on vacation and has visited recently."""
     self.user_1.last_visit_timestamp = int(time.time())
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
@@ -1369,7 +1373,7 @@ class IssuesServicerTest(unittest.TestCase):
   def testPresubmitIssue_DerivedLabels(self, mockGetFilterRules):
     """Test that we can match label rules and return derived labels."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
@@ -1399,7 +1403,7 @@ class IssuesServicerTest(unittest.TestCase):
         self.cnxn, self.project.project_id, 'Foo', 'Foo Docstring', False,
         [], [], 0, 111L, [])
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         comp_refs_add=[common_pb2.ComponentRef(path='Foo')])
 
     mockGetFilterRules.return_value = [
@@ -1423,7 +1427,7 @@ class IssuesServicerTest(unittest.TestCase):
     """Test that we can match field rules and return derived cc emails."""
     field_id = self.AddField('Foo', 'ENUM_TYPE')
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L),
         field_vals_add=[issue_objects_pb2.FieldValue(
             value='Bar', field_ref=common_pb2.FieldRef(field_id=field_id))])
@@ -1451,7 +1455,7 @@ class IssuesServicerTest(unittest.TestCase):
   def testPresubmitIssue_Warnings(self, mockGetFilterRules):
     """Test that we can match owner rules and return warnings."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L))
 
     mockGetFilterRules.return_value = [
@@ -1475,7 +1479,7 @@ class IssuesServicerTest(unittest.TestCase):
   def testPresubmitIssue_Errors(self, mockGetFilterRules):
     """Test that we can match owner rules and return errors."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
-    issue_delta = issues_pb2.IssueDelta(
+    issue_delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(user_id=111L),
         cc_refs_add=[
             common_pb2.UserRef(user_id=222L),

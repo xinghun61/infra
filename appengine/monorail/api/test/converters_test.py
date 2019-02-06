@@ -15,7 +15,6 @@ from api import converters
 from api.api_proto import common_pb2
 from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
-from api.api_proto import issues_pb2
 from api.api_proto import user_objects_pb2
 from framework import exceptions
 from framework import permissions
@@ -971,7 +970,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestIssueDelta_Empty(self):
     """An empty protorpc IssueDelta makes an empty protoc IssueDelta."""
-    delta = issues_pb2.IssueDelta()
+    delta = issue_objects_pb2.IssueDelta()
     actual = converters.IngestIssueDelta(
         self.cnxn, self.services, delta, self.config, [])
     expected = tracker_pb2.IssueDelta()
@@ -984,7 +983,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.services.user.TestAddUser('user3@example.com', 333L)
     self.config.component_defs = [
       tracker_pb2.ComponentDef(component_id=1, path='UI')]
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         status=wrappers_pb2.StringValue(value='Fixed'),
         owner_ref=common_pb2.UserRef(user_id=222L),
         summary=wrappers_pb2.StringValue(value='New summary'),
@@ -999,9 +998,17 @@ class ConverterFunctionsTest(unittest.TestCase):
         labels_add=['Hot'])
     self.assertEqual(expected, actual)
 
+  def testIngestIssueDelta_ClearMergedInto(self):
+    """We can clear merged into from the current issue."""
+    delta = issue_objects_pb2.IssueDelta(merged_into_ref=common_pb2.IssueRef())
+    actual = converters.IngestIssueDelta(
+        self.cnxn, self.services, delta, self.config, [])
+    expected = tracker_pb2.IssueDelta(merged_into=0)
+    self.assertEqual(expected, actual)
+
   def testIngestIssueDelta_BadOwner(self):
     """We reject a specified owner that does not exist."""
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(display_name='user@exa'))
     with self.assertRaises(exceptions.NoSuchUserException):
       converters.IngestIssueDelta(
@@ -1009,7 +1016,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestIssueDelta_BadOwnerIgnored(self):
     """We can ignore an incomplete owner email for presubmit."""
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         owner_ref=common_pb2.UserRef(display_name='user@exa'))
     actual = converters.IngestIssueDelta(
         self.cnxn, self.services, delta, self.config, [],
@@ -1021,7 +1028,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We reject a protorpc IssueDelta that has an invalid component."""
     self.config.component_defs = [
       tracker_pb2.ComponentDef(component_id=1, path='UI')]
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         comp_refs_add=[common_pb2.ComponentRef(path='XYZ')])
     with self.assertRaises(exceptions.NoSuchComponentException):
       converters.IngestIssueDelta(
@@ -1031,7 +1038,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We can ignore invalid components for presubmits."""
     self.config.component_defs = [
       tracker_pb2.ComponentDef(component_id=1, path='UI')]
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         comp_refs_add=[common_pb2.ComponentRef(path='UI'),
                        common_pb2.ComponentRef(path='XYZ')])
     actual = converters.IngestIssueDelta(
@@ -1044,7 +1051,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.config.field_defs = [
         self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_6]
     phases = [tracker_pb2.Phase(phase_id=1, name="Beta")]
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         field_vals_add=[
             issue_objects_pb2.FieldValue(
                 value='string',
@@ -1075,7 +1082,7 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testIngestIssueDelta_InvalidCustomFields(self):
     """We can create a protorpc IssueDelta from a protoc IssueDelta."""
     # TODO(jrobbins): add and remove.
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
     with self.assertRaises(exceptions.NoSuchFieldDefException):
       converters.IngestIssueDelta(
@@ -1084,7 +1091,7 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testIngestIssueDelta_ShiftFieldsIntoLabels(self):
     """Test that enum fields are shifted into labels."""
     self.config.field_defs = [self.fd_5]
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         field_vals_add=[
             issue_objects_pb2.FieldValue(
                 value='Foo',
@@ -1106,7 +1113,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We can create a protorpc IssueDelta that references related issues."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
     self.services.issue.TestAddIssue(issue)
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         blocked_on_refs_add=[common_pb2.IssueRef(
             project_name='proj', local_id=issue.local_id)],
         merged_into_ref=common_pb2.IssueRef(
@@ -1119,14 +1126,14 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestIssueDelta_InvalidRelatedIssues(self):
     """We reject references to related issues that do not exist."""
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         merged_into_ref=common_pb2.IssueRef(
             project_name='not-a-proj', local_id=8))
     with self.assertRaises(exceptions.NoSuchProjectException):
       converters.IngestIssueDelta(
           self.cnxn, self.services, delta, self.config, [])
 
-    delta = issues_pb2.IssueDelta(
+    delta = issue_objects_pb2.IssueDelta(
         merged_into_ref=common_pb2.IssueRef(
             project_name='proj', local_id=999))
     with self.assertRaises(exceptions.NoSuchIssueException):
@@ -1140,9 +1147,9 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testIngestAttachmentUploads_Normal(self):
     """Uploading files results in a list of attachments."""
     uploads = [
-        issues_pb2.AttachmentUpload(
+        issue_objects_pb2.AttachmentUpload(
             filename='hello.c', content='int main() {}'),
-        issues_pb2.AttachmentUpload(
+        issue_objects_pb2.AttachmentUpload(
             filename='README.md', content='readme content'),
         ]
     actual = converters.IngestAttachmentUploads(uploads)
@@ -1155,11 +1162,11 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We reject uploaded files that lack a name or content."""
     with self.assertRaises(exceptions.InputException):
       converters.IngestAttachmentUploads([
-          issues_pb2.AttachmentUpload(content='name is mssing')])
+          issue_objects_pb2.AttachmentUpload(content='name is mssing')])
 
     with self.assertRaises(exceptions.InputException):
       converters.IngestAttachmentUploads([
-          issues_pb2.AttachmentUpload(filename='content is mssing')])
+          issue_objects_pb2.AttachmentUpload(filename='content is mssing')])
 
   def testIngestApprovalDelta(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
@@ -1168,7 +1175,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.config.field_defs = [
         self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_7]
 
-    approval_delta = issues_pb2.ApprovalDelta(
+    approval_delta = issue_objects_pb2.ApprovalDelta(
         status=issue_objects_pb2.APPROVED,
         approver_refs_add=[common_pb2.UserRef(user_id=111L)],
         approver_refs_remove=[common_pb2.UserRef(user_id=222L)],

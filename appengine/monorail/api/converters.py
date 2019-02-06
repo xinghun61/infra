@@ -578,7 +578,10 @@ def IngestIssueDelta(
       cnxn, delta.blocking_refs_remove, services)
   merged_into = None
   if delta.HasField('merged_into_ref'):
-    merged_into = IngestIssueRefs(cnxn, [delta.merged_into_ref], services)[0]
+    if not delta.merged_into_ref.local_id:
+      merged_into = 0
+    else:
+      merged_into = IngestIssueRefs(cnxn, [delta.merged_into_ref], services)[0]
 
   result = tracker_bizobj.MakeIssueDelta(
       status, owner_id, cc_ids_add, cc_ids_remove, comp_ids_add,

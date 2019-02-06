@@ -8,7 +8,6 @@ syntax = "proto3";
 package monorail;
 
 import "google/protobuf/empty.proto";
-import "google/protobuf/wrappers.proto";
 import "api/api_proto/common.proto";
 import "api/api_proto/issue_objects.proto";
 import "api/api_proto/project_objects.proto";
@@ -40,13 +39,6 @@ service Issues {
   rpc FlagIssues (FlagIssuesRequest) returns (FlagIssuesResponse) {}
   rpc FlagComment (FlagCommentRequest) returns (FlagCommentResponse) {}
   rpc ListIssuePermissions (ListIssuePermissionsRequest) returns (ListIssuePermissionsResponse) {}
-}
-
-
-// Next available tag: 3
-message AttachmentUpload {
-  string filename = 1;
-  bytes content = 2;
 }
 
 
@@ -202,32 +194,6 @@ message DeleteCommentRequest {
 }
 
 
-// Next available tag: 18
-message IssueDelta {
-  // Note: We use StringValue instead of string so that we can
-  // check if delta.HasField('status').  Proto3 only allows that
-  // for nested messages and provides "boxed" values for this purpose.
-  // In JSON, a StringValue is represented as a simple string.
-  google.protobuf.StringValue status = 1;
-  UserRef owner_ref = 2;
-  repeated UserRef cc_refs_add = 3;
-  repeated UserRef cc_refs_remove = 4;
-  repeated ComponentRef comp_refs_add = 5;
-  repeated ComponentRef comp_refs_remove = 6;
-  repeated LabelRef label_refs_add = 7;
-  repeated LabelRef label_refs_remove = 8;
-  repeated FieldValue field_vals_add = 9;
-  repeated FieldValue field_vals_remove = 10;
-  repeated FieldRef fields_clear = 11;
-  repeated IssueRef blocked_on_refs_add = 12;
-  repeated IssueRef blocked_on_refs_remove = 13;
-  repeated IssueRef blocking_refs_add = 14;
-  repeated IssueRef blocking_refs_remove = 15;
-  IssueRef merged_into_ref = 16;
-  google.protobuf.StringValue summary = 17;
-}
-
-
 // TODO: Consider eventually replacing calls to UpdateApprovalRequest
 // with BulkUpdateApprovalsRequest.
 // TODO: For now, block bulk attaching uploads and survey editing.
@@ -258,17 +224,6 @@ message UpdateApprovalRequest {
   bool send_email = 6;
   bool is_description = 7;
   repeated AttachmentUpload uploads = 8;
-}
-
-
-// Next available tag: 7
-message ApprovalDelta {
-  ApprovalStatus status = 1;
-  repeated UserRef approver_refs_add = 2;
-  repeated UserRef approver_refs_remove = 3;
-  repeated FieldValue field_vals_add = 4;
-  repeated FieldValue field_vals_remove = 5;
-  repeated FieldRef fields_clear = 6;
 }
 
 
