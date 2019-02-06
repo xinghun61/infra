@@ -14,8 +14,8 @@
     "vulcanize": "~1.14.8"
   },
   "devDependencies": {
-    "bower": "^1.8.4",
     "@chopsui/wct-runner": "0.0.1",
+    "bower": "^1.8.8",
     "istanbul": "^0.4.4",
     "web-component-tester": "^5.0.0",
     "web-component-tester-istanbul": "https://github.com/t2ym/web-component-tester-istanbul/tarball/0.10.1"
