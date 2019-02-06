@@ -441,3 +441,6 @@ usercommits_repo_urls = ['https://chromium.googlesource.com/infra/infra/']
 
 # Used for cache busting JS imports.
 script_prefix_dir = os.environ.get('SCRIPT_FILE_PREFIX_DIR')
+
+# The maximum number of rows chart queries can scan.
+chart_query_max_rows = 10000

@@ -1179,12 +1179,13 @@ class IssuesServicerTest(unittest.TestCase):
         timestamp=1531334109, project_name='proj')
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
-    mockSnapshotCountsQuery.return_value = ({'total': 123}, [])
+    mockSnapshotCountsQuery.return_value = ({'total': 123}, [], True)
 
     response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
 
     self.assertEqual(123, response.snapshot_count[0].count)
     self.assertEqual(0, len(response.unsupported_field))
+    self.assertTrue(response.search_limit_reached)
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
       '', query=None, canned_query=None, label_prefix='')
 
@@ -1203,12 +1204,13 @@ class IssuesServicerTest(unittest.TestCase):
     mockSavedQueryIDToCond.return_value = 'cc:me'
     mockReplaceKeywordsWithUserIDs.side_effect = [
         ('cc:2345', []), ('owner:1234', [])]
-    mockSnapshotCountsQuery.return_value = ({'total': 789}, [])
+    mockSnapshotCountsQuery.return_value = ({'total': 789}, [], False)
 
     response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
 
     self.assertEqual(789, response.snapshot_count[0].count)
     self.assertEqual(0, len(response.unsupported_field))
+    self.assertFalse(response.search_limit_reached)
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
       '', query='owner:1234', canned_query='cc:2345', label_prefix='')
 
@@ -1224,7 +1226,8 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     mockSnapshotCountsQuery.return_value = (
         {'label1': 123, 'label2': 987},
-        ['rutabaga'])
+        ['rutabaga'],
+        True)
 
     response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
 
@@ -1235,6 +1238,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(987, response.snapshot_count[1].count)
     self.assertEqual(1, len(response.unsupported_field))
     self.assertEqual('rutabaga', response.unsupported_field[0])
+    self.assertTrue(response.search_limit_reached)
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
         'label', label_prefix='Type', query='rutabaga:rutabaga',
         canned_query=None)
@@ -1249,7 +1253,8 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     mockSnapshotCountsQuery.return_value = (
         {'component1': 123, 'component2': 987},
-        ['rutabaga'])
+        ['rutabaga'],
+        True)
 
     response = self.CallWrapped(self.issues_svcr.IssueSnapshot, mc, request)
 
@@ -1260,6 +1265,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(987, response.snapshot_count[1].count)
     self.assertEqual(1, len(response.unsupported_field))
     self.assertEqual('rutabaga', response.unsupported_field[0])
+    self.assertTrue(response.search_limit_reached)
     mockSnapshotCountsQuery.assert_called_once_with(self.project, 1531334109,
         'component', label_prefix='', query='rutabaga:rutabaga',
         canned_query='is:open')

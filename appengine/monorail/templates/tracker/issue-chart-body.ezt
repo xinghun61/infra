@@ -1,6 +1,9 @@
 <p><small>
-  Supported query parameters:<br />
-  cc, component, hotlist_id, label, owner, reporter, status
+  Supported query parameters:
+  <span style="font-family: monospace">
+    cc, component, hotlist_id, label, owner,
+    reporter, status
+  </span>
 </small></p>
 
 <mr-chart project-name="[projectname]"></mr-chart>

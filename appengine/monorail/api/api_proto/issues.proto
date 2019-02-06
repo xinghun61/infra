@@ -257,6 +257,7 @@ message IssueSnapshotCount {
 message IssueSnapshotResponse {
   repeated IssueSnapshotCount snapshot_count = 1;
   repeated string unsupported_field = 2;
+  bool search_limit_reached = 3;
 }
 
 

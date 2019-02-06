@@ -143,7 +143,7 @@ class ChartService(object):
       where.append((forbidden_label_clause, []))
 
     if group_by == 'component':
-      cols = ['Comp.path', 'COUNT(DISTINCT(IssueSnapshot.issue_id))']
+      cols = ['Comp.path', 'IssueSnapshot.issue_id']
       left_joins.extend([
         (('IssueSnapshot2Component AS Is2c ON'
           ' Is2c.issuesnapshot_id = IssueSnapshot.id'), []),
@@ -151,7 +151,7 @@ class ChartService(object):
       ])
       group_by = ['Comp.path']
     elif group_by == 'label':
-      cols = ['Lab.label', 'COUNT(DISTINCT(IssueSnapshot.issue_id))']
+      cols = ['Lab.label', 'IssueSnapshot.issue_id']
       left_joins.extend([
         (('IssueSnapshot2Label AS Is2l'
           ' ON Is2l.issuesnapshot_id = IssueSnapshot.id'), []),
@@ -166,7 +166,7 @@ class ChartService(object):
       where.append(('LOWER(Lab.label) LIKE %s', [label_prefix.lower() + '-%']))
       group_by = ['Lab.label']
     elif not group_by:
-      cols = ['COUNT(DISTINCT(IssueSnapshot.issue_id))']
+      cols = ['IssueSnapshot.issue_id']
     else:
       raise ValueError('`group_by` must be label, component, or None.')
 
@@ -177,24 +177,35 @@ class ChartService(object):
       where.extend(query_where)
 
     promises = []
+
+
     for shard_id in range(settings.num_logical_shards):
-      thread_where = where + [('IssueSnapshot.shard = %s', [shard_id])]
-      p = framework_helpers.Promise(self.issuesnapshot_tbl.Select,
-        cnxn=cnxn, cols=cols, left_joins=left_joins, where=thread_where,
-        group_by=group_by, shard_id=shard_id)
-      promises.append(p)
+      count_stmt, stmt_args = self._BuildSnapshotQuery(cols=cols, where=where,
+          joins=left_joins, group_by=group_by, shard_id=shard_id)
+      promises.append(framework_helpers.Promise(cnxn.Execute,
+          count_stmt, stmt_args, shard_id=shard_id))
 
     shard_values_dict = {}
+
+    search_limit_reached = False
+
     for promise in promises:
       # Wait for each query to complete and add it to the dict.
-      shard_values = promise.WaitAndGetValue()
+      shard_values = list(promise.WaitAndGetValue())
+
       if not shard_values:
         continue
       if group_by:
         for name, count in shard_values:
+          if count >= settings.chart_query_max_rows:
+            search_limit_reached = True
+
           shard_values_dict.setdefault(name, 0)
           shard_values_dict[name] += count
       else:
+        if shard_values[0][0] >= settings.chart_query_max_rows:
+            search_limit_reached = True
+
         shard_values_dict.setdefault('total', 0)
         shard_values_dict['total'] += shard_values[0][0]
 
@@ -204,7 +215,7 @@ class ChartService(object):
         for field in cond.field_defs
     ]))
 
-    return shard_values_dict, unsupported_field_names
+    return shard_values_dict, unsupported_field_names, search_limit_reached
 
   def StoreIssueSnapshots(self, cnxn, issues, commit=True):
     """Adds an IssueSnapshot and updates the previous one for each issue."""
@@ -323,3 +334,17 @@ class ChartService(object):
         snapshot_mode=True)
 
     return left_joins, where, unsupported
+
+  def _BuildSnapshotQuery(self, cols, where, joins, group_by, shard_id):
+    """Given SQL arguments, executes a snapshot COUNT query."""
+    where += [('IssueSnapshot.shard = %s', [shard_id])]
+    stmt = sql.Statement.MakeSelect('IssueSnapshot', cols, distinct=True)
+    stmt.AddJoinClauses(joins, left=True)
+    stmt.AddWhereTerms(where)
+    if group_by:
+      stmt.AddGroupByTerms(group_by)
+    stmt.SetLimitAndOffset(limit=settings.chart_query_max_rows, offset=0)
+    stmt_str, stmt_args = stmt.Generate()
+    count_stmt = 'SELECT COUNT(results.issue_id) FROM (%s) AS results' % (
+        stmt_str)
+    return count_stmt, stmt_args

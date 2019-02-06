@@ -32,6 +32,7 @@ export default class MrChart extends HTMLElement {
     this.progressBar = shadowRoot.querySelector('progress');
     this.endDateInput = shadowRoot.getElementById('end-date');
     this.unsupportedFieldsEl = shadowRoot.getElementById('unsupported-fields');
+    this.searchLimitEl = shadowRoot.getElementById('search-limit-message');
 
     // Set up pRPC client.
     this.prpcClient = new AutoRefreshPrpcClient(
@@ -120,6 +121,11 @@ export default class MrChart extends HTMLElement {
       this.unsupportedFieldsEl.innerText = 'Unsupported fields: ' +
         uniqueUnsupportedFields.join(', ');
     }
+
+    const searchLimitReached = chartData.some((d) => d.searchLimitReached);
+    if (searchLimitReached) {
+      this.searchLimitEl.style.display = 'block';
+    }
   }
 
   _fetchDataAtTimestamp(timestamp) {
@@ -140,6 +146,7 @@ export default class MrChart extends HTMLElement {
           date: timestamp * 1000,
           issues: response.snapshotCount[0].count || 0,
           unsupportedField: response.unsupportedField,
+          searchLimitReached: response.searchLimitReached,
         });
       });
     });
@@ -214,6 +221,12 @@ export default class MrChart extends HTMLElement {
           font-weight: bold;
           color: orange;
         }
+        p#search-limit-message {
+          display: none;
+          font-size: 1.25em;
+          padding: 0.25em;
+          background-color: var(--chops-orange-50);
+        }
         progress {
           background-color: white;
           border: 1px solid #666;
@@ -232,6 +245,10 @@ export default class MrChart extends HTMLElement {
         <div id="options">
           <p id="unsupported-fields"></p>
           <progress value="0.05" style="width: 100%; visibility: visible;">Loading chart...</progress>
+          <p id="search-limit-message">
+            Note: Some results are not being counted.
+            Please narrow your query.
+          </p>
           <label for="end-date">Choose end date:</label>
           <br />
           <input type="date" id="end-date" name="end-date" value="" />

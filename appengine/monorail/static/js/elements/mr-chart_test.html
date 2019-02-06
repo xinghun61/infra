@@ -30,6 +30,7 @@ suite('MrChart', function() {
         const dataStr = JSON.stringify({
           snapshotCount: [{count: 0}],
           unsupportedField: [],
+          searchLimitReached: false,
         });
         const responseBody = new Blob([xssiPrefix + dataStr]);
 

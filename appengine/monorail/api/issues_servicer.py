@@ -471,7 +471,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     with work_env.WorkEnv(mc, self.services) as we:
       project = we.GetProjectByName(request.project_name)
-      results, unsupported_fields = we.SnapshotCountsQuery(
+      results, unsupported_fields, limit_reached = we.SnapshotCountsQuery(
           project, request.timestamp, request.group_by,
           label_prefix=request.label_prefix, query=query,
           canned_query=canned_query)
@@ -484,6 +484,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     response.snapshot_count.extend(snapshot_counts)
     response.unsupported_field.extend(unsupported_fields)
     response.unsupported_field.extend(warnings)
+    response.search_limit_reached = limit_reached
     return response
 
   @monorail_servicer.PRPCMethod

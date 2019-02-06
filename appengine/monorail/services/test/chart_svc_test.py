@@ -115,7 +115,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Comp.path',
-      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+      'IssueSnapshot.issue_id',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -141,15 +141,15 @@ class ChartServiceTest(unittest.TestCase):
        ' OR Forbidden_label.label_id IS NULL)',
        [10L, 20L, 10L, 20L]
       ),
-      ('IssueSnapshot.shard = %s', [0])
     ]
     group_by = ['Comp.path']
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
 
     self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(([], [], []))
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
-      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
 
     self._verifySQL(cols, left_joins, where, group_by)
 
@@ -169,7 +169,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+      'IssueSnapshot.issue_id',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -196,15 +196,15 @@ class ChartServiceTest(unittest.TestCase):
        [10L, 20L, 10L, 20L]
       ),
       ('LOWER(Lab.label) LIKE %s', ['foo-%']),
-      ('IssueSnapshot.shard = %s', [0])
     ]
     group_by = ['Lab.label']
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
 
     self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(([], [], []))
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
-      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
 
     self._verifySQL(cols, left_joins, where, group_by)
 
@@ -223,7 +223,7 @@ class ChartServiceTest(unittest.TestCase):
         perms).AndReturn([91, 81])
 
     cols = [
-      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+      'IssueSnapshot.issue_id',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -246,15 +246,15 @@ class ChartServiceTest(unittest.TestCase):
        ' OR Forbidden_label.label_id IS NULL)',
        [10L, 20L, 10L, 20L]
       ),
-      ('IssueSnapshot.shard = %s', [0])
     ]
     group_by = None
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
 
     self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(([], [], []))
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
-      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
 
     self._verifySQL(cols, left_joins, where)
 
@@ -277,7 +277,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+      'IssueSnapshot.issue_id',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -296,16 +296,15 @@ class ChartServiceTest(unittest.TestCase):
       ('Issue.deleted = %s', [False]),
       ('Forbidden_label.label_id IS NULL', []),
       ('LOWER(Lab.label) LIKE %s', ['foo-%']),
-      ('IssueSnapshot.shard = %s', [0])
     ]
     group_by = ['Lab.label']
-
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
 
     self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(([], [], []))
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
-      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
 
     self._verifySQL(cols, left_joins, where, group_by)
 
@@ -325,7 +324,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+      'IssueSnapshot.issue_id',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -348,15 +347,15 @@ class ChartServiceTest(unittest.TestCase):
        [10L, 20L, 10L, 20L]
       ),
       ('LOWER(Lab.label) LIKE %s', ['foo-%']),
-      ('IssueSnapshot.shard = %s', [0]),
     ]
     group_by = ['Lab.label']
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
 
     self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(([], [], []))
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
-      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
 
     self._verifySQL(cols, left_joins, where, group_by)
 
@@ -499,7 +498,7 @@ class ChartServiceTest(unittest.TestCase):
 
     cols = [
       'Lab.label',
-      'COUNT(DISTINCT(IssueSnapshot.issue_id))',
+      'IssueSnapshot.issue_id',
     ]
     left_joins = [
       ('Issue ON IssueSnapshot.issue_id = Issue.id', []),
@@ -527,7 +526,6 @@ class ChartServiceTest(unittest.TestCase):
       ('LOWER(Lab.label) LIKE %s', ['foo-%']),
       ('Cond0.label_id IS NULL', []),
       ('IssueSnapshot.is_open = %s', [True]),
-      ('IssueSnapshot.shard = %s', [0]),
     ]
     group_by = ['Lab.label']
 
@@ -539,6 +537,7 @@ class ChartServiceTest(unittest.TestCase):
       ('Cond0.label_id IS NULL', []),
       ('IssueSnapshot.is_open = %s', [True]),
     ]
+
     unsupported_field_names = ['ownerbouncing']
 
     unsupported_conds = [
@@ -548,20 +547,24 @@ class ChartServiceTest(unittest.TestCase):
       ])
     ]
 
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols, where,
+        left_joins, group_by, shard_id=0)
+
     self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn((query_left_joins, query_where,
         unsupported_conds))
-    self.services.chart.issuesnapshot_tbl.Select(cnxn=self.cnxn, cols=cols,
-      group_by=group_by, left_joins=left_joins, shard_id=0, where=where)
+    self.cnxn.Execute(stmt, stmt_args, shard_id=0).AndReturn([])
 
     self._verifySQL(cols, left_joins, where, group_by)
 
     self.mox.ReplayAll()
-    _, unsupported = self.services.chart.QueryIssueSnapshots(self.cnxn,
-        self.services, unixtime=1514764800, effective_ids=[10L, 20L],
-        project=project, perms=perms, group_by='label', label_prefix='Foo',
+    _, unsupported, limit_reached = self.services.chart.QueryIssueSnapshots(
+        self.cnxn, self.services, unixtime=1514764800,
+        effective_ids=[10L, 20L], project=project, perms=perms,
+        group_by='label', label_prefix='Foo',
         query='-label:Performance%20is:ownerbouncing', canned_query='is:open')
     self.mox.VerifyAll()
 
     self.assertEqual(unsupported_field_names, unsupported)
+    self.assertFalse(limit_reached)
