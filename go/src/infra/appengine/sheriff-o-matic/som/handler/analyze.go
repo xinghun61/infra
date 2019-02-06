@@ -175,10 +175,8 @@ func generateAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.Alerts
 		}
 
 		if anyErr != nil {
-			// TODO: Deal with partial failures so some errors are tolerated so long
-			// as some analysis succeeded.
+			// Some errors are tolerated so long as some analysis succeeded.
 			logging.Errorf(c, "error creating alerts: %v", anyErr)
-			return nil, anyErr
 		}
 
 		groupsByCategory, err := mergeAlertsByReason(ctx, alerts)
