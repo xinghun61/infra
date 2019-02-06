@@ -32,6 +32,7 @@ func TestAssignTasks(t *testing.T) {
 		poolID := "Pool1"
 		admin := &QSchedulerAdminServerImpl{}
 		sch := &QSchedulerServerImpl{}
+		view := &QSchedulerViewServerImpl{}
 		_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
 			PoolId: poolID,
 			Config: &qscheduler.SchedulerPoolConfig{
@@ -51,7 +52,7 @@ func TestAssignTasks(t *testing.T) {
 							Id:    taskID,
 							State: swarming.TaskState_PENDING,
 							Slices: []*swarming.SliceSpec{
-								{},
+								{Dimensions: []string{"label1"}},
 							},
 							EnqueuedTime: tutils.TimestampProto(time.Now()),
 						},
@@ -60,6 +61,10 @@ func TestAssignTasks(t *testing.T) {
 			}
 			_, err := sch.NotifyTasks(ctx, &req)
 			So(err, ShouldBeNil)
+
+			resp, err := view.InspectPool(ctx, &qscheduler.InspectPoolRequest{PoolId: poolID})
+			So(err, ShouldBeNil)
+			So(resp.NumWaitingTasks, ShouldEqual, 1)
 
 			Convey("when AssignTasks is called with an idle bot", func() {
 				botID := "Bot1"
