@@ -1,8 +1,6 @@
-/* Copyright 2019 The Chromium Authors. All Rights Reserved.
- *
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- */
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 import '../../../node_modules/@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
@@ -211,7 +209,7 @@ export class ChopsDialog extends mixinBehaviors([IronFocusablesHelper], PolymerE
   }
 
   // TODO(zhangtiff): Fix logic to get activeElement. This seems to have
-  //   broken in the Polymer 3.0 upgrade. 
+  //   broken in the Polymer 3.0 upgrade.
   _getActiveElement() {
     // document.activeElement alone isn't sufficient to find the active
     // element within shadow dom.

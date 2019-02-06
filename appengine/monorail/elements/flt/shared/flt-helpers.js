@@ -1,8 +1,6 @@
-/* Copyright 2019 The Chromium Authors. All Rights Reserved.
- *
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- */
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 export const fltHelpers = Object.freeze({
   // With lists a and b, get the elements that are in a but not in b.

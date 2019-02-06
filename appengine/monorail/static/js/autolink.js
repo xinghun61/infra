@@ -1,8 +1,6 @@
-/* Copyright 2019 The Chromium Authors. All Rights Reserved.
- *
- * Use of this source code is governed by a BSD-style
- * license that can be found in the LICENSE file.
- */
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
 
 'use strict';
 // When crbug links don't specify a project, the default project is Chromium.
