@@ -20,7 +20,7 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 const (
@@ -85,14 +85,16 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 		data:  []byte(gitDetailsData),
 		isIso: false,
 	}
+	// TODO(qyearsley): Fix.
+	h := isolated.GetHash(isolatedclient.DefaultNamespace)
 	chunks[0].file = &isolated.File{
-		Digest: isolated.HashBytes(chunks[0].data),
+		Digest: isolated.HashBytes(h, chunks[0].data),
 		Mode:   &mode,
 		Size:   &gitDetailsSize,
 	}
 
 	// Create isolate chunk.
-	iso := isolated.New()
+	iso := isolated.New(h)
 	path, err := tricium.GetPathForDataType(d)
 	if err != nil {
 		return "", errors.Reason("failed to get data file path, data: %v", d).Err()
@@ -108,7 +110,7 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 		isIso: true,
 	}
 	chunks[1].file = &isolated.File{
-		Digest: isolated.HashBytes(chunks[1].data),
+		Digest: isolated.HashBytes(h, chunks[1].data),
 		Mode:   &mode,
 		Size:   &isoSize,
 	}
@@ -126,7 +128,9 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, isolatedInput string) (string, error) {
 	// TODO(qyearsley): Include command deadline.
 	mode := 0444
-	iso := isolated.New()
+	// TODO(qyearsley): Fix.
+	h := isolated.GetHash(isolatedclient.DefaultNamespace)
+	iso := isolated.New(h)
 	switch wi := worker.Impl.(type) {
 	case *admin.Worker_Recipe:
 		break
@@ -148,7 +152,7 @@ func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker
 		isIso: true,
 	}
 	chunk.file = &isolated.File{
-		Digest: isolated.HashBytes(chunk.data),
+		Digest: isolated.HashBytes(h, chunk.data),
 		Mode:   &mode,
 		Size:   &isoSize,
 	}
@@ -165,7 +169,9 @@ func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput
 	if err != nil {
 		return "", errors.Annotate(err, "failed to fetch output isolate").Err()
 	}
-	iso := isolated.New()
+	// TODO(qyearsley): Fix.
+	h := isolated.GetHash(isolatedclient.DefaultNamespace)
+	iso := isolated.New(h)
 	iso.Files = outIso.Files
 	iso.Includes = []isolated.HexDigest{isolated.HexDigest(isolatedInput)}
 	isoData, err := json.Marshal(iso)
@@ -178,7 +184,7 @@ func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput
 		isIso: true,
 	}
 	chunk.file = &isolated.File{
-		Digest: isolated.HashBytes(chunk.data),
+		Digest: isolated.HashBytes(h, chunk.data),
 		Mode:   &mode,
 		Size:   &isoSize,
 	}

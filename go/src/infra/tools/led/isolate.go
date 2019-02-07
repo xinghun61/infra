@@ -5,6 +5,7 @@
 package main
 
 import (
+	"crypto"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -20,7 +21,7 @@ import (
 	"go.chromium.org/luci/common/retry"
 )
 
-func combineIsolates(ctx context.Context, arc *archiver.Archiver, isoHashes ...isolated.HexDigest) (isolated.HexDigest, error) {
+func combineIsolates(ctx context.Context, arc *archiver.Archiver, h crypto.Hash, isoHashes ...isolated.HexDigest) (isolated.HexDigest, error) {
 	if len(isoHashes) == 1 {
 		return isoHashes[0], nil
 	}
@@ -28,7 +29,7 @@ func combineIsolates(ctx context.Context, arc *archiver.Archiver, isoHashes ...i
 		return "", nil
 	}
 
-	iso := isolated.New()
+	iso := isolated.New(h)
 	iso.Includes = isoHashes
 	isolated, err := json.Marshal(iso)
 	if err != nil {
@@ -55,7 +56,7 @@ func isolateDirectory(ctx context.Context, isoClient *isolatedclient.Client, dir
 	uploader := archiver.NewUploader(ctx, isoClient, 8)
 	arc := archiver.NewTarringArchiver(checker, uploader)
 
-	summary, err := arc.Archive([]string{dir}, dir, isolated.New(), nil, "")
+	summary, err := arc.Archive([]string{dir}, dir, isolated.New(isoClient.Hash()), nil, "")
 	if err != nil {
 		return "", errors.Annotate(err, "isolating directory").Err()
 	}

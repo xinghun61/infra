@@ -35,7 +35,9 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 					isolated.HexDigest(isoHash),
 					isolated.HexDigest(props.InputsRef.Isolated),
 				}
-				newHash, err := combineIsolates(ctx, arc, toCombine...)
+				// TODO(maruel): Confirm the namespace here is compatible with arc's.
+				h := isolated.GetHash(props.InputsRef.Namespace)
+				newHash, err := combineIsolates(ctx, arc, h, toCombine...)
 				if err != nil {
 					return nil, errors.Annotate(err, "combining isolateds").Err()
 				}
