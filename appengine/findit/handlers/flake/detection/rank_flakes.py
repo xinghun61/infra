@@ -138,6 +138,6 @@ class RankFlakes(BaseHandler):
             error_message,
         'flake_weights': [[
             FLAKE_TYPE_DESCRIPTIONS[flake_type], FLAKE_TYPE_WEIGHT[flake_type]
-        ] for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)]
+        ] for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)],
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}

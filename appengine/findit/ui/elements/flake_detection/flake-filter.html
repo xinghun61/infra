@@ -1,0 +1,59 @@
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+
+<dom-module id="flake-filter">
+  <template>
+    <style>
+
+    </style>
+    <div class="filter-div" id="filter-div-{{index}}">
+      <input type="text" size="100" name="flake-filter" id="filter-text-{{index}}" value="{{filter}}" on-change="_changeFilter">
+      <paper-button noink id="remove-button-{{index}}" on-tap="_removeFilterInput">
+        <iron-icon icon="remove-circle-outline"></iron-icon>
+      </paper-button>
+      <paper-button noink id="add-button-{{index}}" on-tap="_addEmptyFilterInput">
+        <iron-icon icon="add-circle-outline"></iron-icon>
+      </paper-button>
+    </div>
+  </template>
+  <script>
+    (function () {
+      "use strict";
+
+      Polymer({
+        is: "flake-filter",
+        properties: {
+          index: {
+            type: Number
+          },
+          filter: {
+            type: String
+          },
+        },
+
+        _removeFilterInput: function(e) {
+          let filterGroup = this.parentNode;
+          let filterId = '#flake-filter-' + this.index;
+          let filter = filterGroup.querySelector(filterId);
+          filterGroup.removeChild(filter);
+        },
+
+        _addEmptyFilterInput: function (e) {
+          let filterGroup = this.parentNode;
+          let newIndex = filterGroup.querySelectorAll('flake-filter').length;
+          let newFilter = document.createElement('flake-filter');
+          newFilter.index = newIndex;
+          newFilter.id = 'flake-filter-' + newIndex;
+          filterGroup.appendChild(newFilter);
+        },
+
+        _changeFilter: function (e) {
+          this.filter = Polymer.dom(e).localTarget.value;
+        },
+      });
+    })();
+  </script>
+</dom-module>

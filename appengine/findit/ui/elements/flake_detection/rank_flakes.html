@@ -1,5 +1,8 @@
+<link rel="import" href="/bower_components/iron-form/iron-form.html">
 <link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
 <link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/ui/elements/flake_detection/flake-filter.html">
 <link rel="import" href="/ui/elements/flake_detection/rank-flake-item.html">
 
 
@@ -28,6 +31,8 @@
       .table-scroll {
         max-height: calc(100vh - 270px);
         overflow-y: auto;
+        float: left;
+        width: 100vw;
       }
 
       rank-flake-item {
@@ -45,7 +50,79 @@
       .bug-header {
         background-color: #669DF6;
       }
+
+      .hidden {
+        display: none;
+      }
+
+      paper-button {
+          color: #fff;
+          background: #4285F4;
+          margin: 20px;
+      }
+
+      #form-div #form-buttons{
+        float: left;
+        width: 100vw;
+      }
+
+      .paging {
+        padding: 5px;
+      }
+
+      .previous, .next {
+        color: #1A73EB;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        font: inherit;
+        border-bottom:1px solid #1A73EB;
+        cursor: pointer;
+      }
+
+      .disabled {
+        color: #9AA0A6;
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        border-bottom:1px solid #9AA0A6;
+        cursor: pointer;
+      }
     </style>
+    <div id="form-div">
+        <form id="flake-form" is="iron-form" method="get" action="/ranked-flakes">
+          <input type="text" name="luci_project" id="luci_project" class="hidden" value="{{luci_project}}" disabled$="{{_isValueEmpty(luci_project)}}">
+          <input type="text" name="n" id="n" class="hidden" value="{{n}}" disabled$="{{_isValueEmpty(n)}}">
+          <input type="text" name="cursor" id="cursor" class="hidden" value="{{cursor_in_use}}" disabled$="{{_isValueEmpty(cursor_in_use)}}">
+          <input type="text" name="direction" id="direction" class="hidden" value="{{direction}}" disabled$="{{_isValueEmpty(direction)}}">
+          <input type="text" name="bug_id" id="bug_id" class="hidden" value="{{bug_id}}" disabled$="{{_isValueEmpty(bug_id)}}">
+          <input type="text" name="monorail_project" id="monorail_project" class="hidden" value="{{monorail_project}}" disabled$="{{_isValueEmpty(monorail_project)}}">
+          <input type="text" name="flake_filter" id="flake_filter" class="hidden" value="{{ flake_filter }}" disabled$="{{_isValueEmpty(flake_filter)}}">
+          <div id="filter-group">
+            <template is="dom-repeat" items="{{_getFilterList(flake_filter)}}" as="filter">
+              <flake-filter
+                id="flake-filter-{{index}}"
+                index={{index}}
+                filter={{filter}}></flake-filter>
+            </template>
+          </div>
+          <div id="form-buttons">
+            <paper-button on-tap="_toggleFilter">{{_getButtonText()}}</paper-button>
+            <paper-button id="submit-button" class$="{{_getSubmitButtonClass()}}" on-tap="_submitForm">apply filters</paper-button>
+          </div>
+          <div id="filter-message">
+            * Press '?' for search options
+          </div>
+        </form>
+    </div>
+    <br>
+    <div class="paging">
+      <paper-button class$="previous {{_getDisabledClass(prev_cursor)}}" disabled$="{{_isValueEmpty(prev_cursor)}}" on-tap="_submitFormWithCursor">Previous</paper-button>
+      <paper-button class$="next {{_getDisabledClass(cursor)}}" disabled$="{{_isValueEmpty(cursor)}}" on-tap="_submitFormWithCursor">Next</paper-button>
+    </div>
+    <br>
     <div class="table-scroll">
       <table width="95%">
         <tr>
@@ -64,8 +141,8 @@
           <th class="bug-header" width="10%">Status</th>
           <th class="bug-header" width="15%">Last Updated</th>
         </tr>
-        <template is="dom-repeat" items="[[flakes]]" as="flake">
-          <rank-flake-item flake=[[flake]] weights=[[weights]]></rank-flake-item>
+        <template is="dom-repeat" items="{{flakes}}" as="flake">
+          <rank-flake-item flake={{flake}} weights={{weights}}></rank-flake-item>
         </template>
       </table>
     </div>
@@ -83,7 +160,154 @@
           },
           weights: {
             type: Array
+          },
+          luci_project: {
+            type: String,
+            value: 'chromium'
+          },
+          n: {
+            type: String
+          },
+          cursor: {
+            type: String
+          },
+          prev_cursor: {
+            type: String
+          },
+          bug_id: {
+            type: String
+          },
+          monorail_project: {
+            type: String
+          },
+          flake_filter: {
+            type: String
+          },
+          direction: {
+            type: String,
+            value: ""
+          },
+          cursor_in_use: {
+            type: String,
+            value: ""
+          },
+        },
+
+        _hasFilter: function () {
+          return this.flake_filter != "";
+        },
+
+        _getFilterList: function (flake_filter) {
+          if (this._hasFilter()) {
+            return flake_filter.split("@");
           }
+          return [];
+        },
+
+        _isValueEmpty: function (value) {
+          return typeof(value) == "undefined" || value == null || value == "";
+        },
+
+        _getDisabledClass: function (value) {
+          if (value == "") return "disabled";
+          return "";
+        },
+
+        _getFilterInputElements: function () {
+          let shadowRoot = this.shadowRoot;
+          if (shadowRoot) {
+            let filter_group = shadowRoot.querySelector('#filter-group');
+            return filter_group.querySelectorAll('flake-filter');
+          }
+          return null;
+        },
+
+        _haveFilterInputElements: function() {
+          let filters = this._getFilterInputElements();
+          return filters != null && filters.length > 0;
+        },
+
+        _getButtonText: function () {
+          if (this._hasFilter() || this._haveFilterInputElements()) {
+            return 'clear filters';}
+          return 'filter flakes';
+        },
+
+        _getSubmitButtonClass: function () {
+          if (! this._hasFilter()) return "hidden";
+          return "";
+        },
+
+        _addFilterInputElement: function(e, index) {
+          let filter_group = this.shadowRoot.querySelector('#filter-group');
+          let newFilter = document.createElement('flake-filter');
+          newFilter.id = 'flake-filter-' + index;
+          newFilter.index = index;
+          filter_group.appendChild(newFilter);
+        },
+
+        _removeFilterInputElements: function(e) {
+          let filter_group = this.shadowRoot.querySelector('#filter-group');
+          let filters = this._getFilterInputElements();
+          for (let filter of filters) {
+              filter_group.removeChild(filter);
+          }
+        },
+
+        // Event handlers.
+        _toggleFilter: function (e) {
+          let toggleButton = Polymer.dom(e).localTarget;
+          let form = toggleButton.parentElement.parentElement;
+          let submitButton = this.shadowRoot.querySelector('#submit-button');
+          if (this._haveFilterInputElements()) {
+            submitButton.classList.add('hidden');
+            this._removeFilterInputElements(e);
+            this.flake_filter = "";
+            form.submit();
+          } else {
+            submitButton.classList.remove('hidden');
+            this._addFilterInputElement(e, 0);
+            toggleButton.textContent = 'clear filters';
+          }
+        },
+
+        _submitFormWithCursor: function(e) {
+          let pageButton = Polymer.dom(e).localTarget;
+          if (pageButton.classList.contains('previous')) {
+            this.cursor_in_use = this.prev_cursor;
+            this.direction = 'previous';
+          } else {
+            this.cursor_in_use = this.cursor;
+            this.direction = 'next';
+          }
+
+          this._submitForm(e);
+        },
+
+        _submitForm: function (e) {
+          let form = this.shadowRoot.querySelector('#flake-form');
+
+          let filter_group = this.shadowRoot.querySelector('#filter-group');
+          let old_filter = this.flake_filter;
+          this.flake_filter = "";
+          for (let filter of filter_group.querySelectorAll('flake-filter')) {
+             let filter_content = filter.filter;
+             if (filter_content && filter_content.indexOf("::") < 0) {
+               // Treats this as a filter for a specific test.
+               this.flake_filter = filter_content;
+               break;
+             }
+
+             // Concatenates filters.
+             if (filter_content && this.flake_filter == "") {
+               this.flake_filter += filter_content;
+             } else if (filter_content) {
+               this.flake_filter += '@' + filter_content;}
+          }
+          // Prevents duplicate filter inputs.
+          if (old_filter == "") {
+            this._removeFilterInputElements(e);}
+          form.submit();
         },
       });
     })();
