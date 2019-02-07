@@ -296,18 +296,15 @@ message ListServersResponse {
 
 message UpdateDutLabelsRequest {
   string dut_id = 1;
-  // old_labels are the old labels for the DUT that the client
-  // changed.  This should be a serialized protobuf of
-  // inventory.SchedulableLabels.
-  bytes old_labels = 2;
-  // new_labels are the new labels for the DUT.  This should be a
-  // serialized protobuf of inventory.SchedulableLabels.
-  bytes new_labels = 3;
-  // context is some string to provide context for the update.  This
+  // labels are the labels for the DUT that the client changed.  This
+  // should be a serialized protobuf of inventory.SchedulableLabels.
+  // Any labels that shouldn't be updated are ignored.
+  bytes labels = 2;
+  // reason is some string to provide context for the update.  This
   // should contain a URL to the task that triggered the change.  This
   // should not be capitalized since it will get formatted with other
   // information.
-  string context = 4;
+  string reason = 3;
 }
 
 message UpdateDutLabelsResponse {

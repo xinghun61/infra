@@ -320,13 +320,10 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 		return nil, err
 	}
 	req2 := updateDutLabelsRequest{
-		dutID:   req.GetDutId(),
-		context: req.GetContext(),
+		dutID:  req.GetDutId(),
+		reason: req.GetReason(),
 	}
-	if err := proto.Unmarshal(req.GetOldLabels(), req2.old); err != nil {
-		return nil, err
-	}
-	if err := proto.Unmarshal(req.GetNewLabels(), req2.new); err != nil {
+	if err := proto.Unmarshal(req.GetLabels(), req2.labels); err != nil {
 		return nil, err
 	}
 	err = retry.Retry(
@@ -343,9 +340,9 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 }
 
 type updateDutLabelsRequest struct {
-	dutID    string
-	old, new *inventory.SchedulableLabels
-	context  string
+	dutID  string
+	labels *inventory.SchedulableLabels
+	reason string
 }
 
 func updateDutLabels(ctx context.Context, s *store.GitStore, req updateDutLabelsRequest) (*fleet.UpdateDutLabelsResponse, error) {
@@ -359,13 +356,9 @@ func updateDutLabels(ctx context.Context, s *store.GitStore, req updateDutLabels
 		return nil, errors.Reason("updateDutLabels: no DUT found").Err()
 	}
 	labels := dut.GetCommon().GetLabels()
+	labels.UselessSwitch = req.labels.UselessSwitch
 
-	if req.old.GetUselessSwitch() != labels.GetUselessSwitch() {
-		return nil, errors.Reason("updateDutLabels: stale labels").Err()
-	}
-	labels.UselessSwitch = req.new.UselessSwitch
-
-	url, err := s.Commit(ctx, fmt.Sprintf("Update DUT labels for %s", req.context))
+	url, err := s.Commit(ctx, fmt.Sprintf("Update DUT labels for %s", req.reason))
 	if err != nil {
 		return nil, errors.Annotate(err, "updateDutLabels").Err()
 	}
