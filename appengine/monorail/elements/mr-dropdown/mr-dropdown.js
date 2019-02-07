@@ -32,6 +32,8 @@ export class MrDropdown extends PolymerElement {
           margin: 2px;
         }
         .anchor {
+          background: none;
+          border: none;
           width: 100%;
           height: 100%;
           display: flex;
@@ -71,10 +73,10 @@ export class MrDropdown extends PolymerElement {
           background: hsl(0, 0%, 90%);
         }
       </style>
-      <div class="anchor" on-click="toggle">
+      <button class="anchor" on-click="toggle" aria-expanded$="[[_toString(opened)]]">
         [[text]]
         <i class="material-icons expand-icon">[[icon]]</i>
-      </div>
+      </button>
       <div class="menu">
         <template is="dom-repeat" items="[[items]]">
           <hr hidden\$="[[!item.separator]]">
@@ -156,6 +158,11 @@ export class MrDropdown extends PolymerElement {
     if (hasMenu) return;
 
     this.close();
+  }
+
+  // TODO(zhangtiff): Remove this when upgrading to LitElement.
+  _toString(bool) {
+    return bool.toString();
   }
 }
 
