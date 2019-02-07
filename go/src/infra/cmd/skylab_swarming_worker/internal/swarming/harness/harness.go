@@ -69,7 +69,7 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 	}(i)
 	i.DUTName = i.getDUTName(b)
 	i.BotInfo = i.loadBotInfo(b)
-	d := i.loadDUTInfo(b, c.adminServiceURL)
+	d := i.loadDUTInfo(b, c)
 	hi := i.makeHostInfo(d)
 	i.addBotInfoToHostInfo(hi, i.BotInfo)
 	i.ResultsDir = i.makeResultsDir(b)
@@ -103,15 +103,16 @@ func (i *Info) loadBotInfo(b *swarming.Bot) *botinfo.BotInfo {
 	return &bi.BotInfo
 }
 
-func (i *Info) loadDUTInfo(b *swarming.Bot, adminServiceURL string) *inventory.DeviceUnderTest {
+func (i *Info) loadDUTInfo(b *swarming.Bot, c config) *inventory.DeviceUnderTest {
 	if i.err != nil {
 		return nil
 	}
 	var uf dutinfo.UpdateFunc
-	if adminServiceURL != "" {
-		uf = func(new *inventory.DeviceUnderTest) error {
-			return adminUpdateLabels(adminServiceURL, new)
+	if c.adminServiceURL != "" {
+		u := labelUpdater{
+			adminServiceURL: c.adminServiceURL,
 		}
+		uf = u.update
 	}
 	dis, err := dutinfo.Load(b, uf)
 	if err != nil {
@@ -165,14 +166,18 @@ func (i *Info) exposeHostInfo(hi *hostinfo.HostInfo, resultsDir string, dutName 
 	i.closers = append(i.closers, hif)
 }
 
-// adminUpdateLabels calls the admin service RPC service to update DUT labels.
-func adminUpdateLabels(adminServiceURL string, new *inventory.DeviceUnderTest) error {
-	nc := new.GetCommon()
-	client, err := admin.NewInventoryClient(adminServiceURL)
+// labelUpdater implements an update method that is used as a dutinfo.UpdateFunc.
+type labelUpdater struct {
+	adminServiceURL string
+}
+
+func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
+	c := new.GetCommon()
+	client, err := admin.NewInventoryClient(u.adminServiceURL)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
-	if err := admin.UpdateLabels(client, nc.GetId(), nc.GetLabels()); err != nil {
+	if err := admin.UpdateLabels(client, c.GetId(), c.GetLabels()); err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
 	return nil
