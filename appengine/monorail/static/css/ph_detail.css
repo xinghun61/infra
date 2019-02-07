@@ -71,6 +71,7 @@ pre.prettyprint {
   #meta-float, #summary-float {
     position: sticky;
     top: 0;
+    z-index: 1;
   }
   #summary-float {
     margin: 0;

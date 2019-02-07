@@ -120,8 +120,8 @@ class AttachmentHelpersFunctionsTest(unittest.TestCase):
 
     # Viewable video.
     attach.mimetype = 'video/mpeg'
-    self.assertEqual(
-      download_url + '&inline=1',  # Video thumbs don't work that way.
+    self.assertIsNone(
+      # Video thumbs are displayed via GetVideoURL rather than this.
       attachment_helpers.GetThumbnailURL(attach, download_url))
 
     # Something that we don't thumbnail.

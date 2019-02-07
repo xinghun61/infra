@@ -97,8 +97,6 @@ def GetThumbnailURL(attach, download_url):
   """Return a relative URL to view an attachment thumbnail."""
   if IsViewableImage(attach.mimetype, attach.filesize):
     return download_url + '&inline=1&thumb=1'
-  elif IsViewableVideo(attach.mimetype, attach.filesize):
-    return download_url + '&inline=1'
   else:
     return None
 
