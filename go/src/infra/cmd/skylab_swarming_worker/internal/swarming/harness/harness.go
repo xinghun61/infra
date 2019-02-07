@@ -109,8 +109,8 @@ func (i *Info) loadDUTInfo(b *swarming.Bot, adminServiceURL string) *inventory.D
 	}
 	var uf dutinfo.UpdateFunc
 	if adminServiceURL != "" {
-		uf = func(old, new *inventory.DeviceUnderTest) error {
-			return adminUpdateLabels(adminServiceURL, old, new)
+		uf = func(new *inventory.DeviceUnderTest) error {
+			return adminUpdateLabels(adminServiceURL, new)
 		}
 	}
 	dis, err := dutinfo.Load(b, uf)
@@ -166,16 +166,13 @@ func (i *Info) exposeHostInfo(hi *hostinfo.HostInfo, resultsDir string, dutName 
 }
 
 // adminUpdateLabels calls the admin service RPC service to update DUT labels.
-func adminUpdateLabels(adminServiceURL string, old, new *inventory.DeviceUnderTest) error {
-	oc, nc := old.GetCommon(), new.GetCommon()
-	if oc.GetId() != nc.GetId() {
-		return errors.Reason("update inventory labels: aborting because DUT ID was changed").Err()
-	}
+func adminUpdateLabels(adminServiceURL string, new *inventory.DeviceUnderTest) error {
+	nc := new.GetCommon()
 	client, err := admin.NewInventoryClient(adminServiceURL)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
-	if err := admin.UpdateLabels(client, oc.GetId(), oc.GetLabels(), nc.GetLabels()); err != nil {
+	if err := admin.UpdateLabels(client, nc.GetId(), nc.GetLabels()); err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
 	return nil

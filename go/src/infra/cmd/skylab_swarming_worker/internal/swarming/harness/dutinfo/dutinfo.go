@@ -7,7 +7,6 @@
 package dutinfo
 
 import (
-	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
@@ -17,7 +16,6 @@ import (
 // Store holds a DUT's inventory info and adds a Close method.
 type Store struct {
 	DUT        *inventory.DeviceUnderTest
-	original   *inventory.DeviceUnderTest
 	updateFunc UpdateFunc
 }
 
@@ -27,19 +25,19 @@ func (s *Store) Close() error {
 	if s == nil {
 		return nil
 	}
-	if s.original == nil || s.updateFunc == nil {
+	if s.updateFunc == nil {
 		return nil
 	}
-	if err := s.updateFunc(s.original, s.DUT); err != nil {
+	if err := s.updateFunc(s.DUT); err != nil {
 		return errors.Annotate(err, "close DUT inventory").Err()
 	}
-	s.updateFunc, s.original = nil, nil
+	s.updateFunc = nil
 	return nil
 }
 
 // UpdateFunc is used to implement inventory updating for any changes
 // to the loaded DUT info.
-type UpdateFunc func(old, new *inventory.DeviceUnderTest) error
+type UpdateFunc func(new *inventory.DeviceUnderTest) error
 
 // Load loads the bot's DUT's info from the inventory.  This function
 // returns a Store that should be closed to update the inventory with
@@ -62,7 +60,6 @@ func Load(b *swarming.Bot, f UpdateFunc) (*Store, error) {
 		}
 		return &Store{
 			DUT:        d,
-			original:   proto.Clone(d).(*inventory.DeviceUnderTest),
 			updateFunc: f,
 		}, nil
 	}

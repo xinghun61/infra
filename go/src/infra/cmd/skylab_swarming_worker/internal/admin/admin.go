@@ -17,7 +17,7 @@ func NewInventoryClient(url string) (*fleet.InventoryClient, error) {
 }
 
 // UpdateLabels calls the admin service update labels API.
-func UpdateLabels(c *fleet.InventoryClient, dutID string, old, new *inventory.SchedulableLabels) error {
+func UpdateLabels(c *fleet.InventoryClient, dutID string, new *inventory.SchedulableLabels) error {
 	// TODO(ayatane): implement
 	return nil
 }
