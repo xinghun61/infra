@@ -478,10 +478,6 @@ def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
       week. So look for groups for each of them by their luci_project,
       canonical_step_name and failed builds separately.
 
-  Note: case 5 and 6 should be very rare since closed issues will be detached
-  from flakes. Still handles these cases in case flake issues and monorail bugs
-  are out of sync for any reason.
-
   Returns:
      ([FlakeGroupByOccurrence], [FlakeGroupByFlakeIssue]): groups of flakes.
   """
@@ -600,11 +596,15 @@ def ReportFlakesToFlakeAnalyzer(flake_tuples_to_report):
       AnalyzeDetectedFlakeOccurrence(flake, occurrence, issue_id)
 
 
-def _DetachClosedIssueFromFlakes(flake_issue):
-  """Detaches closed flake issue from flakes."""
+def _ArchiveFlakesForClosedIssue(flake_issue):
+  """Archives flakes with closed issue.
+
+  Flakes with closed issue should be archived since they are fixed or not
+  actionable.
+  """
   flakes = Flake.query(Flake.flake_issue_key == flake_issue.key).fetch()
   for flake in flakes:
-    flake.flake_issue_key = None
+    flake.archived = True
   ndb.put_multi(flakes)
 
 
@@ -978,4 +978,4 @@ def SyncOpenFlakeIssuesWithMonorail():
 
     if monorail_issue.status in issue_constants.CLOSED_STATUSES_NO_DUPLICATE:
       # Issue is closed, detaches it from flakes.
-      _DetachClosedIssueFromFlakes(flake_issue)
+      _ArchiveFlakesForClosedIssue(flake_issue)

@@ -516,6 +516,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         normalized_step_name=normalized_step_name,
         normalized_test_name=normalized_test_name,
         test_label_name=test_label_name)
+    flake.archived = True
     flake.put()
     flake_key = flake.key
 
@@ -547,6 +548,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     flake = flake_key.get()
     self.assertEqual(flake.last_occurred_time, datetime(2018, 1, 1, 1))
     self.assertEqual(flake.tags, ['tag1::v1'])
+    self.assertFalse(flake.archived)
 
     # Flake's last_occurred_time is earlier and tags are different, updated.
     occurrence_2 = FlakeOccurrence.Create(

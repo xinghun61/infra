@@ -1255,9 +1255,11 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
     self.assertEqual(expected_last_updated_time,
                      flake_issue_3.last_updated_time_in_monorail)
 
-    flake_link_to_issue4 = Flake.query(
-        Flake.flake_issue_key == flake_issue_4.key).fetch()
-    self.assertEqual([], flake_link_to_issue4)
+    flake_issue_4 = FlakeIssue.Get('chromium', 4)
+    self.assertEqual('Fixed', flake_issue_4.status)
+    flake = Flake.Get('chromium', 's', 'suite.t1')
+    self.assertEqual(flake_issue_4.key, flake.flake_issue_key)
+    self.assertTrue(flake.archived)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 12, 20))

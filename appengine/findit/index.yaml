@@ -214,6 +214,8 @@ indexes:
   - name: last_updated_time_with_analysis_results
 
 # For ranked flakes dashboard forward paging.
+# impacted_cl_count_last_week and false_rejection_count_last_week are obsolete
+# fields and will be removed soon.
 - kind: Flake
   properties:
   - name: luci_project
@@ -241,6 +243,7 @@ indexes:
 - kind: Flake
   properties:
   - name: luci_project
+  - name: archived
   - name: flake_score_last_week
     direction: desc
   - name: last_occurred_time
@@ -278,6 +281,7 @@ indexes:
 - kind: Flake
   properties:
   - name: luci_project
+  - name: archived
   - name: flake_score_last_week
     direction: asc
   - name: last_occurred_time

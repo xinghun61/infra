@@ -6,6 +6,8 @@
 from collections import defaultdict
 import logging
 
+from google.appengine.ext import ndb
+
 from libs import time_util
 from libs import analysis_status
 from model import entity_util
@@ -360,7 +362,8 @@ def GetFlakesByFilter(flake_filter, luci_project,
   logging.info('Positive filters: %r', positive_filters)
   logging.info('Negative filters: %r', negative_filters)
 
-  query = Flake.query(Flake.luci_project == luci_project)
+  query = Flake.query(
+      ndb.AND(Flake.luci_project == luci_project, Flake.archived == False))  # pylint: disable=singleton-comparison
   for tag in positive_filters:
     query = query.filter(Flake.tags == tag)
 

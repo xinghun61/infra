@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.appengine.ext import ndb
+
 from gae_libs import dashboard_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
@@ -34,9 +36,7 @@ def _GetFlakesByBug(monorail_project, bug_id):
     flakes_to_issue = Flake.query(Flake.flake_issue_key == issue_key).fetch()
     flakes.extend(flakes_to_issue)
 
-  flakes = [f for f in flakes if f.false_rejection_count_last_week > 0]
-  flakes.sort(
-      key=lambda flake: flake.false_rejection_count_last_week, reverse=True)
+  flakes.sort(key=lambda flake: flake.flake_score_last_week, reverse=True)
   return flakes
 
 
@@ -58,7 +58,8 @@ def _GetFlakeQueryResults(luci_project, cursor, direction, page_size):
     cursor (str): The urlsafe encoding of the cursor, which is at the
       bottom position of entities of the current page.
   """
-  flake_query = Flake.query(Flake.luci_project == luci_project)
+  flake_query = Flake.query(
+      ndb.AND(Flake.luci_project == luci_project, Flake.archived == False))  # pylint: disable=singleton-comparison
   # Orders flakes by flake_score_last_week.
   flake_query = flake_query.filter(Flake.flake_score_last_week > 0)
   first_sort_property = Flake.flake_score_last_week

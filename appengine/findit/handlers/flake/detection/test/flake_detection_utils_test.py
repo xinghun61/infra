@@ -174,6 +174,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
+        'archived':
+            False,
         'flake_counts_last_week': [
             {
                 'flake_type': 'cq false rejection',
@@ -407,6 +409,8 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
             0,
         'impacted_cl_count_last_week':
             0,
+        'archived':
+            False,
         'flake_counts_last_week': [
             {
                 'flake_type': 'cq false rejection',

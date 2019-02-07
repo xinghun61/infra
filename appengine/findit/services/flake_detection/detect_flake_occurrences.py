@@ -391,7 +391,8 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
 
 
 def _UpdateFlakeMetadata(all_occurrences):
-  """Updates flakes' metadata including last_occurred_time and tags.
+  """Updates flakes' metadata including last_occurred_time, archived flag
+    and tags.
 
   Args:
     all_occurrences(list): A list of FlakeOccurrence entities.
@@ -422,6 +423,11 @@ def _UpdateFlakeMetadata(all_occurrences):
       # There are new tags.
       new_tags.update(flake.tags)
       flake.tags = sorted(new_tags)
+      changed = True
+
+    if flake.archived:
+      # Occurrences of an old flake reoccur, resets the flake's archived.
+      flake.archived = False
       changed = True
 
     # The "gerrit_project:" tag should be updated first.
@@ -555,8 +561,9 @@ def StoreDetectedCIFlakes(master_name, builder_name, build_number, flaky_tests):
       build.build_id)
 
   if not luci_project or not luci_bucket:
-    logging.debug('Could not get luci_project or luci_bucket from'
-                  ' build %s/%s/%d.', master_name, builder_name, build_number)
+    logging.debug(
+        'Could not get luci_project or luci_bucket from'
+        ' build %s/%s/%d.', master_name, builder_name, build_number)
     return
 
   row = {

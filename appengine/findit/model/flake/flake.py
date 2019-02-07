@@ -111,6 +111,10 @@ class Flake(ndb.Model):
   # could change along the time.
   last_test_location_based_tag_update_time = ndb.DateTimeProperty()
 
+  # Flag that indicates whether take action on the flake.
+  # Will be set to True when linked bug is closed (not merged).
+  archived = ndb.BooleanProperty(default=False)
+
   @classmethod
   def _CreateKey(cls, luci_project, step_name, test_name):
     return ndb.Key(cls, cls.GetId(luci_project, step_name, test_name))
