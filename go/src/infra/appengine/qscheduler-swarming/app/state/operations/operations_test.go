@@ -22,75 +22,65 @@ import (
 	swarming "infra/swarming"
 )
 
+func taskWithSliceDimensions(sliceDimensions ...[]string) *swarming.TaskSpec {
+	t := &swarming.TaskSpec{}
+	for _, dims := range sliceDimensions {
+		newSlice := &swarming.SliceSpec{}
+		newSlice.Dimensions = dims
+		t.Slices = append(t.Slices, newSlice)
+	}
+	return t
+}
+
 func TestGetProvisionableLabels(t *testing.T) {
-	cases := []struct {
-		caseName        string
-		sliceDimensions [][]string
-		expected        []string
-		errorExpected   bool
-	}{
-		// 0 slices should return an error.
-		{
-			"Given a task notification with 0 slices",
-			nil,
-			nil,
-			true,
-		},
-		// 1 slice should return an empty dimension list.
-		{
-			"Given a task notification with 1 slice",
-			[][]string{{"dimension1"}},
-			[]string{},
-			false,
-		},
-		// 2 slices where second one is not a subset of first should return an error.
-		{
-			"Given a task notification with 2 slices, where second slice dimensions are not subset of first",
-			[][]string{
-				{"common dimension"},
-				{"common dimensions", "erroneous extra dimension"},
-			},
-			nil,
-			true,
-		},
-		// 2 slices with well formed dimensions should return provisionable labels.
-		{
-			"Given a task notification with 2 well formed slices",
-			[][]string{
-				{"common dimension", "provisionable label 1", "provisionable label 2"},
-				{"common dimension"},
-			},
-			[]string{"provisionable label 1", "provisionable label 2"},
-			false,
-		},
-		// 3 slices should return an error.
-		{
-			"Given a task notification with 3 slices",
-			[][]string{{}, {}, {}},
-			nil,
-			true,
-		},
-	}
-	for _, c := range cases {
-		Convey(c.caseName, t, func() {
-			n := &swarming.NotifyTasksItem{}
-			n.Task = &swarming.TaskSpec{}
-			for _, dims := range c.sliceDimensions {
-				newSlice := &swarming.SliceSpec{}
-				newSlice.Dimensions = dims
-				n.Task.Slices = append(n.Task.Slices, newSlice)
-			}
-			Convey("when getProvisionableLabels is called, it returns expected value and error.", func() {
-				got, gotError := ProvisionableLabels(n)
-				So(got, ShouldResemble, c.expected)
-				if c.errorExpected {
-					So(gotError, ShouldNotBeNil)
-				} else {
-					So(gotError, ShouldBeNil)
-				}
-			})
-		})
-	}
+	Convey("When computing labels, 0-slice tasks return error.", t, func() {
+		item := &swarming.NotifyTasksItem{Task: taskWithSliceDimensions()}
+		_, err := computeLabels(item)
+		So(err, ShouldNotBeNil)
+
+	})
+	Convey("When computing labels, 1-slice tasks return only base labels.", t, func() {
+		item := &swarming.NotifyTasksItem{
+			Task: taskWithSliceDimensions([]string{"base1", "base2"}),
+		}
+		labels, err := computeLabels(item)
+		So(err, ShouldBeNil)
+		So(labels.provisionable, ShouldBeEmpty)
+		So(labels.base, ShouldContain, "base1")
+		So(labels.base, ShouldContain, "base2")
+		So(labels.base, ShouldHaveLength, 2)
+	})
+	Convey("When computing labels, 2-slice tasks return base and provisionable labels.", t, func() {
+		item := &swarming.NotifyTasksItem{
+			Task: taskWithSliceDimensions(
+				[]string{"base1", "base2", "provisionable1", "provisionable2"},
+				[]string{"base1", "base2"},
+			),
+		}
+		labels, err := computeLabels(item)
+		So(err, ShouldBeNil)
+		So(labels.base, ShouldContain, "base1")
+		So(labels.base, ShouldContain, "base2")
+		So(labels.base, ShouldHaveLength, 2)
+		So(labels.provisionable, ShouldContain, "provisionable1")
+		So(labels.provisionable, ShouldContain, "provisionable2")
+		So(labels.provisionable, ShouldHaveLength, 2)
+	})
+	Convey("When computing labels, 2-slice tasks with invalid dimensions return error.", t, func() {
+		item := &swarming.NotifyTasksItem{
+			Task: taskWithSliceDimensions(
+				[]string{},
+				[]string{"unexepected"},
+			),
+		}
+		_, err := computeLabels(item)
+		So(err, ShouldNotBeNil)
+	})
+	Convey("When computing labels, 3-slice tasks return error.", t, func() {
+		item := &swarming.NotifyTasksItem{Task: taskWithSliceDimensions(nil, nil, nil)}
+		_, err := computeLabels(item)
+		So(err, ShouldNotBeNil)
+	})
 }
 
 func TestGetAccountId(t *testing.T) {

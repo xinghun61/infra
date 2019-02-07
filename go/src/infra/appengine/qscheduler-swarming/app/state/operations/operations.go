@@ -17,7 +17,6 @@ package operations
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	swarming "infra/swarming"
 
@@ -102,15 +101,28 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			}
 
 			var provisionableLabels []string
+			var baseLabels []string
 			var accountID string
-			var err error
-			// ProvisionableLabels attribute only matters for TaskInstant_WAITING state,
-			// because the scheduler pays no attention to label or RUNNING or ABSENT
-			// tasks.
+			// ProvisionableLabels and BaseLabels attribute only matter for
+			// TaskInstant_WAITING state because the scheduler pays no attention
+			// to labels of RUNNING or ABSENT tasks.
+			//
+			// The same is true of AccountID
 			if t == reconciler.TaskInstant_WAITING {
-				if provisionableLabels, err = ProvisionableLabels(n); err != nil {
+				labels, err := computeLabels(n)
+				if err != nil {
 					logging.Warningf(ctx, err.Error())
 					sp.Reconciler.TaskError(n.Task.Id, err.Error())
+					continue
+				}
+				provisionableLabels = labels.provisionable
+				baseLabels = labels.base
+
+				s := stringset.NewFromSlice(baseLabels...)
+				if !s.HasAll(sp.Config.Labels...) {
+					msg := fmt.Sprintf("task with base dimensions %s does not contain all of scheduler dimensions %s", baseLabels, sp.Config.Labels)
+					logging.Warningf(ctx, msg)
+					sp.Reconciler.TaskError(n.Task.Id, msg)
 					continue
 				}
 
@@ -119,21 +131,13 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 					sp.Reconciler.TaskError(n.Task.Id, err.Error())
 					continue
 				}
-
-				lastSlice := n.Task.Slices[len(n.Task.Slices)-1]
-				s := stringset.NewFromSlice(lastSlice.Dimensions...)
-				if !s.HasAll(sp.Config.Labels...) {
-					msg := fmt.Sprintf("task dimensions %s does not contain all of scheduler dimensions %s", lastSlice.Dimensions, sp.Config.Labels)
-					logging.Warningf(ctx, msg)
-					sp.Reconciler.TaskError(n.Task.Id, msg)
-					continue
-				}
 			}
 
 			update := &reconciler.TaskInstant{
 				AccountId:           accountID,
 				EnqueueTime:         n.Task.EnqueuedTime,
 				ProvisionableLabels: provisionableLabels,
+				BaseLabels:          baseLabels,
 				RequestId:           n.Task.Id,
 				Time:                n.Time,
 				State:               t,
@@ -151,25 +155,24 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 	}, &response
 }
 
-// ProvisionableLabels determines the provisionable labels for a given task,
-// based on the dimensions of its slices.
-func ProvisionableLabels(n *swarming.NotifyTasksItem) ([]string, error) {
-	switch len(n.Task.Slices) {
+// computeLabels determines the labels for a given task.
+func computeLabels(n *swarming.NotifyTasksItem) (*labels, error) {
+	slices := n.Task.Slices
+	switch len(slices) {
 	case 1:
-		return []string{}, nil
+		return &labels{base: slices[0].Dimensions}, nil
 	case 2:
-		s1 := stringset.NewFromSlice(n.Task.Slices[0].Dimensions...)
-		s2 := stringset.NewFromSlice(n.Task.Slices[1].Dimensions...)
-		// s2 must be a subset of s1 (i.e. the first slice must be more specific about dimensions than the second one)
-		// otherwise this is an error.
+		s1 := stringset.NewFromSlice(slices[0].Dimensions...)
+		s2 := stringset.NewFromSlice(slices[1].Dimensions...)
+		// s2 must be a subset of s1 (i.e. the first slice must be more specific
+		// about dimensions than the second one).
 		if flaws := s2.Difference(s1); flaws.Len() != 0 {
 			return nil, errors.Errorf("Invalid slice dimensions; task's 2nd slice dimensions are not a subset of 1st slice dimensions.")
 		}
 
-		var provisionable sort.StringSlice
-		provisionable = s1.Difference(s2).ToSlice()
-		provisionable.Sort()
-		return provisionable, nil
+		provisionable := s1.Difference(s2).ToSlice()
+		base := slices[1].Dimensions
+		return &labels{provisionable: provisionable, base: base}, nil
 	default:
 		return nil, errors.Errorf("Invalid slice count %d; quotascheduler only supports 1-slice or 2-slice tasks.", len(n.Task.Slices))
 	}
@@ -211,4 +214,10 @@ func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, boo
 	default:
 		return reconciler.TaskInstant_NULL, false
 	}
+}
+
+// labels represents the computed labels for a task.
+type labels struct {
+	provisionable []string
+	base          []string
 }
