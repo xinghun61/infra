@@ -92,8 +92,7 @@ func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authO
 }
 
 func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, builder string, authOpts auth.Options) (*JobDefinition, error) {
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
-	authClient, err := authenticator.Client()
+	authClient, err := getAuthClient(ctx, authOpts)
 	if err != nil {
 		return nil, err
 	}

@@ -94,12 +94,13 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
-	authenticator, authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
+	authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
 	if err != nil {
 		errors.Log(ctx, err)
 		return 1
 	}
 
+	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 	tok, err := authenticator.GetAccessToken(time.Minute)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "getting access token")

@@ -250,7 +250,7 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 	logging.Infof(ctx, "bundling recipes: done")
 
 	err = editMode(ctx, func(jd *JobDefinition) error {
-		_, authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
+		authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
 		if err != nil {
 			return err
 		}

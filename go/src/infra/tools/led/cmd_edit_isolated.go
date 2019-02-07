@@ -90,14 +90,8 @@ func (c *cmdEditIsolated) Run(a subcommands.Application, args []string, env subc
 		}
 	}()
 
-	authClient, err := mkAuthClient(ctx, authOpts)
-	if err != nil {
-		logging.Errorf(ctx, "failed to create tempdir: %s", err)
-		return 1
-	}
-
 	err = editMode(ctx, func(jd *JobDefinition) error {
-		_, _, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
+		authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
 		if err != nil {
 			return err
 		}

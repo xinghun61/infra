@@ -12,7 +12,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/client/archiver"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/isolated"
@@ -70,11 +69,6 @@ func isolateDirectory(ctx context.Context, isoClient *isolatedclient.Client, dir
 	}
 
 	return summary.Digest, nil
-}
-
-func mkAuthClient(ctx context.Context, authOpts auth.Options) (*http.Client, error) {
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
-	return authenticator.Client()
 }
 
 func newIsolatedClient(ctx context.Context, isolatedFlags isolatedclient.Flags, authClient *http.Client) (*isolatedclient.Client, error) {

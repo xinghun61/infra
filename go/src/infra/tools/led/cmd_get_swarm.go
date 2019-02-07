@@ -74,7 +74,7 @@ func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpt
 // swarming task, printing it to stdout and returning an error.
 func GetFromSwarmingTask(ctx context.Context, authOpts auth.Options, host, taskID string, pinMachine bool) error {
 	logging.Infof(ctx, "getting task definition: %q", taskID)
-	_, _, swarm, err := newSwarmClient(ctx, authOpts, host)
+	_, swarm, err := newSwarmClient(ctx, authOpts, host)
 	if err != nil {
 		return err
 	}

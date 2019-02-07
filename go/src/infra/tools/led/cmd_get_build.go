@@ -85,8 +85,7 @@ func (c *cmdGetBuild) validateFlags(ctx context.Context, args []string) (authOpt
 
 func (c *cmdGetBuild) grabBuildDefinition(ctx context.Context, authOpts auth.Options) error {
 	logging.Infof(ctx, "getting build definition")
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
-	authClient, err := authenticator.Client()
+	authClient, err := getAuthClient(ctx, authOpts)
 	if err != nil {
 		return err
 	}

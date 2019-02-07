@@ -90,8 +90,7 @@ func (c *cmdEditCl) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
-	authClient, err := authenticator.Client()
+	authClient, err := getAuthClient(ctx, authOpts)
 	if err != nil {
 		errors.Log(ctx, err)
 		return 2
