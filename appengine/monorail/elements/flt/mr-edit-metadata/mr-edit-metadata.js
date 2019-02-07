@@ -16,6 +16,7 @@ import {MetadataMixin} from '../shared/metadata-mixin.js';
 import {selectors} from '../../redux/selectors.js';
 import {actionType} from '../../redux/redux-mixin.js';
 import './mr-edit-field.js';
+import './mr-edit-status.js';
 
 
 /**
@@ -64,7 +65,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         vaadin-upload {
           margin-bottom: 1em;
         }
-        select,
         input {
           @apply --mr-edit-field-styles;
         }
@@ -160,37 +160,13 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           <template is="dom-if" if="[[statuses.length]]">
             <label for="statusInput">Status:</label>
 
-            <select id="statusInput">
-              <template is="dom-repeat" items="[[_statusesGrouped]]" as="group">
-                <optgroup label$="[[group.name]]" hidden$="[[!group.name]]">
-                  <template is="dom-repeat" items="[[group.statuses]]">
-                    <option
-                      value$="[[item.status]]"
-                      selected$="[[_computeIsSelected(status, item.status)]]"
-                    >
-                      [[item.status]]
-                      <template is="dom-if" if="[[item.docstring]]">
-                        = [[item.docstring]]
-                      </template>
-                    </option>
-                  </template>
-                </optgroup>
-
-                <template is="dom-if" if="[[!group.name]]">
-                  <template is="dom-repeat" items="[[group.statuses]]">
-                    <option
-                      value$="[[item.status]]"
-                      selected$="[[_computeIsSelected(status, item.status)]]"
-                    >
-                      [[item.status]]
-                      <template is="dom-if" if="[[item.docstring]]">
-                        = [[item.docstring]]
-                      </template>
-                    </option>
-                  </template>
-                </template>
-              </template>
-            </select>
+            <mr-edit-status
+              id="statusInput"
+              status="[[status]]"
+              statuses="[[statuses]]"
+              is-approval="[[isApproval]]"
+              merged-into="[[_mapIssueRefToIssueString(mergedInto, projectName)]]"
+            ></mr-edit-status>
           </template>
 
 
@@ -384,6 +360,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Array,
         value: () => [],
       },
+      mergedInto: Object,
       ownerName: {
         type: String,
         value: '',
@@ -423,10 +400,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       sendEmail: {
         type: Boolean,
         value: true,
-      },
-      _statusesGrouped: {
-        type: Array,
-        computed: '_computeStatusesGrouped(statuses, isApproval)',
       },
       _newAttachments: Array,
       _nicheFieldCount: {
@@ -516,10 +489,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
     const statusInput = root.querySelector('#statusInput');
     if (statusInput) {
-      const newStatus = statusInput.value;
-      if (newStatus !== this.status) {
-        result['status'] = newStatus;
-      }
+      Object.assign(result, statusInput.getDelta());
     }
 
     const commentContent = root.querySelector('#commentText').value;
@@ -639,35 +609,17 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     return fieldDefs.reduce((acc, fd) => acc + (fd.isNiche | 0), 0);
   }
 
-  _computeIsSelected(a, b) {
-    return a === b;
-  }
-
-  _computeStatusesGrouped(statuses, isApproval) {
-    if (!statuses) return [];
-    if (isApproval) {
-      return [{statuses: statuses}];
+  _mapIssueRefToIssueString(ref, projectName) {
+    if (!ref) return '';
+    if (ref.projectName === projectName) {
+      return `${ref.localId}`;
     }
-    return [
-      {
-        name: 'Open',
-        statuses: statuses.filter((s) => s.meansOpen),
-      },
-      {
-        name: 'Closed',
-        statuses: statuses.filter((s) => !s.meansOpen),
-      },
-    ];
+    return `${ref.projectName}:${ref.localId}`;
   }
 
   _mapBlockerRefsToIdStrings(arr, projectName) {
     if (!arr || !arr.length) return [];
-    return arr.map((v) => {
-      if (v.projectName === projectName) {
-        return `${v.localId}`;
-      }
-      return `${v.projectName}:${v.localId}`;
-    });
+    return arr.map((v) => this._mapIssueRefToIssueString(v, projectName));
   }
 
   // For simulating && in templating.

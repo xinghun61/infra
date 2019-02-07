@@ -36,6 +36,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
         field-values="[[issue.fieldValues]]"
         blocked-on="[[issue.blockedOnIssueRefs]]"
         blocking="[[issue.blockingIssueRefs]]"
+        merged-into="[[issue.mergedIntoIssueRef]]"
         label-names="[[_labelNames]]"
         derived-labels="[[_derivedLabels]]"
         on-save="save"
@@ -134,6 +135,12 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
 
     if (data.status !== undefined) {
       delta['status'] = data.status;
+    }
+
+    if (data.mergedInto === '') {
+      delta['mergedIntoRef'] = {};
+    } else if (data.mergedInto !== undefined) {
+      delta['mergedIntoRef'] = this._issueStringToIssueRef(data.mergedInto);
     }
 
     if (data.summary) {

@@ -58,9 +58,35 @@ test('changing status produces delta change', () => {
 
   flush();
 
-  dom(element.root).querySelector('#statusInput').value = 'Old';
+  const statusComponent = dom(element.root).querySelector('#statusInput');
+  const root = dom(statusComponent.root);
+  root.querySelector('#statusInput').value = 'Old';
   assert.deepEqual(element.getDelta(), {
     status: 'Old',
+  });
+});
+
+test('changing status to duplicate produces delta change', () => {
+  element.statuses = [
+    {'status': 'New'},
+    {'status': 'Duplicate'},
+  ];
+  element.status = 'New';
+
+  flush();
+
+  const statusComponent = dom(element.root).querySelector('#statusInput');
+  const root = dom(statusComponent.root);
+  const statusInput = root.querySelector('#statusInput');
+  statusInput.value = 'Duplicate';
+  statusInput.dispatchEvent(new Event('change'));
+
+  flush();
+
+  root.querySelector('#mergedIntoInput').setValue('chromium:1234');
+  assert.deepEqual(element.getDelta(), {
+    status: 'Duplicate',
+    mergedInto: 'chromium:1234',
   });
 });
 
