@@ -1,3 +1,20 @@
+# Release Notes sheriff-o-matic 2019-02-07
+
+- 3 commits, 2 bugs affected since 3f4f7d9 (2019-02-04T21:19:14Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Fix monorail client mismatch so bugqueue and annotations work](https://chromium-review.googlesource.com/c/1456566) (seanmccullough@chromium.org)
+- [[som] continue analysis when milo.BuildExtract RPCs fail.](https://chromium-review.googlesource.com/c/1454332) (seanmccullough@chromium.org)
+- [[som] Update bower version](https://chromium-review.googlesource.com/c/1455540) (seanmccullough@chromium.org)
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/928324](https://crbug.com/928324)
+  -  [https://crbug.com/929182](https://crbug.com/929182)
+
 # Release Notes sheriff-o-matic 2019-02-04
 
 - 5 commits, 0 bugs affected since a145103 (2018-12-11T00:27:42Z)
