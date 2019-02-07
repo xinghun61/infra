@@ -83,3 +83,8 @@ func (b *Bot) ResultsDir() string {
 	// This will truly disambiguate results between different swarming servers.
 	return filepath.Join(b.AutotestPath, "results", fmt.Sprintf("swarming-%s", b.Task.ID))
 }
+
+// TaskURL returns the URL for the current Swarming task.
+func (b *Bot) TaskURL() string {
+	return fmt.Sprintf("https://chromeos-swarming.appspot.com/task?id=%s", b.Task.ID)
+}

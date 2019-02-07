@@ -6,6 +6,7 @@ package harness
 
 type config struct {
 	adminServiceURL string
+	taskName        string
 }
 
 func makeConfig(os []Option) config {
@@ -24,5 +25,14 @@ type Option func(*config)
 func UpdateInventory(adminServiceURL string) Option {
 	return func(c *config) {
 		c.adminServiceURL = adminServiceURL
+	}
+}
+
+// TaskName returns an Option that sets the task name.  The task name
+// is for informational purposes only.  For example, it is used to
+// provide context for inventory label updates.
+func TaskName(name string) Option {
+	return func(c *config) {
+		c.taskName = name
 	}
 }

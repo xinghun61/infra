@@ -8,6 +8,7 @@
 package harness
 
 import (
+	"context"
 	"io"
 	"log"
 
@@ -59,7 +60,7 @@ func (i *Info) Close() error {
 // Open opens and sets up the bot and task harness needed for Autotest
 // jobs.  An Info struct is returned with necessary fields, which must
 // be closed.
-func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
+func Open(ctx context.Context, b *swarming.Bot, o ...Option) (i *Info, err error) {
 	c := makeConfig(o)
 	i = &Info{Bot: b}
 	defer func(i *Info) {
@@ -69,7 +70,7 @@ func Open(b *swarming.Bot, o ...Option) (i *Info, err error) {
 	}(i)
 	i.DUTName = i.getDUTName(b)
 	i.BotInfo = i.loadBotInfo(b)
-	d := i.loadDUTInfo(b, c)
+	d := i.loadDUTInfo(ctx, b, c)
 	hi := i.makeHostInfo(d)
 	i.addBotInfoToHostInfo(hi, i.BotInfo)
 	i.ResultsDir = i.makeResultsDir(b)
@@ -103,14 +104,17 @@ func (i *Info) loadBotInfo(b *swarming.Bot) *botinfo.BotInfo {
 	return &bi.BotInfo
 }
 
-func (i *Info) loadDUTInfo(b *swarming.Bot, c config) *inventory.DeviceUnderTest {
+func (i *Info) loadDUTInfo(ctx context.Context, b *swarming.Bot, c config) *inventory.DeviceUnderTest {
 	if i.err != nil {
 		return nil
 	}
 	var uf dutinfo.UpdateFunc
 	if c.adminServiceURL != "" {
 		u := labelUpdater{
+			ctx:             ctx,
 			adminServiceURL: c.adminServiceURL,
+			taskURL:         b.TaskURL(),
+			taskName:        c.taskName,
 		}
 		uf = u.update
 	}
@@ -168,7 +172,10 @@ func (i *Info) exposeHostInfo(hi *hostinfo.HostInfo, resultsDir string, dutName 
 
 // labelUpdater implements an update method that is used as a dutinfo.UpdateFunc.
 type labelUpdater struct {
+	ctx             context.Context
 	adminServiceURL string
+	taskURL         string
+	taskName        string
 }
 
 func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {

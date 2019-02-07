@@ -104,9 +104,11 @@ func mainInner(a *args) error {
 	defer annotWriter.Close()
 	var i *harness.Info
 	if updatesInventory(a.taskName) {
-		i, err = harness.Open(b, harness.UpdateInventory(a.adminServiceURL))
+		i, err = harness.Open(ctx, b,
+			harness.TaskName("repair"),
+			harness.UpdateInventory(a.adminServiceURL))
 	} else {
-		i, err = harness.Open(b)
+		i, err = harness.Open(ctx, b)
 	}
 	if err != nil {
 		return err
