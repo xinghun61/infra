@@ -16,6 +16,7 @@ import (
 	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/handler"
+	"infra/monorail"
 
 	"golang.org/x/net/context"
 
@@ -203,6 +204,56 @@ func getXSRFToken(ctx *router.Context) {
 	w.Write(txt)
 }
 
+func newBugQueueHandler(c context.Context) *handler.BugQueueHandler {
+	var monorailClient monorail.MonorailClient
+	if info.AppID(c) == prodAppID {
+		monorailClient = client.NewMonorail(c, "https://monorail-prod.appspot.com")
+	} else {
+		monorailClient = client.NewMonorail(c, "https://monorail-staging.appspot.com")
+	}
+	bqh := &handler.BugQueueHandler{
+		Monorail: monorailClient,
+	}
+	return bqh
+}
+
+func refreshBugQueueHandler(ctx *router.Context) {
+	bqh := newBugQueueHandler(ctx.Context)
+	bqh.RefreshBugQueueHandler(ctx)
+}
+
+func getBugQueueHandler(ctx *router.Context) {
+	bqh := newBugQueueHandler(ctx.Context)
+	bqh.GetBugQueueHandler(ctx)
+}
+
+func getUncachedBugsHandler(ctx *router.Context) {
+	bqh := newBugQueueHandler(ctx.Context)
+	bqh.GetUncachedBugsHandler(ctx)
+}
+
+func newAnnotationHandler(c context.Context) *handler.AnnotationHandler {
+	bqh := newBugQueueHandler(c)
+	return &handler.AnnotationHandler{
+		Bqh: bqh,
+	}
+}
+
+func refreshAnnotationsHandler(ctx *router.Context) {
+	ah := newAnnotationHandler(ctx.Context)
+	ah.RefreshAnnotationsHandler(ctx)
+}
+
+func getAnnotationsHandler(ctx *router.Context) {
+	ah := newAnnotationHandler(ctx.Context)
+	ah.GetAnnotationsHandler(ctx)
+}
+
+func postAnnotationsHandler(ctx *router.Context) {
+	ah := newAnnotationHandler(ctx.Context)
+	ah.PostAnnotationsHandler(ctx)
+}
+
 //// Routes.
 func init() {
 
@@ -225,11 +276,12 @@ func init() {
 	r.POST("/api/v1/alerts/:tree", base(false).Extend(requireGoogler), handler.PostAlertsHandler)
 	r.POST("/api/v1/alert/:tree/:key", base(false).Extend(requireGoogler), handler.PostAlertHandler)
 	r.POST("/api/v1/resolve/:tree", protected, handler.ResolveAlertHandler)
-	r.GET("/api/v1/annotations/:tree", protected, handler.GetAnnotationsHandler)
-	r.POST("/api/v1/annotations/:tree/:action", protected, handler.PostAnnotationsHandler)
+
+	r.GET("/api/v1/annotations/:tree", protected, getAnnotationsHandler)
+	r.POST("/api/v1/annotations/:tree/:action", protected, postAnnotationsHandler)
 	r.POST("/api/v1/filebug/", protected, handler.FileBugHandler)
-	r.GET("/api/v1/bugqueue/:label", protected, handler.GetBugQueueHandler)
-	r.GET("/api/v1/bugqueue/:label/uncached/", protected, handler.GetUncachedBugsHandler)
+	r.GET("/api/v1/bugqueue/:label", protected, getBugQueueHandler)
+	r.GET("/api/v1/bugqueue/:label/uncached/", protected, getUncachedBugsHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, handler.GetRevRangeHandler)
 	r.GET("/api/v1/testexpectations", protected, handler.GetLayoutTestsHandler)
 	r.POST("/api/v1/testexpectation", protected, handler.PostLayoutTestExpectationChangeHandler)
@@ -238,9 +290,9 @@ func init() {
 	r.GET("/_/autocomplete/:query", protected, handler.GetUserAutocompleteHandler)
 
 	// Non-public endpoints.
-	r.GET("/_cron/refresh/bugqueue/:label", basemw, handler.RefreshBugQueueHandler)
+	r.GET("/_cron/refresh/bugqueue/:label", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, handler.FlushOldAnnotationsHandler)
-	r.GET("/_cron/annotations/refresh/", basemw, handler.RefreshAnnotationsHandler)
+	r.GET("/_cron/annotations/refresh/", basemw, refreshAnnotationsHandler)
 	r.POST("/_/clientmon", basemw, handler.PostClientMonHandler)
 
 	// Ingore reqeuests from builder-alerts rather than 404.

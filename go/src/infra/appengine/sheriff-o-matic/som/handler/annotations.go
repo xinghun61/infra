@@ -39,6 +39,11 @@ const (
 	annotationExpiration = time.Hour * 24 * 10
 )
 
+// AnnotationHandler handles annotation-related requests.
+type AnnotationHandler struct {
+	Bqh *BugQueueHandler
+}
+
 // AnnotationResponse ... The Annotation object extended with cached bug data.
 type AnnotationResponse struct {
 	model.Annotation
@@ -56,7 +61,7 @@ func makeAnnotationResponse(a *model.Annotation, meta map[string]monorail.Issue)
 }
 
 // GetAnnotationsHandler retrieves a set of annotations.
-func GetAnnotationsHandler(ctx *router.Context) {
+func (ah *AnnotationHandler) GetAnnotationsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -70,7 +75,7 @@ func GetAnnotationsHandler(ctx *router.Context) {
 	annotations := []*model.Annotation{}
 	datastore.GetAll(c, q, &annotations)
 
-	meta, err := getAnnotationsMetaData(c)
+	meta, err := ah.getAnnotationsMetaData(c)
 
 	if err != nil {
 		logging.Errorf(c, "while fetching annotation metadata")
@@ -91,13 +96,13 @@ func GetAnnotationsHandler(ctx *router.Context) {
 	w.Write(data)
 }
 
-func getAnnotationsMetaData(c context.Context) (map[string]monorail.Issue, error) {
+func (ah *AnnotationHandler) getAnnotationsMetaData(c context.Context) (map[string]monorail.Issue, error) {
 	item, err := memcache.GetKey(c, annotationsCacheKey)
 	val := make(map[string]monorail.Issue)
 
 	if err == memcache.ErrCacheMiss {
 		logging.Warningf(c, "No annotation metadata in memcache, refreshing...")
-		val, err = refreshAnnotations(c, nil)
+		val, err = ah.refreshAnnotations(c, nil)
 
 		if err != nil {
 			return nil, err
@@ -113,10 +118,10 @@ func getAnnotationsMetaData(c context.Context) (map[string]monorail.Issue, error
 }
 
 // RefreshAnnotationsHandler refreshes the set of annotations.
-func RefreshAnnotationsHandler(ctx *router.Context) {
+func (ah *AnnotationHandler) RefreshAnnotationsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
-	bugMap, err := refreshAnnotations(c, nil)
+	bugMap, err := ah.refreshAnnotations(c, nil)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -133,7 +138,7 @@ func RefreshAnnotationsHandler(ctx *router.Context) {
 }
 
 // Update the cache for annotation bug data.
-func refreshAnnotations(c context.Context, a *model.Annotation) (map[string]monorail.Issue, error) {
+func (ah *AnnotationHandler) refreshAnnotations(c context.Context, a *model.Annotation) (map[string]monorail.Issue, error) {
 	q := datastore.NewQuery("Annotation")
 	results := []*model.Annotation{}
 	datastore.GetAll(c, q, &results)
@@ -157,8 +162,9 @@ func refreshAnnotations(c context.Context, a *model.Annotation) (map[string]mono
 	sort.Strings(bugsSlice)
 	mq = fmt.Sprintf("%s%s", mq, strings.Join(bugsSlice, ","))
 
-	issues, err := getBugsFromMonorail(c, mq, monorail.IssuesListRequest_ALL)
+	issues, err := ah.Bqh.getBugsFromMonorail(c, mq, monorail.IssuesListRequest_ALL)
 	if err != nil {
+		logging.Errorf(c, "error getting bugs from monorail: %v", err)
 		return nil, err
 	}
 
@@ -192,7 +198,7 @@ type postRequest struct {
 }
 
 // PostAnnotationsHandler handles updates to annotations.
-func PostAnnotationsHandler(ctx *router.Context) {
+func (ah *AnnotationHandler) PostAnnotationsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	tree := p.ByName("tree")
@@ -269,12 +275,12 @@ func PostAnnotationsHandler(ctx *router.Context) {
 	// code to still run even if this fails.
 	if needRefresh {
 		logging.Infof(c, "Refreshing annotation metadata, due to a stateful modification.")
-		m, err = refreshAnnotations(c, annotation)
+		m, err = ah.refreshAnnotations(c, annotation)
 		if err != nil {
 			logging.Errorf(c, "while refreshing annotation cache on post: %s", err)
 		}
 	} else {
-		m, err = getAnnotationsMetaData(c)
+		m, err = ah.getAnnotationsMetaData(c)
 		if err != nil {
 			logging.Errorf(c, "while getting annotation metadata: %s", err)
 		}

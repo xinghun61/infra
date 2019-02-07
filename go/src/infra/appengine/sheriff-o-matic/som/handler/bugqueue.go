@@ -8,11 +8,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
-	"time"
 
-	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/monorail"
 
 	"golang.org/x/net/context"
@@ -35,19 +32,14 @@ var (
 		nil, field.String("label"))
 )
 
+// BugQueueHandler handles bug queue-related requests.
+type BugQueueHandler struct {
+	Monorail monorail.MonorailClient
+}
+
 // A bit of a hack to let us mock getBugsFromMonorail.
-var getBugsFromMonorail = func(c context.Context, q string,
+func (bqh *BugQueueHandler) getBugsFromMonorail(c context.Context, q string,
 	can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
-	// Get authenticated monorail client.
-	c, cancel := context.WithDeadline(c, clock.Now(c).Add(time.Second*30))
-	defer cancel()
-
-	logging.Infof(c, "about to get mr client")
-	monorailMux := http.NewServeMux()
-	monorailServer := httptest.NewServer(monorailMux)
-	defer monorailServer.Close()
-	mr := client.NewMonorail(c, monorailServer.URL)
-
 	// TODO(martiniss): make this look up request info based on Tree datastore
 	// object
 	req := &monorail.IssuesListRequest{
@@ -59,7 +51,7 @@ var getBugsFromMonorail = func(c context.Context, q string,
 
 	before := clock.Now(c)
 
-	res, err := mr.IssuesList(c, req)
+	res, err := bqh.Monorail.IssuesList(c, req)
 	if err != nil {
 		logging.Errorf(c, "error getting issuelist: %v", err)
 		return nil, err
@@ -85,7 +77,7 @@ func getAlternateEmail(email string) string {
 }
 
 // GetBugQueueHandler returns a set of bugs for the current user and tree.
-func GetBugQueueHandler(ctx *router.Context) {
+func (bqh *BugQueueHandler) GetBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	label := p.ByName("label")
@@ -95,7 +87,7 @@ func GetBugQueueHandler(ctx *router.Context) {
 
 	if err == memcache.ErrCacheMiss {
 		logging.Debugf(c, "No bug queue data for %s in memcache, refreshing...", label)
-		item, err = refreshBugQueue(c, label)
+		item, err = bqh.refreshBugQueue(c, label)
 	}
 
 	if err != nil {
@@ -110,7 +102,7 @@ func GetBugQueueHandler(ctx *router.Context) {
 }
 
 // GetUncachedBugsHandler bypasses the cache to return the bug queue for current user and tree.
-func GetUncachedBugsHandler(ctx *router.Context) {
+func (bqh *BugQueueHandler) GetUncachedBugsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	label := p.ByName("label")
@@ -120,9 +112,10 @@ func GetUncachedBugsHandler(ctx *router.Context) {
 	q := fmt.Sprintf("label:%[1]s -has:owner OR label:%[1]s owner:%s OR owner:%s label:%[1]s",
 		label, user.Email(), email)
 
-	bugs, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
-
-	bugQueueLength.Set(c, int64(bugs.TotalResults), label)
+	bugs, err := bqh.getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
+	if err != nil && bugs != nil {
+		bugQueueLength.Set(c, int64(bugs.TotalResults), label)
+	}
 
 	out, err := json.Marshal(bugs)
 	if err != nil {
@@ -135,10 +128,10 @@ func GetUncachedBugsHandler(ctx *router.Context) {
 }
 
 // Makes a request to Monorail for bugs in a label and caches the results.
-func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
+func (bqh *BugQueueHandler) refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 	q := fmt.Sprintf("label=%s", label)
 
-	res, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
+	res, err := bqh.getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
 	if err != nil {
 		return nil, err
 	}
@@ -158,10 +151,10 @@ func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 }
 
 // RefreshBugQueueHandler updates the cached bug queue for current tree.
-func RefreshBugQueueHandler(ctx *router.Context) {
+func (bqh *BugQueueHandler) RefreshBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 	label := p.ByName("label")
-	item, err := refreshBugQueue(c, label)
+	item, err := bqh.refreshBugQueue(c, label)
 
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())

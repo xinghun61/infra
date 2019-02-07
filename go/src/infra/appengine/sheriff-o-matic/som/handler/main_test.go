@@ -19,7 +19,6 @@ import (
 	testclient "infra/appengine/sheriff-o-matic/som/client/test"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monitoring/messages"
-	"infra/monorail"
 
 	"golang.org/x/net/context"
 
@@ -905,197 +904,6 @@ func TestMain(t *testing.T) {
 				})
 			})
 
-			Convey("/annotations", func() {
-				Convey("GET", func() {
-					Convey("no annotations yet", func() {
-						GetAnnotationsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makeGetRequest(),
-						})
-
-						r, err := ioutil.ReadAll(w.Body)
-						So(err, ShouldBeNil)
-						body := string(r)
-						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, "[]")
-					})
-
-					ann := &model.Annotation{
-						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
-						Key:              "foobar",
-						Bugs:             []string{"111", "222"},
-						SnoozeTime:       123123,
-						ModificationTime: datastore.RoundTime(clock.Now(c).Add(4 * time.Hour)),
-					}
-
-					So(datastore.Put(c, ann), ShouldBeNil)
-					datastore.GetTestable(c).CatchupIndexes()
-
-					Convey("basic annotation", func() {
-						GetAnnotationsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makeGetRequest(),
-						})
-
-						r, err := ioutil.ReadAll(w.Body)
-						So(err, ShouldBeNil)
-						body := string(r)
-						So(w.Code, ShouldEqual, 200)
-						rslt := []*model.Annotation{}
-						So(json.NewDecoder(strings.NewReader(body)).Decode(&rslt), ShouldBeNil)
-						So(rslt, ShouldHaveLength, 1)
-						So(rslt[0], ShouldResemble, ann)
-					})
-				})
-				Convey("POST", func() {
-					Convey("invalid action", func() {
-						PostAnnotationsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makePostRequest(""),
-							Params:  makeParams("action", "lolwut"),
-						})
-
-						So(w.Code, ShouldEqual, 400)
-					})
-
-					Convey("invalid json", func() {
-						PostAnnotationsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makePostRequest("invalid json"),
-							Params:  makeParams("annKey", "foobar", "action", "add"),
-						})
-
-						So(w.Code, ShouldEqual, http.StatusBadRequest)
-					})
-
-					ann := &model.Annotation{
-						Tree:             datastore.MakeKey(c, "Tree", "tree.unknown"),
-						Key:              "foobar",
-						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
-						ModificationTime: datastore.RoundTime(clock.Now(c)),
-					}
-					cl.Add(time.Hour)
-
-					makeChange := func(data map[string]interface{}, tok string) string {
-						change, err := json.Marshal(map[string]interface{}{
-							"xsrf_token": tok,
-							"data":       data,
-						})
-						So(err, ShouldBeNil)
-						return string(change)
-					}
-					Convey("add, bad xsrf token", func() {
-						PostAnnotationsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makePostRequest(makeChange(map[string]interface{}{
-								"snoozeTime": 123123,
-							}, "no good token")),
-							Params: makeParams("annKey", "foobar", "action", "add"),
-						})
-
-						So(w.Code, ShouldEqual, http.StatusForbidden)
-					})
-
-					Convey("add", func() {
-						ann := &model.Annotation{
-							Tree:             datastore.MakeKey(c, "Tree", "tree.unknown"),
-							Key:              "foobar",
-							KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
-							ModificationTime: datastore.RoundTime(clock.Now(c)),
-						}
-						change := map[string]interface{}{}
-						Convey("snoozeTime", func() {
-							PostAnnotationsHandler(&router.Context{
-								Context: c,
-								Writer:  w,
-								Request: makePostRequest(makeChange(map[string]interface{}{
-									"snoozeTime": 123123,
-									"key":        "foobar",
-								}, tok)),
-								Params: makeParams("action", "add", "tree", "tree.unknown"),
-							})
-
-							So(w.Code, ShouldEqual, 200)
-
-							So(datastore.Get(c, ann), ShouldBeNil)
-							So(ann.SnoozeTime, ShouldEqual, 123123)
-						})
-
-						Convey("bugs", func() {
-							change["bugs"] = []string{"123123"}
-							change["key"] = "foobar"
-							PostAnnotationsHandler(&router.Context{
-								Context: c,
-								Writer:  w,
-								Request: makePostRequest(makeChange(change, tok)),
-								Params:  makeParams("action", "add", "tree", "tree.unknown"),
-							})
-
-							So(w.Code, ShouldEqual, 200)
-
-							So(datastore.Get(c, ann), ShouldBeNil)
-							So(ann.Bugs, ShouldResemble, []string{"123123"})
-						})
-
-						Convey("bad change", func() {
-							change["bugs"] = []string{"ooops"}
-							change["key"] = "foobar"
-							w = httptest.NewRecorder()
-							PostAnnotationsHandler(&router.Context{
-								Context: c,
-								Writer:  w,
-								Request: makePostRequest(makeChange(change, tok)),
-								Params:  makeParams("action", "add", "tree", "tree.unknown"),
-							})
-
-							So(w.Code, ShouldEqual, 400)
-
-							So(datastore.Get(c, ann), ShouldNotBeNil)
-						})
-					})
-
-					Convey("remove", func() {
-						Convey("can't remove non-existant annotation", func() {
-							PostAnnotationsHandler(&router.Context{
-								Context: c,
-								Writer:  w,
-								Request: makePostRequest(makeChange(map[string]interface{}{"key": "foobar"}, tok)),
-								Params:  makeParams("action", "remove", "tree", "tree.unknown"),
-							})
-
-							So(w.Code, ShouldEqual, 404)
-						})
-
-						ann.SnoozeTime = 123
-						So(datastore.Put(c, ann), ShouldBeNil)
-
-						Convey("basic", func() {
-							So(ann.SnoozeTime, ShouldEqual, 123)
-
-							PostAnnotationsHandler(&router.Context{
-								Context: c,
-								Writer:  w,
-								Request: makePostRequest(makeChange(map[string]interface{}{
-									"key":        "foobar",
-									"snoozeTime": true,
-								}, tok)),
-								Params: makeParams("action", "remove", "tree", "tree.unknown"),
-							})
-
-							So(w.Code, ShouldEqual, 200)
-							So(datastore.Get(c, ann), ShouldBeNil)
-							So(ann.SnoozeTime, ShouldEqual, 0)
-						})
-
-					})
-				})
-			})
-
 			Convey("/restarts", func() {
 				c := gaetesting.TestingContext()
 				w := httptest.NewRecorder()
@@ -1254,89 +1062,6 @@ func TestMain(t *testing.T) {
 				})
 
 			})
-
-			Convey("/bugqueue", func() {
-				Convey("getBugsFromMonorail", func() {
-					// HACK
-					oldOAClient := getOAuthClient
-					getOAuthClient = func(c context.Context) (*http.Client, error) {
-						return &http.Client{}, nil
-					}
-					_, err = getBugsFromMonorail(c, "label:test", 0)
-					So(err, ShouldNotBeNil)
-					getOAuthClient = oldOAClient
-				})
-
-				Convey("mock getBugsFromMonorail", func() {
-					getBugsFromMonorail = func(c context.Context, q string,
-						can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
-						res := &monorail.IssuesListResponse{
-							Items:        []*monorail.Issue{},
-							TotalResults: 0,
-						}
-						return res, nil
-					}
-					Convey("get bug queue handler", func() {
-						GetBugQueueHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makeGetRequest(),
-						})
-
-						b, err := ioutil.ReadAll(w.Body)
-						So(err, ShouldBeNil)
-						So(w.Code, ShouldEqual, 200)
-						So(string(b), ShouldEqual, "{}")
-					})
-
-					Convey("refresh bug queue handler", func() {
-						RefreshBugQueueHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makeGetRequest(),
-						})
-
-						b, err := ioutil.ReadAll(w.Body)
-						So(err, ShouldBeNil)
-						So(w.Code, ShouldEqual, 200)
-						So(string(b), ShouldEqual, "{}")
-					})
-
-					Convey("refresh bug queue", func() {
-						// HACK:
-						oldOAClient := getOAuthClient
-						getOAuthClient = func(c context.Context) (*http.Client, error) {
-							return &http.Client{}, nil
-						}
-
-						_, err := refreshBugQueue(c, "label")
-						So(err, ShouldBeNil)
-						getOAuthClient = oldOAClient
-					})
-
-					Convey("get uncached bugs", func() {
-						GetUncachedBugsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makeGetRequest(),
-							Params:  makeParams("label", "infra-troopers"),
-						})
-
-						b, err := ioutil.ReadAll(w.Body)
-						So(err, ShouldBeNil)
-						So(w.Code, ShouldEqual, 200)
-						So(string(b), ShouldEqual, "{}")
-					})
-
-					Convey("get alternate email", func() {
-						e := getAlternateEmail("test@chromium.org")
-						So(e, ShouldEqual, "test@google.com")
-
-						e = getAlternateEmail("test@google.com")
-						So(e, ShouldEqual, "test@chromium.org")
-					})
-				})
-			})
 		})
 
 		Convey("cron", func() {
@@ -1413,104 +1138,44 @@ func TestMain(t *testing.T) {
 				})
 			})
 
-			Convey("refreshAnnotations", func() {
-				Convey("handler", func() {
-					RefreshAnnotationsHandler(&router.Context{
-						Context: c,
-						Writer:  w,
-						Request: makeGetRequest(),
-					})
+			Convey("clientmon", func() {
+				body := &eCatcherReq{XSRFToken: tok}
+				bodyBytes, err := json.Marshal(body)
+				So(err, ShouldBeNil)
+				ctx := &router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makePostRequest(string(bodyBytes)),
+					Params:  makeParams("xsrf_token", tok),
+				}
 
-					b, err := ioutil.ReadAll(w.Body)
-					So(err, ShouldBeNil)
-					So(w.Code, ShouldEqual, 200)
-					So(string(b), ShouldEqual, "{}")
-				})
-
-				Convey("inner function", func() {
-					oldGetBugs := getBugsFromMonorail
-					mrResp := &monorail.IssuesListResponse{
-						Items:        []*monorail.Issue{},
-						TotalResults: 0,
-					}
-
-					var mrErr error
-					var query string
-					getBugsFromMonorail = func(c context.Context, q string,
-						can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
-						query = q
-						return mrResp, mrErr
-					}
-
-					ann := &model.Annotation{
-						Bugs: []string{"111111"},
-					}
-					So(datastore.Put(c, ann), ShouldBeNil)
-					datastore.GetTestable(c).CatchupIndexes()
-
-					Convey("one bug", func() {
-						// Don't care about the return value for now.
-						_, err := refreshAnnotations(c, nil)
-
-						So(err, ShouldBeNil)
-						So(query, ShouldEqual, "id:111111")
-					})
-
-					ann = &model.Annotation{
-						Bugs: []string{"111111", "222222"},
-					}
-					So(datastore.Put(c, ann), ShouldBeNil)
-					datastore.GetTestable(c).CatchupIndexes()
-
-					Convey("de-dup", func() {
-						// Don't care about the return value for now.
-						_, err := refreshAnnotations(c, nil)
-
-						So(err, ShouldBeNil)
-						So(query, ShouldEqual, "id:111111,222222")
-					})
-					getBugsFromMonorail = oldGetBugs
-				})
+				PostClientMonHandler(ctx)
+				So(w.Code, ShouldEqual, 200)
 			})
-		})
 
-		Convey("clientmon", func() {
-			body := &eCatcherReq{XSRFToken: tok}
-			bodyBytes, err := json.Marshal(body)
-			So(err, ShouldBeNil)
-			ctx := &router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makePostRequest(string(bodyBytes)),
-				Params:  makeParams("xsrf_token", tok),
-			}
+			Convey("treelogo", func() {
+				ctx := &router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("tree", "chromium"),
+				}
 
-			PostClientMonHandler(ctx)
-			So(w.Code, ShouldEqual, 200)
-		})
+				getTreeLogo(ctx, "", &noopSigner{})
+				So(w.Code, ShouldEqual, 302)
+			})
 
-		Convey("treelogo", func() {
-			ctx := &router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("tree", "chromium"),
-			}
+			Convey("treelogo fail", func() {
+				ctx := &router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+					Params:  makeParams("tree", "chromium"),
+				}
 
-			getTreeLogo(ctx, "", &noopSigner{})
-			So(w.Code, ShouldEqual, 302)
-		})
-
-		Convey("treelogo fail", func() {
-			ctx := &router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("tree", "chromium"),
-			}
-
-			getTreeLogo(ctx, "", &noopSigner{fmt.Errorf("fail")})
-			So(w.Code, ShouldEqual, 500)
+				getTreeLogo(ctx, "", &noopSigner{fmt.Errorf("fail")})
+				So(w.Code, ShouldEqual, 500)
+			})
 		})
 	})
 }
