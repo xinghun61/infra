@@ -96,6 +96,10 @@ export const actionCreator = {
 
     const refsToFetch = (issue.blockedOnIssueRefs || []).concat(
         issue.blockingIssueRefs || []);
+    if (issue.mergedIntoIssueRef) {
+      refsToFetch.push(issue.mergedIntoIssueRef);
+    }
+
     const message = {
       issueRefs: refsToFetch,
     };

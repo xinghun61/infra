@@ -131,6 +131,19 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
         </tr>
       </template>
 
+      <template is="dom-if" if="[[_issueIsDuplicate(issueStatus)]]">
+        <tr>
+          <th>MergedInto:</th>
+          <td>
+            <mr-bug-link
+              project-name="[[projectName]]"
+              issue="[[_getIssueForRef(blockerReferences, mergedInto)]]"
+              is-closed$="[[_getIsClosedForRef(blockerReferences, mergedInto)]]"
+            ></mr-bug-link>
+          </td>
+        </tr>
+      </template>
+
       <template is="dom-if" if="[[components.length]]">
         <tr>
           <th>Components:</th>
@@ -320,6 +333,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
       issueStatus: String,
       blockedOn: Array,
       blocking: Array,
+      mergedInto: Object,
       owner: Object,
       isApproval: {
         type: Boolean,
@@ -464,6 +478,10 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
       }
     });
     return hotlists;
+  }
+
+  _issueIsDuplicate(issueStatus) {
+    return issueStatus.status === 'Duplicate';
   }
 
   openUpdateHotlists() {

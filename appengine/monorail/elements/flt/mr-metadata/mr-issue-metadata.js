@@ -112,6 +112,7 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         field-defs="[[_fieldDefs]]"
         blocked-on="[[issue.blockedOnIssueRefs]]"
         blocking="[[issue.blockingIssueRefs]]"
+        merged-into="[[issue.mergedIntoIssueRef]]"
         modified-timestamp="[[issue.modifiedTimestamp]]"
       ></mr-metadata>
 
