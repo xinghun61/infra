@@ -1524,7 +1524,7 @@
       "-u",
       "RECIPE_MODULE[recipe_engine::archive]/resources/extract.py",
       "--json-input",
-      "{\"archive_file\": \"[CLEANUP]/tmp_tmp_4/archive.tgz\", \"output\": \"[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout\", \"safe_mode\": true}",
+      "{\"archive_file\": \"[CLEANUP]/tmp_tmp_4/archive.tgz\", \"include_files\": [], \"output\": \"[START_DIR]/3pp/wd/posix_tool/linux-amd64/1.2.0/checkout\", \"safe_mode\": true}",
       "--json-output",
       "/path/to/tmp/json"
     ],
