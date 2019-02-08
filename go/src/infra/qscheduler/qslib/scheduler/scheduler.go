@@ -34,6 +34,8 @@ import (
 	"github.com/pkg/errors"
 
 	"go.chromium.org/luci/common/data/stringset"
+
+	"infra/qscheduler/qslib/metrics"
 )
 
 // Scheduler encapsulates the state and configuration of a running
@@ -144,7 +146,7 @@ func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time
 	if request.ID == "" {
 		return errors.New("empty request id")
 	}
-	s.state.addRequest(ctx, request, t)
+	s.state.addRequest(ctx, request, t, m)
 	return nil
 }
 
@@ -262,7 +264,7 @@ func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t tim
 // calculation.
 func (s *Scheduler) RunOnce(ctx context.Context, m MetricsSink) ([]*Assignment, error) {
 	pass := s.newRun()
-	return pass.Run()
+	return pass.Run(m)
 }
 
 // GetRequest returns the (waiting or running) request for a given ID.
@@ -289,17 +291,17 @@ type schedulerRun struct {
 	scheduler *Scheduler
 }
 
-func (run *schedulerRun) Run() ([]*Assignment, error) {
+func (run *schedulerRun) Run(m MetricsSink) ([]*Assignment, error) {
 	var output []*Assignment
 	// Proceed through multiple passes of the scheduling algorithm, from highest
 	// to lowest priority requests (high priority = low p).
 	for p := Priority(0); p < NumPriorities; p++ {
 		// Step 1: Match any requests to idle workers that have matching
 		// provisionable labels.
-		output = append(output, run.matchIdleBots(p, provisionAwareMatch)...)
+		output = append(output, run.matchIdleBots(p, provisionAwareMatch, m)...)
 		// Step 2: Match request to any remaining idle workers, regardless of
 		// provisionable labels.
-		output = append(output, run.matchIdleBots(p, basicMatch)...)
+		output = append(output, run.matchIdleBots(p, basicMatch, m)...)
 		// Step 3: Demote (out of this level) or promote (into this level) any
 		// already running tasks that qualify.
 		run.reprioritizeRunningTasks(p)
@@ -314,8 +316,8 @@ func (run *schedulerRun) Run() ([]*Assignment, error) {
 	// idle workers. The reprioritize and preempt stages do not apply here.
 	// TODO(akeshet): Consider a final sorting step here, so that FIFO ordering is respected among
 	// FreeBucket jobs, including those that were moved the the throttled list during the pass above.
-	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch)...)
-	output = append(output, run.matchIdleBots(FreeBucket, basicMatch)...)
+	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch, m)...)
+	output = append(output, run.matchIdleBots(FreeBucket, basicMatch, m)...)
 
 	return output, nil
 }
@@ -429,7 +431,7 @@ func computeWorkerMatch(w *worker, requests requestList, mf matcher) []matchList
 }
 
 // matchIdleBots matches requests with idle workers.
-func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher) []*Assignment {
+func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, mSink MetricsSink) []*Assignment {
 	var output []*Assignment
 	for wid, w := range run.idleWorkers {
 		// Try to match.
@@ -452,6 +454,14 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher) []*Assignm
 			run.assignRequestToWorker(wid, match.node, priority)
 			run.scheduler.state.applyAssignment(m)
 			output = append(output, m)
+			mSink.AddEvent(
+				eventAssigned(match.request, w, run.scheduler.state, run.scheduler.state.lastUpdateTime,
+					&metrics.TaskEvent_AssignedDetails{
+						Preempting: false,
+						Priority:   int32(priority),
+						// TODO(akeshet): Calculate this properly.
+						ProvisionRequired: false,
+					}))
 			break
 		}
 

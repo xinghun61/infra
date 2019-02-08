@@ -120,7 +120,7 @@ type worker struct {
 
 // AddRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time) {
+func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m MetricsSink) {
 	if r.ID == "" {
 		panic("empty request id")
 	}
@@ -131,6 +131,7 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time) {
 	} else {
 		r.confirm(t)
 		s.queuedRequests[r.ID] = r
+		m.AddEvent(eventEnqueued(r, s, t))
 	}
 }
 
