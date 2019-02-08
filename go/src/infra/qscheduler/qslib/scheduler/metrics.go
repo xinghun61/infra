@@ -53,7 +53,6 @@ func eventCommon(request *TaskRequest, w *worker, s *state, t time.Time) *metric
 	baseLabels.Sort()
 	provLabels.Sort()
 	accountBalance, accountValid := s.balances[request.AccountID]
-	accountBalance = accountBalance.Copy()
 	return &metrics.TaskEvent{
 		AccountBalance:      accountBalance[:],
 		AccountId:           string(request.AccountID),
