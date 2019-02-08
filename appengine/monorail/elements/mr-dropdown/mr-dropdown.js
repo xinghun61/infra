@@ -39,6 +39,7 @@ export class MrDropdown extends PolymerElement {
           display: flex;
           align-items: center;
           justify-content: center;
+          cursor: pointer;
           color: var(--chops-link-color);
         }
         .menu {
@@ -68,6 +69,7 @@ export class MrDropdown extends PolymerElement {
           width: 100%;
           padding: 0.25em 8px;
           transition: 0.2s background ease-in-out;
+          color: var(--chops-link-color);
         }
         .menu a:hover {
           background: hsl(0, 0%, 90%);
@@ -81,7 +83,12 @@ export class MrDropdown extends PolymerElement {
         <template is="dom-repeat" items="[[items]]">
           <hr hidden\$="[[!item.separator]]">
           <template is="dom-if" if="[[!item.separator]]">
-            <a href\$="[[item.url]]" on-click="_onClick" data-idx\$="[[index]]">
+            <a
+              href\$="[[item.url]]"
+              on-click="_onClick"
+              data-idx\$="[[index]]"
+              class="menu-item"
+            >
               [[item.text]]
             </a>
           </template>
@@ -115,7 +122,7 @@ export class MrDropdown extends PolymerElement {
 
   _onClick(e) {
     const idx = e.target.dataset.idx;
-    if (idx !== undefined && this.items[idx].handle) {
+    if (idx !== undefined && this.items[idx].handler) {
       this.items[idx].handler();
     }
     this.close();

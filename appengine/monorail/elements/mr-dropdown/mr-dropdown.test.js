@@ -4,6 +4,8 @@
 
 import {assert} from 'chai';
 import {MrDropdown} from './mr-dropdown.js';
+import sinon from 'sinon';
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 let randomButton;
@@ -53,4 +55,44 @@ test('clicking outside element closes menu', () => {
   randomButton.click();
 
   assert.isFalse(element.opened);
+});
+
+test('items with handlers are handled', () => {
+  const handler1 = sinon.spy();
+  const handler2 = sinon.spy();
+  const handler3 = sinon.spy();
+
+  element.items = [
+    {
+      url: '#',
+      text: 'blah',
+      handler: handler1,
+    },
+    {
+      url: '#',
+      text: 'rutabaga noop',
+      handler: handler2,
+    },
+    {
+      url: '#',
+      text: 'click me please',
+      handler: handler3,
+    },
+  ];
+
+  element.open();
+
+  flush();
+
+  const items = element.shadowRoot.querySelectorAll('.menu-item');
+
+  items[0].click();
+  assert.isTrue(handler1.calledOnce);
+  assert.isFalse(handler2.called);
+  assert.isFalse(handler3.called);
+
+  items[2].click();
+  assert.isTrue(handler1.calledOnce);
+  assert.isFalse(handler2.called);
+  assert.isTrue(handler3.calledOnce);
 });
