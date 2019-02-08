@@ -112,7 +112,7 @@ func (s buildbucketServer) Collect(c context.Context, params *CollectParameters)
 		logging.Fields{
 			"buildID":    params.BuildID,
 			"buildState": result.State,
-		}.Warningf(c, "Result had no output.")
+		}.Infof(c, "Result had no output.")
 	}
 	return result, nil
 }

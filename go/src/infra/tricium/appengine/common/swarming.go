@@ -136,6 +136,8 @@ func (s swarmingServer) Collect(c context.Context, params *CollectParameters) (*
 		}
 	} else if taskResult.State == "PENDING" || taskResult.State == "RUNNING" {
 		result.State = Pending
+	} else {
+		result.State = Failure
 	}
 
 	return result, nil
