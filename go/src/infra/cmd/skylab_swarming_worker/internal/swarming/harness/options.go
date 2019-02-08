@@ -4,27 +4,14 @@
 
 package harness
 
-type config struct {
-	adminServiceURL string
-	taskName        string
-}
-
-func makeConfig(os []Option) config {
-	var c config
-	for _, o := range os {
-		o(&c)
-	}
-	return c
-}
-
-// Option is passed to Open to set harness options.
-type Option func(*config)
+// Option is passed to Open to configure the harness.
+type Option func(*Info)
 
 // UpdateInventory returns an Option that enables inventory updates.
 // The admin service URL for updating needs to be provided.
 func UpdateInventory(adminServiceURL string) Option {
-	return func(c *config) {
-		c.adminServiceURL = adminServiceURL
+	return func(i *Info) {
+		i.labelUpdater.adminServiceURL = adminServiceURL
 	}
 }
 
@@ -32,7 +19,7 @@ func UpdateInventory(adminServiceURL string) Option {
 // is for informational purposes only.  For example, it is used to
 // provide context for inventory label updates.
 func TaskName(name string) Option {
-	return func(c *config) {
-		c.taskName = name
+	return func(i *Info) {
+		i.labelUpdater.taskName = name
 	}
 }

@@ -35,6 +35,8 @@ type Info struct {
 	DUTName    string
 	BotInfo    *botinfo.BotInfo
 
+	labelUpdater labelUpdater
+
 	// err tracks errors during setup to simplify error handling
 	// logic.
 	err error
@@ -61,16 +63,24 @@ func (i *Info) Close() error {
 // jobs.  An Info struct is returned with necessary fields, which must
 // be closed.
 func Open(ctx context.Context, b *swarming.Bot, o ...Option) (i *Info, err error) {
-	c := makeConfig(o)
-	i = &Info{Bot: b}
+	i = &Info{
+		Bot: b,
+		labelUpdater: labelUpdater{
+			ctx:     ctx,
+			taskURL: b.TaskURL(),
+		},
+	}
 	defer func(i *Info) {
 		if err != nil {
 			_ = i.Close()
 		}
 	}(i)
+	for _, o := range o {
+		o(i)
+	}
 	i.DUTName = i.getDUTName(b)
 	i.BotInfo = i.loadBotInfo(b)
-	d := i.loadDUTInfo(ctx, b, c)
+	d := i.loadDUTInfo(ctx, b)
 	hi := i.makeHostInfo(d)
 	i.addBotInfoToHostInfo(hi, i.BotInfo)
 	i.ResultsDir = i.makeResultsDir(b)
@@ -104,21 +114,11 @@ func (i *Info) loadBotInfo(b *swarming.Bot) *botinfo.BotInfo {
 	return &bi.BotInfo
 }
 
-func (i *Info) loadDUTInfo(ctx context.Context, b *swarming.Bot, c config) *inventory.DeviceUnderTest {
+func (i *Info) loadDUTInfo(ctx context.Context, b *swarming.Bot) *inventory.DeviceUnderTest {
 	if i.err != nil {
 		return nil
 	}
-	var uf dutinfo.UpdateFunc
-	if c.adminServiceURL != "" {
-		u := labelUpdater{
-			ctx:             ctx,
-			adminServiceURL: c.adminServiceURL,
-			taskURL:         b.TaskURL(),
-			taskName:        c.taskName,
-		}
-		uf = u.update
-	}
-	dis, err := dutinfo.Load(b, uf)
+	dis, err := dutinfo.Load(b, i.labelUpdater.update)
 	if err != nil {
 		i.err = err
 		return nil
@@ -178,7 +178,12 @@ type labelUpdater struct {
 	taskName        string
 }
 
+// update is a dutinfo.UpdateFunc for updating DUT inventory labels.
+// If adminServiceURL is empty, this method does nothing.
 func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
+	if u.adminServiceURL == "" {
+		return nil
+	}
 	c := new.GetCommon()
 	client, err := admin.NewInventoryClient(u.adminServiceURL)
 	if err != nil {
