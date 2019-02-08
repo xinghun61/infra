@@ -1,0 +1,12 @@
+package: infra/gce/agent/${platform}
+description: GCE Provider agent.
+platforms:
+  - linux-amd64
+  - windows-amd64
+install_mode: copy
+go_packages:
+  - go.chromium.org/luci/gce/cmd/agent
+root: ../../go/bin
+data:
+  - file: agent${exe_suffix}
+  - version_file: .versions/agent${exe_suffix}.cipd_version
