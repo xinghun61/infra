@@ -177,16 +177,16 @@ func (i *Info) exposeHostInfo(hi *hostinfo.HostInfo, resultsDir string, dutName 
 
 // labelUpdater implements an update method that is used as a dutinfo.UpdateFunc.
 type labelUpdater struct {
-	ctx             context.Context
-	adminServiceURL string
-	taskURL         string
-	taskName        string
+	ctx          context.Context
+	adminService string
+	taskURL      string
+	taskName     string
 }
 
 // update is a dutinfo.UpdateFunc for updating DUT inventory labels.
 // If adminServiceURL is empty, this method does nothing.
 func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
-	if u.adminServiceURL == "" {
+	if u.adminService == "" {
 		return nil
 	}
 	client, err := u.makeClient()
@@ -219,7 +219,7 @@ func (u labelUpdater) makeClient() (fleet.InventoryClient, error) {
 			"https://www.googleapis.com/auth/cloud-platform",
 		},
 	}
-	c, err := admin.NewInventoryClient(ctx, u.adminServiceURL, o)
+	c, err := admin.NewInventoryClient(ctx, u.adminService, o)
 	if err != nil {
 		return nil, err
 	}

@@ -8,10 +8,11 @@ package harness
 type Option func(*Info)
 
 // UpdateInventory returns an Option that enables inventory updates.
-// The admin service URL for updating needs to be provided.
-func UpdateInventory(adminServiceURL string) Option {
+// The admin service for updating needs to be provided,
+// e.g. foo.appspot.com.
+func UpdateInventory(adminService string) Option {
 	return func(i *Info) {
-		i.labelUpdater.adminServiceURL = adminServiceURL
+		i.labelUpdater.adminService = adminService
 	}
 }
 
