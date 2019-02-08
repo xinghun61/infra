@@ -189,18 +189,7 @@ func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
 	if u.adminServiceURL == "" {
 		return nil
 	}
-	ctx, err := lucictx.SwitchLocalAccount(u.ctx, "task")
-	if err != nil {
-		return errors.Annotate(err, "update inventory labels").Err()
-	}
-	o := auth.Options{
-		Method: auth.LUCIContextMethod,
-		Scopes: []string{
-			auth.OAuthScopeEmail,
-			"https://www.googleapis.com/auth/cloud-platform",
-		},
-	}
-	client, err := admin.NewInventoryClient(ctx, u.adminServiceURL, o)
+	client, err := u.makeClient()
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
@@ -208,7 +197,7 @@ func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
-	resp, err := client.UpdateDutLabels(ctx, req)
+	resp, err := client.UpdateDutLabels(u.ctx, req)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
@@ -218,11 +207,30 @@ func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
 	return nil
 }
 
+func (u labelUpdater) makeClient() (fleet.InventoryClient, error) {
+	ctx, err := lucictx.SwitchLocalAccount(u.ctx, "task")
+	if err != nil {
+		return nil, err
+	}
+	o := auth.Options{
+		Method: auth.LUCIContextMethod,
+		Scopes: []string{
+			auth.OAuthScopeEmail,
+			"https://www.googleapis.com/auth/cloud-platform",
+		},
+	}
+	c, err := admin.NewInventoryClient(ctx, u.adminServiceURL, o)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
 func (u labelUpdater) makeRequest(new *inventory.DeviceUnderTest) (*fleet.UpdateDutLabelsRequest, error) {
 	c := new.GetCommon()
 	d, err := proto.Marshal(c.GetLabels())
 	if err != nil {
-		return nil, errors.Annotate(err, "update inventory labels").Err()
+		return nil, err
 	}
 	req := fleet.UpdateDutLabelsRequest{
 		DutId:  c.GetId(),
