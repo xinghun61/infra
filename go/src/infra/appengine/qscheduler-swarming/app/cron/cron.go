@@ -19,6 +19,7 @@ import (
 	"net/http"
 	"time"
 
+	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/frontend"
 	"infra/appengine/qscheduler-swarming/app/state"
 	swarming "infra/swarming"
@@ -38,6 +39,7 @@ import (
 func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	mwCron := mwBase.Extend(gaemiddleware.RequireCron)
 	r.GET("/internal/cron/refresh-schedulers", mwCron, logAndSetHTTPError(refreshSchedulers))
+	r.GET("/internal/cron/flush-bq-events", mwCron, logAndSetHTTPError(flushEventLogs))
 }
 
 func logAndSetHTTPError(f func(c *router.Context) error) func(*router.Context) {
@@ -68,4 +70,9 @@ func refreshSchedulers(c *router.Context) error {
 	}
 
 	return nil
+}
+
+func flushEventLogs(c *router.Context) error {
+	ctx := c.Context
+	return eventlog.FlushEvents(ctx)
 }
