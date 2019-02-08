@@ -126,6 +126,7 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 		Pool:                 cfg.Swarming.BotPool,
 		Priority:             req.Priority,
 		Tags:                 tags,
+		User:                 cfg.Tasker.AdminTaskUser,
 	})
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create task for dut %s", bse.DutID).Err()
@@ -203,6 +204,7 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 		Pool:                 cfg.Swarming.BotPool,
 		Priority:             req.Priority,
 		Tags:                 tags,
+		User:                 cfg.Tasker.AdminTaskUser,
 	})
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create task for dut %s", bse.DutID).Err()
@@ -270,6 +272,7 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 			Pool:                 cfg.Swarming.BotPool,
 			Priority:             req.Priority,
 			Tags:                 tags,
+			User:                 cfg.Tasker.AdminTaskUser,
 		})
 		if err != nil {
 			return nil, errors.Annotate(err, "Error when creating %dth task for dut %q", i+1, bse.DutID).Err()
