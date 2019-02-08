@@ -28,8 +28,8 @@ func TestBestPriority(t *testing.T) {
 		1,
 	}
 	actuals := []Priority{
-		BestPriorityFor(balance{0, 0, 0}),
-		BestPriorityFor(balance{0, 1, 0}),
+		BestPriorityFor(Balance{0, 0, 0}),
+		BestPriorityFor(Balance{0, 1, 0}),
 	}
 
 	for i, expect := range expects {
@@ -44,13 +44,13 @@ func TestBestPriority(t *testing.T) {
 // when an account is not overflowing its MaxBalance.
 func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 	t.Parallel()
-	expect := balance{0, 2, 4}
+	expect := Balance{0, 2, 4}
 
 	config := &AccountConfig{
 		ChargeRate:       []float64{1, 2, 3},
 		MaxChargeSeconds: 10,
 	}
-	before := balance{}
+	before := Balance{}
 	actual := nextBalance(before, config, 2, []int{1, 1, 1})
 
 	if diff := pretty.Compare(actual, expect); diff != "" {
@@ -74,7 +74,7 @@ func TestAccountAdvanceWithOverflow(t *testing.T) {
 		MaxChargeSeconds: 10,
 	}
 
-	before := balance{9.5, 12, 10.5}
+	before := Balance{9.5, 12, 10.5}
 	actual := nextBalance(before, config, 1, []int{0, 1, 1})
 
 	if diff := pretty.Compare(actual, expect); diff != "" {

@@ -213,14 +213,14 @@ func TestSchedulerReprioritize(t *testing.T) {
 		s := New(tm0)
 		aid := AccountID("a1")
 		s.config.AccountConfigs[string(aid)] = &AccountConfig{ChargeRate: []float64{1.1, 0.9}}
-		s.state.balances[aid] = balance{2 * DemoteThreshold, 2 * PromoteThreshold, 0}
+		s.state.balances[aid] = Balance{2 * DemoteThreshold, 2 * PromoteThreshold, 0}
 
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
 			wid := WorkerID(fmt.Sprintf("w%d", i))
 			addRunningRequest(ctx, s, rid, wid, aid, 0, tm0)
 		}
-		s.state.workers["w2"].runningTask.cost = balance{1, 0, 0}
+		s.state.workers["w2"].runningTask.cost = Balance{1, 0, 0}
 
 		Convey("given both requests running at P0", func() {
 			Convey("when scheduling", func() {
@@ -263,12 +263,12 @@ func TestSchedulerPreempt(t *testing.T) {
 			s.MarkIdle(ctx, wid, stringset.New(0), tm0, NullMetricsSink)
 			s.state.applyAssignment(&Assignment{RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker, Priority: 1})
 		}
-		s.state.workers["w1"].runningTask.cost = balance{0, 1, 0}
+		s.state.workers["w1"].runningTask.cost = Balance{0, 1, 0}
 		Convey("given a new P0 request from a different account", func() {
 			s.AddAccount(ctx, "a2", NewAccountConfig(0, 0, nil), nil)
 			s.AddRequest(ctx, NewTaskRequest("r3", "a2", nil, nil, tm0), tm0, NullMetricsSink)
 			Convey("given sufficient balance", func() {
-				s.state.balances["a2"] = balance{1}
+				s.state.balances["a2"] = Balance{1}
 				Convey("when scheduling", func() {
 					tm1 := time.Unix(1, 0)
 					s.UpdateTime(ctx, tm1)
@@ -351,14 +351,14 @@ func TestUpdateBalance(t *testing.T) {
 
 		Convey("then a zeroed balance for that account exists", func() {
 			So(s.state.balances, ShouldContainKey, aID)
-			So(s.state.balances[aID], ShouldResemble, balance{})
+			So(s.state.balances[aID], ShouldResemble, Balance{})
 		})
 
 		Convey("when updating time forward", func() {
 			t1 := t0.Add(time.Second)
 			s.UpdateTime(ctx, t1)
 			Convey("then account balance should be increased according to charge rate", func() {
-				So(s.state.balances[aID], ShouldResemble, balance{1, 2, 3})
+				So(s.state.balances[aID], ShouldResemble, Balance{1, 2, 3})
 			})
 		})
 
@@ -366,7 +366,7 @@ func TestUpdateBalance(t *testing.T) {
 			t1 := t0.Add(10 * time.Second)
 			s.UpdateTime(ctx, t1)
 			Convey("then account balance saturates at the maximum charge.", func() {
-				So(s.state.balances[aID], ShouldResemble, balance{2, 4, 6})
+				So(s.state.balances[aID], ShouldResemble, Balance{2, 4, 6})
 			})
 		})
 
@@ -396,7 +396,7 @@ func TestUpdateBalance(t *testing.T) {
 				t1 := t0.Add(time.Second)
 				s.UpdateTime(ctx, t1)
 				Convey("then account balance reflects charges for running tasks.", func() {
-					So(s.state.balances[aID], ShouldResemble, balance{-1, 2, 3})
+					So(s.state.balances[aID], ShouldResemble, Balance{-1, 2, 3})
 				})
 			})
 		})

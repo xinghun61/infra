@@ -34,7 +34,7 @@ func sortDescendingCost(ws []*worker) {
 	sort.SliceStable(ws, less)
 }
 
-func less(a balance, b balance) bool {
+func less(a Balance, b Balance) bool {
 	for i := range a {
 		if a[i] < b[i] {
 			return true

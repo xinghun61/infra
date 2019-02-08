@@ -33,7 +33,7 @@ const (
 //
 // If the account is out of quota, or if the supplied balance is a nil
 // pointer, then this returns FreeBucket.
-func BestPriorityFor(b balance) Priority {
+func BestPriorityFor(b Balance) Priority {
 	for priority, value := range b {
 		if value > 0 {
 			return Priority(priority)
@@ -47,8 +47,8 @@ func BestPriorityFor(b balance) Priority {
 // The new balance calculation is based on the account's recharge rate,
 // maximum balance, and the number of currently running jobs per priority
 // bucket for that account.
-func nextBalance(before balance, c *AccountConfig, elapsedSecs float64, runningJobs []int) balance {
-	b := balance{}
+func nextBalance(before Balance, c *AccountConfig, elapsedSecs float64, runningJobs []int) Balance {
+	b := Balance{}
 	for priority := 0; priority < NumPriorities; priority++ {
 		val := before[priority]
 		val -= elapsedSecs * float64(runningJobs[priority])

@@ -33,7 +33,7 @@ type state struct {
 	// balance of all quota accounts for this pool, keyed by account id.
 	// TODO(akeshet): Turn this into map[string]*balance, and then get rid of a bunch of
 	// unnecessary array copying.
-	balances map[AccountID]balance
+	balances map[AccountID]Balance
 
 	// workers that may run tasks, and their states, keyed by worker id.
 	workers map[WorkerID]*worker
@@ -91,7 +91,7 @@ type taskRun struct {
 	// cost is the total cost that has been incurred on this task while running.
 	// TODO(akeshet): Turn this into map[string]*balance, and then get rid of a bunch of
 	// unnecessary array copying.
-	cost balance
+	cost Balance
 
 	// request is the request that this running task corresponds to.
 	request *TaskRequest
@@ -292,7 +292,7 @@ func (s *state) deleteWorkerIfOlder(workerID WorkerID, t time.Time) {
 func (s *state) applyAssignment(m *Assignment) {
 	s.validateAssignment(m)
 
-	cost := balance{}
+	var cost Balance
 
 	// If preempting, determine initial cost, and apply and preconditions
 	// to starting the new task run.
@@ -300,10 +300,10 @@ func (s *state) applyAssignment(m *Assignment) {
 		worker := s.workers[m.WorkerID]
 		cost = worker.runningTask.cost
 		// Refund the cost of the preempted task.
-		s.refundAccount(worker.runningTask.request.AccountID, cost)
+		s.refundAccount(worker.runningTask.request.AccountID, &cost)
 
 		// Charge the preempting account for the cost of the preempted task.
-		s.chargeAccount(s.queuedRequests[m.RequestID].AccountID, cost)
+		s.chargeAccount(s.queuedRequests[m.RequestID].AccountID, &cost)
 
 		// Remove the preempted job from worker.
 		oldRequestID := worker.runningTask.request.ID
@@ -353,28 +353,24 @@ func (s *state) validateAssignment(m *Assignment) {
 
 // refundAccount applies a cost-sized refund to account with given id (if it
 // exists).
-// TODO(akeshet): Update this and the related methods to accept a *balance argument
-// rather than balance, to avoid a lot of unneeded array copying.
-func (s *state) refundAccount(accountID AccountID, cost balance) {
+func (s *state) refundAccount(accountID AccountID, cost *Balance) {
 	if _, ok := s.balances[accountID]; ok {
-		bal := s.balances[accountID].Plus(cost)
-		s.balances[accountID] = bal
+		s.balances[accountID] = s.balances[accountID].Add(cost)
 	}
 }
 
 // chargeAccount applies a cost-sized charge to the account with given id (if it
 // exists).
-func (s *state) chargeAccount(accountID AccountID, cost balance) {
+func (s *state) chargeAccount(accountID AccountID, cost *Balance) {
 	if _, ok := s.balances[accountID]; ok {
-		bal := s.balances[accountID].Minus(cost)
-		s.balances[accountID] = bal
+		s.balances[accountID] = s.balances[accountID].Sub(cost)
 	}
 }
 
 // startRunning starts the given requestID on the given workerID.
 // It does not validate inputs, so it should only be called if that worker
 // and request currently exist and are idle.
-func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority Priority, initialCost balance) {
+func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority Priority, initialCost Balance) {
 	rt := &taskRun{
 		priority: priority,
 		request:  s.queuedRequests[requestID],

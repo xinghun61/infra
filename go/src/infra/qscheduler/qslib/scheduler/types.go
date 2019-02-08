@@ -32,7 +32,7 @@ func NewConfig() *Config {
 // newState creates an returns a new State instance with all maps initialized.
 func newState(t time.Time) *state {
 	return &state{
-		balances:             map[AccountID]balance{},
+		balances:             map[AccountID]Balance{},
 		queuedRequests:       map[RequestID]*TaskRequest{},
 		workers:              map[WorkerID]*worker{},
 		runningRequestsCache: map[RequestID]WorkerID{},
@@ -60,7 +60,7 @@ func newStateFromProto(sp *StateProto) *state {
 	for wid, w := range sp.Workers {
 		var tr *taskRun
 		if w.RunningTask != nil {
-			cost := balance{}
+			cost := Balance{}
 			copy(cost[:], w.RunningTask.Cost)
 			tr = &taskRun{
 				cost:     cost,
@@ -84,9 +84,9 @@ func newStateFromProto(sp *StateProto) *state {
 		}
 	}
 
-	s.balances = make(map[AccountID]balance, len(sp.Balances))
+	s.balances = make(map[AccountID]Balance, len(sp.Balances))
 	for aid, bal := range sp.Balances {
-		newBal := balance{}
+		newBal := Balance{}
 		copy(newBal[:], bal.Value)
 		s.balances[AccountID(aid)] = newBal
 	}

@@ -319,7 +319,7 @@ func TestApplyPreempt(t *testing.T) {
 		s := newState(tm)
 		s.workers["w1"] = &worker{ID: "w1"}
 		s.workers["w1"].runningTask = &taskRun{
-			cost:     balance{1},
+			cost:     Balance{1},
 			priority: 2,
 			request: &TaskRequest{
 				ID:        "t1",
@@ -330,8 +330,8 @@ func TestApplyPreempt(t *testing.T) {
 			ID:        "t2",
 			AccountID: "a2",
 		}
-		s.balances["a1"] = balance{1}
-		s.balances["a2"] = balance{2}
+		s.balances["a1"] = Balance{1}
+		s.balances["a2"] = Balance{2}
 
 		Convey("when a preemption assignment is applied", func() {
 			mut := &Assignment{Type: AssignmentPreemptWorker, Priority: 1, RequestID: "t2", WorkerID: "w1", TaskToAbort: "t1"}
@@ -341,10 +341,10 @@ func TestApplyPreempt(t *testing.T) {
 				So(s.queuedRequests, ShouldBeEmpty)
 				rt := s.workers["w1"].runningTask
 				So(rt, ShouldNotBeNil)
-				So(rt.cost, ShouldResemble, balance{1})
+				So(rt.cost, ShouldResemble, Balance{1})
 				So(rt.request.ID, ShouldEqual, "t2")
-				So(s.balances["a1"], ShouldResemble, balance{2})
-				So(s.balances["a2"], ShouldResemble, balance{1})
+				So(s.balances["a1"], ShouldResemble, Balance{2})
+				So(s.balances["a2"], ShouldResemble, Balance{1})
 			})
 		})
 	})

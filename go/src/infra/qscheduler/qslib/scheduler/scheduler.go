@@ -135,7 +135,7 @@ func (e *UpdateOrderError) Error() string {
 // If an account with that id already exists, then it is overwritten.
 func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *AccountConfig, initialBalance []float64) error {
 	s.config.AccountConfigs[string(id)] = config
-	bal := balance{}
+	bal := Balance{}
 	copy(bal[:], initialBalance)
 	s.state.balances[id] = bal
 	return nil
@@ -201,7 +201,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 
 	// Determine the new account balance for each
 	// TODO(akeshet): Update balance in-place rather than creating all new map.
-	newBalances := make(map[AccountID]balance)
+	newBalances := make(map[AccountID]Balance)
 	for id, acct := range config.AccountConfigs {
 		accountID := AccountID(id)
 		before := state.balances[accountID]

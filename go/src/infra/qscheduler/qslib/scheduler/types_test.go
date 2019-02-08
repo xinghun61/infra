@@ -28,24 +28,24 @@ import (
 func TestClone(t *testing.T) {
 	Convey("Given a state with some balances, accounts, and requests", t, func() {
 		s := &state{
-			balances: map[AccountID]balance{
+			balances: map[AccountID]Balance{
 				"account1": {1, 2, 3},
 				"account2": {3, 4, 5},
 			},
 			workers: map[WorkerID]*worker{
-				"worker1": {ID: "worker1", runningTask: &taskRun{cost: balance{11, 12, 13}, request: &TaskRequest{ID: "r1"}}},
-				"worker2": {ID: "worker2", runningTask: &taskRun{cost: balance{13, 14, 15}, request: &TaskRequest{ID: "r2"}}},
+				"worker1": {ID: "worker1", runningTask: &taskRun{cost: Balance{11, 12, 13}, request: &TaskRequest{ID: "r1"}}},
+				"worker2": {ID: "worker2", runningTask: &taskRun{cost: Balance{13, 14, 15}, request: &TaskRequest{ID: "r2"}}},
 			},
 		}
 		Convey("when state is Cloned", func() {
 			sClone := s.Clone()
 			Convey("then account balance values should match.", func() {
-				So(sClone.balances["account1"], ShouldResemble, balance{1, 2, 3})
-				So(sClone.balances["account2"], ShouldResemble, balance{3, 4, 5})
+				So(sClone.balances["account1"], ShouldResemble, Balance{1, 2, 3})
+				So(sClone.balances["account2"], ShouldResemble, Balance{3, 4, 5})
 			})
 			Convey("then running task costs should match.", func() {
-				So(sClone.workers["worker1"].runningTask.cost, ShouldResemble, balance{11, 12, 13})
-				So(sClone.workers["worker2"].runningTask.cost, ShouldResemble, balance{13, 14, 15})
+				So(sClone.workers["worker1"].runningTask.cost, ShouldResemble, Balance{11, 12, 13})
+				So(sClone.workers["worker2"].runningTask.cost, ShouldResemble, Balance{13, 14, 15})
 			})
 		})
 	})
