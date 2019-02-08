@@ -127,7 +127,10 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
-      issue: Object,
+      issue: {
+        type: Object,
+        observer: '_issueChanged',
+      },
       issueId: Number,
       issueLoaded: Boolean,
       projectName: {
@@ -162,6 +165,11 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
     return [
       '_issueIdChanged(issueId, projectName)',
     ];
+  }
+
+  _issueChanged(issue) {
+    document.title =
+      `${issue.localId} - ${issue.summary} - ${issue.projectName} - Monorail`;
   }
 
   _projectNameChanged(projectName) {
