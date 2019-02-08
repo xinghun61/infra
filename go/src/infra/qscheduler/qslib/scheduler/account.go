@@ -47,10 +47,9 @@ func BestPriorityFor(b Balance) Priority {
 // The new balance calculation is based on the account's recharge rate,
 // maximum balance, and the number of currently running jobs per priority
 // bucket for that account.
-func nextBalance(before Balance, c *AccountConfig, elapsedSecs float64, runningJobs []int) Balance {
-	b := Balance{}
+func nextBalance(balance Balance, c *AccountConfig, elapsedSecs float64, runningJobs []int) Balance {
 	for priority := 0; priority < NumPriorities; priority++ {
-		val := before[priority]
+		val := balance[priority]
 		val -= elapsedSecs * float64(runningJobs[priority])
 		var chargeRate float64
 		if len(c.ChargeRate) > priority {
@@ -66,10 +65,10 @@ func nextBalance(before Balance, c *AccountConfig, elapsedSecs float64, runningJ
 				val = maxBalance
 			}
 		}
-		b[priority] = val
+		balance[priority] = val
 	}
 
-	return b
+	return balance
 }
 
 // TODO(akeshet): Consider removing the NewConfig helper, as it is not really

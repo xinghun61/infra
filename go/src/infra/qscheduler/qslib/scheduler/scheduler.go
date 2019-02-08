@@ -199,20 +199,24 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 		}
 	}
 
-	// Determine the new account balance for each
-	// TODO(akeshet): Update balance in-place rather than creating all new map.
-	newBalances := make(map[AccountID]Balance)
+	// Determine the new account balance for each account.
+
+	// Null out balances with no corresponding config.
+	for aid := range s.state.balances {
+		if _, ok := config.AccountConfigs[string(aid)]; !ok {
+			delete(s.state.balances, aid)
+		}
+	}
+
+	// Update account balances.
 	for id, acct := range config.AccountConfigs {
 		accountID := AccountID(id)
-		before := state.balances[accountID]
 		runningJobs := jobsPerAcct[accountID]
 		if runningJobs == nil {
 			runningJobs = make([]int, NumPriorities)
 		}
-		after := nextBalance(before, acct, elapsedSecs, runningJobs)
-		newBalances[accountID] = after
+		state.balances[accountID] = nextBalance(state.balances[accountID], acct, elapsedSecs, runningJobs)
 	}
-	state.balances = newBalances
 
 	state.lastUpdateTime = t
 
