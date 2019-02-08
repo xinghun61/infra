@@ -306,7 +306,7 @@ func (run *schedulerRun) Run(m MetricsSink) ([]*Assignment, error) {
 		// already running tasks that qualify.
 		run.reprioritizeRunningTasks(p)
 		// Step 4: Preempt any lower priority running tasks.
-		output = append(output, run.preemptRunningTasks(p)...)
+		output = append(output, run.preemptRunningTasks(p, m)...)
 		// Step 5: Give any requests that were throttled in this pass a chance to be scheduled
 		// during the final FreeBucket pass.
 		run.moveThrottledRequests(p)
@@ -570,7 +570,7 @@ func workersBelow(ws map[WorkerID]*worker, priority Priority, accountID AccountI
 // preemptRunningTasks interrupts lower priority already-running tasks, and
 // replaces them with higher priority tasks. When doing so, it also reimburses
 // the account that had been charged for the task.
-func (run *schedulerRun) preemptRunningTasks(priority Priority) []*Assignment {
+func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSink) []*Assignment {
 	state := run.scheduler.state
 	var output []*Assignment
 	candidates := make([]*worker, 0, len(state.workers))
@@ -617,6 +617,23 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority) []*Assignment {
 				Time:        state.lastUpdateTime,
 			}
 			run.assignRequestToWorker(worker.ID, m.node, priority)
+			mSink.AddEvent(
+				eventAssigned(m.request, worker, state, state.lastUpdateTime,
+					&metrics.TaskEvent_AssignedDetails{
+						Preempting:     true,
+						PreemptionCost: worker.runningTask.cost[:],
+						Priority:       int32(priority),
+						// TODO(akeshet): Compute this properly.
+						ProvisionRequired: false,
+					}))
+			mSink.AddEvent(
+				eventPreempted(worker.runningTask.request, worker, state, state.lastUpdateTime,
+					&metrics.TaskEvent_PreemptedDetails{
+						PreemptingAccountId: string(m.request.AccountID),
+						PreemptingPriority:  int32(priority),
+						PreemptingTaskId:    string(m.request.ID),
+						Priority:            int32(worker.runningTask.priority),
+					}))
 			state.applyAssignment(mut)
 			output = append(output, mut)
 		}

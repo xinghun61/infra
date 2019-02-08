@@ -81,3 +81,10 @@ func eventAssigned(request *TaskRequest, w *worker, s *state, t time.Time, detai
 	e.Details = &metrics.TaskEvent_AssignedDetails_{AssignedDetails: details}
 	return e
 }
+
+func eventPreempted(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_PreemptedDetails) *metrics.TaskEvent {
+	e := eventCommon(request, w, s, t)
+	e.EventType = metrics.TaskEvent_PREEMPTED
+	e.Details = &metrics.TaskEvent_PreemptedDetails_{PreemptedDetails: details}
+	return e
+}
