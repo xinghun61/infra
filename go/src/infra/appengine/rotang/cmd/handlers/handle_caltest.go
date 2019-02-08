@@ -62,7 +62,7 @@ func testCal(ctx *router.Context, rota rotang.Configuration, cal rotang.Calender
 			EndTime:   start.Add(fullDay),
 			Comment:   "Test Event",
 		},
-	})
+	}, false)
 	if err != nil {
 		return &calResult{
 			Success: false,

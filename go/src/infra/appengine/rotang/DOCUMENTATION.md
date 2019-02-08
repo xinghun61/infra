@@ -242,6 +242,13 @@ Already scheduled shifts will be unaffected , you'll have to swap  with someone 
   * **Generator**
 
     What generator to use when scheduling new shifts.
+    
+  * **FullDayEvent**
+    
+    Enabling this option produces `AllDay` event in Google Calendar instead of the default DateTime events. 
+  
+    **Note**: This option is only available for 24h shifts.
+    
 
     * **Legacy**
 

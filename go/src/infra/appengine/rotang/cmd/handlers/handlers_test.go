@@ -122,7 +122,7 @@ func (f *fakeCal) SetTroopers(ret []string, fail bool) {
 	f.fail = fail
 }
 
-func (f *fakeCal) CreateEvent(_ *router.Context, _ *rotang.Configuration, shifts []rotang.ShiftEntry) ([]rotang.ShiftEntry, error) {
+func (f *fakeCal) CreateEvent(_ *router.Context, _ *rotang.Configuration, shifts []rotang.ShiftEntry, _ bool) ([]rotang.ShiftEntry, error) {
 	if f.fail {
 		return nil, status.Errorf(codes.Internal, "fake is failing as requested")
 	}

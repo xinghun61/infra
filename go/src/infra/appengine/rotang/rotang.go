@@ -64,6 +64,8 @@ type ShiftConfig struct {
 	Modifiers []string
 	// TZ TimeZone used.
 	TZ time.Location
+	// FullDayEvents creates FullDayEvents in the rotation calendar.
+	FullDayEvents bool
 }
 
 // Shift represents a shift in a 24h rotation.
@@ -215,7 +217,7 @@ type MailSender interface {
 
 // Calenderer is used to handle the shared rota calendars.
 type Calenderer interface {
-	CreateEvent(ctx *router.Context, cfg *Configuration, shifts []ShiftEntry) ([]ShiftEntry, error)
+	CreateEvent(ctx *router.Context, cfg *Configuration, shifts []ShiftEntry, sendUpdates bool) ([]ShiftEntry, error)
 	Event(ctx *router.Context, cfg *Configuration, shift *ShiftEntry) (*ShiftEntry, error)
 	Events(ctx *router.Context, cfg *Configuration, from, to time.Time) ([]ShiftEntry, error)
 	UpdateEvent(ctx *router.Context, cfg *Configuration, updated *ShiftEntry) (*ShiftEntry, error)

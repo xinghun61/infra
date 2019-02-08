@@ -244,7 +244,7 @@ func (h *State) handleGeneratedShifts(ctx *router.Context, cfg *rotang.Configura
 		logging.Infof(ctx.Context, "calendar not updated for rota: %q due to not being enabled")
 		return nil
 	}
-	resShifts, err := h.calendar.CreateEvent(ctx, cfg, shifts)
+	resShifts, err := h.calendar.CreateEvent(ctx, cfg, shifts, h.IsProduction())
 	if err != nil {
 		return err
 	}

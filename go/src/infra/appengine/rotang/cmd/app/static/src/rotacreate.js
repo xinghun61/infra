@@ -430,6 +430,7 @@ class RotaCreate extends LitElement {
                   <small>&#x1F5D1;</small>
                 </button>
               </td>
+              ${this.handleFullDay()}
             </tr>
           `)}
         </tbody>
@@ -437,6 +438,16 @@ class RotaCreate extends LitElement {
       <br>
       ${this.addShiftForm()}
     `;
+  }
+
+  handleFullDay() {
+    if (!this.shifts || this.shifts.length != 1) {
+      return html``;
+    }
+    return html`<td>${this.config.Cfg.Config.Shifts.FullDayEvents ?
+      html`<input id="fullDay" type="checkbox" checked>` :
+      html`<input id="fullDay" type="checkbox">`} FullDayEvents
+    </td>`;
   }
 
   addShiftForm() {
@@ -668,6 +679,7 @@ class RotaCreate extends LitElement {
             .value),
           Generator: this.shadowRoot.getElementById('shiftGenerator').value,
           Modifiers: this.buildModifiers(),
+          FullDayEvents: this.shadowRoot.getElementById('fullDay').checked,
           Shifts: this.buildShifts(),
         },
         Expiration: Number(this.shadowRoot.getElementById('expiration').value),

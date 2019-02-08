@@ -87,7 +87,7 @@ func shiftsEqual(a, b rotang.ShiftEntry) bool {
 }
 
 func (h *State) createNonExists(ctx *router.Context, cfg *rotang.Configuration, shift rotang.ShiftEntry) error {
-	shifts, err := h.calendar.CreateEvent(ctx, cfg, []rotang.ShiftEntry{shift})
+	shifts, err := h.calendar.CreateEvent(ctx, cfg, []rotang.ShiftEntry{shift}, h.IsProduction())
 	if err != nil {
 		return err
 	}

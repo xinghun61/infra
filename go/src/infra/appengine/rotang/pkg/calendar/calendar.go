@@ -34,7 +34,7 @@ func New(credFunc func(*router.Context) (*http.Client, error)) *Calendar {
 }
 
 // CreateEvent creates new calendar events from the provided ShiftEntries.
-func (c *Calendar) CreateEvent(ctx *router.Context, cfg *rotang.Configuration, shifts []rotang.ShiftEntry) ([]rotang.ShiftEntry, error) {
+func (c *Calendar) CreateEvent(ctx *router.Context, cfg *rotang.Configuration, shifts []rotang.ShiftEntry, sendUpdates bool) ([]rotang.ShiftEntry, error) {
 	if err := ctx.Context.Err(); err != nil {
 		return nil, err
 	}
@@ -54,10 +54,15 @@ func (c *Calendar) CreateEvent(ctx *router.Context, cfg *rotang.Configuration, s
 
 	var resEvt []*gcal.Event
 	for _, evt := range events {
-		e, err := cal.Events.Insert(cfg.Config.Calendar, evt).SendUpdates("all").Do()
+		insert := cal.Events.Insert(cfg.Config.Calendar, evt)
+		if sendUpdates {
+			insert = insert.SendUpdates("all")
+		}
+		e, err := insert.Do()
 		if err != nil {
 			return nil, err
 		}
+
 		resEvt = append(resEvt, e)
 	}
 
@@ -308,16 +313,16 @@ func shiftsToEvents(cfg *rotang.Configuration, shifts []rotang.ShiftEntry) ([]*g
 				Email: m.Email,
 			})
 		}
+		start, end, err := timeToCal(cfg, s)
+		if err != nil {
+			return nil, err
+		}
 		res = append(res, &gcal.Event{
 			Summary:     sum,
 			Attendees:   att,
 			Description: desc,
-			Start: &gcal.EventDateTime{
-				DateTime: s.StartTime.Format(time.RFC3339),
-			},
-			End: &gcal.EventDateTime{
-				DateTime: s.EndTime.Format(time.RFC3339),
-			},
+			Start:       start,
+			End:         end,
 		})
 	}
 	return res, nil
@@ -349,6 +354,28 @@ var mtvTime = func() *time.Location {
 	}
 	return loc
 }()
+
+// timeToCal converts times to Google Calendar EventDateTimes.
+// If the FullDay option is set the Date field of EvenDateTime will be used, if not DateTime will be used
+// to set a full Start/End time of the shift.
+func timeToCal(cfg *rotang.Configuration, shift rotang.ShiftEntry) (*gcal.EventDateTime, *gcal.EventDateTime, error) {
+	if len(cfg.Config.Shifts.Shifts) > 1 && cfg.Config.Shifts.FullDayEvents {
+		return nil, nil, status.Errorf(codes.InvalidArgument, "can't enable FullDayEvents with split shifts")
+	}
+	if cfg.Config.Shifts.FullDayEvents {
+		return &gcal.EventDateTime{
+				Date: shift.StartTime.Format(dayFormat),
+			}, &gcal.EventDateTime{
+				Date: shift.EndTime.Format(dayFormat),
+			}, nil
+	}
+
+	return &gcal.EventDateTime{
+			DateTime: shift.StartTime.Format(time.RFC3339),
+		}, &gcal.EventDateTime{
+			DateTime: shift.EndTime.Format(time.RFC3339),
+		}, nil
+}
 
 func calToTime(calTime *gcal.EventDateTime) (time.Time, error) {
 	tz := time.UTC
@@ -412,7 +439,6 @@ func (c *Calendar) UpdateEvent(ctx *router.Context, cfg *rotang.Configuration, u
 
 	res := shifts[0]
 	return &res, err
-
 }
 
 // DeleteEvent deletes the calendar event matching the provided shift.

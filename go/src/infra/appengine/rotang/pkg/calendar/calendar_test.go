@@ -111,7 +111,7 @@ func TestCreateEvent(t *testing.T) {
 	for _, tst := range tests {
 		t.Run(tst.name, func(t *testing.T) {
 			c := New(tst.credFunc)
-			_, err := c.CreateEvent(tst.ctx, tst.cfg, tst.shifts)
+			_, err := c.CreateEvent(tst.ctx, tst.cfg, tst.shifts, false)
 			if got, want := (err != nil), tst.fail; got != want {
 				t.Fatalf("%s: CreateEvent(ctx, _, _) = %t want: %t, err: %v", tst.name, got, want, err)
 			}
@@ -747,6 +747,52 @@ func TestShiftsToEvents(t *testing.T) {
 				},
 				End: &gcal.EventDateTime{
 					DateTime: midnight.Add(2 * 24 * time.Hour).Format(time.RFC3339),
+				},
+			},
+		},
+	}, {
+		name: "FullDay event",
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "Test Rota",
+				Description: "Calendar desc",
+				Shifts: rotang.ShiftConfig{
+					Shifts: []rotang.Shift{
+						{
+							Name: "MTV All Day",
+						},
+					},
+					FullDayEvents: true,
+				},
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						ShiftName: "MTV All Day",
+						Email:     "test1@test.com",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(2 * 24 * time.Hour),
+			},
+		},
+		want: []*gcal.Event{
+			{
+				Summary: "Test Rota",
+				Attendees: []*gcal.EventAttendee{
+					{
+						Email: "test1@test.com",
+					},
+				},
+				Description: "Calendar desc",
+				Start: &gcal.EventDateTime{
+					Date: midnight.Format(dayFormat),
+				},
+				End: &gcal.EventDateTime{
+					Date: midnight.Add(2 * 24 * time.Hour).Format(dayFormat),
 				},
 			},
 		},
