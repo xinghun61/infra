@@ -37,11 +37,12 @@ func stringToShifts(in, shiftName string) []rotang.ShiftEntry {
 	return res
 }
 
-func stringToMembers(in string) []rotang.Member {
+func stringToMembers(in string, tz *time.Location) []rotang.Member {
 	var res []rotang.Member
 	for _, c := range in {
 		res = append(res, rotang.Member{
 			Email: fmt.Sprintf("%c@%c.com", c, c),
+			TZ:    *tz,
 		})
 	}
 	return res
@@ -106,7 +107,7 @@ func TestMakeFair(t *testing.T) {
 	}}
 
 	for _, tst := range tests {
-		res := makeFair(stringToMembers(tst.members), stringToShifts(tst.shifts, "MTV all day"))
+		res := makeFair(stringToMembers(tst.members, mtvTime), stringToShifts(tst.shifts, "MTV all day"))
 		if got, want := membersToString(res), tst.want; got != want {
 			t.Errorf("%s: makeFair(_, _ ) = %q want: %q", tst.name, got, want)
 		}
@@ -274,7 +275,7 @@ func TestGenerateFair(t *testing.T) {
 
 	for _, tst := range tests {
 		tst.cfg.Members = stringToShiftMembers(tst.members, tst.cfg.Config.Shifts.Shifts[0].Name)
-		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous, tst.cfg.Config.Shifts.Shifts[0].Name), stringToMembers(tst.members), tst.numShifts)
+		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous, tst.cfg.Config.Shifts.Shifts[0].Name), stringToMembers(tst.members, mtvTime), tst.numShifts)
 		if got, want := (err != nil), tst.fail; got != want {
 			t.Errorf("%s: Generate(_) = %t want: %t, err: %v", tst.name, got, want, err)
 			continue

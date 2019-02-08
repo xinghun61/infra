@@ -110,7 +110,7 @@ func TestGenerateFairRandom(t *testing.T) {
 
 	for _, tst := range tests {
 		tst.cfg.Members = stringToShiftMembers(tst.members, tst.cfg.Config.Shifts.Shifts[0].Name)
-		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous, tst.cfg.Config.Shifts.Shifts[0].Name), stringToMembers(tst.members), tst.numShifts)
+		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous, tst.cfg.Config.Shifts.Shifts[0].Name), stringToMembers(tst.members, mtvTime), tst.numShifts)
 		if got, want := (err != nil), tst.fail; got != want {
 			t.Errorf("%s: Generate(_) = %t want: %t, err: %v", tst.name, got, want, err)
 			continue
@@ -350,7 +350,7 @@ func TestGenerateRandom(t *testing.T) {
 
 	for _, tst := range tests {
 		tst.cfg.Members = stringToShiftMembers(tst.members, tst.cfg.Config.Shifts.Shifts[0].Name)
-		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous, tst.cfg.Config.Shifts.Shifts[0].Name), stringToMembers(tst.members), tst.numShifts)
+		shifts, err := generator.Generate(tst.cfg, tst.start, stringToShifts(tst.previous, tst.cfg.Config.Shifts.Shifts[0].Name), stringToMembers(tst.members, mtvTime), tst.numShifts)
 		if got, want := (err != nil), tst.fail; got != want {
 			t.Errorf("%s: Generate(_) = %t want: %t, err: %v", tst.name, got, want, err)
 		}

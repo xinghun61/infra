@@ -19,7 +19,10 @@ export const TimeZones = [
   {name: 'America/New_York', description: 'New York'},
   {name: 'Asia/Tokyo', description: 'Tokyo'},
   {name: 'Australia/Sydney', description: 'Sydney'},
+  {name: 'EST', description: 'EST'},
   {name: 'Europe/Paris', description: 'Paris'},
   {name: 'Europe/Stockholm', description: 'Stockholm'},
+  {name: 'US/Pacific', description: 'PST'},
+  {name: 'UTC', description: 'UTC'},
 ];
 export const BugList = 'https://bugs.chromium.org/p/chromium/issues/entry?components=Infra%3EProdTech%3ERotation';

@@ -243,6 +243,22 @@ Already scheduled shifts will be unaffected , you'll have to swap  with someone 
 
     What generator to use when scheduling new shifts.
 
+    * **Legacy**
+
+     Tries to emulate the legacy scheduler.
+
+    * **Fair**
+
+      Add weights to historic number of shifts done and how recent a member was on call.
+
+    * **TZFair**
+
+      Adds one member per TZ to the shift. Among the members of a particular timezone it behaves the same as Fair.
+
+    * **Random**
+
+      Randomly assigns members to shifts.
+
 
 
 ### Manage shifts

@@ -158,6 +158,7 @@ func init() {
 	gs.Register(algo.NewLegacy())
 	gs.Register(algo.NewFair())
 	gs.Register(algo.NewRandomGen())
+	gs.Register(algo.NewTZFair())
 
 	// And the modifiers.
 	gs.RegisterModifier(algo.NewWeekendSkip())
