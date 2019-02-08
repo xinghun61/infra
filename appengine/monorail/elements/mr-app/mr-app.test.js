@@ -6,6 +6,7 @@ import {assert} from 'chai';
 import {MrApp} from './mr-app.js';
 import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
+import {actionType} from '../redux/redux-mixin.js';
 
 
 let element;
@@ -20,6 +21,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.removeChild(element);
+  element.dispatchAction({type: actionType.RESET_STATE});
 });
 
 test('initializes', () => {

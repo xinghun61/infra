@@ -6,7 +6,7 @@ import {assert} from 'chai';
 import {MrIssueDetails} from './mr-issue-details.js';
 import sinon from 'sinon';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {actionCreator} from '../../redux/redux-mixin.js';
+import {actionCreator, actionType} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -29,6 +29,7 @@ afterEach(() => {
   document.body.removeChild(element);
   window.prpcCall.restore();
   actionCreator.updateIssue.restore();
+  element.dispatchAction({type: actionType.RESET_STATE});
 });
 
 test('initializes', () => {

@@ -6,6 +6,7 @@ import {assert} from 'chai';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
+import {actionType} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -19,6 +20,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.removeChild(element);
+  element.dispatchAction({type: actionType.RESET_STATE});
 });
 
 test('initializes', () => {

@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {MrMetadata} from './mr-metadata.js';
+import {actionType} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -61,6 +62,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.removeChild(element);
+  element.dispatchAction({type: actionType.RESET_STATE});
 });
 
 test('initializes', () => {

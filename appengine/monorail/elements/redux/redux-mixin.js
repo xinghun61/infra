@@ -8,6 +8,7 @@ import {autolink} from '../../static/js/autolink.js';
 
 export const actionType = {
   // Misc global state.
+  RESET_STATE: 'RESET_STATE',
   UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
   UPDATE_FORMS_TO_CHECK: 'UPDATE_FORMS_TO_CHECK',
   CLEAR_FORMS_TO_CHECK: 'CLEAR_FORMS_TO_CHECK',
@@ -369,6 +370,9 @@ export const updateIssueApproval = (issue, approval) => {
 
 export const reducer = (state, action) => {
   switch (action.type) {
+    case actionType.RESET_STATE:
+      return Object.assign({}, initial);
+
     case actionType.UPDATE_ISSUE_REF:
       return Object.assign({}, state, {
         issueId: action.issueId || state.issueId,

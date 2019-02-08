@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {MrPhase} from './mr-phase.js';
+import {actionType} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -17,6 +18,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.removeChild(element);
+  element.dispatchAction({type: actionType.RESET_STATE});
 });
 
 test('initializes', () => {

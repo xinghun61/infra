@@ -17,6 +17,7 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.removeChild(element);
+  element.dispatchAction({type: actionType.RESET_STATE});
 });
 
 test('initializes', () => {
