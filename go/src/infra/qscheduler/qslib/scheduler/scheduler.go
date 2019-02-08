@@ -304,7 +304,7 @@ func (run *schedulerRun) Run(m MetricsSink) ([]*Assignment, error) {
 		output = append(output, run.matchIdleBots(p, basicMatch, m)...)
 		// Step 3: Demote (out of this level) or promote (into this level) any
 		// already running tasks that qualify.
-		run.reprioritizeRunningTasks(p)
+		run.reprioritizeRunningTasks(p, m)
 		// Step 4: Preempt any lower priority running tasks.
 		output = append(output, run.preemptRunningTasks(p, m)...)
 		// Step 5: Give any requests that were throttled in this pass a chance to be scheduled
@@ -480,7 +480,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, mSink Metr
 //
 // Running tasks are promoted if their quota account has a sufficiently positive
 // balance and a recharge rate that can sustain them at this level.
-func (run *schedulerRun) reprioritizeRunningTasks(priority Priority) {
+func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, mSink MetricsSink) {
 	state := run.scheduler.state
 	config := run.scheduler.config
 	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
@@ -505,10 +505,10 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority) {
 
 		switch {
 		case demote && chargeRate < 0:
-			doDemote(state, runningAtP, chargeRate, priority)
+			doDemote(state, runningAtP, chargeRate, priority, mSink)
 		case promote && chargeRate > 0:
 			runningBelowP := workersBelow(state.workers, priority, accountID)
-			doPromote(state, runningBelowP, chargeRate, priority)
+			doPromote(state, runningBelowP, chargeRate, priority, mSink)
 		}
 	}
 }
@@ -518,11 +518,17 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority) {
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *state, candidates []*worker, chargeRate float64, priority Priority) {
+func doDemote(state *state, candidates []*worker, chargeRate float64, priority Priority, mSink MetricsSink) {
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
 	for _, toDemote := range candidates[:numberToDemote] {
+		mSink.AddEvent(eventReprioritized(toDemote.runningTask.request, toDemote, state, state.lastUpdateTime,
+			&metrics.TaskEvent_ReprioritizedDetails{
+				NewPriority: int32(priority) + 1,
+				OldPriority: int32(toDemote.runningTask.priority),
+			},
+		))
 		toDemote.runningTask.priority = priority + 1
 	}
 }
@@ -530,11 +536,17 @@ func doDemote(state *state, candidates []*worker, chargeRate float64, priority P
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *state, candidates []*worker, chargeRate float64, priority Priority) {
+func doPromote(state *state, candidates []*worker, chargeRate float64, priority Priority, mSink MetricsSink) {
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
 	for _, toPromote := range candidates[:numberToPromote] {
+		mSink.AddEvent(eventReprioritized(toPromote.runningTask.request, toPromote, state, state.lastUpdateTime,
+			&metrics.TaskEvent_ReprioritizedDetails{
+				NewPriority: int32(priority) + 1,
+				OldPriority: int32(toPromote.runningTask.priority),
+			},
+		))
 		toPromote.runningTask.priority = priority
 	}
 }

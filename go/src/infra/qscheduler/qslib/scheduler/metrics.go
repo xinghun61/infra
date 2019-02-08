@@ -88,3 +88,10 @@ func eventPreempted(request *TaskRequest, w *worker, s *state, t time.Time, deta
 	e.Details = &metrics.TaskEvent_PreemptedDetails_{PreemptedDetails: details}
 	return e
 }
+
+func eventReprioritized(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_ReprioritizedDetails) *metrics.TaskEvent {
+	e := eventCommon(request, w, s, t)
+	e.EventType = metrics.TaskEvent_REPRIORITIZED
+	e.Details = &metrics.TaskEvent_ReprioritizedDetails_{ReprioritizedDetails: details}
+	return e
+}
