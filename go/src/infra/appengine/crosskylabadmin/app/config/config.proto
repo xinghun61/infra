@@ -14,121 +14,121 @@ option go_package = "config";
 
 // Config is the configuration data served by luci-config for this app.
 message Config {
-    // AccessGroup is the luci-auth group controlling access to admin app APIs.
-    string access_group = 1;
+  // AccessGroup is the luci-auth group controlling access to admin app APIs.
+  string access_group = 1;
 
-    // Swarming contains information about the Swarming instance that hosts the
-    // bots managed by this app.
-    Swarming swarming = 2;
+  // Swarming contains information about the Swarming instance that hosts the
+  // bots managed by this app.
+  Swarming swarming = 2;
 
-    // Tasker contains configuration data specific to the Tasker API endpoints.
-    Tasker tasker = 3;
+  // Tasker contains configuration data specific to the Tasker API endpoints.
+  Tasker tasker = 3;
 
-    // Cron contains the configuration data specific to cron jobs on this app.
-    Cron cron = 4;
+  // Cron contains the configuration data specific to cron jobs on this app.
+  Cron cron = 4;
 
-    // Inventory contains configuration information about skylab inventory
-    // repo.
-    Inventory inventory = 5;
+  // Inventory contains configuration information about skylab inventory
+  // repo.
+  Inventory inventory = 5;
 }
 
 // Swarming contains information about the Swarming instance that hosts the bots
 // managed by this app.
 message Swarming {
-    // Host is the swarming instance hosting skylab bots.
-    string host = 1;
+  // Host is the swarming instance hosting skylab bots.
+  string host = 1;
 
-    // BotPool is the swarming pool containing skylab bots.
-    string bot_pool = 2;
+  // BotPool is the swarming pool containing skylab bots.
+  string bot_pool = 2;
 
-    // FleetAdminTaskTag identifies all tasks created by the fleet admin app.
-    string fleet_admin_task_tag = 3;
+  // FleetAdminTaskTag identifies all tasks created by the fleet admin app.
+  string fleet_admin_task_tag = 3;
 
-    // LuciProjectTag is the swarming tag that associates the task with a
-    // luci project, allowing milo to work with the swarming UI.
-    string luci_project_tag = 4;
+  // LuciProjectTag is the swarming tag that associates the task with a
+  // luci project, allowing milo to work with the swarming UI.
+  string luci_project_tag = 4;
 }
 
 // Tasker contains configuration data specific to the Tasker API endpoints.
 message Tasker {
-    // BackgroundTaskExecutionTimeoutSecs is the execution timeout (in
-    // seconds) for background tasks created by tasker.
-    int64 background_task_execution_timeout_secs = 1;
+  // BackgroundTaskExecutionTimeoutSecs is the execution timeout (in
+  // seconds) for background tasks created by tasker.
+  int64 background_task_execution_timeout_secs = 1;
 
-    // BackgroundTaskExpirationSecs is the expiration time (in seconds) for
-    // background tasks created by tasker.
-    int64 background_task_expiration_secs = 2;
+  // BackgroundTaskExpirationSecs is the expiration time (in seconds) for
+  // background tasks created by tasker.
+  int64 background_task_expiration_secs = 2;
 
-    // LogdogHost is the Logdog host to use for logging from the created tasks.
-    string logdog_host = 3;
+  // LogdogHost is the Logdog host to use for logging from the created tasks.
+  string logdog_host = 3;
 }
 
 // Cron contains the configuration data specific to cron jobs on this app.
 message Cron {
-    // FleetAdminTaskPriority is the swarming task priority of created tasks.
-    //
-    // This must be numerically smaller (i.e. more important) than Skylab's test
-    // task priority range [49-255] and numerically larger than the minimum
-    // allowed Swarming priority (20) for non administrator users.
-    int64 fleet_admin_task_priority = 1;
+  // FleetAdminTaskPriority is the swarming task priority of created tasks.
+  //
+  // This must be numerically smaller (i.e. more important) than Skylab's test
+  // task priority range [49-255] and numerically larger than the minimum
+  // allowed Swarming priority (20) for non administrator users.
+  int64 fleet_admin_task_priority = 1;
 
-    // EnsureTasksCount is the number of background tasks maintained against
-    // each bot.
-    int32 ensure_tasks_count = 2;
+  // EnsureTasksCount is the number of background tasks maintained against
+  // each bot.
+  int32 ensure_tasks_count = 2;
 
-    // RepairIdleDuration is the duration for which a bot in the fleet must have
-    // been idle for a repair task to be created against it.
-    google.protobuf.Duration repair_idle_duration = 3;
+  // RepairIdleDuration is the duration for which a bot in the fleet must have
+  // been idle for a repair task to be created against it.
+  google.protobuf.Duration repair_idle_duration = 3;
 
-    // RepairAttemptDelayDuration is the time between successive attempts at
-    // repairing repair failed bots in the fleet.
-    google.protobuf.Duration repair_attempt_delay_duration = 4;
+  // RepairAttemptDelayDuration is the time between successive attempts at
+  // repairing repair failed bots in the fleet.
+  google.protobuf.Duration repair_attempt_delay_duration = 4;
 
-    // Configuration of automatic pool balancing to keep critical pools healthy.
-    PoolBalancer pool_balancer = 5;
+  // Configuration of automatic pool balancing to keep critical pools healthy.
+  PoolBalancer pool_balancer = 5;
 }
 
 // Skylab inventory is stored in a git project. A Gitiles server as well as
 // Gerrit review server are used by this app to view and update the inventory
 // data.
 message Inventory {
-    // Gitiles server hosting inventory project.
-    // e.g. chromium.googlesource.com
-    string gitiles_host = 1;
+  // Gitiles server hosting inventory project.
+  // e.g. chromium.googlesource.com
+  string gitiles_host = 1;
 
-    // Gerrit code review server hosting inventory project.
-    // e.g. chromium-review.googlesource.com
-    string gerrit_host = 2;
+  // Gerrit code review server hosting inventory project.
+  // e.g. chromium-review.googlesource.com
+  string gerrit_host = 2;
 
-    // Git project containing the inventory data.
-    string project = 3;
+  // Git project containing the inventory data.
+  string project = 3;
 
-    // Git branch from the inventory project to be used.
-    string branch = 4;
+  // Git branch from the inventory project to be used.
+  string branch = 4;
 
-    string data_path = 5 [deprecated=true];
+  string data_path = 5 [deprecated=true];
 
-    // Inventory environment managed by this instance of the app.
-    // e.g. ENVIRONMENT_STAGING
-    string environment = 6;
+  // Inventory environment managed by this instance of the app.
+  // e.g. ENVIRONMENT_STAGING
+  string environment = 6;
 
-    // Path to the infrastructure inventory data file within the git project.
-    // e.g. data/skylab/server_db.textpb
-    string infrastructure_data_path = 7;
+  // Path to the infrastructure inventory data file within the git project.
+  // e.g. data/skylab/server_db.textpb
+  string infrastructure_data_path = 7;
 
-    // Path to the lab inventory data file within the git project.
-    // e.g. data/skylab/lab.textpb
-    string lab_data_path = 8;
+  // Path to the lab inventory data file within the git project.
+  // e.g. data/skylab/lab.textpb
+  string lab_data_path = 8;
 }
 
 message PoolBalancer {
-    // Names of the pools to keep healthy automatically via pool balancing.
-    repeated string target_pools = 1;
+  // Names of the pools to keep healthy automatically via pool balancing.
+  repeated string target_pools = 1;
 
-    // Name of the pool to use as the spare pool for pool balancing.
-    string spare_pool = 2;
+  // Name of the pool to use as the spare pool for pool balancing.
+  string spare_pool = 2;
 
-    // Maximum number of unhealthy DUTs per model that can be balanced away from
-    // a single target pool.
-    int32 max_unhealthy_duts = 3;
+  // Maximum number of unhealthy DUTs per model that can be balanced away from
+  // a single target pool.
+  int32 max_unhealthy_duts = 3;
 }
