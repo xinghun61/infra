@@ -32,10 +32,11 @@ func NewConfig() *Config {
 // newState creates an returns a new State instance with all maps initialized.
 func newState(t time.Time) *state {
 	return &state{
-		balances:       map[AccountID]balance{},
-		queuedRequests: map[RequestID]*TaskRequest{},
-		workers:        map[WorkerID]*worker{},
-		lastUpdateTime: t,
+		balances:             map[AccountID]balance{},
+		queuedRequests:       map[RequestID]*TaskRequest{},
+		workers:              map[WorkerID]*worker{},
+		runningRequestsCache: map[RequestID]WorkerID{},
+		lastUpdateTime:       t,
 	}
 }
 

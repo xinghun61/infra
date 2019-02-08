@@ -209,7 +209,6 @@ func (s *state) abortRequest(ctx context.Context, requestID RequestID, t time.Ti
 // tasks, and returns (the request if it exists, boolean indication if
 // request exists).
 func (s *state) getRequest(requestID RequestID) (r *TaskRequest, ok bool) {
-	s.ensureCache()
 	if wid, ok := s.runningRequestsCache[requestID]; ok {
 		return s.workers[wid].runningTask.request, true
 	}
@@ -225,7 +224,6 @@ func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID
 	if requestID == "" {
 		panic("empty request ID")
 	}
-	s.ensureCache()
 	allegedWorkerID, isRunning := s.runningRequestsCache[requestID]
 	if allegedWorkerID == workerID {
 		// Our state is already correct, so just update times and we are done.
@@ -377,8 +375,6 @@ func (s *state) chargeAccount(accountID AccountID, cost balance) {
 // It does not validate inputs, so it should only be called if that worker
 // and request currently exist and are idle.
 func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority Priority, initialCost balance) {
-	s.ensureCache()
-
 	rt := &taskRun{
 		priority: priority,
 		request:  s.queuedRequests[requestID],
@@ -394,7 +390,6 @@ func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority Pr
 func (s *state) deleteWorker(workerID WorkerID) {
 	if worker, ok := s.workers[workerID]; ok {
 		if !worker.isIdle() {
-			s.ensureCache()
 			delete(s.runningRequestsCache, worker.runningTask.request.ID)
 		}
 		delete(s.workers, workerID)
@@ -404,40 +399,11 @@ func (s *state) deleteWorker(workerID WorkerID) {
 // deleteRequest deletes the request with the given ID, whether it is running
 // or queued. If the request is neither running nor enqueued, it does nothing.
 func (s *state) deleteRequest(requestID RequestID) {
-	// TODO(akeshet): eliminate most of these calls to ensureCache() by
-	// by adding a getWorkerForRequest method.
-	s.ensureCache()
 	if _, ok := s.queuedRequests[requestID]; ok {
 		delete(s.queuedRequests, requestID)
 	} else if workerID, ok := s.runningRequestsCache[requestID]; ok {
 		worker := s.workers[workerID]
 		worker.runningTask = nil
 		delete(s.runningRequestsCache, requestID)
-	}
-}
-
-// ensureCache ensures that the running request cache exists and regenerates it
-// if necessary. It should be called before attempting to access
-// RunningRequestCache.
-func (s *state) ensureCache() {
-	if s.runningRequestsCache == nil {
-		s.regenCache()
-	}
-}
-
-// regenCache recomputes and stores the RunningRequestsCache.
-func (s *state) regenCache() {
-	s.runningRequestsCache = make(map[RequestID]WorkerID)
-	for wid, w := range s.workers {
-		if w.isIdle() {
-			continue
-		}
-		rid := w.runningTask.request.ID
-		if existing, ok := s.runningRequestsCache[rid]; ok {
-			panic(fmt.Sprintf(
-				"Duplicate workers %s and %s assigned to a single request %s",
-				wid, existing, rid))
-		}
-		s.runningRequestsCache[rid] = wid
 	}
 }
