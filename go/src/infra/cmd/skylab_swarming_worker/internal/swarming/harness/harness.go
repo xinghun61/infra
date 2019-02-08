@@ -9,11 +9,16 @@ package harness
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 
+	"github.com/golang/protobuf/proto"
+	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/lucictx"
 
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/libs/skylab/inventory"
 
 	"infra/cmd/skylab_swarming_worker/internal/admin"
@@ -184,13 +189,45 @@ func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
 	if u.adminServiceURL == "" {
 		return nil
 	}
-	c := new.GetCommon()
-	client, err := admin.NewInventoryClient(u.adminServiceURL)
+	ctx, err := lucictx.SwitchLocalAccount(u.ctx, "task")
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
-	if err := admin.UpdateLabels(client, c.GetId(), c.GetLabels()); err != nil {
+	o := auth.Options{
+		Method: auth.LUCIContextMethod,
+		Scopes: []string{
+			auth.OAuthScopeEmail,
+			"https://www.googleapis.com/auth/cloud-platform",
+		},
+	}
+	client, err := admin.NewInventoryClient(ctx, u.adminServiceURL, o)
+	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
+	req, err := u.makeRequest(new)
+	if err != nil {
+		return errors.Annotate(err, "update inventory labels").Err()
+	}
+	resp, err := client.UpdateDutLabels(ctx, req)
+	if err != nil {
+		return errors.Annotate(err, "update inventory labels").Err()
+	}
+	if url := resp.GetUrl(); url != "" {
+		log.Printf("Updated DUT labels at %s", url)
+	}
 	return nil
+}
+
+func (u labelUpdater) makeRequest(new *inventory.DeviceUnderTest) (*fleet.UpdateDutLabelsRequest, error) {
+	c := new.GetCommon()
+	d, err := proto.Marshal(c.GetLabels())
+	if err != nil {
+		return nil, errors.Annotate(err, "update inventory labels").Err()
+	}
+	req := fleet.UpdateDutLabelsRequest{
+		DutId:  c.GetId(),
+		Labels: d,
+		Reason: fmt.Sprintf("%s %s", u.taskName, u.taskURL),
+	}
+	return &req, nil
 }
