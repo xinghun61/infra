@@ -9,6 +9,15 @@ import '../../chops/chops-timestamp/chops-timestamp.js';
 import '../../mr-comment-content/mr-comment-content.js';
 import '../../mr-dropdown/mr-dropdown.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+
+// Match: projectName:localIdFormat
+const ISSUE_ID_REGEX = /(?:-?([a-z0-9-]+):)?(\d+)/i;
+const ISSUE_REF_FIELD_NAMES = [
+  'Blocking',
+  'Blockedon',
+  'Mergedinto',
+];
+
 /**
  * `<mr-comments>`
  *
@@ -102,7 +111,21 @@ export class MrComments extends ReduxMixin(PolymerElement) {
             <template is="dom-if" if="[[_showDiff(comment)]]">
               <div class="issue-diff">
                 <template is="dom-repeat" items="[[comment.amendments]]" as="delta">
-                  <strong>[[delta.fieldName]]:</strong> [[delta.newOrDeltaValue]]
+                  <strong>[[delta.fieldName]]:</strong>
+                  <template
+                    is="dom-repeat"
+                    items="[[_issuesForAmendment(delta, projectName)]]"
+                    as="issue"
+                  >
+                    <mr-bug-link
+                      project-name="[[projectName]]"
+                      issue="[[issue.issue]]"
+                      text="[[issue.text]]"
+                    ></mr-bug-link>
+                  </template>
+                  <template is="dom-if" if="[[!_amendmentHasIssueRefs(delta.fieldName)]]">
+                    [[delta.newOrDeltaValue]]
+                  </template>
                   <template is="dom-if" if="[[delta.oldValue]]">
                     (was: [[delta.oldValue]])
                   </template>
@@ -152,6 +175,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
         type: Number,
         value: 4,
       },
+      projectName: String,
       editPermission: String,
       issuePermissions: Object,
       _commentsHidden: {
@@ -176,6 +200,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
+      projectName: state.projectName,
       issuePermissions: state.issuePermissions,
     };
   }
@@ -261,6 +286,30 @@ export class MrComments extends ReduxMixin(PolymerElement) {
 
   toggleComments() {
     this._commentsHidden = !this._commentsHidden;
+  }
+
+  _amendmentHasIssueRefs(fieldName) {
+    return ISSUE_REF_FIELD_NAMES.includes(fieldName);
+  }
+
+  _issuesForAmendment(delta, projectName) {
+    if (!this._amendmentHasIssueRefs(delta.fieldName)) {
+      return [];
+    }
+    // TODO(ehmaldonado): Request the issue to check for permissions and display
+    // the issue summary.
+    return delta.newOrDeltaValue.split(' ').map((issueRef) => {
+      const matches = issueRef.match(ISSUE_ID_REGEX);
+      return {
+        issue: {
+          projectName: matches[1] ? matches[1] : projectName,
+          localId: matches[2],
+          // Link all issues to the approval page.
+          approvalValues: true,
+        },
+        text: issueRef,
+      };
+    });
   }
 
   _computeCommentHidden(commentsHidden, commentsHiddenCount, index) {

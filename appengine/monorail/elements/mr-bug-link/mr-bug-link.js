@@ -20,14 +20,10 @@ export class MrBugLink extends PolymerElement {
         }
       </style>
       <a
-        id="bugLink"
-        href$="[[issueUrl]]"
+        id="_bugLink"
+        href$="[[_issueUrl]]"
         title$="[[issue.summary]]"
-      >
-        Issue <template
-          is="dom-if"
-          if="[[!_hideProjectName(projectName, issue.projectName)]]"
-        >[[issue.projectName]]:</template>[[issue.localId]]</a>
+      >[[_linkText]]</a>
     `;
   }
 
@@ -38,26 +34,39 @@ export class MrBugLink extends PolymerElement {
   static get properties() {
     return {
       issue: Object,
+      text: String,
       isClosed: {
         type: Boolean,
         reflectToAttribute: true,
       },
       projectName: String,
-      issueUrl: {
+      _issueUrl: {
         type: String,
         computed: '_computeIssueUrl(issue)',
+      },
+      _linkText: {
+        type: String,
+        computed: '_computeLinkText(projectName, issue, text)',
       },
     };
   }
 
-  _hideProjectName(mainProjectName, localProjectName) {
-    if (!mainProjectName || !localProjectName) return true;
-    return mainProjectName.toLowerCase() === localProjectName.toLowerCase();
+  _showProjectName(mainProjectName, localProjectName) {
+    if (!mainProjectName || !localProjectName) return false;
+    return mainProjectName.toLowerCase() !== localProjectName.toLowerCase();
   }
 
   _computeIssueUrl(issue) {
     const issueType = issue.approvalValues ? 'approval' : 'detail';
     return `/p/${issue.projectName}/issues/${issueType}?id=${issue.localId}`;
+  }
+
+  _computeLinkText(projectName, issue, text) {
+    if (text) return text;
+    const projectNamePart =
+      this._showProjectName(projectName, issue.projectName)
+      ? `${issue.projectName}:` : '';
+    return `Issue ${projectNamePart}${issue.localId}`;
   }
 }
 customElements.define(MrBugLink.is, MrBugLink);
