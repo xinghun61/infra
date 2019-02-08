@@ -211,7 +211,11 @@ func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, metrics 
 
 		switch update.State {
 		case TaskInstant_WAITING:
-			req := scheduler.NewTaskRequest(RequestID(update.RequestId), AccountID(update.AccountId), update.ProvisionableLabels, nil,
+			req := scheduler.NewTaskRequest(
+				RequestID(update.RequestId),
+				AccountID(update.AccountId),
+				update.ProvisionableLabels,
+				update.BaseLabels,
 				tutils.Timestamp(update.EnqueueTime))
 			// TODO(akeshet): Handle error from AddRequest.
 			s.AddRequest(ctx, req, tutils.Timestamp(update.Time), metrics)
