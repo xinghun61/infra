@@ -80,12 +80,6 @@
    <div id="flipper-box">
     <div>
      <mr-flipper />
-     <script
-       type="module"
-       async defer
-       src="/static/js/elements/mr-flipper.js?version=[app_version]"
-       nonce="[nonce]">
-     </script>
     </div>
    </div>
 

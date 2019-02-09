@@ -1,5 +1,12 @@
 [include "master-header-shared.ezt"]
 
+<script src="/static/dist/ezt-footer-scripts-package.min.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="module" nonce="[nonce]">
+// Load and instantiate pRPC client before any other script.
+window.prpcClient = new window.AutoRefreshPrpcClient(
+  CS_env.token, CS_env.tokenExpiresSec);
+</script>
+
 <style>
   body {
     box-sizing: border-box;
@@ -11,30 +18,3 @@
     min-width: 300px;
   }
 </style>
-
-<script type="text/javascript" nonce="[nonce]">
-/*
-Using a Promise to wait for prpc.js to load is necessary because JS module code
-executes after HTML imports are resolved.
-
-TODO(jeffcarp): Remove after transition to JS modules.
-*/
-
-window.__waitForPrpcLoading = new Promise((resolve) => {
-  window.__prpcClientOnLoad = resolve;
-});
-
-// For the time being, Polymer pages must use window.prpcCall.
-window.prpcCall = function(service, method, message) {
-  return new Promise(async (resolve, reject) => {
-    const client = await window.__waitForPrpcLoading;
-    client.call(service, method, message).then(resolve, reject);
-  });
-};
-</script>
-
-<script type="module" nonce="[nonce]">
-import AutoRefreshPrpcClient from '/[script_prefix_dir]/static/js/prpc.js';
-const client = new AutoRefreshPrpcClient(CS_env.token, CS_env.tokenExpiresSec);
-window.__prpcClientOnLoad(client);
-</script>

@@ -13,8 +13,8 @@ coverage
 htmlcov
 .DS_Store
 workspace.xml
-elements/**/*\.vulcanized.*
-elements/**/*\.min.js*
+static_src/**/*\.min.js*
+static/dist
 bower_components
 node_modules
 deployed_node_modules

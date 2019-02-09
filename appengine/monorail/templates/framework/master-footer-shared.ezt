@@ -1,11 +1,14 @@
+<script type="module" src="/static/dist/ezt-footer-scripts-package.min.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="module" nonce="[nonce]">
 // Load and instantiate pRPC client before any other script.
-import AutoRefreshPrpcClient from '/[script_prefix_dir]/static/js/prpc.js';
 window.prpcClient = new AutoRefreshPrpcClient(
   CS_env.token, CS_env.tokenExpiresSec);
 </script>
+<script type="text/javascript"
+  src="/deployed_node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js?version=[app_version]"
+  nonce="[nonce]"
+></script>
 
-<script type="text/javascript" src="/bower_components/webcomponentsjs/webcomponents-loader.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/framework/externs.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/framework/env.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/framework/framework-ajax.js?version=[app_version]" nonce="[nonce]"></script>
@@ -98,11 +101,4 @@ a.src=g;m.parentNode.insertBefore(a,m)
 
   ga('send', 'pageview');
 })();
-</script>
-
-<script
-  type="module"
-  async defer
-  src="/[script_prefix_dir]/static/js/monitoring/client-logger.js"
-  nonce="[nonce]">
 </script>

@@ -7,10 +7,3 @@
 </small></p>
 
 <mr-chart project-name="[projectname]"></mr-chart>
-
-<script
-  type="module"
-  src="/[script_prefix_dir]/static/js/elements/mr-chart.js?version=[app_version]"
-  async defer
-  nonce="[nonce]">
-</script>

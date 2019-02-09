@@ -10,9 +10,10 @@ const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPl
 
 const config = {
   entry: {
-    'elements/mr-app/mr-app': './elements/mr-app/mr-app.js',
-    'elements/chdir/mr-profile-page/mr-profile-page': './elements/chdir/mr-profile-page/mr-profile-page.js',
-    'elements/ezt-element-package': './elements/ezt-element-package.js',
+    'elements/mr-app/mr-app': './static_src/elements/mr-app/mr-app.js',
+    'elements/chdir/mr-profile-page/mr-profile-page': './static_src/elements/chdir/mr-profile-page/mr-profile-page.js',
+    'ezt-element-package': './static_src/ezt-element-package.js',
+    'ezt-footer-scripts-package': './static_src/ezt-footer-scripts-package.js',
   },
   devtool: 'inline-source-map',
   plugins: [],
@@ -21,7 +22,7 @@ const config = {
   },
   output: {
     filename: '[name].min.js',
-    path: path.resolve(__dirname),
+    path: path.resolve(__dirname, 'static/dist'),
   },
 };
 

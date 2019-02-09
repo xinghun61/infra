@@ -80,12 +80,12 @@ serve_remote_email: config_local
 run: serve
 
 deps:
-	bower install
 	npm install --no-save
 
-	mkdir -p deployed_node_modules/chart.js/dist/
-	cp node_modules/chart.js/dist/Chart.min.js \
-		deployed_node_modules/chart.js/dist/Chart.min.js
+	mkdir -p deployed_node_modules/@webcomponents/webcomponentsjs/
+
+	cp node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js \
+		deployed_node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js
 
 build_js:
 	$(WEBPACK_PATH) --mode=production
@@ -97,17 +97,8 @@ clean_deps:
 node_deps:
 	npm install
 
-bower_deps: node_deps
-	npx bower install
-
-wct: bower_deps
-	npx run-wct
-
-wct_debug: bower_deps
-	npx run-wct --debug
-
-karma: bower_deps
-	npx karma start
+karma: node_deps
+	npx karma start --single-run false
 
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py

@@ -43,34 +43,13 @@ handlers:
   static_files: static/database-maintenance.html
   upload: static/database-maintenance.html
 
-- url: /bower_components
-  static_dir: bower_components
-  secure: always
-  mime_type: application/javascript
-
-# Used with relative imports for cache busting.
-- url: /SCRIPT_PREFIX_DIR/bower_components
-  static_dir: bower_components
-  secure: always
-  mime_type: application/javascript
-
-- url: /node_modules
-  static_dir: node_modules
-  secure: always
-  mime_type: application/javascript
-
 - url: /deployed_node_modules
   static_dir: deployed_node_modules
   secure: always
   mime_type: application/javascript
 
-- url: /elements
-  static_dir: elements
-  secure: always
-
-# Used with relative imports for cache busting.
-- url: /SCRIPT_PREFIX_DIR/static/js
-  static_dir: static/js
+- url: /static/dist
+  static_dir: static/dist
   mime_type: application/javascript
   secure: always
 

@@ -16,7 +16,7 @@ module.exports = function(config) {
     client: {
       mocha: {
         reporter: 'html',
-        ui: 'qunit',
+        ui: 'tdd',
       },
     },
 
@@ -28,7 +28,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'elements/test/index.js',
+      'static_src/test/index.js',
     ],
 
 
@@ -40,7 +40,7 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      'elements/test/index.js': ['webpack', 'sourcemap'],
+      'static_src/test/index.js': ['webpack', 'sourcemap'],
     },
 
     plugins: [
@@ -61,7 +61,7 @@ module.exports = function(config) {
           {
             test: /\.js$/,
             loader: 'istanbul-instrumenter-loader',
-            include: path.resolve('elements/'),
+            include: path.resolve('static_src/'),
             query: {esModules: true},
           },
         ],

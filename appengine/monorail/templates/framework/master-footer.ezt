@@ -12,5 +12,7 @@
 
   [include "master-footer-shared.ezt"]
 
+  <script src="/static/dist/ezt-element-package.min.js?version=[app_version]" nonce="[nonce]"></script>
+
  </body>
 </html>

@@ -6,8 +6,6 @@
 ]
 [include "master-header-shared.ezt"]
 
-<script src="/elements/ezt-element-package.min.js?version=[app_version]" nonce="[nonce]"></script>
-
 <body class="[main_tab_mode] [if-any perms.EditIssue]perms_EditIssue[end]">
 
 [# Tiny script used sitewide. ]
