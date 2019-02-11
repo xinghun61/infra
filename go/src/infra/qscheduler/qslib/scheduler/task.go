@@ -21,12 +21,12 @@ import (
 )
 
 // NewTaskRequest creates a new TaskRequest.
-func NewTaskRequest(id RequestID, accountID AccountID, provisionableLabels []string,
-	baseLabels []string, enqueueTime time.Time) *TaskRequest {
+func NewTaskRequest(id RequestID, accountID AccountID, provisionableLabels stringset.Set,
+	baseLabels stringset.Set, enqueueTime time.Time) *TaskRequest {
 	return &TaskRequest{
 		AccountID:           accountID,
-		BaseLabels:          stringset.NewFromSlice(baseLabels...),
-		ProvisionableLabels: stringset.NewFromSlice(provisionableLabels...),
+		BaseLabels:          baseLabels,
+		ProvisionableLabels: provisionableLabels,
 		EnqueueTime:         enqueueTime,
 		ID:                  id,
 	}

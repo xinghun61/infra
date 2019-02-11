@@ -202,8 +202,8 @@ func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Schedule
 	req := scheduler.NewTaskRequest(
 		RequestID(update.RequestId),
 		AccountID(update.AccountId),
-		update.ProvisionableLabels,
-		update.BaseLabels,
+		stringset.NewFromSlice(update.ProvisionableLabels...),
+		stringset.NewFromSlice(update.BaseLabels...),
 		tutils.Timestamp(update.EnqueueTime))
 	// TODO(akeshet): Handle error from AddRequest.
 	s.AddRequest(ctx, req, tutils.Timestamp(update.Time), metrics)

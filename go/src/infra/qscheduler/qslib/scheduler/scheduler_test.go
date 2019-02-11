@@ -233,7 +233,7 @@ func TestUpdateBalance(t *testing.T) {
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
 func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri Priority, tm time.Time) {
-	s.AddRequest(ctx, NewTaskRequest(rid, aid, []string{}, nil, tm), tm, NullMetricsSink)
+	s.AddRequest(ctx, NewTaskRequest(rid, aid, nil, nil, tm), tm, NullMetricsSink)
 	s.MarkIdle(ctx, wid, stringset.New(0), tm, NullMetricsSink)
 	s.state.applyAssignment(&Assignment{Priority: pri, RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker})
 }
