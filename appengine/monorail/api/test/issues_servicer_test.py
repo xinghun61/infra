@@ -1146,6 +1146,50 @@ class IssuesServicerTest(unittest.TestCase):
         tracker_pb2.ApprovalDelta(),
         u'Better response.', True, attachments=[], send_email=False)
 
+  @patch('businesslogic.work_env.WorkEnv.ConvertIssueApprovalsTemplate')
+  def testConvertIssueApprovalsTemplate(self, mockWorkEnvConvertApprovals):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com',
+        auth=self.auth)
+    request = issues_pb2.ConvertIssueApprovalsTemplateRequest(
+        issue_ref=common_pb2.IssueRef(project_name='proj', local_id=1),
+        template_name='template_name')
+    response = self.CallWrapped(
+        self.issues_svcr.ConvertIssueApprovalsTemplate, mc, request)
+    mockWorkEnvConvertApprovals.assert_called_once_with(
+        self.issue_1, 'template_name')
+    self.assertEqual(
+        response.issue,
+        issue_objects_pb2.Issue(
+            project_name='proj',
+            local_id=1,
+            summary='sum',
+            owner_ref=common_pb2.UserRef(
+                user_id=111L, display_name='owner@example.com'),
+            status_ref=common_pb2.StatusRef(status='New', means_open=True),
+            blocked_on_issue_refs=[
+                common_pb2.IssueRef(project_name='proj', local_id=2)],
+            reporter_ref=common_pb2.UserRef(
+                user_id=111L, display_name='owner@example.com'),
+            opened_timestamp=1234567890,
+            ))
+
+  def testConvertIssueApprovalsTemplate_MissingRequiredFields(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com',
+        auth=self.auth)
+    request = issues_pb2.ConvertIssueApprovalsTemplateRequest(
+        issue_ref=common_pb2.IssueRef(project_name='proj', local_id=1))
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(
+          self.issues_svcr.ConvertIssueApprovalsTemplate, mc, request)
+
+    request = issues_pb2.ConvertIssueApprovalsTemplateRequest(
+        template_name='name')
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(
+          self.issues_svcr.ConvertIssueApprovalsTemplate, mc, request)
+
   @patch('businesslogic.work_env.WorkEnv.SnapshotCountsQuery')
   def testSnapshotCounts_RequiredFields(self, mockSnapshotCountsQuery):
     """Test that timestamp is required at all times.

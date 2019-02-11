@@ -30,6 +30,11 @@ class NoSuchProjectException(Error):
   pass
 
 
+class NoSuchTemplateException(Error):
+  """No template with the specified name exists."""
+  pass
+
+
 class NoSuchUserException(Error):
   """No user with the specified name exists."""
   pass

@@ -998,6 +998,30 @@ class WorkEnv(object):
 
     return approval_value, comment_pb
 
+  def ConvertIssueApprovalsTemplate(self, issue, template_name):
+    """Convert an issue's existing approvals structure to match the one of
+       the given template."""
+
+    template = self.services.template.GetTemplateByName(
+        self.mc.cnxn, template_name, issue.project_id)
+    if not template:
+      raise exceptions.NoSuchTemplateException(
+          'Template %s is not found' % template_name)
+    issue_approvals = {av.approval_id: av for av in issue.approval_values}
+    new_issue_approvals = []
+    for template_av in template.approval_values:
+      existing_issue_av = issue_approvals.get(template_av.approval_id)
+      if existing_issue_av:
+        existing_issue_av.phase_id = template_av.phase_id
+        new_issue_approvals.append(existing_issue_av)
+      else:
+        new_issue_approvals.append(template_av)
+
+    issue.approval_values = new_issue_approvals
+    issue.phases = template.phases
+    # TODO(jojwang): remove '_' from method name below.
+    self.services.issue._UpdateIssuesApprovals(self.mc.cnxn, issue)
+
   def UpdateIssue(
       self, issue, delta, comment_content, attachments=None, send_email=True,
       is_description=False):

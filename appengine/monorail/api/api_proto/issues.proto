@@ -30,6 +30,7 @@ service Issues {
   rpc DeleteComment (DeleteCommentRequest) returns (google.protobuf.Empty) {}
   rpc BulkUpdateApprovals (BulkUpdateApprovalsRequest) returns (BulkUpdateApprovalsResponse) {}
   rpc UpdateApproval (UpdateApprovalRequest) returns (UpdateApprovalResponse) {}
+  rpc ConvertIssueApprovalsTemplate (ConvertIssueApprovalsTemplateRequest) returns (ConvertIssueApprovalsTemplateResponse) {}
   rpc IssueSnapshot (IssueSnapshotRequest) returns (IssueSnapshotResponse) {}
   rpc PresubmitIssue (PresubmitIssueRequest) returns (PresubmitIssueResponse) {}
   rpc RerankBlockedOnIssues (RerankBlockedOnIssuesRequest) returns (RerankBlockedOnIssuesResponse) {}
@@ -231,6 +232,19 @@ message UpdateApprovalRequest {
 message UpdateApprovalResponse {
   Approval approval = 1;
   // TODO(jojwang): monorail:3895, add new_comment field.
+}
+
+
+// Next available tag: 3
+message ConvertIssueApprovalsTemplateRequest {
+  IssueRef issue_ref = 1;
+  string template_name = 2;
+}
+
+
+// Next available tag: 2
+message ConvertIssueApprovalsTemplateResponse {
+  Issue issue = 1;
 }
 
 

@@ -1037,6 +1037,77 @@ class WorkEnvTest(unittest.TestCase):
         comment_content='please review', is_description=False,
         attachments=attachments)
 
+  def testConvertIssueApprovalsTemplate(self):
+    """We can convert an issue's approvals to match template's approvals."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=3,
+            phase_id=4,
+            status=tracker_pb2.ApprovalStatus.APPROVED,
+            approver_ids=[111L],
+        ),
+        tracker_pb2.ApprovalValue(
+            approval_id=4,
+            phase_id=5,
+            approver_ids=[111L]),
+        tracker_pb2.ApprovalValue(approval_id=6)]
+    issue.phases = [
+        tracker_pb2.Phase(name='Expired', phase_id=4),
+        tracker_pb2.Phase(name='Canary', phase_id=5)]
+
+
+    self.services.issue._UpdateIssuesApprovals = mock.Mock()
+    self.SignIn()
+
+    template = testing_helpers.DefaultTemplates()[0]
+    template.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=3,
+            phase_id=6,  # Different phase. Nothing else affected.
+            approver_ids=[222L]),
+        # No phase. Nothing else affected.
+        tracker_pb2.ApprovalValue(approval_id=4),
+        # New approval not already found in issue.
+        tracker_pb2.ApprovalValue(
+            approval_id=7,
+            phase_id=5,
+            approver_ids=[222L]),
+    ]  # No approval 6
+    template.phases = [tracker_pb2.Phase(name='Canary', phase_id=5),
+                       tracker_pb2.Phase(name='Stable-Exp', phase_id=6)]
+    self.services.template.GetTemplateByName.return_value = template
+
+    self.work_env.ConvertIssueApprovalsTemplate(issue, 'template_name')
+
+    expected_avs = [
+      tracker_pb2.ApprovalValue(
+            approval_id=3,
+            phase_id=6,
+            status=tracker_pb2.ApprovalStatus.APPROVED,
+            approver_ids=[111L],
+        ),
+      tracker_pb2.ApprovalValue(
+          approval_id=4,
+          approver_ids=[111L]),
+      tracker_pb2.ApprovalValue(
+          approval_id=7,
+          phase_id=5,
+          approver_ids=[222L]),
+    ]
+    self.assertEqual(issue.approval_values, expected_avs)
+    self.assertEqual(issue.phases, template.phases)
+    self.services.template.GetTemplateByName.assert_called_once_with(
+        self.mr.cnxn, 'template_name', 789)
+    self.services.issue._UpdateIssuesApprovals.assert_called_once_with(
+        self.mr.cnxn, issue)
+
+  def testConvertIssueApprovalsTemplate_NoSuchTemplate(self):
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.template.GetTemplateByName.return_value = None
+    with self.assertRaises(exceptions.NoSuchTemplateException):
+      self.work_env.ConvertIssueApprovalsTemplate(issue, 'template_name')
+
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Normal(self, fake_pasicn):

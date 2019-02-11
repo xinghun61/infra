@@ -441,6 +441,35 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
     return response
 
   @monorail_servicer.PRPCMethod
+  def ConvertIssueApprovalsTemplate(self, mc, request):
+    """Update an issue's existing approvals structure to match the one of the
+       given template."""
+
+    if not request.issue_ref.local_id or not request.issue_ref.project_name:
+      raise exceptions.InputException('Param `issue_ref.local_id` empty')
+    if not request.template_name:
+      raise exceptions.InputException('Param `template_name` empty')
+
+    project, issue, config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.ConvertIssueApprovalsTemplate(issue, request.template_name)
+      related_refs = we.GetRelatedIssueRefs([issue])
+
+    with mc.profiler.Phase('making user views'):
+      users_involved_in_issue = tracker_bizobj.UsersInvolvedInIssues([issue])
+      users_by_id = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, users_involved_in_issue)
+      framework_views.RevealAllEmailsToMembers(mc.auth, project, users_by_id)
+
+    with mc.profiler.Phase('converting to response objects'):
+      response = issues_pb2.ConvertIssueApprovalsTemplateResponse()
+      response.issue.CopyFrom(converters.ConvertIssue(
+          issue, users_by_id, related_refs, config))
+    return response
+
+  @monorail_servicer.PRPCMethod
   def IssueSnapshot(self, mc, request):
     """Fetch IssueSnapshot counts for charting."""
     warnings = []

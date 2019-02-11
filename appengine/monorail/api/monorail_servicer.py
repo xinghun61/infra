@@ -226,6 +226,9 @@ class MonorailServicer(object):
     elif exc_type == exceptions.NoSuchProjectException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
       prpc_context.set_details('The project does not exist.')
+    elif exc_type == exceptions.NoSuchTemplateException:
+      prpc_context.set_code(codes.StatusCode.NOT_FOUND)
+      prpc_context.set_details('The template does not exist.')
     elif exc_type == exceptions.NoSuchIssueException:
       prpc_context.set_code(codes.StatusCode.NOT_FOUND)
       prpc_context.set_details('The issue does not exist.')
