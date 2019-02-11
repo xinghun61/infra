@@ -894,8 +894,16 @@ def ConvertConfig(
   return result
 
 
+def ConvertTemplates(templates):
+  """Convert protorpc TemplateDefs into protoc TemplateDefs."""
+  # TODO(jojwang): Convert remaining template fields when needed.
+  return [
+      project_objects_pb2.TemplateDef(template_name=template.name)
+      for template in templates]
+
+
 def ConvertHotlist(hotlist, users_by_id):
-  """Convert a protoprc Hotlist into a protoc Hotlist."""
+  """Convert a protorpc Hotlist into a protoc Hotlist."""
   owner_ref = ConvertUserRef(
       hotlist.owner_ids[0], None, users_by_id)
   result = features_objects_pb2.Hotlist(

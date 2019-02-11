@@ -11,6 +11,7 @@ from api.api_proto import projects_pb2
 from api.api_proto import project_objects_pb2
 from api.api_proto import projects_prpc_pb2
 from businesslogic import work_env
+from framework import exceptions
 from framework import framework_views
 from framework import permissions
 from project import project_helpers
@@ -42,6 +43,22 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
             project_objects_pb2.Project(name='One'),
             project_objects_pb2.Project(name='Two')],
         next_page_token='next...')
+
+  @monorail_servicer.PRPCMethod
+  def ListProjectTemplates(self, mc, request):
+    """Return the specific project's templates."""
+    if not request.project_name:
+      raise exceptions.InputException('Param `project_name` required.')
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      templates = we.ListProjectTemplates(project)
+
+    with mc.profiler.Phase('converting to response objects'):
+      response = projects_pb2.ListProjectTemplatesResponse(
+          templates=converters.ConvertTemplates(templates))
+
+    return response
 
   @monorail_servicer.PRPCMethod
   def GetConfig(self, mc, request):

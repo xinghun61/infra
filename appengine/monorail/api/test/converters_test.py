@@ -15,6 +15,7 @@ from api import converters
 from api.api_proto import common_pb2
 from api.api_proto import features_objects_pb2
 from api.api_proto import issue_objects_pb2
+from api.api_proto import project_objects_pb2
 from api.api_proto import user_objects_pb2
 from framework import exceptions
 from framework import permissions
@@ -1669,6 +1670,21 @@ class ConverterFunctionsTest(unittest.TestCase):
     actual = converters.ConvertConfig(
         self.project, self.config, self.users_by_id, labels_by_id)
     self.assertEqual(3, len(actual.field_defs))
+
+  def testConvertTemplates_Normal(self):
+    """We can convert protoc TemplateDefs."""
+    templates = [
+        tracker_pb2.TemplateDef(name='Chicken'),
+        tracker_pb2.TemplateDef(name='Kale')]
+    actual = converters.ConvertTemplates(templates)
+    expected = [project_objects_pb2.TemplateDef(template_name='Chicken'),
+                project_objects_pb2.TemplateDef(template_name='Kale')]
+    self.assertEqual(actual, expected)
+
+  def testConvertTemplates_Empty(self):
+    """We can convert an empty list of protoc TemplateDefs."""
+    actual = converters.ConvertTemplates([])
+    self.assertEqual(actual, [])
 
   def testConvertHotlist(self):
     """We can convert a hotlist to protoc."""

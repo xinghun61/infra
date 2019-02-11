@@ -6,6 +6,7 @@
 """Tests for the projects servicer."""
 
 import unittest
+from mock import patch
 
 import mox
 from components.prpc import codes
@@ -21,6 +22,7 @@ from framework import exceptions
 from framework import framework_constants
 from framework import monorailcontext
 from framework import permissions
+from proto import tracker_pb2
 from proto import project_pb2
 from tracker import tracker_constants
 from testing import fake
@@ -124,6 +126,43 @@ class ProjectsServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='nonmember@example.com')
     with self.assertRaises(permissions.PermissionException):
       self.CallWrapped(self.projects_svcr.GetConfig, mc, request)
+
+  @patch('businesslogic.work_env.WorkEnv.ListProjectTemplates')
+  def testListProjectTemplates_Normal(self, mockListProjectTemplates):
+    mockListProjectTemplates.return_value = [tracker_pb2.TemplateDef(
+        name='chicken')]
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    request = projects_pb2.ListProjectTemplatesRequest(project_name='proj')
+    response = self.CallWrapped(
+        self.projects_svcr.ListProjectTemplates, mc, request)
+    self.assertEqual(
+        response,
+        projects_pb2.ListProjectTemplatesResponse(
+            templates=[
+                project_objects_pb2.TemplateDef(template_name='chicken')]))
+
+  def testListProjectTemplates_NoProjectName(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    request = projects_pb2.ListProjectTemplatesRequest()
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.projects_svcr.ListProjectTemplates, mc, request)
+
+  def testListProjectTemplates_NoSuchProject(self):
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    request = projects_pb2.ListProjectTemplatesRequest(project_name='ghost')
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      self.CallWrapped(self.projects_svcr.ListProjectTemplates, mc, request)
+
+  def testListProjectTemplates_PermissionDenied(self):
+    self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='nonmember@example.com')
+    request = projects_pb2.GetConfigRequest(project_name='proj')
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.projects_svcr.ListProjectTemplates, mc, request)
 
   def testGetCustomPermissions_Normal(self):
     self.project.extra_perms = [

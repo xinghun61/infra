@@ -562,6 +562,34 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetProjectConfig(789)
 
+  def testListProjectTemplates_IsMember(self):
+    private_tmpl = tracker_pb2.TemplateDef(name='Chicken', members_only=True)
+    public_tmpl = tracker_pb2.TemplateDef(name='Kale', members_only=False)
+    self.services.template.GetProjectTemplates.return_value = [
+        private_tmpl, public_tmpl]
+
+    self.SignIn()  # user 111L is a member of self.project
+
+    with self.work_env as we:
+      actual = we.ListProjectTemplates(self.project)
+
+    self.assertEqual(actual, [private_tmpl, public_tmpl])
+    self.services.template.GetProjectTemplates.assert_called_once_with(
+        self.mr.cnxn, self.project.project_id)
+
+  def testListProjectTemplates_IsNotMember(self):
+    private_tmpl = tracker_pb2.TemplateDef(name='Chicken', members_only=True)
+    public_tmpl = tracker_pb2.TemplateDef(name='Kale', members_only=False)
+    self.services.template.GetProjectTemplates.return_value = [
+        private_tmpl, public_tmpl]
+
+    with self.work_env as we:
+      actual = we.ListProjectTemplates(self.project)
+
+    self.assertEqual(actual, [public_tmpl])
+    self.services.template.GetProjectTemplates.assert_called_once_with(
+        self.mr.cnxn, self.project.project_id)
+
   # FUTURE: labels, statuses, fields, components, rules, templates, and views.
   # FUTURE: project saved queries.
   # FUTURE: GetProjectPermissionsForUser()

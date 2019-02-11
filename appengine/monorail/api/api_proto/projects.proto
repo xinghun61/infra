@@ -14,6 +14,7 @@ import "api/api_proto/project_objects.proto";
 
 service Projects {
   rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse) {}
+  rpc ListProjectTemplates (ListProjectTemplatesRequest) returns (ListProjectTemplatesResponse) {}
   rpc GetConfig (GetConfigRequest) returns (Config) {}
   rpc GetCustomPermissions (GetCustomPermissionsRequest) returns (GetCustomPermissionsResponse) {}
   rpc GetVisibleMembers (GetVisibleMembersRequest) returns (GetVisibleMembersResponse) {}
@@ -41,6 +42,19 @@ message ListProjectsRequest {
 message ListProjectsResponse {
   repeated Project projects = 1;
   string next_page_token = 2;
+}
+
+
+// Next available tag: 3
+message ListProjectTemplatesRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+
+// Next available tag: 2
+message ListProjectTemplatesResponse {
+  repeated TemplateDef templates = 1;
 }
 
 

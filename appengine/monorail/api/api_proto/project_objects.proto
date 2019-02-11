@@ -97,9 +97,14 @@ message Config {
   repeated FieldDef field_defs = 7;
   repeated ApprovalDef approval_defs = 8;
   bool restrict_to_known = 9;
-  // TODO(jrobbins): Templates, maybe keep them separate.
   // TODO(jrobbins): Default query and grid options.
   // TODO(jrobbins): custom_issue_entry_url
 }
 
 
+// Next available tag: 2
+message TemplateDef {
+  string template_name = 1;
+  // TODO(jojwang): Add approvals and phases.
+  // TODO(jojwang): Add other fields.
+}
