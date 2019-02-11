@@ -29,8 +29,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var (
-	testDataDir          = "test_data"
+const (
+	testDataDir          = "testdata"
 	testMainRunScriptENV = "_VPYTHON_MAIN_TEST_RUN_SCRIPT"
 
 	behaveExactlyLikeVpythonENV = "_VPYTHON_MAIN_TEST_PASSTHROUGH"

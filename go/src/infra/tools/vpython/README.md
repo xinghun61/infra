@@ -16,7 +16,7 @@ install into the VirtualEnv. Infra's `vpython` implementation uses CIPD for
 package deployment. For more information, see
 [CIPD Client and Packages](#CIPD-Client-and-Packages).
 
-A user who wants to create a `vpython` spec for thier project should:
+A user who wants to create a `vpython` spec for their project should:
 
 1. Determine which Python packages and versions are needed.
 1. [Check CIPD](https://chrome-infra-packages.appspot.com/#/?path=infra/python/wheels/)
