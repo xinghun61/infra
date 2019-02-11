@@ -106,7 +106,7 @@ func (h *State) memberGET(ctx *router.Context, member *rotang.Member) error {
 	}
 	for _, r := range rotas {
 		shifts, err := shiftStore.AllShifts(ctx.Context, r)
-		if err != nil {
+		if err != nil && status.Code(err) != codes.NotFound {
 			return err
 		}
 		var entries []rotang.ShiftEntry

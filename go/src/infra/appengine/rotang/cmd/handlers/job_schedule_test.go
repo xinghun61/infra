@@ -146,6 +146,21 @@ func TestScheduleShifts(t *testing.T) {
 				Expiration: 4,
 			},
 		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+			}, {
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
+			}, {
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(14 * fullDay),
+				EndTime:   midnight.Add(19 * fullDay),
+			},
+		},
 	}, {
 		name: "Non existing generator",
 		fail: true,

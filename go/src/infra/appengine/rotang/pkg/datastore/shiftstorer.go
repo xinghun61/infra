@@ -113,6 +113,11 @@ func (s *Store) AddShifts(ctx context.Context, rota string, entries []rotang.Shi
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+
+	if len(entries) < 1 {
+		return nil
+	}
+
 	dsShifts := &DsShifts{
 		Key:  rootKey(ctx),
 		Name: rota,

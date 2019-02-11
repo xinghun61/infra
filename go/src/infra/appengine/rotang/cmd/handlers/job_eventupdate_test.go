@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"infra/appengine/rotang"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"context"
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/server/router"
 )
@@ -138,6 +138,32 @@ func TestEventUpdate(t *testing.T) {
 				Name:       "Test Rota",
 				Enabled:    false,
 				Expiration: 4,
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(-weekDuration),
+				EndTime:   midnight.Add(-weekDuration + 5*fullDay),
+				EvtID:     "before 1",
+			}, {
+				Name:      "MTV All Day",
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "before 2",
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(-weekDuration),
+				EndTime:   midnight.Add(-weekDuration + 5*fullDay),
+				EvtID:     "before 1",
+			}, {
+				Name:      "MTV All Day",
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "before 2",
 			},
 		},
 	}, {

@@ -765,6 +765,13 @@ func TestAddShifts(t *testing.T) {
 				Name:        "test rota",
 			},
 		},
+		add: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight,
+				EndTime:   midnight.Add(8 * time.Hour),
+			},
+		},
 	}, {
 		name: "Shift already exist",
 		fail: true,

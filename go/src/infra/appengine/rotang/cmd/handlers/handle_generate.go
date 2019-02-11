@@ -10,8 +10,11 @@ import (
 	"strings"
 	"time"
 
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const elementTimeFormat = "2006-01-02"
@@ -31,8 +34,11 @@ func (h *State) HandleGenerate(ctx *router.Context) {
 	case "":
 		var err error
 		if shifts, err = h.shiftStore(ctx.Context).AllShifts(ctx.Context, rota.Config.Name); err != nil {
-			http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-			return
+			if status.Code(err) != codes.NotFound {
+				http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			start = clock.Now(ctx.Context)
 		}
 	default:
 		var err error
