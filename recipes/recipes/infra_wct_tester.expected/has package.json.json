@@ -239,6 +239,18 @@
   },
   {
     "cmd": [
+      "npx",
+      "karma",
+      "start"
+    ],
+    "cwd": "[START_DIR]/infra/appengine/monorail",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "monorail karma start"
+  },
+  {
+    "cmd": [
       "npm",
       "install"
     ],

@@ -51,6 +51,7 @@ def RunSteps(api):
     api.step('monorail bower install', ['npx', 'bower', 'install'])
     api.step('monorail run-wct', ['npx', 'run-wct'])
     api.step('monorail generate js coverage report', ['npx', 'nyc', 'report'])
+    api.step('monorail karma start', ['npx', 'karma', 'start'])
 
   cwd = api.path['checkout'].join('go', 'src', 'infra', 'appengine',
       'sheriff-o-matic', 'frontend')
