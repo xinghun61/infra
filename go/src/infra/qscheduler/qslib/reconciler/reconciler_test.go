@@ -63,7 +63,7 @@ func TestOneAssignment(t *testing.T) {
 				EnqueueTime:         tutils.TimestampProto(t0),
 			}
 
-			r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 			Convey("when AssignTasks is called for a worker that has the task's provisionable label", func() {
 				wid := WorkerID("Worker1")
@@ -121,7 +121,7 @@ func TestOneAssignment(t *testing.T) {
 							State:     TaskInstant_RUNNING,
 							Time:      tutils.TimestampProto(c.t),
 						}
-						r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+						r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 						Convey("when AssignTasks is called again for the same worker", func() {
 							as, _ = r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
@@ -140,7 +140,7 @@ func TestOneAssignment(t *testing.T) {
 						State:     TaskInstant_RUNNING,
 						Time:      tutils.TimestampProto(t1),
 					}
-					r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+					r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 					Convey("when AssignTasks is called again for the same worker", func() {
 						as, _ = r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
@@ -158,7 +158,7 @@ func TestOneAssignment(t *testing.T) {
 						State:     TaskInstant_RUNNING,
 						Time:      tutils.TimestampProto(t1),
 					}
-					r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+					r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 					Convey("when AssignTasks is called again for the same worker", func() {
 						as, _ = r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
 						Convey("then it is no longer given the task.", func() {
@@ -196,7 +196,7 @@ func TestQueuedAssignment(t *testing.T) {
 					RequestId:           rid,
 					State:               TaskInstant_WAITING,
 				}
-				r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+				r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 				Convey("when a different worker without that label calls AssignTasks", func() {
 					wid2 := WorkerID("Worker2")
 					t1 := time.Unix(1, 0)
@@ -235,7 +235,7 @@ func TestPreemption(t *testing.T) {
 				RequestId:   string(oldRequest),
 				State:       TaskInstant_WAITING,
 			}
-			r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 			wid := WorkerID("Worker1")
 			r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
@@ -256,7 +256,7 @@ func TestPreemption(t *testing.T) {
 					RequestId:   string(newRequest),
 					State:       TaskInstant_WAITING,
 				}
-				r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+				r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 				Convey("when AssignTasks is called with no idle workers and the scheduler preempts the old request with the new one", func() {
 					r.AssignTasks(ctx, s, t1, scheduler.NullMetricsSink)
@@ -281,7 +281,7 @@ func TestPreemption(t *testing.T) {
 							RequestId: string(oldRequest),
 							State:     TaskInstant_ABSENT,
 						}
-						r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+						r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 						Convey("when GetCancellations is called", func() {
 							c := r.Cancellations(ctx)
 							Convey("then it returns nothing.", func() {
@@ -318,7 +318,7 @@ func TestPreemption(t *testing.T) {
 							RequestId:   string(oldRequest),
 							State:       TaskInstant_WAITING,
 						}
-						r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+						r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 						Convey("when AssignTasks is called for a different worker", func() {
 
@@ -380,7 +380,7 @@ func TestTaskError(t *testing.T) {
 					State:     TaskInstant_ABSENT,
 					Time:      tutils.TimestampProto(t0),
 				}
-				r.Notify(ctx, s, scheduler.NullMetricsSink, u)
+				r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, u)
 				Convey("when GetCancellations is called", func() {
 					c := r.Cancellations(ctx)
 					Convey("then it returns nothing.", func() {

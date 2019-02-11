@@ -58,7 +58,7 @@ func Example() {
 		EnqueueTime:         t,
 		Time:                t,
 	}
-	r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+	r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 	// Notify the reconciler of a new idle worker, and fetch an assignment
 	// for it. This will fetch Request1 to run on it.
@@ -82,7 +82,7 @@ func Example() {
 		WorkerId:  string(workerID),
 		Time:      t,
 	}
-	r.Notify(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+	r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 	// Now, a subsequent AssignTasks call for this worker will return
 	// nothing, as there are no other tasks in the queue.

@@ -187,67 +187,79 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 	return c
 }
 
-// Notify informs the quotascheduler about task state changes.
-//
-// Task state changes include: creation of new tasks, assignment of task to
-// worker, cancellation of a task.
-//
-// Notify must be called in order to acknowledge that previously returned
-// scheduler operations have been completed (otherwise: subsequent AssignTasks or
-// Cancellations will return stale data until internal timeouts within reconciler
-// expire).
-func (state *State) Notify(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskInstant) error {
+// NotifyTaskWaiting informs the quotascheduler about a waiting task.
+func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskInstant) error {
 	state.ensureMaps()
+	if update.State != TaskInstant_WAITING {
+		panic("invalid update type")
+	}
 
 	updateTime := tutils.Timestamp(update.Time)
 	if err := s.UpdateTime(ctx, updateTime); err != nil {
 		logging.Warningf(ctx, "ignoring UpdateTime error: %s", err.Error())
 	}
 
-	switch update.State {
-	case TaskInstant_WAITING:
-		req := scheduler.NewTaskRequest(
-			RequestID(update.RequestId),
-			AccountID(update.AccountId),
-			update.ProvisionableLabels,
-			update.BaseLabels,
-			tutils.Timestamp(update.EnqueueTime))
-		// TODO(akeshet): Handle error from AddRequest.
-		s.AddRequest(ctx, req, tutils.Timestamp(update.Time), metrics)
+	req := scheduler.NewTaskRequest(
+		RequestID(update.RequestId),
+		AccountID(update.AccountId),
+		update.ProvisionableLabels,
+		update.BaseLabels,
+		tutils.Timestamp(update.EnqueueTime))
+	// TODO(akeshet): Handle error from AddRequest.
+	s.AddRequest(ctx, req, tutils.Timestamp(update.Time), metrics)
 
-	case TaskInstant_RUNNING:
-		wid := WorkerID(update.WorkerId)
-		rid := RequestID(update.RequestId)
-		updateTime := tutils.Timestamp(update.Time)
-		// This NotifyRequest call ensures scheduler state consistency with
-		// the latest update.
-		s.NotifyRequest(ctx, rid, wid, updateTime, metrics)
-		if q, ok := state.WorkerQueues[string(wid)]; ok {
-			if !updateTime.Before(tutils.Timestamp(q.EnqueueTime)) {
-				delete(state.WorkerQueues, string(wid))
-				// TODO(akeshet): Log or handle "unexpected request on worker" here.
-			} else {
-				// TODO(akeshet): Consider whether we should delete from workerqueue
-				// here for non-forward updates that are still a (wid, rid) match
-				// for the expected assignment.
-			}
-		}
+	return nil
+}
 
-	// TODO(akeshet): This handler is mostly copy-pasted from the INTERRUPTED case. They can
-	// probably be unified. Also, the same TODO from the INTERRUPTED case applies here.
-	case TaskInstant_ABSENT:
-		rid := RequestID(update.RequestId)
-		updateTime := tutils.Timestamp(update.Time)
-		s.AbortRequest(ctx, rid, updateTime, metrics)
-		// TODO(akeshet): Add an inverse map from aborting request -> previous
-		// worker to avoid the need for this iteration through all workers.
-		for wid, q := range state.WorkerQueues {
-			if q.TaskToAbort == string(rid) && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
-				delete(state.WorkerQueues, wid)
-			}
-		}
-		delete(state.TaskErrors, string(rid))
+// NotifyTaskRunning informs the quotascheduler about a running task.
+func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskInstant) error {
+	state.ensureMaps()
+	if update.State != TaskInstant_RUNNING {
+		panic("invalid update type")
 	}
+
+	updateTime := tutils.Timestamp(update.Time)
+	if err := s.UpdateTime(ctx, updateTime); err != nil {
+		logging.Warningf(ctx, "ignoring UpdateTime error: %s", err.Error())
+	}
+
+	wid := WorkerID(update.WorkerId)
+	rid := RequestID(update.RequestId)
+	// This NotifyRequest call ensures scheduler state consistency with
+	// the latest update.
+	s.NotifyRequest(ctx, rid, wid, updateTime, metrics)
+	if q, ok := state.WorkerQueues[string(wid)]; ok {
+		if !updateTime.Before(tutils.Timestamp(q.EnqueueTime)) {
+			delete(state.WorkerQueues, string(wid))
+			// TODO(akeshet): Log or handle "unexpected request on worker" here.
+		} else {
+			// TODO(akeshet): Consider whether we should delete from workerqueue
+			// here for non-forward updates that are still a (wid, rid) match
+			// for the expected assignment.
+		}
+	}
+
+	return nil
+}
+
+// NotifyTaskAbsent informs the quotascheduler about an absent task.
+func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskInstant) error {
+	state.ensureMaps()
+	if update.State != TaskInstant_ABSENT {
+		panic("invalid update type")
+	}
+
+	rid := RequestID(update.RequestId)
+	updateTime := tutils.Timestamp(update.Time)
+	s.AbortRequest(ctx, rid, updateTime, metrics)
+	// TODO(akeshet): Add an inverse map from aborting request -> previous
+	// worker to avoid the need for this iteration through all workers.
+	for wid, q := range state.WorkerQueues {
+		if q.TaskToAbort == string(rid) && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
+			delete(state.WorkerQueues, wid)
+		}
+	}
+	delete(state.TaskErrors, string(rid))
 
 	return nil
 }

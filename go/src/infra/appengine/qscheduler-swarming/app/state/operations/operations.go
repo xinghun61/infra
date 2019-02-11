@@ -143,7 +143,19 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				State:               t,
 				WorkerId:            n.Task.BotId,
 			}
-			if err := sp.Reconciler.Notify(ctx, sp.Scheduler, metrics, update); err != nil {
+
+			var err error
+			switch update.State {
+			case reconciler.TaskInstant_ABSENT:
+				err = sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, update)
+			case reconciler.TaskInstant_RUNNING:
+				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, update)
+			case reconciler.TaskInstant_WAITING:
+				err = sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, update)
+			default:
+				panic("Invalid update type.")
+			}
+			if err != nil {
 				sp.Reconciler.TaskError(n.Task.Id, err.Error())
 				logging.Warningf(ctx, err.Error())
 				continue
