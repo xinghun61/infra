@@ -35,7 +35,8 @@ const (
 	host = "https://chromium-review.googlesource.com"
 )
 
-// mockPollRestAPI allows for modification of change state returned by QueryChanges.
+// mockPollRestAPI allows for modification of change state returned by
+// QueryChanges.
 type mockPollRestAPI struct {
 	sync.Mutex
 	changes map[string][]gr.ChangeInfo
@@ -54,12 +55,12 @@ func (m *mockPollRestAPI) QueryChanges(c context.Context, host, project string, 
 }
 
 func (*mockPollRestAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
-	// not used by the poller
+	// Not used by the poller.
 	return nil
 }
 
 func (m *mockPollRestAPI) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
-	// not used by the poller
+	// Not used by the poller.
 	return ChangedLinesInfo{}, nil
 }
 
@@ -76,12 +77,14 @@ func (m *mockPollRestAPI) addChanges(host, project string, c []gr.ChangeInfo) {
 	m.changes[id] = changes
 }
 
+// mockConfigProvider stores and returns canned configs.
 type mockConfigProvider struct {
 	Projects map[string]*tricium.ProjectConfig
 }
 
 func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
-	return nil, nil // not used by the poller
+	// Not used by the poller.
+	return nil, nil
 }
 
 func (m *mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
@@ -92,7 +95,6 @@ func (m *mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tri
 	return pc, nil
 }
 
-// GetAllProjectConfigs implements the ProviderAPI.
 func (m *mockConfigProvider) GetAllProjectConfigs(c context.Context) (map[string]*tricium.ProjectConfig, error) {
 	return m.Projects, nil
 }
@@ -195,20 +197,6 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 			projects["infra"].Repos[0].GetGerritProject(),
 			projects["infra"].Repos[1].GetGerritProject(),
 		}
-
-		flaggedRevisions := revisionGenerator(
-			"Hello\nThis is a revision message\nWith some footers\nTricium:disable\nAnother=value",
-		)
-		unflaggedRevisions := revisionGenerator(
-			"Hello\nThis is a revision message\nWith some footers\nSomething: value",
-		)
-		uppercaseFlaggedRevisions := revisionGenerator("TRICIUM: disable")
-		lowercaseFlaggedRevisions := revisionGenerator("tricium: disable")
-		noFlaggedRevisions := revisionGenerator("Tricium: no")
-		noneFlaggedRevisions := revisionGenerator("Tricium: none")
-		skipFlaggedRevisions := revisionGenerator("Tricium: skip")
-		falseFlaggedRevisions := revisionGenerator("Tricium: false")
-		enableFlaggedRevisions := revisionGenerator("Tricium: enable")
 
 		Convey("First poll, no changes", func() {
 			api := &mockPollRestAPI{}
@@ -460,6 +448,101 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 				}
 			})
 		})
+	})
+}
+
+func TestPollProjectDescriptionFlagBehavior(t *testing.T) {
+
+	// generateRevisionInfo generates a map of revisionID to RevisionInfo.
+	//
+	// It takes commitMessage as input and adds that to the "curRev" revision.
+	generateRevisionInfo := func(commitMessage string) map[string]gr.RevisionInfo {
+		return map[string]gr.RevisionInfo{
+			"curRev": {
+				Files: map[string]*gr.FileInfo{"README.md": {}},
+				Commit: &gr.CommitInfo{
+					Message: commitMessage,
+				},
+			},
+			"olderRev": {
+				Files: map[string]*gr.FileInfo{"another1.go": {}},
+			},
+		}
+	}
+
+	// generateChangeInfo returns a one-item slice of ChangeInfo
+	// for use in the tests below, where "curRev" is the current revision.
+	generateChangeInfo := func(project string, lastChangeTs time.Time,
+		revisions map[string]gr.RevisionInfo) []gr.ChangeInfo {
+		return []gr.ChangeInfo{
+			{
+				ID:              "project~branch~Ideadc0de",
+				Project:         project,
+				Status:          "NEW",
+				CurrentRevision: "curRev",
+				Updated:         gr.TimeStamp(lastChangeTs),
+				Revisions:       revisions,
+				Owner:           &gr.AccountInfo{Email: "user@example.com"},
+			},
+		}
+	}
+
+	Convey("Test Environment", t, func() {
+		ctx := triciumtest.Context()
+
+		now := time.Date(2017, 1, 1, 0, 0, 0, 0, time.UTC)
+		ctx, tc := testclock.UseTime(ctx, now)
+		ctx = auth.WithState(ctx, &authtest.FakeState{
+			Identity: identity.AnonymousIdentity,
+		})
+
+		cp := &mockConfigProvider{
+			Projects: map[string]*tricium.ProjectConfig{
+				"infra": {
+					Repos: []*tricium.RepoDetails{
+						{
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "infra",
+									GitUrl:  "https://repo-host.com/infra",
+								},
+							},
+						},
+						{
+							Source: &tricium.RepoDetails_GerritProject{
+								GerritProject: &tricium.GerritProject{
+									Host:    host,
+									Project: "project/tricium-gerrit",
+									GitUrl:  "https://repo-host.com/playground",
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		projects, err := cp.GetAllProjectConfigs(ctx)
+		So(err, ShouldBeNil)
+
+		gerritProjects := []*tricium.GerritProject{
+			projects["infra"].Repos[0].GetGerritProject(),
+			projects["infra"].Repos[1].GetGerritProject(),
+		}
+
+		flaggedRevisions := generateRevisionInfo(
+			"Hello\nThis is a revision message\nWith some footers\nTricium:disable\nAnother=value",
+		)
+		unflaggedRevisions := generateRevisionInfo(
+			"Hello\nThis is a revision message\nWith some footers\nSomething: value",
+		)
+		uppercaseFlaggedRevisions := generateRevisionInfo("TRICIUM: disable")
+		lowercaseFlaggedRevisions := generateRevisionInfo("tricium: disable")
+		noFlaggedRevisions := generateRevisionInfo("Tricium: no")
+		noneFlaggedRevisions := generateRevisionInfo("Tricium: none")
+		skipFlaggedRevisions := generateRevisionInfo("Tricium: skip")
+		falseFlaggedRevisions := generateRevisionInfo("Tricium: false")
+		enableFlaggedRevisions := generateRevisionInfo("Tricium: enable")
 
 		Convey("Poll when changes have Tricium:disable description flag", func() {
 			api := &mockPollRestAPI{}
@@ -818,34 +901,4 @@ func TestStatusCode(t *testing.T) {
 	Convey("Unknown status means modified", t, func() {
 		So(statusFromCode(ctx, "X"), ShouldEqual, tricium.Data_MODIFIED)
 	})
-}
-
-func generateChangeInfo(project string, lastChangeTs time.Time, revisions map[string]gr.RevisionInfo) []gr.ChangeInfo {
-	return []gr.ChangeInfo{
-		{
-			ID:              "project~branch~Ideadc0de",
-			Project:         project,
-			Status:          "NEW",
-			CurrentRevision: "curRev",
-			Updated:         gr.TimeStamp(lastChangeTs),
-			Revisions:       revisions,
-			Owner:           &gr.AccountInfo{Email: "user@example.com"},
-		},
-	}
-}
-
-// revisionGenerator is a helper function that generates a map of revisionID string
-// to RevisionInfo. It takes commitMessage as input and adds that to the first revision.
-func revisionGenerator(commitMessage string) map[string]gr.RevisionInfo {
-	return map[string]gr.RevisionInfo{
-		"curRev": {
-			Files: map[string]*gr.FileInfo{"README.md": {}},
-			Commit: &gr.CommitInfo{
-				Message: commitMessage,
-			},
-		},
-		"olderRev": {
-			Files: map[string]*gr.FileInfo{"another1.go": {}},
-		},
-	}
 }
