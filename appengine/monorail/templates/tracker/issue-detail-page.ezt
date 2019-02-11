@@ -84,6 +84,7 @@
    </div>
 
    <div>
+    <mr-code-font-toggle title="code font" style="float:right; margin: 3px;"></mr-code-font-toggle>
     <a href="[issue.crbug_url]" class="material-icons" title="crbug link">link</a>
     <h1 class="not_styled_as_heading"><span class="h3" style="padding:4px">
       Issue [issue.local_id]:

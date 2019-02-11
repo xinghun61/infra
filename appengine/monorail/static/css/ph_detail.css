@@ -39,6 +39,11 @@ pre.prettyprint {
   padding: 5px 0 6px 8px;
 }
 
+.codefont pre.issue_text {
+  font-family: monospace;
+  font-size: 12px;
+}
+
 .issuedescription pre, .issuecomment pre {
     white-space: pre-wrap;
     white-space: -moz-pre-wrap;
