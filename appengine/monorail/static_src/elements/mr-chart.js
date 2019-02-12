@@ -106,7 +106,7 @@ export default class MrChart extends HTMLElement {
       this._updateChartValues();
       return data;
     });
-    
+
     const chartData = await Promise.all(fetchPromises);
     this.dispatchEvent(new Event('allDataLoaded'));
 

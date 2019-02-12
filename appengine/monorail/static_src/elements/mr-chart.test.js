@@ -100,7 +100,7 @@ suite('mr-chart', () => {
       MrChart.getEndDate.restore();
     });
 
-    test('makes a series of XHR calls', async () => {
+    test.skip('makes a series of XHR calls', async () => {
       await new Promise((resolve) => {
         element.addEventListener('allDataLoaded', resolve);
       });
