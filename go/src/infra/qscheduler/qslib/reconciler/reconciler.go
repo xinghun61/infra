@@ -81,7 +81,7 @@ type Assignment struct {
 
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
-func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, metrics scheduler.MetricsSink, workers ...*IdleWorker) ([]Assignment, error) {
+func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, metrics scheduler.MetricsSink, workers ...*IdleWorker) []Assignment {
 	state.ensureMaps()
 	s.UpdateTime(ctx, t)
 
@@ -98,19 +98,14 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 		wid := w.ID
 		q, ok := state.WorkerQueues[string(wid)]
 		if !ok || !s.IsAssigned(RequestID(q.TaskToAssign), wid) {
-			if err := s.MarkIdle(ctx, wid, w.Labels, t, metrics); err != nil {
-				return nil, err
-			}
+			s.MarkIdle(ctx, wid, w.Labels, t, metrics)
 			delete(state.WorkerQueues, string(wid))
 		}
 	}
 
 	// Call scheduler, and update worker queues based on assignments that it
 	// yielded.
-	newAssignments, err := s.RunOnce(ctx, metrics)
-	if err != nil {
-		return nil, err
-	}
+	newAssignments := s.RunOnce(ctx, metrics)
 
 	for _, a := range newAssignments {
 		if a.TaskToAbort != "" && a.Type != scheduler.AssignmentPreemptWorker {
@@ -146,7 +141,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 		}
 	}
 
-	return assignments, nil
+	return assignments
 }
 
 // TaskError marks a given task as having failed due to an error, and in need of cancellation.
@@ -187,7 +182,7 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 }
 
 // NotifyTaskWaiting informs the quotascheduler about a waiting task.
-func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskWaitingRequest) error {
+func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskWaitingRequest) {
 	state.ensureMaps()
 	req := scheduler.NewTaskRequest(
 		update.RequestID,
@@ -195,14 +190,11 @@ func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Schedule
 		update.ProvisionableLabels,
 		update.BaseLabels,
 		update.EnqueueTime)
-	// TODO(akeshet): Handle error from AddRequest.
 	s.AddRequest(ctx, req, update.Time, metrics)
-
-	return nil
 }
 
 // NotifyTaskRunning informs the quotascheduler about a running task.
-func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskRunningRequest) error {
+func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskRunningRequest) {
 	state.ensureMaps()
 	wid := update.WorkerID
 	rid := update.RequestID
@@ -219,12 +211,10 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 			// for the expected assignment.
 		}
 	}
-
-	return nil
 }
 
 // NotifyTaskAbsent informs the quotascheduler about an absent task.
-func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, rid RequestID, t time.Time) error {
+func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, rid RequestID, t time.Time) {
 	state.ensureMaps()
 	s.NotifyTaskAbsent(ctx, rid, t, metrics)
 	// TODO(akeshet): Add an inverse map from aborting request -> previous
@@ -235,8 +225,6 @@ func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler
 		}
 	}
 	delete(state.TaskErrors, string(rid))
-
-	return nil
 }
 
 // ensureMaps initializes any nil maps in reconciler.

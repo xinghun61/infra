@@ -70,7 +70,7 @@ func Example() {
 	t := time.Now()
 	s.UpdateTime(ctx, t)
 	// This will return a match between Request1 and Worker1.
-	assignments, _ := s.RunOnce(ctx, scheduler.NullMetricsSink)
+	assignments := s.RunOnce(ctx, scheduler.NullMetricsSink)
 
 	// True.
 	IsOn(requestID, workerID, s)

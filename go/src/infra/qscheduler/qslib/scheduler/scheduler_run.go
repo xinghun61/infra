@@ -41,7 +41,7 @@ type schedulerRun struct {
 	scheduler *Scheduler
 }
 
-func (run *schedulerRun) Run(m MetricsSink) ([]*Assignment, error) {
+func (run *schedulerRun) Run(m MetricsSink) []*Assignment {
 	var output []*Assignment
 	// Proceed through multiple passes of the scheduling algorithm, from highest
 	// to lowest priority requests (high priority = low p).
@@ -69,7 +69,7 @@ func (run *schedulerRun) Run(m MetricsSink) ([]*Assignment, error) {
 	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch, m)...)
 	output = append(output, run.matchIdleBots(FreeBucket, basicMatch, m)...)
 
-	return output, nil
+	return output
 }
 
 // assignRequestToWorker updates the information in scheduler pass to reflect the fact that the given request

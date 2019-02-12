@@ -99,7 +99,7 @@ func TestSchedulerPreempt(t *testing.T) {
 				Convey("when scheduling", func() {
 					tm1 := time.Unix(1, 0)
 					s.UpdateTime(ctx, tm1)
-					got, _ := s.RunOnce(ctx, NullMetricsSink)
+					got := s.RunOnce(ctx, NullMetricsSink)
 					Convey("then the cheaper running job is preempted.", func() {
 						want := &Assignment{Type: AssignmentPreemptWorker, Priority: 0, WorkerID: "w2", RequestID: "r3", TaskToAbort: "r2", Time: tm1}
 						So(got, ShouldResemble, []*Assignment{want})
@@ -108,7 +108,7 @@ func TestSchedulerPreempt(t *testing.T) {
 			})
 			Convey("given insufficient balance", func() {
 				Convey("when scheduling", func() {
-					got, _ := s.RunOnce(ctx, NullMetricsSink)
+					got := s.RunOnce(ctx, NullMetricsSink)
 					Convey("then nothing happens.", func() {
 						So(got, ShouldBeEmpty)
 					})
@@ -119,7 +119,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		Convey("given a new P0 request from the same account", func() {
 			s.AddRequest(ctx, NewTaskRequest("r3", "a1", nil, nil, tm0), tm0, NullMetricsSink)
 			Convey("when scheduling", func() {
-				got, _ := s.RunOnce(ctx, NullMetricsSink)
+				got := s.RunOnce(ctx, NullMetricsSink)
 				Convey("then nothing happens.", func() {
 					So(got, ShouldBeEmpty)
 				})

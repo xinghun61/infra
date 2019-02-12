@@ -29,8 +29,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"go.chromium.org/luci/common/data/stringset"
 )
 
@@ -129,21 +127,19 @@ func (e *UpdateOrderError) Error() string {
 // (or zero balance if nil).
 //
 // If an account with that id already exists, then it is overwritten.
-func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *AccountConfig, initialBalance []float64) error {
+func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *AccountConfig, initialBalance []float64) {
 	s.config.AccountConfigs[string(id)] = config
 	bal := Balance{}
 	copy(bal[:], initialBalance)
 	s.state.balances[id] = bal
-	return nil
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time, m MetricsSink) error {
+func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time, m MetricsSink) {
 	if request.ID == "" {
-		return errors.New("empty request id")
+		panic("empty request id")
 	}
 	s.state.addRequest(ctx, request, t, m)
-	return nil
 }
 
 // IsAssigned returns whether the given request is currently assigned to the
@@ -231,27 +227,24 @@ type IdleWorker struct {
 // of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time, m MetricsSink) error {
+func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time, m MetricsSink) {
 	s.state.markIdle(workerID, labels, t, m)
-	return nil
 }
 
 // NotifyTaskRunning informs the scheduler authoritatively that the given task
 // was running on the given worker at the given time.
 //
 // Supplied requestID and workerID must not be "".
-func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) error {
+func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) {
 	s.state.notifyTaskRunning(ctx, requestID, workerID, t, m)
-	return nil
 }
 
 // NotifyTaskAbsent informs the scheduler authoritatively that the given request
 // is stopped (not running on a worker, and not in the queue) at the given time.
 //
 // Supplied requestID must not be "".
-func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) error {
+func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) {
 	s.state.notifyTaskAbsent(ctx, requestID, t, m)
-	return nil
 }
 
 // RunOnce performs a single round of the quota scheduler algorithm
@@ -259,7 +252,7 @@ func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t
 //
 // TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
 // calculation.
-func (s *Scheduler) RunOnce(ctx context.Context, m MetricsSink) ([]*Assignment, error) {
+func (s *Scheduler) RunOnce(ctx context.Context, m MetricsSink) []*Assignment {
 	pass := s.newRun()
 	return pass.Run(m)
 }

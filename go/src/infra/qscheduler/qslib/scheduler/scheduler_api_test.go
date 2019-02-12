@@ -45,7 +45,7 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		c := scheduler.NewAccountConfig(0, 0, nil)
 		s.AddAccount(ctx, "a1", c, []float64{2, 0, 0})
 		Convey("when scheduling jobs", func() {
-			muts, _ := s.RunOnce(ctx, scheduler.NullMetricsSink)
+			muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
 				expects := []*scheduler.Assignment{
 					{Type: scheduler.AssignmentIdleWorker, Priority: 0, RequestID: "t1", WorkerID: "w1", Time: tm},
@@ -65,17 +65,14 @@ func TestMatchAccountless(t *testing.T) {
 		tm := time.Unix(0, 0)
 		s := scheduler.New(tm)
 		wid := WorkerID("worker")
-		err := s.MarkIdle(ctx, wid, nil, tm, scheduler.NullMetricsSink)
-		So(err, ShouldBeNil)
+		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullMetricsSink)
 
 		Convey("and a request with no account", func() {
 			rid := RequestID("req")
-			err := s.AddRequest(ctx, scheduler.NewTaskRequest(rid, "", nil, nil, tm), tm, scheduler.NullMetricsSink)
-			So(err, ShouldBeNil)
+			s.AddRequest(ctx, scheduler.NewTaskRequest(rid, "", nil, nil, tm), tm, scheduler.NullMetricsSink)
 			Convey("when scheduling is run", func() {
-				muts, err := s.RunOnce(ctx, scheduler.NullMetricsSink)
+				muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
 				Convey("then the request is matched at lowest priority.", func() {
-					So(err, ShouldBeNil)
 					So(muts, ShouldHaveLength, 1)
 					So(muts[0].Priority, ShouldEqual, scheduler.FreeBucket)
 					So(muts[0].RequestID, ShouldEqual, rid)
@@ -104,8 +101,7 @@ func TestMatchThrottledAccountJobs(t *testing.T) {
 		s.MarkIdle(ctx, w1, nil, tm, scheduler.NullMetricsSink)
 		s.MarkIdle(ctx, w2, nil, tm, scheduler.NullMetricsSink)
 		Convey("when running a round of scheduling", func() {
-			m, err := s.RunOnce(ctx, scheduler.NullMetricsSink)
-			So(err, ShouldBeNil)
+			m := s.RunOnce(ctx, scheduler.NullMetricsSink)
 			Convey("then both requests should be assigned to a worker, but 1 of them at FreeBucket priority.", func() {
 				So(m, ShouldHaveLength, 2)
 				priorities := map[Priority]bool{m[0].Priority: true, m[1].Priority: true}
@@ -136,7 +132,7 @@ func TestMatchProvisionableLabel(t *testing.T) {
 			s.MarkIdle(ctx, wid, stringset.NewFromSlice("b", "c"), tm, scheduler.NullMetricsSink)
 
 			Convey("when scheduling jobs", func() {
-				muts, _ := s.RunOnce(ctx, scheduler.NullMetricsSink)
+				muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
 
 				Convey("then worker is matched to the task with label 'b'.", func() {
 					So(muts, ShouldHaveLength, 1)
@@ -160,7 +156,7 @@ func TestBaseLabelMatch(t *testing.T) {
 		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullMetricsSink)
 		s.AddRequest(ctx, scheduler.NewTaskRequest(rid, aid, nil, stringset.NewFromSlice("unsatisfied_label"), tm), tm, scheduler.NullMetricsSink)
 		Convey("when scheduling jobs", func() {
-			m, _ := s.RunOnce(ctx, scheduler.NullMetricsSink)
+			m := s.RunOnce(ctx, scheduler.NullMetricsSink)
 			Convey("no requests should be assigned to workers.", func() {
 				So(m, ShouldBeEmpty)
 			})
@@ -193,7 +189,7 @@ func TestMatchRareLabel(t *testing.T) {
 			var rareRequest RequestID = "RareRequest"
 			s.AddRequest(ctx, scheduler.NewTaskRequest(rareRequest, aid, nil, stringset.NewFromSlice(commonLabel, rareLabel), tm), tm, scheduler.NullMetricsSink)
 			Convey("when scheduling jobs", func() {
-				muts, _ := s.RunOnce(ctx, scheduler.NullMetricsSink)
+				muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
 				Convey("then all jobs are scheduled to workers, including the rare requests and workers.", func() {
 					So(muts, ShouldHaveLength, 11)
 					So(s.IsAssigned(rareRequest, rareWorker), ShouldBeTrue)

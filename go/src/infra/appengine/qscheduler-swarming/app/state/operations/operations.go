@@ -67,10 +67,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 			}
 		}
 
-		schedulerAssignments, err := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), metrics, idles...)
-		if err != nil {
-			return err
-		}
+		schedulerAssignments := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), metrics, idles...)
 
 		assignments := make([]*swarming.TaskAssignment, len(schedulerAssignments))
 		for i, v := range schedulerAssignments {
@@ -112,16 +109,16 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			var err error
 			switch t {
 			case taskStateAbsent:
-				err = sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, RequestID(n.Task.Id), tutils.Timestamp(n.Time))
+				sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, RequestID(n.Task.Id), tutils.Timestamp(n.Time))
 			case taskStateRunning:
 				rR := &reconciler.TaskRunningRequest{
 					RequestID: RequestID(n.Task.Id),
 					Time:      tutils.Timestamp(n.Time),
 					WorkerID:  WorkerID(n.Task.BotId),
 				}
-				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
+				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
 			case taskStateWaiting:
-				notifyTaskWaiting(ctx, sp, metrics, n)
+				err = notifyTaskWaiting(ctx, sp, metrics, n)
 			default:
 				panic("Invalid update type.")
 			}
@@ -165,7 +162,9 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, metrics schedu
 		RequestID:           RequestID(n.Task.Id),
 		Time:                tutils.Timestamp(n.Time),
 	}
-	return sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, wR)
+	sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, wR)
+
+	return nil
 }
 
 // computeLabels determines the labels for a given task.
