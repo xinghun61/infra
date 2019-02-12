@@ -322,6 +322,7 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 	req2 := updateDutLabelsRequest{
 		dutID:  req.GetDutId(),
 		reason: req.GetReason(),
+		labels: &inventory.SchedulableLabels{},
 	}
 	if err := proto.Unmarshal(req.GetLabels(), req2.labels); err != nil {
 		return nil, err
