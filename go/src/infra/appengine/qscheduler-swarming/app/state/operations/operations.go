@@ -109,15 +109,21 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				continue
 			}
 
-			var provisionableLabels []string
-			var baseLabels []string
-			var accountID string
-			// ProvisionableLabels and BaseLabels attribute only matter for
-			// TaskInstant_WAITING state because the scheduler pays no attention
-			// to labels of RUNNING or ABSENT tasks.
-			//
-			// The same is true of AccountID
-			if t == taskStateWaiting {
+			var err error
+			switch t {
+			case taskStateAbsent:
+				err = sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, RequestID(n.Task.Id), tutils.Timestamp(n.Time))
+			case taskStateRunning:
+				rR := &reconciler.TaskRunningRequest{
+					RequestID: RequestID(n.Task.Id),
+					Time:      tutils.Timestamp(n.Time),
+					WorkerID:  WorkerID(n.Task.BotId),
+				}
+				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
+			case taskStateWaiting:
+				var provisionableLabels []string
+				var baseLabels []string
+				var accountID string
 				labels, err := computeLabels(n)
 				if err != nil {
 					logging.Warningf(ctx, err.Error())
@@ -140,20 +146,6 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 					sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
 					continue
 				}
-			}
-
-			var err error
-			switch t {
-			case taskStateAbsent:
-				err = sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, RequestID(n.Task.Id), tutils.Timestamp(n.Time))
-			case taskStateRunning:
-				rR := &reconciler.TaskRunningRequest{
-					RequestID: RequestID(n.Task.Id),
-					Time:      tutils.Timestamp(n.Time),
-					WorkerID:  WorkerID(n.Task.BotId),
-				}
-				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
-			case taskStateWaiting:
 				wR := &reconciler.TaskWaitingRequest{
 					AccountID:           AccountID(accountID),
 					BaseLabels:          stringset.NewFromSlice(baseLabels...),
@@ -166,6 +158,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			default:
 				panic("Invalid update type.")
 			}
+
 			if err != nil {
 				sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
 				logging.Warningf(ctx, err.Error())
