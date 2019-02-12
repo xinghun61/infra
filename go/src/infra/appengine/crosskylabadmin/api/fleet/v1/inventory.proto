@@ -14,6 +14,9 @@ option go_package = "fleet";
 // Inventory service helps manage ChromeOS Dut Pools.
 service Inventory {
 
+  // ///////////////////////////////////////////////////////////////////////////
+  // DUT pool balancing RPCs
+
   // EnsurePoolHealthy ensures that a target pool has only healthy DUTs.
   //
   // EnsurePoolHealthy works by swapping unhealthy DUTs from target pool with
@@ -35,6 +38,9 @@ service Inventory {
   // changes are made.
   rpc ResizePool(ResizePoolRequest) returns (ResizePoolResponse);
 
+  // ///////////////////////////////////////////////////////////////////////////
+  // Server database manipulation RPCs
+
   // RemoveDutsFromDrones removes the given duts from drones.
   rpc RemoveDutsFromDrones(RemoveDutsFromDronesRequest) returns (RemoveDutsFromDronesResponse);
 
@@ -43,6 +49,9 @@ service Inventory {
 
   // ListServers lists the servers in the current environment.
   rpc ListServers(ListServersRequest) returns (ListServersResponse);
+
+  // ///////////////////////////////////////////////////////////////////////////
+  // RPCs used internally by the infrastructure. Not for end-user tools.
 
   // UpdateDutLabels sets the SchedulableLabels of a DUT.
   //
