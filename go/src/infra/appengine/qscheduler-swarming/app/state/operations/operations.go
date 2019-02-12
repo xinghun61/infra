@@ -121,40 +121,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				}
 				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
 			case taskStateWaiting:
-				var provisionableLabels []string
-				var baseLabels []string
-				var accountID string
-				labels, err := computeLabels(n)
-				if err != nil {
-					logging.Warningf(ctx, err.Error())
-					sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
-					continue
-				}
-				provisionableLabels = labels.provisionable
-				baseLabels = labels.base
-
-				s := stringset.NewFromSlice(baseLabels...)
-				if !s.HasAll(sp.Config.Labels...) {
-					msg := fmt.Sprintf("task with base dimensions %s does not contain all of scheduler dimensions %s", baseLabels, sp.Config.Labels)
-					logging.Warningf(ctx, msg)
-					sp.Reconciler.TaskError(RequestID(n.Task.Id), msg)
-					continue
-				}
-
-				if accountID, err = GetAccountID(n); err != nil {
-					logging.Warningf(ctx, err.Error())
-					sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
-					continue
-				}
-				wR := &reconciler.TaskWaitingRequest{
-					AccountID:           AccountID(accountID),
-					BaseLabels:          stringset.NewFromSlice(baseLabels...),
-					EnqueueTime:         tutils.Timestamp(n.Task.EnqueuedTime),
-					ProvisionableLabels: stringset.NewFromSlice(provisionableLabels...),
-					RequestID:           RequestID(n.Task.Id),
-					Time:                tutils.Timestamp(n.Time),
-				}
-				err = sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, wR)
+				notifyTaskWaiting(ctx, sp, metrics, n)
 			default:
 				panic("Invalid update type.")
 			}
@@ -169,6 +136,36 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 		response = swarming.NotifyTasksResponse{}
 		return nil
 	}, &response
+}
+
+func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, metrics scheduler.MetricsSink, n *swarming.NotifyTasksItem) error {
+	var provisionableLabels []string
+	var baseLabels []string
+	var accountID string
+	labels, err := computeLabels(n)
+	if err != nil {
+		return err
+	}
+	provisionableLabels = labels.provisionable
+	baseLabels = labels.base
+
+	s := stringset.NewFromSlice(baseLabels...)
+	if !s.HasAll(sp.Config.Labels...) {
+		return fmt.Errorf("task with base dimensions %s does not contain all of scheduler dimensions %s", baseLabels, sp.Config.Labels)
+	}
+
+	if accountID, err = GetAccountID(n); err != nil {
+		return err
+	}
+	wR := &reconciler.TaskWaitingRequest{
+		AccountID:           AccountID(accountID),
+		BaseLabels:          stringset.NewFromSlice(baseLabels...),
+		EnqueueTime:         tutils.Timestamp(n.Task.EnqueuedTime),
+		ProvisionableLabels: stringset.NewFromSlice(provisionableLabels...),
+		RequestID:           RequestID(n.Task.Id),
+		Time:                tutils.Timestamp(n.Time),
+	}
+	return sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, wR)
 }
 
 // computeLabels determines the labels for a given task.
