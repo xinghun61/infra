@@ -81,6 +81,7 @@ func eventAssigned(request *TaskRequest, w *worker, s *state, t time.Time, detai
 	return e
 }
 
+// eventPreempted returns a TaskEvent for PREEMPTED events.
 func eventPreempted(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_PreemptedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_PREEMPTED
@@ -88,6 +89,7 @@ func eventPreempted(request *TaskRequest, w *worker, s *state, t time.Time, deta
 	return e
 }
 
+// eventReprioritized returns a TaskEvent for REPRIORITIZED events.
 func eventReprioritized(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_ReprioritizedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_REPRIORITIZED
