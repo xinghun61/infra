@@ -8,8 +8,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/cmd/skylab/internal/site"
 	"os"
 	"strconv"
 
@@ -18,21 +16,26 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/grpc/prpc"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/cmd/skylab/internal/site"
 )
 
 // ResizePool subcommand: Resize DUT pools
 var ResizePool = &subcommands.Command{
 	UsageLine: "resize-pool [-spare SPARE] TARGET MODEL SIZE",
-	ShortDesc: "Resize the target pool for model",
+	ShortDesc: "change DUT pool allocations",
 	LongDesc: `
-Resize the given MODEL's TARGET pool to SIZE.
-Borrow required duts from or return extra duts to SPARE pool.`,
+Change the number of DUTs in the TARGET pool for MODEL to SIZE.
+
+Any DUTs that need to be added or removed from the TARGET pool will be
+taken from or returned to the SPARE pool.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &resizePoolRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 
-		c.Flags.StringVar(&c.spare, "spare", "DUT_POOL_SUITES", "Pool to borrow duts from or return extra duts to")
+		c.Flags.StringVar(&c.spare, "spare", "DUT_POOL_SUITES", "Spare pool to use.")
 		return c
 	},
 }

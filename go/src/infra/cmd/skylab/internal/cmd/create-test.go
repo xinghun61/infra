@@ -23,27 +23,37 @@ import (
 
 // CreateTest subcommand: create a test task.
 var CreateTest = &subcommands.Command{
-	UsageLine: "create-test {-board BOARD | -model MODEL} -pool POOL -image IMAGE [-timeout-mins TIMEOUT_MINS] [-client-test] [-tag KEY:VALUE...] [-provision-label LABEL...] [-keyval KEY:VALUE] [-test-args ARGS] TEST_NAME [DIMENSION_KEY:VALUE...]",
-	ShortDesc: "Create a test task, with the given test name and swarming dimensions",
-	LongDesc:  "Create a test task, with the given test name and swarming dimensions.",
+	UsageLine: `create-test [FLAGS...] TEST_NAME [DIMENSION_KEY:VALUE...]`,
+	ShortDesc: "create a test task",
+	LongDesc: `Create a test task.
+
+You must supply -pool, -image, and one of -board or -model.
+
+This command does not wait for the task to start running.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &createTestRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.BoolVar(&c.client, "client-test", false, "Task is a client-side test.")
-		c.Flags.StringVar(&c.image, "image", "", "Fully specified image name to run test against, e.g. reef-canary/R73-11580.0.0")
+		c.Flags.StringVar(&c.image, "image", "",
+			`Fully specified image name to run test against,
+e.g., reef-canary/R73-11580.0.0.`)
 		c.Flags.StringVar(&c.board, "board", "", "Board to run test on.")
 		c.Flags.StringVar(&c.model, "model", "", "Model to run test on.")
 		// TODO(akeshet): Decide on whether these should be specified in their proto
 		// format (e.g. DUT_POOL_BVT) or in a human readable format, e.g. bvt. Provide a
 		// list of common choices.
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
-		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "Time (counting from when the task starts) after which task will be killed if it hasn't completed.")
+		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "Task runtime timeout.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
-		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval", "Autotest keyval for test. Key may not contain : character. May be specified multiple times.")
+		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval",
+			`Autotest keyval for test.  May be specified multiple times.`)
 		c.Flags.StringVar(&c.testArgs, "test-args", "", "Test arguments string (meaning depends on test).")
-		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "QuotaScheduler account to use for this task (optional)")
-		c.Flags.Var(flag.StringSlice(&c.provisionLabels), "provision-label", "Additional provisionable labels to use for the test (e.g. cheets-version:git_pi-arc/cheets_x86_64). May be specified multiple times (optional)")
+		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quota Scheduler account to use for this task.  Optional.")
+		c.Flags.Var(flag.StringSlice(&c.provisionLabels), "provision-label",
+			`Additional provisionable labels to use for the test
+(e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
+multiple times.  Optional.`)
 		return c
 	},
 }

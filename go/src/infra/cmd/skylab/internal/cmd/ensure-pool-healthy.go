@@ -27,18 +27,24 @@ import (
 // EnsurePoolHealthy subcommand: Balance DUT pools
 var EnsurePoolHealthy = &subcommands.Command{
 	UsageLine: "ensure-pool-healthy [-dryrun] [-all-models] [-spare SPARE] TARGET [MODEL ...]",
-	ShortDesc: "Ensure DUT pool is healthy",
+	ShortDesc: "ensure DUT pool is healthy",
 	LongDesc: `
-Ensure that given MODELs' TARGET pool contains healthy DUTs.
-If needed, swap in healthy DUTs from SPARE pool.`,
+Ensure that the TARGET pool is healthy for the given MODELs.  If
+needed, unhealthy DUTs in the TARGET pool are swapped with healthy
+DUTs from the SPARE pool.
+
+You usually do not need to run this command, as pools are balanced by
+a cron job.
+
+To change the number of DUTs in a pool, use resize-pool.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &ensurePoolHealthyRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 
-		c.Flags.BoolVar(&c.dryrun, "dryrun", false, "Dryrun mode -- do not commit inventory changes")
-		c.Flags.BoolVar(&c.allModels, "all-models", false, "Ensure pool health for all known models")
-		c.Flags.StringVar(&c.spare, "spare", "DUT_POOL_SUITES", "DUT pool to swap in healthy DUTs from")
+		c.Flags.BoolVar(&c.dryrun, "dryrun", false, "Dry run.  Inventory changes are not committed.")
+		c.Flags.BoolVar(&c.allModels, "all-models", false, "Consider all models in the pool.")
+		c.Flags.StringVar(&c.spare, "spare", "DUT_POOL_SUITES", "Spare pool to use.")
 		return c
 	},
 }

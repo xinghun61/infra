@@ -21,8 +21,10 @@ import (
 // Repair subcommand: Repair hosts.
 var Repair = &subcommands.Command{
 	UsageLine: "repair [HOST...]",
-	ShortDesc: "Repair hosts",
-	LongDesc:  "Repair hosts.",
+	ShortDesc: "create repair tasks",
+	LongDesc: `Create repair tasks.
+
+This command does not wait for the task to start running.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &repairRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)

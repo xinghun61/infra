@@ -21,13 +21,17 @@ import (
 // AssignDuts subcommand: AssignDuts a DUT to a drone.
 var AssignDuts = &subcommands.Command{
 	UsageLine: "assign-duts [-drone DRONE] [DUT_ID...]",
-	ShortDesc: "Assign a DUT to a drone",
-	LongDesc:  "Assign a DUT to a drone",
+	ShortDesc: "assign DUTs to a drone",
+	LongDesc: `Assign DUTs to a drone.
+
+The -drone flag is required.
+
+Assigning a DUT to a drone allows the DUT to run tasks.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &assignDutsRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.StringVar(&c.server, "drone", "", "Drone to assign DUTs to. (required)")
+		c.Flags.StringVar(&c.server, "drone", "", "Drone to assign DUTs to.  Required.")
 		return c
 	},
 }

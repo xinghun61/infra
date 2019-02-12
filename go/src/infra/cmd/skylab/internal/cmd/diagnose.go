@@ -25,13 +25,18 @@ import (
 // Diagnose subcommand: Diagnose DUT status.
 var Diagnose = &subcommands.Command{
 	UsageLine: "diagnose [-dev] [-short] [HOST...]",
-	ShortDesc: "Diagnose DUT status",
-	LongDesc:  "Diagnose DUT status.",
+	ShortDesc: "diagnose DUT status",
+	LongDesc: `Diagnose DUT status.
+
+This prints the current status of DUTs and a list of tasks that show
+how the DUTs got into that state.
+
+This is the equivalent of dut-status in Autotest.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &diagnoseRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.BoolVar(&c.short, "short", false, "Print short diagnosis")
+		c.Flags.BoolVar(&c.short, "short", false, "Print short diagnosis.")
 		return c
 	},
 }

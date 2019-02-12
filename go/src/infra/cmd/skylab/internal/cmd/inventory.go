@@ -25,13 +25,19 @@ import (
 // Inventory subcommand: Print host inventory.
 var Inventory = &subcommands.Command{
 	UsageLine: "inventory [-dev] [-labs N]",
-	ShortDesc: "Print host inventory",
-	LongDesc:  "Print host inventory.",
+	ShortDesc: "print DUT inventory",
+	LongDesc: `Print a summary of the DUT inventory.
+
+This is the equivalent of the inventory email in Autotest.
+`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &inventoryRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.Var(flag.CommaList(&c.labs), "labs", "Restrict results to chromeos labs, e.g. 2,4,6")
+		c.Flags.Var(flag.CommaList(&c.labs), "labs",
+			`Restrict results to specific labs.  This should be a number, and
+multiple labs can be specified separated with commas.  For example,
+labs chromeos2 and chromeos4 can be specified with 2,4.`)
 		return c
 	},
 }

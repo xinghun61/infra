@@ -51,7 +51,7 @@ type commonFlags struct {
 }
 
 func (f *commonFlags) Register(fl *flag.FlagSet) {
-	fl.BoolVar(&f.debug, "debug", false, "Enable debug output")
+	fl.BoolVar(&f.debug, "debug", false, "Enable debug output.")
 }
 
 func (f commonFlags) DebugLogger(a subcommands.Application) *log.Logger {
@@ -67,7 +67,7 @@ type envFlags struct {
 }
 
 func (f *envFlags) Register(fl *flag.FlagSet) {
-	fl.BoolVar(&f.dev, "dev", false, "Run in dev environment")
+	fl.BoolVar(&f.dev, "dev", false, "Run in dev environment.")
 }
 
 func (f envFlags) Env() site.Environment {

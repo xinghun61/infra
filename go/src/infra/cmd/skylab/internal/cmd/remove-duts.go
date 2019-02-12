@@ -21,13 +21,19 @@ import (
 // RemoveDuts subcommand: RemoveDuts a DUT from a drone.
 var RemoveDuts = &subcommands.Command{
 	UsageLine: "remove-duts [-drone DRONE] [DUT_ID...]",
-	ShortDesc: "Remove a DUT from a drone",
-	LongDesc:  "Remove a DUT from a drone",
+	ShortDesc: "remove DUTs from a drone",
+	LongDesc: `Remove DUTs from a drone
+
+If -drone is given, check that the DUTs are currently assigned to that
+drone.  Otherwise, the DUTs are removed from whichever drone they are
+currently assigned to.
+
+Removing DUTs from a drone stops the DUTs from being able to run tasks.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &removeDutsRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.StringVar(&c.server, "drone", "", "Drone to remove DUTs from (optional; if absent, remove from current drone)")
+		c.Flags.StringVar(&c.server, "drone", "", "Drone to remove DUTs from.")
 		return c
 	},
 }

@@ -22,8 +22,8 @@ import (
 // RerunTasks subcommand.
 var RerunTasks = &subcommands.Command{
 	UsageLine: "rerun-tasks [TASK_ID...]",
-	ShortDesc: "Rerun Skylab tasks",
-	LongDesc:  "Rerun Skylab tasks with new tasks.",
+	ShortDesc: "create copies of tasks to run again",
+	LongDesc:  `Create copies of tasks to run again.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &rerunTasksRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)

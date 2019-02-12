@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/maruel/subcommands"
@@ -24,9 +25,13 @@ import (
 
 // CreateSuite subcommand: create a suite task.
 var CreateSuite = &subcommands.Command{
-	UsageLine: "create-suite -board BOARD -pool POOL -image IMAGE [-model MODEL] [-priority PRIORITY] [-timeout-mins TIMEOUT_MINS] [max-retries MAX_RETRIES] [-tag KEY:VALUE...] [-keyval KEY:VALUE...] SUITE_NAME",
-	ShortDesc: "Create a suite task, with the given suite name.",
-	LongDesc:  "Create a suite task, with the given suite name.",
+	UsageLine: "create-suite [FLAGS...] SUITE_NAME",
+	ShortDesc: "create a suite task",
+	LongDesc: `Create a suite task, with the given suite name.
+
+You must supply -pool and -image.
+
+This command does not wait for the task to start running.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &createSuiteRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
@@ -36,11 +41,20 @@ var CreateSuite = &subcommands.Command{
 		c.Flags.StringVar(&c.model, "model", "", "Model to run suite on.")
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run suite on.")
 		c.Flags.StringVar(&c.image, "image", "", "Fully specified image name to run suite against, e.g. reef-canary/R73-11580.0.0")
-		c.Flags.Var(flagx.NewChoice(&c.priority, sortedPriorityKeys()...), "priority", fmt.Sprint("Specify the priority of the suite. A high value means this suite will be executed in a low priority. It should be a string in ", sortedPriorities()))
-		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "Time (counting from when the task starts) after which task will be killed if it hasn't completed.")
-		c.Flags.IntVar(&c.maxRetries, "max-retries", 0, "Maximum retries allowed in total for all child tests of this suite. No retry if it is 0.")
+		c.Flags.Var(flagx.NewChoice(&c.priority, sortedPriorityKeys()...), "priority",
+			`Specify the priority of the suite.  A high value means this suite
+will be executed in a low priority.  It should one of:
+`+strings.Join(sortedPriorityKeys(), ", "))
+		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20,
+			`Time (counting from when the task starts) after which task will be
+killed if it hasn't completed.`)
+		c.Flags.IntVar(&c.maxRetries, "max-retries", 0,
+			`Maximum retries allowed in total for all child tests of this
+suite. No retry if it is 0.`)
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for suite; may be specified multiple times.")
-		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval", "Autotest keyval for test. Key may not contain : character. May be specified multiple times.")
+		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval",
+			`Autotest keyval for test. Key may not contain : character. May be
+specified multiple times.`)
 		return c
 	},
 }

@@ -19,7 +19,7 @@ import (
 // Version subcommand: Version skylab tool.
 var Version = &subcommands.Command{
 	UsageLine: "version",
-	ShortDesc: "Print skylab tool version",
+	ShortDesc: "print skylab tool version",
 	LongDesc:  "Print skylab tool version.",
 	CommandRun: func() subcommands.CommandRun {
 		c := &versionRun{}

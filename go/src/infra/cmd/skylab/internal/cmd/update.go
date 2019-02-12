@@ -21,8 +21,13 @@ import (
 // Update subcommand: Update skylab tool.
 var Update = &subcommands.Command{
 	UsageLine: "update",
-	ShortDesc: "Update skylab tool",
-	LongDesc:  "Update skylab tool.",
+	ShortDesc: "update skylab tool",
+	LongDesc: `Update skylab tool.
+
+If you installed the skylab tool as a part of lab tools, you should
+use update_lab_tools instead of this.
+
+This is just a thin wrapper around CIPD.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &updateRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
