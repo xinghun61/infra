@@ -233,7 +233,9 @@ function loaderPage(testFiles) {
       });
     })();
 
-    WCT.loadSuites([${testFiles.map(file => html`"${file}",`)}]);
+    // Strip leading slash to support ?grep.
+    WCT.loadSuites([${testFiles.map(file =>
+      html`"${file.replace(/^\/+/g, '')}",`)}]);
     </script>
   `;
 }
