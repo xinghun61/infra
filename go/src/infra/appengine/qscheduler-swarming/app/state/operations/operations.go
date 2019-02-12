@@ -100,9 +100,9 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 		}
 
 		for _, n := range r.Notifications {
-			var t reconciler.TaskInstant_State
+			var t taskState
 			var ok bool
-			if t, ok = toTaskInstantState(n.Task.State); !ok {
+			if t, ok = translateTaskState(n.Task.State); !ok {
 				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
 				logging.Warningf(ctx, err)
 				sp.Reconciler.TaskError(RequestID(n.Task.Id), err)
@@ -117,7 +117,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			// to labels of RUNNING or ABSENT tasks.
 			//
 			// The same is true of AccountID
-			if t == reconciler.TaskInstant_WAITING {
+			if t == taskStateWaiting {
 				labels, err := computeLabels(n)
 				if err != nil {
 					logging.Warningf(ctx, err.Error())
@@ -142,29 +142,18 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				}
 			}
 
-			update := &reconciler.TaskInstant{
-				AccountId:           accountID,
-				EnqueueTime:         n.Task.EnqueuedTime,
-				ProvisionableLabels: provisionableLabels,
-				BaseLabels:          baseLabels,
-				RequestId:           n.Task.Id,
-				Time:                n.Time,
-				State:               t,
-				WorkerId:            n.Task.BotId,
-			}
-
 			var err error
-			switch update.State {
-			case reconciler.TaskInstant_ABSENT:
+			switch t {
+			case taskStateAbsent:
 				err = sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, RequestID(n.Task.Id), tutils.Timestamp(n.Time))
-			case reconciler.TaskInstant_RUNNING:
+			case taskStateRunning:
 				rR := &reconciler.TaskRunningRequest{
 					RequestID: RequestID(n.Task.Id),
 					Time:      tutils.Timestamp(n.Time),
 					WorkerID:  WorkerID(n.Task.BotId),
 				}
 				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
-			case reconciler.TaskInstant_WAITING:
+			case taskStateWaiting:
 				wR := &reconciler.TaskWaitingRequest{
 					AccountID:           AccountID(accountID),
 					BaseLabels:          stringset.NewFromSlice(baseLabels...),
@@ -182,7 +171,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				logging.Warningf(ctx, err.Error())
 				continue
 			}
-			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update %+v", r.SchedulerId, update)
+			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update type %d", r.SchedulerId, t)
 		}
 		response = swarming.NotifyTasksResponse{}
 		return nil
@@ -226,7 +215,16 @@ func GetAccountID(n *swarming.NotifyTasksItem) (string, error) {
 	}
 }
 
-func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, bool) {
+type taskState int
+
+const (
+	taskStateUnknown taskState = iota
+	taskStateWaiting
+	taskStateRunning
+	taskStateAbsent
+)
+
+func translateTaskState(s swarming.TaskState) (taskState, bool) {
 	cInt := int(s) &^ int(swarming.TaskStateCategory_TASK_STATE_MASK)
 	category := swarming.TaskStateCategory(cInt)
 
@@ -234,19 +232,19 @@ func toTaskInstantState(s swarming.TaskState) (reconciler.TaskInstant_State, boo
 	// swarming.proto. Please preserve that when adding new cases.
 	switch category {
 	case swarming.TaskStateCategory_CATEGORY_PENDING:
-		return reconciler.TaskInstant_WAITING, true
+		return taskStateWaiting, true
 	case swarming.TaskStateCategory_CATEGORY_RUNNING:
-		return reconciler.TaskInstant_RUNNING, true
+		return taskStateRunning, true
 	// The following categories all translate to "ABSENT", because they are all
 	// equivalent to the task being neither running nor waiting.
 	case swarming.TaskStateCategory_CATEGORY_TRANSIENT_DONE,
 		swarming.TaskStateCategory_CATEGORY_EXECUTION_DONE,
 		swarming.TaskStateCategory_CATEGORY_NEVER_RAN_DONE:
-		return reconciler.TaskInstant_ABSENT, true
+		return taskStateAbsent, true
 
 	// Invalid state.
 	default:
-		return reconciler.TaskInstant_NULL, false
+		return taskStateUnknown, false
 	}
 }
 
