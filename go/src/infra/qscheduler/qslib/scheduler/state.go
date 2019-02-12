@@ -124,11 +124,25 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m M
 	if r.ID == "" {
 		panic("empty request id")
 	}
-	if _, ok := s.getRequest(r.ID); ok {
-		// Request already exists, simply notify that it should be idle at the
-		// given time.
-		s.notifyTaskRunning(ctx, r.ID, "", t)
+	if oldR, ok := s.getRequest(r.ID); ok {
+		// Request is already known.
+		if wid, ok := s.runningRequestsCache[r.ID]; ok {
+			// Request was running.
+			w := s.workers[wid]
+			if !t.Before(oldR.confirmedTime) && !t.Before(w.confirmedTime) {
+				// This notification is newer than the known state of request.
+				// Respect it.
+				s.deleteWorker(wid)
+				r.confirm(t)
+				s.queuedRequests[r.ID] = r
+				m.AddEvent(eventEnqueued(r, s, t))
+			}
+			return
+		}
+		// Request was already idle. Just update request's confirmed time.
+		oldR.confirm(t)
 	} else {
+		// Request is not already known.
 		r.confirm(t)
 		s.queuedRequests[r.ID] = r
 		m.AddEvent(eventEnqueued(r, s, t))
@@ -178,8 +192,11 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time) {
 
 // notifyTaskRunning implements Scheduler.NotifyTaskRunning for a given State.
 func (s *state) notifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) {
+	if workerID == "" {
+		panic("empty workerID")
+	}
 	if requestID == "" {
-		panic("Must supply a requestID.")
+		panic("empty requestID")
 	}
 
 	if request, ok := s.getRequest(requestID); ok {
@@ -195,13 +212,24 @@ func (s *state) notifyTaskRunning(ctx context.Context, requestID RequestID, work
 
 // notifyTaskAbsent implements Scheduler.NotifyTaskAbsent for a given State.
 func (s *state) notifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time) {
-	// Reuse the notifyRequest logic. First, notify that task is not running. Then, remove
-	// the request from queue if it is present.
-	s.notifyTaskRunning(ctx, requestID, "", t)
-	if req, ok := s.getRequest(requestID); ok {
-		if !t.Before(req.confirmedTime) {
-			s.deleteRequest(requestID)
+	r, ok := s.getRequest(requestID)
+	if !ok {
+		// Task was already absent.
+		return
+	}
+
+	if wid, ok := s.runningRequestsCache[requestID]; ok {
+		// Task was running.
+		w := s.workers[wid]
+		if !t.Before(w.confirmedTime) && !t.Before(r.confirmedTime) {
+			s.deleteWorker(wid)
 		}
+		return
+	}
+
+	// Task was waiting.
+	if !t.Before(r.confirmedTime) {
+		s.deleteRequest(requestID)
 	}
 }
 

@@ -237,10 +237,9 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stri
 }
 
 // NotifyTaskRunning informs the scheduler authoritatively that the given task
-// was running on the given worker (or was idle, for workerID = "") at the
-// given time.
+// was running on the given worker at the given time.
 //
-// Supplied requestID must not be "".
+// Supplied requestID and workerID must not be "".
 func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) error {
 	s.state.notifyTaskRunning(ctx, requestID, workerID, t)
 	return nil
