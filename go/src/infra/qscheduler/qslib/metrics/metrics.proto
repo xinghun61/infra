@@ -151,7 +151,32 @@ message TaskEvent {
 
   // ReprioritizedDetails represents event details that are specific to the
   // COMPLETED event type.
-  message CompletedDetails { }
+  message CompletedDetails {
+    enum Reason {
+      UNSPECIFIED = 0;
+
+      // The bot that was previously assigned this task became idle.
+      BOT_IDLE = 1;
+
+      // The task became absent while it was still idle.
+      IDLE_TASK_ABSENT = 2;
+
+      // The task becamse absent while it was running.
+      RUNNING_TASK_ABSENT = 3;
+
+      // The task was believed to be running on a bot, but the scheduler was
+      // notified that it was running on a different bot,so its state was
+      // deleted.
+      INCONSISTENT_BOT_FOR_TASK = 4;
+
+      // The task was believed the be running on a bot, but the scheduler was
+      // notified that a different task is running on the bot, so its state was
+      // deleted.
+      INCONSISTENT_TASK_FOR_BOT = 5;
+    }
+
+    Reason reason = 1;
+  }
 
   oneof details {
     EnqueuedDetails enqueued_details = 100;
