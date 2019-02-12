@@ -124,25 +124,31 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m M
 	if r.ID == "" {
 		panic("empty request id")
 	}
-	if oldR, ok := s.getRequest(r.ID); ok {
-		// Request is already known.
-		if wid, ok := s.runningRequestsCache[r.ID]; ok {
-			// Request was running.
-			w := s.workers[wid]
-			if !t.Before(oldR.confirmedTime) && !t.Before(w.confirmedTime) {
-				// This notification is newer than the known state of request.
-				// Respect it.
-				s.deleteWorker(wid)
-				r.confirm(t)
-				s.queuedRequests[r.ID] = r
-				m.AddEvent(eventEnqueued(r, s, t))
-			}
-			return
-		}
+	rid := r.ID
+
+	knownRequest, alreadyKnown := s.getRequest(rid)
+	if !alreadyKnown {
+		// Request is not already known. Add it.
+		r.confirm(t)
+		s.queuedRequests[r.ID] = r
+		m.AddEvent(eventEnqueued(r, s, t))
+		return
+	}
+
+	// Request is already known.
+	wid, running := s.runningRequestsCache[rid]
+	if !running {
 		// Request was already idle. Just update request's confirmed time.
-		oldR.confirm(t)
-	} else {
-		// Request is not already known.
+		knownRequest.confirm(t)
+		return
+	}
+
+	// Request was running.
+	w := s.workers[wid]
+	if !t.Before(knownRequest.confirmedTime) && !t.Before(w.confirmedTime) {
+		// This notification is newer than the known state of request.
+		// Respect it.
+		s.deleteWorker(wid)
 		r.confirm(t)
 		s.queuedRequests[r.ID] = r
 		m.AddEvent(eventEnqueued(r, s, t))
