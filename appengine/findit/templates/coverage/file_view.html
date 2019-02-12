@@ -113,7 +113,7 @@
 
       <tbody id="report-data-container">
       {% for num, info in data.line_to_data %}
-        <tr class="highlight-row">
+        <tr id="{{num}}" class="highlight-row">
           <td><a href="#{{num}}"><pre>{{num}}</pre></a></td>
           {% if info.count == 0 %}
           <td class="uncovered-count"><pre>0</pre></td>
