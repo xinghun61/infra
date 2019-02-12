@@ -258,6 +258,9 @@ func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID
 	if requestID == "" {
 		panic("empty request ID")
 	}
+	if workerID == "" {
+		panic("empty worker ID")
+	}
 	allegedWorkerID, isRunning := s.runningRequestsCache[requestID]
 	if allegedWorkerID == workerID {
 		// Our state is already correct, so just update times and we are done.
@@ -268,35 +271,6 @@ func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID
 			worker := s.workers[allegedWorkerID]
 			worker.confirm(t)
 		}
-		return
-	}
-
-	if workerID == "" {
-		// We thought the request was running on a worker, but were notified it
-		// is idle.
-		allegedWorker := s.workers[allegedWorkerID]
-
-		if t.Before(allegedWorker.latestConfirmedTime()) {
-			// However, the worker was marked idle more recently than this notification's
-			// timestamp, and was later matched to this request by the scheduler.
-			// This probably means that this notification is a late delivery of a
-			// message that was emitted after the scheduler assignment.
-			// Ignore it.
-			//
-			// NOTE: Revisit if this is the actual desired behavior. If the assignment
-			// of the request to the worker was dropped or ignored by swarming, then
-			// the inconsistency will only be healed by a future call to either MarkIdle
-			// for this worker or Notify for this request.
-			//
-			// TODO(akeshet): Once a logging or metrics layer is added, log the fact
-			// that this has occurred.
-			return
-		}
-		// The request should be queued, although it is not. Fix this by putting the
-		// request into the queue and removing the alleged worker.
-		s.deleteWorker(allegedWorkerID)
-		r.confirmedTime = t
-		s.queuedRequests[requestID] = r
 		return
 	}
 
