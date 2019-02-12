@@ -111,12 +111,12 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			case taskStateAbsent:
 				sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, RequestID(n.Task.Id), tutils.Timestamp(n.Time))
 			case taskStateRunning:
-				rR := &reconciler.TaskRunningRequest{
+				r := &reconciler.TaskRunningRequest{
 					RequestID: RequestID(n.Task.Id),
 					Time:      tutils.Timestamp(n.Time),
 					WorkerID:  WorkerID(n.Task.BotId),
 				}
-				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
+				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, r)
 			case taskStateWaiting:
 				err = notifyTaskWaiting(ctx, sp, metrics, n)
 			default:
@@ -154,7 +154,7 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, metrics schedu
 	if accountID, err = GetAccountID(n); err != nil {
 		return err
 	}
-	wR := &reconciler.TaskWaitingRequest{
+	r := &reconciler.TaskWaitingRequest{
 		AccountID:           AccountID(accountID),
 		BaseLabels:          stringset.NewFromSlice(baseLabels...),
 		EnqueueTime:         tutils.Timestamp(n.Task.EnqueuedTime),
@@ -162,7 +162,7 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, metrics schedu
 		RequestID:           RequestID(n.Task.Id),
 		Time:                tutils.Timestamp(n.Time),
 	}
-	sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, wR)
+	sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, r)
 
 	return nil
 }
