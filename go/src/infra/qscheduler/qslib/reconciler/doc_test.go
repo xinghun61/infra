@@ -46,19 +46,18 @@ func Example() {
 	// configs.
 
 	// Notify the reconciler of a newly enqueued task request.
-	requestID := "Request1"
-	accountID := "Account1"
+	requestID := RequestID("Request1")
+	accountID := AccountID("Account1")
 	labels := stringset.NewFromSlice("label1")
-	t := tutils.TimestampProto(time.Now())
-	taskUpdate := &reconciler.TaskInstant{
-		State:               reconciler.TaskInstant_WAITING,
-		AccountId:           accountID,
-		RequestId:           requestID,
-		ProvisionableLabels: labels.ToSlice(),
+	t := time.Now()
+	waitRequest := &reconciler.TaskWaitingRequest{
+		AccountID:           accountID,
+		RequestID:           requestID,
+		ProvisionableLabels: labels,
 		EnqueueTime:         t,
 		Time:                t,
 	}
-	r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+	r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, waitRequest)
 
 	// Notify the reconciler of a new idle worker, and fetch an assignment
 	// for it. This will fetch Request1 to run on it.
@@ -75,12 +74,12 @@ func Example() {
 	fmt.Printf("%s was again assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
 	// Acknowledge the that request is running on the worker.
-	t = tutils.TimestampProto(time.Now())
-	taskUpdate = &reconciler.TaskInstant{
+	tp := tutils.TimestampProto(time.Now())
+	taskUpdate := &reconciler.TaskInstant{
 		State:     reconciler.TaskInstant_RUNNING,
-		RequestId: requestID,
+		RequestId: string(requestID),
 		WorkerId:  string(workerID),
-		Time:      t,
+		Time:      tp,
 	}
 	r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 

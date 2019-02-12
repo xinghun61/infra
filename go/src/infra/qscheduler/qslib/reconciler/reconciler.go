@@ -188,25 +188,21 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 }
 
 // NotifyTaskWaiting informs the quotascheduler about a waiting task.
-func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskInstant) error {
+func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskWaitingRequest) error {
 	state.ensureMaps()
-	if update.State != TaskInstant_WAITING {
-		panic("invalid update type")
-	}
 
-	updateTime := tutils.Timestamp(update.Time)
-	if err := s.UpdateTime(ctx, updateTime); err != nil {
+	if err := s.UpdateTime(ctx, update.Time); err != nil {
 		logging.Warningf(ctx, "ignoring UpdateTime error: %s", err.Error())
 	}
 
 	req := scheduler.NewTaskRequest(
-		RequestID(update.RequestId),
-		AccountID(update.AccountId),
-		stringset.NewFromSlice(update.ProvisionableLabels...),
-		stringset.NewFromSlice(update.BaseLabels...),
-		tutils.Timestamp(update.EnqueueTime))
+		update.RequestID,
+		update.AccountID,
+		update.ProvisionableLabels,
+		update.BaseLabels,
+		update.EnqueueTime)
 	// TODO(akeshet): Handle error from AddRequest.
-	s.AddRequest(ctx, req, tutils.Timestamp(update.Time), metrics)
+	s.AddRequest(ctx, req, update.Time, metrics)
 
 	return nil
 }

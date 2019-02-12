@@ -39,6 +39,15 @@ import (
 // account the task should be charged to.
 const AccountIDTagKey = "qs_account"
 
+// WorkerID is a type alias for WorkerID
+type WorkerID = scheduler.WorkerID
+
+// RequestID is a type alias for RequestID
+type RequestID = scheduler.RequestID
+
+// AccountID is a type alias for AccountID
+type AccountID = scheduler.AccountID
+
 // AssignTasks returns an operation that will perform the given Assign request.
 //
 // The result object will have the operation response stored in it after
@@ -151,7 +160,15 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			case reconciler.TaskInstant_RUNNING:
 				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, update)
 			case reconciler.TaskInstant_WAITING:
-				err = sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, update)
+				wR := &reconciler.TaskWaitingRequest{
+					AccountID:           AccountID(accountID),
+					BaseLabels:          stringset.NewFromSlice(baseLabels...),
+					EnqueueTime:         tutils.Timestamp(n.Task.EnqueuedTime),
+					ProvisionableLabels: stringset.NewFromSlice(provisionableLabels...),
+					RequestID:           RequestID(n.Task.Id),
+					Time:                tutils.Timestamp(n.Time),
+				}
+				err = sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, wR)
 			default:
 				panic("Invalid update type.")
 			}

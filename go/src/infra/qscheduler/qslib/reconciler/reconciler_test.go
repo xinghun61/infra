@@ -51,16 +51,15 @@ func TestOneAssignment(t *testing.T) {
 		r := New()
 
 		Convey("given an idle task has been notified", func() {
-			aid := "Account1"
+			aid := AccountID("Account1")
 			labels := stringset.NewFromSlice("Label1")
-			rid := "Request1"
-			taskUpdate := &TaskInstant{
-				AccountId:           aid,
-				ProvisionableLabels: labels.ToSlice(),
-				RequestId:           rid,
-				State:               TaskInstant_WAITING,
-				Time:                tutils.TimestampProto(t0),
-				EnqueueTime:         tutils.TimestampProto(t0),
+			rid := RequestID("Request1")
+			taskUpdate := &TaskWaitingRequest{
+				AccountID:           aid,
+				ProvisionableLabels: labels,
+				RequestID:           rid,
+				Time:                t0,
+				EnqueueTime:         t0,
 			}
 
 			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
@@ -116,7 +115,7 @@ func TestOneAssignment(t *testing.T) {
 				for _, c := range matchingNotifyCases {
 					Convey(fmt.Sprintf("when the task is notified on the worker %s", c.desc), func() {
 						taskUpdate := &TaskInstant{
-							RequestId: rid,
+							RequestId: string(rid),
 							WorkerId:  string(wid),
 							State:     TaskInstant_RUNNING,
 							Time:      tutils.TimestampProto(c.t),
@@ -153,7 +152,7 @@ func TestOneAssignment(t *testing.T) {
 				Convey("when the task is notified on a different worker", func() {
 					wid2 := "Worker2"
 					taskUpdate := &TaskInstant{
-						RequestId: rid,
+						RequestId: string(rid),
 						WorkerId:  wid2,
 						State:     TaskInstant_RUNNING,
 						Time:      tutils.TimestampProto(t1),
@@ -188,13 +187,12 @@ func TestQueuedAssignment(t *testing.T) {
 			labels := stringset.NewFromSlice("Label1")
 			r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{wid, labels})
 			Convey("given a request is enqueued with that label", func() {
-				rid := "Request1"
-				taskUpdate := &TaskInstant{
-					EnqueueTime:         tutils.TimestampProto(t0),
-					Time:                tutils.TimestampProto(t0),
-					ProvisionableLabels: labels.ToSlice(),
-					RequestId:           rid,
-					State:               TaskInstant_WAITING,
+				rid := RequestID("Request1")
+				taskUpdate := &TaskWaitingRequest{
+					EnqueueTime:         t0,
+					Time:                t0,
+					ProvisionableLabels: labels,
+					RequestID:           rid,
 				}
 				r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 				Convey("when a different worker without that label calls AssignTasks", func() {
@@ -229,11 +227,10 @@ func TestPreemption(t *testing.T) {
 
 		Convey("given a task and an idle worker, and that AssignTasks has been called and the worker is running that task", func() {
 			oldRequest := RequestID("Request1")
-			taskUpdate := &TaskInstant{
-				EnqueueTime: tutils.TimestampProto(t0),
-				Time:        tutils.TimestampProto(t0),
-				RequestId:   string(oldRequest),
-				State:       TaskInstant_WAITING,
+			taskUpdate := &TaskWaitingRequest{
+				EnqueueTime: t0,
+				Time:        t0,
+				RequestID:   oldRequest,
 			}
 			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
@@ -249,12 +246,11 @@ func TestPreemption(t *testing.T) {
 				s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float64{1})
 				t1 := time.Unix(1, 0)
 				newRequest := RequestID("Request2")
-				taskUpdate := &TaskInstant{
-					AccountId:   string(aid),
-					EnqueueTime: tutils.TimestampProto(t1),
-					Time:        tutils.TimestampProto(t1),
-					RequestId:   string(newRequest),
-					State:       TaskInstant_WAITING,
+				taskUpdate := &TaskWaitingRequest{
+					AccountID:   aid,
+					EnqueueTime: t1,
+					Time:        t1,
+					RequestID:   newRequest,
 				}
 				r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
@@ -312,11 +308,10 @@ func TestPreemption(t *testing.T) {
 					Convey("when the cancellation is ACKed", func() {
 						t2 := time.Unix(2, 0)
 
-						taskUpdate := &TaskInstant{
-							EnqueueTime: tutils.TimestampProto(t0),
-							Time:        tutils.TimestampProto(t0),
-							RequestId:   string(oldRequest),
-							State:       TaskInstant_WAITING,
+						taskUpdate := &TaskWaitingRequest{
+							EnqueueTime: t0,
+							Time:        t0,
+							RequestID:   oldRequest,
 						}
 						r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
