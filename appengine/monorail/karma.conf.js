@@ -6,8 +6,6 @@
 
 const path = require('path');
 
-process.env.CHROME_BIN = require('puppeteer').executablePath()
-
 module.exports = function(config) {
   config.set({
 
@@ -108,7 +106,14 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['ChromeHeadless'],
+    browsers: ['Chrome_latest'],
+
+    customLaunchers: {
+      Chrome_latest: {
+        base: 'Chrome',
+        version: 'latest',
+      },
+    },
 
 
     // Continuous Integration mode

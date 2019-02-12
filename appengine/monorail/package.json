@@ -14,7 +14,6 @@
     "karma-coverage": "^1.1.2",
     "karma-sinon": "^1.0.5",
     "karma-sourcemap-loader": "^0.3.7",
-    "puppeteer": "^1.10.0",
     "path": "^0.12.7",
     "sinon": "^7.2.3",
     "vulcanize": "^1.14.12",
