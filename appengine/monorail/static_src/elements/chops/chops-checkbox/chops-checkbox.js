@@ -17,7 +17,7 @@ export class ChopsCheckbox extends PolymerElement {
     return html`
       <style>
         :host {
-          --chops-checkbox-color: hsl(219, 70%, 51%);
+          --chops-checkbox-color: var(--chops-primary-accent-color);
           /* A bit brighter than Chrome's default focus color to
            * avoid blending into the checkbox's blue. */
           --chops-checkbox-focus-color: hsl(193, 82%, 63%);

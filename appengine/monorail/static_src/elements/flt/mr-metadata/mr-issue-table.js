@@ -62,8 +62,8 @@ export class MrIssueTable extends ReduxMixin(PolymerElement) {
       <template is="dom-if" if="[[error]]">
         <div class="error">[[error]]</div>
       </template>
-      <table>
-        <tbody><tr>
+      <table><tbody>
+        <tr>
           <template is="dom-if" if="[[rerankEnabled]]">
             <th></th>
           </template>

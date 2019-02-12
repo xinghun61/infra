@@ -87,7 +87,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           width: 100%;
           background-color: white;
           font-size: 85%;
-          border-bottom: 1px solid hsl(0, 0%, 85%);
+          border-bottom: var(--chops-normal-border);
           box-sizing: border-box;
           display: block;
           border-left: 4px solid var(--approval-bg-color);

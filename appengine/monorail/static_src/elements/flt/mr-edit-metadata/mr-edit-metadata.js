@@ -80,7 +80,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           width: 100%;
           margin: 0.5em 0;
           box-sizing: border-box;
-          border: 1px solid hsl(0, 0%, 70%);
+          border: var(--chops-accessible-border);
           height: 8em;
           transition: height 0.1s ease-in-out;
           padding: 0.5em 4px;
@@ -89,7 +89,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         }
         button.toggle {
           background: none;
-          color: hsl(240, 100%, 40%);
+          color: var(--chops-link-color);
           border: 0;
           width: 100%;
           padding: 0.25em 0;

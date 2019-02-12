@@ -23,8 +23,8 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           width: 100%;
           margin-top: 0;
           font-size: 18px;
-          background-color: hsl(227, 100%, 95%);
-          border-bottom: 1px solid hsl(227, 10%, 87%);
+          background-color: var(--monorail-metadata-open-bg);
+          border-bottom: var(--chops-normal-border);
           font-weight: normal;
           padding: 0.25em 16px;
           box-sizing: border-box;

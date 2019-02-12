@@ -24,11 +24,9 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       <style include="mr-flt-styles">
         :host {
           box-sizing: border-box;
-          padding: 0.5em 8px;
+          padding: 0.5em 16px;
           max-width: 100%;
           display: block;
-          position: sticky;
-          top: 0.5em;
         }
         a.label {
           color: hsl(120, 100%, 25%);
@@ -37,19 +35,9 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         a.label[data-derived] {
           font-style: italic;
         }
-        a.button {
-          border: 1px solid hsl(120, 15%, 90%);
-        }
-        .edit-container {
-          text-align: center;
-          box-sizing: border-box;
-          padding: 0.5em 8px;
-          border-bottom: 1px solid hsl(120, 15%, 90%);
-          margin-bottom: 1em;
-        }
         .restricted {
           background: hsl(30, 100%, 93%);
-          border: 1px solid hsl(30, 40%, 85%);
+          border: var(--chops-normal-border);
           width: 100%;
           box-sizing: border-box;
           padding: 0.5em 8px;

@@ -20,7 +20,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-flt-styles">
       }
       chops-button, a.button {
         box-sizing: border-box;
-        border: 1px solid hsl(0, 0%, 85%);
+        border: var(--chops-normal-border);
         font-size: 12px;
         background: white;
         border-radius: 8px;
@@ -34,8 +34,8 @@ $_documentContainer.innerHTML = `<dom-module id="mr-flt-styles">
         margin-right: 4px;
       }
       chops-button.emphasized, a.button.emphasized {
-        background: hsl(219, 70%, 51%);
-        color: white;
+        background: var(--chops-primary-button-bg);
+        color: var(--chops-primary-button-color);
         text-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.25);
       }
       chops-button.de-emphasized, a.button.de-emphasized {
@@ -52,7 +52,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-flt-styles">
         padding: 0.5em 0;
         color: hsl(227, 60%, 39%);
         margin: 0;
-        border-bottom: 1px dotted hsl(0, 0%, 83%);
+        border-bottom: var(--chops-normal-border);
       }
     </style>
   </template>

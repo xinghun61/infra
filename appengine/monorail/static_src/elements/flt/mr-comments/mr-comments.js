@@ -31,9 +31,9 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       <style>
         button.toggle {
           background: none;
-          color: hsl(0, 0%, 39%);
+          color: var(--chops-link-color);
           border: 0;
-          border-bottom: thin dotted hsl(0, 0%, 83%);
+          border-bottom: var(--chops-normal-border);
           width: 100%;
           padding: 0.5em 0;
           text-align: left;
@@ -49,13 +49,13 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           width: 100%;
           margin: 0.5em 0;
           box-sizing: border-box;
-          border: 1px solid hsl(0, 0%, 70%);
+          border: var(--chops-accessible-border);
           height: 5em;
           transition: height 0.1s ease-in-out;
           padding: 0.5em 4px;
         }
         .card-comment {
-          border-bottom: thin dotted hsl(0, 0%, 83%);
+          border-bottom: var(--chops-normal-border);
           padding: 1em 0;
         }
         .comment-header {
@@ -80,7 +80,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           padding: 0.5em 8px;
           width: auto;
           background: hsl(227, 100%, 98%);
-          border: 1px solid hsl(227, 10%, 92%);
+          border: var(--chops-normal-border);
           margin-bottom: 0.5em;
         }
       </style>

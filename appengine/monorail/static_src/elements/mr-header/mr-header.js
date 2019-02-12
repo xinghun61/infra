@@ -18,13 +18,16 @@ export class MrHeader extends PolymerElement {
   static get template() {
     return html`
       <style>
+        :host {
+          z-index: 999;
+        }
         chops-header {
           height: 40px;
-          background-color: hsl(0, 0%, 95%);
-          border-bottom: 1px solid hsl(0, 0%, 80%);
+          background-color: var(--chops-primary-header-bg);
+          border-bottom: var(--chops-normal-border);
         }
         chops-header a {
-          color: hsl(0, 0%, 13%);
+          color: var(--chops-text-color);
           text-decoration: none;
         }
       </style>

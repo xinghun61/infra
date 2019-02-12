@@ -49,12 +49,12 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
           width: 40%;
         }
         .group-separator {
-          border-top: 1px solid hsl(120, 15%, 85%);
+          border-top: var(--chops-normal-border);
         }
         .group-title {
           font-weight: normal;
           font-style: oblique;
-          border-bottom: 1px solid hsl(120, 15%, 85%);
+          border-bottom: var(--chops-normal-border);
           text-align: center;
         }
       </style>

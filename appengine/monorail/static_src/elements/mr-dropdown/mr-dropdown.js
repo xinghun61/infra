@@ -28,7 +28,7 @@ export class MrDropdown extends PolymerElement {
         }
         i.material-icons {
           display: inline-block;
-          color: hsl(0, 0%, 39%);
+          color: var(--chops-primary-icon-color);
           margin: 2px;
         }
         .anchor {
@@ -49,8 +49,8 @@ export class MrDropdown extends PolymerElement {
           top: 98%;
           display: block;
           background: white;
-          border: 1px solid hsl(0, 0%, 80%);
-          z-index: 10;
+          border: var(--chops-accessible-border);
+          z-index: 990;
           box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
         }
         .menu hr {

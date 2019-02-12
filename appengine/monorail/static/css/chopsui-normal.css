@@ -11,7 +11,10 @@
   --chops-gray-50: #fafafa;
   --chops-gray-200: #eee;
   --chops-gray-300: #e0e0e0;
+  --chops-gray-400: #bdbdbd;
+  --chops-gray-500: #9e9e9e;
   --chops-gray-600: #757575;
+  --chops-gray-800: #424242;
   --chops-blue-gray-50: #eceff1;  /* Similar to grimoire. */
 
   --chops-primary-header-bg: white;
@@ -19,15 +22,20 @@
   --chops-sidebar-bg: var(--chops-blue-gray-50);
   --chops-page-bg: white;
   --chops-footer-bg: white;
+  --chops-primary-icon-color: var(--chops-gray-800);
+  --chops-text-color: #222;
 
   --chops-normal-border: 1px solid hsl(0, 0%, 88%);
+  /* Border color for situations when contrast is important. */
+  --chops-accessible-border: 1px solid var(--chops-gray-400);
   --chops-radius: 6px;
   --chops-shadow: none;
 
   /* TODO(zhangtiff): Replace this with Material Design blue once all
    * instances of links styled with #00c have been replaced. */
   --chops-link-color: #00c;
-  --chops-primary-button-bg: var(--chops-blue-700);
+  --chops-primary-accent-color: var(--chops-blue-700);
+  --chops-primary-button-bg: var(--chops-primary-accent-color);
   --chops-primary-button-color: white;
   --chops-button-bg: var(--chops-gray-200);
   --chops-button-color: black;
@@ -36,7 +44,7 @@
   --chops-choice-bg: var(--chops-blue-gray-50);
   --chops-choice-color: var(--chops-gray-600);
   --chops-active-choice-bg: var(--chops-blue-50);
-  --chops-active-choice-color: var(--chops-blue-700);
+  --chops-active-choice-color: var(--chops-primary-accent-color);
 
   --chops-error-bubble-bg: var(--chops-red-50);
   --chops-notice-bubble-bg: var(--chops-orange-50);

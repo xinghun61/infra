@@ -49,7 +49,7 @@ export class MrInlineEditor extends PolymerElement {
         textarea.content {
           min-height: var(--mr-inline-editor-textarea-min-height);
           max-height: var(--mr-inline-editor-textarea-max-height);
-          border: 1px solid hsl(219, 60%, 71%);
+          border: var(--chops-accessible-border);
           padding: 0.5em 4px;
         }
       </style>

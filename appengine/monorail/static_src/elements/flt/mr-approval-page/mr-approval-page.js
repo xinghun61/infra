@@ -22,14 +22,21 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <style>
-        .container-main {
+        .container-issue {
+          width: 100%;
+          flex-direction: column;
+          align-items: stretch;
+          justify-content: flex-start;
+        }
+        .container-issue-content {
+          padding: 0 16px;
           overflow: hidden;
           flex-grow: 1;
           display: flex;
           align-items: stretch;
           justify-content: space-between;
           flex-direction: row;
-          flex-wrap: no-wrap;
+          flex-wrap: nowrap;
           box-sizing: border-box;
         }
         .container-outside {
@@ -37,7 +44,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
           width: 100%;
           max-width: 100%;
           margin: auto;
-          padding: 0.75em 8px;
+          padding: 0;
           display: flex;
           align-items: stretch;
           justify-content: space-between;
@@ -52,30 +59,38 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
         }
         .metadata-container {
           font-size: 85%;
-          background: hsl(120, 35%, 95%);
-          border: 1px solid hsl(120, 15%, 90%);
+          background: var(--monorail-metadata-open-bg);
+          border-right: var(--chops-normal-border);
+          border-bottom: var(--chops-normal-border);
           width: 17%;
           min-width: 256px;
           flex-grow: 0;
           flex-shrink: 0;
-          margin-right: 16px;
           box-sizing: border-box;
-          z-index: 999;
+          z-index: 100;
+        }
+        mr-issue-header {
+          z-index: 10;
+          position: sticky;
+          top: 0;
+          margin-bottom: 0.25em;
+          width: 100%;
         }
         mr-issue-details {
           padding-right: 16px;
-          border-right: 1px dotted hsl(227, 10%, 87%);
+          border-right: var(--chops-normal-border);
           width: 50%;
+        }
+        mr-issue-metadata {
+          position: sticky;
+          top: 0.5em;
         }
         mr-launch-overview {
           padding-left: 16px;
           width: 50%;
         }
-        @media (max-width: 1280px) {
-          .container-outside {
-            padding: 0.5em 8px;
-          }
-          .container-main {
+        @media (max-width: 1024px) {
+          .container-issue-content {
             flex-direction: column;
           }
           .main-item {
@@ -107,14 +122,16 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
         </div>
       </template>
       <template is="dom-if" if="[[issueLoaded]]">
-        <mr-issue-header></mr-issue-header>
         <div class="container-outside">
           <aside class="metadata-container">
             <mr-issue-metadata></mr-issue-metadata>
           </aside>
-          <div class="container-main">
-            <mr-issue-details class="main-item"></mr-issue-details>
-            <mr-launch-overview class="main-item"></mr-launch-overview>
+          <div class="container-issue">
+            <mr-issue-header></mr-issue-header>
+            <div class="container-issue-content">
+              <mr-issue-details class="main-item"></mr-issue-details>
+              <mr-launch-overview class="main-item"></mr-launch-overview>
+            </div>
           </div>
         </div>
       </template>
