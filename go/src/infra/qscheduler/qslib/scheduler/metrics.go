@@ -96,3 +96,11 @@ func eventReprioritized(request *TaskRequest, w *worker, s *state, t time.Time, 
 	e.Details = &metrics.TaskEvent_ReprioritizedDetails_{ReprioritizedDetails: details}
 	return e
 }
+
+// eventCompleted returns a TaskEvent for COMPLETED events.
+func eventCompleted(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_CompletedDetails) *metrics.TaskEvent {
+	e := eventCommon(request, w, s, t)
+	e.EventType = metrics.TaskEvent_SWARMING_COMPLETED
+	e.Details = &metrics.TaskEvent_CompletedDetails_{CompletedDetails: details}
+	return e
+}
