@@ -25,15 +25,6 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 )
 
-// WorkerID is a type alias for WorkerID
-type WorkerID = scheduler.WorkerID
-
-// RequestID is a type alias for RequestID
-type RequestID = scheduler.RequestID
-
-// AccountID is a type alias for AccountID
-type AccountID = scheduler.AccountID
-
 func Example() {
 	ctx := context.Background()
 
@@ -45,8 +36,8 @@ func Example() {
 	// configs.
 
 	// Notify the reconciler of a newly enqueued task request.
-	requestID := RequestID("Request1")
-	accountID := AccountID("Account1")
+	requestID := scheduler.RequestID("Request1")
+	accountID := scheduler.AccountID("Account1")
 	labels := stringset.NewFromSlice("label1")
 	t := time.Now()
 	waitRequest := &reconciler.TaskWaitingRequest{
@@ -60,7 +51,7 @@ func Example() {
 
 	// Notify the reconciler of a new idle worker, and fetch an assignment
 	// for it. This will fetch Request1 to run on it.
-	workerID := WorkerID("Worker1")
+	workerID := scheduler.WorkerID("Worker1")
 	idleWorker := &reconciler.IdleWorker{ID: workerID, Labels: labels}
 	a := r.AssignTasks(ctx, s, time.Now(), scheduler.NullMetricsSink, idleWorker)
 

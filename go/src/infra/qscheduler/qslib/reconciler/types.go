@@ -17,6 +17,8 @@ package reconciler
 import (
 	"time"
 
+	"infra/qscheduler/qslib/scheduler"
+
 	"go.chromium.org/luci/common/data/stringset"
 )
 
@@ -29,7 +31,7 @@ type TaskWaitingRequest struct {
 	EnqueueTime time.Time
 
 	// RequestID of the request that is waiting.
-	RequestID RequestID
+	RequestID scheduler.RequestID
 
 	// ProvisionableLabels of the request that is waiting.
 	ProvisionableLabels stringset.Set
@@ -38,7 +40,7 @@ type TaskWaitingRequest struct {
 	BaseLabels stringset.Set
 
 	// AccountID for the request.
-	AccountID AccountID
+	AccountID scheduler.AccountID
 }
 
 // TaskRunningRequest encapsulates the arguments to NotifyTaskRunning.
@@ -47,10 +49,10 @@ type TaskRunningRequest struct {
 	Time time.Time
 
 	// RequestID of the request that is running.
-	RequestID RequestID
+	RequestID scheduler.RequestID
 
 	// WorkerID of the worker that is running the task.
-	WorkerID WorkerID
+	WorkerID scheduler.WorkerID
 }
 
 // TaskAbsentRequest encapsulates the arguments to NotifyTaskAbsent.
@@ -59,8 +61,8 @@ type TaskAbsentRequest struct {
 	Time time.Time
 
 	// RequestID of the request that is running.
-	RequestID RequestID
+	RequestID scheduler.RequestID
 
 	// WorkerID of the worker that is running the task.
-	WorkerID WorkerID
+	WorkerID scheduler.WorkerID
 }

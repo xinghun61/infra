@@ -50,9 +50,9 @@ func TestOneAssignment(t *testing.T) {
 		r := New()
 
 		Convey("given an idle task has been notified", func() {
-			aid := AccountID("Account1")
+			aid := scheduler.AccountID("Account1")
 			labels := stringset.NewFromSlice("Label1")
-			rid := RequestID("Request1")
+			rid := scheduler.RequestID("Request1")
 			taskUpdate := &TaskWaitingRequest{
 				AccountID:           aid,
 				ProvisionableLabels: labels,
@@ -64,7 +64,7 @@ func TestOneAssignment(t *testing.T) {
 			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
 			Convey("when AssignTasks is called for a worker that has the task's provisionable label", func() {
-				wid := WorkerID("Worker1")
+				wid := scheduler.WorkerID("Worker1")
 				as := r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{ID: wid, Labels: labels})
 
 				Convey("then it is given the assigned task with no provision required.", func() {
@@ -77,7 +77,7 @@ func TestOneAssignment(t *testing.T) {
 			})
 
 			Convey("when AssignTasks is called for a worker that doesn't have task's provisionable label", func() {
-				wid := WorkerID("Worker1")
+				wid := scheduler.WorkerID("Worker1")
 				as := r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
 
 				Convey("then it is given the assigned task with provision required.", func() {
@@ -130,7 +130,7 @@ func TestOneAssignment(t *testing.T) {
 				}
 
 				Convey("when a different task is notified on the worker", func() {
-					rid2 := RequestID("Request2")
+					rid2 := scheduler.RequestID("Request2")
 					taskUpdate := &TaskRunningRequest{
 						RequestID: rid2,
 						WorkerID:  wid,
@@ -147,7 +147,7 @@ func TestOneAssignment(t *testing.T) {
 				})
 
 				Convey("when the task is notified on a different worker", func() {
-					wid2 := WorkerID("Worker2")
+					wid2 := scheduler.WorkerID("Worker2")
 					taskUpdate := &TaskRunningRequest{
 						RequestID: rid,
 						WorkerID:  wid2,
@@ -179,11 +179,11 @@ func TestQueuedAssignment(t *testing.T) {
 		r := New()
 		s := scheduler.New(t0)
 		Convey("given a worker with a label is idle", func() {
-			wid := WorkerID("Worker1")
+			wid := scheduler.WorkerID("Worker1")
 			labels := stringset.NewFromSlice("Label1")
 			r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{wid, labels})
 			Convey("given a request is enqueued with that label", func() {
-				rid := RequestID("Request1")
+				rid := scheduler.RequestID("Request1")
 				taskUpdate := &TaskWaitingRequest{
 					EnqueueTime:         t0,
 					Time:                t0,
@@ -192,7 +192,7 @@ func TestQueuedAssignment(t *testing.T) {
 				}
 				r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 				Convey("when a different worker without that label calls AssignTasks", func() {
-					wid2 := WorkerID("Worker2")
+					wid2 := scheduler.WorkerID("Worker2")
 					t1 := time.Unix(1, 0)
 					as := r.AssignTasks(ctx, s, t1, scheduler.NullMetricsSink, &IdleWorker{wid2, stringset.New(0)})
 					Convey("then it is given no task.", func() {
@@ -222,7 +222,7 @@ func TestPreemption(t *testing.T) {
 		s := scheduler.New(t0)
 
 		Convey("given a task and an idle worker, and that AssignTasks has been called and the worker is running that task", func() {
-			oldRequest := RequestID("Request1")
+			oldRequest := scheduler.RequestID("Request1")
 			taskUpdate := &TaskWaitingRequest{
 				EnqueueTime: t0,
 				Time:        t0,
@@ -230,7 +230,7 @@ func TestPreemption(t *testing.T) {
 			}
 			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
-			wid := WorkerID("Worker1")
+			wid := scheduler.WorkerID("Worker1")
 			r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
 
 			// Note: This is more of a test of the scheduler's behavior than the
@@ -238,10 +238,10 @@ func TestPreemption(t *testing.T) {
 			So(s.IsAssigned(oldRequest, wid), ShouldBeTrue)
 
 			Convey("given a new request with higher priority", func() {
-				aid := AccountID("Account1")
+				aid := scheduler.AccountID("Account1")
 				s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float64{1})
 				t1 := time.Unix(1, 0)
-				newRequest := RequestID("Request2")
+				newRequest := scheduler.RequestID("Request2")
 				taskUpdate := &TaskWaitingRequest{
 					AccountID:   aid,
 					EnqueueTime: t1,
@@ -289,7 +289,7 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when AssignTasks is called for a different worker prior to ACK of the cancellation", func() {
 						t2 := time.Unix(2, 0)
-						wid2 := WorkerID("Worker2")
+						wid2 := scheduler.WorkerID("Worker2")
 						as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{wid2, stringset.New(0)})
 						Convey("then it returns nothing.", func() {
 							So(as, ShouldHaveLength, 0)
@@ -308,7 +308,7 @@ func TestPreemption(t *testing.T) {
 
 						Convey("when AssignTasks is called for a different worker", func() {
 
-							wid2 := WorkerID("Worker2")
+							wid2 := scheduler.WorkerID("Worker2")
 							as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{wid2, stringset.New(0)})
 							Convey("then it returns the previously cancelled request.", func() {
 								So(as, ShouldHaveLength, 1)
@@ -318,13 +318,13 @@ func TestPreemption(t *testing.T) {
 						})
 
 						Convey("when AssignTasks is called for the intended worker and a different worker simultaneously", func() {
-							wid2 := WorkerID("Worker2")
+							wid2 := scheduler.WorkerID("Worker2")
 							as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{wid, stringset.New(0)}, &IdleWorker{wid2, stringset.New(0)})
 							Convey("then intended worker receives preempting request, other receives preempted request.", func() {
 								So(as, ShouldHaveLength, 2)
 								a1 := Assignment{RequestID: newRequest, WorkerID: wid}
 								a2 := Assignment{RequestID: oldRequest, WorkerID: wid2}
-								asm := make(map[WorkerID]Assignment)
+								asm := make(map[scheduler.WorkerID]Assignment)
 								for _, a := range as {
 									asm[a.WorkerID] = a
 								}
@@ -347,7 +347,7 @@ func TestTaskError(t *testing.T) {
 		s := scheduler.New(t0)
 
 		Convey("when TaskError is called for a new task", func() {
-			taskID := RequestID("Task1")
+			taskID := scheduler.RequestID("Task1")
 			err := "An frabjous error occurred."
 			r.TaskError(taskID, err)
 

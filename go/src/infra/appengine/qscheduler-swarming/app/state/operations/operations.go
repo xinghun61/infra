@@ -39,15 +39,6 @@ import (
 // account the task should be charged to.
 const AccountIDTagKey = "qs_account"
 
-// WorkerID is a type alias for WorkerID
-type WorkerID = scheduler.WorkerID
-
-// RequestID is a type alias for RequestID
-type RequestID = scheduler.RequestID
-
-// AccountID is a type alias for AccountID
-type AccountID = scheduler.AccountID
-
 // AssignTasks returns an operation that will perform the given Assign request.
 //
 // The result object will have the operation response stored in it after
@@ -102,20 +93,20 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			if t, ok = translateTaskState(n.Task.State); !ok {
 				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
 				logging.Warningf(ctx, err)
-				sp.Reconciler.TaskError(RequestID(n.Task.Id), err)
+				sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), err)
 				continue
 			}
 
 			var err error
 			switch t {
 			case taskStateAbsent:
-				r := &reconciler.TaskAbsentRequest{RequestID: RequestID(n.Task.Id), Time: tutils.Timestamp(n.Time)}
+				r := &reconciler.TaskAbsentRequest{RequestID: scheduler.RequestID(n.Task.Id), Time: tutils.Timestamp(n.Time)}
 				sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, r)
 			case taskStateRunning:
 				r := &reconciler.TaskRunningRequest{
-					RequestID: RequestID(n.Task.Id),
+					RequestID: scheduler.RequestID(n.Task.Id),
 					Time:      tutils.Timestamp(n.Time),
-					WorkerID:  WorkerID(n.Task.BotId),
+					WorkerID:  scheduler.WorkerID(n.Task.BotId),
 				}
 				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, r)
 			case taskStateWaiting:
@@ -125,7 +116,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			}
 
 			if err != nil {
-				sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
+				sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), err.Error())
 				logging.Warningf(ctx, err.Error())
 				continue
 			}
@@ -156,11 +147,11 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, metrics schedu
 		return err
 	}
 	r := &reconciler.TaskWaitingRequest{
-		AccountID:           AccountID(accountID),
+		AccountID:           scheduler.AccountID(accountID),
 		BaseLabels:          stringset.NewFromSlice(baseLabels...),
 		EnqueueTime:         tutils.Timestamp(n.Task.EnqueuedTime),
 		ProvisionableLabels: stringset.NewFromSlice(provisionableLabels...),
-		RequestID:           RequestID(n.Task.Id),
+		RequestID:           scheduler.RequestID(n.Task.Id),
 		Time:                tutils.Timestamp(n.Time),
 	}
 	sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, r)

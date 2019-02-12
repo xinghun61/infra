@@ -47,19 +47,10 @@ func New() *State {
 	}
 }
 
-// WorkerID is a type alias for WorkerID
-type WorkerID = scheduler.WorkerID
-
-// RequestID is a type alias for RequestID
-type RequestID = scheduler.RequestID
-
-// AccountID is a type alias for AccountID
-type AccountID = scheduler.AccountID
-
 // IdleWorker represents a worker that is idle and wants to have a task assigned.
 type IdleWorker struct {
 	// ID is the ID of the idle worker.
-	ID WorkerID
+	ID scheduler.WorkerID
 
 	// Labels is the set of labels of the idle worker.
 	Labels stringset.Set
@@ -68,10 +59,10 @@ type IdleWorker struct {
 // Assignment represents a scheduler-initated operation to assign a task to a worker.
 type Assignment struct {
 	// WorkerID is the ID the worker that is being assigned a task.
-	WorkerID WorkerID
+	WorkerID scheduler.WorkerID
 
 	// RequestID is the ID of the task request that is being assigned.
-	RequestID RequestID
+	RequestID scheduler.RequestID
 
 	// ProvisionRequired indicates whether the worker needs to be provisioned (in other
 	// words, it is true if the worker does not possess the request's provisionable
@@ -97,7 +88,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 	for _, w := range workers {
 		wid := w.ID
 		q, ok := state.WorkerQueues[string(wid)]
-		if !ok || !s.IsAssigned(RequestID(q.TaskToAssign), wid) {
+		if !ok || !s.IsAssigned(scheduler.RequestID(q.TaskToAssign), wid) {
 			s.MarkIdle(ctx, wid, w.Labels, t, metrics)
 			delete(state.WorkerQueues, string(wid))
 		}
@@ -127,11 +118,11 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 			// Note: We determine whether provision is needed here rather than
 			// using the determination used within the Scheduler, because we have the
 			// newest info about worker dimensions here.
-			r, _ := s.GetRequest(RequestID(q.TaskToAssign))
+			r, _ := s.GetRequest(scheduler.RequestID(q.TaskToAssign))
 			provisionRequired := !w.Labels.Contains(r.ProvisionableLabels)
 
 			assignments = append(assignments, Assignment{
-				RequestID:         RequestID(q.TaskToAssign),
+				RequestID:         scheduler.RequestID(q.TaskToAssign),
 				WorkerID:          w.ID,
 				ProvisionRequired: provisionRequired,
 			})
@@ -145,7 +136,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 }
 
 // TaskError marks a given task as having failed due to an error, and in need of cancellation.
-func (state *State) TaskError(requestID RequestID, err string) {
+func (state *State) TaskError(requestID scheduler.RequestID, err string) {
 	state.ensureMaps()
 	state.TaskErrors[string(requestID)] = err
 }

@@ -24,18 +24,7 @@ import (
 	"go.chromium.org/luci/grpc/grpcutil"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"infra/qscheduler/qslib/scheduler"
 )
-
-// WorkerID is a type alias for WorkerID
-type WorkerID = scheduler.WorkerID
-
-// RequestID is a type alias for RequestID
-type RequestID = scheduler.RequestID
-
-// AccountID is a type alias for AccountID
-type AccountID = scheduler.AccountID
 
 // QSchedulerServerImpl implements the QSchedulerServer interface.
 //

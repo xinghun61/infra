@@ -24,18 +24,9 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 )
 
-// WorkerID is a type alias for WorkerID
-type WorkerID = scheduler.WorkerID
-
-// RequestID is a type alias for RequestID
-type RequestID = scheduler.RequestID
-
-// AccountID is a type alias for AccountID
-type AccountID = scheduler.AccountID
-
 func HandleAssignments([]*scheduler.Assignment) {}
 
-func IsOn(requestID RequestID, workerID WorkerID, s *scheduler.Scheduler) {
+func IsOn(requestID scheduler.RequestID, workerID scheduler.WorkerID, s *scheduler.Scheduler) {
 	fmt.Printf("%s is on %s? %v\n", requestID, workerID, s.IsAssigned(requestID, workerID))
 }
 
@@ -47,19 +38,19 @@ func Example() {
 
 	// Create a quota account with no initial balance.
 	accountConfig := scheduler.NewAccountConfig(0, 1, []float64{1, 2, 3})
-	accountID := AccountID("Account1")
+	accountID := scheduler.AccountID("Account1")
 	s.AddAccount(ctx, accountID, accountConfig, nil)
 
 	// Update time, causing quota accounts to accumulate quota.
 	s.UpdateTime(ctx, time.Now())
 
 	// Create a task request, and add it to the scheduler queue.
-	requestID := RequestID("Request1")
+	requestID := scheduler.RequestID("Request1")
 	request := scheduler.NewTaskRequest(requestID, accountID, stringset.NewFromSlice("Label1"), nil, time.Now())
 	s.AddRequest(ctx, request, time.Now(), scheduler.NullMetricsSink)
 
 	// Inform the scheduler of the existence of an idle worker.
-	workerID := WorkerID("Worker1")
+	workerID := scheduler.WorkerID("Worker1")
 	s.MarkIdle(ctx, workerID, stringset.NewFromSlice("Label2"), time.Now(), scheduler.NullMetricsSink)
 
 	// False.
