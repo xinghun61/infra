@@ -235,19 +235,14 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 }
 
 // NotifyTaskAbsent informs the quotascheduler about an absent task.
-func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskInstant) error {
+func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, rid RequestID, t time.Time) error {
 	state.ensureMaps()
-	if update.State != TaskInstant_ABSENT {
-		panic("invalid update type")
-	}
 
-	rid := RequestID(update.RequestId)
-	updateTime := tutils.Timestamp(update.Time)
-	s.AbortRequest(ctx, rid, updateTime, metrics)
+	s.AbortRequest(ctx, rid, t, metrics)
 	// TODO(akeshet): Add an inverse map from aborting request -> previous
 	// worker to avoid the need for this iteration through all workers.
 	for wid, q := range state.WorkerQueues {
-		if q.TaskToAbort == string(rid) && tutils.Timestamp(q.EnqueueTime).Before(updateTime) {
+		if q.TaskToAbort == string(rid) && tutils.Timestamp(q.EnqueueTime).Before(t) {
 			delete(state.WorkerQueues, wid)
 		}
 	}

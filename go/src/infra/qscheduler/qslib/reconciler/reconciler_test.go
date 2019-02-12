@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"infra/qscheduler/qslib/scheduler"
-	"infra/qscheduler/qslib/tutils"
 
 	"github.com/kylelemons/godebug/pretty"
 
@@ -269,12 +268,7 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when Notify is called to inform that the old request is cancelled", func() {
 						t2 := time.Unix(2, 0)
-						taskUpdate := &TaskInstant{
-							Time:      tutils.TimestampProto(t2),
-							RequestId: string(oldRequest),
-							State:     TaskInstant_ABSENT,
-						}
-						r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+						r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, oldRequest, t2)
 						Convey("when GetCancellations is called", func() {
 							c := r.Cancellations(ctx)
 							Convey("then it returns nothing.", func() {
@@ -367,12 +361,7 @@ func TestTaskError(t *testing.T) {
 				})
 			})
 			Convey("when NotifyRequest is called to abort the task", func() {
-				u := &TaskInstant{
-					RequestId: string(taskID),
-					State:     TaskInstant_ABSENT,
-					Time:      tutils.TimestampProto(t0),
-				}
-				r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, u)
+				r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, taskID, t0)
 				Convey("when GetCancellations is called", func() {
 					c := r.Cancellations(ctx)
 					Convey("then it returns nothing.", func() {
