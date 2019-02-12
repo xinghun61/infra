@@ -114,11 +114,10 @@ func TestOneAssignment(t *testing.T) {
 				}
 				for _, c := range matchingNotifyCases {
 					Convey(fmt.Sprintf("when the task is notified on the worker %s", c.desc), func() {
-						taskUpdate := &TaskInstant{
-							RequestId: string(rid),
-							WorkerId:  string(wid),
-							State:     TaskInstant_RUNNING,
-							Time:      tutils.TimestampProto(c.t),
+						taskUpdate := &TaskRunningRequest{
+							RequestID: rid,
+							WorkerID:  wid,
+							Time:      c.t,
 						}
 						r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
@@ -132,12 +131,11 @@ func TestOneAssignment(t *testing.T) {
 				}
 
 				Convey("when a different task is notified on the worker", func() {
-					rid2 := "Request2"
-					taskUpdate := &TaskInstant{
-						RequestId: rid2,
-						WorkerId:  string(wid),
-						State:     TaskInstant_RUNNING,
-						Time:      tutils.TimestampProto(t1),
+					rid2 := RequestID("Request2")
+					taskUpdate := &TaskRunningRequest{
+						RequestID: rid2,
+						WorkerID:  wid,
+						Time:      t1,
 					}
 					r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 
@@ -150,12 +148,11 @@ func TestOneAssignment(t *testing.T) {
 				})
 
 				Convey("when the task is notified on a different worker", func() {
-					wid2 := "Worker2"
-					taskUpdate := &TaskInstant{
-						RequestId: string(rid),
-						WorkerId:  wid2,
-						State:     TaskInstant_RUNNING,
-						Time:      tutils.TimestampProto(t1),
+					wid2 := WorkerID("Worker2")
+					taskUpdate := &TaskRunningRequest{
+						RequestID: rid,
+						WorkerID:  wid2,
+						Time:      t1,
 					}
 					r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
 					Convey("when AssignTasks is called again for the same worker", func() {

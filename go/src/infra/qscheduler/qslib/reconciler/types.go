@@ -40,3 +40,15 @@ type TaskWaitingRequest struct {
 	// AccountID for the request.
 	AccountID AccountID
 }
+
+// TaskRunningRequest encapsulates the arguments to NotifyTaskRunning.
+type TaskRunningRequest struct {
+	// Time at which the task was running.
+	Time time.Time
+
+	// RequestID of the request that is running.
+	RequestID RequestID
+
+	// WorkerID of the worker that is running the task.
+	WorkerID WorkerID
+}

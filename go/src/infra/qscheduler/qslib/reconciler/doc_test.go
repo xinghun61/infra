@@ -21,7 +21,6 @@ import (
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
-	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
 )
@@ -74,14 +73,12 @@ func Example() {
 	fmt.Printf("%s was again assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
 	// Acknowledge the that request is running on the worker.
-	tp := tutils.TimestampProto(time.Now())
-	taskUpdate := &reconciler.TaskInstant{
-		State:     reconciler.TaskInstant_RUNNING,
-		RequestId: string(requestID),
-		WorkerId:  string(workerID),
-		Time:      tp,
+	runningRequest := &reconciler.TaskRunningRequest{
+		RequestID: requestID,
+		WorkerID:  workerID,
+		Time:      time.Now(),
 	}
-	r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+	r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, runningRequest)
 
 	// Now, a subsequent AssignTasks call for this worker will return
 	// nothing, as there are no other tasks in the queue.

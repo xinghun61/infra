@@ -158,7 +158,12 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			case reconciler.TaskInstant_ABSENT:
 				err = sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, update)
 			case reconciler.TaskInstant_RUNNING:
-				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, update)
+				rR := &reconciler.TaskRunningRequest{
+					RequestID: RequestID(n.Task.Id),
+					Time:      tutils.Timestamp(n.Time),
+					WorkerID:  WorkerID(n.Task.BotId),
+				}
+				err = sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, rR)
 			case reconciler.TaskInstant_WAITING:
 				wR := &reconciler.TaskWaitingRequest{
 					AccountID:           AccountID(accountID),

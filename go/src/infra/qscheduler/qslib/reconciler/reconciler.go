@@ -208,24 +208,20 @@ func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Schedule
 }
 
 // NotifyTaskRunning informs the quotascheduler about a running task.
-func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskInstant) error {
+func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskRunningRequest) error {
 	state.ensureMaps()
-	if update.State != TaskInstant_RUNNING {
-		panic("invalid update type")
-	}
 
-	updateTime := tutils.Timestamp(update.Time)
-	if err := s.UpdateTime(ctx, updateTime); err != nil {
+	if err := s.UpdateTime(ctx, update.Time); err != nil {
 		logging.Warningf(ctx, "ignoring UpdateTime error: %s", err.Error())
 	}
 
-	wid := WorkerID(update.WorkerId)
-	rid := RequestID(update.RequestId)
+	wid := update.WorkerID
+	rid := update.RequestID
 	// This NotifyRequest call ensures scheduler state consistency with
 	// the latest update.
-	s.NotifyRequest(ctx, rid, wid, updateTime, metrics)
+	s.NotifyRequest(ctx, rid, wid, update.Time, metrics)
 	if q, ok := state.WorkerQueues[string(wid)]; ok {
-		if !updateTime.Before(tutils.Timestamp(q.EnqueueTime)) {
+		if !update.Time.Before(tutils.Timestamp(q.EnqueueTime)) {
 			delete(state.WorkerQueues, string(wid))
 			// TODO(akeshet): Log or handle "unexpected request on worker" here.
 		} else {
