@@ -274,7 +274,7 @@ func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID
 		return
 	}
 
-	if allegedWorkerID != "" {
+	if isRunning {
 		// The request was believed to be non-idle, but is running on a different
 		// worker than expected. Delete this worker and request.
 		s.deleteWorker(allegedWorkerID)
