@@ -55,6 +55,7 @@ suite. No retry if it is 0.`)
 		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval",
 			`Autotest keyval for test. Key may not contain : character. May be
 specified multiple times.`)
+		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quotascheduler account for test jobs.")
 		return c
 	},
 }
@@ -72,6 +73,7 @@ type createSuiteRun struct {
 	maxRetries  int
 	tags        []string
 	keyvals     []string
+	qsAccount   string
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -100,7 +102,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	if err != nil {
 		return err
 	}
-	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, priority, c.timeoutMins, c.maxRetries, dimensions, keyvals)
+	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, c.qsAccount, priority, c.timeoutMins, c.maxRetries, dimensions, keyvals)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -157,16 +159,16 @@ func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPai
 	}
 }
 
-func getSuiteSlices(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int, maxRetries int, dimensions []string, keyvals map[string]string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSuiteSlices(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, dimensions []string, keyvals map[string]string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	dims, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
-	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, priority, timeoutMins, maxRetries, keyvals)
+	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, qsAccount, priority, timeoutMins, maxRetries, keyvals)
 	return []*swarming.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims, timeoutMins)}, nil
 }
 
-func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, priority int, timeoutMins int, maxRetries int, keyvals map[string]string) []string {
+func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, keyvals map[string]string) []string {
 	cmd := []string{
 		"/usr/local/autotest/bin/run_suite_skylab",
 		"--build", image,
@@ -179,6 +181,9 @@ func getRunSuiteCmd(board string, model string, pool string, image string, suite
 		"--create_and_return"}
 	if model != "" {
 		cmd = append(cmd, "--model", model)
+	}
+	if qsAccount != "" {
+		cmd = append(cmd, "--quota_account", qsAccount)
 	}
 	if maxRetries > 0 {
 		cmd = append(cmd, "--test_retry")
