@@ -214,8 +214,10 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 }
 
 // NotifyTaskAbsent informs the quotascheduler about an absent task.
-func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, rid RequestID, t time.Time) {
+func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskAbsentRequest) {
 	state.ensureMaps()
+	rid := update.RequestID
+	t := update.Time
 	s.NotifyTaskAbsent(ctx, rid, t, metrics)
 	// TODO(akeshet): Add an inverse map from aborting request -> previous
 	// worker to avoid the need for this iteration through all workers.

@@ -109,7 +109,8 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			var err error
 			switch t {
 			case taskStateAbsent:
-				sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, RequestID(n.Task.Id), tutils.Timestamp(n.Time))
+				r := &reconciler.TaskAbsentRequest{RequestID: RequestID(n.Task.Id), Time: tutils.Timestamp(n.Time)}
+				sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, r)
 			case taskStateRunning:
 				r := &reconciler.TaskRunningRequest{
 					RequestID: RequestID(n.Task.Id),

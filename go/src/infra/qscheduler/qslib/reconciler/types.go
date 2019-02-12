@@ -52,3 +52,15 @@ type TaskRunningRequest struct {
 	// WorkerID of the worker that is running the task.
 	WorkerID WorkerID
 }
+
+// TaskAbsentRequest encapsulates the arguments to NotifyTaskAbsent.
+type TaskAbsentRequest struct {
+	// Time at which the task was running.
+	Time time.Time
+
+	// RequestID of the request that is running.
+	RequestID RequestID
+
+	// WorkerID of the worker that is running the task.
+	WorkerID WorkerID
+}

@@ -268,7 +268,7 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when Notify is called to inform that the old request is cancelled", func() {
 						t2 := time.Unix(2, 0)
-						r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, oldRequest, t2)
+						r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, &TaskAbsentRequest{RequestID: oldRequest, Time: t2})
 						Convey("when GetCancellations is called", func() {
 							c := r.Cancellations(ctx)
 							Convey("then it returns nothing.", func() {
@@ -361,7 +361,7 @@ func TestTaskError(t *testing.T) {
 				})
 			})
 			Convey("when NotifyRequest is called to abort the task", func() {
-				r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, taskID, t0)
+				r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, &TaskAbsentRequest{RequestID: taskID, Time: t0})
 				Convey("when GetCancellations is called", func() {
 					c := r.Cancellations(ctx)
 					Convey("then it returns nothing.", func() {
