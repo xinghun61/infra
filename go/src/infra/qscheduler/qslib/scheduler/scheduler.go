@@ -236,24 +236,22 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stri
 	return nil
 }
 
-// NotifyRequest informs the scheduler authoritatively that the given request
+// NotifyTaskRunning informs the scheduler authoritatively that the given task
 // was running on the given worker (or was idle, for workerID = "") at the
 // given time.
 //
 // Supplied requestID must not be "".
-//
-// Note: calls to NotifyRequest come from task update pubsub messages from swarming.
-func (s *Scheduler) NotifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) error {
-	s.state.notifyRequest(ctx, requestID, workerID, t)
+func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) error {
+	s.state.notifyTaskRunning(ctx, requestID, workerID, t)
 	return nil
 }
 
-// AbortRequest informs the scheduler authoritatively that the given request
+// NotifyTaskAbsent informs the scheduler authoritatively that the given request
 // is stopped (not running on a worker, and not in the queue) at the given time.
 //
 // Supplied requestID must not be "".
-func (s *Scheduler) AbortRequest(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) error {
-	s.state.abortRequest(ctx, requestID, t)
+func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) error {
+	s.state.notifyTaskAbsent(ctx, requestID, t)
 	return nil
 }
 

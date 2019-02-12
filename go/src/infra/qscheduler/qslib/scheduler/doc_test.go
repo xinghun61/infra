@@ -87,7 +87,7 @@ func Example() {
 	// Note: the account is already being charged for this task prior to the
 	// notification. The notification ensures consistency of request and worker
 	// state, but does not affect account state.
-	s.NotifyRequest(ctx, "Request1", "Worker1", time.Now(), scheduler.NullMetricsSink)
+	s.NotifyTaskRunning(ctx, "Request1", "Worker1", time.Now(), scheduler.NullMetricsSink)
 
 	// True.
 	IsOn(requestID, workerID, s)
@@ -103,7 +103,7 @@ func Example() {
 	// causing records about that worker and previous request to be deleted.
 	// Note that this deletion will not affect the current balance of Account1;
 	// quota that was spent already on Request1 will not be refunded.
-	s.NotifyRequest(ctx, "Request2", "Worker1", time.Now(), scheduler.NullMetricsSink)
+	s.NotifyTaskRunning(ctx, "Request2", "Worker1", time.Now(), scheduler.NullMetricsSink)
 
 	// False.
 	IsOn(requestID, workerID, s)

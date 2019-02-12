@@ -219,7 +219,7 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 	rid := update.RequestID
 	// This NotifyRequest call ensures scheduler state consistency with
 	// the latest update.
-	s.NotifyRequest(ctx, rid, wid, update.Time, metrics)
+	s.NotifyTaskRunning(ctx, rid, wid, update.Time, metrics)
 	if q, ok := state.WorkerQueues[string(wid)]; ok {
 		if !update.Time.Before(tutils.Timestamp(q.EnqueueTime)) {
 			delete(state.WorkerQueues, string(wid))
@@ -238,7 +238,7 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, rid RequestID, t time.Time) error {
 	state.ensureMaps()
 
-	s.AbortRequest(ctx, rid, t, metrics)
+	s.NotifyTaskAbsent(ctx, rid, t, metrics)
 	// TODO(akeshet): Add an inverse map from aborting request -> previous
 	// worker to avoid the need for this iteration through all workers.
 	for wid, q := range state.WorkerQueues {

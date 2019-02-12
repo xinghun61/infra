@@ -127,7 +127,7 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m M
 	if _, ok := s.getRequest(r.ID); ok {
 		// Request already exists, simply notify that it should be idle at the
 		// given time.
-		s.notifyRequest(ctx, r.ID, "", t)
+		s.notifyTaskRunning(ctx, r.ID, "", t)
 	} else {
 		r.confirm(t)
 		s.queuedRequests[r.ID] = r
@@ -176,8 +176,8 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time) {
 	s.deleteRequest(previousRequestID)
 }
 
-// notifyRequest implements Scheduler.NotifyRequest for a given State.
-func (s *state) notifyRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) {
+// notifyTaskRunning implements Scheduler.NotifyTaskRunning for a given State.
+func (s *state) notifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time) {
 	if requestID == "" {
 		panic("Must supply a requestID.")
 	}
@@ -193,11 +193,11 @@ func (s *state) notifyRequest(ctx context.Context, requestID RequestID, workerID
 	}
 }
 
-// abortRequest implements Scheduler.AbortRequest for a given State.
-func (s *state) abortRequest(ctx context.Context, requestID RequestID, t time.Time) {
+// notifyTaskAbsent implements Scheduler.NotifyTaskAbsent for a given State.
+func (s *state) notifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time) {
 	// Reuse the notifyRequest logic. First, notify that task is not running. Then, remove
 	// the request from queue if it is present.
-	s.notifyRequest(ctx, requestID, "", t)
+	s.notifyTaskRunning(ctx, requestID, "", t)
 	if req, ok := s.getRequest(requestID); ok {
 		if !t.Before(req.confirmedTime) {
 			s.deleteRequest(requestID)
