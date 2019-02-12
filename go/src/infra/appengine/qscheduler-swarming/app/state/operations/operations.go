@@ -105,7 +105,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			if t, ok = toTaskInstantState(n.Task.State); !ok {
 				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
 				logging.Warningf(ctx, err)
-				sp.Reconciler.TaskError(n.Task.Id, err)
+				sp.Reconciler.TaskError(RequestID(n.Task.Id), err)
 				continue
 			}
 
@@ -121,7 +121,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				labels, err := computeLabels(n)
 				if err != nil {
 					logging.Warningf(ctx, err.Error())
-					sp.Reconciler.TaskError(n.Task.Id, err.Error())
+					sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
 					continue
 				}
 				provisionableLabels = labels.provisionable
@@ -131,13 +131,13 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				if !s.HasAll(sp.Config.Labels...) {
 					msg := fmt.Sprintf("task with base dimensions %s does not contain all of scheduler dimensions %s", baseLabels, sp.Config.Labels)
 					logging.Warningf(ctx, msg)
-					sp.Reconciler.TaskError(n.Task.Id, msg)
+					sp.Reconciler.TaskError(RequestID(n.Task.Id), msg)
 					continue
 				}
 
 				if accountID, err = GetAccountID(n); err != nil {
 					logging.Warningf(ctx, err.Error())
-					sp.Reconciler.TaskError(n.Task.Id, err.Error())
+					sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
 					continue
 				}
 			}
@@ -178,7 +178,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				panic("Invalid update type.")
 			}
 			if err != nil {
-				sp.Reconciler.TaskError(n.Task.Id, err.Error())
+				sp.Reconciler.TaskError(RequestID(n.Task.Id), err.Error())
 				logging.Warningf(ctx, err.Error())
 				continue
 			}

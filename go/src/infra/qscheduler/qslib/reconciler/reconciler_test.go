@@ -353,7 +353,7 @@ func TestTaskError(t *testing.T) {
 		s := scheduler.New(t0)
 
 		Convey("when TaskError is called for a new task", func() {
-			taskID := "Task1"
+			taskID := RequestID("Task1")
 			err := "An frabjous error occurred."
 			r.TaskError(taskID, err)
 
@@ -368,7 +368,7 @@ func TestTaskError(t *testing.T) {
 			})
 			Convey("when NotifyRequest is called to abort the task", func() {
 				u := &TaskInstant{
-					RequestId: taskID,
+					RequestId: string(taskID),
 					State:     TaskInstant_ABSENT,
 					Time:      tutils.TimestampProto(t0),
 				}
