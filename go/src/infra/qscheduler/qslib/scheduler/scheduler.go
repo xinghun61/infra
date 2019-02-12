@@ -232,7 +232,7 @@ type IdleWorker struct {
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
 func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time, m MetricsSink) error {
-	s.state.markIdle(workerID, labels, t)
+	s.state.markIdle(workerID, labels, t, m)
 	return nil
 }
 
@@ -241,7 +241,7 @@ func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stri
 //
 // Supplied requestID and workerID must not be "".
 func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) error {
-	s.state.notifyTaskRunning(ctx, requestID, workerID, t)
+	s.state.notifyTaskRunning(ctx, requestID, workerID, t, m)
 	return nil
 }
 
@@ -250,7 +250,7 @@ func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, 
 //
 // Supplied requestID must not be "".
 func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) error {
-	s.state.notifyTaskAbsent(ctx, requestID, t)
+	s.state.notifyTaskAbsent(ctx, requestID, t, m)
 	return nil
 }
 
