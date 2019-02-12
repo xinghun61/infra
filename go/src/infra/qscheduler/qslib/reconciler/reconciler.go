@@ -38,7 +38,6 @@ import (
 	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
-	"go.chromium.org/luci/common/logging"
 )
 
 // New returns a new initialized State instance.
@@ -190,11 +189,6 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 // NotifyTaskWaiting informs the quotascheduler about a waiting task.
 func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskWaitingRequest) error {
 	state.ensureMaps()
-
-	if err := s.UpdateTime(ctx, update.Time); err != nil {
-		logging.Warningf(ctx, "ignoring UpdateTime error: %s", err.Error())
-	}
-
 	req := scheduler.NewTaskRequest(
 		update.RequestID,
 		update.AccountID,
@@ -210,11 +204,6 @@ func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Schedule
 // NotifyTaskRunning informs the quotascheduler about a running task.
 func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskRunningRequest) error {
 	state.ensureMaps()
-
-	if err := s.UpdateTime(ctx, update.Time); err != nil {
-		logging.Warningf(ctx, "ignoring UpdateTime error: %s", err.Error())
-	}
-
 	wid := update.WorkerID
 	rid := update.RequestID
 	// This NotifyRequest call ensures scheduler state consistency with
@@ -237,7 +226,6 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 // NotifyTaskAbsent informs the quotascheduler about an absent task.
 func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, rid RequestID, t time.Time) error {
 	state.ensureMaps()
-
 	s.NotifyTaskAbsent(ctx, rid, t, metrics)
 	// TODO(akeshet): Add an inverse map from aborting request -> previous
 	// worker to avoid the need for this iteration through all workers.
