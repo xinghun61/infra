@@ -69,28 +69,28 @@ func eventCommon(request *TaskRequest, w *worker, s *state, t time.Time) *metric
 // eventEnqueued returns a TaskEvent for ENQUEUED events.
 func eventEnqueued(request *TaskRequest, s *state, t time.Time) *metrics.TaskEvent {
 	e := eventCommon(request, nil, s, t)
-	e.EventType = metrics.TaskEvent_ENQUEUED
+	e.EventType = metrics.TaskEvent_SWARMING_ENQUEUED
 	return e
 }
 
 // eventAssigned returns a TaskEvent for ASSIGNED events.
 func eventAssigned(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_AssignedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
-	e.EventType = metrics.TaskEvent_ASSIGNED
+	e.EventType = metrics.TaskEvent_QSCHEDULER_ASSIGNED
 	e.Details = &metrics.TaskEvent_AssignedDetails_{AssignedDetails: details}
 	return e
 }
 
 func eventPreempted(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_PreemptedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
-	e.EventType = metrics.TaskEvent_PREEMPTED
+	e.EventType = metrics.TaskEvent_QSCHEDULER_PREEMPTED
 	e.Details = &metrics.TaskEvent_PreemptedDetails_{PreemptedDetails: details}
 	return e
 }
 
 func eventReprioritized(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_ReprioritizedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
-	e.EventType = metrics.TaskEvent_REPRIORITIZED
+	e.EventType = metrics.TaskEvent_QSCHEDULER_REPRIORITIZED
 	e.Details = &metrics.TaskEvent_ReprioritizedDetails_{ReprioritizedDetails: details}
 	return e
 }

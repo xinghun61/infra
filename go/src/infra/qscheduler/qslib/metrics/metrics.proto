@@ -23,27 +23,36 @@ import "google/protobuf/timestamp.proto";
 // events are logged.
 message TaskEvent {
 
+  enum EventCategory {
+    CATEGORY_UNSPECIFIED = 0;
+
+    // CATEGORY_SWARMING events are due to new information from swarming.
+    CATEGORY_SWARMING = 0x100;
+
+    // CATEGORY_QSCHEDULER events are due to a decision made by quotascheduler.
+    CATEGORY_QSCHEDULER = 0x200;
+  }
+
   enum EventType {
     // Invalid or unspecified event type.
     UNSPECIFIED = 0;
 
     // Task was enqueued.
-    ENQUEUED = 1;
+    SWARMING_ENQUEUED = 0x101;
+
+    // Task completed (was removed from running worker or from queue).
+    SWARMING_COMPLETED = 0x102;
 
     // Task was assigned to a bot.
-    ASSIGNED = 2;
+    QSCHEDULER_ASSIGNED = 0x201;
 
     // Task (which was previously assigned to a bot) was interrupted by another
     // task.
-    PREEMPTED = 3;
+    QSCHEDULER_PREEMPTED = 0x202;
 
     // Task (which was previously assigned to a bot) changed its running
     // priority.
-    REPRIORITIZED = 4;
-
-    // Task (which was previously assigned to a bot) completed on that bot,
-    // because the bot reported itself as idle.
-    COMPLETED = 5;
+    QSCHEDULER_REPRIORITIZED = 0x203;
   }
 
   // EventType is the type of event that occurred.
