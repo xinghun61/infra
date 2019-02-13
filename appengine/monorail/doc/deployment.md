@@ -24,6 +24,7 @@ chat](http://chat/room/AAAACV9ZZ8k).
     1. `make deploy_staging`
 1. Test on Staging
     1. For each commit since last deploy, verify affected functionality still works.
+       Test using a non-admin account, unless you're verifying admin-specific functionality.
 1. Make Live on Staging
     1. Update module `besearch` to be the live version on staging.
     1. Update the other modules, `default` and `latency-insensitive`.
