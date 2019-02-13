@@ -45,7 +45,7 @@ func TestAssignTasks(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 
-		Convey("with an idle task that has been notified", func() {
+		SkipConvey("with an idle task that has been notified", func() {
 			taskID := "Task1"
 			req := swarming.NotifyTasksRequest{
 				SchedulerId: poolID,

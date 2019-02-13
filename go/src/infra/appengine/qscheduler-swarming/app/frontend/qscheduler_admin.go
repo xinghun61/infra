@@ -132,51 +132,5 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	store := state.NewStore(r.PoolId)
-	sp, err := store.Load(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	sProto := sp.Scheduler.ToProto()
-	runningCount, idleCount := 0, 0
-	running := make([]*qscheduler.InspectPoolResponse_RunningTask, 0, len(sProto.State.Workers))
-	idle := make([]*qscheduler.InspectPoolResponse_IdleBot, 0, len(sProto.State.Workers))
-	for wid, w := range sProto.State.Workers {
-		if w.RunningTask != nil {
-			runningCount++
-			running = append(running, &qscheduler.InspectPoolResponse_RunningTask{
-				BotId:     wid,
-				Id:        w.RunningTask.RequestId,
-				Priority:  w.RunningTask.Priority,
-				AccountId: w.RunningTask.Request.AccountId,
-			})
-		} else {
-			idleCount++
-			idle = append(idle, &qscheduler.InspectPoolResponse_IdleBot{
-				Id:         wid,
-				Dimensions: w.Labels,
-			})
-		}
-	}
-
-	waiting := make([]*qscheduler.InspectPoolResponse_WaitingTask, 0, len(sProto.State.QueuedRequests))
-	for rid, r := range sProto.State.QueuedRequests {
-		waiting = append(waiting, &qscheduler.InspectPoolResponse_WaitingTask{
-			Id:        rid,
-			AccountId: r.AccountId,
-		})
-	}
-
-	resp = &qscheduler.InspectPoolResponse{
-		NumWaitingTasks: int32(len(sProto.State.QueuedRequests)),
-		NumIdleBots:     int32(idleCount),
-		NumRunningTasks: int32(runningCount),
-		RunningTasks:    running,
-		WaitingTasks:    waiting,
-		IdleBots:        idle,
-		AccountBalances: sProto.State.Balances,
-	}
-
-	return resp, nil
+	return nil, status.Error(codes.Unimplemented, "not yet implemented")
 }
