@@ -119,6 +119,9 @@ message TaskEvent {
     // preempt the previous task on this bot, if this was a preempting
     // assignment.
     repeated double preemption_cost = 4;
+
+    // PreemptedTaskId is the task that was preempted, if any.
+    string preempted_task_id = 5;
   }
 
   // PreemptedDetails represents event details that are specific to the
