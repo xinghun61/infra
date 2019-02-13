@@ -45,10 +45,12 @@ func eventCommon(request *TaskRequest, w *worker, s *state, t time.Time) *metric
 	var provLabels sort.StringSlice = request.ProvisionableLabels.ToSlice()
 	var botID string
 	var botLabels sort.StringSlice
+	var cost []float64
 	if w != nil {
 		botID = string(w.ID)
 		botLabels = w.labels.ToSlice()
 		botLabels.Sort()
+		cost = w.runningTask.cost[:]
 	}
 	baseLabels.Sort()
 	provLabels.Sort()
@@ -60,6 +62,7 @@ func eventCommon(request *TaskRequest, w *worker, s *state, t time.Time) *metric
 		BaseLabels:          baseLabels,
 		BotId:               botID,
 		BotDimensions:       botLabels,
+		Cost:                cost,
 		ProvisionableLabels: provLabels,
 		TaskId:              string(request.ID),
 		Time:                tutils.TimestampProto(t),
