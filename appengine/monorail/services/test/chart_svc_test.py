@@ -568,3 +568,32 @@ class ChartServiceTest(unittest.TestCase):
 
     self.assertEqual(unsupported_field_names, unsupported)
     self.assertFalse(limit_reached)
+
+  def testQueryToWhere_AddsShardId(self):
+    """Test that shards are handled correctly."""
+    cols = []
+    where = []
+    joins = []
+    group_by = []
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols=cols,
+        where=where, joins=joins, group_by=group_by, shard_id=9)
+
+    self.assertEqual(stmt, ('SELECT COUNT(results.issue_id) '
+        'FROM (SELECT DISTINCT  FROM IssueSnapshot\n'
+        'WHERE IssueSnapshot.shard = %s\nLIMIT 10000) AS results'))
+    self.assertEqual(stmt_args, [9])
+
+    # Test that shard_id is still correct on second invocation.
+    stmt, stmt_args = self.services.chart._BuildSnapshotQuery(cols=cols,
+        where=where, joins=joins, group_by=group_by, shard_id=8)
+
+    self.assertEqual(stmt, ('SELECT COUNT(results.issue_id) '
+        'FROM (SELECT DISTINCT  FROM IssueSnapshot\n'
+        'WHERE IssueSnapshot.shard = %s\nLIMIT 10000) AS results'))
+    self.assertEqual(stmt_args, [8])
+
+    # Test no parameters were modified.
+    self.assertEqual(cols, [])
+    self.assertEqual(where, [])
+    self.assertEqual(joins, [])
+    self.assertEqual(group_by, [])

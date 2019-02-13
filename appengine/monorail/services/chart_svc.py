@@ -178,10 +178,10 @@ class ChartService(object):
 
     promises = []
 
-
     for shard_id in range(settings.num_logical_shards):
-      count_stmt, stmt_args = self._BuildSnapshotQuery(cols=cols, where=where,
-          joins=left_joins, group_by=group_by, shard_id=shard_id)
+      count_stmt, stmt_args = self._BuildSnapshotQuery(cols=cols,
+          where=where, joins=left_joins, group_by=group_by,
+          shard_id=shard_id)
       promises.append(framework_helpers.Promise(cnxn.Execute,
           count_stmt, stmt_args, shard_id=shard_id))
 
@@ -337,10 +337,9 @@ class ChartService(object):
 
   def _BuildSnapshotQuery(self, cols, where, joins, group_by, shard_id):
     """Given SQL arguments, executes a snapshot COUNT query."""
-    where += [('IssueSnapshot.shard = %s', [shard_id])]
     stmt = sql.Statement.MakeSelect('IssueSnapshot', cols, distinct=True)
     stmt.AddJoinClauses(joins, left=True)
-    stmt.AddWhereTerms(where)
+    stmt.AddWhereTerms(where + [('IssueSnapshot.shard = %s', [shard_id])])
     if group_by:
       stmt.AddGroupByTerms(group_by)
     stmt.SetLimitAndOffset(limit=settings.chart_query_max_rows, offset=0)
