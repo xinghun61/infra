@@ -1,0 +1,33 @@
+{
+  "name": "chopsui",
+  "version": "0.0.1",
+  "description": "Package directory for ChopsUI.",
+  "main": "test-index.js",
+  "scripts": {
+    "test": "npx karma start"
+  },
+  "author": "The Chromium Authors",
+  "license": "ISC",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "istanbul-instrumenter-loader": "^3.0.1",
+    "karma": "^4.0.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-cli": "^2.0.0",
+    "karma-coverage": "^1.1.2",
+    "karma-mocha": "^1.3.0",
+    "karma-sinon": "^1.0.5",
+    "karma-sourcemap-loader": "^0.3.7",
+    "karma-webpack": "^3.0.5",
+    "mocha": "^5.2.0",
+    "path": "^0.12.7",
+    "puppeteer": "^1.12.2",
+    "sinon": "^7.2.3",
+    "webpack": "^4.29.3",
+    "webpack-cli": "^3.2.3"
+  },
+  "dependencies": {
+    "@chopsui/prpc-client": "0.0.1",
+    "@chopsui/tsmon-client": "0.0.1"
+  }
+}
