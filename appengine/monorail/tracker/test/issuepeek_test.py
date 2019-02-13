@@ -6,6 +6,7 @@
 """Unittests for monorail.tracker.issuepeek."""
 
 import unittest
+import mock
 
 from google.appengine.ext import testbed
 
@@ -49,18 +50,18 @@ class IssuePeekTest(unittest.TestCase):
   def tearDown(self):
     self.testbed.deactivate()
 
-  def testGatherPageData_NoPermission(self):
+  @mock.patch('framework.permissions.GetPermissions')
+  def testGatherPageData_NoPermission(self, mock_getpermissions):
     """Permit users who can view issues."""
     # Empty permissionset does not have the VIEW permission.
-    mr = testing_helpers.MakeMonorailRequest(
-        project=self.proj,
-        perms=permissions.EMPTY_PERMISSIONSET)
+    mr = testing_helpers.MakeMonorailRequest(project=self.proj)
+    mock_getpermissions.return_value = permissions.EMPTY_PERMISSIONSET
     mr.local_id = self.local_id_1
     self.assertRaises(permissions.PermissionException,
                       self.servlet.GatherPageData, mr)
 
     # User permissionset has the VIEW permission.
-    mr.perms = permissions.USER_PERMISSIONSET
+    mock_getpermissions.return_value = permissions.USER_PERMISSIONSET
     self.servlet.GatherPageData(mr)
 
   def testPaginateComments_NotVisible(self):

@@ -107,16 +107,18 @@ class WorkEnv(object):
         'User lacks permission %r in project %s' % (perm, project.project_name))
 
   def _UserCanViewIssue(self, issue, allow_viewing_deleted=False):
-    """Test if the user may view the issue."""
+    """Test if user may view an issue according to perms in issue's project."""
     project = self.GetProject(issue.project_id)
     config = self.GetProjectConfig(issue.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, self.mc.auth.effective_ids, config)
+    project_perms = permissions.GetPermissions(
+        self.mc.auth.user_pb, self.mc.auth.effective_ids, project)
     issue_perms = permissions.UpdateIssuePermissions(
-        self.mc.perms, project, issue, self.mc.auth.effective_ids,
+        project_perms, project, issue, self.mc.auth.effective_ids,
         granted_perms=granted_perms)
     permit_view = permissions.CanViewIssue(
-        self.mc.auth.effective_ids, self.mc.perms, project, issue,
+        self.mc.auth.effective_ids, issue_perms, project, issue,
         allow_viewing_deleted=allow_viewing_deleted,
         granted_perms=granted_perms)
     return issue_perms, permit_view
@@ -802,7 +804,7 @@ class WorkEnv(object):
 
   def GetIssuesDict(self, issue_ids, use_cache=True,
                     allow_viewing_deleted=False):
-    """Return the specified issue.
+    """Return a dict {iid: issue} with the specified issues, if allowed.
 
     Args:
       issue_ids: int global issue IDs.
@@ -810,7 +812,8 @@ class WorkEnv(object):
       allow_viewing_deleted: set to true to allow user to view deleted issues.
 
     Returns:
-      The requested Issue PBs.
+      A dict {issue_id: issue} for only those issues that the user is allowed
+      to view.
     """
     with self.mc.profiler.Phase('getting issues %r' % issue_ids):
       issues = self.services.issue.GetIssuesDict(
@@ -1812,14 +1815,21 @@ class WorkEnv(object):
     for hotlist_id in hotlist_ids:
       self._AssertUserCanEditHotlist(self.GetHotlist(hotlist_id))
 
-    issues_to_add = [
+    # Even though we check permissions when viewing the issues in a hotlist,
+    # we also check permissions when adding issues to a hotlist to prevent
+    # some clever ways that attackers could find some issue details.
+    issues = self.services.issue.GetIssuesDict(self.mc.cnxn, issue_ids)
+    for issue_id in issues:
+      self._AssertUserCanViewIssue(issues[issue_id])
+
+    added_tuples = [
         (issue_id, self.mc.auth.user_id, int(time.time()), note)
         for issue_id in issue_ids]
 
     with self.mc.profiler.Phase(
         'Removing issues %r from hotlists %r' % (issue_ids, hotlist_ids)):
       self.services.features.AddIssuesToHotlists(
-          self.mc.cnxn, hotlist_ids, issues_to_add, self.services.issue,
+          self.mc.cnxn, hotlist_ids, added_tuples, self.services.issue,
           self.services.chart)
 
   def UpdateHotlistIssueNote(self, hotlist_id, issue_id, note):

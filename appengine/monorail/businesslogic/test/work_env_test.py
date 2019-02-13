@@ -2746,8 +2746,23 @@ class WorkEnvTest(unittest.TestCase):
         [issue1.issue_id],
         [item.issue_id for item in hotlist2.items])
 
+  def testAddIssuesToHotlists_NotViewable(self):
+    """Users can add viewable issues to hotlists."""
+    issue1 = fake.MakeTestIssue(
+        789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue1.labels = ['Restrict-View-CoreTeam']
+    self.services.issue.TestAddIssue(issue1)
+    hotlist = self.work_env.services.features.CreateHotlist(
+            self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
+            owner_ids=[333L], editor_ids=[])
+
+    self.SignIn(user_id=333L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.AddIssuesToHotlists([hotlist.hotlist_id], [78901], None)
+
   def testAddIssuesToHotlists_NotAllowed(self):
-    """Only owners and editors can remove issues."""
+    """Only owners and editors can add issues."""
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
             owner_ids=[111L], editor_ids=[])

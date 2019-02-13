@@ -12,9 +12,11 @@ import settings
 import time
 import re
 
+from businesslogic import work_env
 from features import features_bizobj
 from features import features_constants
 from features import hotlist_helpers
+from framework import exceptions
 from framework import servlet
 from framework import sorting
 from framework import permissions
@@ -34,6 +36,8 @@ _INITIAL_ADD_ISSUES_MESSAGE = 'projectname:localID, projectname:localID, etc.'
 _MSG_INVALID_ISSUES_INPUT = (
     'Please follow project_name:issue_id, project_name:issue_id..')
 _MSG_ISSUES_NOT_FOUND = 'One or more of your issues were not found.'
+_MSG_ISSUES_NOT_VIEWABLE = 'You lack permission to view one or more issues.'
+
 
 class HotlistIssues(servlet.Servlet):
   """HotlistIssues is a page that shows the issues of one hotlist."""
@@ -210,14 +214,23 @@ class HotlistIssues(servlet.Servlet):
         project_names = {project_name for (project_name, _) in
                          issue_refs_tuples}
         projects_dict = self.services.project.GetProjectsByName(
-        mr.cnxn, project_names)
+            mr.cnxn, project_names)
         selected_iids, _misses = self.services.issue.ResolveIssueRefs(
-        mr.cnxn, projects_dict, mr.project_name, issue_refs_tuples)
+            mr.cnxn, projects_dict, mr.project_name, issue_refs_tuples)
         if (not selected_iids) or len(issue_refs_tuples) > len(selected_iids):
           mr.errors.issues = _MSG_ISSUES_NOT_FOUND
           # TODO(jojwang): give issues that were not found.
       else:
         mr.errors.issues = _MSG_INVALID_ISSUES_INPUT
+
+    try:
+      with work_env.WorkEnv(mr, self.services) as we:
+        selected_issues = we.GetIssuesDict(selected_iids)
+    except exceptions.NoSuchIssueException:
+      mr.errors.issues = _MSG_ISSUES_NOT_FOUND
+    if len(selected_issues) < len(selected_iids):
+      mr.errors.issues = _MSG_ISSUES_NOT_VIEWABLE
+
     # TODO(jojwang): fix: when there are errors, hidden column come back on
     # the .do page but go away once the errors are fixed and the form
     # is submitted again
@@ -227,17 +240,11 @@ class HotlistIssues(servlet.Servlet):
           add_issues_selected=ezt.boolean(True), col_spec=current_col_spec)
 
     else:
-      if post_data.get('remove') == 'true':
-        self.services.features.RemoveIssuesFromHotlists(
-            mr.cnxn, [mr.hotlist_id], selected_iids, self.services.issue,
-            self.services.chart)
-      else:
-        added_tuples =  [(issue_id, mr.auth.user_id,
-                          int(time.time()), '') for issue_id in
-                         selected_iids]
-        self.services.features.AddIssuesToHotlists(
-            mr.cnxn, [mr.hotlist_id], added_tuples, self.services.issue,
-            self.services.chart)
+      with work_env.WorkEnv(mr, self.services) as we:
+        if post_data.get('remove') == 'true':
+          we.RemoveIssuesFromHotlists([mr.hotlist_id], selected_iids)
+        else:
+          we.AddIssuesToHotlists([mr.hotlist_id], selected_iids, '')
       return framework_helpers.FormatAbsoluteURL(
           mr, hotlist_view_url, saved=1, ts=int(time.time()),
           include_project=False, colspec=current_col_spec)

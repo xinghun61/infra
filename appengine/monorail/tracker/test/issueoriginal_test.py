@@ -5,6 +5,7 @@
 
 """Tests for the issueoriginal module."""
 
+import mock
 import unittest
 
 import webapp2
@@ -72,11 +73,16 @@ class IssueOriginalTest(unittest.TestCase):
         cnxn, 789, self.local_id_1)
     self.comments = [comment_0, comment_1, comment_2, comment_3]
 
-  def testAssertBasePermission(self):
+  @mock.patch('framework.permissions.GetPermissions')
+  def testAssertBasePermission(self, mock_getpermissions):
     """Permit users who can view issue, view inbound message and delete."""
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=1&seq=1',
         project=self.proj)
+
+    # Allow the user to view the issue itself.
+    mock_getpermissions.return_value = (
+        permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET)
 
     # Someone without VIEW permission cannot view the inbound email.
     mr.perms = permissions.EMPTY_PERMISSIONSET
@@ -99,6 +105,8 @@ class IssueOriginalTest(unittest.TestCase):
                       self.servlet.AssertBasePermission, mr)
 
     # Project owners have VIEW_INBOUND_MESSAGES and bypass restrictions.
+    mock_getpermissions.return_value = (
+        permissions.OWNER_ACTIVE_PERMISSIONSET)
     mr.perms = permissions.OWNER_ACTIVE_PERMISSIONSET
     self.servlet.AssertBasePermission(mr)
 
