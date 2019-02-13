@@ -21,6 +21,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/libs/skylab/inventory"
+	"math/rand"
 
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -123,6 +124,15 @@ func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, dutI
 	return nil
 }
 
+// pickDroneForDUT returns hostname of a drone to use for the DUT with the given ID.
+//
+// TODO(crbug/929854) Use a reasonable heuristic here and use in
+// AssignDutsToDrone RPC.
+func pickDroneForDUT(infra *inventory.Infrastructure, dutID string) string {
+	ds := filterSkylabDrones(infra.GetServers())
+	return ds[rand.Intn(len(ds))].GetHostname()
+}
+
 func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *fleet.RemoveDutsFromDronesRequest) (*fleet.RemoveDutsFromDronesResponse, error) {
 	store, err := is.newStore(ctx)
 	if err != nil {
@@ -202,6 +212,21 @@ func findNamedServer(servers []*inventory.Server, hostname string) (server *inve
 		}
 	}
 	return nil, false
+}
+
+// filterSkylabDrones returns drones from a list of servers.
+func filterSkylabDrones(servers []*inventory.Server) []*inventory.Server {
+	ds := make([]*inventory.Server, 0, len(servers))
+OUTER:
+	for _, s := range servers {
+		for _, r := range s.GetRoles() {
+			if r == inventory.Server_ROLE_SKYLAB_DRONE {
+				ds = append(ds, s)
+				continue OUTER
+			}
+		}
+	}
+	return ds
 }
 
 // removeDutFromServer removes the given Dut from the given server, if it exists.
