@@ -38,17 +38,40 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-	err = retry.Retry(
-		ctx,
-		transientErrorRetries(),
-		func() error {
-			var ierr error
-			resp, ierr = is.assignDutsToDronesNoRetry(ctx, req)
-			return ierr
-		},
-		retry.LogCallback(ctx, "assignDutsToDronesNoRetry"),
-	)
-	return resp, err
+
+	s, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	f := func() error {
+		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
+		if err := s.Refresh(ctx); err != nil {
+			return err
+		}
+		for _, a := range req.Assignments {
+			if err = assignDutToDrone(ctx, s.Infrastructure, a.DutId, a.DroneHostname); err != nil {
+				return err
+			}
+			assigned = append(assigned, &fleet.AssignDutsToDronesResponse_Item{
+				DroneHostname: a.DroneHostname,
+				DutId:         a.DutId,
+			})
+		}
+		url, err := s.Commit(ctx, "assign DUTs")
+		if err != nil {
+			return err
+		}
+		resp = &fleet.AssignDutsToDronesResponse{
+			Assigned: assigned,
+			Url:      url,
+		}
+		return nil
+	}
+	if err = retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "assignDutsToDronesNoRetry")); err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // RemoveDutsFromDrones implements the method from fleet.InventoryServer interface.
@@ -59,6 +82,7 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
+
 	err = retry.Retry(
 		ctx,
 		transientErrorRetries(),
@@ -72,54 +96,31 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	return resp, err
 }
 
-func (is *ServerImpl) assignDutsToDronesNoRetry(ctx context.Context, req *fleet.AssignDutsToDronesRequest) (*fleet.AssignDutsToDronesResponse, error) {
-	store, err := is.newStore(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := store.Refresh(ctx); err != nil {
-		return nil, err
-	}
-
-	resp := &fleet.AssignDutsToDronesResponse{
-		Assigned: make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments)),
-	}
-
+// assignDutToDrone upates infra to assign the DUT with given ID to the drone with given hostname.
+func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, dutID string, hostname string) error {
 	env := config.Get(ctx).Inventory.Environment
-
-	for _, assignment := range req.Assignments {
-		dutToAssign := assignment.DutId
-		serverToAssign := assignment.DroneHostname
-		if server, ok := findDutServer(store.Infrastructure.GetServers(), dutToAssign); ok {
-			return nil, status.Errorf(codes.InvalidArgument,
-				"dut %s is already assigned to drone %s in environment %s",
-				dutToAssign, server.GetHostname(), server.GetEnvironment())
-		}
-
-		server, ok := findNamedServer(store.Infrastructure.GetServers(), serverToAssign)
-		if !ok {
-			return nil, status.Error(codes.NotFound,
-				fmt.Sprintf("drone %s does not exist", serverToAssign))
-		}
-		if server.GetEnvironment().String() != env {
-			return nil, status.Errorf(codes.InvalidArgument,
-				"drone %s is in environment %s instead of %s",
-				server.GetHostname(), server.GetEnvironment().String(), env)
-		}
-
-		server.DutUids = append(server.DutUids, dutToAssign)
-		resp.Assigned = append(resp.Assigned,
-			&fleet.AssignDutsToDronesResponse_Item{
-				DroneHostname: serverToAssign,
-				DutId:         dutToAssign,
-			})
+	servers := infra.GetServers()
+	if server, ok := findDutServer(servers, dutID); ok {
+		return status.Errorf(
+			codes.InvalidArgument,
+			"dut %s is already assigned to drone %s in environment %s",
+			dutID, server.GetHostname(), server.GetEnvironment(),
+		)
 	}
 
-	if resp.Url, err = store.Commit(ctx, "assign DUTs"); err != nil {
-		return nil, err
+	server, ok := findNamedServer(servers, hostname)
+	if !ok {
+		return status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", hostname))
 	}
-
-	return resp, nil
+	if server.GetEnvironment().String() != env {
+		return status.Errorf(
+			codes.InvalidArgument,
+			"drone %s is in environment %s instead of %s",
+			server.GetHostname(), server.GetEnvironment().String(), env,
+		)
+	}
+	server.DutUids = append(server.DutUids, dutID)
+	return nil
 }
 
 func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *fleet.RemoveDutsFromDronesRequest) (*fleet.RemoveDutsFromDronesResponse, error) {
