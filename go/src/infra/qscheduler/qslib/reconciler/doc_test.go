@@ -32,9 +32,6 @@ func Example() {
 	s := scheduler.New(time.Now())
 	r := reconciler.New()
 
-	// TODO(akeshet): Use reconciler API to add accounts or account
-	// configs.
-
 	// Notify the reconciler of a newly enqueued task request.
 	requestID := scheduler.RequestID("Request1")
 	accountID := scheduler.AccountID("Account1")

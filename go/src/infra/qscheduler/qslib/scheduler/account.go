@@ -71,11 +71,6 @@ func nextBalance(balance Balance, c *AccountConfig, elapsedSecs float64, running
 	return balance
 }
 
-// TODO(akeshet): Consider removing the NewConfig helper, as it is not really
-// doing any non-trivial initialization, and using inline literals is more go-ish.
-// On the other hand, it does make tests and example code more compact and
-// readable.
-
 // NewAccountConfig creates a new Config instance.
 func NewAccountConfig(fanout int, chargeSeconds float64, chargeRate []float64) *AccountConfig {
 	return &AccountConfig{

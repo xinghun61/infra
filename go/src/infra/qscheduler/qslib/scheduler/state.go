@@ -32,8 +32,6 @@ type state struct {
 	queuedRequests map[RequestID]*TaskRequest
 
 	// balance of all quota accounts for this pool, keyed by account id.
-	// TODO(akeshet): Turn this into map[string]*balance, and then get rid of a bunch of
-	// unnecessary array copying.
 	balances map[AccountID]Balance
 
 	// workers that may run tasks, and their states, keyed by worker id.
@@ -90,8 +88,6 @@ func requestProto(r *TaskRequest, mb *mapBuilder) *TaskRequestProto {
 // taskRun represents the run-related information about a running task.
 type taskRun struct {
 	// cost is the total cost that has been incurred on this task while running.
-	// TODO(akeshet): Turn this into map[string]*balance, and then get rid of a bunch of
-	// unnecessary array copying.
 	cost Balance
 
 	// request is the request that this running task corresponds to.

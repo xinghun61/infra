@@ -249,9 +249,6 @@ func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t
 
 // RunOnce performs a single round of the quota scheduler algorithm
 // on a given state and config, and returns a slice of state mutations.
-//
-// TODO(akeshet): Revisit how to make this function an interruptable goroutine-based
-// calculation.
 func (s *Scheduler) RunOnce(ctx context.Context, m MetricsSink) []*Assignment {
 	pass := s.newRun()
 	return pass.Run(m)
