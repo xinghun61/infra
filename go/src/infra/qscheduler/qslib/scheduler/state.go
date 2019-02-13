@@ -119,7 +119,7 @@ type worker struct {
 	confirmedTime time.Time
 }
 
-// AddRequest enqueues a new task request with the given time, (or if the task
+// addRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
 func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m MetricsSink) {
 	if r.ID == "" {
@@ -130,9 +130,7 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m M
 	knownRequest, alreadyKnown := s.getRequest(rid)
 	if !alreadyKnown {
 		// Request is not already known. Add it.
-		r.confirm(t)
-		s.queuedRequests[r.ID] = r
-		m.AddEvent(eventEnqueued(r, s, t))
+		s.addNewRequest(ctx, r, t, m)
 		return
 	}
 
@@ -150,10 +148,15 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m M
 		// This notification is newer than the known state of request.
 		// Respect it.
 		s.deleteWorker(wid)
-		r.confirm(t)
-		s.queuedRequests[r.ID] = r
-		m.AddEvent(eventEnqueued(r, s, t))
+		s.addNewRequest(ctx, r, t, m)
 	}
+}
+
+// addNewRequest immediately adds the given request to the queue.
+func (s *state) addNewRequest(ctx context.Context, r *TaskRequest, t time.Time, m MetricsSink) {
+	r.confirm(t)
+	s.queuedRequests[r.ID] = r
+	m.AddEvent(eventEnqueued(r, s, t))
 }
 
 // markIdle implements MarkIdle for a given state.
