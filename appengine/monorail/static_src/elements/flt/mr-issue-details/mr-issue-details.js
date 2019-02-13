@@ -61,7 +61,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
         heading-level="3"
         comments="[[_comments]]"
         comments-shown-count="5"
-        edit-permission="editissue"
       >
         <h3 id="editIssue" class="medium-heading">Add a comment and make changes</h3>
         <mr-edit-issue

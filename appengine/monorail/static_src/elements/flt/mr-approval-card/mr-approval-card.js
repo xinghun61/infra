@@ -211,7 +211,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         <mr-comments
           heading-level=5
           comments="[[_comments]]"
-          edit-permission="editissueapproval"
         >
           <h4 id$="[[_editId]]" class="medium-heading">
             Editing approval: [[phaseName]] &gt; [[fieldName]]

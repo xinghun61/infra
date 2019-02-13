@@ -17,6 +17,7 @@ const ISSUE_REF_FIELD_NAMES = [
   'Blockedon',
   'Mergedinto',
 ];
+const ISSUE_EDIT_PERMISSION = 'editissue';
 
 /**
  * `<mr-comments>`
@@ -151,7 +152,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           </template>
         </div>
       </template>
-      <template is="dom-if" if="[[_shouldOfferEdit(issuePermissions, editPermission)]]">
+      <template is="dom-if" if="[[_shouldOfferEdit(issuePermissions)]]">
         <slot></slot>
       </template>
     `;
@@ -176,7 +177,6 @@ export class MrComments extends ReduxMixin(PolymerElement) {
         value: 4,
       },
       projectName: String,
-      editPermission: String,
       issuePermissions: Object,
       _commentsHidden: {
         type: Boolean,
@@ -338,8 +338,8 @@ export class MrComments extends ReduxMixin(PolymerElement) {
     return comment.descriptionNum || comment.amendments;
   }
 
-  _shouldOfferEdit(issuePermissions, editPermission) {
-    return (issuePermissions || []).includes(editPermission);
+  _shouldOfferEdit(issuePermissions) {
+    return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION);
   }
 }
 customElements.define(MrComments.is, MrComments);
