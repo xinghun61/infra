@@ -293,7 +293,8 @@ export class MrComments extends ReduxMixin(PolymerElement) {
   }
 
   _issuesForAmendment(delta, projectName) {
-    if (!this._amendmentHasIssueRefs(delta.fieldName)) {
+    if (!this._amendmentHasIssueRefs(delta.fieldName)
+        || !delta.newOrDeltaValue) {
       return [];
     }
     // TODO(ehmaldonado): Request the issue to check for permissions and display

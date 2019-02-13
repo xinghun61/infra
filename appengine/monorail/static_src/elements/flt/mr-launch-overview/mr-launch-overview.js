@@ -62,7 +62,7 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
   }
 
   _approvalsForPhase(approvals, phaseName) {
-    return approvals.filter((a) => {
+    return (approvals || []).filter((a) => {
       // We can assume phase names will be unique.
       return a.phaseRef.phaseName == phaseName;
     });

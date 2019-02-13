@@ -130,7 +130,7 @@ export class MrEditStatus extends PolymerElement {
       }
     }
 
-    if (this.mergedInto && !this._showMergedInto) {
+    if (this.status === 'Duplicate' && !this._showMergedInto) {
       result['mergedInto'] = '';
     } else if (this._showMergedInto) {
       const newMergedInto = root.querySelector('#mergedIntoInput').getValue();

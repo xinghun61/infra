@@ -484,6 +484,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   getDelta() {
+    if (!this.isConnected) {
+      return {};
+    }
+
     const result = {};
     const root = dom(this.root);
 
