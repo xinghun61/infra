@@ -204,6 +204,7 @@ class HotlistIssues(servlet.Servlet):
       if not project_and_local_ids:
         return default_url
 
+    selected_iids = []
     if project_and_local_ids:
       pattern = re.compile(features_constants.ISSUE_INPUT_REGEX)
       if pattern.match(project_and_local_ids):

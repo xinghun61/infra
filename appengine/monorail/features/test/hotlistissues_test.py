@@ -6,6 +6,7 @@
 """Unit tests for issuelist module."""
 
 import mox
+import mock
 import unittest
 import time
 
@@ -152,6 +153,21 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     post_data = fake.PostData(remove=['false'], add_local_ids=[''])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue(url.endswith('u/222/hotlists/hotlist'))
+    self.assertEqual(self.test_hotlist.items, self.hotlistissues)
+
+  def testProcessFormData_AddBadIssueRef(self):
+    self.servlet.PleaseCorrect = mock.Mock()
+    post_data = fake.PostData(
+        remove=['false'], add_local_ids=['no-such-project:999'])
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    self.assertIsNone(url)
+    self.servlet.PleaseCorrect.assert_called_once()
+
+  def testProcessFormData_RemoveBadIssueRef(self):
+    post_data = fake.PostData(
+        remove=['true'], add_local_ids=['no-such-project:999'])
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    self.assertIn('u/222/hotlists/hotlist', url)
     self.assertEqual(self.test_hotlist.items, self.hotlistissues)
 
   def testProcessFormData_NormalEditIssues(self):
