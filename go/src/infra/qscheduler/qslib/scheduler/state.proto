@@ -38,6 +38,11 @@ message StateProto {
   // LastUpdateTime is the last time at which UpdateTime was called on a scheduler,
   // and corresponds to the when the quota account balances were updated.
   google.protobuf.Timestamp last_update_time = 4;
+
+  // LabelMap maps label IDs to their string values.
+  //
+  // Requests and workers store labels by IDs.
+  map<uint64, string> label_map = 5;
 }
 
 // TaskRequestProto represents a requested task in the queue, and refers to the
@@ -50,16 +55,23 @@ message TaskRequestProto {
   // EnqueueTime is the time at which the request was enqueued.
   google.protobuf.Timestamp enqueue_time = 2;
 
-  // The set of Provisionable Labels for this task.
-  repeated string provisionable_labels = 3;
+  // Deprecated provisionable_labels field.
+  reserved 3;
 
   // ConfirmedTime is the most recent time at which the Request state was
   // provided or confirmed by external authority (via a call to Enforce or
   // AddRequest).
   google.protobuf.Timestamp confirmed_time = 4;
 
-  // The set of base labels for this task.
-  repeated string base_labels = 5;
+
+  // Deprecated base_labels field.
+  reserved 5;
+
+  // ProvisionableLabelIds represents the task's provisionable labels.
+  repeated uint64 provisionable_label_ids = 6;
+
+  // BaseLabelIds represents the task's base labels.
+  repeated uint64 base_label_ids = 7;
 }
 
 // TaskRun represents a task that has been assigned to a worker and is
@@ -85,8 +97,8 @@ message TaskRun {
 // because the quota scheduler algorithm is expected to run against a pool of
 // otherwise homogenous workers.
 message Worker {
-  // Labels represents the set of labels that this worker possesses.
-  repeated string labels = 1;
+  // Deprecated Labels field.
+  reserved 1;
 
   // RunningTask is, if non-nil, the task that is currently running on the
   // worker.
@@ -96,6 +108,9 @@ message Worker {
   // directly confirmed as idle by external authority (via a call to MarkIdle or
   // NotifyRequest).
   google.protobuf.Timestamp confirmed_time = 3;
+
+  // LabelIds represents the worker's labels.
+  repeated uint64 label_ids = 4;
 
   // TODO(akeshet): Add the concept of an Inactive worker, which will exist
   // in the scheduler State object, but will be ignored for scheduling purposes.

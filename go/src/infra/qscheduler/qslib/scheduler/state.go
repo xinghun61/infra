@@ -77,13 +77,13 @@ type TaskRequest struct {
 
 // requestProto converts a request to a TaskRequest proto. It is a convenience method.
 // Note: TaskRequest does not include the request's ID, so this conversion is lossy.
-func requestProto(r *TaskRequest) *TaskRequestProto {
+func requestProto(r *TaskRequest, mb *mapBuilder) *TaskRequestProto {
 	return &TaskRequestProto{
-		AccountId:           string(r.AccountID),
-		ConfirmedTime:       tutils.TimestampProto(r.confirmedTime),
-		EnqueueTime:         tutils.TimestampProto(r.EnqueueTime),
-		ProvisionableLabels: r.ProvisionableLabels.ToSlice(),
-		BaseLabels:          r.BaseLabels.ToSlice(),
+		AccountId:             string(r.AccountID),
+		ConfirmedTime:         tutils.TimestampProto(r.confirmedTime),
+		EnqueueTime:           tutils.TimestampProto(r.EnqueueTime),
+		ProvisionableLabelIds: mb.ForSet(r.ProvisionableLabels),
+		BaseLabelIds:          mb.ForSet(r.BaseLabels),
 	}
 }
 

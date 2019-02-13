@@ -15,6 +15,7 @@
 package scheduler
 
 import (
+	"fmt"
 	"time"
 
 	"infra/qscheduler/qslib/tutils"
@@ -40,6 +41,18 @@ func newState(t time.Time) *state {
 	}
 }
 
+func toLabels(IDs []uint64, m map[uint64]string) stringset.Set {
+	s := make([]string, len(IDs))
+	for i, id := range IDs {
+		if label, ok := m[id]; ok {
+			s[i] = label
+		} else {
+			panic(fmt.Sprintf("id %d does not exist in label map", id))
+		}
+	}
+	return stringset.NewFromSlice(s...)
+}
+
 func newStateFromProto(sp *StateProto) *state {
 	s := &state{}
 	s.lastUpdateTime = tutils.Timestamp(sp.LastUpdateTime)
@@ -50,8 +63,8 @@ func newStateFromProto(sp *StateProto) *state {
 			AccountID:           AccountID(req.AccountId),
 			confirmedTime:       tutils.Timestamp(req.ConfirmedTime),
 			EnqueueTime:         tutils.Timestamp(req.EnqueueTime),
-			ProvisionableLabels: stringset.NewFromSlice(req.ProvisionableLabels...),
-			BaseLabels:          stringset.NewFromSlice(req.BaseLabels...),
+			ProvisionableLabels: toLabels(req.ProvisionableLabelIds, sp.LabelMap),
+			BaseLabels:          toLabels(req.BaseLabelIds, sp.LabelMap),
 		}
 	}
 
@@ -70,8 +83,8 @@ func newStateFromProto(sp *StateProto) *state {
 					AccountID:           AccountID(w.RunningTask.Request.AccountId),
 					confirmedTime:       tutils.Timestamp(w.RunningTask.Request.ConfirmedTime),
 					EnqueueTime:         tutils.Timestamp(w.RunningTask.Request.EnqueueTime),
-					ProvisionableLabels: stringset.NewFromSlice(w.RunningTask.Request.ProvisionableLabels...),
-					BaseLabels:          stringset.NewFromSlice(w.RunningTask.Request.BaseLabels...),
+					ProvisionableLabels: toLabels(w.RunningTask.Request.ProvisionableLabelIds, sp.LabelMap),
+					BaseLabels:          toLabels(w.RunningTask.Request.BaseLabelIds, sp.LabelMap),
 				},
 			}
 			s.runningRequestsCache[RequestID(w.RunningTask.RequestId)] = WorkerID(wid)
@@ -79,7 +92,7 @@ func newStateFromProto(sp *StateProto) *state {
 		s.workers[WorkerID(wid)] = &worker{
 			ID:            WorkerID(wid),
 			confirmedTime: tutils.Timestamp(w.ConfirmedTime),
-			labels:        stringset.NewFromSlice(w.Labels...),
+			labels:        toLabels(w.LabelIds, sp.LabelMap),
 			runningTask:   tr,
 		}
 	}
@@ -94,7 +107,59 @@ func newStateFromProto(sp *StateProto) *state {
 	return s
 }
 
+// TODO(akeshet): Move mapBuilder to internal package.
+
+// mapBuilder builds a uint64<->string map, with each unique string being
+// given a unique integer key.
+//
+// This is intended for use when serializing a State into a StateProto.
+// It is not needed or used when going from StateProto to State.
+type mapBuilder struct {
+	nextID uint64
+	m      map[uint64]string
+	inv    map[string]uint64
+}
+
+// newMapBuilder initializes a mapBuilder.
+func newMapBuilder() *mapBuilder {
+	return &mapBuilder{
+		m:   make(map[uint64]string),
+		inv: make(map[string]uint64),
+	}
+}
+
+// For determines an ID for the given string and returns it.
+func (mb *mapBuilder) For(s string) uint64 {
+	if id, ok := mb.inv[s]; ok {
+		return id
+	}
+
+	mb.inv[s] = mb.nextID
+	mb.m[mb.nextID] = s
+	mb.nextID++
+
+	return mb.nextID - 1
+}
+
+// ForSet determines an ID slice for the given string set and returns it.
+func (mb *mapBuilder) ForSet(set stringset.Set) []uint64 {
+	s := make([]uint64, len(set))
+	i := 0
+	for l := range set {
+		s[i] = mb.For(l)
+		i++
+	}
+	return s
+}
+
+// Map returns the ID -> string map for this mapBuilder.
+func (mb *mapBuilder) Map() map[uint64]string {
+	return mb.m
+}
+
 func (s *state) toProto() *StateProto {
+	mb := newMapBuilder()
+
 	balances := make(map[string]*StateProto_Balance, len(s.balances))
 	for aid, bal := range s.balances {
 		bCopy := bal
@@ -103,7 +168,7 @@ func (s *state) toProto() *StateProto {
 
 	queuedRequests := make(map[string]*TaskRequestProto, len(s.queuedRequests))
 	for rid, rq := range s.queuedRequests {
-		queuedRequests[string(rid)] = requestProto(rq)
+		queuedRequests[string(rid)] = requestProto(rq, mb)
 	}
 
 	workers := make(map[string]*Worker, len(s.workers))
@@ -114,14 +179,14 @@ func (s *state) toProto() *StateProto {
 			rt = &TaskRun{
 				Cost:      costCopy[:],
 				Priority:  int32(w.runningTask.priority),
-				Request:   requestProto(w.runningTask.request),
+				Request:   requestProto(w.runningTask.request, mb),
 				RequestId: string(w.runningTask.request.ID),
 			}
 		}
 		workers[string(wid)] = &Worker{
 			ConfirmedTime: tutils.TimestampProto(w.confirmedTime),
-			Labels:        w.labels.ToSlice(),
 			RunningTask:   rt,
+			LabelIds:      mb.ForSet(w.labels),
 		}
 	}
 
@@ -130,6 +195,7 @@ func (s *state) toProto() *StateProto {
 		LastUpdateTime: tutils.TimestampProto(s.lastUpdateTime),
 		QueuedRequests: queuedRequests,
 		Workers:        workers,
+		LabelMap:       mb.Map(),
 	}
 }
 

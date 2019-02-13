@@ -20,33 +20,31 @@
 package scheduler
 
 import (
+	"context"
 	"testing"
+	"time"
 
+	"github.com/kylelemons/godebug/pretty"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 func TestClone(t *testing.T) {
 	Convey("Given a state with some balances, accounts, and requests", t, func() {
-		s := &state{
-			balances: map[AccountID]Balance{
-				"account1": {1, 2, 3},
-				"account2": {3, 4, 5},
-			},
-			workers: map[WorkerID]*worker{
-				"worker1": {ID: "worker1", runningTask: &taskRun{cost: Balance{11, 12, 13}, request: &TaskRequest{ID: "r1"}}},
-				"worker2": {ID: "worker2", runningTask: &taskRun{cost: Balance{13, 14, 15}, request: &TaskRequest{ID: "r2"}}},
-			},
-		}
-		Convey("when state is Cloned", func() {
-			sClone := s.Clone()
-			Convey("then account balance values should match.", func() {
-				So(sClone.balances["account1"], ShouldResemble, Balance{1, 2, 3})
-				So(sClone.balances["account2"], ShouldResemble, Balance{3, 4, 5})
-			})
-			Convey("then running task costs should match.", func() {
-				So(sClone.workers["worker1"].runningTask.cost, ShouldResemble, Balance{11, 12, 13})
-				So(sClone.workers["worker2"].runningTask.cost, ShouldResemble, Balance{13, 14, 15})
-			})
+		ctx := context.Background()
+		tm := time.Unix(10, 10).UTC()
+		s := New(tm)
+		s.AddAccount(ctx, "aid", NewAccountConfig(1, 1, []float64{2, 3, 4}), nil)
+		s.AddRequest(ctx, NewTaskRequest("req1", "a1", stringset.NewFromSlice("provision 1", "provision 2"), stringset.NewFromSlice("base 1", "base 2"), tm), tm, NullMetricsSink)
+		s.AddRequest(ctx, NewTaskRequest("req2", "a1", stringset.NewFromSlice("provision 3", "provision 4"), stringset.NewFromSlice("base 3", "base 4"), tm), tm, NullMetricsSink)
+		s.MarkIdle(ctx, "worker 1", stringset.NewFromSlice("base 1", "base 2"), tm, NullMetricsSink)
+		s.MarkIdle(ctx, "worker 2", stringset.NewFromSlice("base foo", "base bar"), tm, NullMetricsSink)
+		s.RunOnce(ctx, NullMetricsSink)
+		Convey("when state is Cloned via proto roundtrip, it should resemble itself.", func() {
+			sClone := s.state.Clone()
+			diff := pretty.Compare(s.state, sClone)
+			So(diff, ShouldBeBlank)
 		})
 	})
 }
