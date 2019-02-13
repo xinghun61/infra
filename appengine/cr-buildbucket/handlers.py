@@ -43,12 +43,25 @@ class CronUpdateBuckets(webapp2.RequestHandler):  # pragma: no cover
     config.cron_update_buckets()
 
 
-class BuildHandler(webapp2.RequestHandler):  # pragma: no cover
+class BuildRPCHandler(webapp2.RequestHandler):  # pragma: no cover
   """Redirects to API explorer to see the build."""
 
   def get(self, build_id):
     api_path = '/_ah/api/buildbucket/v1/builds/%s' % build_id
     return self.redirect(api_path)
+
+
+class ViewBuildHandler(webapp2.RequestHandler):  # pragma: no cover
+  """Redirects to API explorer to see the build."""
+
+  def get(self, build_id):
+    settings = config.get_settings_async().get_result()
+    milo_hostname = settings.swarming.milo_hostname
+    if not milo_hostname:
+      self.response.write('Milo hostname is not configured')
+      self.abort(500)
+
+    return self.redirect('https://%s/b/%s' % (str(milo_hostname), build_id))
 
 
 class TaskCancelSwarmingTask(webapp2.RequestHandler):  # pragma: no cover
@@ -75,7 +88,8 @@ def get_frontend_routes():  # pragma: no cover
   ]
   routes = [
       webapp2.Route(r'/', MainHandler),
-      webapp2.Route(r'/b/<build_id:\d+>', BuildHandler),
+      webapp2.Route(r'/b/<build_id:\d+>', BuildRPCHandler),
+      webapp2.Route(r'/build/<build_id:\d+>', ViewBuildHandler),
   ]
   routes.extend(endpoints_webapp2.api_routes(endpoints_services))
   # /api routes should be removed once clients are hitting /_ah/api.
