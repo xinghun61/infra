@@ -9,7 +9,7 @@
   <tr>
     [if-any project_thumbnail_url]
       <th id="thumbnail_box">
-          <a href="[project_home_page]" target="_blank">
+          <a href="[project_home_page]">
             <img src="[project_thumbnail_url]">
           </a>
       </th>
