@@ -383,6 +383,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSin
 					&metrics.TaskEvent_AssignedDetails{
 						Preempting:        true,
 						PreemptionCost:    worker.runningTask.cost[:],
+						PreemptedTaskId:   string(worker.runningTask.request.ID),
 						Priority:          int32(priority),
 						ProvisionRequired: !worker.labels.Contains(r.ProvisionableLabels),
 					}))
