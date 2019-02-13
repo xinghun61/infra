@@ -62,14 +62,13 @@
       "-u",
       "[START_DIR]/build_dir/chromium-69.0.3491.0/tools/gn/bootstrap/bootstrap.py",
       "--gn-gen-args=is_debug=false enable_nacl=false is_official_build=true enable_distro_version_check=false use_system_libjpeg=true use_v8_context_snapshot=false",
-      "--with-sysroot"
+      "--use-custom-libcxx"
     ],
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "env": {
       "AR": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/llvm-ar",
       "CC": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/clang",
       "CXX": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/clang++",
-      "LD": "[START_DIR]/build_dir/chromium-69.0.3491.0/third_party/llvm-build/Release+Asserts/bin/lld",
       "LDFLAGS": "-fuse-ld=lld"
     },
     "env_suffixes": {
