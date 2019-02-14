@@ -305,6 +305,20 @@ wheel: <
 
 * *universal*
 
+## **atomicwrites**
+
+### 1.3.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/atomicwrites-py2_py3"
+  version: "version:1.3.0"
+>
+```
+
+
+* *universal*
+
 ## **attrs**
 
 ### 17.4.0
@@ -1539,6 +1553,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/paramiko-py2_py3"
   version: "version:2.4.1"
+>
+```
+
+
+* *universal*
+
+## **pathlib2**
+
+### 2.3.3
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pathlib2-py2_py3"
+  version: "version:2.3.3"
 >
 ```
 
