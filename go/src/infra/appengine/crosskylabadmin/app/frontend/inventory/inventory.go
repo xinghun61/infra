@@ -171,8 +171,10 @@ func updateDutLabels(ctx context.Context, s *store.GitStore, req updateDutLabels
 	}
 	labels := dut.GetCommon().GetLabels()
 	labels.UselessSwitch = req.labels.UselessSwitch
-
 	url, err := s.Commit(ctx, fmt.Sprintf("Update DUT labels for %s", req.reason))
+	if store.IsEmptyErr(err) {
+		return &resp, nil
+	}
 	if err != nil {
 		return nil, errors.Annotate(err, "updateDutLabels").Err()
 	}

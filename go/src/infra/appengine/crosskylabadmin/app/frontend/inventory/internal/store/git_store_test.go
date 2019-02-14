@@ -15,10 +15,11 @@
 package store
 
 import (
+	"testing"
+
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/fakes"
 	"infra/libs/skylab/inventory"
-	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/luci/appengine/gaetesting"
@@ -62,6 +63,7 @@ func TestStoreValidity(t *testing.T) {
 				Convey("Commit() without changes fails", func() {
 					_, err := store.Commit(ctx, "no reason")
 					So(err, ShouldNotBeNil)
+					So(IsEmptyErr(err), ShouldBeTrue)
 				})
 
 				Convey("Commit() with changes succeeds", func() {

@@ -56,6 +56,21 @@ func NewGitStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *G
 	return store
 }
 
+// IsEmptyErr returns true if the given error is because of am empty
+// commit.
+func IsEmptyErr(e error) bool {
+	_, ok := e.(emptyError)
+	return ok
+}
+
+type emptyError struct {
+	err error
+}
+
+func (e emptyError) Error() string {
+	return e.err.Error()
+}
+
 // Commit commits the current inventory data in the store to git.
 //
 // Successful Commit() invalidates the data cached in GitStore().
@@ -85,7 +100,7 @@ func (g *GitStore) Commit(ctx context.Context, reason string) (string, error) {
 	}
 
 	if len(changed) == 0 {
-		return "", errors.New("gitstore commit: nothing to commit")
+		return "", emptyError{errors.New("gitstore commit: nothing to commit")}
 	}
 
 	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, g.latestSHA1, reason, changed)
