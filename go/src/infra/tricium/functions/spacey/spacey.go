@@ -72,12 +72,12 @@ func main() {
 }
 
 // Checks the whole file for whitespace issues.
-func analyzeFile(fileScanner *bufio.Scanner, path string) []*tricium.Data_Comment {
+func analyzeFile(scanner *bufio.Scanner, path string) []*tricium.Data_Comment {
 	lineNum, start, end := 1, 1, 1
 	var comments []*tricium.Data_Comment
 	var adjacentEmptyLines int
-	for fileScanner.Scan() {
-		line := fileScanner.Text()
+	for scanner.Scan() {
+		line := scanner.Text()
 
 		// Keep track of adjacent empty lines to report
 		// trailing empty lines at the end of the file.
@@ -97,8 +97,8 @@ func analyzeFile(fileScanner *bufio.Scanner, path string) []*tricium.Data_Commen
 		}
 		lineNum++
 	}
-	if err := fileScanner.Err(); err != nil {
-		log.Fatalf("Failed to read file: %v, path: %s", err, path)
+	if err := scanner.Err(); err != nil {
+		log.Printf("Failed to read a line, skipping the rest of %q: %v", path, err)
 	}
 
 	if adjacentEmptyLines > 0 {

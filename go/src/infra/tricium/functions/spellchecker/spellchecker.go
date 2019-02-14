@@ -153,7 +153,7 @@ func analyzeFile(scanner *bufio.Scanner, filePath string, checkEveryWord bool, c
 		lineno++
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("Failed to read file: %v, path: %s", err, filePath)
+		log.Printf("Failed to read a line, skipping the rest of %q: %v", filePath, err)
 	}
 }
 
