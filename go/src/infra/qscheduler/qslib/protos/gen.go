@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package scheduler
+package protos
 
 //go:generate cproto
 //go:generate goimports -w .

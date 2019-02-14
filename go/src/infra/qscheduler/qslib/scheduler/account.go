@@ -14,6 +14,10 @@
 
 package scheduler
 
+import (
+	"infra/qscheduler/qslib/protos"
+)
+
 const (
 	// FreeBucket is the free priority bucket, where jobs may run even if they have
 	// no quota account or have an empty quota account.
@@ -47,7 +51,7 @@ func BestPriorityFor(b Balance) Priority {
 // The new balance calculation is based on the account's recharge rate,
 // maximum balance, and the number of currently running jobs per priority
 // bucket for that account.
-func nextBalance(balance Balance, c *AccountConfig, elapsedSecs float64, runningJobs []int) Balance {
+func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float64, runningJobs []int) Balance {
 	for priority := 0; priority < NumPriorities; priority++ {
 		val := balance[priority]
 		val -= elapsedSecs * float64(runningJobs[priority])
@@ -72,8 +76,8 @@ func nextBalance(balance Balance, c *AccountConfig, elapsedSecs float64, running
 }
 
 // NewAccountConfig creates a new Config instance.
-func NewAccountConfig(fanout int, chargeSeconds float64, chargeRate []float64) *AccountConfig {
-	return &AccountConfig{
+func NewAccountConfig(fanout int, chargeSeconds float64, chargeRate []float64) *protos.AccountConfig {
+	return &protos.AccountConfig{
 		ChargeRate:       chargeRate,
 		MaxChargeSeconds: chargeSeconds,
 		MaxFanout:        int32(fanout),

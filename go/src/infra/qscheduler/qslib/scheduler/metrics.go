@@ -18,7 +18,7 @@ import (
 	"sort"
 	"time"
 
-	"infra/qscheduler/qslib/metrics"
+	"infra/qscheduler/qslib/protos/metrics"
 	"infra/qscheduler/qslib/tutils"
 )
 

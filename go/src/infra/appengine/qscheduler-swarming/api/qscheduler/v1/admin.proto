@@ -6,8 +6,8 @@ syntax = "proto3";
 
 package qscheduler;
 
-import "infra/qscheduler/qslib/scheduler/config.proto";
-import "infra/qscheduler/qslib/scheduler/state.proto";
+import "infra/qscheduler/qslib/protos/config.proto";
+import "infra/qscheduler/qslib/protos/state.proto";
 
 // This API is under development and subject to compatibility-breaking changes.
 // Do not use for production.
@@ -59,7 +59,7 @@ message CreateAccountRequest {
     string account_id = 2;
 
     // Config is the quota account config for the quota account to create.
-    scheduler.AccountConfig config = 3;
+    protos.AccountConfig config = 3;
 }
 
 message CreateAccountResponse {}
@@ -77,7 +77,7 @@ message ListAccountsRequest {
 }
 
 message ListAccountsResponse {
-    map<string, scheduler.AccountConfig> accounts = 1;
+    map<string, protos.AccountConfig> accounts = 1;
 }
 
 message SchedulerPoolConfig{
@@ -102,7 +102,7 @@ message InspectPoolResponse {
     int32 num_idle_bots = 3;
 
     // AccountBalances is the set of balances for all accounts.
-    map<string, scheduler.StateProto.Balance> account_balances = 4;
+    map<string, protos.SchedulerState.Balance> account_balances = 4;
 
     message RunningTask {
         // Id is the id of the request.

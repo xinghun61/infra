@@ -18,15 +18,16 @@ import (
 	"fmt"
 	"time"
 
+	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
 )
 
 // NewConfig creates an returns a new Config instance with all maps initialized.
-func NewConfig() *Config {
-	return &Config{
-		AccountConfigs: map[string]*AccountConfig{},
+func NewConfig() *protos.SchedulerConfig {
+	return &protos.SchedulerConfig{
+		AccountConfigs: map[string]*protos.AccountConfig{},
 	}
 }
 
@@ -53,7 +54,7 @@ func toLabels(IDs []uint64, m map[uint64]string) stringset.Set {
 	return stringset.NewFromSlice(s...)
 }
 
-func newStateFromProto(sp *StateProto) *state {
+func newStateFromProto(sp *protos.SchedulerState) *state {
 	s := &state{}
 	s.lastUpdateTime = tutils.Timestamp(sp.LastUpdateTime)
 	s.queuedRequests = make(map[RequestID]*TaskRequest, len(sp.QueuedRequests))
@@ -157,40 +158,40 @@ func (mb *mapBuilder) Map() map[uint64]string {
 	return mb.m
 }
 
-func (s *state) toProto() *StateProto {
+func (s *state) toProto() *protos.SchedulerState {
 	mb := newMapBuilder()
 
-	balances := make(map[string]*StateProto_Balance, len(s.balances))
+	balances := make(map[string]*protos.SchedulerState_Balance, len(s.balances))
 	for aid, bal := range s.balances {
 		bCopy := bal
-		balances[string(aid)] = &StateProto_Balance{Value: bCopy[:]}
+		balances[string(aid)] = &protos.SchedulerState_Balance{Value: bCopy[:]}
 	}
 
-	queuedRequests := make(map[string]*TaskRequestProto, len(s.queuedRequests))
+	queuedRequests := make(map[string]*protos.TaskRequest, len(s.queuedRequests))
 	for rid, rq := range s.queuedRequests {
 		queuedRequests[string(rid)] = requestProto(rq, mb)
 	}
 
-	workers := make(map[string]*Worker, len(s.workers))
+	workers := make(map[string]*protos.Worker, len(s.workers))
 	for wid, w := range s.workers {
-		var rt *TaskRun
+		var rt *protos.TaskRun
 		if w.runningTask != nil {
 			costCopy := w.runningTask.cost
-			rt = &TaskRun{
+			rt = &protos.TaskRun{
 				Cost:      costCopy[:],
 				Priority:  int32(w.runningTask.priority),
 				Request:   requestProto(w.runningTask.request, mb),
 				RequestId: string(w.runningTask.request.ID),
 			}
 		}
-		workers[string(wid)] = &Worker{
+		workers[string(wid)] = &protos.Worker{
 			ConfirmedTime: tutils.TimestampProto(w.confirmedTime),
 			RunningTask:   rt,
 			LabelIds:      mb.ForSet(w.labels),
 		}
 	}
 
-	return &StateProto{
+	return &protos.SchedulerState{
 		Balances:       balances,
 		LastUpdateTime: tutils.TimestampProto(s.lastUpdateTime),
 		QueuedRequests: queuedRequests,

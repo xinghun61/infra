@@ -19,7 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	"infra/qscheduler/qslib/metrics"
+	"infra/qscheduler/qslib/protos"
+	"infra/qscheduler/qslib/protos/metrics"
 	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
@@ -75,8 +76,8 @@ type TaskRequest struct {
 
 // requestProto converts a request to a TaskRequest proto. It is a convenience method.
 // Note: TaskRequest does not include the request's ID, so this conversion is lossy.
-func requestProto(r *TaskRequest, mb *mapBuilder) *TaskRequestProto {
-	return &TaskRequestProto{
+func requestProto(r *TaskRequest, mb *mapBuilder) *protos.TaskRequest {
+	return &protos.TaskRequest{
 		AccountId:             string(r.AccountID),
 		ConfirmedTime:         tutils.TimestampProto(r.confirmedTime),
 		EnqueueTime:           tutils.TimestampProto(r.EnqueueTime),

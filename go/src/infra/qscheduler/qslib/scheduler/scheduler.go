@@ -30,6 +30,8 @@ import (
 	"time"
 
 	"go.chromium.org/luci/common/data/stringset"
+
+	"infra/qscheduler/qslib/protos"
 )
 
 // Scheduler encapsulates the state and configuration of a running
@@ -37,7 +39,7 @@ import (
 // of the quotascheduler algorithm.
 type Scheduler struct {
 	state  *state
-	config *Config
+	config *protos.SchedulerConfig
 }
 
 // AccountID (a string) identifies an account.
@@ -95,17 +97,17 @@ func New(t time.Time) *Scheduler {
 }
 
 // NewFromProto returns a new Scheduler from proto representation.
-func NewFromProto(s *SchedulerProto) *Scheduler {
+func NewFromProto(s *protos.Scheduler) *Scheduler {
 	c := s.Config
 	if c.AccountConfigs == nil {
-		c.AccountConfigs = make(map[string]*AccountConfig)
+		c.AccountConfigs = make(map[string]*protos.AccountConfig)
 	}
 	return &Scheduler{newStateFromProto(s.State), s.Config}
 }
 
 // ToProto returns a proto representation of the state and configuration of Scheduler.
-func (s *Scheduler) ToProto() *SchedulerProto {
-	return &SchedulerProto{
+func (s *Scheduler) ToProto() *protos.Scheduler {
+	return &protos.Scheduler{
 		State:  s.state.toProto(),
 		Config: s.config,
 	}
@@ -127,7 +129,7 @@ func (e *UpdateOrderError) Error() string {
 // (or zero balance if nil).
 //
 // If an account with that id already exists, then it is overwritten.
-func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *AccountConfig, initialBalance []float64) {
+func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *protos.AccountConfig, initialBalance []float64) {
 	s.config.AccountConfigs[string(id)] = config
 	bal := Balance{}
 	copy(bal[:], initialBalance)

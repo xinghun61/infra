@@ -29,6 +29,7 @@ import (
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/state/types"
+	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -67,7 +68,7 @@ func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 		return status.Error(codes.Internal, e.Error())
 	}
 
-	if rd, err = proto.Marshal(q.Reconciler); err != nil {
+	if rd, err = proto.Marshal(q.Reconciler.ToProto()); err != nil {
 		e := errors.Wrap(err, "unable to marshal Reconciler")
 		return status.Error(codes.Internal, e.Error())
 	}
@@ -105,8 +106,8 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 		return nil, status.Error(codes.NotFound, e.Error())
 	}
 
-	r := new(reconciler.State)
-	sp := new(scheduler.SchedulerProto)
+	r := new(protos.Reconciler)
+	sp := new(protos.Scheduler)
 	c := new(qscheduler.SchedulerPoolConfig)
 	if err := proto.Unmarshal(dst.ReconcilerData, r); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Reconciler")
@@ -120,7 +121,7 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 
 	return &types.QScheduler{
 		SchedulerID: dst.QSPoolID,
-		Reconciler:  r,
+		Reconciler:  reconciler.NewFromProto(r),
 		Scheduler:   scheduler.NewFromProto(sp),
 		Config:      c,
 	}, nil

@@ -17,10 +17,17 @@ package reconciler
 import (
 	"time"
 
+	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/scheduler"
 
 	"go.chromium.org/luci/common/data/stringset"
 )
+
+// State is the state of a reconciler.
+type State struct {
+	// Internal proto representation of reconciler state.
+	proto *protos.Reconciler
+}
 
 // TaskWaitingRequest encapsulates the arguments to NotifyTaskWaiting.
 type TaskWaitingRequest struct {

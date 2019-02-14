@@ -18,6 +18,8 @@ import (
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
+
+	"infra/qscheduler/qslib/protos"
 )
 
 // TestBestPriority tests that BestPriorityFor behaves correctly.
@@ -46,7 +48,7 @@ func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 	t.Parallel()
 	expect := Balance{0, 2, 4}
 
-	config := &AccountConfig{
+	config := &protos.AccountConfig{
 		ChargeRate:       []float64{1, 2, 3},
 		MaxChargeSeconds: 10,
 	}
@@ -69,7 +71,7 @@ func TestAccountAdvanceWithOverflow(t *testing.T) {
 	//    it to be pulled to a lower value still above max.
 	// P2 bucket will have started above max, but have spend that causes it to be
 	//    pulled below max, and then will recharge to reach max again.
-	config := &AccountConfig{
+	config := &protos.AccountConfig{
 		ChargeRate:       []float64{1, 1, 1},
 		MaxChargeSeconds: 10,
 	}

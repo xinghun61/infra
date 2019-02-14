@@ -19,7 +19,7 @@ import (
 	"math"
 	"sort"
 
-	"infra/qscheduler/qslib/metrics"
+	"infra/qscheduler/qslib/protos/metrics"
 )
 
 // schedulerRun stores values that are used within a single run of the scheduling algorithm.

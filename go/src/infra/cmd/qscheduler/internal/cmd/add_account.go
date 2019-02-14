@@ -16,7 +16,7 @@ import (
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/cmd/qscheduler/internal/site"
-	"infra/qscheduler/qslib/scheduler"
+	"infra/qscheduler/qslib/protos"
 )
 
 // AddAccount subcommand: add an account.
@@ -84,7 +84,7 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 	req := &qscheduler.CreateAccountRequest{
 		AccountId: accountID,
 		PoolId:    poolID,
-		Config: &scheduler.AccountConfig{
+		Config: &protos.AccountConfig{
 			ChargeRate:       chargeRateFloats,
 			MaxChargeSeconds: c.chargeTime,
 			MaxFanout:        int32(c.fanout),

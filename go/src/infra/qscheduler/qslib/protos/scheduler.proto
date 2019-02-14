@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 syntax = "proto3";
-package scheduler;
+package protos;
 
-import "infra/qscheduler/qslib/scheduler/state.proto";
-import "infra/qscheduler/qslib/scheduler/config.proto";
+import "infra/qscheduler/qslib/protos/state.proto";
+import "infra/qscheduler/qslib/protos/config.proto";
 
-// SchedulerProto encapsulates the state and configuration of a running
+// Scheduler encapsulates the state and configuration of a running
 // quotascheduler for a single pool, and its methods provide an implementation
 // of the quotascheduler algorithm.
-message SchedulerProto {
-  // State is the state of the scheduler.
-  StateProto state = 1;
+message Scheduler {
+  // SchedulerState is the state of the scheduler.
+  SchedulerState state = 1;
 
-  // Config is the config of the scheduler.
-  Config config = 2;
+  // SchedulerConfig is the config of the scheduler.
+  SchedulerConfig config = 2;
 }

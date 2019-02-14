@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 syntax = "proto3";
-package scheduler;
+package protos;
 
-// Config represents configuration information about the behavior of accounts
-// for this quota scheduler pool.
-message Config {
+// SchedulerConfig represents configuration information about the behavior of
+// accounts for this quota scheduler pool.
+message SchedulerConfig {
   // Configuration for a given account, keyed by account id.
   map<string, AccountConfig> account_configs = 1;
 }

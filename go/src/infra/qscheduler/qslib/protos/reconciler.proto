@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 syntax = "proto3";
-package reconciler;
+package protos;
 
 import "google/protobuf/timestamp.proto";
 
@@ -39,9 +39,9 @@ message WorkerQueue {
 	string task_to_abort = 3;
 }
 
-// State represents a reconciler, which includes its configuration and the
+// ReconcilerState represents a reconciler, which includes its configuration and the
 // pending operations that are in-flight and have not been ACK'ed yet.
-message State {
+message Reconciler {
 	// WorkerQueues is a map from worker id to the pending operations for that worker.
 	map<string, WorkerQueue> worker_queues = 1;
 

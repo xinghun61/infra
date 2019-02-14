@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 syntax = "proto3";
-package scheduler;
+package protos;
 
 import "google/protobuf/timestamp.proto";
 
-// StateProto represents the overall state of a quota scheduler worker pool,
+// State represents the overall state of a quota scheduler worker pool,
 // account set, and task queue. This is represented separately from
 // configuration information. The state is expected to be updated frequently,
 // on each scheduler tick.
-message StateProto {
+message SchedulerState {
   // QueuedRequests is the set of Requests that are waiting to be assigned to a
   // worker, keyed by request id.
-  map<string, TaskRequestProto> queued_requests = 1;
+  map<string, TaskRequest> queued_requests = 1;
 
   message Balance {
     repeated double value = 1;
@@ -48,7 +48,7 @@ message StateProto {
 // TaskRequestProto represents a requested task in the queue, and refers to the
 // quota account to run it against. This representation intentionally
 // excludes most of the details of a Swarming task request.
-message TaskRequestProto {
+message TaskRequest {
   // AccountId is the id of the account that this request charges to.
   string account_id = 1;
 
@@ -81,7 +81,7 @@ message TaskRun {
   repeated double cost = 1;
 
   // Request is the request that this running task corresponds to.
-  TaskRequestProto request = 2;
+  TaskRequest request = 2;
 
   // RequestId is the request id of the request that this running task
   // corresponds to.

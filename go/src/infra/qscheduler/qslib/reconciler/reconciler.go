@@ -34,6 +34,7 @@ import (
 	"fmt"
 	"time"
 
+	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
 
@@ -43,8 +44,22 @@ import (
 // New returns a new initialized State instance.
 func New() *State {
 	return &State{
-		WorkerQueues: make(map[string]*WorkerQueue),
+		proto: &protos.Reconciler{
+			WorkerQueues: make(map[string]*protos.WorkerQueue),
+		},
 	}
+}
+
+// NewFromProto returns a new State instance from a proto representation.
+func NewFromProto(proto *protos.Reconciler) *State {
+	return &State{
+		proto: proto,
+	}
+}
+
+// ToProto converts a reconciler state to proto representation.
+func (state *State) ToProto() *protos.Reconciler {
+	return state.proto
 }
 
 // IdleWorker represents a worker that is idle and wants to have a task assigned.
@@ -87,10 +102,10 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 	//    subtleties.
 	for _, w := range workers {
 		wid := w.ID
-		q, ok := state.WorkerQueues[string(wid)]
+		q, ok := state.proto.WorkerQueues[string(wid)]
 		if !ok || !s.IsAssigned(scheduler.RequestID(q.TaskToAssign), wid) {
 			s.MarkIdle(ctx, wid, w.Labels, t, metrics)
-			delete(state.WorkerQueues, string(wid))
+			delete(state.proto.WorkerQueues, string(wid))
 		}
 	}
 
@@ -104,7 +119,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 		}
 		// TODO(akeshet): Log if there was a previous WorkerQueue that we are
 		// overwriting.
-		state.WorkerQueues[string(a.WorkerID)] = &WorkerQueue{
+		state.proto.WorkerQueues[string(a.WorkerID)] = &protos.WorkerQueue{
 			EnqueueTime:  tutils.TimestampProto(a.Time),
 			TaskToAssign: string(a.RequestID),
 			TaskToAbort:  string(a.TaskToAbort),
@@ -114,7 +129,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 	// Yield from worker queues.
 	assignments := make([]Assignment, 0, len(workers))
 	for _, w := range workers {
-		if q, ok := state.WorkerQueues[string(w.ID)]; ok {
+		if q, ok := state.proto.WorkerQueues[string(w.ID)]; ok {
 			// Note: We determine whether provision is needed here rather than
 			// using the determination used within the Scheduler, because we have the
 			// newest info about worker dimensions here.
@@ -138,7 +153,7 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 // TaskError marks a given task as having failed due to an error, and in need of cancellation.
 func (state *State) TaskError(requestID scheduler.RequestID, err string) {
 	state.ensureMaps()
-	state.TaskErrors[string(requestID)] = err
+	state.proto.TaskErrors[string(requestID)] = err
 }
 
 // Cancellation represents a scheduler-initated operation to cancel a task on a worker.
@@ -160,13 +175,13 @@ type Cancellation struct {
 // Cancellations returns the set of workers and tasks that should be cancelled.
 func (state *State) Cancellations(ctx context.Context) []Cancellation {
 	state.ensureMaps()
-	c := make([]Cancellation, 0, len(state.WorkerQueues)+len(state.TaskErrors))
-	for wid, q := range state.WorkerQueues {
+	c := make([]Cancellation, 0, len(state.proto.WorkerQueues)+len(state.proto.TaskErrors))
+	for wid, q := range state.proto.WorkerQueues {
 		if q.TaskToAbort != "" {
 			c = append(c, Cancellation{RequestID: q.TaskToAbort, WorkerID: wid})
 		}
 	}
-	for tid, err := range state.TaskErrors {
+	for tid, err := range state.proto.TaskErrors {
 		c = append(c, Cancellation{RequestID: tid, ErrorMessage: err})
 	}
 	return c
@@ -192,9 +207,9 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 	// This NotifyRequest call ensures scheduler state consistency with
 	// the latest update.
 	s.NotifyTaskRunning(ctx, rid, wid, update.Time, metrics)
-	if q, ok := state.WorkerQueues[string(wid)]; ok {
+	if q, ok := state.proto.WorkerQueues[string(wid)]; ok {
 		if !update.Time.Before(tutils.Timestamp(q.EnqueueTime)) {
-			delete(state.WorkerQueues, string(wid))
+			delete(state.proto.WorkerQueues, string(wid))
 			// TODO(akeshet): Log or handle "unexpected request on worker" here.
 		} else {
 			// TODO(akeshet): Consider whether we should delete from workerqueue
@@ -212,22 +227,22 @@ func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler
 	s.NotifyTaskAbsent(ctx, rid, t, metrics)
 	// TODO(akeshet): Add an inverse map from aborting request -> previous
 	// worker to avoid the need for this iteration through all workers.
-	for wid, q := range state.WorkerQueues {
+	for wid, q := range state.proto.WorkerQueues {
 		if q.TaskToAbort == string(rid) && tutils.Timestamp(q.EnqueueTime).Before(t) {
-			delete(state.WorkerQueues, wid)
+			delete(state.proto.WorkerQueues, wid)
 		}
 	}
-	delete(state.TaskErrors, string(rid))
+	delete(state.proto.TaskErrors, string(rid))
 }
 
 // ensureMaps initializes any nil maps in reconciler.
 //
 // This is necessary because protobuf deserialization of an empty map returns a nil map.
 func (state *State) ensureMaps() {
-	if state.WorkerQueues == nil {
-		state.WorkerQueues = make(map[string]*WorkerQueue)
+	if state.proto.WorkerQueues == nil {
+		state.proto.WorkerQueues = make(map[string]*protos.WorkerQueue)
 	}
-	if state.TaskErrors == nil {
-		state.TaskErrors = make(map[string]string)
+	if state.proto.TaskErrors == nil {
+		state.proto.TaskErrors = make(map[string]string)
 	}
 }

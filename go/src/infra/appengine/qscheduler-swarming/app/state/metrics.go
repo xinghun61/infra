@@ -15,7 +15,7 @@
 package state
 
 import (
-	"infra/qscheduler/qslib/metrics"
+	"infra/qscheduler/qslib/protos/metrics"
 )
 
 // metricsSliceSink implements scheduler.MetricsSink by appending items to

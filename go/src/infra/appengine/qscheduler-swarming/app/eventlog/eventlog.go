@@ -21,7 +21,7 @@ import (
 	"go.chromium.org/luci/appengine/bqlog"
 	"go.chromium.org/luci/common/bq"
 
-	"infra/qscheduler/qslib/metrics"
+	"infra/qscheduler/qslib/protos/metrics"
 )
 
 // tasks is the BigQuery logger for metrics.TaskEvent entries.
