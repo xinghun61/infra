@@ -55,6 +55,12 @@ findit-predeploy:
 	@echo "Deployable Changes. (git pull and client sync if not current)"
 	@git log $(REMOTE_FINDIT_HASH)..HEAD --pretty=oneline .
 
+deploy-all-prod: deploy-findit-prod deploy-coverage-prod
+	@echo "Both Findit and Code Coverage were deployed to production."
+
+deploy-all-staging: deploy-findit-staging deploy-coverage-staging
+	@echo "Both Findit and Code Coverage were deployed to staging."
+
 deploy-findit-prod: test
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID) $(FINDIT_MODULES);
 	@echo "New version '$(LOCAL_VERSION)' of Findit was" \
@@ -157,4 +163,5 @@ endif
 
 .PHONY: _deploy_findit test update \
         help migrate deploy-findit-prod deploy-findit-staging \
-        deploy-coverage-prod deploy-coverage-staging findit-predeploy
+        deploy-coverage-prod deploy-coverage-staging findit-predeploy \
+        deploy-all-prod deploy-all-staging
