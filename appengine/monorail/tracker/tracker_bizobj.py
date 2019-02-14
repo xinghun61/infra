@@ -1227,6 +1227,25 @@ def MakeFieldClearedAmendment(field_id, config):
       custom_field_name=fd.field_name)
 
 
+def MakeApprovalStructureAmendment(new_approvals, old_approvals):
+  """Return an Amendment showing an issue's approval structure changed.
+
+  Args:
+    new_approvals: the new list of approvals.
+    old_approvals: the old list of approvals.
+
+  Returns:
+    A new Amendment object.
+  """
+
+  approvals_added, approvals_removed = DiffValueLists(
+      new_approvals, old_approvals)
+  return MakeAmendment(
+      tracker_pb2.FieldID.CUSTOM, _PlusMinusString(
+          approvals_added, approvals_removed),
+      [], [], custom_field_name='Approvals')
+
+
 def MakeApprovalStatusAmendment(new_status):
   """Return an Amendment showing an issue approval's status changed.
 

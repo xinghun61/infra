@@ -1465,6 +1465,14 @@ class BizobjTest(unittest.TestCase):
             tracker_pb2.FieldID.CUSTOM, '----', [], [], 'Rabbit'),
         tracker_bizobj.MakeFieldClearedAmendment(1, config))
 
+  def testMakeApprovalStructureAmendment(self):
+    actual_amendment = tracker_bizobj.MakeApprovalStructureAmendment(
+        ['Chicken1', 'Chicken', 'Llama'], ['Cow', 'Chicken2', 'Llama'])
+    amendment = tracker_bizobj.MakeAmendment(
+        tracker_pb2.FieldID.CUSTOM, '-Cow -Chicken2 Chicken1 Chicken',
+        [], [], 'Approvals')
+    self.assertEqual(amendment, actual_amendment)
+
   def testMakeApprovalStatusAmendment(self):
     actual_amendment = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.APPROVED)
