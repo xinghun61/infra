@@ -1601,6 +1601,30 @@ wheel: <
 
 * *universal*
 
+### 0.7.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pluggy-py2_py3"
+  version: "version:0.7.1"
+>
+```
+
+
+* *universal*
+
+### 0.8.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pluggy-py2_py3"
+  version: "version:0.8.1"
+>
+```
+
+
+* *universal*
+
 ## **ply**
 
 ### 3.11
