@@ -24,6 +24,37 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+type GetDeploymentStatusResponse_Status int32
+
+const (
+	GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_INVALID     GetDeploymentStatusResponse_Status = 0
+	GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS GetDeploymentStatusResponse_Status = 1
+	GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_SUCCEEDED   GetDeploymentStatusResponse_Status = 2
+	GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED      GetDeploymentStatusResponse_Status = 3
+)
+
+var GetDeploymentStatusResponse_Status_name = map[int32]string{
+	0: "DUT_DEPLOYMENT_STATUS_INVALID",
+	1: "DUT_DEPLOYMENT_STATUS_IN_PROGRESS",
+	2: "DUT_DEPLOYMENT_STATUS_SUCCEEDED",
+	3: "DUT_DEPLOYMENT_STATUS_FAILED",
+}
+
+var GetDeploymentStatusResponse_Status_value = map[string]int32{
+	"DUT_DEPLOYMENT_STATUS_INVALID":     0,
+	"DUT_DEPLOYMENT_STATUS_IN_PROGRESS": 1,
+	"DUT_DEPLOYMENT_STATUS_SUCCEEDED":   2,
+	"DUT_DEPLOYMENT_STATUS_FAILED":      3,
+}
+
+func (x GetDeploymentStatusResponse_Status) String() string {
+	return proto.EnumName(GetDeploymentStatusResponse_Status_name, int32(x))
+}
+
+func (GetDeploymentStatusResponse_Status) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{5, 0}
+}
+
 type EnsurePoolHealthyResponse_Failure int32
 
 const (
@@ -54,7 +85,460 @@ func (x EnsurePoolHealthyResponse_Failure) String() string {
 }
 
 func (EnsurePoolHealthyResponse_Failure) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{1, 0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{10, 0}
+}
+
+type DeployDutRequest struct {
+	// new_specs are the device specs this deployment effort should set.
+	//
+	// This should be a serialized inventory.CommonDeviceSpecs protobuf.
+	//
+	// Note that deploy will use new_specs to initialize the device specs for the
+	// DUT, but the specs (in particular labels) may be updated further as a
+	// result of the deployment process itself.
+	//
+	// new_specs must satisfy following sanity conditions:
+	// - inventory.CommonDeviceSpecs.Id must be unset.
+	NewSpecs []byte `protobuf:"bytes,1,opt,name=new_specs,json=newSpecs,proto3" json:"new_specs,omitempty"`
+	// The deployment actions to take.
+	//
+	// Automated repair is always attempted at the end of deployment actions.
+	Actions              *DutDeploymentActions `protobuf:"bytes,2,opt,name=actions,proto3" json:"actions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *DeployDutRequest) Reset()         { *m = DeployDutRequest{} }
+func (m *DeployDutRequest) String() string { return proto.CompactTextString(m) }
+func (*DeployDutRequest) ProtoMessage()    {}
+func (*DeployDutRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{0}
+}
+
+func (m *DeployDutRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeployDutRequest.Unmarshal(m, b)
+}
+func (m *DeployDutRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeployDutRequest.Marshal(b, m, deterministic)
+}
+func (m *DeployDutRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployDutRequest.Merge(m, src)
+}
+func (m *DeployDutRequest) XXX_Size() int {
+	return xxx_messageInfo_DeployDutRequest.Size(m)
+}
+func (m *DeployDutRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeployDutRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeployDutRequest proto.InternalMessageInfo
+
+func (m *DeployDutRequest) GetNewSpecs() []byte {
+	if m != nil {
+		return m.NewSpecs
+	}
+	return nil
+}
+
+func (m *DeployDutRequest) GetActions() *DutDeploymentActions {
+	if m != nil {
+		return m.Actions
+	}
+	return nil
+}
+
+type DeployDutResponse struct {
+	// Opaque ID to be used for future GetDeploymentStatus requests.
+	DeploymentId         string   `protobuf:"bytes,1,opt,name=deployment_id,json=deploymentId,proto3" json:"deployment_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeployDutResponse) Reset()         { *m = DeployDutResponse{} }
+func (m *DeployDutResponse) String() string { return proto.CompactTextString(m) }
+func (*DeployDutResponse) ProtoMessage()    {}
+func (*DeployDutResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{1}
+}
+
+func (m *DeployDutResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeployDutResponse.Unmarshal(m, b)
+}
+func (m *DeployDutResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeployDutResponse.Marshal(b, m, deterministic)
+}
+func (m *DeployDutResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeployDutResponse.Merge(m, src)
+}
+func (m *DeployDutResponse) XXX_Size() int {
+	return xxx_messageInfo_DeployDutResponse.Size(m)
+}
+func (m *DeployDutResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeployDutResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeployDutResponse proto.InternalMessageInfo
+
+func (m *DeployDutResponse) GetDeploymentId() string {
+	if m != nil {
+		return m.DeploymentId
+	}
+	return ""
+}
+
+type RedeployDutRequest struct {
+	// old_specs are the old device specs for a DUT already in the inventory that
+	// the client wants to re-deploy.
+	//
+	// This should be a serialized inventory.CommonDeviceSpecs protobuf.
+	//
+	// old_specs must satisfy following sanity conditions:
+	// - inventory.CommonDeviceSpecs.Id must be set. It will be used to identify
+	//   the dut to deploy.
+	OldSpecs []byte `protobuf:"bytes,1,opt,name=old_specs,json=oldSpecs,proto3" json:"old_specs,omitempty"`
+	// new_specs are the device specs this redeployment effort should set.
+	//
+	// This should be a serialized inventory.CommonDeviceSpecs protobuf.
+	//
+	// Note that deploy will use new_specs to initialize the device specs for the
+	// DUT, but the specs (in particular labels) may be updated further as a
+	// result of the deployment process itself.
+	//
+	// new_specs must satisfy following sanity conditions:
+	// - inventory.CommonDeviceSpecs.Id must be set and be identical to the one in
+	//   old_specs.
+	NewSpecs             []byte                `protobuf:"bytes,2,opt,name=new_specs,json=newSpecs,proto3" json:"new_specs,omitempty"`
+	Actions              *DutDeploymentActions `protobuf:"bytes,3,opt,name=actions,proto3" json:"actions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *RedeployDutRequest) Reset()         { *m = RedeployDutRequest{} }
+func (m *RedeployDutRequest) String() string { return proto.CompactTextString(m) }
+func (*RedeployDutRequest) ProtoMessage()    {}
+func (*RedeployDutRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{2}
+}
+
+func (m *RedeployDutRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RedeployDutRequest.Unmarshal(m, b)
+}
+func (m *RedeployDutRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RedeployDutRequest.Marshal(b, m, deterministic)
+}
+func (m *RedeployDutRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RedeployDutRequest.Merge(m, src)
+}
+func (m *RedeployDutRequest) XXX_Size() int {
+	return xxx_messageInfo_RedeployDutRequest.Size(m)
+}
+func (m *RedeployDutRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RedeployDutRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RedeployDutRequest proto.InternalMessageInfo
+
+func (m *RedeployDutRequest) GetOldSpecs() []byte {
+	if m != nil {
+		return m.OldSpecs
+	}
+	return nil
+}
+
+func (m *RedeployDutRequest) GetNewSpecs() []byte {
+	if m != nil {
+		return m.NewSpecs
+	}
+	return nil
+}
+
+func (m *RedeployDutRequest) GetActions() *DutDeploymentActions {
+	if m != nil {
+		return m.Actions
+	}
+	return nil
+}
+
+type RedeployDutResponse struct {
+	// Opaque ID to be used for future GetDeploymentStatus requests.
+	DeploymentId         string   `protobuf:"bytes,1,opt,name=deployment_id,json=deploymentId,proto3" json:"deployment_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RedeployDutResponse) Reset()         { *m = RedeployDutResponse{} }
+func (m *RedeployDutResponse) String() string { return proto.CompactTextString(m) }
+func (*RedeployDutResponse) ProtoMessage()    {}
+func (*RedeployDutResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{3}
+}
+
+func (m *RedeployDutResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RedeployDutResponse.Unmarshal(m, b)
+}
+func (m *RedeployDutResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RedeployDutResponse.Marshal(b, m, deterministic)
+}
+func (m *RedeployDutResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RedeployDutResponse.Merge(m, src)
+}
+func (m *RedeployDutResponse) XXX_Size() int {
+	return xxx_messageInfo_RedeployDutResponse.Size(m)
+}
+func (m *RedeployDutResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RedeployDutResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RedeployDutResponse proto.InternalMessageInfo
+
+func (m *RedeployDutResponse) GetDeploymentId() string {
+	if m != nil {
+		return m.DeploymentId
+	}
+	return ""
+}
+
+type GetDeploymentStatusRequest struct {
+	// An opaque ID returned by earlier deployment RPCs.
+	DeploymentId         string   `protobuf:"bytes,1,opt,name=deployment_id,json=deploymentId,proto3" json:"deployment_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetDeploymentStatusRequest) Reset()         { *m = GetDeploymentStatusRequest{} }
+func (m *GetDeploymentStatusRequest) String() string { return proto.CompactTextString(m) }
+func (*GetDeploymentStatusRequest) ProtoMessage()    {}
+func (*GetDeploymentStatusRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{4}
+}
+
+func (m *GetDeploymentStatusRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetDeploymentStatusRequest.Unmarshal(m, b)
+}
+func (m *GetDeploymentStatusRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetDeploymentStatusRequest.Marshal(b, m, deterministic)
+}
+func (m *GetDeploymentStatusRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDeploymentStatusRequest.Merge(m, src)
+}
+func (m *GetDeploymentStatusRequest) XXX_Size() int {
+	return xxx_messageInfo_GetDeploymentStatusRequest.Size(m)
+}
+func (m *GetDeploymentStatusRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDeploymentStatusRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDeploymentStatusRequest proto.InternalMessageInfo
+
+func (m *GetDeploymentStatusRequest) GetDeploymentId() string {
+	if m != nil {
+		return m.DeploymentId
+	}
+	return ""
+}
+
+type GetDeploymentStatusResponse struct {
+	Status GetDeploymentStatusResponse_Status `protobuf:"varint,2,opt,name=status,proto3,enum=crosskylabadmin.fleet.GetDeploymentStatusResponse_Status" json:"status,omitempty"`
+	// URL for the inventory change for this DUT deployment, if any.
+	//
+	// This change only includes any explicit inventory changes made for
+	// deployment. Itj does not include any inventory changes that occur as a
+	// consequence of the automated repair attempt at the end of deployment.
+	ChangeUrl string `protobuf:"bytes,3,opt,name=change_url,json=changeUrl,proto3" json:"change_url,omitempty"`
+	// The Skylab task(s) created for the DUT deployment.
+	TaskUrls             []string `protobuf:"bytes,4,rep,name=task_urls,json=taskUrls,proto3" json:"task_urls,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *GetDeploymentStatusResponse) Reset()         { *m = GetDeploymentStatusResponse{} }
+func (m *GetDeploymentStatusResponse) String() string { return proto.CompactTextString(m) }
+func (*GetDeploymentStatusResponse) ProtoMessage()    {}
+func (*GetDeploymentStatusResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{5}
+}
+
+func (m *GetDeploymentStatusResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetDeploymentStatusResponse.Unmarshal(m, b)
+}
+func (m *GetDeploymentStatusResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetDeploymentStatusResponse.Marshal(b, m, deterministic)
+}
+func (m *GetDeploymentStatusResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDeploymentStatusResponse.Merge(m, src)
+}
+func (m *GetDeploymentStatusResponse) XXX_Size() int {
+	return xxx_messageInfo_GetDeploymentStatusResponse.Size(m)
+}
+func (m *GetDeploymentStatusResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDeploymentStatusResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDeploymentStatusResponse proto.InternalMessageInfo
+
+func (m *GetDeploymentStatusResponse) GetStatus() GetDeploymentStatusResponse_Status {
+	if m != nil {
+		return m.Status
+	}
+	return GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_INVALID
+}
+
+func (m *GetDeploymentStatusResponse) GetChangeUrl() string {
+	if m != nil {
+		return m.ChangeUrl
+	}
+	return ""
+}
+
+func (m *GetDeploymentStatusResponse) GetTaskUrls() []string {
+	if m != nil {
+		return m.TaskUrls
+	}
+	return nil
+}
+
+type DeleteDutRequest struct {
+	// inventory.CommonDeviceSpecs.Id for the DUT to delete.
+	DutId                string   `protobuf:"bytes,1,opt,name=dut_id,json=dutId,proto3" json:"dut_id,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteDutRequest) Reset()         { *m = DeleteDutRequest{} }
+func (m *DeleteDutRequest) String() string { return proto.CompactTextString(m) }
+func (*DeleteDutRequest) ProtoMessage()    {}
+func (*DeleteDutRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{6}
+}
+
+func (m *DeleteDutRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteDutRequest.Unmarshal(m, b)
+}
+func (m *DeleteDutRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteDutRequest.Marshal(b, m, deterministic)
+}
+func (m *DeleteDutRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteDutRequest.Merge(m, src)
+}
+func (m *DeleteDutRequest) XXX_Size() int {
+	return xxx_messageInfo_DeleteDutRequest.Size(m)
+}
+func (m *DeleteDutRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteDutRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteDutRequest proto.InternalMessageInfo
+
+func (m *DeleteDutRequest) GetDutId() string {
+	if m != nil {
+		return m.DutId
+	}
+	return ""
+}
+
+type DeleteDutResponse struct {
+	// URL for the inventory change that removed the requested DUT.
+	ChangeUrl            string   `protobuf:"bytes,1,opt,name=change_url,json=changeUrl,proto3" json:"change_url,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DeleteDutResponse) Reset()         { *m = DeleteDutResponse{} }
+func (m *DeleteDutResponse) String() string { return proto.CompactTextString(m) }
+func (*DeleteDutResponse) ProtoMessage()    {}
+func (*DeleteDutResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{7}
+}
+
+func (m *DeleteDutResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteDutResponse.Unmarshal(m, b)
+}
+func (m *DeleteDutResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteDutResponse.Marshal(b, m, deterministic)
+}
+func (m *DeleteDutResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteDutResponse.Merge(m, src)
+}
+func (m *DeleteDutResponse) XXX_Size() int {
+	return xxx_messageInfo_DeleteDutResponse.Size(m)
+}
+func (m *DeleteDutResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteDutResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteDutResponse proto.InternalMessageInfo
+
+func (m *DeleteDutResponse) GetChangeUrl() string {
+	if m != nil {
+		return m.ChangeUrl
+	}
+	return ""
+}
+
+type DutDeploymentActions struct {
+	// Stage the requested Chrome OS image on the USB attached to servo and DUT.
+	StageImageToUsb bool `protobuf:"varint,1,opt,name=stage_image_to_usb,json=stageImageToUsb,proto3" json:"stage_image_to_usb,omitempty"`
+	// Install DUT firmware from the image staged on USB.
+	InstallFirmware bool `protobuf:"varint,2,opt,name=install_firmware,json=installFirmware,proto3" json:"install_firmware,omitempty"`
+	// Install ChromeOS test image from the image staged on USB.
+	InstallTestImage     bool     `protobuf:"varint,3,opt,name=install_test_image,json=installTestImage,proto3" json:"install_test_image,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *DutDeploymentActions) Reset()         { *m = DutDeploymentActions{} }
+func (m *DutDeploymentActions) String() string { return proto.CompactTextString(m) }
+func (*DutDeploymentActions) ProtoMessage()    {}
+func (*DutDeploymentActions) Descriptor() ([]byte, []int) {
+	return fileDescriptor_6ebb6f101f23e24c, []int{8}
+}
+
+func (m *DutDeploymentActions) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DutDeploymentActions.Unmarshal(m, b)
+}
+func (m *DutDeploymentActions) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DutDeploymentActions.Marshal(b, m, deterministic)
+}
+func (m *DutDeploymentActions) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DutDeploymentActions.Merge(m, src)
+}
+func (m *DutDeploymentActions) XXX_Size() int {
+	return xxx_messageInfo_DutDeploymentActions.Size(m)
+}
+func (m *DutDeploymentActions) XXX_DiscardUnknown() {
+	xxx_messageInfo_DutDeploymentActions.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DutDeploymentActions proto.InternalMessageInfo
+
+func (m *DutDeploymentActions) GetStageImageToUsb() bool {
+	if m != nil {
+		return m.StageImageToUsb
+	}
+	return false
+}
+
+func (m *DutDeploymentActions) GetInstallFirmware() bool {
+	if m != nil {
+		return m.InstallFirmware
+	}
+	return false
+}
+
+func (m *DutDeploymentActions) GetInstallTestImage() bool {
+	if m != nil {
+		return m.InstallTestImage
+	}
+	return false
 }
 
 type EnsurePoolHealthyRequest struct {
@@ -89,7 +573,7 @@ func (m *EnsurePoolHealthyRequest) Reset()         { *m = EnsurePoolHealthyReque
 func (m *EnsurePoolHealthyRequest) String() string { return proto.CompactTextString(m) }
 func (*EnsurePoolHealthyRequest) ProtoMessage()    {}
 func (*EnsurePoolHealthyRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{9}
 }
 
 func (m *EnsurePoolHealthyRequest) XXX_Unmarshal(b []byte) error {
@@ -158,7 +642,7 @@ func (m *EnsurePoolHealthyRequest_Options) Reset()         { *m = EnsurePoolHeal
 func (m *EnsurePoolHealthyRequest_Options) String() string { return proto.CompactTextString(m) }
 func (*EnsurePoolHealthyRequest_Options) ProtoMessage()    {}
 func (*EnsurePoolHealthyRequest_Options) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{0, 0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{9, 0}
 }
 
 func (m *EnsurePoolHealthyRequest_Options) XXX_Unmarshal(b []byte) error {
@@ -221,7 +705,7 @@ func (m *EnsurePoolHealthyResponse) Reset()         { *m = EnsurePoolHealthyResp
 func (m *EnsurePoolHealthyResponse) String() string { return proto.CompactTextString(m) }
 func (*EnsurePoolHealthyResponse) ProtoMessage()    {}
 func (*EnsurePoolHealthyResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{1}
+	return fileDescriptor_6ebb6f101f23e24c, []int{10}
 }
 
 func (m *EnsurePoolHealthyResponse) XXX_Unmarshal(b []byte) error {
@@ -301,7 +785,7 @@ func (m *EnsurePoolHealthyForAllModelsRequest) Reset()         { *m = EnsurePool
 func (m *EnsurePoolHealthyForAllModelsRequest) String() string { return proto.CompactTextString(m) }
 func (*EnsurePoolHealthyForAllModelsRequest) ProtoMessage()    {}
 func (*EnsurePoolHealthyForAllModelsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{2}
+	return fileDescriptor_6ebb6f101f23e24c, []int{11}
 }
 
 func (m *EnsurePoolHealthyForAllModelsRequest) XXX_Unmarshal(b []byte) error {
@@ -355,7 +839,7 @@ func (m *EnsurePoolHealthyForAllModelsResponse) Reset()         { *m = EnsurePoo
 func (m *EnsurePoolHealthyForAllModelsResponse) String() string { return proto.CompactTextString(m) }
 func (*EnsurePoolHealthyForAllModelsResponse) ProtoMessage()    {}
 func (*EnsurePoolHealthyForAllModelsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{3}
+	return fileDescriptor_6ebb6f101f23e24c, []int{12}
 }
 
 func (m *EnsurePoolHealthyForAllModelsResponse) XXX_Unmarshal(b []byte) error {
@@ -406,7 +890,7 @@ func (m *ResizePoolRequest) Reset()         { *m = ResizePoolRequest{} }
 func (m *ResizePoolRequest) String() string { return proto.CompactTextString(m) }
 func (*ResizePoolRequest) ProtoMessage()    {}
 func (*ResizePoolRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{4}
+	return fileDescriptor_6ebb6f101f23e24c, []int{13}
 }
 
 func (m *ResizePoolRequest) XXX_Unmarshal(b []byte) error {
@@ -473,7 +957,7 @@ func (m *ResizePoolResponse) Reset()         { *m = ResizePoolResponse{} }
 func (m *ResizePoolResponse) String() string { return proto.CompactTextString(m) }
 func (*ResizePoolResponse) ProtoMessage()    {}
 func (*ResizePoolResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{5}
+	return fileDescriptor_6ebb6f101f23e24c, []int{14}
 }
 
 func (m *ResizePoolResponse) XXX_Unmarshal(b []byte) error {
@@ -519,7 +1003,7 @@ func (m *DutSelector) Reset()         { *m = DutSelector{} }
 func (m *DutSelector) String() string { return proto.CompactTextString(m) }
 func (*DutSelector) ProtoMessage()    {}
 func (*DutSelector) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{6}
+	return fileDescriptor_6ebb6f101f23e24c, []int{15}
 }
 
 func (m *DutSelector) XXX_Unmarshal(b []byte) error {
@@ -561,7 +1045,7 @@ func (m *PoolStatus) Reset()         { *m = PoolStatus{} }
 func (m *PoolStatus) String() string { return proto.CompactTextString(m) }
 func (*PoolStatus) ProtoMessage()    {}
 func (*PoolStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{7}
+	return fileDescriptor_6ebb6f101f23e24c, []int{16}
 }
 
 func (m *PoolStatus) XXX_Unmarshal(b []byte) error {
@@ -613,7 +1097,7 @@ func (m *PoolChange) Reset()         { *m = PoolChange{} }
 func (m *PoolChange) String() string { return proto.CompactTextString(m) }
 func (*PoolChange) ProtoMessage()    {}
 func (*PoolChange) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{8}
+	return fileDescriptor_6ebb6f101f23e24c, []int{17}
 }
 
 func (m *PoolChange) XXX_Unmarshal(b []byte) error {
@@ -667,7 +1151,7 @@ func (m *RemoveDutsFromDronesRequest) Reset()         { *m = RemoveDutsFromDrone
 func (m *RemoveDutsFromDronesRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveDutsFromDronesRequest) ProtoMessage()    {}
 func (*RemoveDutsFromDronesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{9}
+	return fileDescriptor_6ebb6f101f23e24c, []int{18}
 }
 
 func (m *RemoveDutsFromDronesRequest) XXX_Unmarshal(b []byte) error {
@@ -710,7 +1194,7 @@ func (m *RemoveDutsFromDronesRequest_Item) Reset()         { *m = RemoveDutsFrom
 func (m *RemoveDutsFromDronesRequest_Item) String() string { return proto.CompactTextString(m) }
 func (*RemoveDutsFromDronesRequest_Item) ProtoMessage()    {}
 func (*RemoveDutsFromDronesRequest_Item) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{9, 0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{18, 0}
 }
 
 func (m *RemoveDutsFromDronesRequest_Item) XXX_Unmarshal(b []byte) error {
@@ -762,7 +1246,7 @@ func (m *RemoveDutsFromDronesResponse) Reset()         { *m = RemoveDutsFromDron
 func (m *RemoveDutsFromDronesResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveDutsFromDronesResponse) ProtoMessage()    {}
 func (*RemoveDutsFromDronesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{10}
+	return fileDescriptor_6ebb6f101f23e24c, []int{19}
 }
 
 func (m *RemoveDutsFromDronesResponse) XXX_Unmarshal(b []byte) error {
@@ -811,7 +1295,7 @@ func (m *RemoveDutsFromDronesResponse_Item) Reset()         { *m = RemoveDutsFro
 func (m *RemoveDutsFromDronesResponse_Item) String() string { return proto.CompactTextString(m) }
 func (*RemoveDutsFromDronesResponse_Item) ProtoMessage()    {}
 func (*RemoveDutsFromDronesResponse_Item) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{10, 0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{19, 0}
 }
 
 func (m *RemoveDutsFromDronesResponse_Item) XXX_Unmarshal(b []byte) error {
@@ -858,7 +1342,7 @@ func (m *AssignDutsToDronesRequest) Reset()         { *m = AssignDutsToDronesReq
 func (m *AssignDutsToDronesRequest) String() string { return proto.CompactTextString(m) }
 func (*AssignDutsToDronesRequest) ProtoMessage()    {}
 func (*AssignDutsToDronesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{11}
+	return fileDescriptor_6ebb6f101f23e24c, []int{20}
 }
 
 func (m *AssignDutsToDronesRequest) XXX_Unmarshal(b []byte) error {
@@ -903,7 +1387,7 @@ func (m *AssignDutsToDronesRequest_Item) Reset()         { *m = AssignDutsToDron
 func (m *AssignDutsToDronesRequest_Item) String() string { return proto.CompactTextString(m) }
 func (*AssignDutsToDronesRequest_Item) ProtoMessage()    {}
 func (*AssignDutsToDronesRequest_Item) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{11, 0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{20, 0}
 }
 
 func (m *AssignDutsToDronesRequest_Item) XXX_Unmarshal(b []byte) error {
@@ -955,7 +1439,7 @@ func (m *AssignDutsToDronesResponse) Reset()         { *m = AssignDutsToDronesRe
 func (m *AssignDutsToDronesResponse) String() string { return proto.CompactTextString(m) }
 func (*AssignDutsToDronesResponse) ProtoMessage()    {}
 func (*AssignDutsToDronesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{12}
+	return fileDescriptor_6ebb6f101f23e24c, []int{21}
 }
 
 func (m *AssignDutsToDronesResponse) XXX_Unmarshal(b []byte) error {
@@ -1004,7 +1488,7 @@ func (m *AssignDutsToDronesResponse_Item) Reset()         { *m = AssignDutsToDro
 func (m *AssignDutsToDronesResponse_Item) String() string { return proto.CompactTextString(m) }
 func (*AssignDutsToDronesResponse_Item) ProtoMessage()    {}
 func (*AssignDutsToDronesResponse_Item) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{12, 0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{21, 0}
 }
 
 func (m *AssignDutsToDronesResponse_Item) XXX_Unmarshal(b []byte) error {
@@ -1050,7 +1534,7 @@ func (m *ListServersRequest) Reset()         { *m = ListServersRequest{} }
 func (m *ListServersRequest) String() string { return proto.CompactTextString(m) }
 func (*ListServersRequest) ProtoMessage()    {}
 func (*ListServersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{13}
+	return fileDescriptor_6ebb6f101f23e24c, []int{22}
 }
 
 func (m *ListServersRequest) XXX_Unmarshal(b []byte) error {
@@ -1090,7 +1574,7 @@ func (m *ListServersRequest_Filter) Reset()         { *m = ListServersRequest_Fi
 func (m *ListServersRequest_Filter) String() string { return proto.CompactTextString(m) }
 func (*ListServersRequest_Filter) ProtoMessage()    {}
 func (*ListServersRequest_Filter) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{13, 0}
+	return fileDescriptor_6ebb6f101f23e24c, []int{22, 0}
 }
 
 func (m *ListServersRequest_Filter) XXX_Unmarshal(b []byte) error {
@@ -1129,7 +1613,7 @@ func (m *ListServersResponse) Reset()         { *m = ListServersResponse{} }
 func (m *ListServersResponse) String() string { return proto.CompactTextString(m) }
 func (*ListServersResponse) ProtoMessage()    {}
 func (*ListServersResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{14}
+	return fileDescriptor_6ebb6f101f23e24c, []int{23}
 }
 
 func (m *ListServersResponse) XXX_Unmarshal(b []byte) error {
@@ -1177,7 +1661,7 @@ func (m *UpdateDutLabelsRequest) Reset()         { *m = UpdateDutLabelsRequest{}
 func (m *UpdateDutLabelsRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateDutLabelsRequest) ProtoMessage()    {}
 func (*UpdateDutLabelsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{15}
+	return fileDescriptor_6ebb6f101f23e24c, []int{24}
 }
 
 func (m *UpdateDutLabelsRequest) XXX_Unmarshal(b []byte) error {
@@ -1233,7 +1717,7 @@ func (m *UpdateDutLabelsResponse) Reset()         { *m = UpdateDutLabelsResponse
 func (m *UpdateDutLabelsResponse) String() string { return proto.CompactTextString(m) }
 func (*UpdateDutLabelsResponse) ProtoMessage()    {}
 func (*UpdateDutLabelsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_6ebb6f101f23e24c, []int{16}
+	return fileDescriptor_6ebb6f101f23e24c, []int{25}
 }
 
 func (m *UpdateDutLabelsResponse) XXX_Unmarshal(b []byte) error {
@@ -1262,7 +1746,17 @@ func (m *UpdateDutLabelsResponse) GetUrl() string {
 }
 
 func init() {
+	proto.RegisterEnum("crosskylabadmin.fleet.GetDeploymentStatusResponse_Status", GetDeploymentStatusResponse_Status_name, GetDeploymentStatusResponse_Status_value)
 	proto.RegisterEnum("crosskylabadmin.fleet.EnsurePoolHealthyResponse_Failure", EnsurePoolHealthyResponse_Failure_name, EnsurePoolHealthyResponse_Failure_value)
+	proto.RegisterType((*DeployDutRequest)(nil), "crosskylabadmin.fleet.DeployDutRequest")
+	proto.RegisterType((*DeployDutResponse)(nil), "crosskylabadmin.fleet.DeployDutResponse")
+	proto.RegisterType((*RedeployDutRequest)(nil), "crosskylabadmin.fleet.RedeployDutRequest")
+	proto.RegisterType((*RedeployDutResponse)(nil), "crosskylabadmin.fleet.RedeployDutResponse")
+	proto.RegisterType((*GetDeploymentStatusRequest)(nil), "crosskylabadmin.fleet.GetDeploymentStatusRequest")
+	proto.RegisterType((*GetDeploymentStatusResponse)(nil), "crosskylabadmin.fleet.GetDeploymentStatusResponse")
+	proto.RegisterType((*DeleteDutRequest)(nil), "crosskylabadmin.fleet.DeleteDutRequest")
+	proto.RegisterType((*DeleteDutResponse)(nil), "crosskylabadmin.fleet.DeleteDutResponse")
+	proto.RegisterType((*DutDeploymentActions)(nil), "crosskylabadmin.fleet.DutDeploymentActions")
 	proto.RegisterType((*EnsurePoolHealthyRequest)(nil), "crosskylabadmin.fleet.EnsurePoolHealthyRequest")
 	proto.RegisterType((*EnsurePoolHealthyRequest_Options)(nil), "crosskylabadmin.fleet.EnsurePoolHealthyRequest.Options")
 	proto.RegisterType((*EnsurePoolHealthyResponse)(nil), "crosskylabadmin.fleet.EnsurePoolHealthyResponse")
@@ -1294,80 +1788,106 @@ func init() {
 }
 
 var fileDescriptor_6ebb6f101f23e24c = []byte{
-	// 1168 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x57, 0xdd, 0x6e, 0x1a, 0xc7,
-	0x17, 0xff, 0x2f, 0x98, 0x0f, 0x1f, 0x1c, 0x87, 0x4c, 0x12, 0x07, 0x6f, 0xfe, 0x56, 0x9d, 0x4d,
-	0x23, 0x91, 0x7e, 0x40, 0x42, 0x94, 0xc6, 0x6d, 0x22, 0x55, 0x34, 0x40, 0x41, 0xb2, 0x21, 0x1d,
-	0xa0, 0x95, 0x73, 0xb3, 0x5a, 0xb3, 0x63, 0x7b, 0x95, 0xdd, 0x1d, 0xba, 0x33, 0x4b, 0x82, 0x6f,
-	0xfa, 0x00, 0xbd, 0xed, 0x55, 0x6f, 0xfa, 0x1a, 0x55, 0xd5, 0xcb, 0x56, 0xaa, 0xfa, 0x02, 0x7d,
-	0x9d, 0x6a, 0x67, 0x67, 0x31, 0xc6, 0xac, 0x0d, 0x69, 0xda, 0x3b, 0xe6, 0xcc, 0x39, 0xbf, 0xf3,
-	0xf1, 0x3b, 0xe7, 0xcc, 0x02, 0xcf, 0x2c, 0xf7, 0xd0, 0x33, 0xca, 0xc6, 0x70, 0x48, 0xdc, 0x23,
-	0xcb, 0x25, 0xe5, 0x81, 0x47, 0x19, 0x7b, 0x35, 0xb6, 0x8d, 0x03, 0xc3, 0x74, 0x2c, 0xb7, 0x6c,
-	0x0c, 0xad, 0xf2, 0xa1, 0x4d, 0x08, 0x2f, 0x8f, 0x1e, 0x96, 0x2d, 0x77, 0x44, 0x5c, 0x4e, 0xbd,
-	0x71, 0x69, 0xe8, 0x51, 0x4e, 0xd1, 0xcd, 0x19, 0xed, 0x92, 0xd0, 0x54, 0x3f, 0x5d, 0x0a, 0x74,
-	0x40, 0x1d, 0x87, 0xba, 0x21, 0xa2, 0xf6, 0x7b, 0x02, 0x0a, 0x75, 0x97, 0xf9, 0x1e, 0x79, 0x41,
-	0xa9, 0xdd, 0x24, 0x86, 0xcd, 0x8f, 0xc7, 0x98, 0x7c, 0xeb, 0x13, 0xc6, 0x51, 0x1d, 0xd6, 0x4c,
-	0x9f, 0xeb, 0x8c, 0xd8, 0x64, 0xc0, 0xa9, 0x57, 0x50, 0xb6, 0x95, 0x62, 0xae, 0xa2, 0x95, 0xe6,
-	0x46, 0x51, 0xaa, 0xf9, 0xbc, 0x2b, 0x35, 0x71, 0xce, 0x3c, 0x3d, 0xa0, 0xf7, 0x20, 0xc7, 0x0d,
-	0xef, 0x88, 0x70, 0x7d, 0x48, 0xa9, 0x5d, 0x48, 0x6c, 0x2b, 0xc5, 0x55, 0x0c, 0xa1, 0x28, 0xf0,
-	0x8a, 0xb6, 0x00, 0xd8, 0xd0, 0xf0, 0x48, 0x78, 0x9f, 0x14, 0xf7, 0xab, 0x42, 0x22, 0xae, 0x3f,
-	0x02, 0xe4, 0x18, 0x6f, 0x74, 0xdf, 0x3d, 0x0e, 0xc3, 0xd3, 0x4d, 0x9f, 0xb3, 0xc2, 0xca, 0xb6,
-	0x52, 0x4c, 0xe1, 0xbc, 0x63, 0xbc, 0xe9, 0x47, 0x17, 0x35, 0x9f, 0x33, 0xf4, 0x15, 0x64, 0xe8,
-	0x90, 0x5b, 0xd4, 0x65, 0x85, 0x94, 0x88, 0xf7, 0x49, 0x4c, 0xbc, 0x71, 0x69, 0x97, 0x3a, 0xa1,
-	0x39, 0x8e, 0x70, 0xd4, 0x3b, 0x90, 0x91, 0x32, 0xb4, 0x01, 0x69, 0xd3, 0x1b, 0x7b, 0xbe, 0x2b,
-	0x8a, 0x91, 0xc5, 0xf2, 0xa4, 0xfd, 0x9a, 0x84, 0xcd, 0x39, 0x80, 0x6c, 0x48, 0x5d, 0x46, 0x50,
-	0x0f, 0xb2, 0x87, 0x86, 0x65, 0xfb, 0x1e, 0x61, 0x05, 0x65, 0x3b, 0x59, 0x5c, 0xaf, 0xec, 0x2c,
-	0x1e, 0x54, 0x88, 0x51, 0x6a, 0x84, 0x00, 0x78, 0x82, 0x84, 0x3a, 0x80, 0xa6, 0xea, 0xaa, 0x33,
-	0x6e, 0x70, 0x9f, 0x89, 0xf2, 0xe6, 0x2a, 0x77, 0x62, 0xf0, 0x03, 0xe4, 0xae, 0x50, 0xc4, 0xf9,
-	0x53, 0x06, 0x42, 0x09, 0xda, 0x83, 0x6b, 0xa7, 0x3c, 0x44, 0x78, 0xc9, 0x45, 0xf1, 0xae, 0x4e,
-	0x18, 0x93, 0x70, 0x79, 0x48, 0xfa, 0x9e, 0x2d, 0x88, 0x5a, 0xc5, 0xc1, 0x4f, 0xf4, 0x14, 0x32,
-	0x83, 0x63, 0xc3, 0x3d, 0x22, 0x01, 0x37, 0xc9, 0x4b, 0x60, 0x9f, 0x0b, 0x4d, 0x1c, 0x59, 0x68,
-	0x2f, 0x21, 0x23, 0x6b, 0x80, 0xae, 0xc3, 0xd5, 0x46, 0xb5, 0xb5, 0xdb, 0xc7, 0x75, 0xbd, 0xd5,
-	0xfe, 0xba, 0xba, 0xdb, 0xaa, 0xe5, 0xff, 0x87, 0x6e, 0xc3, 0xad, 0x5e, 0xa7, 0xa3, 0xef, 0x55,
-	0xdb, 0xfb, 0x7a, 0xbf, 0xdd, 0xac, 0x57, 0x77, 0x7b, 0xcd, 0x7d, 0xbd, 0xd6, 0xef, 0x75, 0xf3,
-	0x0a, 0xda, 0x82, 0xcd, 0x76, 0xa7, 0xa7, 0xd7, 0xdb, 0x9d, 0xfe, 0x97, 0x4d, 0x3d, 0xba, 0xec,
-	0xbe, 0xa8, 0xe2, 0x7a, 0x37, 0x9f, 0xd0, 0x7e, 0x50, 0xe0, 0xfd, 0x73, 0xa5, 0x6f, 0x50, 0xaf,
-	0x6a, 0xdb, 0x7b, 0xd4, 0x24, 0x36, 0x8b, 0x46, 0x62, 0xa6, 0x97, 0x95, 0x4b, 0x7a, 0x39, 0xb1,
-	0x58, 0x2f, 0x27, 0xe7, 0xf7, 0xb2, 0xf6, 0x7d, 0x02, 0xee, 0x5d, 0x12, 0x96, 0xec, 0xb0, 0x21,
-	0xac, 0x39, 0x81, 0x44, 0xf7, 0x08, 0xf3, 0x6d, 0x2e, 0xba, 0x2c, 0x57, 0xd9, 0x5b, 0xb4, 0xcb,
-	0xe6, 0x61, 0x96, 0xc4, 0x11, 0x0b, 0xbc, 0xba, 0xcb, 0xbd, 0x31, 0xce, 0x39, 0xa7, 0x12, 0x75,
-	0x08, 0xf9, 0x59, 0x85, 0x80, 0xf1, 0x57, 0x64, 0x2c, 0xab, 0x12, 0xfc, 0x44, 0x0d, 0x48, 0x8d,
-	0x0c, 0xdb, 0x27, 0xb2, 0x2d, 0x1f, 0x2c, 0xdb, 0xf6, 0x38, 0x34, 0xff, 0x2c, 0xb1, 0xa3, 0x68,
-	0xbf, 0x29, 0x70, 0x0d, 0x13, 0x66, 0x9d, 0x08, 0xc5, 0xff, 0x7a, 0x49, 0x15, 0x21, 0x7f, 0x66,
-	0xda, 0xac, 0x13, 0x22, 0x79, 0x5b, 0x9f, 0x1a, 0x24, 0xeb, 0x84, 0xcc, 0xb4, 0xc0, 0xca, 0x4c,
-	0x0b, 0x68, 0x03, 0x40, 0xd3, 0x59, 0x48, 0x02, 0xe5, 0xb0, 0x28, 0x73, 0x87, 0x25, 0xb1, 0xf4,
-	0xb0, 0xdc, 0x85, 0xdc, 0x54, 0xaa, 0xe8, 0x06, 0xa4, 0x04, 0x77, 0x12, 0x3f, 0x3c, 0x68, 0x75,
-	0x80, 0xa9, 0x71, 0x45, 0xb0, 0x22, 0x92, 0x52, 0x44, 0x52, 0xe2, 0x37, 0xba, 0x0b, 0x57, 0xa2,
-	0x46, 0x1d, 0x50, 0xdf, 0xe5, 0xa2, 0x2e, 0x29, 0xbc, 0x26, 0x85, 0xcf, 0x03, 0x99, 0xb6, 0x1f,
-	0xc2, 0x84, 0x21, 0xa0, 0x9b, 0x90, 0x0e, 0xf8, 0xb0, 0xcc, 0xc8, 0x97, 0xe9, 0xf3, 0x96, 0x89,
-	0x36, 0x21, 0x4b, 0x6d, 0x73, 0xba, 0xb8, 0x19, 0x6a, 0x9b, 0xa2, 0xb2, 0x9b, 0x90, 0x75, 0xc9,
-	0xeb, 0xe9, 0xe5, 0x9f, 0x71, 0xc9, 0x6b, 0x51, 0xab, 0x9f, 0x15, 0xb8, 0x8d, 0x89, 0x43, 0x47,
-	0x24, 0x98, 0x87, 0x86, 0x47, 0x9d, 0x9a, 0x47, 0x5d, 0x32, 0x19, 0xc7, 0x2e, 0x64, 0xbd, 0xe0,
-	0xda, 0xb0, 0x99, 0x6c, 0xf9, 0xb8, 0x6d, 0x7f, 0x01, 0x4a, 0xa9, 0xc5, 0x89, 0x83, 0x27, 0x40,
-	0x6a, 0x0d, 0x56, 0x02, 0x49, 0x5c, 0x26, 0xf7, 0x60, 0xdd, 0x0c, 0xcc, 0xf5, 0x63, 0xca, 0xb8,
-	0x6b, 0x38, 0x44, 0xe6, 0x73, 0x45, 0x48, 0x9b, 0x52, 0xa8, 0xfd, 0xa9, 0xc0, 0xff, 0xe7, 0x3b,
-	0x95, 0x8c, 0x63, 0xc8, 0x08, 0x97, 0xc4, 0x94, 0xa1, 0xef, 0x2c, 0x15, 0xba, 0x1c, 0x52, 0x11,
-	0x7b, 0x04, 0x14, 0x75, 0x51, 0x62, 0xd2, 0x45, 0xef, 0x28, 0x99, 0x5f, 0x14, 0xd8, 0xac, 0x32,
-	0x66, 0x1d, 0xb9, 0x41, 0x18, 0x3d, 0x7a, 0x96, 0x85, 0x6f, 0x20, 0x67, 0x88, 0x4b, 0x87, 0xb8,
-	0x3c, 0x22, 0xe2, 0x71, 0x4c, 0x36, 0xb1, 0x30, 0x61, 0x2a, 0xd3, 0x48, 0xef, 0x28, 0xf8, 0x3f,
-	0x14, 0x50, 0xe7, 0x79, 0x9d, 0xf0, 0x90, 0x0d, 0x7d, 0x4e, 0x88, 0xf8, 0x64, 0x89, 0xd0, 0xa7,
-	0x69, 0x98, 0xe0, 0xfc, 0x6b, 0x3c, 0xfc, 0xa4, 0x00, 0xda, 0xb5, 0x18, 0xef, 0x12, 0x6f, 0x44,
-	0xbc, 0x09, 0x01, 0x4d, 0x48, 0x1f, 0x5a, 0x36, 0x27, 0xd1, 0xf6, 0x8b, 0x5b, 0xb3, 0xe7, 0x4d,
-	0x4b, 0x0d, 0x61, 0x87, 0xa5, 0xbd, 0xfa, 0x39, 0xa4, 0x43, 0x09, 0x7a, 0x0c, 0x2b, 0x1e, 0xb5,
-	0xc3, 0x75, 0xb0, 0x1e, 0xbb, 0x7b, 0x42, 0x34, 0x4c, 0x6d, 0x82, 0x85, 0xba, 0xd6, 0x86, 0xeb,
-	0x67, 0xbc, 0xc8, 0x22, 0x3f, 0x81, 0x0c, 0x0b, 0x45, 0xb2, 0xc6, 0x5b, 0x17, 0x03, 0x46, 0xda,
-	0x9a, 0x0e, 0x1b, 0xfd, 0xa1, 0x69, 0xf0, 0xa0, 0xff, 0x77, 0x8d, 0x83, 0xa9, 0xa7, 0x38, 0xa6,
-	0x92, 0x1b, 0x90, 0xb6, 0x85, 0x9e, 0xa8, 0xe0, 0x1a, 0x96, 0xa7, 0x40, 0xee, 0x11, 0x83, 0x51,
-	0x57, 0xee, 0x18, 0x79, 0xd2, 0x3e, 0x84, 0x5b, 0xe7, 0x1c, 0xc4, 0xed, 0xe4, 0xca, 0x5f, 0x69,
-	0x58, 0x6d, 0x45, 0x1f, 0xe5, 0x68, 0x04, 0xd7, 0xce, 0x3d, 0x5c, 0xa8, 0xbc, 0xe4, 0xe7, 0xa6,
-	0xba, 0xf4, 0x9b, 0x88, 0x7e, 0x54, 0x60, 0xeb, 0xc2, 0x27, 0x1c, 0x3d, 0x7d, 0xbb, 0x87, 0x3f,
-	0x0c, 0xe8, 0xd9, 0x3f, 0xf9, 0x6a, 0x40, 0x06, 0xc0, 0xe9, 0xf3, 0x86, 0x8a, 0xb1, 0x3b, 0x6d,
-	0xe6, 0x1d, 0x57, 0xef, 0x2f, 0xa0, 0x29, 0x5d, 0x7c, 0x07, 0x37, 0xe6, 0xed, 0x44, 0x54, 0x59,
-	0x7e, 0xf7, 0xab, 0x8f, 0xde, 0x62, 0xe9, 0xa2, 0x31, 0xa0, 0xf3, 0xbb, 0x00, 0x3d, 0x58, 0x76,
-	0xe3, 0xa9, 0x0f, 0x97, 0x5e, 0x34, 0xc8, 0x84, 0xdc, 0xd4, 0x7c, 0xa1, 0xfb, 0x0b, 0x4f, 0xba,
-	0xfa, 0xc1, 0x22, 0xaa, 0x93, 0xcf, 0xc9, 0xab, 0x33, 0x43, 0x81, 0x3e, 0x8e, 0x31, 0x9f, 0x3f,
-	0x9d, 0x6a, 0x69, 0x51, 0xf5, 0xd0, 0xe3, 0x17, 0x99, 0x97, 0x29, 0xa1, 0x70, 0x90, 0x16, 0x7f,
-	0x4c, 0x1f, 0xfd, 0x1d, 0x00, 0x00, 0xff, 0xff, 0xbd, 0x8d, 0x96, 0x24, 0x2a, 0x0f, 0x00, 0x00,
+	// 1583 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x58, 0x5b, 0x4f, 0x1b, 0xcf,
+	0x15, 0xef, 0xda, 0xe0, 0xcb, 0x31, 0x01, 0x33, 0xe4, 0x02, 0x26, 0x28, 0xb0, 0x69, 0x54, 0xd3,
+	0xa4, 0x26, 0x71, 0x94, 0x86, 0x5c, 0xa4, 0xca, 0xc5, 0x4b, 0x40, 0x02, 0x4c, 0xd6, 0x76, 0x2b,
+	0xf2, 0xd0, 0xd5, 0xe2, 0x1d, 0x60, 0x95, 0xf5, 0x8e, 0xbb, 0x33, 0x0b, 0x71, 0x54, 0xa9, 0x1f,
+	0xa0, 0xaf, 0xed, 0x43, 0xab, 0x4a, 0xfd, 0x1a, 0x55, 0xd5, 0xc7, 0x56, 0x8a, 0xfa, 0x95, 0xfa,
+	0x52, 0xcd, 0xec, 0xac, 0x59, 0x9b, 0x5d, 0xb0, 0x93, 0xf4, 0xff, 0x82, 0xbc, 0x67, 0xce, 0xfc,
+	0xce, 0xfd, 0xcc, 0x39, 0xc0, 0x5b, 0xdb, 0x3d, 0xf1, 0xcc, 0x0d, 0xb3, 0xd7, 0xc3, 0xee, 0xa9,
+	0xed, 0xe2, 0x8d, 0x8e, 0x47, 0x28, 0xfd, 0xd8, 0x77, 0xcc, 0x63, 0xd3, 0xea, 0xda, 0xee, 0x86,
+	0xd9, 0xb3, 0x37, 0x4e, 0x1c, 0x8c, 0xd9, 0xc6, 0xf9, 0xb3, 0x0d, 0xdb, 0x3d, 0xc7, 0x2e, 0x23,
+	0x5e, 0xbf, 0xd2, 0xf3, 0x08, 0x23, 0xe8, 0xce, 0x08, 0x77, 0x45, 0x70, 0x96, 0x5e, 0x4d, 0x04,
+	0xda, 0x21, 0xdd, 0x2e, 0x71, 0x03, 0x44, 0xf5, 0x1c, 0x8a, 0x75, 0xdc, 0x73, 0x48, 0xbf, 0xee,
+	0x33, 0x1d, 0xff, 0xd6, 0xc7, 0x94, 0xa1, 0x65, 0xc8, 0xbb, 0xf8, 0xc2, 0xa0, 0x3d, 0xdc, 0xa1,
+	0x8b, 0xca, 0xaa, 0x52, 0x9e, 0xd1, 0x73, 0x2e, 0xbe, 0x68, 0xf2, 0x6f, 0xa4, 0x41, 0xd6, 0xec,
+	0x30, 0x9b, 0xb8, 0x74, 0x31, 0xb5, 0xaa, 0x94, 0x0b, 0xd5, 0xc7, 0x95, 0x58, 0xa5, 0x2a, 0x75,
+	0x9f, 0x05, 0xc8, 0x5d, 0xec, 0xb2, 0x5a, 0x70, 0x45, 0x0f, 0xef, 0xaa, 0x9b, 0x30, 0x1f, 0x91,
+	0x4b, 0x7b, 0xc4, 0xa5, 0x18, 0x3d, 0x84, 0x5b, 0xd6, 0xe0, 0x8a, 0x61, 0x5b, 0x42, 0x78, 0x5e,
+	0x9f, 0xb9, 0x24, 0xee, 0x5a, 0xea, 0x9f, 0x14, 0x40, 0x3a, 0xb6, 0x62, 0x94, 0x26, 0x8e, 0x35,
+	0xac, 0x34, 0x71, 0xac, 0x40, 0xe9, 0x21, 0x8b, 0x52, 0xc9, 0x16, 0xa5, 0xbf, 0xc1, 0xa2, 0xd7,
+	0xb0, 0x30, 0xa4, 0xd6, 0x24, 0x36, 0xd5, 0xa0, 0xf4, 0x0e, 0x47, 0xc0, 0x9b, 0xcc, 0x64, 0x3e,
+	0x0d, 0x4d, 0x1b, 0x0b, 0xe2, 0x4b, 0x0a, 0x96, 0x63, 0x31, 0xa4, 0x1e, 0xef, 0x21, 0x43, 0x05,
+	0x45, 0xd8, 0x3f, 0x5b, 0x7d, 0x95, 0x60, 0xe4, 0x35, 0x18, 0x15, 0xf9, 0x29, 0x81, 0xd0, 0x0a,
+	0x40, 0xe7, 0xcc, 0x74, 0x4f, 0xb1, 0xe1, 0x7b, 0x8e, 0xf0, 0x5d, 0x5e, 0xcf, 0x07, 0x94, 0xb6,
+	0xe7, 0x70, 0xa7, 0x33, 0x93, 0x7e, 0xe4, 0x87, 0x74, 0x71, 0x6a, 0x35, 0x5d, 0xce, 0xeb, 0x39,
+	0x4e, 0x68, 0x7b, 0x0e, 0x55, 0xff, 0xac, 0x40, 0x26, 0x80, 0x43, 0x6b, 0xb0, 0x52, 0x6f, 0xb7,
+	0x8c, 0xba, 0x76, 0xb8, 0xd7, 0x38, 0xda, 0xd7, 0x0e, 0x5a, 0x46, 0xb3, 0x55, 0x6b, 0xb5, 0x9b,
+	0xc6, 0xee, 0xc1, 0xaf, 0x6a, 0x7b, 0xbb, 0xf5, 0xe2, 0x8f, 0xd0, 0x23, 0x58, 0x4b, 0x62, 0x31,
+	0x0e, 0xf5, 0xc6, 0x3b, 0x5d, 0x6b, 0x36, 0x8b, 0x0a, 0x7a, 0x08, 0x0f, 0xe2, 0xd9, 0x9a, 0xed,
+	0xad, 0x2d, 0x4d, 0xab, 0x6b, 0xf5, 0x62, 0x0a, 0xad, 0xc2, 0xfd, 0x78, 0xa6, 0xed, 0xda, 0xee,
+	0x9e, 0x56, 0x2f, 0xa6, 0xd5, 0x75, 0x5e, 0x13, 0x0e, 0x66, 0x38, 0x92, 0x5e, 0x77, 0x20, 0x63,
+	0xf9, 0x11, 0xe7, 0x4f, 0x5b, 0x3e, 0xf7, 0x7a, 0x95, 0xa7, 0xf1, 0x80, 0x55, 0xba, 0x7a, 0xd8,
+	0x2f, 0xca, 0x88, 0x5f, 0xd4, 0xbf, 0x2a, 0x70, 0x3b, 0x2e, 0x95, 0xd0, 0x63, 0x40, 0x94, 0x99,
+	0xa7, 0xd8, 0xb0, 0xbb, 0xfc, 0x2f, 0x23, 0x86, 0x4f, 0x8f, 0xc5, 0xfd, 0x9c, 0x3e, 0x27, 0x4e,
+	0x76, 0xf9, 0x41, 0x8b, 0xb4, 0xe9, 0x31, 0x5a, 0x87, 0xa2, 0xed, 0x52, 0x66, 0x3a, 0x8e, 0x71,
+	0x62, 0x7b, 0xdd, 0x0b, 0xd3, 0xc3, 0x22, 0xb2, 0x39, 0x7d, 0x4e, 0xd2, 0xb7, 0x25, 0x19, 0x3d,
+	0x01, 0x14, 0xb2, 0x32, 0x4c, 0x59, 0x00, 0x2f, 0xe2, 0x95, 0xd3, 0x43, 0x90, 0x16, 0xa6, 0x4c,
+	0xa0, 0xab, 0xff, 0x4e, 0xc1, 0xa2, 0xe6, 0x52, 0xdf, 0xc3, 0x87, 0x84, 0x38, 0x3b, 0xd8, 0x74,
+	0xd8, 0x59, 0x3f, 0x74, 0x83, 0x06, 0x33, 0xdc, 0x0d, 0x14, 0x3b, 0xb8, 0xc3, 0x88, 0x27, 0x94,
+	0x2b, 0x54, 0xd5, 0xe4, 0x82, 0x69, 0x4a, 0x4e, 0xbd, 0x60, 0x5d, 0x7e, 0xa0, 0x07, 0x50, 0x60,
+	0xa6, 0x77, 0x8a, 0x99, 0xd1, 0x23, 0xc4, 0x11, 0x7a, 0xe7, 0x75, 0x08, 0x48, 0x5c, 0x2a, 0x77,
+	0x21, 0xed, 0x99, 0x1e, 0x0e, 0xce, 0x65, 0x6a, 0x09, 0x8a, 0x38, 0x7e, 0x02, 0xa8, 0x6b, 0x7e,
+	0x32, 0x7c, 0xf7, 0x2c, 0x50, 0xcf, 0xb0, 0x7c, 0xc6, 0x73, 0x4c, 0x29, 0x4f, 0xeb, 0xc5, 0xae,
+	0xf9, 0xa9, 0x1d, 0x1e, 0xd4, 0x7d, 0x46, 0xd1, 0x7b, 0xc8, 0x92, 0x5e, 0x50, 0xe0, 0xd3, 0x42,
+	0xdf, 0x97, 0x09, 0xfa, 0x26, 0x99, 0x5d, 0x69, 0xf4, 0x64, 0xb1, 0x4b, 0x9c, 0xd2, 0x1a, 0x64,
+	0x25, 0x0d, 0xdd, 0x85, 0x8c, 0xe5, 0xf5, 0x3d, 0xdf, 0x95, 0x91, 0x92, 0x5f, 0xea, 0x3f, 0xd3,
+	0xb0, 0x14, 0x03, 0x28, 0x73, 0xa4, 0x05, 0xb9, 0x13, 0xd3, 0x76, 0x7c, 0x0f, 0xf3, 0x6e, 0x95,
+	0x2e, 0xcf, 0x56, 0x37, 0xc7, 0x57, 0x4a, 0x96, 0xe3, 0x76, 0x00, 0xa0, 0x0f, 0x90, 0x50, 0x03,
+	0x50, 0xc4, 0xaf, 0x46, 0xa4, 0xe0, 0x0b, 0xd5, 0xb5, 0x04, 0x7c, 0x8e, 0x2c, 0x0b, 0xbb, 0x78,
+	0x19, 0x01, 0x59, 0x9b, 0xfb, 0x30, 0x7f, 0x19, 0x87, 0x10, 0x2f, 0x3d, 0x2e, 0xde, 0xdc, 0x20,
+	0x62, 0x12, 0xae, 0x08, 0x69, 0x5e, 0x12, 0x53, 0x22, 0x9e, 0xfc, 0x27, 0x7a, 0x03, 0xd9, 0xa0,
+	0x32, 0x78, 0x6c, 0xd2, 0x37, 0xc0, 0x6e, 0x09, 0x4e, 0x3d, 0xbc, 0xa1, 0x7e, 0x80, 0xac, 0xf4,
+	0x01, 0x5a, 0x80, 0x39, 0x5e, 0xbf, 0x6d, 0x5d, 0x8b, 0xb4, 0x8d, 0x65, 0xb8, 0xd7, 0x6a, 0x34,
+	0x8c, 0xfd, 0xda, 0xc1, 0x91, 0xd1, 0x3e, 0xd8, 0xd1, 0x6a, 0x7b, 0xad, 0x9d, 0x23, 0xa3, 0xde,
+	0x6e, 0xf1, 0x66, 0xb1, 0x02, 0x4b, 0x07, 0x8d, 0x96, 0xa1, 0x1d, 0x34, 0xda, 0xef, 0x76, 0x8c,
+	0xf0, 0xb0, 0x79, 0x58, 0xd3, 0xb5, 0x66, 0x31, 0xa5, 0xfe, 0x51, 0x81, 0x1f, 0x5f, 0x71, 0xfd,
+	0x36, 0xf1, 0x6a, 0x8e, 0xb3, 0x4f, 0x2c, 0xec, 0x0c, 0xba, 0xf3, 0x48, 0x2e, 0x2b, 0x37, 0xe4,
+	0x72, 0x6a, 0xbc, 0x5c, 0x4e, 0xc7, 0xe7, 0xb2, 0xfa, 0x87, 0x14, 0x3c, 0xba, 0x41, 0x2d, 0x99,
+	0x61, 0x3d, 0x98, 0xe9, 0x72, 0x8a, 0xe1, 0x61, 0xea, 0x3b, 0x4c, 0x64, 0x59, 0xa1, 0xba, 0x3f,
+	0x6e, 0x96, 0xc5, 0x61, 0x56, 0xc4, 0xa7, 0x2e, 0xf0, 0x34, 0x97, 0x79, 0x7d, 0xbd, 0xd0, 0xbd,
+	0xa4, 0x94, 0x7a, 0x50, 0x1c, 0x65, 0xe0, 0x11, 0xff, 0x88, 0xfb, 0xd2, 0x2b, 0xfc, 0x27, 0xda,
+	0x86, 0xe9, 0x73, 0xd3, 0xf1, 0xb1, 0x4c, 0xcb, 0xa7, 0x93, 0xa6, 0xbd, 0x1e, 0x5c, 0x7f, 0x9d,
+	0xda, 0x54, 0xd4, 0x7f, 0x29, 0x30, 0xaf, 0x63, 0x6a, 0x7f, 0x16, 0x8c, 0x3f, 0x74, 0x93, 0x2a,
+	0x43, 0x71, 0xa8, 0xda, 0xec, 0xcf, 0x58, 0xc6, 0x6d, 0x36, 0x52, 0x48, 0xf6, 0x67, 0x3c, 0x92,
+	0x02, 0x53, 0x23, 0x29, 0xa0, 0x76, 0xf8, 0x44, 0x73, 0x69, 0x85, 0x0c, 0xa0, 0x2c, 0x16, 0x25,
+	0xb6, 0x58, 0x52, 0x13, 0x17, 0xcb, 0x43, 0x28, 0x44, 0x4c, 0x45, 0xb7, 0x61, 0x5a, 0xc4, 0x2e,
+	0x7c, 0xcf, 0xc4, 0x87, 0xaa, 0x01, 0x44, 0xca, 0x15, 0xc1, 0x94, 0x30, 0x4a, 0x11, 0x46, 0x89,
+	0xdf, 0x7c, 0x18, 0x09, 0x13, 0xb5, 0x43, 0x7c, 0x97, 0x09, 0xbf, 0x4c, 0xeb, 0x33, 0x92, 0xb8,
+	0xc5, 0x69, 0xea, 0x51, 0x00, 0x13, 0xa8, 0x90, 0xf0, 0x76, 0xa2, 0x25, 0xe0, 0x03, 0x5a, 0xd4,
+	0xb9, 0x59, 0xe2, 0x58, 0xc2, 0xb3, 0x4b, 0xc0, 0xc7, 0xb3, 0x68, 0xf3, 0xcf, 0xba, 0xf8, 0x42,
+	0xf8, 0xea, 0xef, 0x0a, 0x2c, 0xeb, 0xb8, 0x4b, 0xce, 0xf9, 0x93, 0x4b, 0xb7, 0x3d, 0xd2, 0xad,
+	0x7b, 0xc4, 0xc5, 0x83, 0x72, 0x6c, 0x42, 0xce, 0xe3, 0xc7, 0xa6, 0x43, 0x65, 0xca, 0x27, 0x75,
+	0xfb, 0x6b, 0x50, 0x2a, 0xbb, 0x0c, 0x77, 0xf5, 0x01, 0x50, 0xa9, 0x0e, 0x53, 0x9c, 0x92, 0x64,
+	0xc9, 0x23, 0x98, 0xb5, 0xf8, 0x75, 0xe3, 0x8c, 0x50, 0xe6, 0x9a, 0x5d, 0x2c, 0xed, 0xb9, 0x25,
+	0xa8, 0x3b, 0x92, 0xa8, 0xfe, 0x47, 0x81, 0xfb, 0xf1, 0x42, 0x65, 0xc4, 0x75, 0xc8, 0x0a, 0x91,
+	0xd8, 0x92, 0xaa, 0x6f, 0x4e, 0xa4, 0xba, 0x2c, 0x52, 0xa1, 0x7b, 0x08, 0x14, 0x66, 0x51, 0x6a,
+	0x90, 0x45, 0xdf, 0xc9, 0x98, 0x7f, 0x28, 0xb0, 0x54, 0xa3, 0xd4, 0x3e, 0x75, 0xb9, 0x1a, 0x2d,
+	0x32, 0x1c, 0x85, 0x5f, 0x43, 0xc1, 0x14, 0x87, 0x7c, 0xbe, 0x09, 0x03, 0xf1, 0x22, 0xc1, 0x9a,
+	0x44, 0x98, 0xc0, 0x94, 0x28, 0xd2, 0x77, 0x52, 0xfe, 0x8b, 0x02, 0xa5, 0x38, 0xa9, 0x83, 0x38,
+	0xe4, 0x02, 0x99, 0x83, 0x40, 0xfc, 0x7c, 0x02, 0xd5, 0xa3, 0x61, 0x18, 0xe0, 0xfc, 0xdf, 0xe2,
+	0xf0, 0x37, 0x05, 0xd0, 0x9e, 0x4d, 0x59, 0x13, 0x7b, 0xe7, 0xd8, 0x1b, 0x04, 0x60, 0x07, 0x32,
+	0x27, 0xb6, 0xc3, 0x70, 0xd8, 0xfd, 0x92, 0xda, 0xec, 0xd5, 0xab, 0x95, 0x6d, 0x71, 0x4f, 0x97,
+	0xf7, 0x4b, 0xbf, 0x80, 0x4c, 0x40, 0x41, 0x2f, 0x60, 0xca, 0x23, 0x4e, 0xd0, 0x0e, 0x66, 0x13,
+	0x7b, 0x4f, 0x80, 0xa6, 0x13, 0x07, 0xeb, 0x82, 0x5d, 0x3d, 0x80, 0x85, 0x21, 0x29, 0xd2, 0xc9,
+	0x2f, 0x21, 0x4b, 0x03, 0x92, 0xf4, 0xf1, 0xca, 0xf5, 0x80, 0x21, 0xb7, 0x6a, 0xc0, 0xdd, 0x76,
+	0xcf, 0x32, 0xc5, 0xcc, 0xbd, 0x67, 0x1e, 0x47, 0x9e, 0xe2, 0x04, 0x4f, 0xde, 0x85, 0x8c, 0x23,
+	0xf8, 0xe4, 0xea, 0x27, 0xbf, 0x38, 0xdd, 0xc3, 0x26, 0x25, 0xae, 0xec, 0x31, 0xf2, 0x4b, 0x7d,
+	0x0c, 0xf7, 0xae, 0x08, 0x48, 0xea, 0xc9, 0xd5, 0xff, 0xe6, 0x21, 0xbf, 0x1b, 0xae, 0xe9, 0xe8,
+	0x37, 0x90, 0x1f, 0xac, 0xb5, 0xe8, 0x27, 0x49, 0x2f, 0xce, 0xc8, 0xee, 0x5a, 0x2a, 0xdf, 0xcc,
+	0x28, 0xe5, 0x5b, 0x50, 0x88, 0x2c, 0x99, 0x68, 0x3d, 0xb1, 0x3f, 0x8c, 0xee, 0xc7, 0xa5, 0x9f,
+	0x8e, 0xc3, 0x2a, 0xa5, 0xfc, 0x0e, 0x16, 0x62, 0xd6, 0x40, 0xf4, 0x6c, 0x92, 0x95, 0x31, 0x90,
+	0x5a, 0x9d, 0x7c, 0xcb, 0x0c, 0x7c, 0x28, 0x77, 0xaa, 0x6b, 0x7c, 0x38, 0xbc, 0xa0, 0x5d, 0xe3,
+	0xc3, 0xd1, 0xf5, 0xec, 0x1c, 0xe6, 0xaf, 0x0c, 0x17, 0x68, 0x63, 0xc2, 0x95, 0xa0, 0x34, 0xf1,
+	0xdc, 0x82, 0xfe, 0xa2, 0xc0, 0xca, 0xb5, 0x63, 0x16, 0x7a, 0xf3, 0x75, 0xc3, 0x59, 0xa0, 0xd0,
+	0xdb, 0x6f, 0x99, 0xec, 0x90, 0x09, 0x70, 0x39, 0x82, 0xa0, 0x72, 0x62, 0xb2, 0x8c, 0xcc, 0x5a,
+	0xa5, 0xf5, 0x31, 0x38, 0xa5, 0x88, 0xdf, 0xc3, 0xed, 0xb8, 0x77, 0x0b, 0x55, 0x27, 0x7f, 0x9f,
+	0x4b, 0xcf, 0xbf, 0xe2, 0x61, 0x44, 0x7d, 0x40, 0x57, 0xfb, 0x35, 0x7a, 0x3a, 0xe9, 0xab, 0x54,
+	0x7a, 0x36, 0xf1, 0x63, 0xc0, 0xeb, 0x36, 0xd2, 0x03, 0x13, 0xeb, 0xf6, 0x6a, 0x37, 0x4e, 0xac,
+	0xdb, 0xb8, 0x96, 0xda, 0x83, 0xb9, 0x91, 0xc6, 0x85, 0x7e, 0x96, 0x70, 0x3d, 0xbe, 0x83, 0x96,
+	0x2a, 0xe3, 0xb2, 0x07, 0x12, 0x7f, 0x99, 0xfd, 0x30, 0x2d, 0x18, 0x8e, 0x33, 0xe2, 0xdf, 0x89,
+	0xcf, 0xff, 0x17, 0x00, 0x00, 0xff, 0xff, 0xd0, 0x34, 0xb4, 0x8f, 0xe0, 0x14, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1382,6 +1902,34 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type InventoryClient interface {
+	// Deploy a DUT.
+	//
+	// This RPC must be used to deploy a DUT that does not already exist in the
+	// inventory. See RedeployDutStart for redeploying an existing DUT.
+	//
+	// This RPC does not wait for the DUT deployment to finish. Clients may use
+	// GetDutDeploymentStatus to track progress.
+	//
+	// Request options allow control over the exact DUT preparation steps
+	// executed, but automated repair is always attempted as part of the
+	// deployment process.
+	DeployDut(ctx context.Context, in *DeployDutRequest, opts ...grpc.CallOption) (*DeployDutResponse, error)
+	// Redeploy a DUT.
+	//
+	// This RPC must be used to deploy a DUT that does not already exist in the
+	// inventory. See RedeployDutStart for redeploying an existing DUT.
+	//
+	// This RPC does not wait for the DUT deployment to finish. Clients may use
+	// GetDutDeploymentStatus to track progress.
+	//
+	// Request options allow control over the exact DUT preparation steps
+	// executed, but automated repair is always attempted as part of the
+	// deployment process.
+	RedeployDut(ctx context.Context, in *RedeployDutRequest, opts ...grpc.CallOption) (*RedeployDutResponse, error)
+	// Get the status of a DUT deployment initiated by DeployDut or RedeployDut.
+	GetDeploymentStatus(ctx context.Context, in *GetDeploymentStatusRequest, opts ...grpc.CallOption) (*GetDeploymentStatusResponse, error)
+	// Delete a DUT from inventory.
+	DeleteDut(ctx context.Context, in *DeleteDutRequest, opts ...grpc.CallOption) (*DeleteDutResponse, error)
 	// EnsurePoolHealthy ensures that a target pool has only healthy DUTs.
 	//
 	// EnsurePoolHealthy works by swapping unhealthy DUTs from target pool with
@@ -1416,6 +1964,42 @@ type inventoryPRPCClient struct {
 
 func NewInventoryPRPCClient(client *prpc.Client) InventoryClient {
 	return &inventoryPRPCClient{client}
+}
+
+func (c *inventoryPRPCClient) DeployDut(ctx context.Context, in *DeployDutRequest, opts ...grpc.CallOption) (*DeployDutResponse, error) {
+	out := new(DeployDutResponse)
+	err := c.client.Call(ctx, "crosskylabadmin.fleet.Inventory", "DeployDut", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryPRPCClient) RedeployDut(ctx context.Context, in *RedeployDutRequest, opts ...grpc.CallOption) (*RedeployDutResponse, error) {
+	out := new(RedeployDutResponse)
+	err := c.client.Call(ctx, "crosskylabadmin.fleet.Inventory", "RedeployDut", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryPRPCClient) GetDeploymentStatus(ctx context.Context, in *GetDeploymentStatusRequest, opts ...grpc.CallOption) (*GetDeploymentStatusResponse, error) {
+	out := new(GetDeploymentStatusResponse)
+	err := c.client.Call(ctx, "crosskylabadmin.fleet.Inventory", "GetDeploymentStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryPRPCClient) DeleteDut(ctx context.Context, in *DeleteDutRequest, opts ...grpc.CallOption) (*DeleteDutResponse, error) {
+	out := new(DeleteDutResponse)
+	err := c.client.Call(ctx, "crosskylabadmin.fleet.Inventory", "DeleteDut", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *inventoryPRPCClient) EnsurePoolHealthy(ctx context.Context, in *EnsurePoolHealthyRequest, opts ...grpc.CallOption) (*EnsurePoolHealthyResponse, error) {
@@ -1489,6 +2073,42 @@ func NewInventoryClient(cc *grpc.ClientConn) InventoryClient {
 	return &inventoryClient{cc}
 }
 
+func (c *inventoryClient) DeployDut(ctx context.Context, in *DeployDutRequest, opts ...grpc.CallOption) (*DeployDutResponse, error) {
+	out := new(DeployDutResponse)
+	err := c.cc.Invoke(ctx, "/crosskylabadmin.fleet.Inventory/DeployDut", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryClient) RedeployDut(ctx context.Context, in *RedeployDutRequest, opts ...grpc.CallOption) (*RedeployDutResponse, error) {
+	out := new(RedeployDutResponse)
+	err := c.cc.Invoke(ctx, "/crosskylabadmin.fleet.Inventory/RedeployDut", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryClient) GetDeploymentStatus(ctx context.Context, in *GetDeploymentStatusRequest, opts ...grpc.CallOption) (*GetDeploymentStatusResponse, error) {
+	out := new(GetDeploymentStatusResponse)
+	err := c.cc.Invoke(ctx, "/crosskylabadmin.fleet.Inventory/GetDeploymentStatus", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *inventoryClient) DeleteDut(ctx context.Context, in *DeleteDutRequest, opts ...grpc.CallOption) (*DeleteDutResponse, error) {
+	out := new(DeleteDutResponse)
+	err := c.cc.Invoke(ctx, "/crosskylabadmin.fleet.Inventory/DeleteDut", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *inventoryClient) EnsurePoolHealthy(ctx context.Context, in *EnsurePoolHealthyRequest, opts ...grpc.CallOption) (*EnsurePoolHealthyResponse, error) {
 	out := new(EnsurePoolHealthyResponse)
 	err := c.cc.Invoke(ctx, "/crosskylabadmin.fleet.Inventory/EnsurePoolHealthy", in, out, opts...)
@@ -1554,6 +2174,34 @@ func (c *inventoryClient) UpdateDutLabels(ctx context.Context, in *UpdateDutLabe
 
 // InventoryServer is the server API for Inventory service.
 type InventoryServer interface {
+	// Deploy a DUT.
+	//
+	// This RPC must be used to deploy a DUT that does not already exist in the
+	// inventory. See RedeployDutStart for redeploying an existing DUT.
+	//
+	// This RPC does not wait for the DUT deployment to finish. Clients may use
+	// GetDutDeploymentStatus to track progress.
+	//
+	// Request options allow control over the exact DUT preparation steps
+	// executed, but automated repair is always attempted as part of the
+	// deployment process.
+	DeployDut(context.Context, *DeployDutRequest) (*DeployDutResponse, error)
+	// Redeploy a DUT.
+	//
+	// This RPC must be used to deploy a DUT that does not already exist in the
+	// inventory. See RedeployDutStart for redeploying an existing DUT.
+	//
+	// This RPC does not wait for the DUT deployment to finish. Clients may use
+	// GetDutDeploymentStatus to track progress.
+	//
+	// Request options allow control over the exact DUT preparation steps
+	// executed, but automated repair is always attempted as part of the
+	// deployment process.
+	RedeployDut(context.Context, *RedeployDutRequest) (*RedeployDutResponse, error)
+	// Get the status of a DUT deployment initiated by DeployDut or RedeployDut.
+	GetDeploymentStatus(context.Context, *GetDeploymentStatusRequest) (*GetDeploymentStatusResponse, error)
+	// Delete a DUT from inventory.
+	DeleteDut(context.Context, *DeleteDutRequest) (*DeleteDutResponse, error)
 	// EnsurePoolHealthy ensures that a target pool has only healthy DUTs.
 	//
 	// EnsurePoolHealthy works by swapping unhealthy DUTs from target pool with
@@ -1585,6 +2233,78 @@ type InventoryServer interface {
 
 func RegisterInventoryServer(s prpc.Registrar, srv InventoryServer) {
 	s.RegisterService(&_Inventory_serviceDesc, srv)
+}
+
+func _Inventory_DeployDut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeployDutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServer).DeployDut(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crosskylabadmin.fleet.Inventory/DeployDut",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServer).DeployDut(ctx, req.(*DeployDutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Inventory_RedeployDut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeployDutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServer).RedeployDut(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crosskylabadmin.fleet.Inventory/RedeployDut",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServer).RedeployDut(ctx, req.(*RedeployDutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Inventory_GetDeploymentStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServer).GetDeploymentStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crosskylabadmin.fleet.Inventory/GetDeploymentStatus",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServer).GetDeploymentStatus(ctx, req.(*GetDeploymentStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Inventory_DeleteDut_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteDutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(InventoryServer).DeleteDut(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crosskylabadmin.fleet.Inventory/DeleteDut",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(InventoryServer).DeleteDut(ctx, req.(*DeleteDutRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Inventory_EnsurePoolHealthy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1717,6 +2437,22 @@ var _Inventory_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "crosskylabadmin.fleet.Inventory",
 	HandlerType: (*InventoryServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "DeployDut",
+			Handler:    _Inventory_DeployDut_Handler,
+		},
+		{
+			MethodName: "RedeployDut",
+			Handler:    _Inventory_RedeployDut_Handler,
+		},
+		{
+			MethodName: "GetDeploymentStatus",
+			Handler:    _Inventory_GetDeploymentStatus_Handler,
+		},
+		{
+			MethodName: "DeleteDut",
+			Handler:    _Inventory_DeleteDut_Handler,
+		},
 		{
 			MethodName: "EnsurePoolHealthy",
 			Handler:    _Inventory_EnsurePoolHealthy_Handler,

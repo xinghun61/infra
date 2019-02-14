@@ -13,6 +13,41 @@ option go_package = "fleet";
 
 // Inventory service helps manage ChromeOS Dut Pools.
 service Inventory {
+  // ///////////////////////////////////////////////////////////////////////////
+  // DUT addition / update RPCs
+
+  // Deploy a DUT.
+  //
+  // This RPC must be used to deploy a DUT that does not already exist in the
+  // inventory. See RedeployDutStart for redeploying an existing DUT.
+  //
+  // This RPC does not wait for the DUT deployment to finish. Clients may use
+  // GetDutDeploymentStatus to track progress.
+  //
+  // Request options allow control over the exact DUT preparation steps
+  // executed, but automated repair is always attempted as part of the
+  // deployment process.
+  rpc DeployDut(DeployDutRequest) returns (DeployDutResponse);
+
+  // Redeploy a DUT.
+  //
+  // This RPC must be used to deploy a DUT that does not already exist in the
+  // inventory. See RedeployDutStart for redeploying an existing DUT.
+  //
+  // This RPC does not wait for the DUT deployment to finish. Clients may use
+  // GetDutDeploymentStatus to track progress.
+  //
+  // Request options allow control over the exact DUT preparation steps
+  // executed, but automated repair is always attempted as part of the
+  // deployment process.
+  rpc RedeployDut(RedeployDutRequest) returns (RedeployDutResponse);
+
+  // Get the status of a DUT deployment initiated by DeployDut or RedeployDut.
+  rpc GetDeploymentStatus(GetDeploymentStatusRequest) returns
+      (GetDeploymentStatusResponse);
+
+  // Delete a DUT from inventory.
+  rpc DeleteDut(DeleteDutRequest) returns (DeleteDutResponse);
 
   // ///////////////////////////////////////////////////////////////////////////
   // DUT pool balancing RPCs
@@ -58,6 +93,111 @@ service Inventory {
   // This API should only be used by the Skylab infrastructure
   // internally.  It is used by repair tasks to update DUT labels.
   rpc UpdateDutLabels(UpdateDutLabelsRequest) returns (UpdateDutLabelsResponse);
+}
+
+message DeployDutRequest {
+  // new_specs are the device specs this deployment effort should set.
+  //
+  // This should be a serialized inventory.CommonDeviceSpecs protobuf.
+  //
+  // Note that deploy will use new_specs to initialize the device specs for the
+  // DUT, but the specs (in particular labels) may be updated further as a
+  // result of the deployment process itself.
+  //
+  // new_specs must satisfy following sanity conditions:
+  // - inventory.CommonDeviceSpecs.Id must be unset.
+  bytes new_specs = 1;
+
+  // The deployment actions to take.
+  //
+  // Automated repair is always attempted at the end of deployment actions.
+  DutDeploymentActions actions = 2;
+}
+
+message DeployDutResponse {
+  // Opaque ID to be used for future GetDeploymentStatus requests.
+  string deployment_id = 1;
+}
+
+message RedeployDutRequest {
+  // old_specs are the old device specs for a DUT already in the inventory that
+  // the client wants to re-deploy.
+  //
+  // This should be a serialized inventory.CommonDeviceSpecs protobuf.
+  //
+  // old_specs must satisfy following sanity conditions:
+  // - inventory.CommonDeviceSpecs.Id must be set. It will be used to identify
+  //   the dut to deploy.
+  bytes old_specs = 1;
+
+  // new_specs are the device specs this redeployment effort should set.
+  //
+  // This should be a serialized inventory.CommonDeviceSpecs protobuf.
+  //
+  // Note that deploy will use new_specs to initialize the device specs for the
+  // DUT, but the specs (in particular labels) may be updated further as a
+  // result of the deployment process itself.
+  //
+  // new_specs must satisfy following sanity conditions:
+  // - inventory.CommonDeviceSpecs.Id must be set and be identical to the one in
+  //   old_specs.
+  bytes new_specs = 2;
+
+  DutDeploymentActions actions = 3;
+}
+
+message RedeployDutResponse {
+  // Opaque ID to be used for future GetDeploymentStatus requests.
+  string deployment_id = 1;
+}
+
+message GetDeploymentStatusRequest {
+  // An opaque ID returned by earlier deployment RPCs.
+  string deployment_id = 1;
+}
+
+message GetDeploymentStatusResponse{
+  enum Status {
+    DUT_DEPLOYMENT_STATUS_INVALID = 0;
+
+    DUT_DEPLOYMENT_STATUS_IN_PROGRESS = 1;
+
+    DUT_DEPLOYMENT_STATUS_SUCCEEDED = 2;
+
+    DUT_DEPLOYMENT_STATUS_FAILED = 3;
+  }
+  Status status = 2;
+
+  // URL for the inventory change for this DUT deployment, if any.
+  //
+  // This change only includes any explicit inventory changes made for
+  // deployment. Itj does not include any inventory changes that occur as a
+  // consequence of the automated repair attempt at the end of deployment.
+  string change_url = 3;
+
+  // The Skylab task(s) created for the DUT deployment.
+  repeated string task_urls = 4;
+}
+
+message DeleteDutRequest {
+  // inventory.CommonDeviceSpecs.Id for the DUT to delete.
+  string dut_id = 1;
+}
+
+message DeleteDutResponse {
+  // URL for the inventory change that removed the requested DUT.
+  string change_url = 1;
+}
+
+message DutDeploymentActions {
+  // Stage the requested Chrome OS image on the USB attached to servo and DUT.
+  bool stage_image_to_usb = 1;
+
+  // Install DUT firmware from the image staged on USB.
+  bool install_firmware = 2;
+
+  // Install ChromeOS test image from the image staged on USB.
+  bool install_test_image = 3;
 }
 
 message EnsurePoolHealthyRequest {

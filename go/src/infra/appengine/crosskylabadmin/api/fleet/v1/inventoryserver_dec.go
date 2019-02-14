@@ -23,6 +23,74 @@ type DecoratedInventory struct {
 	Postlude func(c context.Context, methodName string, rsp proto.Message, err error) error
 }
 
+func (s *DecoratedInventory) DeployDut(c context.Context, req *DeployDutRequest) (rsp *DeployDutResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "DeployDut", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.DeployDut(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "DeployDut", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedInventory) RedeployDut(c context.Context, req *RedeployDutRequest) (rsp *RedeployDutResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "RedeployDut", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.RedeployDut(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "RedeployDut", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedInventory) GetDeploymentStatus(c context.Context, req *GetDeploymentStatusRequest) (rsp *GetDeploymentStatusResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "GetDeploymentStatus", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.GetDeploymentStatus(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "GetDeploymentStatus", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedInventory) DeleteDut(c context.Context, req *DeleteDutRequest) (rsp *DeleteDutResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "DeleteDut", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.DeleteDut(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "DeleteDut", rsp, err)
+	}
+	return
+}
+
 func (s *DecoratedInventory) EnsurePoolHealthy(c context.Context, req *EnsurePoolHealthyRequest) (rsp *EnsurePoolHealthyResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
