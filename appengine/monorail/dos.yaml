@@ -158,3 +158,5 @@ blacklist:
     description: someone fuzzing us 2019-01-24
   - subnet: 108.170.6.26
     description: someone crawling p/oss-fuzz/issues
+  - subnet: 51.15.72.250
+    description: someone polling certain /p/chromium/issues
