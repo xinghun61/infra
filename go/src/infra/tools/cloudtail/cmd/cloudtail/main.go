@@ -20,7 +20,7 @@ import (
 
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
-	"go.chromium.org/luci/cipd/version/versioncmd"
+	"go.chromium.org/luci/client/versioncli"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/rand/mathrand"
@@ -493,7 +493,7 @@ func getApplication(defaultAuthOpts auth.Options) *cli.Application {
 
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
-			versioncmd.Version,
+			versioncli.CmdVersion("cloudtail"),
 
 			// Main commands.
 			cmdSend(defaultAuthOpts),
