@@ -161,6 +161,7 @@ class GetBuildTests(BaseTestCase):
         search.Query(
             bucket_ids=['chromium/try'],
             tags=['build_address:luci.chromium.try/linux-try/2'],
+            include_experimental=True,
         )
     )
 

@@ -219,9 +219,12 @@ def get_build_async(req, res, _ctx, mask):
         req.builder.builder,
         req.build_number,
     )
-    found, _ = yield search.search_async(
-        search.Query(bucket_ids=[bucket_id_string(req.builder)], tags=[tag])
+    q = search.Query(
+        bucket_ids=[bucket_id_string(req.builder)],
+        tags=[tag],
+        include_experimental=True,
     )
+    found, _ = yield search.search_async(q)
     build = found[0] if found else None
 
   if not build:
