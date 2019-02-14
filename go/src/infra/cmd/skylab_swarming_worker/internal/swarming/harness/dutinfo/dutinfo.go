@@ -34,6 +34,9 @@ func (s *Store) Close() error {
 	}
 	c := s.DUT.GetCommon()
 	new := c.GetLabels()
+	if new.GetUselessSwitch() {
+		*new.UselessSwitch = false
+	}
 	if proto.Equal(new, s.oldLabels) {
 		log.Printf("Skipping label update since there are no changes")
 		return nil
