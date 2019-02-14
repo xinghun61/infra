@@ -1974,12 +1974,48 @@ wheel: <
 
 ## **pytest**
 
+### 3.10.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pytest-py2_py3"
+  version: "version:3.10.1"
+>
+```
+
+
+* *universal*
+
 ### 3.5.0
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/pytest-py2_py3"
   version: "version:3.5.0"
+>
+```
+
+
+* *universal*
+
+### 3.6.2
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pytest-py2_py3"
+  version: "version:3.6.2"
+>
+```
+
+
+* *universal*
+
+### 3.6.4
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pytest-py2_py3"
+  version: "version:3.6.4"
 >
 ```
 
