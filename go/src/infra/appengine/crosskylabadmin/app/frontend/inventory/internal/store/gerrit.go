@@ -98,7 +98,7 @@ func commitFileContents(ctx context.Context, client gerrit.GerritClient, project
 		// Mark this error as transient so that the operation will be retried.
 		// Errors in submit are mostly caused because of conflict with a concurrent
 		// change to the inventory.
-		return -1, errors.Annotate(err, "commit file conents").Tag(transient.Tag).Err()
+		return -1, errors.Annotate(err, "commit file contents").Tag(transient.Tag).Err()
 	}
 
 	cn := int(changeInfo.Number)
