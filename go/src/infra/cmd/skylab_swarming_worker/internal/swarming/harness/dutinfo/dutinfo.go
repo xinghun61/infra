@@ -7,6 +7,8 @@
 package dutinfo
 
 import (
+	"log"
+
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
 
@@ -17,7 +19,7 @@ import (
 // Store holds a DUT's inventory info and adds a Close method.
 type Store struct {
 	DUT        *inventory.DeviceUnderTest
-	original   *inventory.DeviceUnderTest
+	oldLabels  *inventory.SchedulableLabels
 	updateFunc UpdateFunc
 }
 
@@ -30,10 +32,15 @@ func (s *Store) Close() error {
 	if s.updateFunc == nil {
 		return nil
 	}
-	if proto.Equal(s.DUT, s.original) {
+	c := s.DUT.GetCommon()
+	new := c.GetLabels()
+	if proto.Equal(new, s.oldLabels) {
+		log.Printf("Skipping label update since there are no changes")
 		return nil
 	}
-	if err := s.updateFunc(s.DUT); err != nil {
+	log.Printf("Labels changed from %#v to %#v", s.oldLabels, new)
+	log.Printf("Calling label update function")
+	if err := s.updateFunc(c.GetId(), new); err != nil {
 		return errors.Annotate(err, "close DUT inventory").Err()
 	}
 	s.updateFunc = nil
@@ -42,7 +49,7 @@ func (s *Store) Close() error {
 
 // UpdateFunc is used to implement inventory updating for any changes
 // to the loaded DUT info.
-type UpdateFunc func(new *inventory.DeviceUnderTest) error
+type UpdateFunc func(dutID string, labels *inventory.SchedulableLabels) error
 
 // Load loads the bot's DUT's info from the inventory.  This function
 // returns a Store that should be closed to update the inventory with
@@ -65,7 +72,7 @@ func Load(b *swarming.Bot, f UpdateFunc) (*Store, error) {
 		}
 		return &Store{
 			DUT:        d,
-			original:   proto.Clone(d).(*inventory.DeviceUnderTest),
+			oldLabels:  proto.Clone(c.GetLabels()).(*inventory.SchedulableLabels),
 			updateFunc: f,
 		}, nil
 	}

@@ -185,7 +185,7 @@ type labelUpdater struct {
 
 // update is a dutinfo.UpdateFunc for updating DUT inventory labels.
 // If adminServiceURL is empty, this method does nothing.
-func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
+func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) error {
 	if u.adminService == "" {
 		return nil
 	}
@@ -193,7 +193,7 @@ func (u labelUpdater) update(new *inventory.DeviceUnderTest) error {
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
-	req, err := u.makeRequest(new)
+	req, err := u.makeRequest(dutID, labels)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
@@ -226,14 +226,13 @@ func (u labelUpdater) makeClient() (fleet.InventoryClient, error) {
 	return c, nil
 }
 
-func (u labelUpdater) makeRequest(new *inventory.DeviceUnderTest) (*fleet.UpdateDutLabelsRequest, error) {
-	c := new.GetCommon()
-	d, err := proto.Marshal(c.GetLabels())
+func (u labelUpdater) makeRequest(dutID string, labels *inventory.SchedulableLabels) (*fleet.UpdateDutLabelsRequest, error) {
+	d, err := proto.Marshal(labels)
 	if err != nil {
 		return nil, err
 	}
 	req := fleet.UpdateDutLabelsRequest{
-		DutId:  c.GetId(),
+		DutId:  dutID,
 		Labels: d,
 		Reason: fmt.Sprintf("%s %s", u.taskName, u.taskURL),
 	}
