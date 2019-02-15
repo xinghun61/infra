@@ -27,6 +27,7 @@ from services import service_manager
 from services import spam_svc
 from services import tracker_fulltext
 from testing import fake
+from testing import testing_helpers
 from tracker import tracker_bizobj
 
 
@@ -952,6 +953,122 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue._UpdateIssuesRelation(self.cnxn, [issue], commit=False)
     self.mox.VerifyAll()
 
+  @patch('time.time')
+  def testUpdateIssueStructure(self, mockTime):
+    mockTime.return_value = self.now
+    reporter_id = 111L
+    comment_content = 'This issue is being converted'
+    # Set up config
+    config = self.services.config.GetProjectConfig(
+        self.cnxn, 789)
+    config.approval_defs = [
+        tracker_pb2.ApprovalDef(approval_id=3, survey='Question3'),
+        tracker_pb2.ApprovalDef(approval_id=4, survey='Question4'),
+        tracker_pb2.ApprovalDef(approval_id=7, survey='Question7'),
+    ]
+    config.field_defs = [
+      tracker_pb2.FieldDef(
+          field_id=3, project_id=789, field_name='Cow'),
+      tracker_pb2.FieldDef(
+          field_id=4, project_id=789, field_name='Chicken'),
+      tracker_pb2.FieldDef(
+          field_id=6, project_id=789, field_name='Llama'),
+      tracker_pb2.FieldDef(
+          field_id=7, project_id=789, field_name='Roo'),
+    ]
+
+    # Set up issue
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111L, summary='sum', status='Open',
+        issue_id=78901, project_name='proj')
+    issue.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=3,
+            phase_id=4,
+            status=tracker_pb2.ApprovalStatus.APPROVED,
+            approver_ids=[111L],
+        ),
+        tracker_pb2.ApprovalValue(
+            approval_id=4,
+            phase_id=5,
+            approver_ids=[111L]),
+        tracker_pb2.ApprovalValue(approval_id=6)]
+    issue.phases = [
+        tracker_pb2.Phase(name='Expired', phase_id=4),
+        tracker_pb2.Phase(name='Canary', phase_id=5)]
+
+    # Set up template
+    template = testing_helpers.DefaultTemplates()[0]
+    template.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=3,
+            phase_id=6,  # Different phase. Nothing else affected.
+            approver_ids=[222L]),
+        # No phase. Nothing else affected.
+        tracker_pb2.ApprovalValue(approval_id=4),
+        # New approval not already found in issue.
+        tracker_pb2.ApprovalValue(
+            approval_id=7,
+            phase_id=5,
+            approver_ids=[222L]),
+    ]  # No approval 6
+    template.phases = [tracker_pb2.Phase(name='Canary', phase_id=5),
+                       tracker_pb2.Phase(name='Stable-Exp', phase_id=6)]
+
+    self.SetUpInsertComment(
+        7890101, is_description=True, approval_id=3,
+        content=config.approval_defs[0].survey, commit=False)
+    self.SetUpInsertComment(
+        7890101, is_description=True, approval_id=4,
+        content=config.approval_defs[1].survey, commit=False)
+    self.SetUpInsertComment(
+        7890101, is_description=True, approval_id=7,
+        content=config.approval_defs[2].survey, commit=False)
+    amendment_row = (
+        78901, 7890101, 'custom', None, '-Llama Roo', None, None, 'Approvals')
+    self.SetUpInsertComment(
+        7890101, content=comment_content, amendment_rows=[amendment_row],
+        commit=False)
+    av_rows = [
+        (3, 78901, 6, 'approved', None, None),
+        (4, 78901, None, 'not_set', None, None),
+        (7, 78901, 5, 'not_set', None, None),
+    ]
+    approver_rows = [(3, 111L, 78901), (4, 111L, 78901), (7, 222L, 78901)]
+    self.SetUpUpdateIssuesApprovals(
+        av_rows=av_rows, approver_rows=approver_rows)
+
+    self.mox.ReplayAll()
+    comment = self.services.issue.UpdateIssueStructure(
+        self.cnxn, config, issue, template, reporter_id,
+        comment_content=comment_content, commit=False, invalidate=False)
+    self.mox.VerifyAll()
+
+    expected_avs = [
+        tracker_pb2.ApprovalValue(
+            approval_id=3,
+            phase_id=6,
+            status=tracker_pb2.ApprovalStatus.APPROVED,
+            approver_ids=[111L],
+        ),
+        tracker_pb2.ApprovalValue(
+            approval_id=4,
+            approver_ids=[111L]),
+        tracker_pb2.ApprovalValue(
+            approval_id=7,
+            phase_id=5,
+            approver_ids=[222L]),
+    ]
+    self.assertEqual(issue.approval_values, expected_avs)
+    self.assertEqual(issue.phases, template.phases)
+    amendment = tracker_bizobj.MakeApprovalStructureAmendment(
+        ['Roo', 'Cow', 'Chicken'], ['Cow', 'Chicken', 'Llama'])
+    expected_comment = self.services.issue._MakeIssueComment(
+        789, reporter_id, content=comment_content, amendments=[amendment])
+    expected_comment.issue_id = 78901
+    expected_comment.id = 7890101
+    self.assertEqual(expected_comment, comment)
+
   def testDeltaUpdateIssue(self):
     pass  # TODO(jrobbins): write more tests
 
@@ -1576,7 +1693,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def SetUpInsertComment(
       self, comment_id, is_spam=False, is_description=False, approval_id=None,
-          content=None):
+          content=None, amendment_rows=None, commit=True):
     content = content or 'content'
     commentcontent_id = comment_id * 10
     self.services.issue.commentcontent_tbl.InsertRow(
@@ -1588,7 +1705,7 @@ class IssueServiceTest(unittest.TestCase):
         is_description=is_description, commentcontent_id=commentcontent_id,
         commit=False).AndReturn(comment_id)
 
-    amendment_rows = []
+    amendment_rows = amendment_rows or []
     self.services.issue.issueupdate_tbl.InsertRows(
         self.cnxn, issue_svc.ISSUEUPDATE_COLS[1:], amendment_rows,
         commit=False)
@@ -1603,7 +1720,8 @@ class IssueServiceTest(unittest.TestCase):
           self.cnxn, issue_svc.ISSUEAPPROVAL2COMMENT_COLS,
           [(approval_id, comment_id)], commit=False)
 
-    self.cnxn.Commit()
+    if commit:
+      self.cnxn.Commit()
 
   def testInsertComment(self):
     self.SetUpInsertComment(7890101, approval_id=23)

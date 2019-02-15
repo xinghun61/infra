@@ -454,7 +454,9 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
         mc, request.issue_ref, use_cache=False)
 
     with work_env.WorkEnv(mc, self.services) as we:
-      we.ConvertIssueApprovalsTemplate(issue, request.template_name)
+      we.ConvertIssueApprovalsTemplate(
+          config, issue, request.template_name, request.comment_content,
+          send_email=request.send_email)
       related_refs = we.GetRelatedIssueRefs([issue])
 
     with mc.profiler.Phase('making user views'):

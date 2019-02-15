@@ -1065,7 +1065,9 @@ class WorkEnvTest(unittest.TestCase):
         comment_content='please review', is_description=False,
         attachments=attachments)
 
-  def testConvertIssueApprovalsTemplate(self):
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testConvertIssueApprovalsTemplate(self, fake_pasicn):
     """We can convert an issue's approvals to match template's approvals."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     issue.approval_values = [
@@ -1083,7 +1085,6 @@ class WorkEnvTest(unittest.TestCase):
     issue.phases = [
         tracker_pb2.Phase(name='Expired', phase_id=4),
         tracker_pb2.Phase(name='Canary', phase_id=5)]
-
 
     self.services.issue._UpdateIssuesApprovals = mock.Mock()
     self.SignIn()
@@ -1106,7 +1107,24 @@ class WorkEnvTest(unittest.TestCase):
                        tracker_pb2.Phase(name='Stable-Exp', phase_id=6)]
     self.services.template.GetTemplateByName.return_value = template
 
-    self.work_env.ConvertIssueApprovalsTemplate(issue, 'template_name')
+    config = self.services.config.GetProjectConfig(self.cnxn, 789)
+    config.approval_defs = [
+        tracker_pb2.ApprovalDef(approval_id=3, survey='Question3'),
+        tracker_pb2.ApprovalDef(approval_id=4, survey='Question4'),
+        tracker_pb2.ApprovalDef(approval_id=7, survey='Question7'),
+    ]
+    config.field_defs = [
+      tracker_pb2.FieldDef(
+          field_id=3, project_id=789, field_name='Cow'),
+      tracker_pb2.FieldDef(
+          field_id=4, project_id=789, field_name='Chicken'),
+      tracker_pb2.FieldDef(
+          field_id=6, project_id=789, field_name='Llama'),
+      tracker_pb2.FieldDef(
+          field_id=7, project_id=789, field_name='Roo'),
+    ]
+    self.work_env.ConvertIssueApprovalsTemplate(
+        config, issue, 'template_name', 'Convert', send_email=False)
 
     expected_avs = [
       tracker_pb2.ApprovalValue(
@@ -1127,14 +1145,17 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(issue.phases, template.phases)
     self.services.template.GetTemplateByName.assert_called_once_with(
         self.mr.cnxn, 'template_name', 789)
-    self.services.issue._UpdateIssuesApprovals.assert_called_once_with(
-        self.mr.cnxn, issue)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=False,
+        comment_id=mock.ANY)
 
   def testConvertIssueApprovalsTemplate_NoSuchTemplate(self):
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     self.services.template.GetTemplateByName.return_value = None
+    config = self.services.config.GetProjectConfig(self.cnxn, 789)
     with self.assertRaises(exceptions.NoSuchTemplateException):
-      self.work_env.ConvertIssueApprovalsTemplate(issue, 'template_name')
+      self.work_env.ConvertIssueApprovalsTemplate(
+          config, issue, 'template_name', 'comment')
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')

@@ -235,11 +235,13 @@ message UpdateApprovalResponse {
 }
 
 
-// Next available tag: 4
+// Next available tag: 6
 message ConvertIssueApprovalsTemplateRequest {
   RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   string template_name = 3;
+  string comment_content = 4;
+  bool send_email = 5;
 }
 
 
