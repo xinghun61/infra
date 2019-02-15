@@ -41,7 +41,7 @@ func (s *Store) Close() error {
 		log.Printf("Skipping label update since there are no changes")
 		return nil
 	}
-	log.Printf("Labels changed from %#v to %#v", s.oldLabels, new)
+	log.Printf("Labels changed from %s to %s", s.oldLabels.String(), new.String())
 	log.Printf("Calling label update function")
 	if err := s.updateFunc(c.GetId(), new); err != nil {
 		return errors.Annotate(err, "close DUT inventory").Err()
