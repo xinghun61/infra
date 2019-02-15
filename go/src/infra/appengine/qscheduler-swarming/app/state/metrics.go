@@ -15,28 +15,46 @@
 package state
 
 import (
+	"context"
+
+	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/qscheduler/qslib/protos/metrics"
 )
 
-// metricsSliceSink implements scheduler.MetricsSink by appending items to
-// a slice.
-type metricsSliceSink struct {
+// eventBuffer implements scheduler.EventSink.
+//
+// Events can be flushed to bigquery.
+type eventBuffer struct {
 	schedulerID string
 	taskEvents  []*metrics.TaskEvent
 }
 
-// newMetricsSink creates a metrics sink for the given scheduler.
-func newMetricsSink(schedulerID string) *metricsSliceSink {
-	return &metricsSliceSink{schedulerID: schedulerID}
+// newEventBuffer creates a metrics sink for the given scheduler.
+func newEventBuffer(schedulerID string) *eventBuffer {
+	return &eventBuffer{schedulerID: schedulerID}
 }
 
 // reset resets the given metrics sink, erasing any previously added entries.
-func (m *metricsSliceSink) reset() {
-	m.taskEvents = nil
+func (e *eventBuffer) reset() {
+	e.taskEvents = nil
 }
 
-// AddEvent implements scheduler.MetricsSink.
-func (m *metricsSliceSink) AddEvent(e *metrics.TaskEvent) {
-	e.SchedulerId = m.schedulerID
-	m.taskEvents = append(m.taskEvents, e)
+// flushToBQ flushes events to bigquery.
+//
+// This can be called inside of a datastore transaction, in which case events
+// will only be flushed if the transaction succeeds.
+func (e *eventBuffer) flushToBQ(ctx context.Context) error {
+	return eventlog.TaskEvents(ctx, e.taskEvents...)
+}
+
+// flushToTsMon flushes events to ts_mon.
+func (e *eventBuffer) flushToTsMon(ctx context.Context) error {
+	// TODO(akeshet): Implement.
+	return nil
+}
+
+// AddEvent implements scheduler.EventSink.
+func (e *eventBuffer) AddEvent(event *metrics.TaskEvent) {
+	event.SchedulerId = e.schedulerID
+	e.taskEvents = append(e.taskEvents, event)
 }

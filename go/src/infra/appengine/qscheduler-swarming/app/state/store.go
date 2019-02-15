@@ -27,7 +27,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
-	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/reconciler"
@@ -129,24 +128,20 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 
 // RunOperationInTransaction runs the given operation in a transaction on this store.
 func (s *Store) RunOperationInTransaction(ctx context.Context, op types.Operation) error {
-	m := newMetricsSink(s.entityID)
-	if err := datastore.RunInTransaction(ctx, operationRunner(op, s, m), nil); err != nil {
+	e := newEventBuffer(s.entityID)
+	if err := datastore.RunInTransaction(ctx, operationRunner(op, s, e), nil); err != nil {
 		return err
 	}
-	// TODO(akeshet): Emit ts_mon metrics based on m. This is a best effort way
-	// to emit metrics that resemble actual events committed during the transaction.
-	return nil
+	return e.flushToTsMon(ctx)
 }
 
 // RunRevertableOperationInTransaction runs the given operation in a transaction on this store.
 func (s *Store) RunRevertableOperationInTransaction(ctx context.Context, op types.RevertableOperation) error {
-	m := newMetricsSink(s.entityID)
-	if err := datastore.RunInTransaction(ctx, revertableOperationRunner(op, s, m), nil); err != nil {
+	e := newEventBuffer(s.entityID)
+	if err := datastore.RunInTransaction(ctx, revertableOperationRunner(op, s, e), nil); err != nil {
 		return err
 	}
-	// TODO(akeshet): Emit ts_mon metrics based on m. This is a best effort way
-	// to emit metrics that resemble actual events committed during the transaction.
-	return nil
+	return e.flushToTsMon(ctx)
 }
 
 const stateEntityKind = "qschedulerStateEntity"
@@ -174,16 +169,16 @@ type datastoreEntity struct {
 // operationRunner returns a read-modify-write function for an operation.
 //
 // The returned function is suitable to be used with datastore.RunInTransaction.
-func operationRunner(op types.Operation, store *Store, m *metricsSliceSink) func(context.Context) error {
+func operationRunner(op types.Operation, store *Store, e *eventBuffer) func(context.Context) error {
 	return func(ctx context.Context) error {
-		m.reset()
+		e.reset()
 
 		sp, err := store.Load(ctx)
 		if err != nil {
 			return err
 		}
 
-		if err = op(ctx, sp, m); err != nil {
+		if err = op(ctx, sp, e); err != nil {
 			return err
 		}
 
@@ -191,7 +186,7 @@ func operationRunner(op types.Operation, store *Store, m *metricsSliceSink) func
 			return err
 		}
 
-		return eventlog.TaskEvents(ctx, m.taskEvents...)
+		return e.flushToBQ(ctx)
 	}
 }
 
@@ -201,16 +196,16 @@ func operationRunner(op types.Operation, store *Store, m *metricsSliceSink) func
 // should be reverted rather than saved.
 //
 // The returned function is suitable to be used with datastore.RunInTransaction.
-func revertableOperationRunner(op types.RevertableOperation, store *Store, m *metricsSliceSink) func(context.Context) error {
+func revertableOperationRunner(op types.RevertableOperation, store *Store, e *eventBuffer) func(context.Context) error {
 	return func(ctx context.Context) error {
-		m.reset()
+		e.reset()
 
 		sp, err := store.Load(ctx)
 		if err != nil {
 			return err
 		}
 
-		revert := op(ctx, sp, m)
+		revert := op(ctx, sp, e)
 		if revert {
 			return nil
 		}
@@ -219,6 +214,6 @@ func revertableOperationRunner(op types.RevertableOperation, store *Store, m *me
 			return err
 		}
 
-		return eventlog.TaskEvents(ctx, m.taskEvents...)
+		return e.flushToBQ(ctx)
 	}
 }
