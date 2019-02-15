@@ -1,7 +1,8 @@
 <div class="list">
-  <div style="float:right; margin-left:2em; font-size:95%">
-   <span class="active_choice choice_chip">List</span><a
-   class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=grid">Grid</a>
+  <div class="button_set">
+   <span class="active_choice choice_chip">List</span>
+   <a class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=grid">Grid</a>
+   <a class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=chart">Chart</a>
   </div>
 
    [include "../framework/artifact-list-pagination-part.ezt"]

@@ -1,0 +1,9 @@
+<!-- TODO: make this cleaner by replacing it with web component. -->
+<div class="list">
+  <div class="button_set">
+    <a class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]">List</a>
+    <a class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=grid">Grid</a>
+    <a class="choice_chip active_choice" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=chart">Chart</a>
+  </div>
+</div>
+

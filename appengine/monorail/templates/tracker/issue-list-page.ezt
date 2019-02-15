@@ -22,6 +22,10 @@
   [include "issue-list-controls-top.ezt"]
  [end]
 
+ [if-any chart_mode]
+  [include "issue-chart-controls-top.ezt"]
+ [end]
+
   [include "issue-hovercard.ezt"]
 
   <div id="cursorarea">

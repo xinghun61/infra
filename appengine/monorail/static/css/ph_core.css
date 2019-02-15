@@ -136,6 +136,14 @@ input[type=submit].secondary {
     color: var(--chops-button-color) !important;
 }
 
+.button_set {
+    float: right;
+    font-size: 95%;
+    display: flex;
+    margin-left: 2em;
+    margin-bottom: 5px; /* Offsets padding lost by flex+float. */
+}
+
 @-moz-document url-prefix() {
     .buttonify {
 	padding: 2px 3px 2px 3px;

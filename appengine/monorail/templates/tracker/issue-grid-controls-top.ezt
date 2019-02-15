@@ -1,7 +1,9 @@
 <div class="list">
-<div style="float:right; margin-left:2em; font-size:95%">
- <a class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]">List</a><span
- class="choice_chip active_choice">Grid</span>
+
+<div class="button_set">
+  <a class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]">List</a><span
+  class="choice_chip active_choice">Grid</span>
+  <a class="choice_chip" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=chart">Chart</a>
 </div>
 
 [if-any pagination]

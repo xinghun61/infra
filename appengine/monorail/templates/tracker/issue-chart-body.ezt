@@ -1,9 +1,21 @@
-<p><small>
-  Supported query parameters:
-  <span style="font-family: monospace">
-    cc, component, hotlist_id, label, owner,
-    reporter, status
-  </span>
-</small></p>
-
 <mr-chart project-name="[projectname]"></mr-chart>
+
+<div>
+  <div class="help" style="padding: 1em;">
+    <h2 style="font-size: 1.2em; margin: 0 0 0.5em;">Supported query parameters:</h2>
+    <span style="font-family: monospace;">
+      cc, component, hotlist_id, label, owner, reporter, status
+    </span>
+    <br /><br />
+    <a href="https://bugs.chromium.org/p/monorail/issues/entry?owner=jeffcarp@chromium.org&labels=Feature-Charts">
+      Please file feedback here.
+    </a>
+  </div>
+</div>
+
+<script
+  type="module"
+  src="/[script_prefix_dir]/static/js/elements/mr-chart.js?version=[app_version]"
+  async
+  nonce="[nonce]">
+</script>
