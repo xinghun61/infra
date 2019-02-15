@@ -17,8 +17,55 @@ package state
 import (
 	"context"
 
+	"go.chromium.org/luci/common/tsmon/field"
+	"go.chromium.org/luci/common/tsmon/metric"
+
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/qscheduler/qslib/protos/metrics"
+)
+
+var (
+	counterCompleted = metric.NewCounter(
+		"qscheduler/state/task_completed",
+		"Task completed by swarming.",
+		nil,
+		field.String("scheduler_id"),
+		field.String("account_id"),
+	)
+
+	counterEnqueued = metric.NewCounter(
+		"qscheduler/state/task_enqueued",
+		"Task enqueued by swarming.",
+		nil,
+		field.String("scheduler_id"),
+		field.String("account_id"),
+	)
+
+	counterAssigned = metric.NewCounter(
+		"qscheduler/state/task_assigned",
+		"Task assigned by qscheduler.",
+		nil,
+		field.String("scheduler_id"),
+		field.String("account_id"),
+		field.Bool("preempting"),
+		field.Bool("provision_required"),
+	)
+
+	counterPreempted = metric.NewCounter(
+		"qscheduler/state/task_preempted",
+		"Task preempted by qscheduler.",
+		nil,
+		field.String("scheduler_id"),
+		field.String("account_id"),
+	)
+
+	counterReprioritized = metric.NewCounter(
+		"qscheduler/state/task_reprioritized",
+		"Task reprioritized by qscheduler.",
+		nil,
+		field.String("scheduler_id"),
+		field.String("account_id"),
+	)
 )
 
 // eventBuffer implements scheduler.EventSink.
@@ -49,7 +96,21 @@ func (e *eventBuffer) flushToBQ(ctx context.Context) error {
 
 // flushToTsMon flushes events to ts_mon.
 func (e *eventBuffer) flushToTsMon(ctx context.Context) error {
-	// TODO(akeshet): Implement.
+	for _, event := range e.taskEvents {
+		switch event.EventType {
+		case metrics.TaskEvent_SWARMING_COMPLETED:
+			counterCompleted.Add(ctx, 1, event.SchedulerId, event.AccountId)
+		case metrics.TaskEvent_SWARMING_ENQUEUED:
+			counterEnqueued.Add(ctx, 1, event.SchedulerId, event.AccountId)
+		case metrics.TaskEvent_QSCHEDULER_ASSIGNED:
+			details := event.GetAssignedDetails()
+			counterAssigned.Add(ctx, 1, event.SchedulerId, event.AccountId, details.Preempting, details.ProvisionRequired)
+		case metrics.TaskEvent_QSCHEDULER_PREEMPTED:
+			counterPreempted.Add(ctx, 1, event.SchedulerId, event.AccountId)
+		case metrics.TaskEvent_QSCHEDULER_REPRIORITIZED:
+			counterReprioritized.Add(ctx, 1, event.SchedulerId, event.AccountId)
+		}
+	}
 	return nil
 }
 
