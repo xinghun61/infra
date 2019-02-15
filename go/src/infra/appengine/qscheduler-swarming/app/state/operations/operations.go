@@ -45,7 +45,7 @@ const AccountIDTagKey = "qs_account"
 // the operation has run.
 func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.AssignTasksResponse) {
 	var response swarming.AssignTasksResponse
-	return func(ctx context.Context, state *types.QScheduler, metrics scheduler.MetricsSink) (err error) {
+	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) (err error) {
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
 			s := stringset.NewFromSlice(v.Dimensions...)
@@ -58,7 +58,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 			}
 		}
 
-		schedulerAssignments := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), metrics, idles...)
+		schedulerAssignments := state.Reconciler.AssignTasks(ctx, state.Scheduler, tutils.Timestamp(r.Time), events, idles...)
 
 		assignments := make([]*swarming.TaskAssignment, len(schedulerAssignments))
 		for i, v := range schedulerAssignments {
@@ -82,7 +82,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 // and result object that will get the results after the operation is run.
 func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.NotifyTasksResponse) {
 	var response swarming.NotifyTasksResponse
-	return func(ctx context.Context, sp *types.QScheduler, metrics scheduler.MetricsSink) (err error) {
+	return func(ctx context.Context, sp *types.QScheduler, events scheduler.EventSink) (err error) {
 		if sp.Config == nil {
 			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
 		}
@@ -101,16 +101,16 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			switch t {
 			case taskStateAbsent:
 				r := &reconciler.TaskAbsentRequest{RequestID: scheduler.RequestID(n.Task.Id), Time: tutils.Timestamp(n.Time)}
-				sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, metrics, r)
+				sp.Reconciler.NotifyTaskAbsent(ctx, sp.Scheduler, events, r)
 			case taskStateRunning:
 				r := &reconciler.TaskRunningRequest{
 					RequestID: scheduler.RequestID(n.Task.Id),
 					Time:      tutils.Timestamp(n.Time),
 					WorkerID:  scheduler.WorkerID(n.Task.BotId),
 				}
-				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, metrics, r)
+				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, events, r)
 			case taskStateWaiting:
-				err = notifyTaskWaiting(ctx, sp, metrics, n)
+				err = notifyTaskWaiting(ctx, sp, events, n)
 			default:
 				panic("Invalid update type.")
 			}
@@ -127,7 +127,7 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 	}, &response
 }
 
-func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, metrics scheduler.MetricsSink, n *swarming.NotifyTasksItem) error {
+func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, events scheduler.EventSink, n *swarming.NotifyTasksItem) error {
 	var provisionableLabels []string
 	var baseLabels []string
 	var accountID string
@@ -154,7 +154,7 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, metrics schedu
 		RequestID:           scheduler.RequestID(n.Task.Id),
 		Time:                tutils.Timestamp(n.Time),
 	}
-	sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, metrics, r)
+	sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, events, r)
 
 	return nil
 }

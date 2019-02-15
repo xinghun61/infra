@@ -22,21 +22,21 @@ import (
 	"infra/qscheduler/qslib/tutils"
 )
 
-// MetricsSink defines the interface for a class that records scheduler
-// metrics.
-type MetricsSink interface {
+// EventSink defines the interface for a class that records scheduler
+// events, for metrics or analytics purposes.
+type EventSink interface {
 	AddEvent(*metrics.TaskEvent)
 }
 
-// nullMetricsSink is a trivial implementation of MetricsSink that discards
+// nullEventSink is a trivial implementation of MetricsSink that discards
 // metrics.
-type nullMetricsSink struct{}
+type nullEventSink struct{}
 
-// AddEvent implements MetricsSink.
-func (m *nullMetricsSink) AddEvent(_ *metrics.TaskEvent) {}
+// AddEvent implements EventSink.
+func (m *nullEventSink) AddEvent(_ *metrics.TaskEvent) {}
 
-// NullMetricsSink is a trivial MetricsSink that discards metrics.
-var NullMetricsSink MetricsSink = &nullMetricsSink{}
+// NullEventSink is a trivial MetricsSink that discards metrics.
+var NullEventSink EventSink = &nullEventSink{}
 
 // eventCommon returns a metrics.TaskEvent with fields populated that are common
 // to all event types.

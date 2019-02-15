@@ -47,11 +47,11 @@ func Example() {
 	// Create a task request, and add it to the scheduler queue.
 	requestID := scheduler.RequestID("Request1")
 	request := scheduler.NewTaskRequest(requestID, accountID, stringset.NewFromSlice("Label1"), nil, time.Now())
-	s.AddRequest(ctx, request, time.Now(), scheduler.NullMetricsSink)
+	s.AddRequest(ctx, request, time.Now(), scheduler.NullEventSink)
 
 	// Inform the scheduler of the existence of an idle worker.
 	workerID := scheduler.WorkerID("Worker1")
-	s.MarkIdle(ctx, workerID, stringset.NewFromSlice("Label2"), time.Now(), scheduler.NullMetricsSink)
+	s.MarkIdle(ctx, workerID, stringset.NewFromSlice("Label2"), time.Now(), scheduler.NullEventSink)
 
 	// False.
 	IsOn(requestID, workerID, s)
@@ -61,7 +61,7 @@ func Example() {
 	t := time.Now()
 	s.UpdateTime(ctx, t)
 	// This will return a match between Request1 and Worker1.
-	assignments := s.RunOnce(ctx, scheduler.NullMetricsSink)
+	assignments := s.RunOnce(ctx, scheduler.NullEventSink)
 
 	// True.
 	IsOn(requestID, workerID, s)
@@ -78,7 +78,7 @@ func Example() {
 	// Note: the account is already being charged for this task prior to the
 	// notification. The notification ensures consistency of request and worker
 	// state, but does not affect account state.
-	s.NotifyTaskRunning(ctx, "Request1", "Worker1", time.Now(), scheduler.NullMetricsSink)
+	s.NotifyTaskRunning(ctx, "Request1", "Worker1", time.Now(), scheduler.NullEventSink)
 
 	// True.
 	IsOn(requestID, workerID, s)
@@ -94,7 +94,7 @@ func Example() {
 	// causing records about that worker and previous request to be deleted.
 	// Note that this deletion will not affect the current balance of Account1;
 	// quota that was spent already on Request1 will not be refunded.
-	s.NotifyTaskRunning(ctx, "Request2", "Worker1", time.Now(), scheduler.NullMetricsSink)
+	s.NotifyTaskRunning(ctx, "Request2", "Worker1", time.Now(), scheduler.NullEventSink)
 
 	// False.
 	IsOn(requestID, workerID, s)

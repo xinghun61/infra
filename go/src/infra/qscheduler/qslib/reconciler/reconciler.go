@@ -87,7 +87,7 @@ type Assignment struct {
 
 // AssignTasks accepts one or more idle workers, and returns tasks to be assigned
 // to those workers (if there are tasks available).
-func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, metrics scheduler.MetricsSink, workers ...*IdleWorker) []Assignment {
+func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, events scheduler.EventSink, workers ...*IdleWorker) []Assignment {
 	state.ensureMaps()
 	s.UpdateTime(ctx, t)
 
@@ -104,14 +104,14 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 		wid := w.ID
 		q, ok := state.proto.WorkerQueues[string(wid)]
 		if !ok || !s.IsAssigned(scheduler.RequestID(q.TaskToAssign), wid) {
-			s.MarkIdle(ctx, wid, w.Labels, t, metrics)
+			s.MarkIdle(ctx, wid, w.Labels, t, events)
 			delete(state.proto.WorkerQueues, string(wid))
 		}
 	}
 
 	// Call scheduler, and update worker queues based on assignments that it
 	// yielded.
-	newAssignments := s.RunOnce(ctx, metrics)
+	newAssignments := s.RunOnce(ctx, events)
 
 	for _, a := range newAssignments {
 		if a.TaskToAbort != "" && a.Type != scheduler.AssignmentPreemptWorker {
@@ -188,7 +188,7 @@ func (state *State) Cancellations(ctx context.Context) []Cancellation {
 }
 
 // NotifyTaskWaiting informs the quotascheduler about a waiting task.
-func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskWaitingRequest) {
+func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Scheduler, events scheduler.EventSink, update *TaskWaitingRequest) {
 	state.ensureMaps()
 	req := scheduler.NewTaskRequest(
 		update.RequestID,
@@ -196,17 +196,17 @@ func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Schedule
 		update.ProvisionableLabels,
 		update.BaseLabels,
 		update.EnqueueTime)
-	s.AddRequest(ctx, req, update.Time, metrics)
+	s.AddRequest(ctx, req, update.Time, events)
 }
 
 // NotifyTaskRunning informs the quotascheduler about a running task.
-func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskRunningRequest) {
+func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Scheduler, events scheduler.EventSink, update *TaskRunningRequest) {
 	state.ensureMaps()
 	wid := update.WorkerID
 	rid := update.RequestID
 	// This NotifyRequest call ensures scheduler state consistency with
 	// the latest update.
-	s.NotifyTaskRunning(ctx, rid, wid, update.Time, metrics)
+	s.NotifyTaskRunning(ctx, rid, wid, update.Time, events)
 	if q, ok := state.proto.WorkerQueues[string(wid)]; ok {
 		if !update.Time.Before(tutils.Timestamp(q.EnqueueTime)) {
 			delete(state.proto.WorkerQueues, string(wid))
@@ -220,11 +220,11 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 }
 
 // NotifyTaskAbsent informs the quotascheduler about an absent task.
-func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, metrics scheduler.MetricsSink, update *TaskAbsentRequest) {
+func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler, events scheduler.EventSink, update *TaskAbsentRequest) {
 	state.ensureMaps()
 	rid := update.RequestID
 	t := update.Time
-	s.NotifyTaskAbsent(ctx, rid, t, metrics)
+	s.NotifyTaskAbsent(ctx, rid, t, events)
 	// TODO(akeshet): Add an inverse map from aborting request -> previous
 	// worker to avoid the need for this iteration through all workers.
 	for wid, q := range state.proto.WorkerQueues {

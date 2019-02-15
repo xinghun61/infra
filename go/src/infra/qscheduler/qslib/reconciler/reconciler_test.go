@@ -61,11 +61,11 @@ func TestOneAssignment(t *testing.T) {
 				EnqueueTime:         t0,
 			}
 
-			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+			r.NotifyTaskWaiting(ctx, s, scheduler.NullEventSink, taskUpdate)
 
 			Convey("when AssignTasks is called for a worker that has the task's provisionable label", func() {
 				wid := scheduler.WorkerID("Worker1")
-				as := r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{ID: wid, Labels: labels})
+				as := r.AssignTasks(ctx, s, t0, scheduler.NullEventSink, &IdleWorker{ID: wid, Labels: labels})
 
 				Convey("then it is given the assigned task with no provision required.", func() {
 					So(as, ShouldHaveLength, 1)
@@ -78,7 +78,7 @@ func TestOneAssignment(t *testing.T) {
 
 			Convey("when AssignTasks is called for a worker that doesn't have task's provisionable label", func() {
 				wid := scheduler.WorkerID("Worker1")
-				as := r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
+				as := r.AssignTasks(ctx, s, t0, scheduler.NullEventSink, &IdleWorker{ID: wid})
 
 				Convey("then it is given the assigned task with provision required.", func() {
 					So(as, ShouldHaveLength, 1)
@@ -89,7 +89,7 @@ func TestOneAssignment(t *testing.T) {
 				})
 
 				Convey("when AssignTasks is called again for the same worker", func() {
-					as = r.AssignTasks(ctx, s, t1, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
+					as = r.AssignTasks(ctx, s, t1, scheduler.NullEventSink, &IdleWorker{ID: wid})
 					Convey("then it is given the same task.", func() {
 						So(as, ShouldHaveLength, 1)
 						a := as[0]
@@ -118,10 +118,10 @@ func TestOneAssignment(t *testing.T) {
 							WorkerID:  wid,
 							Time:      c.t,
 						}
-						r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+						r.NotifyTaskRunning(ctx, s, scheduler.NullEventSink, taskUpdate)
 
 						Convey("when AssignTasks is called again for the same worker", func() {
-							as = r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
+							as = r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, &IdleWorker{ID: wid})
 							Convey("then it is no longer given the task.", func() {
 								So(as, ShouldBeEmpty)
 							})
@@ -136,10 +136,10 @@ func TestOneAssignment(t *testing.T) {
 						WorkerID:  wid,
 						Time:      t1,
 					}
-					r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+					r.NotifyTaskRunning(ctx, s, scheduler.NullEventSink, taskUpdate)
 
 					Convey("when AssignTasks is called again for the same worker", func() {
-						as = r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
+						as = r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, &IdleWorker{ID: wid})
 						Convey("then it is no longer given the task.", func() {
 							So(as, ShouldBeEmpty)
 						})
@@ -153,9 +153,9 @@ func TestOneAssignment(t *testing.T) {
 						WorkerID:  wid2,
 						Time:      t1,
 					}
-					r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+					r.NotifyTaskRunning(ctx, s, scheduler.NullEventSink, taskUpdate)
 					Convey("when AssignTasks is called again for the same worker", func() {
-						as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
+						as := r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, &IdleWorker{ID: wid})
 						Convey("then it is no longer given the task.", func() {
 							So(as, ShouldBeEmpty)
 						})
@@ -181,7 +181,7 @@ func TestQueuedAssignment(t *testing.T) {
 		Convey("given a worker with a label is idle", func() {
 			wid := scheduler.WorkerID("Worker1")
 			labels := stringset.NewFromSlice("Label1")
-			r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{wid, labels})
+			r.AssignTasks(ctx, s, t0, scheduler.NullEventSink, &IdleWorker{wid, labels})
 			Convey("given a request is enqueued with that label", func() {
 				rid := scheduler.RequestID("Request1")
 				taskUpdate := &TaskWaitingRequest{
@@ -190,16 +190,16 @@ func TestQueuedAssignment(t *testing.T) {
 					ProvisionableLabels: labels,
 					RequestID:           rid,
 				}
-				r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+				r.NotifyTaskWaiting(ctx, s, scheduler.NullEventSink, taskUpdate)
 				Convey("when a different worker without that label calls AssignTasks", func() {
 					wid2 := scheduler.WorkerID("Worker2")
 					t1 := time.Unix(1, 0)
-					as := r.AssignTasks(ctx, s, t1, scheduler.NullMetricsSink, &IdleWorker{wid2, stringset.New(0)})
+					as := r.AssignTasks(ctx, s, t1, scheduler.NullEventSink, &IdleWorker{wid2, stringset.New(0)})
 					Convey("then it is given no task.", func() {
 						So(as, ShouldBeEmpty)
 					})
 					Convey("when the labeled worker calls AssignTasks", func() {
-						as = r.AssignTasks(ctx, s, t1, scheduler.NullMetricsSink, &IdleWorker{wid, labels})
+						as = r.AssignTasks(ctx, s, t1, scheduler.NullEventSink, &IdleWorker{wid, labels})
 						Convey("it is given the task.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, rid)
@@ -228,10 +228,10 @@ func TestPreemption(t *testing.T) {
 				Time:        t0,
 				RequestID:   oldRequest,
 			}
-			r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+			r.NotifyTaskWaiting(ctx, s, scheduler.NullEventSink, taskUpdate)
 
 			wid := scheduler.WorkerID("Worker1")
-			r.AssignTasks(ctx, s, t0, scheduler.NullMetricsSink, &IdleWorker{ID: wid})
+			r.AssignTasks(ctx, s, t0, scheduler.NullEventSink, &IdleWorker{ID: wid})
 
 			// Note: This is more of a test of the scheduler's behavior than the
 			// reconciler, but it is a precondition for the rest of the test cases.
@@ -248,10 +248,10 @@ func TestPreemption(t *testing.T) {
 					Time:        t1,
 					RequestID:   newRequest,
 				}
-				r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+				r.NotifyTaskWaiting(ctx, s, scheduler.NullEventSink, taskUpdate)
 
 				Convey("when AssignTasks is called with no idle workers and the scheduler preempts the old request with the new one", func() {
-					r.AssignTasks(ctx, s, t1, scheduler.NullMetricsSink)
+					r.AssignTasks(ctx, s, t1, scheduler.NullEventSink)
 
 					// Note: This is more of a test of the scheduler's behavior than the
 					// reconciler, but it is a precondition for the rest of the test cases.
@@ -268,7 +268,7 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when Notify is called to inform that the old request is cancelled", func() {
 						t2 := time.Unix(2, 0)
-						r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, &TaskAbsentRequest{RequestID: oldRequest, Time: t2})
+						r.NotifyTaskAbsent(ctx, s, scheduler.NullEventSink, &TaskAbsentRequest{RequestID: oldRequest, Time: t2})
 						Convey("when GetCancellations is called", func() {
 							c := r.Cancellations(ctx)
 							Convey("then it returns nothing.", func() {
@@ -279,7 +279,7 @@ func TestPreemption(t *testing.T) {
 
 					Convey("when AssignTasks is called for the intended worker", func() {
 						t2 := time.Unix(2, 0)
-						as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{wid, stringset.New(0)})
+						as := r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, &IdleWorker{wid, stringset.New(0)})
 						Convey("then it returns the preempting request.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, newRequest)
@@ -290,7 +290,7 @@ func TestPreemption(t *testing.T) {
 					Convey("when AssignTasks is called for a different worker prior to ACK of the cancellation", func() {
 						t2 := time.Unix(2, 0)
 						wid2 := scheduler.WorkerID("Worker2")
-						as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{wid2, stringset.New(0)})
+						as := r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, &IdleWorker{wid2, stringset.New(0)})
 						Convey("then it returns nothing.", func() {
 							So(as, ShouldHaveLength, 0)
 						})
@@ -304,12 +304,12 @@ func TestPreemption(t *testing.T) {
 							Time:        t0,
 							RequestID:   oldRequest,
 						}
-						r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, taskUpdate)
+						r.NotifyTaskWaiting(ctx, s, scheduler.NullEventSink, taskUpdate)
 
 						Convey("when AssignTasks is called for a different worker", func() {
 
 							wid2 := scheduler.WorkerID("Worker2")
-							as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{wid2, stringset.New(0)})
+							as := r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, &IdleWorker{wid2, stringset.New(0)})
 							Convey("then it returns the previously cancelled request.", func() {
 								So(as, ShouldHaveLength, 1)
 								So(as[0].RequestID, ShouldEqual, oldRequest)
@@ -319,7 +319,7 @@ func TestPreemption(t *testing.T) {
 
 						Convey("when AssignTasks is called for the intended worker and a different worker simultaneously", func() {
 							wid2 := scheduler.WorkerID("Worker2")
-							as := r.AssignTasks(ctx, s, t2, scheduler.NullMetricsSink, &IdleWorker{wid, stringset.New(0)}, &IdleWorker{wid2, stringset.New(0)})
+							as := r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, &IdleWorker{wid, stringset.New(0)}, &IdleWorker{wid2, stringset.New(0)})
 							Convey("then intended worker receives preempting request, other receives preempted request.", func() {
 								So(as, ShouldHaveLength, 2)
 								a1 := Assignment{RequestID: newRequest, WorkerID: wid}
@@ -361,7 +361,7 @@ func TestTaskError(t *testing.T) {
 				})
 			})
 			Convey("when NotifyRequest is called to abort the task", func() {
-				r.NotifyTaskAbsent(ctx, s, scheduler.NullMetricsSink, &TaskAbsentRequest{RequestID: taskID, Time: t0})
+				r.NotifyTaskAbsent(ctx, s, scheduler.NullEventSink, &TaskAbsentRequest{RequestID: taskID, Time: t0})
 				Convey("when GetCancellations is called", func() {
 					c := r.Cancellations(ctx)
 					Convey("then it returns nothing.", func() {

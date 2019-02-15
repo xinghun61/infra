@@ -24,13 +24,13 @@ import (
 )
 
 // Operation is the type for functions that examine and mutate a state.
-type Operation func(ctx context.Context, state *QScheduler, metrics scheduler.MetricsSink) error
+type Operation func(ctx context.Context, state *QScheduler, events scheduler.EventSink) error
 
 // RevertableOperation is the type for revertable functions that mutate a state.
 //
 // The function indicates whether its mutations should be reverted (ie its
 // changes to state should not be saved).
-type RevertableOperation func(ctx context.Context, state *QScheduler, metrics scheduler.MetricsSink) (revert bool)
+type RevertableOperation func(ctx context.Context, state *QScheduler, events scheduler.EventSink) (revert bool)
 
 // QScheduler encapsulates the state of a scheduler.
 type QScheduler struct {

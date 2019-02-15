@@ -41,22 +41,22 @@ type schedulerRun struct {
 	scheduler *Scheduler
 }
 
-func (run *schedulerRun) Run(m MetricsSink) []*Assignment {
+func (run *schedulerRun) Run(e EventSink) []*Assignment {
 	var output []*Assignment
 	// Proceed through multiple passes of the scheduling algorithm, from highest
 	// to lowest priority requests (high priority = low p).
 	for p := Priority(0); p < NumPriorities; p++ {
 		// Step 1: Match any requests to idle workers that have matching
 		// provisionable labels.
-		output = append(output, run.matchIdleBots(p, provisionAwareMatch, m)...)
+		output = append(output, run.matchIdleBots(p, provisionAwareMatch, e)...)
 		// Step 2: Match request to any remaining idle workers, regardless of
 		// provisionable labels.
-		output = append(output, run.matchIdleBots(p, basicMatch, m)...)
+		output = append(output, run.matchIdleBots(p, basicMatch, e)...)
 		// Step 3: Demote (out of this level) or promote (into this level) any
 		// already running tasks that qualify.
-		run.reprioritizeRunningTasks(p, m)
+		run.reprioritizeRunningTasks(p, e)
 		// Step 4: Preempt any lower priority running tasks.
-		output = append(output, run.preemptRunningTasks(p, m)...)
+		output = append(output, run.preemptRunningTasks(p, e)...)
 		// Step 5: Give any requests that were throttled in this pass a chance to be scheduled
 		// during the final FreeBucket pass.
 		run.moveThrottledRequests(p)
@@ -66,8 +66,8 @@ func (run *schedulerRun) Run(m MetricsSink) []*Assignment {
 	// idle workers. The reprioritize and preempt stages do not apply here.
 	// TODO(akeshet): Consider a final sorting step here, so that FIFO ordering is respected among
 	// FreeBucket jobs, including those that were moved the the throttled list during the pass above.
-	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch, m)...)
-	output = append(output, run.matchIdleBots(FreeBucket, basicMatch, m)...)
+	output = append(output, run.matchIdleBots(FreeBucket, provisionAwareMatch, e)...)
+	output = append(output, run.matchIdleBots(FreeBucket, basicMatch, e)...)
 
 	return output
 }
@@ -181,7 +181,7 @@ func computeWorkerMatch(w *Worker, requests requestList, mf matcher) []matchList
 }
 
 // matchIdleBots matches requests with idle workers.
-func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, mSink MetricsSink) []*Assignment {
+func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events EventSink) []*Assignment {
 	var output []*Assignment
 	for wid, w := range run.idleWorkers {
 		// Try to match.
@@ -204,7 +204,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, mSink Metr
 			run.assignRequestToWorker(wid, match.node, priority)
 			run.scheduler.state.applyAssignment(m)
 			output = append(output, m)
-			mSink.AddEvent(
+			events.AddEvent(
 				eventAssigned(match.request, w, run.scheduler.state, run.scheduler.state.lastUpdateTime,
 					&metrics.TaskEvent_AssignedDetails{
 						Preempting:        false,
@@ -229,7 +229,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, mSink Metr
 //
 // Running tasks are promoted if their quota account has a sufficiently positive
 // balance and a recharge rate that can sustain them at this level.
-func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, mSink MetricsSink) {
+func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, events EventSink) {
 	state := run.scheduler.state
 	config := run.scheduler.config
 	// TODO(akeshet): jobs that are currently running, but have no corresponding account,
@@ -254,10 +254,10 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, mSink Metri
 
 		switch {
 		case demote && chargeRate < 0:
-			doDemote(state, runningAtP, chargeRate, priority, mSink)
+			doDemote(state, runningAtP, chargeRate, priority, events)
 		case promote && chargeRate > 0:
 			runningBelowP := workersBelow(state.workers, priority, accountID)
-			doPromote(state, runningBelowP, chargeRate, priority, mSink)
+			doPromote(state, runningBelowP, chargeRate, priority, events)
 		}
 	}
 }
@@ -267,12 +267,12 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, mSink Metri
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *state, candidates []*Worker, chargeRate float64, priority Priority, mSink MetricsSink) {
+func doDemote(state *state, candidates []*Worker, chargeRate float64, priority Priority, events EventSink) {
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
 	for _, toDemote := range candidates[:numberToDemote] {
-		mSink.AddEvent(eventReprioritized(toDemote.runningTask.request, toDemote, state, state.lastUpdateTime,
+		events.AddEvent(eventReprioritized(toDemote.runningTask.request, toDemote, state, state.lastUpdateTime,
 			&metrics.TaskEvent_ReprioritizedDetails{
 				NewPriority: int32(priority) + 1,
 				OldPriority: int32(toDemote.runningTask.priority),
@@ -285,12 +285,12 @@ func doDemote(state *state, candidates []*Worker, chargeRate float64, priority P
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *state, candidates []*Worker, chargeRate float64, priority Priority, mSink MetricsSink) {
+func doPromote(state *state, candidates []*Worker, chargeRate float64, priority Priority, events EventSink) {
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
 	for _, toPromote := range candidates[:numberToPromote] {
-		mSink.AddEvent(eventReprioritized(toPromote.runningTask.request, toPromote, state, state.lastUpdateTime,
+		events.AddEvent(eventReprioritized(toPromote.runningTask.request, toPromote, state, state.lastUpdateTime,
 			&metrics.TaskEvent_ReprioritizedDetails{
 				NewPriority: int32(priority) + 1,
 				OldPriority: int32(toPromote.runningTask.priority),
@@ -331,7 +331,7 @@ func workersBelow(ws map[WorkerID]*Worker, priority Priority, accountID AccountI
 // preemptRunningTasks interrupts lower priority already-running tasks, and
 // replaces them with higher priority tasks. When doing so, it also reimburses
 // the account that had been charged for the task.
-func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSink) []*Assignment {
+func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink) []*Assignment {
 	state := run.scheduler.state
 	var output []*Assignment
 	candidates := make([]*Worker, 0, len(state.workers))
@@ -378,7 +378,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSin
 				Time:        state.lastUpdateTime,
 			}
 			run.assignRequestToWorker(worker.ID, m.node, priority)
-			mSink.AddEvent(
+			events.AddEvent(
 				eventAssigned(m.request, worker, state, state.lastUpdateTime,
 					&metrics.TaskEvent_AssignedDetails{
 						Preempting:        true,
@@ -387,7 +387,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSin
 						Priority:          int32(priority),
 						ProvisionRequired: !worker.Labels.Contains(r.ProvisionableLabels),
 					}))
-			mSink.AddEvent(
+			events.AddEvent(
 				eventPreempted(worker.runningTask.request, worker, state, state.lastUpdateTime,
 					&metrics.TaskEvent_PreemptedDetails{
 						PreemptingAccountId: string(m.request.AccountID),

@@ -44,19 +44,19 @@ func Example() {
 		EnqueueTime:         t,
 		Time:                t,
 	}
-	r.NotifyTaskWaiting(ctx, s, scheduler.NullMetricsSink, waitRequest)
+	r.NotifyTaskWaiting(ctx, s, scheduler.NullEventSink, waitRequest)
 
 	// Notify the reconciler of a new idle worker, and fetch an assignment
 	// for it. This will fetch Request1 to run on it.
 	workerID := scheduler.WorkerID("Worker1")
 	idleWorker := &reconciler.IdleWorker{ID: workerID, Labels: labels}
-	a := r.AssignTasks(ctx, s, time.Now(), scheduler.NullMetricsSink, idleWorker)
+	a := r.AssignTasks(ctx, s, time.Now(), scheduler.NullEventSink, idleWorker)
 
 	fmt.Printf("%s was assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
 	// A subsequent call for this worker will return the same task,
 	// because the previous assignment has not yet been acknowledged.
-	a = r.AssignTasks(ctx, s, time.Now(), scheduler.NullMetricsSink, idleWorker)
+	a = r.AssignTasks(ctx, s, time.Now(), scheduler.NullEventSink, idleWorker)
 
 	fmt.Printf("%s was again assigned %s.\n", a[0].WorkerID, a[0].RequestID)
 
@@ -66,11 +66,11 @@ func Example() {
 		WorkerID:  workerID,
 		Time:      time.Now(),
 	}
-	r.NotifyTaskRunning(ctx, s, scheduler.NullMetricsSink, runningRequest)
+	r.NotifyTaskRunning(ctx, s, scheduler.NullEventSink, runningRequest)
 
 	// Now, a subsequent AssignTasks call for this worker will return
 	// nothing, as there are no other tasks in the queue.
-	a = r.AssignTasks(ctx, s, time.Now(), scheduler.NullMetricsSink, idleWorker)
+	a = r.AssignTasks(ctx, s, time.Now(), scheduler.NullEventSink, idleWorker)
 	fmt.Printf("After ACK, there were %d new assignments.\n", len(a))
 
 	// Output:

@@ -38,14 +38,14 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := scheduler.New(tm)
-		s.MarkIdle(ctx, "w0", stringset.New(0), tm, scheduler.NullMetricsSink)
-		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("label1"), tm, scheduler.NullMetricsSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest("t1", "a1", stringset.NewFromSlice("label1"), nil, tm), tm, scheduler.NullMetricsSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest("t2", "a1", stringset.NewFromSlice("label2"), nil, tm), tm, scheduler.NullMetricsSink)
+		s.MarkIdle(ctx, "w0", stringset.New(0), tm, scheduler.NullEventSink)
+		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("label1"), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest("t1", "a1", stringset.NewFromSlice("label1"), nil, tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest("t2", "a1", stringset.NewFromSlice("label2"), nil, tm), tm, scheduler.NullEventSink)
 		c := scheduler.NewAccountConfig(0, 0, nil)
 		s.AddAccount(ctx, "a1", c, []float64{2, 0, 0})
 		Convey("when scheduling jobs", func() {
-			muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
+			muts := s.RunOnce(ctx, scheduler.NullEventSink)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
 				expects := []*scheduler.Assignment{
 					{Type: scheduler.AssignmentIdleWorker, Priority: 0, RequestID: "t1", WorkerID: "w1", Time: tm},
@@ -65,13 +65,13 @@ func TestMatchAccountless(t *testing.T) {
 		tm := time.Unix(0, 0)
 		s := scheduler.New(tm)
 		wid := scheduler.WorkerID("worker")
-		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullMetricsSink)
+		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullEventSink)
 
 		Convey("and a request with no account", func() {
 			rid := scheduler.RequestID("req")
-			s.AddRequest(ctx, scheduler.NewTaskRequest(rid, "", nil, nil, tm), tm, scheduler.NullMetricsSink)
+			s.AddRequest(ctx, scheduler.NewTaskRequest(rid, "", nil, nil, tm), tm, scheduler.NullEventSink)
 			Convey("when scheduling is run", func() {
-				muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
+				muts := s.RunOnce(ctx, scheduler.NullEventSink)
 				Convey("then the request is matched at lowest priority.", func() {
 					So(muts, ShouldHaveLength, 1)
 					So(muts[0].Priority, ShouldEqual, scheduler.FreeBucket)
@@ -94,14 +94,14 @@ func TestMatchThrottledAccountJobs(t *testing.T) {
 		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 0, nil), []float64{1})
 		var r1 scheduler.RequestID = "Request1"
 		var r2 scheduler.RequestID = "Request2"
-		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, aid, nil, nil, tm), tm, scheduler.NullMetricsSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest(r2, aid, nil, nil, tm), tm, scheduler.NullMetricsSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, aid, nil, nil, tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r2, aid, nil, nil, tm), tm, scheduler.NullEventSink)
 		var w1 scheduler.WorkerID = "Worker1"
 		var w2 scheduler.WorkerID = "Worker2"
-		s.MarkIdle(ctx, w1, nil, tm, scheduler.NullMetricsSink)
-		s.MarkIdle(ctx, w2, nil, tm, scheduler.NullMetricsSink)
+		s.MarkIdle(ctx, w1, nil, tm, scheduler.NullEventSink)
+		s.MarkIdle(ctx, w2, nil, tm, scheduler.NullEventSink)
 		Convey("when running a round of scheduling", func() {
-			m := s.RunOnce(ctx, scheduler.NullMetricsSink)
+			m := s.RunOnce(ctx, scheduler.NullEventSink)
 			Convey("then both requests should be assigned to a worker, but 1 of them at FreeBucket priority.", func() {
 				So(m, ShouldHaveLength, 2)
 				priorities := map[Priority]bool{m[0].Priority: true, m[1].Priority: true}
@@ -123,16 +123,16 @@ func TestMatchProvisionableLabel(t *testing.T) {
 		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 1, nil), []float64{1})
 		for i := 0; i < 500; i++ {
 			id := scheduler.RequestID(fmt.Sprintf("t%d", i))
-			s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, stringset.NewFromSlice("a"), nil, tm), tm, scheduler.NullMetricsSink)
+			s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, stringset.NewFromSlice("a"), nil, tm), tm, scheduler.NullEventSink)
 		}
-		s.AddRequest(ctx, scheduler.NewTaskRequest(reqB, aid, stringset.NewFromSlice("b"), nil, tm), tm, scheduler.NullMetricsSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(reqB, aid, stringset.NewFromSlice("b"), nil, tm), tm, scheduler.NullEventSink)
 
 		Convey("and an idle worker with labels 'b' and 'c'", func() {
 			wid := scheduler.WorkerID("workerID")
-			s.MarkIdle(ctx, wid, stringset.NewFromSlice("b", "c"), tm, scheduler.NullMetricsSink)
+			s.MarkIdle(ctx, wid, stringset.NewFromSlice("b", "c"), tm, scheduler.NullEventSink)
 
 			Convey("when scheduling jobs", func() {
-				muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
+				muts := s.RunOnce(ctx, scheduler.NullEventSink)
 
 				Convey("then worker is matched to the task with label 'b'.", func() {
 					So(muts, ShouldHaveLength, 1)
@@ -153,10 +153,10 @@ func TestBaseLabelMatch(t *testing.T) {
 		var wid scheduler.WorkerID = "WorkerID"
 		var rid scheduler.RequestID = "RequestID"
 		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float64{1})
-		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullMetricsSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest(rid, aid, nil, stringset.NewFromSlice("unsatisfied_label"), tm), tm, scheduler.NullMetricsSink)
+		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(rid, aid, nil, stringset.NewFromSlice("unsatisfied_label"), tm), tm, scheduler.NullEventSink)
 		Convey("when scheduling jobs", func() {
-			m := s.RunOnce(ctx, scheduler.NullMetricsSink)
+			m := s.RunOnce(ctx, scheduler.NullEventSink)
 			Convey("no requests should be assigned to workers.", func() {
 				So(m, ShouldBeEmpty)
 			})
@@ -174,22 +174,22 @@ func TestMatchRareLabel(t *testing.T) {
 		commonLabel := "CommonLabel"
 		for i := 0; i < 10; i++ {
 			id := scheduler.WorkerID(fmt.Sprintf("CommonWorker%d", i))
-			s.MarkIdle(ctx, id, stringset.NewFromSlice(commonLabel), tm, scheduler.NullMetricsSink)
+			s.MarkIdle(ctx, id, stringset.NewFromSlice(commonLabel), tm, scheduler.NullEventSink)
 		}
 		rareLabel := "RareLabel"
 		var rareWorker scheduler.WorkerID = "RareWorker"
-		s.MarkIdle(ctx, rareWorker, stringset.NewFromSlice(commonLabel, rareLabel), tm, scheduler.NullMetricsSink)
+		s.MarkIdle(ctx, rareWorker, stringset.NewFromSlice(commonLabel, rareLabel), tm, scheduler.NullEventSink)
 		Convey("and 10 interchangable requests and 1 rare-labeled request", func() {
 			var aid scheduler.AccountID = "AccountID"
 			s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float64{1})
 			for i := 0; i < 10; i++ {
 				id := scheduler.RequestID(fmt.Sprintf("CommonRequest%d", i))
-				s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, nil, stringset.NewFromSlice(commonLabel), tm), tm, scheduler.NullMetricsSink)
+				s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, nil, stringset.NewFromSlice(commonLabel), tm), tm, scheduler.NullEventSink)
 			}
 			var rareRequest scheduler.RequestID = "RareRequest"
-			s.AddRequest(ctx, scheduler.NewTaskRequest(rareRequest, aid, nil, stringset.NewFromSlice(commonLabel, rareLabel), tm), tm, scheduler.NullMetricsSink)
+			s.AddRequest(ctx, scheduler.NewTaskRequest(rareRequest, aid, nil, stringset.NewFromSlice(commonLabel, rareLabel), tm), tm, scheduler.NullEventSink)
 			Convey("when scheduling jobs", func() {
-				muts := s.RunOnce(ctx, scheduler.NullMetricsSink)
+				muts := s.RunOnce(ctx, scheduler.NullEventSink)
 				Convey("then all jobs are scheduled to workers, including the rare requests and workers.", func() {
 					So(muts, ShouldHaveLength, 11)
 					So(s.IsAssigned(rareRequest, rareWorker), ShouldBeTrue)
@@ -205,7 +205,7 @@ func TestAddRequest(t *testing.T) {
 	tm := time.Unix(0, 0)
 	s := scheduler.New(tm)
 	r := scheduler.NewTaskRequest("r1", "a1", nil, nil, tm)
-	s.AddRequest(ctx, r, tm, scheduler.NullMetricsSink)
+	s.AddRequest(ctx, r, tm, scheduler.NullEventSink)
 
 	if _, ok := s.GetRequest("r1"); !ok {
 		t.Errorf("AddRequest did not enqueue request.")

@@ -137,11 +137,11 @@ func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *protos
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time, m MetricsSink) {
+func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time, e EventSink) {
 	if request.ID == "" {
 		panic("empty request id")
 	}
-	s.state.addRequest(ctx, request, t, m)
+	s.state.addRequest(ctx, request, t, e)
 }
 
 // IsAssigned returns whether the given request is currently assigned to the
@@ -229,31 +229,31 @@ type IdleWorker struct {
 // of state, then it does nothing.
 //
 // Note: calls to MarkIdle come from bot reap calls from swarming.
-func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time, m MetricsSink) {
-	s.state.markIdle(workerID, labels, t, m)
+func (s *Scheduler) MarkIdle(ctx context.Context, workerID WorkerID, labels stringset.Set, t time.Time, e EventSink) {
+	s.state.markIdle(workerID, labels, t, e)
 }
 
 // NotifyTaskRunning informs the scheduler authoritatively that the given task
 // was running on the given worker at the given time.
 //
 // Supplied requestID and workerID must not be "".
-func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) {
-	s.state.notifyTaskRunning(ctx, requestID, workerID, t, m)
+func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, e EventSink) {
+	s.state.notifyTaskRunning(ctx, requestID, workerID, t, e)
 }
 
 // NotifyTaskAbsent informs the scheduler authoritatively that the given request
 // is stopped (not running on a worker, and not in the queue) at the given time.
 //
 // Supplied requestID must not be "".
-func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) {
-	s.state.notifyTaskAbsent(ctx, requestID, t, m)
+func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, e EventSink) {
+	s.state.notifyTaskAbsent(ctx, requestID, t, e)
 }
 
 // RunOnce performs a single round of the quota scheduler algorithm
 // on a given state and config, and returns a slice of state mutations.
-func (s *Scheduler) RunOnce(ctx context.Context, m MetricsSink) []*Assignment {
+func (s *Scheduler) RunOnce(ctx context.Context, e EventSink) []*Assignment {
 	pass := s.newRun()
-	return pass.Run(m)
+	return pass.Run(e)
 }
 
 // GetRequest returns the (waiting or running) request for a given ID.

@@ -44,12 +44,12 @@ func TestBatcherErrors(t *testing.T) {
 
 		Convey("an error in one operation in the batch is propagated correctly.", func() {
 			var goodError error
-			goodOperation := func(ctx context.Context, s *types.QScheduler, m scheduler.MetricsSink) error {
+			goodOperation := func(ctx context.Context, s *types.QScheduler, m scheduler.EventSink) error {
 				return nil
 			}
 
 			var badError error
-			badOperation := func(ctx context.Context, s *types.QScheduler, m scheduler.MetricsSink) error {
+			badOperation := func(ctx context.Context, s *types.QScheduler, m scheduler.EventSink) error {
 				return errors.New("a bad error occurred")
 			}
 
@@ -95,12 +95,12 @@ func TestBatcherBehavior(t *testing.T) {
 
 		Convey("a batch of requests are run in priority order.", func() {
 			s := &[]string{}
-			operationA := func(_ context.Context, _ *types.QScheduler, _ scheduler.MetricsSink) error {
+			operationA := func(_ context.Context, _ *types.QScheduler, _ scheduler.EventSink) error {
 				temp := append(*s, "A")
 				s = &temp
 				return nil
 			}
-			operationB := func(_ context.Context, _ *types.QScheduler, _ scheduler.MetricsSink) error {
+			operationB := func(_ context.Context, _ *types.QScheduler, _ scheduler.EventSink) error {
 				temp := append(*s, "B")
 				s = &temp
 				return nil

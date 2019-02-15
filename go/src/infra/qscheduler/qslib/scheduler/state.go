@@ -118,7 +118,7 @@ type Worker struct {
 
 // addRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m MetricsSink) {
+func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, e EventSink) {
 	if r.ID == "" {
 		panic("empty request id")
 	}
@@ -127,7 +127,7 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m M
 	knownRequest, alreadyKnown := s.getRequest(rid)
 	if !alreadyKnown {
 		// Request is not already known. Add it.
-		s.addNewRequest(ctx, r, t, m)
+		s.addNewRequest(ctx, r, t, e)
 		return
 	}
 
@@ -145,19 +145,19 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, m M
 		// This notification is newer than the known state of request.
 		// Respect it.
 		s.deleteWorker(wid)
-		s.addNewRequest(ctx, r, t, m)
+		s.addNewRequest(ctx, r, t, e)
 	}
 }
 
 // addNewRequest immediately adds the given request to the queue.
-func (s *state) addNewRequest(ctx context.Context, r *TaskRequest, t time.Time, m MetricsSink) {
+func (s *state) addNewRequest(ctx context.Context, r *TaskRequest, t time.Time, e EventSink) {
 	r.confirm(t)
 	s.queuedRequests[r.ID] = r
-	m.AddEvent(eventEnqueued(r, s, t))
+	e.AddEvent(eventEnqueued(r, s, t))
 }
 
 // markIdle implements MarkIdle for a given state.
-func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, m MetricsSink) {
+func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, e EventSink) {
 	w, ok := s.workers[workerID]
 	if !ok {
 		// This is a new worker, create it and return.
@@ -194,13 +194,13 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, m
 	// Our worker wasn't previously idle. Remove the previous request it was
 	// running.
 	previousRequest := w.runningTask.request
-	m.AddEvent(eventCompleted(previousRequest, w, s, t,
+	e.AddEvent(eventCompleted(previousRequest, w, s, t,
 		&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_BOT_IDLE}))
 	s.deleteRequest(previousRequest.ID)
 }
 
 // notifyTaskRunning implements Scheduler.NotifyTaskRunning for a given State.
-func (s *state) notifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, m MetricsSink) {
+func (s *state) notifyTaskRunning(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, e EventSink) {
 	if workerID == "" {
 		panic("empty workerID")
 	}
@@ -210,17 +210,17 @@ func (s *state) notifyTaskRunning(ctx context.Context, requestID RequestID, work
 
 	if request, ok := s.getRequest(requestID); ok {
 		if !t.Before(request.confirmedTime) {
-			s.updateRequest(ctx, requestID, workerID, t, request, m)
+			s.updateRequest(ctx, requestID, workerID, t, request, e)
 		}
 	} else {
 		// The request didn't exist, but the notification might be more up to date
 		// that our information about the worker, in which case delete the worker.
-		s.deleteInconsistentWorkerIfOlder(workerID, t, m)
+		s.deleteInconsistentWorkerIfOlder(workerID, t, e)
 	}
 }
 
 // notifyTaskAbsent implements Scheduler.NotifyTaskAbsent for a given State.
-func (s *state) notifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, m MetricsSink) {
+func (s *state) notifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, e EventSink) {
 	r, ok := s.getRequest(requestID)
 	if !ok {
 		// Task was already absent.
@@ -232,7 +232,7 @@ func (s *state) notifyTaskAbsent(ctx context.Context, requestID RequestID, t tim
 		w := s.workers[wid]
 		if !t.Before(w.confirmedTime) && !t.Before(r.confirmedTime) {
 
-			m.AddEvent(eventCompleted(r, w, s, t,
+			e.AddEvent(eventCompleted(r, w, s, t,
 				&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_RUNNING_TASK_ABSENT}))
 			s.deleteWorker(wid)
 		}
@@ -241,7 +241,7 @@ func (s *state) notifyTaskAbsent(ctx context.Context, requestID RequestID, t tim
 
 	// Task was waiting.
 	if !t.Before(r.confirmedTime) {
-		m.AddEvent(eventCompleted(r, nil, s, t,
+		e.AddEvent(eventCompleted(r, nil, s, t,
 			&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_IDLE_TASK_ABSENT}))
 		s.deleteRequest(requestID)
 	}
@@ -262,7 +262,7 @@ func (s *state) getRequest(requestID RequestID) (r *TaskRequest, ok bool) {
 // only be called for requests that were already determined to be stale relative
 // to time t.
 func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time,
-	r *TaskRequest, m MetricsSink) {
+	r *TaskRequest, e EventSink) {
 	if requestID == "" {
 		panic("empty request ID")
 	}
@@ -286,24 +286,24 @@ func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID
 		// The request was believed to be non-idle, but is running on a different
 		// worker than expected. Delete this worker and request.
 		allegedWorker := s.workers[allegedWorkerID]
-		m.AddEvent(eventCompleted(r, allegedWorker, s, t,
+		e.AddEvent(eventCompleted(r, allegedWorker, s, t,
 			&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_INCONSISTENT_BOT_FOR_TASK}))
 		s.deleteWorker(allegedWorkerID)
 	}
 
 	// If our information about workerID is older than this notification, then
 	// delete it and its request too.
-	s.deleteInconsistentWorkerIfOlder(workerID, t, m)
+	s.deleteInconsistentWorkerIfOlder(workerID, t, e)
 }
 
 // deleteInconsistentWorkerIfOlder deletes the worker with the given ID (along with any
 // request it was running) if its confirmed time and that of any
 // request it is running is older than t.
-func (s *state) deleteInconsistentWorkerIfOlder(workerID WorkerID, t time.Time, m MetricsSink) {
+func (s *state) deleteInconsistentWorkerIfOlder(workerID WorkerID, t time.Time, e EventSink) {
 	if worker, ok := s.workers[workerID]; ok {
 		if !t.Before(worker.latestConfirmedTime()) {
 			if !worker.IsIdle() {
-				m.AddEvent(eventCompleted(worker.runningTask.request, worker, s, t,
+				e.AddEvent(eventCompleted(worker.runningTask.request, worker, s, t,
 					&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_INCONSISTENT_TASK_FOR_BOT}))
 			}
 			s.deleteWorker(workerID)

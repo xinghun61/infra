@@ -229,14 +229,14 @@ func (b *batch) executeAndClose(ctx context.Context, store *Store) {
 // getRunner gets a runner function to be used in a datastore transaction
 // to execute the batch.
 func (b *batch) getRunner(store *Store) types.RevertableOperation {
-	return func(ctx context.Context, state *types.QScheduler, metrics scheduler.MetricsSink) bool {
+	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) bool {
 		// Modify
 		for _, opSlice := range b.operations {
 			for _, op := range opSlice {
 				currentOp := op.operation
 				// currentOp is a closure, and will write its results to the
 				// appropriate result instance when it is executed.
-				if err := currentOp(ctx, state, metrics); err != nil {
+				if err := currentOp(ctx, state, events); err != nil {
 					// A single-operation error occurred. Store that error
 					// to the responsible operation, and store a transient
 					// error to all other operations.
