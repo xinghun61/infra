@@ -150,9 +150,11 @@ export const actionCreator = {
         issue: resp.issue,
       });
 
-      actionCreator.fetchBlockerReferences(dispatch, resp.issue);
-      actionCreator.fetchIssueHotlists(dispatch, message.issueRef);
       actionCreator.fetchIssuePermissions(dispatch, message);
+      if (!resp.issue.isDeleted) {
+        actionCreator.fetchBlockerReferences(dispatch, resp.issue);
+        actionCreator.fetchIssueHotlists(dispatch, message.issueRef);
+      }
     }, (error) => {
       dispatch({
         type: actionType.FETCH_ISSUE_FAILURE,

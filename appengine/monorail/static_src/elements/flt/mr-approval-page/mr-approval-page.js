@@ -5,12 +5,14 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
+import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-header/chops-header.js';
 import './mr-issue-header.js';
 import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
 import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
+import '../shared/mr-flt-styles.js';
 
 /**
  * `<mr-approval-page>`
@@ -21,7 +23,7 @@ import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js'
 export class MrApprovalPage extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style>
+      <style include="mr-flt-styles">
         .container-issue {
           width: 100%;
           flex-direction: column;
@@ -50,6 +52,9 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
           justify-content: space-between;
           flex-direction: row;
           flex-wrap: no-wrap;
+        }
+        .container-deleted {
+          padding: 16px;
         }
         .main-item {
           flex-grow: 0;
@@ -121,7 +126,17 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
           [[fetchIssueError.description]]
         </div>
       </template>
-      <template is="dom-if" if="[[issueLoaded]]">
+      <template is="dom-if" if="[[_isDeleted(issueLoaded, issue)]]">
+        <div class="container-deleted">
+          <p>Issue [[issueId]] has been deleted.</p>
+          <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
+            <chops-button on-click="_undeleteIssue" class="emphasized">
+              Undelete Issue
+            </chops-button>
+          </template>
+        </div>
+      </template>
+      <template is="dom-if" if="[[_showIssue(issueLoaded, issue)]]">
         <div class="container-outside">
           <aside class="metadata-container">
             <mr-issue-metadata></mr-issue-metadata>
@@ -150,6 +165,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
       },
       issueId: Number,
       issueLoaded: Boolean,
+      issuePermissions: Object,
       projectName: {
         type: String,
         observer: '_projectNameChanged',
@@ -170,6 +186,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
       issue: state.issue,
       issueId: state.issueId,
       issueLoaded: state.issueLoaded,
+      issuePermissions: state.issuePermissions,
       projectName: state.projectName,
       fetchingIssue: state.fetchingIssue,
       fetchingProjectConfig: state.fetchingProjectConfig,
@@ -180,13 +197,19 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
 
   static get observers() {
     return [
-      '_issueIdChanged(issueId, projectName)',
+      '_fetchIssue(issueId, projectName)',
     ];
   }
 
   _issueChanged(issue) {
-    document.title =
-      `${issue.localId} - ${issue.summary} - ${issue.projectName} - Monorail`;
+    let title = `${this.issueId} - `;
+    if (issue.isDeleted) {
+      title += 'Issue has been deleted';
+    } else {
+      title += `${issue.summary} - `;
+    }
+    title += `${this.projectName} - Monorail`;
+    document.title = title;
   }
 
   _projectNameChanged(projectName) {
@@ -223,7 +246,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
     return !issueLoaded && !fetchIssueError;
   }
 
-  _issueIdChanged(id, projectName) {
+  _fetchIssue(id, projectName) {
     if (!id || !projectName || this.fetchingIssue) return;
     // Reload the issue data when the id changes.
 
@@ -272,6 +295,31 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
       });
     });
   }
+
+  _undeleteIssue() {
+    window.prpcClient.call('monorail.Issues', 'DeleteIssue', {
+      issueRef: {
+        localId: this.issueId,
+        projectName: this.projectName,
+      },
+      delete: false,
+    }).then(() => {
+      this._fetchIssue(this.issueId, this.projectName);
+    });
+  }
+
+  _showUndelete(issuePermissions) {
+    return (issuePermissions || []).includes('deleteissue');
+  }
+
+  _showIssue(issueLoaded, issue) {
+    return issueLoaded && !issue.isDeleted;
+  }
+
+  _isDeleted(issueLoaded, issue) {
+    return issueLoaded && issue.isDeleted;
+  }
+
 }
 
 customElements.define(MrApprovalPage.is, MrApprovalPage);

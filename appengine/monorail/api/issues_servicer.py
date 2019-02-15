@@ -89,7 +89,12 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   def GetIssue(self, mc, request):
     """Return the specified issue in a response proto."""
     project, issue, config = self._GetProjectIssueAndConfig(
-        mc, request.issue_ref)
+        mc, request.issue_ref, view_deleted=True)
+
+    if issue.deleted:
+      return issues_pb2.IssueResponse(
+          issue=issue_objects_pb2.Issue(is_deleted=True))
+
     with work_env.WorkEnv(mc, self.services) as we:
       related_refs = we.GetRelatedIssueRefs([issue])
 
