@@ -19,7 +19,7 @@ import (
 )
 
 // sortAscendingCost sorts a slice in-place by ascending cost.
-func sortAscendingCost(ws []*worker) {
+func sortAscendingCost(ws []*Worker) {
 	less := func(i, j int) bool {
 		return less(ws[i].runningTask.cost, ws[j].runningTask.cost)
 	}
@@ -27,7 +27,7 @@ func sortAscendingCost(ws []*worker) {
 }
 
 // sortDescendingCost sorts a slice in-place by descending cost.
-func sortDescendingCost(ws []*worker) {
+func sortDescendingCost(ws []*Worker) {
 	less := func(i, j int) bool {
 		return less(ws[j].runningTask.cost, ws[i].runningTask.cost)
 	}

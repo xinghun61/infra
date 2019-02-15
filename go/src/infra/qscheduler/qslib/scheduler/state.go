@@ -36,7 +36,7 @@ type state struct {
 	balances map[AccountID]Balance
 
 	// workers that may run tasks, and their states, keyed by worker id.
-	workers map[WorkerID]*worker
+	workers map[WorkerID]*Worker
 
 	lastUpdateTime time.Time
 
@@ -98,13 +98,13 @@ type taskRun struct {
 	priority Priority
 }
 
-// worker represents a running or idle worker capable of running tasks.
-type worker struct {
+// Worker represents a running or idle Worker capable of running tasks.
+type Worker struct {
 	// ID is the ID of this worker.
 	ID WorkerID
 
-	// labels represents the set of labels that this worke possesses.
-	labels stringset.Set
+	// Labels represents the set of Labels that this worker possesses.
+	Labels stringset.Set
 
 	// runningTask is, if non-nil, the task that is currently running on the
 	// worker.
@@ -161,7 +161,7 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, m
 	w, ok := s.workers[workerID]
 	if !ok {
 		// This is a new worker, create it and return.
-		s.workers[workerID] = &worker{ID: workerID, confirmedTime: t, labels: labels}
+		s.workers[workerID] = &Worker{ID: workerID, confirmedTime: t, Labels: labels}
 		return
 	}
 
@@ -182,10 +182,10 @@ func (s *state) markIdle(workerID WorkerID, labels stringset.Set, t time.Time, m
 		return
 	}
 
-	w.labels = labels
+	w.Labels = labels
 	w.confirm(t)
 
-	if w.isIdle() {
+	if w.IsIdle() {
 		// Our worker was already idle and we've updated its labels and idle time, so
 		// we're done.
 		return
@@ -302,7 +302,7 @@ func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID
 func (s *state) deleteInconsistentWorkerIfOlder(workerID WorkerID, t time.Time, m MetricsSink) {
 	if worker, ok := s.workers[workerID]; ok {
 		if !t.Before(worker.latestConfirmedTime()) {
-			if !worker.isIdle() {
+			if !worker.IsIdle() {
 				m.AddEvent(eventCompleted(worker.runningTask.request, worker, s, t,
 					&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_INCONSISTENT_TASK_FOR_BOT}))
 			}
@@ -355,13 +355,13 @@ func (s *state) validateAssignment(m *Assignment) {
 	// Assignment-type-specific checks.
 	switch m.Type {
 	case AssignmentIdleWorker:
-		if !worker.isIdle() {
+		if !worker.IsIdle() {
 			panic(fmt.Sprintf("Worker %s is not idle, it is running task %s.",
 				m.WorkerID, worker.runningTask.request.ID))
 		}
 
 	case AssignmentPreemptWorker:
-		if worker.isIdle() {
+		if worker.IsIdle() {
 			panic(fmt.Sprintf("Worker %s is idle, expected running task %s.",
 				m.WorkerID, m.TaskToAbort))
 		}
@@ -410,7 +410,7 @@ func (s *state) startRunning(requestID RequestID, workerID WorkerID, priority Pr
 // it is running).
 func (s *state) deleteWorker(workerID WorkerID) {
 	if worker, ok := s.workers[workerID]; ok {
-		if !worker.isIdle() {
+		if !worker.IsIdle() {
 			delete(s.runningRequestsCache, worker.runningTask.request.ID)
 		}
 		delete(s.workers, workerID)

@@ -18,16 +18,16 @@ import (
 	"time"
 )
 
-// isIdle returns whether the given worker is currently idle.
-func (w *worker) isIdle() bool {
+// IsIdle returns whether the given worker is currently idle.
+func (w *Worker) IsIdle() bool {
 	return w.runningTask == nil
 }
 
 // latestConfirmedTime returns the newer of the its ConfirmedTime or that of the
 // request it is running (if it is running one).
-func (w *worker) latestConfirmedTime() time.Time {
+func (w *Worker) latestConfirmedTime() time.Time {
 	t := w.confirmedTime
-	if w.isIdle() {
+	if w.IsIdle() {
 		return t
 	}
 	tr := w.runningTask.request.confirmedTime
@@ -40,7 +40,7 @@ func (w *worker) latestConfirmedTime() time.Time {
 // confirm updates a worker's confirmed time (to acknowledge that its state
 // is consistent with authoritative source as of this time). The update is
 // only applied if it is a forward-in-time update.
-func (w *worker) confirm(t time.Time) {
+func (w *Worker) confirm(t time.Time) {
 	if w.confirmedTime.Before(t) {
 		w.confirmedTime = t
 	}

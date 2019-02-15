@@ -40,7 +40,7 @@ var NullMetricsSink MetricsSink = &nullMetricsSink{}
 
 // eventCommon returns a metrics.TaskEvent with fields populated that are common
 // to all event types.
-func eventCommon(request *TaskRequest, w *worker, s *state, t time.Time) *metrics.TaskEvent {
+func eventCommon(request *TaskRequest, w *Worker, s *state, t time.Time) *metrics.TaskEvent {
 	var baseLabels sort.StringSlice = request.BaseLabels.ToSlice()
 	var provLabels sort.StringSlice = request.ProvisionableLabels.ToSlice()
 	var botID string
@@ -48,7 +48,7 @@ func eventCommon(request *TaskRequest, w *worker, s *state, t time.Time) *metric
 	var cost []float64
 	if w != nil {
 		botID = string(w.ID)
-		botLabels = w.labels.ToSlice()
+		botLabels = w.Labels.ToSlice()
 		botLabels.Sort()
 		cost = w.runningTask.cost[:]
 	}
@@ -77,7 +77,7 @@ func eventEnqueued(request *TaskRequest, s *state, t time.Time) *metrics.TaskEve
 }
 
 // eventAssigned returns a TaskEvent for ASSIGNED events.
-func eventAssigned(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_AssignedDetails) *metrics.TaskEvent {
+func eventAssigned(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_AssignedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_ASSIGNED
 	e.Details = &metrics.TaskEvent_AssignedDetails_{AssignedDetails: details}
@@ -85,7 +85,7 @@ func eventAssigned(request *TaskRequest, w *worker, s *state, t time.Time, detai
 }
 
 // eventPreempted returns a TaskEvent for PREEMPTED events.
-func eventPreempted(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_PreemptedDetails) *metrics.TaskEvent {
+func eventPreempted(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_PreemptedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_PREEMPTED
 	e.Details = &metrics.TaskEvent_PreemptedDetails_{PreemptedDetails: details}
@@ -93,7 +93,7 @@ func eventPreempted(request *TaskRequest, w *worker, s *state, t time.Time, deta
 }
 
 // eventReprioritized returns a TaskEvent for REPRIORITIZED events.
-func eventReprioritized(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_ReprioritizedDetails) *metrics.TaskEvent {
+func eventReprioritized(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_ReprioritizedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_REPRIORITIZED
 	e.Details = &metrics.TaskEvent_ReprioritizedDetails_{ReprioritizedDetails: details}
@@ -101,7 +101,7 @@ func eventReprioritized(request *TaskRequest, w *worker, s *state, t time.Time, 
 }
 
 // eventCompleted returns a TaskEvent for COMPLETED events.
-func eventCompleted(request *TaskRequest, w *worker, s *state, t time.Time, details *metrics.TaskEvent_CompletedDetails) *metrics.TaskEvent {
+func eventCompleted(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_CompletedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_SWARMING_COMPLETED
 	e.Details = &metrics.TaskEvent_CompletedDetails_{CompletedDetails: details}

@@ -36,7 +36,7 @@ func newState(t time.Time) *state {
 	return &state{
 		balances:             map[AccountID]Balance{},
 		queuedRequests:       map[RequestID]*TaskRequest{},
-		workers:              map[WorkerID]*worker{},
+		workers:              map[WorkerID]*Worker{},
 		runningRequestsCache: map[RequestID]WorkerID{},
 		lastUpdateTime:       t,
 	}
@@ -70,7 +70,7 @@ func newStateFromProto(sp *protos.SchedulerState) *state {
 	}
 
 	s.runningRequestsCache = make(map[RequestID]WorkerID, len(sp.Workers))
-	s.workers = make(map[WorkerID]*worker, len(sp.Workers))
+	s.workers = make(map[WorkerID]*Worker, len(sp.Workers))
 	for wid, w := range sp.Workers {
 		var tr *taskRun
 		if w.RunningTask != nil {
@@ -90,10 +90,10 @@ func newStateFromProto(sp *protos.SchedulerState) *state {
 			}
 			s.runningRequestsCache[RequestID(w.RunningTask.RequestId)] = WorkerID(wid)
 		}
-		s.workers[WorkerID(wid)] = &worker{
+		s.workers[WorkerID(wid)] = &Worker{
 			ID:            WorkerID(wid),
 			confirmedTime: tutils.Timestamp(w.ConfirmedTime),
-			labels:        toLabels(w.LabelIds, sp.LabelMap),
+			Labels:        toLabels(w.LabelIds, sp.LabelMap),
 			runningTask:   tr,
 		}
 	}
@@ -187,7 +187,7 @@ func (s *state) toProto() *protos.SchedulerState {
 		workers[string(wid)] = &protos.Worker{
 			ConfirmedTime: tutils.TimestampProto(w.confirmedTime),
 			RunningTask:   rt,
-			LabelIds:      mb.ForSet(w.labels),
+			LabelIds:      mb.ForSet(w.Labels),
 		}
 	}
 

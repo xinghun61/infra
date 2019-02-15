@@ -148,7 +148,7 @@ func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time
 // given worker. It is provided for a consistency checks.
 func (s *Scheduler) IsAssigned(requestID RequestID, workerID WorkerID) bool {
 	if w, ok := s.state.workers[workerID]; ok {
-		if !w.isIdle() {
+		if !w.IsIdle() {
 			return w.runningTask.request.ID == requestID
 		}
 	}
@@ -176,7 +176,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 	jobsPerAcct := make(map[AccountID][]int)
 
 	for _, w := range state.workers {
-		if !w.isIdle() {
+		if !w.IsIdle() {
 			id := w.runningTask.request.AccountID
 			c := jobsPerAcct[id]
 			if c == nil {

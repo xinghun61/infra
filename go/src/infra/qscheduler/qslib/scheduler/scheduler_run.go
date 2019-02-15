@@ -26,7 +26,7 @@ import (
 // Its fields may be mutated during the run, as requests get assigned to workers.
 type schedulerRun struct {
 	// idleWorkers is a collection of currently idle workers.
-	idleWorkers map[WorkerID]*worker
+	idleWorkers map[WorkerID]*Worker
 
 	// requestsPerPriority is a per-priority linked list of queued requests, sorted by FIFO order within
 	// each priority level. It takes into account throttling of any requests whose account was
@@ -85,7 +85,7 @@ func (s *Scheduler) newRun() *schedulerRun {
 	// Note: We are using len(s.state.workers) as a capacity hint for this map. In reality,
 	// that is the upper bound, and in normal workload (in which fleet is highly utilized) most
 	// scheduler passes will have only a few idle workers.
-	idleWorkers := make(map[WorkerID]*worker, len(s.state.workers))
+	idleWorkers := make(map[WorkerID]*Worker, len(s.state.workers))
 	remainingBeforeThrottle := make(map[AccountID]int)
 	for aid, ac := range s.config.AccountConfigs {
 		if ac.MaxFanout == 0 {
@@ -96,7 +96,7 @@ func (s *Scheduler) newRun() *schedulerRun {
 	}
 
 	for wid, w := range s.state.workers {
-		if w.isIdle() {
+		if w.IsIdle() {
 			idleWorkers[wid] = w
 		} else {
 			aid := w.runningTask.request.AccountID
@@ -139,7 +139,7 @@ type matchListItem struct {
 }
 
 // matcher is the type for functions that evaluates request to worker matching.
-type matcher func(*worker, *TaskRequest) matchLevel
+type matcher func(*Worker, *TaskRequest) matchLevel
 
 // basicMatch is a matcher function that considers only whether all of the base labels of the
 // given request are satisfied by the worker.
@@ -147,8 +147,8 @@ type matcher func(*worker, *TaskRequest) matchLevel
 // The quality heuristic is the number of the base labels in the request (the more, the better).
 // This heuristic allows requests that have higher specificity to be preferentially matched to the
 // workers that can support them.
-func basicMatch(w *worker, r *TaskRequest) matchLevel {
-	if w.labels.Contains(r.BaseLabels) {
+func basicMatch(w *Worker, r *TaskRequest) matchLevel {
+	if w.Labels.Contains(r.BaseLabels) {
 		quality := len(r.BaseLabels)
 		return matchLevel{true, quality}
 	}
@@ -157,8 +157,8 @@ func basicMatch(w *worker, r *TaskRequest) matchLevel {
 
 // provisionAwareMatch is a matcher function that requires both the base labels and the provisionable
 // labels of the request to be satisfied by the worker.
-func provisionAwareMatch(w *worker, r *TaskRequest) matchLevel {
-	if !w.labels.Contains(r.ProvisionableLabels) {
+func provisionAwareMatch(w *Worker, r *TaskRequest) matchLevel {
+	if !w.Labels.Contains(r.ProvisionableLabels) {
 		return matchLevel{false, 0}
 	}
 	return basicMatch(w, r)
@@ -166,7 +166,7 @@ func provisionAwareMatch(w *worker, r *TaskRequest) matchLevel {
 
 // computeWorkerMatch computes the match level for all given requests against a single worker,
 // and returns the matchable requests sorted by match quality.
-func computeWorkerMatch(w *worker, requests requestList, mf matcher) []matchListItem {
+func computeWorkerMatch(w *Worker, requests requestList, mf matcher) []matchListItem {
 	matches := make([]matchListItem, 0, requests.Len())
 	for current := requests.Head(); current.Element != nil; current = current.Next() {
 		m := mf(w, current.Value())
@@ -209,7 +209,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, mSink Metr
 					&metrics.TaskEvent_AssignedDetails{
 						Preempting:        false,
 						Priority:          int32(priority),
-						ProvisionRequired: !w.labels.Contains(match.request.ProvisionableLabels),
+						ProvisionRequired: !w.Labels.Contains(match.request.ProvisionableLabels),
 					}))
 			break
 		}
@@ -267,7 +267,7 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, mSink Metri
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *state, candidates []*worker, chargeRate float64, priority Priority, mSink MetricsSink) {
+func doDemote(state *state, candidates []*Worker, chargeRate float64, priority Priority, mSink MetricsSink) {
 	sortAscendingCost(candidates)
 
 	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
@@ -285,7 +285,7 @@ func doDemote(state *state, candidates []*worker, chargeRate float64, priority P
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *state, candidates []*worker, chargeRate float64, priority Priority, mSink MetricsSink) {
+func doPromote(state *state, candidates []*Worker, chargeRate float64, priority Priority, mSink MetricsSink) {
 	sortDescendingCost(candidates)
 
 	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
@@ -302,10 +302,10 @@ func doPromote(state *state, candidates []*worker, chargeRate float64, priority 
 
 // workersAt is a helper function that returns the workers with a given
 // account id and running.
-func workersAt(ws map[WorkerID]*worker, priority Priority, accountID AccountID) []*worker {
-	ans := make([]*worker, 0, len(ws))
+func workersAt(ws map[WorkerID]*Worker, priority Priority, accountID AccountID) []*Worker {
+	ans := make([]*Worker, 0, len(ws))
 	for _, worker := range ws {
-		if !worker.isIdle() &&
+		if !worker.IsIdle() &&
 			worker.runningTask.request.AccountID == accountID &&
 			worker.runningTask.priority == priority {
 			ans = append(ans, worker)
@@ -316,10 +316,10 @@ func workersAt(ws map[WorkerID]*worker, priority Priority, accountID AccountID) 
 
 // workersBelow is a helper function that returns the workers with a given
 // account id and below a given running.
-func workersBelow(ws map[WorkerID]*worker, priority Priority, accountID AccountID) []*worker {
-	ans := make([]*worker, 0, len(ws))
+func workersBelow(ws map[WorkerID]*Worker, priority Priority, accountID AccountID) []*Worker {
+	ans := make([]*Worker, 0, len(ws))
 	for _, worker := range ws {
-		if !worker.isIdle() &&
+		if !worker.IsIdle() &&
 			worker.runningTask.request.AccountID == accountID &&
 			worker.runningTask.priority > priority {
 			ans = append(ans, worker)
@@ -334,7 +334,7 @@ func workersBelow(ws map[WorkerID]*worker, priority Priority, accountID AccountI
 func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSink) []*Assignment {
 	state := run.scheduler.state
 	var output []*Assignment
-	candidates := make([]*worker, 0, len(state.workers))
+	candidates := make([]*Worker, 0, len(state.workers))
 	// Accounts that are already running a lower priority job are not
 	// permitted to preempt jobs at this priority. This is to prevent a type
 	// of thrashing that may occur if an account is unable to promote jobs to
@@ -342,7 +342,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSin
 	// but still has positive quota at this priority.
 	bannedAccounts := make(map[AccountID]bool)
 	for _, worker := range state.workers {
-		if !worker.isIdle() && worker.runningTask.priority > priority {
+		if !worker.IsIdle() && worker.runningTask.priority > priority {
 			candidates = append(candidates, worker)
 			bannedAccounts[worker.runningTask.request.AccountID] = true
 		}
@@ -385,7 +385,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, mSink MetricsSin
 						PreemptionCost:    worker.runningTask.cost[:],
 						PreemptedTaskId:   string(worker.runningTask.request.ID),
 						Priority:          int32(priority),
-						ProvisionRequired: !worker.labels.Contains(r.ProvisionableLabels),
+						ProvisionRequired: !worker.Labels.Contains(r.ProvisionableLabels),
 					}))
 			mSink.AddEvent(
 				eventPreempted(worker.runningTask.request, worker, state, state.lastUpdateTime,

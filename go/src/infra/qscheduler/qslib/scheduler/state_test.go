@@ -40,18 +40,18 @@ func TestMarkIdle(t *testing.T) {
 			state.markIdle(workerID, label1, tm1, NullMetricsSink)
 			Convey("then the worker is added to the state.", func() {
 				So(state.workers, ShouldContainKey, workerID)
-				So(state.workers[workerID].labels, ShouldResemble, label1)
+				So(state.workers[workerID].Labels, ShouldResemble, label1)
 			})
 			Convey("when marking idle again with newer time t=2", func() {
 				state.markIdle(workerID, stringset.NewFromSlice("new_label"), tm2, NullMetricsSink)
 				Convey("then the update is applied.", func() {
-					So(state.workers[workerID].labels, ShouldResemble, stringset.NewFromSlice("new_label"))
+					So(state.workers[workerID].Labels, ShouldResemble, stringset.NewFromSlice("new_label"))
 				})
 			})
 			Convey("when marking idle again with older time t=0", func() {
 				state.markIdle(workerID, stringset.NewFromSlice("new_label"), tm0, NullMetricsSink)
 				Convey("then the update is ignored.", func() {
-					So(state.workers[workerID].labels, ShouldResemble, label1)
+					So(state.workers[workerID].Labels, ShouldResemble, label1)
 				})
 			})
 		})
@@ -63,7 +63,7 @@ func TestMarkIdle(t *testing.T) {
 			Convey("when marking idle again with newer time t=2", func() {
 				state.markIdle(workerID, stringset.New(0), tm2, NullMetricsSink)
 				Convey("then the update is applied.", func() {
-					So(state.workers[workerID].isIdle(), ShouldBeTrue)
+					So(state.workers[workerID].IsIdle(), ShouldBeTrue)
 					So(state.workers[workerID].confirmedTime, ShouldEqual, tm2)
 				})
 			})
@@ -71,7 +71,7 @@ func TestMarkIdle(t *testing.T) {
 			Convey("when marking idle again with older time t=0", func() {
 				state.markIdle(workerID, stringset.New(0), tm0, NullMetricsSink)
 				Convey("then the update is ignored.", func() {
-					So(state.workers[workerID].isIdle(), ShouldBeFalse)
+					So(state.workers[workerID].IsIdle(), ShouldBeFalse)
 					So(state.workers[workerID].confirmedTime, ShouldEqual, tm1)
 				})
 			})
@@ -317,7 +317,7 @@ func TestApplyPreempt(t *testing.T) {
 	tm := time.Unix(0, 0)
 	Convey("Given a state with a running request, a queued request, and two accounts", t, func() {
 		s := newState(tm)
-		s.workers["w1"] = &worker{ID: "w1"}
+		s.workers["w1"] = &Worker{ID: "w1"}
 		s.workers["w1"].runningTask = &taskRun{
 			cost:     Balance{1},
 			priority: 2,
