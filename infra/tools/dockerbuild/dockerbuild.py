@@ -95,7 +95,14 @@ def _main_wheel_build(args, system):
         continue
       seen.add(package)
 
-      cipd_exists = system.cipd.exists(package.name, *package.tags)
+      # We have other tags (like git_revision) for advisory reasons. Pluck out
+      # the actual version tag.
+      versions = [t for t in package.tags if t.startswith('version:')]
+      if len(versions) != 1:
+        raise ValueError(
+            'Can only use one authoritative version tag. Must start with '
+            '"version:". Got: %r' % versions)
+      cipd_exists = system.cipd.exists(package.name, versions[0])
       if cipd_exists and not args.rebuild:
         util.LOGGER.info('Package already exists: %s', package)
         continue
@@ -120,6 +127,7 @@ def _main_wheel_build(args, system):
         continue
 
       util.LOGGER.info('Uploading CIPD package for: %s', package)
+      # But when we register it, we want to attach all tags.
       system.cipd.register_package(pkg_path, *package.tags)
 
 
