@@ -35,7 +35,7 @@
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder",
     "env_prefixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -82,13 +82,13 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "RECIPE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder/infra",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "gclient runhooks"
@@ -171,7 +171,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "-h",
       "Content-Type:text/html",
@@ -211,7 +211,7 @@
     ],
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder/workdir",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "populate cache"
@@ -228,7 +228,7 @@
     ],
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder/workdir",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git cache",
@@ -244,7 +244,7 @@
     ],
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder/workdir",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git remote"
@@ -260,7 +260,7 @@
     ],
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder/workdir",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git fetch"

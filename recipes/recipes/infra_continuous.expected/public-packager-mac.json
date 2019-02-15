@@ -35,7 +35,7 @@
     "cwd": "[CACHE]/infra_gclient_with_go",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -82,7 +82,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "RECIPE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
@@ -93,7 +93,7 @@
     },
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "gclient runhooks"

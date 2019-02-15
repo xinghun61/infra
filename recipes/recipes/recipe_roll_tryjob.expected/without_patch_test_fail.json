@@ -62,7 +62,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -141,7 +141,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -262,7 +262,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -341,7 +341,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,

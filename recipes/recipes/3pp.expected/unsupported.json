@@ -48,7 +48,7 @@
     ],
     "cwd": "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "load packages from desired repos.git fetch",

@@ -79,7 +79,7 @@ def run_script(api, *args, **kwargs):
   if compile_platform.startswith('linux-'):
     # dockerbuild time.
     dockerbuild_platform = _DOCKERBUILD_PLATFORM[compile_platform]
-    repo_root = api.support_3pp.package_repo_resource()
+    repo_root = api.support_3pp.repo_resource()
     cmd = [
       'infra.tools.dockerbuild', '--logs-debug', 'run',
       '--platform', dockerbuild_platform, '--workdir', workdir.base,

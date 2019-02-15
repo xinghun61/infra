@@ -5,7 +5,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "ls",
       "gs://chromium-browser-official/"
@@ -38,7 +38,7 @@
     ],
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -193,7 +193,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "RECIPE_REPO[depot_tools]/gclient.py",
       "sync",
       "-D",
       "--nohooks",
@@ -203,7 +203,7 @@
     "cwd": "[START_DIR]/src",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -239,7 +239,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/download_from_google_storage.py",
+      "RECIPE_REPO[depot_tools]/download_from_google_storage.py",
       "--no_resume",
       "--extract",
       "--no_auth",
@@ -361,7 +361,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -391,7 +391,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -481,7 +481,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -511,7 +511,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -1036,7 +1036,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -1066,7 +1066,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -1154,7 +1154,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",
@@ -1184,7 +1184,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "-a",

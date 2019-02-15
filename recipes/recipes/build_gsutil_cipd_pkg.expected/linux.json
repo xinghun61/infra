@@ -18,7 +18,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "ls",
       "gs://pub/gsutil_*.zip"
@@ -36,7 +36,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "gs://pub/gsutil_4.1.zip",

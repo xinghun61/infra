@@ -83,7 +83,7 @@
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "build.git fetch",
@@ -233,7 +233,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cat",
       "gs://recipe-roller-cl-uploads/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
@@ -383,7 +383,7 @@
   },
   {
     "cmd": [
-      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
+      "RECIPE_REPO[depot_tools]/git_cl.py",
       "upload",
       "--send-mail",
       "--tbrs=foo@bar.example.com,meep@example.com",
@@ -430,7 +430,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_roll_ts_utc\": \"2012-05-14T12:53:21\", \"trivial\": true}",

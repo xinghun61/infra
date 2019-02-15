@@ -466,7 +466,7 @@
     "cmd": [
       "vpython",
       "-vpython-spec",
-      "RECIPE_PACKAGE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
+      "RECIPE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
       "-u",
       "-m",
       "infra.tools.dockerbuild",
@@ -510,7 +510,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
+      "PYTHONPATH": "RECIPE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "bottom_dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
@@ -1643,7 +1643,7 @@
     "cmd": [
       "vpython",
       "-vpython-spec",
-      "RECIPE_PACKAGE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
+      "RECIPE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
       "-u",
       "-m",
       "infra.tools.dockerbuild",
@@ -1687,7 +1687,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
+      "PYTHONPATH": "RECIPE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "posix_tool",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
@@ -2078,7 +2078,7 @@
     "cmd": [
       "vpython",
       "-vpython-spec",
-      "RECIPE_PACKAGE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
+      "RECIPE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
       "-u",
       "-m",
       "infra.tools.dockerbuild",
@@ -2122,7 +2122,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
+      "PYTHONPATH": "RECIPE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "windows_experiment",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
@@ -2488,7 +2488,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>",
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -2741,7 +2741,7 @@
     "cmd": [
       "vpython",
       "-vpython-spec",
-      "RECIPE_PACKAGE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
+      "RECIPE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
       "-u",
       "-m",
       "infra.tools.dockerbuild",
@@ -2788,7 +2788,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
+      "PYTHONPATH": "RECIPE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -3033,7 +3033,7 @@
     "cmd": [
       "vpython",
       "-vpython-spec",
-      "RECIPE_PACKAGE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
+      "RECIPE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
       "-u",
       "-m",
       "infra.tools.dockerbuild",
@@ -3077,7 +3077,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
+      "PYTHONPATH": "RECIPE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "linux-amd64",
@@ -3496,7 +3496,7 @@
     "cmd": [
       "vpython",
       "-vpython-spec",
-      "RECIPE_PACKAGE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
+      "RECIPE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
       "-u",
       "-m",
       "infra.tools.dockerbuild",
@@ -3540,7 +3540,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
+      "PYTHONPATH": "RECIPE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "dep",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",
@@ -4051,7 +4051,7 @@
     "cmd": [
       "vpython",
       "-vpython-spec",
-      "RECIPE_PACKAGE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
+      "RECIPE_REPO[infra]/infra/tools/dockerbuild/standalone.vpython",
       "-u",
       "-m",
       "infra.tools.dockerbuild",
@@ -4095,7 +4095,7 @@
     "env": {
       "GOARCH": "amd64",
       "GOOS": "linux",
-      "PYTHONPATH": "RECIPE_PACKAGE_REPO[infra]",
+      "PYTHONPATH": "RECIPE_REPO[infra]",
       "_3PP_PACKAGE_NAME": "pkg",
       "_3PP_PLATFORM": "linux-amd64",
       "_3PP_TOOL_PLATFORM": "linux-amd64",

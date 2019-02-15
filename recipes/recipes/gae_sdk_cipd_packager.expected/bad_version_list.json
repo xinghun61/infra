@@ -9,7 +9,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "ls",
       "gs://appengine-sdks/featured/go_appengine_sdk_linux_amd64-*.zip"
@@ -33,7 +33,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "ls",
       "gs://appengine-sdks/featured/go_appengine_sdk_darwin_amd64-*.zip"
@@ -57,7 +57,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "ls",
       "gs://appengine-sdks/featured/google_appengine_*.zip"

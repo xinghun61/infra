@@ -19,7 +19,7 @@
     ],
     "env_prefixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -200,7 +200,7 @@
     ],
     "cwd": "[START_DIR]/src",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git new-branch update_wpt"
@@ -220,7 +220,7 @@
   },
   {
     "cmd": [
-      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
+      "RECIPE_REPO[depot_tools]/git_cl.py",
       "issue",
       "--json",
       "/path/to/tmp/json"

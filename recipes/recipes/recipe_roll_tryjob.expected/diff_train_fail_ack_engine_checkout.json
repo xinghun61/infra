@@ -45,7 +45,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gerrit_client.py",
+      "RECIPE_REPO[depot_tools]/gerrit_client.py",
       "changes",
       "--host",
       "https://chromium-review.googlesource.com",
@@ -62,7 +62,7 @@
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
     "env": {
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
+      "PATH": "<PATH>:RECIPE_REPO[depot_tools]"
     },
     "infra_step": true,
     "name": "gerrit fetch current CL info",
@@ -104,7 +104,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -185,7 +185,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/build",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -280,7 +280,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -403,7 +403,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -484,7 +484,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/build",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -579,7 +579,7 @@
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -688,7 +688,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gerrit_client.py",
+      "RECIPE_REPO[depot_tools]/gerrit_client.py",
       "changes",
       "--host",
       "https://chromium-review.googlesource.com",
@@ -704,7 +704,7 @@
       "ALL_COMMITS"
     ],
     "env": {
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
+      "PATH": "<PATH>:RECIPE_REPO[depot_tools]"
     },
     "infra_step": true,
     "name": "gerrit changes",
@@ -728,7 +728,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/git_footers.py",
+      "RECIPE_REPO[depot_tools]/git_footers.py",
       "--json",
       "/path/to/tmp/json"
     ],

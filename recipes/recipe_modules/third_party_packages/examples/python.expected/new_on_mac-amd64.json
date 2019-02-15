@@ -96,7 +96,7 @@
     "cwd": "[START_DIR]/python/checkout",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git fetch"

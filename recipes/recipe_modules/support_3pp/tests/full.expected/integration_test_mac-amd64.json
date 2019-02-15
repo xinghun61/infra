@@ -2990,7 +2990,7 @@
       "GOARCH": "amd64",
       "GOOS": "darwin",
       "MACOSX_DEPLOYMENT_TARGET": "10.10",
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>",
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>",
       "_3PP_PACKAGE_NAME": "tool",
       "_3PP_PATCH_VERSION": "chops.1",
       "_3PP_PLATFORM": "mac-amd64",

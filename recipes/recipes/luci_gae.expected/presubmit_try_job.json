@@ -18,7 +18,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gerrit_client.py",
+      "RECIPE_REPO[depot_tools]/gerrit_client.py",
       "changes",
       "--host",
       "https://chromium-review.googlesource.com",
@@ -35,7 +35,7 @@
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "env": {
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
+      "PATH": "<PATH>:RECIPE_REPO[depot_tools]"
     },
     "infra_step": true,
     "name": "gerrit fetch current CL info",
@@ -83,7 +83,7 @@
     "cwd": "[CACHE]/infra_gclient_with_go",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "infra_step": true,
@@ -148,13 +148,13 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "RECIPE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "gclient runhooks"
@@ -177,7 +177,7 @@
       "-u",
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "python",
-      "RECIPE_PACKAGE_REPO[depot_tools]/presubmit_support.py",
+      "RECIPE_REPO[depot_tools]/presubmit_support.py",
       "--root",
       "[CACHE]/infra_gclient_with_go/infra/go/src/go.chromium.org/gae",
       "--commit",

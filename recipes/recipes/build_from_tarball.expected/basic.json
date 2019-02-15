@@ -5,7 +5,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
       "gs://chromium-browser-official/chromium-69.0.3491.0.tar.xz",
@@ -34,7 +34,7 @@
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "Download sysroot."
@@ -51,7 +51,7 @@
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "Build clang."
@@ -73,7 +73,7 @@
     },
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "Bootstrap gn."
@@ -94,7 +94,7 @@
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "Download nodejs."
@@ -116,7 +116,7 @@
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "Unbundle libraries."
@@ -131,7 +131,7 @@
     "cwd": "[START_DIR]/build_dir/chromium-69.0.3491.0",
     "env_suffixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_REPO[depot_tools]"
       ]
     },
     "name": "Build chrome."

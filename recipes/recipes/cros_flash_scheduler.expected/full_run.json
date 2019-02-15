@@ -22,7 +22,7 @@
     ],
     "cwd": "[START_DIR]/swarming.client",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git fetch (swarming_client)"
@@ -113,7 +113,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cat",
       "gs://chromeos-image-archive/some-device-type-full/LATEST-12345.0.0"
@@ -130,7 +130,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
       "--",
-      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "ls",
       "gs://chromeos-image-archive/some-device-type-full//chromiumos_test_image.tar.xz"

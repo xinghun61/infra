@@ -86,7 +86,7 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "python.git fetch",
@@ -1455,7 +1455,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git.git fetch",
@@ -2545,7 +2545,7 @@
     ],
     "cwd": "[START_DIR]/ninja/checkout",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "ninja.git fetch",
@@ -2789,7 +2789,7 @@
     ],
     "cwd": "[START_DIR]/cmake/checkout",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "cmake.git fetch",
@@ -3032,7 +3032,7 @@
     ],
     "cwd": "[START_DIR]/swig/checkout",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "swig.git fetch",
@@ -3834,7 +3834,7 @@
     ],
     "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+      "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "dep.git fetch",
