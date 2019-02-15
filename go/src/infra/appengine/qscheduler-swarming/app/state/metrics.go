@@ -30,6 +30,11 @@ func newMetricsSink(schedulerID string) *metricsSliceSink {
 	return &metricsSliceSink{schedulerID: schedulerID}
 }
 
+// reset resets the given metrics sink, erasing any previously added entries.
+func (m *metricsSliceSink) reset() {
+	m.taskEvents = nil
+}
+
 // AddEvent implements scheduler.MetricsSink.
 func (m *metricsSliceSink) AddEvent(e *metrics.TaskEvent) {
 	e.SchedulerId = m.schedulerID

@@ -129,12 +129,24 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 
 // RunOperationInTransaction runs the given operation in a transaction on this store.
 func (s *Store) RunOperationInTransaction(ctx context.Context, op types.Operation) error {
-	return datastore.RunInTransaction(ctx, operationRunner(op, s), nil)
+	m := newMetricsSink(s.entityID)
+	if err := datastore.RunInTransaction(ctx, operationRunner(op, s, m), nil); err != nil {
+		return err
+	}
+	// TODO(akeshet): Emit ts_mon metrics based on m. This is a best effort way
+	// to emit metrics that resemble actual events committed during the transaction.
+	return nil
 }
 
 // RunRevertableOperationInTransaction runs the given operation in a transaction on this store.
 func (s *Store) RunRevertableOperationInTransaction(ctx context.Context, op types.RevertableOperation) error {
-	return datastore.RunInTransaction(ctx, revertableOperationRunner(op, s), nil)
+	m := newMetricsSink(s.entityID)
+	if err := datastore.RunInTransaction(ctx, revertableOperationRunner(op, s, m), nil); err != nil {
+		return err
+	}
+	// TODO(akeshet): Emit ts_mon metrics based on m. This is a best effort way
+	// to emit metrics that resemble actual events committed during the transaction.
+	return nil
 }
 
 const stateEntityKind = "qschedulerStateEntity"
@@ -162,14 +174,14 @@ type datastoreEntity struct {
 // operationRunner returns a read-modify-write function for an operation.
 //
 // The returned function is suitable to be used with datastore.RunInTransaction.
-func operationRunner(op types.Operation, store *Store) func(context.Context) error {
+func operationRunner(op types.Operation, store *Store, m *metricsSliceSink) func(context.Context) error {
 	return func(ctx context.Context) error {
+		m.reset()
+
 		sp, err := store.Load(ctx)
 		if err != nil {
 			return err
 		}
-
-		m := newMetricsSink(store.entityID)
 
 		if err = op(ctx, sp, m); err != nil {
 			return err
@@ -189,14 +201,14 @@ func operationRunner(op types.Operation, store *Store) func(context.Context) err
 // should be reverted rather than saved.
 //
 // The returned function is suitable to be used with datastore.RunInTransaction.
-func revertableOperationRunner(op types.RevertableOperation, store *Store) func(context.Context) error {
+func revertableOperationRunner(op types.RevertableOperation, store *Store, m *metricsSliceSink) func(context.Context) error {
 	return func(ctx context.Context) error {
+		m.reset()
+
 		sp, err := store.Load(ctx)
 		if err != nil {
 			return err
 		}
-
-		m := newMetricsSink(store.entityID)
 
 		revert := op(ctx, sp, m)
 		if revert {
