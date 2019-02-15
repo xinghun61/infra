@@ -208,9 +208,11 @@ WITH
     # 1. All Luci-based builds.
     # 2. A subset of buildbot-based builds, e.g. all CQ builds.
     AND build_id != ''
-    # Ignore disabled tests.
+    # Ignore disabled tests and tests with 'UNKNOWN' or 'NOTRUN' statuses.
     AND ARRAY_LENGTH(run.actual) > 0
-    AND 'SKIP' NOT IN UNNEST(run.actual)
+    AND NOT EXISTS (SELECT *
+                      FROM UNNEST(run.actual) AS x
+                      WHERE x IN UNNEST(['SKIP', 'UNKNOWN', 'NOTRUN']))
     # A failed test should have at least one run with an unexpected status.
     # For gtests, this is straightforward:
     #  1. Passing status is only PASS.

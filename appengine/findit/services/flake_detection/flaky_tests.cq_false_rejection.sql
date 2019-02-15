@@ -361,8 +361,10 @@ WITH
       # 1. All Luci-based builds.
       # 2. A subset of buildbot-based builds, e.g. all CQ builds.
       AND build_id != ''
-      # Ignore disabled tests.
-      AND 'SKIP' NOT IN UNNEST(run.actual))
+      # Ignore disabled tests and tests with 'UNKNOWN' or 'NOTRUN' statuses.
+      AND NOT EXISTS (SELECT *
+                      FROM UNNEST(run.actual) AS x
+                      WHERE x IN UNNEST(['SKIP', 'UNKNOWN', 'NOTRUN'])))
   WHERE
     # For tests with patch, they failed if there is no success.
     (step_name like '%(with patch)%' AND num_expected_runs = 0)

@@ -213,8 +213,10 @@ WITH
       # Due to resource starvation, a test may pass in the first retry. so
       # hidden flakes are required to have at least 2 retries after the failure.
       AND ARRAY_LENGTH(run.actual) >= 3
-      # Ignore disabled tests.
-      AND 'SKIP' NOT IN UNNEST(run.actual))
+      # Ignore disabled tests and tests with 'UNKNOWN' or 'NOTRUN' statuses.
+      AND NOT EXISTS (SELECT *
+                      FROM UNNEST(run.actual) AS x
+                      WHERE x IN UNNEST(['SKIP', 'UNKNOWN', 'NOTRUN'])))
   WHERE
     # Hidden flakes have both expected and unexpected test results.
     num_expected_runs > 0
