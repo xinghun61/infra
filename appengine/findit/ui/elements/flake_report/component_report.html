@@ -161,7 +161,7 @@
                 <td>[[report.report_time]]</td>
                 <td>[[report.test_count]]</td>
                 <td>[[report.bug_count]]</td>
-                <td>[[report.new_bug_count]]</td>
+                <td>[[_getCount(report.new_bug_count)]]</td>
                 <td>[[report.impacted_cl_counts.cq_false_rejection]]</td>
                 <td>[[report.impacted_cl_counts.total]]</td>
                 <td>[[report.occurrence_counts.total]]</td>
@@ -275,6 +275,14 @@
             return component_reports_copy.reverse();
         },
 
+        // Wrapper around a report count to set default value if it doesn't exist.
+        _getCount: function (count) {
+          if (typeof(count) == "undefined" || count == null || count == "") {
+            return 0;
+          }
+          return count;
+        },
+
         _getChartDataFromFlake: function (component_reports) {
             let data = [];
 
@@ -294,7 +302,7 @@
                 report.impacted_cl_counts.cq_false_rejection,
                 report.impacted_cl_counts.total,
                 report.bug_count,
-                report.new_bug_count,
+                this._getCount(report.new_bug_count),
                 report.occurrence_counts.total,
                 report.test_count
               ];

@@ -81,13 +81,13 @@
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Count of bugs for flaky tests that occurred.</paper-tooltip>
         </th>
         <th class="main-header" id="rank_new_bug" width="14%">
-          <paper-button noink id="1" on-tap="selectRankBy">New Bugs
-            <iron-icon id="1" icon="arrow-downward"></iron-icon></paper-button>
+          <paper-button noink id="2" on-tap="selectRankBy">New Bugs
+            <iron-icon id="2" icon="arrow-downward"></iron-icon></paper-button>
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Count of newly created bugs for flaky tests that occurred.</paper-tooltip>
         </th>
         <th class="main-header" id="rank_false_rejection" width="14%">
-          <paper-button noink id="2" on-tap="selectRankBy">False Rejects
-            <iron-icon id="2" icon="arrow-downward"></iron-icon></paper-button>
+          <paper-button noink id="3" on-tap="selectRankBy">False Rejects
+            <iron-icon id="3" icon="arrow-downward"></iron-icon></paper-button>
           <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Count of falsely rejected CLs because of flaky tests.</paper-tooltip>
         </th>
         <th class="main-header" width="14%">Total Impacted CLs</th>
@@ -142,6 +142,7 @@
           // Resets all headers.
           this.$.rank_test.classList.remove("rank_by");
           this.$.rank_bug.classList.remove("rank_by");
+          this.$.rank_new_bug.classList.remove("rank_by");
           this.$.rank_false_rejection.classList.remove("rank_by");
 
           // Highlights the selected header.

@@ -18,9 +18,9 @@ _DEFAULT_RANK_BY = 'test_count'
 _RANK_PROPERTY_TUPLES = [
     ('test_count', ComponentFlakinessReport.test_count),
     ('bug_count', ComponentFlakinessReport.bug_count),
+    ('new_bug_count', ComponentFlakinessReport.new_bug_count),
     ('false_rejected_cl_count',
-     ComponentFlakinessReport.false_rejected_cl_count),
-    ('new_bug_count', ComponentFlakinessReport.new_bug_count)]
+     ComponentFlakinessReport.false_rejected_cl_count)]
 
 
 # TODO (crbug.com/923552): Add count as a parameter instead of always use the
