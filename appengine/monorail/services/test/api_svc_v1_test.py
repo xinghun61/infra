@@ -812,8 +812,6 @@ class MonorailApiTest(testing.EndpointsTestCase):
         labels=issue_labels)
     self.services.issue.TestAddIssue(issue1)
 
-    self.services.issue.GetIssueApproval = Mock(
-        return_value=(issue1, approval))
     self.services.issue.DeltaUpdateIssueApproval = Mock(return_value=comment)
 
     self.mock(api_svc_v1.MonorailApi, 'mar_factory',
@@ -924,7 +922,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(403):
       self.call_api('approvals_comments_insert', request)
 
-  def testApprovalsCommentsInsert_NoApprovalFound(self):
+  def testApprovalsCommentsInsert_NoApprovalDefFound(self):
     """No approval with approvalName found."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2],
@@ -940,6 +938,39 @@ class MonorailApiTest(testing.EndpointsTestCase):
     # Test wrong field_type is also caught.
     self.SetUpFieldDefs(
         1, 12345, 'Legal-Review', tracker_pb2.FieldTypes.STR_TYPE)
+    with self.call_should_fail(400):
+      self.call_api('approvals_comments_insert', request)
+
+  def testApprovalscommentsInsert_NoIssueFound(self):
+    """No issue found in project."""
+    request = {'userId': 'user@example.com',
+               'requester': 'requester@example.com',
+               'projectId': 'test-project',
+               'issueId': 1,
+               'approvalName': 'Legal-Review',
+    }
+    # No issue created.
+    with self.call_should_fail(400):
+      self.call_api('approvals_comments_insert', request)
+
+  def testApprovalsCommentsInsert_NoIssueApprovalFound(self):
+    """No approval with the given name found in the issue."""
+
+    request = {'userId': 'user@example.com',
+               'requester': 'requester@example.com',
+               'projectId': 'test-project',
+               'issueId': 1,
+               'approvalName': 'Legal-Review',
+               'sendEmail': False,
+    }
+
+    self.SetUpFieldDefs(
+        1, 12345, 'Legal-Review', tracker_pb2.FieldTypes.APPROVAL_TYPE)
+
+    # issue 1 does not contain the Legal-Review approval.
+    issue1 = fake.MakeTestIssue(12345, 1, 'Issue 1', 'New', 2)
+    self.services.issue.TestAddIssue(issue1)
+
     with self.call_should_fail(400):
       self.call_api('approvals_comments_insert', request)
 

@@ -686,8 +686,17 @@ class MonorailApi(remote.Service):
       raise endpoints.BadRequestException(
           'Field definition for %s not found in project config' %
           request.approvalName)
-    issue, approval = self._services.issue.GetIssueApproval(
-        mar.cnxn, request.issueId, approval_fd.field_id, use_cache=False)
+    try:
+      issue = self._services.issue.GetIssueByLocalID(
+          mar.cnxn, mar.project_id, request.issueId)
+    except exceptions.NoSuchIssueException:
+      raise endpoints.BadRequestException(
+          'Issue %s:%s not found' % (request.projectId, request.issueId))
+    approval = tracker_bizobj.FindApprovalValueByID(
+        approval_fd.field_id, issue.approval_values)
+    if not approval:
+      raise endpoints.BadRequestException(
+          'Approval %s not found in issue.' % request.approvalName)
 
     if not permissions.CanCommentIssue(
         mar.auth.effective_ids, mar.perms, mar.project, issue,
