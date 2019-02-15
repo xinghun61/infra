@@ -260,3 +260,18 @@ func (s *Scheduler) RunOnce(ctx context.Context, m MetricsSink) []*Assignment {
 func (s *Scheduler) GetRequest(rid RequestID) (req *TaskRequest, ok bool) {
 	return s.state.getRequest(rid)
 }
+
+// GetWorkers returns the known workers.
+func (s *Scheduler) GetWorkers() map[WorkerID]*Worker {
+	return s.state.workers
+}
+
+// GetWaitingRequests returns the waiting requests.
+func (s *Scheduler) GetWaitingRequests() map[RequestID]*TaskRequest {
+	return s.state.queuedRequests
+}
+
+// GetBalances returns the account balances.
+func (s *Scheduler) GetBalances() map[AccountID]Balance {
+	return s.state.balances
+}

@@ -23,6 +23,22 @@ func (w *Worker) IsIdle() bool {
 	return w.runningTask == nil
 }
 
+// RunningRequest returns the currently running request for this worker.
+func (w *Worker) RunningRequest() *TaskRequest {
+	if !w.IsIdle() {
+		return w.runningTask.request
+	}
+	return nil
+}
+
+// RunningPriority returns the priority of the currently running request.
+func (w *Worker) RunningPriority() Priority {
+	if !w.IsIdle() {
+		return w.runningTask.priority
+	}
+	return FreeBucket
+}
+
 // latestConfirmedTime returns the newer of the its ConfirmedTime or that of the
 // request it is running (if it is running one).
 func (w *Worker) latestConfirmedTime() time.Time {
