@@ -8,23 +8,26 @@ from collections import defaultdict
 class _ActualTestResultByStatusGroup(object):
   """Counts of classified results by status group for a single test."""
 
-  def __init__(self, passes=None, failures=None, skips=None, unknowns=None):
+  def __init__(self, passes=None, failures=None, skips=None, unknowns=None,
+               notruns=None):
     self.passes = passes or defaultdict(int)
     self.failures = failures or defaultdict(int)
     self.skips = skips or defaultdict(int)
     self.unknowns = unknowns or defaultdict(int)
+    self.notruns = notruns or defaultdict(int)
 
   @classmethod
   def FromDict(cls, info):
     return cls(info['passes'], info['failures'], info['skips'],
-               info['unknowns'])
+               info['unknowns'], info['notruns'])
 
   def ToDict(self):
     return {
         'passes': self.passes,
         'failures': self.failures,
         'skips': self.skips,
-        'unknowns': self.unknowns
+        'unknowns': self.unknowns,
+        'notruns': self.notruns
     }
 
 

@@ -41,6 +41,9 @@ class _ClassifiedTestResult(ndb.Model):
   # All the unknown status and their counts.
   unknowns = ndb.LocalStructuredProperty(
       _ResultCount, repeated=True, compressed=True)
+  # All the unknown status and their counts.
+  notruns = ndb.LocalStructuredProperty(
+      _ResultCount, repeated=True, compressed=True)
 
   @staticmethod
   def _GetResultList(results):
@@ -60,6 +63,7 @@ class _ClassifiedTestResult(ndb.Model):
     result.failures = cls._GetResultList(classified_results.results.failures)
     result.skips = cls._GetResultList(classified_results.results.skips)
     result.unknowns = cls._GetResultList(classified_results.results.unknowns)
+    result.notruns = cls._GetResultList(classified_results.results.notruns)
     return result
 
 
@@ -150,11 +154,11 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
         # There are expected or successful runs for a test that failed on
         # waterfall, classifies the test as a flake.
         tests['flaky_tests'].append(test_name)
-      elif classified_test_result.unknowns:
+      elif classified_test_result.unknowns or classified_test_result.notruns:
         tests['unknown_tests'].append(test_name)
       else:
         # Here we consider a 'non-flaky' test to be 'reliable'.
-        # If the test has skiping results, there should be failure in its
+        # If the test has skipping results, there should be failure in its
         # dependency, considers it to be failed as well.
         tests['reliable_tests'].append(test_name)
     return tests
@@ -217,7 +221,7 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
 
   @staticmethod
   def GetClassifiedTestResults(results):
-    """Gets classified test reresults and populates data to
+    """Gets classified test results and populates data to
       _ClassifiedTestResults.
 
     Args:

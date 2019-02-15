@@ -437,6 +437,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                 'failures': {},
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'virtual/spv2/fast/css/error-in-last-decl.html': {
@@ -450,6 +451,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                     'SKIP': 1
                 },
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'virtual/high-contrast-mode/paint/high-contrast-mode/image-filter-none/'
@@ -464,6 +466,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                 },
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'bluetooth/requestDevice/chooser/new-scan-device-added.html': {
@@ -478,6 +481,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                 },
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'bluetooth/requestDevice/chooser/unknown-status-test.html?5000-6000': {
@@ -491,6 +495,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                 'unknowns': {
                     'UNKNOWN': 1
                 },
+                'notruns': {},
             }
         },
         'virtual/high-contrast-mode/paint/high-contrast-mode/'
@@ -505,6 +510,7 @@ class WebkitLayoutTestResultsTest(wf_testcase.WaterfallTestCase):
                 'failures': {},
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         }
     }

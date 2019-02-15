@@ -22,7 +22,8 @@ class ClassifiedTestResultsTest(wf_testcase.WaterfallTestCase):
                 'skips': {},
                 'unknowns': {
                     'UNKNOWN': 1
-                }
+                },
+                'notruns': {}
             }
         },
         'Unittest1.Subtest2': {
@@ -37,7 +38,8 @@ class ClassifiedTestResultsTest(wf_testcase.WaterfallTestCase):
                     'FAILURE': 2
                 },
                 'skips': {},
-                'unknowns': {}
+                'unknowns': {},
+                'notruns': {}
             }
         },
         'Unittest2.Subtest1': {
@@ -54,13 +56,31 @@ class ClassifiedTestResultsTest(wf_testcase.WaterfallTestCase):
                 'skips': {
                     'SKIPPED': 1
                 },
-                'unknowns': {}
+                'unknowns': {},
+                'notruns': {}
             }
-        }
+        },
+        'Unittest3.Subtest1': {
+            'total_run': 2,
+            'num_expected_results': 1,
+            'num_unexpected_results': 1,
+            'results': {
+                'passes': {
+                    'SUCCESS': 1
+                },
+                'failures': {},
+                'skips': {},
+                'unknowns': {
+                },
+                'notruns': {
+                    'NOTRUN': 1
+                }
+            }
+        },
     }
     test_result_object = ClassifiedTestResults.FromDict(test_result_dict)
     self.assertEqual(test_result_dict, test_result_object.ToDict())
-    self.assertEqual(3, len(test_result_object))
+    self.assertEqual(4, len(test_result_object))
     for test_name, test_result in test_result_object.iteritems():
       self.assertEqual(test_result_dict[test_name], test_result.ToDict())
 

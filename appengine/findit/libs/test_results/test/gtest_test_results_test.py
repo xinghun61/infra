@@ -431,6 +431,10 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
             'Unittest2.Subtest1': [{
                 'status': 'SUCCESS',
                 'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+            }],
+            'Unittest3.Subtest1': [{
+                'status': 'NOTRUN',
+                'output_snippet_base64': ''
             }]
         }]
     }
@@ -447,7 +451,8 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
                 'skips': {},
                 'unknowns': {
                     'UNKNOWN': 1
-                }
+                },
+                'notruns': {},
             }
         },
         'Unittest1.Subtest2': {
@@ -462,7 +467,8 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
                     'FAILURE': 2
                 },
                 'skips': {},
-                'unknowns': {}
+                'unknowns': {},
+                'notruns': {},
             }
         },
         'Unittest2.Subtest1': {
@@ -479,7 +485,25 @@ class GtestTestResultsTest(wf_testcase.WaterfallTestCase):
                 'skips': {
                     'SKIPPED': 1
                 },
-                'unknowns': {}
+                'unknowns': {},
+                'notruns': {},
+            }
+        },
+        'Unittest3.Subtest1': {
+            'total_run': 1,
+            'num_expected_results': 0,
+            'num_unexpected_results': 1,
+            'results': {
+                'passes': {
+                },
+                'failures': {
+                },
+                'skips': {
+                },
+                'unknowns': {},
+                'notruns': {
+                  'NOTRUN': 1
+                },
             }
         }
     }

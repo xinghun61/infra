@@ -195,7 +195,8 @@ class WebkitLayoutTestResults(BaseTestResults):
       * num_expected_results: total number of runs with expected results,
       * num_unexpected_results: total number of runs with unexpected results,
       * results: classified test results in 4 groups: passes, failures, skips
-        and unknowns.
+        and unknowns. There's another 'notruns' group for gtests, but not
+        meaningful for webkit_layout_test, so it will always be empty here.
     """
     if not self.IsTestResultUseful():
       return {}

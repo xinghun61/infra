@@ -25,8 +25,9 @@ RESULTS_INVALID = 10
 SUCCESS = 'SUCCESS'
 SKIPPED = 'SKIPPED'
 UNKNOWN = 'UNKNOWN'
+NOTRUN = 'NOTRUN'
 
-_NON_FAILURE_STATUSES = [SUCCESS, SKIPPED, UNKNOWN]
+_NON_FAILURE_STATUSES = [SUCCESS, SKIPPED, UNKNOWN, NOTRUN]
 
 
 class GtestTestResults(BaseTestResults):
@@ -117,7 +118,7 @@ class GtestTestResults(BaseTestResults):
 
   def GetClassifiedTestResults(self):
     """Parses gtest results, counts and classifies test results by:
-      * status_group: passes/failures/skips/unknowns,
+      * status_group: passes/failures/skips/unknowns/notruns,
       * status: actual result status.
 
     Also counts number of expected and unexpected results for each test:
@@ -132,8 +133,8 @@ class GtestTestResults(BaseTestResults):
       * total_run: total number of runs,
       * num_expected_results: total number of runs with expected results,
       * num_unexpected_results: total number of runs with unexpected results,
-      * results: classified test results in 4 groups: passes, failures, skips
-        and unknowns.
+      * results: classified test results in 5 groups: passes, failures, skips,
+        unknowns and notruns.
     """
     if not self.IsTestResultUseful():
       return {}
@@ -151,6 +152,8 @@ class GtestTestResults(BaseTestResults):
         test_result.results.skips[upper_status] += 1
       elif upper_status == UNKNOWN:
         test_result.results.unknowns[upper_status] += 1
+      elif upper_status == NOTRUN:
+        test_result.results.notruns[upper_status] += 1
       else:
         test_result.results.failures[upper_status] += 1
 

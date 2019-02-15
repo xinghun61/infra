@@ -74,7 +74,8 @@ class WfSwarmingTaskTest(unittest.TestCase):
                 'skips': {},
                 'unknowns': {
                     'UNKNOWN': 1
-                }
+                },
+                'notruns': {},
             }
         },
         'Unittest1.Subtest2': {
@@ -89,7 +90,8 @@ class WfSwarmingTaskTest(unittest.TestCase):
                     'FAILURE': 2
                 },
                 'skips': {},
-                'unknowns': {}
+                'unknowns': {},
+                'notruns': {},
             }
         },
         'Unittest2.Subtest1': {
@@ -104,7 +106,25 @@ class WfSwarmingTaskTest(unittest.TestCase):
                 'skips': {
                     'SKIPPED': 1
                 },
-                'unknowns': {}
+                'unknowns': {},
+                'notruns': {},
+            }
+        },
+        'Unittest3.Subtest1': {
+            'total_run': 1,
+            'num_expected_results': 0,
+            'num_unexpected_results': 1,
+            'results': {
+                'passes': {
+                },
+                'failures': {
+                },
+                'skips': {
+                },
+                'unknowns': {},
+                'notruns': {
+                  'NOTRUN': 1
+                },
             }
         }
     }
@@ -114,10 +134,11 @@ class WfSwarmingTaskTest(unittest.TestCase):
     expected_classified_tests = {
         'flaky_tests': ['Unittest1.Subtest2'],
         'reliable_tests': ['Unittest2.Subtest1'],
-        'unknown_tests': ['Unittest1.Subtest1']
+        'unknown_tests': ['Unittest1.Subtest1', 'Unittest3.Subtest1'],
     }
 
-    self.assertEqual(expected_classified_tests, task.classified_tests)
+    for status, expected_res in expected_classified_tests.iteritems():
+      self.assertItemsEqual(expected_res, task.classified_tests[status])
     self.assertEqual(expected_classified_tests['reliable_tests'],
                      task.reliable_tests)
     self.assertEqual(expected_classified_tests['flaky_tests'], task.flaky_tests)
@@ -140,6 +161,7 @@ class WfSwarmingTaskTest(unittest.TestCase):
                 'failures': {},
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'virtual/spv2/fast/css/error-in-last-decl.html': {
@@ -153,6 +175,7 @@ class WfSwarmingTaskTest(unittest.TestCase):
                     'SKIP': 1
                 },
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'virtual/high-contrast-mode/paint/high-contrast-mode/image-filter-none/'
@@ -167,6 +190,7 @@ class WfSwarmingTaskTest(unittest.TestCase):
                 },
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'bluetooth/requestDevice/chooser/new-scan-device-added.html': {
@@ -181,6 +205,7 @@ class WfSwarmingTaskTest(unittest.TestCase):
                 },
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         },
         'bluetooth/requestDevice/chooser/unknown-status-test.html': {
@@ -194,6 +219,7 @@ class WfSwarmingTaskTest(unittest.TestCase):
                 'unknowns': {
                     'UNKNOWN': 1
                 },
+                'notruns': {},
             }
         },
         'virtual/high-contrast-mode/paint/high-contrast-mode/'
@@ -210,6 +236,7 @@ class WfSwarmingTaskTest(unittest.TestCase):
                 },
                 'skips': {},
                 'unknowns': {},
+                'notruns': {},
             }
         }
     }
