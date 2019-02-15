@@ -54,9 +54,9 @@ pre.prettyprint {
 
 .issuecomment {
     margin: 1.3em 1em;
-    border: var(--chops-card-border);
-    border-radius: var(--chops-radius);
-    box-shadow: var(--chops-shadow);
+    /* TODO(jrobbins): After some time, fully elminate card motif. */
+    border: 1px solid hsl(0, 0%, 92%);
+    border-radius: 4px;
 }
 
 .issuedescription pre a, .issuecomment pre a {
