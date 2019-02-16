@@ -23,6 +23,7 @@ service Users {
   rpc SetExpandPermsPreference (SetExpandPermsPreferenceRequest) returns (SetExpandPermsPreferenceResponse) {}
   rpc InviteLinkedParent (InviteLinkedParentRequest) returns (InviteLinkedParentResponse) {}
   rpc AcceptLinkedChild (AcceptLinkedChildRequest) returns (AcceptLinkedChildResponse) {}
+  rpc UnlinkAccounts (UnlinkAccountsRequest) returns (UnlinkAccountsResponse) {}
 }
 
 
@@ -163,4 +164,17 @@ message AcceptLinkedChildRequest {
 
 // Next available tag: 1
 message AcceptLinkedChildResponse {
+}
+
+
+// Next available tag: 4
+message UnlinkAccountsRequest {
+  RequestTrace trace = 1;
+  UserRef parent = 2;
+  UserRef child = 3;
+}
+
+
+// Next available tag: 1
+message UnlinkAccountsResponse {
 }

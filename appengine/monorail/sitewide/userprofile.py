@@ -73,6 +73,8 @@ class UserProfile(servlet.Servlet):
       if viewed_user.linked_child_ids:
         linked_children = [
           linked_views[child_id] for child_id in viewed_user.linked_child_ids]
+      offer_unlink = (mr.auth.user_id == viewed_user.user_id or
+                      mr.auth.user_id in linked_views)
 
     incoming_invite_users = []
     outgoing_invite_users = []
@@ -189,6 +191,7 @@ class UserProfile(servlet.Servlet):
         'outgoing_invite_users': outgoing_invite_users,
         'possible_parent_accounts': possible_parent_accounts,
         'can_edit_invites': ezt.boolean(can_edit_invites),
+        'offer_unlink': ezt.boolean(offer_unlink),
         }
 
     user_settings = (

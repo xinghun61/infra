@@ -563,6 +563,15 @@ class UserService(object):
     self.GetUser(cnxn, parent_id).linked_child_ids.append(child_id)
     self.GetUser(cnxn, child_id).linked_parent_id = parent_id
 
+  def UnlinkAccounts(self, _cnxn, parent_id, child_id):
+    """Delete a linked-account relationship."""
+    if not parent_id:
+      raise exceptions.InputException('Parent account is missing')
+    if not child_id:
+      raise exceptions.InputException('Child account is missing')
+    self.linked_account_rows = [(p, c) for (p, c) in self.linked_account_rows
+                                if (p, c) != (parent_id, child_id)]
+
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,

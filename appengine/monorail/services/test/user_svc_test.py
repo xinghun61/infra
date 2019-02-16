@@ -427,6 +427,22 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.linkedaccountinvite_tbl.Delete.assert_called_once_with(
         self.cnxn, parent_id=111L, child_id=222L)
 
+  def testUnlinkAccounts_MissingIDs(self):
+    """Reject an attempt to unlink anon."""
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.UnlinkAccounts(self.cnxn, 0, 0)
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.UnlinkAccounts(self.cnxn, 0, 111L)
+    with self.assertRaises(exceptions.InputException):
+      self.user_service.UnlinkAccounts(self.cnxn, 111L, 0)
+
+  def testUnlinkAccounts_Normal(self):
+    """We can unlink accounts."""
+    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.UnlinkAccounts(self.cnxn, 111L, 222L)
+    self.user_service.linkedaccount_tbl.Delete.assert_called_once_with(
+        self.cnxn, parent_id=111L, child_id=222L)
+
   def testUpdateUserSettings(self):
     self.SetUpUpdateUser()
     user_a = user_pb2.User(email='a@example.com')

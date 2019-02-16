@@ -8,6 +8,7 @@
 const parentSelect = document.getElementById('parent_to_invite');
 const createButton = document.getElementById('create_linked_account_invite');
 const acceptButtons = document.querySelectorAll('.incoming_invite');
+const unlinkButtons = document.querySelectorAll('.unlink_account');
 
 function CreateLinkedAccountInvite(ev) {
   const email = parentSelect.value;
@@ -38,6 +39,23 @@ function AcceptIncomingInvite(ev) {
 }
 
 
+function UnlinkAccounts(ev) {
+  const parent = ev.target.dataset.parent;
+  const child = ev.target.dataset.child;
+  const message = {
+    parent: {display_name: parent},
+    child: {display_name: child},
+  };
+  const unlinkCall = window.prpcClient.call(
+    'monorail.Users', 'UnlinkAccounts', message);
+  unlinkCall.then((resp) => {
+    location.reload();
+  }).catch((reason) => {
+    console.error('Unlinking failed: ' + reason);
+  });
+}
+
+
 if (parentSelect) {
   parentSelect.onchange = function(e) {
     const email = parentSelect.value;
@@ -55,4 +73,8 @@ if (acceptButtons) {
   }
 }
 
-// TODO(jrobbins): function to unlink accounts.
+if (unlinkButtons) {
+  for (const unlinkButton of unlinkButtons) {
+    unlinkButton.onclick = UnlinkAccounts;
+  }
+}

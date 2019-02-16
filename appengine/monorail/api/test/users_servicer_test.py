@@ -426,3 +426,43 @@ class UsersServicerTest(unittest.TestCase):
 
     self.assertEqual(parent.user_id, child.linked_parent_id)
     self.assertIn(child.user_id, parent.linked_child_ids)
+
+  def testUnlinkAccounts_NotFound(self):
+    """Reject attempt to unlink a user that does not exist or unspecified."""
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    request = users_pb2.UnlinkAccountsRequest(
+        parent=common_pb2.UserRef(display_name='who@chromium.org'),
+        child=common_pb2.UserRef(display_name='owner@example.com'))
+    with self.assertRaises(exceptions.NoSuchUserException):
+      self.CallWrapped(self.users_svcr.UnlinkAccounts, mc, request)
+
+    request = users_pb2.UnlinkAccountsRequest(
+        parent=common_pb2.UserRef(display_name='owner@example.com'),
+        child=common_pb2.UserRef(display_name='who@google.com'))
+    with self.assertRaises(exceptions.NoSuchUserException):
+      self.CallWrapped(self.users_svcr.UnlinkAccounts, mc, request)
+
+    request = users_pb2.UnlinkAccountsRequest(
+        parent=common_pb2.UserRef(display_name='owner@example.com'))
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.users_svcr.UnlinkAccounts, mc, request)
+
+    request = users_pb2.UnlinkAccountsRequest(
+        child=common_pb2.UserRef(display_name='owner@example.com'))
+    with self.assertRaises(exceptions.InputException):
+      self.CallWrapped(self.users_svcr.UnlinkAccounts, mc, request)
+
+  def testUnlinkAccounts_Normal(self):
+    """Users can unlink their accounts."""
+    self.services.user.linked_account_rows = [(111L, 222L)]
+    request = users_pb2.UnlinkAccountsRequest(
+        parent=common_pb2.UserRef(display_name='owner@example.com'),
+        child=common_pb2.UserRef(display_name='test2@example.com'))
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+
+    self.CallWrapped(self.users_svcr.UnlinkAccounts, mc, request)
+
+    self.assertEqual([], self.services.user.linked_account_rows)

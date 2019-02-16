@@ -949,3 +949,7 @@ html>body .goog-inline-block {
     text-align: left;
     background-color: #6ec5ff;
 }
+
+input.unlink_account, input.incoming_invite {
+    font-size: 80%;
+}

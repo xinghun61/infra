@@ -635,6 +635,16 @@ class UserService(object):
         cnxn, parent_id=parent_id, child_id=child_id)
     self.user_2lc.InvalidateKeys(cnxn, [parent_id, child_id])
 
+  def UnlinkAccounts(self, cnxn, parent_id, child_id):
+    """Delete a linked-account relationship."""
+    if not parent_id:
+      raise exceptions.InputException('Parent account is missing')
+    if not child_id:
+      raise exceptions.InputException('Child account is missing')
+    self.linkedaccount_tbl.Delete(
+        cnxn, parent_id=parent_id, child_id=child_id)
+    self.user_2lc.InvalidateKeys(cnxn, [parent_id, child_id])
+
   ### User settings
   # Settings are details about a user account that are usually needed
   # every time that user is displayed to another user.

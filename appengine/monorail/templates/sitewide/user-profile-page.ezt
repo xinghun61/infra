@@ -56,7 +56,12 @@
   <p>
   <b>Linked parent account:</b>
     [include "../framework/user-link.ezt" linked_parent]
-    [# TODO(jrobbins): Allow unlinking.]
+    [if-any offer_unlink perms._EditOtherUsers]
+      <input type="button" class="unlink_account secondary"
+             data-parent="[linked_parent.email]"
+             data-child="[viewed_user.email]"
+             value="Unlink">
+    [end]
   </p>
 [end]
 
@@ -64,7 +69,13 @@
   <p>
   <b>Linked child accounts:</b>
   [for linked_children]
-    [include "../framework/user-link.ezt" linked_children][if-index linked_children last][else], [end]
+    [include "../framework/user-link.ezt" linked_children]
+    [if-any offer_unlink perms._EditOtherUsers]
+      <input type="button" class="unlink_account secondary"
+             data-parent="[viewed_user.email]"
+             data-child="[linked_children.email]"
+             value="Unlink">
+    [end]
   [end]
   </p>
 [end]
@@ -75,7 +86,7 @@
       <div>
         [include "../framework/user-link.ezt" incoming_invite_users]
         [if-any can_edit_invites][# TODO(jrobbins): allow site admin to accept invites for other users.]
-          <button class="incoming_invite" data-email="[incoming_invite_users.email]">Accept</button>
+          <input type="button" class="incoming_invite" data-email="[incoming_invite_users.email]" value="Accept">
           [# TODO(jrobbins): Button to decline invite.]
         [end]
       </div>

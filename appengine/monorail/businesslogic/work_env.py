@@ -1449,6 +1449,19 @@ class WorkEnv(object):
       self.services.user.AcceptLinkedChild(
           self.mc.cnxn, self.mc.auth.user_id, child_id)
 
+  def UnlinkAccounts(self, parent_id, child_id):
+    """Delete a linked-account relationship."""
+    if (self.mc.auth.user_id != parent_id and
+        self.mc.auth.user_id != child_id):
+      permitted = self.mc.perms.CanUsePerm(
+        permissions.EDIT_OTHER_USERS, self.mc.auth.effective_ids, None, [])
+      if not permitted:
+        raise permissions.PermissionException(
+          'User lacks permission to unlink accounts')
+
+    with self.mc.profiler.Phase('Unlink accounts'):
+      self.services.user.UnlinkAccounts(self.mc.cnxn, parent_id, child_id)
+
   def UpdateUserSettings(self, **kwargs):
     """Update the preferences of the specified user.
 

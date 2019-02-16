@@ -158,3 +158,14 @@ class UsersServicer(monorail_servicer.MonorailServicer):
 
     result = users_pb2.AcceptLinkedChildResponse()
     return result
+
+  @monorail_servicer.PRPCMethod
+  def UnlinkAccounts(self, mc, request):
+    """Unlink a specificed parent and child account."""
+    parent_id, child_id = converters.IngestUserRefs(
+        mc.cnxn, [request.parent, request.child], self.services.user)
+    with work_env.WorkEnv(mc, self.services) as we:
+      we.UnlinkAccounts(parent_id, child_id)
+
+    result = users_pb2.UnlinkAccountsResponse()
+    return result

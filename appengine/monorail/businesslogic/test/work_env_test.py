@@ -1962,6 +1962,35 @@ class WorkEnvTest(unittest.TestCase):
       self.assertEqual(
         [], self.services.user.invite_rows)
 
+  def testUnlinkAccounts_NotAllowed(self):
+    """Reject attempts to unlink someone else's accounts."""
+    self.SignIn(user_id=333L)
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.UnlinkAccounts(111L, 222L)
+
+  def testUnlinkAccounts_AdminIsAllowed(self):
+    """Site admins may unlink someone else's accounts."""
+    self.SignIn(user_id=444L)
+    self.services.user.linked_account_rows = [(111L, 222L)]
+    with self.work_env as we:
+      we.UnlinkAccounts(111L, 222L)
+    self.assertNotIn((111L, 222L), self.services.user.linked_account_rows)
+
+  def testUnlinkAccounts_Normal(self):
+    """A parent or child can unlink their linked account."""
+    self.SignIn(user_id=111L)
+    self.services.user.linked_account_rows = [(111L, 222L), (333L, 444L)]
+    with self.work_env as we:
+      we.UnlinkAccounts(111L, 222L)
+    self.assertEqual([(333L, 444L)], self.services.user.linked_account_rows)
+
+    self.SignIn(user_id=222L)
+    self.services.user.linked_account_rows = [(111L, 222L), (333L, 444L)]
+    with self.work_env as we:
+      we.UnlinkAccounts(111L, 222L)
+    self.assertEqual([(333L, 444L)], self.services.user.linked_account_rows)
+
   def testUpdateUserSettings(self):
     """We can update the settings of the logged in user."""
     self.SignIn()
