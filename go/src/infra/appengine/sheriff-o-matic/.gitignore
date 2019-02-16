@@ -3,3 +3,4 @@ appengine-generated/
 bower_components
 node_modules
 som-app.vulcanized.html
+.nyc_output
