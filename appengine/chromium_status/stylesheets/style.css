@@ -34,11 +34,14 @@ th {
   font-size: 9pt;
 }
 
+a {
+  color: inherit;
+}
 a:link {
-  text-decoration: none;
+  text-decoration: underline;
 }
 a:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 div.error {
