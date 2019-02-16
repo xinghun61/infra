@@ -230,8 +230,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       'read recipes.cfg',
       recipes_cfg_path, step_test_data=lambda: self.m.json.test_api.output({}))
 
-    return (
-      current_cfg.json.output['autoroll_recipe_options'].get('disable_reason'))
+    return current_cfg.json.output.get(
+        'autoroll_recipe_options', {}
+    ).get('disable_reason')
 
   def _roll_project(self, project_data, recipes_dir):
     """
