@@ -7,8 +7,16 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../mr-flipper.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';
+import '../../mr-dropdown/mr-dropdown.js';
+
+
+const DELETE_ISSUE_CONFIRMATION_NOTICE = `\
+Normally, you would just close issues by setting their status to a closed value.
+Are you sure you want to delete this issue?`;
+
+
 /**
  * `<mr-issue-header>`
  *
@@ -28,9 +36,8 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           font-weight: normal;
           padding: 0.25em 16px;
           box-sizing: border-box;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
+          display: grid;
+          grid-template-columns: 1fr auto auto;
         }
         h1 {
           font-size: 100%;
@@ -39,7 +46,11 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           padding: 0;
           margin: 0;
         }
+        mr-dropdown {
+          justify-self: end;
+        }
         mr-flipper {
+          justify-self: end;
           font-size: 0.75em;
         }
         .byline {
@@ -48,6 +59,9 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           width: 100%;
           line-height: 140%;
           color: hsl(227, 15%, 35%);
+        }
+        .main-text {
+          justify-self: start;
         }
         @media (max-width: 840px) {
           :host {
@@ -68,6 +82,12 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
         </small>
       </div>
+      <template is="dom-if" if="[[_issueOptions.length]]">
+        <mr-dropdown
+          items="[[_issueOptions]]"
+          icon="more_vert"
+        ></mr-dropdown>
+      </template>
       <mr-flipper></mr-flipper>
     `;
   }
@@ -87,6 +107,11 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       issue: {
         type: Object,
         value: () => {},
+      },
+      issuePermissions: Object,
+      _issueOptions: {
+        type: Array,
+        computed: '_computeIssueOptions(issuePermissions)',
       },
       _flipperCount: {
         type: Number,
@@ -110,6 +135,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issue: state.issue,
+      issuePermissions: state.issuePermissions,
     };
   }
 
@@ -123,6 +149,38 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
 
   _computePrevId(id) {
     return id - 1;
+  }
+
+  _computeIssueOptions(issuePermissions) {
+    const options = [];
+    if ((issuePermissions || []).includes('deleteissue')) {
+      options.push({
+        text: 'Delete issue',
+        handler: this._deleteIssue.bind(this),
+      });
+    }
+    return options;
+  }
+
+  _deleteIssue() {
+    const ok = confirm(DELETE_ISSUE_CONFIRMATION_NOTICE);
+    if (ok) {
+      window.prpcClient.call('monorail.Issues', 'DeleteIssue', {
+        issueRef: {
+          projectName: this.issue.projectName,
+          localId: this.issue.localId,
+        },
+        delete: true,
+      }).then(() => {
+        const message = {
+          issueRef: {
+            projectName: this.issue.projectName,
+            localId: this.issue.localId,
+          },
+        };
+        actionCreator.fetchIssue(this.dispatchAction.bind(this), message);
+      });
+    }
   }
 }
 
