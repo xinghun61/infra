@@ -17,7 +17,7 @@
   [define offer_make_changes][end]
 [end]
 
-<div id="color_control" class="[if-any issue.is_open][else]closed_colors[end]">
+<div id="color_control" class="[if-any issue.is_open][else]closed_colors[end] [if-any code_font]codefont[end]">
 
 <table width="100%" cellpadding="0" cellspacing="0" border="0" class="issuepage" id="meta-container">
 
@@ -112,7 +112,7 @@
 
 
  <tr>
-  <td class="vt issuedescription [if-any code_font]codefont[end]" width="100%" height="100%" id="cursorarea" colspan="2">
+  <td class="vt issuedescription" width="100%" height="100%" id="cursorarea" colspan="2">
     <h3 class="visually_hidden">Issue description</h3>
     [include "issue-comments-part.ezt" "show-delete-comment-link"]
   </td>

@@ -39,7 +39,7 @@ pre.prettyprint {
   padding: 5px 0 6px 8px;
 }
 
-.codefont pre.issue_text {
+.codefont .issue_text {
   font-family: monospace;
   font-size: 12px;
 }

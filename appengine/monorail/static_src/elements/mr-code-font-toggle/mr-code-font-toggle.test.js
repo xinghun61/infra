@@ -7,21 +7,21 @@ import sinon from 'sinon';
 import {MrCodeFontToggle} from './mr-code-font-toggle.js';
 
 let element;
-let cursorArea;
+let ancestor;
 
 suite('mr-code-font-toggle', () => {
 
   setup(() => {
     element = document.createElement('mr-code-font-toggle');
     document.body.appendChild(element);
-    cursorArea = document.createElement('div');
-    cursorArea.id = 'cursorarea';
-    document.body.appendChild(cursorArea);
+    ancestor = document.createElement('div');
+    ancestor.id = 'color_control';
+    document.body.appendChild(ancestor);
   });
 
   teardown(() => {
     document.body.removeChild(element);
-    document.body.removeChild(cursorArea);
+    document.body.removeChild(ancestor);
   });
 
   test('initializes', () => {
@@ -33,10 +33,10 @@ suite('mr-code-font-toggle', () => {
     var label = chopsToggle.shadowRoot.querySelector('label');
 
     // code font is initially off.
-    assert.isFalse(cursorArea.classList.contains('codefont'));
+    assert.isFalse(ancestor.classList.contains('codefont'));
     label.click();  // Toggle it on.
-    assert.isTrue(cursorArea.classList.contains('codefont'));
+    assert.isTrue(ancestor.classList.contains('codefont'));
     label.click();  // Toggle it off.
-    assert.isFalse(cursorArea.classList.contains('codefont'));
+    assert.isFalse(ancestor.classList.contains('codefont'));
   });
 });

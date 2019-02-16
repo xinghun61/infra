@@ -43,13 +43,13 @@ export class MrCodeFontToggle extends PolymerElement {
 
   _checkedChange(checked) {
     if (checked === this.checked) return;
-    const cursorArea = document.querySelector('#cursorarea');
-    if (cursorArea && window.prpcClient) {
+    const ancestor = document.querySelector('#color_control');
+    if (ancestor && window.prpcClient) {
       this.checked = checked;
       if (checked) {
-        cursorArea.classList.add('codefont');
+        ancestor.classList.add('codefont');
       } else {
-        cursorArea.classList.remove('codefont');
+        ancestor.classList.remove('codefont');
       }
       const message = {
           prefs: [{name: 'code_font', value: '' + checked}],
