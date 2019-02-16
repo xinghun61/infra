@@ -17,7 +17,10 @@ import '../chops/chops-toggle/chops-toggle.js';
 export class MrCodeFontToggle extends PolymerElement {
   static get template() {
     return html`
-      <chops-toggle on-checked-change="_checkedChangeHandler">Code</chops-toggle>
+      <chops-toggle
+         checked="[[checked]]"
+         on-checked-change="_checkedChangeHandler"
+       >Code</chops-toggle>
     `;
   }
 
@@ -25,18 +28,40 @@ export class MrCodeFontToggle extends PolymerElement {
     return 'mr-code-font-toggle';
   }
 
+  static get properties() {
+    return {
+      checked: {
+        type: Boolean,
+        observer: '_checkedChange',
+      },
+    };
+  }
+
   _checkedChangeHandler(evt) {
     this._checkedChange(evt.detail.checked);
   }
 
   _checkedChange(checked) {
-    let cursorArea = document.querySelector('#cursorarea');
-    if (checked) {
-      cursorArea.classList.add('codefont');
-    } else {
-      cursorArea.classList.remove('codefont');
+    if (checked === this.checked) return;
+    const cursorArea = document.querySelector('#cursorarea');
+    if (cursorArea && window.prpcClient) {
+      this.checked = checked;
+      if (checked) {
+        cursorArea.classList.add('codefont');
+      } else {
+        cursorArea.classList.remove('codefont');
+      }
+      const message = {
+          prefs: [{name: 'code_font', value: '' + checked}],
+      };
+      const setPrefsCall = window.prpcClient.call(
+          'monorail.Users', 'SetUserPrefs', message);
+      setPrefsCall.then((resp) => {
+         // successfully saved prefs
+      }).catch((reason) => {
+        console.error('SetUserPrefs failed: ' + reason);
+      });
     }
-    // TODO(jrobbins): Use pRPC call to store pref on the server.
   }
 }
 customElements.define(MrCodeFontToggle.is, MrCodeFontToggle);

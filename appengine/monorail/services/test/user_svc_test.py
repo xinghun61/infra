@@ -483,7 +483,7 @@ class UserServiceTest(unittest.TestCase):
                    user_pb2.UserPrefValue(name='keep_perms_open', value='true')]
     self.user_service.SetUserPrefs(self.cnxn, 111L, pref_values)
     self.user_service.userprefs_tbl.InsertRows.assert_called_once_with(
-        self.cnxn,
+        self.cnxn, user_svc.USERPREFS_COLS,
         [(111L, 'code_font', 'true'),
          (111L, 'keep_perms_open', 'true')],
         replace=True)

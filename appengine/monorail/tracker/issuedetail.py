@@ -162,6 +162,9 @@ class IssueDetail(issuepeek.IssuePeek):
       star_cnxn = sql.MonorailConnection()
       star_promise = framework_helpers.Promise(
           we.IsIssueStarred, issue, cnxn=star_cnxn)
+      userprefs = we.GetUserPrefs(mr.auth.user_id)
+      code_font = any(pref for pref in userprefs.prefs
+                      if pref.name == 'code_font' and pref.value == 'true')
 
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, mr.auth.effective_ids, config)
@@ -380,6 +383,7 @@ class IssueDetail(issuepeek.IssuePeek):
         'remaining_issue_hotlists': remaining_issue_hotlist_views,
 
         'is_member': ezt.boolean(is_member),
+        'code_font': ezt.boolean(code_font),
     }
 
   def GatherHelpData(self, mr, page_data):

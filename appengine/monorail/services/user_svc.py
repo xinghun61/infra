@@ -751,7 +751,8 @@ class UserService(object):
   def SetUserPrefs(self, cnxn, user_id, pref_values):
     """Store the given list of UserPrefValues."""
     userprefs_rows = [(user_id, upv.name, upv.value) for upv in pref_values]
-    self.userprefs_tbl.InsertRows(cnxn, userprefs_rows, replace=True)
+    self.userprefs_tbl.InsertRows(
+        cnxn, USERPREFS_COLS, userprefs_rows, replace=True)
     self.userprefs_2lc.InvalidateKeys(cnxn, [user_id])
 
 
