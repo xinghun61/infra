@@ -68,6 +68,10 @@ func testSetup(t *testing.T) *State {
 		MailAddress:    "admin@example.com",
 		ProdENV:        "production",
 		BackupCred:     defaultClient,
+		NobodyEmail: NobodyEmail{
+			Subject: "TestSubject",
+			Body:    "TestBody",
+		},
 	}
 	setupStoreHandlers(&opts, datastore.New)
 	h, err := New(&opts)
@@ -171,6 +175,10 @@ func TestNew(t *testing.T) {
 			Calendar:       &calendar.Calendar{},
 			LegacyCalendar: &calendar.Calendar{},
 			BackupCred:     defaultClient,
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
 		},
 	}, {
 		name: "Options nil",
@@ -193,6 +201,10 @@ func TestNew(t *testing.T) {
 			Calendar:       &calendar.Calendar{},
 			LegacyCalendar: &calendar.Calendar{},
 			BackupCred:     defaultClient,
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
 		},
 	}, {
 		name: "Store empty",
@@ -207,6 +219,10 @@ func TestNew(t *testing.T) {
 				return datastore.New(ctx)
 			},
 			BackupCred: defaultClient,
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
 		},
 	}, {
 		name: "No Calendar",
@@ -226,6 +242,10 @@ func TestNew(t *testing.T) {
 				return datastore.New(ctx)
 			},
 			BackupCred: defaultClient,
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
 		},
 	}, {
 		name: "No ProdENV",
@@ -245,6 +265,10 @@ func TestNew(t *testing.T) {
 			Calendar:       &calendar.Calendar{},
 			LegacyCalendar: &calendar.Calendar{},
 			BackupCred:     defaultClient,
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
 		},
 	}, {
 		name: "No LegacyCalendar",
@@ -264,6 +288,10 @@ func TestNew(t *testing.T) {
 			},
 			Calendar:   &calendar.Calendar{},
 			BackupCred: defaultClient,
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
 		},
 	}, {
 		name: "BackupCred missing",
@@ -283,11 +311,39 @@ func TestNew(t *testing.T) {
 			},
 			Calendar:       &calendar.Calendar{},
 			LegacyCalendar: &calendar.Calendar{},
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
 		},
 	}, {
 		name: "ProjectID missing",
 		fail: true,
 		opts: &Options{
+			ProdENV:    "production",
+			Generators: &algo.Generators{},
+			MemberStore: func(ctx context.Context) rotang.MemberStorer {
+				return datastore.New(ctx)
+			},
+			ShiftStore: func(ctx context.Context) rotang.ShiftStorer {
+				return datastore.New(ctx)
+			},
+			ConfigStore: func(ctx context.Context) rotang.ConfigStorer {
+				return datastore.New(ctx)
+			},
+			Calendar:       &calendar.Calendar{},
+			LegacyCalendar: &calendar.Calendar{},
+			BackupCred:     defaultClient,
+			NobodyEmail: NobodyEmail{
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			},
+		},
+	}, {
+		name: "NobodyEmail missing",
+		fail: true,
+		opts: &Options{
+			ProjectID:  idFunc,
 			ProdENV:    "production",
 			Generators: &algo.Generators{},
 			MemberStore: func(ctx context.Context) rotang.MemberStorer {

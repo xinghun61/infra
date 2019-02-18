@@ -65,6 +65,17 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 		if err = h.shiftStore(ctx.Context).UpdateShift(ctx.Context, cfg.Config.Name, resShift); err != nil {
 			return err
 		}
+
+		if len(s.OnCall) > 0 && len(resShift.OnCall) == 0 {
+			// Only send a mail out if this was changed in the calendar.
+			// This gives that if an owner removes all OnCallers from a shift
+			// no mail will be sent. Also only one mail will be sent on detecting
+			// the first change to the calendar.
+			if err := h.sendNobodyOncall(ctx, cfg, &s); err != nil {
+				logging.Warningf(ctx.Context, "sending NobodyOncall email for rota: %q failed: %v", cfg.Config.Name, err)
+			}
+		}
+
 		logging.Infof(ctx.Context, "shift: %v updated from calendar, updated shift: %v", s, *resShift)
 	}
 	return nil

@@ -96,7 +96,7 @@ func (h *State) sendMail(ctx *router.Context, cfg *rotang.Configuration, shift *
 		return err
 	}
 
-	subject, body, err := emailFromTemplate(cfg, &rotang.Info{
+	subject, body, err := emailFromTemplate(cfg.Config.Email.Subject, cfg.Config.Email.Body, &rotang.Info{
 		RotaName:    cfg.Config.Name,
 		ShiftConfig: cfg.Config.Shifts,
 		ShiftEntry:  *shift,
@@ -106,20 +106,20 @@ func (h *State) sendMail(ctx *router.Context, cfg *rotang.Configuration, shift *
 		return err
 	}
 
-	to, sender := h.setSender(ctx, email)
+	to, sender := h.setSender(ctx, []string{email})
 
 	return h.mailSender.Send(ctx.Context, &mail.Message{
 		Sender:  sender,
-		To:      []string{to},
+		To:      to,
 		Subject: subject,
 		Body:    body,
 	})
 }
 
-func (h *State) setSender(ctx *router.Context, email string) (string, string) {
+func (h *State) setSender(ctx *router.Context, email []string) ([]string, string) {
 	sender := h.mailAddress
 	if h.IsStaging() {
-		email = stagingEmail
+		email = []string{stagingEmail}
 		if sender == "" {
 			sender = stagingEmail
 		}
@@ -132,15 +132,15 @@ func (h *State) setSender(ctx *router.Context, email string) (string, string) {
 	return email, sender
 }
 
-func emailFromTemplate(cfg *rotang.Configuration, info *rotang.Info) (string, string, error) {
-	if info == nil || cfg == nil {
-		return "", "", status.Errorf(codes.InvalidArgument, "info and cfg must be set")
+func emailFromTemplate(subject, body string, info *rotang.Info) (string, string, error) {
+	if info == nil || subject == "" || body == "" {
+		return "", "", status.Errorf(codes.InvalidArgument, "info and subject/body must be set")
 	}
-	subjectTemplate, err := template.New("Subject").Parse(cfg.Config.Email.Subject)
+	subjectTemplate, err := template.New("Subject").Parse(subject)
 	if err != nil {
 		return "", "", err
 	}
-	bodyTemplate, err := template.New("Body").Parse(cfg.Config.Email.Body)
+	bodyTemplate, err := template.New("Body").Parse(body)
 	if err != nil {
 		return "", "", err
 	}
@@ -153,4 +153,25 @@ func emailFromTemplate(cfg *rotang.Configuration, info *rotang.Info) (string, st
 		return "", "", err
 	}
 	return subjectBuf.String(), bodyBuf.String(), nil
+}
+
+func (h *State) sendNobodyOncall(ctx *router.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry) error {
+	subject, body, err := emailFromTemplate(h.nobodyEmail.Subject, h.nobodyEmail.Body, &rotang.Info{
+		RotaName:    cfg.Config.Name,
+		ShiftConfig: cfg.Config.Shifts,
+		ShiftEntry:  *shift,
+	})
+	if err != nil {
+		return err
+	}
+
+	to, sender := h.setSender(ctx, cfg.Config.Owners)
+
+	return h.mailSender.Send(ctx.Context, &mail.Message{
+		Sender:  sender,
+		To:      to,
+		Subject: subject,
+		Body:    body,
+	})
+
 }

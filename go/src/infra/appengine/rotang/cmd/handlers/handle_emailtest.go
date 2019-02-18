@@ -106,11 +106,11 @@ func (h *State) HandleEmailTestSend(ctx *router.Context) {
 	}
 	fmt.Println(subject, body)
 
-	to, sender := h.setSender(ctx, auth.CurrentUser(ctx.Context).Email)
+	to, sender := h.setSender(ctx, []string{auth.CurrentUser(ctx.Context).Email})
 
 	if err := h.mailSender.Send(ctx.Context, &mail.Message{
 		Sender:  sender,
-		To:      []string{to},
+		To:      to,
 		Subject: subject,
 		Body:    body,
 	}); err != nil {
@@ -160,7 +160,7 @@ func (h *State) fillEmail(ctx *router.Context, rota *rotang.Configuration, t tim
 		}
 	}
 
-	subject, body, err := emailFromTemplate(rota, &rotang.Info{
+	subject, body, err := emailFromTemplate(rota.Config.Email.Subject, rota.Config.Email.Body, &rotang.Info{
 		RotaName:    rota.Config.Name,
 		ShiftConfig: rota.Config.Shifts,
 		ShiftEntry:  ss[0],

@@ -200,6 +200,13 @@ func buildLegacyMap(h *State) map[string]func(ctx *router.Context, file string) 
 	}
 }
 
+// NobodyEmail defines the data needed to send out nobody
+// on call emails.
+type NobodyEmail struct {
+	Subject string
+	Body    string
+}
+
 // State holds shared state between handlers.
 type State struct {
 	projectID      func(context.Context) string
@@ -212,6 +219,7 @@ type State struct {
 	shiftStore     func(context.Context) rotang.ShiftStorer
 	configStore    func(context.Context) rotang.ConfigStorer
 	mailAddress    string
+	nobodyEmail    NobodyEmail
 	mailSender     rotang.MailSender
 	legacyMap      map[string]func(ctx *router.Context, file string) (string, error)
 }
@@ -225,6 +233,7 @@ type Options struct {
 	Generators     *algo.Generators
 	MailSender     rotang.MailSender
 	MailAddress    string
+	NobodyEmail    NobodyEmail
 	BackupCred     func(*router.Context) (*http.Client, error)
 
 	MemberStore func(context.Context) rotang.MemberStorer
@@ -251,6 +260,8 @@ func New(opt *Options) (*State, error) {
 		return nil, status.Errorf(codes.InvalidArgument, "BackupCred can not be nil")
 	case opt.ProjectID == nil:
 		return nil, status.Errorf(codes.InvalidArgument, "ProjectID can not be nil")
+	case opt.NobodyEmail.Subject == "" || opt.NobodyEmail.Body == "":
+		return nil, status.Errorf(codes.InvalidArgument, "NobodyEmail can not be empty")
 	}
 	h := &State{
 		prodENV:        opt.ProdENV,
@@ -263,6 +274,7 @@ func New(opt *Options) (*State, error) {
 		configStore:    opt.ConfigStore,
 		mailSender:     opt.MailSender,
 		mailAddress:    opt.MailAddress,
+		nobodyEmail:    opt.NobodyEmail,
 		backupCred:     opt.BackupCred,
 	}
 	h.legacyMap = buildLegacyMap(h)
