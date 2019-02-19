@@ -132,7 +132,7 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 
 // RunOperationInTransaction runs the given operation in a transaction on this store.
 func (s *Store) RunOperationInTransaction(ctx context.Context, op types.Operation) error {
-	e := newEventBuffer(s.entityID)
+	e := newMetricsBuffer(s.entityID)
 	if err := datastore.RunInTransaction(ctx, operationRunner(op, s, e), nil); err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func (s *Store) RunOperationInTransaction(ctx context.Context, op types.Operatio
 
 // RunRevertableOperationInTransaction runs the given operation in a transaction on this store.
 func (s *Store) RunRevertableOperationInTransaction(ctx context.Context, op types.RevertableOperation) error {
-	e := newEventBuffer(s.entityID)
+	e := newMetricsBuffer(s.entityID)
 	if err := datastore.RunInTransaction(ctx, revertableOperationRunner(op, s, e), nil); err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ type datastoreEntity struct {
 // operationRunner returns a read-modify-write function for an operation.
 //
 // The returned function is suitable to be used with datastore.RunInTransaction.
-func operationRunner(op types.Operation, store *Store, e *eventBuffer) func(context.Context) error {
+func operationRunner(op types.Operation, store *Store, e *metricsBuffer) func(context.Context) error {
 	return func(ctx context.Context) error {
 		e.reset()
 
@@ -200,7 +200,7 @@ func operationRunner(op types.Operation, store *Store, e *eventBuffer) func(cont
 // should be reverted rather than saved.
 //
 // The returned function is suitable to be used with datastore.RunInTransaction.
-func revertableOperationRunner(op types.RevertableOperation, store *Store, e *eventBuffer) func(context.Context) error {
+func revertableOperationRunner(op types.RevertableOperation, store *Store, e *metricsBuffer) func(context.Context) error {
 	return func(ctx context.Context) error {
 		e.reset()
 

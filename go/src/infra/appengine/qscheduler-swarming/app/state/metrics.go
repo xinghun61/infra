@@ -79,21 +79,22 @@ var (
 	)
 )
 
-// eventBuffer implements scheduler.EventSink.
+// metricsBuffer implements scheduler.EventSink.
 //
-// Events can be flushed to bigquery.
-type eventBuffer struct {
+// Metrics are buffered so that they can be sent to bigquery and tsmon upon
+// successful datastore transaction.
+type metricsBuffer struct {
 	schedulerID string
 	taskEvents  []*metrics.TaskEvent
 }
 
-// newEventBuffer creates a metrics sink for the given scheduler.
-func newEventBuffer(schedulerID string) *eventBuffer {
-	return &eventBuffer{schedulerID: schedulerID}
+// newMetricsBuffer creates a metrics sink for the given scheduler.
+func newMetricsBuffer(schedulerID string) *metricsBuffer {
+	return &metricsBuffer{schedulerID: schedulerID}
 }
 
 // reset resets the given metrics sink, erasing any previously added entries.
-func (e *eventBuffer) reset() {
+func (e *metricsBuffer) reset() {
 	e.taskEvents = nil
 }
 
@@ -101,12 +102,12 @@ func (e *eventBuffer) reset() {
 //
 // This can be called inside of a datastore transaction, in which case events
 // will only be flushed if the transaction succeeds.
-func (e *eventBuffer) flushToBQ(ctx context.Context) error {
+func (e *metricsBuffer) flushToBQ(ctx context.Context) error {
 	return eventlog.TaskEvents(ctx, e.taskEvents...)
 }
 
 // flushToTsMon flushes events to ts_mon.
-func (e *eventBuffer) flushToTsMon(ctx context.Context) error {
+func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 	for _, event := range e.taskEvents {
 		switch event.EventType {
 		case metrics.TaskEvent_SWARMING_COMPLETED:
@@ -126,7 +127,7 @@ func (e *eventBuffer) flushToTsMon(ctx context.Context) error {
 }
 
 // AddEvent implements scheduler.EventSink.
-func (e *eventBuffer) AddEvent(event *metrics.TaskEvent) {
+func (e *metricsBuffer) AddEvent(event *metrics.TaskEvent) {
 	event.SchedulerId = e.schedulerID
 	e.taskEvents = append(e.taskEvents, event)
 }
