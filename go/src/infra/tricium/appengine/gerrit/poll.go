@@ -93,6 +93,7 @@ func poll(c context.Context, cp config.ProviderAPI) error {
 
 	var tasks []*tq.Task
 	for _, name := range names {
+		logging.Debugf(c, "Adding poll-project task for %q.", name)
 		task := tq.NewPOSTTask("/gerrit/internal/poll-project", nil)
 		bytes, err := proto.Marshal(&admin.PollProjectRequest{Project: name})
 		if err != nil {
@@ -144,6 +145,7 @@ func pollProject(c context.Context, name string, gerrit API, cp config.ProviderA
 // corresponding to zero is used (time.Time{}).
 func pollGerritProject(c context.Context, luciProject string, repo *tricium.RepoDetails, gerrit API) error {
 	gerritProject := repo.GetGerritProject()
+	logging.Debugf(c, "Starting poll-project for project %q.", luciProject)
 
 	// Get last poll data for the given host/project.
 	p := &Project{ID: gerritProjectID(gerritProject.Host, gerritProject.Project)}
