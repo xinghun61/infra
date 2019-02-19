@@ -1,4 +1,8 @@
-import {LitElement, html} from '@polymer/lit-element/lit-element.js';
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import {LitElement, html} from 'lit-element/lit-element.js';
 
 export class ChopsHeader extends LitElement {
   constructor() {
@@ -17,22 +21,29 @@ export class ChopsHeader extends LitElement {
       homeUrl: {
         type: String,
       },
+      /* URL for the image location of the application's logo. No logo is
+       * shown if this is not specified. */
+      logoSrc: {
+        type: String,
+      },
+      // TODO(zhangtiff): Also make the :host element extend the "header"
+      // tag once browsers implement extending native elements with web
+      // components.
+      role: {
+        type: String,
+        reflect: true,
+      },
     };
   }
 
   render() {
     return html`
-      <link
-        href="https://fonts.googleapis.com/css?family=Roboto"
-        rel="stylesheet"
-      >
       <style>
         :host {
+          color: var(--chops-header-text-color);
           box-sizing: border-box;
-          position: fixed;
-          background: white;
-          font-family: 'Roboto', sans-serif;
-          font-size: 16px;
+          background: hsl(221, 67%, 92%);
+          font-size: 14px;
           width: 100%;
           height: 50px;
           display: flex;
@@ -40,46 +51,70 @@ export class ChopsHeader extends LitElement {
           justify-content: space-between;
           align-items: center;
           z-index: 100;
-          border-bottom: 1px solid hsl(0, 0%, 88%);
-        }
-        ::slotted(img) {
-          max-height: 100%;
         }
         a {
+          color: var(--chops-header-text-color);
           text-decoration: none;
         }
         a:hover {
           text-decoration: underline;
         }
-        .header-section {
-          padding: 0 16px;
-          height: 100%;
+        #headerTitle {
+          font-size: 18px;
           display: flex;
           align-items: center;
         }
-        #login {
-          align-self: flex-end;
+        #headerTitle img {
+          height: 32px;
+          width: 32px;
+          font-size: 10px;
+          overflow: hidden;
+          margin: 0;
         }
-        #title {
-          font-size: 20px;
+        #headerTitle small {
+          font-size: 14px;
+        }
+        #headerTitleText {
           display: flex;
-          align-items: center;
+          align-items: baseline;
+        }
+        #headerTitleTextMain {
           padding: 0 8px;
-          height: 100%;
+        }
+        .header-section {
+          padding: 0.5em 16px;
+          display: flex;
+          align-items: center;
+        }
+        @media (max-width: 840px) {
+          .header-section {
+            font-size: 0.8em;
+            min-width: 10%;
+            text-align: left;
+          }
         }
       </style>
       <div class="header-section">
-        <slot name="hamburger"></slot>
-        <slot name="logo"></slot>
-        <a id="title" href="${this.homeUrl}">
-          ${this.appTitle}
-        </a>
+        <slot name="before-header"></slot>
+        <div id="headerTitle">
+          ${this.logo}
+          <div ?hidden=${!this.logoSrc}>
+            <a href="/">
+              <img src=${this.logoSrc} alt="${this.appTitle} Logo" title="${this.appTitle} Logo">
+            </a>
+          </div>
+          <span id="headerTitleText">
+            <a id="headerTitleTextMain" href="/">
+              ${this.appTitle}
+            </a>
+            <small>
+              <slot name="subheader"></slot>
+            </small>
+          </span>
+        </div>
       </div>
       <div class="header-section">
         <slot></slot>
-      </div>
-      <div id="login" class="header-section">
-        <slot name="login"></slot>
       </div>
     `;
   }

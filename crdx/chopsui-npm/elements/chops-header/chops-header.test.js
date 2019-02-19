@@ -1,3 +1,7 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 import {assert} from 'chai';
 import {ChopsHeader} from './chops-header.js';
 
@@ -21,6 +25,6 @@ test('initializes', () => {
 test('changing appTitle sets title', async () => {
   element.appTitle = 'test';
   await element.updateComplete;
-  const title = element.shadowRoot.querySelector('#title');
+  const title = element.shadowRoot.querySelector('#headerTitleTextMain');
   assert.equal(title.textContent.trim(), 'test');
 });

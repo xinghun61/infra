@@ -1,10 +1,14 @@
 {
   "name": "@chopsui/chops-header",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "A shared header element for Chops.",
-  "author": "Chrome Operations team",
-  "license": "ISC",
+  "author": "The Chromium Authors",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
+  },
   "dependencies": {
-    "@polymer/lit-element": "^0.6.4"
+    "lit-element": "^2.0.0"
   }
 }

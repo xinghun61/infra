@@ -5,6 +5,7 @@ module.exports = {
   entry: {
     'chops-header': './elements/chops-header/chops-header.js',
   },
+  mode: 'development',
   output: {
     filename: 'elements/[name]/[name].js',
     path: path.resolve(__dirname, 'dist'),
