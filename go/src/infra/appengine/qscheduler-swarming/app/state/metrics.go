@@ -27,7 +27,7 @@ import (
 
 var (
 	counterCompleted = metric.NewCounter(
-		"qscheduler/state/task_completed",
+		"qscheduler/state/event/task_completed",
 		"Task completed by swarming.",
 		nil,
 		field.String("scheduler_id"),
@@ -35,7 +35,7 @@ var (
 	)
 
 	counterEnqueued = metric.NewCounter(
-		"qscheduler/state/task_enqueued",
+		"qscheduler/state/event/task_enqueued",
 		"Task enqueued by swarming.",
 		nil,
 		field.String("scheduler_id"),
@@ -43,7 +43,7 @@ var (
 	)
 
 	counterAssigned = metric.NewCounter(
-		"qscheduler/state/task_assigned",
+		"qscheduler/state/event/task_assigned",
 		"Task assigned by qscheduler.",
 		nil,
 		field.String("scheduler_id"),
@@ -53,7 +53,7 @@ var (
 	)
 
 	counterPreempted = metric.NewCounter(
-		"qscheduler/state/task_preempted",
+		"qscheduler/state/event/task_preempted",
 		"Task preempted by qscheduler.",
 		nil,
 		field.String("scheduler_id"),
@@ -61,7 +61,7 @@ var (
 	)
 
 	counterReprioritized = metric.NewCounter(
-		"qscheduler/state/task_reprioritized",
+		"qscheduler/state/event/task_reprioritized",
 		"Task reprioritized by qscheduler.",
 		nil,
 		field.String("scheduler_id"),
