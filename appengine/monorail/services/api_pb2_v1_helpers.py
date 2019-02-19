@@ -252,7 +252,7 @@ def convert_issue(cls, issue, mar, services):
       phase = phases_by_id.get(fv.phase_id)
       if not phase:
         logging.warning('Phase %d for field %s does not exist',
-                        fd.phase_id, fd.field_name)
+                        fv.phase_id, fd.field_name)
       else:
         new_fv.phaseName = phase.name
     field_values_list.append(new_fv)

@@ -243,7 +243,10 @@ class ApiV1HelpersTest(unittest.TestCase):
       tracker_bizobj.MakeFieldValue(
           1, 4, None, None, None, None, False, phase_id=4),
       tracker_bizobj.MakeFieldValue(
-          3, None, 'string', None, None, None, False, phase_id=4)
+          3, None, 'string', None, None, None, False, phase_id=4),
+      # missing phase
+      tracker_bizobj.MakeFieldValue(
+          3, None, 'string', None, None, None, False, phase_id=2),
     ]
     phases = [
         tracker_pb2.Phase(phase_id=3, name="JustAPhase", rank=4),
@@ -278,7 +281,9 @@ class ApiV1HelpersTest(unittest.TestCase):
               fieldName='EstDays', fieldValue='4', approvalName='DesignReview',
               derived=False),
            api_pb2_v1.FieldValue(fieldName='StringField', fieldValue='string',
-                                 phaseName="NotAPhase", derived=False)
+                                 phaseName="NotAPhase", derived=False),
+           api_pb2_v1.FieldValue(fieldName='StringField', fieldValue='string',
+                                 derived=False),
           ]
       )
       self.assertEqual(
