@@ -64,11 +64,27 @@ type BatchRunner struct {
 
 	// tBatchStart is read from prior to a batch being permitted to start.
 	tBatchStart chan struct{}
+
+	// doneChannelSize is the buffer size to use for done channels.
+	//
+	// In production, this is 1, to ensure that the single necessary write
+	// to this channel doesn't block.
+	//
+	// In tests, this is 0, to ensure that batcher is deadlock-free.
+	doneChannelSize int
 }
 
 // NewBatcher creates a new BatchRunner.
 func NewBatcher() *BatchRunner {
-	b := NewBatchRunnerForTest()
+	b := &BatchRunner{
+		requests: make(chan *batchedOp, 100),
+		closed:   make(chan struct{}),
+
+		doneChannelSize: 1,
+
+		tBatchStart: make(chan struct{}),
+		tBatchWait:  make(chan struct{}),
+	}
 	b.closeFixtureChannels()
 	return b
 }
@@ -91,8 +107,7 @@ func (b *BatchRunner) Start(store *Store) {
 // result.
 func (b *BatchRunner) RunOperation(ctx context.Context, op types.Operation, priority BatchPriority) (wait <-chan error) {
 	// Use a buffered channel, so that writing back to this channel doesn't block.
-	// TODO(akeshet): Make this unbuffered for tests.
-	dc := make(chan error, 1)
+	dc := make(chan error, b.doneChannelSize)
 	bo := &batchedOp{
 		ctx:       ctx,
 		priority:  priority,
@@ -286,10 +301,10 @@ func (b *batch) close() {
 // batches to be allowed to close.
 func NewBatchRunnerForTest() *BatchRunner {
 	return &BatchRunner{
-		// TODO(akeshet): Make this a buffered channel in prod, unbuffered in
-		// tests.
 		requests: make(chan *batchedOp),
 		closed:   make(chan struct{}),
+
+		doneChannelSize: 0,
 
 		tBatchStart: make(chan struct{}),
 		tBatchWait:  make(chan struct{}),
