@@ -118,6 +118,10 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 		return nil, errors.Wrap(err, "unable to unmarshal Config")
 	}
 
+	recordProtoSize(ctx, len(dst.ReconcilerData), dst.QSPoolID, "reconciler")
+	recordProtoSize(ctx, len(dst.SchedulerData), dst.QSPoolID, "scheduler")
+	recordProtoSize(ctx, len(dst.ConfigData), dst.QSPoolID, "config")
+
 	return &types.QScheduler{
 		SchedulerID: dst.QSPoolID,
 		Reconciler:  reconciler.NewFromProto(r),

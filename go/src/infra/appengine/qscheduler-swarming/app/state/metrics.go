@@ -19,6 +19,7 @@ import (
 
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
+	"go.chromium.org/luci/common/tsmon/types"
 
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/qscheduler/qslib/protos/metrics"
@@ -65,6 +66,16 @@ var (
 		nil,
 		field.String("scheduler_id"),
 		field.String("account_id"),
+	)
+
+	gaugeProtoSize = metric.NewInt(
+		"qscheduler/store/proto_size",
+		"Size of a loaded store proto.",
+		&types.MetricMetadata{
+			Units: types.Bytes,
+		},
+		field.String("scheduler_id"),
+		field.String("type"),
 	)
 )
 
@@ -118,4 +129,9 @@ func (e *eventBuffer) flushToTsMon(ctx context.Context) error {
 func (e *eventBuffer) AddEvent(event *metrics.TaskEvent) {
 	event.SchedulerId = e.schedulerID
 	e.taskEvents = append(e.taskEvents, event)
+}
+
+// recordProtoSize records a metric about a given proto's size.
+func recordProtoSize(ctx context.Context, bytes int, schedulerID string, protoType string) {
+	gaugeProtoSize.Set(ctx, int64(bytes), schedulerID, protoType)
 }
