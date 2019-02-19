@@ -69,7 +69,7 @@ var (
 		field.String("account_id"),
 	)
 
-	gaugeQueueSize = metric.NewCounter(
+	gaugeQueueSize = metric.NewInt(
 		"qscheduler/state/queue_size",
 		"The number of tasks in the queue.",
 		nil,
