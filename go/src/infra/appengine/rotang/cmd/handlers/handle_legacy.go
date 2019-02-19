@@ -309,7 +309,6 @@ var rotaToName = map[string][2]string{
 	"headless_roll":           {"Headless Chrome roll sheriff", ""},
 	"infra_platform":          {"Chops Foundation Triage", ""},
 	"infra_triage":            {"Chrome Infra Bug Triage Rotation", ""},
-	"media_ux_triage":         {"Chrome Media UX Bug Triage Rotation", ""},
 	"monorail":                {"Chrome Infra Monorail Triage Rotation", ""},
 	"network":                 {"Chrome Network Bug Triage", ""},
 	"perfbot":                 {"Chromium Perf Bot Sheriff Rotation", ""},
