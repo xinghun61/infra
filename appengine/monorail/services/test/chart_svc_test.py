@@ -21,6 +21,7 @@ from framework import permissions
 from framework import sql
 from proto import ast_pb2
 from proto import tracker_pb2
+from search import ast2select
 from search import search_helpers
 from testing import fake
 from tracker import tracker_bizobj
@@ -104,6 +105,23 @@ class ChartServiceTest(unittest.TestCase):
           unixtime=1514764800, effective_ids=[10L, 20L], project=project,
           perms=perms, group_by='label')
     self.mox.VerifyAll()
+
+  def testQueryIssueSnapshots_Impossible(self):
+    """We give an error message when a query could never have results."""
+    project = fake.Project(project_id=789)
+    perms = permissions.USER_PERMISSIONSET
+    self.services.chart._QueryToWhere(mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        mox.IgnoreArg()).AndRaise(ast2select.NoPossibleResults())
+    self.mox.ReplayAll()
+    total, errors, limit_reached = self.services.chart.QueryIssueSnapshots(
+        self.cnxn, self.services,
+        unixtime=1514764800, effective_ids=[10L, 20L], project=project,
+        perms=perms, query='prefix=')
+    self.mox.VerifyAll()
+    self.assertEqual({}, total)
+    self.assertEqual(['Invalid query.'], errors)
+    self.assertFalse(limit_reached)
 
   def testQueryIssueSnapshots_Components(self):
     """Test a burndown query from a regular user grouping by component."""

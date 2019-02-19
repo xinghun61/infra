@@ -80,6 +80,7 @@ class ChartService(object):
     Returns:
       1. A dict of {'2nd dimension or "total"': number of occurences}.
       2. A list of any unsupported query conditions in query.
+      3. A boolean that is true if any results were capped.
     """
     project_config = services.config.GetProjectConfig(cnxn,
         project.project_id)
@@ -87,7 +88,7 @@ class ChartService(object):
       query_left_joins, query_where, unsupported_conds = self._QueryToWhere(
           cnxn, services, project_config, query, canned_query, project)
     except ast2select.NoPossibleResults:
-      return {}, ['Invalid query.']
+      return {}, ['Invalid query.'], False
 
     restricted_label_ids = search_helpers.GetPersonalAtRiskLabelIDs(
       cnxn, None, self.config_service, effective_ids, project, perms)
