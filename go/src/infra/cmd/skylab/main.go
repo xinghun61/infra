@@ -49,6 +49,8 @@ func getApplication() *cli.Application {
 			cmd.CreateSuite,
 			cmd.Repair,
 			cmd.RerunTasks,
+			subcommands.Section("Internal use"),
+			cmd.InternalListDroneDuts,
 		},
 	}
 }
