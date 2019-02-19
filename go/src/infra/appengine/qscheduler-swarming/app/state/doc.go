@@ -13,6 +13,6 @@
 // limitations under the License.
 
 // Package state provides representations of the state of a quotascheduler
-// app, as well as transformations that run on a state and ways to persis
-// the state.
+// app, as well as transformations that run on a state and ways to persist
+// the state, and emits metrics about the state or its transitions.
 package state
