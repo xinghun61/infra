@@ -1301,23 +1301,35 @@ class IssueService(object):
 
     for template_av in template.approval_values:
       existing_issue_av = issue_avs_by_id.get(template_av.approval_id)
-      # Keep approval values as-if fi it exists in issue and template
-      if existing_issue_av:
-        existing_issue_av.phase_id = template_av.phase_id
-        new_issue_approvals.append(existing_issue_av)
-      else:
-        new_issue_approvals.append(template_av)
 
       # Update all approval surveys so latest ApprovalDef survey changes
       # appear in the converted issue's approval values.
       ad = approval_defs_by_id.get(template_av.approval_id)
+      new_av_approver_ids = []
       if ad:
+        new_av_approver_ids = ad.approver_ids
         new_approval_surveys.append(
             self._MakeIssueComment(
                 issue.project_id, reporter_id, ad.survey,
                 is_description=True, approval_id=ad.approval_id))
       else:
         logging.info('ApprovalDef not found for approval %r', template_av)
+
+      # Keep approval values as-is if it exists in issue and template
+      if existing_issue_av:
+        new_av = tracker_bizobj.MakeApprovalValue(
+            existing_issue_av.approval_id,
+            approver_ids=existing_issue_av.approver_ids,
+            status=existing_issue_av.status,
+            setter_id=existing_issue_av.setter_id,
+            set_on=existing_issue_av.set_on,
+            phase_id=template_av.phase_id)
+        new_issue_approvals.append(new_av)
+      else:
+        new_av = tracker_bizobj.MakeApprovalValue(
+            template_av.approval_id, approver_ids=new_av_approver_ids,
+            status=template_av.status, phase_id=template_av.phase_id)
+        new_issue_approvals.append(new_av)
 
     fd_names_by_id = {fd.field_id: fd.field_name for fd in config.field_defs}
     amendment = tracker_bizobj.MakeApprovalStructureAmendment(

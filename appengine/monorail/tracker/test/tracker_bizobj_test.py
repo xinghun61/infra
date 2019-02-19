@@ -269,6 +269,21 @@ class BizobjTest(unittest.TestCase):
         ['Hot'],
         tracker_bizobj.NonMaskedLabels(['Hot', 'Size-XL'], field_names))
 
+  def testMakeApprovalValue_Basic(self):
+    av = tracker_bizobj.MakeApprovalValue(2)
+    expected = tracker_pb2.ApprovalValue(approval_id=2)
+    self.assertEqual(av, expected)
+
+  def testMakeApprovalValue_Full(self):
+    av = tracker_bizobj.MakeApprovalValue(
+        2, approver_ids=[], status=tracker_pb2.ApprovalStatus.APPROVED,
+        setter_id=3, set_on=123, phase_id=3)
+    expected = tracker_pb2.ApprovalValue(
+        approval_id=2, approver_ids=[],
+        status=tracker_pb2.ApprovalStatus.APPROVED,
+        setter_id=3, set_on=123, phase_id=3)
+    self.assertEqual(av, expected)
+
   def testMakeFieldDef_Basic(self):
     fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'Size', tracker_pb2.FieldTypes.USER_TYPE, None, None,

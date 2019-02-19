@@ -962,9 +962,12 @@ class IssueServiceTest(unittest.TestCase):
     config = self.services.config.GetProjectConfig(
         self.cnxn, 789)
     config.approval_defs = [
-        tracker_pb2.ApprovalDef(approval_id=3, survey='Question3'),
-        tracker_pb2.ApprovalDef(approval_id=4, survey='Question4'),
-        tracker_pb2.ApprovalDef(approval_id=7, survey='Question7'),
+        tracker_pb2.ApprovalDef(
+            approval_id=3, survey='Question3', approver_ids=[222L]),
+        tracker_pb2.ApprovalDef(
+            approval_id=4, survey='Question4', approver_ids=[444L]),
+        tracker_pb2.ApprovalDef(
+            approval_id=7, survey='Question7', approver_ids=[222L]),
     ]
     config.field_defs = [
       tracker_pb2.FieldDef(
@@ -986,12 +989,12 @@ class IssueServiceTest(unittest.TestCase):
             approval_id=3,
             phase_id=4,
             status=tracker_pb2.ApprovalStatus.APPROVED,
-            approver_ids=[111L],
+            approver_ids=[111L],  # trumps approval_def approver_ids
         ),
         tracker_pb2.ApprovalValue(
             approval_id=4,
             phase_id=5,
-            approver_ids=[111L]),
+            approver_ids=[111L]),  # trumps approval_def approver_ids
         tracker_pb2.ApprovalValue(approval_id=6)]
     issue.phases = [
         tracker_pb2.Phase(name='Expired', phase_id=4),
@@ -1002,15 +1005,13 @@ class IssueServiceTest(unittest.TestCase):
     template.approval_values = [
         tracker_pb2.ApprovalValue(
             approval_id=3,
-            phase_id=6,  # Different phase. Nothing else affected.
-            approver_ids=[222L]),
+            phase_id=6),  # Different phase. Nothing else affected.
         # No phase. Nothing else affected.
         tracker_pb2.ApprovalValue(approval_id=4),
         # New approval not already found in issue.
         tracker_pb2.ApprovalValue(
             approval_id=7,
-            phase_id=5,
-            approver_ids=[222L]),
+            phase_id=5),
     ]  # No approval 6
     template.phases = [tracker_pb2.Phase(name='Canary', phase_id=5),
                        tracker_pb2.Phase(name='Stable-Exp', phase_id=6)]
@@ -1053,9 +1054,11 @@ class IssueServiceTest(unittest.TestCase):
         ),
         tracker_pb2.ApprovalValue(
             approval_id=4,
+            status=tracker_pb2.ApprovalStatus.NOT_SET,
             approver_ids=[111L]),
         tracker_pb2.ApprovalValue(
             approval_id=7,
+            status=tracker_pb2.ApprovalStatus.NOT_SET,
             phase_id=5,
             approver_ids=[222L]),
     ]

@@ -238,6 +238,17 @@ def ExplicitAndDerivedNonMaskedLabels(issue, config):
   return labels, derived_labels
 
 
+def MakeApprovalValue(approval_id, approver_ids=None, status=None,
+                      setter_id=None, set_on=None, phase_id=None):
+  """Return an ApprovalValue PB with the given field values."""
+  av = tracker_pb2.ApprovalValue(
+      approval_id=approval_id, status=status,
+      setter_id=setter_id, set_on=set_on, phase_id=phase_id)
+  if approver_ids is not None:
+    av.approver_ids = approver_ids
+  return av
+
+
 def MakeFieldDef(
     field_id, project_id, field_name, field_type_int, applic_type, applic_pred,
     is_required, is_niche, is_multivalued, min_value, max_value, regex,
