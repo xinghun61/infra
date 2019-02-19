@@ -214,7 +214,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
 
   _projectNameChanged(projectName) {
     if (!projectName || this.fetchingProjectConfig) return;
-    // Reload project config when the project name changes.
+    // Reload project config and templates when the project name changes.
 
     this.dispatchAction({type: actionType.FETCH_PROJECT_CONFIG_START});
 
@@ -237,6 +237,27 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
     }, (error) => {
       this.dispatchAction({
         type: actionType.FETCH_PROJECT_CONFIG_FAILURE,
+        error,
+      });
+    });
+
+    this.dispatchAction({type: actionType.FETCH_PROJECT_TEMPLATES_START});
+
+    const listTemplates = window.prpcClient.call(
+        'monorail.Projects', 'ListProjectTemplates', message
+    );
+
+    // TODO(zhangtiff): Remove (see above TODO).
+    if (!listTemplates) return;
+
+    listTemplates.then((resp) => {
+      this.dispatchAction({
+        type: actionType.FETCH_PROJECT_TEMPLATES_SUCCESS,
+        projectTemplates: resp,
+      });
+    }, (error) => {
+      this.dispatchAction({
+        type: actionType.FETCH_PROJECT_TEMPLATES_FAILURE,
         error,
       });
     });

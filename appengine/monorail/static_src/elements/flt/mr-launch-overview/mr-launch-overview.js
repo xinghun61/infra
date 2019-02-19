@@ -5,8 +5,11 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import './mr-phase.js';
+import './mr-convert-issue.js';
+
+const ISSUE_EDIT_PERMISSION = 'editissue';
 
 /**
  * `<mr-launch-overview>`
@@ -17,6 +20,8 @@ import './mr-phase.js';
 export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
       <style>
         :host {
           width: 100%;
@@ -35,6 +40,23 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
       <template is="dom-if" if="[[_phaselessApprovals.length]]">
         <mr-phase approvals="[[_phaselessApprovals]]"></mr-phase>
       </template>
+      <template is="dom-if" if="[[_shouldOfferConvert(issuePermissions, projectTemplates)]]">
+        <chops-button
+          on-click="openConvertIssue">
+          <i class="material-icons">transform</i>
+          Convert this issue
+        </chops-button>
+      </template>
+      <chops-dialog id="convertIssueDialog">
+        <mr-convert-issue
+          id="convertIssueForm"
+          convert-issue-error=[[convertIssueError]]
+          project-templates=[[projectTemplates]]
+          on-discard="closeConvertIssue"
+          on-save="saveConvertIssue"
+        >
+        </mr-convert-issue>
+      </chops-dialog>
     `;
   }
 
@@ -50,6 +72,15 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
         type: Array,
         computed: '_approvalsForPhase(approvals)',
       },
+      convertingIssue: {
+        type: Boolean,
+        observer: '_convertingIssueChanged',
+      },
+      convertIssueError: Object,
+      issueId: Number,
+      issuePermissions: Object,
+      projectName: String,
+      projectTemplates: Array,
     };
   }
 
@@ -58,6 +89,12 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
     return {
       approvals: state.issue.approvalValues,
       phases: state.issue.phases,
+      convertingIssue: state.convertingIssue,
+      convertIssueError: state.convertIssueError,
+      issueId: state.issueId,
+      issuePermissions: state.issuePermissions,
+      projectName: state.projectName,
+      projectTemplates: state.projectTemplates,
     };
   }
 
@@ -67,5 +104,36 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
       return a.phaseRef.phaseName == phaseName;
     });
   }
+
+  openConvertIssue() {
+    this.$.convertIssueDialog.open();
+  }
+
+  closeConvertIssue() {
+    this.$.convertIssueDialog.close();
+  }
+
+  saveConvertIssue() {
+    actionCreator.convertIssue(this.dispatchAction.bind(this), {
+      issueRef: {
+        projectName: this.projectName,
+        localId: this.issueId,
+      },
+      templateName: this.$.convertIssueForm.selectedTemplate,
+      commentContent: this.$.convertIssueForm.$.commentContent.value,
+      sendEmail: this.$.convertIssueForm.sendEmail,
+    });
+  }
+
+  _shouldOfferConvert(issuePermissions, projectTemplates) {
+    return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION) && projectTemplates.length;
+  }
+
+  _convertingIssueChanged(isConversionInFlight) {
+    if (!isConversionInFlight && !this.convertIssueError) {
+      this.$.convertIssueDialog.close();
+    }
+  }
+
 }
 customElements.define(MrLaunchOverview.is, MrLaunchOverview);

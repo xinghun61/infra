@@ -18,6 +18,10 @@ export const actionType = {
   FETCH_PROJECT_CONFIG_SUCCESS: 'FETCH_PROJECT_CONFIG_SUCCESS',
   FETCH_PROJECT_CONFIG_FAILURE: 'FETCH_PROJECT_CONFIG_FAILURE',
 
+  FETCH_PROJECT_TEMPLATES_START: 'FETCH_PROJECT_TEMPLATES_START',
+  FETCH_PROJECT_TEMPLATES_SUCCESS: 'FETCH_PROJECT_TEMPLATES_SUCCESS',
+  FETCH_PROJECT_TEMPLATES_FAILURE: 'FETCH_PROJECT_TEMPLATES_FAILURE',
+
   FETCH_USER_START: 'FETCH_USER_START',
   FETCH_USER_SUCCESS: 'FETCH_USER_SUCCESS',
   FETCH_USER_FAILURE: 'FETCH_USER_FAILURE',
@@ -57,6 +61,10 @@ export const actionType = {
   FETCH_BLOCKER_REFERENCES_START: 'FETCH_BLOCKER_REFERENCES_START',
   FETCH_BLOCKER_REFERENCES_SUCCESS: 'FETCH_BLOCKER_REFERENCES_SUCCESS',
   FETCH_BLOCKER_REFERENCES_FAILURE: 'FETCH_BLOCKER_REFERENCES_FAILURE',
+
+  CONVERT_ISSUE_START: 'CONVERT_ISSUE_START',
+  CONVERT_ISSUE_SUCCESS: 'CONVERT_ISSUE_SUCCESS',
+  CONVERT_ISSUE_FAILURE: 'CONVERT_ISSUE_FAILURE',
 
   UPDATE_ISSUE_START: 'UPDATE_ISSUE_START',
   UPDATE_ISSUE_SUCCESS: 'UPDATE_ISSUE_SUCCESS',
@@ -288,6 +296,27 @@ export const actionCreator = {
       });
     });
   },
+  convertIssue: (dispatch, message) => {
+    dispatch({type: actionType.CONVERT_ISSUE_START});
+
+    window.prpcClient.call(
+        'monorail.Issues', 'ConvertIssueApprovalsTemplate', message
+    ).then((resp) => {
+      dispatch({
+        type: actionType.CONVERT_ISSUE_SUCCESS,
+        issue: resp.issue,
+      });
+      const fetchCommentsMessage = {
+        issueRef: message.issueRef,
+      };
+      actionCreator.fetchComments(dispatch, fetchCommentsMessage);
+    }, (error) => {
+      dispatch({
+        type: actionType.CONVERT_ISSUE_FAILURE,
+        error: error,
+      });
+    });
+  },
 };
 
 export const initial = {
@@ -331,6 +360,9 @@ export const initial = {
   fetchingProjectConfig: false,
   fetchProjectConfigError: null,
 
+  fetchingProjectTemplates: false,
+  fetchProjectTemplatesError: null,
+
   fetchingComments: false,
   fetchCommentsError: null,
 
@@ -345,6 +377,9 @@ export const initial = {
 
   fetchingIsStarred: false,
   fetchIsStarredError: null,
+
+  convertingIssue: false,
+  convertIssueError: null,
 
   updatingIssue: false,
   updateIssueError: null,
@@ -404,6 +439,23 @@ export const reducer = (state, action) => {
       return Object.assign({}, state, {
         fetchProjectConfigError: action.error,
         fetchingProjectConfig: false,
+      });
+
+    // Request for getting templates for a project.
+    case actionType.FETCH_PROJECT_TEMPLATES_START:
+      return Object.assign({}, state, {
+        fetchProjectTemplatesError: null,
+        fetchingProjectTemplates: true,
+      });
+    case actionType.FETCH_PROJECT_TEMPLATES_SUCCESS:
+      return Object.assign({}, state, {
+        projectTemplates: action.projectTemplates.templates,
+        fetchingProjectTemplates: false,
+      });
+    case actionType.FETCH_PROJECT_TEMPLATES_FAILURE:
+      return Object.assign({}, state, {
+        fetchProjectTemplatesError: action.error,
+        fetchingProjectTemplates: false,
       });
 
     // Request for getting backend metadata related to a user, such as
@@ -578,6 +630,23 @@ export const reducer = (state, action) => {
       return Object.assign({}, state, {
         fetchIsStarredError: action.error,
         fetchingIsStarred: false,
+      });
+
+    // Request for converting an issue.
+    case actionType.CONVERT_ISSUE_START:
+      return Object.assign({}, state, {
+        convertingIssue: true,
+        convertIssueError: null,
+      });
+    case actionType.CONVERT_ISSUE_SUCCESS:
+      return Object.assign({}, state, {
+        issue: action.issue,
+        convertingIssue: false,
+      });
+    case actionType.CONVERT_ISSUE_FAILURE:
+      return Object.assign({}, state, {
+        convertIssueError: action.error,
+        convertingIssue: false,
       });
 
     // Request for updating an issue.
