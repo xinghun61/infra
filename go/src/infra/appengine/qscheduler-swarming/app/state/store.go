@@ -190,6 +190,7 @@ func operationRunner(op types.Operation, store *Store, e *metricsBuffer) func(co
 			return err
 		}
 
+		e.recordStateMetrics(sp.Scheduler)
 		return e.flushToBQ(ctx)
 	}
 }
@@ -218,6 +219,7 @@ func revertableOperationRunner(op types.RevertableOperation, store *Store, e *me
 			return err
 		}
 
+		e.recordStateMetrics(sp.Scheduler)
 		return e.flushToBQ(ctx)
 	}
 }

@@ -23,6 +23,7 @@ import (
 
 	"infra/appengine/qscheduler-swarming/app/eventlog"
 	"infra/qscheduler/qslib/protos/metrics"
+	"infra/qscheduler/qslib/scheduler"
 )
 
 var (
@@ -68,6 +69,13 @@ var (
 		field.String("account_id"),
 	)
 
+	gaugeQueueSize = metric.NewCounter(
+		"qscheduler/state/queue_size",
+		"The number of tasks in the queue.",
+		nil,
+		field.String("scheduler_id"),
+	)
+
 	gaugeProtoSize = metric.NewInt(
 		"qscheduler/store/proto_size",
 		"Size of a loaded store proto.",
@@ -86,6 +94,8 @@ var (
 type metricsBuffer struct {
 	schedulerID string
 	taskEvents  []*metrics.TaskEvent
+
+	queueSize *int
 }
 
 // newMetricsBuffer creates a metrics sink for the given scheduler.
@@ -96,6 +106,7 @@ func newMetricsBuffer(schedulerID string) *metricsBuffer {
 // reset resets the given metrics sink, erasing any previously added entries.
 func (e *metricsBuffer) reset() {
 	e.taskEvents = nil
+	e.queueSize = nil
 }
 
 // flushToBQ flushes events to bigquery.
@@ -123,6 +134,9 @@ func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 			counterReprioritized.Add(ctx, 1, event.SchedulerId, event.AccountId)
 		}
 	}
+	if e.queueSize != nil {
+		gaugeQueueSize.Set(ctx, int64(*e.queueSize), e.schedulerID)
+	}
 	return nil
 }
 
@@ -130,6 +144,12 @@ func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 func (e *metricsBuffer) AddEvent(event *metrics.TaskEvent) {
 	event.SchedulerId = e.schedulerID
 	e.taskEvents = append(e.taskEvents, event)
+}
+
+// recordStateMetrics records general metrics about the given state.
+func (e *metricsBuffer) recordStateMetrics(s *scheduler.Scheduler) {
+	queueSize := len(s.GetWaitingRequests())
+	e.queueSize = &queueSize
 }
 
 // recordProtoSize records a metric about a given proto's size.
