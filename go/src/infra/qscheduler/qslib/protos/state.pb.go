@@ -26,6 +26,11 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // account set, and task queue. This is represented separately from
 // configuration information. The state is expected to be updated frequently,
 // on each scheduler tick.
+//
+// The proto representation optimizes for a small binary-serialized size, rather
+// than human-friendliness, because the number of tasks that can be stored
+// in a single datastore entity (~1 MB) is one of the main scaling limits
+// of the quotascheduler.
 type SchedulerState struct {
 	// QueuedRequests is the set of Requests that are waiting to be assigned to a
 	// worker, keyed by request id.

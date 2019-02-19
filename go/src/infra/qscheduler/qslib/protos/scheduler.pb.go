@@ -22,8 +22,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Scheduler encapsulates the state and configuration of a running
-// quotascheduler for a single pool, and its methods provide an implementation
-// of the quotascheduler algorithm.
+// quotascheduler for a single pool.
 type Scheduler struct {
 	// SchedulerState is the state of the scheduler.
 	State *SchedulerState `protobuf:"bytes,1,opt,name=state,proto3" json:"state,omitempty"`
