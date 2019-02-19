@@ -51,16 +51,18 @@ export class MrCodeFontToggle extends PolymerElement {
       } else {
         ancestor.classList.remove('codefont');
       }
-      const message = {
-          prefs: [{name: 'code_font', value: '' + checked}],
-      };
-      const setPrefsCall = window.prpcClient.call(
-          'monorail.Users', 'SetUserPrefs', message);
-      setPrefsCall.then((resp) => {
-         // successfully saved prefs
-      }).catch((reason) => {
-        console.error('SetUserPrefs failed: ' + reason);
-      });
+      if (CS_env.loggedInUserEmail) {
+        const message = {
+            prefs: [{name: 'code_font', value: '' + checked}],
+        };
+        const setPrefsCall = window.prpcClient.call(
+            'monorail.Users', 'SetUserPrefs', message);
+        setPrefsCall.then((resp) => {
+           // successfully saved prefs
+        }).catch((reason) => {
+          console.error('SetUserPrefs failed: ' + reason);
+        });
+      }
     }
   }
 }
