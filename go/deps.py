@@ -250,6 +250,11 @@ def compare_deps(before, after):
     for pkg, sha1_before, sha1_after in rest:
       print '%s: %s -> %s' % (pkg, sha1_before, sha1_after)
     print '-'*74
+    print
+    print (
+        'IMPORTANT: Please include the above updated repos report in the '
+        'commit message.')
+    print
 
   # Print a list of packages that need git mirrors. All of them do, so it just
   # prints a list of packages without 'repo' field set.
