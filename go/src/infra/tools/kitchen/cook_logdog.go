@@ -54,6 +54,36 @@ func disableGRPCLogging(ctx context.Context) {
 	grpcLogging.Install(log.Get(ctx), level)
 }
 
+// globalTags returns tags to be applied to all logdog streams by default.
+func (c *cookRun) globalTags(env environ.Env) map[string]string {
+	flags := c.CookFlags.LogDogFlags
+	ret := make(map[string]string, len(flags.GlobalTags)+1)
+	if c.BuildURL != "" {
+		ret[logDogViewerURLTag] = c.BuildURL
+	}
+
+	// SWARMING_SERVER is the full URL: https://example.com
+	// We want just the hostname.
+	if v, ok := env.Get("SWARMING_SERVER"); ok {
+		if u, err := url.Parse(v); err == nil && u.Host != "" {
+			ret["swarming.host"] = u.Host
+		}
+	}
+	if v, ok := env.Get("SWARMING_TASK_ID"); ok {
+		ret["swarming.run_id"] = v
+	}
+	if v, ok := env.Get("SWARMING_BOT_ID"); ok {
+		ret["bot_id"] = v
+	}
+
+	// Prefer user-supplied tags to our generated ones.
+	for k, v := range flags.GlobalTags {
+		ret[k] = v
+	}
+
+	return ret
+}
+
 // runWithLogdogButler runs the supplied command through the a LogDog Butler
 // engine instance. This involves:
 //	- Configuring / setting up the Butler.
@@ -79,31 +109,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	// are emitted through our logger. We only log gRPC prints if our logger is
 	// configured to log debug-level or lower.
 	disableGRPCLogging(ctx)
-
-	// Construct our global tags. We will prefer user-supplied tags to our
-	// generated ones.
-	globalTags := make(map[string]string, len(flags.GlobalTags)+1)
-	if c.BuildURL != "" {
-		globalTags[logDogViewerURLTag] = c.BuildURL
-	}
-
-	// SWARMING_SERVER is the full URL: https://example.com
-	// We want just the hostname.
-	if v, ok := env.Get("SWARMING_SERVER"); ok {
-		if u, err := url.Parse(v); err == nil && u.Host != "" {
-			globalTags["swarming.host"] = u.Host
-		}
-	}
-	if v, ok := env.Get("SWARMING_TASK_ID"); ok {
-		globalTags["swarming.run_id"] = v
-	}
-	if v, ok := env.Get("SWARMING_BOT_ID"); ok {
-		globalTags["bot_id"] = v
-	}
-
-	for k, v := range flags.GlobalTags {
-		globalTags[k] = v
-	}
 
 	// Create our stream server instance.
 	streamServer, err := c.getLogDogStreamServer(withNonCancel(ctx))
@@ -183,7 +188,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
-		GlobalTags:   globalTags,
+		GlobalTags:   c.globalTags(env),
 	}
 	if flags.LogDogSendIOKeepAlives {
 		// If we're not teeing, we need to issue keepalives so our executor doesn't
