@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"go.chromium.org/luci/buildbucket"
-	"go.chromium.org/luci/buildbucket/proto"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/milo"
