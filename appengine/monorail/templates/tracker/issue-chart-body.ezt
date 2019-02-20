@@ -12,10 +12,3 @@
     </a>
   </div>
 </div>
-
-<script
-  type="module"
-  src="/[script_prefix_dir]/static/js/elements/mr-chart.js?version=[app_version]"
-  async
-  nonce="[nonce]">
-</script>
