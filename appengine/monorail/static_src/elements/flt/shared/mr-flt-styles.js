@@ -23,11 +23,11 @@ $_documentContainer.innerHTML = `<dom-module id="mr-flt-styles">
         border: var(--chops-normal-border);
         font-size: 12px;
         background: white;
-        border-radius: 8px;
+        border-radius: 6px;
         padding: 0.25em 8px;
         margin: 0;
         margin-left: auto;
-        color: hsl(227, 60%, 39%);
+        color: var(--chops-link-color);
       }
       chops-button i.material-icons, a.button i.material-icons {
         display: block;

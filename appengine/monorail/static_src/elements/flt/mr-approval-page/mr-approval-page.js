@@ -77,7 +77,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
         mr-issue-header {
           z-index: 10;
           position: sticky;
-          top: 0;
+          top: var(--monorail-header-height);
           margin-bottom: 0.25em;
           width: 100%;
         }
@@ -88,7 +88,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
         }
         mr-issue-metadata {
           position: sticky;
-          top: 0.5em;
+          top: var(--monorail-header-height);
         }
         mr-launch-overview {
           padding-left: 16px;
@@ -110,9 +110,13 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
             flex-direction: column;
           }
           .metadata-container {
-            margin: 0.25em 0;
             width: 100%;
             height: auto;
+            border: 0;
+            border-bottom: var(--chops-normal-border);
+          }
+          mr-issue-metadata, mr-issue-header {
+            position: static;
           }
         }
       </style>

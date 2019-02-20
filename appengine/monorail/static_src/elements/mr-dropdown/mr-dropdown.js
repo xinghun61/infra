@@ -19,21 +19,28 @@ export class MrDropdown extends PolymerElement {
         :host {
           position: relative;
           display: inline-block;
-          cursor: pointer;
           height: 100%;
+          font-size: inherit;
         }
         :host(:not([opened])) .menu {
           display: none;
           visibility: hidden;
         }
+        strong {
+          font-size: 14px;
+        }
         i.material-icons {
+          font-size: 20px;
           display: inline-block;
           color: var(--chops-primary-icon-color);
-          margin: 2px;
+          padding: 0 2px;
+          box-sizing: border-box;
         }
         .anchor {
+          box-sizing: border-box;
           background: none;
           border: none;
+          font-size: inherit;
           width: 100%;
           height: 100%;
           display: flex;
@@ -42,16 +49,33 @@ export class MrDropdown extends PolymerElement {
           cursor: pointer;
           color: var(--chops-link-color);
         }
+        .menu.right {
+          right: 0px;
+        }
+        .menu.left {
+          left: 0px;
+        }
         .menu {
           position: absolute;
           min-width: 120%;
-          right: 0px;
-          top: 98%;
+          top: 90%;
           display: block;
           background: white;
           border: var(--chops-accessible-border);
           z-index: 990;
           box-shadow: 2px 3px 8px 0px hsla(0, 0%, 0%, 0.3);
+        }
+        .menu-item {
+          box-sizing: border-box;
+          text-decoration: none;
+          white-space: nowrap;
+          display: block;
+          width: 100%;
+          padding: 0.25em 8px;
+          transition: 0.2s background ease-in-out;
+        }
+        .menu-item[hidden] {
+          display: none;
         }
         .menu hr {
           width: 96%;
@@ -61,14 +85,6 @@ export class MrDropdown extends PolymerElement {
           background: hsl(0, 0%, 80%);
         }
         .menu a {
-          box-sizing: border-box;
-          text-decoration: none;
-          font-size: 16px;
-          white-space: nowrap;
-          display: block;
-          width: 100%;
-          padding: 0.25em 8px;
-          transition: 0.2s background ease-in-out;
           color: var(--chops-link-color);
         }
         .menu a:hover {
@@ -79,9 +95,14 @@ export class MrDropdown extends PolymerElement {
         [[text]]
         <i class="material-icons expand-icon">[[icon]]</i>
       </button>
-      <div class="menu">
+      <div class\$="menu [[menuAlignment]]">
         <template is="dom-repeat" items="[[items]]">
-          <hr hidden\$="[[!item.separator]]">
+          <template is="dom-if" if="[[item.separator]]">
+            <strong hidden\$="[[!item.text]]" class="menu-item">
+              [[item.text]]
+            </strong>
+            <hr />
+          </template>
           <template is="dom-if" if="[[!item.separator]]">
             <a
               href\$="[[item.url]]"
@@ -105,7 +126,14 @@ export class MrDropdown extends PolymerElement {
     return {
       text: String,
       items: Array,
-      icon: String,
+      icon: {
+        type: String,
+        value: 'arrow_drop_down',
+      },
+      menuAlignment: {
+        type: String,
+        value: 'right',
+      },
       opened: {
         type: Boolean,
         value: false,
@@ -156,10 +184,7 @@ export class MrDropdown extends PolymerElement {
 
     const hasMenu = evt.composedPath().find(
       (node) => {
-        return node.classList && (
-          node.classList.contains('menu') ||
-          node.classList.contains('anchor')
-        );
+        return node === this;
       }
     );
     if (hasMenu) return;

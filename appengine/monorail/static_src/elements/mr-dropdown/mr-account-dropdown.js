@@ -16,6 +16,14 @@ import './mr-dropdown.js';
 export class MrAccountDropdown extends PolymerElement {
   static get template() {
     return html`
+      <style>
+        :host {
+          position: relative;
+          display: inline-block;
+          height: 100%;
+          font-size: inherit;
+        }
+      </style>
       <mr-dropdown text="[[userDisplayName]]" items="[[items]]" icon="arrow_drop_down"></mr-dropdown>
     `;
   }

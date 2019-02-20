@@ -8,6 +8,7 @@
 @charset "utf-8";
 
 :root {
+  --monorail-header-height: 40px;
   --monorail-metadata-open-bg: var(--chops-light-green-50);
   --monorail-metadata-closed-bg: var(--chops-blue-gray-50);
   --mr-flipper-link-color: #00c;
@@ -718,7 +719,7 @@ span.keystroke {
     background: #fff;
     color: #00C;
     padding: 2px;
-    z-index: 10;
+    z-index: 999;
     max-height: 18em;
     overflow-x: hidden;
     overflow-y: auto;

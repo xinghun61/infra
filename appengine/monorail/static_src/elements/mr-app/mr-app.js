@@ -28,11 +28,12 @@ export class MrApp extends ReduxMixin(PolymerElement) {
           'safeTypesBridge': security.polymer_resin.noclosure_bridge,
         });
       </script>
-      <mr-header project-name="[[projectName]]" user-display-name="[[userDisplayName]]" login-url="[[loginUrl]]" logout-url="[[logoutUrl]]">
-        <template is="dom-if" if="[[subheader]]">
-          <span slot="subheader">&gt; [[subheader]]</span>
-        </template>
-      </mr-header>
+      <mr-header
+        project-name="[[projectName]]"
+        user-display-name="[[userDisplayName]]"
+        login-url="[[loginUrl]]"
+        logout-url="[[logoutUrl]]"
+      ></mr-header>
       <main></main>
     `;
   }
@@ -46,7 +47,6 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       loginUrl: String,
       logoutUrl: String,
       projectName: String,
-      subheader: String,
       userDisplayName: String,
       _boundLoadApprovalPage: {
         type: Function,
@@ -141,7 +141,6 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     });
 
     this.projectName = ctx.params.project;
-    this.subheader = 'Feature Launch Issue';
 
     this.loadWebComponent('mr-approval-page', {
       'projectName': ctx.params.project,
