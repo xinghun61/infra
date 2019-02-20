@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -119,7 +120,7 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
 	}
 	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
-		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair, logdogURL),
+		Cmd:                  luciferAdminTaskCmd(ctx, fleet.TaskType_Repair, logdogURL),
 		DutID:                bse.DutID,
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
 		ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
@@ -196,7 +197,7 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
 	}
 	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
-		Cmd:                  luciferAdminTaskCmd(fleet.TaskType_Repair, logdogURL),
+		Cmd:                  luciferAdminTaskCmd(ctx, fleet.TaskType_Repair, logdogURL),
 		DutID:                bse.DutID,
 		DutState:             "repair_failed",
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
@@ -264,7 +265,7 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 			tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
 		}
 		tid, err := sc.CreateTask(ctx, taskName[req.Type], &clients.SwarmingCreateTaskArgs{
-			Cmd:                  luciferAdminTaskCmd(req.Type, logdogURL),
+			Cmd:                  luciferAdminTaskCmd(ctx, req.Type, logdogURL),
 			DutID:                bse.DutID,
 			DutState:             dutStateForTask[req.Type],
 			ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
@@ -337,11 +338,12 @@ func repairTasksWithIDs(host string, dutID string, taskIDs []string) *fleet.Task
 // command.
 //
 // logdogURL, if non-empty, is used as the LogDog annotation URL.
-func luciferAdminTaskCmd(ttype fleet.TaskType, logdogURL string) []string {
+func luciferAdminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL string) []string {
 	s := []string{
 		skylabSwarmingWorkerPath,
 		"-task-name", fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
 	}
+	s = append(s, "-admin-service", fmt.Sprintf("%s.appspot.com", info.AppID(ctx)))
 	if logdogURL != "" {
 		s = append(s, "-logdog-annotation-url", logdogURL)
 	}
