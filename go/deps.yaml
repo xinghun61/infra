@@ -362,8 +362,6 @@ import:
   subpackages:
   - bmp
   - tiff
-
-# TODO(vadimsh): Remove once luci-go switches to use starlark.
 - package: github.com/google/skylark
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
@@ -373,7 +371,6 @@ import:
 - package: github.com/chzyer/readline
   version: master
   repo: https://chromium.googlesource.com/external/github.com/chzyer/readline.git
-
 - package: github.com/waigani/diffparser
   version: master
   repo: https://chromium.googlesource.com/external/github.com/waigani/diffparser.git
@@ -409,7 +406,6 @@ import:
 - package: gopkg.in/src-d/go-git.v4
   version: v4.7.0
   repo: https://chromium.googlesource.com/external/github.com/src-d/go-git.git
-
 - package: github.com/emirpasic/gods
   version: master
   repo: https://chromium.googlesource.com/external/github.com/emirpasic/gods.git
@@ -428,7 +424,6 @@ import:
 - package: github.com/xanzy/ssh-agent
   version: master
   repo: https://chromium.googlesource.com/external/github.com/xanzy/ssh-agent.git
-
 - package: gopkg.in/src-d/go-billy.v4
   version: master
   repo: https://chromium.googlesource.com/external/github.com/src-d/go-billy.git
@@ -457,15 +452,21 @@ import:
 - package: github.com/cenkalti/backoff
   version: master
   repo: https://chromium.googlesource.com/external/github.com/cenkalti/backoff.git
-- package: github.com/davecgh/go-spew/spew
+- package: github.com/davecgh/go-spew
   version: master
   repo: https://chromium.googlesource.com/external/github.com/davecgh/go-spew.git
-- package: github.com/fiorix/go-web/autogzip
+  subpackages:
+  - spew
+- package: github.com/fiorix/go-web
   version: master
   repo: https://chromium.googlesource.com/external/github.com/fiorix/go-web.git
-- package: github.com/golang/groupcache/lru
+  subpackages:
+  - autogzip
+- package: github.com/golang/groupcache
   version: master
   repo: https://chromium.googlesource.com/external/github.com/golang/groupcache.git
+  subpackages:
+  - lru
 - package: github.com/gorilla/mux
   version: master
   repo: https://chromium.googlesource.com/external/github.com/gorilla/mux.git
@@ -505,3 +506,8 @@ import:
 - package: github.com/inconshreveable/mousetrap
   version: master
   repo: https://chromium.googlesource.com/external/github.com/inconshreveable/mousetrap.git
+- package: github.com/hashicorp/golang-lru
+  repo: https://chromium.googlesource.com/external/github.com/hashicorp/golang-lru.git
+  version: master
+  subpackages:
+  - simplelru
