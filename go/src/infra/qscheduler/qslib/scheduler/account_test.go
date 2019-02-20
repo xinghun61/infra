@@ -65,7 +65,7 @@ func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 // account balance is capped if it is supposed to be).
 func TestAccountAdvanceWithOverflow(t *testing.T) {
 	t.Parallel()
-	expect := []float64{10, 11, 10}
+	expect := Balance{10, 11, 10}
 	// P0 bucket will start below max and reach max.
 	// P1 bucket will have started above max already, but have spend that causes
 	//    it to be pulled to a lower value still above max.

@@ -52,9 +52,11 @@ func BestPriorityFor(b Balance) Priority {
 // maximum balance, and the number of currently running jobs per priority
 // bucket for that account.
 func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float64, runningJobs []int) Balance {
+	var runningJobsArray [NumPriorities]int
+	copy(runningJobsArray[:], runningJobs)
 	for priority := 0; priority < NumPriorities; priority++ {
 		val := balance[priority]
-		val -= elapsedSecs * float64(runningJobs[priority])
+		val -= elapsedSecs * float64(runningJobsArray[priority])
 		var chargeRate float64
 		if len(c.ChargeRate) > priority {
 			chargeRate = c.ChargeRate[priority]

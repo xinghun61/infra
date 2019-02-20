@@ -16,7 +16,7 @@ package scheduler
 
 // NumPriorities is the number of distinct priority buckets. For performance
 // and code complexity reasons, this is a compile-time constant.
-const NumPriorities = 3
+const NumPriorities = 5
 
 // Balance is a vector that represents a cost or account balance.
 type Balance [NumPriorities]float64
