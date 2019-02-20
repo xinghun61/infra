@@ -13,9 +13,8 @@ import (
 
 // LogDogFlags are the subset of flags which control logdog behavior.
 type LogDogFlags struct {
-	AnnotationURL          types.StreamAddr   `json:"annotation_url"`
-	GlobalTags             streamproto.TagMap `json:"global_tags"`
-	LogDogSendIOKeepAlives bool               `json:"send_io_keepalives"`
+	AnnotationURL types.StreamAddr   `json:"annotation_url"`
+	GlobalTags    streamproto.TagMap `json:"global_tags"`
 
 	FilePath string `json:"file_path"`
 }
@@ -30,11 +29,6 @@ func (p *LogDogFlags) register(fs *flag.FlagSet) {
 		"logdog-only",
 		true,
 		"deprecated, ignored")
-	fs.BoolVar(
-		&p.LogDogSendIOKeepAlives,
-		"logdog-send-io-keepalives",
-		false,
-		"When in LogDog-only mode (-logdog-only), send I/O keepalives.")
 	fs.StringVar(
 		&p.FilePath,
 		"logdog-debug-out-file",
@@ -65,7 +59,6 @@ func (p *LogDogFlags) Dump() []string {
 		ret = append(ret, "-logdog-annotation-url", p.AnnotationURL.String())
 	}
 	ret.stringMap("logdog-tag", p.GlobalTags)
-	ret.boolean("logdog-send-io-keepalives", p.LogDogSendIOKeepAlives)
 	ret.str("logdog-debug-out-file", p.FilePath)
 	return ret
 }

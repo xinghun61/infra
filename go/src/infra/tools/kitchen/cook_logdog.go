@@ -190,12 +190,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		MaxBufferAge: butler.DefaultMaxBufferAge,
 		GlobalTags:   c.globalTags(env),
 	}
-	if flags.LogDogSendIOKeepAlives {
-		// If we're not teeing, we need to issue keepalives so our executor doesn't
-		// kill us due to lack of I/O.
-		butlerCfg.IOKeepAliveInterval = 5 * time.Minute
-		butlerCfg.IOKeepAliveWriter = os.Stderr
-	}
 
 	ncCtx := withNonCancel(ctx)
 	b, err := butler.New(ncCtx, butlerCfg)
