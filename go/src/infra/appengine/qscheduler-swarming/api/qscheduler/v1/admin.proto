@@ -145,4 +145,7 @@ message InspectPoolResponse {
 
     // IdleBots is a description of the idle bots according to quotascheduler.
     repeated IdleBot idle_bots = 7;
+
+    // Labels is the label set configured for this scheduler.
+    repeated string labels = 8;
 }

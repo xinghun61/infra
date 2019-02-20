@@ -85,6 +85,7 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		WaitingTasks:    waiting,
 		IdleBots:        idle,
 		AccountBalances: responseBalance,
+		Labels:          sp.Config.Labels,
 	}
 
 	return resp, nil
