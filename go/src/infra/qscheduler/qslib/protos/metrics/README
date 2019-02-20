@@ -1,3 +1,3 @@
-To create a bigquery table based on this proto, run the following command:
+To create or update a bigquery table based on this proto, run the following command:
 
 $ bqschemaupdater -table PROJECT_ID.qs_events.task_events -message-dir . -message metrics.TaskEvent
