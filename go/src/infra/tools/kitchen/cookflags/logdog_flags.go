@@ -25,10 +25,6 @@ func (p *LogDogFlags) register(fs *flag.FlagSet) {
 		"logdog-annotation-url",
 		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
 			"project and prefix will be extracted from this URL. This can include Swarmbucket template parameters.")
-	fs.Bool(
-		"logdog-only",
-		true,
-		"deprecated, ignored")
 	fs.StringVar(
 		&p.FilePath,
 		"logdog-debug-out-file",
