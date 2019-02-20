@@ -159,10 +159,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
-      issue: {
-        type: Object,
-        observer: '_issueChanged',
-      },
+      issue: Object,
       issueId: Number,
       issueLoaded: Boolean,
       issuePermissions: Object,
@@ -198,17 +195,21 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
   static get observers() {
     return [
       '_fetchIssue(issueId, projectName)',
+      '_issueChanged(issueId, projectName, issue)',
     ];
   }
 
-  _issueChanged(issue) {
-    let title = `${this.issueId} - `;
+  _issueChanged(issueId, projectName, issue) {
+    let title = issueId ? `${issueId} - ` : 'Loading issue... - ';
     if (issue.isDeleted) {
-      title += 'Issue has been deleted';
-    } else {
+      title += 'Issue has been deleted - ';
+    } else if (issue.summary) {
       title += `${issue.summary} - `;
     }
-    title += `${this.projectName} - Monorail`;
+    if (projectName) {
+      title += `${projectName} - `;
+    }
+    title += 'Monorail';
     document.title = title;
   }
 
