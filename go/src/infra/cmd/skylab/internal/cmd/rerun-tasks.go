@@ -7,6 +7,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -65,6 +66,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
+	originalToRerunID := make(map[string]string)
 	for i, original := range originalRequests {
 		originalID := originalIDs[i]
 		newRequest, err := createRerunRequest(original, siteEnv)
@@ -76,8 +78,10 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 		if err != nil {
 			return errors.Annotate(err, fmt.Sprintf("rerun task %s", originalID)).Err()
 		}
-		fmt.Fprintf(a.GetOut(), "Rerunning %s\tCreated Swarming task %s\n", originalID, swarmingTaskURL(siteEnv, resp.TaskId))
+		originalToRerunID[originalID] = resp.TaskId
 	}
+
+	printIDMap(a.GetOut(), originalToRerunID, siteEnv)
 
 	return nil
 }
@@ -127,4 +131,11 @@ func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, siteEnv site
 	}
 
 	return newTaskRequest(original.Name, original.Tags, original.TaskSlices, original.Priority), nil
+}
+
+func printIDMap(w io.Writer, originalToRerunID map[string]string, siteEnv site.Environment) {
+	for originalID, rerunID := range originalToRerunID {
+		fmt.Fprintf(w, "Rerunning %s\tCreated Swarming task %s\n",
+			originalID, swarmingTaskURL(siteEnv, rerunID))
+	}
 }
