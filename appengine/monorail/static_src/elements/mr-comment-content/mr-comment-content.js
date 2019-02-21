@@ -18,8 +18,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
     return html`
       <style>
         :host {
-          word-wrap: break-word;
-          word-break: break-all;
+          word-break: break-word;
         }
         .line {
           white-space: pre-wrap;
