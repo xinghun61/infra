@@ -261,7 +261,10 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 			// Fill up with one change per project.
 			for _, gd := range gerritProjects {
 				revisions := map[string]gr.RevisionInfo{
-					"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
+					"abcdef": {
+						Kind:  "REWORK",
+						Files: map[string]*gr.FileInfo{"README.md": {}},
+					},
 				}
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
 					{
@@ -321,6 +324,7 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 			for _, gd := range gerritProjects {
 				revisions := map[string]gr.RevisionInfo{
 					"abcdef": {
+						Kind: "REWORK",
 						Files: map[string]*gr.FileInfo{
 							"changed.txt": {},
 							"deleted.txt": {Status: "D"},
@@ -378,7 +382,46 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 			// Fill up with one change per project.
 			for _, gd := range gerritProjects {
 				revisions := map[string]gr.RevisionInfo{
-					"abcdef": {Files: make(map[string]*gr.FileInfo)},
+					"abcdef": {
+						Kind:  "REWORK",
+						Files: make(map[string]*gr.FileInfo),
+					},
+				}
+				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
+					{
+						ID:              "project~branch~Ideadc0de",
+						Project:         gd.Project,
+						Status:          "NEW",
+						CurrentRevision: "abcdef",
+						Updated:         gr.TimeStamp(lastChangeTs),
+						Revisions:       revisions,
+						Owner:           &gr.AccountInfo{Email: "user@example.com"},
+					},
+				})
+			}
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(pollProject(ctx, "infra", api, cp), ShouldBeNil)
+			Convey("Does not enqueue analyze requests", func() {
+				So(numEnqueuedAnalyzeRequests(ctx), ShouldEqual, 0)
+			})
+		})
+
+		Convey("Poll when the current revision is has no code change.", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := tc.Now().UTC()
+			// Fill up with one change per project.
+			for _, gd := range gerritProjects {
+				revisions := map[string]gr.RevisionInfo{
+					"abcdef": {
+						// Since Kind is not REWORK, the revision is considered
+						// "trivial", and there is no need to analyze.
+						Kind: "NO_CODE_CHANGE",
+						Files: map[string]*gr.FileInfo{
+							"changed.txt": {},
+							"binary.png":  {Binary: true},
+						},
+					},
 				}
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
 					{
@@ -419,7 +462,10 @@ func TestPollProjectBasicBehavior(t *testing.T) {
 					rev := fmt.Sprintf("%s%d", revBase, i)
 					files := map[string]*gr.FileInfo{"README.md": {}}
 					revisions := make(map[string]gr.RevisionInfo)
-					revisions[rev] = gr.RevisionInfo{Files: files}
+					revisions[rev] = gr.RevisionInfo{
+						Kind:  "REWORK",
+						Files: files,
+					}
 					changes = append(changes, gr.ChangeInfo{
 						ID:              changeID,
 						Project:         gd.Project,
@@ -463,9 +509,11 @@ func TestPollProjectDescriptionFlagBehavior(t *testing.T) {
 				Commit: &gr.CommitInfo{
 					Message: commitMessage,
 				},
+				Kind: "REWORK",
 			},
 			"olderRev": {
 				Files: map[string]*gr.FileInfo{"another1.go": {}},
+				Kind:  "REWORK",
 			},
 		}
 	}
@@ -813,7 +861,9 @@ func TestPollProjectWhitelistBehavior(t *testing.T) {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
 			revisions := map[string]gr.RevisionInfo{
-				"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
+				"abcdef": {
+					Kind:  "REWORK",
+					Files: map[string]*gr.FileInfo{"README.md": {}}},
 			}
 			api.addChanges(host, noWhitelistProject, []gr.ChangeInfo{
 				{
@@ -838,7 +888,10 @@ func TestPollProjectWhitelistBehavior(t *testing.T) {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
 			revisions := map[string]gr.RevisionInfo{
-				"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
+				"abcdef": {
+					Kind:  "REWORK",
+					Files: map[string]*gr.FileInfo{"README.md": {}},
+				},
 			}
 			api.addChanges(host, whitelistProject, []gr.ChangeInfo{
 				{
@@ -863,7 +916,10 @@ func TestPollProjectWhitelistBehavior(t *testing.T) {
 			api := &mockPollRestAPI{}
 			lastChangeTs := tc.Now().UTC()
 			revisions := map[string]gr.RevisionInfo{
-				"abcdef": {Files: map[string]*gr.FileInfo{"README.md": {}}},
+				"abcdef": {
+					Files: map[string]*gr.FileInfo{"README.md": {}},
+					Kind:  "REWORK",
+				},
 			}
 			api.addChanges(host, whitelistProject, []gr.ChangeInfo{
 				{

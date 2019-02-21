@@ -357,9 +357,7 @@ func isOpen(change gr.ChangeInfo) bool {
 // Changes that shouldn't be analyzed include:
 //   - changes by owners that aren't whitelisted
 //   - changes with a "Tricium: no" CL description flag
-//   - TODO(crbug.com/807036): Trivial patchsets with no code change
-//
-// Files that shouldn't be processed are
+//   - "Trivial" revisions with no code change
 //
 // Changes with only deleted files are also filtered out below
 // in enqueueAnalyzeRequests, where the list of files is also
@@ -371,6 +369,17 @@ func filterChanges(c context.Context, repo *tricium.RepoDetails, changes []gr.Ch
 			logging.Fields{
 				"changeID": change.ID,
 			}.Infof(c, "Skipping change with skip footer.")
+			continue
+		}
+		if change.Revisions[change.CurrentRevision].Kind != "REWORK" {
+			// REWORK is the revision kind that involves code change.
+			// For other possible values of Kind, see:
+			// https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#revision-info
+			logging.Fields{
+				"changeID": change.ID,
+				"revision": change.CurrentRevision,
+				"kind":     change.Revisions[change.CurrentRevision].Kind,
+			}.Infof(c, "Skipping revision with no code change.")
 			continue
 		}
 		if !isAuthorAllowed(c, change, repo.WhitelistedGroup) {
