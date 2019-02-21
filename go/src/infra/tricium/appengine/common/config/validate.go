@@ -13,6 +13,11 @@ import (
 )
 
 // Validate validates the provided project config using the provided service config.
+//
+// This function does both merging and validation, and returns a partial
+// ProjectConfig with merged function definitions, which is then used for
+// workflow generation.
+// TODO(qyearsley): Split up the validation and merging work.
 func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.ProjectConfig, error) {
 	if sc.SwarmingServer == "" {
 		return nil, errors.Reason("missing swarming server URL in service config").Err()

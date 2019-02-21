@@ -97,7 +97,11 @@ func updateProjectConfig(c context.Context, sc *tricium.ServiceConfig, name stri
 		"revision": revision,
 		"project":  name,
 	}.Infof(c, "Found new project config.")
-	return setProjectConfig(c, name, revision, vpc)
+	// TODO(qyearsley): Remove this after confirming whether
+	// vpc is a partial config with merged functions and pc
+	// contains repo details.
+	logging.Debugf(c, "vpc: %#v\npc: %#v", vpc, pc)
+	return setProjectConfig(c, name, revision, pc)
 }
 
 // updateServiceConfig updates and stores a new service config.
