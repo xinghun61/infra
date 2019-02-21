@@ -92,5 +92,5 @@ func (c *CookFlags) Normalize() error {
 		}
 	}
 
-	return c.LogDogFlags.setupAndValidate()
+	return c.LogDogFlags.validate()
 }

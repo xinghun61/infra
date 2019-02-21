@@ -24,7 +24,7 @@ func (p *LogDogFlags) register(fs *flag.FlagSet) {
 		&p.AnnotationURL,
 		"logdog-annotation-url",
 		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
-			"project and prefix will be extracted from this URL. This can include Swarmbucket template parameters.")
+			"project and prefix will be extracted from this URL.")
 	fs.StringVar(
 		&p.FilePath,
 		"logdog-debug-out-file",
@@ -37,14 +37,10 @@ func (p *LogDogFlags) register(fs *flag.FlagSet) {
 			"be specified multiple times.")
 }
 
-func (p *LogDogFlags) setupAndValidate() error {
-	if p.AnnotationURL.IsZero() && p.FilePath == "" {
-		return inputError("LogDog flag (-logdog-only) requires -logdog-annotation-url or -logdog-debug-out-file")
-	}
+func (p *LogDogFlags) validate() error {
 	if p.AnnotationURL.IsZero() {
-		return inputError("-logdog-debug-out-file requires -logdog-annotation-url")
+		return inputError("-logdog-annotation-url is required")
 	}
-
 	return nil
 }
 
