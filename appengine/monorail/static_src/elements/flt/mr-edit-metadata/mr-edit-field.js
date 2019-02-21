@@ -96,6 +96,7 @@ export class MrEditField extends PolymerElement {
               <input
                 id$="multi[[index]]"
                 class="multi"
+                type$="[[_inputType]]"
                 aria-label$="[[name]] input #[[index]]"
                 value$="[[item]]"
                 data-ac-type$="[[_acType]]"
@@ -111,6 +112,7 @@ export class MrEditField extends PolymerElement {
         <input
           id="editInput"
           hidden$="[[multi]]"
+          type$="[[_inputType]]"
           value$="[[_initialValue]]"
           data-ac-type$="[[_acType]]"
           autocomplete$="[[_computeDomAutocomplete(_acType)]]"
@@ -155,6 +157,10 @@ export class MrEditField extends PolymerElement {
       _acType: {
         type: String,
         computed: '_computeAcType(acType, type)',
+      },
+      _inputType: {
+        type: String,
+        computed: '_computeInputType(type)',
       },
       // Set to true if a field uses a standard input instead of any sort of
       // fancier edit type.
@@ -302,6 +308,15 @@ export class MrEditField extends PolymerElement {
       return 'owner';
     }
     return acType;
+  }
+
+  _computeInputType(type) {
+    if (type === fieldTypes.INT_TYPE) {
+      return 'number';
+    } else if (type === fieldTypes.DATE_TYPE) {
+      return 'date';
+    }
+    return 'text';
   }
 
   _computeDomAutocomplete(acType) {
