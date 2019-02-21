@@ -8,6 +8,7 @@ package tracker
 import (
 	"net/http"
 
+	"go.chromium.org/luci/appengine/gaemiddleware"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/server/router"
 
@@ -22,6 +23,16 @@ func init() {
 	r.POST("/tracker/internal/worker-done", base, workerDoneHandler)
 	r.POST("/tracker/internal/worker-launched", base, workerLaunchedHandler)
 	r.POST("/tracker/internal/workflow-launched", base, workflowLaunchedHandler)
+
+	r.GET("/tracker/internal/cron/bqlog/analysis-flush", base.Extend(gaemiddleware.RequireCron),
+		func(c *router.Context) {
+			if err := flushResultsToBQ(c.Context); err != nil {
+				http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			c.Writer.WriteHeader(http.StatusOK)
+		},
+	)
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()

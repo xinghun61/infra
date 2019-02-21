@@ -6,12 +6,16 @@ package tracker
 
 import (
 	"encoding/json"
+	"strconv"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/google/uuid"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/appengine/bqlog"
+	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -19,8 +23,10 @@ import (
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 
+	"infra/qscheduler/qslib/tutils"
 	admin "infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	apibq "infra/tricium/api/bigquery"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
@@ -53,6 +59,123 @@ func validateWorkerDoneRequest(req *admin.WorkerDoneRequest) error {
 		return errors.New("too many results (both isolate and buildbucket exist)")
 	}
 	return nil
+}
+
+var validPlatforms = []tricium.Platform_Name{
+	tricium.Platform_LINUX,
+	tricium.Platform_UBUNTU,
+	tricium.Platform_ANDROID,
+	tricium.Platform_MAC,
+	tricium.Platform_OSX,
+	tricium.Platform_IOS,
+	tricium.Platform_WINDOWS,
+	tricium.Platform_CHROMEOS,
+	tricium.Platform_FUCHSIA,
+}
+
+// Given a bitfield whose bit positions correspond to tricium.Platform_Name
+// values return an array of tricium.Platform_Name values.
+func getPlatforms(platforms int64) ([]tricium.Platform_Name, error) {
+	if platforms == int64(tricium.Platform_ANY) {
+		return []tricium.Platform_Name{tricium.Platform_ANY}, nil
+	}
+
+	out := []tricium.Platform_Name{}
+	for _, p := range validPlatforms {
+		mask := int64(1<<uint64(p) - 1)
+		if platforms&mask != 0 {
+			out = append(out, p)
+			platforms = platforms &^ mask
+		}
+	}
+
+	if platforms != 0 {
+		return nil, errors.Reason("Unknown platform: %#x", platforms).Err()
+	}
+
+	return out, nil
+}
+
+// Create and populate an AnalysisRun given the datastore entities.
+func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment) (*apibq.AnalysisRun, error) {
+	revisionNumber, err := strconv.Atoi(common.PatchSetNumber(areq.GitRef))
+	if err != nil {
+		return nil, err
+	}
+
+	rev := tricium.GerritRevision{
+		Host:    areq.GerritHost,
+		Project: areq.Project,
+		Change:  areq.GerritChange,
+		GitUrl:  areq.GitURL,
+		GitRef:  areq.GitRef,
+	}
+
+	files := make([]*tricium.Data_File, len(areq.Files))
+	for i, f := range areq.Files {
+		fc := tricium.Data_File(f)
+		files[i] = &fc
+	}
+
+	gcomments := make([]*apibq.AnalysisRun_GerritComment, len(comments))
+	for i, comment := range comments {
+		ctime, err := ptypes.TimestampProto(comment.CreationTime)
+		if err != nil {
+			return nil, err
+		}
+		tcomment := tricium.Data_Comment{}
+		if err := jsonpb.UnmarshalString(string(comment.Comment), &tcomment); err != nil {
+			return nil, err
+		}
+		p, err := getPlatforms(comment.Platforms)
+		if err != nil {
+			return nil, err
+		}
+		cinfo := apibq.AnalysisRun_GerritComment{
+			Comment:     &tcomment,
+			CreatedTime: ctime,
+			Analyzer:    comment.Analyzer,
+			Platforms:   p,
+		}
+		gcomments[i] = &cinfo
+	}
+
+	analysisRun := apibq.AnalysisRun{
+		GerritRevision: &rev,
+		RevisionNumber: int32(revisionNumber),
+		Files:          files,
+		RequestedTime:  tutils.TimestampProto(areq.Received),
+		ResultState:    ares.State,
+		ResultPlatform: wres.Platform,
+		Comments:       gcomments,
+	}
+
+	return &analysisRun, nil
+}
+
+var resultsLog = bqlog.Log{
+	QueueName: "analysis-results-queue", // See queue.yaml.
+	DatasetID: "analyzer",               // See setup_bigquery.sh.
+	TableID:   "results",                // See setup_bigquery.sh.
+}
+
+// flushResultsToBQ sends all buffered results to BigQuery.
+//
+// It is fine to call flushResultsToBQ concurrently from multiple request
+// handlers, if necessary (it will effectively parallelize the flush).
+func flushResultsToBQ(c context.Context) error {
+	_, err := resultsLog.Flush(c)
+	return err
+}
+
+// Stream analyzer results to BigQuery for metrics and ad hoc analysis.
+func streamToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment) error {
+	run, err := createAnalysisResults(wres, areq, ares, comments)
+	if err != nil {
+		return err
+	}
+
+	return resultsLog.Insert(c, &bq.Row{Message: run})
 }
 
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
@@ -325,6 +448,15 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			}
 		}
 	}
+
+	result := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
+	if err := ds.Get(c, result); err != nil {
+		return errors.Annotate(err, "failed to get AnalyzeRequestResult entity").Err()
+	}
+	if err := streamToBigQuery(c, workerRes, request, result, comments); err != nil {
+		return err
+	}
+
 	return nil
 }
 

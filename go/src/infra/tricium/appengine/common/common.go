@@ -22,12 +22,13 @@ import (
 
 // Task queue names.
 const (
-	AnalyzeQueue        = "analyze-queue"
-	DriverQueue         = "driver-queue"
-	GerritReporterQueue = "gerrit-reporter-queue"
-	LauncherQueue       = "launcher-queue"
-	PollProjectQueue    = "poll-project-queue"
-	TrackerQueue        = "tracker-queue"
+	AnalyzeQueue         = "analyze-queue"
+	DriverQueue          = "driver-queue"
+	GerritReporterQueue  = "gerrit-reporter-queue"
+	LauncherQueue        = "launcher-queue"
+	PollProjectQueue     = "poll-project-queue"
+	TrackerQueue         = "tracker-queue"
+	AnalysisResultsQueue = "analysis-results-queue"
 )
 
 // AppID returns the current App ID.

@@ -6,14 +6,16 @@ package tracker
 
 import (
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
 	"golang.org/x/net/context"
 
+	"infra/qscheduler/qslib/tutils"
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
 )
@@ -50,6 +52,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 
 		// Add pending workflow run.
 		request := &track.AnalyzeRequest{}
+		request.GitRef = "refs/changes/88/508788/7"
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
@@ -144,6 +147,7 @@ func TestRecipeWorkerDoneRequest(t *testing.T) {
 
 		// Add pending workflow run.
 		request := &track.AnalyzeRequest{}
+		request.GitRef = "refs/changes/88/508788/7"
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
@@ -198,6 +202,7 @@ func TestAbortedWorkerDoneRequest(t *testing.T) {
 
 		// Add pending run entry.
 		request := &track.AnalyzeRequest{}
+		request.GitRef = "refs/changes/88/508788/7"
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
@@ -329,5 +334,142 @@ func TestValidateWorkerDoneRequestRequest(t *testing.T) {
 			BuildbucketOutput:  "foobar",
 			IsolatedOutputHash: "12ab34cd",
 		}), ShouldNotBeNil)
+	})
+}
+
+func platformBitPosToMask(pos tricium.Platform_Name) int64 {
+	if pos == 0 {
+		return 0
+	}
+	return int64(1 << uint64(pos-1))
+}
+
+func TestGetPlatforms(t *testing.T) {
+	Convey("Platform: ANY", t, func() {
+		values, err := getPlatforms(platformBitPosToMask(tricium.Platform_ANY))
+		So(err, ShouldBeNil)
+		So(values, ShouldResemble, []tricium.Platform_Name{tricium.Platform_ANY})
+	})
+	Convey("Platform: UBUNTU", t, func() {
+		values, err := getPlatforms(platformBitPosToMask(tricium.Platform_UBUNTU))
+		So(err, ShouldBeNil)
+		So(values, ShouldResemble, []tricium.Platform_Name{tricium.Platform_UBUNTU})
+	})
+	Convey("Platform: ANDROID|OSX|WINDOWS", t, func() {
+		values, err := getPlatforms(platformBitPosToMask(tricium.Platform_ANDROID) +
+			platformBitPosToMask(tricium.Platform_OSX) +
+			platformBitPosToMask(tricium.Platform_WINDOWS))
+		So(err, ShouldBeNil)
+		So(values, ShouldResemble, []tricium.Platform_Name{tricium.Platform_ANDROID,
+			tricium.Platform_OSX,
+			tricium.Platform_WINDOWS})
+	})
+	Convey("Platform: Invalid", t, func() {
+		// Position 60 is currently unused in tricium.Platform_Name.
+		values, err := getPlatforms(platformBitPosToMask(60))
+		So(err, ShouldNotBeNil)
+		So(values, ShouldBeNil)
+	})
+}
+
+func TestCreateAnalysisResults(t *testing.T) {
+	Convey("Default objects", t, func() {
+		wres := track.WorkerRunResult{}
+		areq := track.AnalyzeRequest{}
+		ares := track.AnalyzeRequestResult{}
+		comments := []*track.Comment{}
+
+		areq.GitRef = "refs/changes/88/508788/102"
+		result, err := createAnalysisResults(&wres, &areq, &ares, comments)
+		So(err, ShouldBeNil)
+		So(result, ShouldNotBeNil)
+		So(result.RevisionNumber, ShouldEqual, 102)
+	})
+
+	Convey("GitRef required", t, func() {
+		wres := track.WorkerRunResult{}
+		areq := track.AnalyzeRequest{}
+		ares := track.AnalyzeRequestResult{}
+		comments := []*track.Comment{}
+
+		result, err := createAnalysisResults(&wres, &areq, &ares, comments)
+		So(err, ShouldNotBeNil)
+		So(result, ShouldBeNil)
+	})
+
+	Convey("All values", t, func() {
+		wres := track.WorkerRunResult{}
+
+		areq := track.AnalyzeRequest{}
+		areq.GerritHost = "http://my-gerrit-review.com/my-project"
+		areq.Project = "my-project"
+		areq.GerritChange = "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
+		areq.GitURL = "http://the-git-url.com/my-project"
+		areq.GitRef = "refs/changes/88/508788/7"
+		areq.Received = time.Now()
+		areq.Files = []tricium.Data_File{
+			{Path: "dir/file.txt"},
+			{Path: "dir/file2.txt"},
+		}
+
+		ares := track.AnalyzeRequestResult{}
+		deletedFileCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+			Category: "L",
+			Message:  "Line too long",
+			Path:     "dir/deleted_file.txt",
+		})
+		inChangeCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+			Category:  "L",
+			Message:   "Line too short",
+			Path:      "dir/file.txt",
+			StartLine: 2,
+			EndLine:   3,
+		})
+		So(err, ShouldBeNil)
+		comments := []*track.Comment{
+			{
+				UUID:         "1234",
+				Parent:       nil,
+				Platforms:    platformBitPosToMask(tricium.Platform_ANY),
+				Analyzer:     "analyzerName",
+				Category:     "analyzerName/categoryName",
+				Comment:      []byte(deletedFileCommentJSON),
+				CreationTime: time.Now(),
+			},
+			{
+				UUID:         "1234",
+				Parent:       nil,
+				Platforms:    platformBitPosToMask(tricium.Platform_IOS) | platformBitPosToMask(tricium.Platform_WINDOWS),
+				Analyzer:     "analyzerName",
+				Category:     "analyzerName/categoryName",
+				Comment:      []byte(inChangeCommentJSON),
+				CreationTime: time.Now(),
+			}}
+
+		result, err := createAnalysisResults(&wres, &areq, &ares, comments)
+		So(err, ShouldBeNil)
+		So(result, ShouldNotBeNil)
+		So(result.GerritRevision.Host, ShouldEqual, areq.GerritHost)
+		So(result.GerritRevision.Project, ShouldEqual, areq.Project)
+		So(result.GerritRevision.Change, ShouldEqual, areq.GerritChange)
+		So(result.GerritRevision.GitUrl, ShouldEqual, areq.GitURL)
+		So(result.GerritRevision.GitRef, ShouldEqual, areq.GitRef)
+		So(result.RevisionNumber, ShouldEqual, 7)
+		So(tutils.Timestamp(result.RequestedTime), ShouldEqual, areq.Received)
+		So(len(result.Files), ShouldEqual, len(areq.Files))
+		for i := 0; i < len(result.Files); i++ {
+			So(result.Files[i], ShouldResemble, &areq.Files[i])
+		}
+		So(len(result.Comments), ShouldEqual, len(comments))
+		for i, gcomment := range result.Comments {
+			tcomment := tricium.Data_Comment{}
+			err := jsonpb.UnmarshalString(string(comments[i].Comment), &tcomment)
+			So(err, ShouldBeNil)
+			So(&tcomment, ShouldResemble, gcomment.Comment)
+			So(gcomment.Analyzer, ShouldEqual, comments[i].Analyzer)
+			So(gcomment.CreatedTime, ShouldResemble, tutils.TimestampProto(comments[i].CreationTime))
+			platforms, _ := getPlatforms(comments[i].Platforms)
+			So(gcomment.Platforms, ShouldResemble, platforms)
+		}
 	})
 }
