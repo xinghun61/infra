@@ -21,6 +21,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -347,10 +348,7 @@ func luciferAdminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL st
 		skylabSwarmingWorkerPath,
 		"-task-name", fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
 	}
-	// TODO(ayatane): Temporarily disable to rollout the config
-	// first.  The config has to be pushed first so it can be
-	// validated by LUCI config service.
-	// s = append(s, "-admin-service", fmt.Sprintf("%s.appspot.com", info.AppID(ctx)))
+	s = append(s, "-admin-service", fmt.Sprintf("%s.appspot.com", info.AppID(ctx)))
 	if logdogURL != "" {
 		s = append(s, "-logdog-annotation-url", logdogURL)
 	}
