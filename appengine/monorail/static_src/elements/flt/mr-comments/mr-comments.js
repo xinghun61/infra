@@ -71,6 +71,38 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           text-align: right;
           text-decoration: none;
         }
+        .comment-attachment {
+          min-width: 20%;
+          width: fit-content;
+          background: var(--chops-card-details-bg);
+          padding: 4px;
+          margin: 8px;
+        }
+        .comment-attachment-header {
+          display: flex;
+          flex-wrap: nowrap;
+        }
+        .filesize {
+          margin-left: .7em;
+        }
+        .filename {
+          margin-left: .7em;
+          font-weight: bold;
+        }
+        .attachment-view {
+          margin-left: .7em;
+        }
+        .attachment-download {
+          margin-left: .7em
+        }
+        .preview {
+          border: 2px solid #c3d9ff;
+          padding: 1px;
+          max-width: 98%;
+        }
+        .preview:hover {
+          border: 2px solid blue;
+        }
         .deleted-comment-notice {
           color: #888;
         }
@@ -137,18 +169,44 @@ export class MrComments extends ReduxMixin(PolymerElement) {
                 </template>
               </div><br>
             </template>
-            <div class="comment-attachments">
+            <div>
               <template is="dom-repeat" items="[[comment.attachments]]" as="attachment">
-                <div class="filename">[[attachment.filename]]</div>
-                <div class="filesize">[[attachment.size]]b</div>
-                <div class="attachment-view"><a href="[[attachment.viewUrl]]" target="_blank">View</a></div>
-                <div class="attachment-download"><a href="[[attachment.downloadUrl]]" target="_blank">Download</a></div>
-                <template is="dom-if" if="[[attachment.thumbnailUrl]]">
-                  <img src\$="[[attachment.thumbnailUrl]]">
-                </template>
+                <div class="comment-attachment">
+                  <div class="filename">[[attachment.filename]]</div>
+                  <div class="comment-attachment-header">
+                    <div class="filesize">[[_bytesOrKbOrMb(attachment.size)]]</div>
+                    <div class="attachment-view">
+                      <a href="[[attachment.viewUrl]]" target="_blank">View</a>
+                    </div>
+                    <div class="attachment-download">
+                      <a href="[[attachment.downloadUrl]]" target="_blank">Download</a>
+                    </div>
+                  </div>
+                  <template is="dom-if" if="[[attachment.thumbnailUrl]]">
+                    <a href="[[attachment.viewUrl]]" target="_blank">
+                      <img
+                        class="preview"
+                        src\$="[[attachment.thumbnailUrl]]"
+                      >
+                    </a>
+                  </template>
+                  <template is="dom-if" if="[[_isVideo(attachment.contentType)]]">
+                    <video
+                      src\$="[[attachment.viewUrl]]"
+                      class="preview"
+                      controls
+                      width="640"
+                      preload="metadata"
+                    ></video>
+                  </template>
+                </div>
               </template>
             </div>
-            <mr-comment-content hidden\$="[[comment.descriptionNum]]" content="[[comment.content]]" is-deleted="[[comment.isDeleted]]"></mr-comment-content>
+            <mr-comment-content
+              hidden\$="[[comment.descriptionNum]]"
+              content="[[comment.content]]"
+              is-deleted="[[comment.isDeleted]]"
+            ></mr-comment-content>
           </template>
         </div>
       </template>
@@ -340,6 +398,24 @@ export class MrComments extends ReduxMixin(PolymerElement) {
 
   _shouldOfferEdit(issuePermissions) {
     return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION);
+  }
+
+  _bytesOrKbOrMb(numBytes) {
+    if (numBytes < 1024) {
+      return `${numBytes} bytes`;  // e.g., 128 bytes
+    } else if (numBytes < 99 * 1024) {
+      return `${(numBytes / 1024).toFixed(1)} KB`;  // e.g. 23.4 KB
+    } else if (numBytes < 1024 * 1024) {
+      return `${(numBytes / 1024).toFixed(0)} KB`;  // e.g., 219 KB
+    } else if (numBytes < 99 * 1024 * 1024) {
+      return `${(numBytes / 1024 / 1024).toFixed(1)} MB`;  // e.g., 21.9 MB
+    } else {
+      return `${(numBytes / 1024 / 1024).toFixed(0)} MB`;  // e.g., 100 MB
+    }
+  }
+
+  _isVideo(contentType) {
+    return contentType.startsWith('video/');
   }
 }
 customElements.define(MrComments.is, MrComments);
