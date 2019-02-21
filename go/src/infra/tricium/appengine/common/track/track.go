@@ -72,6 +72,9 @@ type AnalyzeRequest struct {
 	Project string
 	// Files listed in the request, including metadata.
 	Files []tricium.Data_File `gae:",noindex"`
+	// Paths is retained for backward compatibilty but should not be used
+	// in new entities. Files is used instead. See crbug.com/934246.
+	Paths []string `gae:",noindex"`
 	// Full URL of Git repository hosting files in the request.
 	GitURL string `gae:",noindex"`
 	// Git ref to use in the git repo.
