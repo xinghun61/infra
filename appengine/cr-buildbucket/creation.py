@@ -219,7 +219,8 @@ def add_many_async(build_request_list):
   Returns:
     A list of (new_build, exception) tuples in the same order.
     Exactly one item of a tuple will be non-None.
-    The exception can only be errors.InvalidInputError.
+    The exception can be either errors.InvalidInputError or
+    auth.AuthorizationError.
 
   Raises:
     Any exception that datastore operations can raise.

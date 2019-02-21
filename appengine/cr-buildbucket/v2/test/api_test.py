@@ -481,6 +481,7 @@ class BatchTests(BaseTestCase):
     add_many_async.return_value = future([
         (test_util.build(id=42), None),
         (None, errors.InvalidInputError('bad')),
+        (None, auth.AuthorizationError('bad')),
     ])
 
     user.can_async.side_effect = (
@@ -508,9 +509,17 @@ class BatchTests(BaseTestCase):
             dict(
                 schedule_build=dict(
                     builder=dict(
+                        project='chromium', bucket='try', builder='windows'
+                    ),
+                    request_id='2',
+                )
+            ),
+            dict(
+                schedule_build=dict(
+                    builder=dict(
                         project='chromium', bucket='forbidden', builder='nope'
                     ),
-                    request_id='1',
+                    request_id='3',
                 )
             ),
             dict(
@@ -534,7 +543,10 @@ class BatchTests(BaseTestCase):
         res.responses[2].error.code, prpc.StatusCode.PERMISSION_DENIED.value
     )
     self.assertEqual(
-        res.responses[3].error.code, prpc.StatusCode.INVALID_ARGUMENT.value
+        res.responses[3].error.code, prpc.StatusCode.PERMISSION_DENIED.value
+    )
+    self.assertEqual(
+        res.responses[4].error.code, prpc.StatusCode.INVALID_ARGUMENT.value
     )
 
 

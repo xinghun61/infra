@@ -386,11 +386,14 @@ def schedule_build_multi(batch):
   ]
   results = creation.add_many_async(build_requests).get_result()
   for rr, (build, ex) in zip(to_schedule, results):
-    if ex:
-      assert isinstance(ex, errors.InvalidInputError)
+    if isinstance(ex, errors.InvalidInputError):
       rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
       rr.response.error.message = ex.message
+    elif isinstance(ex, auth.AuthorizationError):
+      rr.response.error.code = prpc.StatusCode.PERMISSION_DENIED.value
+      rr.response.error.message = ex.message
     else:
+      assert not ex, ex
       # Since this is a new build, no other entities need to be loaded
       # and we use model.Build.proto directly.
       rr.response.schedule_build.MergeFrom(build.proto)
