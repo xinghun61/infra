@@ -129,7 +129,7 @@ func (e *UpdateOrderError) Error() string {
 // (or zero balance if nil).
 //
 // If an account with that id already exists, then it is overwritten.
-func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *protos.AccountConfig, initialBalance []float64) {
+func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *protos.AccountConfig, initialBalance []float32) {
 	s.config.AccountConfigs[string(id)] = config
 	bal := Balance{}
 	copy(bal[:], initialBalance)
@@ -167,7 +167,7 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 		return &UpdateOrderError{Previous: t0, Next: t}
 	}
 
-	elapsedSecs := t.Sub(t0).Seconds()
+	elapsedSecs := float32(t.Sub(t0).Seconds())
 
 	// Count the number of running tasks per priority bucket for each
 	//

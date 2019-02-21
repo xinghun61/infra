@@ -31,7 +31,7 @@ message SchedulerState {
   map<string, TaskRequest> queued_requests = 1;
 
   message Balance {
-    repeated double value = 1;
+    repeated float value = 1;
   }
 
   // Balance of all quota accounts for this pool, keyed by account id.
@@ -83,7 +83,7 @@ message TaskRequest {
 // now running.
 message TaskRun {
   // Cost is the total cost that has been incurred on this task while running.
-  repeated double cost = 1;
+  repeated float cost = 1;
 
   // Request is the request that this running task corresponds to.
   TaskRequest request = 2;

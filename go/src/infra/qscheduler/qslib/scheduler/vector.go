@@ -19,7 +19,7 @@ package scheduler
 const NumPriorities = 5
 
 // Balance is a vector that represents a cost or account balance.
-type Balance [NumPriorities]float64
+type Balance [NumPriorities]float32
 
 // Less determines whether Vector a is less than b, based on
 // priority ordered comparison

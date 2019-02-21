@@ -51,13 +51,13 @@ func BestPriorityFor(b Balance) Priority {
 // The new balance calculation is based on the account's recharge rate,
 // maximum balance, and the number of currently running jobs per priority
 // bucket for that account.
-func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float64, runningJobs []int) Balance {
+func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float32, runningJobs []int) Balance {
 	var runningJobsArray [NumPriorities]int
 	copy(runningJobsArray[:], runningJobs)
 	for priority := 0; priority < NumPriorities; priority++ {
 		val := balance[priority]
-		val -= elapsedSecs * float64(runningJobsArray[priority])
-		var chargeRate float64
+		val -= elapsedSecs * float32(runningJobsArray[priority])
+		var chargeRate float32
 		if len(c.ChargeRate) > priority {
 			chargeRate = c.ChargeRate[priority]
 		}
@@ -78,7 +78,7 @@ func nextBalance(balance Balance, c *protos.AccountConfig, elapsedSecs float64, 
 }
 
 // NewAccountConfig creates a new Config instance.
-func NewAccountConfig(fanout int, chargeSeconds float64, chargeRate []float64) *protos.AccountConfig {
+func NewAccountConfig(fanout int, chargeSeconds float32, chargeRate []float32) *protos.AccountConfig {
 	return &protos.AccountConfig{
 		ChargeRate:       chargeRate,
 		MaxChargeSeconds: chargeSeconds,

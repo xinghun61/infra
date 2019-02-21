@@ -43,7 +43,7 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		s.AddRequest(ctx, scheduler.NewTaskRequest("t1", "a1", stringset.NewFromSlice("label1"), nil, tm), tm, scheduler.NullEventSink)
 		s.AddRequest(ctx, scheduler.NewTaskRequest("t2", "a1", stringset.NewFromSlice("label2"), nil, tm), tm, scheduler.NullEventSink)
 		c := scheduler.NewAccountConfig(0, 0, nil)
-		s.AddAccount(ctx, "a1", c, []float64{2, 0, 0})
+		s.AddAccount(ctx, "a1", c, []float32{2, 0, 0})
 		Convey("when scheduling jobs", func() {
 			muts := s.RunOnce(ctx, scheduler.NullEventSink)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
@@ -91,7 +91,7 @@ func TestMatchThrottledAccountJobs(t *testing.T) {
 		tm := time.Unix(0, 0)
 		s := scheduler.New(tm)
 		var aid scheduler.AccountID = "Account1"
-		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 0, nil), []float64{1})
+		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 0, nil), []float32{1})
 		var r1 scheduler.RequestID = "Request1"
 		var r2 scheduler.RequestID = "Request2"
 		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, aid, nil, nil, tm), tm, scheduler.NullEventSink)
@@ -120,7 +120,7 @@ func TestMatchProvisionableLabel(t *testing.T) {
 		aid := scheduler.AccountID("account1")
 		reqB := scheduler.RequestID("reqb")
 		s := scheduler.New(tm)
-		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 1, nil), []float64{1})
+		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 1, nil), []float32{1})
 		for i := 0; i < 500; i++ {
 			id := scheduler.RequestID(fmt.Sprintf("t%d", i))
 			s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, stringset.NewFromSlice("a"), nil, tm), tm, scheduler.NullEventSink)
@@ -152,7 +152,7 @@ func TestBaseLabelMatch(t *testing.T) {
 		var aid scheduler.AccountID = "AccountID"
 		var wid scheduler.WorkerID = "WorkerID"
 		var rid scheduler.RequestID = "RequestID"
-		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float64{1})
+		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float32{1})
 		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullEventSink)
 		s.AddRequest(ctx, scheduler.NewTaskRequest(rid, aid, nil, stringset.NewFromSlice("unsatisfied_label"), tm), tm, scheduler.NullEventSink)
 		Convey("when scheduling jobs", func() {
@@ -181,7 +181,7 @@ func TestMatchRareLabel(t *testing.T) {
 		s.MarkIdle(ctx, rareWorker, stringset.NewFromSlice(commonLabel, rareLabel), tm, scheduler.NullEventSink)
 		Convey("and 10 interchangable requests and 1 rare-labeled request", func() {
 			var aid scheduler.AccountID = "AccountID"
-			s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float64{1})
+			s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float32{1})
 			for i := 0; i < 10; i++ {
 				id := scheduler.RequestID(fmt.Sprintf("CommonRequest%d", i))
 				s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, nil, stringset.NewFromSlice(commonLabel), tm), tm, scheduler.NullEventSink)

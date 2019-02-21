@@ -45,7 +45,7 @@ func eventCommon(request *TaskRequest, w *Worker, s *state, t time.Time) *metric
 	var provLabels sort.StringSlice = request.ProvisionableLabels.ToSlice()
 	var botID string
 	var botLabels sort.StringSlice
-	var cost []float64
+	var cost []float32
 	if w != nil {
 		botID = string(w.ID)
 		botLabels = w.Labels.ToSlice()

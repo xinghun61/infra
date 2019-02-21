@@ -63,14 +63,14 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 	poolID := args[0]
 	accountID := args[1]
 
-	chargeRateFloats := make([]float64, len(c.chargeRates))
+	chargeRateFloats := make([]float32, len(c.chargeRates))
 	for i, c := range c.chargeRates {
-		f, err := strconv.ParseFloat(c, 64)
+		f, err := strconv.ParseFloat(c, 32)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Invalid charge rate: %s\n", err.Error())
 			return 1
 		}
-		chargeRateFloats[i] = f
+		chargeRateFloats[i] = float32(f)
 	}
 
 	ctx := cli.GetContext(a, c, env)
@@ -86,7 +86,7 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 		PoolId:    poolID,
 		Config: &protos.AccountConfig{
 			ChargeRate:       chargeRateFloats,
-			MaxChargeSeconds: c.chargeTime,
+			MaxChargeSeconds: float32(c.chargeTime),
 			MaxFanout:        int32(c.fanout),
 		},
 	}

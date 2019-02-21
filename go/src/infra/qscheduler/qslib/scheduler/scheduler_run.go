@@ -250,7 +250,7 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, events Even
 
 		runningAtP := workersAt(state.workers, priority, accountID)
 
-		chargeRate := accountConfig.ChargeRate[priority] - float64(len(runningAtP))
+		chargeRate := accountConfig.ChargeRate[priority] - float32(len(runningAtP))
 
 		switch {
 		case demote && chargeRate < 0:
@@ -267,10 +267,10 @@ func (run *schedulerRun) reprioritizeRunningTasks(priority Priority, events Even
 
 // doDemote is a helper function used by reprioritizeRunningTasks
 // which demotes some jobs (selected from candidates) from priority to priority + 1.
-func doDemote(state *state, candidates []*Worker, chargeRate float64, priority Priority, events EventSink) {
+func doDemote(state *state, candidates []*Worker, chargeRate float32, priority Priority, events EventSink) {
 	sortAscendingCost(candidates)
 
-	numberToDemote := minInt(len(candidates), int(math.Ceil(-chargeRate)))
+	numberToDemote := minInt(len(candidates), ceil(-chargeRate))
 	for _, toDemote := range candidates[:numberToDemote] {
 		events.AddEvent(eventReprioritized(toDemote.runningTask.request, toDemote, state, state.lastUpdateTime,
 			&metrics.TaskEvent_ReprioritizedDetails{
@@ -285,10 +285,10 @@ func doDemote(state *state, candidates []*Worker, chargeRate float64, priority P
 // doPromote is a helper function use by reprioritizeRunningTasks
 // which promotes some jobs (selected from candidates) from any level > priority
 // to priority.
-func doPromote(state *state, candidates []*Worker, chargeRate float64, priority Priority, events EventSink) {
+func doPromote(state *state, candidates []*Worker, chargeRate float32, priority Priority, events EventSink) {
 	sortDescendingCost(candidates)
 
-	numberToPromote := minInt(len(candidates), int(math.Ceil(chargeRate)))
+	numberToPromote := minInt(len(candidates), ceil(chargeRate))
 	for _, toPromote := range candidates[:numberToPromote] {
 		events.AddEvent(eventReprioritized(toPromote.runningTask.request, toPromote, state, state.lastUpdateTime,
 			&metrics.TaskEvent_ReprioritizedDetails{
@@ -420,4 +420,8 @@ func minInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func ceil(val float32) int {
+	return int(math.Ceil(float64(val)))
 }

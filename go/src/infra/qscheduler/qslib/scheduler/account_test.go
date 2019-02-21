@@ -49,7 +49,7 @@ func TestAccountAdvanceWithNoOverflow(t *testing.T) {
 	expect := Balance{0, 2, 4}
 
 	config := &protos.AccountConfig{
-		ChargeRate:       []float64{1, 2, 3},
+		ChargeRate:       []float32{1, 2, 3},
 		MaxChargeSeconds: 10,
 	}
 	before := Balance{}
@@ -72,7 +72,7 @@ func TestAccountAdvanceWithOverflow(t *testing.T) {
 	// P2 bucket will have started above max, but have spend that causes it to be
 	//    pulled below max, and then will recharge to reach max again.
 	config := &protos.AccountConfig{
-		ChargeRate:       []float64{1, 1, 1},
+		ChargeRate:       []float32{1, 1, 1},
 		MaxChargeSeconds: 10,
 	}
 

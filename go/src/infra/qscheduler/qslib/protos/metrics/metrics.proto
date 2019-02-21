@@ -81,11 +81,11 @@ message TaskEvent {
   bool account_valid = 8;
 
   // AccountBalance is the task's quotascheduler account's balance at this time.
-  repeated double account_balance = 9;
+  repeated float account_balance = 9;
 
   // Cost is the total quota cost accumulated so far to the quotascheduler
   // account, when running this task.
-  repeated double cost = 10;
+  repeated float cost = 10;
 
   // BotId is the bot that the event occurred on (relevant for all event
   // types except for ENQUEUED).
@@ -118,7 +118,7 @@ message TaskEvent {
     // PreemptionCost is the cost paid by this task's account in order to
     // preempt the previous task on this bot, if this was a preempting
     // assignment.
-    repeated double preemption_cost = 4;
+    repeated float preemption_cost = 4;
 
     // PreemptedTaskId is the task that was preempted, if any.
     string preempted_task_id = 5;

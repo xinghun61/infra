@@ -40,7 +40,7 @@ func TestSchedulerReprioritize(t *testing.T) {
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
 		aid := AccountID("a1")
-		s.AddAccount(ctx, aid, NewAccountConfig(0, 0, []float64{1.1, 0.9}), []float64{2 * DemoteThreshold, 2 * PromoteThreshold})
+		s.AddAccount(ctx, aid, NewAccountConfig(0, 0, []float32{1.1, 0.9}), []float32{2 * DemoteThreshold, 2 * PromoteThreshold})
 
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
@@ -82,7 +82,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		ctx := context.Background()
 		tm0 := time.Unix(0, 0)
 		s := New(tm0)
-		s.AddAccount(ctx, "a1", NewAccountConfig(0, 0, []float64{1, 1, 1}), []float64{0.5 * PromoteThreshold, 1})
+		s.AddAccount(ctx, "a1", NewAccountConfig(0, 0, []float32{1, 1, 1}), []float32{0.5 * PromoteThreshold, 1})
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
 			wid := WorkerID(fmt.Sprintf("w%d", i))
@@ -173,8 +173,8 @@ func TestUpdateBalance(t *testing.T) {
 	Convey("Given a scheduler with an added account config", t, func() {
 		ctx := context.Background()
 		s := New(t0)
-		maxTime := 2.0
-		s.AddAccount(ctx, aID, NewAccountConfig(0, maxTime, []float64{1, 2, 3}), nil)
+		var maxTime float32 = 2.0
+		s.AddAccount(ctx, aID, NewAccountConfig(0, maxTime, []float32{1, 2, 3}), nil)
 
 		Convey("then a zeroed balance for that account exists", func() {
 			So(s.state.balances, ShouldContainKey, aID)
