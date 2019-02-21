@@ -5,10 +5,12 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
+import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import '../../mr-comment-content/mr-comment-content.js';
 import '../../mr-dropdown/mr-dropdown.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import '../shared/mr-flt-styles.js';
 
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:-?([a-z0-9-]+):)?(\d+)/i;
@@ -29,7 +31,7 @@ const ISSUE_EDIT_PERMISSION = 'editissue';
 export class MrComments extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style>
+      <style include="mr-flt-styles">
         button.toggle {
           background: none;
           color: var(--chops-link-color);
@@ -73,6 +75,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
         }
         .comment-attachment {
           min-width: 20%;
+          min-hegiht: 28px;
           width: fit-content;
           background: var(--chops-card-details-bg);
           padding: 4px;
@@ -87,13 +90,20 @@ export class MrComments extends ReduxMixin(PolymerElement) {
         }
         .filename {
           margin-left: .7em;
-          font-weight: bold;
         }
         .attachment-view {
           margin-left: .7em;
         }
         .attachment-download {
           margin-left: .7em
+        }
+        .attachment-delete {
+          float: right;
+        }
+        .attachment-delete-button {
+          color: var(--chops-button-color);
+          background: var(--chops-button-bg);
+          border-color: transparent;
         }
         .preview {
           border: 2px solid #c3d9ff;
@@ -172,32 +182,61 @@ export class MrComments extends ReduxMixin(PolymerElement) {
             <div>
               <template is="dom-repeat" items="[[comment.attachments]]" as="attachment">
                 <div class="comment-attachment">
-                  <div class="filename">[[attachment.filename]]</div>
-                  <div class="comment-attachment-header">
-                    <div class="filesize">[[_bytesOrKbOrMb(attachment.size)]]</div>
-                    <div class="attachment-view">
-                      <a href="[[attachment.viewUrl]]" target="_blank">View</a>
-                    </div>
-                    <div class="attachment-download">
-                      <a href="[[attachment.downloadUrl]]" target="_blank">Download</a>
-                    </div>
-                  </div>
-                  <template is="dom-if" if="[[attachment.thumbnailUrl]]">
-                    <a href="[[attachment.viewUrl]]" target="_blank">
-                      <img
-                        class="preview"
-                        src\$="[[attachment.thumbnailUrl]]"
+                  <template is="dom-if" if="[[comment.canDelete]]">
+                    <div class="attachment-delete">
+                      <chops-button
+                        class="attachment-delete-button"
+                        on-click="_deleteAttachment"
+                        data-attachment-id\$="[[attachment.attachmentId]]"
+                        data-project-name\$="[[comment.projectName]]"
+                        data-local-id\$="[[comment.localId]]"
+                        data-sequence-num\$="[[comment.sequenceNum]]"
+                        data-mark-deleted\$="[[!attachment.isDeleted]]"
                       >
-                    </a>
+                        <template is="dom-if" if="[[attachment.isDeleted]]">
+                          Undelete
+                        </template>
+                        <template is="dom-if" if="[[!attachment.isDeleted]]">
+                          Delete
+                        </template>
+                      </chops-button>
+                    </div>
                   </template>
-                  <template is="dom-if" if="[[_isVideo(attachment.contentType)]]">
-                    <video
-                      src\$="[[attachment.viewUrl]]"
-                      class="preview"
-                      controls
-                      width="640"
-                      preload="metadata"
-                    ></video>
+                  <div class="filename">
+                    <template is="dom-if" if="[[attachment.isDeleted]]">
+                      [Deleted]
+                    </template>
+                    <b>[[attachment.filename]]</b>
+                  </div>
+                  <template is="dom-if" if="[[!attachment.isDeleted]]">
+                    <div class="comment-attachment-header">
+                      <div class="filesize">[[_bytesOrKbOrMb(attachment.size)]]</div>
+                      <template is="dom-if" if="[[!attachment.isDeleted]]">
+                        <div class="attachment-view">
+                          <a href="[[attachment.viewUrl]]" target="_blank">View</a>
+                        </div>
+                        <div class="attachment-download">
+                          <a href="[[attachment.downloadUrl]]" target="_blank">Download</a>
+                        </div>
+                      </template>
+                    </div>
+                    <template is="dom-if" if="[[attachment.thumbnailUrl]]">
+                      <a href="[[attachment.viewUrl]]" target="_blank">
+                        <img
+                          class="preview"
+                          src\$="[[attachment.thumbnailUrl]]"
+                        >
+                      </a>
+                    </template>
+                    <template is="dom-if" if="[[_isVideo(attachment.contentType)]]">
+                      <video
+                        src\$="[[attachment.viewUrl]]"
+                        class="preview"
+                        controls
+                        width="640"
+                        preload="metadata"
+                      ></video>
+                    </template>
                   </template>
                 </div>
               </template>
@@ -416,6 +455,28 @@ export class MrComments extends ReduxMixin(PolymerElement) {
 
   _isVideo(contentType) {
     return contentType.startsWith('video/');
+  }
+
+  _deleteAttachment(e) {
+    const issueRef = {
+      projectName: e.target.dataset.projectName,
+      localId: Number.parseInt(e.target.dataset.localId),
+    };
+
+    const promise = window.prpcClient.call(
+      'monorail.Issues', 'DeleteAttachment',
+      {
+        issueRef,
+        sequenceNum: Number.parseInt(e.target.dataset.sequenceNum),
+        attachmentId: Number.parseInt(e.target.dataset.attachmentId),
+        delete: (e.target.dataset.markDeleted !== undefined),
+      });
+
+    promise.then(() => {
+      actionCreator.fetchComments(this.dispatchAction.bind(this), {issueRef});
+    }, (error) => {
+      console.log('Failed to (un)delete attachment', error);
+    });
   }
 }
 customElements.define(MrComments.is, MrComments);
