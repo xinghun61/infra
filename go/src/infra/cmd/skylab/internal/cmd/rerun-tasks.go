@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -29,14 +30,16 @@ var RerunTasks = &subcommands.Command{
 		c := &rerunTasksRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		c.Flags.BoolVar(&c.outputJSON, "output-json", false, "Format output as JSON.")
 		return c
 	},
 }
 
 type rerunTasksRun struct {
 	subcommands.CommandRunBase
-	authFlags authcli.Flags
-	envFlags  envFlags
+	authFlags  authcli.Flags
+	envFlags   envFlags
+	outputJSON bool
 }
 
 func (c *rerunTasksRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -81,9 +84,11 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 		originalToRerunID[originalID] = resp.TaskId
 	}
 
-	printIDMap(a.GetOut(), originalToRerunID, siteEnv)
+	if c.outputJSON {
+		return printJSONMap(a.GetOut(), originalToRerunID, siteEnv)
+	}
 
-	return nil
+	return printIDMap(a.GetOut(), originalToRerunID, siteEnv)
 }
 
 func getSwarmingRequestsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskRequest, error) {
@@ -133,9 +138,26 @@ func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, siteEnv site
 	return newTaskRequest(original.Name, original.Tags, original.TaskSlices, original.Priority), nil
 }
 
-func printIDMap(w io.Writer, originalToRerunID map[string]string, siteEnv site.Environment) {
+func printIDMap(w io.Writer, originalToRerunID map[string]string, siteEnv site.Environment) error {
 	for originalID, rerunID := range originalToRerunID {
 		fmt.Fprintf(w, "Rerunning %s\tCreated Swarming task %s\n",
 			originalID, swarmingTaskURL(siteEnv, rerunID))
 	}
+
+	return nil
+}
+
+func printJSONMap(w io.Writer, originalToRerunID map[string]string, siteEnv site.Environment) error {
+	outputMap := map[string]map[string]string{
+		"original_id_to_rerun_id_map": originalToRerunID,
+	}
+
+	outputJSON, err := json.Marshal(outputMap)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(w, string(outputJSON))
+
+	return nil
 }
