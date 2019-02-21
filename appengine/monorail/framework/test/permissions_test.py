@@ -1569,42 +1569,37 @@ class IssuePermissionsTest(unittest.TestCase):
         None, None))
 
   def testCanUpdateApprovalStatus_Approver(self):
-     self.assertTrue(permissions.CanUpdateApprovalStatus(
-         {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-         [222L], tracker_pb2.ApprovalStatus.APPROVED,
-         tracker_pb2.ApprovalStatus.NOT_APPROVED))
-
-     self.assertTrue(permissions.CanUpdateApprovalStatus(
-         {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-         [222L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW,
-         tracker_pb2.ApprovalStatus.NA))
-
-  def testCanUpdateApprovalStatus_SiteAdmin(self):
-      self.assertTrue(permissions.CanUpdateApprovalStatus(
-          {444L}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
-          self.PROJECT, [222L], tracker_pb2.ApprovalStatus.APPROVED,
-          tracker_pb2.ApprovalStatus.NOT_APPROVED))
-
-      self.assertTrue(permissions.CanUpdateApprovalStatus(
-          {444L}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
-          self.PROJECT, [222L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW,
-          tracker_pb2.ApprovalStatus.NA))
-
-  def testCanUpdateApprovalStatus_NonApprover(self):
+    # restricted status
     self.assertTrue(permissions.CanUpdateApprovalStatus(
         {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [333L], tracker_pb2.ApprovalStatus.NEED_INFO,
-        tracker_pb2.ApprovalStatus.REVIEW_REQUESTED))
+        [222L], tracker_pb2.ApprovalStatus.APPROVED))
 
+    # non-restricted status
+    self.assertTrue(permissions.CanUpdateApprovalStatus(
+        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
+        [222L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW))
+
+  def testCanUpdateApprovalStatus_SiteAdmin(self):
+    # restricted status
+    self.assertTrue(permissions.CanUpdateApprovalStatus(
+        {444L}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
+        self.PROJECT, [222L], tracker_pb2.ApprovalStatus.NOT_APPROVED))
+
+    # non-restricted status
+    self.assertTrue(permissions.CanUpdateApprovalStatus(
+        {444L}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
+        self.PROJECT, [222L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW))
+
+  def testCanUpdateApprovalStatus_NonApprover(self):
+    # non-restricted status
+    self.assertTrue(permissions.CanUpdateApprovalStatus(
+        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
+        [333L], tracker_pb2.ApprovalStatus.NEED_INFO))
+
+    # restricted status
     self.assertFalse(permissions.CanUpdateApprovalStatus(
         {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [333L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW,
-        tracker_pb2.ApprovalStatus.NA))
-
-    self.assertFalse(permissions.CanUpdateApprovalStatus(
-        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [333L], tracker_pb2.ApprovalStatus.NOT_APPROVED,
-        tracker_pb2.ApprovalStatus.APPROVED))
+        [333L], tracker_pb2.ApprovalStatus.NA))
 
   def testCanUpdateApprovers_Approver(self):
     self.assertTrue(permissions.CanUpdateApprovers(

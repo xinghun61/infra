@@ -984,8 +984,7 @@ class WorkEnv(object):
     if approval_delta.status:
       if not permissions.CanUpdateApprovalStatus(
           self.mc.auth.effective_ids, self.mc.perms, project,
-          approval_value.approver_ids,
-          approval_value.status, approval_delta.status):
+          approval_value.approver_ids, approval_delta.status):
         raise permissions.PermissionException(
             'User not allowed to make this status update.')
 

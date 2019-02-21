@@ -739,8 +739,7 @@ class MonorailApi(remote.Service):
             request.approvalUpdates.status.upper())
         if not permissions.CanUpdateApprovalStatus(
             mar.auth.effective_ids, mar.perms, mar.project,
-            approval.approver_ids,
-            approval.status, status):
+            approval.approver_ids, status):
           raise permissions.PermissionException(
               'User is not allowed to make this status change')
         updates_dict['status'] = status

@@ -1071,12 +1071,12 @@ def CanCommentIssue(effective_ids, perms, project, issue, granted_perms=None):
 
 
 def CanUpdateApprovalStatus(
-    effective_ids, perms, project, approver_ids, current_status, new_status):
+    effective_ids, perms, project, approver_ids, new_status):
   """Return True if a user can change the approval status to the new status."""
   if not effective_ids.isdisjoint(approver_ids):
     return True # Approval approvers can always change the approval status
 
-  if set([current_status, new_status]).isdisjoint(RESTRICTED_APPROVAL_STATUSES):
+  if new_status not in RESTRICTED_APPROVAL_STATUSES:
     return True
 
   return perms.CanUsePerm(EDIT_ISSUE_APPROVAL, effective_ids, project, [])
