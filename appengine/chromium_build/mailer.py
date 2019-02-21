@@ -15,8 +15,10 @@ import gatekeeper_mailer
 import gae_ts_mon
 
 
-GATEKEEPER_SERVICE_ACCOUNT_EMAIL = (
-    'gatekeeper@chromium-build.iam.gserviceaccount.com')
+GATEKEEPER_SERVICE_ACCOUNT_EMAILS = (
+    'gatekeeper@chromium-build.iam.gserviceaccount.com',
+    'gatekeeper-builder@chops-service-accounts.iam.gserviceaccount.com',
+    'infra-internal-gatekeeper@chops-service-accounts.iam.gserviceaccount.com')
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -94,7 +96,7 @@ class Email(BaseHandler):
   def post(self):
     email = _get_user_email()
     logging.info('current user email is %s', email)
-    if email != GATEKEEPER_SERVICE_ACCOUNT_EMAIL:
+    if email not in GATEKEEPER_SERVICE_ACCOUNT_EMAILS:
       self.response.out.write('user %r is not authorized' % email)
       logging.warning('user %r is not authorized' % email)
       self.error(403)
