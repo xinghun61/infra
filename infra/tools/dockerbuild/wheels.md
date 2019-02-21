@@ -1483,6 +1483,20 @@ wheel: <
 
 * *universal*
 
+## **odictliteral**
+
+### 1.0.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/odictliteral-py2_py3"
+  version: "version:1.0.0"
+>
+```
+
+
+* *universal*
+
 ## **opencv_python**
 
 ### 2.4.13.2
