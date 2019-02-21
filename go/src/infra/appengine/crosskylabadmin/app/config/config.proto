@@ -62,9 +62,9 @@ message Tasker {
   // LogdogHost is the Logdog host to use for logging from the created tasks.
   string logdog_host = 3;
 
-  // AdminTaskUser is the name of the service account to use for admin
+  // AdminTaskServiceAccount is the name of the service account to use for admin
   // tasks.
-  string admin_task_user = 4;
+  string admin_task_service_account = 4;
 }
 
 // Cron contains the configuration data specific to cron jobs on this app.
