@@ -12,7 +12,7 @@ To set up project development:
 1. Clone this repo with `git clone`.
 2. Install dependencies with `npm run bootstrap`.
 3. Run tests with `npm test`.
-4. Run demos with `npm start`. Each component has a separate demo URL, e.g. http://localhost:8080/demos/chops-header.html
+4. Run demos with `npm start`. The demos will be at http://localhost:8080/.
 
 ### Publishing packages
 

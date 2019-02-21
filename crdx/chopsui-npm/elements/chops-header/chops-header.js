@@ -97,12 +97,11 @@ export class ChopsHeader extends LitElement {
       <div class="header-section">
         <slot name="before-header"></slot>
         <div id="headerTitle">
-          ${this.logo}
-          <div ?hidden=${!this.logoSrc}>
+          ${this.logoSrc ? html`
             <a href="/">
               <img src=${this.logoSrc} alt="${this.appTitle} Logo" title="${this.appTitle} Logo">
             </a>
-          </div>
+          ` : ''}
           <span id="headerTitleText">
             <a id="headerTitleTextMain" href="/">
               ${this.appTitle}

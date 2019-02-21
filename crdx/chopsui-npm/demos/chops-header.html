@@ -1,28 +1,20 @@
 <!doctype html>
-<html>
-<head>
-  <title>chops-header demo</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="../node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
-  <script type="module" src="../elements/chops-header/chops-header.js"></script>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-    }
-  </style>
-</head>
-<body>
-  <chops-header appTitle="test">
-    <div slot="logo">
-      Hello
-    </div>
-    Main slot of the element. Searchbars and stuff go here.
-    <div slot="icons">
-    </div>
-    <div slot="login">
-      Login
-    </div>
-  </chops-header>
-</body>
-</html>
+<title>chops-header demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+<script type="module" src="/elements/chops-header.js"></script>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+  }
+</style>
+<chops-header appTitle="App Title" logoSrc="logo.png">
+  <div slot="before-header">
+    This is where the hamburger menu goes.
+  </div>
+  <div slot="subheader">
+    Subheader
+  </div>
+  Main slot of the element. Searchbars and stuff go here.
+</chops-header>
