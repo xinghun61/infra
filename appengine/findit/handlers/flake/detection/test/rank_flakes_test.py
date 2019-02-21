@@ -11,6 +11,7 @@ from handlers.flake.detection import rank_flakes
 from libs import time_util
 from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
+from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
@@ -170,14 +171,16 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1), ('ci failed step', 10)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)],
+            'filter_names':
+                SUPPORTED_TAGS
         },
                    default=str), response.body)
 
   @mock.patch.object(Flake, 'NormalizeTestName', return_value='suite.test1')
   def testSearchRedirectOldFlake(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?flake_filter=suite.test1',
+        '/ranked-flakes?flake_filter=test::suite.test1',
         params={
             'format': 'json',
         },
@@ -192,7 +195,7 @@ class RankFlakesTest(WaterfallTestCase):
   @mock.patch.object(Flake, 'NormalizeTestName', return_value='suite.test2')
   def testSearchRedirect(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?flake_filter=test_name',
+        '/ranked-flakes?flake_filter=test::test_name',
         params={
             'format': 'json',
         },
@@ -235,7 +238,9 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1), ('ci failed step', 10)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)],
+            'filter_names':
+                SUPPORTED_TAGS
         },
                    default=str), response.body)
 
@@ -271,7 +276,9 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1), ('ci failed step', 10)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)],
+            'filter_names':
+                SUPPORTED_TAGS
         },
                    default=str), response.body)
 
@@ -308,7 +315,9 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1), ('ci failed step', 10)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)],
+            'filter_names':
+                SUPPORTED_TAGS
         },
                    default=str), response.body)
 
@@ -344,6 +353,8 @@ class RankFlakesTest(WaterfallTestCase):
                 None,
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
-                              ('cq hidden flake', 1), ('ci failed step', 10)]
+                              ('cq hidden flake', 1), ('ci failed step', 10)],
+            'filter_names':
+                SUPPORTED_TAGS
         },
                    default=str), response.body)

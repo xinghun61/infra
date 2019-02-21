@@ -1,7 +1,9 @@
 <link rel="import" href="/bower_components/iron-form/iron-form.html">
-<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-tabs/paper-tabs.html">
 <link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/ui/elements/flake_detection/flake-filter.html">
 <link rel="import" href="/ui/elements/flake_detection/rank-flake-item.html">
 
@@ -28,13 +30,6 @@
         background-color: #FFF;
       }
 
-      .table-scroll {
-        max-height: calc(100vh - 270px);
-        overflow-y: auto;
-        float: left;
-        width: 100vw;
-      }
-
       rank-flake-item {
         display: table-row;
       }
@@ -56,9 +51,9 @@
       }
 
       paper-button {
-          color: #fff;
-          background: #4285F4;
-          margin: 20px;
+        color: #fff;
+        background: #4285F4;
+        margin: 20px;
       }
 
       #form-div #form-buttons{
@@ -90,6 +85,24 @@
         border-bottom:1px solid #9AA0A6;
         cursor: pointer;
       }
+
+      #tabs-container {
+        background-color: #1F78B4;
+        width: 500px;
+        height: 50px;
+      }
+
+      #display-tabs, #clear-button {
+        background-color: #FFF;
+        color: #4285F4;
+      }
+
+      paper-tab.iron-selected {
+        color: #FFF;
+        background-color: #4285F4;
+        font-size: 18px;
+      }
+
     </style>
     <div id="form-div">
         <form id="flake-form" is="iron-form" method="get" action="/ranked-flakes">
@@ -100,20 +113,50 @@
           <input type="text" name="bug_id" id="bug_id" class="hidden" value="{{bug_id}}" disabled$="{{_isValueEmpty(bug_id)}}">
           <input type="text" name="monorail_project" id="monorail_project" class="hidden" value="{{monorail_project}}" disabled$="{{_isValueEmpty(monorail_project)}}">
           <input type="text" name="flake_filter" id="flake_filter" class="hidden" value="{{ flake_filter }}" disabled$="{{_isValueEmpty(flake_filter)}}">
-          <div id="filter-group">
-            <template is="dom-repeat" items="{{_getFilterList(flake_filter)}}" as="filter">
+
+          <div id="tabs-container">
+            <paper-tabs id="display-tabs" selected="{{selected}}">
+              <paper-tab>Search By Test</paper-tab>
+              <paper-tab>Filter By Tags</paper-tab>
+            </paper-tabs>
+          </div>
+           <iron-pages selected="{{selected}}">
+             <div>
+               <flake-filter
+                id="test-filter"
+                filter_type="test"
+                index=0
+                filter={{_getTestFilter()}}>
+               </flake-filter>
+             </div>
+             <div id="filter-group">
+               <br>
+               <div id="filter-message">
+                 <a on-tap="_openMessageDialog">* Press '?' for search options</a>
+               </div>
+            <template is="dom-if" if="{{_hasTagFilters()}}">
+              <template is="dom-repeat" items="{{_getTagFilterList()}}" as="filter">
+                <flake-filter
+                  id="flake-filter-{{index}}"
+                  filter_type="tags"
+                  index={{index}}
+                  filter={{filter}}
+                  filter_names={{filter_names}}></flake-filter>
+              </template>
+            </template>
+            <template is="dom-if" if="{{!_hasTagFilters()}}">
               <flake-filter
-                id="flake-filter-{{index}}"
-                index={{index}}
-                filter={{filter}}></flake-filter>
+                id="flake-filter-0"
+                filter_type="tags"
+                index=0
+                filter=''
+                filter_names={{filter_names}}></flake-filter>
             </template>
           </div>
+           </iron-pages>
           <div id="form-buttons">
-            <paper-button on-tap="_toggleFilter">{{_getButtonText()}}</paper-button>
-            <paper-button id="submit-button" class$="{{_getSubmitButtonClass()}}" on-tap="_submitForm">apply filters</paper-button>
-          </div>
-          <div id="filter-message">
-            * Press '?' for search options
+            <paper-button id="clear-button" on-tap="_clearForm" raised>clear filters</paper-button>
+            <paper-button id="submit-button" on-tap="_submitForm" raised>apply filters</paper-button>
           </div>
         </form>
     </div>
@@ -123,29 +166,27 @@
       <paper-button class$="next {{_getDisabledClass(cursor)}}" disabled$="{{_isValueEmpty(cursor)}}" on-tap="_submitFormWithCursor">Next</paper-button>
     </div>
     <br>
-    <div class="table-scroll">
-      <table width="95%">
-        <tr>
-          <th class="group-header flake-header" width="65%" colspan="3">Flake</th>
-          <th class="group-header bug-header" width="35%" colspan="3">Bug</th>
-        </tr>
-        <tr>
-          <th class="flake-header" width="10%">Score
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Flake Score = Sum(# of impacted CLs * Weight).</paper-tooltip></th>
-          <th class="flake-header" width="40%">Test Name
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Name of a flaky test, or a group of parameterized tests.</paper-tooltip></th>
-          <th class="flake-header" width="15%">Last Occurred
-          <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Time since last occurrence.</paper-tooltip>
-          </th>
-          <th class="bug-header" width="10%">Id</th>
-          <th class="bug-header" width="10%">Status</th>
-          <th class="bug-header" width="15%">Last Updated</th>
-        </tr>
-        <template is="dom-repeat" items="{{flakes}}" as="flake">
-          <rank-flake-item flake={{flake}} weights={{weights}}></rank-flake-item>
-        </template>
-      </table>
-    </div>
+    <table width="95%">
+      <tr>
+        <th class="group-header flake-header" width="65%" colspan="3">Flake</th>
+        <th class="group-header bug-header" width="35%" colspan="3">Bug</th>
+      </tr>
+      <tr>
+        <th class="flake-header" width="10%">Score
+        <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Flake Score = Sum(# of impacted CLs * Weight).</paper-tooltip></th>
+        <th class="flake-header" width="40%">Test Name
+        <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Name of a flaky test, or a group of parameterized tests.</paper-tooltip></th>
+        <th class="flake-header" width="15%">Last Occurred
+        <paper-tooltip position="top" offset="0" fit-to-visible-bounds="true">Time since last occurrence.</paper-tooltip>
+        </th>
+        <th class="bug-header" width="10%">Id</th>
+        <th class="bug-header" width="10%">Status</th>
+        <th class="bug-header" width="15%">Last Updated</th>
+      </tr>
+      <template is="dom-repeat" items="{{flakes}}" as="flake">
+        <rank-flake-item flake={{flake}} weights={{weights}}></rank-flake-item>
+      </template>
+    </table>
   </template>
   <script>
     (function () {
@@ -191,17 +232,67 @@
             type: String,
             value: ""
           },
+          filter_names: {
+            type: Array
+          },
+          selected: {
+            type: Number,
+          }
+        },
+
+        ready: function() {
+          this.selected = this._getFilterTabSelected();
+        },
+
+        _getFilterTabSelected: function () {
+          if (this._hasTagFilters()) {
+            // There are tag filters.
+            return 1;
+          }
+          return 0;
         },
 
         _hasFilter: function () {
-          return this.flake_filter != "";
+          return Boolean(this.flake_filter);
         },
 
-        _getFilterList: function (flake_filter) {
-          if (this._hasFilter()) {
-            return flake_filter.split("@");
+        _getFilterList: function () {
+          if (this._hasFilter() && this.flake_filter.indexOf("::") > 0 ) {
+            return this.flake_filter.split("@");
           }
           return [];
+        },
+
+        _getTestFilter: function () {
+          let filters = this._getFilterList();
+          for (let f of filters) {
+            let x = f.indexOf("test::");
+            if (f.indexOf("test::") >= 0) {
+              return f;
+            }
+          }
+          return '';
+        },
+
+        _hasTestFilter: function () {
+          if (this._getTestFilter() != '') {
+            return true;
+          }
+          return false;
+        },
+
+        _getTagFilterList: function () {
+          if (! this._hasTestFilter()) {
+            return this._getFilterList();
+          }
+          return [];
+        },
+
+        _hasTagFilters: function () {
+          if (this._getTagFilterList().length != 0) {
+            return true;
+          }
+          return false;
         },
 
         _isValueEmpty: function (value) {
@@ -213,62 +304,16 @@
           return "";
         },
 
-        _getFilterInputElements: function () {
-          let shadowRoot = this.shadowRoot;
-          if (shadowRoot) {
-            let filter_group = shadowRoot.querySelector('#filter-group');
-            return filter_group.querySelectorAll('flake-filter');
-          }
-          return null;
-        },
-
-        _haveFilterInputElements: function() {
-          let filters = this._getFilterInputElements();
-          return filters != null && filters.length > 0;
-        },
-
-        _getButtonText: function () {
-          if (this._hasFilter() || this._haveFilterInputElements()) {
-            return 'clear filters';}
-          return 'filter flakes';
-        },
-
-        _getSubmitButtonClass: function () {
-          if (! this._hasFilter()) return "hidden";
-          return "";
-        },
-
-        _addFilterInputElement: function(e, index) {
-          let filter_group = this.shadowRoot.querySelector('#filter-group');
-          let newFilter = document.createElement('flake-filter');
-          newFilter.id = 'flake-filter-' + index;
-          newFilter.index = index;
-          filter_group.appendChild(newFilter);
-        },
-
-        _removeFilterInputElements: function(e) {
-          let filter_group = this.shadowRoot.querySelector('#filter-group');
-          let filters = this._getFilterInputElements();
-          for (let filter of filters) {
-              filter_group.removeChild(filter);
-          }
-        },
-
         // Event handlers.
-        _toggleFilter: function (e) {
-          let toggleButton = Polymer.dom(e).localTarget;
-          let form = toggleButton.parentElement.parentElement;
-          let submitButton = this.shadowRoot.querySelector('#submit-button');
-          if (this._haveFilterInputElements()) {
-            submitButton.classList.add('hidden');
-            this._removeFilterInputElements(e);
-            this.flake_filter = "";
-            form.submit();
-          } else {
-            submitButton.classList.remove('hidden');
-            this._addFilterInputElement(e, 0);
-            toggleButton.textContent = 'clear filters';
-          }
+        _openMessageDialog: function (e) {
+          displayMessage(600);
+        },
+
+        _clearForm: function (e) {
+          let clearButton = this.shadowRoot.querySelector('#clear-button');
+          let form = clearButton.parentElement.parentElement;
+          this.flake_filter = "";
+          form.submit();
         },
 
         _submitFormWithCursor: function(e) {
@@ -287,15 +332,29 @@
         _submitForm: function (e) {
           let form = this.shadowRoot.querySelector('#flake-form');
 
+          // Filter by a specific test.
+          if (this.selected == 0) {
+            let test_filter = this.shadowRoot.querySelector('#test-filter');
+            let filter_content = test_filter.filter;
+            if (filter_content && filter_content.endsWith('::')) {
+               // Incomplete input, ignore.
+               filter_content = '';
+             }
+            this.flake_filter = filter_content;
+            form.submit();
+            return;
+          }
+
+          // Filter by tag(s).
           let filter_group = this.shadowRoot.querySelector('#filter-group');
           let old_filter = this.flake_filter;
-          this.flake_filter = "";
+          this.flake_filter = '';
           for (let filter of filter_group.querySelectorAll('flake-filter')) {
              let filter_content = filter.filter;
-             if (filter_content && filter_content.indexOf("::") < 0) {
-               // Treats this as a filter for a specific test.
-               this.flake_filter = filter_content;
-               break;
+
+             if (filter_content && filter_content.endsWith('::')) {
+               // Incomplete input, ignore.
+               continue;
              }
 
              // Concatenates filters.
@@ -304,9 +363,6 @@
              } else if (filter_content) {
                this.flake_filter += '@' + filter_content;}
           }
-          // Prevents duplicate filter inputs.
-          if (old_filter == "") {
-            this._removeFilterInputElements(e);}
           form.submit();
         },
       });

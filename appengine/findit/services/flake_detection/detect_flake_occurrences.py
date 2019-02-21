@@ -55,22 +55,24 @@ _COMPONENT_MAPPING_URL = ('https://storage.googleapis.com/chromium-owners/'
 
 # The tags used to filter flakes.
 # TODO(crbug.com/907688): find a way to keep the list updated.
+# TODO: Collect user feedback on frequently used tags and order tags
+# accordingly.
 SUPPORTED_TAGS = (
+    'binary',
+    'bucket',
+    'builder',
+    'component',
+    'directory',
+    'flake',
     'gerrit_project',
     'luci_project',
-    'bucket',
     'master',
-    'builder',
-    'binary',
-    'test_type',
-    'step',
-    'flake',
-    'suite',
-    'watchlist',
-    'directory',
-    'component',
     'parent_component',
     'source',
+    'step',
+    'suite',
+    'test_type',
+    'watchlist',
 )
 
 # Runs query for cq hidden flakes every 2 hours.

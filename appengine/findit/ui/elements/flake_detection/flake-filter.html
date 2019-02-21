@@ -1,5 +1,10 @@
 <link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/neon-animation/web-animations.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/paper-item/paper-item.html">
+<link rel="import" href="/bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="/bower_components/polymer/polymer.html">
 
@@ -7,17 +12,70 @@
 <dom-module id="flake-filter">
   <template>
     <style>
+      paper-input {
+        width: 300px;
+      }
+
+      paper-dropdown-menu {
+        padding-right: 20px;
+      }
+
+      .side-by-side {
+        float: left;
+      }
+
+      /* Clear floats after the columns */
+      section:after {
+        content: "";
+        display: table;
+        clear: both;
+      }
+
+       paper-button[disabled] {
+        background: none;
+      }
+
+      paper-dropdown-menu[disabled] {
+        --paper-input-container-disabled: {
+          opacity: 1;
+        }
+      }
 
     </style>
-    <div class="filter-div" id="filter-div-{{index}}">
-      <input type="text" size="100" name="flake-filter" id="filter-text-{{index}}" value="{{filter}}" on-change="_changeFilter">
-      <paper-button noink id="remove-button-{{index}}" on-tap="_removeFilterInput">
-        <iron-icon icon="remove-circle-outline"></iron-icon>
-      </paper-button>
-      <paper-button noink id="add-button-{{index}}" on-tap="_addEmptyFilterInput">
-        <iron-icon icon="add-circle-outline"></iron-icon>
-      </paper-button>
-    </div>
+    <section id="filter-section-{{index}}">
+      <paper-dropdown-menu noink class="side-by-side" name="filter-name" label="Filter Name" id="filter-name-dropdown-{{index}}"
+                           on-iron-select="_onFilterNameSelected" required disabled$="{{_isTestFilter()}}">
+        <paper-listbox slot="dropdown-content" class="dropdown-content" attr-for-selected="value" selected$="{{filter_name}}">
+          <template is="dom-repeat" items="{{filter_names}}" as="filter_name">
+            <paper-item value={{filter_name}}>{{filter_name}}</paper-item>
+          </template>
+        </paper-listbox>
+      </paper-dropdown-menu>
+
+      <paper-dropdown-menu class="side-by-side" noink name="filter-flag"
+                           id="filter-flag-dropdown-{{index}}" on-iron-select="_changeFilter" required
+                            disabled$="{{_isFirstFilter()}}">
+        <paper-listbox slot="dropdown-content" class="dropdown-content" attr-for-selected="value" selected$="{{filter_flag}}">
+          <paper-item value="==">==</paper-item>
+            <paper-item value="!=">!=</paper-item>
+        </paper-listbox>
+      </paper-dropdown-menu>
+
+      <paper-input class="side-by-side" name="filter-value" id="filter-value-{{index}}" label="Filter Value" value={{filter_value}}
+                   on-change="_changeFilter" on-blur="_validateFilterValue" required></paper-input>
+
+      <!--Add button is placed next to the first tag filter; remove button are placed next to every tag filter except the first one.-->
+      <template is="dom-if" if="{{!_isFirstFilter()}}">
+        <paper-button noink class$="side-by-side" id="remove-button-{{index}}" on-tap="_removeFilterInput">
+          <iron-icon icon="remove-circle-outline"></iron-icon>
+        </paper-button>
+      </template>
+      <template is="dom-if" if="{{_canAddFilter()}}">
+        <paper-button noink class$="side-by-side" id="add-button-{{index}}" on-tap="_addEmptyFilterInput">
+          <iron-icon icon="add-circle-outline"></iron-icon>
+        </paper-button>
+      </template>
+    </section>
   </template>
   <script>
     (function () {
@@ -26,12 +84,85 @@
       Polymer({
         is: "flake-filter",
         properties: {
+          filter_type: {
+            // Type of the filter: test or tags.
+            type: String
+          },
           index: {
             type: Number
           },
+          // Existing filter, such as 'builder::linux_rel'.
           filter: {
-            type: String
+            type: String,
+            value: ''
           },
+          // Supported tags listed in
+          // services/flake_detection/detect_flake_occurrences.SUPPORTED_TAGS.
+          filter_names: {
+            type: Array,
+            value: ['test']
+          },
+          // A list of split filter, for example:
+          // for a positive filter 'builder::linux_rel': ['builder', '==', 'linux_rel']
+          // for a negative filter '-builder::linux_rel': ['builder', '!=', 'linux_rel']
+          // for a test filter 'test::t': ['test', '==', 't']
+          filter_parts: {
+            type: Array,
+            computed: '_getFilterParts()'
+          },
+          // Filter name part in the existing filter, like 'builder'.
+          filter_name: {
+            type: String,
+            computed: '_getCurrentFilterName()'
+          },
+          // Flag part in the existing filter indicating if the filter is positive
+          // or negative, like '+'.
+          filter_flag: {
+            type: String,
+            computed: '_getCurrentFilterFlag()'
+          },
+          // Filter value part in the existing filter, like 'linux_rel'.
+          filter_value: {
+            type: String,
+            computed: '_getCurrentFilterValue()'
+          },
+        },
+
+        ready: function() {
+          let filter_section = this._findFilterSection();
+          let filter_value_input = filter_section.querySelector('#filter-value-'+this.index);
+          filter_value_input.focus();
+        },
+
+        _getFilterParts: function () {
+          let parts = this.filter.split("::");
+          if (parts.length == 2) {
+            let flag = '==';
+            if (this.filter.startsWith('-')) {
+              // Negative filter.
+              flag = '!=';
+              parts[0] = parts[0].slice(1);
+            }
+            return [parts[0], flag, parts[1]];
+          }
+
+          if (this.filter_type == 'test') {
+            // Search a specific test.
+            return ['test', '==', ''];
+          }
+          return ['', '==', ''];
+        },
+
+        _getCurrentFilterName: function () {
+          return this.filter_parts[0];
+        },
+
+        _getCurrentFilterFlag: function () {
+          return this.filter_parts[1];
+        },
+
+        _getCurrentFilterValue: function () {
+          return this.filter_parts[2];
         },
 
         _removeFilterInput: function(e) {
@@ -47,12 +178,69 @@
           let newFilter = document.createElement('flake-filter');
           newFilter.index = newIndex;
           newFilter.id = 'flake-filter-' + newIndex;
+          newFilter.filter_names = this.filter_names;
           filterGroup.appendChild(newFilter);
         },
 
-        _changeFilter: function (e) {
-          this.filter = Polymer.dom(e).localTarget.value;
+        _findFilterSection: function () {
+          let filterGroup = this.parentNode;
+          let filterId = '#flake-filter-' + this.index;
+          let filter = filterGroup.querySelector(filterId);
+          return Polymer.dom(this.root).querySelector('#filter-section-'+this.index);
         },
+
+        _isFirstFilter: function () {
+          if (this.index == 0) {
+            return true;
+          }
+          return false;
+        },
+
+        _isTestFilter: function () {
+          return this.filter_type == 'test';
+        },
+
+        _canAddFilter: function () {
+          if (this._isTestFilter()) {
+            return false;
+          }
+          if (this._isFirstFilter()) {
+            return true;
+          }
+          return false;
+        },
+
+        _validateFilterValue: function (e) {
+          let filter_section = this._findFilterSection();
+          let filter_value_input = filter_section.querySelector('#filter-value-'+this.index)
+          let filter_value = filter_value_input.value;
+          filter_value_input.invalid = !filter_value;
+        },
+
+        _changeFilter: function (e) {
+          let filter_section = this._findFilterSection();
+          let filter_name = filter_section.querySelector('#filter-name-dropdown-'+this.index).value;
+          let f = filter_section.querySelector('#filter-flag-dropdown-'+this.index);
+          let filter_flag = filter_section.querySelector('#filter-flag-dropdown-'+this.index).value;
+          let filter_value = filter_section.querySelector('#filter-value-'+this.index).value;
+
+          let tmpFilter = '';
+          if (filter_flag == '!=') {
+            tmpFilter = '-';
+          }
+
+          tmpFilter += filter_name + '::' + filter_value;
+          this.filter = tmpFilter;
+        },
+
+        _onFilterNameSelected: function (e) {
+          this._changeFilter();
+
+          // Also enable/disable filter-flag-dropdown based on filter_name.
+          let filter_section = this._findFilterSection();
+          let filter_name = filter_section.querySelector('#filter-name-dropdown-'+this.index).value;
+          let flag_dropdown = filter_section.querySelector('#filter-flag-dropdown-'+this.index);
+        }
       });
     })();
   </script>

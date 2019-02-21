@@ -24,6 +24,7 @@ from services.flake_failure.flake_bug_util import (
 from services.flake_issue_util import GetFlakeIssue
 
 DEFAULT_PAGE_SIZE = 100
+_TEST_FILTER_NAME = 'test'
 
 
 def _GetOccurrenceInformation(occurrence):
@@ -312,14 +313,7 @@ def GetFlakesByFilter(flake_filter, luci_project,
   logging.info('Searching filter: %s', flake_filter)
 
   flakes = []
-  grouping_search = False
   error_message = None
-
-  if TAG_DELIMITER not in flake_filter:
-    # Search for a specific test.
-    flakes = Flake.query(Flake.normalized_test_name == Flake.NormalizeTestName(
-        flake_filter)).filter(Flake.luci_project == luci_project).fetch()
-    return flakes, grouping_search, error_message
 
   grouping_search = True
   filters = [f.strip() for f in flake_filter.split('@') if f.strip()]
@@ -335,6 +329,14 @@ def GetFlakesByFilter(flake_filter, luci_project,
     if len(parts) != 2 or not parts[1]:
       invalid_filters.append(f)
       continue
+
+    if parts[0] == _TEST_FILTER_NAME:
+      # Search for a specific test.
+      grouping_search = False
+      flakes = Flake.query(
+        Flake.normalized_test_name == Flake.NormalizeTestName(
+          parts[1])).filter(Flake.luci_project == luci_project).fetch()
+      return flakes, grouping_search, error_message
 
     negative = False
     if parts[0][0] == '-':

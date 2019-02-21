@@ -12,6 +12,7 @@ from model.flake.flake import Flake
 from model.flake.flake_issue import FlakeIssue
 from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from model.flake.flake_type import FLAKE_TYPE_WEIGHT
+from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
 
 _DEFAULT_LUCI_PROJECT = 'chromium'
 _DEFAULT_MONORAIL_PROJECT = 'chromium'
@@ -140,5 +141,7 @@ class RankFlakes(BaseHandler):
         'flake_weights': [[
             FLAKE_TYPE_DESCRIPTIONS[flake_type], FLAKE_TYPE_WEIGHT[flake_type]
         ] for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)],
+        'filter_names':
+            SUPPORTED_TAGS
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}
