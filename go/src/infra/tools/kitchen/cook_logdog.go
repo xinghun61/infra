@@ -107,6 +107,20 @@ func (c *cookRun) butlerOutput(ctx context.Context) (output.Output, error) {
 	return ocfg.Register(ctx)
 }
 
+func (c *cookRun) newButler(ctx context.Context, out output.Output, env environ.Env) (*butler.Butler, error) {
+	flags := c.CookFlags.LogDogFlags
+	prefix, _ := flags.AnnotationURL.Path.Split()
+	cfg := butler.Config{
+		Output:       out,
+		Project:      flags.AnnotationURL.Project,
+		Prefix:       prefix,
+		BufferLogs:   true,
+		MaxBufferAge: butler.DefaultMaxBufferAge,
+		GlobalTags:   c.globalTags(env),
+	}
+	return butler.New(ctx, cfg)
+}
+
 // runWithLogdogButler runs the supplied command through the a LogDog Butler
 // engine instance. This involves:
 //	- Configuring / setting up the Butler.
@@ -125,6 +139,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	defer wg.Wait()
 
 	flags := c.CookFlags.LogDogFlags
+	ncCtx := withNonCancel(ctx)
 
 	log.Infof(ctx, "Using LogDog URL: %s", &flags.AnnotationURL)
 
@@ -164,23 +179,13 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	}
 	bsEnv.Augment(env)
 
-	// Create Butler config.
+	// Create a Butler.
 	butlerOutput, err := c.butlerOutput(ctx)
 	if err != nil {
 		return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
 	}
 	defer butlerOutput.Close()
-	butlerCfg := butler.Config{
-		Output:       butlerOutput,
-		Project:      flags.AnnotationURL.Project,
-		Prefix:       prefix,
-		BufferLogs:   true,
-		MaxBufferAge: butler.DefaultMaxBufferAge,
-		GlobalTags:   c.globalTags(env),
-	}
-
-	ncCtx := withNonCancel(ctx)
-	b, err := butler.New(ncCtx, butlerCfg)
+	b, err := c.newButler(ncCtx, butlerOutput, env)
 	if err != nil {
 		return 0, nil, errors.Annotate(err, "failed to create Butler instance").Err()
 	}
