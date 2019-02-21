@@ -84,6 +84,29 @@ func (c *cookRun) globalTags(env environ.Env) map[string]string {
 	return ret
 }
 
+// butlerOutput creates LogDog output destination.
+// The caller is responsible for closing it.
+func (c *cookRun) butlerOutput(ctx context.Context) (output.Output, error) {
+	flags := c.CookFlags.LogDogFlags
+	if flags.FilePath != "" {
+		// Debug: Use a file output.
+		ocfg := fileOut.Options{Path: flags.FilePath}
+		return ocfg.New(ctx), nil
+	}
+
+	prefix, _ := flags.AnnotationURL.Path.Split()
+	ocfg := out.Config{
+		Auth:           c.systemAuth.Authenticator(),
+		Host:           flags.AnnotationURL.Host,
+		Project:        flags.AnnotationURL.Project,
+		Prefix:         prefix,
+		SourceInfo:     []string{"Kitchen"},
+		RPCTimeout:     defaultRPCTimeout,
+		PublishContext: withNonCancel(ctx),
+	}
+	return ocfg.Register(ctx)
+}
+
 // runWithLogdogButler runs the supplied command through the a LogDog Butler
 // engine instance. This involves:
 //	- Configuring / setting up the Butler.
@@ -141,49 +164,14 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	}
 	bsEnv.Augment(env)
 
-	// Start our bootstrapped subprocess.
-	//
-	// We need to consume all of its streams prior to waiting for completion (see
-	// exec.Cmd).
-	//
-	// We'll set up our own cancellation function to help ensure that the process
-	// is properly terminated regardless of any encountered errors.
-	procCtx, procCancelFunc := context.WithCancel(ctx)
-	defer procCancelFunc()
-
-	proc, err := eng.commandRun(procCtx, filepath.Join(c.TempDir, "rr"), env)
+	// Create Butler config.
+	butlerOutput, err := c.butlerOutput(ctx)
 	if err != nil {
-		return 0, nil, errors.Annotate(err, "failed to build recipe command").Err()
+		return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
 	}
-
-	// Register and instantiate our LogDog Output.
-	var o output.Output
-	if flags.FilePath == "" {
-		ocfg := out.Config{
-			Auth:    c.systemAuth.Authenticator(),
-			Host:    flags.AnnotationURL.Host,
-			Project: flags.AnnotationURL.Project,
-			Prefix:  prefix,
-			SourceInfo: []string{
-				"Kitchen",
-			},
-			RPCTimeout:     defaultRPCTimeout,
-			PublishContext: withNonCancel(ctx),
-		}
-		if o, err = ocfg.Register(ctx); err != nil {
-			return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
-		}
-	} else {
-		// Debug: Use a file output.
-		ocfg := fileOut.Options{
-			Path: flags.FilePath,
-		}
-		o = ocfg.New(ctx)
-	}
-	defer o.Close()
-
+	defer butlerOutput.Close()
 	butlerCfg := butler.Config{
-		Output:       o,
+		Output:       butlerOutput,
 		Project:      flags.AnnotationURL.Project,
 		Prefix:       prefix,
 		BufferLogs:   true,
@@ -211,6 +199,21 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 
 	b.AddStreamServer(streamServer)
 	streamServer = nil
+
+	// Start our bootstrapped subprocess.
+	//
+	// We need to consume all of its streams prior to waiting for completion (see
+	// exec.Cmd).
+	//
+	// We'll set up our own cancellation function to help ensure that the process
+	// is properly terminated regardless of any encountered errors.
+	procCtx, procCancelFunc := context.WithCancel(ctx)
+	defer procCancelFunc()
+
+	proc, err := eng.commandRun(procCtx, filepath.Join(c.TempDir, "rr"), env)
+	if err != nil {
+		return 0, nil, errors.Annotate(err, "failed to build recipe command").Err()
+	}
 
 	// Build pipes for our STDOUT and STDERR streams.
 	stdout, err := proc.StdoutPipe()
