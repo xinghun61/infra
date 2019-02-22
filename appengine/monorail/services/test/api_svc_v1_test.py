@@ -741,7 +741,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     resp = self.call_api('issues_comments_insert', self.request).json_body
 
     self.assertEqual(
-        'Moved issue test-project:1 to now be issue test-project:2.',
+        'Moved issue test-project:1 to now be issue test-project2:2.',
         resp['content'])
 
   def testIssuesCommentsDelete_NoComment(self):

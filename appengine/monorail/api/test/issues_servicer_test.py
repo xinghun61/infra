@@ -2287,3 +2287,35 @@ class IssuesServicerTest(unittest.TestCase):
                'verdictspam',
                'view']),
         response)
+
+  @patch('services.tracker_fulltext.IndexIssues')
+  @patch('services.tracker_fulltext.UnindexIssues')
+  def testMoveIssue_Normal(self, _mock_index, _mock_unindex):
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988, committer_ids=[111L])
+
+    request = issues_pb2.MoveIssueRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        target_project_name='dest')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.MoveIssue, mc, request)
+
+    self.assertEqual(
+        issues_pb2.MoveIssueResponse(
+            moved_issue_ref=common_pb2.IssueRef(
+                project_name='dest',
+                local_id=1)),
+        response)
+
+    moved_issue = self.services.issue.GetIssueByLocalID(self.cnxn,
+        target_project.project_id, 1)
+    self.assertEqual(target_project.project_id, moved_issue.project_id)
+    self.assertEqual(issue.summary, moved_issue.summary)
+    self.assertEqual(moved_issue.reporter_id, 111L)

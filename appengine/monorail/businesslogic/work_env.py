@@ -55,6 +55,7 @@ from framework import framework_views
 from framework import permissions
 from search import frontendsearchpipeline
 from services import project_svc
+from services import tracker_fulltext
 from sitewide import sitewide_helpers
 from tracker import rerank_helpers
 from tracker import tracker_bizobj
@@ -100,7 +101,9 @@ class WorkEnv(object):
 
   def _AssertPermInProject(self, perm, project):
     """Make sure the user may use perm in the given project."""
-    permitted = self.mc.perms.CanUsePerm(
+    project_perms = permissions.GetPermissions(
+        self.mc.auth.user_pb, self.mc.auth.effective_ids, project)
+    permitted = project_perms.CanUsePerm(
         perm, self.mc.auth.effective_ids, project, [])
     if not permitted:
       raise permissions.PermissionException(
@@ -731,6 +734,49 @@ class WorkEnv(object):
             reporter_id)
 
     return new_issue, comment
+
+  def MoveIssue(self, issue, target_project):
+    """Move issue to the target_project.
+
+    The current user needs to have permission to delete the current issue, and
+    to edit issues on the target project.
+
+    Args:
+      issue: the issue PB.
+      target_project: the project PB where the issue should be moved to.
+    Returns:
+      The issue PB of the new issue on the target project.
+    """
+    self._AssertPermInIssue(issue, permissions.DELETE_ISSUE)
+    self._AssertPermInProject(permissions.EDIT_ISSUE, target_project)
+
+    if permissions.GetRestrictions(issue):
+      raise exceptions.InputException(
+          'Issues with Restrict labels are not allowed to be moved')
+
+    with self.mc.profiler.Phase('Moving Issue'):
+      tracker_fulltext.UnindexIssues([issue.issue_id])
+
+      # issue is modified by MoveIssues
+      old_text_ref = 'issue %s:%s' % (issue.project_name, issue.local_id)
+      moved_back_iids = self.services.issue.MoveIssues(
+          self.mc.cnxn, target_project, [issue], self.services.user)
+      new_text_ref = 'issue %s:%s' % (issue.project_name, issue.local_id)
+
+      if issue.issue_id in moved_back_iids:
+        content = 'Moved %s back to %s again.' % (old_text_ref, new_text_ref)
+      else:
+        content = 'Moved %s to now be %s.' % (old_text_ref, new_text_ref)
+      self.services.issue.CreateIssueComment(
+          self.mc.cnxn, issue, self.mc.auth.user_id, content,
+          amendments=[
+              tracker_bizobj.MakeProjectAmendment(target_project.project_name)])
+
+      tracker_fulltext.IndexIssues(
+          self.mc.cnxn, [issue], self.services.user, self.services.issue,
+          self.services.config)
+
+    return issue
 
   def _MergeLinkedAccounts(self, me_user_id):
     """Return a list of the given user ID and any linked accounts."""

@@ -40,6 +40,7 @@ service Issues {
   rpc FlagIssues (FlagIssuesRequest) returns (FlagIssuesResponse) {}
   rpc FlagComment (FlagCommentRequest) returns (FlagCommentResponse) {}
   rpc ListIssuePermissions (ListIssuePermissionsRequest) returns (ListIssuePermissionsResponse) {}
+  rpc MoveIssue (MoveIssueRequest) returns (MoveIssueResponse) {}
 }
 
 
@@ -393,4 +394,18 @@ message ListIssuePermissionsRequest {
 // Next available tag: 2
 message ListIssuePermissionsResponse {
   repeated string permissions = 1;
+}
+
+
+// Next available tag: 4
+message MoveIssueRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  string target_project_name = 3;
+}
+
+
+// Next available tag: 2
+message MoveIssueResponse {
+  IssueRef moved_issue_ref = 1;
 }

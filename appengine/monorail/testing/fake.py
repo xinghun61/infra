@@ -1234,6 +1234,9 @@ class IssueService(object):
     # IndexIssues().
     self.indexed_issue_iids = set()
 
+    # Set of issue IDs for issues that have been moved by calling MoveIssue().
+    self.moved_back_iids = set()
+
     # Test-only indication that the indexer would have been called
     # by the real DITPersist.
     self.indexer_called = False
@@ -1726,13 +1729,18 @@ class IssueService(object):
   def MoveIssues(self, cnxn, dest_project, issues, user_service):
     move_to = dest_project.project_id
     self.issues_by_project.setdefault(move_to, {})
+    moved_back_iids = set()
     for issue in issues:
+      if issue.issue_id in self.moved_back_iids:
+        moved_back_iids.add(issue.issue_id)
+      self.moved_back_iids.add(issue.issue_id)
       project_id = issue.project_id
       self.issues_by_project[project_id].pop(issue.local_id)
       issue.local_id = self.AllocateNextLocalID(cnxn, move_to)
       self.issues_by_project[move_to][issue.local_id] = issue
       issue.project_id = move_to
-    return []
+      issue.project_name = dest_project.project_name
+    return moved_back_iids
 
   def GetCommentsForIssues(self, _cnxn, issue_ids, content_only=False):
     comments_dict = {}

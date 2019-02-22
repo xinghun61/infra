@@ -655,6 +655,113 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([], fake_pasicn.mock_calls)
     self.assertEqual([], fake_pasibn.mock_calls)
 
+  @mock.patch('services.tracker_fulltext.IndexIssues')
+  @mock.patch('services.tracker_fulltext.UnindexIssues')
+  def testMoveIssue_Normal(self, mock_unindex, mock_index):
+    """We can move issues."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988, committer_ids=[111L])
+
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      moved_issue = we.MoveIssue(issue, target_project)
+
+    self.assertEqual(moved_issue.project_name, 'dest')
+    self.assertEqual(moved_issue.local_id, 1)
+
+    moved_issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', target_project.project_id, 1)
+    self.assertEqual(target_project.project_id, moved_issue.project_id)
+    self.assertEqual(issue.summary, moved_issue.summary)
+    self.assertEqual(moved_issue.reporter_id, 111L)
+
+    mock_unindex.assert_called_once_with([issue.issue_id])
+    mock_index.assert_called_once_with(
+       self.mr.cnxn, [issue], self.services.user, self.services.issue,
+       self.services.config)
+
+  @mock.patch('services.tracker_fulltext.IndexIssues')
+  @mock.patch('services.tracker_fulltext.UnindexIssues')
+  def testMoveIssue_MoveBackAgain(self, _mock_unindex, _mock_index):
+    """We can move issues backt and get the old id."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue.project_name = 'proj'
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988, owner_ids=[111L])
+
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      moved_issue = we.MoveIssue(issue, target_project)
+      moved_issue = we.MoveIssue(moved_issue, self.project)
+
+    self.assertEqual(moved_issue.project_name, 'proj')
+    self.assertEqual(moved_issue.local_id, 1)
+
+    moved_issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', self.project.project_id, 1)
+    self.assertEqual(self.project.project_id, moved_issue.project_id)
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    self.assertEqual(
+        comments[1].content, 'Moved issue proj:1 to now be issue dest:1.')
+    self.assertEqual(
+        comments[2].content, 'Moved issue dest:1 back to issue proj:1 again.')
+
+  def testMoveIssue_Anon(self):
+    """Anon can't move issues."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988)
+
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.MoveIssue(issue, target_project)
+
+  def testMoveIssue_CantDeleteIssue(self):
+    """We can't move issues if we don't have DeleteIssue perm on the issue."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988, committer_ids=[111L])
+
+    self.SignIn(user_id=111L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.MoveIssue(issue, target_project)
+
+  def testMoveIssue_CantEditIssueOnTargetProject(self):
+    """We can't move issues if we don't have EditIssue perm on target."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=989)
+
+    self.SignIn(user_id=111L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.MoveIssue(issue, target_project)
+
+  def testMoveIssue_CantRestrictions(self):
+    """We can't move issues if they have restriction labels."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue.labels = ['Restrict-Foo-Bar']
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=989, committer_ids=[111L])
+
+    self.SignIn(user_id=111L)
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.MoveIssue(issue, target_project)
+
   def testListIssues_Normal(self):
     """We can do a query that generates some results."""
     pass  # TODO(jrobbins): add unit test

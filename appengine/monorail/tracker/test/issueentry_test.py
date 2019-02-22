@@ -435,8 +435,8 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', project=self.project)
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
-    mr.perms = permissions.USER_PERMISSIONSET
     mr.template_name = 'rutabaga'
+    mr.auth.effective_ids = set([100])
     post_data = fake.PostData(
         template_name=['rutabaga'],
         summary=['fake summary'],
@@ -563,6 +563,7 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', project=self.project)
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    mr.auth.effective_ids = set([100])
 
     self.services.template.GetTemplateById.return_value = None
     self.services.template.GetProjectTemplates.return_value = [

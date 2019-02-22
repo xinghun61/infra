@@ -693,3 +693,18 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
 
     return issues_pb2.ListIssuePermissionsResponse(
         permissions=sorted(perms.perm_names))
+
+  @monorail_servicer.PRPCMethod
+  def MoveIssue(self, mc, request):
+    """Move an issue to another project."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      target_project = we.GetProjectByName(request.target_project_name)
+      moved_issue = we.MoveIssue(issue, target_project)
+
+    result = issues_pb2.MoveIssueResponse(
+        moved_issue_ref=converters.ConvertIssueRef(
+            (moved_issue.project_name, moved_issue.local_id)))
+    return result
