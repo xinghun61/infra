@@ -362,9 +362,6 @@ import:
   subpackages:
   - bmp
   - tiff
-- package: github.com/google/skylark
-  version: master
-  repo: https://chromium.googlesource.com/external/github.com/google/skylark.git
 - package: go.starlark.net
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
