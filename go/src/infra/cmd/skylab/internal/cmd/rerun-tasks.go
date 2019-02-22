@@ -72,7 +72,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 	originalToRerunID := make(map[string]string)
 	for i, original := range originalRequests {
 		originalID := originalIDs[i]
-		newRequest, err := createRerunRequest(original, siteEnv)
+		newRequest, err := createRerunRequest(original, originalID, siteEnv)
 		if err != nil {
 			return errors.Annotate(err, fmt.Sprintf("rerun task %s", originalID)).Err()
 		}
@@ -106,7 +106,7 @@ func getSwarmingRequestsForIds(ctx context.Context, IDs []string, s *swarming.Se
 }
 
 // createRerunRequest modifies a request to produce rerun a Skylab task.
-func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, siteEnv site.Environment) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID string, siteEnv site.Environment) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 	newURL := generateAnnotationURL(siteEnv)
 	for _, s := range original.TaskSlices {
 		cmd := s.Properties.Command
@@ -121,21 +121,22 @@ func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, siteEnv site
 		}
 	}
 
-	addedRerunTag := false
-	for i, t := range original.Tags {
-		if strings.HasPrefix(t, "log_location:") {
-			original.Tags[i] = "log_location:" + newURL
-		}
-		if strings.HasPrefix(t, "skylab-tool:") {
-			original.Tags[i] = "skylab-tool:rerun-tasks"
-			addedRerunTag = true
-		}
-	}
-	if !addedRerunTag {
-		original.Tags = append(original.Tags, "skylab-tool:rerun-tasks")
-	}
+	original.Tags = upsertTag(original.Tags, "log_location", newURL)
+	original.Tags = upsertTag(original.Tags, "skylab-tool", "rerun-tasks")
+	original.Tags = upsertTag(original.Tags, "retry_original_task_id", originalID)
 
 	return newTaskRequest(original.Name, original.Tags, original.TaskSlices, original.Priority), nil
+}
+
+func upsertTag(tags []string, key string, replacementValue string) []string {
+	replacementTag := key + ":" + replacementValue
+	for i, t := range tags {
+		if strings.HasPrefix(t, key) {
+			tags[i] = replacementTag
+			return tags
+		}
+	}
+	return append(tags, replacementTag)
 }
 
 func printIDMap(w io.Writer, originalToRerunID map[string]string, siteEnv site.Environment) error {
