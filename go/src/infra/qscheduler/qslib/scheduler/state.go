@@ -215,7 +215,7 @@ func (s *state) notifyTaskRunning(ctx context.Context, requestID RequestID, work
 	} else {
 		// The request didn't exist, but the notification might be more up to date
 		// that our information about the worker, in which case delete the worker.
-		s.deleteInconsistentWorkerIfOlder(workerID, t, e)
+		s.deleteInconsistentWorkerIfOlder(workerID, t, requestID, e)
 	}
 }
 
@@ -287,24 +287,30 @@ func (s *state) updateRequest(ctx context.Context, requestID RequestID, workerID
 		// worker than expected. Delete this worker and request.
 		allegedWorker := s.workers[allegedWorkerID]
 		e.AddEvent(eventCompleted(r, allegedWorker, s, t,
-			&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_INCONSISTENT_BOT_FOR_TASK}))
+			&metrics.TaskEvent_CompletedDetails{
+				Reason:   metrics.TaskEvent_CompletedDetails_INCONSISTENT_BOT_FOR_TASK,
+				OtherBot: string(workerID),
+			}))
 		s.deleteWorker(allegedWorkerID)
 	}
 
 	// If our information about workerID is older than this notification, then
 	// delete it and its request too.
-	s.deleteInconsistentWorkerIfOlder(workerID, t, e)
+	s.deleteInconsistentWorkerIfOlder(workerID, t, requestID, e)
 }
 
 // deleteInconsistentWorkerIfOlder deletes the worker with the given ID (along with any
 // request it was running) if its confirmed time and that of any
 // request it is running is older than t.
-func (s *state) deleteInconsistentWorkerIfOlder(workerID WorkerID, t time.Time, e EventSink) {
+func (s *state) deleteInconsistentWorkerIfOlder(workerID WorkerID, t time.Time, cause RequestID, e EventSink) {
 	if worker, ok := s.workers[workerID]; ok {
 		if !t.Before(worker.latestConfirmedTime()) {
 			if !worker.IsIdle() {
 				e.AddEvent(eventCompleted(worker.runningTask.request, worker, s, t,
-					&metrics.TaskEvent_CompletedDetails{Reason: metrics.TaskEvent_CompletedDetails_INCONSISTENT_TASK_FOR_BOT}))
+					&metrics.TaskEvent_CompletedDetails{
+						Reason:    metrics.TaskEvent_CompletedDetails_INCONSISTENT_TASK_FOR_BOT,
+						OtherTask: string(cause),
+					}))
 			}
 			s.deleteWorker(workerID)
 		}

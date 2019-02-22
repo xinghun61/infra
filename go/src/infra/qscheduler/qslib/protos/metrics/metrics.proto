@@ -168,7 +168,7 @@ message TaskEvent {
       RUNNING_TASK_ABSENT = 3;
 
       // The task was believed to be running on a bot, but the scheduler was
-      // notified that it was running on a different bot,so its state was
+      // notified that it was running on a different bot, so its state was
       // deleted.
       INCONSISTENT_BOT_FOR_TASK = 4;
 
@@ -179,6 +179,14 @@ message TaskEvent {
     }
 
     Reason reason = 1;
+
+    // If reason is INCONSISTENT_TASK_FOR_BOT, other_task specifies which task
+    // it was that notified itself on this bot.
+    string other_task = 2;
+
+    // If reason is INCONSISTENT_BOT_FOR_TASK, other_bot specifies which bot
+    // it was that was notified with this task.
+    string other_bot = 3;
   }
 
   oneof details {
