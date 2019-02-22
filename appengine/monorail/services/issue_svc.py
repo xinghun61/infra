@@ -464,6 +464,14 @@ class IssueService(object):
       'monorail/issue_svc/replication_lag_retries',
       'Counts times that loading comments from a replica failed',
       [])
+  issue_creations = ts_mon.CounterMetric(
+      'monorail/issue_svc/issue_creations',
+      'Counts times that issues were created',
+      [])
+  comment_creations = ts_mon.CounterMetric(
+      'monorail/issue_svc/comment_creations',
+      'Counts times that comments were created',
+      [])
 
   def __init__(self, project_service, config_service, cache_manager,
       chart_service):
@@ -711,6 +719,7 @@ class IssueService(object):
               av.approval_id)
 
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
+    self.issue_creations.increment()
     issue_id = self.InsertIssue(cnxn, issue)
     comment.issue_id = issue_id
     self.InsertComment(cnxn, comment)
@@ -2545,6 +2554,7 @@ class IssueService(object):
           issue.attachment_count + len(attachments) + len(kept_attachments))
       self.UpdateIssue(cnxn, issue, update_cols=['attachment_count'])
 
+    self.comment_creations.increment()
     self.InsertComment(cnxn, comment, commit=commit)
 
     return comment
