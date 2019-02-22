@@ -37,8 +37,6 @@ class IssueBulkEdit(servlet.Servlet):
 
   _PAGE_TEMPLATE = 'tracker/issue-bulk-edit-page.ezt'
   _MAIN_TAB_MODE = servlet.Servlet.MAIN_TAB_ISSUES
-  _CAPTCHA_ACTION_TYPES = [actionlimit.ISSUE_BULK_EDIT]
-
   _SECONDS_OVERHEAD = 4
   _SECONDS_PER_UPDATE = 0.12
   _SLOWNESS_THRESHOLD = 10
@@ -164,9 +162,6 @@ class IssueBulkEdit(servlet.Servlet):
       self.response.status = httplib.BAD_REQUEST  # xxx should raise except
       return
 
-    self.CountRateLimitedActions(
-        mr, {actionlimit.ISSUE_BULK_EDIT: len(mr.local_id_list)})
-
     # Check that the user has permission to add a comment, and to enter
     # metadata if they are trying to do that.
     if not self.CheckPerm(mr, permissions.ADD_ISSUE_COMMENT):
@@ -207,7 +202,6 @@ class IssueBulkEdit(servlet.Servlet):
 
     reporter_id = mr.auth.user_id
     logging.info('bulk edit request by %s', reporter_id)
-    self.CheckCaptcha(mr, post_data)
 
     if parsed.users.owner_id is None:
       mr.errors.owner = 'Invalid owner username'

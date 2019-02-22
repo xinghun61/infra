@@ -106,7 +106,7 @@ def monorail_api_method(
             auth_client_ids, auth_emails)
         mar = self.mar_factory(request, cnxn)
         self.ratelimiter.CheckStart(c_id, c_email, start_time)
-        self.increment_request_limit(mar, request, c_id, c_email)
+        self.increment_request_limit(request, c_id, c_email)
         ret = func(self, mar, *args, **kwargs)
       except exceptions.NoSuchUserException as e:
         approximate_http_status = 404
@@ -345,21 +345,10 @@ class MonorailApi(remote.Service):
       we.DeleteComment(issue, issue_comment, delete=delete)
     return api_pb2_v1.IssuesCommentsDeleteResponse()
 
-  def increment_request_limit(self, mar, _request, client_id, client_email):
+  def increment_request_limit(self, _request, client_id, client_email):
     """Check whether the requester has exceeded API quotas limit,
     and increment request count in DB and ts_mon.
     """
-    # soft_limit == hard_limit for api_request, so NeedCaptcha() either
-    # returns False if under limit, or raise ExcessiveActivityException.
-    # Don't count actions by whitelisted users, which helps reduce DB writes.
-    if (not mar.auth.user_pb.ignore_action_limits and
-        not actionlimit.NeedCaptcha(
-          mar.auth.user_pb, actionlimit.API_REQUEST, skip_lifetime_check=True)):
-      actionlimit.CountAction(
-          mar.auth.user_pb, actionlimit.API_REQUEST, delta=1)
-      self._services.user.UpdateUser(
-          mar.cnxn, mar.auth.user_id, mar.auth.user_pb)
-
     # Avoid value explosision and protect PII info
     if not framework_helpers.IsServiceAccount(client_email):
       client_email = 'user@email.com'

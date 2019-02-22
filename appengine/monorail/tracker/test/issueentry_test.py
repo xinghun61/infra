@@ -443,8 +443,6 @@ class IssueEntryTest(unittest.TestCase):
         comment=['fake comment'],
         status=['New'])
 
-    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
-    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
 
@@ -575,8 +573,6 @@ class IssueEntryTest(unittest.TestCase):
         comment=['fake comment'],
         status=['New'])
 
-    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
-    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
 

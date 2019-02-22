@@ -446,8 +446,6 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr.project = self.project
     mr.me_user_id = 111L
 
-    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
-    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
     self.mox.ReplayAll()
 
     # The form should be processed and redirect back to viewing the issue.
@@ -500,8 +498,6 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr.project = self.project
     mr.me_user_id = 111L
 
-    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
-    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
     self.mox.ReplayAll()
 
     # The form should be processed and redirect back to viewing the issue.

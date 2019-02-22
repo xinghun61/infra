@@ -36,11 +36,6 @@
   [include "../framework/project-access-part.ezt" "checksubmit"]
   <br>
 
-  [if-any show_captcha]
-    <div>Word verification</div>
-    <div>[include "../framework/captcha-field.ezt"]</div>
-  [end]
-  <br>
   <input type="submit" id="submit_btn" name="btn" value="Create project">
 </form>
 

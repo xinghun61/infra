@@ -40,8 +40,6 @@ class ProjectCreate(servlet.Servlet):
 
   _PAGE_TEMPLATE = 'sitewide/project-create-page.ezt'
 
-  _CAPTCHA_ACTION_TYPES = [actionlimit.PROJECT_CREATION]
-
   def AssertBasePermission(self, mr):
     """Assert that the user has the permissions needed to view this page."""
     super(ProjectCreate, self).AssertBasePermission(mr)
@@ -131,8 +129,6 @@ class ProjectCreate(servlet.Servlet):
         docs_url.startswith('http:') or docs_url.startswith('https:')):
       mr.errors.docs_url = 'Documentation link must start with http: or https:'
 
-    self.CheckCaptcha(mr, post_data)
-
     # These are not specified on via the ProjectCreate form,
     # the user must edit the project after creation to set them.
     committer_ids = []
@@ -173,8 +169,6 @@ class ProjectCreate(servlet.Servlet):
                 project_id, logo_gcs_id=logo_gcs_id,
                 logo_file_name=logo_file_name)
 
-          self.CountRateLimitedActions(
-              mr, {actionlimit.PROJECT_CREATION: 1})
         except exceptions.ProjectAlreadyExists:
           mr.errors.projectname = _MSG_PROJECT_NAME_NOT_AVAIL
 

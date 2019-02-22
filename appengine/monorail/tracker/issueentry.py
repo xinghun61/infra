@@ -41,7 +41,6 @@ class IssueEntry(servlet.Servlet):
 
   _PAGE_TEMPLATE = 'tracker/issue-entry-page.ezt'
   _MAIN_TAB_MODE = servlet.Servlet.MAIN_TAB_ISSUES
-  _CAPTCHA_ACTION_TYPES = [actionlimit.ISSUE_COMMENT]
 
   def AssertBasePermission(self, mr):
     """Check whether the user has any permission to visit this page.
@@ -274,7 +273,7 @@ class IssueEntry(servlet.Servlet):
     component_ids = tracker_helpers.LookupComponentIDs(
         parsed.components.paths, config, mr.errors)
 
-    self.CheckCaptcha(mr, post_data)
+    # TODO(jrobbins): consider captcha 3 score in API
 
     if not parsed.summary.strip() or parsed.summary == PLACEHOLDER_SUMMARY:
       mr.errors.summary = 'Summary is required'
@@ -347,10 +346,6 @@ class IssueEntry(servlet.Servlet):
 
         except tracker_helpers.OverAttachmentQuota:
           mr.errors.attachments = 'Project attachment quota exceeded.'
-
-      counts = {actionlimit.ISSUE_COMMENT: 1,
-                actionlimit.ISSUE_ATTACHMENT: len(parsed.attachments)}
-      self.CountRateLimitedActions(mr, counts)
 
     mr.template_name = parsed.template_name
     if mr.errors.AnyErrors():

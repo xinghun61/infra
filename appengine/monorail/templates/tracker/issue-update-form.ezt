@@ -209,14 +209,6 @@
 
       [end][# if page_perms.EditIssue]
 
-       [if-any show_captcha]
-        <tr><th class="vt" style="white-space:nowrap">Human Verification:</th>
-         <td colspan="2">
-          [include "../framework/captcha-field.ezt"]
-         </td>
-        </tr>
-       [end]
-
        [include "../framework/label-validation-row.ezt"]
       </table>
 
@@ -417,8 +409,7 @@ runOnLoad(function() {
 });
 </script>
 
-[# If the user can edit issue metadata, we need to do a bunch of JS setup for editing features.
-   Otherwise, if they can only enter comments, they still might need to retry a failed CAPTCHA. ]
+[# If the user can edit issue metadata, we need to do a bunch of JS setup for editing features.]
 
 [if-any page_perms.EditIssue page_perms.EditIssueStatus page_perms.EditIssueOwner page_perms.EditIssueCc]
 <script type="text/javascript" nonce="[nonce]">

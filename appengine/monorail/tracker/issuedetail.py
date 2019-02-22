@@ -56,7 +56,6 @@ class IssueDetail(issuepeek.IssuePeek):
   _PAGE_TEMPLATE = 'tracker/issue-detail-page.ezt'
   _MISSING_ISSUE_PAGE_TEMPLATE = 'tracker/issue-missing-page.ezt'
   _MAIN_TAB_MODE = issuepeek.IssuePeek.MAIN_TAB_ISSUES
-  _CAPTCHA_ACTION_TYPES = [actionlimit.ISSUE_COMMENT]
   _ALLOW_VIEWING_DELETED = True
 
   def __init__(self, request, response, **kwargs):
@@ -589,7 +588,7 @@ class IssueDetail(issuepeek.IssuePeek):
 
     page_generation_time = long(post_data['pagegen'])
     reporter_id = mr.auth.user_id
-    self.CheckCaptcha(mr, post_data)
+    # TODO(jrobbins): consider captcha 3 score in API
 
     error_msg = self._ValidateOwner(
         mr, post_data.get('owner', '').strip(), parsed.users.owner_id,
@@ -724,10 +723,6 @@ class IssueDetail(issuepeek.IssuePeek):
       # And, give feedback in the source issue if any part of the
       # merge was not allowed.  Maybe use AJAX to check as the
       # user types in the issue local ID.
-
-      counts = {actionlimit.ISSUE_COMMENT: 1,
-                actionlimit.ISSUE_ATTACHMENT: len(parsed.attachments)}
-      self.CountRateLimitedActions(mr, counts)
 
     copy_to_project = CheckCopyIssueRequest(
         self.services, mr, issue, post_data.get('more_actions') == 'copy',

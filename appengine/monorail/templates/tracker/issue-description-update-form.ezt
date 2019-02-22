@@ -49,8 +49,6 @@
   [else]
     <div style="color:#666">Issue attachment storage quota exceeded.</div>
   [end]
-  [# only project members can edit descriptions, and they are not subject to action limits
-     so no captcha is necessary]
 
   <div style="margin-top:0.5em;">
     <input type="submit" name="btn" value="Save changes" id="desc_submit_btn">

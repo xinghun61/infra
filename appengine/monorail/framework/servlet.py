@@ -43,7 +43,6 @@ from features import features_bizobj
 from features import hotlist_views
 from framework import actionlimit
 from framework import alerts
-from framework import captcha
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
@@ -148,8 +147,6 @@ class Servlet(webapp2.RequestHandler):
 
   _PAGE_TEMPLATE = None  # Normally overriden in subclasses.
   _ELIMINATE_BLANK_LINES = False
-
-  _CAPTCHA_ACTION_TYPES = []  # Override this in subclass to add captcha.
 
   _MISSING_PERMISSIONS_TEMPLATE = 'sitewide/403-page.ezt'
 
@@ -389,7 +386,7 @@ class Servlet(webapp2.RequestHandler):
 
     Args:
       _page_data: A dict of data for ezt rendering, containing base ezt
-      data, captcha data, page data, and debug data.
+      data, page data, and debug data.
 
     Returns:
       The template to be used for writing the http response.
@@ -458,7 +455,6 @@ class Servlet(webapp2.RequestHandler):
     with mr.profiler.Phase('common request data'):
       self._DoCommonRequestProcessing(self.request, mr)
       page_data = self.GatherBaseData(mr, nonce)
-      page_data.update(self.GatherCaptchaData(mr))
 
     with mr.profiler.Phase('page processing'):
       page_data.update(self.GatherPageData(mr))
@@ -788,18 +784,6 @@ class Servlet(webapp2.RequestHandler):
     else:
       return path + '.do'
 
-  def GatherCaptchaData(self, mr):
-    """If this page needs a captcha, return captcha info for use in EZT."""
-    if (mr.project and
-        framework_bizobj.UserIsInProject(mr.project, mr.auth.effective_ids)):
-      # Don't show users CAPTCHAs within their own projects.
-      return {'show_captcha': ezt.boolean(False)}
-
-    show_captcha = any(actionlimit.NeedCaptcha(mr.auth.user_pb, action_type)
-                       for action_type in self._CAPTCHA_ACTION_TYPES)
-    logging.info('show_captcha: %r', show_captcha)
-    return {'show_captcha': ezt.boolean(show_captcha)}
-
   def GatherPageData(self, mr):
     """Return a dict of page-specific ezt data."""
     raise MethodNotSupportedError()
@@ -857,53 +841,6 @@ class Servlet(webapp2.RequestHandler):
           'dbg': 'off',
           'debug': [('none', 'recorded')],
           }
-
-  def CheckCaptcha(self, mr, post_data):
-    """Check the provided CAPTCHA solution and add an error if it is wrong."""
-    if (mr.project and
-        framework_bizobj.UserIsInProject(mr.project, mr.auth.effective_ids)):
-      logging.info('Project member is exempt from CAPTCHA')
-      return  # Don't check a user's actions within their own projects.
-
-    if not any(actionlimit.NeedCaptcha(mr.auth.user_pb, action_type)
-               for action_type in self._CAPTCHA_ACTION_TYPES):
-      logging.info('No CAPTCHA was required')
-      return  # no captcha was needed.
-
-    remote_ip = mr.request.remote_addr
-    captcha_response = post_data.get('g-recaptcha-response')
-    correct, _msg = captcha.Verify(remote_ip, captcha_response)
-    if correct:
-      logging.info('CAPTCHA was solved')
-    else:
-      logging.info('BZzzz! Bad captcha solution.')
-      mr.errors.captcha = 'Captcha check failed.'
-
-  def CountRateLimitedActions(self, mr, action_counts):
-    """Count attempted actions against non-member's action limits.
-
-    Note that users can take any number of actions in their own projects.
-
-    Args:
-      mr: commonly used info parsed from the request.
-      action_counts: {action_type: delta, ... }
-        a dictionary mapping action type constants to the number of times
-        that action was performed during the current request (usually 1).
-    """
-    if (mr.project and
-        framework_bizobj.UserIsInProject(mr.project, mr.auth.effective_ids)):
-      # Don't count a user's actions within their own projects...
-      return
-
-    if mr.auth.user_pb.ignore_action_limits:
-      # Don't count actions by whitelisted users, which helps reduce DB writes.
-      return
-
-    for action_type in action_counts:
-      actionlimit.CountAction(
-          mr.auth.user_pb, action_type, delta=action_counts[action_type])
-
-    self.services.user.UpdateUser(mr.cnxn, mr.auth.user_id, mr.auth.user_pb)
 
   def PleaseCorrect(self, mr, **echo_data):
     """Show the same form again so that the user can correct their input."""
