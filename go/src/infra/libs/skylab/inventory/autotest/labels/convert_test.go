@@ -30,6 +30,7 @@ test_coverage_hints {
   chaos_dut: true
 }
 self_serve_pools: "poolval"
+reference_design: "reef"
 platform: "platformval"
 phase: 4
 peripherals: {
@@ -122,6 +123,7 @@ var fullLabels = []string{
 	"pool:poolval",
 	"power:powerval",
 	"recovery_test",
+	"reference_design:reef",
 	"servo",
 	"sparse_coverage_3",
 	"storage:storageval",

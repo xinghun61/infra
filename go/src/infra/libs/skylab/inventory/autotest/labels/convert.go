@@ -81,8 +81,9 @@ func newScheduableLabels() *inventory.SchedulableLabels {
 			Stylus:              new(bool),
 			Wificell:            new(bool),
 		},
-		Platform: new(string),
-		Phase:    new(inventory.SchedulableLabels_Phase),
+		Platform:        new(string),
+		Phase:           new(inventory.SchedulableLabels_Phase),
+		ReferenceDesign: new(string),
 		TestCoverageHints: &inventory.TestCoverageHints{
 			ChaosDut:        new(bool),
 			Chromesign:      new(bool),

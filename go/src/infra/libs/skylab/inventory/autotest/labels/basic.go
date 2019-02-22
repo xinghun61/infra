@@ -43,6 +43,9 @@ func basicConverter(ls *inventory.SchedulableLabels) []string {
 		lv := "phase:" + v.String()[plen:]
 		labels = append(labels, lv)
 	}
+	if v := ls.GetReferenceDesign(); v != "" {
+		labels = append(labels, "reference_design:"+v)
+	}
 	for _, v := range ls.GetVariant() {
 		lv := "variant:" + v
 		labels = append(labels, lv)
@@ -77,6 +80,8 @@ func basicReverter(ls *inventory.SchedulableLabels, labels []string) []string {
 			type t = inventory.SchedulableLabels_Phase
 			vals := inventory.SchedulableLabels_Phase_value
 			*ls.Phase = t(vals[vn])
+		case "reference_design":
+			*ls.ReferenceDesign = v
 		case "variant":
 			ls.Variant = append(ls.Variant, v)
 		default:

@@ -128,7 +128,7 @@ message Shard {
 //
 // Keep sorted by field name.
 //
-// NEXT TAG: 24
+// NEXT TAG: 25
 message SchedulableLabels {
   // Whether this device supports ARC execution environment.
   optional bool arc = 20;
@@ -225,6 +225,8 @@ message SchedulableLabels {
   // TODO(pprabhu) This should be an enum shared with stable_versions.proto
   // But there are 171 of them...
   optional string platform = 1;
+
+  optional string reference_design = 24;
 
   repeated string self_serve_pools = 4;
 
