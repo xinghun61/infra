@@ -1014,10 +1014,6 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
           'updated': '2018-12-07T17:52:45',
           'id': '234567',
       }))
-  @mock.patch.object(
-      FlakeDetectionGroupIssueGenerator,
-      'GetFirstCommentWhenBugJustCreated',
-      return_value='group link')
   @mock.patch.object(monorail_util, 'CreateBug', return_value=234567)
   @mock.patch.object(monorail_util, 'PostCommentOnMonorailBug')
   def testCreateIssueForAGroup(self, mock_first_comment, mock_create_bug, *_):

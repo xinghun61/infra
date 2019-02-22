@@ -785,8 +785,14 @@ def _CreateIssueForFlakeGroup(flake_group):
       '%s was created for flake_group: %s.',
       FlakeIssue.GetLinkForIssue(issue_generator.GetMonorailProject(),
                                  issue_id), flake_group.canonical_step_name)
-  for flake in flake_group.flakes:
-    _AssignIssueToFlake(issue_id, flake)
+
+  flake_issue = _AssignIssueToFlake(issue_id, flake_group.flakes[0])
+  for i in xrange(1, len(flake_group.flakes)):
+    flake = flake_group.flakes[i]
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+  issue_generator.SetFlakeIssue(flake_issue)
 
   monorail_util.PostCommentOnMonorailBug(
       issue_id, issue_generator,
@@ -920,6 +926,7 @@ def _AssignIssueToFlake(issue_id, flake):
   flake_issue = _GetOrCreateFlakeIssue(issue_id, monorail_project)
   flake.flake_issue_key = flake_issue.key
   flake.put()
+  return flake_issue
 
 
 def _GetIssueStatusesNeedingUpdating():
