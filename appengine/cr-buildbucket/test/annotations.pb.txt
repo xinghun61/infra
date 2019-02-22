@@ -98,7 +98,7 @@ substep: <
     name: "other links url"
     other_links: <
       label: "1"
-      url: "https://example.com/1"
+      url: "https://example.com/1(foo)"
     >
     other_links: <
       label: "2"

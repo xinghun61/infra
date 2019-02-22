@@ -80,7 +80,7 @@ steps: <
 steps: <
   name: "other links url"
   summary_markdown: <<END
-* [1](https://example.com/1)
+* [1](https://example.com/1\(foo\))
 * [2](https://example.com/2)
 END
   status: STARTED

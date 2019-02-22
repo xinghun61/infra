@@ -200,7 +200,9 @@ class StepParser(object):
             )
         )
       elif link.url:
-        lines.append('* [%s](%s)' % (link.label, link.url))
+        # Backslash escape all parens.
+        s = link.url.replace(r'(', r'\(').replace(r')', r'\)')
+        lines.append('* [%s](%s)' % (link.label, s))
       else:  # pragma: no cover
         # Experience shows that all link we have in practice are either
         # urls or logdog streams.
