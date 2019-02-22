@@ -187,8 +187,10 @@ type labelUpdater struct {
 // If adminServiceURL is empty, this method does nothing.
 func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) error {
 	if u.adminService == "" {
+		log.Printf("Skipping label update since no admin service was provided")
 		return nil
 	}
+	log.Printf("Calling admin service to update labels")
 	client, err := u.makeClient()
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
