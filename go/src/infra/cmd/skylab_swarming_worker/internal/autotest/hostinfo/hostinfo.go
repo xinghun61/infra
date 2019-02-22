@@ -29,12 +29,14 @@ const supportedSerializerVersion = 1
 // Unmarshal deserializes a HostInfo struct from a slice of bytes.
 func Unmarshal(blob []byte) (*HostInfo, error) {
 	var vhi versionedHostInfo
-	err := json.Unmarshal(blob, &vhi)
+	if err := json.Unmarshal(blob, &vhi); err != nil {
+		return nil, err
+	}
 	if vhi.SerializerVersion != supportedSerializerVersion {
 		return nil, fmt.Errorf("Can not unmarshal HostInfo with serializer version %d",
 			vhi.SerializerVersion)
 	}
-	return vhi.HostInfo, err
+	return vhi.HostInfo, nil
 }
 
 // Marshal serializes the HostInfo struct into a slice of bytes.
