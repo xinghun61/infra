@@ -34,9 +34,9 @@ type schedulerRun struct {
 	// as a result of newly assigned requests/workers.
 	requestsPerPriority [NumPriorities + 1]requestList
 
-	// jobsUntilThrottled is the number of additional requests that each account may run before reaching
+	// fanout tracks the number of additional requests that each fanout class may run before reaching
 	// its fanout limit and becoming throttled (at which point its other requests are demoted to FreeBucket).
-	jobsUntilThrottled map[AccountID]int
+	fanout *fanoutCounter
 
 	scheduler *Scheduler
 }
@@ -76,7 +76,7 @@ func (run *schedulerRun) Run(e EventSink) []*Assignment {
 // (from the given priority) was assigned to a worker.
 func (run *schedulerRun) assignRequestToWorker(w WorkerID, request requestNode, priority Priority) {
 	delete(run.idleWorkers, w)
-	run.jobsUntilThrottled[request.Value().AccountID]--
+	run.fanout.count(request.Value())
 	run.requestsPerPriority[priority].Remove(request.Element)
 }
 
@@ -86,30 +86,20 @@ func (s *Scheduler) newRun() *schedulerRun {
 	// that is the upper bound, and in normal workload (in which fleet is highly utilized) most
 	// scheduler passes will have only a few idle workers.
 	idleWorkers := make(map[WorkerID]*Worker, len(s.state.workers))
-	remainingBeforeThrottle := make(map[AccountID]int)
-	for aid, ac := range s.config.AccountConfigs {
-		if ac.MaxFanout == 0 {
-			remainingBeforeThrottle[AccountID(aid)] = math.MaxInt32
-		} else {
-			remainingBeforeThrottle[AccountID(aid)] = int(ac.MaxFanout)
-		}
-	}
+	fanoutCounter := newFanoutCounter(s.config)
 
 	for wid, w := range s.state.workers {
 		if w.IsIdle() {
 			idleWorkers[wid] = w
 		} else {
-			aid := w.runningTask.request.AccountID
-			if aid != "" {
-				remainingBeforeThrottle[aid]--
-			}
+			fanoutCounter.count(w.runningTask.request)
 		}
 	}
 
 	return &schedulerRun{
 		idleWorkers:         idleWorkers,
-		requestsPerPriority: s.prioritizeRequests(remainingBeforeThrottle),
-		jobsUntilThrottled:  remainingBeforeThrottle,
+		requestsPerPriority: s.prioritizeRequests(fanoutCounter),
+		fanout:              fanoutCounter,
 		scheduler:           s,
 	}
 }
@@ -190,7 +180,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events Eve
 		// select first non-throttled match
 		for _, match := range matches {
 			// Enforce fanout (except for Freebucket).
-			if run.jobsUntilThrottled[match.request.AccountID] <= 0 && priority != FreeBucket {
+			if run.fanout.getRemaining(match.request) <= 0 && priority != FreeBucket {
 				continue
 			}
 
@@ -363,7 +353,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 			if bannedAccounts[r.AccountID] {
 				continue
 			}
-			if run.jobsUntilThrottled[r.AccountID] <= 0 {
+			if run.fanout.getRemaining(r) <= 0 {
 				continue
 			}
 			if !worker.runningTask.cost.Less(state.balances[r.AccountID]) {
@@ -407,7 +397,7 @@ func (run *schedulerRun) preemptRunningTasks(priority Priority, events EventSink
 // once the FreeBucket pass is reached.
 func (run *schedulerRun) moveThrottledRequests(priority Priority) {
 	for current := run.requestsPerPriority[priority].Head(); current.Element != nil; current = current.Next() {
-		if run.jobsUntilThrottled[current.Value().AccountID] <= 0 {
+		if run.fanout.getRemaining(current.Value()) <= 0 {
 			run.requestsPerPriority[FreeBucket].PushBack(current.Value())
 			run.requestsPerPriority[priority].Remove(current.Element)
 		}

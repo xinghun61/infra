@@ -86,26 +86,38 @@ func TestMatchAccountless(t *testing.T) {
 // TestMatchThrottledAccountJobs tests that scheduling logic correctly handles throttling of jobs
 // that are beyond an account's max fanout, and still schedules them if there are idle workers available.
 func TestMatchThrottledAccountJobs(t *testing.T) {
-	Convey("Given a state with 2 idle workers, an account with a maximum fanout of 1, and 2 requests for that account", t, func() {
+	Convey("Given a state with 3 idle workers, an account with a maximum fanout of 1, and 3 requests for that account (2 of which have the same provisionable labels)", t, func() {
 		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := scheduler.New(tm)
 		var aid scheduler.AccountID = "Account1"
+		provisionable := stringset.NewFromSlice("provisionable 1", "provisionable 2")
 		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 0, nil), []float32{1})
-		var r1 scheduler.RequestID = "Request1"
-		var r2 scheduler.RequestID = "Request2"
-		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, aid, nil, nil, tm), tm, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest(r2, aid, nil, nil, tm), tm, scheduler.NullEventSink)
+		var r1 scheduler.RequestID = "SharedLabelRequest 1"
+		var r2 scheduler.RequestID = "SharedLabelRequest 2"
+		var r3 scheduler.RequestID = "DifferentLabelRequest"
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, aid, provisionable, nil, tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r2, aid, provisionable, nil, tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r3, aid, nil, nil, tm), tm, scheduler.NullEventSink)
 		var w1 scheduler.WorkerID = "Worker1"
 		var w2 scheduler.WorkerID = "Worker2"
+		var w3 scheduler.WorkerID = "Worker3"
 		s.MarkIdle(ctx, w1, nil, tm, scheduler.NullEventSink)
 		s.MarkIdle(ctx, w2, nil, tm, scheduler.NullEventSink)
+		s.MarkIdle(ctx, w3, nil, tm, scheduler.NullEventSink)
 		Convey("when running a round of scheduling", func() {
 			m := s.RunOnce(ctx, scheduler.NullEventSink)
-			Convey("then both requests should be assigned to a worker, but 1 of them at FreeBucket priority.", func() {
-				So(m, ShouldHaveLength, 2)
-				priorities := map[Priority]bool{m[0].Priority: true, m[1].Priority: true}
-				So(priorities, ShouldResemble, map[Priority]bool{0: true, FreeBucket: true})
+			Convey("then all 3 requests should be assigned to workers, but 1 of the shared-provisionable-label demoted to the FreeBucket priority.", func() {
+				So(m, ShouldHaveLength, 3)
+				priorities := make(map[scheduler.RequestID]Priority)
+				counts := make(map[Priority]int)
+				for _, a := range m {
+					priorities[a.RequestID] = a.Priority
+					counts[a.Priority]++
+				}
+				So(priorities[r3], ShouldEqual, 0)
+				So(counts[0], ShouldEqual, 2)
+				So(counts[FreeBucket], ShouldEqual, 1)
 			})
 		})
 	})

@@ -60,7 +60,7 @@ func (n requestNode) Next() requestNode {
 //   - FIFO ordering as a tiebreaker.
 //
 // This function does not modify state or config.
-func (s *Scheduler) prioritizeRequests(jobsUntilThrottled map[AccountID]int) [NumPriorities + 1]requestList {
+func (s *Scheduler) prioritizeRequests(fanoutCounter *fanoutCounter) [NumPriorities + 1]requestList {
 	state := s.state
 
 	var prioritized [NumPriorities + 1][]*TaskRequest
@@ -74,7 +74,7 @@ func (s *Scheduler) prioritizeRequests(jobsUntilThrottled map[AccountID]int) [Nu
 			panic("empty request ID")
 		}
 		var p Priority
-		if jobsUntilThrottled[req.AccountID] <= 0 {
+		if fanoutCounter.getRemaining(req) <= 0 {
 			p = FreeBucket
 		} else {
 			p = BestPriorityFor(state.balances[req.AccountID])

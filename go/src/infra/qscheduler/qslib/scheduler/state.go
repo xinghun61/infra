@@ -17,6 +17,8 @@ package scheduler
 import (
 	"context"
 	"fmt"
+	"sort"
+	"strings"
 	"time"
 
 	"infra/qscheduler/qslib/protos"
@@ -51,6 +53,10 @@ type state struct {
 	// about them.
 }
 
+// fanoutGroup identifies the group (for a given request) over which per-account
+// per-image fanout limits will be enforced.
+type fanoutGroup string
+
 // TaskRequest represents a queued or running task TaskRequest.
 type TaskRequest struct {
 	// ID is the ID of this request.
@@ -84,6 +90,27 @@ func requestProto(r *TaskRequest, mb *mapBuilder) *protos.TaskRequest {
 		ProvisionableLabelIds: mb.ForSet(r.ProvisionableLabels),
 		BaseLabelIds:          mb.ForSet(r.BaseLabels),
 	}
+}
+
+// fanoutGroup returns a string that uniquely identifies this task's account
+// and provisionable labels, and thus identifies the fanout group to be
+// used for this account.
+//
+// TODO(akeshet): Memoize the return value to avoid cost of recomputation.
+func (t *TaskRequest) fanoutGroup() fanoutGroup {
+	if t.AccountID == "" {
+		return ""
+	}
+
+	provisionable := t.ProvisionableLabels.ToSlice()
+	sort.Strings(provisionable)
+
+	elems := []string{string(t.AccountID)}
+	elems = append(elems, provisionable...)
+	// This separator is just an arbitrary string that is very unlikely to be
+	// encountered in the wild in account IDs or provisionable labels.
+	const separator = "$;~$"
+	return fanoutGroup(strings.Join(elems, separator))
 }
 
 // taskRun represents the run-related information about a running task.
