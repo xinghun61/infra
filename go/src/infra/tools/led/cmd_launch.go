@@ -126,6 +126,8 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
+	jd.TopLevel.Tags = append(jd.TopLevel.Tags, "user:"+uid)
+
 	logging.Infof(ctx, "building swarming task")
 	st, err := jd.GetSwarmingNewTask(ctx, uid, isoClient)
 	if err != nil {
