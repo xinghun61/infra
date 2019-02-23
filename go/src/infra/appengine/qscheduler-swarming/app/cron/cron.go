@@ -63,7 +63,7 @@ func refreshSchedulers(c *router.Context) error {
 		// idle bots.
 		req := &swarming.AssignTasksRequest{SchedulerId: sid, Time: ts}
 
-		s := &frontend.QSchedulerServerImpl{}
+		s := &frontend.BasicQSchedulerServer{}
 		if _, err := s.AssignTasks(ctx, req); err != nil {
 			return errors.Wrap(err, "unable to refresh scheduler via AssignTasks")
 		}

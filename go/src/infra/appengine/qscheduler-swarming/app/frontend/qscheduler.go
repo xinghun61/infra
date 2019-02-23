@@ -26,15 +26,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// QSchedulerServerImpl implements the QSchedulerServer interface.
+// BasicQSchedulerServer implements the QSchedulerServer interface.
 //
 // This implementation is only expected to scale to ~1QPS of mutating
 // operations, because it handles each request in its own datastore
 // transaction.
-type QSchedulerServerImpl struct{}
+type BasicQSchedulerServer struct{}
 
 // AssignTasks implements QSchedulerServer.
-func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.AssignTasksRequest) (resp *swarming.AssignTasksResponse, err error) {
+func (s *BasicQSchedulerServer) AssignTasks(ctx context.Context, r *swarming.AssignTasksRequest) (resp *swarming.AssignTasksResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
@@ -53,7 +53,7 @@ func (s *QSchedulerServerImpl) AssignTasks(ctx context.Context, r *swarming.Assi
 }
 
 // GetCancellations implements QSchedulerServer.
-func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming.GetCancellationsRequest) (resp *swarming.GetCancellationsResponse, err error) {
+func (s *BasicQSchedulerServer) GetCancellations(ctx context.Context, r *swarming.GetCancellationsRequest) (resp *swarming.GetCancellationsResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
@@ -76,7 +76,7 @@ func (s *QSchedulerServerImpl) GetCancellations(ctx context.Context, r *swarming
 }
 
 // NotifyTasks implements QSchedulerServer.
-func (s *QSchedulerServerImpl) NotifyTasks(ctx context.Context, r *swarming.NotifyTasksRequest) (resp *swarming.NotifyTasksResponse, err error) {
+func (s *BasicQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.NotifyTasksRequest) (resp *swarming.NotifyTasksResponse, err error) {
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
