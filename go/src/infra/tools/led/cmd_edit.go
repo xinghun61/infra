@@ -75,6 +75,9 @@ led get-builder ... |
 			ret.Flags.StringVar(&ret.swarmingHost, "S", "",
 				"override the swarming `host` to launch the task on (i.e. chromium-swarm.appspot.com).")
 
+			ret.Flags.StringVar(&ret.experimental, "exp", "",
+				"set to `true` or `false` to change the $recipe_engine/runtime['is_experimental'] property.")
+
 			return ret
 		},
 	}
@@ -94,6 +97,7 @@ type cmdEdit struct {
 	recipeName     string
 	recipeCIPDPkg  string
 	recipeCIPDVer  string
+	experimental   string
 
 	swarmingHost string
 }
@@ -143,6 +147,7 @@ func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.
 		ejd.Properties(c.propertiesAuto, true)
 		ejd.Recipe(c.recipeName)
 		ejd.SwarmingHostname(c.swarmingHost)
+		ejd.Experimental(c.experimental)
 		return ejd.Finalize()
 	})
 	if err != nil {

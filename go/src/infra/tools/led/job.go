@@ -155,7 +155,11 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 		ret.TopLevel.Name = ledJobNamePrefix + ret.TopLevel.Name
 	}
 
-	return ret, me.Get()
+	// Default all led tasks to experimental
+	ejd := EditJobDefinition{ret, me.Get()}
+	ejd.Experimental("true")
+
+	return ret, ejd.err
 }
 
 func (tl *ToplevelFields) apply(st *swarming.SwarmingRpcsNewTaskRequest) {

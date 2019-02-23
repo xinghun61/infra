@@ -265,6 +265,31 @@ func (ejd *EditJobDefinition) SwarmingHostname(host string) {
 	})
 }
 
+// Experimental allows you to conveniently modify the
+// "$recipe_engine/runtime['is_experimental']" property.
+func (ejd *EditJobDefinition) Experimental(trueOrFalse string) {
+	if trueOrFalse == "" {
+		return
+	}
+	ejd.tweakUserland(func(u *Userland) error {
+		key := "$recipe_engine/runtime"
+		current, ok := u.RecipeProperties[key].(map[string]interface{})
+		if !ok {
+			current = map[string]interface{}{}
+		}
+		if trueOrFalse == "true" {
+			current["is_experimental"] = true
+		} else if trueOrFalse == "false" {
+			current["is_experimental"] = false
+		} else {
+			return errors.Reason(
+				"experimental can only be 'true' or 'false', got %q", trueOrFalse).Err()
+		}
+		u.RecipeProperties[key] = current
+		return nil
+	})
+}
+
 // PrefixPathEnv controls swarming's env_prefix mapping.
 //
 // Values prepended with '!' will remove them from the existing list of values
