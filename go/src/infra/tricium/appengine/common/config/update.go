@@ -88,19 +88,14 @@ func updateProjectConfig(c context.Context, sc *tricium.ServiceConfig, name stri
 	if err != nil {
 		return err
 	}
-	vpc, err := Validate(sc, pc)
-	if err != nil {
-		logging.Warningf(c, `Project "%s" config validation error: %v`, name, err)
+	if err = Validate(sc, pc); err != nil {
+		logging.Warningf(c, `Project %q config invalid: %v`, name, err)
 		return err
 	}
 	logging.Fields{
 		"revision": revision,
 		"project":  name,
 	}.Infof(c, "Found new project config.")
-	// TODO(qyearsley): Remove this after confirming whether
-	// vpc is a partial config with merged functions and pc
-	// contains repo details.
-	logging.Debugf(c, "vpc: %#v\npc: %#v", vpc, pc)
 	return setProjectConfig(c, name, revision, pc)
 }
 

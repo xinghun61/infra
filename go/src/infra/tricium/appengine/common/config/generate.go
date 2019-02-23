@@ -22,26 +22,24 @@ import (
 // project in question, and filtered to only include workers relevant to the
 // files to be analyzed.
 func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tricium.Data_File, gitRef, gitURL string) (*admin.Workflow, error) {
-	vpc, err := Validate(sc, pc)
+	mergedFunctions, err := mergeSelectedFunctions(sc, pc)
 	if err != nil {
-		return nil, errors.Annotate(err, "failed to validate project config").Err()
+		return nil, errors.Annotate(err, "failed to merge function definitions").Err()
 	}
 	var workers []*admin.Worker
-	functions := map[string]*tricium.Function{}
-	for _, s := range vpc.Selections {
-		if _, ok := functions[s.Function]; !ok {
-			f := tricium.LookupFunction(vpc.Functions, s.Function)
-			if f == nil {
-				return nil, errors.Annotate(err, "failed to lookup project function").Err()
-			}
-			functions[s.Function] = f
+	functions := []*tricium.Function{}
+	for _, s := range pc.Selections {
+		f, ok := mergedFunctions[s.Function]
+		if !ok {
+			return nil, errors.Annotate(err, "failed to lookup project function").Err()
 		}
-		shouldInclude, err := includeFunction(functions[s.Function], files)
+		functions = append(functions, f)
+		shouldInclude, err := includeFunction(f, files)
 		if err != nil {
 			return nil, errors.Annotate(err, "failed include function check").Err()
 		}
 		if shouldInclude {
-			w, err := createWorker(s, sc, functions[s.Function], gitRef, gitURL)
+			w, err := createWorker(s, sc, f, gitRef, gitURL)
 			if err != nil {
 				return nil, errors.Annotate(err, "failed to create worker").Err()
 			}
@@ -58,7 +56,7 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, files []*tri
 		SwarmingServer:        sc.SwarmingServer,
 		BuildbucketServerHost: sc.BuildbucketServerHost,
 		IsolateServer:         sc.IsolateServer,
-		Functions:             vpc.Functions,
+		Functions:             functions,
 	}, nil
 }
 

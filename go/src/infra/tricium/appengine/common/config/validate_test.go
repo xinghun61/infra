@@ -65,7 +65,7 @@ func TestValidate(t *testing.T) {
 		}
 
 		Convey("Supported function platform OK", func() {
-			_, err := Validate(sd, &tricium.ProjectConfig{
+			err := Validate(sd, &tricium.ProjectConfig{
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -79,7 +79,7 @@ func TestValidate(t *testing.T) {
 		})
 
 		Convey("Non-supported function platform causes error", func() {
-			_, err := Validate(sd, &tricium.ProjectConfig{
+			err := Validate(sd, &tricium.ProjectConfig{
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -93,7 +93,7 @@ func TestValidate(t *testing.T) {
 		})
 
 		Convey("Supported function config OK", func() {
-			_, err := Validate(sd, &tricium.ProjectConfig{
+			err := Validate(sd, &tricium.ProjectConfig{
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -113,7 +113,7 @@ func TestValidate(t *testing.T) {
 		})
 
 		Convey("Non-supported function config causes error", func() {
-			_, err := Validate(sd, &tricium.ProjectConfig{
+			err := Validate(sd, &tricium.ProjectConfig{
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
@@ -158,7 +158,7 @@ func TestMergeFunctions(t *testing.T) {
 		}
 
 		Convey("Project function def without service def must have data deps", func() {
-			_, err := mergeFunctions(functionName, sc, nil, &tricium.Function{
+			_, err := mergeFunction(functionName, sc, nil, &tricium.Function{
 				Type: tricium.Function_ANALYZER,
 				Name: functionName,
 			})
@@ -166,7 +166,7 @@ func TestMergeFunctions(t *testing.T) {
 		})
 
 		Convey("Service function def must have data deps", func() {
-			_, err := mergeFunctions(functionName, sc, &tricium.Function{
+			_, err := mergeFunction(functionName, sc, &tricium.Function{
 				Type: tricium.Function_ANALYZER,
 				Name: functionName,
 			}, nil)
@@ -174,7 +174,7 @@ func TestMergeFunctions(t *testing.T) {
 		})
 
 		Convey("No service function config is OK", func() {
-			_, err := mergeFunctions(functionName, sc, nil, &tricium.Function{
+			_, err := mergeFunction(functionName, sc, nil, &tricium.Function{
 				Type:     tricium.Function_ANALYZER,
 				Name:     functionName,
 				Needs:    tricium.Data_FILES,
@@ -184,7 +184,7 @@ func TestMergeFunctions(t *testing.T) {
 		})
 
 		Convey("No project function config is OK", func() {
-			_, err := mergeFunctions(functionName, sc, &tricium.Function{
+			_, err := mergeFunction(functionName, sc, &tricium.Function{
 				Type:     tricium.Function_ANALYZER,
 				Name:     functionName,
 				Needs:    tricium.Data_FILES,
@@ -194,7 +194,7 @@ func TestMergeFunctions(t *testing.T) {
 		})
 
 		Convey("Change of service data deps not allowed", func() {
-			_, err := mergeFunctions(functionName, sc, &tricium.Function{
+			_, err := mergeFunction(functionName, sc, &tricium.Function{
 				Type:     tricium.Function_ANALYZER,
 				Name:     functionName,
 				Needs:    tricium.Data_FILES,
@@ -208,7 +208,7 @@ func TestMergeFunctions(t *testing.T) {
 		})
 
 		Convey("Neither service nor function config not OK", func() {
-			_, err := mergeFunctions(functionName, sc, nil, nil)
+			_, err := mergeFunction(functionName, sc, nil, nil)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -217,7 +217,7 @@ func TestMergeFunctions(t *testing.T) {
 			comp := "someonesComp"
 			exec := "cat"
 			deadline := int32(120)
-			a, err := mergeFunctions(functionName, sc, &tricium.Function{
+			a, err := mergeFunction(functionName, sc, &tricium.Function{
 				Type:              tricium.Function_ANALYZER,
 				Name:              functionName,
 				Needs:             tricium.Data_FILES,

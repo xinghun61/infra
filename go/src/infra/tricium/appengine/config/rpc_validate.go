@@ -19,6 +19,8 @@ type configServer struct{}
 var server = &configServer{}
 
 // Validate validates a project config.
+//
+// TODO(qyearsley): I believe this RPC can be removed (crbug.com/935049).
 func (*configServer) Validate(c context.Context, req *admin.ValidateRequest) (*admin.ValidateResponse, error) {
 	if req.ProjectConfig == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "missing project config")
@@ -30,9 +32,8 @@ func (*configServer) Validate(c context.Context, req *admin.ValidateRequest) (*a
 			return nil, status.Errorf(codes.InvalidArgument, "failed to get service config: %v", err)
 		}
 	}
-	pc, err := config.Validate(sc, req.ProjectConfig)
-	if err != nil {
+	if err := config.Validate(sc, req.ProjectConfig); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to validate config: %v", err)
 	}
-	return &admin.ValidateResponse{ValidatedConfig: pc}, nil
+	return &admin.ValidateResponse{}, nil
 }
