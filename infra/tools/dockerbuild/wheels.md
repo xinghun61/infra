@@ -440,6 +440,20 @@ wheel: <
 
 * *universal*
 
+## **certifi**
+
+### 2018.11.29
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/certifi-py2_py3"
+  version: "version:2018.11.29"
+>
+```
+
+
+* *universal*
+
 ## **cffi**
 
 ### 1.10.0
@@ -464,6 +478,20 @@ wheel: <
 * *manylinux-x86-ucs2*
 * *windows-x64*
 * *windows-x86*
+
+## **chardet**
+
+### 3.0.4
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/chardet-py2_py3"
+  version: "version:3.0.4"
+>
+```
+
+
+* *universal*
 
 ## **cheroot**
 
@@ -1143,6 +1171,18 @@ wheel: <
 
 * *universal*
 
+### 2.8
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/idna-py2_py3"
+  version: "version:2.8"
+>
+```
+
+
+* *universal*
+
 ## **infra_libs**
 
 ### 2.0.0
@@ -1805,6 +1845,18 @@ wheel: <
 
 * *universal*
 
+### 0.4.5
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pyasn1-py2_py3"
+  version: "version:0.4.5"
+>
+```
+
+
+* *universal*
+
 ## **pyasn1_modules**
 
 ### 0.0.8
@@ -1813,6 +1865,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/pyasn1_modules-py2_py3"
   version: "version:0.0.8"
+>
+```
+
+
+* *universal*
+
+### 0.2.4
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pyasn1_modules-py2_py3"
+  version: "version:0.2.4"
 >
 ```
 
@@ -2168,6 +2232,18 @@ wheel: <
 
 * *universal*
 
+### 4.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/rsa-py2_py3"
+  version: "version:4.0"
+>
+```
+
+
+* *universal*
+
 ## **scan-build**
 
 ### 2.0.8
@@ -2460,6 +2536,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/urllib3-py2_py3"
   version: "version:1.22"
+>
+```
+
+
+* *universal*
+
+### 1.24.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/urllib3-py2_py3"
+  version: "version:1.24.1"
 >
 ```
 
