@@ -2116,6 +2116,18 @@ wheel: <
 
 * *universal*
 
+### 2.21.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/requests-py2_py3"
+  version: "version:2.21.0"
+>
+```
+
+
+* *universal*
+
 ## **requests-unixsocket**
 
 ### 0.1.5
