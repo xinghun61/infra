@@ -1117,6 +1117,18 @@ wheel: <
 
 * *universal*
 
+### 0.12.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/httplib2-py2_py3"
+  version: "version:0.12.1"
+>
+```
+
+
+* *universal*
+
 ## **idna**
 
 ### 2.5
