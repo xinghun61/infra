@@ -12,6 +12,7 @@ export const actionType = {
   UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
   UPDATE_FORMS_TO_CHECK: 'UPDATE_FORMS_TO_CHECK',
   CLEAR_FORMS_TO_CHECK: 'CLEAR_FORMS_TO_CHECK',
+  SET_FOCUS_ID: 'SET_FOCUS_ID',
 
   // AJAX request state.
   FETCH_PROJECT_CONFIG_START: 'FETCH_PROJECT_CONFIG_START',
@@ -341,6 +342,9 @@ export const initial = {
   // TODO(ehmaldonado): Figure out a way to keep redux state serializable.
   formsToCheck: [],
 
+  // The ID of the element to be focused, as given by the hash part of the URL.
+  focusId: null,
+
   fetchingUser: false,
   fetchUserError: null,
 
@@ -407,6 +411,9 @@ export const updateIssueApproval = (issue, approval) => {
 
 export const reducer = (state, action) => {
   switch (action.type) {
+    case actionType.SET_FOCUS_ID:
+      return Object.assign({}, state, {focusId: action.focusId});
+
     case actionType.RESET_STATE:
       return Object.assign({}, initial);
 

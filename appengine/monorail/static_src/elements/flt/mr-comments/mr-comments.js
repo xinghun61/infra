@@ -4,6 +4,8 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
@@ -131,10 +133,25 @@ export class MrComments extends ReduxMixin(PolymerElement) {
         [[_computeCommentToggleVerb(_commentsHidden)]] [[_commentsHiddenCount]] older [[_pluralize(_commentsHiddenCount, 'comment')]].
       </button>
       <template is="dom-repeat" items="[[comments]]" as="comment">
-        <div class="card-comment" hidden\$="[[_computeCommentHidden(_commentsHidden,_commentsHiddenCount,index)]]">
-          <span role="heading" aria-level\$="[[headingLevel]]" class="comment-header">
-            Comment [[comment.sequenceNum]] by
-            <mr-user-link display-name="[[comment.commenter.displayName]]" user-id="[[comment.commenter.userId]]"></mr-user-link> on
+        <div
+          class="card-comment"
+          hidden\$="[[_computeCommentHidden(_commentsHidden, _commentsHiddenCount, index)]]"
+          id\$="c[[comment.sequenceNum]]"
+        >
+          <span
+            role="heading"
+            aria-level\$="[[headingLevel]]"
+            class="comment-header"
+          >
+            <a href\$="#c[[comment.sequenceNum]]">
+              Comment [[comment.sequenceNum]]
+            </a>
+            by
+            <mr-user-link
+              display-name="[[comment.commenter.displayName]]"
+              user-id="[[comment.commenter.userId]]"
+            ></mr-user-link>
+            on
             <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
             <template is="dom-if" if="[[_offerCommentOptions(comment)]]">
               <div class="comment-options">
@@ -275,6 +292,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       },
       projectName: String,
       issuePermissions: Object,
+      focusId: String,
       _commentsHidden: {
         type: Boolean,
         value: true,
@@ -295,11 +313,32 @@ export class MrComments extends ReduxMixin(PolymerElement) {
     };
   }
 
+  static get observers() {
+    return [
+      '_onFocusIdChange(focusId, comments)',
+    ];
+  }
+
   static mapStateToProps(state, element) {
     return {
+      focusId: state.focusId,
       projectName: state.projectName,
       issuePermissions: state.issuePermissions,
     };
+  }
+
+  _onFocusIdChange(focusId, comments) {
+    if (!focusId || !comments.length) return;
+    flush();
+    const element = dom(this.root).querySelector('#' + focusId);
+    if (element) {
+      if (element.hidden) {
+        this.toggleComments();
+      }
+      // TODO(ehmaldonado): Really scroll the element into view. As it is, it is
+      // hidden by the page and issue headers.
+      element.scrollIntoView();
+    }
   }
 
   _deleteComment(comment) {

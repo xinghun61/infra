@@ -76,6 +76,14 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     //   page loads.
 
     page('*', (ctx, next) => {
+      // Navigate to the requested element if a hash is present.
+      if (ctx.hash) {
+        this.dispatchAction({
+          type: actionType.SET_FOCUS_ID,
+          focusId: ctx.hash,
+        });
+      }
+
       // We're not really navigating anywhere, so don't do anything.
       if (ctx.path === this._currentContext.path) {
         Object.assign(ctx, this._currentContext);
