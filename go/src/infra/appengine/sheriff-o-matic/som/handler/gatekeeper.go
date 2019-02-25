@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	gkConfigURL         = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper.json?format=text"
-	gkTreesURL          = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text"
-	gkConfigInternalURL = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/gatekeeper_internal.json?format=text"
-	gkTreesInternalURL  = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/gatekeeper_trees_internal.json?format=text"
+	gkConfigURL         = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipe_modules/gatekeeper/resources/gatekeeper.json?format=text"
+	gkTreesURL          = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipe_modules/gatekeeper/resources/gatekeeper_trees.json?format=text"
+	gkConfigInternalURL = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/recipes/gatekeeper_internal.resources/gatekeeper_internal.json?format=text"
+	gkTreesInternalURL  = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/recipes/gatekeeper_internal.resources/gatekeeper_trees_internal.json?format=text"
 	gkUnkeptConfigURL   = "https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/sheriff-o-matic/config/unkept_gatekeeper.json?format=text"
 	gkUnkeptTreesURL    = "https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/sheriff-o-matic/config/unkept_gatekeeper_trees.json?format=text"
 )

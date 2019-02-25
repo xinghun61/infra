@@ -959,7 +959,7 @@ func TestMain(t *testing.T) {
     ]
    }
 }`,
-						"https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text": `{    "chromium": {
+						"https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/recipe_modules/gatekeeper/resources/gatekeeper_trees.json?format=text": `{    "chromium": {
         "build-db": "waterfall_build_db.json",
         "masters": {
             "https://build.chromium.org/p/chromium": ["*"],
