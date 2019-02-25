@@ -10,7 +10,7 @@ import '@polymer/iron-collapse/iron-collapse.js';
 import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
 import {fieldTypes} from '../../shared/field-types.js';
-import '../../mr-comment-content/mr-comment-content.js';
+import '../../mr-comment-content/mr-description.js';
 import '../mr-comments/mr-comments.js';
 import '../mr-inline-editor/mr-inline-editor.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
@@ -203,9 +203,10 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           placeholder="Survey content and answer"
           on-save="_updateSurveyHandler"
         >
-          <div class="survey">
-            <mr-comment-content content="[[_survey.content]]"></mr-comment-content>
-          </div>
+          <mr-description
+            class="survey"
+            description-list="[[_surveyList]]"
+          ></mr-description>
         </mr-inline-editor>
         <h4 class="medium-heading">Approval comments / Changelog</h3>
         <mr-comments
@@ -297,8 +298,12 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         computed: '_computeEditId(fieldName)',
       },
       _survey: {
-        type: String,
-        computed: '_computeSurvey(comments, fieldName)',
+        type: Object,
+        computed: '_computeSurvey(_surveyList)',
+      },
+      _surveyList: {
+        type: Array,
+        computed: '_computeSurveyList(comments, fieldName)',
       },
       _isApprovalOwner: {
         type: Boolean,
@@ -493,18 +498,18 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     return `edit${fieldName}`;
   }
 
+  _computeSurvey(surveyList) {
+    if (!surveyList || !surveyList.length) return;
+    return surveyList[surveyList.length - 1];
+  }
+
   // TODO(zhangtiff): Change data flow here so that this is only computed
   // once for all approvals.
-  _computeSurvey(comments, fieldName) {
+  _computeSurveyList(comments, fieldName) {
     if (!comments || !fieldName) return;
-    for (let i = comments.length - 1; i >= 0; i--) {
-      if (comments[i].approvalRef
-          && comments[i].approvalRef.fieldName === fieldName
-          && comments[i].descriptionNum) {
-        return comments[i];
-      }
-    }
-    return {};
+    return comments.filter((comment) => comment.approvalRef
+        && comment.approvalRef.fieldName === fieldName
+        && comment.descriptionNum);
   }
 
   _filterStatuses(status, statuses, hasApproverPrivileges) {

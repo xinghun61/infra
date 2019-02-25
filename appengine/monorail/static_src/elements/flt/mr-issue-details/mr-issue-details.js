@@ -6,7 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
-import '../../mr-comment-content/mr-comment-content.js';
+import '../../mr-comment-content/mr-description.js';
 import '../mr-comments/mr-comments.js';
 import '../mr-edit-metadata/mr-edit-issue.js';
 import '../mr-inline-editor/mr-inline-editor.js';
@@ -52,7 +52,7 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
         placeholder="Feature description"
         on-save="_updateDescriptionHandler"
       >
-        <mr-comment-content content="[[_description.content]]"></mr-comment-content>
+        <mr-description description-list="[[_descriptionList]]"></mr-description>
       </mr-inline-editor>
       <h2 class="medium-heading" hidden\$="[[!_comments.length]]">
         Feature discussion / Changelog
@@ -91,8 +91,12 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
       issueId: Number,
       projectName: String,
       _description: {
-        type: String,
-        computed: '_computeDescription(comments)',
+        type: Object,
+        computed: '_computeDescription(_descriptionList)',
+      },
+      _descriptionList: {
+        type: Array,
+        computed: '_computeDescriptionList(comments)',
       },
       _comments: {
         type: Array,
@@ -130,14 +134,16 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     return comments.filter((c) => (!c.approvalRef && c.sequenceNum));
   }
 
-  _computeDescription(comments) {
+  _computeDescriptionList(comments) {
     if (!comments || !comments.length) return {};
-    for (let i = comments.length - 1; i >= 0; i--) {
-      if (!comments[i].approvalRef && comments[i].descriptionNum) {
-        return comments[i];
-      }
-    }
-    return {};
+    return comments.filter(
+      (comment) => !comment.approvalRef && comment.descriptionNum);
+  }
+
+  _computeDescription(descriptionList) {
+    if (!descriptionList || !descriptionList.length) return {};
+
+    return descriptionList[descriptionList.length - 1];
   }
 }
 customElements.define(MrIssueDetails.is, MrIssueDetails);
