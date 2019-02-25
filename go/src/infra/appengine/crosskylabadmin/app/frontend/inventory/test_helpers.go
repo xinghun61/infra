@@ -19,9 +19,11 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/fakes"
+	"infra/libs/skylab/inventory"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/common/logging"
@@ -107,6 +109,50 @@ type testInventoryDut struct {
 // duts provided.
 func setupLabInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testInventoryDut) error {
 	return g.AddArchive(config.Get(c).Inventory, []byte(labInventoryStrFromDuts(duts)), []byte{})
+}
+
+// testDutOnServer contains a subset of the fields in infrastructure servers.
+type testDutOnServer struct {
+	id          string
+	server      string
+	environment inventory.Environment
+}
+
+// setupLabInventoryArchive sets up fake gitiles to return the inventory of
+// duts provided.
+func setupInfraInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testDutOnServer) error {
+	return g.AddArchive(config.Get(c).Inventory, []byte{}, []byte(infraInventoryStrFromDuts(duts)))
+}
+
+// TODO(akeshet): Consider eliminating this helper and marshalling directly to a byte buffer
+// in addArchive.
+func infraInventoryStrFromDuts(duts []testDutOnServer) string {
+	infra := &inventory.Infrastructure{}
+	serversByName := make(map[string]*inventory.Server)
+	for _, d := range duts {
+		server, ok := serversByName[d.server]
+		if !ok {
+			server = dutTestServer(d.server, d.environment)
+			serversByName[d.server] = server
+		}
+		server.DutUids = append(server.DutUids, d.id)
+	}
+	infra.Servers = make([]*inventory.Server, 0, len(serversByName))
+	for _, s := range serversByName {
+		infra.Servers = append(infra.Servers, s)
+	}
+
+	return proto.MarshalTextString(infra)
+}
+
+func dutTestServer(serverName string, env inventory.Environment) *inventory.Server {
+	status := inventory.Server_STATUS_PRIMARY
+	return &inventory.Server{
+		Hostname:    &serverName,
+		Environment: &env,
+		Roles:       []inventory.Server_Role{inventory.Server_ROLE_SKYLAB_DRONE},
+		Status:      &status,
+	}
 }
 
 type trackerPartialFake struct {

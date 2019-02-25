@@ -15,21 +15,18 @@
 package inventory
 
 import (
-	"strings"
-	"testing"
-
-	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
-	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
-	"github.com/kylelemons/godebug/pretty"
-
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/fakes"
 	"infra/libs/skylab/inventory"
+	"strings"
+	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/proto"
+	"github.com/kylelemons/godebug/pretty"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	. "github.com/smartystreets/goconvey/convey"
 	. "go.chromium.org/luci/common/testing/assertions"
@@ -327,12 +324,6 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 	})
 }
 
-type testDutOnServer struct {
-	id          string
-	server      string
-	environment inventory.Environment
-}
-
 func TestEnsurePoolHealthyCommit(t *testing.T) {
 	Convey("EnsurePoolHealthy commits expected changes to gerrit", t, func(c C) {
 		tf, validate := newTestFixture(t)
@@ -538,301 +529,6 @@ func TestResizePoolCommit(t *testing.T) {
 	})
 }
 
-func TestRemoveDutsFromDrones(t *testing.T) {
-	Convey("With 2 DUTs assigned to drones (1 in prod, 1 in staging)", t, func() {
-		tf, validate := newTestFixture(t)
-		defer validate()
-
-		dutID := "dut_id"
-		serverID := "server_id"
-		wrongEnvDutID := "wrong_env_dut"
-		wrongEnvServer := "wrong_env_server"
-		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testDutOnServer{
-			{dutID, serverID, inventory.Environment_ENVIRONMENT_STAGING},
-			{wrongEnvDutID, wrongEnvServer, inventory.Environment_ENVIRONMENT_PROD},
-		})
-		So(err, ShouldBeNil)
-
-		Convey("DeactivateDut for the staging dut removes it from drone.", func() {
-			req := &fleet.RemoveDutsFromDronesRequest{
-				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: dutID}},
-			}
-			resp, err := tf.Inventory.RemoveDutsFromDrones(tf.C, req)
-			So(err, ShouldBeNil)
-			So(resp.Removed, ShouldHaveLength, 1)
-			So(resp.Removed[0].DutId, ShouldEqual, dutID)
-
-			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
-			change := tf.FakeGerrit.Changes[0]
-			p := "data/skylab/server_db.textpb"
-			So(change.Files, ShouldContainKey, p)
-
-			contents := change.Files[p]
-			infra := &inventory.Infrastructure{}
-			err = inventory.LoadInfrastructureFromString(contents, infra)
-			So(err, ShouldBeNil)
-			So(change.Subject, ShouldStartWith, "remove DUTs")
-			So(infra.Servers, ShouldHaveLength, 2)
-
-			var server *inventory.Server
-			for _, s := range infra.Servers {
-				if s.GetHostname() == serverID {
-					server = s
-					break
-				}
-			}
-			So(server.DutUids, ShouldBeEmpty)
-		})
-
-		Convey("DeactivateDut for a nonexistant dut returns no results.", func() {
-			req := &fleet.RemoveDutsFromDronesRequest{
-				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: "foo"}},
-			}
-			resp, err := tf.Inventory.RemoveDutsFromDrones(tf.C, req)
-			So(err, ShouldBeNil)
-			So(resp.Removed, ShouldBeEmpty)
-			So(resp.Url, ShouldEqual, "")
-		})
-
-		Convey("DeactivateDut for prod dut returns no results.", func() {
-			req := &fleet.RemoveDutsFromDronesRequest{
-				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: wrongEnvDutID}},
-			}
-			resp, err := tf.Inventory.RemoveDutsFromDrones(tf.C, req)
-			So(err, ShouldBeNil)
-			So(resp.Removed, ShouldBeEmpty)
-			So(resp.Url, ShouldEqual, "")
-		})
-	})
-}
-
-func TestAssignDutsToDrones(t *testing.T) {
-	Convey("With 2 DUT assigned to drones (1 in prod, 1 in staging)", t, func() {
-		tf, validate := newTestFixture(t)
-		defer validate()
-
-		existingDutID := "dut_id_1"
-		serverID := "server_id"
-		wrongEnvDutID := "wrong_env_dut"
-		wrongEnvServer := "wrong_env_server"
-		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testDutOnServer{
-			{existingDutID, serverID, inventory.Environment_ENVIRONMENT_STAGING},
-			{wrongEnvDutID, wrongEnvServer, inventory.Environment_ENVIRONMENT_PROD},
-		})
-		So(err, ShouldBeNil)
-
-		Convey("AssignDutsToDrones with an already assigned dut in current environment should return an appropriate error.", func() {
-			req := &fleet.AssignDutsToDronesRequest{
-				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
-					{DutId: existingDutID, DroneHostname: serverID},
-				},
-			}
-			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
-			So(resp, ShouldBeNil)
-			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "already assigned")
-			So(err.Error(), ShouldContainSubstring, inventory.Environment_ENVIRONMENT_STAGING.String())
-		})
-
-		Convey("AssignDutsToDrones with an already assigned dut in other environment should return an appropriate error.", func() {
-			req := &fleet.AssignDutsToDronesRequest{
-				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
-					{DutId: wrongEnvDutID, DroneHostname: serverID},
-				},
-			}
-			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
-			So(resp, ShouldBeNil)
-			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "already assigned")
-			So(err.Error(), ShouldContainSubstring, inventory.Environment_ENVIRONMENT_PROD.String())
-		})
-
-		newDutID := "dut_id_2"
-
-		Convey("AssignDutsToDrones with a nonexistant drone should return an appropriate error.", func() {
-			req := &fleet.AssignDutsToDronesRequest{
-				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
-					{DutId: newDutID, DroneHostname: "foo_host"},
-				},
-			}
-			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
-			So(resp, ShouldBeNil)
-			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "does not exist")
-		})
-
-		Convey("AssignDutsToDrones with a new dut and existing drone assigns that dut.", func() {
-			req := &fleet.AssignDutsToDronesRequest{
-				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
-					{DutId: newDutID, DroneHostname: serverID},
-				},
-			}
-			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
-			So(err, ShouldBeNil)
-			So(resp, ShouldNotBeNil)
-			So(resp.Assigned, ShouldHaveLength, 1)
-			So(resp.Assigned[0].DroneHostname, ShouldEqual, serverID)
-			So(resp.Assigned[0].DutId, ShouldEqual, newDutID)
-
-			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
-			change := tf.FakeGerrit.Changes[0]
-			p := "data/skylab/server_db.textpb"
-			So(change.Files, ShouldContainKey, p)
-
-			contents := change.Files[p]
-			infra := &inventory.Infrastructure{}
-			err = inventory.LoadInfrastructureFromString(contents, infra)
-			So(err, ShouldBeNil)
-			So(change.Subject, ShouldStartWith, "assign DUTs")
-			So(infra.Servers, ShouldHaveLength, 2)
-
-			var server *inventory.Server
-			for _, s := range infra.Servers {
-				if s.GetHostname() == serverID {
-					server = s
-					break
-				}
-			}
-			So(server.DutUids, ShouldContain, existingDutID)
-			So(server.DutUids, ShouldContain, newDutID)
-		})
-
-		Convey("AssignDutsToDrones with a new dut by name and existing drone assigns that dut.", func() {
-			req := &fleet.AssignDutsToDronesRequest{
-				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
-					{DutId: newDutID, DroneHostname: serverID},
-				},
-			}
-			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
-			So(err, ShouldBeNil)
-			So(resp, ShouldNotBeNil)
-			So(resp.Assigned, ShouldHaveLength, 1)
-			So(resp.Assigned[0].DroneHostname, ShouldEqual, serverID)
-			So(resp.Assigned[0].DutId, ShouldEqual, newDutID)
-
-			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
-			change := tf.FakeGerrit.Changes[0]
-			p := "data/skylab/server_db.textpb"
-			So(change.Files, ShouldContainKey, p)
-
-			contents := change.Files[p]
-			infra := &inventory.Infrastructure{}
-			err = inventory.LoadInfrastructureFromString(contents, infra)
-			So(err, ShouldBeNil)
-			So(change.Subject, ShouldStartWith, "assign DUTs")
-			So(infra.Servers, ShouldHaveLength, 2)
-
-			var server *inventory.Server
-			for _, s := range infra.Servers {
-				if s.GetHostname() == serverID {
-					server = s
-					break
-				}
-			}
-			So(server.DutUids, ShouldContain, existingDutID)
-			So(server.DutUids, ShouldContain, newDutID)
-		})
-
-		Convey("AssignDutsToDrones with a new dut and no drone should pick a drone to assign.", func() {
-			req := &fleet.AssignDutsToDronesRequest{
-				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
-					{DutId: newDutID},
-				},
-			}
-			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
-			So(err, ShouldBeNil)
-			So(resp, ShouldNotBeNil)
-			So(resp.Assigned, ShouldHaveLength, 1)
-			So(resp.Assigned[0].DroneHostname, ShouldEqual, serverID)
-			So(resp.Assigned[0].DutId, ShouldEqual, newDutID)
-
-			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
-			change := tf.FakeGerrit.Changes[0]
-			p := "data/skylab/server_db.textpb"
-			So(change.Files, ShouldContainKey, p)
-
-			contents := change.Files[p]
-			infra := &inventory.Infrastructure{}
-			err = inventory.LoadInfrastructureFromString(contents, infra)
-			So(err, ShouldBeNil)
-			So(change.Subject, ShouldStartWith, "assign DUTs")
-			So(infra.Servers, ShouldHaveLength, 2)
-
-			var server *inventory.Server
-			for _, s := range infra.Servers {
-				if s.GetHostname() == serverID {
-					server = s
-					break
-				}
-			}
-			So(server.DutUids, ShouldContain, existingDutID)
-			So(server.DutUids, ShouldContain, newDutID)
-		})
-	})
-}
-
-// setupLabInventoryArchive sets up fake gitiles to return the inventory of
-// duts provided.
-func setupInfraInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testDutOnServer) error {
-	return g.AddArchive(config.Get(c).Inventory, []byte{}, []byte(infraInventoryStrFromDuts(duts)))
-}
-
-// assertLabInventoryChange verifies that the CL uploaded to gerrit contains the
-// inventory of duts provided.
-func assertLabInventoryChange(c C, fg *fakes.GerritClient, duts []testInventoryDut) {
-	p := "data/skylab/lab.textpb"
-	changes := fg.Changes
-	So(changes, ShouldHaveLength, 1)
-	change := changes[0]
-	So(change.Files, ShouldContainKey, p)
-	var actualLab inventory.Lab
-	err := inventory.LoadLabFromString(change.Files[p], &actualLab)
-	So(err, ShouldBeNil)
-	var expectedLab inventory.Lab
-	err = inventory.LoadLabFromString(labInventoryStrFromDuts(duts), &expectedLab)
-	So(err, ShouldBeNil)
-	if !proto.Equal(&actualLab, &expectedLab) {
-		prettyPrintLabDiff(c, &expectedLab, &actualLab)
-		So(proto.Equal(&actualLab, &expectedLab), ShouldBeTrue)
-	}
-}
-
-// TODO(akeshet): Consider eliminating this helper and marshalling directly to a byte buffer
-// in addArchive.
-func infraInventoryStrFromDuts(duts []testDutOnServer) string {
-	infra := &inventory.Infrastructure{}
-	serversByName := make(map[string]*inventory.Server)
-	for _, d := range duts {
-		server, ok := serversByName[d.server]
-		if !ok {
-			server = dutTestServer(d.server, d.environment)
-			serversByName[d.server] = server
-		}
-		server.DutUids = append(server.DutUids, d.id)
-	}
-	infra.Servers = make([]*inventory.Server, 0, len(serversByName))
-	for _, s := range serversByName {
-		infra.Servers = append(infra.Servers, s)
-	}
-
-	return proto.MarshalTextString(infra)
-}
-
-func dutTestServer(serverName string, env inventory.Environment) *inventory.Server {
-	status := inventory.Server_STATUS_PRIMARY
-	return &inventory.Server{
-		Hostname:    &serverName,
-		Environment: &env,
-		Roles:       []inventory.Server_Role{inventory.Server_ROLE_SKYLAB_DRONE},
-		Status:      &status,
-	}
-}
-
-func expectDutsWithHealth(t *fleet.MockTrackerServer, dutHealths map[string]fleet.Health) {
-	ft := &trackerPartialFake{dutHealths}
-	t.EXPECT().SummarizeBots(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(ft.SummarizeBots)
-}
-
 // partialPoolChange contains a subset of the fleet.PoolChange fields.
 //
 // This struct is used for easy validation of relevant fields of
@@ -868,6 +564,31 @@ func poolChangeCount(pcs map[string]*partialPoolChange, oldPool, newPool string)
 		}
 	}
 	return c
+}
+
+// assertLabInventoryChange verifies that the CL uploaded to gerrit contains the
+// inventory of duts provided.
+func assertLabInventoryChange(c C, fg *fakes.GerritClient, duts []testInventoryDut) {
+	p := "data/skylab/lab.textpb"
+	changes := fg.Changes
+	So(changes, ShouldHaveLength, 1)
+	change := changes[0]
+	So(change.Files, ShouldContainKey, p)
+	var actualLab inventory.Lab
+	err := inventory.LoadLabFromString(change.Files[p], &actualLab)
+	So(err, ShouldBeNil)
+	var expectedLab inventory.Lab
+	err = inventory.LoadLabFromString(labInventoryStrFromDuts(duts), &expectedLab)
+	So(err, ShouldBeNil)
+	if !proto.Equal(&actualLab, &expectedLab) {
+		prettyPrintLabDiff(c, &expectedLab, &actualLab)
+		So(proto.Equal(&actualLab, &expectedLab), ShouldBeTrue)
+	}
+}
+
+func expectDutsWithHealth(t *fleet.MockTrackerServer, dutHealths map[string]fleet.Health) {
+	ft := &trackerPartialFake{dutHealths}
+	t.EXPECT().SummarizeBots(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(ft.SummarizeBots)
 }
 
 func prettyPrintLabDiff(c C, want, got *inventory.Lab) {
