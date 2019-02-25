@@ -345,6 +345,9 @@ class UserGroupService(object):
     self.group_settings[group_id] = group_settings
 
   def ExpandAnyUserGroups(self, cnxn, user_ids):
+    # TODO(jojwang): Update fake.DetermineWhichUserIDsAreGroups
+    # to return unique ids so set does not have to be called outside
+    # the method.
     group_ids = set(self.DetermineWhichUserIDsAreGroups(cnxn, user_ids))
     direct_ids = [uid for uid in user_ids if uid not in group_ids]
     member_ids_dict, owner_ids_dict = self.LookupAllMembers(cnxn, group_ids)
@@ -358,6 +361,21 @@ class UserGroupService(object):
     indirect_ids = [iid for iid in indirect_ids if iid not in direct_ids]
 
     return direct_ids, list(indirect_ids)
+
+  def ExpandAnyGroupEmailRecipients(self, cnxn, user_ids):
+    group_ids = set(self.DetermineWhichUserIDsAreGroups(cnxn, user_ids))
+    group_settings_dict = self.GetAllGroupSettings(cnxn, group_ids)
+    member_ids_dict, owner_ids_dict = self.LookupAllMembers(cnxn, group_ids)
+    indirect_ids = set()
+    direct_ids = {uid for uid in user_ids if uid not in group_ids}
+    for gid, group_settings in group_settings_dict.iteritems():
+      if group_settings.notify_members:
+        indirect_ids.update(member_ids_dict.get(gid, set()))
+        indirect_ids.update(owner_ids_dict.get(gid, set()))
+      if group_settings.notify_group:
+        direct_ids.add(gid)
+
+    return list(direct_ids), list(indirect_ids)
 
   def LookupVisibleMembers(
       self, cnxn, group_id_list, perms, effective_ids, services):

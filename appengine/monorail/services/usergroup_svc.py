@@ -31,7 +31,8 @@ USERGROUPPROJECTS_TABLE_NAME = 'Group2Project'
 
 USERGROUP_COLS = ['user_id', 'group_id', 'role']
 USERGROUPSETTINGS_COLS = ['group_id', 'who_can_view_members',
-                          'external_group_type', 'last_sync_time']
+                          'external_group_type', 'last_sync_time',
+                          'notify_members', 'notify_group']
 USERGROUPPROJECTS_COLS = ['group_id', 'project_id']
 
 GROUP_TYPE_ENUM = (
@@ -329,6 +330,8 @@ class UserGroupService(object):
                               if row[1] == gid and row[2] == 'owner']
     return member_ids_dict, owner_ids_dict
 
+  # TODO(jojwang): monorail:4642, where appropriate, replace calls to
+  # ExpandAnyUserGroups with calls to ExpandAnyGroupEmailRecipients.
   def ExpandAnyUserGroups(self, cnxn, user_ids):
     """Transitively expand any user groups and return member user IDs.
 
@@ -356,6 +359,37 @@ class UserGroupService(object):
     # why the user got an email.  E.g., "You were Cc'd" vs. "You are a
     # member of a user group that was Cc'd".
     return direct_ids, list(indirect_ids)
+
+  def ExpandAnyGroupEmailRecipients(self, cnxn, user_ids):
+    """Expand the list with members that are part of a group configured
+       to have notifications sent directly to members. Remove any groups
+       not configured to have notifications sent directly to the group.
+
+    Args:
+      cnxn: connection to SQL database.
+      user_ids: list of user IDs to check.
+
+    Returns:
+      A paire (individual user_ids, transitive_ids). individual_user_ids
+          is a list of user IDs that were in the given user_ids list and
+          that identify individual members or a group that has
+          settings.notify_group set to True. transitive_ids is a list of
+          user IDs of members of any user group in user_ids with
+          settings.notify_members set to True.
+    """
+    group_ids = self.DetermineWhichUserIDsAreGroups(cnxn, user_ids)
+    group_settings_dict = self.GetAllGroupSettings(cnxn, group_ids)
+    member_ids_dict, owner_ids_dict = self.LookupAllMembers(cnxn, group_ids)
+    indirect_ids = set()
+    direct_ids = {uid for uid in user_ids if uid not in group_ids}
+    for gid, settings in group_settings_dict.iteritems():
+      if settings.notify_members:
+        indirect_ids.update(member_ids_dict.get(gid, set()))
+        indirect_ids.update(owner_ids_dict.get(gid, set()))
+      if settings.notify_group:
+        direct_ids.add(gid)
+
+    return list(direct_ids), list(indirect_ids)
 
   def LookupVisibleMembers(
       self, cnxn, group_id_list, perms, effective_ids, services):
@@ -406,23 +440,24 @@ class UserGroupService(object):
   def GetAllUserGroupsInfo(self, cnxn):
     """Fetch (addr, member_count, usergroup_settings) for all user groups."""
     group_rows = self.usergroupsettings_tbl.Select(
-        cnxn, cols=['group_id', 'email', 'who_can_view_members',
-                    'external_group_type', 'last_sync_time'],
+        cnxn, cols=['email'] + USERGROUPSETTINGS_COLS,
         left_joins=[('User ON UserGroupSettings.group_id = User.user_id', [])])
     count_rows = self.usergroup_tbl.Select(
         cnxn, cols=['group_id', 'COUNT(*)'],
         group_by=['group_id'])
     count_dict = dict(count_rows)
-    group_ids = [g[0] for g in group_rows]
+
+    group_ids = [g[1] for g in group_rows]
     friends_dict = self.GetAllGroupFriendProjects(cnxn, group_ids)
 
     user_group_info_tuples = [
         (email, count_dict.get(group_id, 0),
          usergroup_pb2.MakeSettings(visiblity, group_type, last_sync_time,
-                                    friends_dict.get(group_id, [])),
+                                    friends_dict.get(group_id, []),
+                                    bool(notify_members), bool(notify_group)),
          group_id)
-        for (group_id, email, visiblity, group_type, last_sync_time)
-        in group_rows]
+        for (email, group_id, visiblity, group_type, last_sync_time,
+             notify_members, notify_group) in group_rows]
     return user_group_info_tuples
 
   def GetAllGroupSettings(self, cnxn, group_ids):
@@ -433,8 +468,11 @@ class UserGroupService(object):
     friends_dict = self.GetAllGroupFriendProjects(cnxn, group_ids)
     settings_dict = {
         group_id: usergroup_pb2.MakeSettings(
-            vis, group_type, last_sync_time, friends_dict.get(group_id, []))
-        for group_id, vis, group_type, last_sync_time in rows}
+            vis, group_type, last_sync_time, friends_dict.get(group_id, []),
+            notify_members=bool(notify_members),
+            notify_group=bool(notify_group))
+        for (group_id, vis, group_type, last_sync_time,
+             notify_members, notify_group) in rows}
     return settings_dict
 
   def GetGroupSettings(self, cnxn, group_id):
@@ -462,6 +500,8 @@ class UserGroupService(object):
         cnxn, group_id=group_id, who_can_view_members=who_can_view_members,
         external_group_type=ext_group_type,
         last_sync_time=group_settings.last_sync_time,
+        notify_members=group_settings.notify_members,
+        notify_group=group_settings.notify_group,
         replace=True)
     self.usergroupprojects_tbl.Delete(
         cnxn, group_id=group_id)

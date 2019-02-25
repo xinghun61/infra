@@ -32,14 +32,18 @@ class UserGroupSettings(messages.Message):
       3, default=0, variant=messages.Variant.INT32)
   friend_projects = messages.IntegerField(
       4, repeated=True, variant=messages.Variant.INT32)
+  notify_members = messages.BooleanField(5, default=True)
+  notify_group = messages.BooleanField(6, default=False)
 # TODO(jrobbins): add settings to control who can join, etc.
 
 
 def MakeSettings(who_can_view_members_str, ext_group_type_str=None,
-                 last_sync_time=0, friend_projects=None):
+                 last_sync_time=0, friend_projects=None, notify_members=True,
+                 notify_group=False):
   """Create and return a new user record in RAM."""
   settings = UserGroupSettings(
-      who_can_view_members=MemberVisibility(who_can_view_members_str.upper()))
+      who_can_view_members=MemberVisibility(who_can_view_members_str.upper()),
+      notify_members=notify_members, notify_group=notify_group)
   if ext_group_type_str:
     settings.ext_group_type = GroupType(ext_group_type_str.upper())
   settings.last_sync_time = last_sync_time

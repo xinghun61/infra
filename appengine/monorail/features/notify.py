@@ -783,7 +783,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     recipient_ids = self._GetApprovalEmailRecipients(
         approval_value, comment, issue, user_ids_from_fields,
         omit_ids=[comment.user_id])
-    direct, indirect = self.services.usergroup.ExpandAnyUserGroups(
+    direct, indirect = self.services.usergroup.ExpandAnyGroupEmailRecipients(
         mr.cnxn, recipient_ids)
     # group ids were found in recipient_ids.
     # Re-set recipient_ids to remove group_ids

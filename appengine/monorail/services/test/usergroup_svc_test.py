@@ -265,6 +265,27 @@ class UserGroupServiceTest(unittest.TestCase):
     self.assertItemsEqual([111, 222], direct_ids)
     self.assertItemsEqual([333, 222], indirect_ids)
 
+  def testExpandAnyGroupEmailRecipients(self):
+    self.usergroup_service.group_dag.initialized = True
+    self.SetUpDetermineWhichUserIDsAreGroups(
+        [111, 777, 888, 999], [777, 888, 999])
+    self.SetUpGetGroupSettings(
+        [777, 888, 999],
+        [(777, 'anyone', None, 0, 1, 0),
+         (888, 'anyone', None, 0, 0, 1),
+         (999, 'anyone', None, 0, 1, 1)],
+    )
+    self.SetUpLookupAllMembers(
+        [777, 888, 999],
+        [(222, 777, 'member'), (333, 888, 'member'), (444, 999, 'member')],
+        {}, {})
+    self.mox.ReplayAll()
+    direct, indirect = self.usergroup_service.ExpandAnyGroupEmailRecipients(
+        self.cnxn, [111, 777, 888, 999])
+    self.mox.VerifyAll()
+    self.assertItemsEqual([111, 888, 999], direct)
+    self.assertItemsEqual([222, 444], indirect)
+
   def SetUpLookupMembers(self, group_member_dict):
     mock_membership_rows = []
     group_ids = []
@@ -329,7 +350,7 @@ class UserGroupServiceTest(unittest.TestCase):
     self.usergroup_service.group_dag.initialized = True
     self.SetUpGetGroupSettings(
         [888, 999],
-        [(888, 'anyone', None, 0), (999, 'members', None, 0)])
+        [(888, 'anyone', None, 0, 1, 0), (999, 'members', None, 0, 1, 0)])
     self.SetUpLookupMembers({888: [111], 999: [111]})
     self.SetUpLookupAllMembers(
         [888, 999], [(111, 888, 'member'), (111, 999, 'member')], {}, {})
@@ -345,22 +366,23 @@ class UserGroupServiceTest(unittest.TestCase):
                                 mock_friends=None):
     mock_friends = mock_friends or []
     self.usergroup_service.usergroupsettings_tbl.Select(
-        self.cnxn, cols=['group_id', 'email', 'who_can_view_members',
-                         'external_group_type', 'last_sync_time'],
+        self.cnxn, cols=['email', 'group_id', 'who_can_view_members',
+                         'external_group_type', 'last_sync_time',
+                         'notify_members', 'notify_group'],
         left_joins=[('User ON UserGroupSettings.group_id = User.user_id', [])]
         ).AndReturn(mock_settings_rows)
     self.usergroup_service.usergroup_tbl.Select(
         self.cnxn, cols=['group_id', 'COUNT(*)'],
         group_by=['group_id']).AndReturn(mock_count_rows)
 
-    group_ids = [g[0] for g in mock_settings_rows]
+    group_ids = [g[1] for g in mock_settings_rows]
     self.usergroup_service.usergroupprojects_tbl.Select(
         self.cnxn, cols=usergroup_svc.USERGROUPPROJECTS_COLS,
         group_id=group_ids).AndReturn(mock_friends)
 
   def testGetAllUserGroupsInfo(self):
     self.SetUpGetAllUserGroupsInfo(
-        [(888L, 'group@example.com', 'anyone', None, 0)],
+        [('group@example.com', 888L, 'anyone', None, 0, 1, 0)],
         [(888L, 12)])
     self.mox.ReplayAll()
     actual_infos = self.usergroup_service.GetAllUserGroupsInfo(self.cnxn)
@@ -402,7 +424,7 @@ class UserGroupServiceTest(unittest.TestCase):
   def testGetGroupSettings_SomeGroups(self):
     self.SetUpGetGroupSettings(
         [777L, 888L, 999L],
-        [(888L, 'anyone', None, 0), (999L, 'members', None, 0)])
+        [(888L, 'anyone', None, 0, 1, 0), (999L, 'members', None, 0, 1, 0)])
     self.mox.ReplayAll()
     actual_settings_dict = self.usergroup_service.GetAllGroupSettings(
         self.cnxn, [777L, 888L, 999L])
@@ -420,7 +442,7 @@ class UserGroupServiceTest(unittest.TestCase):
     self.assertEqual(None, actual_settings)
 
   def testGetGroupSettings_Found(self):
-    self.SetUpGetGroupSettings([888L], [(888L, 'anyone', None, 0)])
+    self.SetUpGetGroupSettings([888L], [(888L, 'anyone', None, 0, 1, 0)])
     self.mox.ReplayAll()
     actual_settings = self.usergroup_service.GetGroupSettings(self.cnxn, 888)
     self.mox.VerifyAll()
@@ -429,7 +451,8 @@ class UserGroupServiceTest(unittest.TestCase):
         actual_settings.who_can_view_members)
 
   def testGetGroupSettings_Import(self):
-    self.SetUpGetGroupSettings([888L], [(888L, 'owners', 'mdb', 0)])
+    self.SetUpGetGroupSettings(
+        [888L], [(888L, 'owners', 'mdb', 0, 1, 0)])
     self.mox.ReplayAll()
     actual_settings = self.usergroup_service.GetGroupSettings(self.cnxn, 888)
     self.mox.VerifyAll()
@@ -441,13 +464,14 @@ class UserGroupServiceTest(unittest.TestCase):
         actual_settings.ext_group_type)
 
   def SetUpUpdateSettings(self, group_id, visiblity, external_group_type=None,
-                          last_sync_time=0, friend_projects=None):
+                          last_sync_time=0, friend_projects=None,
+                          notify_members=True, notify_group=False):
     friend_projects = friend_projects or []
     self.usergroup_service.usergroupsettings_tbl.InsertRow(
         self.cnxn, group_id=group_id, who_can_view_members=visiblity,
         external_group_type=external_group_type,
-        last_sync_time=last_sync_time,
-        replace=True)
+        last_sync_time=last_sync_time, notify_members=notify_members,
+        notify_group=notify_group, replace=True)
     self.usergroup_service.usergroupprojects_tbl.Delete(
         self.cnxn, group_id=group_id)
     if friend_projects:
