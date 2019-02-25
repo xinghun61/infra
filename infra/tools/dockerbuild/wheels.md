@@ -1547,6 +1547,20 @@ wheel: <
 
 * *universal*
 
+## **oauthlib**
+
+### 3.0.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/oauthlib-py2_py3"
+  version: "version:3.0.1"
+>
+```
+
+
+* *universal*
+
 ## **odictliteral**
 
 ### 1.0.0
@@ -2210,6 +2224,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/requests-py2_py3"
   version: "version:2.21.0"
+>
+```
+
+
+* *universal*
+
+## **requests-oauthlib**
+
+### 1.2.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/requests-oauthlib-py2_py3"
+  version: "version:1.2.0"
 >
 ```
 
