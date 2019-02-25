@@ -108,7 +108,9 @@ type testInventoryDut struct {
 // setupLabInventoryArchive sets up fake gitiles to return the inventory of
 // duts provided.
 func setupLabInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testInventoryDut) error {
-	return g.AddArchive(config.Get(c).Inventory, []byte(inventoryBytesFromDUTs(duts)), []byte{})
+	return g.SetInventory(config.Get(c).Inventory, fakes.InventoryData{
+		Lab: []byte(inventoryBytesFromDUTs(duts)),
+	})
 }
 
 func inventoryBytesFromDUTs(duts []testInventoryDut) string {
@@ -143,7 +145,9 @@ type testInventoryServer struct {
 // setupLabInventoryArchive sets up fake gitiles to return the inventory of
 // duts provided.
 func setupInfraInventoryArchive(c context.Context, g *fakes.GitilesClient, servers []testInventoryServer) error {
-	return g.AddArchive(config.Get(c).Inventory, []byte{}, inventoryBytesFromServers(servers))
+	return g.SetInventory(config.Get(c).Inventory, fakes.InventoryData{
+		Infrastructure: inventoryBytesFromServers(servers),
+	})
 }
 
 func inventoryBytesFromServers(servers []testInventoryServer) []byte {

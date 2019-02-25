@@ -268,7 +268,13 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 				}
 			}
 		`
-		So(tf.FakeGitiles.AddArchive(config.Get(tf.C).Inventory, []byte(ptext), nil), ShouldBeNil)
+		So(
+			tf.FakeGitiles.SetInventory(
+				config.Get(tf.C).Inventory,
+				fakes.InventoryData{Lab: []byte(ptext)},
+			),
+			ShouldBeNil,
+		)
 		expectDutsWithHealth(tf.MockTracker, map[string]fleet.Health{
 			"dut_in_env":    fleet.Health_Healthy,
 			"dut_no_in_env": fleet.Health_Healthy,

@@ -43,7 +43,7 @@ func TestStoreValidity(t *testing.T) {
 		gerritC := &fakes.GerritClient{}
 		gitilesC := fakes.NewGitilesClient()
 
-		err := gitilesC.AddArchive(config.Get(ctx).Inventory, []byte{}, []byte{})
+		err := gitilesC.SetInventory(config.Get(ctx).Inventory, fakes.InventoryData{})
 		So(err, ShouldBeNil)
 
 		Convey("store initially contains no data", func() {
