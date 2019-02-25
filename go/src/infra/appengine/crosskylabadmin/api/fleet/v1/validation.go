@@ -16,7 +16,6 @@ package fleet
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Validate returns an error if r is invalid.
@@ -96,11 +95,6 @@ func (r *AssignDutsToDronesRequest) Validate() error {
 	for _, item := range r.Assignments {
 		if item.DutId == "" {
 			return errors.New("must specify DutId")
-		}
-		// TODO(akeshet): Implement a heuristic for determining drone when not
-		// specified, then remove this check.
-		if item.DroneHostname == "" {
-			return fmt.Errorf("must specify DroneHostname (not specified for Dut %s)", item.DutId)
 		}
 	}
 	return nil

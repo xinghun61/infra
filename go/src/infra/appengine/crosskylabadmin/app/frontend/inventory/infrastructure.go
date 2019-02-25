@@ -22,12 +22,21 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/libs/skylab/inventory"
 	"math/rand"
+	"sort"
 
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+)
+
+const (
+	// Number of drones least loaded drones to consider when picking a drone for a DUT.
+	//
+	// A random drone from these is assigned to the DUT.
+	leastLoadedDronesCount = 8
 )
 
 // AssignDutsToDrones implements the method from fleet.InventoryServer interface.
@@ -51,11 +60,16 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 			return err
 		}
 		for _, a := range req.Assignments {
-			if err = assignDutToDrone(ctx, s.Infrastructure, a.DutId, a.DroneHostname); err != nil {
+			dh := a.GetDroneHostname()
+			if dh == "" {
+				dh = pickDroneForDUT(ctx, s.Infrastructure)
+				logging.Debugf(ctx, "Picked drone %s for DUT %s", dh, a.DutId)
+			}
+			if err = assignDutToDrone(ctx, s.Infrastructure, a.DutId, dh); err != nil {
 				return err
 			}
 			assigned = append(assigned, &fleet.AssignDutsToDronesResponse_Item{
-				DroneHostname: a.DroneHostname,
+				DroneHostname: dh,
 				DutId:         a.DutId,
 			})
 		}
@@ -126,10 +140,17 @@ func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, dutI
 
 // pickDroneForDUT returns hostname of a drone to use for the DUT with the given ID.
 //
-// TODO(crbug/929854) Use a reasonable heuristic here and use in
-// AssignDutsToDrone RPC.
-func pickDroneForDUT(infra *inventory.Infrastructure, dutID string) string {
-	ds := filterSkylabDrones(infra.GetServers())
+// Returns "" if no drone can be found.
+func pickDroneForDUT(ctx context.Context, infra *inventory.Infrastructure) string {
+	ds := filterSkylabDronesInEnvironment(ctx, infra.GetServers())
+	// ds is a new slice. Sorting it does not modify infra.
+	sortDronesByAscendingDUTCount(ds)
+
+	dc := minInt(leastLoadedDronesCount, len(ds))
+	ds = ds[:dc]
+	if len(ds) == 0 {
+		return ""
+	}
 	return ds[rand.Intn(len(ds))].GetHostname()
 }
 
@@ -214,19 +235,29 @@ func findNamedServer(servers []*inventory.Server, hostname string) (server *inve
 	return nil, false
 }
 
-// filterSkylabDrones returns drones from a list of servers.
-func filterSkylabDrones(servers []*inventory.Server) []*inventory.Server {
+// filterSkylabDronesInEnvironment returns drones in the current environment
+// from a list of servers
+func filterSkylabDronesInEnvironment(ctx context.Context, servers []*inventory.Server) []*inventory.Server {
+	env := config.Get(ctx).Inventory.Environment
 	ds := make([]*inventory.Server, 0, len(servers))
-OUTER:
 	for _, s := range servers {
+		if s.GetEnvironment().String() != env {
+			continue
+		}
 		for _, r := range s.GetRoles() {
 			if r == inventory.Server_ROLE_SKYLAB_DRONE {
 				ds = append(ds, s)
-				continue OUTER
+				break
 			}
 		}
 	}
 	return ds
+}
+
+func sortDronesByAscendingDUTCount(ds []*inventory.Server) {
+	sort.SliceStable(ds, func(i, j int) bool {
+		return len(ds[i].DutUids) < len(ds[j].DutUids)
+	})
 }
 
 // removeDutFromServer removes the given Dut from the given server, if it exists.
@@ -240,4 +271,11 @@ func removeDutFromServer(server *inventory.Server, dutID string) (ok bool) {
 		}
 	}
 	return false
+}
+
+func minInt(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
