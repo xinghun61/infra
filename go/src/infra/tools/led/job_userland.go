@@ -22,8 +22,6 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 
 	if args != nil {
 		if u.RecipeIsolatedHash != "" {
-			args.RepositoryURL = ""
-			args.Revision = ""
 			args.CheckoutDir = recipeCheckoutDir
 
 			isoHash := u.RecipeIsolatedHash
@@ -47,18 +45,6 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 			// TODO(iannucci): add recipe_repository swarming tag
 			// `led isolate` should be able to capture this and embed in the
 			// JobDefinition.
-		} else if u.RecipeGitSource != nil {
-			args.RepositoryURL = u.RecipeGitSource.RepositoryURL
-			args.Revision = u.RecipeGitSource.Revision
-
-			tagRevision := u.RecipeGitSource.Revision
-			if tagRevision == "" {
-				tagRevision = "HEAD"
-			}
-			extraTags = append(extraTags,
-				"recipe_repository:"+u.RecipeGitSource.RepositoryURL,
-				"recipe_revision:"+u.RecipeGitSource.Revision,
-			)
 		} else if u.RecipeCIPDSource != nil {
 			if props.CipdInput == nil {
 				props.CipdInput = &swarming.SwarmingRpcsCipdInput{}
@@ -69,6 +55,7 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 					PackageName: u.RecipeCIPDSource.Package,
 					Version:     u.RecipeCIPDSource.Version,
 				})
+			extraTags = append(extraTags, "recipe_package:"+u.RecipeCIPDSource.Package)
 		}
 
 		if u.RecipeName != "" {

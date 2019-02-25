@@ -36,9 +36,9 @@ import (
 // for running a recipe, e.g. fetches a repository.
 const BootstrapStepName = "recipe bootstrap"
 
-// cmdCook checks out a repository at a revision and runs a recipe.
+// cmdCook runs a recipe.
 var cmdCook = &subcommands.Command{
-	UsageLine: "cook -repository <repository URL> -recipe <recipe>",
+	UsageLine: "cook -recipe <recipe>",
 	ShortDesc: "bootstraps a LUCI job.",
 	LongDesc:  "Bootstraps a LUCI job.",
 	CommandRun: func() subcommands.CommandRun {
@@ -85,9 +85,8 @@ func (c *cookRun) normalizeFlags() error {
 	return nil
 }
 
-// ensureAndRunRecipe ensures that we have the recipe (according to -repository,
-// -revision and -checkout-dir) and all its deps and runs it.
-func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *build.BuildRunResult {
+// runRecipe runs the recipe.
+func (c *cookRun) runRecipe(ctx context.Context, env environ.Env) *build.BuildRunResult {
 	result := &build.BuildRunResult{
 		Recipe: &build.BuildRunResult_Recipe{
 			Name: c.RecipeName,
@@ -105,67 +104,24 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		return result
 	}
 
-	if c.RepositoryURL == "" {
-		// The ready-to-run recipe is already present on the file system.
-		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
-		if err != nil {
-			return fail(errors.Annotate(err, "could not find bundled recipes").Err())
-		}
-		// LookPath can return an absolute OR relative path. Use Abs to make sure.
-		recipesPath, err = filepath.Abs(recipesPath)
-		if err != nil {
-			return fail(errors.Annotate(err, "could not convert bundled recipes to abspath").Err())
-		}
-		c.engine.cmdPrefix = []string{recipesPath}
-	} else {
-		// Run initial git fetch in system account context (which is always present
-		// on bots), since recipes bootstrap is considered part of the overall
-		// "Recipes on Swarming" offering. Users that run recipes on Swarming
-		// expect the recipe to actually start, even if their task is not associated
-		// with a service account (the recipe runs in anonymous context in this
-		// case).
-		sysEnv := c.systemAuth.ExportIntoEnv(env)
-
-		// Fetch the recipe. Record the fetched revision.
-		rev, err := checkoutRepository(ctx, sysEnv, c.CheckoutDir, c.RepositoryURL, c.Revision)
-		if err != nil {
-			return fail(errors.Annotate(err, "could not checkout %q at %q to %q",
-				c.RepositoryURL, c.Revision, c.CheckoutDir).Err())
-		}
-
-		result.Recipe.Repository = c.RepositoryURL
-		result.Recipe.Revision = rev
-
-		// Record the fetched repository. Add ".git" if it doesn't have it
-		// (normalization).
-		if !strings.HasSuffix(result.Recipe.Repository, ".git") {
-			result.Recipe.Repository += ".git"
-		}
-
-		// Read the path to the recipes.py within the fetched repo.
-		recipesPath, err := getRecipesPath(c.CheckoutDir)
-		if err != nil {
-			return fail(errors.Annotate(err, "could not read recipes.cfg").Err())
-		}
-		c.engine.cmdPrefix = []string{
-			"python",
-			filepath.Join(c.CheckoutDir, filepath.FromSlash(recipesPath), "recipes.py"),
-		}
-
-		// Fetch all recipe dependencies. They are fetched into some internal guts
-		// controlled by the engine (not a work dir). So we can do it before setting
-		// up the work dir.
-		if err := c.engine.fetchRecipeDeps(ctx, sysEnv); err != nil {
-			return fail(errors.Annotate(err, "failed to fetch recipe deps").Err())
-		}
+	// The ready-to-run recipe must already be present on the file system in
+	// checkout-dir.
+	recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
+	if err != nil {
+		return fail(errors.Annotate(err, "could not find bundled recipes").Err())
 	}
+	// LookPath can return an absolute OR relative path. Use Abs to make sure.
+	recipesPath, err = filepath.Abs(recipesPath)
+	if err != nil {
+		return fail(errors.Annotate(err, "could not convert bundled recipes to abspath").Err())
+	}
+	c.engine.cmdPrefix = []string{recipesPath}
 
 	// Setup our working directory. This is cwd for the recipe itself.
 	// Previously this was unnecessarially configurable; Now we hard-code it to
 	// "$CWD/k", which is the shortest path we can make. This is important to
 	// allow tasks on Windows to have as many characters as possible; otherwise
 	// they run into MAX_PATH issues.
-	var err error
 	c.engine.workDir, err = prepareRecipeRunWorkDir("k")
 	if err != nil {
 		return fail(errors.Annotate(err, "failed to prepare workdir").Err())
@@ -433,7 +389,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	defer c.systemAuth.Close()
 
 	// Run the recipe.
-	result := c.ensureAndRunRecipe(ctx, env)
+	result := c.runRecipe(ctx, env)
 
 	return result
 }

@@ -19,9 +19,7 @@ const (
 type CookFlags struct {
 	// For field documentation see the flags that these flags are bound to.
 
-	RepositoryURL string `json:"repository_url"`
-	Revision      string `json:"revision"`
-	CheckoutDir   string `json:"checkout_dir"`
+	CheckoutDir string `json:"checkout_dir"`
 
 	RecipeResultByteLimit int `json:"recipe_result_byte_limit"`
 
@@ -51,20 +49,6 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 	_ = fs.String("mode", "swarming", "deprecated, ignored")
 
 	fs.StringVar(
-		&c.RepositoryURL,
-		"repository",
-		"",
-		"URL of a git repository with the recipe to run. Must have a recipe configuration at infra/config/recipes.cfg. "+
-			"If unspecified will look for bundled recipes at -checkout-dir.")
-
-	fs.StringVar(
-		&c.Revision,
-		"revision",
-		"",
-		"Revison of the recipe to run (if -repository is specified). It can be HEAD, a commit hash or a fully-qualified "+
-			"ref. (defaults to HEAD)")
-
-	fs.StringVar(
 		&c.RecipeName,
 		"recipe",
 		"",
@@ -74,8 +58,8 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		&c.CheckoutDir,
 		"checkout-dir",
 		defaultCheckoutDir,
-		"The directory to check out the repository to or to look for bundled recipes. It must either: not exist, be empty, "+
-			"be a valid Git repository, or be a recipe bundle.")
+		"The directory where the recipes are checked out (via CIPD bundle). "+
+			"Expected to contain a `recipes` and `recipes.bat` executable/script.")
 
 	if c.Properties == nil {
 		c.Properties = PropertyFlag{}
@@ -163,8 +147,6 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 func (c *CookFlags) Dump() []string {
 	ret := flagDumper{}
 
-	ret.str("repository", c.RepositoryURL)
-	ret.str("revision", c.Revision)
 	ret.strDefault("checkout-dir", c.CheckoutDir, defaultCheckoutDir)
 	ret.strDefault("recipe-result-byte-limit", strconv.Itoa(c.RecipeResultByteLimit), "0")
 	if len(c.Properties) > 0 {

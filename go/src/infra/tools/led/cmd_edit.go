@@ -57,17 +57,11 @@ led get-builder ... |
 					" resulting folder contents. The `led edit-recipe-bundle` subcommand does all this"+
 					" automatically.")
 
-			ret.Flags.StringVar(&ret.recipeURL, "ru", "",
-				"override the recipe repo `url` (if not using CIPD or isolated).")
+			ret.Flags.StringVar(&ret.recipeCIPDPkg, "rpkg", "",
+				"override the recipe CIPD `package` (if not using isolated).")
 
-			ret.Flags.StringVar(&ret.recipeRevision, "rr", "",
-				"override the recipe repo `revision` (if not using CIPD or isolated).")
-
-			ret.Flags.StringVar(&ret.recipeCIPDPkg, "rCP", "",
-				"override the recipe CIPD `package` (if not using git or isolated).")
-
-			ret.Flags.StringVar(&ret.recipeCIPDVer, "rCV", "",
-				"override the recipe CIPD `version` (if not using git or isolated).")
+			ret.Flags.StringVar(&ret.recipeCIPDVer, "rver", "",
+				"override the recipe CIPD `version` (if not using isolated).")
 
 			ret.Flags.StringVar(&ret.recipeName, "r", "",
 				"override the `recipe` to run.")
@@ -92,8 +86,6 @@ type cmdEdit struct {
 	dimensions     stringmapflag.Value
 	properties     stringmapflag.Value
 	propertiesAuto stringmapflag.Value
-	recipeURL      string
-	recipeRevision string
 	recipeName     string
 	recipeCIPDPkg  string
 	recipeCIPDVer  string
@@ -141,7 +133,7 @@ func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.
 
 	err := editMode(ctx, func(jd *JobDefinition) error {
 		ejd := jd.Edit()
-		ejd.RecipeSource(c.recipeIsolate, c.recipeURL, c.recipeRevision, c.recipeCIPDPkg, c.recipeCIPDVer)
+		ejd.RecipeSource(c.recipeIsolate, c.recipeCIPDPkg, c.recipeCIPDVer)
 		ejd.Dimensions(c.dimensions)
 		ejd.Properties(c.properties, false)
 		ejd.Properties(c.propertiesAuto, true)

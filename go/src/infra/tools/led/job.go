@@ -79,14 +79,7 @@ func JobSliceFromTaskSlice(ts *swarming.SwarmingRpcsTaskSlice) (*JobSlice, error
 				prefix = generateLogdogToken
 				ret.S.KitchenArgs.LogDogFlags.AnnotationURL.Path = prefix.AsPathPrefix(path)
 
-				if ret.S.KitchenArgs.RepositoryURL != "" && ret.S.KitchenArgs.Revision != "" {
-					ret.U.RecipeGitSource = &RecipeGitSource{
-						ret.S.KitchenArgs.RepositoryURL,
-						ret.S.KitchenArgs.Revision,
-					}
-					ret.S.KitchenArgs.RepositoryURL = ""
-					ret.S.KitchenArgs.Revision = ""
-				} else if cipdRecipe, ok := ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir]; ok {
+				if cipdRecipe, ok := ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir]; ok {
 					pkgname, vers := "", ""
 					for pkgname, vers = range cipdRecipe {
 						break
@@ -147,6 +140,7 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 
 	ret.TopLevel.Tags = trimTags(ret.TopLevel.Tags, []string{
 		"luci_project:",
+		"recipe_package:", // re-added by Userland.apply
 	})
 
 	// prepend the name by default. This can be removed by manually editing the

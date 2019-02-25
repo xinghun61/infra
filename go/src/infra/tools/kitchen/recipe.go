@@ -5,9 +5,6 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,7 +13,6 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/system/environ"
-	"go.chromium.org/luci/common/system/exitcode"
 )
 
 // recipeEngine can invoke the recipe engine configured with some single recipe.
@@ -66,58 +62,6 @@ func (eng *recipeEngine) commandRun(ctx context.Context, tdir string, env enviro
 	recipeCmd.Dir = eng.workDir
 	recipeCmd.Env = env.Sorted()
 	return recipeCmd, nil
-}
-
-// commandFetch prepares a command that fetches recipe dependences.
-func (eng *recipeEngine) commandFetch(ctx context.Context, env environ.Env) (*exec.Cmd, error) {
-	if len(eng.cmdPrefix) == 0 {
-		return nil, errors.New("empty command prefix")
-	}
-
-	args := []string{}
-	args = append(args, eng.cmdPrefix...)
-	args = append(args, "-v", "fetch")
-
-	recipeCmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	recipeCmd.Env = env.Sorted()
-	return recipeCmd, nil
-}
-
-// fetchRecipeDeps fetches recipe dependencies via 'recipes.py fetch'.
-func (eng *recipeEngine) fetchRecipeDeps(ctx context.Context, env environ.Env) error {
-	cmd, err := eng.commandFetch(ctx, env)
-	if err != nil {
-		return err
-	}
-	printCommand(ctx, cmd)
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	err = cmd.Run()
-	switch rv, hasRV := exitcode.Get(err); {
-	case !hasRV:
-		return errors.Annotate(err, "failed to run recipe fetch").Err()
-	case rv != 0:
-		return errors.New(fmt.Sprintf("recipes fetch failed with exit code %d", rv))
-	}
-	return nil
-}
-
-func getRecipesPath(repoDir string) (string, error) {
-	recipesCfg := filepath.Join(repoDir, "infra", "config", "recipes.cfg")
-	fileContents, err := ioutil.ReadFile(recipesCfg)
-	if err != nil {
-		return "", errors.Annotate(err, "could not read recipes.cfg at %q", recipesCfg).Err()
-	}
-
-	var cfg struct {
-		RecipesPath string `json:"recipes_path"`
-	}
-	if err := json.Unmarshal(fileContents, &cfg); err != nil {
-		return "", errors.Annotate(err, "could not parse recipes.cfg at %q", recipesCfg).Err()
-	}
-	return cfg.RecipesPath, nil
 }
 
 // prepareWorkDir verifies and normalizes a workdir is suitable for a recipe

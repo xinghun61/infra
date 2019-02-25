@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	validRevisionRe = regexp.MustCompile("^([a-z0-9]{40}|HEAD|refs/.+)$")
 	validHostnameRe = regexp.MustCompile("^[a-zA-Z0-9\\-_.]+$") // good enough
 )
 
@@ -37,22 +36,12 @@ func inputError(format string, args ...interface{}) error {
 // Normalize normalizes the contents of CookFlags, returning non-nil if there is
 // an error.
 func (c *CookFlags) Normalize() error {
-	if c.RepositoryURL != "" && c.Revision == "" {
-		c.Revision = "HEAD"
-	} else if c.RepositoryURL == "" && c.Revision != "" {
-		return inputError("if -repository is unspecified -revision must also be unspecified.")
-	}
-
-	if c.RepositoryURL != "" && !validRevisionRe.MatchString(c.Revision) {
-		return inputError("invalid revision %q", c.Revision)
-	}
-
 	if c.CheckoutDir == "" {
 		return inputError("empty -checkout-dir")
 	}
 	switch st, err := os.Stat(c.CheckoutDir); {
-	case os.IsNotExist(err) && c.RepositoryURL == "":
-		return inputError("-repository not specified and -checkout-dir doesn't exist")
+	case os.IsNotExist(err):
+		return inputError("-checkout-dir doesn't exist")
 	case !os.IsNotExist(err) && err != nil:
 		return err
 	case err == nil && !st.IsDir():

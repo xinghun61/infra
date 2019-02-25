@@ -24,17 +24,13 @@ var flagTestCases = []struct {
 }{
 	{
 		flags:       []string{},
-		errValidate: "-repository not specified",
-	},
-
-	{
-		flags:       []string{"-revision", "refs/cool/awesome"},
-		errValidate: "-revision must also be unspecified",
+		errValidate: "-checkout-dir doesn't exist",
 	},
 
 	{
 		flags: []string{
-			"-repository", "whatever", "-recipe", "yep",
+			"-checkout-dir", ".",
+			"-recipe", "yep",
 			"-properties", `{"some": "thing"}`, "-properties-file", "bar",
 		},
 		errValidate: "only one of -properties or -properties-file",
@@ -42,7 +38,7 @@ var flagTestCases = []struct {
 
 	{
 		flags: []string{
-			"-repository", "meep",
+			"-checkout-dir", ".",
 			"-recipe", "cool_recipe",
 			"-call-update-build",
 		},
@@ -50,7 +46,7 @@ var flagTestCases = []struct {
 	},
 	{
 		flags: []string{
-			"-repository", "meep",
+			"-checkout-dir", ".",
 			"-recipe", "cool_recipe",
 			"-buildbucket-hostname", "buildbucket.example.com",
 			"-call-update-build",

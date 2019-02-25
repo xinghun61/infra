@@ -94,7 +94,6 @@ type Userland struct {
 	// combined via isolated inclusions with the Properties.InputsRef.Isolated
 	// when the job is launched with an `led launch` command.
 	RecipeIsolatedHash string            `json:"recipe_isolated_hash"`
-	RecipeGitSource    *RecipeGitSource  `json:"recipe_git_source"`
 	RecipeCIPDSource   *RecipeCIPDSource `json:"recipe_cipd_source"`
 
 	RecipeName       string                 `json:"recipe_name"`
@@ -103,13 +102,6 @@ type Userland struct {
 	ChangeListURL string `json:"changelist_url"`
 
 	Dimensions map[string]string `json:"dimensions"`
-}
-
-// RecipeGitSource instructs the JobDefinition to obtain its recipes from
-// a git repo.
-type RecipeGitSource struct {
-	RepositoryURL string `json:"repository_url"`
-	Revision      string `json:"revision"`
 }
 
 // RecipeCIPDSource instructs the JobDefinition to obtain its recipes from

@@ -99,7 +99,6 @@ func TestCook(t *testing.T) {
 
 			// Prepare paths
 			recipeRepoDir := filepath.Join(tdir, "recipe_repo")
-			checkoutPath := filepath.Join(tdir, "checkout")
 			logdogFilePath := filepath.Join(tdir, "logdog-debug-file.txt")
 			resultFilePath := filepath.Join(tdir, "result.json")
 			workdirPath := filepath.Join(tdir, "k")
@@ -142,10 +141,9 @@ func TestCook(t *testing.T) {
 				})
 				So(err, ShouldBeNil)
 				args := []string{
-					"-repository", "file://" + recipeRepoDir,
 					"-recipe", "kitchen_test",
 					"-properties", string(propertiesJSON),
-					"-checkout-dir", checkoutPath,
+					"-checkout-dir", recipeRepoDir,
 					"-temp-dir", kitchenTempDir,
 					"-cache-dir", cacheDirPath,
 					"-logdog-annotation-url", "logdog://logdog.example.com/chromium/prefix/+/annotations",
@@ -198,7 +196,7 @@ func TestCook(t *testing.T) {
 				}
 				So(actualRecipeInput, ShouldResemble, recipeInput{
 					Args: []string{
-						filepath.Join(checkoutPath, "recipes.py"),
+						filepath.Join(recipeRepoDir, "recipes"),
 						"run",
 						"--properties-file", filepath.Join(kitchenTempDir, "rr", "properties.json"),
 						"--workdir", workdirPath,
@@ -261,15 +259,6 @@ func TestCook(t *testing.T) {
 
 func setupRecipeRepo(c context.Context, env environ.Env, targetDir string) error {
 	if err := copyDir(targetDir, filepath.Join("testdata", "recipe_repo")); err != nil {
-		return err
-	}
-	if _, err := runGit(c, env, targetDir, "init"); err != nil {
-		return err
-	}
-	if _, err := runGit(c, env, targetDir, "add", "-A"); err != nil {
-		return err
-	}
-	if _, err := runGit(c, env, targetDir, "commit", "-m", "inital"); err != nil {
 		return err
 	}
 	return nil
