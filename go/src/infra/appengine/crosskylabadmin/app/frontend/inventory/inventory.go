@@ -140,6 +140,8 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 	if err := proto.Unmarshal(req.GetLabels(), req2.labels); err != nil {
 		return nil, err
 	}
+	// Discard unknown labels to not break the inventory schema.
+	proto.DiscardUnknown(req2.labels)
 	err = retry.Retry(
 		ctx,
 		transientErrorRetries(),
