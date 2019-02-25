@@ -697,6 +697,42 @@ func TestAssignDutsToDrones(t *testing.T) {
 			So(server.DutUids, ShouldContain, newDutID)
 		})
 
+		Convey("AssignDutsToDrones with a new dut by name and existing drone assigns that dut.", func() {
+			req := &fleet.AssignDutsToDronesRequest{
+				Assignments: []*fleet.AssignDutsToDronesRequest_Item{
+					{DutId: newDutID, DroneHostname: serverID},
+				},
+			}
+			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
+			So(err, ShouldBeNil)
+			So(resp, ShouldNotBeNil)
+			So(resp.Assigned, ShouldHaveLength, 1)
+			So(resp.Assigned[0].DroneHostname, ShouldEqual, serverID)
+			So(resp.Assigned[0].DutId, ShouldEqual, newDutID)
+
+			So(tf.FakeGerrit.Changes, ShouldHaveLength, 1)
+			change := tf.FakeGerrit.Changes[0]
+			p := "data/skylab/server_db.textpb"
+			So(change.Files, ShouldContainKey, p)
+
+			contents := change.Files[p]
+			infra := &inventory.Infrastructure{}
+			err = inventory.LoadInfrastructureFromString(contents, infra)
+			So(err, ShouldBeNil)
+			So(change.Subject, ShouldStartWith, "assign DUTs")
+			So(infra.Servers, ShouldHaveLength, 2)
+
+			var server *inventory.Server
+			for _, s := range infra.Servers {
+				if s.GetHostname() == serverID {
+					server = s
+					break
+				}
+			}
+			So(server.DutUids, ShouldContain, existingDutID)
+			So(server.DutUids, ShouldContain, newDutID)
+		})
+
 		Convey("AssignDutsToDrones with a new dut and no drone should pick a drone to assign.", func() {
 			req := &fleet.AssignDutsToDronesRequest{
 				Assignments: []*fleet.AssignDutsToDronesRequest_Item{

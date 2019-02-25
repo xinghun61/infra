@@ -60,6 +60,10 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 			return err
 		}
 		for _, a := range req.Assignments {
+			if a.DutHostname != "" {
+				return status.Errorf(codes.Unimplemented, "specifying DUT by hostname not implemented")
+			}
+
 			dh := a.GetDroneHostname()
 			if dh == "" {
 				dh = pickDroneForDUT(ctx, s.Infrastructure)
@@ -170,6 +174,10 @@ func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *flee
 	env := config.Get(ctx).Inventory.Environment
 
 	for _, removal := range req.Removals {
+		if removal.DutHostname != "" {
+			return nil, status.Errorf(codes.Unimplemented, "specifying DUT by hostname not implemented")
+		}
+
 		serverToRemove := removal.DroneHostname
 
 		var ok bool

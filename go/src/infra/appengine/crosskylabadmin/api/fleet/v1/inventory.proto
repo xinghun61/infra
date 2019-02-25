@@ -359,13 +359,21 @@ message PoolChange {
 }
 
 message RemoveDutsFromDronesRequest {
-
+  // NEXT TAG: 4
   message Item {
-    // dut_id is the id of a dut to be removed.
+    // dut_id is the id of a DUT to be removed.
+    //
+    // Exactly one of dut_id or hostname must be provided.
     string dut_id = 1;
 
-    // drone_hostname is the drone to remove the dut from (if specified); if unspecified
-    // dut will be removed regardless of current drone.
+    // dut_hostname is the id of a DUT to be removed.
+    //
+    // Exactly one of dut_id or dut_hostname must be provided.
+    string dut_hostname = 3;
+
+    // drone_hostname is the drone to remove the dut from.
+    //
+    // If unspecified dut will be removed regardless of current drone.
     string drone_hostname = 2;
   }
 
@@ -374,12 +382,12 @@ message RemoveDutsFromDronesRequest {
 }
 
 message RemoveDutsFromDronesResponse {
-
   message Item {
     // dut_id is the id of a dut that was removed.
     string dut_id = 1;
 
-    // drone_hostname is the hostname of the drone that it the Dut was removed from.
+    // drone_hostname is the hostname of the drone that it the Dut was removed
+    // from.
     string drone_hostname = 2;
   }
 
@@ -394,15 +402,21 @@ message RemoveDutsFromDronesResponse {
 }
 
 message AssignDutsToDronesRequest {
-
+  // NEXT TAG: 4
   message Item {
-    // dut_id is the id of a dut to assign to a drone.
+    // dut_id is the id of a DUT to assign to a drone.
+    //
+    // Exactly one of dut_id or hostname must be provided.
     string dut_id = 1;
+
+    // dut_hostname is the hostname of the DUT to assign to the drone.
+    //
+    // Exactly one of dut_id or hostname must be provided.
+    string dut_hostname = 3;
 
     // drone_hostname is the drone to assign the dut to.
     //
-    // [not yet implemented] if absent, inventory service will use a heuristic to select
-    // drone.
+    // if absent, inventory service will use a heuristic to select a drone.
     string drone_hostname = 2;
   }
 
@@ -411,7 +425,6 @@ message AssignDutsToDronesRequest {
 }
 
 message AssignDutsToDronesResponse {
-
   message Item {
     // dut_id is the id of a dut that was assigned to a drone.
     string dut_id = 1;
