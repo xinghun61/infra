@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2019-02-25
+
+- 3 commits, 2 bugs affected since b489690 ()
+- 2 Authors:
+  - agable@chromium.org
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [Update SoM's gatekeeper json URLs](https://chromium-review.googlesource.com/c/1481987) (agable@chromium.org)
+- [Remove corp gatekeeper urls from SoM](https://chromium-review.googlesource.com/c/1479258) (agable@chromium.org)
+- [[som] git ignore .nyc_output for coverge reporting output](https://chromium-review.googlesource.com/c/1475946) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- agable@chromium.org:
+  -  [https://crbug.com/853854](https://crbug.com/853854)
+  -  [https://crbug.com/931890](https://crbug.com/931890)
+
+
 # Release Notes sheriff-o-matic 2019-02-07
 
 - 3 commits, 2 bugs affected since 3f4f7d9 (2019-02-04T21:19:14Z)
