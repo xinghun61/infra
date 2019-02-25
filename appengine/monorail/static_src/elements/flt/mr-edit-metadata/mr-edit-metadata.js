@@ -446,9 +446,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         }
       }
     }
-    dom(this.root).querySelectorAll('mr-edit-field').forEach((el) => {
+    this.shadowRoot.querySelectorAll('mr-edit-field').forEach((el) => {
       el.reset();
     });
+    this.shadowRoot.querySelector('vaadin-upload').files = [];
   }
 
   save() {

@@ -216,4 +216,40 @@ suite('mr-edit-metadata', () => {
     assert.isNotNull(
       element.shadowRoot.querySelector('#approversInput'));
   });
+
+  test('reset empties form values', () => {
+    element.fieldDefs = [
+      {
+        fieldRef: {
+          fieldName: 'testField',
+          fieldId: 1,
+        },
+      },
+      {
+        fieldRef: {
+          fieldName: 'fakeField',
+          fieldId: 2,
+        },
+      },
+    ];
+
+    flush();
+
+    const uploader = element.shadowRoot.querySelector('vaadin-upload');
+    uploader.files = [
+      {name: 'test.png', progress: 0},
+      {name: 'rutabaga.png', progress: 0},
+    ];
+
+    element.shadowRoot.querySelector('#testFieldInput').setValue('testy test');
+    element.shadowRoot.querySelector('#fakeFieldInput').setValue('hello world');
+
+    element.reset();
+
+    assert.lengthOf(element.shadowRoot.querySelector(
+      '#testFieldInput').getValue(), 0);
+    assert.lengthOf(element.shadowRoot.querySelector(
+      '#fakeFieldInput').getValue(), 0);
+    assert.lengthOf(uploader.files, 0);
+  });
 });
