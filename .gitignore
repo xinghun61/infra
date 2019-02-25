@@ -23,3 +23,5 @@ reasons.sqlite
 *.sublime-*
 # Used by "infra/tools/dockerbuild".
 .dockerbuild
+# Cache directory created by 3pp/run_locally.sh
+.3pp_wd
