@@ -498,7 +498,7 @@ def _handle_invalid_input_error():
   try:
     yield
   except errors.InvalidInputError as ex:
-    _err(ex.message)
+    _err('%s', ex.message)
 
 
 def _enter_err(name, fmt, *args):
