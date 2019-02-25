@@ -167,7 +167,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
         </tr>
         <template is="dom-repeat" items="[[group.fieldDefs]]" as="field">
           <tr hidden$="[[_fieldIsHidden(fieldValueMap, field)]]">
-            <th title$="[[field.fieldRef.fieldName]]">[[field.fieldRef.fieldName]]:</th>
+            <th title$="[[field.docstring]]">[[field.fieldRef.fieldName]]:</th>
             <td>
               <mr-field-values
                 name="[[field.fieldRef.fieldName]]"
