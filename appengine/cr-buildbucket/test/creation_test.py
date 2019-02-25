@@ -52,8 +52,9 @@ class CreationTest(testing.AppengineTestCase):
             name: "linux"
             build_numbers: YES
             recipe {
-              repository: "https://example.com"
               name: "recipe"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
             }
           }
         }

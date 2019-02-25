@@ -56,7 +56,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
               category: "Chromium"
               build_numbers: YES
               recipe {
-                repository: "https://example.com"
+                cipd_package: "infra/recipe_bundle"
+                cipd_version: "refs/heads/master"
                 name: "presubmit"
                 properties: "foo:bar"
                 properties_j: "baz:1"
@@ -91,10 +92,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             '3600',
         'extra_args': [
             'cook',
-            '-repository',
-            '${repository}',
-            '-revision',
-            '${revision}',
             '-recipe',
             '${recipe}',
             '-properties',
@@ -268,10 +265,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         u'env': [{u'key': u'BUILDBUCKET_EXPERIMENTAL', u'value': u'FALSE'}],
         u'extra_args': [
             u'cook',
-            u'-repository',
-            u'https://example.com',
-            u'-revision',
-            u'HEAD',
             u'-recipe',
             u'presubmit',
             u'-properties',
@@ -306,7 +299,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                         'number': 1,
                         'infra': {
                             'buildbucket': {'serviceConfigRevision': 'rev'},
-                            'recipe': {'name': 'presubmit'},
+                            'recipe': {
+                                'name': 'presubmit',
+                                'cipdPackage': 'infra/recipe_bundle',
+                            },
                             'swarming': {'hostname': 'swarming.example.com'},
                         },
                         'createdBy': 'anonymous:anonymous',
@@ -340,6 +336,11 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                     u'package_name': u'infra/test/foo/${platform}',
                     u'version': u'stable',
                 },
+                {
+                    u'path': u'kitchen-checkout',
+                    u'package_name': u'infra/recipe_bundle',
+                    u'version': u'refs/heads/master',
+                },
             ],
         },
         u'dimensions': [
@@ -368,7 +369,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'buildbucket_template_revision:rev',
             u'builder:linux',
             u'recipe_name:presubmit',
-            u'recipe_repository:https://example.com',
+            u'recipe_package:infra/recipe_bundle',
         ],
         u'priority':
             u'100',

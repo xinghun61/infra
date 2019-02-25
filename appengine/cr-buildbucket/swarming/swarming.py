@@ -419,7 +419,7 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
     if master:  # pragma: no branch
       break
 
-  host = swarmingcfg_module.clear_dash(builder_cfg.luci_migration_host)
+  host = _clear_dash(builder_cfg.luci_migration_host)
   if master and host:
     try:
       url = 'https://%s/masters/%s/builders/%s/' % (
@@ -626,33 +626,19 @@ def _setup_recipes(build, builder_cfg, params):
       'recipe': builder_cfg.recipe.name,
       'properties_json': api_common.properties_to_json(recipe_props),
       'checkout_dir': _KITCHEN_CHECKOUT,
+      # TODO(iannucci): remove these when the templates no longer have them
+      'repository': '',
+      'revision': '',
   }
   extra_swarming_tags = [
       'recipe_name:%s' % builder_cfg.recipe.name,
+      'recipe_package:%s' % builder_cfg.recipe.cipd_package,
   ]
-  extra_cipd_packages = []
-
-  if builder_cfg.recipe.cipd_package:
-    extra_task_template_params.update({
-        'repository': '',
-        'revision': '',
-    })
-    extra_swarming_tags.append(
-        'recipe_package:' + builder_cfg.recipe.cipd_package
-    )
-    extra_cipd_packages.append({
-        'path': _KITCHEN_CHECKOUT,
-        'package_name': builder_cfg.recipe.cipd_package,
-        'version': builder_cfg.recipe.cipd_version or 'refs/heads/master',
-    })
-  else:
-    extra_task_template_params.update({
-        'repository': builder_cfg.recipe.repository,
-        'revision': 'HEAD',
-    })
-    extra_swarming_tags.append(
-        'recipe_repository:' + builder_cfg.recipe.repository
-    )
+  extra_cipd_packages = [{
+      'path': _KITCHEN_CHECKOUT,
+      'package_name': builder_cfg.recipe.cipd_package,
+      'version': builder_cfg.recipe.cipd_version or 'refs/heads/master',
+  }]
 
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
@@ -1583,3 +1569,8 @@ def _parse_ts(ts):
   if '.' not in ts:
     ts += '.0'
   return datetime.datetime.strptime(ts, '%Y-%m-%dT%H:%M:%S.%f')
+
+
+def _clear_dash(s):
+  """Returns s if it is not '-', otherwise returns ''."""
+  return s if s != '-' else ''

@@ -56,7 +56,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
                 name: "linux"
                 build_numbers: YES
                 recipe {
-                  repository: "https://example.com"
+                  cipd_package: "infra/recipe_bundle"
+                  cipd_version: "refs/heads/master"
                   name: "recipe"
                 }
               }

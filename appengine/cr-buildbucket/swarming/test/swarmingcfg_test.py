@@ -63,8 +63,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
               path: "git_cache"
             }
             recipe {
-              repository: "https://x.com"
               name: "foo"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
               properties: "a:b'"
               properties_j: "x:true"
             }
@@ -86,8 +87,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
           builders {
             name: "release"
             recipe {
-              repository: "https://x.com"
               name: "foo"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
             }
           }
         ''', '', []
@@ -151,7 +153,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
             'builder #1: name: unspecified',
             'builder #1: swarming_host: unspecified',
             'builder #1: recipe: name: unspecified',
-            'builder #1: recipe: specify either cipd_package or repository',
+            'builder #1: recipe: cipd_package: unspecified',
         ],
     )
 
@@ -161,7 +163,8 @@ class ProjectCfgTest(testing.AppengineTestCase):
             swarming_host: "swarming.example.com"
             recipe {
               name: "meeper"
-              repository: "https://example.com"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
             }
           }
           builders {
@@ -218,8 +221,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
             swarming_host: "swarming.example.com"
             dimensions: "pool:a"
             recipe {
-              repository: "https://x.com"
               name: "foo"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
             }
           }
         ''',
@@ -449,8 +453,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
             dimensions: "pool:default"
             swarming_host: "swarming.example.com"
             recipe {
-              repository: "https://x.com"
               name: "foo"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
               properties: "a:b"
               properties: "x:y"
            }
@@ -481,47 +486,6 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         ['builder_defaults: recipe: properties u\'a\': does not have a colon'],
-    )
-
-  def test_cipd_and_repository_bad(self):
-    self.cfg_test(
-        '''
-          builders {
-            name: "debug"
-            swarming_host: "swarming.example.com"
-            dimensions: "pool:default"
-            recipe {
-              name: "foo"
-              repository: "https://example.com"
-              cipd_package: "some/package"
-            }
-          }
-        ''', '', [
-            (
-                'builder debug: recipe: specify either cipd_package '
-                'or repository, not both'
-            ),
-        ]
-    )
-
-  def test_clear_recipe_repository(self):
-    self.cfg_test(
-        '''
-          builder_defaults {
-            swarming_host: "swarming.example.com"
-            recipe {
-              name: "foo"
-              repository: "https://example.com"
-            }
-          }
-          builders {
-            name: "debug"
-            recipe {
-              repository: "-"
-              cipd_package: "some/package"
-            }
-          }
-        ''', '', []
     )
 
   def test_validate_builder_mixins(self):
@@ -655,8 +619,9 @@ class ProjectCfgTest(testing.AppengineTestCase):
               path: "git"
             }
             recipe {
-              repository: "https://x.com"
               name: "foo"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
               properties: "a:b'"
               properties_j: "x:true"
             }

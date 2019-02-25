@@ -58,8 +58,9 @@ class ProjectCfgTest(unittest.TestCase):
               dimensions: "pool:default"
               dimensions: "cpu:x86-86"
               recipe {
-                repository: "https://example.com/repo"
                 name: "recipe"
+                cipd_package: "infra/recipe_bundle"
+                cipd_version: "refs/heads/master"
               }
               caches {
                 name: "git_chromium"
@@ -99,8 +100,9 @@ class ProjectCfgTest(unittest.TestCase):
         dimensions: "pool:Chrome"
         priority: 108
         recipe {
-          repository: "https://example.com/repo"
           name: "recipe"
+          cipd_package: "infra/recipe_bundle"
+          cipd_version: "refs/heads/master"
           properties_j: "predefined-property:\\\"x\\\""
           properties_j: "predefined-property-bool:true"
         }
@@ -170,8 +172,9 @@ class ProjectCfgTest(unittest.TestCase):
               path: "first"
             }
             recipe {
-              repository: "https://example.com/first"
               name: "first"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
               properties: "p2:first"
               properties_j: "pj2:\\\"first\\\""
             }
@@ -232,8 +235,9 @@ class ProjectCfgTest(unittest.TestCase):
             path: "second"
           }
           recipe {
-            repository: "https://example.com/first"
             name: "second"
+            cipd_package: "infra/recipe_bundle"
+            cipd_version: "refs/heads/master"
             properties_j: "p1:\\\"base\\\""
             properties_j: "p2:\\\"first\\\""
             properties_j: "p3:\\\"second\\\""
@@ -263,8 +267,9 @@ class ProjectCfgTest(unittest.TestCase):
                 mixins: "default"
                 dimensions: "pool:builder_defaults"
                 recipe {
-                  repository: "https://x.com"
                   name: "foo"
+                  cipd_package: "infra/recipe_bundle"
+                  cipd_version: "refs/heads/master"
                 }
               }
               builders {
@@ -278,8 +283,9 @@ class ProjectCfgTest(unittest.TestCase):
           name: "release"
           dimensions: "pool:builder_mixin"
           recipe {
-            repository: "https://x.com"
             name: "foo"
+            cipd_package: "infra/recipe_bundle"
+            cipd_version: "refs/heads/master"
           }
         ''',
     )

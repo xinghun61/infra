@@ -170,11 +170,8 @@ def _validate_recipe_cfg(recipe, ctx, final=True):
   if final:
     if not recipe.name:
       ctx.error('name: unspecified')
-    repo = clear_dash(recipe.repository)
-    if recipe.cipd_package and repo:
-      ctx.error('specify either cipd_package or repository, not both')
-    if not recipe.cipd_package and not repo:
-      ctx.error('specify either cipd_package or repository')
+    if not recipe.cipd_package:
+      ctx.error('cipd_package: unspecified')
   validate_recipe_properties(recipe.properties, recipe.properties_j, ctx)
 
 
@@ -424,10 +421,3 @@ def validate_service_cfg(swarming, ctx):
   if swarming.milo_hostname:
     with ctx.prefix('milo_hostname: '):
       _validate_hostname(swarming.milo_hostname, ctx)
-
-
-def clear_dash(s):
-  """Returns s if it is not '-', otherwise returns ''."""
-  if s == '-':
-    return ''
-  return s

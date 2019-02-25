@@ -84,6 +84,11 @@ def compile_protos(src_dir, dest_dir):
   args = ['yapf', '-i'] + pb2_files
   subprocess.check_call(args, cwd=tmpd)
 
+  # Remove all _pb2.py and .pyc from the dest dir
+  for fname in os.listdir(dest_dir):
+    if fname.endswith(('_pb2.py', '.pyc')):
+      os.remove(os.path.join(dest_dir, fname))
+
   # Copy _pb2.py files to dest dir.
   for f in pb2_files:
     shutil.copyfile(os.path.join(tmpd, f), os.path.join(dest_dir, f))

@@ -239,7 +239,8 @@ _STEP.fields_by_name[
     'start_time'
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name[
-    'end_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'end_time'
+].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _STEP.fields_by_name['status'].enum_type = common__pb2._STATUS
 _STEP.fields_by_name['logs'].message_type = _STEP_LOG
 DESCRIPTOR.message_types_by_name['Step'] = _STEP

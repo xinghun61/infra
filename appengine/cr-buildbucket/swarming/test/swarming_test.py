@@ -124,8 +124,9 @@ class SwarmingTest(BaseTest):
           build_numbers: YES
           service_account: "robot@example.com"
           recipe {
-            repository: "https://example.com/repo"
             name: "recipe"
+            cipd_package: "infra/recipe_bundle"
+            cipd_version: "refs/heads/master"
             properties_j: "predefined-property:\\\"x\\\""
             properties_j: "predefined-property-bool:true"
           }
@@ -204,10 +205,6 @@ class SwarmingTest(BaseTest):
                     '3600',
                 'extra_args': [
                     'cook',
-                    '-repository',
-                    '${repository}',
-                    '-revision',
-                    '${revision}',
                     '-recipe',
                     '${recipe}',
                     '-properties',
@@ -687,7 +684,7 @@ class SwarmingTest(BaseTest):
                 ),
                 'priority:108',
                 'recipe_name:recipe',
-                'recipe_repository:https://example.com/repo',
+                'recipe_package:infra/recipe_bundle',
             ],
             'service_account':
                 'robot@example.com',
@@ -714,10 +711,6 @@ class SwarmingTest(BaseTest):
             '3600',
         'extra_args': [
             'cook',
-            '-repository',
-            'https://example.com/repo',
-            '-revision',
-            'HEAD',
             '-recipe',
             'recipe',
             '-properties',
@@ -776,7 +769,10 @@ class SwarmingTest(BaseTest):
                                 'project': 'chromium',
                                 'prefix': 'bb',
                             },
-                            'recipe': {'name': 'recipe'},
+                            'recipe': {
+                                'name': 'recipe',
+                                'cipdPackage': 'infra/recipe_bundle',
+                            },
                             'swarming': {
                                 'hostname': 'swarming.example.com',
                                 'taskId': 'deadbeef',
@@ -820,6 +816,11 @@ class SwarmingTest(BaseTest):
                     'path': 'third_party',
                     'version': 'stable',
                 },
+                {
+                    'package_name': 'infra/recipe_bundle',
+                    'path': 'kitchen-checkout',
+                    'version': 'refs/heads/master',
+                },
             ],
         },
     }
@@ -852,7 +853,7 @@ class SwarmingTest(BaseTest):
             ),
             'luci_project:chromium',
             'recipe_name:recipe',
-            'recipe_repository:https://example.com/repo',
+            'recipe_package:infra/recipe_bundle',
         ],
         'pool_task_template':
             'CANARY_NEVER',
@@ -941,7 +942,7 @@ class SwarmingTest(BaseTest):
                 'buildset:1',
                 'priority:108',
                 'recipe_name:recipe',
-                'recipe_repository:https://example.com/repo',
+                'recipe_package:infra/recipe_bundle',
             ],
             'service_account':
                 'robot@example.com',
@@ -975,10 +976,6 @@ class SwarmingTest(BaseTest):
                     '3600',
                 'extra_args': [
                     'cook',
-                    '-repository',
-                    '${repository}',
-                    '-revision',
-                    '${revision}',
                     '-recipe',
                     '${recipe}',
                     '-properties',
@@ -1031,7 +1028,7 @@ class SwarmingTest(BaseTest):
                 'buildset:1',
                 'priority:108',
                 'recipe_name:recipe',
-                'recipe_repository:https://example.com/repo',
+                'recipe_package:infra/recipe_bundle',
             ],
             'service_account':
                 'robot@example.com',
@@ -1130,7 +1127,7 @@ class SwarmingTest(BaseTest):
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:recipe',
-                'recipe_repository:https://example.com/repo',
+                'recipe_package:infra/recipe_bundle',
             ],
         },
     }
@@ -1155,10 +1152,6 @@ class SwarmingTest(BaseTest):
             '3600',
         'extra_args': [
             'cook',
-            '-repository',
-            'https://example.com/repo',
-            '-revision',
-            'HEAD',
             '-recipe',
             'recipe',
             '-properties',
@@ -1203,7 +1196,10 @@ class SwarmingTest(BaseTest):
                                 'project': 'chromium',
                                 'prefix': 'bb',
                             },
-                            'recipe': {'name': 'recipe'},
+                            'recipe': {
+                                'name': 'recipe',
+                                'cipdPackage': 'infra/recipe_bundle',
+                            },
                             'swarming': {
                                 'hostname': 'swarming.example.com',
                                 'taskId': 'deadbeef',
@@ -1252,6 +1248,11 @@ class SwarmingTest(BaseTest):
                     'path': 'third_party',
                     'version': 'stable',
                 },
+                {
+                    'package_name': 'infra/recipe_bundle',
+                    'path': 'kitchen-checkout',
+                    'version': 'refs/heads/master',
+                },
             ],
         },
     }
@@ -1284,7 +1285,7 @@ class SwarmingTest(BaseTest):
             ),
             'luci_project:chromium',
             'recipe_name:recipe',
-            'recipe_repository:https://example.com/repo',
+            'recipe_package:infra/recipe_bundle',
         ],
         'pool_task_template':
             'CANARY_PREFER',
@@ -1363,7 +1364,6 @@ class SwarmingTest(BaseTest):
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:recipe',
-                'recipe_repository:https://example.com/repo',
             ],
         },
     }
@@ -1407,7 +1407,6 @@ class SwarmingTest(BaseTest):
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:bob',
-                'recipe_repository:https://example.com/repo',
             ],
         },
     }
@@ -1453,7 +1452,6 @@ class SwarmingTest(BaseTest):
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:bob',
-                'recipe_repository:https://example.com/repo',
             ],
         },
     }
@@ -1539,7 +1537,6 @@ class SwarmingTest(BaseTest):
                 'commontag:yes',
                 'priority:108',
                 'recipe_name:bob',
-                'recipe_repository:https://example.com/repo',
             ],
         },
     }

@@ -53,7 +53,8 @@ LUCI_CHROMIUM_TRY = test_util.parse_bucket_cfg(
         dimensions: "os:Linux"
         dimensions: "pool:luci.chromium.try"
         recipe {
-          repository: "https://example.com"
+          cipd_package: "infra/recipe_bundle"
+          cipd_version: "refs/heads/master"
           name: "x"
         }
       }
@@ -69,7 +70,8 @@ LUCI_DART_TRY = test_util.parse_bucket_cfg(
         name: "linux"
         dimensions: "pool:Dart.LUCI"
         recipe {
-          repository: "https://example.com"
+          cipd_package: "infra/recipe_bundle"
+          cipd_version: "refs/heads/master"
           name: "x"
         }
       }
@@ -222,7 +224,8 @@ class ConfigTest(testing.AppengineTestCase):
         builder_mixins {
           name: "recipe-x"
           recipe {
-            repository: "https://example.com"
+            cipd_package: "infra/recipe_bundle"
+            cipd_version: "refs/heads/master"
             name: "x"
           }
         }
@@ -277,7 +280,8 @@ class ConfigTest(testing.AppengineTestCase):
           builder_defaults {
             dimensions: "pool:Dart.LUCI"
             recipe {
-              repository: "https://example.com"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
               name: "x"
             }
           }
@@ -519,7 +523,8 @@ class ConfigTest(testing.AppengineTestCase):
       builder_mixins {
         name: "m"
         recipe {
-          repository: "https://chromium.googlesource.com/infra/infra"
+          cipd_package: "infra/recipe_bundle"
+          cipd_version: "refs/heads/master"
         }
       }
       buckets {
