@@ -108,72 +108,10 @@ type testInventoryDut struct {
 // setupLabInventoryArchive sets up fake gitiles to return the inventory of
 // duts provided.
 func setupLabInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testInventoryDut) error {
-	return g.AddArchive(config.Get(c).Inventory, []byte(labInventoryStrFromDuts(duts)), []byte{})
+	return g.AddArchive(config.Get(c).Inventory, []byte(inventoryBytesFromDUTs(duts)), []byte{})
 }
 
-// testDutOnServer contains a subset of the fields in infrastructure servers.
-type testDutOnServer struct {
-	id          string
-	server      string
-	environment inventory.Environment
-}
-
-// setupLabInventoryArchive sets up fake gitiles to return the inventory of
-// duts provided.
-func setupInfraInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testDutOnServer) error {
-	return g.AddArchive(config.Get(c).Inventory, []byte{}, []byte(infraInventoryStrFromDuts(duts)))
-}
-
-// TODO(akeshet): Consider eliminating this helper and marshalling directly to a byte buffer
-// in addArchive.
-func infraInventoryStrFromDuts(duts []testDutOnServer) string {
-	infra := &inventory.Infrastructure{}
-	serversByName := make(map[string]*inventory.Server)
-	for _, d := range duts {
-		server, ok := serversByName[d.server]
-		if !ok {
-			server = dutTestServer(d.server, d.environment)
-			serversByName[d.server] = server
-		}
-		server.DutUids = append(server.DutUids, d.id)
-	}
-	infra.Servers = make([]*inventory.Server, 0, len(serversByName))
-	for _, s := range serversByName {
-		infra.Servers = append(infra.Servers, s)
-	}
-
-	return proto.MarshalTextString(infra)
-}
-
-func dutTestServer(serverName string, env inventory.Environment) *inventory.Server {
-	status := inventory.Server_STATUS_PRIMARY
-	return &inventory.Server{
-		Hostname:    &serverName,
-		Environment: &env,
-		Roles:       []inventory.Server_Role{inventory.Server_ROLE_SKYLAB_DRONE},
-		Status:      &status,
-	}
-}
-
-type trackerPartialFake struct {
-	DutHealths map[string]fleet.Health
-}
-
-// SummarizeBots implements the fleet.TrackerService interface.
-func (t *trackerPartialFake) SummarizeBots(c context.Context, req *fleet.SummarizeBotsRequest) (*fleet.SummarizeBotsResponse, error) {
-	summaries := make([]*fleet.BotSummary, 0, len(req.Selectors))
-	for _, s := range req.Selectors {
-		h, ok := t.DutHealths[s.DutId]
-		// Tracker silently skips any selectors that don't match existing DUTs.
-		if !ok {
-			continue
-		}
-		summaries = append(summaries, &fleet.BotSummary{DutId: s.DutId, Health: h})
-	}
-	return &fleet.SummarizeBotsResponse{Bots: summaries}, nil
-}
-
-func labInventoryStrFromDuts(duts []testInventoryDut) string {
+func inventoryBytesFromDUTs(duts []testInventoryDut) string {
 	ptext := ""
 	for _, dut := range duts {
 		ptext = fmt.Sprintf(`%s
@@ -193,4 +131,56 @@ func labInventoryStrFromDuts(duts []testInventoryDut) string {
 		)
 	}
 	return ptext
+}
+
+// testDutOnServer contains a subset of the fields in infrastructure servers.
+type testInventoryServer struct {
+	hostname    string
+	environment inventory.Environment
+	dutIDs      []string
+}
+
+// setupLabInventoryArchive sets up fake gitiles to return the inventory of
+// duts provided.
+func setupInfraInventoryArchive(c context.Context, g *fakes.GitilesClient, servers []testInventoryServer) error {
+	return g.AddArchive(config.Get(c).Inventory, []byte{}, inventoryBytesFromServers(servers))
+}
+
+func inventoryBytesFromServers(servers []testInventoryServer) []byte {
+	infra := &inventory.Infrastructure{
+		Servers: make([]*inventory.Server, 0, len(servers)),
+	}
+	for _, s := range servers {
+		status := inventory.Server_STATUS_PRIMARY
+		hostname := s.hostname
+		env := s.environment
+		server := &inventory.Server{
+			DutUids:     []string{},
+			Environment: &env,
+			Hostname:    &hostname,
+			Roles:       []inventory.Server_Role{inventory.Server_ROLE_SKYLAB_DRONE},
+			Status:      &status,
+		}
+		server.DutUids = append(server.DutUids, s.dutIDs...)
+		infra.Servers = append(infra.Servers, server)
+	}
+	return []byte(proto.MarshalTextString(infra))
+}
+
+type trackerPartialFake struct {
+	DutHealths map[string]fleet.Health
+}
+
+// SummarizeBots implements the fleet.TrackerService interface.
+func (t *trackerPartialFake) SummarizeBots(c context.Context, req *fleet.SummarizeBotsRequest) (*fleet.SummarizeBotsResponse, error) {
+	summaries := make([]*fleet.BotSummary, 0, len(req.Selectors))
+	for _, s := range req.Selectors {
+		h, ok := t.DutHealths[s.DutId]
+		// Tracker silently skips any selectors that don't match existing DUTs.
+		if !ok {
+			continue
+		}
+		summaries = append(summaries, &fleet.BotSummary{DutId: s.DutId, Health: h})
+	}
+	return &fleet.SummarizeBotsResponse{Bots: summaries}, nil
 }

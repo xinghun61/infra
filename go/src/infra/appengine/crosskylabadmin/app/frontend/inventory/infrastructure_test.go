@@ -32,9 +32,17 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 		serverID := "server_id"
 		wrongEnvDutID := "wrong_env_dut"
 		wrongEnvServer := "wrong_env_server"
-		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testDutOnServer{
-			{dutID, serverID, inventory.Environment_ENVIRONMENT_STAGING},
-			{wrongEnvDutID, wrongEnvServer, inventory.Environment_ENVIRONMENT_PROD},
+		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryServer{
+			{
+				hostname:    serverID,
+				environment: inventory.Environment_ENVIRONMENT_STAGING,
+				dutIDs:      []string{dutID},
+			},
+			{
+				hostname:    wrongEnvServer,
+				environment: inventory.Environment_ENVIRONMENT_PROD,
+				dutIDs:      []string{wrongEnvDutID},
+			},
 		})
 		So(err, ShouldBeNil)
 
@@ -100,9 +108,17 @@ func TestAssignDutsToDrones(t *testing.T) {
 		serverID := "server_id"
 		wrongEnvDutID := "wrong_env_dut"
 		wrongEnvServer := "wrong_env_server"
-		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testDutOnServer{
-			{existingDutID, serverID, inventory.Environment_ENVIRONMENT_STAGING},
-			{wrongEnvDutID, wrongEnvServer, inventory.Environment_ENVIRONMENT_PROD},
+		err := setupInfraInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryServer{
+			{
+				hostname:    serverID,
+				environment: inventory.Environment_ENVIRONMENT_STAGING,
+				dutIDs:      []string{existingDutID},
+			},
+			{
+				hostname:    wrongEnvServer,
+				environment: inventory.Environment_ENVIRONMENT_PROD,
+				dutIDs:      []string{wrongEnvDutID},
+			},
 		})
 		So(err, ShouldBeNil)
 

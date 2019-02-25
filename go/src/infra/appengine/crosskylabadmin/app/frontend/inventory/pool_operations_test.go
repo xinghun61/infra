@@ -578,7 +578,7 @@ func assertLabInventoryChange(c C, fg *fakes.GerritClient, duts []testInventoryD
 	err := inventory.LoadLabFromString(change.Files[p], &actualLab)
 	So(err, ShouldBeNil)
 	var expectedLab inventory.Lab
-	err = inventory.LoadLabFromString(labInventoryStrFromDuts(duts), &expectedLab)
+	err = inventory.LoadLabFromString(inventoryBytesFromDUTs(duts), &expectedLab)
 	So(err, ShouldBeNil)
 	if !proto.Equal(&actualLab, &expectedLab) {
 		prettyPrintLabDiff(c, &expectedLab, &actualLab)
