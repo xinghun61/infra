@@ -24,14 +24,13 @@ var AssignDuts = &subcommands.Command{
 	ShortDesc: "assign DUTs to a drone",
 	LongDesc: `Assign DUTs to a drone.
 
-The -drone flag is required.
-
 Assigning a DUT to a drone allows the DUT to run tasks.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &assignDutsRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.StringVar(&c.server, "drone", "", "Drone to assign DUTs to.  Required.")
+		c.Flags.StringVar(&c.server, "drone", "",
+			`Drone to assign DUTs to. If omitted, one is automatically chosen.`)
 		return c
 	},
 }
@@ -61,7 +60,12 @@ func (c *assignDutsRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	for i, dut := range c.Flags.Args() {
-		req.Assignments[i] = &fleet.AssignDutsToDronesRequest_Item{DutId: dut, DroneHostname: c.server}
+		req.Assignments[i] = &fleet.AssignDutsToDronesRequest_Item{DutId: dut}
+	}
+	if c.server != "" {
+		for _, a := range req.Assignments {
+			a.DroneHostname = c.server
+		}
 	}
 
 	ctx := cli.GetContext(a, c, env)
