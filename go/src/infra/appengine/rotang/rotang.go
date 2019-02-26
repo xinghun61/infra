@@ -143,6 +143,32 @@ const (
 	NoOncall
 )
 
+// ChangeType represents the type of change, used by ConfigChange.
+type ChangeType int
+
+const (
+	// Update is used for changes to existing configurations.
+	Update ChangeType = iota
+	// Create is used when a new configuration is created.
+	Create
+	// Delete is used for deletions of configurations.
+	Delete
+)
+
+// ConfigChange represents a change to a rotation configuration.
+type ConfigChange struct {
+	// At timestamps the change.
+	At time.Time
+	// Rota names the rotation affected by the change.
+	Rota string
+	// Type identifies the type of change.
+	Type ChangeType
+	// Who is the email of the user who made the change.
+	Who string
+	// Cfg is the changed configuration.
+	Cfg Configuration
+}
+
 // ConfigStorer defines the Store interface.
 type ConfigStorer interface {
 	// CreateRotaConfig stores a Configuration in backend storage.
@@ -166,6 +192,8 @@ type ConfigStorer interface {
 	DisableRota(ctx context.Context, rota string) error
 	// RotaEnabled returns the Enabled state of a rota.
 	RotaEnabled(ctx context.Context, rota string) (bool, error)
+	// ChangeHistory returns the change history for the specified rotation.
+	ChangeHistory(ctx context.Context, from, to time.Time, rota string) ([]ConfigChange, error)
 }
 
 // MemberStorer defines the member store interface.

@@ -16,6 +16,11 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
+	"go.chromium.org/luci/auth/identity"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 )
 
 func newTestContext() context.Context {
@@ -33,6 +38,236 @@ var locationUTC = func() *time.Location {
 	}
 	return utcTZ
 }()
+
+type testChange struct {
+	at time.Time
+	f  func(context.Context, rotang.ConfigStorer) error
+}
+
+func TestChangeHistory(t *testing.T) {
+	tests := []struct {
+		name     string
+		fail     bool
+		rota     string
+		user     string
+		from, to time.Time
+		changes  []testChange
+		want     []rotang.ConfigChange
+	}{{
+		name: "Create single rota",
+		rota: "test rota",
+		user: "testuser",
+		changes: []testChange{
+			{
+				at: midnight,
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.CreateRotaConfig(ctx, &rotang.Configuration{
+						Config: rotang.Config{
+							Name: "test rota",
+						},
+					})
+				},
+			},
+		},
+		want: []rotang.ConfigChange{
+			{
+				Rota: "test rota",
+				At:   midnight,
+				Who:  "testuser",
+				Type: rotang.Create,
+				Cfg: rotang.Configuration{
+					Config: rotang.Config{
+						Name: "test rota",
+					},
+				},
+			},
+		},
+	}, {
+		name: "Update/Delete",
+		rota: "test rota",
+		user: "testuser",
+		from: midnight.Add(1 * time.Minute),
+		changes: []testChange{
+			{
+				at: midnight,
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.CreateRotaConfig(ctx, &rotang.Configuration{
+						Config: rotang.Config{
+							Name: "test rota",
+						},
+					})
+				},
+			}, {
+				at: midnight.Add(1 * time.Minute),
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.UpdateRotaConfig(ctx, &rotang.Configuration{
+						Config: rotang.Config{
+							Name:        "test rota",
+							Description: "Something changed",
+						},
+					})
+				},
+			}, {
+				at: midnight.Add(2 * time.Minute),
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.DeleteRotaConfig(ctx, "test rota")
+				},
+			},
+		},
+		want: []rotang.ConfigChange{
+			{
+				Rota: "test rota",
+				Who:  "testuser",
+				At:   midnight.Add(1 * time.Minute),
+				Type: rotang.Update,
+				Cfg: rotang.Configuration{
+					Config: rotang.Config{
+						Name:        "test rota",
+						Description: "Something changed",
+					},
+				},
+			}, {
+				Rota: "test rota",
+				Who:  "testuser",
+				At:   midnight.Add(2 * time.Minute),
+				Type: rotang.Delete,
+			},
+		},
+	}, {
+		name: "Enable/Disable",
+		rota: "test rota",
+		user: "testuser",
+		from: midnight.Add(1 * time.Minute),
+		to:   midnight.Add(2 * time.Minute),
+		changes: []testChange{
+			{
+				at: midnight,
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.CreateRotaConfig(ctx, &rotang.Configuration{
+						Config: rotang.Config{
+							Name: "test rota",
+						},
+					})
+				},
+			},
+			{
+				at: midnight.Add(1 * time.Minute),
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.EnableRota(ctx, "test rota")
+				},
+			}, {
+				at: midnight.Add(2 * time.Minute),
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.DisableRota(ctx, "test rota")
+				},
+			},
+		},
+		want: []rotang.ConfigChange{
+			{
+				Rota: "test rota",
+				Who:  "testuser",
+				At:   midnight.Add(1 * time.Minute),
+				Type: rotang.Update,
+				Cfg: rotang.Configuration{
+					Config: rotang.Config{
+						Name:    "test rota",
+						Enabled: true,
+					},
+				},
+			}, {
+				Rota: "test rota",
+				Who:  "testuser",
+				At:   midnight.Add(2 * time.Minute),
+				Type: rotang.Update,
+				Cfg: rotang.Configuration{
+					Config: rotang.Config{
+						Name:    "test rota",
+						Enabled: false,
+					},
+				},
+			},
+		},
+	}, {
+		name: "To only",
+		rota: "test rota",
+		user: "testuser",
+		to:   midnight.Add(1 * time.Minute),
+		changes: []testChange{
+			{
+				at: midnight,
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.CreateRotaConfig(ctx, &rotang.Configuration{
+						Config: rotang.Config{
+							Name: "test rota",
+						},
+					})
+				},
+			},
+			{
+				at: midnight.Add(1 * time.Minute),
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.EnableRota(ctx, "test rota")
+				},
+			}, {
+				at: midnight.Add(2 * time.Minute),
+				f: func(ctx context.Context, s rotang.ConfigStorer) error {
+					return s.DisableRota(ctx, "test rota")
+				},
+			},
+		},
+		want: []rotang.ConfigChange{
+			{
+				Rota: "test rota",
+				At:   midnight,
+				Who:  "testuser",
+				Type: rotang.Create,
+				Cfg: rotang.Configuration{
+					Config: rotang.Config{
+						Name: "test rota",
+					},
+				},
+			}, {
+				Rota: "test rota",
+				Who:  "testuser",
+				At:   midnight.Add(1 * time.Minute),
+				Type: rotang.Update,
+				Cfg: rotang.Configuration{
+					Config: rotang.Config{
+						Name:    "test rota",
+						Enabled: true,
+					},
+				},
+			},
+		},
+	},
+	}
+
+	for _, tst := range tests {
+		t.Run(tst.name, func(t *testing.T) {
+			ctx := newTestContext()
+			ctx = auth.WithState(ctx, &authtest.FakeState{
+				Identity: identity.Identity("user:" + tst.user),
+			})
+			s := New(ctx)
+			for _, c := range tst.changes {
+				ctx = clock.Set(ctx, testclock.New(c.at))
+				if err := c.f(ctx, s); err != nil {
+					t.Fatalf("%s: f(ctx) failed: %v", tst.name, err)
+				}
+			}
+			cs, err := s.ChangeHistory(ctx, tst.from, tst.to, tst.rota)
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: s.ChangeHistory(ctx, %v, %v, %q) = %t want: %t, err: %v", tst.name, tst.from, tst.to, tst.rota, got, want, err)
+			}
+			if err != nil {
+				return
+			}
+			if diff := pretty.Compare(tst.want, cs); diff != "" {
+				t.Errorf("%s: s.ChangeHistory(ctx, %v, %v, %q) differ -want +got, %s", tst.name, tst.from, tst.to, tst.rota, diff)
+			}
+		})
+	}
+}
 
 func TestMemberOf(t *testing.T) {
 	ctx := newTestContext()

@@ -6,6 +6,7 @@
 package datastore
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -17,6 +18,9 @@ import (
 	"context"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 )
 
 const (
@@ -24,6 +28,7 @@ const (
 	memberKind = "DsMember"
 	rootKind   = "DsRoot"
 	root       = "root"
+	changeKind = "DsConfigChange"
 )
 
 // DsRoot identifies the root of the Rota datastore.
@@ -47,6 +52,18 @@ type DsMember struct {
 	TZ     string
 }
 
+// DsConfigChange is used to store rotang.ConfigChange in Datastore.
+type DsConfigChange struct {
+	Key     *datastore.Key `gae:"$parent"`
+	ID      int64          `gae:"$id"`
+	At      time.Time
+	Rota    string
+	Type    rotang.ChangeType
+	Who     string
+	Cfg     rotang.Config
+	Members []rotang.ShiftMember
+}
+
 // _ make sure Store confirms with the ConfigStorer and MemberStorer interfaces.
 var (
 	_ rotang.ConfigStorer = &Store{}
@@ -55,6 +72,7 @@ var (
 
 // Store represents a datastore entity.
 type Store struct {
+	user string
 }
 
 func rootKey(ctx context.Context) *datastore.Key {
@@ -81,7 +99,94 @@ func New(ctx context.Context) *Store {
 			panic(err)
 		}
 	})
-	return &Store{}
+	return &Store{
+		user: auth.CurrentUser(ctx).Email,
+	}
+}
+
+// ChangeHistory returns the configuration change history for the specified rotation.
+func (s *Store) ChangeHistory(ctx context.Context, from, to time.Time, rota string) ([]rotang.ConfigChange, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	from, to = from.UTC(), to.UTC()
+
+	query := datastore.NewQuery(changeKind)
+
+	var dsChanges []DsConfigChange
+	switch {
+	case to.IsZero() && from.IsZero():
+		if err := datastore.GetAll(ctx, query, &dsChanges); err != nil {
+			return nil, err
+		}
+	case from.IsZero():
+		if err := datastore.GetAll(ctx, query.Lte("At", to), &dsChanges); err != nil {
+			return nil, err
+		}
+	case to.IsZero():
+		if err := datastore.GetAll(ctx, query.Gte("At", from), &dsChanges); err != nil {
+			return nil, err
+		}
+	default:
+		var tmpEntries []DsConfigChange
+		if err := datastore.GetAll(ctx, query.Gte("At", from), &tmpEntries); err != nil {
+			return nil, err
+		}
+		sort.Slice(tmpEntries, func(i, j int) bool {
+			return tmpEntries[i].At.Before(tmpEntries[j].At)
+		})
+		for _, e := range tmpEntries {
+			if e.At.After(to) {
+				continue
+			}
+			dsChanges = append(dsChanges, e)
+		}
+	}
+
+	var res []rotang.ConfigChange
+	for _, c := range dsChanges {
+		res = append(res, rotang.ConfigChange{
+			At:   c.At,
+			Rota: c.Rota,
+			Type: c.Type,
+			Who:  c.Who,
+			Cfg: rotang.Configuration{
+				Config:  c.Cfg,
+				Members: c.Members,
+			},
+		})
+	}
+	return res, nil
+}
+
+func (s *Store) storeChange(ctx context.Context, at time.Time, tp rotang.ChangeType, cfg *rotang.Configuration) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if cfg == nil {
+		return status.Errorf(codes.InvalidArgument, "cfg can can not be nil")
+	}
+	now := clock.Now(ctx).UTC()
+	if tp == rotang.Delete {
+		return datastore.Put(ctx, &DsConfigChange{
+			Key:  rootKey(ctx),
+			ID:   now.Unix(),
+			At:   now,
+			Rota: cfg.Config.Name,
+			Type: tp,
+			Who:  s.user,
+		})
+	}
+	return datastore.Put(ctx, &DsConfigChange{
+		Key:     rootKey(ctx),
+		ID:      now.Unix(),
+		At:      clock.Now(ctx).UTC(),
+		Rota:    cfg.Config.Name,
+		Type:    tp,
+		Who:     s.user,
+		Cfg:     cfg.Config,
+		Members: cfg.Members,
+	})
 }
 
 // Member fetches the matching Member from datastore.
@@ -235,7 +340,7 @@ func (s *Store) CreateRotaConfig(ctx context.Context, rotation *rotang.Configura
 		Members: rotation.Members,
 	}
 
-	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+	if err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
 		for _, m := range rotation.Members {
 			if _, err := s.Member(ctx, m.Email); err != nil {
 				return err
@@ -244,16 +349,20 @@ func (s *Store) CreateRotaConfig(ctx context.Context, rotation *rotang.Configura
 
 		if err := datastore.Get(ctx, &cfg); err != nil {
 			if err == datastore.ErrNoSuchEntity {
-				return datastore.Put(ctx, &DsRotaConfig{
-					Key:     rootKey(ctx),
-					ID:      rotation.Config.Name,
-					Cfg:     rotation.Config,
-					Members: rotation.Members,
-				})
+				if err := datastore.Put(ctx, &cfg); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 		return status.Errorf(codes.AlreadyExists, "rota already exists")
-	}, nil)
+	}, nil); err != nil {
+		return err
+	}
+	if err := s.storeChange(ctx, clock.Now(ctx), rotang.Create, rotation); err != nil {
+		logging.Warningf(ctx, "Storing ChangeHistory for: %q failed: %v", rotation.Config.Name, err)
+	}
+	return nil
 }
 
 // UpdateRotaConfig updates an existing Configuration entry.
@@ -268,18 +377,26 @@ func (s *Store) UpdateRotaConfig(ctx context.Context, rotation *rotang.Configura
 		ID:  rotation.Config.Name,
 	}
 
-	return datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+	if err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
 		if err := datastore.Get(ctx, &cfg); err != nil {
 			return err
 		}
-		return datastore.Put(ctx, &DsRotaConfig{
+		if err := datastore.Put(ctx, &DsRotaConfig{
 			Key:     rootKey(ctx),
 			ID:      rotation.Config.Name,
 			Cfg:     rotation.Config,
 			Members: rotation.Members,
-		})
-	}, nil)
-
+		}); err != nil {
+			return err
+		}
+		return nil
+	}, nil); err != nil {
+		return err
+	}
+	if err := s.storeChange(ctx, clock.Now(ctx), rotang.Update, rotation); err != nil {
+		logging.Warningf(ctx, "Storing ChangeHistory for: %q failed: %v", rotation.Config.Name, err)
+	}
+	return nil
 }
 
 // MemberOf returns the rotas the specified email is a member of.
@@ -358,10 +475,20 @@ func (s *Store) DeleteRotaConfig(ctx context.Context, name string) error {
 	if err := datastore.GetAll(ctx, datastore.NewQuery(memberKind).Ancestor(key), &children); err != nil {
 		return err
 	}
-	return datastore.Delete(ctx, &DsRotaConfig{
+	if err := datastore.Delete(ctx, &DsRotaConfig{
 		Key: rootKey(ctx),
 		ID:  name,
-	}, children)
+	}, children); err != nil {
+		return err
+	}
+	if err := s.storeChange(ctx, clock.Now(ctx), rotang.Delete, &rotang.Configuration{
+		Config: rotang.Config{
+			Name: name,
+		},
+	}); err != nil {
+		logging.Warningf(ctx, "Storing ChangeHistory for: %q failed: %v", name, err)
+	}
+	return nil
 }
 
 // EnableRota enables jobs to consider the specified rotation.

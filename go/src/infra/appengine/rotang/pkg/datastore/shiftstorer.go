@@ -324,8 +324,8 @@ func (s *Store) ShiftsFromTo(ctx context.Context, rota string, from, to time.Tim
 		if err := datastore.GetAll(ctx, query.Gt("EndTime", from), &tmpEntries); err != nil {
 			return nil, err
 		}
-		sort.Slice(dsEntries, func(i, j int) bool {
-			return dsEntries[i].StartTime.Before(dsEntries[j].StartTime)
+		sort.Slice(tmpEntries, func(i, j int) bool {
+			return tmpEntries[i].StartTime.Before(tmpEntries[j].StartTime)
 		})
 		for _, e := range tmpEntries {
 			if e.StartTime.After(to) && e.EndTime.After(to) {
