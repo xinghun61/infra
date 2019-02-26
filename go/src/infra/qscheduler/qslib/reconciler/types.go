@@ -31,35 +31,35 @@ type State struct {
 
 // TaskWaitingRequest encapsulates the arguments to NotifyTaskWaiting.
 type TaskWaitingRequest struct {
-	// Time at which the task was waiting.
-	Time time.Time
-
-	// Time at which the task was first enqueued.
-	EnqueueTime time.Time
-
-	// RequestID of the request that is waiting.
-	RequestID scheduler.RequestID
-
-	// ProvisionableLabels of the request that is waiting.
-	ProvisionableLabels stringset.Set
+	// AccountID for the request.
+	AccountID scheduler.AccountID
 
 	// BaseLabels of the request that is waiting.
 	BaseLabels stringset.Set
 
-	// AccountID for the request.
-	AccountID scheduler.AccountID
+	// Time at which the task was first enqueued.
+	EnqueueTime time.Time
+
+	// ProvisionableLabels of the request that is waiting.
+	ProvisionableLabels stringset.Set
+
+	// RequestID of the request that is waiting.
+	RequestID scheduler.RequestID
 
 	// Tags is the set of tags for the request.
 	Tags []string
+
+	// Time at which the task was waiting.
+	Time time.Time
 }
 
 // TaskRunningRequest encapsulates the arguments to NotifyTaskRunning.
 type TaskRunningRequest struct {
-	// Time at which the task was running.
-	Time time.Time
-
 	// RequestID of the request that is running.
 	RequestID scheduler.RequestID
+
+	// Time at which the task was running.
+	Time time.Time
 
 	// WorkerID of the worker that is running the task.
 	WorkerID scheduler.WorkerID
@@ -67,11 +67,11 @@ type TaskRunningRequest struct {
 
 // TaskAbsentRequest encapsulates the arguments to NotifyTaskAbsent.
 type TaskAbsentRequest struct {
-	// Time at which the task was running.
-	Time time.Time
-
 	// RequestID of the request that is running.
 	RequestID scheduler.RequestID
+
+	// Time at which the task was running.
+	Time time.Time
 
 	// WorkerID of the worker that is running the task.
 	WorkerID scheduler.WorkerID
