@@ -92,7 +92,8 @@ func (s *QSchedulerAdminServerImpl) Wipe(ctx context.Context, r *qscheduler.Wipe
 		if err != nil {
 			return err
 		}
-		sp.Scheduler = scheduler.New(time.Now())
+		config := sp.Scheduler.Config()
+		sp.Scheduler = scheduler.NewWithConfig(time.Now(), config)
 		sp.Reconciler = reconciler.New()
 		return store.Save(ctx, sp)
 	}
