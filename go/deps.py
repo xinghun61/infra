@@ -47,7 +47,6 @@ import time
 # be installed via "go install" after Glide fetches all vendored dependencies.
 # See 'install' function below.
 VENDORED_TOOLS = [
-  'github.com/golang/lint/golint',
   'github.com/golang/mock/mockgen',
   'github.com/golang/protobuf/protoc-gen-go',
   'github.com/kisielk/errcheck',
@@ -55,6 +54,7 @@ VENDORED_TOOLS = [
   'github.com/maruel/pre-commit-go/cmd/covg',
   'github.com/maruel/pre-commit-go/cmd/pcg',
   'github.com/smartystreets/goconvey',
+  'golang.org/x/lint/golint',
   'golang.org/x/mobile/cmd/gomobile',
   'golang.org/x/tools/cmd/callgraph',
   'golang.org/x/tools/cmd/fiximports',
@@ -74,7 +74,6 @@ VENDORED_TOOLS = [
 # like that.
 PACKAGES_TO_VENDOR_COMPLETELY = [
   'github.com/smartystreets/goconvey',  # needs *.css etc for Web UI
-  'github.com/google/skylark',          # needs *.sky files
   'go.starlark.net',                    # needs *.star files
 ]
 
