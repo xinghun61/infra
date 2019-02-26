@@ -24,7 +24,6 @@ import (
 	"math/rand"
 	"sort"
 
-	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -141,7 +140,7 @@ func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, host
 	if a.DutHostname != "" {
 		d, ok := hostnameToID[a.DutHostname]
 		if !ok {
-			return nil, errors.Reason("assign duts to drone: Unknown DUT hostname %s", a.DutHostname).Err()
+			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", a.DutHostname)
 		}
 		id = d.GetCommon().GetId()
 	}
@@ -202,7 +201,7 @@ func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, ho
 	if r.DutHostname != "" {
 		d, ok := hostnameToID[r.DutHostname]
 		if !ok {
-			return nil, errors.Reason("remove duts to drone: Unknown DUT hostname %s", r.DutHostname).Err()
+			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
 		}
 		id = d.GetCommon().GetId()
 	}
