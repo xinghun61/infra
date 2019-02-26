@@ -109,11 +109,11 @@ type testInventoryDut struct {
 // duts provided.
 func setupLabInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testInventoryDut) error {
 	return g.SetInventory(config.Get(c).Inventory, fakes.InventoryData{
-		Lab: []byte(inventoryBytesFromDUTs(duts)),
+		Lab: inventoryBytesFromDUTs(duts),
 	})
 }
 
-func inventoryBytesFromDUTs(duts []testInventoryDut) string {
+func inventoryBytesFromDUTs(duts []testInventoryDut) []byte {
 	ptext := ""
 	for _, dut := range duts {
 		ptext = fmt.Sprintf(`%s
@@ -132,7 +132,7 @@ func inventoryBytesFromDUTs(duts []testInventoryDut) string {
 			dut.id, dut.id, dut.model, dut.pool,
 		)
 	}
-	return ptext
+	return []byte(ptext)
 }
 
 // testDutOnServer contains a subset of the fields in infrastructure servers.
