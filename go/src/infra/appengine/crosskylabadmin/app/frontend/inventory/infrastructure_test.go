@@ -54,7 +54,7 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 		})
 		So(err, ShouldBeNil)
 
-		Convey("DeactivateDut for the staging dut removes it from drone.", func() {
+		Convey("RemoveDutsFromdrone for the staging dut removes it from drone.", func() {
 			req := &fleet.RemoveDutsFromDronesRequest{
 				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: dutID}},
 			}
@@ -85,7 +85,7 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 			So(server.DutUids, ShouldBeEmpty)
 		})
 
-		Convey("DeactivateDut for the staging dut by name removes it from drone.", func() {
+		Convey("RemoveDutsFromdrone for the staging dut by name removes it from drone.", func() {
 			req := &fleet.RemoveDutsFromDronesRequest{
 				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutHostname: dutID}},
 			}
@@ -116,7 +116,7 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 			So(server.DutUids, ShouldBeEmpty)
 		})
 
-		Convey("DeactivateDut for a nonexistant dut returns no results.", func() {
+		Convey("RemoveDutsFromdrone for a nonexistant dut returns no results.", func() {
 			req := &fleet.RemoveDutsFromDronesRequest{
 				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: "foo"}},
 			}
@@ -126,7 +126,7 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 			So(resp.Url, ShouldEqual, "")
 		})
 
-		Convey("DeactivateDut for prod dut returns no results.", func() {
+		Convey("RemoveDutsFromdrone for prod dut returns no results.", func() {
 			req := &fleet.RemoveDutsFromDronesRequest{
 				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutId: wrongEnvDutID}},
 			}
