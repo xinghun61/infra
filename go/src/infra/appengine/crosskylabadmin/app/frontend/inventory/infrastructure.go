@@ -24,6 +24,7 @@ import (
 	"math/rand"
 	"sort"
 
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -55,13 +56,20 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 	}
 
 	f := func() error {
-		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
 		if err := s.Refresh(ctx); err != nil {
 			return err
 		}
+
+		hostnameToID := mapHostnameToDUTs(s.Lab.GetDuts())
+		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
 		for _, a := range req.Assignments {
+			id := a.DutId
 			if a.DutHostname != "" {
-				return status.Errorf(codes.Unimplemented, "specifying DUT by hostname not implemented")
+				d, ok := hostnameToID[a.DutHostname]
+				if !ok {
+					return errors.Reason("assign duts to drone: Unknown DUT hostname %s", a.DutHostname).Err()
+				}
+				id = d.GetCommon().GetId()
 			}
 
 			dh := a.GetDroneHostname()
@@ -69,12 +77,12 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 				dh = pickDroneForDUT(ctx, s.Infrastructure)
 				logging.Debugf(ctx, "Picked drone %s for DUT %s", dh, a.DutId)
 			}
-			if err = assignDutToDrone(ctx, s.Infrastructure, a.DutId, dh); err != nil {
+			if err = assignDutToDrone(ctx, s.Infrastructure, id, dh); err != nil {
 				return err
 			}
 			assigned = append(assigned, &fleet.AssignDutsToDronesResponse_Item{
 				DroneHostname: dh,
-				DutId:         a.DutId,
+				DutId:         id,
 			})
 		}
 		url, err := s.Commit(ctx, "assign DUTs")
@@ -173,9 +181,15 @@ func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *flee
 
 	env := config.Get(ctx).Inventory.Environment
 
+	hostnameToID := mapHostnameToDUTs(store.Lab.GetDuts())
 	for _, removal := range req.Removals {
+		id := removal.DutId
 		if removal.DutHostname != "" {
-			return nil, status.Errorf(codes.Unimplemented, "specifying DUT by hostname not implemented")
+			d, ok := hostnameToID[removal.DutHostname]
+			if !ok {
+				return nil, errors.Reason("remove duts to drone: Unknown DUT hostname %s", removal.DutHostname).Err()
+			}
+			id = d.GetCommon().GetId()
 		}
 
 		serverToRemove := removal.DroneHostname
@@ -183,9 +197,9 @@ func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *flee
 		var ok bool
 		var server *inventory.Server
 		if serverToRemove == "" {
-			server, ok = findDutServer(store.Infrastructure.GetServers(), removal.DutId)
+			server, ok = findDutServer(store.Infrastructure.GetServers(), id)
 		} else {
-			server, ok = findNamedServer(store.Infrastructure.GetServers(), removal.DutId)
+			server, ok = findNamedServer(store.Infrastructure.GetServers(), id)
 		}
 		if !ok {
 			continue
@@ -194,13 +208,13 @@ func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *flee
 			continue
 		}
 
-		if !removeDutFromServer(server, removal.DutId) {
+		if !removeDutFromServer(server, id) {
 			continue
 		}
 
 		resp.Removed = append(resp.Removed,
 			&fleet.RemoveDutsFromDronesResponse_Item{
-				DutId:         removal.DutId,
+				DutId:         id,
 				DroneHostname: server.GetHostname(),
 			})
 	}
@@ -266,6 +280,14 @@ func sortDronesByAscendingDUTCount(ds []*inventory.Server) {
 	sort.SliceStable(ds, func(i, j int) bool {
 		return len(ds[i].DutUids) < len(ds[j].DutUids)
 	})
+}
+
+func mapHostnameToDUTs(duts []*inventory.DeviceUnderTest) map[string]*inventory.DeviceUnderTest {
+	m := make(map[string]*inventory.DeviceUnderTest)
+	for _, d := range duts {
+		m[d.GetCommon().GetHostname()] = d
+	}
+	return m
 }
 
 // removeDutFromServer removes the given Dut from the given server, if it exists.
