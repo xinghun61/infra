@@ -99,7 +99,10 @@ message TaskEvent {
 
   // EnqueuedDetails represents event details that are specific to the
   // ENQUEUED event type.
-  message EnqueuedDetails { }
+  message EnqueuedDetails {
+    // Tags is the set of swarming tags for the task.
+    repeated string tags = 1;
+  }
 
   // AssignedDetails represents event details that are specific to the
   // ASSIGNED event type.
