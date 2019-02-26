@@ -20,7 +20,7 @@ import (
 
 // RemoveDuts subcommand: RemoveDuts a DUT from a drone.
 var RemoveDuts = &subcommands.Command{
-	UsageLine: "remove-duts [-drone DRONE] [DUT_ID...]",
+	UsageLine: "remove-duts [-drone DRONE] [DUT...]",
 	ShortDesc: "remove DUTs from a drone",
 	LongDesc: `Remove DUTs from a drone
 
@@ -62,7 +62,7 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 		Removals: make([]*fleet.RemoveDutsFromDronesRequest_Item, c.Flags.NArg()),
 	}
 	for i, dut := range c.Flags.Args() {
-		req.Removals[i] = &fleet.RemoveDutsFromDronesRequest_Item{DutId: dut, DroneHostname: c.server}
+		req.Removals[i] = &fleet.RemoveDutsFromDronesRequest_Item{DutHostname: dut, DroneHostname: c.server}
 	}
 
 	ctx := cli.GetContext(a, c, env)

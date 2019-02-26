@@ -20,7 +20,7 @@ import (
 
 // AssignDuts subcommand: AssignDuts a DUT to a drone.
 var AssignDuts = &subcommands.Command{
-	UsageLine: "assign-duts [-drone DRONE] [DUT_ID...]",
+	UsageLine: "assign-duts [-drone DRONE] [DUT...]",
 	ShortDesc: "assign DUTs to a drone",
 	LongDesc: `Assign DUTs to a drone.
 
@@ -30,7 +30,8 @@ Assigning a DUT to a drone allows the DUT to run tasks.`,
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.StringVar(&c.server, "drone", "",
-			`Drone to assign DUTs to. If omitted, one is automatically chosen.`)
+			`Hostname of drone to assign DUTs to.
+If omitted, one is automatically chosen.`)
 		return c
 	},
 }
@@ -60,7 +61,7 @@ func (c *assignDutsRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	for i, dut := range c.Flags.Args() {
-		req.Assignments[i] = &fleet.AssignDutsToDronesRequest_Item{DutId: dut}
+		req.Assignments[i] = &fleet.AssignDutsToDronesRequest_Item{DutHostname: dut}
 	}
 	if c.server != "" {
 		for _, a := range req.Assignments {
