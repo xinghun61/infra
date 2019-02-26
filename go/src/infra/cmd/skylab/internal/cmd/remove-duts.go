@@ -24,6 +24,8 @@ var RemoveDuts = &subcommands.Command{
 	ShortDesc: "remove DUTs from a drone",
 	LongDesc: `Remove DUTs from a drone
 
+-reason is required. (reason is currently unused: crbug/934067).
+
 If -drone is given, check that the DUTs are currently assigned to that
 drone.  Otherwise, the DUTs are removed from whichever drone they are
 currently assigned to.
@@ -34,6 +36,9 @@ Removing DUTs from a drone stops the DUTs from being able to run tasks.`,
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.StringVar(&c.server, "drone", "", "Drone to remove DUTs from.")
+		c.Flags.StringVar(&c.reason, "reason", "", `Reason the DUT is being removed from drone.
+Please include a bug reference, especially if the DUT should be added
+back in the future.`)
 		return c
 	},
 }
@@ -43,6 +48,7 @@ type removeDutsRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 	server    string
+	reason    string
 }
 
 func (c *removeDutsRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -56,6 +62,9 @@ func (c *removeDutsRun) Run(a subcommands.Application, args []string, env subcom
 func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
 	if c.Flags.NArg() == 0 {
 		return errors.New("must specify at least 1 DUT")
+	}
+	if c.reason == "" {
+		return errors.New("-reason is required")
 	}
 
 	req := &fleet.RemoveDutsFromDronesRequest{
