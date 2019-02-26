@@ -94,16 +94,44 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	err = retry.Retry(
-		ctx,
-		transientErrorRetries(),
-		func() error {
-			var ierr error
-			resp, ierr = is.removeDutsFromDronesNoRetry(ctx, req)
-			return ierr
-		},
-		retry.LogCallback(ctx, "removeDutsFromDronesNoRetry"),
-	)
+	s, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	f := func() error {
+		removed := make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals))
+		if err := s.Refresh(ctx); err != nil {
+			return err
+		}
+
+		hostnameToID := mapHostnameToDUTs(s.Lab.GetDuts())
+		for _, r := range req.Removals {
+			i, err := removeDutFromDrone(ctx, s.Infrastructure, hostnameToID, r)
+			if err != nil {
+				return err
+			}
+			if i == nil {
+				// DUT did not belong to any drone.
+				continue
+			}
+			removed = append(removed, i)
+		}
+
+		var url string
+		if len(removed) > 0 {
+			if url, err = s.Commit(ctx, "remove DUTs"); err != nil {
+				return err
+			}
+		}
+		resp = &fleet.RemoveDutsFromDronesResponse{
+			Removed: removed,
+			Url:     url,
+		}
+		return nil
+	}
+
+	err = retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "removeDutsFromDronesNoRetry"))
 	return resp, err
 }
 
@@ -166,43 +194,6 @@ func pickDroneForDUT(ctx context.Context, infra *inventory.Infrastructure) strin
 		return ""
 	}
 	return ds[rand.Intn(len(ds))].GetHostname()
-}
-
-func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *fleet.RemoveDutsFromDronesRequest) (*fleet.RemoveDutsFromDronesResponse, error) {
-	store, err := is.newStore(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := store.Refresh(ctx); err != nil {
-		return nil, err
-	}
-
-	resp := &fleet.RemoveDutsFromDronesResponse{
-		Removed: make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals)),
-	}
-
-	hostnameToID := mapHostnameToDUTs(store.Lab.GetDuts())
-	for _, r := range req.Removals {
-		i, err := removeDutFromDrone(ctx, store.Infrastructure, hostnameToID, r)
-		if err != nil {
-			return nil, err
-		}
-		if i == nil {
-			// DUT did not belong to any drone.
-			continue
-		}
-		resp.Removed = append(resp.Removed, i)
-	}
-
-	if len(resp.Removed) == 0 {
-		return resp, nil
-	}
-
-	if resp.Url, err = store.Commit(ctx, "remove DUTs"); err != nil {
-		return nil, err
-	}
-
-	return resp, nil
 }
 
 func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]*inventory.DeviceUnderTest, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
