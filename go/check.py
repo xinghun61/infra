@@ -112,7 +112,7 @@ def main(args):
 
 
 TOOL_FUNC = {
-  "govet": mk_checker(False, "go", "tool", "vet"),
+  "govet": mk_checker(False, "go", "vet"),
   "golint": mk_checker(True, "golint"),
   "gofmt": gofmt_main,
 }
