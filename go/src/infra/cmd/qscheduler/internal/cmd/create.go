@@ -31,6 +31,7 @@ var Create = &subcommands.Command{
 		c.Flags.Var(flag.StringSlice(&c.labels), "label",
 			"Label that will be used by all tasks and bots for this scheduler, specified in "+
 				"the form foo:bar. May be specified multiple times.")
+		c.Flags.BoolVar(&c.allowPreemption, "allow-preemption", true, "Allow preemption.")
 
 		return c
 	},
@@ -41,7 +42,8 @@ type createRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 
-	labels []string
+	labels          []string
+	allowPreemption bool
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -77,7 +79,7 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	req := &qscheduler.CreateSchedulerPoolRequest{
 		PoolId: poolID,
-		Config: &protos.SchedulerConfig{Labels: c.labels},
+		Config: &protos.SchedulerConfig{Labels: c.labels, DisablePreemption: !c.allowPreemption},
 	}
 
 	_, err = adminService.CreateSchedulerPool(ctx, req)
