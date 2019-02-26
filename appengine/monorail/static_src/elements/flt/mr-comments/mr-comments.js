@@ -285,6 +285,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       comments: {
         type: Array,
         value: [],
+        observer: '_onCommentsChange',
       },
       headingLevel: {
         type: Number,
@@ -293,6 +294,10 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       projectName: String,
       issuePermissions: Object,
       focusId: String,
+      commentsLoaded: {
+        type: Boolean,
+        value: false,
+      },
       _commentsHidden: {
         type: Boolean,
         value: true,
@@ -315,7 +320,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
 
   static get observers() {
     return [
-      '_onFocusIdChange(focusId, comments)',
+      '_onFocusIdChange(focusId, commentsLoaded)',
     ];
   }
 
@@ -327,8 +332,14 @@ export class MrComments extends ReduxMixin(PolymerElement) {
     };
   }
 
-  _onFocusIdChange(focusId, comments) {
-    if (!focusId || !comments.length) return;
+  _onCommentsChange(comments) {
+    if (comments.length) {
+      this.commentsLoaded = true;
+    }
+  }
+
+  _onFocusIdChange(focusId, commentsLoaded) {
+    if (!focusId || !commentsLoaded) return;
     flush();
     const element = dom(this.root).querySelector('#' + focusId);
     if (element) {
@@ -395,7 +406,6 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       const expanded = expandedDeletedComments[comment.sequenceNum];
       const text = (expanded ? 'Hide' : 'Show') + ' comment content';
       options.push({
-        url: '#',
         text: text,
         handler: this._toggleHideDeletedComment.bind(this, comment),
       });
@@ -404,7 +414,6 @@ export class MrComments extends ReduxMixin(PolymerElement) {
     if (comment.canDelete) {
       const text = (comment.isDeleted ? 'Undelete' : 'Delete') + ' comment';
       options.push({
-        url: '#',
         text: text,
         handler: this._deleteComment.bind(this, comment),
       });
@@ -412,7 +421,6 @@ export class MrComments extends ReduxMixin(PolymerElement) {
     if (comment.canFlag) {
       const text = (comment.isSpam ? 'Unflag' : 'Flag') + ' comment';
       options.push({
-        url: '#',
         text: text,
         handler: this._flagComment.bind(this, comment),
       });

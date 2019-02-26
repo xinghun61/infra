@@ -85,6 +85,7 @@ export class MrDropdown extends PolymerElement {
           background: hsl(0, 0%, 80%);
         }
         .menu a {
+          cursor: pointer;
           color: var(--chops-link-color);
         }
         .menu a:hover {
