@@ -45,7 +45,7 @@ type QScheduler struct {
 func NewQScheduler(id string, t time.Time) *QScheduler {
 	return &QScheduler{
 		SchedulerID: id,
-		Scheduler:   scheduler.New(t),
+		Scheduler:   scheduler.NewWithConfig(t, scheduler.NewConfig()),
 		Reconciler:  reconciler.New(),
 		Config:      &qscheduler.SchedulerPoolConfig{},
 	}
