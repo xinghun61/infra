@@ -63,27 +63,11 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 		hostnameToID := mapHostnameToDUTs(s.Lab.GetDuts())
 		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
 		for _, a := range req.Assignments {
-			id := a.DutId
-			if a.DutHostname != "" {
-				d, ok := hostnameToID[a.DutHostname]
-				if !ok {
-					return errors.Reason("assign duts to drone: Unknown DUT hostname %s", a.DutHostname).Err()
-				}
-				id = d.GetCommon().GetId()
-			}
-
-			dh := a.GetDroneHostname()
-			if dh == "" {
-				dh = pickDroneForDUT(ctx, s.Infrastructure)
-				logging.Debugf(ctx, "Picked drone %s for DUT %s", dh, a.DutId)
-			}
-			if err = assignDutToDrone(ctx, s.Infrastructure, id, dh); err != nil {
+			i, err := assignDutToDrone(ctx, s.Infrastructure, hostnameToID, a)
+			if err != nil {
 				return err
 			}
-			assigned = append(assigned, &fleet.AssignDutsToDronesResponse_Item{
-				DroneHostname: dh,
-				DutId:         id,
-			})
+			assigned = append(assigned, i)
 		}
 		url, err := s.Commit(ctx, "assign DUTs")
 		if err != nil {
@@ -123,31 +107,49 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	return resp, err
 }
 
-// assignDutToDrone upates infra to assign the DUT with given ID to the drone with given hostname.
-func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, dutID string, hostname string) error {
+func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]*inventory.DeviceUnderTest, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
 	env := config.Get(ctx).Inventory.Environment
+	id := a.DutId
+	if a.DutHostname != "" {
+		d, ok := hostnameToID[a.DutHostname]
+		if !ok {
+			return nil, errors.Reason("assign duts to drone: Unknown DUT hostname %s", a.DutHostname).Err()
+		}
+		id = d.GetCommon().GetId()
+	}
+
+	dh := a.GetDroneHostname()
+	if dh == "" {
+		dh = pickDroneForDUT(ctx, infra)
+		logging.Debugf(ctx, "Picked drone %s for DUT %s", dh, a.DutId)
+	}
+
 	servers := infra.GetServers()
-	if server, ok := findDutServer(servers, dutID); ok {
-		return status.Errorf(
+	if server, ok := findDutServer(servers, id); ok {
+		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"dut %s is already assigned to drone %s in environment %s",
-			dutID, server.GetHostname(), server.GetEnvironment(),
+			id, server.GetHostname(), server.GetEnvironment(),
 		)
 	}
 
-	server, ok := findNamedServer(servers, hostname)
+	server, ok := findNamedServer(servers, dh)
 	if !ok {
-		return status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", hostname))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", dh))
 	}
 	if server.GetEnvironment().String() != env {
-		return status.Errorf(
+		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"drone %s is in environment %s instead of %s",
-			server.GetHostname(), server.GetEnvironment().String(), env,
+			dh, server.GetEnvironment().String(), env,
 		)
 	}
-	server.DutUids = append(server.DutUids, dutID)
-	return nil
+	server.DutUids = append(server.DutUids, id)
+
+	return &fleet.AssignDutsToDronesResponse_Item{
+		DroneHostname: dh,
+		DutId:         id,
+	}, nil
 }
 
 // pickDroneForDUT returns hostname of a drone to use for the DUT with the given ID.
@@ -179,44 +181,17 @@ func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *flee
 		Removed: make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals)),
 	}
 
-	env := config.Get(ctx).Inventory.Environment
-
 	hostnameToID := mapHostnameToDUTs(store.Lab.GetDuts())
-	for _, removal := range req.Removals {
-		id := removal.DutId
-		if removal.DutHostname != "" {
-			d, ok := hostnameToID[removal.DutHostname]
-			if !ok {
-				return nil, errors.Reason("remove duts to drone: Unknown DUT hostname %s", removal.DutHostname).Err()
-			}
-			id = d.GetCommon().GetId()
+	for _, r := range req.Removals {
+		i, err := removeDutFromDrone(ctx, store.Infrastructure, hostnameToID, r)
+		if err != nil {
+			return nil, err
 		}
-
-		serverToRemove := removal.DroneHostname
-
-		var ok bool
-		var server *inventory.Server
-		if serverToRemove == "" {
-			server, ok = findDutServer(store.Infrastructure.GetServers(), id)
-		} else {
-			server, ok = findNamedServer(store.Infrastructure.GetServers(), id)
-		}
-		if !ok {
+		if i == nil {
+			// DUT did not belong to any drone.
 			continue
 		}
-		if server.GetEnvironment().String() != env {
-			continue
-		}
-
-		if !removeDutFromServer(server, id) {
-			continue
-		}
-
-		resp.Removed = append(resp.Removed,
-			&fleet.RemoveDutsFromDronesResponse_Item{
-				DutId:         id,
-				DroneHostname: server.GetHostname(),
-			})
+		resp.Removed = append(resp.Removed, i)
 	}
 
 	if len(resp.Removed) == 0 {
@@ -228,6 +203,40 @@ func (is *ServerImpl) removeDutsFromDronesNoRetry(ctx context.Context, req *flee
 	}
 
 	return resp, nil
+}
+
+func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]*inventory.DeviceUnderTest, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
+	env := config.Get(ctx).Inventory.Environment
+	id := r.DutId
+	if r.DutHostname != "" {
+		d, ok := hostnameToID[r.DutHostname]
+		if !ok {
+			return nil, errors.Reason("remove duts to drone: Unknown DUT hostname %s", r.DutHostname).Err()
+		}
+		id = d.GetCommon().GetId()
+	}
+
+	var ok bool
+	var server *inventory.Server
+	if r.DroneHostname == "" {
+		server, ok = findDutServer(infra.GetServers(), id)
+	} else {
+		server, ok = findNamedServer(infra.GetServers(), id)
+	}
+	if !ok {
+		return nil, nil
+	}
+	if server.GetEnvironment().String() != env {
+		return nil, nil
+	}
+	if !removeDutFromServer(server, id) {
+		return nil, nil
+	}
+
+	return &fleet.RemoveDutsFromDronesResponse_Item{
+		DutId:         id,
+		DroneHostname: server.GetHostname(),
+	}, nil
 }
 
 // findDutServer finds the server that the given Dut is on, if it exists.
