@@ -19,6 +19,9 @@ package protos;
 message SchedulerConfig {
   // Configuration for a given account, keyed by account id.
   map<string, AccountConfig> account_configs = 1;
+
+  // If set, scheduler will never preempt running tasks.
+  bool disable_preemption = 2;
 }
 
 // AccountConfig represents per-quota-account configuration information, such
