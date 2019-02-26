@@ -47,8 +47,7 @@ func (s *QSchedulerAdminServerImpl) CreateSchedulerPool(ctx context.Context, r *
 	sp := types.QScheduler{
 		SchedulerID: r.PoolId,
 		Reconciler:  reconciler.New(),
-		Scheduler:   scheduler.New(time.Now()),
-		Config:      r.Config,
+		Scheduler:   scheduler.NewWithConfig(time.Now(), r.Config),
 	}
 	store := state.NewStore(r.PoolId)
 	if err := store.Save(ctx, &sp); err != nil {

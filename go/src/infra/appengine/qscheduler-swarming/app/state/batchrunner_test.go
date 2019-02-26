@@ -35,7 +35,7 @@ func TestBatcherErrors(t *testing.T) {
 		ctx := gaetesting.TestingContext()
 		poolID := "pool 1"
 		store := state.NewStore(poolID)
-		s := types.NewQScheduler(poolID, time.Now())
+		s := types.NewQScheduler(poolID, time.Now(), scheduler.NewConfig())
 		store.Save(ctx, s)
 
 		batcher := state.NewBatchRunnerForTest()
@@ -86,7 +86,7 @@ func TestBatcherBehavior(t *testing.T) {
 		ctx := gaetesting.TestingContext()
 		poolID := "pool 1"
 		store := state.NewStore(poolID)
-		s := types.NewQScheduler(poolID, time.Now())
+		s := types.NewQScheduler(poolID, time.Now(), scheduler.NewConfig())
 		store.Save(ctx, s)
 
 		batcher := state.NewBatchRunnerForTest()

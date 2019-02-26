@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/qscheduler/qslib/protos"
 )
 
 func TestCreateScheduler(t *testing.T) {
@@ -44,7 +45,7 @@ func TestCreateScheduler(t *testing.T) {
 		})
 
 		Convey("when CreateSchedulerPool is called with a valid config", func() {
-			config := &qscheduler.SchedulerPoolConfig{
+			config := &protos.SchedulerConfig{
 				Labels: []string{"Label 1"},
 			}
 			req.Config = config
@@ -95,7 +96,7 @@ func TestCreateListAccount(t *testing.T) {
 		Convey("with a scheduler pool", func() {
 			req := qscheduler.CreateSchedulerPoolRequest{
 				PoolId: poolID,
-				Config: &qscheduler.SchedulerPoolConfig{},
+				Config: &protos.SchedulerConfig{},
 			}
 			_, err := admin.CreateSchedulerPool(ctx, &req)
 			So(err, ShouldBeNil)

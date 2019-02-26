@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/reconciler"
@@ -60,7 +59,7 @@ func List(ctx context.Context) ([]string, error) {
 
 // Save persists the given SchdulerPool to datastore.
 func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
-	var sd, rd, cd []byte
+	var sd, rd []byte
 	var err error
 	if sd, err = proto.Marshal(q.Scheduler.ToProto()); err != nil {
 		e := errors.Wrap(err, "unable to marshal Scheduler")
@@ -72,22 +71,15 @@ func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 		return status.Error(codes.Internal, e.Error())
 	}
 
-	if cd, err = proto.Marshal(q.Config); err != nil {
-		e := errors.Wrap(err, "unable to marshal Config")
-		return status.Error(codes.Internal, e.Error())
-	}
-
 	entity := &datastoreEntity{
 		QSPoolID:       s.entityID,
 		SchedulerData:  sd,
 		ReconcilerData: rd,
-		ConfigData:     cd,
 	}
 
 	logging.Infof(ctx, "attempting to Put datastore entitiy for pool %s"+
-		"with (Scheduler, Reconciler, Config) size of (%d, %d, %d) bytes",
-		entity.QSPoolID, len(entity.SchedulerData), len(entity.ReconcilerData),
-		len(entity.ConfigData))
+		"with (Scheduler, Reconciler) size of (%d, %d) bytes",
+		entity.QSPoolID, len(entity.SchedulerData), len(entity.ReconcilerData))
 
 	if err := datastore.Put(ctx, entity); err != nil {
 		e := errors.Wrap(err, "unable to Put scheduler state")
@@ -107,26 +99,20 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 
 	r := new(protos.Reconciler)
 	sp := new(protos.Scheduler)
-	c := new(qscheduler.SchedulerPoolConfig)
 	if err := proto.Unmarshal(dst.ReconcilerData, r); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Reconciler")
 	}
 	if err := proto.Unmarshal(dst.SchedulerData, sp); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Scheduler")
 	}
-	if err := proto.Unmarshal(dst.ConfigData, c); err != nil {
-		return nil, errors.Wrap(err, "unable to unmarshal Config")
-	}
 
 	recordProtoSize(ctx, len(dst.ReconcilerData), dst.QSPoolID, "reconciler")
 	recordProtoSize(ctx, len(dst.SchedulerData), dst.QSPoolID, "scheduler")
-	recordProtoSize(ctx, len(dst.ConfigData), dst.QSPoolID, "config")
 
 	return &types.QScheduler{
 		SchedulerID: dst.QSPoolID,
 		Reconciler:  reconciler.NewFromProto(r),
 		Scheduler:   scheduler.NewFromProto(sp),
-		Config:      c,
 	}, nil
 }
 

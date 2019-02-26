@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/tutils"
 	swarming "infra/swarming"
 )
@@ -56,7 +57,7 @@ func TestAssignTasks(t *testing.T) {
 				view := &QSchedulerViewServerImpl{}
 				_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
 					PoolId: poolID,
-					Config: &qscheduler.SchedulerPoolConfig{
+					Config: &protos.SchedulerConfig{
 						Labels: []string{"label1"},
 					},
 				})

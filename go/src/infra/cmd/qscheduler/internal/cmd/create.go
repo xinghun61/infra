@@ -16,6 +16,7 @@ import (
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/cmd/qscheduler/internal/site"
+	"infra/qscheduler/qslib/protos"
 )
 
 // Create subcommand: Create a qscheduler pool.
@@ -76,7 +77,7 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	req := &qscheduler.CreateSchedulerPoolRequest{
 		PoolId: poolID,
-		Config: &qscheduler.SchedulerPoolConfig{Labels: c.labels},
+		Config: &protos.SchedulerConfig{Labels: c.labels},
 	}
 
 	_, err = adminService.CreateSchedulerPool(ctx, req)

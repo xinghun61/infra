@@ -18,7 +18,7 @@ import (
 	"context"
 	"time"
 
-	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -38,15 +38,16 @@ type QScheduler struct {
 	SchedulerID string
 	Scheduler   *scheduler.Scheduler
 	Reconciler  *reconciler.State
-	Config      *qscheduler.SchedulerPoolConfig
 }
 
+// TODO(akeshet): Factor the constructor below into a ones that do and don't
+// accept a config.
+
 // NewQScheduler returns a new QSchedulerState instance.
-func NewQScheduler(id string, t time.Time) *QScheduler {
+func NewQScheduler(id string, t time.Time, c *protos.SchedulerConfig) *QScheduler {
 	return &QScheduler{
 		SchedulerID: id,
-		Scheduler:   scheduler.NewWithConfig(t, scheduler.NewConfig()),
+		Scheduler:   scheduler.NewWithConfig(t, c),
 		Reconciler:  reconciler.New(),
-		Config:      &qscheduler.SchedulerPoolConfig{},
 	}
 }

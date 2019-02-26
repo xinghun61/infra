@@ -22,6 +22,11 @@ message SchedulerConfig {
 
   // If set, scheduler will never preempt running tasks.
   bool disable_preemption = 2;
+
+  // Labels is a list of swarming dimensions in "key:value" form. This corresponds
+  // to swarming.ExternalSchedulerConfig.dimensionsions; it is the minimal set
+  // of dimensions for tasks or bots that will use this scheduler.
+  repeated string labels = 3;
 }
 
 // AccountConfig represents per-quota-account configuration information, such

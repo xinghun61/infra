@@ -23,6 +23,7 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	"infra/appengine/qscheduler-swarming/app/state/types"
+	"infra/qscheduler/qslib/scheduler"
 )
 
 func TestSaveLoadList(t *testing.T) {
@@ -47,8 +48,8 @@ func TestSaveLoadList(t *testing.T) {
 			s2 := NewStore("s2")
 			t1 := time.Unix(0, 0)
 			t2 := time.Unix(1, 0)
-			So(s1.Save(ctx, types.NewQScheduler("s1", t1)), ShouldBeNil)
-			So(s2.Save(ctx, types.NewQScheduler("s2", t2)), ShouldBeNil)
+			So(s1.Save(ctx, types.NewQScheduler("s1", t1, scheduler.NewConfig())), ShouldBeNil)
+			So(s2.Save(ctx, types.NewQScheduler("s2", t2, scheduler.NewConfig())), ShouldBeNil)
 			Convey("when Load is called on one", func() {
 				l, err := s1.Load(ctx)
 				Convey("then it returns the saved value.", func() {

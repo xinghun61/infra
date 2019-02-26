@@ -49,7 +49,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
 			s := stringset.NewFromSlice(v.Dimensions...)
-			if !s.HasAll(state.Config.Labels...) {
+			if !s.HasAll(state.Scheduler.Config().Labels...) {
 				return status.Errorf(codes.InvalidArgument, "bot with id %s does not have all scheduler dimensions", v.BotId)
 			}
 			idles[i] = &reconciler.IdleWorker{
@@ -83,7 +83,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.NotifyTasksResponse) {
 	var response swarming.NotifyTasksResponse
 	return func(ctx context.Context, sp *types.QScheduler, events scheduler.EventSink) (err error) {
-		if sp.Config == nil {
+		if sp.Scheduler.Config() == nil {
 			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
 		}
 
@@ -139,8 +139,8 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, events schedul
 	baseLabels = labels.base
 
 	s := stringset.NewFromSlice(baseLabels...)
-	if !s.HasAll(sp.Config.Labels...) {
-		return fmt.Errorf("task with base dimensions %s does not contain all of scheduler dimensions %s", baseLabels, sp.Config.Labels)
+	if !s.HasAll(sp.Scheduler.Config().Labels...) {
+		return fmt.Errorf("task with base dimensions %s does not contain all of scheduler dimensions %s", baseLabels, sp.Scheduler.Config().Labels)
 	}
 
 	if accountID, err = GetAccountID(n); err != nil {
