@@ -107,7 +107,7 @@ func NewFromProto(s *protos.Scheduler) *Scheduler {
 	if c.AccountConfigs == nil {
 		c.AccountConfigs = make(map[string]*protos.AccountConfig)
 	}
-	return &Scheduler{newStateFromProto(s.State), s.Config}
+	return &Scheduler{newStateFromProto(s.State), c}
 }
 
 // ToProto returns a proto representation of the state and configuration of Scheduler.
