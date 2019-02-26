@@ -40,8 +40,8 @@ func TestMatchWithIdleWorkers(t *testing.T) {
 		s := scheduler.New(tm)
 		s.MarkIdle(ctx, "w0", stringset.New(0), tm, scheduler.NullEventSink)
 		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("label1"), tm, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest("t1", "a1", stringset.NewFromSlice("label1"), nil, tm), tm, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest("t2", "a1", stringset.NewFromSlice("label2"), nil, tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest("t1", "a1", stringset.NewFromSlice("label1"), nil, tm), tm, nil, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest("t2", "a1", stringset.NewFromSlice("label2"), nil, tm), tm, nil, scheduler.NullEventSink)
 		c := scheduler.NewAccountConfig(0, 0, nil)
 		s.AddAccount(ctx, "a1", c, []float32{2, 0, 0})
 		Convey("when scheduling jobs", func() {
@@ -69,7 +69,7 @@ func TestMatchAccountless(t *testing.T) {
 
 		Convey("and a request with no account", func() {
 			rid := scheduler.RequestID("req")
-			s.AddRequest(ctx, scheduler.NewTaskRequest(rid, "", nil, nil, tm), tm, scheduler.NullEventSink)
+			s.AddRequest(ctx, scheduler.NewTaskRequest(rid, "", nil, nil, tm), tm, nil, scheduler.NullEventSink)
 			Convey("when scheduling is run", func() {
 				muts := s.RunOnce(ctx, scheduler.NullEventSink)
 				Convey("then the request is matched at lowest priority.", func() {
@@ -96,9 +96,9 @@ func TestMatchThrottledAccountJobs(t *testing.T) {
 		var r1 scheduler.RequestID = "SharedLabelRequest 1"
 		var r2 scheduler.RequestID = "SharedLabelRequest 2"
 		var r3 scheduler.RequestID = "DifferentLabelRequest"
-		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, aid, provisionable, nil, tm), tm, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest(r2, aid, provisionable, nil, tm), tm, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest(r3, aid, nil, nil, tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, aid, provisionable, nil, tm), tm, nil, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r2, aid, provisionable, nil, tm), tm, nil, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r3, aid, nil, nil, tm), tm, nil, scheduler.NullEventSink)
 		var w1 scheduler.WorkerID = "Worker1"
 		var w2 scheduler.WorkerID = "Worker2"
 		var w3 scheduler.WorkerID = "Worker3"
@@ -135,9 +135,9 @@ func TestMatchProvisionableLabel(t *testing.T) {
 		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(1, 1, nil), []float32{1})
 		for i := 0; i < 500; i++ {
 			id := scheduler.RequestID(fmt.Sprintf("t%d", i))
-			s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, stringset.NewFromSlice("a"), nil, tm), tm, scheduler.NullEventSink)
+			s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, stringset.NewFromSlice("a"), nil, tm), tm, nil, scheduler.NullEventSink)
 		}
-		s.AddRequest(ctx, scheduler.NewTaskRequest(reqB, aid, stringset.NewFromSlice("b"), nil, tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(reqB, aid, stringset.NewFromSlice("b"), nil, tm), tm, nil, scheduler.NullEventSink)
 
 		Convey("and an idle worker with labels 'b' and 'c'", func() {
 			wid := scheduler.WorkerID("workerID")
@@ -166,7 +166,7 @@ func TestBaseLabelMatch(t *testing.T) {
 		var rid scheduler.RequestID = "RequestID"
 		s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float32{1})
 		s.MarkIdle(ctx, wid, nil, tm, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest(rid, aid, nil, stringset.NewFromSlice("unsatisfied_label"), tm), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(rid, aid, nil, stringset.NewFromSlice("unsatisfied_label"), tm), tm, nil, scheduler.NullEventSink)
 		Convey("when scheduling jobs", func() {
 			m := s.RunOnce(ctx, scheduler.NullEventSink)
 			Convey("no requests should be assigned to workers.", func() {
@@ -196,10 +196,10 @@ func TestMatchRareLabel(t *testing.T) {
 			s.AddAccount(ctx, aid, scheduler.NewAccountConfig(0, 0, nil), []float32{1})
 			for i := 0; i < 10; i++ {
 				id := scheduler.RequestID(fmt.Sprintf("CommonRequest%d", i))
-				s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, nil, stringset.NewFromSlice(commonLabel), tm), tm, scheduler.NullEventSink)
+				s.AddRequest(ctx, scheduler.NewTaskRequest(id, aid, nil, stringset.NewFromSlice(commonLabel), tm), tm, nil, scheduler.NullEventSink)
 			}
 			var rareRequest scheduler.RequestID = "RareRequest"
-			s.AddRequest(ctx, scheduler.NewTaskRequest(rareRequest, aid, nil, stringset.NewFromSlice(commonLabel, rareLabel), tm), tm, scheduler.NullEventSink)
+			s.AddRequest(ctx, scheduler.NewTaskRequest(rareRequest, aid, nil, stringset.NewFromSlice(commonLabel, rareLabel), tm), tm, nil, scheduler.NullEventSink)
 			Convey("when scheduling jobs", func() {
 				muts := s.RunOnce(ctx, scheduler.NullEventSink)
 				Convey("then all jobs are scheduled to workers, including the rare requests and workers.", func() {
@@ -217,7 +217,7 @@ func TestAddRequest(t *testing.T) {
 	tm := time.Unix(0, 0)
 	s := scheduler.New(tm)
 	r := scheduler.NewTaskRequest("r1", "a1", nil, nil, tm)
-	s.AddRequest(ctx, r, tm, scheduler.NullEventSink)
+	s.AddRequest(ctx, r, tm, nil, scheduler.NullEventSink)
 
 	if _, ok := s.GetRequest("r1"); !ok {
 		t.Errorf("AddRequest did not enqueue request.")

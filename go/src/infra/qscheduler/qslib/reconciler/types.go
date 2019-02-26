@@ -48,6 +48,9 @@ type TaskWaitingRequest struct {
 
 	// AccountID for the request.
 	AccountID scheduler.AccountID
+
+	// Tags is the set of tags for the request.
+	Tags []string
 }
 
 // TaskRunningRequest encapsulates the arguments to NotifyTaskRunning.

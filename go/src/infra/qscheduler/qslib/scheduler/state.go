@@ -145,7 +145,7 @@ type Worker struct {
 
 // addRequest enqueues a new task request with the given time, (or if the task
 // exists already, notifies that the task was idle at the given time).
-func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, e EventSink) {
+func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, tags []string, e EventSink) {
 	if r.ID == "" {
 		panic("empty request id")
 	}
@@ -154,7 +154,7 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, e E
 	knownRequest, alreadyKnown := s.getRequest(rid)
 	if !alreadyKnown {
 		// Request is not already known. Add it.
-		s.addNewRequest(ctx, r, t, e)
+		s.addNewRequest(ctx, r, t, tags, e)
 		return
 	}
 
@@ -172,15 +172,16 @@ func (s *state) addRequest(ctx context.Context, r *TaskRequest, t time.Time, e E
 		// This notification is newer than the known state of request.
 		// Respect it.
 		s.deleteWorker(wid)
-		s.addNewRequest(ctx, r, t, e)
+		s.addNewRequest(ctx, r, t, tags, e)
 	}
 }
 
 // addNewRequest immediately adds the given request to the queue.
-func (s *state) addNewRequest(ctx context.Context, r *TaskRequest, t time.Time, e EventSink) {
+func (s *state) addNewRequest(ctx context.Context, r *TaskRequest, t time.Time, tags []string, e EventSink) {
 	r.confirm(t)
 	s.queuedRequests[r.ID] = r
-	e.AddEvent(eventEnqueued(r, s, t))
+	e.AddEvent(eventEnqueued(r, s, t,
+		&metrics.TaskEvent_EnqueuedDetails{Tags: tags}))
 }
 
 // markIdle implements MarkIdle for a given state.

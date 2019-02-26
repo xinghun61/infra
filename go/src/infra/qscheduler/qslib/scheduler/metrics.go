@@ -70,9 +70,10 @@ func eventCommon(request *TaskRequest, w *Worker, s *state, t time.Time) *metric
 }
 
 // eventEnqueued returns a TaskEvent for ENQUEUED events.
-func eventEnqueued(request *TaskRequest, s *state, t time.Time) *metrics.TaskEvent {
+func eventEnqueued(request *TaskRequest, s *state, t time.Time, details *metrics.TaskEvent_EnqueuedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, nil, s, t)
 	e.EventType = metrics.TaskEvent_SWARMING_ENQUEUED
+	e.Details = &metrics.TaskEvent_EnqueuedDetails_{EnqueuedDetails: details}
 	return e
 }
 

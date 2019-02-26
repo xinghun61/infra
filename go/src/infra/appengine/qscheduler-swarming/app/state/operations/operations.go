@@ -152,6 +152,7 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, events schedul
 		EnqueueTime:         tutils.Timestamp(n.Task.EnqueuedTime),
 		ProvisionableLabels: stringset.NewFromSlice(provisionableLabels...),
 		RequestID:           scheduler.RequestID(n.Task.Id),
+		Tags:                n.Task.Tags,
 		Time:                tutils.Timestamp(n.Time),
 	}
 	sp.Reconciler.NotifyTaskWaiting(ctx, sp.Scheduler, events, r)

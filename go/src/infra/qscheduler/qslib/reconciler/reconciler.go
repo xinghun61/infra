@@ -196,7 +196,7 @@ func (state *State) NotifyTaskWaiting(ctx context.Context, s *scheduler.Schedule
 		update.ProvisionableLabels,
 		update.BaseLabels,
 		update.EnqueueTime)
-	s.AddRequest(ctx, req, update.Time, events)
+	s.AddRequest(ctx, req, update.Time, update.Tags, events)
 }
 
 // NotifyTaskRunning informs the quotascheduler about a running task.

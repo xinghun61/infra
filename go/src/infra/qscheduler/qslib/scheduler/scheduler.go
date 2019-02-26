@@ -147,11 +147,11 @@ func (s *Scheduler) AddAccount(ctx context.Context, id AccountID, config *protos
 }
 
 // AddRequest enqueues a new task request.
-func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time, e EventSink) {
+func (s *Scheduler) AddRequest(ctx context.Context, request *TaskRequest, t time.Time, tags []string, e EventSink) {
 	if request.ID == "" {
 		panic("empty request id")
 	}
-	s.state.addRequest(ctx, request, t, e)
+	s.state.addRequest(ctx, request, t, tags, e)
 }
 
 // IsAssigned returns whether the given request is currently assigned to the

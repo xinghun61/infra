@@ -86,14 +86,14 @@ func TestSchedulerPreempt(t *testing.T) {
 		for _, i := range []int{1, 2} {
 			rid := RequestID(fmt.Sprintf("r%d", i))
 			wid := WorkerID(fmt.Sprintf("w%d", i))
-			s.AddRequest(ctx, NewTaskRequest(rid, "a1", nil, nil, tm0), tm0, NullEventSink)
+			s.AddRequest(ctx, NewTaskRequest(rid, "a1", nil, nil, tm0), tm0, nil, NullEventSink)
 			s.MarkIdle(ctx, wid, stringset.New(0), tm0, NullEventSink)
 			s.state.applyAssignment(&Assignment{RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker, Priority: 1})
 		}
 		s.state.workers["w1"].runningTask.cost = Balance{0, 1, 0}
 		Convey("given a new P0 request from a different account", func() {
 			s.AddAccount(ctx, "a2", NewAccountConfig(0, 0, nil), nil)
-			s.AddRequest(ctx, NewTaskRequest("r3", "a2", nil, nil, tm0), tm0, NullEventSink)
+			s.AddRequest(ctx, NewTaskRequest("r3", "a2", nil, nil, tm0), tm0, nil, NullEventSink)
 			Convey("given sufficient balance", func() {
 				s.state.balances["a2"] = Balance{1}
 				Convey("when scheduling", func() {
@@ -117,7 +117,7 @@ func TestSchedulerPreempt(t *testing.T) {
 		})
 
 		Convey("given a new P0 request from the same account", func() {
-			s.AddRequest(ctx, NewTaskRequest("r3", "a1", nil, nil, tm0), tm0, NullEventSink)
+			s.AddRequest(ctx, NewTaskRequest("r3", "a1", nil, nil, tm0), tm0, nil, NullEventSink)
 			Convey("when scheduling", func() {
 				got := s.RunOnce(ctx, NullEventSink)
 				Convey("then nothing happens.", func() {
@@ -211,8 +211,8 @@ func TestUpdateBalance(t *testing.T) {
 		Convey("when 2 tasks for the account are running", func() {
 			r1 := RequestID("request 1")
 			r2 := RequestID("request 2")
-			s.AddRequest(ctx, NewTaskRequest(r1, aID, nil, nil, t0), t0, NullEventSink)
-			s.AddRequest(ctx, NewTaskRequest(r2, aID, nil, nil, t0), t0, NullEventSink)
+			s.AddRequest(ctx, NewTaskRequest(r1, aID, nil, nil, t0), t0, nil, NullEventSink)
+			s.AddRequest(ctx, NewTaskRequest(r2, aID, nil, nil, t0), t0, nil, NullEventSink)
 			s.MarkIdle(ctx, "w1", nil, t0, NullEventSink)
 			s.MarkIdle(ctx, "w2", nil, t0, NullEventSink)
 			s.state.applyAssignment(&Assignment{Priority: 0, RequestID: r1, WorkerID: "w1", Type: AssignmentIdleWorker})
@@ -233,7 +233,7 @@ func TestUpdateBalance(t *testing.T) {
 // addRunningRequest is a test helper to add a new request to a scheduler and
 // immediately start it running on a new worker.
 func addRunningRequest(ctx context.Context, s *Scheduler, rid RequestID, wid WorkerID, aid AccountID, pri Priority, tm time.Time) {
-	s.AddRequest(ctx, NewTaskRequest(rid, aid, nil, nil, tm), tm, NullEventSink)
+	s.AddRequest(ctx, NewTaskRequest(rid, aid, nil, nil, tm), tm, nil, NullEventSink)
 	s.MarkIdle(ctx, wid, stringset.New(0), tm, NullEventSink)
 	s.state.applyAssignment(&Assignment{Priority: pri, RequestID: rid, WorkerID: wid, Type: AssignmentIdleWorker})
 }
