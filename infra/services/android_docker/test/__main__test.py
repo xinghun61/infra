@@ -6,7 +6,8 @@ import mock
 import unittest
 
 from infra.services.android_docker import __main__ as main
-
+from infra.services.swarm_docker import containers
+from infra.services.swarm_docker.test import containers_test
 
 class MainTests(unittest.TestCase):
   def setUp(self):
@@ -65,3 +66,81 @@ class MainTests(unittest.TestCase):
 
     # (1000 GB * 0.001) / 7 < 10 GB, so 10 GB fallback should be returned
     self.assertEqual(cache_size, 10 * 1024 * 1024 * 1024)
+
+
+class LaunchTests(unittest.TestCase):
+
+  def setUp(self):
+    self.c1_backend = containers_test.FakeContainerBackend('c1')
+    self.c2_backend = containers_test.FakeContainerBackend('c2')
+    self.c1 = containers.Container(self.c1_backend)
+    self.c2 = containers.Container(self.c2_backend)
+
+    self.fake_client = containers_test.FakeClient()
+    self.fake_client.get_running_containers = mock.MagicMock(
+        return_value=[self.c1, self.c2])
+    self.fake_client.get_created_containers = mock.MagicMock(return_value=[])
+
+  @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
+  def test_noop(self, mock_launch_containers):
+    # All healthy containers should cause launch() to do nothing but go straight
+    # to main_helpers.launch_containers().
+    main.launch(self.fake_client, [], None)
+
+    mock_launch_containers.ensure_called_once()
+
+  @mock.patch('infra.services.swarm_docker.main_helpers.reboot_host')
+  @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
+  @mock.patch('infra.services.swarm_docker.main_helpers.get_host_uptime')
+  def test_no_devices_no_reboot(self, mock_get_uptime, mock_launch_containers,
+                                mock_reboot):
+    # No running containers, but a small host uptime.
+    mock_get_uptime.return_value = 1
+    self.fake_client.get_running_containers.return_value = []
+
+    main.launch(self.fake_client, [], None)
+
+    # main_helpers.launch_containers() should be called without a reboot.
+    self.assertEqual(mock_launch_containers.call_count, 1)
+    self.assertEqual(mock_reboot.call_count, 0)
+
+  @mock.patch('infra.services.swarm_docker.main_helpers.reboot_host')
+  @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
+  @mock.patch('infra.services.swarm_docker.main_helpers.get_host_uptime')
+  def test_no_devices_with_reboot(self, mock_get_uptime, mock_launch_containers,
+                                  mock_reboot):
+    # No running containers, and a large host uptime.
+    mock_get_uptime.return_value = 999
+    self.fake_client.get_running_containers.return_value = []
+
+    main.launch(self.fake_client, [], None)
+
+    # A reboot should be called instead of main_helpers.launch_containers().
+    self.assertEqual(mock_launch_containers.call_count, 0)
+    self.assertEqual(mock_reboot.call_count, 1)
+
+  @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
+  def test_frozen_containers_no_remove(self, mock_launch_containers):
+    # c1 is running, but c2 is in "Created" with exit code 0.
+    self.fake_client.get_running_containers.return_value = [self.c1]
+    self.fake_client.get_created_containers.return_value = [self.c2]
+    self.c2_backend.attrs = {'State': {'ExitCode': 0}}
+
+    main.launch(self.fake_client, [], None)
+
+    # c2 should not have been removed since it had a zero exit code.
+    self.assertFalse(self.c2_backend.was_deleted)
+    self.assertEqual(mock_launch_containers.call_count, 1)
+
+  @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
+  def test_frozen_containers_with_removal(self, mock_launch_containers):
+    # c1 is running, but c2 is in "Created" with exit code non-zero exit code.
+    self.fake_client.get_running_containers.return_value = [self.c1]
+    self.fake_client.get_created_containers.return_value = [self.c2]
+    self.c2_backend.attrs = {'State': {'ExitCode': 127}}
+
+    main.launch(self.fake_client, [], None)
+
+    # c2 should have been removed since it had non-zero exit code.
+    self.assertTrue(self.c2_backend.was_deleted)
+    self.assertEqual(mock_launch_containers.call_count, 1)

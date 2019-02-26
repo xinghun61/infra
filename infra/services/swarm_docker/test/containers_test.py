@@ -116,6 +116,10 @@ class FakeContainerList(object):
       return [c for c in self._list if c.is_paused]
     elif status == 'running':
       return [c for c in self._list if not c.is_paused]
+    elif status == 'created':
+      return [
+          c for c in self._list if c.attrs.get('State', {}).get(
+              'Status') == 'created']
     else:
       return self._list
 
@@ -247,6 +251,15 @@ class TestDockerClient(unittest.TestCase):
     self.assertEqual(paused_containers[0].name, '5')
 
   @mock.patch('docker.from_env')
+  def test_get_created_containers(self, mock_from_env):
+    self.fake_client.containers.get('5').attrs['State'] = {'Status': 'created'}
+    mock_from_env.return_value = self.fake_client
+
+    created_containers = containers.DockerClient().get_created_containers()
+    self.assertEqual(len(created_containers), 1)
+    self.assertEqual(created_containers[0].name, '5')
+
+  @mock.patch('docker.from_env')
   def test_get_container(self, mock_from_env):
     mock_from_env.return_value = self.fake_client
     container = containers.DockerClient().get_container(
@@ -355,6 +368,10 @@ class TestContainer(unittest.TestCase):
   def test_get_labels(self):
     self.container_backend.attrs = {'Config': {'Labels': {'label1': 'val1'}}}
     self.assertEquals(self.container.labels, {'label1': 'val1'})
+
+  def test_get_exit_code(self):
+    self.container_backend.attrs['State'] = {'ExitCode': 111}
+    self.assertEqual(self.container.exit_code, 111)
 
   def test_get_state(self):
     self.container_backend.attrs = {'State': {'Status': 'running'}}

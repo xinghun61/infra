@@ -166,17 +166,20 @@ class DockerClient(object):
     except docker.errors.ImageNotFound:
       return False
 
-  def get_paused_containers(self):
+  def _get_containers_by_status(self, status):
     return [
         Container(c) for c in self._client.containers.list(
-            filters={'status': 'paused'})
+            filters={'status': status})
     ]
 
+  def get_created_containers(self):
+    return self._get_containers_by_status('created')
+
+  def get_paused_containers(self):
+    return self._get_containers_by_status('paused')
+
   def get_running_containers(self):
-    return [
-        Container(c) for c in self._client.containers.list(
-            filters={'status': 'running'})
-    ]
+    return self._get_containers_by_status('running')
 
   def get_container(self, container_desc):
     try:
@@ -265,6 +268,10 @@ class Container(object):
   @property
   def state(self):
     return self._container.attrs.get('State', {}).get('Status', 'unknown')
+
+  @property
+  def exit_code(self):
+    return self._container.attrs.get('State', {}).get('ExitCode', 'unknown')
 
   @property
   def attrs(self):
