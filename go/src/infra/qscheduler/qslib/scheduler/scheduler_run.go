@@ -56,7 +56,9 @@ func (run *schedulerRun) Run(e EventSink) []*Assignment {
 		// already running tasks that qualify.
 		run.reprioritizeRunningTasks(p, e)
 		// Step 4: Preempt any lower priority running tasks.
-		output = append(output, run.preemptRunningTasks(p, e)...)
+		if !run.scheduler.config.DisablePreemption {
+			output = append(output, run.preemptRunningTasks(p, e)...)
+		}
 		// Step 5: Give any requests that were throttled in this pass a chance to be scheduled
 		// during the final FreeBucket pass.
 		run.moveThrottledRequests(p)
