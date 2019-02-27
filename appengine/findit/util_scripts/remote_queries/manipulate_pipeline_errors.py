@@ -29,7 +29,8 @@ from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipeline.models import _PipelineRecord
 from pipeline import pipeline
 
-_FLAKE_URL_TEMPLATE = 'https://findit-for-me.appspot.com/waterfall/flake?key=%s'
+_FLAKE_URL_TEMPLATE = ('https://analysis.chromium.org'
+                       '/p/chromium/flake-portal/analysis/analyze?key=%s')
 
 
 def _IterateOverIncompleteAnalyses(ndb_model_class, start_date, end_date,

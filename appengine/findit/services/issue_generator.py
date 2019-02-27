@@ -29,7 +29,8 @@ from services import swarming
 # The link to the flake culprit page to encapsulate all impacted analyses by
 # a common culprit.
 _CULPRIT_LINK_TEMPLATE = (
-    'https://analysis.chromium.org/waterfall/flake/flake-culprit?key={}')
+    'https://analysis.chromium.org'
+    '/p/chromium/flake-portal/analysis/analyze/flake-culprit?key={}')
 
 # The base template for updating a bug with culprit findings.
 _RESULT_WITH_CULPRIT_TEMPLATE = textwrap.dedent("""

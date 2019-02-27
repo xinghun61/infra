@@ -534,7 +534,7 @@
       </p>
 
       <!-- Rerun analysis button -->
-      <form action="/waterfall/flake" method="post">
+      <form action="/p/chromium/flake-portal/analysis/analyze" method="post">
         <input type="hidden" name="debug" value="1" />
         <input type="hidden" name="rerun" value="1" />
         <input type="hidden" name="key" value="{{key}}" />
@@ -543,7 +543,7 @@
       </form>
 
       <!-- Cancel analysis button -->
-      <form action="/waterfall/flake" method="post">
+      <form action="/p/chromium/flake-portal/analysis/analyze" method="post">
         <input type="hidden" name="debug" value="1" />
         <input type="hidden" name="cancel" value="1" />
         <input type="hidden" name="key" value="{{key}}" />

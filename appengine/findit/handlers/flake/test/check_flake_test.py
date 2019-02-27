@@ -29,7 +29,7 @@ from waterfall.test import wf_testcase
 
 class CheckFlakeTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/waterfall/flake', check_flake.CheckFlake),
+      ('/p/chromium/flake-portal/analysis/analyze', check_flake.CheckFlake),
   ],
                                        debug=True)
 
@@ -39,7 +39,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
   def testPostWithBadUrl(self, *_):
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url': 'this is not a valid build url',
             'step_name': 's',
@@ -57,7 +57,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
   def testPostWithoutStepName(self, *_):
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url': buildbot.CreateBuildUrl('m', 'b', 1),
             'test_name': 't',
@@ -102,7 +102,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url':
                 buildbot.CreateBuildUrl(master_name, builder_name,
@@ -138,7 +138,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url':
                 buildbot.CreateBuildUrl(master_name, builder_name,
@@ -152,7 +152,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         },
         status=302)
     expected_url_surfix = (
-        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+        '/p/chromium/flake-portal/analysis/analyze?redirect=1&key=%s' %
+        analysis.key.urlsafe())
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_surfix))
 
@@ -168,7 +169,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url':
                 buildbot.CreateBuildUrl(master_name, builder_name,
@@ -187,7 +188,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   def testMissingKeyGet(self):
     response = self.test_app.get(
-        '/waterfall/flake', params={'format': 'json'}, status=404)
+        '/p/chromium/flake-portal/analysis/analyze',
+        params={'format': 'json'},
+        status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
 
@@ -199,10 +202,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
   def testMissingKeyPost(self, *_):
     response = self.test_app.post(
-        '/waterfall/flake', params={
+        '/p/chromium/flake-portal/analysis/analyze',
+        params={
             'format': 'json',
             'rerun': '1'
-        }, status=404)
+        },
+        status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
 
@@ -214,7 +219,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.key.delete()
 
     response = self.test_app.get(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'format': 'json',
             'key': analysis.key.urlsafe()
@@ -237,7 +242,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.key.delete()
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'format': 'json',
             'rerun': '1',
@@ -311,7 +316,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@example.com', is_admin=False)
 
     response = self.test_app.get(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'format': 'json'
@@ -404,7 +409,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url':
                 buildbot.CreateBuildUrl(master_name, builder_name,
@@ -451,7 +456,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_request.Save()
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url':
                 buildbot.CreateBuildUrl(master_name, builder_name,
@@ -465,7 +470,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         },
         status=302)
     expected_url_surfix = (
-        '/waterfall/flake?redirect=1&key=%s' % previous_analysis.key.urlsafe())
+        '/p/chromium/flake-portal/analysis/analyze?redirect=1&key=%s' %
+        previous_analysis.key.urlsafe())
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_surfix))
 
@@ -533,7 +539,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     response = self.test_app.get(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'format': 'json'
@@ -656,7 +662,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_request.supported = False
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'url':
                 buildbot.CreateBuildUrl(master_name, builder_name,
@@ -712,7 +718,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         triage_result, {'build_number': suspected_flake_build_number}, 'test')
 
     response = self.test_app.get(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'format': 'json'
@@ -992,7 +998,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'format': 'json',
             'rerun': '1',
@@ -1014,7 +1020,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'format': 'json',
             'rerun': '1',
@@ -1075,7 +1081,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         '_CreateAndScheduleFlakeAnalysis',
         return_value=(analysis, True)) as scheduler:
       self.test_app.post(
-          '/waterfall/flake',
+          '/p/chromium/flake-portal/analysis/analyze',
           params={
               'key': analysis.key.urlsafe(),
               'rerun': '1',
@@ -1108,7 +1114,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'cancel': '1',
@@ -1126,7 +1132,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'format': 'json',
             'cancel': '1',
@@ -1142,7 +1148,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'format': 'json',
             'cancel': '1'
@@ -1163,7 +1169,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'format': 'json',
             'cancel': '1',
@@ -1194,7 +1200,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'cancel': '1',
@@ -1225,7 +1231,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'cancel': '1',
@@ -1257,7 +1263,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'cancel': '1',
@@ -1286,7 +1292,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     self.test_app.post(
-        '/waterfall/flake',
+        '/p/chromium/flake-portal/analysis/analyze',
         params={
             'key': analysis.key.urlsafe(),
             'analyze_recent_commit': '1',

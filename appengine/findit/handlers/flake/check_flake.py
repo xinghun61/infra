@@ -397,7 +397,8 @@ class CheckFlake(BaseHandler):
         analysis.bug_id, True)
 
     return self.CreateRedirect(
-        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+        '/p/chromium/flake-portal/analysis/analyze?redirect=1&key=%s' %
+        analysis.key.urlsafe())
 
   def _HandleCancelAnalysis(self):
     """Cancel analysis as a response to a user request."""
@@ -435,7 +436,8 @@ class CheckFlake(BaseHandler):
         end_time=time_util.GetUTCNow())
 
     return self.CreateRedirect(
-        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+        '/p/chromium/flake-portal/analysis/analyze?redirect=1&key=%s' %
+        analysis.key.urlsafe())
 
   def _HandleAnalyzeRecentCommit(self):
     key = self.request.get('key')
@@ -454,7 +456,8 @@ class CheckFlake(BaseHandler):
         analysis.key.urlsafe())
 
     return self.CreateRedirect(
-        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+        '/p/chromium/flake-portal/analysis/analyze?redirect=1&key=%s' %
+        analysis.key.urlsafe())
 
   @token.VerifyXSRFToken()
   def HandlePost(self):
@@ -543,7 +546,8 @@ class CheckFlake(BaseHandler):
       logging.info('Analysis: %s has a scheduled status of: %r', analysis.key,
                    scheduled)
       return self.CreateRedirect(
-          '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+          '/p/chromium/flake-portal/analysis/analyze?redirect=1&key=%s' %
+          analysis.key.urlsafe())
 
   def HandleGet(self):
     key = self.request.get('key')

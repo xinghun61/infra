@@ -71,7 +71,9 @@ def make_analysis_detail(data):
   """
   detail_body = ''
   build_id = '{master_name}/{builder_name}/{build_number}'
-  analysis_link = SWARM_HOST + '/waterfall/flake?key={analysis_key}'
+  analysis_link = (
+      'https://analysis.chromium.org'
+      '/p/chromium/flake-portal/analysis/analyze?key={analysis_key}')
   analysis_result = {'findit_stable': '', 'findit_culprit': ''}
   for row in data['rows']:
     revision_results = row['results']
@@ -81,16 +83,16 @@ def make_analysis_detail(data):
         revision_results['total_tries'] - revision_results['total_passes'])
     flake_bots = sorted(revision_results.get('not_all_pass_bots', []))
     stable_bots = sorted(revision_results.get('all_pass_bots', []))
-    analysis_result['findit_stable' if row['expected_stable'] else
-                    'findit_culprit'] = ('experiment_stable' if not flake_bots
-                                         else 'experiment_flaky')
+    analysis_result[
+        'findit_stable' if row['expected_stable'] else 'findit_culprit'] = (
+            'experiment_stable' if not flake_bots else 'experiment_flaky')
     # It is unreadable to list all bots used to run the experiments' tasks,
     # just list the first and last (lexicographically) in the set.
     revision_results['flake_bots'] = '...'.join(
         [flake_bots[0], flake_bots[-1]]) if len(flake_bots) > 1 else flake_bots
-    revision_results['stable_bots'] = '...'.join(
-        [stable_bots[0],
-         stable_bots[-1]]) if len(stable_bots) > 1 else stable_bots
+    revision_results['stable_bots'] = '...'.join([
+        stable_bots[0], stable_bots[-1]
+    ]) if len(stable_bots) > 1 else stable_bots
 
     # Link to example passing and failing tasks.
     revision_results['fail_example'] = ''
@@ -98,24 +100,24 @@ def make_analysis_detail(data):
     if flake_bots:
       for task, task_result in row['task_results'].iteritems():
         if task_result.get('failures'):
-          revision_results[
-              'fail_example'] = '[%s](%s/task?id=%s)' % (task, SWARM_HOST, task)
+          revision_results['fail_example'] = '[%s](%s/task?id=%s)' % (
+              task, SWARM_HOST, task)
     if stable_bots:
       for task, task_result in row['task_results'].iteritems():
         if task_result.get('passes'):
-          revision_results[
-              'pass_example'] = '[%s](%s/task?id=%s)' % (task, SWARM_HOST, task)
+          revision_results['pass_example'] = '[%s](%s/task?id=%s)' % (
+              task, SWARM_HOST, task)
 
-    detail_body += (
-        '\n\n#### Isolated hash:{isolate_hash}\n'
-        '\n- Findit thought this revision was *{stable}*'
-        '\n- Out of {total_tries}:'
-        '\n  - {total_passes} passed'
-        '\n    - Bots: {stable_bots}'
-        '\n    - Example: {pass_example}'
-        '\n  - {total_failures} failed'
-        '\n    - Bots: {flake_bots}'
-        '\n    - Example: {fail_example}').format(**revision_results)
+    detail_body += ('\n\n#### Isolated hash:{isolate_hash}\n'
+                    '\n- Findit thought this revision was *{stable}*'
+                    '\n- Out of {total_tries}:'
+                    '\n  - {total_passes} passed'
+                    '\n    - Bots: {stable_bots}'
+                    '\n    - Example: {pass_example}'
+                    '\n  - {total_failures} failed'
+                    '\n    - Bots: {flake_bots}'
+                    '\n    - Example: {fail_example}').format(
+                        **revision_results)
   detail_header = ('\n\n### {label}: Analysis for flake on '
                    '[' + build_id + '](' + analysis_link + ')'
                    '\n\nTest name: ```{test_name}```'
