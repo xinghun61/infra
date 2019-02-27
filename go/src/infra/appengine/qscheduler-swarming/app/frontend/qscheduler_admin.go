@@ -104,6 +104,24 @@ func (s *QSchedulerAdminServerImpl) Wipe(ctx context.Context, r *qscheduler.Wipe
 	return &qscheduler.WipeResponse{}, nil
 }
 
+// ModAccount implements QSchedulerAdminServer.
+func (s *QSchedulerAdminServerImpl) ModAccount(ctx context.Context, r *qscheduler.ModAccountRequest) (resp *qscheduler.ModAccountResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	return nil, status.Errorf(codes.Unimplemented, "not implemented")
+}
+
+// ModSchedulerPool implements QSchedulerAdminServer.
+func (s *QSchedulerAdminServerImpl) ModSchedulerPool(ctx context.Context, r *qscheduler.ModSchedulerPoolRequest) (resp *qscheduler.ModSchedulerPoolResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	return nil, status.Errorf(codes.Unimplemented, "not implemented")
+}
+
 // ListAccounts implements QSchedulerAdminServer.
 func (s *QSchedulerViewServerImpl) ListAccounts(ctx context.Context, r *qscheduler.ListAccountsRequest) (resp *qscheduler.ListAccountsResponse, err error) {
 	defer func() {

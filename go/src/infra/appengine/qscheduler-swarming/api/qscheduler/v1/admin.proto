@@ -6,6 +6,7 @@ syntax = "proto3";
 
 package qscheduler;
 
+import "google/protobuf/wrappers.proto";
 import "infra/qscheduler/qslib/protos/config.proto";
 import "infra/qscheduler/qslib/protos/state.proto";
 
@@ -28,17 +29,12 @@ service QSchedulerAdmin {
     // point. May have significant correctness or performance impact on
     // scheduler.
     rpc Wipe(WipeRequest) returns (WipeResponse);
-}
 
-// QSchedulerView is a inspection / viewing API for quotascheduler. All calls
-// are read-only.
-service QSchedulerView {
-    // ListAccounts returns the set of accounts for a given scheduler.
-    rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+    // ModAccount modifies an account.
+    rpc ModAccount(ModAccountRequest) returns (ModAccountResponse);
 
-    // InspectPool returns a description of the state of a scheduler, for debugging
-    // or diagnostic purposes.
-    rpc InspectPool(InspectPoolRequest) returns (InspectPoolResponse);
+    // ModSchedulerPool modifies a scheduler.
+    rpc ModSchedulerPool(ModSchedulerPoolRequest) returns (ModSchedulerPoolResponse);
 }
 
 // TODO(akeshet): Rename to CreatePoolScheduler CreateScheduler.
@@ -71,6 +67,47 @@ message WipeRequest {
 }
 
 message WipeResponse {}
+
+message ModAccountRequest {
+  string pool_id = 1;
+
+  string account_id = 2;
+
+  // TODO(akeshet): Here and in ModSchedulerPoolRequest, use
+  // a google.protobuf.FieldMask (from google/protobuf/field_mask.proto)
+  // and a bare protos.AccountConfig to specify values to overwrite, rather
+  // than these wrapper values.
+  //
+  // This is blocked on crbug.com/935649 which will provide golang
+  // implementation of FieldMask semantics.
+
+  repeated float charge_rate = 3;
+
+  google.protobuf.FloatValue max_charge_seconds = 4;
+
+  google.protobuf.Int32Value max_fanout = 5;
+}
+
+message ModAccountResponse {}
+
+message ModSchedulerPoolRequest {
+  string pool_id = 1;
+
+  google.protobuf.BoolValue disable_preemption = 2;
+}
+
+message ModSchedulerPoolResponse {}
+
+// QSchedulerView is a inspection / viewing API for quotascheduler. All calls
+// are read-only.
+service QSchedulerView {
+    // ListAccounts returns the set of accounts for a given scheduler.
+    rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+
+    // InspectPool returns a description of the state of a scheduler, for debugging
+    // or diagnostic purposes.
+    rpc InspectPool(InspectPoolRequest) returns (InspectPoolResponse);
+}
 
 message ListAccountsRequest {
     // PoolID is the id of the scheduler to list accounts from.

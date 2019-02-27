@@ -73,3 +73,37 @@ func (s *DecoratedQSchedulerAdmin) Wipe(c context.Context, req *WipeRequest) (rs
 	}
 	return
 }
+
+func (s *DecoratedQSchedulerAdmin) ModAccount(c context.Context, req *ModAccountRequest) (rsp *ModAccountResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "ModAccount", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.ModAccount(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "ModAccount", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedQSchedulerAdmin) ModSchedulerPool(c context.Context, req *ModSchedulerPoolRequest) (rsp *ModSchedulerPoolResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "ModSchedulerPool", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.ModSchedulerPool(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "ModSchedulerPool", rsp, err)
+	}
+	return
+}
