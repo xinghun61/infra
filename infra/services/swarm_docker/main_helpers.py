@@ -55,11 +55,41 @@ def get_host_uptime():
   return uptime / 60
 
 
-def reboot_host():
-  # Docker'ed hosts should have /sbin/reboot as password-less sudo.
-  cmd = ['sudo', '-n', '/sbin/reboot']
+def update_docker(version='18.06.3~ce~3-0~ubuntu'):
+  """Update the docker package prior to reboot.
+
+  This will automatically keep the docker package up to date and running prior
+  to reboot will ensure that no containers are running, so no disruptions. This
+  will also remove older docker packages (docker-engine) automatically.
+
+  Args:
+      version: (str) The version of docker-ce to ensure is installed.
+  """
+  # Not doing a lot of dpkg/apt-cache checking here as the runtime to just try
+  # an install is only 1.1 seconds.
   try:
-    subprocess.check_call(cmd)
+    subprocess.check_call(['/usr/bin/apt-get', 'update'])
+  except subprocess.CalledProcessError:
+    # We don't care enough to abort reboot here, only if install fails.
+    logging.exception('Unable to apt-get update.')
+
+  try:
+    subprocess.check_call(['/usr/bin/apt-get', 'install', '-y',
+                           'docker-ce=%s' % version])
+  except subprocess.CalledProcessError:
+    logging.exception('Unable to install/upgrade docker-ce to %s.', version)
+    return False
+  return True
+
+
+def reboot_host():
+  if not update_docker():
+    logging.warning('Not rebooting, something went wrong.')
+    return
+
+  # This script runs as root.
+  try:
+    subprocess.check_call(['/sbin/reboot'])
   except subprocess.CalledProcessError:
     logging.exception('Unable to reboot host.')
 
