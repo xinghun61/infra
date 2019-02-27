@@ -16,7 +16,6 @@ package frontend
 
 import (
 	"fmt"
-	"net/url"
 	"sync"
 
 	"go.chromium.org/luci/common/errors"
@@ -30,12 +29,8 @@ import (
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/botsummary"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/worker"
-)
-
-const (
-	// taskUser is the user for tasks created by Tasker.
-	taskUser = "admin-service"
 )
 
 var taskName = map[fleet.TaskType]string{
@@ -97,37 +92,34 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 
 	// Check existing tasks even before checking for trigger condition so that we
 	// never lie about tasks we _have_ already created.
-	tags := withCommonTags(cfg, fmt.Sprintf("idle_task:%s", bse.DutID))
+	tags := swarming.AddCommonTags(ctx, fmt.Sprintf("idle_task:%s", bse.DutID))
 	oldTasks, err := sc.ListRecentTasks(ctx, tags, "PENDING", 1)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to list existing on-idle tasks triggered for dut %s", bse.DutID).Err()
 	}
 	if len(oldTasks) > 0 {
-		return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{oldTasks[0].TaskId}), nil
+		return repairTasksWithIDs(ctx, bse.DutID, []string{oldTasks[0].TaskId}), nil
 	}
 
 	if idle != nil && idle.Seconds < req.IdleDuration.Seconds {
-		return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{}), nil
+		return repairTasksWithIDs(ctx, bse.DutID, []string{}), nil
 	}
 
 	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
 	tags = append(tags, at.Tags...)
-	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
+	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  at.Cmd,
 		DutID:                bse.DutID,
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
 		ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
-		Pool:                 cfg.Swarming.BotPool,
 		Priority:             req.Priority,
 		Tags:                 tags,
-		User:                 taskUser,
-		ServiceAccount:       cfg.Tasker.AdminTaskServiceAccount,
-	})
+	}))
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create task for dut %s", bse.DutID).Err()
 	}
 
-	return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{tid}), nil
+	return repairTasksWithIDs(ctx, bse.DutID, []string{tid}), nil
 }
 
 // TriggerRepairOnRepairFailed implements the fleet.TaskerService method.
@@ -160,10 +152,10 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 		return nil, errors.Annotate(err, "failed to decode bot summary entity for bot %s", bse.BotID).Err()
 	}
 	if bs.DutState != fleet.DutState_RepairFailed {
-		return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{}), nil
+		return repairTasksWithIDs(ctx, bse.DutID, []string{}), nil
 	}
 
-	tags := withCommonTags(cfg, fmt.Sprintf("repair_failed_task:%s", bse.DutID))
+	tags := swarming.AddCommonTags(ctx, fmt.Sprintf("repair_failed_task:%s", bse.DutID))
 	// A repair task should only be created if enough time has passed since the
 	// last attempt, irrespective of the state the old task is in.
 	oldTasks, err := sc.ListRecentTasks(ctx, tags, "", 1)
@@ -174,13 +166,13 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 	if len(oldTasks) > 0 {
 		ot := oldTasks[0]
 		if ot.State == "PENDING" || ot.State == "RUNNING" {
-			return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{ot.TaskId}), nil
+			return repairTasksWithIDs(ctx, bse.DutID, []string{ot.TaskId}), nil
 		}
 		switch t, err := clients.TimeSinceBotTask(ot); {
 		case err != nil:
 			return nil, errors.Annotate(err, "failed to determine time since last repair task %s", ot.TaskId).Err()
 		case t != nil && t.Seconds < req.TimeSinceLastRepair.Seconds:
-			return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{}), nil
+			return repairTasksWithIDs(ctx, bse.DutID, []string{}), nil
 		default:
 			// old tasks are too old, must create new.
 		}
@@ -188,23 +180,20 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 
 	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
 	tags = append(tags, at.Tags...)
-	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
+	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  at.Cmd,
 		DutID:                bse.DutID,
 		DutState:             "repair_failed",
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
 		ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
-		Pool:                 cfg.Swarming.BotPool,
 		Priority:             req.Priority,
 		Tags:                 tags,
-		User:                 taskUser,
-		ServiceAccount:       cfg.Tasker.AdminTaskServiceAccount,
-	})
+	}))
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to create task for dut %s", bse.DutID).Err()
 	}
 
-	return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{tid}), nil
+	return repairTasksWithIDs(ctx, bse.DutID, []string{tid}), nil
 }
 
 // EnsureBackgroundTasks implements the fleet.TaskerService method.
@@ -237,7 +226,7 @@ var dutStateForTask = map[fleet.TaskType]string{
 func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient, req *fleet.EnsureBackgroundTasksRequest, bse *botsummary.Entity) (*fleet.TaskerBotTasks, error) {
 	cfg := config.Get(ctx)
 	ts := make([]*fleet.TaskerTask, 0, req.TaskCount)
-	commonTags := withCommonTags(cfg, fmt.Sprintf("background_task:%s_%s", req.Type.String(), bse.DutID))
+	commonTags := swarming.AddCommonTags(ctx, fmt.Sprintf("background_task:%s_%s", req.Type.String(), bse.DutID))
 	oldTasks, err := sc.ListRecentTasks(ctx, commonTags, "PENDING", int(req.TaskCount))
 	if err != nil {
 		return nil, errors.Annotate(err, "Failed to list existing tasks of type %s for dut %s",
@@ -245,7 +234,7 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 	}
 	for _, ot := range oldTasks {
 		ts = append(ts, &fleet.TaskerTask{
-			TaskUrl: swarmingURLForTask(cfg.Swarming.Host, ot.TaskId),
+			TaskUrl: swarming.URLForTask(ctx, ot.TaskId),
 			Type:    req.Type,
 		})
 	}
@@ -255,23 +244,20 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 		tags := append([]string{}, commonTags...)
 		at := worker.AdminTaskForType(ctx, req.Type)
 		tags = append(tags, at.Tags...)
-		tid, err := sc.CreateTask(ctx, taskName[req.Type], &clients.SwarmingCreateTaskArgs{
+		tid, err := sc.CreateTask(ctx, taskName[req.Type], swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 			Cmd:                  at.Cmd,
 			DutID:                bse.DutID,
 			DutState:             dutStateForTask[req.Type],
 			ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
 			ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
-			Pool:                 cfg.Swarming.BotPool,
 			Priority:             req.Priority,
 			Tags:                 tags,
-			User:                 taskUser,
-			ServiceAccount:       cfg.Tasker.AdminTaskServiceAccount,
-		})
+		}))
 		if err != nil {
 			return nil, errors.Annotate(err, "Error when creating %dth task for dut %q", i+1, bse.DutID).Err()
 		}
 		ts = append(ts, &fleet.TaskerTask{
-			TaskUrl: swarmingURLForTask(cfg.Swarming.Host, tid),
+			TaskUrl: swarming.URLForTask(ctx, tid),
 			Type:    req.Type,
 		})
 	}
@@ -312,11 +298,11 @@ func createTasksPerBot(bses []*botsummary.Entity, worker func(*botsummary.Entity
 	}, nil
 }
 
-func repairTasksWithIDs(host string, dutID string, taskIDs []string) *fleet.TaskerBotTasks {
+func repairTasksWithIDs(ctx context.Context, dutID string, taskIDs []string) *fleet.TaskerBotTasks {
 	tasks := make([]*fleet.TaskerTask, 0, len(taskIDs))
 	for _, tid := range taskIDs {
 		tasks = append(tasks, &fleet.TaskerTask{
-			TaskUrl: swarmingURLForTask(host, tid),
+			TaskUrl: swarming.URLForTask(ctx, tid),
 			Type:    fleet.TaskType_Repair,
 		})
 	}
@@ -324,24 +310,4 @@ func repairTasksWithIDs(host string, dutID string, taskIDs []string) *fleet.Task
 		DutId: dutID,
 		Tasks: tasks,
 	}
-}
-
-func withCommonTags(cfg *config.Config, ts ...string) []string {
-	tags := make([]string, 0, len(ts)+2)
-	tags = append(tags, cfg.Swarming.LuciProjectTag)
-	tags = append(tags, cfg.Swarming.FleetAdminTaskTag)
-	tags = append(tags, ts...)
-	return tags
-}
-
-func swarmingURLForTask(host string, tid string) string {
-	u := url.URL{
-		Scheme: "https",
-		Host:   host,
-		Path:   "task",
-	}
-	q := u.Query()
-	q.Set("id", tid)
-	u.RawQuery = q.Encode()
-	return u.String()
 }
