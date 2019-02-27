@@ -34,11 +34,30 @@ const (
 	skylabSwarmingWorkerPath = infraToolsDir + "/skylab_swarming_worker"
 )
 
-// AdminTaskCmd returns a slice of strings for a skylab_swarming_worker admin
-// task command.
-//
-// logdogURL, if non-empty, is used as the LogDog annotation URL.
-func AdminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL string) []string {
+// AdminTask contains the information required to create a Swarming task for an
+// admin task.
+type AdminTask struct {
+	// The Swarming command to execute.
+	Cmd []string
+
+	// Tags to append to the swarming task.
+	Tags []string
+}
+
+// AdminTaskForType returns the information required to create a Skylab task
+// for an admin task type.
+func AdminTaskForType(ctx context.Context, ttype fleet.TaskType) AdminTask {
+	var at AdminTask
+	cfg := config.Get(ctx)
+	logdogURL := generateLogDogURL(cfg)
+	if logdogURL != "" {
+		at.Tags = []string{fmt.Sprintf("log_location:%s", logdogURL)}
+	}
+	at.Cmd = adminTaskCmd(ctx, ttype, logdogURL)
+	return at
+}
+
+func adminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL string) []string {
 	s := []string{
 		skylabSwarmingWorkerPath,
 		"-task-name", fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
@@ -50,11 +69,11 @@ func AdminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL string) [
 	return s
 }
 
-// GenerateLogDogURL generates a LogDog annotation URL for the LogDog server
+// generateLogDogURL generates a LogDog annotation URL for the LogDog server
 // corresponding to the configured Swarming server.
 //
 // If the LogDog server can't be determined, an empty string is returned.
-func GenerateLogDogURL(cfg *config.Config) string {
+func generateLogDogURL(cfg *config.Config) string {
 	if cfg.Tasker.LogdogHost != "" {
 		return logdogAnnotationURL(cfg.Tasker.LogdogHost, uuid.New().String())
 	}

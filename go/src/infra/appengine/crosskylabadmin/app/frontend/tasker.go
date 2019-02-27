@@ -110,12 +110,10 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 		return repairTasksWithIDs(cfg.Swarming.Host, bse.DutID, []string{}), nil
 	}
 
-	logdogURL := worker.GenerateLogDogURL(cfg)
-	if logdogURL != "" {
-		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
-	}
+	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
+	tags = append(tags, at.Tags...)
 	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
-		Cmd:                  worker.AdminTaskCmd(ctx, fleet.TaskType_Repair, logdogURL),
+		Cmd:                  at.Cmd,
 		DutID:                bse.DutID,
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
 		ExpirationSecs:       cfg.Tasker.BackgroundTaskExpirationSecs,
@@ -188,12 +186,10 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 		}
 	}
 
-	logdogURL := worker.GenerateLogDogURL(cfg)
-	if logdogURL != "" {
-		tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
-	}
+	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
+	tags = append(tags, at.Tags...)
 	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], &clients.SwarmingCreateTaskArgs{
-		Cmd:                  worker.AdminTaskCmd(ctx, fleet.TaskType_Repair, logdogURL),
+		Cmd:                  at.Cmd,
 		DutID:                bse.DutID,
 		DutState:             "repair_failed",
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
@@ -257,12 +253,10 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 	newTaskCount := int(req.TaskCount) - len(ts)
 	for i := 0; i < newTaskCount; i++ {
 		tags := append([]string{}, commonTags...)
-		logdogURL := worker.GenerateLogDogURL(cfg)
-		if logdogURL != "" {
-			tags = append(tags, fmt.Sprintf("log_location:%s", logdogURL))
-		}
+		at := worker.AdminTaskForType(ctx, req.Type)
+		tags = append(tags, at.Tags...)
 		tid, err := sc.CreateTask(ctx, taskName[req.Type], &clients.SwarmingCreateTaskArgs{
-			Cmd:                  worker.AdminTaskCmd(ctx, req.Type, logdogURL),
+			Cmd:                  at.Cmd,
 			DutID:                bse.DutID,
 			DutState:             dutStateForTask[req.Type],
 			ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
