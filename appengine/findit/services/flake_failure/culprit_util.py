@@ -29,7 +29,7 @@ from waterfall import waterfall_config
 _NOTIFICATION_MESSAGE_TEMPLATE = textwrap.dedent("""
 Findit (https://goo.gl/kROfz5) identified this CL at revision {} as the culprit
 for introducing flakiness in the tests as shown on:
-https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={}
+https://analysis.chromium.org/p/chromium/flake-portal/analysis/culprit?key={}
 
 If the results are correct, please either revert this CL, disable, or fix the
 flaky test.""")

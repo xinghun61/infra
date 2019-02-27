@@ -109,7 +109,8 @@ class RankFlakes(BaseHandler):
         # even if only one flake is retrieved.
         flake = flakes[0]
         return self.CreateRedirect(
-            '/flake/occurrences?key=%s' % flake.key.urlsafe())
+            '/p/chromium/flake-portal/flakes/occurrences?key=%s' %
+            flake.key.urlsafe())
     elif bug_id:
       flakes = _GetFlakesByBug(monorail_project, bug_id)
     else:

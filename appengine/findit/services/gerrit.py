@@ -59,8 +59,8 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
     revert_change_id (str): Id of the revert change.
     submitted (bool): If the revert is submitted or not.
   """
-  culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
-                  culprit_key)
+  culprit_link = (
+      'https://analysis.chromium.org/waterfall/culprit?key=%s' % culprit_key)
   false_positive_bug_query = urllib.urlencode({
       'status': 'Available',
       'labels': 'Test-Findit-Wrong',
@@ -137,7 +137,7 @@ def _GenerateRevertReasonForFailure(build_id, commit_position, revision,
   return textwrap.dedent("""
       Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
       culprit for failures in the build cycles as shown on:
-      https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
+      https://analysis.chromium.org/waterfall/culprit?key=%s\n
       Sample Failed Build: %s\n
       Sample Failed Step: %s""") % (commit_position or revision,
                                     culprit.key.urlsafe(), sample_build_url,
@@ -153,7 +153,7 @@ def _GenerateRevertReasonForFlake(build_id, commit_position, revision, culprit):
   return textwrap.dedent("""
       Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
       culprit for flakes in the build cycles as shown on:
-      https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key=%s\n
+      https://analysis.chromium.org/p/chromium/flake-portal/analysis/culprit?key=%s\n
       Sample Failed Build: %s\n
       Sample Failed Step: %s\n
       Sample Flaky Test: %s""") % (
@@ -363,7 +363,7 @@ def SendNotificationForCulprit(parameters, codereview_info):
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
-    https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+    https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
         action, commit_position or revision, culprit.key.urlsafe())
     sent = codereview.PostMessage(review_change_id, message, should_email)
   else:

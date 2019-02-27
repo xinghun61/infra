@@ -186,8 +186,8 @@ class RankFlakesTest(WaterfallTestCase):
         },
         status=302)
 
-    expected_url_suffix = (
-        '/flake/occurrences?key=%s' % self.flake2.key.urlsafe())
+    expected_url_suffix = ('/p/chromium/flake-portal/flakes/occurrences?key=%s'
+                           % self.flake2.key.urlsafe())
 
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))
@@ -201,8 +201,8 @@ class RankFlakesTest(WaterfallTestCase):
         },
         status=302)
 
-    expected_url_suffix = (
-        '/flake/occurrences?key=%s' % self.flake3.key.urlsafe())
+    expected_url_suffix = ('/p/chromium/flake-portal/flakes/occurrences?key=%s'
+                           % self.flake3.key.urlsafe())
 
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))

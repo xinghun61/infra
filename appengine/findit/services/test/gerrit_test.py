@@ -103,7 +103,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     reason = textwrap.dedent("""
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
-        https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
+        https://analysis.chromium.org/waterfall/culprit?key=%s\n
         Sample Failed Build: %s\n
         Sample Failed Step: %s""") % (commit_position, culprit.key.urlsafe(),
                                       buildbot.CreateBuildUrl('m', 'b', '1'),
@@ -111,8 +111,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     mock_gerrit.assert_called_once_with(
         reason, self.review_change_id, '20001', bug_id=None)
 
-    culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s'
-                    % (culprit.key.urlsafe()))
+    culprit_link = ('https://analysis.chromium.org/waterfall/culprit?key=%s' %
+                    (culprit.key.urlsafe()))
     false_positive_bug_query = urllib.urlencode({
         'status': 'Available',
         'labels': 'Test-Findit-Wrong',
@@ -201,7 +201,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     reason = textwrap.dedent("""
       Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
       culprit for flakes in the build cycles as shown on:
-      https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key=%s\n
+      https://analysis.chromium.org/p/chromium/flake-portal/analysis/culprit?key=%s\n
       Sample Failed Build: %s\n
       Sample Failed Step: %s\n
       Sample Flaky Test: %s""") % (
@@ -402,8 +402,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(services_constants.ERROR, commit_status)
     mock_commit.assert_called_once_with(revert_change_id)
 
-    culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s'
-                    % culprit.key.urlsafe())
+    culprit_link = ('https://analysis.chromium.org/waterfall/culprit?key=%s' %
+                    culprit.key.urlsafe())
     false_positive_bug_query = urllib.urlencode({
         'status': 'Available',
         'labels': 'Test-Findit-Wrong',
@@ -476,8 +476,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     mock_commit.assert_called_once_with(revert_change_id)
 
-    culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s'
-                    % (culprit.key.urlsafe()))
+    culprit_link = ('https://analysis.chromium.org/waterfall/culprit?key=%s' %
+                    (culprit.key.urlsafe()))
     false_positive_bug_query = urllib.urlencode({
         'status': 'Available',
         'labels': 'Test-Findit-Wrong',
@@ -538,7 +538,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
-    https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+    https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
         'confirmed', self.culprit_commit_position, culprit.key.urlsafe())
     mock_post.assert_called_once_with(self.review_change_id, message, False)
 
@@ -563,7 +563,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
-    https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+    https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
         'identified', self.culprit_commit_position, culprit.key.urlsafe())
     mock_post.assert_called_once_with(self.review_change_id, message, True)
 

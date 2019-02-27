@@ -406,7 +406,7 @@
         'triage_result': triageResult,
         'xsrf_token': findit.xsrfToken,
       };
-      $.post('/waterfall/triage-flake-analysis', parameters, function (data) {
+      $.post('/p/chromium/flake-portal/analysis/triage', parameters, function (data) {
         if (!data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {

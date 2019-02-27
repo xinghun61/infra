@@ -42,7 +42,7 @@
         color: #00f;
       }
     </style>
-    <form id="occurrences_form" action="/flake/occurrences">
+    <form id="occurrences_form" action="/p/chromium/flake-portal/flakes/occurrences">
         <input type="text" name="key" id="key" class="hidden" value="{{key}}">
         <input type="text" name="show_all_occurrences" id="show_all_occurrences" class="hidden" value="{{show_all_occurrences}}">
     </form>
@@ -149,7 +149,7 @@
         },
 
         _getCulpritPageLink(culprit_key) {
-            return '/waterfall/flake/flake-culprit?key=' + culprit_key;
+            return '/p/chromium/flake-portal/analysis/culprit?key=' + culprit_key;
         },
 
         _getCulpritIdentifier(culprit) {

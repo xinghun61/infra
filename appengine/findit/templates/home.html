@@ -46,8 +46,8 @@
       <br>
       <br>
       <div>
-        <div><span style="color:GREEN"><b>Flaky test</b> (Gtest or Android Instrument) on Waterfall or CQ</span>: (<a href="/waterfall/list-flakes">previous analyses</a>)</div>
-        <form id="flake" action="/waterfall/flake" method="POST">
+        <div><span style="color:GREEN"><b>Flaky test</b> (Gtest, Layout tests, or Android Instrument)</span>: (<a href="/p/chromium/flake-portal/analysis">previous analyses</a>)</div>
+        <form id="flake" action="/p/chromium/flake-portal/analysis/analyze" method="POST">
           <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
           <table>
             <tr>
@@ -80,7 +80,7 @@
       <br>
       <br>
       <div>
-        <div><span style="color:GREEN"><b>Compile/test</b> failure on Waterfall:</span> (<a href="/waterfall/list-failures">previous analyses</a>)</div>
+        <div><span style="color:GREEN"><b>Compile/test</b> failures on CI Waterfall:</span> (<a href="/waterfall/list-failures">previous analyses</a>)</div>
         <form id="failure" action="/waterfall/failure" method="POST">
           <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
           <label for="build-url">URL</label> <input required id="build-url" type="url" name="url" size="130" placeholder="Press ENTER after pasting the URL to the build cycle like https://luci-milo.appspot.com/buildbot/chromium.linux/Linux%20Tests/44306"/><br>

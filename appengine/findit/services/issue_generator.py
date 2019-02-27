@@ -29,7 +29,7 @@ from services import swarming
 # The link to the flake culprit page to encapsulate all impacted analyses by
 # a common culprit.
 _CULPRIT_LINK_TEMPLATE = (
-    'https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={}')
+    'https://analysis.chromium.org/waterfall/flake/flake-culprit?key={}')
 
 # The base template for updating a bug with culprit findings.
 _RESULT_WITH_CULPRIT_TEMPLATE = textwrap.dedent("""
@@ -149,8 +149,9 @@ List of all flake occurrences can be found at:
 
 def _GenerateAnalysisLink(analysis):
   """Returns a link to Findit's result page of a MasterFlakeAnalysis."""
-  return 'https://findit-for-me.appspot.com/waterfall/flake?key={}'.format(
-      analysis.key.urlsafe())
+  return ('https://analysis.chromium.org'
+          '/p/chromium/flake-portal/analysis/culprit?key={}').format(
+              analysis.key.urlsafe())
 
 
 def _GenerateCulpritLink(culprit_urlsafe_key):
@@ -591,10 +592,12 @@ class FlakeDetectionIssueGenerator(FlakyTestIssueGenerator):
     Returns:
       A link to the flake on flake detection UI.
     """
+    hostname = 'analysis.chromium.org'
+    if IsStaging():
+      hostname = 'findit-for-me-staging.appspot.com'
     url_template = (
-        'https://findit-for-me%s.appspot.com/flake/occurrences?key=%s')
-    suffix = '-staging' if IsStaging() else ''
-    return url_template % (suffix, self._flake.key.urlsafe())
+        'https://%s/p/chromium/flake-portal/flakes/occurrences?key=%s')
+    return url_template % (hostname, self._flake.key.urlsafe())
 
   def _GetFooter(self):
     """Gets the footer for the bug description of comment.

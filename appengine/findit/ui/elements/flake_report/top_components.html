@@ -41,7 +41,7 @@
     <table width="98%">
       <template is="dom-repeat" items="[[top_components]]" as="component">
         <tr>
-          <th width="16%"><a target="_blank" href="report/component?component=[[component.id]]">[[component.id]]</a></th>
+          <th width="16%"><a target="_blank" href="/p/chromium/flake-portal/report/component?component=[[component.id]]">[[component.id]]</a></th>
           <td class$="[[isRankedBy(rank_by, 'test_count')]]" width="14%">[[component.test_count]]</td>
           <td class$="[[isRankedBy(rank_by, 'bug_count')]]" width="14%">[[component.bug_count]]</td>
           <td class$="[[isRankedBy(rank_by, 'new_bug_count')]]" width="14%">[[_getCount(component.new_bug_count)]]</td>

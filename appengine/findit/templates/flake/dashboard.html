@@ -112,7 +112,7 @@
       parameters['step_name'] = encodeURIComponent($('#step_name').val());
       parameters['test_name'] = encodeURIComponent($('#test_name').val());
       parameters['result_status'] = $('#result_status').val() == 'default' ? undefined : $('#result_status').val();
-      return parameters
+      return parameters;
     }
 
     function createUrl(parameters) {
@@ -124,9 +124,9 @@
       }
 
       if (params.length == 0) {
-        return '/waterfall/list-flakes'
+        return '/p/chromium/flake-portal/analysis';
       } else {
-        return '/waterfall/list-flakes?' + params.join('&');
+        return '/p/chromium/flake-portal/analysis?' + params.join('&');
       }
     };
 
@@ -199,7 +199,7 @@
 </head>
 <body>
   <findit-app id="app" page-header="Flaky Tests">
-    <form method="get" action="/waterfall/list-flakes">
+    <form method="get" action="/p/chromium/flake-portal/analysis">
       <table>
         <tr>
           <td style="text-align:right">Test:</td>
@@ -268,7 +268,7 @@
               Step: {{ analysis.step_name }}
               <br>
               <div class="truncated">
-                Test: <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">{{ analysis.test_name }}</a>
+                Test: <a href="/p/chromium/flake-portal/analysis/analyze?key={{ analysis.key }}" target="_blank">{{ analysis.test_name }}</a>
                 <div class="tooltiptext">{{ analysis.test_name }}</div>
               </div>
             </div>
@@ -287,7 +287,7 @@
                 (
                   {{ '%0.1f%%' % (analysis.confidence_in_culprit * 100) }}
                   ,
-                  <a href="https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={{ analysis.culprit.key }}" target="_blank">
+                  <a href="/p/chromium/flake-portal/analysis/culprit?key={{ analysis.culprit.key }}" target="_blank">
                     {% if analysis.culprit and analysis.culprit.cr_notified %}
                       notified
                     {% else %}

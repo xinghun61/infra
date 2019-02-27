@@ -57,27 +57,12 @@ handlers:
   secure: always
 
 # Web UI pages.
-- url: /flake/report
+- url: /p/chromium/flake-portal.*
   script: frontend_main.flake_detection_frontend_web_application
   secure: always
 
-- url: /flake/report/component
-  script: frontend_main.flake_detection_frontend_web_application
-  secure: always
-
-- url: /flake/occurrences
-  script: frontend_main.flake_detection_frontend_web_application
-  secure: always
-
-- url: /ranked-flakes
-  script: frontend_main.flake_detection_frontend_web_application
-  secure: always
-
-- url: /waterfall/.*
-  script: frontend_main.waterfall_frontend_web_application
-  secure: always
-
-- url: /trooper
+# Keep this one as the last match for redirection of old URLs.
+- url: /.*
   script: frontend_main.waterfall_frontend_web_application
   secure: always
 

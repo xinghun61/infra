@@ -393,8 +393,8 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('12345', duplicate_issue.merged_into)
     mocked_update_bug.assert_called_once_with(duplicate_issue, 'comment')
 
-  @mock.patch.object(IssueTrackerAPI, 'getComments')
-  def testGetCommnets(self, mock_comments):
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetCommnets(self, mocked_issue_tracker_api):
     comment = Comment({
         'author': {
             'name': 'name'
@@ -404,9 +404,8 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
         'id': '12345',
     })
     expected_comments = [comment]
-    mock_comments.return_value = expected_comments
+    mocked_issue_tracker_api.return_value.getComments.return_value = [comment]
     self.assertEqual(expected_comments, monorail_util.GetComments(12345))
-    mock_comments.assert_called_once_with(12345)
 
   @mock.patch.object(monorail_util, 'GetMergedDestinationIssueForId')
   @mock.patch.object(monorail_util, 'UpdateBug')

@@ -181,7 +181,7 @@
             <template is="dom-repeat" items="[[top_flakes]]" as="flake">
               <tr>
                 <td class="num-cell" width="10%">[[flake.flake_score_last_week]]</td>
-                <td class="str-cell" width="80%"><a target="_blank" href="/flake/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a></td>
+                <td class="str-cell" width="80%"><a target="_blank" href="/p/chromium/flake-portal/flakes/occurrences?key=[[flake.flake_urlsafe_key]]">[[flake.test_label_name]]</a></td>
                 <td class="num-cell" width="10%">
                   <template is="dom-if" if="[[_hasBug(flake)]]">
                     <a href="[[flake.flake_issue.issue_link]]">[[flake.flake_issue.issue_id]]</a>

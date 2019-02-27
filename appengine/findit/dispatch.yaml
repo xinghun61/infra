@@ -20,12 +20,6 @@ dispatch:
   - url: "*/auto-action/task/*"
     module: auto-action-backend
 
-  - url: "*/flake/*"
-    module: frontend
-
-  - url: "*/ranked-flakes"
-    module: frontend
-
   - url: "*/waterfall/cron/*"
     module: waterfall-backend
 
@@ -58,5 +52,6 @@ dispatch:
   - url: "*/coverage*"
     module: code-coverage-frontend
 
-  - url: "*/trooper"
+  # This is for the service on flakiness.
+  - url: "*/p/chromium/flake*"
     module: frontend

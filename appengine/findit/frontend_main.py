@@ -22,6 +22,7 @@ from handlers import pipeline_errors_dashboard
 from handlers import triage_suspected_cl
 from handlers import trooper
 from handlers import try_job_dashboard
+from handlers import url_redirect
 from handlers.flake import check_flake
 from handlers.flake import flake_culprit
 from handlers.flake import list_flakes
@@ -46,41 +47,42 @@ if appengine_util.IsInProductionApp():
 # waterfall frontend.
 waterfall_frontend_web_pages_handler_mappings = [
     ('/', home.Home),
-    ('/trooper', trooper.Trooper),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/check-duplicate-failures',
      check_duplicate_failures.CheckDuplicateFailures),
-    ('/waterfall/check-flake', check_flake.CheckFlake),
     ('/waterfall/check-trybot-mapping',
      check_trybot_mapping.CheckTrybotMapping),
     ('/waterfall/config', config.Configuration),
     ('/waterfall/culprit', culprit.Culprit),
     ('/waterfall/failure', build_failure.BuildFailure),
     ('/waterfall/failure-log', failure_log.FailureLog),
-    ('/waterfall/flake', check_flake.CheckFlake),
-    ('/waterfall/flake/flake-culprit', flake_culprit.FlakeCulprit),
     ('/waterfall/help-triage', help_triage.HelpTriage),
     ('/waterfall/list-failures', list_analyses.ListAnalyses),
-    ('/waterfall/list-flakes', list_flakes.ListFlakes),
-    ('/waterfall/list-analyses', list_analyses.ListAnalyses),
     ('/waterfall/pipeline-errors-dashboard',
      pipeline_errors_dashboard.PipelineErrorsDashboard),
-    ('/waterfall/triage-flake-analysis',
-     triage_flake_analysis.TriageFlakeAnalysis),
     ('/waterfall/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
+    ('/waterfall/trooper', trooper.Trooper),
     ('/waterfall/try-job-dashboard', try_job_dashboard.TryJobDashboard),
+    (r'/.*', url_redirect.URLRedirect),
 ]
 waterfall_frontend_web_application = webapp2.WSGIApplication(
     waterfall_frontend_web_pages_handler_mappings, debug=False)
 if appengine_util.IsInProductionApp():
   gae_ts_mon.initialize(waterfall_frontend_web_application)
 
-# flake detection frontend.
+# Flake frontend.
 flake_detection_frontend_web_pages_handler_mappings = [
-    ('/flake/occurrences', show_flake.ShowFlake),
-    ('/flake/report', flake_report.FlakeReport),
-    ('/flake/report/component', component_report.ComponentReport),
-    ('/ranked-flakes', rank_flakes.RankFlakes)
+    ('/p/chromium/flake-portal', rank_flakes.RankFlakes),
+    ('/p/chromium/flake-portal/flakes', rank_flakes.RankFlakes),
+    ('/p/chromium/flake-portal/flakes/occurrences', show_flake.ShowFlake),
+    ('/p/chromium/flake-portal/analysis', list_flakes.ListFlakes),
+    ('/p/chromium/flake-portal/analysis/analyze', check_flake.CheckFlake),
+    ('/p/chromium/flake-portal/analysis/culprit', flake_culprit.FlakeCulprit),
+    ('/p/chromium/flake-portal/analysis/triage',
+     triage_flake_analysis.TriageFlakeAnalysis),
+    ('/p/chromium/flake-portal/report', flake_report.FlakeReport),
+    ('/p/chromium/flake-portal/report/component',
+     component_report.ComponentReport),
 ]
 flake_detection_frontend_web_application = webapp2.WSGIApplication(
     flake_detection_frontend_web_pages_handler_mappings, debug=False)

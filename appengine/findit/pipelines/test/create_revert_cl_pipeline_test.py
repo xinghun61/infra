@@ -96,7 +96,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     reason = textwrap.dedent("""
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
-        https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
+        https://analysis.chromium.org/waterfall/culprit?key=%s\n
         Sample Failed Build: %s\n
         Sample Failed Step: %s""") % (commit_position, culprit.key.urlsafe(),
                                       buildbot.CreateBuildUrl('m', 'b', '123'),
