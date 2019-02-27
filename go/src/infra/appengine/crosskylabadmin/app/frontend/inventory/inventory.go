@@ -34,7 +34,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
-	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/gitstore"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
 	"infra/libs/skylab/inventory"
 )
 

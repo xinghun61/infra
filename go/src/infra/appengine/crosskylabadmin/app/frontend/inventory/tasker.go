@@ -16,7 +16,7 @@ package inventory
 
 import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/dutpool"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/dutpool"
 
 	"go.chromium.org/luci/common/errors"
 	"golang.org/x/net/context"

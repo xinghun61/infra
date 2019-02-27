@@ -17,7 +17,7 @@ package inventory
 import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
-	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/fakes"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
 	"infra/libs/skylab/inventory"
 	"strings"
 	"testing"
