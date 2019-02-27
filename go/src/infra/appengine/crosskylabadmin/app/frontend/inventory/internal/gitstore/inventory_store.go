@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package gitstore
 
 import (
 	"infra/appengine/crosskylabadmin/app/config"
@@ -24,17 +24,13 @@ import (
 	"golang.org/x/net/context"
 )
 
-// GitStore exposes skylab inventory data in git.
+// InventoryStore exposes skylab inventory data in git.
 //
-// TODO(pprabhu): The following statement is not (yet) true. Make it so.
-// GitStore.Refresh() and GitStore.Commit() together provide an atomic
-// inventory update transaction.
-//
-// Call GitStore.Refresh() to obtain the initial inventory data. After making
-// modifications to the inventory, call GitStore.Commit().
-// Call GitStore.Refresh() again if you want to use the object beyond a
-// GitStore.Commit(), to re-validate the store.
-type GitStore struct {
+// Call InventoryStore.Refresh() to obtain the initial inventory data. After making
+// modifications to the inventory, call InventoryStore.Commit().
+// Call InventoryStore.Refresh() again if you want to use the object beyond a
+// InventoryStore.Commit(), to re-validate the store.
+type InventoryStore struct {
 	*inventory.Lab
 	*inventory.Infrastructure
 
@@ -44,11 +40,11 @@ type GitStore struct {
 	latestSHA1  string
 }
 
-// NewGitStore returns a new GitStore.
+// NewInventoryStore returns a new InventoryStore.
 //
 // The returned store is not refreshed, hence all inventory data is empty.
-func NewGitStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *GitStore {
-	store := &GitStore{
+func NewInventoryStore(gerritC gerrit.GerritClient, gitilesC gitiles.GitilesClient) *InventoryStore {
+	store := &InventoryStore{
 		gerritC:  gerritC,
 		gitilesC: gitilesC,
 	}
@@ -73,9 +69,9 @@ func (e emptyError) Error() string {
 
 // Commit commits the current inventory data in the store to git.
 //
-// Successful Commit() invalidates the data cached in GitStore().
+// Successful Commit() invalidates the data cached in InventoryStore().
 // To continue using the store, call Refresh() again.
-func (g *GitStore) Commit(ctx context.Context, reason string) (string, error) {
+func (g *InventoryStore) Commit(ctx context.Context, reason string) (string, error) {
 	if g.latestSHA1 == "" {
 		return "", errors.New("can not commit invalid store")
 	}
@@ -85,7 +81,7 @@ func (g *GitStore) Commit(ctx context.Context, reason string) (string, error) {
 
 	ls, err := inventory.WriteLabToString(g.Lab)
 	if err != nil {
-		return "", errors.Annotate(err, "gitstore commit").Err()
+		return "", errors.Annotate(err, "inventory store commit").Err()
 	}
 	if ls != g.latestFiles[ic.LabDataPath] {
 		changed[ic.LabDataPath] = ls
@@ -93,24 +89,24 @@ func (g *GitStore) Commit(ctx context.Context, reason string) (string, error) {
 
 	is, err := inventory.WriteInfrastructureToString(g.Infrastructure)
 	if err != nil {
-		return "", errors.Annotate(err, "gitstore commit").Err()
+		return "", errors.Annotate(err, "inventory store commit").Err()
 	}
 	if is != g.latestFiles[ic.InfrastructureDataPath] {
 		changed[ic.InfrastructureDataPath] = is
 	}
 
 	if len(changed) == 0 {
-		return "", emptyError{errors.New("gitstore commit: nothing to commit")}
+		return "", emptyError{errors.New("inventory store commit: nothing to commit")}
 	}
 
 	cn, err := commitFileContents(ctx, g.gerritC, ic.Project, ic.Branch, g.latestSHA1, reason, changed)
 	if err != nil {
-		return "", errors.Annotate(err, "gitstore commit").Err()
+		return "", errors.Annotate(err, "inventory store commit").Err()
 	}
 
 	u, err := changeURL(ic.GerritHost, ic.Project, cn)
 	if err != nil {
-		return "", errors.Annotate(err, "gitstore commit").Err()
+		return "", errors.Annotate(err, "inventory store commit").Err()
 	}
 
 	// Successful commit implies our refreshed data is not longer current, so
@@ -120,7 +116,7 @@ func (g *GitStore) Commit(ctx context.Context, reason string) (string, error) {
 }
 
 // Refresh populates inventory data in the store from git.
-func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
+func (g *InventoryStore) Refresh(ctx context.Context) (rerr error) {
 	defer func() {
 		if rerr != nil {
 			g.clear()
@@ -139,12 +135,12 @@ func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
 	var err error
 	g.latestSHA1, err = fetchLatestSHA1(ctx, g.gitilesC, ic.Project, ic.Branch)
 	if err != nil {
-		return errors.Annotate(err, "gitstore refresh").Err()
+		return errors.Annotate(err, "inventory store refresh").Err()
 	}
 
 	g.latestFiles, err = fetchFilesFromGitiles(ctx, g.gitilesC, ic.Project, g.latestSHA1, []string{ic.LabDataPath, ic.InfrastructureDataPath})
 	if err != nil {
-		return errors.Annotate(err, "gitstore refresh").Err()
+		return errors.Annotate(err, "inventory store refresh").Err()
 	}
 
 	data, ok := g.latestFiles[ic.LabDataPath]
@@ -153,7 +149,7 @@ func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
 	}
 	g.Lab = &inventory.Lab{}
 	if err := inventory.LoadLabFromString(data, g.Lab); err != nil {
-		return errors.Annotate(err, "gitstore refresh").Err()
+		return errors.Annotate(err, "inventory store refresh").Err()
 	}
 
 	data, ok = g.latestFiles[ic.InfrastructureDataPath]
@@ -162,13 +158,13 @@ func (g *GitStore) Refresh(ctx context.Context) (rerr error) {
 	}
 	g.Infrastructure = &inventory.Infrastructure{}
 	if err := inventory.LoadInfrastructureFromString(data, g.Infrastructure); err != nil {
-		return errors.Annotate(err, "gitstore refresh").Err()
+		return errors.Annotate(err, "inventory store refresh").Err()
 	}
 
 	return nil
 }
 
-func (g *GitStore) clear() {
+func (g *InventoryStore) clear() {
 	g.Lab = nil
 	g.Infrastructure = nil
 	g.latestSHA1 = ""

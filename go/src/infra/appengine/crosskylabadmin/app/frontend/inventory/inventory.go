@@ -34,7 +34,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
-	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/store"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/gitstore"
 	"infra/libs/skylab/inventory"
 )
 
@@ -101,17 +101,17 @@ func (is *ServerImpl) newGitilesClient(c context.Context, host string) (gitiles.
 	return clients.NewGitilesClient(c, host)
 }
 
-func (is *ServerImpl) newStore(ctx context.Context) (*store.GitStore, error) {
+func (is *ServerImpl) newStore(ctx context.Context) (*gitstore.InventoryStore, error) {
 	inventoryConfig := config.Get(ctx).Inventory
 	gerritC, err := is.newGerritClient(ctx, inventoryConfig.GerritHost)
 	if err != nil {
-		return nil, errors.Annotate(err, "create git store").Err()
+		return nil, errors.Annotate(err, "create inventory store").Err()
 	}
 	gitilesC, err := is.newGitilesClient(ctx, inventoryConfig.GitilesHost)
 	if err != nil {
-		return nil, errors.Annotate(err, "create git store").Err()
+		return nil, errors.Annotate(err, "create inventory store").Err()
 	}
-	return store.NewGitStore(gerritC, gitilesC), nil
+	return gitstore.NewInventoryStore(gerritC, gitilesC), nil
 }
 
 // ListServers implements the method from fleet.InventoryServer interface.
@@ -161,7 +161,7 @@ type updateDutLabelsRequest struct {
 	reason string
 }
 
-func updateDutLabels(ctx context.Context, s *store.GitStore, req updateDutLabelsRequest) (*fleet.UpdateDutLabelsResponse, error) {
+func updateDutLabels(ctx context.Context, s *gitstore.InventoryStore, req updateDutLabelsRequest) (*fleet.UpdateDutLabelsResponse, error) {
 	var resp fleet.UpdateDutLabelsResponse
 	if err := s.Refresh(ctx); err != nil {
 		return nil, errors.Annotate(err, "updateDutLabels").Err()
@@ -174,7 +174,7 @@ func updateDutLabels(ctx context.Context, s *store.GitStore, req updateDutLabels
 	c := dut.GetCommon()
 	c.Labels = req.labels
 	url, err := s.Commit(ctx, fmt.Sprintf("Update DUT labels for %s", req.reason))
-	if store.IsEmptyErr(err) {
+	if gitstore.IsEmptyErr(err) {
 		return &resp, nil
 	}
 	if err != nil {

@@ -19,7 +19,7 @@ import (
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/dutpool"
-	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/store"
+	"infra/appengine/crosskylabadmin/app/frontend/inventory/internal/gitstore"
 	"infra/libs/skylab/inventory"
 	"sync"
 
@@ -208,7 +208,7 @@ func (is *ServerImpl) resizePoolNoRetry(ctx context.Context, req *fleet.ResizePo
 	}, nil
 }
 
-func (is *ServerImpl) commitBalancePoolChanges(ctx context.Context, store *store.GitStore, changes []*fleet.PoolChange) (string, error) {
+func (is *ServerImpl) commitBalancePoolChanges(ctx context.Context, store *gitstore.InventoryStore, changes []*fleet.PoolChange) (string, error) {
 	if len(changes) == 0 {
 		// No inventory changes are required.
 		// TODO(pprabhu) add a unittest enforcing this.

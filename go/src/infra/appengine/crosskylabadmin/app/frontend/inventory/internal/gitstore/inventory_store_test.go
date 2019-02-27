@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package store
+package gitstore
 
 import (
 	"testing"
@@ -47,7 +47,7 @@ func TestStoreValidity(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("store initially contains no data", func() {
-			store := NewGitStore(gerritC, gitilesC)
+			store := NewInventoryStore(gerritC, gitilesC)
 			So(store.Lab, ShouldBeNil)
 
 			Convey("and initial Commit() fails", func() {
