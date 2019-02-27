@@ -33,12 +33,6 @@ import (
 	"infra/appengine/crosskylabadmin/app/frontend/internal/worker"
 )
 
-var taskName = map[fleet.TaskType]string{
-	fleet.TaskType_Cleanup: "AdminCleanup",
-	fleet.TaskType_Repair:  "AdminRepair",
-	fleet.TaskType_Reset:   "AdminReset",
-}
-
 // SwarmingFactory is a constructor for a SwarmingClient.
 type SwarmingFactory func(c context.Context, host string) (clients.SwarmingClient, error)
 
@@ -107,7 +101,7 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 
 	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
 	tags = append(tags, at.Tags...)
-	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
+	tid, err := sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  at.Cmd,
 		DutID:                bse.DutID,
 		ExecutionTimeoutSecs: cfg.Tasker.BackgroundTaskExecutionTimeoutSecs,
@@ -180,7 +174,7 @@ func triggerRepairOnRepairFailedForBot(ctx context.Context, sc clients.SwarmingC
 
 	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
 	tags = append(tags, at.Tags...)
-	tid, err := sc.CreateTask(ctx, taskName[fleet.TaskType_Repair], swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
+	tid, err := sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  at.Cmd,
 		DutID:                bse.DutID,
 		DutState:             "repair_failed",
@@ -244,7 +238,7 @@ func ensureBackgroundTasksForBot(ctx context.Context, sc clients.SwarmingClient,
 		tags := append([]string{}, commonTags...)
 		at := worker.AdminTaskForType(ctx, req.Type)
 		tags = append(tags, at.Tags...)
-		tid, err := sc.CreateTask(ctx, taskName[req.Type], swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
+		tid, err := sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 			Cmd:                  at.Cmd,
 			DutID:                bse.DutID,
 			DutState:             dutStateForTask[req.Type],

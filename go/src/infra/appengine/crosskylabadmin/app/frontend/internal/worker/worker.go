@@ -42,12 +42,17 @@ type AdminTask struct {
 
 	// Tags to append to the swarming task.
 	Tags []string
+
+	// Name to use for the swarming task.
+	Name string
 }
 
 // AdminTaskForType returns the information required to create a Skylab task
 // for an admin task type.
 func AdminTaskForType(ctx context.Context, ttype fleet.TaskType) AdminTask {
-	var at AdminTask
+	at := AdminTask{
+		Name: taskName[ttype],
+	}
 	cfg := config.Get(ctx)
 	logdogURL := generateLogDogURL(cfg)
 	if logdogURL != "" {
@@ -67,6 +72,12 @@ func adminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL string) [
 		s = append(s, "-logdog-annotation-url", logdogURL)
 	}
 	return s
+}
+
+var taskName = map[fleet.TaskType]string{
+	fleet.TaskType_Cleanup: "AdminCleanup",
+	fleet.TaskType_Repair:  "AdminRepair",
+	fleet.TaskType_Reset:   "AdminReset",
 }
 
 // generateLogDogURL generates a LogDog annotation URL for the LogDog server
