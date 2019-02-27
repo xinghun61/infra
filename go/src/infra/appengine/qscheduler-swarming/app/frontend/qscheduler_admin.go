@@ -110,7 +110,34 @@ func (s *QSchedulerAdminServerImpl) ModAccount(ctx context.Context, r *qschedule
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	return nil, status.Errorf(codes.Unimplemented, "not implemented")
+	do := func(ctx context.Context) error {
+		store := state.NewStore(r.PoolId)
+		sp, err := store.Load(ctx)
+		if err != nil {
+			return err
+		}
+		config := sp.Scheduler.Config()
+		accountConfig, ok := config.AccountConfigs[r.AccountId]
+		if !ok {
+			return status.Errorf(codes.NotFound, "no account with id %s", r.AccountId)
+		}
+
+		if r.MaxChargeSeconds != nil {
+			accountConfig.MaxChargeSeconds = r.MaxChargeSeconds.Value
+		}
+		if r.MaxFanout != nil {
+			accountConfig.MaxFanout = r.MaxFanout.Value
+		}
+		if len(r.ChargeRate) != 0 {
+			accountConfig.ChargeRate = r.ChargeRate
+		}
+		return store.Save(ctx, sp)
+	}
+
+	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+		return nil, err
+	}
+	return &qscheduler.ModAccountResponse{}, nil
 }
 
 // ModSchedulerPool implements QSchedulerAdminServer.
@@ -119,7 +146,23 @@ func (s *QSchedulerAdminServerImpl) ModSchedulerPool(ctx context.Context, r *qsc
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	return nil, status.Errorf(codes.Unimplemented, "not implemented")
+	do := func(ctx context.Context) error {
+		store := state.NewStore(r.PoolId)
+		sp, err := store.Load(ctx)
+		if err != nil {
+			return err
+		}
+		config := sp.Scheduler.Config()
+		if r.DisablePreemption != nil {
+			config.DisablePreemption = r.DisablePreemption.Value
+		}
+		return store.Save(ctx, sp)
+	}
+
+	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+		return nil, err
+	}
+	return &qscheduler.ModSchedulerPoolResponse{}, nil
 }
 
 // ListAccounts implements QSchedulerAdminServer.
