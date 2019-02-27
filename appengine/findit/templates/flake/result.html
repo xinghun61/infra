@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title> Analysis of Flaky Test</title>
+  <title>Flake Analysis</title>
   <script src="/ui/js/common.js"></script>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
   <link rel="import" href="/ui/elements/analysis/flake/flake-analysis-info.html">
   <link rel="import" href="/ui/elements/analysis/flake/check-recent-flakiness.html">
   <style type="text/css">
@@ -434,7 +434,7 @@
 </head>
 
 <body>
-  <findit-app id="app" page-header="{{test_name}}">
+  <cats-app id="app" components="Tools>Test>FindIt>Flakiness" page-header="Findit: analysis result for flake {{test_name}}">
 
     <!-- Test and analysis info -->
     <flake-analysis-info master-name="{{master_name}}"
@@ -665,5 +665,5 @@
         </table>
       </div>
     {% endif %}
-  </findit-app>
+  </cats-app>
 </body>

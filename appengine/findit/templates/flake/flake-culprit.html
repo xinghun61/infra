@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <head>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title>Culprit</title>
+  <title>Culprit causing flakes</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
 </head>
 <body>
-  <findit-app id="app" page-header="Culprit">
+  <cats-app id="app" components="Tools>Test>FindIt>Flakiness" page-header="Findit: flakes caused by the culprit">
     <b>Project:</b> {{project_name}}<br>
     <b>Commit:</b> <a href="https://crrev.com/{{commit_position or revision}}" target="_blank">{{commit_position or revision}}</a><br>
     {% if cr_notified %}
@@ -51,7 +51,7 @@
         </tbody>
       </table>
     </div>
-  </findit-app>
+  </cats-app>
   <script>
     document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
   </script>

@@ -79,7 +79,7 @@
     }
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/coverage-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script>
     $(function() {
@@ -89,7 +89,7 @@
 </head>
 
 <body>
-  <coverage-app id="app">
+  <cats-app id="app" components="Tools>CodeCoverage" page-header="Code Coverage: line-by-line coverage (Chrome Browser on Linux)">
     <div style="font-size:18px">
     Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>">Component View</a>
     <br>
@@ -141,5 +141,5 @@
       {% endfor %}
       </tbody>
     </table>
-  </coverage-app>
+  </cats-app>
 </body>

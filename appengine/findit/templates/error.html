@@ -4,12 +4,12 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <title>Error Page</title>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
 </head>
 <body>
-  <findit-app id="app">
+  <cats-app id="app">
     <span style="color:red">Error</span>: {{ error_message }}
-  </findit-app>
+  </cats-app>
 </body>
 <script>
   document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};

@@ -8,7 +8,7 @@
   <script src="/ui/js/common.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <link rel="import" href="/ui/elements/analysis/triage-help.html">
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
   {% block head %}{% endblock head %}
   <style>
     .running {
@@ -124,7 +124,7 @@
   </script>
 </head>
 <body>
-  <findit-app id="app">
+  <cats-app id="app" components="Tools>Test>FindIt" page-header="Findit: Analysis Result">
     <b>{% block heading %}{% endblock heading %}</b>
     <div>
       Master: {{master_name}}<br>
@@ -234,5 +234,5 @@
         </table>
       </div>
     {% endif %}
-  </findit-app>
+  </cats-app>
 </body>

@@ -15,7 +15,7 @@
   <meta charset="utf-8">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
   <script>
     $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
@@ -23,7 +23,7 @@
   </script>
 </head>
 <body>
-  <findit-app id="app" login-required="true">
+  <cats-app id="app" components="Tools>Test>FindIt" page-header="Trooper page: to disable/enable a critical feature">
     <form id="trooper-form" action="/trooper" method="post">
       <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
       <table>
@@ -70,5 +70,5 @@
         </tr>
       </table>
     </form>
-  </findit-app>
+  </cats-app>
 </body>

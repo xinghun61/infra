@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="/common.css">
   <script src="/ui/js/common.js"></script>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
   <link rel="import" href="/ui/elements/flake_report/flake_report.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <style type="text/css">
@@ -84,12 +84,12 @@
   </script>
 </head>
 <body>
-  <findit-app id="app" page-header="Flake Report of Previous Week">
+  <cats-app id="app" components="Tools>Test>FindIt>Flakiness" page-header="Findit: Flakiness Report by components (Last week)">
     <form method="get" action="/p/chromium/flake-portal/report">
       <input type="text" name="luci_project" id="luci_project" class="hidden" value="{{luci_project}}">
       <input type="text" name="component_filter" id="component_filter" size="200" placeholder="Enter component to search" value="{{ component_filter }}"/>
     </form>
     <br>
     <flake-report total_report='{{total_report | tojson}}' top_components='{{top_components | tojson}}'></flake-report>
-  </findit-app>
+  </cats-app>
 </body>

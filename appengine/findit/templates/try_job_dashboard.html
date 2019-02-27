@@ -7,7 +7,7 @@
   <script src="/ui/js/common.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
   <script>
     function createUrl(parameters) {
       var params = [];
@@ -51,7 +51,7 @@
   </script>
 </head>
 <body>
-  <findit-app id="app">
+  <cats-app id="app" components="Tools>Test>FindIt" page-header="Builds triggered by Findit">
     <form>
       Start date
       <input type="date" id="start_date" value={{ start_date }}></input>
@@ -234,5 +234,5 @@
         No try-jobs have completed within the time range requested
       {% endif %}
     </div>
-  </findit-app>
+  </cats-app>
 </body>

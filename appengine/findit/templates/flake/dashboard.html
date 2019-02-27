@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <head>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title>Flaky Tests</title>
+  <title>Analyses of Flakes</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <script src="/ui/js/common.js"></script>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-  <link rel="import" href="/ui/elements/findit-app.html">
+  <link rel="import" href="/ui/elements/cats-app.html">
   <style type="text/css">
     .truncated {
       max-width: 600px;
@@ -198,7 +198,7 @@
   </script>
 </head>
 <body>
-  <findit-app id="app" page-header="Flaky Tests">
+  <cats-app id="app" components="Tools>Test>FindIt>Flakiness" page-header="Findit: Previous Analyses of Flakes">
     <form method="get" action="/p/chromium/flake-portal/analysis">
       <table>
         <tr>
@@ -316,5 +316,5 @@
       <button class="previous">Previous</button>
       <button class="next">Next</button>
     </div>
-  <findit-app>
+  <cats-app>
 </body>
