@@ -221,14 +221,27 @@ func (is *ServerImpl) commitBalancePoolChanges(ctx context.Context, store *gitst
 }
 
 func selectDutsFromInventory(lab *inventory.Lab, sel *fleet.DutSelector, env string) []*inventory.DeviceUnderTest {
-	m := sel.GetModel()
 	duts := []*inventory.DeviceUnderTest{}
 	for _, d := range lab.Duts {
-		if d.GetCommon().GetEnvironment().String() == env && d.GetCommon().GetLabels().GetModel() == m {
+		if d.GetCommon().GetEnvironment().String() == env && dutMatchesSelector(d, sel) {
 			duts = append(duts, d)
 		}
 	}
 	return duts
+}
+
+func dutMatchesSelector(d *inventory.DeviceUnderTest, sel *fleet.DutSelector) bool {
+	c := d.GetCommon()
+	if sel.Id != "" && sel.Id != c.GetId() {
+		return false
+	}
+	if sel.Hostname != "" && sel.Hostname != c.GetHostname() {
+		return false
+	}
+	if sel.Model != "" && sel.Model != c.GetLabels().GetModel() {
+		return false
+	}
+	return true
 }
 
 func ensurePoolHealthyFor(ctx context.Context, ts fleet.TrackerServer, duts []*inventory.DeviceUnderTest, target, spare string, maxUnhealthyDUTs int32) (*fleet.EnsurePoolHealthyResponse, error) {

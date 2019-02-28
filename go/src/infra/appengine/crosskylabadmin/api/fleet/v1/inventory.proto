@@ -334,7 +334,13 @@ message ResizePoolResponse {
   repeated PoolChange changes = 2;
 }
 
+// NEXT TAG: 4
 message DutSelector {
+  string hostname = 2;
+
+  // ID assigned to the DUT in the inventory.
+  string id = 3;
+
   string model = 1;
 }
 
