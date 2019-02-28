@@ -1306,7 +1306,11 @@ def _sync_build_async(build_id, task_result, bucket_id, builder):
         (step_byte_size, model.BuildSteps.MAX_STEPS_LEN)
     )
     build_run_result_error = _BUILD_RUN_RESULT_TOO_LARGE
-  else:
+  elif step_container.steps:
+    # Do not save empty steps.
+    # It is either useless, or will overwrites steps provided in UpdateBuild RPC
+    # Steps are empty only in BOT_DIED case.
+
     # Do not set build_steps.step_container unless we are sure it is under the
     # size limit.
     build_steps = model.BuildSteps(

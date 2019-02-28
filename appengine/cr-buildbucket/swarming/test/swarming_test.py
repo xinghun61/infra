@@ -1797,7 +1797,6 @@ class SwarmingTest(BaseTest):
 
     expected_steps = case.get('build_steps') or []
     actual_build_steps = model.BuildSteps.key_for(build.key).get()
-    self.assertTrue(not build.is_ended or actual_build_steps is not None)
     step_container = build_pb2.Build()
     if actual_build_steps:
       step_container = actual_build_steps.step_container
