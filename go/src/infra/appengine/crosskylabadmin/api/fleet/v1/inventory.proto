@@ -175,8 +175,8 @@ message GetDeploymentStatusResponse{
   // consequence of the automated repair attempt at the end of deployment.
   string change_url = 3;
 
-  // The Skylab task(s) created for the DUT deployment.
-  repeated string task_urls = 4;
+  // The Skylab task created for the DUT deployment.
+  string task_url = 4;
 }
 
 message DeleteDutRequest {
