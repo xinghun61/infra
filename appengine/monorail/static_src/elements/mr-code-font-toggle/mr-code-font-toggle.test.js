@@ -5,38 +5,52 @@
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrCodeFontToggle} from './mr-code-font-toggle.js';
+import {actionType} from '../redux/redux-mixin.js';
 
 let element;
-let ancestor;
 
 suite('mr-code-font-toggle', () => {
 
   setup(() => {
     element = document.createElement('mr-code-font-toggle');
     document.body.appendChild(element);
-    ancestor = document.createElement('div');
-    ancestor.id = 'color_control';
-    document.body.appendChild(ancestor);
+    window.prpcClient = {
+      call: () => Promise.resolve({}),
+    };
+    sinon.spy(window.prpcClient, 'call');
+    MrCodeFontToggle.mapStateToProps = () => {};
   });
 
   teardown(() => {
     document.body.removeChild(element);
-    document.body.removeChild(ancestor);
+    window.prpcClient.call.restore();
+    element.dispatchAction({type: actionType.RESET_STATE});
   });
 
   test('initializes', () => {
     assert.instanceOf(element, MrCodeFontToggle);
   });
 
-  test('clicking toggles the codefont CSS class', () => {
-    var chopsToggle = element.shadowRoot.querySelector('chops-toggle');
-    var label = chopsToggle.shadowRoot.querySelector('label');
+  test('toggle font', () => {
+    element.userDisplayName = 'test@example.com';
+    const chopsToggle = element.shadowRoot.querySelector('chops-toggle');
+    const label = chopsToggle.shadowRoot.querySelector('label');
 
-    // code font is initially off.
-    assert.isFalse(ancestor.classList.contains('codefont'));
     label.click();  // Toggle it on.
-    assert.isTrue(ancestor.classList.contains('codefont'));
+    assert.deepEqual(window.prpcClient.call.getCall(0).args, [
+      'monorail.Users',
+      'SetUserPrefs',
+      {prefs: [{name: 'code_font', value: 'true'}]},
+    ]);
+    assert.isTrue(window.prpcClient.call.calledOnce);
+
+    element.prefs = new Map([['code_font', 'true']]);
     label.click();  // Toggle it off.
-    assert.isFalse(ancestor.classList.contains('codefont'));
+    assert.deepEqual(window.prpcClient.call.getCall(1).args, [
+      'monorail.Users',
+      'SetUserPrefs',
+      {prefs: [{name: 'code_font', value: 'false'}]},
+    ]);
+    assert.isTrue(window.prpcClient.call.calledTwice);
   });
 });

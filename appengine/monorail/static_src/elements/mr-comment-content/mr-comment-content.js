@@ -26,16 +26,26 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
         .strike-through {
           text-decoration: line-through;
         }
-        .deleted-comment-content {
+        span[is-deleted] {
           color: #888;
           font-style: italic;
         }
+        span[code-font] {
+          font-family: monospace;
+          font-size: 11px;
+        }
       </style>
-      <span class\$="[[_computeDeletedClass(isDeleted)]]">
+      <span is-deleted\$="[[isDeleted]]" code-font\$="[[_codeFont]]">
         <template is="dom-repeat" items="[[_textRuns]]" as="run">
           <b class="line" hidden\$="[[!_isTagEqual(run.tag, 'b')]]">[[run.content]]</b>
           <br hidden\$="[[!_isTagEqual(run.tag, 'br')]]">
-          <a class="line" hidden\$="[[!_isTagEqual(run.tag, 'a')]]" target="_blank" href\$="[[run.href]]" class\$="[[run.css]]">[[run.content]]</a>
+          <a
+            class="line"
+            hidden\$="[[!_isTagEqual(run.tag, 'a')]]"
+            target="_blank"
+            href\$="[[run.href]]"
+            class\$="[[run.css]]"
+          >[[run.content]]</a>
           <span class="line" hidden\$="[[run.tag]]">[[run.content]]</span>
         </template>
       </span>
@@ -54,10 +64,15 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
         value: () => new Map(),
       },
       isDeleted: Boolean,
+      prefs: Object,
       projectName: String,
       _textRuns: {
         type: Array,
         computed: '_computeTextRuns(isDeleted, content, commentReferences, projectName)',
+      },
+      _codeFont: {
+        type: Boolean,
+        computed: '_computeCodeFont(prefs)',
       },
     };
   }
@@ -66,6 +81,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
     return {
       commentReferences: state.commentReferences,
       projectName: state.projectName,
+      prefs: state.prefs,
     };
   }
 
@@ -78,8 +94,9 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
       content, commentReferences, projectName);
   }
 
-  _computeDeletedClass(isDeleted) {
-    return isDeleted ? 'deleted-comment-content' : '';
+  _computeCodeFont(prefs) {
+    if (!prefs) return false;
+    return prefs.get('code_font') === 'true';
   }
 }
 customElements.define(MrCommentContent.is, MrCommentContent);

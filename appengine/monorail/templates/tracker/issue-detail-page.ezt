@@ -84,8 +84,13 @@
    </div>
 
    <div>
-    <mr-code-font-toggle title="code font" style="float:right; margin: 3px;"
-      [if-any code_font]checked="true"[end]></mr-code-font-toggle>
+    <mr-code-font-toggle
+      id="code-font-toggle"
+      title="code font"
+      style="float:right; margin: 3px;"
+      [if-any code_font]initial-value="true"[end]
+      [if-any logged_in_user]user-display-name="[logged_in_user.email]"[end]
+    ></mr-code-font-toggle>
     <a href="[issue.crbug_url]" class="material-icons" title="crbug link">link</a>
     <h1 class="not_styled_as_heading"><span class="h3" style="padding:4px">
       Issue [issue.local_id]:
@@ -155,6 +160,20 @@ runOnLoad(function() {
   _fetchUserProjects(false);
 
   _onload();
+
+  // TODO(ehmaldonado): Remove once we use polymer to display comments and issue
+  // description.
+  $('code-font-toggle').addEventListener('font-toggle', function(e) {
+    const checked = e.detail.checked;
+    const ancestor = $('color_control');
+    if (ancestor) {
+      if (checked) {
+        ancestor.classList.add('codefont');
+      } else {
+        ancestor.classList.remove('codefont');
+      }
+    }
+  });
 
   function showDescription(n, changeSelect) {
     for (var i = 1; i <= descCt; i++)

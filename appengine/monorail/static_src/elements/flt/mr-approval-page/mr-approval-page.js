@@ -146,7 +146,9 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
             <mr-issue-metadata></mr-issue-metadata>
           </aside>
           <div class="container-issue">
-            <mr-issue-header></mr-issue-header>
+            <mr-issue-header
+              user-display-name="[[userDisplayName]]"
+            ></mr-issue-header>
             <div class="container-issue-content">
               <mr-issue-details class="main-item"></mr-issue-details>
               <mr-launch-overview class="main-item"></mr-launch-overview>
@@ -289,37 +291,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
   }
 
   _userDisplayNameChanged(userDisplayName) {
-    this.dispatchAction({type: actionType.FETCH_USER_START});
-
-    const getUser = window.prpcClient.call(
-      'monorail.Users', 'GetUser', {
-        userRef: {
-          displayName: userDisplayName,
-        },
-      }
-    );
-
-    const getMemberships = window.prpcClient.call(
-      'monorail.Users', 'GetMemberships', {
-        userRef: {
-          displayName: userDisplayName,
-        },
-      }
-    );
-
-    Promise.all([getUser, getMemberships]).then((resp) => {
-      this.dispatchAction({
-        type: actionType.FETCH_USER_SUCCESS,
-        user: resp[0],
-        groups: resp[1].groupRefs,
-      });
-      actionCreator.fetchUserHotlists(this.dispatchAction.bind(this), userDisplayName);
-    }, (error) => {
-      this.dispatchAction({
-        type: actionType.FETCH_USER_FAILURE,
-        error,
-      });
-    });
+    actionCreator.fetchUser(this.dispatchAction.bind(this), userDisplayName);
   }
 
   _undeleteIssue() {

@@ -5,6 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
+import {ReduxMixin, actionCreator, actionType} from '../redux/redux-mixin.js';
 import '../chops/chops-toggle/chops-toggle.js';
 
 /**
@@ -14,11 +15,11 @@ import '../chops/chops-toggle/chops-toggle.js';
  * causes issue description and comment text to switch to monospace
  * font and the setting is saved in the user's preferences.
  */
-export class MrCodeFontToggle extends PolymerElement {
+export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <chops-toggle
-         checked="[[checked]]"
+         checked="[[_codeFont]]"
          on-checked-change="_checkedChangeHandler"
        >Code</chops-toggle>
     `;
@@ -30,39 +31,51 @@ export class MrCodeFontToggle extends PolymerElement {
 
   static get properties() {
     return {
-      checked: {
+      prefs: Object,
+      userDisplayName: String,
+      initialValue: {
         type: Boolean,
-        observer: '_checkedChange',
+        value: false,
+      },
+      _codeFont: {
+        type: Boolean,
+        computed: '_computeCodeFont(prefs, initialValue)',
       },
     };
   }
 
-  _checkedChangeHandler(evt) {
-    this._checkedChange(evt.detail.checked);
+  static mapStateToProps(state, element) {
+    return {
+      prefs: state.prefs,
+    };
   }
 
-  _checkedChange(checked) {
-    if (checked === this.checked) return;
-    const ancestor = document.querySelector('#color_control');
-    if (ancestor && window.prpcClient) {
-      this.checked = checked;
-      if (checked) {
-        ancestor.classList.add('codefont');
-      } else {
-        ancestor.classList.remove('codefont');
-      }
-      if (CS_env.loggedInUserEmail) {
-        const message = {
-            prefs: [{name: 'code_font', value: '' + checked}],
-        };
-        const setPrefsCall = window.prpcClient.call(
-            'monorail.Users', 'SetUserPrefs', message);
-        setPrefsCall.then((resp) => {
-           // successfully saved prefs
-        }).catch((reason) => {
-          console.error('SetUserPrefs failed: ' + reason);
-        });
-      }
+  _computeCodeFont(prefs, initialValue) {
+    if (!prefs) return initialValue;
+    return prefs.get('code_font') === 'true';
+  }
+
+  _checkedChangeHandler(e) {
+    const checked = e.detail.checked;
+    this.dispatchEvent(new CustomEvent('font-toggle', {detail: {checked}}));
+    if (this.userDisplayName) {
+      const message = {
+        prefs: [{name: 'code_font', value: '' + checked}],
+      };
+      const setPrefsCall = window.prpcClient.call(
+        'monorail.Users', 'SetUserPrefs', message);
+      setPrefsCall.then((resp) => {
+        actionCreator.fetchUserPrefs(this.dispatchAction.bind(this));
+      }).catch((reason) => {
+        console.error('SetUserPrefs failed: ' + reason);
+      });
+    } else {
+      const newPrefs = new Map(this.prefs);
+      newPrefs.set('code_font', '' + checked);
+      this.dispatchAction({
+        type: actionType.FETCH_USER_PREFS_SUCCESS,
+        prefs: newPrefs,
+      });
     }
   }
 }

@@ -9,6 +9,7 @@ import '../../mr-flipper.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';
+import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
 
 
@@ -36,8 +37,9 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           font-weight: normal;
           padding: 0.25em 16px;
           box-sizing: border-box;
-          display: grid;
-          grid-template-columns: 1fr auto auto;
+          display: flex;
+          justify-content: flex-end;
+          align-items: center;
         }
         h1 {
           font-size: 100%;
@@ -46,11 +48,12 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           padding: 0;
           margin: 0;
         }
-        mr-dropdown {
-          justify-self: end;
+        mr-code-font-toggle {
+          min-width: fit-content;
+          margin: 3px;
+          font-size: 0.75em;
         }
         mr-flipper {
-          justify-self: end;
           font-size: 0.75em;
         }
         .byline {
@@ -61,7 +64,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           color: hsl(227, 15%, 35%);
         }
         .main-text {
-          justify-self: start;
+          flex-basis: 100%;
         }
         @media (max-width: 840px) {
           :host {
@@ -78,10 +81,16 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         <h1>Issue [[issue.localId]]: [[issue.summary]]</h1>
         <small class="byline">
           Created by
-          <mr-user-link display-name="[[issue.reporterRef.displayName]]" user-id="[[issue.reporterRef.userId]]"></mr-user-link>
+          <mr-user-link
+            display-name="[[issue.reporterRef.displayName]]"
+            user-id="[[issue.reporterRef.userId]]"
+          ></mr-user-link>
           on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
         </small>
       </div>
+      <mr-code-font-toggle
+        user-display-name="[[userDisplayName]]"
+      ></mr-code-font-toggle>
       <template is="dom-if" if="[[_issueOptions.length]]">
         <mr-dropdown
           items="[[_issueOptions]]"
@@ -104,6 +113,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           return new Date();
         },
       },
+      userDisplayName: String,
       issue: {
         type: Object,
         value: () => {},

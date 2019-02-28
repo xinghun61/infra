@@ -31,6 +31,10 @@ export const actionType = {
   FETCH_USER_HOTLISTS_SUCCESS: 'FETCH_USER_HOTLISTS_SUCCESS',
   FETCH_USER_HOTLISTS_FAILURE: 'FETCH_USER_HOTLISTS_FAILURE',
 
+  FETCH_USER_PREFS_START: 'FETCH_USER_PREFS_START',
+  FETCH_USER_PREFS_SUCCESS: 'FETCH_USER_PREFS_SUCCESS',
+  FETCH_USER_PREFS_FAILURE: 'FETCH_USER_PREFS_FAILURE',
+
   FETCH_ISSUE_START: 'FETCH_ISSUE_START',
   FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
   FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
@@ -193,12 +197,40 @@ export const actionCreator = {
       });
     });
   },
-  fetchUserHotlists: (dispatch, user) => {
+  fetchUser: (dispatch, displayName) => {
+    dispatch({type: actionType.FETCH_USER_START});
+
+    const message = {
+      userRef: {displayName},
+    };
+
+    const allPromises = [
+      window.prpcClient.call(
+        'monorail.Users', 'GetUser', message),
+      window.prpcClient.call(
+        'monorail.Users', 'GetMemberships', message),
+    ];
+
+    Promise.all(allPromises).then((resp) => {
+      dispatch({
+        type: actionType.FETCH_USER_SUCCESS,
+        user: resp[0],
+        groups: resp[1].groupRefs,
+      });
+      actionCreator.fetchUserHotlists(dispatch, displayName);
+      actionCreator.fetchUserPrefs(dispatch);
+    }, (error) => {
+      dispatch({
+        type: actionType.FETCH_USER_FAILURE,
+        error,
+      });
+    });
+  },
+  fetchUserHotlists: (dispatch, displayName) => {
     dispatch({type: actionType.FETCH_USER_HOTLISTS_START});
 
     const getUserHotlists = window.prpcClient.call(
-      'monorail.Features', 'ListHotlistsByUser',
-      {user: {displayName: user}});
+      'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
 
     getUserHotlists.then((resp) => {
       const hotlists = (resp.hotlists || []);
@@ -212,6 +244,27 @@ export const actionCreator = {
     }, (error) => {
       dispatch({
         type: actionType.FETCH_USER_HOTLISTS_FAILURE,
+        error,
+      });
+    });
+  },
+  fetchUserPrefs: (dispatch) => {
+    dispatch({type: actionType.FETCH_USER_PREFS_START});
+
+    const getUserPrefs = window.prpcClient.call(
+      'monorail.Users', 'GetUserPrefs', {});
+
+    getUserPrefs.then((resp) => {
+      const prefs = new Map(resp.prefs.map((pref) => {
+        return [pref.name, pref.value];
+      }));
+      dispatch({
+        type: actionType.FETCH_USER_PREFS_SUCCESS,
+        prefs,
+      });
+    }, (error) => {
+      dispatch({
+        type: actionType.FETCH_USER_PREFS_FAILURE,
         error,
       });
     });
@@ -344,12 +397,16 @@ export const initial = {
 
   // The ID of the element to be focused, as given by the hash part of the URL.
   focusId: null,
+  prefs: null,
 
   fetchingUser: false,
   fetchUserError: null,
 
   fetchingUserHotlists: false,
   fetchUserHotlistsError: null,
+
+  fetchingUserPrefs: false,
+  fetchUserPrefsError: null,
 
   issueLoaded: false,
   fetchingIssue: false,
@@ -476,6 +533,7 @@ export const reducer = (state, action) => {
       return Object.assign({}, state, {
         userGroups: action.groups,
         user: action.user,
+        prefs: action.prefs,
         fetchingUser: false,
       });
     case actionType.FETCH_USER_FAILURE:
@@ -499,6 +557,23 @@ export const reducer = (state, action) => {
       return Object.assign({}, state, {
         fetchUserHotlistsError: action.error,
         fetchingUserHotlists: false,
+      });
+
+    // Request for getting a user's prefs.
+    case actionType.FETCH_USER_PREFS_START:
+      return Object.assign({}, state, {
+        fetchUserPrefsError: null,
+        fetchingUserPrefs: true,
+      });
+    case actionType.FETCH_USER_PREFS_SUCCESS:
+      return Object.assign({}, state, {
+        prefs: action.prefs,
+        fetchingUserPrefs: false,
+      });
+    case actionType.FETCH_USER_PREFS_FAILURE:
+      return Object.assign({}, state, {
+        fetchUserPrefsError: action.error,
+        fetchingUserPrefs: false,
       });
 
     // Request for getting an issue.
