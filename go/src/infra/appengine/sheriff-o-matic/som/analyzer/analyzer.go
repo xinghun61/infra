@@ -112,6 +112,7 @@ type Analyzer struct {
 	CrBug       client.CrBug
 	FindIt      client.FindIt
 	TestResults client.TestResults
+	BuildBucket client.BuildBucket
 }
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.

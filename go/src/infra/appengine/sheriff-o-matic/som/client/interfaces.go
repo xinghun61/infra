@@ -5,7 +5,15 @@ import (
 
 	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
+
+	bbpb "go.chromium.org/luci/buildbucket/proto"
 )
+
+// BuildBucket returns information about builds that run on buildbucket.
+type BuildBucket interface {
+	// LatestBuilds returns recent builds.
+	LatestBuilds(ctx context.Context, builderIDs []*bbpb.BuilderID) ([]*bbpb.Build, error)
+}
 
 // Milo returns build information.
 type Milo interface {
