@@ -60,28 +60,35 @@
         height: 32px;
         margin-left: 4px;
       }
-      .flake-item {
+      .group-item {
         --paper-item-selected-weight: normal;
         --paper-item-selected: {
           background-color: var(--app-primary-color);
           color:white;
         };
       }
-      .flake-listbox {
+      .group-item-link {
+        text-decoration: none;
+        color:white;
+      }
+      .group-item-link:hover {
+        background-color: var(--app-primary-color);
+      }
+      .group-listbox {
         padding: 0px;
         color: white;
         background-color: #4C8BF5;
         cursor: pointer;
       }
-      .flake-menu-button {
+      .group-menu-button {
         color: white;
         font-size: 16px;
         padding: 0 10px;
       }
-      .flake-menu-button :hover {
+      .group-menu-button :hover {
         color: black;
       }
-      .flake-name {
+      .group-name {
         @apply --layout-flex-none;
         padding: 0;
         color: #ffffffc7;
@@ -91,7 +98,7 @@
         font-weight: 500;
         /*font-weight: 500;*/
       }
-      .flake-name: hover {
+      .group-name: hover {
         color: black;
       }
     </style>
@@ -108,21 +115,21 @@
           </paper-tabs>
 
           <!-- Flakes selection -->
-          <paper-menu-button class="flake-menu-button">
+          <paper-menu-button class="group-menu-button">
             <paper-button slot="dropdown-trigger">
-              <span class="flake-name">Flake Portal</span>
+              <span class="group-name">Flake Portal</span>
               <iron-icon
                   class="icon-dropdown"
                   icon="arrow-drop-down"></iron-icon>
             </paper-button>
-            <paper-listbox class="flake-listbox" slot="dropdown-content">
-              <paper-item class="flake-item" data-flake="Flakes">
-                <a class=flake-item-link href="/p/chromium/flake-portal/flakes">Flakes</a></paper-item>
-              <paper-item class="flake-item" data-flake="Report">
-                <a class=flake-item-link href="/p/chromium/flake-portal/report">Report</a>
+            <paper-listbox class="group-listbox" slot="dropdown-content">
+              <paper-item class="group-item" data-flake="Flakes">
+                <a class=group-item-link href="/p/chromium/flake-portal/flakes">Flakes</a></paper-item>
+              <paper-item class="group-item" data-flake="Report">
+                <a class=group-item-link href="/p/chromium/flake-portal/report">Report</a>
               </paper-item>
-              <paper-item class="flake-item" data-flake="Analysis">
-                <a class=flake-item-link href="/p/chromium/flake-portal/analysis">Analysis</a>
+              <paper-item class="group-item" data-flake="Analysis">
+                <a class=group-item-link href="/p/chromium/flake-portal/analysis">Analysis</a>
               </paper-item>
             </paper-listbox>
           </paper-menu-button>
