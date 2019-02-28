@@ -13,22 +13,22 @@ import sys
 WORKSPACE_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
-def group_by_dir(emit_prefix, filestream):
+def group_by_dir(filestream):
   prefix = None
   group = []
   for fname in filestream:
     dirname = os.path.dirname(fname)
     if dirname != prefix:
       if group:
-        yield [prefix] if emit_prefix else group
+        yield [prefix]
       prefix = dirname
       group = []
     group.append(fname)
   if group:
-    yield [prefix] if emit_prefix else group
+    yield [prefix]
 
 
-def mk_checker(by_package, *tool_name):
+def mk_checker(*tool_name):
   """mk_checker creates a very simple 'main' function which
   arguments using the SkipCache, invokes the tool, and then returns the
   retcode-style result"""
@@ -38,7 +38,7 @@ def mk_checker(by_package, *tool_name):
     found_errs = []
     retcode = 0
 
-    for fpaths in group_by_dir(by_package, filestream):
+    for fpaths in group_by_dir(filestream):
       proc = subprocess.Popen(
           tool_name+fpaths,
           stdout=subprocess.PIPE,
@@ -112,8 +112,8 @@ def main(args):
 
 
 TOOL_FUNC = {
-  "govet": mk_checker(True, "go", "vet"),
-  "golint": mk_checker(True, "golint"),
+  "govet": mk_checker("go", "vet"),
+  "golint": mk_checker("golint"),
   "gofmt": gofmt_main,
 }
 
