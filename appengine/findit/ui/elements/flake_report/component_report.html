@@ -115,12 +115,6 @@
         float: right;
         margin: 20px;
       }
-
-      .title {
-        font-size: 22px;
-        font-weight: bold;
-      }
-
     </style>
     <br>
     <div id="tabs-container">
@@ -230,8 +224,8 @@
         },
 
         _getLinkToFlakeDashboard: function () {
-          if (this.total != '') return '/ranked-flakes';
-          return '/ranked-flakes?flake_filter=component::' + this.component;
+          if (this.total != '') return '/p/chromium/flake-portal/flakes';
+          return '/p/chromium/flake-portal/flakes?flake_filter=component::' + this.component;
         },
 
         _generateChartOptions: function (component) {

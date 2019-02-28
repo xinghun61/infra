@@ -676,13 +676,14 @@ class FlakeDetectionGroupIssueGenerator(BaseFlakeIssueGenerator):
     """
     assert self._flake_issue, (
         'FlakeIssue required to generate a comment on a group bug.')
-    url_template = (
-        'https://findit-for-me%s.appspot.com/ranked-flakes?bug_id=%d')
+    hostname = 'analysis.chromium.org'
+    if IsStaging():
+      hostname = 'findit-for-me-staging.appspot.com'
+    url_template = 'https://%s/p/chromium/flake-portal/flakes?bug_id=%d'
     if self._flake_issue.monorail_project != 'chromium':
       url_template = '{}&monorail_project={}'.format(
           url_template, self._flake_issue.monorail_project)
-    suffix = '-staging' if IsStaging() else ''
-    return url_template % (suffix, self._flake_issue.issue_id)
+    return url_template % (hostname, self._flake_issue.issue_id)
 
   def _GetIssueSummaryForWrongResultLink(self):
     if self._canonical_step_name:

@@ -31,7 +31,7 @@ Otherwise please find an appropriate owner.
 
 _EXPECTED_GROUP_FIRST_COMMENT = textwrap.dedent("""
 List of all flake occurrences can be found at:
-https://findit-for-me.appspot.com/ranked-flakes?bug_id={}.
+https://analysis.chromium.org/p/chromium/flake-portal/flakes?bug_id={}.
 
 If the result above is wrong, please file a bug using this link:
 {}
@@ -43,7 +43,7 @@ Findit has detected 5+ new flake occurrences of tests in this bug
 within the past 24 hours.
 
 List of all flake occurrences can be found at:
-https://findit-for-me.appspot.com/ranked-flakes?bug_id={}.
+https://analysis.chromium.org/p/chromium/flake-portal/flakes?bug_id={}.
 
 {}
 
@@ -167,9 +167,9 @@ class IssueGeneratorTest(WaterfallTestCase):
         'status=Unconfirmed&labels=Pri-1,Test-Findit-Wrong&'
         'components=Tools%3ETest%3EFindit%3EFlakiness&'
         'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20result%3A%20'
-        'Tests in step&comment=Link%20to%20flake%20details%3A%20https://findit'
-        '-for-me.appspot.com/ranked-flakes?bug_id={}').format(
-            flake_issue.issue_id)
+        'Tests in step&comment=Link%20to%20flake%20details%3A%20'
+        'https://analysis.chromium.org/p/chromium/flake-portal/flakes?bug_id={}'
+    ).format(flake_issue.issue_id)
     expected_description = _EXPECTED_GROUP_FIRST_COMMENT.format(
         flake_issue.issue_id, wrong_result_link)
     self.assertEqual(expected_description,
@@ -183,8 +183,9 @@ class IssueGeneratorTest(WaterfallTestCase):
         'status=Unconfirmed&labels=Pri-1,Test-Findit-Wrong&'
         'components=Tools%3ETest%3EFindit%3EFlakiness&'
         'summary=%5BFindit%5D%20Flake%20Detection%20-%20Wrong%20result%3A%20'
-        '12345&comment=Link%20to%20flake%20details%3A%20https://findit-for-'
-        'me.appspot.com/ranked-flakes?bug_id={}').format(bug_id)
+        '12345&comment=Link%20to%20flake%20details%3A%20'
+        'https://analysis.chromium.org/p/chromium/flake-portal/flakes?bug_id={}'
+    ).format(bug_id)
     sheriff_queue_message = (
         'Since these tests are still flaky, this issue has been moved back onto'
         ' the Sheriff Bug Queue if it hasn\'t already.')

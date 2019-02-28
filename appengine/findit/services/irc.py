@@ -26,7 +26,7 @@ def _GenerateMessage(revert_cl_url, commit_position, revision, culprit_key,
       Findit (https://goo.gl/kROfz5) has %s a revert (%s) for CL %s,
       because it was identified as the culprit for failures in the build
       cycles as shown on:
-      https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+      https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
       action, revert_cl_url, commit_position or revision, culprit_key)
 
 

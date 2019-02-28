@@ -7,7 +7,7 @@ end-users in multiple forms. The previous solution for this was
 Flake Detector is in parity of critical features with Chromium-try-flakes, and
 only supports the Chromium project as of now.
 
-### Flake Detector UI: [https://findit-for-me.appspot.com/ranked-flakes]
+### Flake Detector UI: [https://analysis.chromium.org/p/chromium/flake-portal/flakes]
 
 Table of contents:
 
@@ -112,15 +112,15 @@ Supports for projects that don’t use chromium_trybot recipe could be added
 later, please follow [crbug.com/840831].
 
 [CQ]: https://chrome-internal.googlesource.com/infra/infra_internal/+/master/infra_internal/services/cq/README.md
-[https://findit-for-me.appspot.com/ranked-flakes]: https://findit-for-me.appspot.com/ranked-flakes
+[https://analysis.chromium.org/p/chromium/flake-portal/flakes]: https://analysis.chromium.org/p/chromium/flake-portal/flakes
 [Chromium-try-flakes]: https://chromium-try-flakes.appspot.com/
 [cq_raw]: https://bigquery.cloud.google.com/table/chrome-infra-events:raw_events.cq
 [completed_builds_BETA]: https://bigquery.cloud.google.com/table/cr-buildbucket:builds.completed_BETA?tab=details
 [test_results]: https://bigquery.cloud.google.com/table/test-results-hrd:events.test_results
 [SQL query]: https://cs.chromium.org/chromium/infra/appengine/findit/services/flake_detection/flaky_tests.cq_false_rejection.sql
 [file bugs]: https://bugs.chromium.org/p/chromium/issues/list?can=2&q=test-findit-detected&colspec=ID+Pri+M+Stars+ReleaseBlock+Component+Status+Owner+Summary+OS+Modified&x=m&y=releaseblock&cells=ids
-[Ranked flaky tests]: https://findit-for-me.appspot.com/ranked-flakes
-[Flake Analyzer]: https://findit-for-me.appspot.com/waterfall/list-flakes
+[Ranked flaky tests]: https://analysis.chromium.org/p/chromium/flake-portal/flakes
+[Flake Analyzer]: https://analysis.chromium.org/waterfall/list-flakes
 [Example of gtests with different parameters]: images/gtests_with_different_parameters.png
 [Example of webkit layout tests with different queries]: images/webkit_layout_tests_with_different_queries.png
 [file a bug]: https://bugs.chromium.org/p/chromium/issues/entry?components=Tools%3ETest%3EFindIt%3EFlakiness

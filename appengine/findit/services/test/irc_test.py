@@ -79,7 +79,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
         Findit (https://goo.gl/kROfz5) has created a revert (%s) for CL %s,
         because it was identified as the culprit for failures in the build
         cycles as shown on:
-        https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+        https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
         revert_cl_url, commit_position, culprit_key)
 
     self.assertEqual(

@@ -43,7 +43,7 @@ Deploy to the staging instance (and make it default):
   `make clean && make deploy-staging`
 
 ## Production
-Deploy to findit-for-me.appspot.com (production):
+Deploy to analysis.chromium.org (production):
   `make clean && make deploy-prod`
 
 To make the new version the default:

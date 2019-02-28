@@ -17,7 +17,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class RankFlakesTest(WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/ranked-flakes', rank_flakes.RankFlakes),
+      ('/p/chromium/flake-portal/flakes', rank_flakes.RankFlakes),
   ],
                                        debug=True)
 
@@ -147,7 +147,7 @@ class RankFlakesTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testRankFlakes(self, _):
     response = self.test_app.get(
-        '/ranked-flakes', params={
+        '/p/chromium/flake-portal/flakes', params={
             'format': 'json',
         }, status=200)
     self.assertEqual(
@@ -180,7 +180,7 @@ class RankFlakesTest(WaterfallTestCase):
   @mock.patch.object(Flake, 'NormalizeTestName', return_value='suite.test1')
   def testSearchRedirectOldFlake(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?flake_filter=test::suite.test1',
+        '/p/chromium/flake-portal/flakes?flake_filter=test::suite.test1',
         params={
             'format': 'json',
         },
@@ -195,7 +195,7 @@ class RankFlakesTest(WaterfallTestCase):
   @mock.patch.object(Flake, 'NormalizeTestName', return_value='suite.test2')
   def testSearchRedirect(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?flake_filter=test::test_name',
+        '/p/chromium/flake-portal/flakes?flake_filter=test::test_name',
         params={
             'format': 'json',
         },
@@ -211,7 +211,7 @@ class RankFlakesTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testGetFlakesBySimpleSearch(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?flake_filter=suite::suite',
+        '/p/chromium/flake-portal/flakes?flake_filter=suite::suite',
         params={
             'format': 'json',
         },
@@ -248,7 +248,7 @@ class RankFlakesTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testGetFlakesByAdvancedSearch(self, _):
     response = self.test_app.get(
-        '/ranked-flakes?flake_filter='
+        '/p/chromium/flake-portal/flakes?flake_filter='
         'test_type::flavored_tests@-test_type::tests',
         params={
             'format': 'json',
@@ -287,7 +287,7 @@ class RankFlakesTest(WaterfallTestCase):
   def testGetFlakesByMergedBugKey(self, _):
     bug_id = self.flake_issue0.issue_id
     response = self.test_app.get(
-        '/ranked-flakes?bug_id=%s' % bug_id,
+        '/p/chromium/flake-portal/flakes?bug_id=%s' % bug_id,
         params={
             'format': 'json',
         },
@@ -326,7 +326,7 @@ class RankFlakesTest(WaterfallTestCase):
   def testGetFlakesByIndependentBugKey(self, _):
     bug_id = self.flake_issue1.issue_id
     response = self.test_app.get(
-        '/ranked-flakes?bug_id=%s' % bug_id,
+        '/p/chromium/flake-portal/flakes?bug_id=%s' % bug_id,
         params={
             'format': 'json',
         },
