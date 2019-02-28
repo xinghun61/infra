@@ -18,6 +18,7 @@ DEPS = [
 ]
 
 from recipe_engine import recipe_api
+from recipe_engine.post_process import MustRun
 
 
 # Toposorted for best results.
@@ -126,6 +127,18 @@ def GenTests(api):
           'build', trivial=True, status='commit',
           timestamp='2016-02-01T01:23:45') +
       api.time.seed(1454371200)
+  )
+
+  yield (
+      api.test('repo_data_trivial_open') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='open',
+          timestamp='2016-02-01T01:23:45') +
+      api.recipe_autoroller.roll_data('build') +
+      api.time.seed(1451606400) +
+      api.post_process(MustRun, 'build.git cl set-close')
   )
 
   yield (

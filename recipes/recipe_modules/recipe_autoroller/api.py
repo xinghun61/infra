@@ -214,15 +214,15 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # It's possible that the roller keeps creating new CLs (especially
       # trivial rolls), but they e.g. fail to land, causing staleness.
 
-      # We're about to upload a new CL, so close the old one.
+      # We're about to upload a new CL, so make sure the old one is closed.
       # Pass --gerrit flag to match upload args below.
-      with self.m.context(cwd=workdir):
-        self.m.git('cl', 'set-close',
-                   '--issue', repo_data.issue,
-                   '--gerrit',
-                   _AUTH_REFRESH_TOKEN_FLAG,
-                   # TODO(phajdan.jr): make set-close fatal after Gerrit switch.
-                   ok_ret='any')
+      if cl_status != 'closed':
+        with self.m.context(cwd=workdir):
+          self.m.git('cl', 'set-close',
+                     '--issue', repo_data.issue,
+                     '--gerrit',
+                     _AUTH_REFRESH_TOKEN_FLAG,
+                     name='git cl set-close')
     return None
 
   def _get_disable_reason(self, recipes_cfg_path):
@@ -411,5 +411,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           step_test_data=lambda: self.m.raw_io.test_api.stream_output(
               'foo')
       ).stdout.strip()
+      self.m.step.active_result.step_text = status_result
 
     return repo_data, status_result

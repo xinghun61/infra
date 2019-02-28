@@ -255,6 +255,23 @@
   },
   {
     "cmd": [
+      "git",
+      "cl",
+      "set-close",
+      "--issue",
+      "123456789",
+      "--gerrit",
+      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
+    ],
+    "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
+    "name": "build.git cl set-close",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "vpython",
       "-u",
       "[START_DIR]/recipe_engine/recipes.py",
