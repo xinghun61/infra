@@ -16,8 +16,17 @@ To set up project development:
 
 ### Publishing packages
 
-ChopsUI packages are published publicly on npm under the [@chopsui](https://www.npmjs.com/settings/chopsui/packages) organization. To be added to this org, please send your npm username to zhangtiff@.
+ChopsUI packages are published publicly on npm under the [@chopsui](https://www.npmjs.com/settings/chopsui/packages) organization.
 
 Each component is published under a separate npm package. Packages are managed using [Lerna](https://lernajs.io/). All packages are published together using a single version number kept in the `lerna.json` file under the `version` key.
 
-To publish, update the version number and run `npx lerna publish`.
+To set up:
+1. Send your npm username to zhangtiff@ to be added to [@chopsui](https://www.npmjs.com/settings/chopsui/packages).
+2. Authenticate in npm with `npm adduser`.
+
+To publish a new version:
+1. Sync a clean branch with upstream set to `origin/master`.
+2. Create a new version with `npx lerna version --no-git-tag-version`. Lerna will prompt you to select a new version number, detect which packages have changed since the last version, and locally update the json files.
+3. Commit the changes, upload them for code review, and land them.
+4. Sync to the newly landed commit.
+5. Publish to npm with `npx lerna publish from-package`.
