@@ -15,7 +15,10 @@
 package state
 
 import (
+	"bytes"
+	"compress/zlib"
 	"context"
+	"io/ioutil"
 
 	"github.com/pkg/errors"
 
@@ -59,10 +62,14 @@ func List(ctx context.Context) ([]string, error) {
 
 // Save persists the given SchdulerPool to datastore.
 func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
-	var sd, rd []byte
+	var sd, sdz, rd []byte
 	var err error
 	if sd, err = proto.Marshal(q.Scheduler.ToProto()); err != nil {
 		e := errors.Wrap(err, "unable to marshal Scheduler")
+		return status.Error(codes.Internal, e.Error())
+	}
+	if sdz, err = zlCompress(sd); err != nil {
+		e := errors.Wrap(err, "unable to compress Scheduler")
 		return status.Error(codes.Internal, e.Error())
 	}
 
@@ -72,9 +79,9 @@ func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 	}
 
 	entity := &datastoreEntity{
-		QSPoolID:       s.entityID,
-		SchedulerData:  sd,
-		ReconcilerData: rd,
+		QSPoolID:        s.entityID,
+		SchedulerDataZL: sdz,
+		ReconcilerData:  rd,
 	}
 
 	logging.Infof(ctx, "attempting to Put datastore entitiy for pool %s"+
@@ -102,12 +109,25 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 	if err := proto.Unmarshal(dst.ReconcilerData, r); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Reconciler")
 	}
-	if err := proto.Unmarshal(dst.SchedulerData, sp); err != nil {
+
+	var schedulerData []byte
+	if len(dst.SchedulerData) > 0 {
+		schedulerData = dst.SchedulerData
+	} else if len(dst.SchedulerDataZL) > 0 {
+		var err error
+		schedulerData, err = zlDecompress(dst.SchedulerDataZL)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to decompress Scheduler")
+		}
+	}
+
+	if err := proto.Unmarshal(schedulerData, sp); err != nil {
 		return nil, errors.Wrap(err, "unable to unmarshal Scheduler")
 	}
 
 	recordProtoSize(ctx, len(dst.ReconcilerData), dst.QSPoolID, "reconciler")
 	recordProtoSize(ctx, len(dst.SchedulerData), dst.QSPoolID, "scheduler")
+	recordProtoSize(ctx, len(dst.SchedulerDataZL), dst.QSPoolID, "scheduler_zlib")
 
 	return &types.QScheduler{
 		SchedulerID: dst.QSPoolID,
@@ -145,7 +165,15 @@ type datastoreEntity struct {
 
 	// SchedulerData is the qslib/scheduler.Scheduler object serialized to
 	// protobuf binary format.
+	//
+	// Only one of this or SchedulerDataZL should be specified.
 	SchedulerData []byte `gae:",noindex"`
+
+	// SchedulerDataZL is the the qslib/scheduler.Scheduler object serialized to
+	// protobuf binary format and then zlib-compressed.
+	//
+	// Only one of this or SchedulerData should be specified.
+	SchedulerDataZL []byte `gae:",noindex"`
 
 	// ReconcilerData is the qslib/reconciler.State object serialized to protobuf
 	// binary format.
@@ -208,4 +236,32 @@ func revertableOperationRunner(op types.RevertableOperation, store *Store, e *me
 		e.recordStateMetrics(sp.Scheduler)
 		return e.flushToBQ(ctx)
 	}
+}
+
+func zlCompress(input []byte) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	gzWriter := zlib.NewWriter(buffer)
+
+	if _, err := gzWriter.Write(input); err != nil {
+		return nil, errors.Wrap(err, "zlCompress")
+	}
+	if err := gzWriter.Close(); err != nil {
+		return nil, errors.Wrap(err, "zlCompress")
+	}
+
+	return buffer.Bytes(), nil
+}
+
+func zlDecompress(input []byte) ([]byte, error) {
+	gzReader, err := zlib.NewReader(bytes.NewReader(input))
+	if err != nil {
+		return nil, errors.Wrap(err, "zlDecompress")
+	}
+	defer gzReader.Close()
+
+	output, err := ioutil.ReadAll(gzReader)
+	if err != nil {
+		return nil, errors.Wrap(err, "zlDecompress")
+	}
+	return output, nil
 }
