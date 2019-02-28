@@ -5,18 +5,26 @@
 DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
+  'infra_checkout',
+  'recipe_engine/buildbucket',
   'recipe_engine/cipd',
   'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
+  'recipe_engine/properties',
   'recipe_engine/step',
 ]
 
 def RunSteps(api):
-  project_name = 'infra'
-
-  api.gclient.set_config(project_name)
-  api.bot_update.ensure_checkout()
+  assert api.platform.is_linux, 'Unsupported platform, only Linux is supported.'
+  cl = api.buildbucket.build.input.gerrit_changes[0]
+  project_name = cl.project
+  assert project_name in ('infra/infra', 'infra/infra_internal'), (
+      'unknown project: "%s"' % project_name)
+  patch_root = project_name.split('/')[-1]
+  internal = (patch_root == 'infra_internal')
+  api.gclient.set_config(patch_root)
+  api.bot_update.ensure_checkout(patch_root=patch_root)
   api.gclient.runhooks()
 
   packages_dir = api.path['start_dir'].join('packages')
@@ -29,7 +37,21 @@ def RunSteps(api):
   env = {
       'PATH': api.path.pathsep.join([str(node_path), '%(PATH)s'])
   }
+  if internal:
+    RunInfraInternalWCT(api, env)
+  else:
+    RunInfraWCT(api, env)
 
+def RunInfraInternalWCT(api, env):
+  cwd = api.path['checkout'].join('appengine', 'chromiumdash')
+  with api.context(env=env, cwd=cwd):
+    api.step('chromiumdash npm install', ['npm', 'install'])
+    api.step(
+        'chromiumdash run-wct', ['npx', 'run-wct', '--dep', 'third_party'])
+    api.step(
+        'chromiumdash generate js coverage report', ['npx', 'nyc', 'report'])
+
+def RunInfraWCT(api, env):
   cwd = api.path['checkout'].join('appengine', 'findit')
   with api.context(env=env, cwd=cwd):
     api.step('findit npm install', ['npm', 'install'])
@@ -64,7 +86,9 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  yield api.test('basic')
-  yield api.test('not-linux') + api.platform('win', 32)
-  yield api.test('has package.json') + api.path.exists(
-      api.path['checkout'].join('appengine', 'monorail', 'package.json'))
+  yield (
+      api.test('basic') +
+      api.buildbucket.try_build(project='infra/infra'))
+  yield (
+      api.test('basic-internal') +
+      api.buildbucket.try_build(project='infra/infra_internal'))
