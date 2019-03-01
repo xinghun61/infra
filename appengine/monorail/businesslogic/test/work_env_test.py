@@ -1191,7 +1191,14 @@ class WorkEnvTest(unittest.TestCase):
         tracker_pb2.ApprovalValue(approval_id=6)]
     issue.phases = [
         tracker_pb2.Phase(name='Expired', phase_id=4),
-        tracker_pb2.Phase(name='Canary', phase_id=5)]
+        tracker_pb2.Phase(name='canary', phase_id=3)]
+    issue.field_values = [
+        tracker_bizobj.MakeFieldValue(8, None, 'Pink', None, None, None, False),
+        tracker_bizobj.MakeFieldValue(
+            9, None, 'Silver', None, None, None, False, phase_id=3),
+        tracker_bizobj.MakeFieldValue(
+            19, None, 'Orange', None, None, None, False, phase_id=4),
+        ]
 
     self.services.issue._UpdateIssuesApprovals = mock.Mock()
     self.SignIn()
@@ -1229,6 +1236,12 @@ class WorkEnvTest(unittest.TestCase):
           field_id=6, project_id=789, field_name='Llama'),
       tracker_pb2.FieldDef(
           field_id=7, project_id=789, field_name='Roo'),
+      tracker_pb2.FieldDef(
+          field_id=8, project_id=789, field_name='Salmon'),
+      tracker_pb2.FieldDef(
+          field_id=9, project_id=789, field_name='Tuna', is_phase_field=True),
+      tracker_pb2.FieldDef(
+          field_id=10, project_id=789, field_name='Clown', is_phase_field=True),
     ]
     self.work_env.ConvertIssueApprovalsTemplate(
         config, issue, 'template_name', 'Convert', send_email=False)
@@ -1248,7 +1261,13 @@ class WorkEnvTest(unittest.TestCase):
           phase_id=5,
           approver_ids=[222L]),
     ]
+    expected_fvs = [
+        tracker_bizobj.MakeFieldValue(8, None, 'Pink', None, None, None, False),
+        tracker_bizobj.MakeFieldValue(
+            9, None, 'Silver', None, None, None, False, phase_id=5),
+    ]
     self.assertEqual(issue.approval_values, expected_avs)
+    self.assertEqual(issue.field_values, expected_fvs)
     self.assertEqual(issue.phases, template.phases)
     self.services.template.GetTemplateByName.assert_called_once_with(
         self.mr.cnxn, 'template_name', 789)

@@ -41,6 +41,10 @@ from services import tracker_fulltext
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 
+# TODO(jojwang): monorail:4693, remove this after all 'stable-full'
+# gates have been renamed to 'stable'.
+FLT_EQUIVALENT_GATES = {'stable-full': 'stable',
+                        'stable': 'stable-full'}
 
 ISSUE_TABLE_NAME = 'Issue'
 ISSUESUMMARY_TABLE_NAME = 'IssueSummary'
@@ -1340,6 +1344,31 @@ class IssueService(object):
             status=template_av.status, phase_id=template_av.phase_id)
         new_issue_approvals.append(new_av)
 
+    template_phase_by_name = {
+        phase.name.lower(): phase for phase in template.phases}
+    issue_phase_by_id = {phase.phase_id: phase for phase in issue.phases}
+    updated_fvs = []
+    # Trim issue FieldValues or update FieldValue phase_ids
+    for fv in issue.field_values:
+      # If a fv's phase has the same name as a template's phase, update
+      # the fv's phase_id to that of the template phase's. Otherwise,
+      # remove the fv.
+      if fv.phase_id:
+        issue_phase = issue_phase_by_id.get(fv.phase_id)
+        if issue_phase and issue_phase.name:
+          template_phase = template_phase_by_name.get(issue_phase.name.lower())
+          # TODO(jojwang): monorail:4693, remove this after all 'stable-full'
+          # gates have been renamed to 'stable'.
+          if not template_phase:
+            template_phase = template_phase_by_name.get(
+                FLT_EQUIVALENT_GATES.get(issue_phase.name.lower()))
+          if template_phase:
+            fv.phase_id = template_phase.phase_id
+            updated_fvs.append(fv)
+      # keep all fvs that do not belong to phases.
+      else:
+        updated_fvs.append(fv)
+
     fd_names_by_id = {fd.field_id: fd.field_name for fd in config.field_defs}
     amendment = tracker_bizobj.MakeApprovalStructureAmendment(
         [fd_names_by_id.get(av.approval_id) for av in new_issue_approvals],
@@ -1348,12 +1377,14 @@ class IssueService(object):
     # Update issue structure in RAM.
     issue.approval_values = new_issue_approvals
     issue.phases = template.phases
+    issue.field_values = updated_fvs
 
     # Update issue structure in DB.
     for survey in new_approval_surveys:
       survey.issue_id = issue.issue_id
       self.InsertComment(cnxn, survey, commit=False)
     self._UpdateIssuesApprovals(cnxn, issue, commit=False)
+    self._UpdateIssuesFields(cnxn, [issue], commit=False)
     comment_pb = self.CreateIssueComment(
         cnxn, issue, reporter_id, comment_content,
         amendments=[amendment], commit=False)

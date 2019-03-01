@@ -978,6 +978,14 @@ class IssueServiceTest(unittest.TestCase):
           field_id=6, project_id=789, field_name='Llama'),
       tracker_pb2.FieldDef(
           field_id=7, project_id=789, field_name='Roo'),
+      tracker_pb2.FieldDef(
+          field_id=8, project_id=789, field_name='Salmon'),
+      tracker_pb2.FieldDef(
+          field_id=9, project_id=789, field_name='Tuna', is_phase_field=True),
+      tracker_pb2.FieldDef(
+          field_id=10, project_id=789, field_name='Clown', is_phase_field=True),
+      tracker_pb2.FieldDef(
+          field_id=11, project_id=789, field_name='Dory', is_phase_field=True),
     ]
 
     # Set up issue
@@ -998,7 +1006,17 @@ class IssueServiceTest(unittest.TestCase):
         tracker_pb2.ApprovalValue(approval_id=6)]
     issue.phases = [
         tracker_pb2.Phase(name='Expired', phase_id=4),
-        tracker_pb2.Phase(name='Canary', phase_id=5)]
+        tracker_pb2.Phase(name='canarY', phase_id=3),
+        tracker_pb2.Phase(name='Stable', phase_id=2)]
+    issue.field_values = [
+        tracker_bizobj.MakeFieldValue(8, None, 'Pink', None, None, None, False),
+        tracker_bizobj.MakeFieldValue(
+            9, None, 'Silver', None, None, None, False, phase_id=3),
+        tracker_bizobj.MakeFieldValue(
+            10, None, 'Orange', None, None, None, False, phase_id=4),
+        tracker_bizobj.MakeFieldValue(
+            11, None, 'Flat', None, None, None, False, phase_id=2),
+        ]
 
     # Set up template
     template = testing_helpers.DefaultTemplates()[0]
@@ -1013,8 +1031,10 @@ class IssueServiceTest(unittest.TestCase):
             approval_id=7,
             phase_id=5),
     ]  # No approval 6
+    # TODO(jojwang): monorail:4693, rename 'Stable-Full' after all
+    # 'stable-full' gates have been renamed to 'stable'.
     template.phases = [tracker_pb2.Phase(name='Canary', phase_id=5),
-                       tracker_pb2.Phase(name='Stable-Exp', phase_id=6)]
+                       tracker_pb2.Phase(name='Stable-Full', phase_id=6)]
 
     self.SetUpInsertComment(
         7890101, is_description=True, approval_id=3,
@@ -1038,6 +1058,13 @@ class IssueServiceTest(unittest.TestCase):
     approver_rows = [(3, 111L, 78901), (4, 111L, 78901), (7, 222L, 78901)]
     self.SetUpUpdateIssuesApprovals(
         av_rows=av_rows, approver_rows=approver_rows)
+    issue_shard = issue.issue_id % settings.num_logical_shards
+    issue2fieldvalue_rows = [
+        (78901, 8, None, 'Pink', None, None, None, False, None, issue_shard),
+        (78901, 9, None, 'Silver', None, None, None, False, 5, issue_shard),
+        (78901, 11, None, 'Flat', None, None, None, False, 6, issue_shard),
+    ]
+    self.SetUpUpdateIssuesFields(issue2fieldvalue_rows=issue2fieldvalue_rows)
 
     self.mox.ReplayAll()
     comment = self.services.issue.UpdateIssueStructure(

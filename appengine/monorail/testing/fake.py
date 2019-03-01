@@ -1611,6 +1611,26 @@ class IssueService(object):
       else:
         logging.info('ApprovalDef not found for approval %r', template_av)
 
+    template_phase_by_name = {
+        phase.name.lower(): phase for phase in template.phases}
+    issue_phase_by_id = {phase.phase_id: phase for phase in issue.phases}
+    updated_fvs = []
+    # Trim issue FieldValues or update FieldValue phase_ids
+    for fv in issue.field_values:
+      # If a fv's phase has the same name as a template's phase, update
+      # the fv's phase_id to that of the template phase's. Otherwise,
+      # remove the fv.
+      if fv.phase_id:
+        issue_phase = issue_phase_by_id.get(fv.phase_id)
+        if issue_phase and issue_phase.name:
+          template_phase = template_phase_by_name.get(issue_phase.name.lower())
+          if template_phase:
+            fv.phase_id = template_phase.phase_id
+            updated_fvs.append(fv)
+      # keep all fvs that do not belong to phases.
+      else:
+        updated_fvs.append(fv)
+
     fd_names_by_id = {fd.field_id: fd.field_name for fd in config.field_defs}
     amendment = tracker_bizobj.MakeApprovalStructureAmendment(
         [fd_names_by_id.get(av.approval_id) for av in new_issue_approvals],
@@ -1618,6 +1638,7 @@ class IssueService(object):
 
     issue.approval_values = new_issue_approvals
     issue.phases = template.phases
+    issue.field_values = updated_fvs
 
     return self.CreateIssueComment(
         cnxn, issue, reporter_id, comment_content,
