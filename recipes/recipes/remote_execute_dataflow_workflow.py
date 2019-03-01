@@ -21,15 +21,17 @@ from recipe_engine.config import Single
 from recipe_engine.recipe_api import Property
 
 DEPS = [
-    'build/puppet_service_account',
-    'depot_tools/bot_update',
-    'depot_tools/gclient',
-    'recipe_engine/context',
-    'recipe_engine/path',
-    'recipe_engine/properties',
-    'recipe_engine/python',
-    'recipe_engine/runtime',
-    'recipe_engine/step',
+  'build/puppet_service_account',
+  'depot_tools/bot_update',
+  'depot_tools/cipd',
+  'depot_tools/gclient',
+  'recipe_engine/context',
+  'recipe_engine/file',
+  'recipe_engine/path',
+  'recipe_engine/properties',
+  'recipe_engine/python',
+  'recipe_engine/runtime',
+  'recipe_engine/step',
 ]
 
 PROPERTIES = {
@@ -56,6 +58,35 @@ PROPERTIES = {
       help=('Timeout, in seconds.')),
 }
 
+
+# Name of the credentials.
+# They are stored encrypted in assets/CREDS_NAME
+CREDS_NAME = 'dataflow-launcher'
+
+# Name of the cloudkms key used to decrypt the credentials.
+KMS_CRYPTO_KEY = (
+    'projects/chops-kms/locations/global/keyRings/%s/cryptoKeys/default'
+    % CREDS_NAME)
+
+
+def _install_creds(api):
+  assert api.runtime.is_luci
+  cloudkms_dir = api.path['start_dir'].join('cloudkms')
+  api.cipd.ensure(
+      cloudkms_dir, {'infra/tools/luci/cloudkms/${platform}': 'latest'})
+  # Stick into directory which is guaranteed to be cleaned up by recipe.
+  creds_dir = api.path['cleanup'].join('creds')
+  api.file.ensure_directory('ensure creds dir', creds_dir)
+  creds_file = api.path.join(creds_dir, 'decrypted.json')
+  api.step('decrypt', [
+      cloudkms_dir.join('cloudkms'), 'decrypt',
+      '-input', api.repo_resource('recipes', 'recipes', 'assets', CREDS_NAME),
+      '-output', creds_file,
+      KMS_CRYPTO_KEY,
+  ])
+  return creds_file
+
+
 def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
   num_workers = int(num_workers)
   timeout = int(timeout)
@@ -71,10 +102,13 @@ def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
   python_path = api.path['checkout'].join('ENV', 'bin', 'python')
   # Clear PYTHONPATH since we want to use infra/ENV and not whatever the recipe
   # sets
-  env = {'PYTHONPATH': ''}
-  if not api.runtime.is_luci:
-    env['GOOGLE_APPLICATION_CREDENTIALS'] = (
-        api.puppet_service_account.get_key_path('dataflow-launcher'))
+  env = {
+    'PYTHONPATH': '',
+    'GOOGLE_APPLICATION_CREDENTIALS':
+      _install_creds(api)
+      if api.runtime.is_luci else
+      api.puppet_service_account.get_key_path('dataflow-launcher')
+  }
   with api.context(env=env):
     cmd = [python_path, workflow_path,
            '--job_name', job_name,
