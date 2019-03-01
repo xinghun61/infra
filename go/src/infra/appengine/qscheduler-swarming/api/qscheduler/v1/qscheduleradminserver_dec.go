@@ -107,3 +107,37 @@ func (s *DecoratedQSchedulerAdmin) ModSchedulerPool(c context.Context, req *ModS
 	}
 	return
 }
+
+func (s *DecoratedQSchedulerAdmin) DeleteAccount(c context.Context, req *DeleteAccountRequest) (rsp *DeleteAccountResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "DeleteAccount", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.DeleteAccount(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "DeleteAccount", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedQSchedulerAdmin) DeleteSchedulerPool(c context.Context, req *DeleteSchedulerPoolRequest) (rsp *DeleteSchedulerPoolResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "DeleteSchedulerPool", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.DeleteSchedulerPool(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "DeleteSchedulerPool", rsp, err)
+	}
+	return
+}

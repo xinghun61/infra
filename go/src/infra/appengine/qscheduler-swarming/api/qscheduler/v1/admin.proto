@@ -35,6 +35,12 @@ service QSchedulerAdmin {
 
     // ModSchedulerPool modifies a scheduler.
     rpc ModSchedulerPool(ModSchedulerPoolRequest) returns (ModSchedulerPoolResponse);
+
+    // DeleteAccount deletes an account.
+    rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+
+    // DeleteSchedulerPool deletes a scheduler.
+    rpc DeleteSchedulerPool(DeleteSchedulerPoolRequest) returns (DeleteSchedulerPoolResponse);
 }
 
 // TODO(akeshet): Rename to CreatePoolScheduler CreateScheduler.
@@ -97,6 +103,20 @@ message ModSchedulerPoolRequest {
 }
 
 message ModSchedulerPoolResponse {}
+
+message DeleteAccountRequest {
+    string pool_id = 1;
+
+    string account_id = 2;
+}
+
+message DeleteAccountResponse {}
+
+message DeleteSchedulerPoolRequest {
+    string pool_id = 1;
+}
+
+message DeleteSchedulerPoolResponse {}
 
 // QSchedulerView is a inspection / viewing API for quotascheduler. All calls
 // are read-only.
