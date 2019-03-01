@@ -272,3 +272,9 @@ func (s *Scheduler) GetWaitingRequests() map[RequestID]*TaskRequest {
 func (s *Scheduler) GetBalances() map[AccountID]Balance {
 	return s.state.balances
 }
+
+// DeleteAccount deletes the given account.
+func (s *Scheduler) DeleteAccount(aid AccountID) {
+	delete(s.config.AccountConfigs, string(aid))
+	delete(s.state.balances, aid)
+}

@@ -27,10 +27,11 @@ import (
 	"infra/qscheduler/qslib/protos"
 )
 
-func TestCreateScheduler(t *testing.T) {
+func TestCreateDeleteScheduler(t *testing.T) {
 	Convey("Given an admin server running in a test context", t, func() {
 		ctx := gaetesting.TestingContext()
 		admin := &QSchedulerAdminServerImpl{}
+		view := &QSchedulerViewServerImpl{}
 		poolID := "Pool 1"
 		req := qscheduler.CreateSchedulerPoolRequest{
 			PoolId: poolID,
@@ -55,11 +56,33 @@ func TestCreateScheduler(t *testing.T) {
 				So(resp, ShouldNotBeNil)
 				So(err, ShouldBeNil)
 			})
+
+			Convey("when InspectPool is called, it succeeds.", func() {
+				req := &qscheduler.InspectPoolRequest{PoolId: poolID}
+				resp, err := view.InspectPool(ctx, req)
+				So(err, ShouldBeNil)
+				So(resp, ShouldNotBeNil)
+			})
+
+			Convey("when DeleteSchedulerPool is called to delete the scheduler", func() {
+				req := &qscheduler.DeleteSchedulerPoolRequest{
+					PoolId: poolID,
+				}
+				resp, err := admin.DeleteSchedulerPool(ctx, req)
+				So(err, ShouldBeNil)
+				So(resp, ShouldNotBeNil)
+				Convey("when inspect is called, it fails to find scheduler.", func() {
+					req := &qscheduler.InspectPoolRequest{PoolId: poolID}
+					resp, err := view.InspectPool(ctx, req)
+					So(resp, ShouldBeNil)
+					So(err, ShouldNotBeNil)
+				})
+			})
 		})
 	})
 }
 
-func TestCreateListAccount(t *testing.T) {
+func TestCreateListDeleteAccount(t *testing.T) {
 	poolID := "Pool1"
 	Convey("Given an admin server running in a test context", t, func() {
 		ctx := gaetesting.TestingContext()
@@ -132,6 +155,25 @@ func TestCreateListAccount(t *testing.T) {
 						So(err, ShouldBeNil)
 						So(resp.Accounts, ShouldContainKey, accountID)
 						So(resp.Accounts, ShouldHaveLength, 1)
+					})
+				})
+				Convey("when ModAccount is called to delete the account", func() {
+					req := &qscheduler.DeleteAccountRequest{
+						PoolId:    poolID,
+						AccountId: accountID,
+					}
+					resp, err := admin.DeleteAccount(ctx, req)
+					So(resp, ShouldNotBeNil)
+					So(err, ShouldBeNil)
+					Convey("when ListAccounts is called for that pool", func() {
+						req := qscheduler.ListAccountsRequest{
+							PoolId: poolID,
+						}
+						resp, err := view.ListAccounts(ctx, &req)
+						Convey("then it returns no results.", func() {
+							So(resp.Accounts, ShouldBeEmpty)
+							So(err, ShouldBeNil)
+						})
 					})
 				})
 			})

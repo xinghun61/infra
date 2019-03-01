@@ -60,6 +60,14 @@ func List(ctx context.Context) ([]string, error) {
 	return ids, nil
 }
 
+// Delete deletes the store for the given entity.
+func Delete(ctx context.Context, entityID string) error {
+	e := datastoreEntity{
+		QSPoolID: entityID,
+	}
+	return datastore.Delete(ctx, &e)
+}
+
 // Save persists the given SchdulerPool to datastore.
 func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 	var sd, sdz, rd []byte

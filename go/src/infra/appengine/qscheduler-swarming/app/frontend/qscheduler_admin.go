@@ -171,7 +171,22 @@ func (s *QSchedulerAdminServerImpl) DeleteAccount(ctx context.Context, r *qsched
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	do := func(ctx context.Context) error {
+		store := state.NewStore(r.PoolId)
+		sp, err := store.Load(ctx)
+		if err != nil {
+			return err
+		}
+
+		sp.Scheduler.DeleteAccount(scheduler.AccountID(r.AccountId))
+		return store.Save(ctx, sp)
+	}
+
+	if err := datastore.RunInTransaction(ctx, do, nil); err != nil {
+		return nil, err
+	}
+
+	return &qscheduler.DeleteAccountResponse{}, nil
 }
 
 // DeleteSchedulerPool implements QSchedulerAdminServer.
@@ -180,7 +195,10 @@ func (s *QSchedulerAdminServerImpl) DeleteSchedulerPool(ctx context.Context, r *
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	return nil, status.Error(codes.Unimplemented, "not implemented")
+	if err := state.Delete(ctx, r.PoolId); err != nil {
+		return nil, err
+	}
+	return &qscheduler.DeleteSchedulerPoolResponse{}, nil
 }
 
 // ListAccounts implements QSchedulerAdminServer.
