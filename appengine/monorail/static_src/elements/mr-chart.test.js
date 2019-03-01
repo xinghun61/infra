@@ -6,25 +6,25 @@ import AutoRefreshPrpcClient from '../prpc.js';
 
 // TODO(jeffcarp): Export prefix from prpc-client and use that.
 const xssiPrefix = ')]}\'';
-let element;
+let element, dataLoadedPromise;
 
 const setupElement = () => {
-  if (element) {
+  if (element && document.body.contains(element)) {
     // Avoid setting up multiple versions of the same element.
     document.body.removeChild(element);
+    element = null;
   }
-  // HACK. This is to get around the fact that mr-chart needs a
-  // project-name.
-  let container = document.createElement('div');
-  container.innerHTML = '<mr-chart project-name="rutabaga" />';
-  let el = container.querySelector('mr-chart');
+  const el = document.createElement('mr-chart');
+  el.setAttribute('project-name', 'rutabaga');
+  dataLoadedPromise = new Promise((resolve) => {
+    el.addEventListener('allDataLoaded', resolve);
+  });
+
   document.body.appendChild(el);
   return el;
 };
 
 suite('mr-chart', () => {
-  let element;
-
   setup(() => {
     window.CS_env = {
       token: 'rutabaga-token',
@@ -35,7 +35,7 @@ suite('mr-chart', () => {
     sinon.stub(window, 'fetch').callsFake(() => {
       return new Promise((resolve, reject) => {
         const dataStr = JSON.stringify({
-          snapshotCount: [{count: 0}],
+          snapshotCount: [{count: 8}],
           unsupportedField: [],
           searchLimitReached: false,
         });
@@ -50,6 +50,7 @@ suite('mr-chart', () => {
         }));
       });
     });
+
     // Stub RAF to execute immediately.
     sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
 
@@ -68,12 +69,11 @@ suite('mr-chart', () => {
     test('sets this.projectname', () => {
       assert.equal(element.projectName, 'rutabaga');
     });
-
-    // TODO(jeffcarp): Add back test for data loading on instantiation.
   });
 
   suite('data loading', () => {
     setup(() => {
+      // Stub search params.
       sinon.stub(MrChart, 'getSearchParams');
       const searchParams = new URLSearchParams();
       searchParams.set('q', 'owner:rutabaga@chromium.org');
@@ -89,8 +89,7 @@ suite('mr-chart', () => {
         return new Date(Date.UTC(2018, 10, 3, 23, 59, 59))
       });
 
-      window.fetch.resetHistory();
-
+      // Re-instantiate element after stubs.
       element = setupElement();
     });
 
@@ -100,56 +99,21 @@ suite('mr-chart', () => {
       MrChart.getEndDate.restore();
     });
 
-    test.skip('makes a series of XHR calls', async () => {
-      await new Promise((resolve) => {
-        element.addEventListener('allDataLoaded', resolve);
-      });
-
-      const actualTimestamps = fetch.getCalls().map(call => (
-        JSON.parse(call.args[1].body).timestamp
-      ));
-      assert.deepEqual(actualTimestamps, [
-        1540857599, 1541289599, 1541116799, 1540943999, 1541203199, 1541030399,
-      ]);
-
-      const queries = fetch.getCalls().map(call => (
-        JSON.parse(call.args[1].body).query
-      ));
-      assert.deepEqual(queries, [
-        'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
-        'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
-        'owner:rutabaga@chromium.org', 'owner:rutabaga@chromium.org',
-      ]);
-
-      const cannedQueries = fetch.getCalls().map(call => (
-        JSON.parse(call.args[1].body).cannedQuery
-      ));
-      assert.deepEqual(cannedQueries, ['8', '8', '8', '8', '8', '8']);
-
-      const projectNames = fetch.getCalls().map(call => (
-        JSON.parse(call.args[1].body).projectName
-      ));
-      assert.deepEqual(projectNames, [
-        'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga', 'rutabaga',
-      ])
+    test('makes a series of XHR calls', async () => {
+      await dataLoadedPromise;
+      assert.deepEqual(element.values, [8, 8, 8, 8, 8 ,8]);
     });
 
     test('sets indices and correctly re-orders values', async () => {
+      await dataLoadedPromise;
+
       const timestampMap = new Map([
-        [1540857599, 0],
-        [1540943999, 1],
-        [1541030399, 2],
-        [1541116799, 3],
-        [1541203199, 4],
-        [1541289599, 5],
+        [1540857599, 0], [1540943999, 1], [1541030399, 2], [1541116799, 3],
+        [1541203199, 4], [1541289599, 5],
       ]);
       sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(async (ts) => ({
         issues: timestampMap.get(ts),
       }));
-      element = setupElement();
-      await new Promise((resolve) => {
-        element.addEventListener('allDataLoaded', resolve);
-      });
 
       const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
       await element._fetchData(endDate);

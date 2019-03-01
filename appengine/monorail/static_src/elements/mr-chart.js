@@ -13,8 +13,7 @@ export default class MrChart extends HTMLElement {
     return 'mr-chart';
   }
 
-  constructor() {
-    super();
+  connectedCallback() {
     this._animationFrameRequested = false;
 
     this.projectName = this.getAttribute('project-name');
