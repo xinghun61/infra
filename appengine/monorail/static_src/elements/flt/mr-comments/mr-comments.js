@@ -9,8 +9,10 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
+import '../../mr-bug-link/mr-bug-link.js';
 import '../../mr-comment-content/mr-comment-content.js';
 import '../../mr-dropdown/mr-dropdown.js';
+import '../../mr-user-link/mr-user-link.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../shared/mr-flt-styles.js';
 

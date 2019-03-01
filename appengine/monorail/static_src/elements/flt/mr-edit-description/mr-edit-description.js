@@ -7,6 +7,8 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import {fieldTypes} from '../../shared/field-types.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import '../../chops/chops-checkbox/chops-checkbox.js';
+import '../../chops/chops-dialog/chops-dialog.js';
 import '../shared/mr-flt-styles.js';
 
 
