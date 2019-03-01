@@ -28,6 +28,7 @@ DEPS = [
     'recipe_engine/path',
     'recipe_engine/properties',
     'recipe_engine/python',
+    'recipe_engine/runtime',
     'recipe_engine/step',
 ]
 
@@ -70,8 +71,10 @@ def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
   python_path = api.path['checkout'].join('ENV', 'bin', 'python')
   # Clear PYTHONPATH since we want to use infra/ENV and not whatever the recipe
   # sets
-  env = {'PYTHONPATH': '', 'GOOGLE_APPLICATION_CREDENTIALS':
-         api.puppet_service_account.get_key_path('dataflow-launcher')}
+  env = {'PYTHONPATH': ''}
+  if not api.runtime.is_luci:
+    env['GOOGLE_APPLICATION_CREDENTIALS'] = (
+        api.puppet_service_account.get_key_path('dataflow-launcher'))
   with api.context(env=env):
     cmd = [python_path, workflow_path,
            '--job_name', job_name,
@@ -85,7 +88,18 @@ def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
       cmd.extend(['--numWorkers', num_workers])
     api.step('Remote execute', cmd, timeout=timeout)
 
+
 def GenTests(api):
-  yield api.test('basic') + api.properties(
+  yield api.test('legacy') + api.properties(
       workflow='packages/dataflow/cq_attempts.py', job_name='cq-attempts',
       gcp_project_id='chrome-infra-events', num_workers=5, timeout=60)
+  yield (
+      api.test('basic')
+      + api.runtime(is_luci=True, is_experimental=False)
+      + api.properties(
+          workflow='packages/dataflow/cq_attempts.py',
+          job_name='cq-attempts',
+          gcp_project_id='chrome-infra-events',
+          num_workers=5,
+          timeout=60)
+  )

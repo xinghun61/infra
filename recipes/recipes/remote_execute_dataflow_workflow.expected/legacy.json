@@ -17,7 +17,7 @@
       "--revision",
       "infra@HEAD"
     ],
-    "env_suffixes": {
+    "env_prefixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]
@@ -98,6 +98,7 @@
       "5"
     ],
     "env": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "/creds/service_accounts/service-account-dataflow-launcher.json",
       "PYTHONPATH": ""
     },
     "name": "Remote execute",
