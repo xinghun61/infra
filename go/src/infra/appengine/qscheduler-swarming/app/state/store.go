@@ -110,15 +110,9 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 		return nil, errors.Wrap(err, "unable to unmarshal Reconciler")
 	}
 
-	var schedulerData []byte
-	if len(dst.SchedulerData) > 0 {
-		schedulerData = dst.SchedulerData
-	} else if len(dst.SchedulerDataZL) > 0 {
-		var err error
-		schedulerData, err = zlDecompress(dst.SchedulerDataZL)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to decompress Scheduler")
-		}
+	schedulerData, err := zlDecompress(dst.SchedulerDataZL)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to decompress Scheduler")
 	}
 
 	if err := proto.Unmarshal(schedulerData, sp); err != nil {
@@ -126,7 +120,6 @@ func (s *Store) Load(ctx context.Context) (*types.QScheduler, error) {
 	}
 
 	recordProtoSize(ctx, len(dst.ReconcilerData), dst.QSPoolID, "reconciler")
-	recordProtoSize(ctx, len(dst.SchedulerData), dst.QSPoolID, "scheduler")
 	recordProtoSize(ctx, len(dst.SchedulerDataZL), dst.QSPoolID, "scheduler_zlib")
 
 	return &types.QScheduler{
@@ -163,16 +156,8 @@ type datastoreEntity struct {
 
 	QSPoolID string `gae:"$id"`
 
-	// SchedulerData is the qslib/scheduler.Scheduler object serialized to
-	// protobuf binary format.
-	//
-	// Only one of this or SchedulerDataZL should be specified.
-	SchedulerData []byte `gae:",noindex"`
-
 	// SchedulerDataZL is the the qslib/scheduler.Scheduler object serialized to
 	// protobuf binary format and then zlib-compressed.
-	//
-	// Only one of this or SchedulerData should be specified.
 	SchedulerDataZL []byte `gae:",noindex"`
 
 	// ReconcilerData is the qslib/reconciler.State object serialized to protobuf
