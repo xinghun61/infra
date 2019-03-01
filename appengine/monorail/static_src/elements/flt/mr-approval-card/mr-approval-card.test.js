@@ -76,23 +76,4 @@ suite('mr-approval-card', () => {
       );
     });
   });
-
-  test('_updateSurveyHandler fired when mr-inline-editor saved', () => {
-    element._updateSurveyHandler = sinon.stub();
-
-    const editor = element.shadowRoot.querySelector('mr-inline-editor');
-
-    editor.sendEmail = true;
-    editor.setContent('blah');
-    editor.save();
-
-    flush(() => {
-      const calledWithEvt = element._updateSurveyHandler.args[0][0];
-      assert.deepEqual(calledWithEvt.detail, {
-        commentContent: 'blah',
-        sendEmail: true,
-      });
-      assert.isTrue(element._updateSurveyHandler.calledOnce);
-    });
-  });
 });

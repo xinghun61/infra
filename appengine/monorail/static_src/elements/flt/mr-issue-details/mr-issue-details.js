@@ -9,7 +9,6 @@ import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comments/mr-comments.js';
 import '../mr-edit-metadata/mr-edit-issue.js';
-import '../mr-inline-editor/mr-inline-editor.js';
 import '../shared/mr-flt-styles.js';
 
 /**
@@ -38,22 +37,15 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
         h3 {
           margin-top: 1em;
         }
+        mr-description {
+          margin-bottom: 1em;
+        }
         .comments-section{
           box-sizing: border-box;
           padding: 0.25em 8px;
         }
       </style>
-      <mr-inline-editor
-        id="editDescription"
-        heading-level="2"
-        content="[[_description.content]]"
-        title="Feature description"
-        edit-text="Edit description"
-        placeholder="Feature description"
-        on-save="_updateDescriptionHandler"
-      >
-        <mr-description description-list="[[_descriptionList]]"></mr-description>
-      </mr-inline-editor>
+      <mr-description description-list="[[_descriptionList]]"></mr-description>
       <h2 class="medium-heading" hidden\$="[[!_comments.length]]">
         Feature discussion / Changelog
       </h2>
@@ -90,10 +82,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
       comments: Array,
       issueId: Number,
       projectName: String,
-      _description: {
-        type: Object,
-        computed: '_computeDescription(_descriptionList)',
-      },
       _descriptionList: {
         type: Array,
         computed: '_computeDescriptionList(comments)',
@@ -113,22 +101,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     };
   }
 
-  _updateDescriptionHandler(evt) {
-    if (!evt || !evt.detail) return;
-    const message = {
-      trace: {token: this.token},
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
-      commentContent: evt.detail.commentContent,
-      isDescription: true,
-      sendEmail: evt.detail.sendEmail,
-    };
-
-    actionCreator.updateIssue(this.dispatchAction.bind(this), message);
-  }
-
   _filterComments(comments) {
     if (!comments || !comments.length) return [];
     return comments.filter((c) => (!c.approvalRef && c.sequenceNum));
@@ -138,12 +110,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     if (!comments || !comments.length) return {};
     return comments.filter(
       (comment) => !comment.approvalRef && comment.descriptionNum);
-  }
-
-  _computeDescription(descriptionList) {
-    if (!descriptionList || !descriptionList.length) return {};
-
-    return descriptionList[descriptionList.length - 1];
   }
 }
 customElements.define(MrIssueDetails.is, MrIssueDetails);

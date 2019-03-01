@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../mr-flipper.js';
+import '../../chops/chops-dialog/chops-dialog.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';
@@ -48,10 +49,20 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           padding: 0;
           margin: 0;
         }
-        mr-code-font-toggle {
+        .issue-actions {
           min-width: fit-content;
           margin: 3px;
           font-size: 0.75em;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .issue-actions a {
+          color: var(--chops-link-color);
+          cursor: pointer;
+        }
+        .issue-actions a:hover {
+          text-decoration: underline;
         }
         mr-flipper {
           font-size: 0.75em;
@@ -88,9 +99,13 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
         </small>
       </div>
-      <mr-code-font-toggle
-        user-display-name="[[userDisplayName]]"
-      ></mr-code-font-toggle>
+      <div class="issue-actions">
+        <mr-code-font-toggle
+          user-display-name="[[userDisplayName]]"
+        ></mr-code-font-toggle>
+        <a on-click="_openEditDescription">Edit description</a>
+      </div>
+
       <template is="dom-if" if="[[_issueOptions.length]]">
         <mr-dropdown
           items="[[_issueOptions]]"
@@ -191,6 +206,17 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         actionCreator.fetchIssue(this.dispatchAction.bind(this), message);
       });
     }
+  }
+
+  _openEditDescription() {
+    this.dispatchEvent(new CustomEvent('open-dialog', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        dialogId: 'edit-description',
+        fieldName: '',
+      },
+    }));
   }
 }
 

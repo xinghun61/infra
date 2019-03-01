@@ -13,6 +13,7 @@ import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
 import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
 import '../shared/mr-flt-styles.js';
+import '../mr-edit-description/mr-edit-description.js';
 
 /**
  * `<mr-approval-page>`
@@ -120,6 +121,8 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
+      <mr-edit-description id='edit-description'></mr-edit-description>
+
       <template is="dom-if" if="[[_showLoading(issueLoaded, fetchIssueError)]]">
         <div class="container-outside">
           Loading...
@@ -141,7 +144,10 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
         </div>
       </template>
       <template is="dom-if" if="[[_showIssue(issueLoaded, issue)]]">
-        <div class="container-outside">
+        <div
+          class="container-outside"
+          on-open-dialog="_onOpenDialog"
+        >
           <aside class="metadata-container">
             <mr-issue-metadata></mr-issue-metadata>
           </aside>
@@ -203,6 +209,10 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
       '_fetchIssue(issueId, projectName)',
       '_issueChanged(issueId, projectName, issue)',
     ];
+  }
+
+  _onOpenDialog(e) {
+    this.shadowRoot.querySelector('#' + e.detail.dialogId).open(e);
   }
 
   _issueChanged(issueId, projectName, issue) {

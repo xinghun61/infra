@@ -328,6 +328,28 @@ export const actionCreator = {
       });
     });
   },
+  updateApproval: (dispatch, message) => {
+    dispatch({type: actionType.UPDATE_APPROVAL_START});
+
+    window.prpcClient.call(
+      'monorail.Issues', 'UpdateApproval', message
+    ).then((resp) => {
+      dispatch({
+        type: actionType.UPDATE_APPROVAL_SUCCESS,
+        approval: resp.approval,
+      });
+      const baseMessage = {
+        issueRef: message.issueRef,
+      };
+      actionCreator.fetchIssue(dispatch, baseMessage);
+      actionCreator.fetchComments(dispatch, baseMessage);
+    }, (error) => {
+      dispatch({
+        type: actionType.UPDATE_APPROVAL_FAILURE,
+        error: error,
+      });
+    });
+  },
   updateIssue: (dispatch, message) => {
     dispatch({type: actionType.UPDATE_ISSUE_START});
 

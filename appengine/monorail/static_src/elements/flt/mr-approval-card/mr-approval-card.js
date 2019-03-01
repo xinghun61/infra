@@ -8,11 +8,10 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '@polymer/iron-collapse/iron-collapse.js';
 import {selectors} from '../../redux/selectors.js';
-import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comments/mr-comments.js';
-import '../mr-inline-editor/mr-inline-editor.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-metadata.js';
 import '../shared/mr-flt-styles.js';
@@ -114,15 +113,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           font-size: inherit;
           line-height: inherit;
         }
-        mr-inline-editor {
-          display: block;
-          width: 100%;
-          margin-bottom: 0.5em;
-          color: hsl(0, 0%, 30%);
-          box-sizing: border-box;
-          word-wrap: break-word;
-          --mr-inline-editor-textarea-min-height: 300px;
-        }
         .approver-notice {
           padding: 0.25em 0;
           width: 100%;
@@ -169,6 +159,11 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           max-width: 100%;
           box-sizing: border-box;
         }
+        [role="heading"] {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+        }
       </style>
       <button class="header" on-click="toggleCard" aria-expanded$="[[_toString(opened)]]">
         <i class="material-icons expand-icon">[[_expandIcon]]</i>
@@ -195,19 +190,20 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           field-defs="[[fieldDefs]]"
           is-approval="true"
         ></mr-metadata>
-        <mr-inline-editor
-          heading-level=4
-          content="[[_survey.content]]"
-          title$="[[fieldName]] Survey"
-          edit-text="Edit responses"
-          placeholder="Survey content and answer"
-          on-save="_updateSurveyHandler"
+        <h4
+          class="medium-heading"
+          role="heading"
         >
-          <mr-description
-            class="survey"
-            description-list="[[_surveyList]]"
-          ></mr-description>
-        </mr-inline-editor>
+          [[fieldName]] Survey
+          <chops-button on-click="_openEditSurvey">
+            <i class="material-icons">create</i>
+            Edit responses
+          </chops-button>
+        </h4>
+        <mr-description
+          class="survey"
+          description-list="[[_surveyList]]"
+        ></mr-description>
         <h4 class="medium-heading">Approval comments / Changelog</h3>
         <mr-comments
           heading-level=5
@@ -360,7 +356,15 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     Promise.all(loads).then((uploads) => {
       if (data.comment || Object.keys(delta).length > 0 ||
           uploads.length > 0) {
-        this._updateApproval({
+        actionCreator.updateApproval(this.dispatchAction.bind(this), {
+          issueRef: {
+            projectName: this.projectName,
+            localId: this.issueId,
+          },
+          fieldRef: {
+            type: fieldTypes.APPROVAL_TYPE,
+            fieldName: this.fieldName,
+          },
           commentContent: data.comment,
           approvalDelta: delta,
           uploads: uploads,
@@ -411,40 +415,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
 
   toggleCard(evt) {
     this.opened = !this.opened;
-  }
-
-  _updateApproval(messageBody) {
-    if (!messageBody || !Object.keys(messageBody).length) return;
-    const baseMessage = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
-    };
-    const message = Object.assign({
-      fieldRef: {
-        type: fieldTypes.APPROVAL_TYPE,
-        fieldName: this.fieldName,
-      },
-    }, baseMessage, messageBody);
-
-    this.dispatchAction({type: actionType.UPDATE_APPROVAL_START});
-
-    window.prpcClient.call(
-      'monorail.Issues', 'UpdateApproval', message
-    ).then((resp) => {
-      this.dispatchAction({
-        type: actionType.UPDATE_APPROVAL_SUCCESS,
-        approval: resp.approval,
-      });
-      actionCreator.fetchIssue(this.dispatchAction.bind(this), baseMessage);
-      actionCreator.fetchComments(this.dispatchAction.bind(this), baseMessage);
-    }, (error) => {
-      this.dispatchAction({
-        type: actionType.UPDATE_APPROVAL_FAILURE,
-        error: error,
-      });
-    });
   }
 
   _computeClass(status) {
@@ -536,17 +506,19 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     }
   }
 
-  _updateSurveyHandler(evt) {
-    if (!evt || !evt.detail) return;
-    this._updateApproval({
-      commentContent: evt.detail.commentContent,
-      isDescription: true,
-      sendEmail: evt.detail.sendEmail,
-    });
-  }
-
   _toString(bool) {
     return bool.toString();
+  }
+
+  _openEditSurvey() {
+    this.dispatchEvent(new CustomEvent('open-dialog', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        dialogId: 'edit-description',
+        fieldName: this.fieldName,
+      },
+    }));
   }
 }
 
