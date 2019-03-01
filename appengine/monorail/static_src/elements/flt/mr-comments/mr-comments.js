@@ -42,8 +42,9 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           border: 0;
           border-bottom: var(--chops-normal-border);
           width: 100%;
-          padding: 0.5em 0;
+          padding: 0.5em 8px;
           text-align: left;
+          font-size: 110%;
         }
         button.toggle:hover {
           cursor: pointer;
@@ -62,14 +63,16 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           padding: 0.5em 4px;
         }
         .card-comment {
-          border-bottom: var(--chops-normal-border);
-          padding: 1em 0;
+          padding: 1em 0 0 0;
         }
         .comment-header {
-          color: hsl(0, 0%, 39%);
-          margin-bottom: 0.5em;
+          background: var(--chops-card-heading-bg);
+          padding: 3px 1px 1px 8px;
           width: 100%;
-          display: block;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-sizing: border-box;
         }
         .comment-options {
           float: right;
@@ -84,6 +87,10 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           background: var(--chops-card-details-bg);
           padding: 4px;
           margin: 8px;
+        }
+        .comment-body {
+          margin: 4px;
+          box-sizing: border-box;
         }
         .comment-attachment-header {
           display: flex;
@@ -121,18 +128,21 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           color: #888;
         }
         .issue-diff {
+          background: var(--chops-card-details-bg);
           display: inline-block;
-          font-size: 80%;
-          border-radius: 5px;
-          padding: 0.5em 8px;
-          width: auto;
-          background: hsl(227, 100%, 98%);
-          border: var(--chops-normal-border);
-          margin-bottom: 0.5em;
+          padding: 4px 8px;
+          width: 100%;
+          box-sizing: border-box;
         }
       </style>
+      <template is="dom-if" if="[[!commentsLoaded]]">
+        Loading comments...
+      </template>
       <button on-click="toggleComments" class="toggle" hidden\$="[[_hideToggle]]">
-        [[_computeCommentToggleVerb(_commentsHidden)]] [[_commentsHiddenCount]] older [[_pluralize(_commentsHiddenCount, 'comment')]].
+        [[_computeCommentToggleVerb(_commentsHidden)]]
+        [[_commentsHiddenCount]]
+        older
+        [[_pluralize(_commentsHiddenCount, 'comment')]]
       </button>
       <template is="dom-repeat" items="[[comments]]" as="comment">
         <div
@@ -145,16 +155,18 @@ export class MrComments extends ReduxMixin(PolymerElement) {
             aria-level\$="[[headingLevel]]"
             class="comment-header"
           >
-            <a href\$="#c[[comment.sequenceNum]]">
-              Comment [[comment.sequenceNum]]
-            </a>
-            by
-            <mr-user-link
-              display-name="[[comment.commenter.displayName]]"
-              user-id="[[comment.commenter.userId]]"
-            ></mr-user-link>
-            on
-            <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
+            <div>
+              <a href\$="#c[[comment.sequenceNum]]">
+                Comment [[comment.sequenceNum]]
+              </a>
+              by
+              <mr-user-link
+                display-name="[[comment.commenter.displayName]]"
+                user-id="[[comment.commenter.userId]]"
+              ></mr-user-link>
+              on
+              <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
+            </div>
             <template is="dom-if" if="[[_offerCommentOptions(comment)]]">
               <div class="comment-options">
                 <mr-dropdown
@@ -165,9 +177,11 @@ export class MrComments extends ReduxMixin(PolymerElement) {
             </template>
           </span>
           <template is="dom-if" if="[[_hideDeletedComment(_expandedDeletedComments, comment)]]">
-            <span class="deleted-comment-notice">
-              Deleted comment
-            </span>
+            <div class="comment-body">
+              <span class="deleted-comment-notice">
+                Deleted comment
+              </span>
+            </div>
           </template>
           <template is="dom-if" if="[[!_hideDeletedComment(_expandedDeletedComments, comment)]]">
             <template is="dom-if" if="[[_showDiff(comment)]]">
@@ -198,73 +212,75 @@ export class MrComments extends ReduxMixin(PolymerElement) {
                 </template>
               </div><br>
             </template>
-            <div>
-              <template is="dom-repeat" items="[[comment.attachments]]" as="attachment">
-                <div class="comment-attachment">
-                  <template is="dom-if" if="[[comment.canDelete]]">
-                    <div class="attachment-delete">
-                      <chops-button
-                        class="attachment-delete-button"
-                        on-click="_deleteAttachment"
-                        data-attachment-id\$="[[attachment.attachmentId]]"
-                        data-project-name\$="[[comment.projectName]]"
-                        data-local-id\$="[[comment.localId]]"
-                        data-sequence-num\$="[[comment.sequenceNum]]"
-                        data-mark-deleted\$="[[!attachment.isDeleted]]"
-                      >
-                        <template is="dom-if" if="[[attachment.isDeleted]]">
-                          Undelete
-                        </template>
-                        <template is="dom-if" if="[[!attachment.isDeleted]]">
-                          Delete
-                        </template>
-                      </chops-button>
-                    </div>
-                  </template>
-                  <div class="filename">
-                    <template is="dom-if" if="[[attachment.isDeleted]]">
-                      [Deleted]
-                    </template>
-                    <b>[[attachment.filename]]</b>
-                  </div>
-                  <template is="dom-if" if="[[!attachment.isDeleted]]">
-                    <div class="comment-attachment-header">
-                      <div class="filesize">[[_bytesOrKbOrMb(attachment.size)]]</div>
-                      <template is="dom-if" if="[[!attachment.isDeleted]]">
-                        <div class="attachment-view">
-                          <a href="[[attachment.viewUrl]]" target="_blank">View</a>
-                        </div>
-                        <div class="attachment-download">
-                          <a href="[[attachment.downloadUrl]]" target="_blank">Download</a>
-                        </div>
-                      </template>
-                    </div>
-                    <template is="dom-if" if="[[attachment.thumbnailUrl]]">
-                      <a href="[[attachment.viewUrl]]" target="_blank">
-                        <img
-                          class="preview"
-                          src\$="[[attachment.thumbnailUrl]]"
+            <div class="comment-body">
+              <mr-comment-content
+                hidden\$="[[comment.descriptionNum]]"
+                content="[[comment.content]]"
+                is-deleted="[[comment.isDeleted]]"
+              ></mr-comment-content>
+              <div>
+                <template is="dom-repeat" items="[[comment.attachments]]" as="attachment">
+                  <div class="comment-attachment">
+                    <template is="dom-if" if="[[comment.canDelete]]">
+                      <div class="attachment-delete">
+                        <chops-button
+                          class="attachment-delete-button"
+                          on-click="_deleteAttachment"
+                          data-attachment-id\$="[[attachment.attachmentId]]"
+                          data-project-name\$="[[comment.projectName]]"
+                          data-local-id\$="[[comment.localId]]"
+                          data-sequence-num\$="[[comment.sequenceNum]]"
+                          data-mark-deleted\$="[[!attachment.isDeleted]]"
                         >
-                      </a>
+                          <template is="dom-if" if="[[attachment.isDeleted]]">
+                            Undelete
+                          </template>
+                          <template is="dom-if" if="[[!attachment.isDeleted]]">
+                            Delete
+                          </template>
+                        </chops-button>
+                      </div>
                     </template>
-                    <template is="dom-if" if="[[_isVideo(attachment.contentType)]]">
-                      <video
-                        src\$="[[attachment.viewUrl]]"
-                        class="preview"
-                        controls
-                        width="640"
-                        preload="metadata"
-                      ></video>
+                    <div class="filename">
+                      <template is="dom-if" if="[[attachment.isDeleted]]">
+                        [Deleted]
+                      </template>
+                      <b>[[attachment.filename]]</b>
+                    </div>
+                    <template is="dom-if" if="[[!attachment.isDeleted]]">
+                      <div class="comment-attachment-header">
+                        <div class="filesize">[[_bytesOrKbOrMb(attachment.size)]]</div>
+                        <template is="dom-if" if="[[!attachment.isDeleted]]">
+                          <div class="attachment-view">
+                            <a href="[[attachment.viewUrl]]" target="_blank">View</a>
+                          </div>
+                          <div class="attachment-download">
+                            <a href="[[attachment.downloadUrl]]" target="_blank">Download</a>
+                          </div>
+                        </template>
+                      </div>
+                      <template is="dom-if" if="[[attachment.thumbnailUrl]]">
+                        <a href="[[attachment.viewUrl]]" target="_blank">
+                          <img
+                            class="preview"
+                            src\$="[[attachment.thumbnailUrl]]"
+                          >
+                        </a>
+                      </template>
+                      <template is="dom-if" if="[[_isVideo(attachment.contentType)]]">
+                        <video
+                          src\$="[[attachment.viewUrl]]"
+                          class="preview"
+                          controls
+                          width="640"
+                          preload="metadata"
+                        ></video>
+                      </template>
                     </template>
-                  </template>
-                </div>
-              </template>
+                  </div>
+                </template>
+              </div>
             </div>
-            <mr-comment-content
-              hidden\$="[[comment.descriptionNum]]"
-              content="[[comment.content]]"
-              is-deleted="[[comment.isDeleted]]"
-            ></mr-comment-content>
           </template>
         </div>
       </template>
