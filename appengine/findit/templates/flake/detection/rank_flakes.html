@@ -30,6 +30,11 @@
       margin-top: 10px;
       float: left;
     }
+
+    #link-to-test-history {
+      float: right;
+      padding-right: 50px;
+    }
   </style>
   <script>
 
@@ -59,6 +64,9 @@
     {% if error_message %}
     <div style="font-weight:bold; color: red">{{ error_message }}</div>
     {% endif %}
+    <div id="link-to-test-history">
+      <a href="https://test-results.appspot.com/dashboards/flakiness_dashboard.html" target="_blank"><b>Link to Legacy Flakiness Dashboard</b></a>
+    </div>
     <br>
     <rank-flakes
       flakes='{{flakes_data | tojson}}'

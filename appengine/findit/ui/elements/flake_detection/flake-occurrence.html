@@ -18,7 +18,7 @@
       <td width="8%">[[occurrence_json.flake_type]]</td>
       <td width="30%">[[occurrence_json.step_ui_name]]</td>
       <td width="50%">
-          [[occurrence_json.test_name]]
+          <a href$="[[_linkToTestHistory()]]" target="_blank">[[occurrence_json.test_name]]</a>
           <paper-tooltip position="left" fit-to-visible-bounds="true" offset="0">[[occurrence_json.test_name]]</paper-tooltip>
       </td>
   </template>
@@ -33,6 +33,22 @@
           occurrence_json: {
             type: Object
           },
+        },
+
+        _linkToTestHistory: function() {
+          let step_ui_name = this.occurrence_json.step_ui_name;
+          let test_type = step_ui_name.split(' ')[0];
+
+          for (let suffix of ['(with patch)', '(retry with patch)']) {
+            if (step_ui_name.indexOf(suffix) > -1) {
+              test_type += ' ' + suffix;
+              break;
+            }
+          }
+
+          let link = 'https://test-results.appspot.com/dashboards/flakiness_dashboard.html#';
+          link += 'testType=' + test_type + '&tests=' + this.occurrence_json.test_name;
+          return link;
         }
       });
     })();
