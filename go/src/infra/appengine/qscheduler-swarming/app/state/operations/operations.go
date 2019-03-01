@@ -82,7 +82,7 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 // and result object that will get the results after the operation is run.
 func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.NotifyTasksResponse) {
 	var response swarming.NotifyTasksResponse
-	return func(ctx context.Context, sp *types.QScheduler, events scheduler.EventSink) (err error) {
+	return func(ctx context.Context, sp *types.QScheduler, events scheduler.EventSink) error {
 		if sp.Scheduler.Config() == nil {
 			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
 		}
@@ -97,7 +97,6 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				continue
 			}
 
-			var err error
 			switch t {
 			case taskStateAbsent:
 				r := &reconciler.TaskAbsentRequest{RequestID: scheduler.RequestID(n.Task.Id), Time: tutils.Timestamp(n.Time)}
@@ -110,17 +109,15 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				}
 				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, events, r)
 			case taskStateWaiting:
-				err = notifyTaskWaiting(ctx, sp, events, n)
+				if err := notifyTaskWaiting(ctx, sp, events, n); err != nil {
+					sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), err.Error())
+					logging.Warningf(ctx, err.Error())
+				}
 			default:
-				panic("Invalid update type.")
+				e := fmt.Sprintf("invalid update type %d", t)
+				logging.Warningf(ctx, e)
+				sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), e)
 			}
-
-			if err != nil {
-				sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), err.Error())
-				logging.Warningf(ctx, err.Error())
-				continue
-			}
-			logging.Debugf(ctx, "Scheduler with id %s successfully applied task update type %d", r.SchedulerId, t)
 		}
 		response = swarming.NotifyTasksResponse{}
 		return nil
