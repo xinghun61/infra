@@ -28,6 +28,9 @@ class RankFlakesTest(WaterfallTestCase):
         monorail_project='chromium', issue_id=900)
     self.flake_issue0.last_updated_time_in_monorail = datetime.datetime(
         2018, 1, 1)
+    self.flake_issue0.status = 'Assigned'
+    self.flake_issue0.last_updated_time_in_monorail = datetime.datetime(
+        2018, 1, 1)
     self.flake_issue0.put()
 
     self.flake_issue1 = FlakeIssue.Create(
@@ -102,6 +105,7 @@ class RankFlakesTest(WaterfallTestCase):
     flake_issue0_dict['issue_link'] = FlakeIssue.GetLinkForIssue(
         self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
     flake_issue0_dict['last_updated_time_in_monorail'] = ('274 days, 01:00:00')
+    flake_issue0_dict['status'] = 'Assigned'
 
     self.flake1_dict = self.flake1.to_dict()
     self.flake1_dict['flake_issue'] = flake_issue0_dict
@@ -147,9 +151,11 @@ class RankFlakesTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testRankFlakes(self, _):
     response = self.test_app.get(
-        '/p/chromium/flake-portal/flakes', params={
+        '/p/chromium/flake-portal/flakes',
+        params={
             'format': 'json',
-        }, status=200)
+        },
+        status=200)
     self.assertEqual(
         json.dumps({
             'flakes_data': [self.flake3_dict, self.flake4_dict],

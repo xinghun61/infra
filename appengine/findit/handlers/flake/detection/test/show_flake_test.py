@@ -48,6 +48,8 @@ class ShowFlakeTest(WaterfallTestCase):
   def testShowFlake(self, _):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
     flake_issue.last_updated_time_by_flake_detection = datetime(2018, 1, 1)
+    flake_issue.status = 'Assigned'
+    flake_issue.last_updated_time_in_monorail = datetime(2018, 1, 1)
     flake_issue.put()
 
     luci_project = 'chromium'
@@ -115,14 +117,14 @@ class ShowFlakeTest(WaterfallTestCase):
             'merge_destination_key':
                 None,
             'last_updated_time_in_monorail':
-                None,
+                '2 days, 00:00:00',
             'last_updated_time_with_analysis_results':
                 None,
             'create_time_in_monorail':
                 None,
             'labels': [],
             'status':
-                None,
+                'Assigned',
         },
         'flake_issue_key':
             flake_issue.key,
@@ -200,7 +202,6 @@ class ShowFlakeTest(WaterfallTestCase):
             }]
         }]
     }
-
     self.assertEqual(
         json.dumps({
             'flake_json':

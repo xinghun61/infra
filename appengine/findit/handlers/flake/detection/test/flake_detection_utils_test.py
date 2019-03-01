@@ -352,6 +352,127 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
     self.assertIsNone(flake_detection_utils.GetFlakeInformation(flake, None))
 
   @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2018, 1, 3))
+  def testGetFlakeInformationClosedIssue(self, _):
+    flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=900)
+    flake_issue.last_updated_time_by_flake_detection = datetime(2018, 1, 1)
+    flake_issue.last_updated_time_in_monorail = datetime(2018, 1, 2)
+    flake_issue.status = 'WontFix'
+    flake_issue.put()
+
+    luci_project = 'chromium'
+    step_ui_name = 'step'
+    test_name = 'test'
+    normalized_step_name = 'normalized_step_name'
+    normalized_test_name = 'normalized_test_name_3'
+    test_label_name = 'test_label'
+    flake = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name=normalized_step_name,
+        normalized_test_name=normalized_test_name,
+        test_label_name=test_label_name)
+    flake.flake_issue_key = flake_issue.key
+    flake.put()
+
+    build_id = 123
+    luci_bucket = 'try'
+    luci_builder = 'luci builder'
+    legacy_master_name = 'buildbot master'
+    legacy_build_number = 999
+    time_happened = datetime(2018, 1, 1)
+    gerrit_cl_id = 98765
+    occurrence = FlakeOccurrence.Create(
+        flake_type=FlakeType.CQ_FALSE_REJECTION,
+        build_id=build_id,
+        step_ui_name=step_ui_name,
+        test_name=test_name,
+        luci_project=luci_project,
+        luci_bucket=luci_bucket,
+        luci_builder=luci_builder,
+        legacy_master_name=legacy_master_name,
+        legacy_build_number=legacy_build_number,
+        time_happened=time_happened,
+        gerrit_cl_id=gerrit_cl_id,
+        parent_flake_key=flake.key)
+    occurrence.time_detected = datetime(2018, 1, 1)
+    occurrence.put()
+
+    expected_flake_dict = {
+        'luci_project':
+            'chromium',
+        'normalized_step_name':
+            normalized_step_name,
+        'normalized_test_name':
+            normalized_test_name,
+        'test_label_name':
+            test_label_name,
+        'flake_issue_key':
+            flake_issue.key,
+        'last_occurred_time':
+            None,
+        'last_test_location_based_tag_update_time':
+            None,
+        'false_rejection_count_last_week':
+            0,
+        'impacted_cl_count_last_week':
+            0,
+        'archived':
+            False,
+        'flake_counts_last_week': [
+            {
+                'flake_type': 'cq false rejection',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+            {
+                'flake_type': 'cq retry with patch',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+            {
+                'flake_type': 'cq hidden flake',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+            {
+                'flake_type': 'ci failed step',
+                'impacted_cl_count': 0,
+                'occurrence_count': 0
+            },
+        ],
+        'flake_score_last_week':
+            0,
+        'component':
+            None,
+        'test_location':
+            None,
+        'tags': [],
+        'occurrences': [{
+            'group_by_field':
+                'luci builder',
+            'occurrences': [{
+                'flake_type': 'cq false rejection',
+                'build_id': '123',
+                'step_ui_name': step_ui_name,
+                'test_name': test_name,
+                'tags': [],
+                'build_configuration': {
+                    'luci_project': 'chromium',
+                    'luci_bucket': 'try',
+                    'luci_builder': 'luci builder',
+                    'legacy_master_name': 'buildbot master',
+                    'legacy_build_number': 999
+                },
+                'time_happened': '2018-01-01 00:00:00 UTC',
+                'time_detected': '2018-01-01 00:00:00 UTC',
+                'gerrit_cl_id': gerrit_cl_id
+            }]
+        }],
+    }
+
+    self.assertEqual(expected_flake_dict,
+                     flake_detection_utils.GetFlakeInformation(flake, 1))
+
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2018, 1, 3))
   def testGetFlakeInformationNoIssue(self, _):
 
     luci_project = 'chromium'

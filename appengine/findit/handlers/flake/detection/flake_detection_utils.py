@@ -22,6 +22,7 @@ from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
 from services.flake_failure.flake_bug_util import (
     GetMinimumConfidenceToUpdateEndpoints)
 from services.flake_issue_util import GetFlakeIssue
+from services.issue_constants import OPEN_STATUSES
 
 DEFAULT_PAGE_SIZE = 100
 _TEST_FILTER_NAME = 'test'
@@ -279,7 +280,7 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
       flake.flake_counts_last_week)
 
   flake_issue = GetFlakeIssue(flake)
-  if flake_issue:
+  if flake_issue and flake_issue.status and flake_issue.status in OPEN_STATUSES:
     flake_dict['flake_issue'] = flake_issue.to_dict()
     flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
         flake_issue.monorail_project, flake_issue.issue_id)
@@ -333,9 +334,9 @@ def GetFlakesByFilter(flake_filter, luci_project,
     if parts[0] == _TEST_FILTER_NAME:
       # Search for a specific test.
       grouping_search = False
-      flakes = Flake.query(
-        Flake.normalized_test_name == Flake.NormalizeTestName(
-          parts[1])).filter(Flake.luci_project == luci_project).fetch()
+      flakes = Flake.query(Flake.normalized_test_name == Flake
+                           .NormalizeTestName(parts[1])).filter(
+                               Flake.luci_project == luci_project).fetch()
       return flakes, grouping_search, error_message
 
     negative = False
@@ -416,11 +417,13 @@ def _GetFlakeCountsList(flake_counts_last_week):
   ]
 
 
-def GenerateFlakesData(flakes):
+def GenerateFlakesData(flakes, include_closed_bug=False):
   """Processes flakes data to make them ready to be displayed on pages.
 
   Args:
     flakes ([Flake]): A list of Flake objects.
+    include_closed_bug (bool): True to include info about closed bugs. Otherwise
+      False.
 
   Returns:
     [dict]: A list of dicts containing each flake's data.
@@ -432,7 +435,12 @@ def GenerateFlakesData(flakes):
     # Tries to use merge_destination first, then falls back to the bug that
     # directly associates to the flake.
     flake_issue = GetFlakeIssue(flake)
-    if flake_issue:  # pragma: no branch.
+    if (flake_issue and
+        (include_closed_bug or
+         (flake_issue.status and
+          flake_issue.status in OPEN_STATUSES))):  # pragma: no branch.
+      # Only show open bugs on dashboard.
+      # Unless told otherwise.
       flake_dict['flake_issue'] = flake_issue.to_dict()
       flake_dict['flake_issue']['issue_link'] = FlakeIssue.GetLinkForIssue(
           flake_issue.monorail_project, flake_issue.issue_id)
