@@ -26,7 +26,6 @@ package scheduler
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"go.chromium.org/luci/common/data/stringset"
@@ -123,18 +122,6 @@ func (s *Scheduler) Config() *protos.SchedulerConfig {
 	return s.config
 }
 
-// UpdateOrderError is an error that indicates that UpdateAccounts attempted to update a state
-// backwards in time.
-type UpdateOrderError struct {
-	Previous time.Time
-	Next     time.Time
-}
-
-// Error() implements the error interface.
-func (e *UpdateOrderError) Error() string {
-	return fmt.Sprintf("Update time %v was older than existing state's time %v.", e.Next, e.Previous)
-}
-
 // AddAccount creates a new account with the given id, config, and initialBalance
 // (or zero balance if nil).
 //
@@ -168,13 +155,15 @@ func (s *Scheduler) IsAssigned(requestID RequestID, workerID WorkerID) bool {
 // UpdateTime updates the current time for a quotascheduler, and
 // updates quota account balances accordingly, based on running jobs,
 // account policies, and the time elapsed since the last update.
-func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
+//
+// If the provided time is earlier than that last update, this does nothing.
+func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) {
 	state := s.state
 	config := s.config
 	t0 := state.lastUpdateTime
 
 	if t.Before(t0) {
-		return &UpdateOrderError{Previous: t0, Next: t}
+		return
 	}
 
 	elapsedSecs := float32(t.Sub(t0).Seconds())
@@ -223,8 +212,6 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) error {
 	}
 
 	state.lastUpdateTime = t
-
-	return nil
 }
 
 // IdleWorker describes a worker that is idle, along with

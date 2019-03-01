@@ -20,7 +20,6 @@ package scheduler
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -126,43 +125,6 @@ func TestSchedulerPreempt(t *testing.T) {
 			})
 		})
 	})
-}
-
-// TestUpdateErrors test that UpdateBalance returns the correct errors
-// under error conditions.
-func TestUpdateErrors(t *testing.T) {
-	ctx := context.Background()
-	cases := []struct {
-		S      *Scheduler
-		T      time.Time
-		Expect error
-	}{
-		{
-			// Force UTC time representation, so that we get a predictable error
-			// message that we can assert on.
-			&Scheduler{
-				state:  newState(time.Unix(100, 0).UTC()),
-				config: NewConfig(),
-			},
-			time.Unix(0, 0).UTC(),
-			&UpdateOrderError{Next: time.Unix(0, 0).UTC(), Previous: time.Unix(100, 0).UTC()},
-		},
-		{
-			&Scheduler{
-				state:  newState(time.Unix(0, 0)),
-				config: NewConfig(),
-			},
-			time.Unix(1, 0),
-			nil,
-		},
-	}
-
-	for i, test := range cases {
-		e := test.S.UpdateTime(ctx, test.T)
-		if !reflect.DeepEqual(e, test.Expect) {
-			t.Errorf("In case %d, got error: %+v, want error: %+v", i, e, test.Expect)
-		}
-	}
 }
 
 // TestUpdateBalance tests that UpdateBalance makes the correct modifications
