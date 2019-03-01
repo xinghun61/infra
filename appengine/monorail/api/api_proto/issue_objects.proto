@@ -192,7 +192,7 @@ message PhaseRef {
 
 
 // Next available tag: 7
-enum CannedQuery{
+enum SearchScope {
   ALL = 0;
   NEW = 1;
   OPEN = 2;

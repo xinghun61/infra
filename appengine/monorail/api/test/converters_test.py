@@ -1316,6 +1316,38 @@ class ConverterFunctionsTest(unittest.TestCase):
         'Unparsable value for field SecField',
         cm.exception.message)
 
+  def testIngestSavedQueries(self):
+    self.services.project.TestAddProject('chromium', project_id=1)
+    self.services.project.TestAddProject('fakeproject', project_id=2)
+
+    saved_queries = [
+        tracker_pb2.SavedQuery(
+            query_id=101,
+            name='test query',
+            query='owner:me',
+            executes_in_project_ids=[1, 2]),
+        tracker_pb2.SavedQuery(
+            query_id=202,
+            name='another query',
+            query='-component:Test',
+            executes_in_project_ids=[1])
+    ]
+
+    converted_queries = converters.IngestSavedQueries(self.cnxn,
+        self.services.project, saved_queries)
+
+    self.assertEqual(converted_queries[0].query_id, 101)
+    self.assertEqual(converted_queries[0].name, 'test query')
+    self.assertEqual(converted_queries[0].query, 'owner:me')
+    self.assertEqual(converted_queries[0].project_names,
+        ['chromium', 'fakeproject'])
+
+    self.assertEqual(converted_queries[1].query_id, 202)
+    self.assertEqual(converted_queries[1].name, 'another query')
+    self.assertEqual(converted_queries[1].query, '-component:Test')
+    self.assertEqual(converted_queries[1].project_names, ['chromium'])
+
+
   def testIngestHotlistRef(self):
     self.services.user.TestAddUser('user1@example.com', 111L)
     hotlist = self.services.features.CreateHotlist(

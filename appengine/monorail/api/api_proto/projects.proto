@@ -16,6 +16,7 @@ service Projects {
   rpc ListProjects (ListProjectsRequest) returns (ListProjectsResponse) {}
   rpc ListProjectTemplates (ListProjectTemplatesRequest) returns (ListProjectTemplatesResponse) {}
   rpc GetConfig (GetConfigRequest) returns (Config) {}
+  rpc GetPresentationConfig (GetPresentationConfigRequest) returns (PresentationConfig) {}
   rpc GetCustomPermissions (GetCustomPermissionsRequest) returns (GetCustomPermissionsResponse) {}
   rpc GetVisibleMembers (GetVisibleMembersRequest) returns (GetVisibleMembersResponse) {}
   rpc GetLabelOptions (GetLabelOptionsRequest) returns (GetLabelOptionsResponse) {}
@@ -60,6 +61,12 @@ message ListProjectTemplatesResponse {
 
 // Next available tag: 3
 message GetConfigRequest {
+  RequestTrace trace = 1;
+  string project_name = 2;
+}
+
+// Next available tag: 3
+message GetPresentationConfigRequest {
   RequestTrace trace = 1;
   string project_name = 2;
 }

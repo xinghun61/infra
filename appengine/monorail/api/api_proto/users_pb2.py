@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a api/api_proto/user_objects.proto\x1a\x1a\x61pi/api_proto/common.proto\"S\n\x1aListReferencedUsersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x0e\n\x06\x65mails\x18\x02 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User\"\\\n\x0eGetUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"c\n\x15GetMembershipsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"?\n\x16GetMembershipsResponse\x12%\n\ngroup_refs\x18\x01 \x03(\x0b\x32\x11.monorail.UserRef\"~\n\x15GetUserCommitsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\x12\x16\n\x0e\x66rom_timestamp\x18\x03 \x01(\x07\x12\x17\n\x0funtil_timestamp\x18\x04 \x01(\x07\"@\n\x16GetUserCommitsResponse\x12&\n\x0cuser_commits\x18\x01 \x03(\x0b\x32\x10.monorail.Commit\"e\n\x17GetUserStarCountRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\".\n\x18GetUserStarCountResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"n\n\x0fStarUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"&\n\x10StarUserResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"^\n\x1fSetExpandPermsPreferenceRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0c\x65xpand_perms\x18\x02 \x01(\x08\"\"\n SetExpandPermsPreferenceResponse\"a\n\x13GetUserPrefsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\">\n\x14GetUserPrefsResponse\x12&\n\x05prefs\x18\x01 \x03(\x0b\x32\x17.monorail.UserPrefValue\"\x89\x01\n\x13SetUserPrefsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\x05prefs\x18\x03 \x03(\x0b\x32\x17.monorail.UserPrefValue\"\x16\n\x14SetUserPrefsResponse\"Q\n\x19InviteLinkedParentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\"\x1c\n\x1aInviteLinkedParentResponse\"P\n\x18\x41\x63\x63\x65ptLinkedChildRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\"\x1b\n\x19\x41\x63\x63\x65ptLinkedChildResponse\"\x83\x01\n\x15UnlinkAccountsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12!\n\x06parent\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12 \n\x05\x63hild\x18\x03 \x01(\x0b\x32\x11.monorail.UserRef\"\x18\n\x16UnlinkAccountsResponse2\xa5\x08\n\x05Users\x12\x35\n\x07GetUser\x12\x18.monorail.GetUserRequest\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x12U\n\x0eGetMemberships\x12\x1f.monorail.GetMembershipsRequest\x1a .monorail.GetMembershipsResponse\"\x00\x12U\n\x0eGetUserCommits\x12\x1f.monorail.GetUserCommitsRequest\x1a .monorail.GetUserCommitsResponse\"\x00\x12[\n\x10GetUserStarCount\x12!.monorail.GetUserStarCountRequest\x1a\".monorail.GetUserStarCountResponse\"\x00\x12\x43\n\x08StarUser\x12\x19.monorail.StarUserRequest\x1a\x1a.monorail.StarUserResponse\"\x00\x12O\n\x0cGetUserPrefs\x12\x1d.monorail.GetUserPrefsRequest\x1a\x1e.monorail.GetUserPrefsResponse\"\x00\x12O\n\x0cSetUserPrefs\x12\x1d.monorail.SetUserPrefsRequest\x1a\x1e.monorail.SetUserPrefsResponse\"\x00\x12s\n\x18SetExpandPermsPreference\x12).monorail.SetExpandPermsPreferenceRequest\x1a*.monorail.SetExpandPermsPreferenceResponse\"\x00\x12\x61\n\x12InviteLinkedParent\x12#.monorail.InviteLinkedParentRequest\x1a$.monorail.InviteLinkedParentResponse\"\x00\x12^\n\x11\x41\x63\x63\x65ptLinkedChild\x12\".monorail.AcceptLinkedChildRequest\x1a#.monorail.AcceptLinkedChildResponse\"\x00\x12U\n\x0eUnlinkAccounts\x12\x1f.monorail.UnlinkAccountsRequest\x1a .monorail.UnlinkAccountsResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x19\x61pi/api_proto/users.proto\x12\x08monorail\x1a api/api_proto/user_objects.proto\x1a\x1a\x61pi/api_proto/common.proto\"S\n\x1aListReferencedUsersRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x0e\n\x06\x65mails\x18\x02 \x03(\t\"<\n\x1bListReferencedUsersResponse\x12\x1d\n\x05users\x18\x01 \x03(\x0b\x32\x0e.monorail.User\"\\\n\x0eGetUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"c\n\x15GetMembershipsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"?\n\x16GetMembershipsResponse\x12%\n\ngroup_refs\x18\x01 \x03(\x0b\x32\x11.monorail.UserRef\"d\n\x16GetSavedQueriesRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\"F\n\x17GetSavedQueriesResponse\x12+\n\rsaved_queries\x18\x01 \x03(\x0b\x32\x14.monorail.SavedQuery\"~\n\x15GetUserCommitsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\x12\x16\n\x0e\x66rom_timestamp\x18\x03 \x01(\x07\x12\x17\n\x0funtil_timestamp\x18\x04 \x01(\x07\"@\n\x16GetUserCommitsResponse\x12&\n\x0cuser_commits\x18\x01 \x03(\x0b\x32\x10.monorail.Commit\"e\n\x17GetUserStarCountRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\".\n\x18GetUserStarCountResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"n\n\x0fStarUserRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"&\n\x10StarUserResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"^\n\x1fSetExpandPermsPreferenceRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0c\x65xpand_perms\x18\x02 \x01(\x08\"\"\n SetExpandPermsPreferenceResponse\"a\n\x13GetUserPrefsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\">\n\x14GetUserPrefsResponse\x12&\n\x05prefs\x18\x01 \x03(\x0b\x32\x17.monorail.UserPrefValue\"\x89\x01\n\x13SetUserPrefsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\x05prefs\x18\x03 \x03(\x0b\x32\x17.monorail.UserPrefValue\"\x16\n\x14SetUserPrefsResponse\"Q\n\x19InviteLinkedParentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\"\x1c\n\x1aInviteLinkedParentResponse\"P\n\x18\x41\x63\x63\x65ptLinkedChildRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05\x65mail\x18\x02 \x01(\t\"\x1b\n\x19\x41\x63\x63\x65ptLinkedChildResponse\"\x83\x01\n\x15UnlinkAccountsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12!\n\x06parent\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12 \n\x05\x63hild\x18\x03 \x01(\x0b\x32\x11.monorail.UserRef\"\x18\n\x16UnlinkAccountsResponse2\xff\x08\n\x05Users\x12\x35\n\x07GetUser\x12\x18.monorail.GetUserRequest\x1a\x0e.monorail.User\"\x00\x12\x64\n\x13ListReferencedUsers\x12$.monorail.ListReferencedUsersRequest\x1a%.monorail.ListReferencedUsersResponse\"\x00\x12U\n\x0eGetMemberships\x12\x1f.monorail.GetMembershipsRequest\x1a .monorail.GetMembershipsResponse\"\x00\x12X\n\x0fGetSavedQueries\x12 .monorail.GetSavedQueriesRequest\x1a!.monorail.GetSavedQueriesResponse\"\x00\x12U\n\x0eGetUserCommits\x12\x1f.monorail.GetUserCommitsRequest\x1a .monorail.GetUserCommitsResponse\"\x00\x12[\n\x10GetUserStarCount\x12!.monorail.GetUserStarCountRequest\x1a\".monorail.GetUserStarCountResponse\"\x00\x12\x43\n\x08StarUser\x12\x19.monorail.StarUserRequest\x1a\x1a.monorail.StarUserResponse\"\x00\x12O\n\x0cGetUserPrefs\x12\x1d.monorail.GetUserPrefsRequest\x1a\x1e.monorail.GetUserPrefsResponse\"\x00\x12O\n\x0cSetUserPrefs\x12\x1d.monorail.SetUserPrefsRequest\x1a\x1e.monorail.SetUserPrefsResponse\"\x00\x12s\n\x18SetExpandPermsPreference\x12).monorail.SetExpandPermsPreferenceRequest\x1a*.monorail.SetExpandPermsPreferenceResponse\"\x00\x12\x61\n\x12InviteLinkedParent\x12#.monorail.InviteLinkedParentRequest\x1a$.monorail.InviteLinkedParentResponse\"\x00\x12^\n\x11\x41\x63\x63\x65ptLinkedChild\x12\".monorail.AcceptLinkedChildRequest\x1a#.monorail.AcceptLinkedChildResponse\"\x00\x12U\n\x0eUnlinkAccounts\x12\x1f.monorail.UnlinkAccountsRequest\x1a .monorail.UnlinkAccountsResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_user__objects__pb2.DESCRIPTOR,api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 
@@ -204,6 +204,75 @@ _GETMEMBERSHIPSRESPONSE = _descriptor.Descriptor(
 )
 
 
+_GETSAVEDQUERIESREQUEST = _descriptor.Descriptor(
+  name='GetSavedQueriesRequest',
+  full_name='monorail.GetSavedQueriesRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='trace', full_name='monorail.GetSavedQueriesRequest.trace', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='user_ref', full_name='monorail.GetSavedQueriesRequest.user_ref', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=508,
+  serialized_end=608,
+)
+
+
+_GETSAVEDQUERIESRESPONSE = _descriptor.Descriptor(
+  name='GetSavedQueriesResponse',
+  full_name='monorail.GetSavedQueriesResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='saved_queries', full_name='monorail.GetSavedQueriesResponse.saved_queries', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=610,
+  serialized_end=680,
+)
+
+
 _GETUSERCOMMITSREQUEST = _descriptor.Descriptor(
   name='GetUserCommitsRequest',
   full_name='monorail.GetUserCommitsRequest',
@@ -251,8 +320,8 @@ _GETUSERCOMMITSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=508,
-  serialized_end=634,
+  serialized_start=682,
+  serialized_end=808,
 )
 
 
@@ -282,8 +351,8 @@ _GETUSERCOMMITSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=636,
-  serialized_end=700,
+  serialized_start=810,
+  serialized_end=874,
 )
 
 
@@ -320,8 +389,8 @@ _GETUSERSTARCOUNTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=702,
-  serialized_end=803,
+  serialized_start=876,
+  serialized_end=977,
 )
 
 
@@ -351,8 +420,8 @@ _GETUSERSTARCOUNTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=805,
-  serialized_end=851,
+  serialized_start=979,
+  serialized_end=1025,
 )
 
 
@@ -396,8 +465,8 @@ _STARUSERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=853,
-  serialized_end=963,
+  serialized_start=1027,
+  serialized_end=1137,
 )
 
 
@@ -427,8 +496,8 @@ _STARUSERRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=965,
-  serialized_end=1003,
+  serialized_start=1139,
+  serialized_end=1177,
 )
 
 
@@ -465,8 +534,8 @@ _SETEXPANDPERMSPREFERENCEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1005,
-  serialized_end=1099,
+  serialized_start=1179,
+  serialized_end=1273,
 )
 
 
@@ -489,8 +558,8 @@ _SETEXPANDPERMSPREFERENCERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1101,
-  serialized_end=1135,
+  serialized_start=1275,
+  serialized_end=1309,
 )
 
 
@@ -527,8 +596,8 @@ _GETUSERPREFSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1137,
-  serialized_end=1234,
+  serialized_start=1311,
+  serialized_end=1408,
 )
 
 
@@ -558,8 +627,8 @@ _GETUSERPREFSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1236,
-  serialized_end=1298,
+  serialized_start=1410,
+  serialized_end=1472,
 )
 
 
@@ -603,8 +672,8 @@ _SETUSERPREFSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1301,
-  serialized_end=1438,
+  serialized_start=1475,
+  serialized_end=1612,
 )
 
 
@@ -627,8 +696,8 @@ _SETUSERPREFSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1440,
-  serialized_end=1462,
+  serialized_start=1614,
+  serialized_end=1636,
 )
 
 
@@ -665,8 +734,8 @@ _INVITELINKEDPARENTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1464,
-  serialized_end=1545,
+  serialized_start=1638,
+  serialized_end=1719,
 )
 
 
@@ -689,8 +758,8 @@ _INVITELINKEDPARENTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1547,
-  serialized_end=1575,
+  serialized_start=1721,
+  serialized_end=1749,
 )
 
 
@@ -727,8 +796,8 @@ _ACCEPTLINKEDCHILDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1577,
-  serialized_end=1657,
+  serialized_start=1751,
+  serialized_end=1831,
 )
 
 
@@ -751,8 +820,8 @@ _ACCEPTLINKEDCHILDRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1659,
-  serialized_end=1686,
+  serialized_start=1833,
+  serialized_end=1860,
 )
 
 
@@ -796,8 +865,8 @@ _UNLINKACCOUNTSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1689,
-  serialized_end=1820,
+  serialized_start=1863,
+  serialized_end=1994,
 )
 
 
@@ -820,8 +889,8 @@ _UNLINKACCOUNTSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1822,
-  serialized_end=1846,
+  serialized_start=1996,
+  serialized_end=2020,
 )
 
 _LISTREFERENCEDUSERSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
@@ -831,6 +900,9 @@ _GETUSERREQUEST.fields_by_name['user_ref'].message_type = api_dot_api__proto_dot
 _GETMEMBERSHIPSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETMEMBERSHIPSREQUEST.fields_by_name['user_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 _GETMEMBERSHIPSRESPONSE.fields_by_name['group_refs'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
+_GETSAVEDQUERIESREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
+_GETSAVEDQUERIESREQUEST.fields_by_name['user_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
+_GETSAVEDQUERIESRESPONSE.fields_by_name['saved_queries'].message_type = api_dot_api__proto_dot_common__pb2._SAVEDQUERY
 _GETUSERCOMMITSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETUSERCOMMITSRESPONSE.fields_by_name['user_commits'].message_type = api_dot_api__proto_dot_user__objects__pb2._COMMIT
 _GETUSERSTARCOUNTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
@@ -854,6 +926,8 @@ DESCRIPTOR.message_types_by_name['ListReferencedUsersResponse'] = _LISTREFERENCE
 DESCRIPTOR.message_types_by_name['GetUserRequest'] = _GETUSERREQUEST
 DESCRIPTOR.message_types_by_name['GetMembershipsRequest'] = _GETMEMBERSHIPSREQUEST
 DESCRIPTOR.message_types_by_name['GetMembershipsResponse'] = _GETMEMBERSHIPSRESPONSE
+DESCRIPTOR.message_types_by_name['GetSavedQueriesRequest'] = _GETSAVEDQUERIESREQUEST
+DESCRIPTOR.message_types_by_name['GetSavedQueriesResponse'] = _GETSAVEDQUERIESRESPONSE
 DESCRIPTOR.message_types_by_name['GetUserCommitsRequest'] = _GETUSERCOMMITSREQUEST
 DESCRIPTOR.message_types_by_name['GetUserCommitsResponse'] = _GETUSERCOMMITSRESPONSE
 DESCRIPTOR.message_types_by_name['GetUserStarCountRequest'] = _GETUSERSTARCOUNTREQUEST
@@ -908,6 +982,20 @@ GetMembershipsResponse = _reflection.GeneratedProtocolMessageType('GetMembership
   # @@protoc_insertion_point(class_scope:monorail.GetMembershipsResponse)
   ))
 _sym_db.RegisterMessage(GetMembershipsResponse)
+
+GetSavedQueriesRequest = _reflection.GeneratedProtocolMessageType('GetSavedQueriesRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETSAVEDQUERIESREQUEST,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetSavedQueriesRequest)
+  ))
+_sym_db.RegisterMessage(GetSavedQueriesRequest)
+
+GetSavedQueriesResponse = _reflection.GeneratedProtocolMessageType('GetSavedQueriesResponse', (_message.Message,), dict(
+  DESCRIPTOR = _GETSAVEDQUERIESRESPONSE,
+  __module__ = 'api.api_proto.users_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.GetSavedQueriesResponse)
+  ))
+_sym_db.RegisterMessage(GetSavedQueriesResponse)
 
 GetUserCommitsRequest = _reflection.GeneratedProtocolMessageType('GetUserCommitsRequest', (_message.Message,), dict(
   DESCRIPTOR = _GETUSERCOMMITSREQUEST,
@@ -1043,8 +1131,8 @@ _USERS = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=1849,
-  serialized_end=2910,
+  serialized_start=2023,
+  serialized_end=3174,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetUser',
@@ -1074,9 +1162,18 @@ _USERS = _descriptor.ServiceDescriptor(
     serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
+    name='GetSavedQueries',
+    full_name='monorail.Users.GetSavedQueries',
+    index=3,
+    containing_service=None,
+    input_type=_GETSAVEDQUERIESREQUEST,
+    output_type=_GETSAVEDQUERIESRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
     name='GetUserCommits',
     full_name='monorail.Users.GetUserCommits',
-    index=3,
+    index=4,
     containing_service=None,
     input_type=_GETUSERCOMMITSREQUEST,
     output_type=_GETUSERCOMMITSRESPONSE,
@@ -1085,7 +1182,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='GetUserStarCount',
     full_name='monorail.Users.GetUserStarCount',
-    index=4,
+    index=5,
     containing_service=None,
     input_type=_GETUSERSTARCOUNTREQUEST,
     output_type=_GETUSERSTARCOUNTRESPONSE,
@@ -1094,7 +1191,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='StarUser',
     full_name='monorail.Users.StarUser',
-    index=5,
+    index=6,
     containing_service=None,
     input_type=_STARUSERREQUEST,
     output_type=_STARUSERRESPONSE,
@@ -1103,7 +1200,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='GetUserPrefs',
     full_name='monorail.Users.GetUserPrefs',
-    index=6,
+    index=7,
     containing_service=None,
     input_type=_GETUSERPREFSREQUEST,
     output_type=_GETUSERPREFSRESPONSE,
@@ -1112,7 +1209,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SetUserPrefs',
     full_name='monorail.Users.SetUserPrefs',
-    index=7,
+    index=8,
     containing_service=None,
     input_type=_SETUSERPREFSREQUEST,
     output_type=_SETUSERPREFSRESPONSE,
@@ -1121,7 +1218,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SetExpandPermsPreference',
     full_name='monorail.Users.SetExpandPermsPreference',
-    index=8,
+    index=9,
     containing_service=None,
     input_type=_SETEXPANDPERMSPREFERENCEREQUEST,
     output_type=_SETEXPANDPERMSPREFERENCERESPONSE,
@@ -1130,7 +1227,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='InviteLinkedParent',
     full_name='monorail.Users.InviteLinkedParent',
-    index=9,
+    index=10,
     containing_service=None,
     input_type=_INVITELINKEDPARENTREQUEST,
     output_type=_INVITELINKEDPARENTRESPONSE,
@@ -1139,7 +1236,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='AcceptLinkedChild',
     full_name='monorail.Users.AcceptLinkedChild',
-    index=10,
+    index=11,
     containing_service=None,
     input_type=_ACCEPTLINKEDCHILDREQUEST,
     output_type=_ACCEPTLINKEDCHILDRESPONSE,
@@ -1148,7 +1245,7 @@ _USERS = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='UnlinkAccounts',
     full_name='monorail.Users.UnlinkAccounts',
-    index=11,
+    index=12,
     containing_service=None,
     input_type=_UNLINKACCOUNTSREQUEST,
     output_type=_UNLINKACCOUNTSRESPONSE,

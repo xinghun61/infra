@@ -2326,18 +2326,25 @@ class FeaturesService(object):
     return []
 
   def GetCannedQueriesByProjectID(self, cnxn, project_id):
-    return []
+    return [sq for (pid, _, sq) in self.saved_queries if pid == project_id]
+
+  def GetSavedQueriesByUserID(self, cnxn, user_id):
+    return [sq for (_, uid, sq) in self.saved_queries if uid == user_id]
 
   def UpdateCannedQueries(self, cnxn, project_id, canned_queries):
-    pass
+    self.saved_queries.extend(
+      [(project_id, None, cq) for cq in canned_queries])
 
   def UpdateUserSavedQueries(self, cnxn, user_id, saved_queries):
     self.saved_queries = [
       (pid, uid, sq) for (pid, uid, sq) in self.saved_queries
       if uid != user_id]
     for sq in saved_queries:
-      self.saved_queries.extend(
-        [(eipid, user_id, sq) for eipid in sq.executes_in_project_ids])
+      if sq.executes_in_project_ids:
+        self.saved_queries.extend(
+          [(eipid, user_id, sq) for eipid in sq.executes_in_project_ids])
+      else:
+        self.saved_queries.append((None, user_id, sq))
 
   def GetSubscriptionsInProjects(self, cnxn, project_ids):
     sq_by_uid = {}

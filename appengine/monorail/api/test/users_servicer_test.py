@@ -20,6 +20,7 @@ from framework import authdata
 from framework import exceptions
 from framework import monorailcontext
 from framework import permissions
+from proto import tracker_pb2
 from proto import user_pb2
 from testing import fake
 from services import service_manager
@@ -207,6 +208,78 @@ class UsersServicerTest(unittest.TestCase):
 
     user = self.services.user.GetUser(self.cnxn, self.user.user_id)
     self.assertFalse(user.keep_people_perms_open)
+
+  def testGetUserSavedQueries_Anon(self):
+    """Anon has empty saved queries."""
+    request = users_pb2.GetSavedQueriesRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester=None)
+    response = self.CallWrapped(self.users_svcr.GetSavedQueries, mc, request)
+
+    self.assertEqual(0, len(response.saved_queries))
+
+  def testGetUserSavedQueries_Mine(self):
+    """See your own queries."""
+    self.services.features.UpdateUserSavedQueries(self.cnxn, 111L, [
+      tracker_pb2.SavedQuery(query_id=101, name='test', query='owner:me'),
+      tracker_pb2.SavedQuery(query_id=202, name='hello', query='world',
+          executes_in_project_ids=[987])
+    ])
+    request = users_pb2.GetUserPrefsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(self.users_svcr.GetSavedQueries, mc, request)
+
+    self.assertEqual(2, len(response.saved_queries))
+
+    self.assertEqual('test', response.saved_queries[0].name)
+    self.assertEqual('owner:me', response.saved_queries[0].query)
+    self.assertEqual('hello', response.saved_queries[1].name)
+    self.assertEqual('world', response.saved_queries[1].query)
+    self.assertEqual(['proj'], response.saved_queries[1].project_names)
+
+
+  def testGetUserSavedQueries_Other_Allowed(self):
+    """See other people's queries if you're an admin."""
+    self.services.features.UpdateUserSavedQueries(self.cnxn, 111L, [
+      tracker_pb2.SavedQuery(query_id=101, name='test', query='owner:me'),
+      tracker_pb2.SavedQuery(query_id=202, name='hello', query='world',
+          executes_in_project_ids=[987])
+    ])
+    self.user_2.is_site_admin = True
+
+    request = users_pb2.GetSavedQueriesRequest()
+    request.user_ref.display_name = 'owner@example.com'
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+
+    response = self.CallWrapped(self.users_svcr.GetSavedQueries, mc, request)
+
+    self.assertEqual(2, len(response.saved_queries))
+
+    self.assertEqual('test', response.saved_queries[0].name)
+    self.assertEqual('owner:me', response.saved_queries[0].query)
+    self.assertEqual('hello', response.saved_queries[1].name)
+    self.assertEqual('world', response.saved_queries[1].query)
+    self.assertEqual(['proj'], response.saved_queries[1].project_names)
+
+  def testGetUserSavedQueries_Other_Denied(self):
+    """Can't see other people's queries unless you're an admin."""
+    self.services.features.UpdateUserSavedQueries(self.cnxn, 111L, [
+      tracker_pb2.SavedQuery(query_id=101, name='test', query='owner:me'),
+      tracker_pb2.SavedQuery(query_id=202, name='hello', query='world',
+          executes_in_project_ids=[987])
+    ])
+
+    request = users_pb2.GetSavedQueriesRequest()
+    request.user_ref.display_name = 'owner@example.com'
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.users_svcr.GetSavedQueries, mc, request)
 
   def testGetUserPrefs_Anon(self):
     """Anon always has empty prefs."""

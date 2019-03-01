@@ -164,6 +164,52 @@ class ProjectsServicerTest(unittest.TestCase):
     with self.assertRaises(permissions.PermissionException):
       self.CallWrapped(self.projects_svcr.ListProjectTemplates, mc, request)
 
+  def testGetPresentationConfig_Normal(self):
+    """Test getting project summary, thumbnail url, custom issue entry, etc."""
+    # TODO(zhangtiff): Add this test.
+    pass
+
+  def testGetPresentationConfig_SavedQueriesAllowed(self):
+    """Only project members or higher can see project saved queries."""
+    self.services.features.UpdateCannedQueries(self.cnxn, 789, [
+        tracker_pb2.SavedQuery(query_id=101, name='test', query='owner:me'),
+        tracker_pb2.SavedQuery(query_id=202, name='hello', query='world')
+    ])
+
+    # User 333L is a contributor.
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='user_333@example.com')
+
+    request = projects_pb2.GetPresentationConfigRequest(project_name='proj')
+    response = self.CallWrapped(self.projects_svcr.GetPresentationConfig, mc,
+        request)
+
+    self.assertEqual(2, len(response.saved_queries))
+
+    self.assertEqual(101, response.saved_queries[0].query_id)
+    self.assertEqual('test', response.saved_queries[0].name)
+    self.assertEqual('owner:me', response.saved_queries[0].query)
+
+    self.assertEqual(202, response.saved_queries[1].query_id)
+    self.assertEqual('hello', response.saved_queries[1].name)
+    self.assertEqual('world', response.saved_queries[1].query)
+
+  def testGetPresentationConfig_SavedQueriesDenied(self):
+    """Only project members or higher can see project saved queries."""
+    self.services.features.UpdateCannedQueries(self.cnxn, 789, [
+        tracker_pb2.SavedQuery(query_id=101, name='test', query='owner:me'),
+        tracker_pb2.SavedQuery(query_id=202, name='hello', query='world')
+    ])
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='nonmember@example.com')
+
+    request = projects_pb2.GetPresentationConfigRequest(project_name='proj')
+    response = self.CallWrapped(self.projects_svcr.GetPresentationConfig, mc,
+        request)
+
+    self.assertEqual(0, len(response.saved_queries))
+
   def testGetCustomPermissions_Normal(self):
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(

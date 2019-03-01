@@ -109,3 +109,12 @@ message Pagination {
   uint32 max_items = 1;
   uint32 start = 2;
 }
+
+
+// Next available tag: 5
+message SavedQuery {
+  uint64 query_id = 1;
+  string name = 2;
+  string query = 3;
+  repeated string project_names = 4;
+}

@@ -11,7 +11,7 @@ from api.api_proto import users_prpc_pb2
 from api.api_proto import user_objects_pb2
 from businesslogic import work_env
 from framework import framework_views
-
+from framework import permissions
 
 class UsersServicer(monorail_servicer.MonorailServicer):
   """Handle API requests related to User objects.
@@ -119,6 +119,22 @@ class UsersServicer(monorail_servicer.MonorailServicer):
       user_id = converters.IngestUserRef(
           mc.cnxn, request.user_ref, self.services.user)
     return user_id
+
+  @monorail_servicer.PRPCMethod
+  def GetSavedQueries(self, mc, request):
+    """Get a user's saved queries."""
+    user_id = self._SignedInOrSpecifiedUser(mc, request)
+
+    # Only site admins can view other user's saved queries.
+    if user_id != mc.auth.user_id and not mc.auth.user_pb.is_site_admin:
+      raise permissions.PermissionException(
+        'You are not allowed to view this user\'s saved queries')
+
+    saved_queries = self.services.features.GetSavedQueriesByUserID(
+        mc.cnxn, user_id)
+    return users_pb2.GetSavedQueriesResponse(
+        saved_queries=converters.IngestSavedQueries(mc.cnxn,
+            self.services.project, saved_queries))
 
   @monorail_servicer.PRPCMethod
   def GetUserPrefs(self, mc, request):

@@ -11,12 +11,16 @@ from api.api_proto import projects_pb2
 from api.api_proto import project_objects_pb2
 from api.api_proto import projects_prpc_pb2
 from businesslogic import work_env
+from framework import framework_bizobj
 from framework import exceptions
 from framework import framework_views
 from framework import permissions
 from project import project_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
+
+# TODO(zhangtiff): Remove dependency on tracker_views.
+from tracker import tracker_views
 
 
 class ProjectsServicer(monorail_servicer.MonorailServicer):
@@ -83,6 +87,38 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
     result = converters.ConvertConfig(
         project, config, users_by_id, labels_by_id)
     return result
+
+  @monorail_servicer.PRPCMethod
+  def GetPresentationConfig(self, mc, request):
+    """Return the UI centric pieces of the project config."""
+    project = self._GetProject(mc, request)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      config = we.GetProjectConfig(project.project_id)
+
+    project_thumbnail_url = tracker_views.LogoView(project).thumbnail_url
+    project_summary = project.summary
+    custom_issue_entry_url = config.custom_issue_entry_url
+
+    default_query = None
+    saved_queries = None
+
+    # Only show default query or project saved queries for project
+    # members, in case they contain sensitive information.
+    if framework_bizobj.UserIsInProject(
+        project, mc.auth.effective_ids):
+      default_query = config.member_default_query
+
+      saved_queries = self.services.features.GetCannedQueriesByProjectID(
+          mc.cnxn, project.project_id)
+
+    return project_objects_pb2.PresentationConfig(
+        project_thumbnail_url=project_thumbnail_url,
+        project_summary=project_summary,
+        custom_issue_entry_url=custom_issue_entry_url,
+        default_query=default_query,
+        saved_queries=converters.IngestSavedQueries(mc.cnxn,
+            self.services.project, saved_queries))
 
   @monorail_servicer.PRPCMethod
   def GetCustomPermissions(self, mc, request):

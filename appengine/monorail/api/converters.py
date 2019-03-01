@@ -685,6 +685,36 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
   return ingested_fvs
 
 
+def IngestSavedQueries(cnxn, project_service, saved_queries):
+  """Ingest a list of protoc SavedQuery and create protorpc SavedQuery.
+
+  Args:
+    cnxn: connection to the DB.
+    project_service: interface to project data storage.
+    saved_queries: a list of protoc Savedquery.
+
+  Returns: A protorpc SavedQuery object.
+  """
+  if not saved_queries:
+    return []
+
+  project_ids = set()
+  for sq in saved_queries:
+    project_ids.update(sq.executes_in_project_ids)
+
+  project_name_dict = project_service.LookupProjectNames(cnxn,
+      project_ids)
+  return [
+      common_pb2.SavedQuery(
+          query_id=sq.query_id,
+          name=sq.name,
+          query=sq.query,
+          project_names=[project_name_dict[project_id]
+              for project_id in sq.executes_in_project_ids]
+      )
+      for sq in saved_queries]
+
+
 def IngestHotlistRefs(cnxn, user_service, features_service, hotlist_refs):
   return [IngestHotlistRef(cnxn, user_service, features_service, hotlist_ref)
         for hotlist_ref in hotlist_refs]

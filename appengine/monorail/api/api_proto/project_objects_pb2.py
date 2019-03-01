@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n#api/api_proto/project_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"=\n\x07Project\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07summary\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"d\n\tStatusDef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x11\n\tdocstring\x18\x04 \x01(\t\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\"@\n\x08LabelDef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x11\n\tdocstring\x18\x03 \x01(\t\x12\x12\n\ndeprecated\x18\x04 \x01(\x08\"\xaa\x02\n\x0c\x43omponentDef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\tdocstring\x18\x02 \x01(\t\x12%\n\nadmin_refs\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x04 \x03(\x0b\x32\x11.monorail.UserRef\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\x07\x12&\n\x0b\x63reator_ref\x18\x07 \x01(\x0b\x32\x11.monorail.UserRef\x12\x10\n\x08modified\x18\x08 \x01(\x07\x12\'\n\x0cmodifier_ref\x18\t \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\n \x03(\x0b\x32\x12.monorail.LabelRef\"\xae\x02\n\x08\x46ieldDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\x17\n\x0f\x61pplicable_type\x18\x02 \x01(\t\x12\x13\n\x0bis_required\x18\x03 \x01(\x08\x12\x10\n\x08is_niche\x18\x04 \x01(\x08\x12\x16\n\x0eis_multivalued\x18\x05 \x01(\x08\x12\x11\n\tdocstring\x18\x06 \x01(\t\x12%\n\nadmin_refs\x18\x07 \x03(\x0b\x32\x11.monorail.UserRef\x12\x16\n\x0eis_phase_field\x18\x08 \x01(\x08\x12\'\n\x0cuser_choices\x18\t \x03(\x0b\x32\x11.monorail.UserRef\x12(\n\x0c\x65num_choices\x18\n \x03(\x0b\x32\x12.monorail.LabelDef\"[\n\x0c\x46ieldOptions\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12$\n\tuser_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\"n\n\x0b\x41pprovalDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12\x0e\n\x06survey\x18\x03 \x01(\t\"\xe6\x02\n\x06\x43onfig\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12(\n\x0bstatus_defs\x18\x02 \x03(\x0b\x32\x13.monorail.StatusDef\x12\x31\n\x14statuses_offer_merge\x18\x03 \x03(\x0b\x32\x13.monorail.StatusRef\x12&\n\nlabel_defs\x18\x04 \x03(\x0b\x32\x12.monorail.LabelDef\x12 \n\x18\x65xclusive_label_prefixes\x18\x05 \x03(\t\x12.\n\x0e\x63omponent_defs\x18\x06 \x03(\x0b\x32\x16.monorail.ComponentDef\x12&\n\nfield_defs\x18\x07 \x03(\x0b\x32\x12.monorail.FieldDef\x12,\n\rapproval_defs\x18\x08 \x03(\x0b\x32\x15.monorail.ApprovalDef\x12\x19\n\x11restrict_to_known\x18\t \x01(\x08\"$\n\x0bTemplateDef\x12\x15\n\rtemplate_name\x18\x01 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n#api/api_proto/project_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"=\n\x07Project\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07summary\x18\x02 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\"d\n\tStatusDef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x11\n\tdocstring\x18\x04 \x01(\t\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\"@\n\x08LabelDef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x11\n\tdocstring\x18\x03 \x01(\t\x12\x12\n\ndeprecated\x18\x04 \x01(\x08\"\xaa\x02\n\x0c\x43omponentDef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x11\n\tdocstring\x18\x02 \x01(\t\x12%\n\nadmin_refs\x18\x03 \x03(\x0b\x32\x11.monorail.UserRef\x12\"\n\x07\x63\x63_refs\x18\x04 \x03(\x0b\x32\x11.monorail.UserRef\x12\x12\n\ndeprecated\x18\x05 \x01(\x08\x12\x0f\n\x07\x63reated\x18\x06 \x01(\x07\x12&\n\x0b\x63reator_ref\x18\x07 \x01(\x0b\x32\x11.monorail.UserRef\x12\x10\n\x08modified\x18\x08 \x01(\x07\x12\'\n\x0cmodifier_ref\x18\t \x01(\x0b\x32\x11.monorail.UserRef\x12&\n\nlabel_refs\x18\n \x03(\x0b\x32\x12.monorail.LabelRef\"\xae\x02\n\x08\x46ieldDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12\x17\n\x0f\x61pplicable_type\x18\x02 \x01(\t\x12\x13\n\x0bis_required\x18\x03 \x01(\x08\x12\x10\n\x08is_niche\x18\x04 \x01(\x08\x12\x16\n\x0eis_multivalued\x18\x05 \x01(\x08\x12\x11\n\tdocstring\x18\x06 \x01(\t\x12%\n\nadmin_refs\x18\x07 \x03(\x0b\x32\x11.monorail.UserRef\x12\x16\n\x0eis_phase_field\x18\x08 \x01(\x08\x12\'\n\x0cuser_choices\x18\t \x03(\x0b\x32\x11.monorail.UserRef\x12(\n\x0c\x65num_choices\x18\n \x03(\x0b\x32\x12.monorail.LabelDef\"[\n\x0c\x46ieldOptions\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12$\n\tuser_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\"n\n\x0b\x41pprovalDef\x12%\n\tfield_ref\x18\x01 \x01(\x0b\x32\x12.monorail.FieldRef\x12(\n\rapprover_refs\x18\x02 \x03(\x0b\x32\x11.monorail.UserRef\x12\x0e\n\x06survey\x18\x03 \x01(\t\"\xe6\x02\n\x06\x43onfig\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12(\n\x0bstatus_defs\x18\x02 \x03(\x0b\x32\x13.monorail.StatusDef\x12\x31\n\x14statuses_offer_merge\x18\x03 \x03(\x0b\x32\x13.monorail.StatusRef\x12&\n\nlabel_defs\x18\x04 \x03(\x0b\x32\x12.monorail.LabelDef\x12 \n\x18\x65xclusive_label_prefixes\x18\x05 \x03(\t\x12.\n\x0e\x63omponent_defs\x18\x06 \x03(\x0b\x32\x16.monorail.ComponentDef\x12&\n\nfield_defs\x18\x07 \x03(\x0b\x32\x12.monorail.FieldDef\x12,\n\rapproval_defs\x18\x08 \x03(\x0b\x32\x15.monorail.ApprovalDef\x12\x19\n\x11restrict_to_known\x18\t \x01(\x08\"\xb0\x01\n\x12PresentationConfig\x12\x1d\n\x15project_thumbnail_url\x18\x01 \x01(\t\x12\x17\n\x0fproject_summary\x18\x02 \x01(\t\x12\x1e\n\x16\x63ustom_issue_entry_url\x18\x03 \x01(\t\x12\x15\n\rdefault_query\x18\x04 \x01(\t\x12+\n\rsaved_queries\x18\x05 \x03(\x0b\x32\x14.monorail.SavedQuery\"$\n\x0bTemplateDef\x12\x15\n\rtemplate_name\x18\x01 \x01(\tb\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 
@@ -534,6 +534,65 @@ _CONFIG = _descriptor.Descriptor(
 )
 
 
+_PRESENTATIONCONFIG = _descriptor.Descriptor(
+  name='PresentationConfig',
+  full_name='monorail.PresentationConfig',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='project_thumbnail_url', full_name='monorail.PresentationConfig.project_thumbnail_url', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='project_summary', full_name='monorail.PresentationConfig.project_summary', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='custom_issue_entry_url', full_name='monorail.PresentationConfig.custom_issue_entry_url', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='default_query', full_name='monorail.PresentationConfig.default_query', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='saved_queries', full_name='monorail.PresentationConfig.saved_queries', index=4,
+      number=5, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1481,
+  serialized_end=1657,
+)
+
+
 _TEMPLATEDEF = _descriptor.Descriptor(
   name='TemplateDef',
   full_name='monorail.TemplateDef',
@@ -560,8 +619,8 @@ _TEMPLATEDEF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1480,
-  serialized_end=1516,
+  serialized_start=1659,
+  serialized_end=1695,
 )
 
 _COMPONENTDEF.fields_by_name['admin_refs'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
@@ -583,6 +642,7 @@ _CONFIG.fields_by_name['label_defs'].message_type = _LABELDEF
 _CONFIG.fields_by_name['component_defs'].message_type = _COMPONENTDEF
 _CONFIG.fields_by_name['field_defs'].message_type = _FIELDDEF
 _CONFIG.fields_by_name['approval_defs'].message_type = _APPROVALDEF
+_PRESENTATIONCONFIG.fields_by_name['saved_queries'].message_type = api_dot_api__proto_dot_common__pb2._SAVEDQUERY
 DESCRIPTOR.message_types_by_name['Project'] = _PROJECT
 DESCRIPTOR.message_types_by_name['StatusDef'] = _STATUSDEF
 DESCRIPTOR.message_types_by_name['LabelDef'] = _LABELDEF
@@ -591,6 +651,7 @@ DESCRIPTOR.message_types_by_name['FieldDef'] = _FIELDDEF
 DESCRIPTOR.message_types_by_name['FieldOptions'] = _FIELDOPTIONS
 DESCRIPTOR.message_types_by_name['ApprovalDef'] = _APPROVALDEF
 DESCRIPTOR.message_types_by_name['Config'] = _CONFIG
+DESCRIPTOR.message_types_by_name['PresentationConfig'] = _PRESENTATIONCONFIG
 DESCRIPTOR.message_types_by_name['TemplateDef'] = _TEMPLATEDEF
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -649,6 +710,13 @@ Config = _reflection.GeneratedProtocolMessageType('Config', (_message.Message,),
   # @@protoc_insertion_point(class_scope:monorail.Config)
   ))
 _sym_db.RegisterMessage(Config)
+
+PresentationConfig = _reflection.GeneratedProtocolMessageType('PresentationConfig', (_message.Message,), dict(
+  DESCRIPTOR = _PRESENTATIONCONFIG,
+  __module__ = 'api.api_proto.project_objects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.PresentationConfig)
+  ))
+_sym_db.RegisterMessage(PresentationConfig)
 
 TemplateDef = _reflection.GeneratedProtocolMessageType('TemplateDef', (_message.Message,), dict(
   DESCRIPTOR = _TEMPLATEDEF,
