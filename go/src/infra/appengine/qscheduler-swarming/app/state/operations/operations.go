@@ -45,7 +45,7 @@ const AccountIDTagKey = "qs_account"
 // the operation has run.
 func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.AssignTasksResponse) {
 	var response swarming.AssignTasksResponse
-	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) (err error) {
+	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) error {
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
 			s := stringset.NewFromSlice(v.Dimensions...)
