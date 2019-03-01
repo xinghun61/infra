@@ -53,7 +53,7 @@
           "<omitted by recipe engine>"
         ]
       },
-      "humanReason": "Uncaught Exception: BadParse('While adding \\'bad\\': \\'1:1 : Message type \"Spec\" has no field named \"narwhal\".\\'',)"
+      "humanReason": "Uncaught Exception: BadParse('While adding \\'bad\\': \\'1:1 : Message type \"recipe_modules.infra.support_3pp.Spec\" has no field named \"narwhal\".\\'',)"
     },
     "name": "$result"
   }

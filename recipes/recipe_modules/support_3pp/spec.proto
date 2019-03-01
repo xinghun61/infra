@@ -4,6 +4,8 @@
 
 syntax = "proto3";
 
+package recipe_modules.infra.support_3pp;
+
 // The Spec for a third-party package fully describes how to:
 //   * Fetch the package sources
 //   * Build the sources
