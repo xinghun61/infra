@@ -62,7 +62,12 @@ export class MrCommentList extends PolymerElement {
 
           <template is="dom-repeat" items="[[displayedComments]]" as="comment">
             <tr id="row">
-              <td style="width:20%;"><chops-timestamp timestamp="[[comment.timestamp]]" short=""></chops-timestamp></td>
+              <td style="width:20%;">
+                <chops-timestamp
+                  timestamp="[[comment.timestamp]]"
+                  short
+                ></chops-timestamp>
+              </td>
               <td style="width:10%;">[[comment.projectName]]</td>
               <td class="ellipsis" style="width:50%;">[[_truncateMessage(comment.content)]]</td>
               <td style="width:20%;">

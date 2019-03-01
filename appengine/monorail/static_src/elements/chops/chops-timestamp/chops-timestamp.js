@@ -4,26 +4,22 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import moment from 'moment-timezone';
+
+import {standardTime, standardTimeShort,
+  DEFAULT_DATE_LOCALE} from './chops-timestamp-helpers';
 
 /**
- * `<chops-timestamp>` displays a formatted time string in PDT and the relative time.
+ * `<chops-timestamp>`
  *
  * This element shows a time in a human readable form.
  *
  * @customElement
  * @polymer
- * @demo /demo/chops-timestamp_demo.html
  */
 export class ChopsTimestamp extends PolymerElement {
   static get template() {
     return html`
-      <template is="dom-if" if="[[!short]]">
-        [[_formattedDate]] ([[_computeRelativeTime(_date)]])
-      </template>
-      <template is="dom-if" if="[[short]]" title="[[_formattedDate]]">
-        [[_computeRelativeTime(_date)]]
-      </template>
+      [[_displayedTime]]
     `;
   }
 
@@ -42,46 +38,67 @@ export class ChopsTimestamp extends PolymerElement {
         type: Boolean,
         value: false,
       },
-      /** The format of the date. */
-      dateFormat: {
+      /** Show the full timestamp on hover. */
+      title: {
         type: String,
-        value: 'ddd, D MMM YYYY, h:mm a z',
+        reflectToAttribute: true,
+        computed: '_renderFullTime(date, locale, timezone)',
       },
+      /** The locale this timestamp should be displayed in. */
+      locale: {
+        type: String,
+        value: DEFAULT_DATE_LOCALE,
+      },
+      /** A string for the timezone displayed. Defaults to user's
+       *  local timezone. Note: Not all browsers support timezones
+       *  beyond UTC.
+       */
+      timezone: String,
       /** The moment object, which is stored in UTC, to be processed. */
       _date: {
         type: Object,
-        value: () => (moment()),
         computed: '_computeDate(timestamp)',
       },
-      /** The formatted date. */
-      _formattedDate: {
+      /** The displayed time. */
+      _displayedTime: {
         type: String,
-        computed: '_computeDisplayedTime(_date, dateFormat)',
+        computed: '_computeDisplayedTime(_date, short, locale, timezone)',
       },
     };
   }
 
   _computeDate(timestamp) {
-    // Check if timestamp is unix time first.
-    let date = Number.parseInt(timestamp);
-    if (Number.isNaN(date)) {
-      // Date.parse returns milliseconds since epoch but we want seconds.
-      date = Date.parse(timestamp) / 1000;
-      if (Number.isNaN(date)) {
-        // Default to now if all else fails.
-        date = (new Date()).getTime() / 1000;
+    let unixTimeMs = 0;
+    // Make sure to do Date.parse before Number.parseInt because parseInt
+    // will parse numbers within a string.
+    if (/^\d+$/.test(timestamp)) {
+      // Check if a string contains only digits before guessing it's
+      // unix time. This is necessary because Number.parseInt will parse
+      // number strings that contain non-numbers.
+      unixTimeMs = Number.parseInt(timestamp) * 1000;
+    } else {
+      // Date.parse will parse strings with only numbers as though those
+      // strings were truncated ISO formatted strings.
+      unixTimeMs = Date.parse(timestamp);
+      if (Number.isNaN(unixTimeMs)) {
+        throw new Error('Timestamp is in an invalid format.');
       }
     }
-
-    return moment.unix(date).tz('America/Los_Angeles');
+    return new Date(unixTimeMs);
   }
 
-  _computeDisplayedTime(date, format) {
-    return date.format(format);
+  _computeDisplayedTime(date, short, locale, timezone) {
+    // TODO(zhangtiff): Add logic to dynamically re-compute relative time
+    //   based on set intervals.
+    if (!date) return;
+    if (short) {
+      return standardTimeShort(date, locale, timezone);
+    }
+    return standardTime(date, locale, timezone);
   }
 
-  _computeRelativeTime(date) {
-    return date.fromNow();
+  _renderFullTime(date, locale, timezone) {
+    return standardTime(date, locale, timezone);
   }
 }
 customElements.define(ChopsTimestamp.is, ChopsTimestamp);

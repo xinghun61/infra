@@ -3,8 +3,10 @@
 // found in the LICENSE file.
 
 import {PolymerElement, html} from '@polymer/polymer';
-import moment from 'moment';
 import './mr-comment-content.js';
+
+import {standardTimeShort} from
+  '../chops/chops-timestamp/chops-timestamp-helpers';
 
 
 /**
@@ -89,7 +91,9 @@ export class MrDescription extends PolymerElement {
   }
 
   _formatRelativeTime(unixTime) {
-    return moment.unix(unixTime).fromNow();
+    unixTime = Number.parseInt(unixTime);
+    if (Number.isNaN(unixTime)) return;
+    return standardTimeShort(new Date(unixTime * 1000));
   }
 
   _addOne(num) {

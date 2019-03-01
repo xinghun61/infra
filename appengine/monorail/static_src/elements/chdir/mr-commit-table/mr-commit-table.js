@@ -60,7 +60,12 @@ export class MrCommitTable extends PolymerElement {
           </tr>
           <template is="dom-repeat" items="[[displayedCommits]]" as="commit">
             <tr id="row">
-              <td style="width:15%;"><chops-timestamp timestamp="[[commit.commitTime]]" short=""></chops-timestamp></td>
+              <td style="width:15%;">
+                <chops-timestamp
+                  timestamp="[[commit.commitTime]]"
+                  short
+                ></chops-timestamp>
+              </td>
               <td style="width:15%;"><a class="nav-link" href\$="[[commit.commitRepoUrl]]/+/[[commit.commitSha]]">[[_truncateSHA(commit.commitSha)]]</a></td>
               <td style="width:15%;">[[_truncateRepo(commit.commitRepoUrl)]]</td>
               <td style="width:55%;">[[_truncateMessage(commit.commitMessage)]]</td>

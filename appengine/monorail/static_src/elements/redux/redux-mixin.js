@@ -255,7 +255,7 @@ export const actionCreator = {
       'monorail.Users', 'GetUserPrefs', {});
 
     getUserPrefs.then((resp) => {
-      const prefs = new Map(resp.prefs.map((pref) => {
+      const prefs = new Map((resp.prefs || []).map((pref) => {
         return [pref.name, pref.value];
       }));
       dispatch({
