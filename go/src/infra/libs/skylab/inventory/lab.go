@@ -159,4 +159,11 @@ func sortSchedulableLabels(sl *SchedulableLabels) {
 			return h.CtsSparse[i] < h.CtsSparse[j]
 		})
 	}
+
+	if sl.Capabilities != nil {
+		c := sl.Capabilities
+		sort.SliceStable(c.VideoAcceleration, func(i, j int) bool {
+			return c.VideoAcceleration[i] < c.VideoAcceleration[j]
+		})
+	}
 }
