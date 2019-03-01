@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package frontend
+package frontend_test
 
 import (
 	"fmt"
@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/appengine/qscheduler-swarming/app/frontend"
 	"infra/qscheduler/qslib/protos"
 	"infra/qscheduler/qslib/tutils"
 	swarming "infra/swarming"
@@ -36,11 +37,11 @@ func TestAssignTasks(t *testing.T) {
 	}{
 		{
 			name:            "basic",
-			schedulerServer: &BasicQSchedulerServer{},
+			schedulerServer: &frontend.BasicQSchedulerServer{},
 		},
 		{
 			name:            "batched",
-			schedulerServer: NewBatchedServer(),
+			schedulerServer: frontend.NewBatchedServer(),
 		},
 	}
 	for _, testCase := range cases {
@@ -52,9 +53,9 @@ func TestAssignTasks(t *testing.T) {
 				tq.CreatePullQueue("flush-events")
 
 				poolID := "Pool1"
-				admin := &QSchedulerAdminServerImpl{}
+				admin := &frontend.QSchedulerAdminServerImpl{}
 				sch := testCase.schedulerServer
-				view := &QSchedulerViewServerImpl{}
+				view := &frontend.QSchedulerViewServerImpl{}
 				_, err := admin.CreateSchedulerPool(ctx, &qscheduler.CreateSchedulerPoolRequest{
 					PoolId: poolID,
 					Config: &protos.SchedulerConfig{

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package state
+package state_test
 
 import (
 	"testing"
@@ -22,6 +22,7 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
 
+	"infra/appengine/qscheduler-swarming/app/state"
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -36,7 +37,7 @@ func TestSaveLoadList(t *testing.T) {
 		datastore.GetTestable(ctx).Consistent(true)
 
 		Convey("when List is called", func() {
-			l, err := List(ctx)
+			l, err := state.List(ctx)
 			Convey("then nothing is returned.", func() {
 				So(l, ShouldBeEmpty)
 				So(err, ShouldBeNil)
@@ -44,8 +45,8 @@ func TestSaveLoadList(t *testing.T) {
 		})
 
 		Convey("when two Schedulers are saved", func() {
-			s1 := NewStore("s1")
-			s2 := NewStore("s2")
+			s1 := state.NewStore("s1")
+			s2 := state.NewStore("s2")
 			t1 := time.Unix(0, 0)
 			t2 := time.Unix(1, 0)
 			So(s1.Save(ctx, types.NewQScheduler("s1", t1, scheduler.NewConfig())), ShouldBeNil)
@@ -59,7 +60,7 @@ func TestSaveLoadList(t *testing.T) {
 			})
 
 			Convey("when List is called", func() {
-				l, err := List(ctx)
+				l, err := state.List(ctx)
 				Convey("then both scheduler ids are returned.", func() {
 					So(err, ShouldBeNil)
 					So(l, ShouldHaveLength, 2)
