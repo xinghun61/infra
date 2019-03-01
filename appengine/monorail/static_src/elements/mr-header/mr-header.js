@@ -41,6 +41,11 @@ export class MrHeader extends PolymerElement {
           padding: 0 8px;
           font-size: 14px;
         }
+        @media (max-width: 840px) {
+          :host {
+            position: static;
+          }
+        }
         a {
           font-size: inherit;
           color: var(--chops-link-color);
