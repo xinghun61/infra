@@ -725,7 +725,7 @@ class MonorailApi(remote.Service):
             mar.cnxn, approvers_remove, autocreate=True).values()
       if request.approvalUpdates.status:
         status = tracker_pb2.ApprovalStatus(
-            request.approvalUpdates.status.upper())
+            api_pb2_v1.ApprovalStatus(request.approvalUpdates.status).number)
         if not permissions.CanUpdateApprovalStatus(
             mar.auth.effective_ids, mar.perms, mar.project,
             approval.approver_ids, status):

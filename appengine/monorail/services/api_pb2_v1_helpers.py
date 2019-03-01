@@ -428,7 +428,9 @@ def convert_approval_amendments(amendments, mar, services):
   for amendment in amendments:
     if amendment.field == tracker_pb2.FieldID.CUSTOM:
       if amendment.custom_field_name == 'Status':
-        result.status = amendment.newvalue
+        status_number = tracker_pb2.ApprovalStatus(
+            amendment.newvalue.upper()).number
+        result.status = api_pb2_v1.ApprovalStatus(status_number).name
       elif amendment.custom_field_name == 'Approvers':
         for user_id in amendment.added_user_ids:
           user_email = _get_user_email(

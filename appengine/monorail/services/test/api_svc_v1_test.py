@@ -1072,7 +1072,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     request, issue = self.approvalRequest(
         approval,
-        request_fields={'approvalUpdates': {'status': 'review_requested'}},
+        request_fields={'approvalUpdates': {'status': 'reviewRequested'}},
         comment=comment)
     response = self.call_api('approvals_comments_insert', request).json_body
     approval_delta = tracker_bizobj.MakeApprovalDelta(
@@ -1087,7 +1087,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertTrue(response['canDelete'])
     self.assertEqual(response['approvalUpdates'],
                      {'kind': 'monorail#approvalCommentUpdate',
-                      'status': 'review_requested'})
+                      'status': 'reviewRequested'})
 
   def testApprovalsCommentsInsert_StatusChanges_NoPerms(self):
     self.services.project.TestAddProject(
@@ -1112,7 +1112,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         content='this is a comment',
         timestamp=1437700000,
         amendments=[tracker_bizobj.MakeApprovalStatusAmendment(
-            tracker_pb2.ApprovalStatus.APPROVED)])
+            tracker_pb2.ApprovalStatus.NOT_APPROVED)])
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2],
         project_id=12345)
@@ -1121,12 +1121,12 @@ class MonorailApiTest(testing.EndpointsTestCase):
         status=tracker_pb2.ApprovalStatus.NOT_SET)
     request, issue = self.approvalRequest(
         approval,
-        request_fields={'approvalUpdates': {'status': 'approved'}},
+        request_fields={'approvalUpdates': {'status': 'notApproved'}},
         comment=comment)
     response = self.call_api('approvals_comments_insert', request).json_body
 
     approval_delta = tracker_bizobj.MakeApprovalDelta(
-        tracker_pb2.ApprovalStatus.APPROVED, 1, [], [], [], [], [],
+        tracker_pb2.ApprovalStatus.NOT_APPROVED, 1, [], [], [], [], [],
         [], [], set_on=test_time)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_with(
         None, 1, self.config, issue, approval, approval_delta,
@@ -1136,7 +1136,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertTrue(response['canDelete'])
     self.assertEqual(response['approvalUpdates'],
                      {'kind': 'monorail#approvalCommentUpdate',
-                      'status': 'approved'})
+                      'status': 'notApproved'})
 
   def testApprovalsCommentsInsert_ApproverChanges_NoPerms(self):
     self.services.project.TestAddProject(
