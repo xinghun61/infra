@@ -45,6 +45,9 @@ func (r *EnsurePoolHealthyRequest) Validate() error {
 	if r.DutSelector == nil {
 		return errors.New("must set dut_selector")
 	}
+	if err := r.DutSelector.Validate(); err != nil {
+		return err
+	}
 	if r.SparePool == "" {
 		return errors.New("must set spare_pool")
 	}
@@ -69,6 +72,9 @@ func (r *EnsurePoolHealthyForAllModelsRequest) Validate() error {
 func (r *ResizePoolRequest) Validate() error {
 	if r.DutSelector == nil {
 		return errors.New("must set dut_selector")
+	}
+	if err := r.DutSelector.Validate(); err != nil {
+		return err
 	}
 	if r.SparePool == "" {
 		return errors.New("must set spare_pool")
@@ -101,6 +107,14 @@ func (r *AssignDutsToDronesRequest) Validate() error {
 		if item.DutId != "" && item.DutHostname != "" {
 			return errors.New("must specify only one of DutId and DutHostname")
 		}
+	}
+	return nil
+}
+
+// Validate returns an error if r is invalid.
+func (r *DutSelector) Validate() error {
+	if r.Id == "" && r.Hostname == "" && r.Model == "" {
+		return errors.New("dut_selector must not be empty")
 	}
 	return nil
 }
