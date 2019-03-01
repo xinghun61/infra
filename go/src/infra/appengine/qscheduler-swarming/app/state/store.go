@@ -85,8 +85,8 @@ func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 	}
 
 	logging.Infof(ctx, "attempting to Put datastore entitiy for pool %s"+
-		"with (Scheduler, Reconciler) size of (%d, %d) bytes",
-		entity.QSPoolID, len(entity.SchedulerData), len(entity.ReconcilerData))
+		"with (Scheduler(zip), Reconciler) size of (%d, %d) bytes",
+		entity.QSPoolID, len(entity.SchedulerDataZL), len(entity.ReconcilerData))
 
 	if err := datastore.Put(ctx, entity); err != nil {
 		e := errors.Wrap(err, "unable to Put scheduler state")
