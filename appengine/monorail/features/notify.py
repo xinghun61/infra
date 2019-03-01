@@ -763,20 +763,23 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     autolinker = autolink.Autolink()
 
     approval_url = framework_helpers.IssueCommentURL(
-        hostport, project, issue.local_id, is_approval=True)
+        hostport, project, issue.local_id, is_approval=True,
+        seq_num=comment.sequence)
 
     comment_view = tracker_views.IssueCommentView(
         project.project_name, comment, users_by_id, autolinker, {}, mr, issue)
+    domain_url = framework_helpers.FormatAbsoluteURLForDomain(
+        hostport, project.project_name, '/issues/')
 
     commenter_view = users_by_id[comment.user_id]
     email_data = {
+        'domain_url': domain_url,
         'approval_url': approval_url,
-        'approval_name': approval_name,
         'commenter': commenter_view,
         'comment': comment_view,
         }
-    subject = 'issue %s in %s: %s' % (
-        issue.local_id, project.project_name, issue.summary)
+    subject = '[%s Approval] %s (Issue %s)' % (
+        approval_name, issue.summary, issue.local_id)
     email_body = self.email_template.GetResponse(email_data)
     body = notify_helpers._TruncateBody(email_body)
 

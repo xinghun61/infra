@@ -21,7 +21,10 @@ from proto import tracker_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
+from tracker import attachment_helpers
 from tracker import tracker_bizobj
+
+from third_party import cloudstorage
 
 
 def MakeTestIssue(project_id, local_id, owner_id, reporter_id, is_spam=False):
@@ -62,8 +65,16 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         project_id=12345, local_id=1, owner_id=2, reporter_id=1)
     self.services.issue.TestAddIssue(self.issue1)
 
+    self._old_gcs_open = cloudstorage.open
+    cloudstorage.open = fake.gcs_open
+    self.orig_sign_attachment_id = attachment_helpers.SignAttachmentID
+    attachment_helpers.SignAttachmentID = (
+        lambda aid: 'signed_%d' % aid)
+
   def tearDown(self):
     self.testbed.deactivate()
+    cloudstorage.open = self._old_gcs_open
+    attachment_helpers.SignAttachmentID = self.orig_sign_attachment_id
 
   def VerifyParams(self, result, params):
     self.assertEqual(
@@ -328,7 +339,13 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     comment = tracker_pb2.IssueComment(
         project_id=12345, user_id=999L, issue_id=approval_issue.issue_id,
         amendments=[amend], timestamp=1234567890, content='just a comment.')
+    attach = tracker_pb2.Attachment(
+        attachment_id=4567, filename='sploot.jpg', mimetype='image/png',
+        gcs_object_id='/pid/attachments/abcd', filesize=(1024 * 1023))
+    comment.attachments.append(attach)
     self.services.issue.TestAddComment(comment, approval_issue.local_id)
+    self.services.issue.TestAddAttachment(
+        attach, comment.id, approval_issue.issue_id)
 
     task = notify.NotifyApprovalChangeTask(
         request=None, response=None, services=self.services)
@@ -346,8 +363,9 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.assertTrue('just a comment' in result['tasks'][0]['body'])
     self.assertTrue('Approvers: -approver' in result['tasks'][0]['body'])
+    self.assertTrue('sploot.jpg' in result['tasks'][0]['body'])
     self.assertTrue(
-        'Updates for approval Goat-Approval:' in result['tasks'][0]['body'])
+        '/issues/attachment?aid=4567' in result['tasks'][0]['body'])
     self.assertItemsEqual(
         ['user@example.com', 'approver_old@example.com',
          'approver_new@example.com', 'TL@example.com',

@@ -1,13 +1,13 @@
 [approval_url]
 [commenter.display_name] made the following updates:
 
-Please check the issue and take appropriate action.
-
-Updates for approval [approval_name]:
 [if-any comment.amendments][#
   ][for comment.amendments]      [comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
 [#][end][end]
-
+[if-any comment.attachments][#
+  ]Attachments:
+[for comment.attachments]        [comment.attachments.filename]: [domain_url][comment.attachments.downloadurl]&inline=1
+[end][end]
 [if-any comment.content][#
   ][for comment.text_runs][include "render-plain-text.ezt" comment.text_runs][end][#
 ][else](No comment was entered for this change.)[#
