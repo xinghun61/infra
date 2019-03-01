@@ -146,15 +146,6 @@ func (s *Store) RunOperationInTransaction(ctx context.Context, op types.Operatio
 	return e.flushToTsMon(ctx)
 }
 
-// RunRevertableOperationInTransaction runs the given operation in a transaction on this store.
-func (s *Store) RunRevertableOperationInTransaction(ctx context.Context, op types.RevertableOperation) error {
-	e := newMetricsBuffer(s.entityID)
-	if err := datastore.RunInTransaction(ctx, revertableOperationRunner(op, s, e), nil); err != nil {
-		return err
-	}
-	return e.flushToTsMon(ctx)
-}
-
 const stateEntityKind = "qschedulerStateEntity"
 
 // datastoreEntity is the datastore entity used to store state for a given
@@ -191,35 +182,6 @@ func operationRunner(op types.Operation, store *Store, e *metricsBuffer) func(co
 
 		if err = op(ctx, sp, e); err != nil {
 			return err
-		}
-
-		if err := store.Save(ctx, sp); err != nil {
-			return err
-		}
-
-		e.recordStateMetrics(sp.Scheduler)
-		return e.flushToBQ(ctx)
-	}
-}
-
-// revertableOperationRunner returns a read-modify-write function for a revertable operation.
-//
-// Revertable operations return a boolean to indicate that their mutations to state
-// should be reverted rather than saved.
-//
-// The returned function is suitable to be used with datastore.RunInTransaction.
-func revertableOperationRunner(op types.RevertableOperation, store *Store, e *metricsBuffer) func(context.Context) error {
-	return func(ctx context.Context) error {
-		e.reset()
-
-		sp, err := store.Load(ctx)
-		if err != nil {
-			return err
-		}
-
-		revert := op(ctx, sp, e)
-		if revert {
-			return nil
 		}
 
 		if err := store.Save(ctx, sp); err != nil {

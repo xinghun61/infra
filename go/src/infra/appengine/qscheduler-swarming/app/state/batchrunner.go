@@ -18,8 +18,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"infra/appengine/qscheduler-swarming/app/state/types"
 	"infra/qscheduler/qslib/scheduler"
 )
@@ -234,7 +232,7 @@ func (b *batch) append(bo *batchedOp) {
 
 // executeAndClose executes and closes the given batch.
 func (b *batch) executeAndClose(ctx context.Context, store *Store) {
-	if err := store.RunRevertableOperationInTransaction(ctx, b.getRunner(store)); err != nil {
+	if err := store.RunOperationInTransaction(ctx, b.getRunner(store)); err != nil {
 		// A batch-wide error occurred. Store it on all results.
 		b.allResultsError(err)
 	}
@@ -243,30 +241,15 @@ func (b *batch) executeAndClose(ctx context.Context, store *Store) {
 
 // getRunner gets a runner function to be used in a datastore transaction
 // to execute the batch.
-func (b *batch) getRunner(store *Store) types.RevertableOperation {
-	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) bool {
+func (b *batch) getRunner(store *Store) types.Operation {
+	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) error {
 		// Modify
 		for _, opSlice := range b.operations {
 			for _, op := range opSlice {
-				currentOp := op.operation
-				// currentOp is a closure, and will write its results to the
-				// appropriate result instance when it is executed.
-				if err := currentOp(ctx, state, events); err != nil {
-					// A single-operation error occurred. Store that error
-					// to the responsible operation, and store a transient
-					// error to all other operations.
-					b.allResultsError(errors.New("batch failed due to error on different request"))
-
-					op.err = err
-
-					// Terminate the batch now, without persisting state.
-					return true
-				}
+				op.err = op.operation(ctx, state, events)
 			}
 		}
-
-		// Success
-		return false
+		return nil
 	}
 }
 

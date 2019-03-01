@@ -42,7 +42,7 @@ func TestBatcherErrors(t *testing.T) {
 		batcher.Start(store)
 		defer batcher.Close()
 
-		Convey("an error in one operation in the batch is propagated correctly.", func() {
+		Convey("an error in one operation should only affect that operation.", func() {
 			var goodError error
 			goodOperation := func(ctx context.Context, s *types.QScheduler, m scheduler.EventSink) error {
 				return nil
@@ -75,8 +75,7 @@ func TestBatcherErrors(t *testing.T) {
 			So(badError, ShouldNotBeNil)
 			So(badError.Error(), ShouldEqual, "a bad error occurred")
 
-			So(goodError, ShouldNotBeNil)
-			So(goodError.Error(), ShouldEqual, "batch failed due to error on different request")
+			So(goodError, ShouldBeNil)
 		})
 	})
 }
