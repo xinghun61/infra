@@ -48,7 +48,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 		UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(grpcutil.NewUnaryServerPanicCatcher(nil)),
 	}
 	swarming.RegisterExternalSchedulerServer(&apiServer, &swarming.DecoratedExternalScheduler{
-		Service: &BasicQSchedulerServer{},
+		Service: NewBatchedServer(),
 		Prelude: accessChecker(roleSwarming),
 	})
 	qscheduler.RegisterQSchedulerAdminServer(&apiServer, &qscheduler.DecoratedQSchedulerAdmin{
