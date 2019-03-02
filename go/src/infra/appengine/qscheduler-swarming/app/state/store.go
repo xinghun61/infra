@@ -155,6 +155,9 @@ type datastoreEntity struct {
 
 	QSPoolID string `gae:"$id"`
 
+	// Deprecated, do not use.
+	SchedulerData []byte `gae:",noindex"`
+
 	// SchedulerDataZL is the the qslib/scheduler.Scheduler object serialized to
 	// protobuf binary format and then zlib-compressed.
 	SchedulerDataZL []byte `gae:",noindex"`
