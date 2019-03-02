@@ -52,12 +52,13 @@ PROPERTIES = {
 
 def RunSteps(api, projects, auth_token, service_account):
   api.luci_config.set_config('basic')
-  if not auth_token and service_account:
-    auth_token = api.puppet_service_account.get_access_token(service_account)
-  else:
-    assert not service_account, (
-        "Only one of \"service_account\" and \"auth_token\" may be set")
-  api.luci_config.c.auth_token = auth_token
+  if not api.runtime.is_luci:
+    if not auth_token and service_account:
+      auth_token = api.puppet_service_account.get_access_token(service_account)
+    else:
+      assert not service_account, (
+          "Only one of \"service_account\" and \"auth_token\" may be set")
+    api.luci_config.c.auth_token = auth_token
 
   api.recipe_autoroller.ensure_refresh_token()
   api.recipe_autoroller.roll_projects(projects)

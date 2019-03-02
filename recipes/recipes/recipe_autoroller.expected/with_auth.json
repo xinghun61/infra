@@ -1,19 +1,6 @@
 [
   {
     "cmd": [
-      "luci-auth",
-      "token",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-recipe-roller.json",
-      "-lifetime",
-      "3m"
-    ],
-    "infra_step": true,
-    "name": "get access token for service-account-recipe-roller.json",
-    "stdout": "/path/to/tmp/"
-  },
-  {
-    "cmd": [
       "cipd",
       "ensure",
       "-root",
@@ -73,9 +60,7 @@
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/json",
-      "--headers-json",
-      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
+      "/path/to/tmp/json"
     ],
     "name": "Get luci-config projects"
   },
