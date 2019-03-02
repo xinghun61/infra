@@ -173,8 +173,11 @@ def validate_requested_dimension(dim, expiration_support=True):
   """Validates common_pb2.RequestedDimension."""
   _check_truth(dim, 'key', 'value')
 
-  if dim.key == 'caches':
-    _enter_err('key', 'value "caches" is invalid; define caches instead')
+  with _enter('key'):
+    if dim.key == 'caches':
+      _err('"caches" is invalid; define caches instead')
+    if dim.key == 'pool':
+      _err('"pool" is not allowed')
 
   with _enter('expiration'):
     if not expiration_support and dim.HasField('expiration'):

@@ -928,7 +928,11 @@ class RequestedDimensionTests(BaseTestCase):
 
   def test_valid_with_caches(self):
     msg = common_pb2.RequestedDimension(key='caches', value='b')
-    self.assert_invalid(msg, r'key: value "caches" is invalid')
+    self.assert_invalid(msg, r'key: "caches" is invalid')
+
+  def test_valid_with_pool(self):
+    msg = common_pb2.RequestedDimension(key='pool', value='b')
+    self.assert_invalid(msg, r'key: "pool" is not allowed')
 
   def test_valid_with_negative_seconds(self):
     msg = common_pb2.RequestedDimension(
