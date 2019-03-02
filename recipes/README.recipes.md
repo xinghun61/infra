@@ -195,7 +195,7 @@ APIs for interacting with omahaproxy.
 
 #### **class [RecipeAutorollerApi](/recipes/recipe_modules/recipe_autoroller/api.py#121)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_refresh\_token](/recipes/recipe_modules/recipe_autoroller/api.py#427)(self):**
+&mdash; **def [ensure\_refresh\_token](/recipes/recipe_modules/recipe_autoroller/api.py#431)(self):**
 
 &mdash; **def [roll\_projects](/recipes/recipe_modules/recipe_autoroller/api.py#126)(self, projects):**
 

@@ -132,6 +132,10 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     project_data = self.m.luci_config.get_projects()
     recipes_dir = self.m.path['cache'].join('builder', 'recipe_engine')
     self.m.file.rmtree('ensure recipe_dir gone', recipes_dir)
+    if not self.m.runtime.is_luci:
+      self.m.file.ensure_directory(
+          'ensure builder cache dir exists',
+          self.m.path['cache'].join('builder'))
 
     with self.m.context(cwd=self.m.path['cache'].join('builder')):
       # Git clone really wants to have cwd set to something other than None.
