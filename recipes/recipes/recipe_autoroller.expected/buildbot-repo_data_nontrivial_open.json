@@ -60,6 +60,7 @@
   {
     "cmd": [
       "git",
+      "retry",
       "fetch",
       "origin",
       "master",
@@ -190,7 +191,7 @@
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"autoroll_recipe_options\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"disable_reason\": \"I am a water buffalo.\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"disable_reason\": \"\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"nontrivial\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"automatic_commit_dry_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@      \"extra_reviewers\": [@@@",
@@ -215,13 +216,40 @@
     "cmd": [
       "python",
       "-u",
-      "import sys; sys.exit(0)"
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cat",
+      "gs://recipe-roller-cl-uploads/repo_metadata/IWxlZ2FjeSFodHRwczovL3JlcG8ucmVwby9idWlsZA=="
     ],
-    "name": "build.disabled",
+    "infra_step": true,
+    "name": "build.gsutil repo_state",
+    "stderr": "/path/to/tmp/",
+    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@I am a water buffalo.@@@",
-      "@@@STEP_WARNINGS@@@"
+      "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "cl",
+      "status",
+      "--issue",
+      "123456789",
+      "--gerrit",
+      "--field",
+      "status",
+      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
+    ],
+    "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
+    "name": "build.git cl status",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {

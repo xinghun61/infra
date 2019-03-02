@@ -60,6 +60,7 @@
   {
     "cmd": [
       "git",
+      "retry",
       "fetch",
       "origin",
       "master",

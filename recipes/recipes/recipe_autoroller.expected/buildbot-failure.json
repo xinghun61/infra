@@ -60,6 +60,7 @@
   {
     "cmd": [
       "git",
+      "retry",
       "fetch",
       "origin",
       "master",
@@ -190,7 +191,7 @@
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"autoroll_recipe_options\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"disable_reason\": \"I am a water buffalo.\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"disable_reason\": \"\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"nontrivial\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"automatic_commit_dry_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@      \"extra_reviewers\": [@@@",
@@ -215,17 +216,109 @@
     "cmd": [
       "python",
       "-u",
-      "import sys; sys.exit(0)"
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cat",
+      "gs://recipe-roller-cl-uploads/repo_metadata/IWxlZ2FjeSFodHRwczovL3JlcG8ucmVwby9idWlsZA=="
     ],
-    "name": "build.disabled",
+    "infra_step": true,
+    "name": "build.gsutil repo_state",
+    "stderr": "/path/to/tmp/",
+    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@I am a water buffalo.@@@",
-      "@@@STEP_WARNINGS@@@"
+      "@@@STEP_LOG_LINE@stderr@No URLs matched@@@",
+      "@@@STEP_LOG_END@stderr@@@"
     ]
   },
   {
-    "jsonResult": null,
+    "cmd": [
+      "vpython",
+      "-u",
+      "[START_DIR]/recipe_engine/recipes.py",
+      "--package",
+      "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
+      "autoroll",
+      "--output-json",
+      "/path/to/tmp/json"
+    ],
+    "name": "build.roll",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"picked_roll_details\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"rejected_candidates_count\": 1, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"roll_details\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"commit_infos\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"recipe_engine\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@          {@@@",
+      "@@@STEP_LOG_LINE@json.output@            \"author_email\": \"foo@chromium.org\", @@@",
+      "@@@STEP_LOG_LINE@json.output@            \"message_lines\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@              \"some commit message\", @@@",
+      "@@@STEP_LOG_LINE@json.output@              \"R=bar@chromium.org,baz@chromium.org,invalid1,invalid2@chromium\", @@@",
+      "@@@STEP_LOG_LINE@json.output@              \"BUG=123,456\"@@@",
+      "@@@STEP_LOG_LINE@json.output@            ], @@@",
+      "@@@STEP_LOG_LINE@json.output@            \"revision\": \"123abc\"@@@",
+      "@@@STEP_LOG_LINE@json.output@          }@@@",
+      "@@@STEP_LOG_LINE@json.output@        ]@@@",
+      "@@@STEP_LOG_LINE@json.output@      }, @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"spec\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"api_version\": 2, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"autoroll_recipe_options\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"disable_reason\": \"\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"nontrivial\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@            \"automatic_commit_dry_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@            \"extra_reviewers\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@              \"foo@chromium.org\", @@@",
+      "@@@STEP_LOG_LINE@json.output@              \"foo@bar.example.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@              \"meep@example.com\"@@@",
+      "@@@STEP_LOG_LINE@json.output@            ]@@@",
+      "@@@STEP_LOG_LINE@json.output@          }, @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"trivial\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@            \"automatic_commit\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@            \"tbr_emails\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@              \"foo@bar.example.com\", @@@",
+      "@@@STEP_LOG_LINE@json.output@              \"meep@example.com\"@@@",
+      "@@@STEP_LOG_LINE@json.output@            ]@@@",
+      "@@@STEP_LOG_LINE@json.output@          }@@@",
+      "@@@STEP_LOG_LINE@json.output@        }, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"deps\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"recipe_engine\": {}@@@",
+      "@@@STEP_LOG_LINE@json.output@        }@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"success\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"trivial\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@candidate #1@{\"api_version\": 2, \"autoroll_recipe_options\": {\"disable_reason\": \"\", \"nontrivial\": {\"automatic_commit_dry_run\": true, \"extra_reviewers\": [\"foo@chromium.org\", \"foo@bar.example.com\", \"meep@example.com\"]}, \"trivial\": {\"automatic_commit\": true, \"tbr_emails\": [\"foo@bar.example.com\", \"meep@example.com\"]}}, \"deps\": {\"recipe_engine\": {}}}@@@",
+      "@@@STEP_LOG_END@candidate #1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(1)"
+    ],
+    "name": "roll result",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@manual intervention needed: automated roll attempt failed@@@",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "failure": {
+      "failure": {
+        "step": "roll result"
+      },
+      "humanReason": "Step('roll result') failed with return_code 1"
+    },
     "name": "$result"
   }
 ]

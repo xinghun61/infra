@@ -82,6 +82,7 @@ Bugdroid-Send-Email: False
 ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE, ROLL_SKIP = range(4)
 
 
+# TODO(tandrii): load it from Cloud KMS.
 _AUTH_REFRESH_TOKEN_FLAG = (
     '--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller')
 
@@ -376,7 +377,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     """
     cat_result = self.m.gsutil.cat(
         'gs://recipe-roller-cl-uploads/repo_metadata/%s' % (
-            base64.urlsafe_b64encode(repo_url)),
+            base64.urlsafe_b64encode(
+                # TODO(tandrii): undo hack after LUCI migration.
+                repo_url if self.m.runtime.is_luci else '!legacy!' + repo_url)),
         stdout=self.m.raw_io.output(),
         stderr=self.m.raw_io.output(),
         ok_ret=(0,1),

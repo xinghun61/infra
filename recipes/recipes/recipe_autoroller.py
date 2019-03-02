@@ -13,6 +13,7 @@ DEPS = [
   'recipe_engine/json',
   'recipe_engine/properties',
   'recipe_engine/raw_io',
+  'recipe_engine/runtime',
   'recipe_engine/step',
   'recipe_engine/time',
 ]
@@ -64,6 +65,7 @@ def RunSteps(api, projects, auth_token, service_account):
 def GenTests(api):
   yield (
       api.test('basic') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build')
@@ -71,6 +73,7 @@ def GenTests(api):
 
   yield (
       api.test('with_auth') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build'], service_account='recipe-roller') +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build')
@@ -78,6 +81,7 @@ def GenTests(api):
 
   yield (
       api.test('nontrivial') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build', trivial=False)
@@ -85,6 +89,7 @@ def GenTests(api):
 
   yield (
       api.test('empty') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build', empty=True)
@@ -92,6 +97,7 @@ def GenTests(api):
 
   yield (
       api.test('failure') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build', success=False)
@@ -99,6 +105,7 @@ def GenTests(api):
 
   yield (
       api.test('failed_upload') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build') +
@@ -109,6 +116,7 @@ def GenTests(api):
 
   yield (
       api.test('repo_data_trivial_cq') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.recipe_cfg('build') +
@@ -120,6 +128,7 @@ def GenTests(api):
 
   yield (
       api.test('repo_data_trivial_cq_stale') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.recipe_cfg('build') +
@@ -131,6 +140,7 @@ def GenTests(api):
 
   yield (
       api.test('repo_data_trivial_open') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.repo_data(
@@ -143,6 +153,7 @@ def GenTests(api):
 
   yield (
       api.test('repo_data_trivial_closed') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.repo_data(
@@ -154,6 +165,7 @@ def GenTests(api):
 
   yield (
       api.test('repo_data_nontrivial_open') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.recipe_cfg('build') +
@@ -165,6 +177,7 @@ def GenTests(api):
 
   yield (
       api.test('repo_data_nontrivial_open_stale') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.recipe_cfg('build') +
@@ -176,6 +189,7 @@ def GenTests(api):
 
   yield (
       api.test('trivial_custom_tbr_no_dryrun') +
+      api.runtime(is_luci=True, is_experimental=False) +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build', trivial_commit=False)
@@ -183,6 +197,136 @@ def GenTests(api):
 
   yield (
       api.test('repo_disabled') +
+      api.runtime(is_luci=True, is_experimental=False) +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data(
+        'build', disable_reason='I am a water buffalo.')
+  )
+
+  # Legacy builbot expectations.
+  # TODO(tandrii): delete them after LUCI migration https://crbug.com/848565.
+  yield (
+      api.test('buildbot-basic') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build')
+  )
+
+  yield (
+      api.test('buildbot-with_auth') +
+      api.properties(projects=['build'], service_account='recipe-roller') +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build')
+  )
+
+  yield (
+      api.test('buildbot-nontrivial') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build', trivial=False)
+  )
+
+  yield (
+      api.test('buildbot-empty') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build', empty=True)
+  )
+
+  yield (
+      api.test('buildbot-failure') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build', success=False)
+  )
+
+  yield (
+      api.test('buildbot-failed_upload') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build') +
+      api.override_step_data(
+          'build.git cl issue',
+          api.json.output({'issue': None, 'issue_url': None}))
+  )
+
+  yield (
+      api.test('buildbot-repo_data_trivial_cq') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='commit',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1451606400)
+  )
+
+  yield (
+      api.test('buildbot-repo_data_trivial_cq_stale') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='commit',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1454371200)
+  )
+
+  yield (
+      api.test('buildbot-repo_data_trivial_open') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='open',
+          timestamp='2016-02-01T01:23:45') +
+      api.recipe_autoroller.roll_data('build') +
+      api.time.seed(1451606400) +
+      api.post_process(MustRun, 'build.git cl set-close')
+  )
+
+  yield (
+      api.test('buildbot-repo_data_trivial_closed') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='closed',
+          timestamp='2016-02-01T01:23:45') +
+      api.recipe_autoroller.roll_data('build') +
+      api.time.seed(1451606400)
+  )
+
+  yield (
+      api.test('buildbot-repo_data_nontrivial_open') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=False, status='waiting',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1451606400)
+  )
+
+  yield (
+      api.test('buildbot-repo_data_nontrivial_open_stale') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=False, status='waiting',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1454371200)
+  )
+
+  yield (
+      api.test('buildbot-trivial_custom_tbr_no_dryrun') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build', trivial_commit=False)
+  )
+
+  yield (
+      api.test('buildbot-repo_disabled') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data(
