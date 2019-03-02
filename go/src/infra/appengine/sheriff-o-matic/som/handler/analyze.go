@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	tq "go.chromium.org/gae/service/taskqueue"
+	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
@@ -93,7 +94,17 @@ func GetAnalyzeHandler(ctx *router.Context) {
 		errStatus(c, w, http.StatusInternalServerError, "no analyzer set in Context")
 		return
 	}
-	alertsSummary, err := generateAlerts(ctx, a)
+	source := r.FormValue("use")
+	var alertsSummary *messages.AlertsSummary
+	var err error
+
+	// TODO: remove this check once we're off buildbot.
+	if source == "buildbucket" {
+		alertsSummary, err = generateBuildBucketAlerts(ctx, a)
+	} else {
+		alertsSummary, err = generateAlerts(ctx, a)
+	}
+
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -101,6 +112,7 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	}
 
 	c = appengine.WithContext(c, r)
+	alertsSummary.Timestamp = messages.TimeToEpochTime(time.Now())
 	if err := putAlertsBigQuery(c, tree, alertsSummary); err != nil {
 		logging.Errorf(c, "error sending alerts to bigquery: %v", err)
 		// Not fatal, just log and continue.
@@ -113,6 +125,80 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	}
 
 	w.Write([]byte("ok"))
+}
+
+func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.AlertsSummary, error) {
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+
+	tree := p.ByName("tree")
+	treeCfgs := a.Trees
+	if _, ok := treeCfgs[tree]; !ok {
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecognized tree: %s", tree))
+		return nil, fmt.Errorf("uncrecoginzed tree: %s", tree)
+	}
+
+	treeCfg := treeCfgs[tree]
+	logging.Infof(c, "analyzing tree %q with %d builders", treeCfg.TreeName, len(treeCfg.TreeBuilders))
+
+	builderIDs := []*bbpb.BuilderID{}
+	for _, builderCfg := range treeCfg.TreeBuilders {
+		for _, builder := range builderCfg.Builders {
+			builderIDs = append(builderIDs, &bbpb.BuilderID{
+				Project: builderCfg.Project,
+				Bucket:  builderCfg.Bucket,
+				Builder: builder,
+			})
+		}
+	}
+
+	builderAlerts, err := a.BuildBucketAlerts(c, builderIDs)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error creating alerts: %+v", err))
+		return nil, nil
+	}
+
+	alerts := []messages.Alert{}
+	for _, ba := range builderAlerts {
+		title := fmt.Sprintf("Step %q failing on %d builder(s)", ba.StepAtFault.Step.Name, len(ba.Builders))
+		startTime := messages.TimeToEpochTime(time.Now())
+		for _, b := range ba.Builders {
+			if b.StartTime > 0 && b.StartTime < startTime {
+				startTime = b.StartTime
+			}
+		}
+		alerts = append(alerts, messages.Alert{
+			Title:     title,
+			Extension: ba,
+			StartTime: startTime,
+			Type:      messages.AlertBuildFailure,
+		})
+	}
+
+	logging.Infof(c, "%d alerts generated for tree %q", len(alerts), tree)
+
+	// Attach test result histories to test failure alerts.
+	for _, alert := range alerts {
+		if !isTestFailure(alert) {
+			continue
+		}
+		if err := attachTestResults(c, &alert, a.TestResults); err != nil {
+			logging.WithError(err).Errorf(c, "attaching results")
+		}
+	}
+
+	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
+	alertsSummary := &messages.AlertsSummary{
+		Timestamp:         messages.TimeToEpochTime(time.Now()),
+		RevisionSummaries: map[string]messages.RevisionSummary{},
+		Alerts:            alerts,
+	}
+
+	if err := storeAlertsSummary(c, a, tree, alertsSummary); err != nil {
+		logging.Errorf(c, "error storing alerts: %v", err)
+		return nil, err
+	}
+
+	return alertsSummary, nil
 }
 
 func generateAlerts(ctx *router.Context, a *analyzer.Analyzer) (*messages.AlertsSummary, error) {

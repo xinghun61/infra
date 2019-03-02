@@ -23,8 +23,10 @@ import (
 	"infra/monitoring/messages"
 	"infra/monorail"
 
+	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
+
 	"go.chromium.org/luci/milo/api/proto"
 	"go.chromium.org/luci/server/auth"
 )
@@ -443,7 +445,7 @@ func NewMonorail(c context.Context, baseURL string) monorail.MonorailClient {
 }
 
 // ProdClients returns a set of service clients pointed at production.
-func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
+func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults, BuildBucket) {
 	findIt := NewFindit("https://findit-for-me.appspot.com")
 
 	client, err := getAsSelfOAuthClient(ctx)
@@ -460,17 +462,26 @@ func ProdClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.
 		Options: opts,
 	}
 	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
+	miloClient := &miloClient{BuildBot: miloBuildbot}
 
 	monorailClient := NewMonorail(ctx, "https://monorail-prod.appspot.com")
 	testResultsClient := NewTestResults("https://test-results.appspot.com")
-	miloClient := &miloClient{BuildBot: miloBuildbot}
 	crBugs := &CrBugs{}
 
-	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
+	buildBucketPRPCClient := &prpc.Client{
+		C:       client,
+		Host:    "cr-buildbucket.appspot.com",
+		Options: opts,
+	}
+	buildbucketClientStub := bbpb.NewBuildsPRPCClient(buildBucketPRPCClient)
+	buildbucket := &buildbucketClient{BuildBucket: buildbucketClientStub}
+
+	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient, buildbucket
 }
 
-// StagingClients returns a set of service clients pointed at production.
-func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults) {
+// StagingClients returns a set of service clients pointed at instances suitable for a
+// staging environment.
+func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monorail.MonorailClient, TestResults, BuildBucket) {
 	findIt := NewFindit("https://findit-for-me-staging.appspot.com")
 
 	client, err := getAsSelfOAuthClient(ctx)
@@ -487,11 +498,19 @@ func StagingClients(ctx context.Context) (LogReader, FindIt, Milo, CrBug, monora
 		Options: opts,
 	}
 	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
+	miloClient := &miloClient{BuildBot: miloBuildbot}
 
 	monorailClient := NewMonorail(ctx, "https://monorail-staging.appspot.com")
 	testResultsClient := NewTestResults("https://test-results.appspot.com")
-	miloClient := &miloClient{BuildBot: miloBuildbot}
 	crBugs := &CrBugs{}
 
-	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient
+	buildBucketPRPCClient := &prpc.Client{
+		C:       client,
+		Host:    "cr-buildbucket.appspot.com",
+		Options: opts,
+	}
+	buildbucketClientStub := bbpb.NewBuildsPRPCClient(buildBucketPRPCClient)
+	buildbucket := &buildbucketClient{BuildBucket: buildbucketClientStub}
+
+	return NewLogReader(), findIt, miloClient, crBugs, monorailClient, testResultsClient, buildbucket
 }

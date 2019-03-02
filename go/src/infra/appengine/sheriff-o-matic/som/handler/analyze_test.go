@@ -24,6 +24,7 @@ import (
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/gaetesting"
+	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/router"
@@ -160,6 +161,15 @@ func setUpGitiles(c context.Context) context.Context {
 		}})
 }
 
+type mockBuildBucket struct {
+	builds []*bbpb.Build
+	err    error
+}
+
+func (b *mockBuildBucket) LatestBuilds(ctx context.Context, builderIDs []*bbpb.BuilderID) ([]*bbpb.Build, error) {
+	return b.builds, b.err
+}
+
 func TestGenerateAlerts(t *testing.T) {
 	Convey("bad request", t, func() {
 		c := gaetesting.TestingContext()
@@ -177,6 +187,7 @@ func TestGenerateAlerts(t *testing.T) {
 		}
 
 		a := analyzer.New(5, 100)
+		a.BuildBucket = &mockBuildBucket{}
 		_, _ = generateAlerts(ctx, a)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
@@ -211,12 +222,38 @@ func TestGenerateAlerts(t *testing.T) {
 				"chromium": {},
 			},
 		}
+		a.BuildBucket = &mockBuildBucket{
+			builds: []*bbpb.Build{
+				{
+					Builder: &bbpb.BuilderID{
+						Project: "chromium",
+						Bucket:  "ci",
+						Builder: "win-rel",
+					},
+					Steps: []*bbpb.Step{
+						{
+							Name:   "Run",
+							Status: bbpb.Status_SUCCESS,
+						},
+					},
+					Status: bbpb.Status_SUCCESS,
+				},
+			},
+		}
+		a.Trees["chromium"] = &model.BuildBucketTree{
+			TreeName: "chromium",
+			TreeBuilders: []*model.TreeBuilder{{
+				Project:  "chromium",
+				Bucket:   "ci",
+				Builders: []string{"win-rel"},
+			}},
+		}
 		_, _ = generateAlerts(ctx, a)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
 	})
 
-	Convey("ok request, no gitiles", t, func() {
+	SkipConvey("ok request, no gitiles", t, func() {
 		c := newTestContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", time.Now(), nil}
@@ -238,6 +275,7 @@ func TestGenerateAlerts(t *testing.T) {
 				"chromium": {},
 			},
 		}
+		a.BuildBucket = &mockBuildBucket{}
 
 		_, err := generateAlerts(ctx, a)
 

@@ -6,16 +6,22 @@
 package som
 
 import (
+	"encoding/json"
+
 	"net/http"
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
 	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/handler"
+	"infra/appengine/sheriff-o-matic/som/model"
+
+	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 )
@@ -43,21 +49,46 @@ func withServiceClients(ctx *router.Context, next router.Handler) {
 	next(ctx)
 }
 
+func getTrees(c context.Context) map[string]*model.BuildBucketTree {
+	// TODO: Replace this with a link to the latest revision, once this is checked in.
+	b, err := client.GetGitilesCached(c, "https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/sheriff-o-matic/config/tree-builders.json?format=text")
+	if err != nil {
+		logging.Errorf(c, "Couldn't load tree config json: %v", err)
+		return nil
+	}
+
+	cfg := &struct {
+		Trees []*model.BuildBucketTree `json:"trees"`
+	}{}
+	err = json.Unmarshal(b, cfg)
+	if err != nil {
+		panic(err.Error())
+	}
+	ret := map[string]*model.BuildBucketTree{}
+	for _, tcfg := range cfg.Trees {
+		ret[tcfg.TreeName] = tcfg
+	}
+	return ret
+}
+
 func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
+	a.Trees = getTrees(ctx.Context)
 	if info.AppID(ctx.Context) == prodAppID {
-		logReader, findIt, miloClient, crBug, _, testResults := client.ProdClients(ctx.Context)
+		logReader, findIt, miloClient, crBug, _, testResults, bbucket := client.ProdClients(ctx.Context)
 		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
 		a.CrBug = crBug
 		a.Milo = miloClient
 		a.FindIt = findIt
 		a.TestResults = testResults
+		a.BuildBucket = bbucket
 	} else {
-		logReader, findIt, miloClient, crBug, _, testResults := client.StagingClients(ctx.Context)
+		logReader, findIt, miloClient, crBug, _, testResults, bbucket := client.StagingClients(ctx.Context)
 		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
 		a.CrBug = crBug
 		a.Milo = miloClient
 		a.FindIt = findIt
 		a.TestResults = testResults
+		a.BuildBucket = bbucket
 	}
 }
 

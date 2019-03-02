@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"infra/monitoring/messages"
+	"time"
 
 	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/data/stringset"
@@ -73,6 +74,9 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 		// Assumed: recentBuilds are sorted most recent first.  TODO: Verify this is true.
 		builderID := strToBuilderID(builderKey)
 		latestBuild := recentBuilds[0]
+		if latestBuild.Status == bbpb.Status_SUCCESS {
+			continue
+		}
 		latestStepFailures := stepSet(alertableStepFailures(latestBuild))
 
 		// buildsByFailingStep contains one key for each failing step in latestBuild.
@@ -120,14 +124,19 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 		for stepName, builds := range buildsByFailingStep {
 			// check ret first to see if there's already a build failure for this step
 			// on some other builder. If so, just append this builder to it.
-			firstFailure, latestFailure := builds[len(builds)-1].Number, builds[0].Number
+			firstFailure, latestFailure := builds[len(builds)-1], builds[0]
 			if _, ok := alertedBuildersByStep[stepName]; !ok {
 				alertedBuildersByStep[stepName] = []messages.AlertedBuilder{}
 			}
 			alertedBuilder := messages.AlertedBuilder{
-				Name:          builderID.Builder, // TODO: add more buildbucket specifics to the AlertedBuilder type.
-				FirstFailure:  int64(firstFailure),
-				LatestFailure: int64(latestFailure),
+				Project: builderID.Project,
+				Bucket:  builderID.Bucket,
+				Name:    builderID.Builder,
+				URL:     fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", builderID.Project, builderID.Bucket, builderID.Builder),
+				// TODO: add more buildbucket specifics to the AlertedBuilder type.
+				FirstFailure:  int64(firstFailure.Number),
+				LatestFailure: int64(latestFailure.Number),
+				StartTime:     messages.TimeToEpochTime(time.Unix(firstFailure.StartTime.GetSeconds(), int64(firstFailure.StartTime.GetNanos()))),
 				// Commit positions etc...
 			}
 			alertedBuildersByStep[stepName] = append(alertedBuildersByStep[stepName], alertedBuilder)

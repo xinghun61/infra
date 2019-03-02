@@ -5,6 +5,7 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/common/sync/parallel"
 	"google.golang.org/genproto/protobuf/field_mask"
 )
 
@@ -29,42 +30,89 @@ func (bc *buildbucketClient) Build(ctx context.Context, id int64) (*bbpb.Build, 
 	return build, nil
 }
 
+const maxConcurrentBuilders = 20
+const pageSize = 50
+
 func (bc *buildbucketClient) LatestBuilds(ctx context.Context, builderIDs []*bbpb.BuilderID) ([]*bbpb.Build, error) {
-	logging.Infof(ctx, "getting latest builds from buildbucket")
+	ret := []*bbpb.Build{}
 
-	// Change this to a BatchRequest? Would need to change the signature of this func.
+	type r struct {
+		builderID *bbpb.BuilderID
+		builds    []*bbpb.Build
+		err       error
+	}
 
-	reqs := []*bbpb.BatchRequest_Request{}
+	workers := len(builderIDs)
+	if workers > maxConcurrentBuilders {
+		workers = maxConcurrentBuilders
+	}
+	logging.Infof(ctx, "getting latest builds from buildbucket for %d builders, using %d pool workers", len(builderIDs), workers)
 
-	for _, builderID := range builderIDs {
-		reqs = append(reqs, &bbpb.BatchRequest_Request{
-			Request: &bbpb.BatchRequest_Request_SearchBuilds{
-				SearchBuilds: &bbpb.SearchBuildsRequest{
+	c := make(chan r, len(builderIDs))
+
+	err := parallel.WorkPool(workers, func(workC chan<- func() error) {
+		for _, builderID := range builderIDs {
+			builderID := builderID
+			workC <- func() error {
+				out := r{
+					builderID: builderID,
+				}
+				req := &bbpb.SearchBuildsRequest{
 					Predicate: &bbpb.BuildPredicate{
 						Builder: builderID,
+						// TODO: expand this logic to handle in-process builds.
+						Status: bbpb.Status_ENDED_MASK,
 					},
 					Fields: &field_mask.FieldMask{
-						// Request build steps be included since they aren't by default.
-						Paths: []string{"builds.*.steps"},
+						// Request fields to be included since they aren't by default.
+						Paths: []string{
+							"builds.*.status",
+							"builds.*.steps.*.name",
+							"builds.*.steps.*.status",
+							"builds.*.builder",
+							"builds.*.number",
+							"builds.*.start_time",
+						},
 					},
-				}}})
-	}
-	req := &bbpb.BatchRequest{
-		Requests: reqs,
-	}
+					PageSize: pageSize,
+				}
 
-	batchResp, err := bc.BuildBucket.Batch(ctx, req)
+				resp, err := bc.BuildBucket.SearchBuilds(ctx, req)
+				if err != nil {
+					logging.Errorf(ctx, "error getting most recent builds for %+v: %v", builderID, err)
+					out.err = err
+				}
+				if resp != nil {
+					logging.Debugf(ctx, "got %d builds for %+v", len(resp.Builds), builderID)
+					out.builds = resp.Builds
+				}
+
+				c <- out
+				return nil
+			}
+		}
+	})
+
 	if err != nil {
-		logging.Errorf(ctx, "error getting most recent builds for %q: %v", builderIDs, err)
-		return nil, err
+		logging.Errorf(ctx, "Error from worker pool: %v", err)
 	}
 
-	ret := []*bbpb.Build{}
-	for _, resp := range batchResp.Responses {
-		searchResp := resp.GetSearchBuilds()
-		ret = append(ret, searchResp.Builds...)
-		logging.Infof(ctx, "got %d builds", len(searchResp.Builds))
+	logging.Debugf(ctx, "about to read worker output from c.")
+	i := 0
+	for range builderIDs {
+		r := <-c
+		i++
+		logging.Debugf(ctx, "%d builds for %+v (%d/%d)", len(r.builds), r.builderID, i, len(builderIDs))
+		err = r.err
+		if err != nil {
+			logging.Errorf(ctx, "error getting builds for %+v: %+v", r.builderID, r.err)
+		}
+		ret = append(ret, r.builds...)
 	}
-	// TODO: paginate, get all in memory before returning.
+
+	if len(ret) == 0 {
+		return ret, err
+	}
+
 	return ret, nil
 }

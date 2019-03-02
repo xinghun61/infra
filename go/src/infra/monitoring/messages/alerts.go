@@ -181,6 +181,12 @@ func (r *Reason) Signature() string {
 // Kind is the kind of the reason. Useful for categorization.
 func (r *Reason) Kind() string {
 	// FIXME: This is possibly duplicated with AlertType
+	if r == nil {
+		return "nil Reason"
+	}
+	if r.Raw == nil {
+		return "nil Reason.Raw"
+	}
 	return r.Raw.Kind()
 }
 
@@ -215,8 +221,10 @@ type AlertedBuilder struct {
 	// LatestFailure is the build number of latest failure.
 	LatestFailure int64 `json:"latest_failure"`
 	// LatestPassing is the build number of latest passing build
-	LatestPassing int64 `json:"latest_passing"`
-	Count         int   `json:"count"`
+	LatestPassing int64  `json:"latest_passing"`
+	Count         int    `json:"count"`
+	Project       string `json:"project"`
+	Bucket        string `json:"bucket"`
 }
 
 // RegressionRange identifies the bounds of the location of a regression.

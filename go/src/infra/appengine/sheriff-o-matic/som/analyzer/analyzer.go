@@ -19,6 +19,7 @@ import (
 	"infra/appengine/sheriff-o-matic/som/analyzer/regrange"
 	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
+	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/luci/common/data/stringset"
@@ -113,6 +114,8 @@ type Analyzer struct {
 	FindIt      client.FindIt
 	TestResults client.TestResults
 	BuildBucket client.BuildBucket
+
+	Trees map[string]*model.BuildBucketTree
 }
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
@@ -132,6 +135,7 @@ func New(minBuilds, maxBuilds int) *Analyzer {
 		Now: func() time.Time {
 			return time.Now()
 		},
+		Trees: map[string]*model.BuildBucketTree{},
 	}
 }
 
@@ -436,7 +440,6 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	if err != nil {
 		return nil, []error{err}
 	}
-
 	importantAlerts, err := a.stepFailureAlerts(ctx, tree, importantFailures, []*messages.FinditResult{})
 	if err != nil {
 		return nil, []error{err}

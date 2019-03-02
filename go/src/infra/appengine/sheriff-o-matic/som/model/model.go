@@ -47,6 +47,19 @@ type Tree struct {
 	GerritInstance string   `json:"gerrit_instance,omitempty"`
 }
 
+// BuildBucketTree holds "tree" information about buildbucket builders.
+type BuildBucketTree struct {
+	TreeName     string         `json:"tree_name"`
+	TreeBuilders []*TreeBuilder `json:"tree_builders"`
+}
+
+// TreeBuilder is a builder that belongs to a particular tree or trees.
+type TreeBuilder struct {
+	Project  string   // buildbucket project name
+	Bucket   string   // buildbucket bucket name
+	Builders []string // buildbucket builder name
+}
+
 // AlertJSON is the JSON blob of an alert for a tree.
 type AlertJSON struct {
 	ID           string         `gae:"$id" json:"-"`
