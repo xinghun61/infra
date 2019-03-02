@@ -22,21 +22,8 @@ from recipe_engine import recipe_api
 from recipe_engine.post_process import MustRun
 
 
-# Toposorted for best results.
-# TODO(phajdan.jr): get the list of public projects from luci-config.
-PROJECTS = [
-  'depot_tools',
-  'build',
-  'franky',
-  'gn',
-  'infra',
-  'skia',
-  'skiabuildbot',
-]
-
-
 PROPERTIES = {
-  'projects': recipe_api.Property(default=PROJECTS),
+  'projects': recipe_api.Property(),
 
   # To generate an auth token for running locally, run
   #   infra/go/bin/luci-auth login
