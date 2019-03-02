@@ -8,13 +8,13 @@ This defines the encapsulating logic for fetching, building, packaging, testing
 and uploading a ResolvedSpec.
 """
 
-from . import spec_pb2
-
 from . import source
 from . import build
 from . import verify
 
 from .workdir import Workdir
+
+from PB.recipe_modules.infra.support_3pp.spec import Spec
 
 
 def build_resolved_spec(api, spec_lookup, cache, force_build, spec, version):
@@ -105,7 +105,7 @@ def _build_impl(api, cipd_spec, is_latest, spec_lookup, force_build, recurse_fn,
 
     # Package stage
     cipd_spec.build(installed_prefix,
-                    spec_pb2.Spec.Create.Package.InstallMode.Name(
+                    Spec.Create.Package.InstallMode.Name(
                       spec.create_pb.package.install_mode),
                     spec.create_pb.package.version_file)
 

@@ -301,13 +301,14 @@ from google.protobuf import text_format as textpb
 
 from recipe_engine import recipe_api
 
-from . import spec_pb2
 from .resolved_spec import ResolvedSpec, parse_name_version, tool_platform
 from .resolved_spec import platform_for_host
 from .exceptions import BadParse, DuplicatePackage, UnsupportedPackagePlatform
 
 from . import create
 from . import cipd_spec
+
+from PB.recipe_modules.infra.support_3pp.spec import Spec
 
 
 def _flatten_spec_pb_for_platform(orig_spec, platform):
@@ -320,14 +321,14 @@ def _flatten_spec_pb_for_platform(orig_spec, platform):
   a `dict.update` operation for each submessage.
 
   Args:
-    * orig_spec (spec_pb2.Spec) - The message to flatten.
+    * orig_spec (Spec) - The message to flatten.
     * platform (str) - The CIPD platform value we're targeting (e.g.
     'linux-amd64')
 
-  Returns a new `spec_pb2.Spec` with exactly one `create` message, or None if
+  Returns a new `Spec` with exactly one `create` message, or None if
   the original spec is not supported on the given platform.
   """
-  spec = spec_pb2.Spec()
+  spec = Spec()
   spec.CopyFrom(orig_spec)
 
   resolved_create = {}
@@ -378,7 +379,7 @@ def _flatten_spec_pb_for_platform(orig_spec, platform):
 class Support3ppApi(recipe_api.RecipeApi):
   def __init__(self, **kwargs):
     super(Support3ppApi, self).__init__(**kwargs)
-    # map of name -> (base_path, spec_pb2.Spec)
+    # map of name -> (base_path, Spec)
     self._loaded_specs = {}
     # map of (name, platform) -> ResolvedSpec
     self._resolved_packages = {}
@@ -557,7 +558,7 @@ class Support3ppApi(recipe_api.RecipeApi):
           raise self.m.step.StepFailure('Bad spec PB for %r' % pkg)
 
         try:
-          self._loaded_specs[pkg] = (path, textpb.Merge(data, spec_pb2.Spec()))
+          self._loaded_specs[pkg] = (path, textpb.Merge(data, Spec()))
         except Exception as ex:
           raise BadParse('While adding %r: %r' % (pkg, str(ex)))
         discovered.add(pkg)
