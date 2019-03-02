@@ -17,6 +17,7 @@ package state
 import (
 	"context"
 
+	"go.chromium.org/luci/common/tsmon/distribution"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 	"go.chromium.org/luci/common/tsmon/types"
@@ -84,6 +85,15 @@ var (
 		},
 		field.String("scheduler_id"),
 		field.String("type"),
+	)
+
+	distributionOperationsPerBatch = metric.NewCumulativeDistribution(
+		"qscheduler/state/batcher/operations",
+		"Number of operations handled within a batch.",
+		nil,
+		distribution.FixedWidthBucketer(1, 100),
+		field.String("scheduler_id"),
+		field.Bool("success"),
 	)
 )
 
@@ -155,4 +165,9 @@ func (e *metricsBuffer) recordStateMetrics(s *scheduler.Scheduler) {
 // recordProtoSize records a metric about a given proto's size.
 func recordProtoSize(ctx context.Context, bytes int, schedulerID string, protoType string) {
 	gaugeProtoSize.Set(ctx, int64(bytes), schedulerID, protoType)
+}
+
+// recordBatchSize records a metric about the number of requests handled within a batch.
+func recordBatchSize(ctx context.Context, numRequests int, schedulerID string, success bool) {
+	distributionOperationsPerBatch.Add(ctx, float64(numRequests), schedulerID, success)
 }

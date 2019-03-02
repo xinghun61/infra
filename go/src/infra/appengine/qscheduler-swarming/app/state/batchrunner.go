@@ -230,12 +230,24 @@ func (b *batch) append(bo *batchedOp) {
 	b.operations[bo.priority] = append(b.operations[bo.priority], bo)
 }
 
+func (b *batch) numOperations() int {
+	count := 0
+	for _, ops := range b.operations {
+		count += len(ops)
+	}
+	return count
+}
+
 // executeAndClose executes and closes the given batch.
 func (b *batch) executeAndClose(ctx context.Context, store *Store) {
+	success := true
 	if err := store.RunOperationInTransaction(ctx, b.getRunner(store)); err != nil {
 		// A batch-wide error occurred. Store it on all results.
 		b.allResultsError(err)
+		success = false
 	}
+	recordBatchSize(ctx, b.numOperations(), store.entityID, success)
+
 	b.close()
 }
 
