@@ -14,6 +14,7 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/raw_io',
   'recipe_engine/runtime',
+  'recipe_engine/service_account',
   'recipe_engine/step',
   'recipe_engine/time',
 ]
@@ -46,6 +47,11 @@ def RunSteps(api, projects, auth_token, service_account):
       assert not service_account, (
           "Only one of \"service_account\" and \"auth_token\" may be set")
     api.luci_config.c.auth_token = auth_token
+  else:
+    # If you are running this recipe locally and fail to access internal
+    # repos, do "$ luci-auth login ...".
+    api.luci_config.c.auth_token = (
+        api.service_account.default().get_access_token())
 
   api.recipe_autoroller.ensure_refresh_token()
   api.recipe_autoroller.roll_projects(projects)

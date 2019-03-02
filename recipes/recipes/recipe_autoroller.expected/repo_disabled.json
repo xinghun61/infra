@@ -1,6 +1,17 @@
 [
   {
     "cmd": [
+      "luci-auth",
+      "token",
+      "-lifetime",
+      "3m"
+    ],
+    "infra_step": true,
+    "name": "get access token for default account",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
       "cipd",
       "ensure",
       "-root",
@@ -60,7 +71,9 @@
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/json"
+      "/path/to/tmp/json",
+      "--headers-json",
+      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
     ],
     "name": "Get luci-config projects"
   },

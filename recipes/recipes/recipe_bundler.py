@@ -59,6 +59,7 @@ def RunSteps(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs,
 
   api.step('run recipe_bundler', cmd)
 
+
 def GenTests(api):
   yield api.test('basic') + api.properties(
     recipe_bundler_vers='latest',

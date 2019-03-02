@@ -909,11 +909,11 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 &mdash; **def [published\_test\_tarball](/recipes/recipes/publish_tarball.py#54)(version, ls_result):**
 ### *recipes* / [recipe\_autoroller](/recipes/recipes/recipe_autoroller.py)
 
-[DEPS](/recipes/recipes/recipe_autoroller.py#7): [build/luci\_config][build/recipe_modules/luci_config], [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [recipe\_autoroller](#recipe_modules-recipe_autoroller), [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+[DEPS](/recipes/recipes/recipe_autoroller.py#7): [build/luci\_config][build/recipe_modules/luci_config], [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [recipe\_autoroller](#recipe_modules-recipe_autoroller), [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/service\_account][recipe_engine/recipe_modules/service_account], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
 
 Rolls recipes.cfg dependencies for public projects.
 
-&mdash; **def [RunSteps](/recipes/recipes/recipe_autoroller.py#40)(api, projects, auth_token, service_account):**
+&mdash; **def [RunSteps](/recipes/recipes/recipe_autoroller.py#41)(api, projects, auth_token, service_account):**
 ### *recipes* / [recipe\_bundler](/recipes/recipes/recipe_bundler.py)
 
 [DEPS](/recipes/recipes/recipe_bundler.py#8): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
