@@ -133,9 +133,11 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     recipes_dir = self.m.path['cache'].join('builder', 'recipe_engine')
     self.m.file.rmtree('ensure recipe_dir gone', recipes_dir)
 
-    self.m.git('clone', '--depth', '1',
-               'https://chromium.googlesource.com/infra/luci/recipes-py',
-               recipes_dir, name='clone recipe engine')
+    with self.m.context(cwd=self.m.path['cache'].join('builder')):
+      # Git clone really wants to have cwd set to something other than None.
+      self.m.git('clone', '--depth', '1',
+                 'https://chromium.googlesource.com/infra/luci/recipes-py',
+                 recipes_dir, name='clone recipe engine')
 
     results = []
     with recipe_api.defer_results():

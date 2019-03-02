@@ -35,7 +35,7 @@
       "https://chromium.googlesource.com/infra/luci/recipes-py",
       "[CACHE]/builder/recipe_engine"
     ],
-    "cwd": "None",
+    "cwd": "[CACHE]/builder",
     "infra_step": true,
     "name": "clone recipe engine"
   },
