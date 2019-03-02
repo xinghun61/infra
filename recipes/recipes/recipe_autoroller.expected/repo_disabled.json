@@ -72,7 +72,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "rmtree",
-      "[START_DIR]/recipe_engine"
+      "[CACHE]/builder/recipe_engine"
     ],
     "infra_step": true,
     "name": "ensure recipe_dir gone"
@@ -84,8 +84,9 @@
       "--depth",
       "1",
       "https://chromium.googlesource.com/infra/luci/recipes-py",
-      "[START_DIR]/recipe_engine"
+      "[CACHE]/builder/recipe_engine"
     ],
+    "cwd": "None",
     "infra_step": true,
     "name": "clone recipe engine"
   },
@@ -99,7 +100,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
       "--path",
-      "[CACHE]/recipe_autoroller/build",
+      "[CACHE]/builder/recipe_autoroller/build",
       "--url",
       "https://repo.repo/build"
     ],
@@ -116,7 +117,7 @@
       "master",
       "--progress"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "env": {
       "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
@@ -133,7 +134,7 @@
       "-f",
       "FETCH_HEAD"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.git checkout",
     "~followup_annotations": [
@@ -146,7 +147,7 @@
       "rev-parse",
       "HEAD"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.read revision",
     "stdout": "/path/to/tmp/",
@@ -163,7 +164,7 @@
       "-d",
       "-x"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.git clean",
     "~followup_annotations": [
@@ -177,7 +178,7 @@
       "user.email",
       "recipe-roller@chromium.org"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.git config",
     "~followup_annotations": [
@@ -191,7 +192,7 @@
       "user.name",
       "recipe-roller"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.git config (2)",
     "~followup_annotations": [
@@ -205,7 +206,7 @@
       "-D",
       "roll"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.git branch",
     "~followup_annotations": [
@@ -221,7 +222,7 @@
       "roll",
       "origin/master"
     ],
-    "cwd": "[CACHE]/recipe_autoroller/build",
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.git checkout (2)",
     "~followup_annotations": [
@@ -233,7 +234,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
+      "[CACHE]/builder/recipe_autoroller/build/infra/config/recipes.cfg",
       "/path/to/tmp/json"
     ],
     "name": "build.read recipes.cfg",

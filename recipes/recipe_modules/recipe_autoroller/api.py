@@ -130,13 +130,12 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     projects are not affected.
     """
     project_data = self.m.luci_config.get_projects()
-    recipes_dir = self.m.path['start_dir'].join('recipe_engine')
+    recipes_dir = self.m.path['cache'].join('builder', 'recipe_engine')
     self.m.file.rmtree('ensure recipe_dir gone', recipes_dir)
 
-    with self.m.context(cwd=self.m.path['start_dir']):
-      self.m.git('clone', '--depth', '1',
-                 'https://chromium.googlesource.com/infra/luci/recipes-py',
-                 recipes_dir, name='clone recipe engine')
+    self.m.git('clone', '--depth', '1',
+               'https://chromium.googlesource.com/infra/luci/recipes-py',
+               recipes_dir, name='clone recipe engine')
 
     results = []
     with recipe_api.defer_results():
@@ -164,7 +163,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     # Keep persistent checkout. Speeds up the roller for large repos
     # like chromium/src.
     workdir = self.m.path['cache'].join(
-        'recipe_autoroller', project_data['id'])
+        'builder', 'recipe_autoroller', project_data['id'])
 
     self.m.git.checkout(
         project_data['repo_url'], dir_path=workdir, submodules=False)
