@@ -59,6 +59,7 @@ def RunSteps(api, projects, auth_token, service_account):
         "Only one of \"service_account\" and \"auth_token\" may be set")
   api.luci_config.c.auth_token = auth_token
 
+  api.recipe_autoroller.ensure_refresh_token()
   api.recipe_autoroller.roll_projects(projects)
 
 

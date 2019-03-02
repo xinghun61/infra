@@ -5,6 +5,7 @@
 DEPS = [
   'build/luci_config',
 
+  'depot_tools/cipd',
   'depot_tools/git',
   'depot_tools/git_cl',
   'depot_tools/gsutil',
