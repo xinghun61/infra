@@ -374,11 +374,13 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     If no such CL has been recorded, returns (None, None).
     """
+    gs_bucket = 'recipe-mega-roller-crappy-db'
+    if not self.m.runtime.is_luci:
+      gs_bucket = 'recipe-roller-cl-uploads'
     cat_result = self.m.gsutil.cat(
-        'gs://recipe-roller-cl-uploads/repo_metadata/%s' % (
-            base64.urlsafe_b64encode(
-                # TODO(tandrii): undo hack after LUCI migration.
-                repo_url if self.m.runtime.is_luci else '!legacy!' + repo_url)),
+        'gs://%s/repo_metadata/%s' % (gs_bucket, base64.urlsafe_b64encode(
+            # TODO(tandrii): undo hack after LUCI migration.
+            repo_url if self.m.runtime.is_luci else '!legacy!' + repo_url)),
         stdout=self.m.raw_io.output(),
         stderr=self.m.raw_io.output(),
         ok_ret=(0,1),
