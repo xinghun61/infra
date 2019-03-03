@@ -938,22 +938,24 @@ A continuous builder which runs recipe tests.
 &mdash; **def [RunSteps](/recipes/recipes/recipes_py_continuous.py#17)(api):**
 ### *recipes* / [remote\_execute\_dataflow\_workflow](/recipes/recipes/remote_execute_dataflow_workflow.py)
 
-[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#23): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#25): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 This recipe is used to execute Dataflow workflows.
 
 If you want a workflow to run at regular intervals, you can configure a builder
 to run this recipe. Dataflow workflows run on an internal builder, so this step
-must be completed by a Google employee. See this change for an example:
-https://chrome-internal-review.googlesource.com/c/chrome/tools/build/+/412934
+must be completed by a Google employee. Steps:
+  1. Register builder in cr-buildbucket.cfg:  https://crrev.com/i/913671
+  2. Set it be triggered on schedule https://crrev.com/i/913672
 
 Builders configured with the name matching "dataflow-workflow-.*" will be
 automatically monitored for failures.
 
-This recipe uses the dataflow-launcher service account. That account must have
-the permission to schedule a Dataflow job for your project.
+This recipe uses dataflow-launcher service account
+`dataflow-launcher@chrome-infra-events.iam.gserviceaccount.com`.
+It must have the permission to schedule a Dataflow job for your project.
 
-&mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#90)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
+&mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#123)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
 ### *recipes* / [snapshots/builder](/recipes/recipes/snapshots/builder.py)
 
 [DEPS](/recipes/recipes/snapshots/builder.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]

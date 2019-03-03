@@ -7,14 +7,16 @@ This recipe is used to execute Dataflow workflows.
 
 If you want a workflow to run at regular intervals, you can configure a builder
 to run this recipe. Dataflow workflows run on an internal builder, so this step
-must be completed by a Google employee. See this change for an example:
-https://chrome-internal-review.googlesource.com/c/chrome/tools/build/+/412934
+must be completed by a Google employee. Steps:
+  1. Register builder in cr-buildbucket.cfg:  https://crrev.com/i/913671
+  2. Set it to be triggered on some schedule: https://crrev.com/i/913672
 
 Builders configured with the name matching "dataflow-workflow-.*" will be
 automatically monitored for failures.
 
-This recipe uses the dataflow-launcher service account. That account must have
-the permission to schedule a Dataflow job for your project.
+This recipe uses dataflow-launcher service account
+`dataflow-launcher@chrome-infra-events.iam.gserviceaccount.com`.
+It must have the permission to schedule a Dataflow job for your project.
 """
 
 from recipe_engine.config import Single
@@ -59,18 +61,49 @@ PROPERTIES = {
 }
 
 
-# Name of the credentials.
-# They are stored encrypted in assets/CREDS_NAME
-CREDS_NAME = 'dataflow-launcher'
+# The dataflow-launcher service account to be used with apache beam framework
+# can only come in the form of refresh token (the framework doesn't allow for
+# custom authentication mechanism, so we can't make use of ambient LUCI auth).
+# Thus, we store it encrypted with Google Cloud KMS in assets/dataflow-launcher
+# file, and when recipe runs it decrypts it using Cloud KMS. For this,
+# the (LUCI) task service account under which the recipe is running must have
+# been granted decrypt rights in Cloud KMS.
+#
+# How this was prepared:
+#   1. Download private key file for a service account.
+#   2. Create encrypted version:
+#
+#       $ gcloud kms encrypt \
+#             --key=default \
+#             --keyring=dataflow-launcher \
+#             --location=global \
+#             --project=chops-kms \
+#             --ciphertext-file=assets/dataflow-launcher \
+#             --plaintext-file=plaintext.json
+#
+#     You must have access to this key (ChOps troopers typically have it).
 
-# Name of the cloudkms key used to decrypt the credentials.
-KMS_CRYPTO_KEY = (
-    'projects/chops-kms/locations/global/keyRings/%s/cryptoKeys/default'
-    % CREDS_NAME)
+# If you ever want to get the privat key back:
+#
+#       $ gcloud kms decrypt \
+#             --key=default \
+#             --keyring=dataflow-launcher \
+#             --location=global \
+#             --project=chops-kms \
+#             --plaintext-file=plaintext.json \
+#             --ciphertext-file=assets/dataflow-launcher
+#
+# This recipe essentially does the above decryption command, but using
+# LUCI cloudkms tool
+# https://chromium.googlesource.com/infra/luci/luci-go/+/a6b2dd/client/cmd/cloudkms
+
+# Name of the Cloud KMS key in format suitable for LUCI cloudkms tool.
+KMS_CRYPTO_KEY = ('projects/chops-kms/locations/global/keyRings/'
+                  'dataflow-launcher/cryptoKeys/default')
+CREDS_FILE = 'dataflow-launcher'
 
 
 def _install_creds(api):
-  assert api.runtime.is_luci
   cloudkms_dir = api.path['start_dir'].join('cloudkms')
   api.cipd.ensure(
       cloudkms_dir, {'infra/tools/luci/cloudkms/${platform}': 'latest'})
@@ -80,7 +113,7 @@ def _install_creds(api):
   creds_file = api.path.join(creds_dir, 'decrypted.json')
   api.step('decrypt', [
       cloudkms_dir.join('cloudkms'), 'decrypt',
-      '-input', api.repo_resource('recipes', 'recipes', 'assets', CREDS_NAME),
+      '-input', api.repo_resource('recipes', 'recipes', 'assets', CREDS_FILE),
       '-output', creds_file,
       KMS_CRYPTO_KEY,
   ])
@@ -104,10 +137,7 @@ def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
   # sets
   env = {
     'PYTHONPATH': '',
-    'GOOGLE_APPLICATION_CREDENTIALS':
-      _install_creds(api)
-      if api.runtime.is_luci else
-      api.puppet_service_account.get_key_path('dataflow-launcher')
+    'GOOGLE_APPLICATION_CREDENTIALS': _install_creds(api),
   }
   with api.context(env=env):
     cmd = [python_path, workflow_path,
@@ -124,12 +154,8 @@ def RunSteps(api, workflow, job_name, gcp_project_id, num_workers, timeout):
 
 
 def GenTests(api):
-  yield api.test('legacy') + api.properties(
-      workflow='packages/dataflow/cq_attempts.py', job_name='cq-attempts',
-      gcp_project_id='chrome-infra-events', num_workers=5, timeout=60)
   yield (
       api.test('basic')
-      + api.runtime(is_luci=True, is_experimental=False)
       + api.properties(
           workflow='packages/dataflow/cq_attempts.py',
           job_name='cq-attempts',

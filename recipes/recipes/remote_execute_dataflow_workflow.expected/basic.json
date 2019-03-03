@@ -17,7 +17,7 @@
       "--revision",
       "infra@HEAD"
     ],
-    "env_suffixes": {
+    "env_prefixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]
