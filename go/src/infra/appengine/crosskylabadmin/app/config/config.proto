@@ -123,6 +123,20 @@ message Inventory {
   // Path to the lab inventory data file within the git project.
   // e.g. data/skylab/lab.textpb
   string lab_data_path = 8;
+
+  // dut_info_cache_validty is the amount of time cached inventory information
+  // about a DUT is valid after being refreshed.
+  //
+  // This duration should be long enough to
+  // (1) smooth over any refresh failures due to backing gitiles flake or quota
+  //     issues.
+  // (2) Allow a human to interfere and fix corrupt inventory data about (some)
+  //     DUTs.
+  //
+  // A DUT will continue to live in the cache (and hence be served via various
+  // RPCs) for dut_info_cache_validity after it has been deleted from the
+  // inventory.
+  google.protobuf.Duration dut_info_cache_validity = 9;
 }
 
 message PoolBalancer {
