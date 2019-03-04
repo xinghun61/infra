@@ -137,6 +137,11 @@ input[type=submit].secondary {
     color: var(--chops-button-color) !important;
 }
 
+input[type=submit]:disabled, input[type=button]:disabled {
+    background: var(--chops-button-disabled-bg);
+    color: var(--chops-button-disabled-color) !important;
+}
+
 .button_set {
     float: right;
     font-size: 95%;

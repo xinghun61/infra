@@ -39,6 +39,8 @@
   --chops-primary-button-color: white;
   --chops-button-bg: var(--chops-gray-200);
   --chops-button-color: black;
+  --chops-button-disabled-bg: var(--chops-gray-300);
+  --chops-button-disabled-color: var(--chops-gray-600);
   --chops-button-border: none;
   --chops-button-radius: 4px;
   --chops-choice-bg: var(--chops-blue-gray-50);
