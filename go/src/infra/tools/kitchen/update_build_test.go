@@ -23,7 +23,7 @@ import (
 	. "go.chromium.org/luci/common/testing/assertions"
 )
 
-func newAnnBytes(stepNames ...string) []byte {
+func newAnn(stepNames ...string) *milo.Step {
 	ann := &milo.Step{
 		Substep: make([]*milo.Step_Substep, len(stepNames)),
 	}
@@ -34,8 +34,11 @@ func newAnnBytes(stepNames ...string) []byte {
 			},
 		}
 	}
+	return ann
+}
 
-	ret, err := proto.Marshal(ann)
+func newAnnBytes(stepNames ...string) []byte {
+	ret, err := proto.Marshal(newAnn(stepNames...))
 	if err != nil {
 		panic(err)
 	}
@@ -63,8 +66,21 @@ func TestBuildUpdater(t *testing.T) {
 			annotations: make(chan []byte),
 		}
 
-		Convey(`run`, func() {
+		Convey("build token is sent", func() {
+			updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
+				md, ok := metadata.FromOutgoingContext(ctx)
+				c.So(ok, ShouldBeTrue)
+				c.So(md.Get(buildbucket.BuildTokenHeader), ShouldResemble, []string{"build token"})
+				res := &buildbucketpb.Build{}
+				return res, nil
+			}
+			client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
 
+			err := bu.UpdateBuild(ctx, newAnn("step1"))
+			So(err, ShouldBeNil)
+		})
+
+		Convey(`run`, func() {
 			run := func(err1, err2 error) error {
 				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
 					md, ok := metadata.FromOutgoingContext(ctx)
@@ -82,15 +98,15 @@ func TestBuildUpdater(t *testing.T) {
 				}
 				client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
 
-				done := make(chan error)
+				errC := make(chan error)
 				go func() {
-					done <- bu.Run(ctx)
+					errC <- bu.Run(ctx, nil)
 				}()
 
 				bu.AnnotationUpdated(newAnnBytes("step1"))
 				bu.AnnotationUpdated(newAnnBytes("step1", "step2"))
 				cancel()
-				return <-done
+				return <-errC
 			}
 
 			Convey("two successful requests", func() {
@@ -103,6 +119,23 @@ func TestBuildUpdater(t *testing.T) {
 
 			Convey("first succeeded, second failed", func() {
 				So(run(nil, fmt.Errorf("fatal")), ShouldErrLike, "fatal")
+			})
+
+			Convey("done is closed", func() {
+				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
+					return &buildbucketpb.Build{}, nil
+				}
+				client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
+
+				done := make(chan struct{})
+				errC := make(chan error)
+				go func() {
+					errC <- bu.Run(ctx, done)
+				}()
+
+				bu.AnnotationUpdated(newAnnBytes("step1"))
+				close(done)
+				So(<-errC, ShouldBeNil)
 			})
 		})
 	})

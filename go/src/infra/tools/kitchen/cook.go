@@ -740,6 +740,9 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res 
 // messages to a stream, and optionally sends build info to Buildbucket server
 // (if c.CallUpdateBuild is true).
 func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types.StreamName, stdout, stderr io.Reader, execMetadata *annotation.Execution, b *butler.Butler) (build *milo.Step, err error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	// Determine our base path and annotation subpath.
 	basePath, annoSubpath := annStreamName.Split()
 	annoteeOpts := annotee.Options{
@@ -762,18 +765,13 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 		annoteeOpts.AnnotationUpdated = bu.AnnotationUpdated
 
 		errC := make(chan error)
-		buCtx, buCancel := context.WithCancel(ctx)
+		done := make(chan struct{})
 		stopBU = func() error {
-			buCancel()
-			buCancel = nil
+			close(done)
 			return <-errC
 		}
 		go func() {
-			err := bu.Run(buCtx)
-			if errors.Unwrap(err) == context.Canceled {
-				err = nil
-			}
-			errC <- err
+			errC <- bu.Run(ctx, done)
 		}()
 	}
 
@@ -811,7 +809,7 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 
 	// Call UpdateBuild with the final annotation.
 	if bu != nil {
-		if err := bu.updateBuild(ctx, final); err != nil {
+		if err := bu.UpdateBuild(ctx, final); err != nil {
 			// This call is critical.
 			// If it fails, it is fatal to the build.
 			return nil, errors.Annotate(err, "failed to send final build state to buildbucket").Err()

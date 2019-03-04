@@ -37,9 +37,8 @@ type buildUpdater struct {
 
 // Run calls client.UpdateBuild on new b.annotations.
 // Logs transient errors and returns a fatal error, if any.
-func (b *buildUpdater) Run(ctx context.Context) error {
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(buildbucket.BuildTokenHeader, b.buildToken))
-
+// Stops when done is closed or ctx is done.
+func (b *buildUpdater) Run(ctx context.Context, done <-chan struct{}) error {
 	cond := sync.NewCond(&sync.Mutex{})
 	// protected by cond.L
 	var state struct {
@@ -50,21 +49,25 @@ func (b *buildUpdater) Run(ctx context.Context) error {
 
 	// Listen to new requests.
 	go func() {
+		locked := func(f func()) {
+			cond.L.Lock()
+			f()
+			cond.L.Unlock()
+			cond.Signal()
+		}
+
 		for {
 			select {
 			case ann := <-b.annotations:
-				cond.L.Lock()
-				state.latest = ann
-				state.latestVer++
-				cond.L.Unlock()
-				cond.Signal()
+				locked(func() {
+					state.latest = ann
+					state.latestVer++
+				})
 
 			case <-ctx.Done():
-				cond.L.Lock()
-				state.done = true
-				cond.L.Unlock()
-				cond.Signal()
-				return
+				locked(func() { state.done = true })
+			case <-done:
+				locked(func() { state.done = true })
 			}
 		}
 	}()
@@ -102,17 +105,18 @@ func (b *buildUpdater) updateBuildBytes(ctx context.Context, annBytes []byte) er
 	if err := proto.Unmarshal(annBytes, ann); err != nil {
 		return errors.Annotate(err, "failed to parse annotation proto").Err()
 	}
-	return b.updateBuild(ctx, ann)
+	return b.UpdateBuild(ctx, ann)
 }
 
-// updateBuild makes an UpdateBuild RPC based on the annotation,
+// UpdateBuild makes an UpdateBuild RPC based on the annotation,
 // see also b.parseRequest.
-func (b *buildUpdater) updateBuild(ctx context.Context, ann *milo.Step) error {
+func (b *buildUpdater) UpdateBuild(ctx context.Context, ann *milo.Step) error {
 	req, err := b.parseRequest(ctx, ann)
 	if err != nil {
 		return errors.Annotate(err, "failed to parse UpdateBuild request").Err()
 	}
 
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(buildbucket.BuildTokenHeader, b.buildToken))
 	if _, err = b.client.UpdateBuild(ctx, req); err != nil {
 		return errors.Annotate(err, "UpdateBuild RPC failed").Err()
 	}
