@@ -11,6 +11,7 @@ import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import '../../mr-bug-link/mr-bug-link.js';
 import '../../mr-comment-content/mr-comment-content.js';
+import '../../mr-comment-content/mr-attachment.js';
 import '../../mr-dropdown/mr-dropdown.js';
 import '../../mr-user-link/mr-user-link.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
@@ -80,49 +81,9 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           text-align: right;
           text-decoration: none;
         }
-        .comment-attachment {
-          min-width: 20%;
-          min-hegiht: 28px;
-          width: fit-content;
-          background: var(--chops-card-details-bg);
-          padding: 4px;
-          margin: 8px;
-        }
         .comment-body {
           margin: 4px;
           box-sizing: border-box;
-        }
-        .comment-attachment-header {
-          display: flex;
-          flex-wrap: nowrap;
-        }
-        .filesize {
-          margin-left: .7em;
-        }
-        .filename {
-          margin-left: .7em;
-        }
-        .attachment-view {
-          margin-left: .7em;
-        }
-        .attachment-download {
-          margin-left: .7em
-        }
-        .attachment-delete {
-          float: right;
-        }
-        .attachment-delete-button {
-          color: var(--chops-button-color);
-          background: var(--chops-button-bg);
-          border-color: transparent;
-        }
-        .preview {
-          border: 2px solid #c3d9ff;
-          padding: 1px;
-          max-width: 98%;
-        }
-        .preview:hover {
-          border: 2px solid blue;
         }
         .deleted-comment-notice {
           color: #888;
@@ -218,66 +179,15 @@ export class MrComments extends ReduxMixin(PolymerElement) {
                 content="[[comment.content]]"
                 is-deleted="[[comment.isDeleted]]"
               ></mr-comment-content>
-              <div>
+              <div hidden\$="[[comment.descriptionNum]]">
                 <template is="dom-repeat" items="[[comment.attachments]]" as="attachment">
-                  <div class="comment-attachment">
-                    <template is="dom-if" if="[[comment.canDelete]]">
-                      <div class="attachment-delete">
-                        <chops-button
-                          class="attachment-delete-button"
-                          on-click="_deleteAttachment"
-                          data-attachment-id\$="[[attachment.attachmentId]]"
-                          data-project-name\$="[[comment.projectName]]"
-                          data-local-id\$="[[comment.localId]]"
-                          data-sequence-num\$="[[comment.sequenceNum]]"
-                          data-mark-deleted\$="[[!attachment.isDeleted]]"
-                        >
-                          <template is="dom-if" if="[[attachment.isDeleted]]">
-                            Undelete
-                          </template>
-                          <template is="dom-if" if="[[!attachment.isDeleted]]">
-                            Delete
-                          </template>
-                        </chops-button>
-                      </div>
-                    </template>
-                    <div class="filename">
-                      <template is="dom-if" if="[[attachment.isDeleted]]">
-                        [Deleted]
-                      </template>
-                      <b>[[attachment.filename]]</b>
-                    </div>
-                    <template is="dom-if" if="[[!attachment.isDeleted]]">
-                      <div class="comment-attachment-header">
-                        <div class="filesize">[[_bytesOrKbOrMb(attachment.size)]]</div>
-                        <template is="dom-if" if="[[!attachment.isDeleted]]">
-                          <div class="attachment-view">
-                            <a href="[[attachment.viewUrl]]" target="_blank">View</a>
-                          </div>
-                          <div class="attachment-download">
-                            <a href="[[attachment.downloadUrl]]" target="_blank">Download</a>
-                          </div>
-                        </template>
-                      </div>
-                      <template is="dom-if" if="[[attachment.thumbnailUrl]]">
-                        <a href="[[attachment.viewUrl]]" target="_blank">
-                          <img
-                            class="preview"
-                            src\$="[[attachment.thumbnailUrl]]"
-                          >
-                        </a>
-                      </template>
-                      <template is="dom-if" if="[[_isVideo(attachment.contentType)]]">
-                        <video
-                          src\$="[[attachment.viewUrl]]"
-                          class="preview"
-                          controls
-                          width="640"
-                          preload="metadata"
-                        ></video>
-                      </template>
-                    </template>
-                  </div>
+                  <mr-attachment
+                    attachment="[[attachment]]"
+                    project-name="[[comment.projectName]]"
+                    local-id="[[comment.localId]]"
+                    sequence-num="[[comment.sequenceNum]]"
+                    can-delete="[[comment.canDelete]]"
+                  ></mr-attachment>
                 </template>
               </div>
             </div>

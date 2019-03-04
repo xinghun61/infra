@@ -4,6 +4,7 @@
 
 import {PolymerElement, html} from '@polymer/polymer';
 import './mr-comment-content.js';
+import './mr-attachment.js';
 
 import {standardTimeShort} from
   '../chops/chops-timestamp/chops-timestamp-helpers';
@@ -40,6 +41,17 @@ export class MrDescription extends PolymerElement {
       <mr-comment-content
         content="[[_selectedDescription.content]]"
       ></mr-comment-content>
+      <div>
+        <template is="dom-repeat" items="[[_selectedDescription.attachments]]" as="attachment">
+          <mr-attachment
+            attachment="[[attachment]]"
+            project-name="[[_selectedDescription.projectName]]"
+            local-id="[[_selectedDescription.localId]]"
+            sequence-num="[[_selectedDescription.sequenceNum]]"
+            can-delete="[[_selectedDescription.canDelete]]"
+          ></mr-attachment>
+        </template>
+      </div>
     `;
   }
 
