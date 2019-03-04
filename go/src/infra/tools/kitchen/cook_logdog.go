@@ -276,8 +276,9 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 	}
 
 	var stopBU func() error
+	var bu *buildUpdater
 	if c.CallUpdateBuild {
-		bu, err := c.newBuildUpdater()
+		bu, err = c.newBuildUpdater()
 		if err != nil {
 			return nil, errors.Annotate(err, "failed to create a build updater").Err()
 		}
@@ -329,8 +330,18 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 	}
 
 	// Read the final annotation.
-	as := annoteeProcessor.Finish()
-	return as.RootStep().Proto(), nil
+	final := annoteeProcessor.Finish().RootStep().Proto()
+
+	// Call UpdateBuild with the final annotation.
+	if bu != nil {
+		if err := bu.updateBuild(ctx, final); err != nil {
+			// This call is critical.
+			// If it fails, it is fatal to the build.
+			return nil, errors.Annotate(err, "failed to send final build state to buildbucket").Err()
+		}
+	}
+
+	return final, nil
 }
 
 // newBuildUpdater creates a buildUpdater that uses system auth for RPCs.

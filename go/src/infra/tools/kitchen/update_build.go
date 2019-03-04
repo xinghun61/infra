@@ -82,8 +82,8 @@ func (b *buildUpdater) Run(ctx context.Context) error {
 
 		var err error
 		if sentVer != local.latestVer {
-			if err = b.updateBuild(ctx, local.latest); err != nil {
-				logging.Errorf(ctx, "UpdateBuild RPC failed: %s", err)
+			if err = b.updateBuildBytes(ctx, local.latest); err != nil {
+				logging.Errorf(ctx, "failed to update build: %s", err)
 			} else {
 				sentVer = local.latestVer
 			}
@@ -95,10 +95,20 @@ func (b *buildUpdater) Run(ctx context.Context) error {
 	}
 }
 
+// updateBuildBytes is a version of updateBuild that accepts raw annotation
+// bytes.
+func (b *buildUpdater) updateBuildBytes(ctx context.Context, annBytes []byte) error {
+	ann := &milo.Step{}
+	if err := proto.Unmarshal(annBytes, ann); err != nil {
+		return errors.Annotate(err, "failed to parse annotation proto").Err()
+	}
+	return b.updateBuild(ctx, ann)
+}
+
 // updateBuild makes an UpdateBuild RPC based on the annotation,
 // see also b.parseRequest.
-func (b *buildUpdater) updateBuild(ctx context.Context, annBytes []byte) error {
-	req, err := b.parseRequest(ctx, annBytes)
+func (b *buildUpdater) updateBuild(ctx context.Context, ann *milo.Step) error {
+	req, err := b.parseRequest(ctx, ann)
 	if err != nil {
 		return errors.Annotate(err, "failed to parse UpdateBuild request").Err()
 	}
@@ -114,12 +124,7 @@ func (b *buildUpdater) updateBuild(ctx context.Context, annBytes []byte) error {
 // RPC request.
 // The returned request only attempts to update steps and output properties
 // and asks no build fields in response.
-func (b *buildUpdater) parseRequest(ctx context.Context, annBytes []byte) (*buildbucketpb.UpdateBuildRequest, error) {
-	ann := &milo.Step{}
-	if err := proto.Unmarshal(annBytes, ann); err != nil {
-		return nil, errors.Annotate(err, "failed to parse annotation proto").Err()
-	}
-
+func (b *buildUpdater) parseRequest(ctx context.Context, ann *milo.Step) (*buildbucketpb.UpdateBuildRequest, error) {
 	steps, err := buildbucket.ConvertBuildSteps(ctx, ann.Substep, b.annAddr)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to parse steps from an annotation proto").Err()
