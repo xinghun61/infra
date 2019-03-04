@@ -29,14 +29,13 @@ pre.prettyprint {
 }
 
 .issuedescription pre {
-  margin: 0 12px;
+  margin: 0 8px;
+  padding: 0 8px;
   max-width: 80em;
 }
 
 .issuecomment pre.issue_text {
-  border-top: var(--chops-card-border);
-  margin: 0;
-  padding: 5px 0 6px 8px;
+  margin: 4px 8px;
 }
 
 .codefont .issue_text {
@@ -53,10 +52,7 @@ pre.prettyprint {
 }
 
 .issuecomment {
-    margin: 1.3em 1em;
-    /* TODO(jrobbins): After some time, fully elminate card motif. */
-    border: 1px solid hsl(0, 0%, 92%);
-    border-radius: 4px;
+    margin: 16px 8px;
 }
 
 .issuedescription pre a, .issuecomment pre a {
@@ -258,7 +254,6 @@ pre.prettyprint {
 
 .updates {
     background: var(--chops-card-details-bg);
-    border-top: var(--chops-card-border);
 }
 
 .updates table {
@@ -298,7 +293,7 @@ div td .novel { color: #430; }
 div td .blockingsubmit { color: #a03; }
 div td .exclconflict { color: #a03; }
 div td .questionmark { color: #a03; }
-.issuecomment .delcom { background: #e8e8e8; border-radius: var(--chops-radius); }
+.issuecomment .delcom { background: #e8e8e8; }
 .numberentry { text-align: right; }
 
 .rollovercontrol { display: none; }
