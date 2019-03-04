@@ -29,6 +29,11 @@ export default class MrFlipper extends HTMLElement {
     this.nextUrlEl = shadowRoot.querySelector('a.next-url');
     this.listUrlEl = shadowRoot.querySelector('a.list-url');
 
+    if (location.search) {
+      this.listUrlEl.style.visibility = 'visible';
+      this.listUrlEl.href = `detail/list${location.search}`;
+    }
+
     this.fetchFlipperData();
   }
 
