@@ -91,9 +91,9 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			var t taskState
 			var ok bool
 			if t, ok = translateTaskState(n.Task.State); !ok {
-				err := fmt.Sprintf("Invalid notification with unhandled state %s.", n.Task.State)
-				logging.Warningf(ctx, err)
-				sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), err)
+				err := errors.Errorf("Invalid notification with unhandled state %s.", n.Task.State)
+				logging.Warningf(ctx, err.Error())
+				sp.Reconciler.AddTaskError(scheduler.RequestID(n.Task.Id), err)
 				continue
 			}
 
@@ -110,13 +110,13 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 				sp.Reconciler.NotifyTaskRunning(ctx, sp.Scheduler, events, r)
 			case taskStateWaiting:
 				if err := notifyTaskWaiting(ctx, sp, events, n); err != nil {
-					sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), err.Error())
+					sp.Reconciler.AddTaskError(scheduler.RequestID(n.Task.Id), err)
 					logging.Warningf(ctx, err.Error())
 				}
 			default:
-				e := fmt.Sprintf("invalid update type %d", t)
-				logging.Warningf(ctx, e)
-				sp.Reconciler.TaskError(scheduler.RequestID(n.Task.Id), e)
+				e := errors.Errorf("invalid update type %d", t)
+				logging.Warningf(ctx, e.Error())
+				sp.Reconciler.AddTaskError(scheduler.RequestID(n.Task.Id), e)
 			}
 		}
 		response = swarming.NotifyTasksResponse{}

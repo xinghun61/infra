@@ -150,10 +150,10 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 	return assignments
 }
 
-// TaskError marks a given task as having failed due to an error, and in need of cancellation.
-func (state *State) TaskError(requestID scheduler.RequestID, err string) {
+// AddTaskError marks a given task as having failed due to an error, and in need of cancellation.
+func (state *State) AddTaskError(requestID scheduler.RequestID, err error) {
 	state.ensureMaps()
-	state.proto.TaskErrors[string(requestID)] = err
+	state.proto.TaskErrors[string(requestID)] = err.Error()
 }
 
 // Cancellation represents a scheduler-initated operation to cancel a task on a worker.

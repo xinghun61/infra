@@ -16,6 +16,7 @@ package reconciler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -348,8 +349,8 @@ func TestTaskError(t *testing.T) {
 
 		Convey("when TaskError is called for a new task", func() {
 			taskID := scheduler.RequestID("Task1")
-			err := "An frabjous error occurred."
-			r.TaskError(taskID, err)
+			err := errors.New("an frabjous error occurred")
+			r.AddTaskError(taskID, err)
 
 			Convey("when GetCancellations is called", func() {
 				c := r.Cancellations(ctx)
@@ -357,7 +358,7 @@ func TestTaskError(t *testing.T) {
 					So(c, ShouldHaveLength, 1)
 					So(c[0].RequestID, ShouldEqual, taskID)
 					So(c[0].WorkerID, ShouldEqual, "")
-					So(c[0].ErrorMessage, ShouldEqual, err)
+					So(c[0].ErrorMessage, ShouldContainSubstring, "frabjous")
 				})
 			})
 			Convey("when NotifyRequest is called to abort the task", func() {
