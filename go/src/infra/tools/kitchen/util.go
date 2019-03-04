@@ -88,7 +88,13 @@ func printCommand(ctx context.Context, cmd *exec.Cmd) {
 		}
 	}
 
-	log.Infof(ctx, "env:\n%s", strings.Join(cmd.Env, "\n"))
+	// Log env.
+	envLines := strings.Builder{}
+	for _, e := range cmd.Env {
+		envLines.WriteString("\n\t")
+		envLines.WriteString(e)
+	}
+	log.Infof(ctx, "env:%s", envLines.String())
 }
 
 // nonCancelContext is a context.Context which deliberately ignores cancellation
