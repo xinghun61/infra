@@ -4,6 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+import qs from 'qs';
 
 import '../mr-dropdown/mr-dropdown.js';
 import '../mr-dropdown/mr-account-dropdown.js';
@@ -38,7 +39,7 @@ export class MrHeader extends PolymerElement {
           border-bottom: var(--chops-normal-border);
           top: 0;
           position: sticky;
-          padding: 0 8px;
+          padding: 0 4px;
           font-size: 14px;
         }
         @media (max-width: 840px) {
@@ -54,7 +55,7 @@ export class MrHeader extends PolymerElement {
           align-items: center;
           justify-content: center;
           height: 100%;
-          padding: 0 8px;
+          padding: 0 4px;
           flex-grow: 0;
           flex-shrink: 0;
         }
@@ -87,19 +88,34 @@ export class MrHeader extends PolymerElement {
         }
       </style>
       <a href\$="/p/[[projectName]]/">
-        <i class="material-icons" title="Issues">home</i>
+        <template is="dom-if" if="[[presentationConfig.projectThumbnailUrl]]">
+          <img
+            class="project-logo"
+            src$="[[presentationConfig.projectThumbnailUrl]]"
+            title="Issues"
+          />
+        </template>
+        <template is="dom-if" if="[[!presentationConfig.projectThumbnailUrl]]">
+          <i class="material-icons" title="Issues">home</i>
+        </template>
       </a>
       <mr-dropdown
+        class="project-selector"
         text="[[projectName]]"
         items="[[_projectDropdownItems]]"
         menu-alignment="left"
+        title$="[[presentationConfig.projectSummary]]"
       ></mr-dropdown>
-      <a class="button emphasized" href\$="/p/[[projectName]]/issues/entry">
+      <a class="button emphasized new-issue-link" href\$="[[issueEntryUrl]]">
         New issue
       </a>
       <mr-search-bar
         project-name="[[projectName]]"
         user-display-name="[[userDisplayName]]"
+        project-saved-queries="[[presentationConfig.savedQueries]]"
+        default-can="[[_computeDefaultCan(queryParams.can)]]"
+        initial-value="[[_computeInitialSearch(
+          presentationConfig.defaultQuery, queryParams.q)]]"
       ></mr-search-bar>
 
       <div class="right-section">
@@ -136,12 +152,20 @@ export class MrHeader extends PolymerElement {
       },
       loginUrl: String,
       logoutUrl: String,
-      projectName: String,
+      projectName: {
+        type: String,
+        observer: '_projectChanged',
+      },
       userDisplayName: {
         type: String,
         observer: '_userChanged',
       },
       userProjects: Object,
+      presentationConfig: Object,
+      queryParams: Object,
+      // TODO(zhangtiff): Change this to be dynamically computed by the
+      //   frontend with logic similar to ComputeIssueEntryURL().
+      issueEntryUrl: String,
       _projectSettingsItems: {
         type: Array,
         computed: '_computeProjectSettingsItems(projectName, canAdministerProject)',
@@ -153,14 +177,31 @@ export class MrHeader extends PolymerElement {
     };
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+
+    // TODO(zhangtiff): Replace this with page.js integration.
+    // Note: Until we add page.js integration, this does not handle
+    // frontend route changes.
+    this.queryParams = qs.parse(window.location.search);
+  }
+
+  _projectChanged(projectName) {
+    const presentationConfigPromise = window.prpcClient.call(
+      'monorail.Projects', 'GetPresentationConfig', {projectName});
+    presentationConfigPromise.then((presentationConfig) => {
+      this.presentationConfig = presentationConfig;
+    });
+  }
+
   _userChanged(displayName) {
     if (!displayName) return;
     // Only fetch projects for logged in users.
     // TODO(zhangtiff): Add this state to Redux. This is left out from
     //   Redux for now because this code is meant to run on non-SPA pages
     //   as well.
-    const userProjectsPromise = window.prpcClient.call('monorail.Projects',
-      'GetUserProjects', {});
+    const userProjectsPromise = window.prpcClient.call(
+      'monorail.Projects', 'GetUserProjects', {});
     userProjectsPromise.then((userProjects) => {
       this.userProjects = userProjects;
     });
@@ -214,6 +255,14 @@ export class MrHeader extends PolymerElement {
       items.push({text: 'Administer', url: `/p/${projectName}/admin`});
     }
     return items;
+  }
+
+  _computeInitialSearch(defaultQuery, q) {
+    return q ? q : defaultQuery;
+  }
+
+  _computeDefaultCan(can) {
+    return can ? can : 2;
   }
 }
 

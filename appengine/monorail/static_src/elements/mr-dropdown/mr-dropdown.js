@@ -56,6 +56,7 @@ export class MrDropdown extends PolymerElement {
           left: 0px;
         }
         .menu {
+          font-size: 16px;
           position: absolute;
           min-width: 120%;
           top: 90%;

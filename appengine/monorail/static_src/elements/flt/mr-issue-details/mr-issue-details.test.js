@@ -16,10 +16,8 @@ suite('mr-issue-details', () => {
     element = document.createElement('mr-issue-details');
     document.body.appendChild(element);
 
-    window.prpcClient = {
-      call: () => Promise.resolve({}),
-    };
-    sinon.spy(window.prpcClient, 'call');
+    sinon.stub(window.prpcClient, 'call').callsFake(
+      () => Promise.resolve({}));
     sinon.spy(actionCreator, 'updateIssue');
 
     // Disable Redux state mapping for testing.

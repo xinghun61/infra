@@ -31,6 +31,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       <mr-header
         project-name="[[projectName]]"
         user-display-name="[[userDisplayName]]"
+        issue-entry-url="[[issueEntryUrl]]"
         login-url="[[loginUrl]]"
         logout-url="[[logoutUrl]]"
       ></mr-header>
@@ -44,6 +45,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
+      issueEntryUrl: String,
       loginUrl: String,
       logoutUrl: String,
       projectName: String,

@@ -142,19 +142,41 @@ export class MrSearchBar extends PolymerElement {
           <i class="material-icons">arrow_drop_down</i>
           <select name="can" on-change="_redirectOnSelect">
             <optgroup label="Search within">
-              <option value="1">All issues</option>
-              <option value="2">Open issues</option>
-              <option value="3">Open and owned by me</option>
-              <option value="4">Open and reported by me</option>
-              <option value="5">Open and starred by me</option>
-              <option value="8">Open with comment by me</option>
-              <option value="6">New issues</option>
-              <option value="7">Issues to verify</option>
+              <option value="1" selected\$="[[_isSelected(defaultCan, 1)]]">All issues</option>
+              <option value="2" selected\$="[[_isSelected(defaultCan, 2)]]">Open issues</option>
+              <option value="3" selected\$="[[_isSelected(defaultCan, 3)]]">Open and owned by me</option>
+              <option value="4" selected\$="[[_isSelected(defaultCan, 4)]]">Open and reported by me</option>
+              <option value="5" selected\$="[[_isSelected(defaultCan, 5)]]">Open and starred by me</option>
+              <option value="8" selected\$="[[_isSelected(defaultCan, 8)]]">Open with comment by me</option>
+              <option value="6" selected\$="[[_isSelected(defaultCan, 6)]]">New issues</option>
+              <option value="7" selected\$="[[_isSelected(defaultCan, 7)]]">Issues to verify</option>
             </optgroup>
-            <optgroup label="Project queries" hidden$="[[!userDisplayName]]">
+            <optgroup label="Project queries" hidden\$="[[!userDisplayName]]">
+              <template
+                is="dom-repeat"
+                items="[[projectSavedQueries]]"
+                as="query"
+              >
+                <option
+                  class="project-query"
+                  value\$="[[query.queryId]]"
+                  selected\$="[[_isSelected(defaultCan, query.queryId)]]"
+                >[[query.name]]</option>
+              </template>
               <option data-href\$="/p/[[projectName]]/adminViews">Manage project queries...</option>
             </optgroup>
-            <optgroup label="My saved queries" hidden$="[[!userDisplayName]]">
+            <optgroup label="My saved queries" hidden\$="[[!userDisplayName]]">
+              <template
+                is="dom-repeat"
+                items="[[userSavedQueries]]"
+                as="query"
+              >
+                <option
+                  class="user-query"
+                  value\$="[[query.queryId]]"
+                  selected\$="[[_isSelected(defaultCan, query.queryId)]]"
+                >[[query.name]]</option>
+              </template>
               <option data-href\$="/u/[[userDisplayName]]/queries">Manage my saved queries...</option>
             </optgroup>
           </select>
@@ -185,8 +207,17 @@ export class MrSearchBar extends PolymerElement {
     // TODO(zhangtiff): Let's add
     return {
       projectName: String,
-      userDisplayName: String,
+      userDisplayName: {
+        type: String,
+        observer: '_userChanged',
+      },
+      defaultCan: {
+        type: String,
+        value: 2,
+      },
       initialValue: String,
+      projectSavedQueries: Array,
+      userSavedQueries: Array,
       _searchMenuItems: {
         type: Array,
         computed: '_computeSearchMenuItems(projectName)',
@@ -214,6 +245,18 @@ export class MrSearchBar extends PolymerElement {
     if (option.dataset.href) {
       window.location.href = option.dataset.href;
     }
+  }
+
+  _userChanged(userDisplayName) {
+    const userSavedQueriesPromise = window.prpcClient.call('monorail.Users',
+      'GetSavedQueries', {});
+    userSavedQueriesPromise.then((resp) => {
+      this.userSavedQueries = resp.savedQueries;
+    });
+  }
+
+  _isSelected(a, b) {
+    return `${a}` === `${b}`;
   }
 }
 

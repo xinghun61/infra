@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {MrHeader} from './mr-header.js';
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
@@ -19,5 +20,24 @@ suite('mr-header', () => {
 
   test('initializes', () => {
     assert.instanceOf(element, MrHeader);
+  });
+
+  test('presentationConfig renders', () => {
+    element.presentationConfig = {
+      customIssueEntryUrl: 'https://google.com/test/',
+      projectSummary: 'The best project',
+      projectThumbnailUrl: 'http://images.google.com/',
+    };
+
+    flush();
+
+    assert.equal(element.shadowRoot.querySelector('.project-logo').src,
+      'http://images.google.com/');
+
+    assert.equal(element.shadowRoot.querySelector('.new-issue-link').href,
+      'https://google.com/test/');
+
+    assert.equal(element.shadowRoot.querySelector('.project-selector').title,
+      'The best project');
   });
 });

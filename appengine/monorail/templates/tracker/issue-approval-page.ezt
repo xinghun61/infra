@@ -5,6 +5,7 @@
 
 <mr-app [if-any logged_in_user]
   user-display-name="[logged_in_user.email]"[end]
+  issue-entry-url="[issue_entry_url]"
   login-url="[login_url]"
   logout-url="[logout_url]"
 ></mr-app>
