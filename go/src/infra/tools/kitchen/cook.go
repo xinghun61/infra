@@ -159,14 +159,11 @@ func (c *cookRun) runRecipe(ctx context.Context, env environ.Env) *build.BuildRu
 	// environ of the recipe engine.
 	recipeEnv := c.recipeAuth.ExportIntoEnv(env)
 
-	rv := 0
 	result.AnnotationUrl = c.AnnotationURL.String()
-	rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.engine, recipeEnv)
-	if err != nil {
+	if err = c.runWithLogdogButler(ctx, recipeEnv, result); err != nil {
 		return fail(errors.Annotate(err, "failed to run recipe").Err())
 	}
 	setAnnotationText(result.Annotations)
-	result.RecipeExitCode = &build.OptionalInt32{Value: int32(rv)}
 
 	// Now read the recipe result file.
 	recipeResultFile, err := os.Open(c.engine.outputResultJSONFile)
@@ -613,11 +610,11 @@ func (c *cookRun) newButler(ctx context.Context, out output.Output, env environ.
 //	- Configuring / setting up the Butler.
 //	- Initiating a LogDog Pub/Sub Output, registering with remote server.
 //	- Running the recipe process.
-//	  - Optionally, hook its output streams up through an Annotee processor.
-//	  - Otherwise, wait for the process to finish.
+//	- Hook its output streams up through an Annotee processor.
+//	- Wait for the subprocess to finish.
 //	- Shut down the Butler instance.
-// If recipe engine returns non-zero value, the returned err is nil.
-func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, env environ.Env) (rc int, build *milo.Step, err error) {
+// Writes res.RecipeExitCode and res.Annotations on success.
+func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res *build.BuildRunResult) (err error) {
 	log.Infof(ctx, "Using LogDog URL: %s", &c.AnnotationURL)
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
@@ -628,11 +625,11 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	// Create our stream server instance.
 	streamServer, err := c.getLogDogStreamServer(withNonCancel(ctx))
 	if err != nil {
-		return 0, nil, errors.Annotate(err, "failed to generate stream server").Err()
+		return errors.Annotate(err, "failed to generate stream server").Err()
 	}
 
 	if err := streamServer.Listen(); err != nil {
-		return 0, nil, errors.Annotate(err, "failed to listen on stream server").Err()
+		return errors.Annotate(err, "failed to listen on stream server").Err()
 	}
 	defer func() {
 		if streamServer != nil {
@@ -657,12 +654,12 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	// Create a Butler.
 	butlerOutput, err := c.butlerOutput(ctx)
 	if err != nil {
-		return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
+		return errors.Annotate(err, "failed to create LogDog Output instance").Err()
 	}
 	defer butlerOutput.Close()
 	b, err := c.newButler(withNonCancel(ctx), butlerOutput, env)
 	if err != nil {
-		return 0, nil, errors.Annotate(err, "failed to create Butler instance").Err()
+		return errors.Annotate(err, "failed to create Butler instance").Err()
 	}
 	defer func() {
 		b.Activate()
@@ -690,42 +687,38 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	procCtx, procCancelFunc := context.WithCancel(ctx)
 	defer procCancelFunc()
 
-	proc, err := eng.commandRun(procCtx, filepath.Join(c.TempDir, "rr"), env)
+	proc, err := c.engine.commandRun(procCtx, filepath.Join(c.TempDir, "rr"), env)
 	if err != nil {
-		return 0, nil, errors.Annotate(err, "failed to build recipe command").Err()
+		return errors.Annotate(err, "failed to build recipe command").Err()
 	}
 
 	// Build pipes for our STDOUT and STDERR streams.
 	stdout, err := proc.StdoutPipe()
 	if err != nil {
-		err = errors.Annotate(err, "failed to get STDOUT pipe").Err()
-		return
+		return errors.Annotate(err, "failed to get STDOUT pipe").Err()
 	}
 	defer stdout.Close()
 
 	stderr, err := proc.StderrPipe()
 	if err != nil {
-		err = errors.Annotate(err, "failed to get STDERR pipe").Err()
-		return
+		return errors.Annotate(err, "failed to get STDERR pipe").Err()
 	}
 	defer stderr.Close()
 
 	// Start our bootstrapped subprocess.
 	printCommand(ctx, proc)
 	if err = proc.Start(); err != nil {
-		err = errors.Annotate(err, "failed to start command").Err()
-		return
+		return errors.Annotate(err, "failed to start command").Err()
 	}
 
 	// While the subprocess runs, continuously read its output.
 	execMetadata := annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir)
-	if build, err = c.watchSubprocessOutput(ctx, annoName, stdout, stderr, execMetadata, b); err != nil {
+	if res.Annotations, err = c.watchSubprocessOutput(ctx, annoName, stdout, stderr, execMetadata, b); err != nil {
 		log.Warningf(ctx, "failed to read subprocess output; killing the it and waiting for it to die")
 		procCancelFunc()
 		proc.Wait() // do not let the subprocess outlive this one.
 
-		err = errors.Annotate(err, "failed to read subprocess output").Err()
-		return
+		return errors.Annotate(err, "failed to read subprocess output").Err()
 	}
 
 	// Wait for the subprocess to finish.
@@ -735,12 +728,12 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	switch waitRC, hasRC := exitcode.Get(waitErr); {
 	case hasRC:
 		log.Warningf(ctx, "subprocess exited with code %d", waitRC)
-		rc = waitRC
+		res.RecipeExitCode = &build.OptionalInt32{Value: int32(waitRC)}
 	case waitErr != nil:
-		err = errors.Annotate(waitErr, "failed to Wait() for process").Err()
+		return errors.Annotate(waitErr, "failed to Wait() for process").Err()
 	}
 
-	return
+	return nil
 }
 
 // watchSubprocessOutput annotates stdout/stderr and writes the annotation
