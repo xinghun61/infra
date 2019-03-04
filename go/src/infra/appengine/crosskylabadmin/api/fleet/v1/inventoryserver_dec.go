@@ -193,6 +193,23 @@ func (s *DecoratedInventory) ListServers(c context.Context, req *ListServersRequ
 	return
 }
 
+func (s *DecoratedInventory) GetDutInfo(c context.Context, req *GetDutInfoRequest) (rsp *GetDutInfoResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "GetDutInfo", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.GetDutInfo(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "GetDutInfo", rsp, err)
+	}
+	return
+}
+
 func (s *DecoratedInventory) UpdateDutLabels(c context.Context, req *UpdateDutLabelsRequest) (rsp *UpdateDutLabelsResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
@@ -206,6 +223,23 @@ func (s *DecoratedInventory) UpdateDutLabels(c context.Context, req *UpdateDutLa
 	}
 	if s.Postlude != nil {
 		err = s.Postlude(c, "UpdateDutLabels", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedInventory) UpdateCachedInventory(c context.Context, req *UpdateCachedInventoryRequest) (rsp *UpdateCachedInventoryResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "UpdateCachedInventory", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.UpdateCachedInventory(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "UpdateCachedInventory", rsp, err)
 	}
 	return
 }

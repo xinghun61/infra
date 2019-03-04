@@ -234,6 +234,26 @@ func (mr *MockInventoryClientMockRecorder) ListServers(ctx, in interface{}, opts
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServers", reflect.TypeOf((*MockInventoryClient)(nil).ListServers), varargs...)
 }
 
+// GetDutInfo mocks base method
+func (m *MockInventoryClient) GetDutInfo(ctx context.Context, in *GetDutInfoRequest, opts ...grpc.CallOption) (*GetDutInfoResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetDutInfo", varargs...)
+	ret0, _ := ret[0].(*GetDutInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDutInfo indicates an expected call of GetDutInfo
+func (mr *MockInventoryClientMockRecorder) GetDutInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDutInfo", reflect.TypeOf((*MockInventoryClient)(nil).GetDutInfo), varargs...)
+}
+
 // UpdateDutLabels mocks base method
 func (m *MockInventoryClient) UpdateDutLabels(ctx context.Context, in *UpdateDutLabelsRequest, opts ...grpc.CallOption) (*UpdateDutLabelsResponse, error) {
 	m.ctrl.T.Helper()
@@ -252,6 +272,26 @@ func (mr *MockInventoryClientMockRecorder) UpdateDutLabels(ctx, in interface{}, 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDutLabels", reflect.TypeOf((*MockInventoryClient)(nil).UpdateDutLabels), varargs...)
+}
+
+// UpdateCachedInventory mocks base method
+func (m *MockInventoryClient) UpdateCachedInventory(ctx context.Context, in *UpdateCachedInventoryRequest, opts ...grpc.CallOption) (*UpdateCachedInventoryResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateCachedInventory", varargs...)
+	ret0, _ := ret[0].(*UpdateCachedInventoryResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateCachedInventory indicates an expected call of UpdateCachedInventory
+func (mr *MockInventoryClientMockRecorder) UpdateCachedInventory(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCachedInventory", reflect.TypeOf((*MockInventoryClient)(nil).UpdateCachedInventory), varargs...)
 }
 
 // MockInventoryServer is a mock of InventoryServer interface
@@ -427,6 +467,21 @@ func (mr *MockInventoryServerMockRecorder) ListServers(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListServers", reflect.TypeOf((*MockInventoryServer)(nil).ListServers), arg0, arg1)
 }
 
+// GetDutInfo mocks base method
+func (m *MockInventoryServer) GetDutInfo(arg0 context.Context, arg1 *GetDutInfoRequest) (*GetDutInfoResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDutInfo", arg0, arg1)
+	ret0, _ := ret[0].(*GetDutInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDutInfo indicates an expected call of GetDutInfo
+func (mr *MockInventoryServerMockRecorder) GetDutInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDutInfo", reflect.TypeOf((*MockInventoryServer)(nil).GetDutInfo), arg0, arg1)
+}
+
 // UpdateDutLabels mocks base method
 func (m *MockInventoryServer) UpdateDutLabels(arg0 context.Context, arg1 *UpdateDutLabelsRequest) (*UpdateDutLabelsResponse, error) {
 	m.ctrl.T.Helper()
@@ -440,4 +495,19 @@ func (m *MockInventoryServer) UpdateDutLabels(arg0 context.Context, arg1 *Update
 func (mr *MockInventoryServerMockRecorder) UpdateDutLabels(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateDutLabels", reflect.TypeOf((*MockInventoryServer)(nil).UpdateDutLabels), arg0, arg1)
+}
+
+// UpdateCachedInventory mocks base method
+func (m *MockInventoryServer) UpdateCachedInventory(arg0 context.Context, arg1 *UpdateCachedInventoryRequest) (*UpdateCachedInventoryResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateCachedInventory", arg0, arg1)
+	ret0, _ := ret[0].(*UpdateCachedInventoryResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateCachedInventory indicates an expected call of UpdateCachedInventory
+func (mr *MockInventoryServerMockRecorder) UpdateCachedInventory(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateCachedInventory", reflect.TypeOf((*MockInventoryServer)(nil).UpdateCachedInventory), arg0, arg1)
 }

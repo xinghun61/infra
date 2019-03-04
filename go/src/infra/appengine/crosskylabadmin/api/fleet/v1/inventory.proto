@@ -86,6 +86,16 @@ service Inventory {
   rpc ListServers(ListServersRequest) returns (ListServersResponse);
 
   // ///////////////////////////////////////////////////////////////////////////
+  // Inventory ReadOnly RPCs
+
+  // GetDutInfo returns inventory information about a single DUT.
+  //
+  // This RPC returns possibly cached data about a single DUT. The cache is
+  // updated asynchronously and guaranteed to be a relatively fresh snapshot of
+  // the inventory data.
+  rpc GetDutInfo(GetDutInfoRequest) returns (GetDutInfoResponse);
+
+  // ///////////////////////////////////////////////////////////////////////////
   // RPCs used internally by the infrastructure. Not for end-user tools.
 
   // UpdateDutLabels sets the SchedulableLabels of a DUT.
@@ -93,6 +103,13 @@ service Inventory {
   // This API should only be used by the Skylab infrastructure
   // internally.  It is used by repair tasks to update DUT labels.
   rpc UpdateDutLabels(UpdateDutLabelsRequest) returns (UpdateDutLabelsResponse);
+
+  // UpdateCachedInventory updates the cached inventory data.
+  //
+  // Cached inventory data is used to serve read-only inventory RPCs.
+  // Cached inventory data is not used for inventory modification RPCs.
+  rpc UpdateCachedInventory(UpdateCachedInventoryRequest)
+      returns (UpdateCachedInventoryResponse);
 }
 
 message DeployDutRequest {
@@ -462,6 +479,25 @@ message ListServersResponse {
   repeated Server servers = 1;
 }
 
+message GetDutInfoRequest {
+  // id of the DUT to get info for.
+  //
+  // One of id or hostname is required.
+  string id = 1;
+
+  // hostname of the DUT to get info for.
+  //
+  // One of id or hostname is required.
+  string hostname = 2;
+}
+
+message GetDutInfoResponse {
+  // spec is the device spec for the requested DUT.
+  //
+  // This is a serialized inventory.DeviceUnderTest protobuf.
+  bytes spec = 1;
+}
+
 message UpdateDutLabelsRequest {
   string dut_id = 1;
   // labels are the labels for the DUT that the client changed.  This
@@ -481,3 +517,7 @@ message UpdateDutLabelsResponse {
   // It is usually a Gerrit or Gitiles URL.
   string url = 1;
 }
+
+message UpdateCachedInventoryRequest {}
+message UpdateCachedInventoryResponse {}
+
