@@ -593,10 +593,8 @@ class UserService(object):
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,
-      notify_starred_ping=None,
-      obscure_email=None, after_issue_update=None,
-      is_site_admin=None, ignore_action_limits=None,
-      is_banned=None, banned_reason=None, action_limit_updates=None,
+      notify_starred_ping=None, obscure_email=None, after_issue_update=None,
+      is_site_admin=None, is_banned=None, banned_reason=None,
       dismissed_cues=None, keep_people_perms_open=None, preview_on_hover=None,
       vacation_message=None):
     # notifications
@@ -628,8 +626,6 @@ class UserService(object):
     # admin
     if is_site_admin is not None:
       user.is_site_admin = is_site_admin
-    if ignore_action_limits is not None:
-      user.ignore_action_limits = ignore_action_limits
     if is_banned is not None:
       if is_banned:
         user.banned = banned_reason or 'No reason given'

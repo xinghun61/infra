@@ -409,38 +409,16 @@ class UserSettingsTest(unittest.TestCase):
         mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb)
 
     expected_keys = [
-        'api_request_reset',
-        'api_request_lifetime_limit',
-        'api_request_hard_limit',
-        'api_request_soft_limit',
         'settings_user',
         'settings_user_pb',
         'settings_user_is_banned',
-        'settings_user_ignore_action_limits',
         'self',
-        'project_creation_reset',
-        'issue_comment_reset',
-        'issue_attachment_reset',
-        'issue_bulk_edit_reset',
-        'project_creation_lifetime_limit',
-        'project_creation_soft_limit',
-        'project_creation_hard_limit',
-        'issue_comment_lifetime_limit',
-        'issue_comment_soft_limit',
-        'issue_comment_hard_limit',
-        'issue_attachment_lifetime_limit',
-        'issue_attachment_soft_limit',
-        'issue_attachment_hard_limit',
-        'issue_bulk_edit_lifetime_limit',
-        'issue_bulk_edit_hard_limit',
-        'issue_bulk_edit_soft_limit',
         'profile_url_fragment',
         'preview_on_hover',
         ]
     self.assertItemsEqual(expected_keys, page_data.keys())
 
     self.assertEqual('profile/url', page_data['profile_url_fragment'])
-    # TODO(jrobbins): Test action limit support
 
   # TODO(jrobbins): Test ProcessForm.
 

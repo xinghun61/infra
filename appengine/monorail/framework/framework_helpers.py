@@ -20,7 +20,6 @@ from google.appengine.api import app_identity
 from third_party import ezt
 
 import settings
-from framework import actionlimit
 from framework import framework_constants
 from framework import template_helpers
 from framework import timestr
@@ -395,117 +394,11 @@ class UserSettings(object):
       be exported to EZT to support the unified user settings form template.
     """
 
-    def ActionLastReset(action_limit):
-      """Return a formatted time string for the last action limit reset."""
-      if action_limit:
-        return time.asctime(time.localtime(action_limit.reset_timestamp))
-      return 'Never'
-
-    def DefaultLifetimeLimit(action_type):
-      """Return the deault lifetime limit for the give type of action."""
-      return actionlimit.ACTION_LIMITS[action_type][3]
-
-    def DefaultPeriodSoftLimit(action_type):
-      """Return the deault period soft limit for the give type of action."""
-      return actionlimit.ACTION_LIMITS[action_type][1]
-
-    def DefaultPeriodHardLimit(action_type):
-      """Return the deault period jard limit for the give type of action."""
-      return actionlimit.ACTION_LIMITS[action_type][2]
-
-    project_creation_lifetime_limit = (
-        (settings_user.project_creation_limit and
-         settings_user.project_creation_limit.lifetime_limit) or
-        DefaultLifetimeLimit(actionlimit.PROJECT_CREATION))
-    project_creation_soft_limit = (
-        (settings_user.project_creation_limit and
-         settings_user.project_creation_limit.period_soft_limit) or
-        DefaultPeriodSoftLimit(actionlimit.PROJECT_CREATION))
-    project_creation_hard_limit = (
-        (settings_user.project_creation_limit and
-         settings_user.project_creation_limit.period_hard_limit) or
-        DefaultPeriodHardLimit(actionlimit.PROJECT_CREATION))
-    issue_comment_lifetime_limit = (
-        (settings_user.issue_comment_limit and
-         settings_user.issue_comment_limit.lifetime_limit) or
-        DefaultLifetimeLimit(actionlimit.ISSUE_COMMENT))
-    issue_comment_soft_limit = (
-        (settings_user.issue_comment_limit and
-         settings_user.issue_comment_limit.period_soft_limit) or
-        DefaultPeriodSoftLimit(actionlimit.ISSUE_COMMENT))
-    issue_comment_hard_limit = (
-        (settings_user.issue_comment_limit and
-         settings_user.issue_comment_limit.period_hard_limit) or
-        DefaultPeriodHardLimit(actionlimit.ISSUE_COMMENT ))
-    issue_attachment_lifetime_limit = (
-        (settings_user.issue_attachment_limit and
-         settings_user.issue_attachment_limit.lifetime_limit) or
-        DefaultLifetimeLimit(actionlimit.ISSUE_ATTACHMENT))
-    issue_attachment_soft_limit = (
-        (settings_user.issue_attachment_limit and
-         settings_user.issue_attachment_limit.period_soft_limit) or
-        DefaultPeriodSoftLimit(actionlimit.ISSUE_ATTACHMENT))
-    issue_attachment_hard_limit = (
-        (settings_user.issue_attachment_limit and
-         settings_user.issue_attachment_limit.period_hard_limit) or
-        DefaultPeriodHardLimit(actionlimit.ISSUE_ATTACHMENT))
-    issue_bulk_edit_lifetime_limit = (
-        (settings_user.issue_bulk_edit_limit and
-         settings_user.issue_bulk_edit_limit.lifetime_limit) or
-        DefaultLifetimeLimit(actionlimit.ISSUE_BULK_EDIT))
-    issue_bulk_edit_soft_limit = (
-        (settings_user.issue_bulk_edit_limit and
-         settings_user.issue_bulk_edit_limit.period_soft_limit) or
-        DefaultPeriodSoftLimit(actionlimit.ISSUE_BULK_EDIT))
-    issue_bulk_edit_hard_limit = (
-        (settings_user.issue_bulk_edit_limit and
-         settings_user.issue_bulk_edit_limit.period_hard_limit) or
-        DefaultPeriodHardLimit(actionlimit.ISSUE_BULK_EDIT))
-    api_request_lifetime_limit = (
-        (settings_user.api_request_limit and
-         settings_user.api_request_limit.lifetime_limit) or
-        DefaultLifetimeLimit(actionlimit.API_REQUEST))
-    api_request_soft_limit = (
-        (settings_user.api_request_limit and
-         settings_user.api_request_limit.period_soft_limit) or
-        DefaultPeriodSoftLimit(actionlimit.API_REQUEST))
-    api_request_hard_limit = (
-        (settings_user.api_request_limit and
-         settings_user.api_request_limit.period_hard_limit) or
-        DefaultPeriodHardLimit(actionlimit.API_REQUEST))
-
     return {
         'settings_user': settings_user_view,
         'settings_user_pb': template_helpers.PBProxy(settings_user),
         'settings_user_is_banned': ezt.boolean(settings_user.banned),
-        'settings_user_ignore_action_limits': (
-            ezt.boolean(settings_user.ignore_action_limits)),
         'self': ezt.boolean(logged_in_user_id == settings_user_view.user_id),
-        'project_creation_reset': (
-            ActionLastReset(settings_user.project_creation_limit)),
-        'issue_comment_reset': (
-            ActionLastReset(settings_user.issue_comment_limit)),
-        'issue_attachment_reset': (
-            ActionLastReset(settings_user.issue_attachment_limit)),
-        'issue_bulk_edit_reset': (
-            ActionLastReset(settings_user.issue_bulk_edit_limit)),
-        'api_request_reset': (
-            ActionLastReset(settings_user.api_request_limit)),
-        'project_creation_lifetime_limit': project_creation_lifetime_limit,
-        'project_creation_soft_limit': project_creation_soft_limit,
-        'project_creation_hard_limit': project_creation_hard_limit,
-        'issue_comment_lifetime_limit': issue_comment_lifetime_limit,
-        'issue_comment_soft_limit': issue_comment_soft_limit,
-        'issue_comment_hard_limit': issue_comment_hard_limit,
-        'issue_attachment_lifetime_limit': issue_attachment_lifetime_limit,
-        'issue_attachment_soft_limit': issue_attachment_soft_limit,
-        'issue_attachment_hard_limit': issue_attachment_hard_limit,
-        'issue_bulk_edit_lifetime_limit': issue_bulk_edit_lifetime_limit,
-        'issue_bulk_edit_soft_limit': issue_bulk_edit_soft_limit,
-        'issue_bulk_edit_hard_limit': issue_bulk_edit_hard_limit,
-        'api_request_lifetime_limit': api_request_lifetime_limit,
-        'api_request_soft_limit': api_request_soft_limit,
-        'api_request_hard_limit': api_request_hard_limit,
         'profile_url_fragment': (
             settings_user_view.profile_url[len('/u/'):]),
         'preview_on_hover': ezt.boolean(settings_user.preview_on_hover),
@@ -545,48 +438,9 @@ class UserSettings(object):
 
     kwargs = {}
     if admin:
-      kwargs.update(is_site_admin='site_admin' in post_data,
-                    ignore_action_limits='ignore_action_limits' in post_data)
+      kwargs.update(is_site_admin='site_admin' in post_data)
       kwargs.update(is_banned='banned' in post_data,
                     banned_reason=post_data.get('banned_reason', ''))
-
-      # action limits
-      action_limit_updates = {}
-      for action_name in actionlimit.ACTION_TYPE_NAMES.iterkeys():
-        reset_input = 'reset_' + action_name
-        lifetime_input = action_name + '_lifetime_limit'
-        soft_input = action_name + '_soft_limit'
-        hard_input = action_name + '_hard_limit'
-        pb_getter = action_name + '_limit'
-        old_lifetime_limit = getattr(user, pb_getter).lifetime_limit
-        old_soft_limit = getattr(user, pb_getter).period_soft_limit
-        old_hard_limit = getattr(user, pb_getter).period_hard_limit
-
-        # Try and get the new limit from post data.
-        # If the user doesn't use an integer, act as if no change requested.
-        def _GetLimit(post_data, limit_input, old_limit):
-          try:
-            new_limit = int(post_data[limit_input])
-          except (KeyError, ValueError):
-            new_limit = old_limit
-          return new_limit
-
-        new_lifetime_limit = _GetLimit(post_data, lifetime_input,
-            old_lifetime_limit)
-        new_soft_limit = _GetLimit(post_data, soft_input,
-            old_soft_limit)
-        new_hard_limit = _GetLimit(post_data, hard_input,
-            old_hard_limit)
-
-        if ((new_lifetime_limit >= 0 and
-             new_lifetime_limit != old_lifetime_limit) or
-            (new_soft_limit >= 0 and new_soft_limit != old_soft_limit) or
-            (new_hard_limit >= 0 and new_hard_limit != old_hard_limit)):
-          action_limit_updates[action_name] = (
-              new_soft_limit, new_hard_limit, new_lifetime_limit)
-        elif reset_input in post_data:
-          action_limit_updates[action_name] = None
-      kwargs.update(action_limit_updates=action_limit_updates)
 
     user_service.UpdateUserSettings(
         cnxn, user_id, user, notify='notify' in post_data,

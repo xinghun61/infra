@@ -9,7 +9,6 @@
 import httplib
 import logging
 
-from framework import actionlimit
 from framework import framework_helpers
 from framework import paginate
 from framework import permissions

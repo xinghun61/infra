@@ -30,7 +30,6 @@ import settings
 from businesslogic import work_env
 from features import filterrules_helpers
 from features import send_notifications
-from framework import actionlimit
 from framework import authdata
 from framework import exceptions
 from framework import framework_constants
@@ -134,10 +133,6 @@ def monorail_api_method(
         # Client will refresh token and retry.
         raise endpoints.UnauthorizedException(
             'Auth error: InvalidOAuthTokenError')
-      except actionlimit.ExcessiveActivityException as e:
-        approximate_http_status = 403
-        raise endpoints.ForbiddenException(
-            'The requester has exceeded API quotas limit')
       except (exceptions.GroupExistsException,
               exceptions.InvalidComponentNameException,
               ratelimiter.ApiRateLimitExceeded) as e:

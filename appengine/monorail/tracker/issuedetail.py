@@ -22,7 +22,6 @@ from features import features_bizobj
 from features import send_notifications
 from features import hotlist_helpers
 from features import hotlist_views
-from framework import actionlimit
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants

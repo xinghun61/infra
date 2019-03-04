@@ -26,9 +26,7 @@ def SetUpGetUsers(user_service, cnxn):
       cnxn, cols=user_svc.USER_COLS, user_id=[333L]).AndReturn(
           [(333L, 'c@example.com', False, False, False, False, True,
             False, 'Spammer',
-            'stay_same_issue', False, False, False, True, 0, 0, None)])
-  user_service.actionlimit_tbl.Select(
-      cnxn, cols=user_svc.ACTIONLIMIT_COLS, user_id=[333L]).AndReturn([])
+            'stay_same_issue', False, False, True, 0, 0, None)])
   user_service.dismissedcues_tbl.Select(
       cnxn, cols=user_svc.DISMISSEDCUES_COLS, user_id=[333L]).AndReturn([])
   user_service.linkedaccount_tbl.Select(
@@ -39,7 +37,6 @@ def SetUpGetUsers(user_service, cnxn):
 def MakeUserService(cache_manager, my_mox):
   user_service = user_svc.UserService(cache_manager)
   user_service.user_tbl = my_mox.CreateMock(sql.SQLTableManager)
-  user_service.actionlimit_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.dismissedcues_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.hotlistvisithistory_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.linkedaccount_tbl = my_mox.CreateMock(sql.SQLTableManager)
@@ -65,15 +62,14 @@ class UserTwoLevelCacheTest(unittest.TestCase):
   def testDeserializeUsersByID(self):
     user_rows = [
         (111L, 'a@example.com', False, False, False, False, True, False, '',
-         'stay_same_issue', False, False, False, True, 0, 0, None),
+         'stay_same_issue', False, False, True, 0, 0, None),
         (222L, 'b@example.com', False, False, False, False, True, False, '',
-         'next_in_list', False, False, False, True, 0, 0, None),
+         'next_in_list', False, False, True, 0, 0, None),
         ]
-    actionlimit_rows = []
     dismissedcues_rows = []
     linkedaccount_rows = []
     user_dict = self.user_service.user_2lc._DeserializeUsersByID(
-        user_rows, actionlimit_rows, dismissedcues_rows, linkedaccount_rows)
+        user_rows, dismissedcues_rows, linkedaccount_rows)
     self.assertEqual(2, len(user_dict))
     self.assertEqual('a@example.com', user_dict[111L].email)
     self.assertFalse(user_dict[111L].is_site_admin)
@@ -88,13 +84,12 @@ class UserTwoLevelCacheTest(unittest.TestCase):
   def testDeserializeUsersByID_LinkedAccounts(self):
     user_rows = [
         (111L, 'a@example.com', False, False, False, False, True, False, '',
-         'stay_same_issue', False, False, False, True, 0, 0, None),
+         'stay_same_issue', False, False, True, 0, 0, None),
         ]
-    actionlimit_rows = []
     dismissedcues_rows = []
     linkedaccount_rows = [(111L, 222L), (111L, 333L), (444L, 111L)]
     user_dict = self.user_service.user_2lc._DeserializeUsersByID(
-        user_rows, actionlimit_rows, dismissedcues_rows, linkedaccount_rows)
+        user_rows, dismissedcues_rows, linkedaccount_rows)
     self.assertEqual(1, len(user_dict))
     user_pb = user_dict[111L]
     self.assertEqual('a@example.com', user_pb.email)
@@ -251,7 +246,6 @@ class UserServiceTest(unittest.TestCase):
     delta = {
         'keep_people_perms_open': False,
         'preview_on_hover': True,
-        'ignore_action_limits': False,
         'notify_issue_change': True,
         'after_issue_update': 'STAY_SAME_ISSUE',
         'notify_starred_issue_change': True,
@@ -267,11 +261,6 @@ class UserServiceTest(unittest.TestCase):
     }
     self.user_service.user_tbl.Update(
         self.cnxn, delta, user_id=111L, commit=False)
-
-    self.user_service.actionlimit_tbl.Delete(
-        self.cnxn, user_id=111L, commit=False)
-    self.user_service.actionlimit_tbl.InsertRows(
-        self.cnxn, user_svc.ACTIONLIMIT_COLS, [], commit=False)
 
     self.user_service.dismissedcues_tbl.Delete(
         self.cnxn, user_id=111L, commit=False)
@@ -505,13 +494,3 @@ class UserServiceTest(unittest.TestCase):
         replace=True)
 
 
-class UserServiceFunctionsTest(unittest.TestCase):
-
-  def testActionLimitToRow(self):
-    al = user_pb2.ActionLimit(
-        recent_count=1, reset_timestamp=123456, lifetime_count=9,
-        lifetime_limit=10, period_soft_limit=2, period_hard_limit=5)
-    action_kind = 3
-    row = user_svc._ActionLimitToRow(
-        111, action_kind, al)
-    self.assertEqual((111, action_kind, 1, 123456, 9, 10, 2, 5), row)

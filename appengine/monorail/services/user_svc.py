@@ -12,7 +12,6 @@ import logging
 import time
 
 import settings
-from framework import actionlimit
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
@@ -25,7 +24,6 @@ from services import caches
 
 USER_TABLE_NAME = 'User'
 USERPREFS_TABLE_NAME = 'UserPrefs'
-ACTIONLIMIT_TABLE_NAME = 'ActionLimit'
 DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
 HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
 LINKEDACCOUNT_TABLE_NAME = 'LinkedAccount'
@@ -37,13 +35,9 @@ USER_COLS = [
     'notify_starred_issue_change', 'email_compact_subject', 'email_view_widget',
     'notify_starred_ping',
     'banned', 'after_issue_update', 'keep_people_perms_open',
-    'preview_on_hover', 'ignore_action_limits', 'obscure_email',
+    'preview_on_hover', 'obscure_email',
     'last_visit_timestamp', 'email_bounce_timestamp', 'vacation_message']
 USERPREFS_COLS = ['user_id', 'name', 'value']
-ACTIONLIMIT_COLS = [
-    'user_id', 'action_kind', 'recent_count', 'reset_timestamp',
-    'lifetime_count', 'lifetime_limit', 'period_soft_limit',
-    'period_hard_limit']
 DISMISSEDCUES_COLS = ['user_id', 'cue']
 HOTLISTVISITHISTORY_COLS = ['hotlist_id', 'user_id', 'viewed']
 LINKEDACCOUNT_COLS = ['parent_id', 'child_id']
@@ -60,12 +54,11 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
     self.user_service = user_service
 
   def _DeserializeUsersByID(
-      self, user_rows, actionlimit_rows, dismissedcue_rows, linkedaccount_rows):
+      self, user_rows, dismissedcue_rows, linkedaccount_rows):
     """Convert database row tuples into User PBs.
 
     Args:
       user_rows: rows from the User DB table.
-      actionlimit_rows: rows from the ActionLimit DB table.
       dismissedcue_rows: rows from the DismissedCues DB table.
       linkedaccount_rows: rows from the LinkedAccount DB table.
 
@@ -80,7 +73,7 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
        notify_issue_change, notify_starred_issue_change,
        email_compact_subject, email_view_widget, notify_starred_ping, banned,
        after_issue_update, keep_people_perms_open, preview_on_hover,
-       ignore_action_limits, obscure_email, last_visit_timestamp,
+       obscure_email, last_visit_timestamp,
        email_bounce_timestamp, vacation_message) = row
       user = user_pb2.MakeUser(
           user_id, email=email, obscure_email=obscure_email)
@@ -97,30 +90,11 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
             after_issue_update.upper())
       user.keep_people_perms_open = bool(keep_people_perms_open)
       user.preview_on_hover = bool(preview_on_hover)
-      user.ignore_action_limits = bool(ignore_action_limits)
       user.last_visit_timestamp = last_visit_timestamp or 0
       user.email_bounce_timestamp = email_bounce_timestamp or 0
       if vacation_message:
         user.vacation_message = vacation_message
       result_dict[user_id] = user
-
-    # Make an ActionLimit for each actionlimit row and attach it to a User PB.
-    for row in actionlimit_rows:
-      (user_id, action_type_name, recent_count, reset_timestamp,
-       lifetime_count, lifetime_limit, period_soft_limit,
-       period_hard_limit) = row
-      if user_id not in result_dict:
-        logging.error('Found action limits for missing user %r', user_id)
-        continue
-      user = result_dict[user_id]
-      action_type = actionlimit.ACTION_TYPE_NAMES[action_type_name]
-      al = actionlimit.GetLimitPB(user, action_type)
-      al.recent_count = recent_count
-      al.reset_timestamp = reset_timestamp
-      al.lifetime_count = lifetime_count
-      al.lifetime_limit = lifetime_limit
-      al.period_soft_limit = period_soft_limit
-      al.period_hard_limit = period_hard_limit
 
     # Build up a list of dismissed "cue card" help items for the users.
     for user_id, cue in dismissedcue_rows:
@@ -150,15 +124,13 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
     """
     user_rows = self.user_service.user_tbl.Select(
         cnxn, cols=USER_COLS, user_id=keys)
-    actionlimit_rows = self.user_service.actionlimit_tbl.Select(
-        cnxn, cols=ACTIONLIMIT_COLS, user_id=keys)
     dismissedcues_rows = self.user_service.dismissedcues_tbl.Select(
         cnxn, cols=DISMISSEDCUES_COLS, user_id=keys)
     linkedaccount_rows = self.user_service.linkedaccount_tbl.Select(
         cnxn, cols=LINKEDACCOUNT_COLS, parent_id=keys, child_id=keys,
         or_where_conds=True)
     return self._DeserializeUsersByID(
-        user_rows, actionlimit_rows, dismissedcues_rows, linkedaccount_rows)
+        user_rows, dismissedcues_rows, linkedaccount_rows)
 
 
 class UserPrefsTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -219,7 +191,6 @@ class UserService(object):
     """
     self.user_tbl = sql.SQLTableManager(USER_TABLE_NAME)
     self.userprefs_tbl = sql.SQLTableManager(USERPREFS_TABLE_NAME)
-    self.actionlimit_tbl = sql.SQLTableManager(ACTIONLIMIT_TABLE_NAME)
     self.dismissedcues_tbl = sql.SQLTableManager(DISMISSEDCUES_TABLE_NAME)
     self.hotlistvisithistory_tbl = sql.SQLTableManager(
         HOTLISTVISITHISTORY_TABLE_NAME)
@@ -419,7 +390,7 @@ class UserService(object):
       raise exceptions.NoSuchUserException('%r not found' % email)
     return email_dict[email]
 
-  ### Retrieval of user objects: with preferences, action limits, and cues
+  ### Retrieval of user objects: with preferences and cues
 
   def GetUsersByIDs(self, cnxn, user_ids, use_cache=True):
     """Return a dictionary of retrieved User PBs.
@@ -475,7 +446,6 @@ class UserService(object):
         'after_issue_update': str(user.after_issue_update or 'UP_TO_LIST'),
         'keep_people_perms_open': user.keep_people_perms_open,
         'preview_on_hover': user.preview_on_hover,
-        'ignore_action_limits': user.ignore_action_limits,
         'obscure_email': user.obscure_email,
         'last_visit_timestamp': user.last_visit_timestamp,
         'email_bounce_timestamp': user.email_bounce_timestamp,
@@ -483,28 +453,6 @@ class UserService(object):
         }
     # Start sending UPDATE statements, but don't COMMIT until the end.
     self.user_tbl.Update(cnxn, delta, user_id=user_id, commit=False)
-
-    # Add rows for any ActionLimits that are defined for this user.
-    al_rows = []
-    if user.get_assigned_value('project_creation_limit'):
-      al_rows.append(_ActionLimitToRow(
-          user_id, 'project_creation', user.project_creation_limit))
-    if user.get_assigned_value('issue_comment_limit'):
-      al_rows.append(_ActionLimitToRow(
-          user_id, 'issue_comment', user.issue_comment_limit))
-    if user.get_assigned_value('issue_attachment_limit'):
-      al_rows.append(_ActionLimitToRow(
-          user_id, 'issue_attachment', user.issue_attachment_limit))
-    if user.get_assigned_value('issue_bulk_edit_limit'):
-      al_rows.append(_ActionLimitToRow(
-          user_id, 'issue_bulk_edit', user.issue_bulk_edit_limit))
-    if user.get_assigned_value('api_request_limit'):
-      al_rows.append(_ActionLimitToRow(
-          user_id, 'api_request', user.api_request_limit))
-
-    self.actionlimit_tbl.Delete(cnxn, user_id=user_id, commit=False)
-    self.actionlimit_tbl.InsertRows(
-        cnxn, ACTIONLIMIT_COLS, al_rows, commit=False)
 
     # Rewrite all the DismissedCues rows.
     cues_rows = [(user_id, cue) for cue in user.dismissed_cues]
@@ -653,10 +601,8 @@ class UserService(object):
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,
-      notify_starred_ping=None,
-      obscure_email=None, after_issue_update=None,
-      is_site_admin=None, ignore_action_limits=None,
-      is_banned=None, banned_reason=None, action_limit_updates=None,
+      notify_starred_ping=None, obscure_email=None, after_issue_update=None,
+      is_site_admin=None, is_banned=None, banned_reason=None,
       dismissed_cues=None, keep_people_perms_open=None, preview_on_hover=None,
       vacation_message=None):
     """Update the preferences of the specified user.
@@ -699,8 +645,6 @@ class UserService(object):
     # admin
     if is_site_admin is not None:
       user.is_site_admin = is_site_admin
-    if ignore_action_limits is not None:
-      user.ignore_action_limits = ignore_action_limits
     if is_banned is not None:
       if is_banned:
         user.banned = banned_reason or 'No reason given'
@@ -711,34 +655,8 @@ class UserService(object):
     if vacation_message is not None:
       user.vacation_message = vacation_message
 
-    # action limits
-    if action_limit_updates:
-      self._UpdateActionLimits(user, action_limit_updates)
-
     # Write the user settings to the database.
     self.UpdateUser(cnxn, user_id, user)
-
-  def _UpdateActionLimits(self, user, action_limit_updates):
-    """Apply action limit updates to a user's account."""
-    for action, new_limit_tuple in action_limit_updates.iteritems():
-      if action in actionlimit.ACTION_TYPE_NAMES:
-        action_type = actionlimit.ACTION_TYPE_NAMES[action]
-        if new_limit_tuple is None:
-          actionlimit.ResetRecentActions(user, action_type)
-        else:
-          new_soft_limit, new_hard_limit, new_lifetime_limit = new_limit_tuple
-
-          pb_getter = action + '_limit'
-          old_lifetime_limit = getattr(user, pb_getter).lifetime_limit
-          old_soft_limit = getattr(user, pb_getter).period_soft_limit
-          old_hard_limit = getattr(user, pb_getter).period_hard_limit
-
-          if ((new_lifetime_limit >= 0 and
-               new_lifetime_limit != old_lifetime_limit) or
-              (new_soft_limit >= 0 and new_soft_limit != old_soft_limit) or
-              (new_hard_limit >= 0 and new_hard_limit != old_hard_limit)):
-            actionlimit.CustomizeLimit(user, action_type, new_soft_limit,
-                                       new_hard_limit, new_lifetime_limit)
 
   ### User preferences
   # These are separate from settings in the User objects because they are
@@ -764,10 +682,3 @@ class UserService(object):
     self.userprefs_tbl.InsertRows(
         cnxn, USERPREFS_COLS, userprefs_rows, replace=True)
     self.userprefs_2lc.InvalidateKeys(cnxn, [user_id])
-
-
-def _ActionLimitToRow(user_id, action_kind, al):
-  """Return a tuple for an SQL table row for an action limit."""
-  return (user_id, action_kind, al.recent_count, al.reset_timestamp,
-          al.lifetime_count, al.lifetime_limit, al.period_soft_limit,
-          al.period_hard_limit)

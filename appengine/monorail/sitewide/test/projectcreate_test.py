@@ -69,28 +69,3 @@ class ProjectCreateTest(unittest.TestCase):
     self.assertEqual('', page_data['initial_summary'])
     self.assertEqual('', page_data['initial_description'])
     self.assertEqual([], page_data['labels'])
-
-  def testGatherHelpData(self):
-    project = project_pb2.Project()
-    mr = testing_helpers.MakeMonorailRequest(project=project)
-
-    # Users not near the lifetime limit see no cue card.
-    help_data = self.servlet.GatherHelpData(mr, {})
-    self.assertEqual(None, help_data['cue_remaining_projects'])
-
-    # User who is near the lifetime limit will see a cue card.
-    mr.auth.user_pb.project_creation_limit.lifetime_count = 20
-    help_data = self.servlet.GatherHelpData(mr, {})
-    self.assertEqual(5, help_data['cue_remaining_projects'])
-
-    # User far under custom lifetime limit won't see a cue card.
-    mr.auth.user_pb.project_creation_limit.lifetime_limit = 100
-    mr.auth.user_pb.project_creation_limit.lifetime_count = 20
-    help_data = self.servlet.GatherHelpData(mr, {})
-    self.assertEqual(None, help_data['cue_remaining_projects'])
-
-    # User near custom lifetime limit will see a cue card.
-    mr.auth.user_pb.project_creation_limit.lifetime_limit = 100
-    mr.auth.user_pb.project_creation_limit.lifetime_count = 91
-    help_data = self.servlet.GatherHelpData(mr, {})
-    self.assertEqual(9, help_data['cue_remaining_projects'])

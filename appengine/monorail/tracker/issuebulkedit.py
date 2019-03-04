@@ -18,7 +18,6 @@ from third_party import ezt
 
 from features import filterrules_helpers
 from features import send_notifications
-from framework import actionlimit
 from framework import exceptions
 from framework import framework_constants
 from framework import framework_views

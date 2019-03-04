@@ -41,7 +41,6 @@ from businesslogic import work_env
 from features import savedqueries_helpers
 from features import features_bizobj
 from features import hotlist_views
-from framework import actionlimit
 from framework import alerts
 from framework import exceptions
 from framework import framework_bizobj
@@ -242,13 +241,6 @@ class Servlet(webapp2.RequestHandler):
       logging.warning('The user has been banned')
       url = framework_helpers.FormatAbsoluteURL(
           self.mr, urls.BANNED, include_project=False, copy_params=False)
-      self.redirect(url, abort=True)
-
-    except actionlimit.ExcessiveActivityException:
-      logging.info('Excessive Activity Exception %r', self.mr.auth.user_id)
-      url = framework_helpers.FormatAbsoluteURL(
-          self.mr, urls.EXCESSIVE_ACTIVITY,
-          include_project=False, copy_params=False)
       self.redirect(url, abort=True)
 
     except ratelimiter.RateLimitExceeded as e:

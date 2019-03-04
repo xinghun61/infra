@@ -10,14 +10,6 @@
       style="margin:1em" enctype="multipart/form-data">
   <input type="hidden" name="token" value="[form_token]">
 
-  [if-any cue_remaining_projects]
-    <table align="center" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 6px">
-      <tr><td class="notice">
-        <b>Note:</b> You can create at most [cue_remaining_projects] more projects.
-      </td></tr>
-    </table>
-  [end]
-
 
   Project name:<br>
   <input size="30" type="text" id="projectname" name="projectname" autocomplete="off"
