@@ -15,12 +15,12 @@ _DEFAULT_TOP_COMPONENT_NUM = 10
 _DEFAULT_RANK_BY = 'test_count'
 
 # Uses a list of tuples to ensure sequence of tabs on UI.
-_RANK_PROPERTY_TUPLES = [
-    ('test_count', ComponentFlakinessReport.test_count),
-    ('bug_count', ComponentFlakinessReport.bug_count),
-    ('new_bug_count', ComponentFlakinessReport.new_bug_count),
-    ('false_rejected_cl_count',
-     ComponentFlakinessReport.false_rejected_cl_count)]
+_RANK_PROPERTY_TUPLES = [('test_count', ComponentFlakinessReport.test_count),
+                         ('bug_count', ComponentFlakinessReport.bug_count),
+                         ('new_bug_count',
+                          ComponentFlakinessReport.new_bug_count),
+                         ('false_rejected_cl_count',
+                          ComponentFlakinessReport.false_rejected_cl_count)]
 
 
 # TODO (crbug.com/923552): Add count as a parameter instead of always use the
@@ -61,7 +61,7 @@ class FlakeReport(BaseHandler):
 
     if component:
       return self.CreateRedirect(
-          '/flake/report/component?component=%s' % component)
+          '/p/chromium/flake-portal/report/component?component=%s' % component)
 
     report_time = time_util.GetPreviousWeekMonday()
 

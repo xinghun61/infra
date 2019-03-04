@@ -15,7 +15,7 @@ from waterfall.test import wf_testcase
 
 class FlakeReportTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/flake/report', flake_report.FlakeReport),
+      ('/p/chromium/flake-portal/report', flake_report.FlakeReport),
   ],
                                        debug=True)
 
@@ -28,7 +28,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
       time_util, 'GetPreviousWeekMonday', return_value=datetime(2018, 1, 2))
   def testNoReport(self, _):
     response = self.test_app.get(
-        '/flake/report?component=component',
+        '/p/chromium/flake-portal/report?component=component',
         params={
             'format': 'json',
         },
@@ -45,9 +45,11 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
       time_util, 'GetPreviousWeekMonday', return_value=datetime(2018, 8, 27))
   def testReportWithTopComponents(self, _):
     response = self.test_app.get(
-        '/flake/report', params={
+        '/p/chromium/flake-portal/report',
+        params={
             'format': 'json',
-        }, status=200)
+        },
+        status=200)
 
     component_a_dict = {
         'id': 'ComponentA',
@@ -105,7 +107,7 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
             'id': '2018-08-27@chromium',
             'test_count': 6,
             'bug_count': 4,
-        'new_bug_count': 0,
+            'new_bug_count': 0,
             'impacted_cl_counts': {
                 'cq_false_rejection': 3,
                 'retry_with_patch': 0,
@@ -117,38 +119,37 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
                 'total': 8
             }
         },
-        'top_components': [
-            {
-                'rank_by':
-                    'test_count',
-                'components': [
-                    component_b_dict, component_a_dict, component_unknown_dict
-                ]
-            },
-            {
-                'rank_by':
-                    'bug_count',
-                'components': [
-                    component_unknown_dict, component_a_dict,
-                    component_b_dict
-                ]
-            },
-            {
-                'rank_by':
-                    'false_rejected_cl_count',
-                'components': [
-                    component_a_dict, component_b_dict,
-                    component_unknown_dict
-                ]
-            },
-            {
-                'rank_by':
-                    'new_bug_count',
-                'components': [
-                    component_a_dict, component_b_dict,
-                    component_unknown_dict
-                ]
-            }],
+        'top_components': [{
+            'rank_by':
+                'test_count',
+            'components': [
+                component_b_dict, component_a_dict, component_unknown_dict
+            ]
+        },
+                           {
+                               'rank_by':
+                                   'bug_count',
+                               'components': [
+                                   component_unknown_dict, component_a_dict,
+                                   component_b_dict
+                               ]
+                           },
+                           {
+                               'rank_by':
+                                   'false_rejected_cl_count',
+                               'components': [
+                                   component_a_dict, component_b_dict,
+                                   component_unknown_dict
+                               ]
+                           },
+                           {
+                               'rank_by':
+                                   'new_bug_count',
+                               'components': [
+                                   component_a_dict, component_b_dict,
+                                   component_unknown_dict
+                               ]
+                           }],
         'component':
             '',
         'luci_project':
@@ -165,13 +166,14 @@ class FlakeReportTest(wf_testcase.WaterfallTestCase):
 
   def testSearchRedirect(self):
     response = self.test_app.get(
-        '/flake/report?component_filter=ComponentA',
+        '/p/chromium/flake-portal/report?component_filter=ComponentA',
         params={
             'format': 'json',
         },
         status=302)
 
-    expected_url_suffix = ('/flake/report/component?component=ComponentA')
+    expected_url_suffix = (
+        '/p/chromium/flake-portal/report/component?component=ComponentA')
 
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_suffix))
