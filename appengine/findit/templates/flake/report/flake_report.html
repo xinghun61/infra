@@ -87,7 +87,9 @@
   <cats-app id="app" components="Tools>Test>FindIt>Flakiness" page-header="Findit: Flakiness Report by components (last week)">
     <form method="get" action="/p/chromium/flake-portal/report">
       <input type="text" name="luci_project" id="luci_project" class="hidden" value="{{luci_project}}">
-      <input type="text" name="component_filter" id="component_filter" size="200" placeholder="Enter component to search" value="{{ component_filter }}"/>
+      <br>
+      <label>Search for Component: </label>
+      <input type="text" name="component_filter" id="component_filter" size="200" placeholder="For example: 'UI>Browser>WebUI' " value="{{ component_filter }}"/><br>
     </form>
     <br>
     <flake-report total_report='{{total_report | tojson}}' top_components='{{top_components | tojson}}'></flake-report>
