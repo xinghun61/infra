@@ -717,32 +717,29 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		return
 	}
 
-	defer func() {
-		// Wait for the subprocess to die (do not leave it hanging around)
-		// and collect its return code.
-		waitErr := proc.Wait()
-		waitRC, hasRC := exitcode.Get(waitErr)
-		switch {
-		case hasRC:
-			log.Warningf(ctx, "subprocess exited with code %d", waitRC)
-			rc = waitRC
-		case waitErr != nil:
-			waitErr = errors.Annotate(waitErr, "failed to Wait() for process").Err()
-			logAnnotatedErr(ctx, waitErr)
-			// Promote to function output error if we don't have one yet.
-			if err == nil {
-				err = waitErr
-			}
-		}
-	}()
-
 	// While the subprocess runs, continuously read its output.
 	execMetadata := annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir)
 	if build, err = c.watchSubprocessOutput(ctx, annoName, stdout, stderr, execMetadata, b); err != nil {
-		err = errors.Annotate(err, "failed to read subprocess output").Err()
-		// Reading failed. Cancel the subprocess.
+		log.Warningf(ctx, "failed to read subprocess output; killing the it and waiting for it to die")
 		procCancelFunc()
+		proc.Wait() // do not let the subprocess outlive this one.
+
+		err = errors.Annotate(err, "failed to read subprocess output").Err()
+		return
 	}
+
+	// Wait for the subprocess to finish.
+	// Most likely it already finished because annotee exits when stdout/stderr
+	// are closed.
+	waitErr := proc.Wait()
+	switch waitRC, hasRC := exitcode.Get(waitErr); {
+	case hasRC:
+		log.Warningf(ctx, "subprocess exited with code %d", waitRC)
+		rc = waitRC
+	case waitErr != nil:
+		err = errors.Annotate(waitErr, "failed to Wait() for process").Err()
+	}
+
 	return
 }
 
