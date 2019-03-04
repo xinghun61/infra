@@ -135,6 +135,9 @@ func (b *buildUpdater) parseRequest(ctx context.Context, ann *milo.Step) (*build
 		return nil, errors.Annotate(err, "failed to extract properties from an annotation proto").Err()
 	}
 
+	delete(props.Fields, "buildbucket")
+	delete(props.Fields, "$recipe_engine/buildbucket")
+
 	return &buildbucketpb.UpdateBuildRequest{
 		Build: &buildbucketpb.Build{
 			Id:    b.buildID,
