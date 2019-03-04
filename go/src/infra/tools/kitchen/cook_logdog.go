@@ -7,9 +7,7 @@ package main
 import (
 	"io"
 	"net/url"
-	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -32,6 +30,7 @@ import (
 	out "go.chromium.org/luci/logdog/client/butler/output/logdog"
 	"go.chromium.org/luci/logdog/client/butler/streamserver"
 	"go.chromium.org/luci/logdog/client/butler/streamserver/localclient"
+	"go.chromium.org/luci/logdog/common/types"
 )
 
 const (
@@ -130,17 +129,8 @@ func (c *cookRun) newButler(ctx context.Context, out output.Output, env environ.
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 // If recipe engine returns non-zero value, the returned err is nil.
-// TODO(nodir): split/refactor this function when kitchen is not used on
-// Buildbot, it is too big.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, env environ.Env) (rc int, build *milo.Step, err error) {
-	// A group of child goroutines.
-	// This function will wait for their completion.
-	var wg sync.WaitGroup
-	defer wg.Wait()
-
 	flags := c.CookFlags.LogDogFlags
-	ncCtx := withNonCancel(ctx)
-
 	log.Infof(ctx, "Using LogDog URL: %s", &flags.AnnotationURL)
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
@@ -167,8 +157,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 
 	// Use the annotation stream's prefix component for our Butler run.
 	prefix, annoName := flags.AnnotationURL.Path.Split()
-	// Determine our base path and annotation subpath.
-	basePath, annoSubpath := annoName.Split()
 
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
@@ -185,7 +173,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 		return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
 	}
 	defer butlerOutput.Close()
-	b, err := c.newButler(ncCtx, butlerOutput, env)
+	b, err := c.newButler(withNonCancel(ctx), butlerOutput, env)
 	if err != nil {
 		return 0, nil, errors.Annotate(err, "failed to create Butler instance").Err()
 	}
@@ -237,69 +225,83 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 
 	// Start our bootstrapped subprocess.
 	printCommand(ctx, proc)
-
 	if err = proc.Start(); err != nil {
 		err = errors.Annotate(err, "failed to start command").Err()
 		return
 	}
+
 	defer func() {
-		// If we've encountered an error, cancel our process.
-		if err != nil {
-			procCancelFunc()
-		}
-
-		// Run our command and collect its return code.
-		ierr := proc.Wait()
-		if waitRC, has := exitcode.Get(ierr); has {
+		// Wait for the subprocess to die (do not leave it hanging around)
+		// and collect its return code.
+		waitErr := proc.Wait()
+		waitRC, hasRC := exitcode.Get(waitErr)
+		switch {
+		case hasRC:
+			log.Warningf(ctx, "subprocess exited with code %d", waitRC)
 			rc = waitRC
-		} else {
-			ierr = errors.Annotate(ierr, "failed to Wait() for process").Err()
-			logAnnotatedErr(ctx, ierr)
-
+		case waitErr != nil:
+			waitErr = errors.Annotate(waitErr, "failed to Wait() for process").Err()
+			logAnnotatedErr(ctx, waitErr)
 			// Promote to function output error if we don't have one yet.
 			if err == nil {
-				err = ierr
+				err = waitErr
 			}
 		}
 	}()
 
+	// While the subprocess runs, continuously read its output.
+	execMetadata := annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir)
+	if build, err = c.watchSubprocessOutput(ctx, annoName, stdout, stderr, execMetadata, b); err != nil {
+		err = errors.Annotate(err, "failed to read subprocess output").Err()
+		// Reading failed. Cancel the subprocess.
+		procCancelFunc()
+	}
+	return
+}
+
+// watchSubprocessOutput annotates stdout/stderr and writes the annotation
+// messages to a stream, and optionally sends build info to Buildbucket server
+// (if c.CallUpdateBuild is true).
+func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types.StreamName, stdout, stderr io.Reader, execMetadata *annotation.Execution, b *butler.Butler) (build *milo.Step, err error) {
+	// Determine our base path and annotation subpath.
+	basePath, annoSubpath := annStreamName.Split()
 	annoteeOpts := annotee.Options{
 		Base:                   basePath,
 		AnnotationSubpath:      annoSubpath,
 		Client:                 localclient.New(b),
-		Execution:              annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir),
+		Execution:              execMetadata,
 		MetadataUpdateInterval: 30 * time.Second,
 		Offline:                false,
 		CloseSteps:             true,
 	}
 
+	var stopBU func() error
 	if c.CallUpdateBuild {
 		bu, err := c.newBuildUpdater()
 		if err != nil {
-			return 0, nil, errors.Annotate(err, "failed to create a build updater").Err()
+			return nil, errors.Annotate(err, "failed to create a build updater").Err()
 		}
 		annoteeOpts.AnnotationUpdated = bu.AnnotationUpdated
 
-		wg.Add(1)
+		errC := make(chan error)
+		buCtx, buCancel := context.WithCancel(ctx)
+		stopBU = func() error {
+			buCancel()
+			buCancel = nil
+			return <-errC
+		}
 		go func() {
-			defer wg.Done()
-			if err := bu.Run(procCtx); err != nil && errors.Unwrap(err) != context.Canceled {
-				// TODO(nodir): fail the build run when this happens.
-				log.WithError(err).Errorf(ctx, "build updater crashed")
+			err = bu.Run(buCtx)
+			if errors.Unwrap(err) == context.Canceled {
+				err = nil
 			}
+			errC <- err
 		}()
 	}
 
-	annoteeProcessor := annotee.New(ncCtx, annoteeOpts)
-	defer func() {
-		as := annoteeProcessor.Finish()
-		build = as.RootStep().Proto()
-	}()
+	annoteeProcessor := annotee.New(withNonCancel(ctx), annoteeOpts)
 
-	// Run STDOUT/STDERR streams through the processor. This will block until
-	// both streams are closed.
-	//
-	// If we're teeing, we will tee the full stream, including annotations.
+	// Run STDOUT/STDERR streams through the processor.
 	streams := []*annotee.Stream{
 		{
 			Reader:   stdout,
@@ -312,21 +314,23 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 			Annotate: true,
 		},
 	}
-	if annoteeOpts.TeeText || annoteeOpts.TeeAnnotations {
-		streams[0].Tee = os.Stdout
-		streams[1].Tee = os.Stderr
-	}
 
 	// Run the process' output streams through Annotee. This will block until
 	// they are all consumed.
-	if err = annoteeProcessor.RunStreams(streams); err != nil {
-		err = errors.Annotate(err, "failed to process streams through Annotee").Err()
-		return
+	if err := annoteeProcessor.RunStreams(streams); err != nil {
+		return nil, errors.Annotate(err, "failed to process streams through Annotee").Err()
 	}
 
-	// Our process and Butler instance will be consumed in our teardown
-	// defer() statements.
-	return
+	// Stop the build updater, if any.
+	if stopBU != nil {
+		if err := stopBU(); err != nil {
+			return nil, errors.Annotate(err, "build updater failed").Err()
+		}
+	}
+
+	// Read the final annotation.
+	as := annoteeProcessor.Finish()
+	return as.RootStep().Proto(), nil
 }
 
 // newBuildUpdater creates a buildUpdater that uses system auth for RPCs.
