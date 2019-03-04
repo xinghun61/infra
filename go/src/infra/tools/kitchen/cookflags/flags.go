@@ -9,6 +9,8 @@ import (
 	"strconv"
 
 	"go.chromium.org/luci/common/flag/stringlistflag"
+	"go.chromium.org/luci/logdog/client/butlerlib/streamproto"
+	"go.chromium.org/luci/logdog/common/types"
 )
 
 const (
@@ -37,11 +39,15 @@ type CookFlags struct {
 
 	KnownGerritHost stringlistflag.Flag `json:"known_gerrit_host"`
 
-	LogDogFlags LogDogFlags `json:"logdog_flags"`
-
+	// Buildbucket flags.
 	BuildbucketBuildID  int64  `json:"buildbucket_build_id"`
 	BuildbucketHostname string `json:"buildbucket_hostname"`
 	CallUpdateBuild     bool   `json:"call_update_build"`
+
+	// LogDog flags.
+	AnnotationURL    types.StreamAddr   `json:"annotation_url"`
+	GlobalLogDogTags streamproto.TagMap `json:"global_tags"`
+	LogFilePath      string             `json:"file_path"`
 }
 
 // Register the CookFlags with the provided FlagSet.
@@ -140,7 +146,21 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 			"while build is running. "+
 			"Requires -buildbucket-hostname, -buildbucket-build-id. ")
 
-	c.LogDogFlags.register(fs)
+	fs.Var(
+		&c.AnnotationURL,
+		"logdog-annotation-url",
+		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
+			"project and prefix will be extracted from this URL.")
+	fs.StringVar(
+		&c.LogFilePath,
+		"logdog-debug-out-file",
+		"",
+		"If specified, write all generated logs to this path instead of sending them.")
+	fs.Var(
+		&c.GlobalLogDogTags,
+		"logdog-tag",
+		"Specify key[=value] tags to be applied to all log streams. Individual streams may override. Can "+
+			"be specified multiple times.")
 }
 
 // Dump returns a []string command line argument which matches this CookFlags.
@@ -167,5 +187,11 @@ func (c *CookFlags) Dump() []string {
 	}
 	ret.boolean("call-update-build", c.CallUpdateBuild)
 
-	return append(ret, c.LogDogFlags.Dump()...)
+	if !c.AnnotationURL.IsZero() {
+		ret = append(ret, "-logdog-annotation-url", c.AnnotationURL.String())
+	}
+	ret.stringMap("logdog-tag", c.GlobalLogDogTags)
+	ret.str("logdog-debug-out-file", c.LogFilePath)
+
+	return ret
 }

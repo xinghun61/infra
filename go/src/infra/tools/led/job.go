@@ -70,14 +70,14 @@ func JobSliceFromTaskSlice(ts *swarming.SwarmingRpcsTaskSlice) (*JobSlice, error
 			// to upload build.proto's to buildbucket.
 			ret.S.KitchenArgs.CallUpdateBuild = false
 
-			if !ret.S.KitchenArgs.LogDogFlags.AnnotationURL.IsZero() {
+			if !ret.S.KitchenArgs.AnnotationURL.IsZero() {
 				// annotation urls are one-time use; if we got one as part of the new
 				// task request, the odds are that it's already been used. We do this
 				// replacement here so that when we launch the task we can generate
 				// a unique annotation url.
-				prefix, path := ret.S.KitchenArgs.LogDogFlags.AnnotationURL.Path.Split()
+				prefix, path := ret.S.KitchenArgs.AnnotationURL.Path.Split()
 				prefix = generateLogdogToken
-				ret.S.KitchenArgs.LogDogFlags.AnnotationURL.Path = prefix.AsPathPrefix(path)
+				ret.S.KitchenArgs.AnnotationURL.Path = prefix.AsPathPrefix(path)
 
 				if cipdRecipe, ok := ret.S.CipdPkgs[ret.S.KitchenArgs.CheckoutDir]; ok {
 					pkgname, vers := "", ""

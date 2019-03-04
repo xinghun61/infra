@@ -7,9 +7,8 @@
 package main
 
 import (
+	"context"
 	"path/filepath"
-
-	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/logdog/client/butler/streamserver"
 )

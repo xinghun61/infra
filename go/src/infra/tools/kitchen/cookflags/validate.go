@@ -81,5 +81,9 @@ func (c *CookFlags) Normalize() error {
 		}
 	}
 
-	return c.LogDogFlags.validate()
+	if c.AnnotationURL.IsZero() {
+		return inputError("-logdog-annotation-url is required")
+	}
+
+	return nil
 }

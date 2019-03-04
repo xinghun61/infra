@@ -5,10 +5,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
-
-	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/logdog/client/butler/streamserver"
 )

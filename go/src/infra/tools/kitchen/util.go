@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,11 +13,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"golang.org/x/net/context"
+	"time"
 
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
+	grpcLogging "go.chromium.org/luci/grpc/logging"
 )
 
 func encodeJSONToPath(path string, obj interface{}) (err error) {
@@ -88,4 +89,47 @@ func printCommand(ctx context.Context, cmd *exec.Cmd) {
 	}
 
 	log.Infof(ctx, "env:\n%s", strings.Join(cmd.Env, "\n"))
+}
+
+// nonCancelContext is a context.Context which deliberately ignores cancellation
+// installed in its parent Contexts. This is used to shield the LogDog output
+// from having its operations cancelled if the supplied Context is cancelled,
+// allowing it to flush.
+type nonCancelContext struct {
+	base  context.Context
+	doneC chan struct{}
+}
+
+func withNonCancel(ctx context.Context) context.Context {
+	return &nonCancelContext{
+		base:  ctx,
+		doneC: make(chan struct{}),
+	}
+}
+
+func (c *nonCancelContext) Deadline() (time.Time, bool)       { return time.Time{}, false }
+func (c *nonCancelContext) Done() <-chan struct{}             { return c.doneC }
+func (c *nonCancelContext) Err() error                        { return nil }
+func (c *nonCancelContext) Value(key interface{}) interface{} { return c.base.Value(key) }
+
+// callbackReadCloser invokes a callback method when closed.
+type callbackReadCloser struct {
+	io.ReadCloser
+	callback func()
+}
+
+func (c *callbackReadCloser) Close() error {
+	defer c.callback()
+	return c.ReadCloser.Close()
+}
+
+// disableGRPCLogging routes gRPC log messages that are emitted through our
+// logger. We only log gRPC prints if our logger is configured to log
+// debug-level or lower, which it isn't by default.
+func disableGRPCLogging(ctx context.Context) {
+	level := log.Debug
+	if !log.IsLogging(ctx, log.Debug) {
+		level = grpcLogging.Suppress
+	}
+	grpcLogging.Install(log.Get(ctx), level)
 }

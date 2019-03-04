@@ -20,15 +20,15 @@ func (s *Systemland) apply(ctx context.Context, uid string, logPrefix logdog_typ
 		args = &(*s.KitchenArgs)
 
 		// generate AnnotationURL, if needed, and add it to tags
-		if strings.Contains(string(args.LogDogFlags.AnnotationURL.Path), generateLogdogToken) {
-			args.LogDogFlags.AnnotationURL.Path = logdog_types.StreamPath(strings.Replace(
-				string(args.LogDogFlags.AnnotationURL.Path), generateLogdogToken,
+		if strings.Contains(string(args.AnnotationURL.Path), generateLogdogToken) {
+			args.AnnotationURL.Path = logdog_types.StreamPath(strings.Replace(
+				string(args.AnnotationURL.Path), generateLogdogToken,
 				string(logPrefix), -1))
 		}
-		if !args.LogDogFlags.AnnotationURL.IsZero() {
+		if !args.AnnotationURL.IsZero() {
 			extraTags = append(extraTags,
 				"allow_milo:1",
-				"log_location:"+args.LogDogFlags.AnnotationURL.String(),
+				"log_location:"+args.AnnotationURL.String(),
 			)
 		}
 	}
