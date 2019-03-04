@@ -74,6 +74,15 @@
     .paging {
       padding: 5px;
     }
+
+    .banner {
+      background-color: lightgoldenrodyellow;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      font-family: sans-serif;
+      font-style: italic;
+    }
   </style>
   <script type="text/javascript">
     $(function() {
@@ -199,6 +208,7 @@
 </head>
 <body>
   <cats-app id="app" components="Tools>Test>FindIt>Flakiness" page-header="Findit: Previous Analyses of Flakes">
+    <div class="banner"><b> Notice: </b> Flake analysis breakage: cannot map commit_position to git_hash due to outage in <a href="https://cr-rev.appspot.com/">crrev</a>. Tracking bug: <a href="https://bugs.chromium.org/p/chromium/issues/detail?id=937742">crbug/937742</a>.</div>
     <form method="get" action="/p/chromium/flake-portal/analysis">
       <table>
         <tr>
