@@ -5,7 +5,7 @@
 from testing_utils import testing
 
 from proto import build_pb2
-from v2 import tokens
+import tokens
 
 
 class BuildTokenTests(testing.AppengineTestCase):

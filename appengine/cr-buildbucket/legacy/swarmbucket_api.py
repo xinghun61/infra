@@ -15,15 +15,15 @@ from components import auth
 from components import utils
 import gae_ts_mon
 
-from . import flatten_swarmingcfg
-from . import swarming
-from . import swarmingcfg
+from legacy import api
+from legacy import api_common
 from proto import build_pb2
-import api
-import api_common
 import config
 import errors
+import flatten_swarmingcfg
 import sequence
+import swarming
+import swarmingcfg
 import user
 
 

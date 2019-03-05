@@ -16,8 +16,8 @@ from testing_utils import testing
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from test import config_test
-from swarming import swarmingcfg
 import errors
+import swarmingcfg
 
 
 class ProjectCfgTest(testing.AppengineTestCase):

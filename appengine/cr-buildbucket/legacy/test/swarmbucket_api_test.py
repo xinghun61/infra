@@ -9,10 +9,10 @@ from components import auth
 from components import auth_testing
 from testing_utils import testing
 
-from swarming import swarmbucket_api
+from legacy import api_common
+from legacy import swarmbucket_api
 from test import test_util
 from test.test_util import future
-import api_common
 import config
 import model
 import sequence
@@ -131,7 +131,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
 
     self.patch(
-        'swarming.swarming._get_task_template_async',
+        'swarming._get_task_template_async',
         return_value=future(('rev', self.task_template, False))
     )
 
@@ -248,7 +248,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
   def test_get_task_def(self):
     self.patch(
-        'v2.tokens.generate_build_token',
+        'tokens.generate_build_token',
         autospec=True,
         return_value='beeff00d',
     )

@@ -15,7 +15,7 @@ import webapp2
 from components import decorators
 from components import pubsub
 
-import api_common
+from legacy import api_common
 import model
 
 

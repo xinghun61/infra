@@ -86,7 +86,7 @@ def expire_builds():
   def txn_async(build_key):
     now = utils.utcnow()
     build = yield build_key.get_async()
-    if not build or build.status_v2 not in expected_statuses:
+    if not build or build.status not in expected_statuses:
       raise ndb.Return(False, build)  # pragma: no cover
 
     build.clear_lease()
@@ -110,7 +110,7 @@ def expire_builds():
   q = model.Build.query(
       model.Build.key > ndb.Key(model.Build, id_low),
       # Cannot use >1 inequality filters per query.
-      model.Build.status_v2.IN(expected_statuses),
+      model.Build.status.IN(expected_statuses),
   )
   q.map_async(update_async, keys_only=True).get_result()
 

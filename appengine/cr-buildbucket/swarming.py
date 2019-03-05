@@ -51,24 +51,24 @@ import webapp2
 
 from third_party import annotations_pb2
 
-from . import flatten_swarmingcfg
-from . import isolate
-from . import swarmingcfg as swarmingcfg_module
+from legacy import api_common
 from proto import build_pb2
 from proto import common_pb2
 from proto import launcher_pb2
 from proto.config import project_config_pb2
-from v2 import tokens
 import annotations
-import api_common
 import bbutil
 import buildtags
 import config
 import errors
 import events
+import flatten_swarmingcfg
 import gae_ts_mon
+import isolate
 import logdog
 import model
+import swarmingcfg as swarmingcfg_module
+import tokens
 import user
 
 _PUBSUB_TOPIC = 'swarming'
@@ -809,7 +809,7 @@ def _setup_named_caches(builder_cfg, props):
   # Look for builder specific named caches.
   for c in builder_cfg.caches:
     if c.path.startswith(u'cache/'):  # pragma: no cover
-      # TODO(nodir): remove this code path onces clients remove "cache/" from
+      # TODO(nodir): remove this code path once clients remove "cache/" from
       # their configs.
       cache_path = c.path
     else:

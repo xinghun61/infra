@@ -10,7 +10,7 @@ from google.appengine.ext import ndb
 from components import utils
 import gae_ts_mon
 
-import api_common
+from legacy import api_common
 import buildtags
 import config
 import model

@@ -11,8 +11,8 @@ from components import utils
 
 from access import access_pb2
 from access import access_prpc_pb2
+from legacy import api_common
 from proto.config import project_config_pb2
-import api_common
 import user
 
 __all__ = ['AccessServicer']

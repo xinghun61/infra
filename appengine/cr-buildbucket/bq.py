@@ -71,15 +71,10 @@ class CronExportBuildsExperimental(CronExportBuilds):
 def _process_pull_task_batch(queue_name, dataset):
   """Exports up to 500 builds to BigQuery.
 
-  Leases pull tasks, fetches build entities, tries to convert them to v2 format
-  and insert into BigQuery in v2 format.
+  Leases pull tasks, fetches build entities and inserts them into BigQuery.
 
-  If v2 conversion raises any other exception, including
-  v2.MalformedBuild, logs the exception and does not remove the task from
-  the queue. Such a task will be retried later.
-
-  If v2 conversion indicates that the build is not finalized and it has been
-  20m or more since the build was completed, the following strategies apply:
+  If the build is not finalized and it has been 20m or more since the build was
+  completed, the following strategies apply:
   - if the build infra-failed with BOT_DIED or TIMED_OUT task status,
     saves build as is.
   - if the build infra-failed with BOOTSTRAPPER_ERROR and there are no steps,

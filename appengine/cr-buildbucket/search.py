@@ -209,8 +209,8 @@ class Query(object):
     return repr(self.__dict__)
 
   @property
-  def status_is_v2(self):
-    return isinstance(self.status, int)
+  def status_is_legacy(self):
+    return not isinstance(self.status, int)
 
   def validate(self):
     """Raises errors.InvalidInputError if self is invalid."""
@@ -368,8 +368,8 @@ def _query_search_async(q):
     dq = dq.filter(model.Build.project == q.project)
 
   expected_statuses_v1 = None
-  if q.status_is_v2:
-    dq = dq.filter(model.Build.status_v2 == q.status)
+  if not q.status_is_legacy:
+    dq = dq.filter(model.Build.status == q.status)
   elif q.status == StatusFilter.INCOMPLETE:
     expected_statuses_v1 = (
         model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED
@@ -401,8 +401,8 @@ def _query_search_async(q):
   dq = dq.order(model.Build.key)
 
   def local_predicate(build):
-    if q.status_is_v2:
-      if build.status_v2 != q.status:  # pragma: no cover
+    if not q.status_is_legacy:
+      if build.status != q.status:  # pragma: no cover
         return False
     elif (expected_statuses_v1 and
           build.status_legacy not in expected_statuses_v1):
@@ -542,8 +542,8 @@ def _tag_index_search_async(q):
       ('project', q.project),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
-  if q.status_is_v2:
-    scalar_filters.append(('status_v2', q.status))
+  if not q.status_is_legacy:
+    scalar_filters.append(('status', q.status))
   elif q.status == StatusFilter.INCOMPLETE:
     scalar_filters.append(('incomplete', True))
   elif q.status is not None:

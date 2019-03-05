@@ -10,7 +10,7 @@ from testing_utils import testing
 
 from test.test_util import future
 
-from swarming import isolate
+import isolate
 
 
 class IsolateTest(testing.AppengineTestCase):

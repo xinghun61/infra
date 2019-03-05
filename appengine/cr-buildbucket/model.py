@@ -165,7 +165,9 @@ class Build(ndb.Model):
   # These properties are derived from "proto" properties.
   # They are used to index builds.
 
-  status_v2 = ndb.ComputedProperty(lambda self: self.proto.status)
+  status = ndb.ComputedProperty(
+      lambda self: self.proto.status, name='status_v2'
+  )
 
   @property
   def is_ended(self):  # pragma: no cover
@@ -312,19 +314,19 @@ class Build(ndb.Model):
     self.failure_reason = None
     self.cancelation_reason = None
 
-    status_v2 = self.proto.status
-    if status_v2 == common_pb2.SCHEDULED:
+    status = self.proto.status
+    if status == common_pb2.SCHEDULED:
       self.status_legacy = BuildStatus.SCHEDULED
-    elif status_v2 == common_pb2.STARTED:
+    elif status == common_pb2.STARTED:
       self.status_legacy = BuildStatus.STARTED
-    elif status_v2 == common_pb2.SUCCESS:
+    elif status == common_pb2.SUCCESS:
       self.status_legacy = BuildStatus.COMPLETED
       self.result = BuildResult.SUCCESS
-    elif status_v2 == common_pb2.FAILURE:
+    elif status == common_pb2.FAILURE:
       self.status_legacy = BuildStatus.COMPLETED
       self.result = BuildResult.FAILURE
       self.failure_reason = FailureReason.BUILD_FAILURE
-    elif status_v2 == common_pb2.INFRA_FAILURE:
+    elif status == common_pb2.INFRA_FAILURE:
       self.status_legacy = BuildStatus.COMPLETED
       if self.proto.infra_failure_reason.resource_exhaustion:
         # In python implementation, V2 resource exhaustion is V1 timeout.
@@ -333,12 +335,12 @@ class Build(ndb.Model):
       else:
         self.result = BuildResult.FAILURE
         self.failure_reason = FailureReason.INFRA_FAILURE
-    elif status_v2 == common_pb2.CANCELED:
+    elif status == common_pb2.CANCELED:
       self.status_legacy = BuildStatus.COMPLETED
       self.result = BuildResult.CANCELED
       self.cancelation_reason = CancelationReason.CANCELED_EXPLICITLY
     else:  # pragma: no cover
-      assert False, status_v2
+      assert False, status
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""

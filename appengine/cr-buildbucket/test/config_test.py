@@ -20,10 +20,10 @@ from testing_utils import testing
 import mock
 
 from proto.config import project_config_pb2
-from swarming import flatten_swarmingcfg
 from test import test_util
 import config
 import errors
+import flatten_swarmingcfg
 
 
 def short_bucket_cfg(cfg):

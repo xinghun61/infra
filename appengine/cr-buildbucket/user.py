@@ -247,7 +247,7 @@ def get_accessible_buckets_async():
 
 
 @utils.cache
-def self_identity():  # pramga: no cover
+def self_identity():  # pragma: no cover
   """Returns identity of the buildbucket app."""
   return auth.Identity('user', app_identity.get_service_account_name())
 

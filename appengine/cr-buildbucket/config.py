@@ -84,7 +84,7 @@ def validate_access_list(acl_list, ctx):
 
 @validation.project_config_rule(cfg_path(), project_config_pb2.BuildbucketCfg)
 def validate_buildbucket_cfg(cfg, ctx):
-  from swarming import swarmingcfg
+  import swarmingcfg
 
   acl_set_names = set()
   for i, acl_set in enumerate(cfg.acl_sets):
@@ -143,7 +143,7 @@ def validate_buildbucket_cfg(cfg, ctx):
     self_config_set(), 'settings.cfg', service_config_pb2.SettingsCfg
 )
 def validate_settings_cfg(cfg, ctx):  # pragma: no cover
-  from swarming import swarmingcfg
+  import swarmingcfg
 
   if cfg.HasField('swarming'):
     with ctx.prefix('swarming: '):
@@ -364,8 +364,7 @@ def cron_update_buckets():
   the acl_sets message field. Also inlines swarmbucket builder defaults and
   mixins and clears Builder.mixins field.
   """
-  from swarming import flatten_swarmingcfg
-  from swarming import swarmingcfg
+  import flatten_swarmingcfg
 
   config_map = config.get_project_configs(
       cfg_path(), project_config_pb2.BuildbucketCfg

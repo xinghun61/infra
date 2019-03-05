@@ -200,7 +200,7 @@ class SearchTest(testing.AppengineTestCase):
     )
     self.assertEqual(builds, [build1])
 
-  def test_filter_by_status(self):
+  def test_filter_by_status_legacy(self):
     scheduled_build = self.put_build(status=common_pb2.SCHEDULED)
     self.put_build(status=common_pb2.SUCCESS)
 
@@ -229,7 +229,7 @@ class SearchTest(testing.AppengineTestCase):
     )
     self.assertEqual(builds, [scheduled_build])
 
-  def test_filter_by_status_v2(self):
+  def test_filter_by_status(self):
     scheduled_build = self.put_build(status=common_pb2.SCHEDULED)
     self.put_build(status=common_pb2.STARTED)
 

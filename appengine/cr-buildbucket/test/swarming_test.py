@@ -28,20 +28,20 @@ import webapp2
 
 from third_party import annotations_pb2
 
+from legacy import api_common
 from proto import build_pb2
 from proto import common_pb2
 from proto import launcher_pb2
 from proto import step_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
-from swarming import isolate
-from swarming import swarming
 from test import test_util
 from test.test_util import future, future_exception
-import api_common
 import bbutil
 import errors
+import isolate
 import model
+import swarming
 import user
 
 linux_CACHE_NAME = (
@@ -621,12 +621,12 @@ class SwarmingTest(BaseTest):
         return_value=auth.Identity('user', 'john@example.com')
     )
     self.patch(
-        'swarming.swarming._is_migrating_builder_prod_async',
+        'swarming._is_migrating_builder_prod_async',
         autospec=True,
         return_value=future(True)
     )
     self.patch(
-        'v2.tokens.generate_build_token',
+        'tokens.generate_build_token',
         autospec=True,
         return_value='beeff00d',
     )
@@ -1096,7 +1096,7 @@ class SwarmingTest(BaseTest):
 
   def test_create_task_async_canary_template(self):
     self.patch(
-        'v2.tokens.generate_build_token',
+        'tokens.generate_build_token',
         autospec=True,
         return_value='beeff00d',
     )
@@ -1333,7 +1333,7 @@ class SwarmingTest(BaseTest):
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-  @mock.patch('swarming.swarming._should_use_canary_template', autospec=True)
+  @mock.patch('swarming._should_use_canary_template', autospec=True)
   def test_create_task_async_no_canary_template_implicit(
       self, should_use_canary_template
   ):
@@ -1767,7 +1767,7 @@ class SwarmingTest(BaseTest):
   def test_sync(self, case):
     logging.info('test case: %s', case)
     self.patch(
-        'swarming.swarming._load_build_run_result_async',
+        'swarming._load_build_run_result_async',
         autospec=True,
         return_value=future((
             case.get('build_run_result'),
@@ -1971,7 +1971,7 @@ class SubNotifyTest(BaseTest):
     self.handler = swarming.SubNotify(response=webapp2.Response())
 
     self.patch(
-        'swarming.swarming._load_build_run_result_async',
+        'swarming._load_build_run_result_async',
         autospec=True,
         return_value=future(({}, False)),
     )
@@ -2052,7 +2052,7 @@ class SubNotifyTest(BaseTest):
       with self.assert_bad_message():
         self.handler.unpack_msg({'data': b64json(data)})
 
-  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
+  @mock.patch('swarming._load_task_result_async', autospec=True)
   def test_post(self, load_task_result_async):
     build = test_util.build(id=1)
     build.put()
@@ -2221,7 +2221,7 @@ class SubNotifyTest(BaseTest):
       yield
     self.assertTrue(self.handler.bad_message)
 
-  @mock.patch('swarming.swarming.SubNotify._process_msg', autospec=True)
+  @mock.patch('swarming.SubNotify._process_msg', autospec=True)
   def test_dedup_messages(self, _process_msg):
     self.handler.request = mock.Mock(
         json={'message': {
@@ -2243,12 +2243,12 @@ class CronUpdateTest(BaseTest):
     self.now += datetime.timedelta(minutes=5)
 
     self.patch(
-        'swarming.swarming._load_build_run_result_async',
+        'swarming._load_build_run_result_async',
         autospec=True,
         return_value=future(({}, False)),
     )
 
-  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
+  @mock.patch('swarming._load_task_result_async', autospec=True)
   def test_sync_build_async(self, load_task_result_async):
     load_task_result_async.return_value = future({
         'state': 'RUNNING',
@@ -2275,7 +2275,7 @@ class CronUpdateTest(BaseTest):
     self.assertEqual(build.proto.status, common_pb2.SUCCESS)
     self.assertIsNone(build.lease_key)
 
-  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
+  @mock.patch('swarming._load_task_result_async', autospec=True)
   def test_sync_build_async_no_task(self, load_task_result_async):
     load_task_result_async.return_value = future(None)
 

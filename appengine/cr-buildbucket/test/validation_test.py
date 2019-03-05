@@ -17,7 +17,7 @@ from proto import notification_pb2
 from proto import rpc_pb2
 from proto import step_pb2
 
-from v2 import validation
+import validation
 
 status_name = common_pb2.Status.Name
 

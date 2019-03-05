@@ -28,8 +28,8 @@ class Error(Exception):
 
 PUBSUB_USER_DATA_MAX_LENGTH = 4096
 
-# swarming/swarming.py and v2/api.py reserve these properties.
-# swarming/swarming.py does a redundant check, see validate_build_parameters().
+# swarming.py and api.py reserve these properties.
+# swarming.py does a redundant check, see validate_build_parameters().
 RESERVED_PROPERTY_PATHS = [
     # Reserved for buildbucket internals.
     ['buildbucket'],

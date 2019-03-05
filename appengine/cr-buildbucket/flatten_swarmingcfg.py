@@ -1,0 +1,1 @@
+../../infra/libs/buildbucket/swarming/flatten_swarmingcfg.py

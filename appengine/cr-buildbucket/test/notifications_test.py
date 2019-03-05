@@ -16,8 +16,8 @@ from components import pubsub
 from test import test_util
 from testing_utils import testing
 
+from legacy import api_common
 from test import test_util
-import api_common
 import bbutil
 import main
 import model

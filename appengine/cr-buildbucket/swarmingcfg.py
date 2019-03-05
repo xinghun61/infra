@@ -12,7 +12,7 @@ import re
 from components.config import validation
 
 from proto.config import project_config_pb2
-from . import flatten_swarmingcfg
+import flatten_swarmingcfg
 import errors
 
 _DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')

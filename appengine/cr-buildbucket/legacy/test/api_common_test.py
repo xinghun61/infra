@@ -11,8 +11,8 @@ utils.fix_protobuf_package()
 from test import test_util
 from testing_utils import testing
 
+from legacy import api_common
 from proto import common_pb2
-import api_common
 import bbutil
 import config
 import model
