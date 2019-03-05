@@ -28,6 +28,7 @@ import (
 	apibq "infra/tricium/api/bigquery"
 	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -98,7 +99,7 @@ func getPlatforms(platforms int64) ([]tricium.Platform_Name, error) {
 
 // Create and populate an AnalysisRun given the datastore entities.
 func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment) (*apibq.AnalysisRun, error) {
-	revisionNumber, err := strconv.Atoi(common.PatchSetNumber(areq.GitRef))
+	revisionNumber, err := strconv.Atoi(gerrit.PatchSetNumber(areq.GitRef))
 	if err != nil {
 		return nil, err
 	}

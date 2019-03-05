@@ -26,14 +26,11 @@ import (
 	"google.golang.org/appengine"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
+	gc "infra/tricium/appengine/common/gerrit"
 )
-
-// The timestamp format used by Gerrit (using the reference date).
-// All timestamps are in UTC.
-const timeStampLayout = "2006-01-02 15:04:05.000000000"
 
 // Datastore schema diagram for tracked Gerrit projects and CLs:
 //
@@ -109,7 +106,7 @@ func poll(c context.Context, cp config.ProviderAPI) error {
 }
 
 // pollProject polls for new changes for all repos in one LUCI project.
-func pollProject(c context.Context, name string, gerrit API, cp config.ProviderAPI) error {
+func pollProject(c context.Context, name string, gerrit gc.API, cp config.ProviderAPI) error {
 	// Separate repos in one project can be processed in parallel in one request.
 	pc, err := cp.GetProjectConfig(c, name)
 	if err != nil {
@@ -143,7 +140,7 @@ func pollProject(c context.Context, name string, gerrit API, cp config.ProviderA
 // change in the last poll is used in the next poll, as the value of "after"
 // in the query string. If no previous poll has been logged, then a time
 // corresponding to zero is used (time.Time{}).
-func pollGerritProject(c context.Context, luciProject string, repo *tricium.RepoDetails, gerrit API) error {
+func pollGerritProject(c context.Context, luciProject string, repo *tricium.RepoDetails, gerrit gc.API) error {
 	gerritProject := repo.GetGerritProject()
 	logging.Debugf(c, "Starting poll-project for project %q.", luciProject)
 
@@ -189,7 +186,7 @@ func pollGerritProject(c context.Context, luciProject string, repo *tricium.Repo
 		return errors.Annotate(err, "failed to query for change").Err()
 	}
 	if more {
-		logging.Warningf(c, "There were changes beyond the limit %d. Some will be skipped.", maxChanges)
+		logging.Warningf(c, "There were changes beyond the limit %d. Some will be skipped.", gc.MaxChanges)
 	}
 
 	// No changes found.

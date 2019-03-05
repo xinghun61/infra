@@ -12,7 +12,8 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
+	gc "infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
 )
@@ -55,7 +56,7 @@ func TestReportResultsRequest(t *testing.T) {
 		// Add example Comment and associated CommentSelection entities.
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
 
-		changedLines := ChangedLinesInfo{
+		changedLines := gc.ChangedLinesInfo{
 			"dir/file.txt": {2, 5, 6},
 		}
 		deletedFileCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
@@ -95,7 +96,7 @@ func TestReportResultsRequest(t *testing.T) {
 		}), ShouldBeNil)
 
 		Convey("Reports only included comments", func() {
-			mock := &mockRestAPI{ChangedLines: changedLines}
+			mock := &gc.MockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: "MyLinter",
@@ -108,7 +109,7 @@ func TestReportResultsRequest(t *testing.T) {
 		Convey("Does not report results when reporting is disabled", func() {
 			request.GerritReportingDisabled = true
 			So(ds.Put(ctx, request), ShouldBeNil)
-			mock := &mockRestAPI{ChangedLines: changedLines}
+			mock := &gc.MockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
@@ -132,7 +133,7 @@ func TestReportResultsRequest(t *testing.T) {
 		So(len(comments), ShouldEqual, maxComments+1)
 
 		Convey("Reports when number of comments is at maximum", func() {
-			mock := &mockRestAPI{ChangedLines: changedLines}
+			mock := &gc.MockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
@@ -161,7 +162,7 @@ func TestReportResultsRequest(t *testing.T) {
 		So(len(comments), ShouldEqual, maxComments+2)
 
 		Convey("Does not report comments that are not on changed lines", func() {
-			mock := &mockRestAPI{ChangedLines: changedLines}
+			mock := &gc.MockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
@@ -182,7 +183,7 @@ func TestReportResultsRequest(t *testing.T) {
 		So(len(comments), ShouldEqual, maxComments+3)
 
 		Convey("Does not report when number of comments exceeds maximum", func() {
-			mock := &mockRestAPI{ChangedLines: changedLines}
+			mock := &gc.MockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: functionName,
@@ -232,7 +233,7 @@ func TestReportResultsRequestWithRenamedOrCopiedFiles(t *testing.T) {
 		// Add example Comment and associated CommentSelection entities.
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
 
-		changedLines := ChangedLinesInfo{
+		changedLines := gc.ChangedLinesInfo{
 			"dir/file.txt":         {2, 5, 6},
 			"dir/renamed_file.txt": {1, 2, 3, 4, 5, 6, 7},
 			"dir/copied_file.txt":  {1, 2, 3, 4, 5, 6, 7},
@@ -281,7 +282,7 @@ func TestReportResultsRequestWithRenamedOrCopiedFiles(t *testing.T) {
 		}), ShouldBeNil)
 
 		Convey("Does not report comments in renamed or copied files", func() {
-			mock := &mockRestAPI{ChangedLines: changedLines}
+			mock := &gc.MockRestAPI{ChangedLines: changedLines}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
 				Analyzer: "MyLinter",

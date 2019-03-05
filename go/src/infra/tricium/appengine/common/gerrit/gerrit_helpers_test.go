@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package common
+package gerrit
 
 import (
 	"testing"
@@ -48,15 +48,15 @@ func TestCLAndPatchSetNumberFunctions(t *testing.T) {
 	})
 }
 
-func TestComposeGerritURL(t *testing.T) {
-	Convey("gerritURL with well-formed Gerrit change ref", t, func() {
+func TestComposeCreateURL(t *testing.T) {
+	Convey("createURL with well-formed Gerrit change ref", t, func() {
 		So(
-			GerritURL("https://chromium-review.googlesource.com", "refs/changes/10/12310/3"),
+			CreateURL("https://chromium-review.googlesource.com", "refs/changes/10/12310/3"),
 			ShouldEqual, "https://chromium-review.googlesource.com/c/12310/3")
 	})
 
 	Convey("with badly-formed ref returns empty string", t, func() {
-		So(GerritURL("foo.com", "xxrefs/changes/10/12310/3xx"), ShouldEqual, "")
-		So(GerritURL("foo.com", "refs/changes/123/4"), ShouldEqual, "")
+		So(CreateURL("foo.com", "xxrefs/changes/10/12310/3xx"), ShouldEqual, "")
+		So(CreateURL("foo.com", "refs/changes/123/4"), ShouldEqual, "")
 	})
 }

@@ -20,6 +20,7 @@ import (
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
+	"infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -163,7 +164,7 @@ func fetchPatchDetails(c context.Context, runID int64) common.PatchDetails {
 	patch.GitilesHost = request.GitURL
 	patch.GitilesProject = request.Project
 	if request.GerritProject != "" && request.GerritChange != "" {
-		cl, p := common.ExtractCLPatchSetNumbers(request.GitRef)
+		cl, p := gerrit.ExtractCLPatchSetNumbers(request.GitRef)
 		patch.GerritHost = request.GerritHost
 		patch.GerritProject = request.GerritProject
 		patch.GerritChange = request.GerritChange

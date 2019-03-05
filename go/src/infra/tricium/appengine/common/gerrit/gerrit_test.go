@@ -6,33 +6,14 @@ package gerrit
 
 import (
 	"encoding/base64"
-	"fmt"
 	"testing"
-	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	"encoding/json"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/triciumtest"
 )
-
-func TestComposeChangesQueryURL(t *testing.T) {
-	Convey("Test Environment", t, func() {
-		host := "chromium-review.googlesource.com"
-		project := "playground/gerrit-tricium"
-		formattedProject := "playground%2Fgerrit-tricium"
-		const form = "2006-01-02 15:04:05.000000000"
-		time, err := time.Parse(form, "2016-10-01 10:00:05.640000000")
-		So(err, ShouldBeNil)
-		formattedTime := "2016-10-01+10%3A00%3A05.640000000"
-		Convey("First page of poll", func() {
-			So(composeChangesQueryURL(host, project, time), ShouldEqual,
-				fmt.Sprintf("https://%s/a/changes/?n=60&o=CURRENT_REVISION&o=CURRENT_FILES&o=DETAILED_ACCOUNTS&q=project%%3A%s+after%%3A%%22%s%%22",
-					host, formattedProject, formattedTime))
-		})
-	})
-}
 
 func TestCreateRobotComment(t *testing.T) {
 	Convey("Test Environment", t, func() {

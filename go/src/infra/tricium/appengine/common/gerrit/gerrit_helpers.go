@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package common
+package gerrit
 
 import (
 	"fmt"
@@ -23,8 +23,8 @@ func CLNumber(revision string) string {
 	return cl
 }
 
-// GerritURL makes a URL to link to a particular revision.
-func GerritURL(host, revision string) string {
+// CreateURL makes a URL to link to a particular revision.
+func CreateURL(host, revision string) string {
 	cl, patch := ExtractCLPatchSetNumbers(revision)
 	if cl == "" && patch == "" {
 		return ""

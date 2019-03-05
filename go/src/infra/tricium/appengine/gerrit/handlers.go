@@ -17,6 +17,7 @@ import (
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common/config"
+	gc "infra/tricium/appengine/common/gerrit"
 )
 
 type gerritReporter struct{}
@@ -54,7 +55,7 @@ func pollProjectHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err = pollProject(c, request.Project, GerritServer, config.LuciConfigServer); err != nil {
+	if err = pollProject(c, request.Project, gc.GerritServer, config.LuciConfigServer); err != nil {
 		logging.WithError(err).Errorf(c, "Failed to poll project.")
 		w.WriteHeader(http.StatusInternalServerError)
 		return

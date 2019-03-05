@@ -24,8 +24,7 @@ import (
 	gr "golang.org/x/build/gerrit"
 	"golang.org/x/net/context"
 
-	"infra/tricium/api/v1"
-	"infra/tricium/appengine/common"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -33,11 +32,14 @@ const (
 	scope = "https://www.googleapis.com/auth/gerritcodereview"
 	// Timeout for waiting for a response from Gerrit.
 	gerritTimeout = 60 * time.Second
-	// Max number of changes to request from Gerrit.
+	// MaxChanges is the max number of changes to request from Gerrit.
 	//
 	// This should be a number small enough so that it can be handled in one
 	// request, but also large enough to avoid skipping over changes.
-	maxChanges = 60
+	MaxChanges = 60
+	// The timestamp format used by Gerrit (using the reference date).
+	// All timestamps are in UTC.
+	timeStampLayout = "2006-01-02 15:04:05.000000000"
 )
 
 // API specifies the Gerrit REST API tuned to the needs of Tricium.
@@ -161,7 +163,7 @@ func (g gerritServer) PostRobotComments(c context.Context, host, change, revisio
 func (g gerritServer) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
 	url := fmt.Sprintf(
 		"https://%s/a/changes/%s/revisions/%s/patch",
-		host, change, common.PatchSetNumber(revision))
+		host, change, PatchSetNumber(revision))
 	logging.Debugf(c, "Fetching patch using URL %q", url)
 	response, err := fetchResponse(c, url, nil)
 	if err != nil {
@@ -284,7 +286,7 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time) strin
 	// on the whitelisted_groups field of the project config.
 	v.Add("o", "DETAILED_ACCOUNTS")
 	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", project, ts))
-	v.Add("n", strconv.Itoa(maxChanges))
+	v.Add("n", strconv.Itoa(MaxChanges))
 	return fmt.Sprintf("https://%s/a/changes/?%s", host, v.Encode())
 }
 
@@ -293,7 +295,7 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 	if err != nil {
 		return errors.Annotate(err, "failed to marshal ReviewInput").Err()
 	}
-	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/review", host, change, common.PatchSetNumber(revision))
+	url := fmt.Sprintf("https://%s/a/changes/%s/revisions/%s/review", host, change, PatchSetNumber(revision))
 	logging.Debugf(c, "Posting comments using URL %q.", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
@@ -331,24 +333,30 @@ func getChangedLinesFromPatch(encodedPatch string) (ChangedLinesInfo, error) {
 	return diff.Changed(), nil
 }
 
-// mockRestAPI mocks the GerritAPI interface for testing.
+// MockRestAPI mocks the GerritAPI interface for testing.
 //
 // Remembers the last posted message and comments.
-type mockRestAPI struct {
+type MockRestAPI struct {
 	LastMsg      string
 	LastComments []*track.Comment
 	ChangedLines ChangedLinesInfo
 }
 
-func (*mockRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time) ([]gr.ChangeInfo, bool, error) {
+// QueryChanges sends one query for changes to Gerrit using the
+// provided poll data.
+func (*MockRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time) ([]gr.ChangeInfo, bool, error) {
 	return []gr.ChangeInfo{}, false, nil
 }
 
-func (m *mockRestAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
+// PostRobotComments posts robot comments to a change.
+func (m *MockRestAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
 	m.LastComments = comments
 	return nil
 }
 
-func (m *mockRestAPI) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
+// GetChangedLines requests the diff info for all files for a
+// particular revision and extracts the lines in the "new" post-patch
+// version that are considered changed.
+func (m *MockRestAPI) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
 	return m.ChangedLines, nil
 }

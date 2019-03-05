@@ -14,7 +14,8 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
+	gc "infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -30,14 +31,14 @@ func (r *gerritReporter) ReportResults(c context.Context, req *admin.ReportResul
 	if req.RunId == 0 {
 		return nil, errors.New("missing run ID", grpcutil.InvalidArgumentTag)
 	}
-	if err := reportResults(c, req, GerritServer); err != nil {
+	if err := reportResults(c, req, gc.GerritServer); err != nil {
 		return nil, errors.Annotate(err, "failed to report results").
 			Tag(grpcutil.InternalTag).Err()
 	}
 	return &admin.ReportResultsResponse{}, nil
 }
 
-func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit API) error {
+func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit gc.API) error {
 	// Get Git details first, since other things depend on this.
 	request := &track.AnalyzeRequest{ID: req.RunId}
 	if err := ds.Get(c, request); err != nil {
@@ -116,7 +117,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 //
 // Non-file-level comments that don't overlap with the changed lines
 // should be filtered out.
-func commentIsInChangedLines(c context.Context, trackComment *track.Comment, changedLines ChangedLinesInfo) bool {
+func commentIsInChangedLines(c context.Context, trackComment *track.Comment, changedLines gc.ChangedLinesInfo) bool {
 	var data tricium.Data_Comment
 	if trackComment.Comment == nil {
 		logging.Errorf(c, "Got a comment with a nil Comment field: %+v", trackComment)

@@ -13,8 +13,8 @@ import (
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 
-	"infra/tricium/api/v1"
-	"infra/tricium/appengine/common"
+	tricium "infra/tricium/api/v1"
+	"infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -92,7 +92,7 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 		if err := ds.Get(c, g); err != nil {
 			if err == ds.ErrNoSuchEntity {
 				logging.Fields{
-					"url": common.GerritURL(gr.Host, gr.GitRef),
+					"url": gerrit.CreateURL(gr.Host, gr.GitRef),
 				}.Infof(c, "No run found.")
 				return 0, nil
 			}

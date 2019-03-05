@@ -25,8 +25,9 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
+	gc "infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
 )
@@ -59,9 +60,9 @@ func (*mockPollRestAPI) PostRobotComments(c context.Context, host, change, revis
 	return nil
 }
 
-func (m *mockPollRestAPI) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
+func (m *mockPollRestAPI) GetChangedLines(c context.Context, host, change, revision string) (gc.ChangedLinesInfo, error) {
 	// Not used by the poller.
-	return ChangedLinesInfo{}, nil
+	return gc.ChangedLinesInfo{}, nil
 }
 
 func (m *mockPollRestAPI) addChanges(host, project string, c []gr.ChangeInfo) {
