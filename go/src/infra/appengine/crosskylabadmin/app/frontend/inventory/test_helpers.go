@@ -52,8 +52,11 @@ type testFixture struct {
 // TODO(pprabhu) Deduplicate common setup code with frontend/test_common.go as
 // part of moving all services to sub-packages. (See TODO in inventory.go)
 func newTestFixture(t *testing.T) (testFixture, func()) {
-	tf := testFixture{T: t, C: testingContext()}
+	return newTestFixtureWithContext(testingContext(), t)
+}
 
+func newTestFixtureWithContext(ctx context.Context, t *testing.T) (testFixture, func()) {
+	tf := testFixture{T: t, C: ctx}
 	tf.FakeGerrit = &fakes.GerritClient{}
 	tf.FakeGitiles = fakes.NewGitilesClient()
 	tf.Inventory = &ServerImpl{

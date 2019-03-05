@@ -112,6 +112,14 @@ func (r *AssignDutsToDronesRequest) Validate() error {
 }
 
 // Validate returns an error if r is invalid.
+func (r *GetDutInfoRequest) Validate() error {
+	if r.Id == "" && r.Hostname == "" {
+		return errors.New("one of id or hostname is required")
+	}
+	return nil
+}
+
+// Validate returns an error if r is invalid.
 func (r *DutSelector) Validate() error {
 	if r.Id == "" && r.Hostname == "" && r.Model == "" {
 		return errors.New("dut_selector must not be empty")
