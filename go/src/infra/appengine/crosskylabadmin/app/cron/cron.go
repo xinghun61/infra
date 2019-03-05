@@ -47,6 +47,7 @@ import (
 func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	mwCron := mwBase.Extend(gaemiddleware.RequireCron)
 	r.GET("/internal/cron/refresh-bots", mwCron, logAndSetHTTPErr(refreshBotsCronHandler))
+	r.GET("/internal/cron/refresh-inventory", mwCron, logAndSetHTTPErr(refreshInventoryCronHandler))
 	r.GET("/internal/cron/ensure-background-tasks", mwCron, logAndSetHTTPErr(ensureBackgroundTasksCronHandler))
 	r.GET("/internal/cron/trigger-repair-on-idle", mwCron, logAndSetHTTPErr(triggerRepairOnIdleCronHandler))
 	r.GET("/internal/cron/trigger-repair-on-repair-failed", mwCron, logAndSetHTTPErr(triggerRepairOnRepairFailedCronHandler))
@@ -149,24 +150,19 @@ func logAndSetHTTPErr(f func(c *router.Context) error) func(*router.Context) {
 	}
 }
 
+func refreshInventoryCronHandler(c *router.Context) error {
+	inv := createInventoryServer(c)
+	_, err := inv.UpdateCachedInventory(c.Context, &fleet.UpdateCachedInventoryRequest{})
+	return err
+}
+
 func ensureCriticalPoolsHealthy(c *router.Context) (err error) {
 	cfg := config.Get(c.Context).GetCron().GetPoolBalancer()
 	if cfg == nil {
 		return errors.New("invalid pool balancer configuration")
 	}
 
-	tracker := &frontend.TrackerServerImpl{}
-	inv := &inventory.ServerImpl{
-		GerritFactory: func(c context.Context, host string) (gerrit.GerritClient, error) {
-			return clients.NewGerritClientAsSelf(c, host)
-		},
-		GitilesFactory: func(c context.Context, host string) (gitiles.GitilesClient, error) {
-			return clients.NewGitilesClientAsSelf(c, host)
-		},
-		TrackerFactory: func() fleet.TrackerServer {
-			return tracker
-		},
-	}
+	inv := createInventoryServer(c)
 	merr := make(errors.MultiError, 0)
 	for _, target := range cfg.GetTargetPools() {
 		resp, err := inv.EnsurePoolHealthyForAllModels(c.Context, &fleet.EnsurePoolHealthyForAllModelsRequest{
@@ -192,4 +188,19 @@ func countBotsAndTasks(resp *fleet.TaskerTasksResponse) (int, int) {
 		tc += len(bt.Tasks)
 	}
 	return bc, tc
+}
+
+func createInventoryServer(c *router.Context) *inventory.ServerImpl {
+	tracker := &frontend.TrackerServerImpl{}
+	return &inventory.ServerImpl{
+		GerritFactory: func(c context.Context, host string) (gerrit.GerritClient, error) {
+			return clients.NewGerritClientAsSelf(c, host)
+		},
+		GitilesFactory: func(c context.Context, host string) (gitiles.GitilesClient, error) {
+			return clients.NewGitilesClientAsSelf(c, host)
+		},
+		TrackerFactory: func() fleet.TrackerServer {
+			return tracker
+		},
+	}
 }

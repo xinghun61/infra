@@ -7,6 +7,9 @@ cron:
     # retries is enough to paper over trasient Swarming service failures. Beyond
     # that, we can always catch the next cron train.
     job_retry_limit: 3
+- description: refresh inventory
+  url: /internal/cron/refresh-inventory
+  schedule: every 1 minutes
 - description: ensure background tasks
   url: /internal/cron/ensure-background-tasks
   schedule: every 5 minutes

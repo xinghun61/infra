@@ -24,7 +24,9 @@ import (
 	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/google"
+	"go.chromium.org/luci/common/retry"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -109,9 +111,25 @@ func TestGetDutInfoWithConsistentDatastoreNoCacheValidity(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			Convey("GetDutInfo (by ID) returns NotFound", func() {
-				// Cache is already invalid, so DUT can't be found.
-				_, err := tf.Inventory.GetDutInfo(tf.C, &fleet.GetDutInfoRequest{Id: "dut1_id"})
-				So(status.Code(err), ShouldEqual, codes.NotFound)
+				// Cache will soon be invalid , so DUT will be purged.
+				//
+				// We retry GetDutInfo for a few seconds. When this test passes, it
+				// should pass in < 1 second (as soon as system clock moves forward).
+				// When this test fails, it will block till the end of retries, i.e., a
+				// few seconds.
+				err := retry.Retry(
+					tf.C,
+					testRetryIteratorFactory,
+					func() error {
+						_, err := tf.Inventory.GetDutInfo(tf.C, &fleet.GetDutInfoRequest{Id: "dut1_id"})
+						if status.Code(err) != codes.NotFound {
+							return errors.Reason("status.Code(err) is %s, want codes.NotFound", status.Code(err)).Err()
+						}
+						return nil
+					},
+					nil,
+				)
+				So(err, ShouldBeNil)
 			})
 		})
 	})
@@ -191,4 +209,19 @@ func getDutInfo(t *testing.T, di *fleet.GetDutInfoResponse) *inventory.DeviceUnd
 	err := proto.Unmarshal(di.Spec, &dut)
 	So(err, ShouldBeNil)
 	return &dut
+}
+
+// Maximum time to failure: (2^7 - 1)*(50/1000) = 6.35 seconds
+var testRetriesTemplate = retry.ExponentialBackoff{
+	Limited: retry.Limited{
+		Delay:   50 * time.Millisecond,
+		Retries: 7,
+	},
+	MaxDelay:   5 * time.Second,
+	Multiplier: 2,
+}
+
+func testRetryIteratorFactory() retry.Iterator {
+	it := testRetriesTemplate
+	return &it
 }
