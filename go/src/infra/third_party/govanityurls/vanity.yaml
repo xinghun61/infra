@@ -16,3 +16,11 @@ paths:
       https://chromium.googlesource.com/infra/luci/gae
       https://chromium.googlesource.com/infra/luci/gae/+/master{/dir}
       https://chromium.googlesource.com/infra/luci/gae/+/master{/dir}/{file}#{line}
+
+  /goma/server:
+    repo: https://chromium.googlesource.com/infra/goma/server
+    vcs: git
+    display: >
+      https://chromium.googlesource.com/infra/goma/server
+      https://chromium.googlesource.com/infra/goma/server/+/master{/dir}
+      https://chromium.googlesource.com/infra/goma/server/+/master{/dir}/{file}#{line}
