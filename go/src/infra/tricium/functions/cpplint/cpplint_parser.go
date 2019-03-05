@@ -164,16 +164,28 @@ func parseCpplintLine(line string) *tricium.Data_Comment {
 	if err != nil {
 		return nil
 	}
+	message := match[3]
 	category := match[4] + "/" + match[5]
 	confidence, err := strconv.Atoi(match[6])
+
 	if err != nil {
 		return nil
 	}
+
+	if strings.Contains(message, "Add #include <string>") {
+		// Relatively likely to be a false positive; https://crbug.com/936259.
+		return nil
+	}
+	if category == "build/include_what_you_use" {
+		message += ("\nNote: This check is known to produce false positives, " +
+			"(e.g. for types used only in function overrides).")
+	}
+
 	return &tricium.Data_Comment{
 		Path: match[1],
 		Message: fmt.Sprintf(
 			"%s (confidence %d/5).\nTo disable, add: // NOLINT(%s)",
-			match[3], confidence, category),
+			message, confidence, category),
 		Category:  "Cpplint/" + category,
 		StartLine: int32(lineno),
 	}

@@ -52,7 +52,9 @@ func TestPylintParsingFunctions(t *testing.T) {
 					},
 					{
 						Category: "Cpplint/build/include_what_you_use",
-						Message: "Add #include <vector> for vector<> (confidence 4/5).\n" +
+						Message: "Add #include <vector> for vector<>\n" +
+							"Note: This check is known to produce false positives, " +
+							"(e.g. for types used only in function overrides). (confidence 4/5).\n" +
 							"To disable, add: // NOLINT(build/include_what_you_use)",
 						Path:      "test.cc",
 						StartLine: 42,
@@ -81,6 +83,24 @@ func TestPylintParsingFunctions(t *testing.T) {
 
 		Convey("Parsing some other line gives nil", func() {
 			So(parseCpplintLine("Total errors found: 24"), ShouldBeNil)
+		})
+
+		Convey("Warnings for include_what_you_use for string are ignored", func() {
+			line := "test.cc:148:  Add #include <string> for string  [build/include_what_you_use] [4]"
+			So(parseCpplintLine(line), ShouldBeNil)
+		})
+
+		Convey("An extra note is added for include_what_you_use", func() {
+			line := "test.cc:148:  Add #include <foo> for foo  [build/include_what_you_use] [4]"
+			So(parseCpplintLine(line), ShouldResemble, &tricium.Data_Comment{
+				Category: "Cpplint/build/include_what_you_use",
+				Message: ("Add #include <foo> for foo\n" +
+					"Note: This check is known to produce false positives, " +
+					"(e.g. for types used only in function overrides). (confidence 4/5).\n" +
+					"To disable, add: // NOLINT(build/include_what_you_use)"),
+				Path:      "test.cc",
+				StartLine: 148,
+			})
 		})
 	})
 
