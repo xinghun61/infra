@@ -4,7 +4,6 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import '../../chops/chops-button/chops-button.js';
@@ -96,7 +95,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
           box-sizing: border-box;
         }
       </style>
-      <template is="dom-if" if="[[!commentsLoaded]]">
+      <template is="dom-if" if="[[fetchingComments]]">
         Loading comments...
       </template>
       <button on-click="toggleComments" class="toggle" hidden\$="[[_hideToggle]]">
@@ -213,7 +212,6 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       comments: {
         type: Array,
         value: [],
-        observer: '_onCommentsChange',
       },
       headingLevel: {
         type: Number,
@@ -222,10 +220,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       projectName: String,
       issuePermissions: Object,
       focusId: String,
-      commentsLoaded: {
-        type: Boolean,
-        value: false,
-      },
+      fetchingComments: Boolean,
       _commentsHidden: {
         type: Boolean,
         value: true,
@@ -248,7 +243,7 @@ export class MrComments extends ReduxMixin(PolymerElement) {
 
   static get observers() {
     return [
-      '_onFocusIdChange(focusId, commentsLoaded)',
+      '_onFocusIdChange(focusId, comments)',
     ];
   }
 
@@ -257,19 +252,14 @@ export class MrComments extends ReduxMixin(PolymerElement) {
       focusId: state.focusId,
       projectName: state.projectName,
       issuePermissions: state.issuePermissions,
+      fetchingComments: state.fetchingComments,
     };
   }
 
-  _onCommentsChange(comments) {
-    if (comments.length) {
-      this.commentsLoaded = true;
-    }
-  }
-
-  _onFocusIdChange(focusId, commentsLoaded) {
-    if (!focusId || !commentsLoaded) return;
+  _onFocusIdChange(focusId, comments) {
+    if (!focusId || !comments.length) return;
     flush();
-    const element = dom(this.root).querySelector('#' + focusId);
+    const element = this.shadowRoot.querySelector('#' + focusId);
     if (element) {
       if (element.hidden) {
         this.toggleComments();

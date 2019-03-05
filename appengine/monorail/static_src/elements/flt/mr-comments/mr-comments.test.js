@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrComments} from './mr-comments.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {actionType} from '../../redux/redux-mixin.js';
 
@@ -20,40 +19,40 @@ suite('mr-comments', () => {
         canFlag: true,
         localId: 898395,
         canDelete: true,
-        projectName: "chromium",
+        projectName: 'chromium',
         commenter: {
-          displayName: "user@example.com",
-          userId: "12345"
+          displayName: 'user@example.com',
+          userId: '12345',
         },
-        content: "foo",
+        content: 'foo',
         sequenceNum: 1,
-        timestamp: 1549319989
+        timestamp: 1549319989,
       },
       {
         canFlag: true,
         localId: 898395,
         canDelete: true,
-        projectName: "chromium",
+        projectName: 'chromium',
         commenter: {
-          displayName: "user@example.com",
-          userId: "12345"
+          displayName: 'user@example.com',
+          userId: '12345',
         },
-        content: "foo",
+        content: 'foo',
         sequenceNum: 2,
-        timestamp: 1549320089
+        timestamp: 1549320089,
       },
       {
         canFlag: true,
         localId: 898395,
         canDelete: true,
-        projectName: "chromium",
+        projectName: 'chromium',
         commenter: {
-          displayName: "user@example.com",
-          userId: "12345"
+          displayName: 'user@example.com',
+          userId: '12345',
         },
-        content: "foo",
+        content: 'foo',
         sequenceNum: 3,
-        timestamp: 1549320189
+        timestamp: 1549320189,
       },
     ];
   });
@@ -70,7 +69,7 @@ suite('mr-comments', () => {
   test('scrolls to comment', () => {
     flush();
 
-    const commentElement = dom(element.root).querySelector('#c3');
+    const commentElement = element.shadowRoot.querySelector('#c3');
     sinon.stub(element, 'toggleComments');
     sinon.stub(commentElement, 'scrollIntoView');
 
@@ -83,7 +82,7 @@ suite('mr-comments', () => {
   test('scrolls to hidden comment', () => {
     flush();
 
-    const commentElement = dom(element.root).querySelector('#c1');
+    const commentElement = element.shadowRoot.querySelector('#c1');
     sinon.stub(element, 'toggleComments');
     sinon.stub(commentElement, 'scrollIntoView');
 
