@@ -13,6 +13,8 @@ import './mr-search-bar.js';
 // TODO(zhangtiff): Mpve these styles outside of FLT folder.
 import '../flt/shared/mr-flt-styles.js';
 
+import ClientLogger from '../../monitoring/client-logger';
+
 /**
  * `<mr-header>`
  *
@@ -186,6 +188,11 @@ export class MrHeader extends PolymerElement {
     this.queryParams = qs.parse(window.location.search);
   }
 
+  ready() {
+    super.ready();
+    this.clientLogger = new ClientLogger('mr-header');
+  }
+
   _projectChanged(projectName) {
     const presentationConfigPromise = window.prpcClient.call(
       'monorail.Projects', 'GetPresentationConfig', {projectName});
@@ -240,7 +247,15 @@ export class MrHeader extends PolymerElement {
     }
 
     items.push({text: 'All projects', url: '/hosting/'});
+    items.forEach((item) => {
+      item.handler = () => this._projectChangedHandler(item);
+    });
     return items;
+  }
+
+  _projectChangedHandler(item) {
+    // Just log it to GA and continue.
+    this.clientLogger.logEvent('project-change', item.url);
   }
 
   _computeProjectSettingsItems(projectName, canAdministerProject) {

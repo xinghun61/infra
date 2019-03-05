@@ -10,6 +10,10 @@ import {actionType} from '../redux/redux-mixin.js';
 
 let element;
 
+window.CS_env = {
+  token: 'foo-token',
+};
+
 suite('mr-app', () => {
   setup(() => {
     element = document.createElement('mr-app');
