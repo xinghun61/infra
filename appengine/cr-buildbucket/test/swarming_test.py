@@ -739,6 +739,7 @@ class SwarmingTest(BaseTest):
                 'predefined-property-bool': True,
                 'repository': 'https://chromium.googlesource.com/chromium/src',
                 '$recipe_engine/buildbucket': {
+                    'hostname': 'cr-buildbucket.appspot.com',
                     'build': {
                         'id': '1',
                         'builder': {
@@ -1173,6 +1174,7 @@ class SwarmingTest(BaseTest):
                     },
                 },
                 '$recipe_engine/buildbucket': {
+                    'hostname': 'cr-buildbucket.appspot.com',
                     'build': {
                         'id': '1',
                         'builder': {

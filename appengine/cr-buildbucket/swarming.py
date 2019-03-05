@@ -314,6 +314,7 @@ def _buildbucket_property(build):
   export.infra.buildbucket.ClearField('requested_properties')
   return {
       'build': json_format.MessageToDict(export),
+      'hostname': app_identity.get_default_version_hostname(),
   }
 
 

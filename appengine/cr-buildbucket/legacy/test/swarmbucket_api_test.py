@@ -289,6 +289,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                     },
                 },
                 '$recipe_engine/buildbucket': {
+                    'hostname': 'cr-buildbucket.appspot.com',
                     'build': {
                         'id': '1',
                         'builder': {
