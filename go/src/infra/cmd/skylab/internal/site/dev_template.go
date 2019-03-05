@@ -15,7 +15,7 @@ package site
 import "go.chromium.org/luci/grpc/prpc"
 
 func init() {
-	if false {
+	if false { // Change this to true.
 		Dev.AdminService = "0.0.0.0:8082"
 		Prod = Dev
 		DefaultPRPCOptions = &prpc.Options{Insecure: true}
