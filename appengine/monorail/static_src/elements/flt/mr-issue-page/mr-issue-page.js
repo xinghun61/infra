@@ -16,12 +16,12 @@ import '../shared/mr-flt-styles.js';
 import '../mr-edit-description/mr-edit-description.js';
 
 /**
- * `<mr-approval-page>`
+ * `<mr-issue-page>`
  *
- * The main entry point for a given launch issue.
+ * The main entry point for a Monorail issue detail page.
  *
  */
-export class MrApprovalPage extends ReduxMixin(PolymerElement) {
+export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-flt-styles">
@@ -166,7 +166,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
   }
 
   static get is() {
-    return 'mr-approval-page';
+    return 'mr-issue-page';
   }
 
   static get properties() {
@@ -261,7 +261,7 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
     this.dispatchAction({type: actionType.FETCH_PROJECT_TEMPLATES_START});
 
     const listTemplates = window.prpcClient.call(
-        'monorail.Projects', 'ListProjectTemplates', message
+      'monorail.Projects', 'ListProjectTemplates', message
     );
 
     // TODO(zhangtiff): Remove (see above TODO).
@@ -327,7 +327,6 @@ export class MrApprovalPage extends ReduxMixin(PolymerElement) {
   _isDeleted(issueLoaded, issue) {
     return issueLoaded && issue.isDeleted;
   }
-
 }
 
-customElements.define(MrApprovalPage.is, MrApprovalPage);
+customElements.define(MrIssuePage.is, MrIssuePage);

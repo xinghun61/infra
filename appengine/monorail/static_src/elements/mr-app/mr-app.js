@@ -10,7 +10,7 @@ import page from 'page';
 import qs from 'qs';
 
 import {ReduxMixin, actionType} from '../redux/redux-mixin.js';
-import '../flt/mr-approval-page/mr-approval-page.js';
+import '../flt/mr-issue-page/mr-issue-page.js';
 import '../mr-header/mr-header.js';
 
 /**
@@ -152,7 +152,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
     this.projectName = ctx.params.project;
 
-    this.loadWebComponent('mr-approval-page', {
+    this.loadWebComponent('mr-issue-page', {
       'projectName': ctx.params.project,
       'userDisplayName': this.userDisplayName,
     });

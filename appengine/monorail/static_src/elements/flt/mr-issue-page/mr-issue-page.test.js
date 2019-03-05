@@ -3,15 +3,14 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MrApprovalPage} from './mr-approval-page.js';
+import {MrIssuePage} from './mr-issue-page.js';
 import {store, actionType} from '../../redux/redux-mixin.js';
 
 let element;
 
-suite('mr-approval-page', () => {
-
+suite('mr-issue-page', () => {
   setup(() => {
-    element = document.createElement('mr-approval-page');
+    element = document.createElement('mr-issue-page');
     document.body.appendChild(element);
   });
 
@@ -20,7 +19,7 @@ suite('mr-approval-page', () => {
   });
 
   test('initializes', () => {
-    assert.instanceOf(element, MrApprovalPage);
+    assert.instanceOf(element, MrIssuePage);
   });
 
   test('fetching issue makes loading show', () => {
