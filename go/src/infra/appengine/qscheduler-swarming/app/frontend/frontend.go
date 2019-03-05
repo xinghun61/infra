@@ -21,7 +21,6 @@ import (
 	swarming "infra/swarming"
 
 	"github.com/golang/protobuf/proto"
-	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/grpc/grpcmon"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -61,14 +60,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	})
 
 	discovery.Enable(&apiServer)
-
-	mwAuthenticated := mwBase.Extend(
-		auth.Authenticate(
-			server.UsersAPIAuthMethod{},
-			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		),
-	)
-	apiServer.InstallHandlers(r, mwAuthenticated)
+	apiServer.InstallHandlers(r, mwBase)
 }
 
 // groupFor determines the configured group name for a given role.
