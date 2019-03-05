@@ -160,17 +160,6 @@ func generateAnnotationURL(e site.Environment) string {
 		e.LogDogHost, e.LUCIProject, u.String())
 }
 
-// newTaskRequest creates a new swarming task request for a skylab task.
-func newTaskRequest(taskName string, tags []string, slices []*swarming.SwarmingRpcsTaskSlice,
-	priority int64) *swarming.SwarmingRpcsNewTaskRequest {
-	return &swarming.SwarmingRpcsNewTaskRequest{
-		Name:       taskName,
-		Tags:       tags,
-		TaskSlices: slices,
-		Priority:   priority,
-	}
-}
-
 // toPairs converts a slice of strings in foo:bar form to a slice of swarming rpc string pairs.
 func toPairs(dimensions []string) ([]*swarming.SwarmingRpcsStringPair, error) {
 	pairs := make([]*swarming.SwarmingRpcsStringPair, len(dimensions))

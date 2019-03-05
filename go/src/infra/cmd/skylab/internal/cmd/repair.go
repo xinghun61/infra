@@ -83,16 +83,17 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 		},
 		WaitForCapacity: true,
 	}}
-	r := newTaskRequest(
-		"admin_repair",
-		[]string{
+	r := &swarming.SwarmingRpcsNewTaskRequest{
+		Name: "admin_repair",
+		Tags: []string{
 			fmt.Sprintf("log_location:%s", log),
 			fmt.Sprintf("luci_project:%s", e.LUCIProject),
 			"pool:ChromeOSSkylab",
 			"skylab-tool:repair",
 		},
-		slices,
-		25)
+		TaskSlices: slices,
+		Priority:   25,
+	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
 	resp, err := s.Tasks.New(r).Context(ctx).Do()

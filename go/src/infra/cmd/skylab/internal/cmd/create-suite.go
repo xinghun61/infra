@@ -200,7 +200,12 @@ func getRunSuiteCmd(board string, model string, pool string, image string, suite
 }
 
 func createSuiteTask(ctx context.Context, s *swarming.Service, taskName string, priority int, slices []*swarming.SwarmingRpcsTaskSlice, tags []string) (taskID string, err error) {
-	req := newTaskRequest(taskName, tags, slices, int64(priority))
+	req := &swarming.SwarmingRpcsNewTaskRequest{
+		Name:       taskName,
+		Tags:       tags,
+		TaskSlices: slices,
+		Priority:   int64(priority),
+	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
 	resp, err := s.Tasks.New(req).Context(ctx).Do()

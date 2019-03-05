@@ -153,7 +153,12 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		tags = append(tags, "qs_account:"+c.qsAccount)
 	}
 
-	req := newTaskRequest(taskName, tags, slices, int64(defaultTaskPriority))
+	req := &swarming.SwarmingRpcsNewTaskRequest{
+		Name:       taskName,
+		Tags:       tags,
+		TaskSlices: slices,
+		Priority:   int64(defaultTaskPriority),
+	}
 
 	ctx := cli.GetContext(a, c, env)
 	s, err := newSwarmingService(ctx, c.authFlags, e)

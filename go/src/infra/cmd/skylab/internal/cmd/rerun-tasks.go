@@ -235,7 +235,12 @@ func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID s
 	original.Tags = upsertTag(original.Tags, rerunTagKey, rerunTagVal)
 	original.Tags = upsertTag(original.Tags, "retry_original_task_id", originalID)
 
-	return newTaskRequest(original.Name, original.Tags, original.TaskSlices, original.Priority), nil
+	return &swarming.SwarmingRpcsNewTaskRequest{
+		Name:       original.Name,
+		Tags:       original.Tags,
+		TaskSlices: original.TaskSlices,
+		Priority:   original.Priority,
+	}, nil
 }
 
 func upsertTag(tags []string, key string, replacementValue string) []string {
