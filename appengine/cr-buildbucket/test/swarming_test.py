@@ -15,7 +15,6 @@ from components import utils
 utils.fix_protobuf_package()
 
 from google import protobuf
-from google.protobuf import json_format
 from google.protobuf import timestamp_pb2
 
 from components import auth
@@ -26,13 +25,10 @@ from webob import exc
 import mock
 import webapp2
 
-from third_party import annotations_pb2
-
 from legacy import api_common
 from proto import build_pb2
 from proto import common_pb2
 from proto import launcher_pb2
-from proto import step_pb2
 from proto.config import project_config_pb2
 from proto.config import service_config_pb2
 from test import test_util
@@ -1612,21 +1608,7 @@ class SwarmingTest(BaseTest):
           'build_run_result': {
               'annotationUrl':
                   'logdog://logdog.example.com/chromium/prefix/+/annotations',
-              'annotations':
-                  json.loads(
-                      json_format.MessageToJson(
-                          annotations_pb2.Step(
-                              substep=[
-                                  annotations_pb2.Step.Substep(
-                                      step=annotations_pb2.Step(
-                                          name='bot_update',
-                                          status=annotations_pb2.SUCCESS,
-                                      ),
-                                  ),
-                              ],
-                          )
-                      )
-                  ),
+              'annotations': {},
           },
           'status':
               common_pb2.SUCCESS,
@@ -1640,9 +1622,6 @@ class SwarmingTest(BaseTest):
               tspb(seconds=1517260502, nanos=649750000),
           'end_time':
               tspb(seconds=1517271318, nanos=162860000),
-          'build_steps': [
-              step_pb2.Step(name='bot_update', status=common_pb2.SUCCESS)
-          ],
       },),
       ({
           'task_result': {
@@ -1794,13 +1773,6 @@ class SwarmingTest(BaseTest):
     self.assertEqual(
         list(bp.infra.swarming.bot_dimensions), case.get('bot_dimensions', [])
     )
-
-    expected_steps = case.get('build_steps') or []
-    actual_build_steps = model.BuildSteps.key_for(build.key).get()
-    step_container = build_pb2.Build()
-    if actual_build_steps:
-      step_container = actual_build_steps.step_container
-    self.assertEqual(list(step_container.steps), expected_steps)
 
   @mock.patch('swarming.isolate.fetch_async')
   def test_load_build_run_result_async(self, fetch_isolate_async):

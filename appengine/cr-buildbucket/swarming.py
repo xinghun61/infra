@@ -49,14 +49,10 @@ from google.appengine.ext import ndb
 from google.protobuf import json_format
 import webapp2
 
-from third_party import annotations_pb2
-
 from legacy import api_common
-from proto import build_pb2
 from proto import common_pb2
 from proto import launcher_pb2
 from proto.config import project_config_pb2
-import annotations
 import bbutil
 import buildtags
 import config
@@ -75,26 +71,18 @@ _PUBSUB_TOPIC = 'swarming'
 _PARAM_SWARMING = 'swarming'
 _PARAM_CHANGES = 'changes'
 
+# TODO(nodir): stop reading build-run-result.json, migrate to UpdateBuild RPC.
 _BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 _BUILD_RUN_RESULT_CORRUPTED = 'corrupted'
 
-# Note: we do not store build-run-result.json as is.
-# Instead we convert it to a list of buildbucket.v2.Step and store
-# in binary form in model.BuildSteps, which has its own limit.
-# A limit is still needed to avoid OOMs.
+# A limit on build-run-result.json to avoid OOMs.
+# Checked before loading it from isolate.
 _BUILD_RUN_RESULT_MAX_SIZE_MB = 2
 _BUILD_RUN_RESULT_MAX_SIZE = _BUILD_RUN_RESULT_MAX_SIZE_MB * (1e6)
 _BUILD_RUN_RESULT_TOO_LARGE = '>= %d MB' % _BUILD_RUN_RESULT_MAX_SIZE_MB
 _BUILD_RUN_RESULT_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/build_run_result_size',
     'Size of the build result JSON file fetched from isolate',
-    [gae_ts_mon.StringField('bucket'),
-     gae_ts_mon.StringField('builder')],
-    units=gae_ts_mon.MetricsDataUnits.KILOBYTES,
-)
-_BUILD_STEPS_SIZE_METRIC = gae_ts_mon.CumulativeDistributionMetric(
-    'buildbucket/build_steps_size',
-    'Size of the build steps',
     [gae_ts_mon.StringField('bucket'),
      gae_ts_mon.StringField('builder')],
     units=gae_ts_mon.MetricsDataUnits.KILOBYTES,
@@ -1235,43 +1223,8 @@ def _sync_build_in_memory(
           # TODO(nodir): remove this as soon as Milo switches to buildbucket
           # v2 API.
           'ui': {'info': '\n'.join(ann.get('text', []))},
-          'properties': _extract_properties(ann),
       }
   return True
-
-
-def _extract_properties(annotation_step):  # pragma: no cover
-  """Extracts properties from an annotation step"""
-  ret = {}
-
-  def extract(step):
-    for p in step.get('property') or ():
-      ret[p['name']] = json.loads(p['value'])
-    for s in step.get('substep') or ():
-      extract(s.get('step') or {})
-
-  extract(annotation_step)
-  return ret
-
-
-def _extract_build_steps(build_run_result):
-  """Extracts a list of buildbucket.v2.Step from build_run_result."""
-  # TODO(crbug.com/853450): remove, accept build steps from kitchen directly.
-  build_run_result = build_run_result or {}
-  ann_dict = build_run_result.get('annotations')
-  ann_url = build_run_result.get('annotationUrl')
-  if not ann_dict or not ann_url:  # pragma: no cover
-    return []
-
-  ann_step = annotations_pb2.Step()
-  json_format.Parse(json.dumps(ann_dict), ann_step, ignore_unknown_fields=True)
-
-  host, project, prefix, _ = logdog.parse_url(ann_url)
-  parser = annotations.StepParser(
-      default_logdog_host=host,
-      default_logdog_prefix='%s/%s' % (project, prefix),
-  )
-  return parser.parse_substeps(ann_step.substep)
 
 
 @ndb.tasklet
@@ -1284,43 +1237,9 @@ def _sync_build_async(build_id, task_result, bucket_id, builder):
         _load_build_run_result_async(task_result, bucket_id, builder)
     )
 
-  build_key = ndb.Key(model.Build, build_id)
-
-  # TODO(nodir): accept build steps via a separate RPC.
-  step_container = build_pb2.Build(steps=_extract_build_steps(build_run_result))
-  step_byte_size = step_container.ByteSize()
-  _BUILD_STEPS_SIZE_METRIC.add(
-      step_byte_size / 1000,  # convert to Kb
-      {
-          'bucket': bucket_id,
-          'builder': builder,
-      },
-  )
-  too_large = step_byte_size > model.BuildSteps.MAX_STEPS_LEN
-  build_steps = None
-  if too_large:  # pragma: no cover
-    # piggy back on the existing error handling mechanism
-    build_run_result = None
-    build_run_result_error = (
-        'build steps are %d bytes which is more than %d' %
-        (step_byte_size, model.BuildSteps.MAX_STEPS_LEN)
-    )
-    build_run_result_error = _BUILD_RUN_RESULT_TOO_LARGE
-  elif step_container.steps:
-    # Do not save empty steps.
-    # It is either useless, or will overwrites steps provided in UpdateBuild RPC
-    # Steps are empty only in BOT_DIED case.
-
-    # Do not set build_steps.step_container unless we are sure it is under the
-    # size limit.
-    build_steps = model.BuildSteps(
-        key=model.BuildSteps.key_for(build_key),
-        step_container=step_container,
-    )
-
   @ndb.transactional_tasklet
   def txn_async():
-    build = yield build_key.get_async()
+    build = yield model.Build.get_by_id_async(build_id)
     if not build:  # pragma: no cover
       raise ndb.Return(None)
     made_change = _sync_build_in_memory(
@@ -1336,8 +1255,6 @@ def _sync_build_async(build_id, task_result, bucket_id, builder):
     elif build.is_ended:  # pragma: no cover
       # This code is coverd by tests, but pycover reports coverage incorrectly!
       futures.append(events.on_build_completing_async(build))
-      if build_steps:
-        futures.append(build_steps.put_async())
 
     yield futures
     raise ndb.Return(build)
