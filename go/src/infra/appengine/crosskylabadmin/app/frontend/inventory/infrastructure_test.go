@@ -36,8 +36,8 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 		wrongEnvServer := "wrong_env_server"
 		err := tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
 			Lab: inventoryBytesFromDUTs([]testInventoryDut{
-				{dutID, "link", "DUT_POOL_SUITES"},
-				{wrongEnvDutID, "link", "DUT_POOL_SUITES"},
+				{dutID, dutID, "link", "DUT_POOL_SUITES"},
+				{wrongEnvDutID, wrongEnvDutID, "link", "DUT_POOL_SUITES"},
 			}),
 			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
 				{
@@ -150,9 +150,9 @@ func TestAssignDutsToDrones(t *testing.T) {
 		newDutID := "dut_id_2"
 		err := tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
 			Lab: inventoryBytesFromDUTs([]testInventoryDut{
-				{existingDutID, "link", "DUT_POOL_SUITES"},
-				{newDutID, "link", "DUT_POOL_SUITES"},
-				{wrongEnvDutID, "link", "DUT_POOL_SUITES"},
+				{existingDutID, existingDutID, "link", "DUT_POOL_SUITES"},
+				{newDutID, newDutID, "link", "DUT_POOL_SUITES"},
+				{wrongEnvDutID, wrongEnvDutID, "link", "DUT_POOL_SUITES"},
 			}),
 			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
 				{

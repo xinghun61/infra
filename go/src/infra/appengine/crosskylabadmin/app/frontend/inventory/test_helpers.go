@@ -100,9 +100,10 @@ func testingContext() context.Context {
 
 // testInventoryDut contains a subset of inventory fields for a DUT.
 type testInventoryDut struct {
-	id    string
-	model string
-	pool  string
+	id       string
+	hostname string
+	model    string
+	pool     string
 }
 
 // setupLabInventoryArchive sets up fake gitiles to return the inventory of
@@ -129,7 +130,7 @@ func inventoryBytesFromDUTs(duts []testInventoryDut) []byte {
 				}
 			}`,
 			ptext,
-			dut.id, dut.id, dut.model, dut.pool,
+			dut.id, dut.hostname, dut.model, dut.pool,
 		)
 	}
 	return []byte(ptext)

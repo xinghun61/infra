@@ -72,8 +72,8 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_cq_healthy", "link", "DUT_POOL_CQ"},
-			{"link_suites_healthy", "link", "DUT_POOL_SUITES"},
+			{"link_cq_healthy", "link_cq_healthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)
 		expectDutsWithHealth(tf.MockTracker, map[string]fleet.Health{
@@ -103,8 +103,8 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_cq_unhealthy", "link", "DUT_POOL_CQ"},
-			{"link_suites_healthy", "link", "DUT_POOL_SUITES"},
+			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)
 		expectDutsWithHealth(tf.MockTracker, map[string]fleet.Health{
@@ -147,9 +147,9 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
-			{"link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
-			{"link_suites_healthy", "link", "DUT_POOL_SUITES"},
+			{"link_cq_unhealthy_1", "link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
+			{"link_cq_unhealthy_2", "link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)
 
@@ -202,8 +202,8 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_cq_unknown", "link", "DUT_POOL_CQ"},
-			{"link_suites_healthy", "link", "DUT_POOL_SUITES"},
+			{"link_cq_unknown", "link_cq_unknown", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)
 		expectDutsWithHealth(tf.MockTracker, map[string]fleet.Health{
@@ -302,8 +302,8 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
-			{"link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
+			{"link_cq_unhealthy_1", "link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
+			{"link_cq_unhealthy_2", "link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
 		})
 		So(err, ShouldBeNil)
 
@@ -336,8 +336,8 @@ func TestEnsurePoolHealthyCommit(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_cq_unhealthy", "link", "DUT_POOL_CQ"},
-			{"link_suites_healthy", "link", "DUT_POOL_SUITES"},
+			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_CQ"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)
 		expectDutsWithHealth(tf.MockTracker, map[string]fleet.Health{
@@ -355,8 +355,8 @@ func TestEnsurePoolHealthyCommit(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		assertLabInventoryChange(c, tf.FakeGerrit, []testInventoryDut{
-			{"link_cq_unhealthy", "link", "DUT_POOL_SUITES"},
-			{"link_suites_healthy", "link", "DUT_POOL_CQ"},
+			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_SUITES"},
+			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_CQ"},
 		})
 	})
 }
@@ -401,10 +401,10 @@ func TestResizePool(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_suites_0", "link", "DUT_POOL_SUITES"},
-			{"link_suites_1", "link", "DUT_POOL_SUITES"},
-			{"link_suites_2", "link", "DUT_POOL_SUITES"},
-			{"link_suites_3", "link", "DUT_POOL_SUITES"},
+			{"link_suites_0", "link_suites_0", "link", "DUT_POOL_SUITES"},
+			{"link_suites_1", "link_suites_1", "link", "DUT_POOL_SUITES"},
+			{"link_suites_2", "link_suites_2", "link", "DUT_POOL_SUITES"},
+			{"link_suites_3", "link_suites_3", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)
 
@@ -456,10 +456,10 @@ func TestResizePool(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_suites_0", "link", "DUT_POOL_CQ"},
-			{"link_suites_1", "link", "DUT_POOL_CQ"},
-			{"link_suites_2", "link", "DUT_POOL_CQ"},
-			{"link_suites_3", "link", "DUT_POOL_CQ"},
+			{"link_suites_0", "link_suites_0", "link", "DUT_POOL_CQ"},
+			{"link_suites_1", "link_suites_1", "link", "DUT_POOL_CQ"},
+			{"link_suites_2", "link_suites_2", "link", "DUT_POOL_CQ"},
+			{"link_suites_3", "link_suites_3", "link", "DUT_POOL_CQ"},
 		})
 		So(err, ShouldBeNil)
 
@@ -501,7 +501,7 @@ func TestResizePoolCommit(t *testing.T) {
 		defer validate()
 
 		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-			{"link_suites_0", "link", "DUT_POOL_SUITES"},
+			{"link_suites_0", "link_suites_0", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)
 
@@ -516,7 +516,7 @@ func TestResizePoolCommit(t *testing.T) {
 			})
 			So(err, ShouldBeNil)
 			assertLabInventoryChange(c, tf.FakeGerrit, []testInventoryDut{
-				{"link_suites_0", "link", "DUT_POOL_CQ"},
+				{"link_suites_0", "link_suites_0", "link", "DUT_POOL_CQ"},
 			})
 		})
 
