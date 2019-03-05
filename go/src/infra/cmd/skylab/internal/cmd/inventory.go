@@ -74,23 +74,26 @@ func (c *inventoryRun) innerRun(a subcommands.Application, args []string, env su
 		return err
 	}
 	bs := res.GetBots()
-	r := compileInventoryReport(c.filterBots(bs))
+	r := compileInventoryReport(filterBots(bs, c.labs))
 	_ = printInventory(a.GetOut(), r)
 	return nil
 }
 
-func (c *inventoryRun) filterBots(bs []*fleet.BotSummary) []*fleet.BotSummary {
-	if len(c.labs) == 0 {
+// filterBots filters for the bots in the given labs.  labs should be
+// a slice of strings of lab numbers.  If labs is empty, no filtering
+// is done.
+func filterBots(bs []*fleet.BotSummary, labs []string) []*fleet.BotSummary {
+	if len(labs) == 0 {
 		return bs
 	}
-	labs := make(map[string]bool, len(c.labs))
-	for _, lab := range c.labs {
-		labs[lab] = true
+	keep := make(map[string]bool, len(labs))
+	for _, lab := range labs {
+		keep[lab] = true
 	}
 	var new []*fleet.BotSummary
 	for _, b := range bs {
 		name := b.GetDimensions().GetDutName()
-		if n := getBotLabNumber(name); labs[n] {
+		if n := getBotLabNumber(name); keep[n] {
 			new = append(new, b)
 		}
 	}
