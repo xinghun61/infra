@@ -23,8 +23,8 @@ suite('mr-header', () => {
   });
 
   test('presentationConfig renders', () => {
+    element.issueEntryUrl = 'https://google.com/test/';
     element.presentationConfig = {
-      customIssueEntryUrl: 'https://google.com/test/',
       projectSummary: 'The best project',
       projectThumbnailUrl: 'http://images.google.com/',
     };

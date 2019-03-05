@@ -4,7 +4,7 @@ import sinon from 'sinon';
 import ClientLogger from './client-logger.js';
 import MonorailTSMon from './ts-mon.js';
 
-  suite('ClientLogger', () => {
+suite('ClientLogger', () => {
   const startedKey = 'ClientLogger.rutabaga.started';
   let c;
 
