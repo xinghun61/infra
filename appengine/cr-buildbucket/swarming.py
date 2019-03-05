@@ -228,6 +228,10 @@ def validate_build_parameters(params):
         bad('swarming.override_builder_cfg cannot override builder name')
       if override_builder_cfg.mixins:
         bad('swarming.override_builder_cfg cannot use mixins')
+      if any(d.startswith('pool:') for d in override_builder_cfg.dimensions):
+        logging.warning(
+            'pool is being overridden: %s', override_builder_cfg.dimensions
+        )
       if 'pool:' in override_builder_cfg.dimensions:
         bad('swarming.override_builder_cfg cannot remove pool dimension')
       ctx = validation.Context.raise_on_error(
