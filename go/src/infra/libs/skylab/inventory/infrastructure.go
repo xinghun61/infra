@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"io/ioutil"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	proto "github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
@@ -47,12 +49,37 @@ func WriteInfrastructure(infrastructure *Infrastructure, dataDir string) error {
 // WriteInfrastructureToString marshals infrastructure inventory information into a string.
 func WriteInfrastructureToString(infra *Infrastructure) (string, error) {
 	infra = proto.Clone(infra).(*Infrastructure)
-
-	// TODO(akeshet): Add a sortInfra() to deep sort infra prior to writing
-	// (similar to sortLab usage in WriteLabToString above).
+	if infra != nil {
+		sortInfrastructure(infra)
+	}
 
 	m := proto.TextMarshaler{}
 	var b bytes.Buffer
 	err := m.Marshal(&b, infra)
 	return string(rewriteMarshaledTextProtoForPython(b.Bytes())), err
+}
+
+func sortInfrastructure(infra *Infrastructure) {
+	ss := infra.Servers
+	sort.SliceStable(ss, func(i, j int) bool {
+		return strings.ToLower(ss[i].GetHostname()) < strings.ToLower(ss[j].GetHostname())
+	})
+	for _, s := range ss {
+		sortServer(s)
+	}
+}
+
+func sortServer(s *Server) {
+	if s.Roles != nil {
+		rs := s.Roles
+		sort.SliceStable(rs, func(i, j int) bool {
+			return rs[i] < rs[j]
+		})
+	}
+	if s.DutUids != nil {
+		ds := s.DutUids
+		sort.SliceStable(ds, func(i, j int) bool {
+			return strings.ToLower(ds[i]) < strings.ToLower(ds[j])
+		})
+	}
 }
