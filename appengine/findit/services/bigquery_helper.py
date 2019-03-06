@@ -56,24 +56,32 @@ def _SchemaResponseToDicts(schema):
         }
   """
 
-  def _IntegerTypeConversion(val, nullable=False):
+  def _IntegerTypeConversion(val, nullable=False, repeated=False):
     if nullable and val is None:
       return None
+    if repeated:
+      return [int(x['v']) for x in val]
     return int(val)
 
-  def _StringTypeConversion(val, nullable=False):
+  def _StringTypeConversion(val, nullable=False, repeated=False):
     if nullable and val is None:
       return None
+    if repeated:
+      return [str(x['v']) for x in val]
     return str(val)
 
-  def _BooleanTypeConversion(val, nullable=False):
+  def _BooleanTypeConversion(val, nullable=False, repeated=False):
     if nullable and val is None:
       return None
+    if repeated:
+      return [x['v'].lower() == 'true' for x in val]
     return val.lower() == 'true'
 
-  def _TimestampTypeConversion(val, nullable=False):
+  def _TimestampTypeConversion(val, nullable=False, repeated=False):
     if nullable and val is None:
       return None
+    if repeated:
+      return [datetime.datetime.utcfromtimestamp(float(x['v'])) for x in val]
     return datetime.datetime.utcfromtimestamp(float(val))
 
   known_types = {
@@ -89,9 +97,11 @@ def _SchemaResponseToDicts(schema):
         'name':
             schema_field['name'],
         'type_conversion_function':
-            known_types.get(schema_field['type'], lambda x, y: x),
+            known_types.get(schema_field['type'], lambda x, y, z: x),
         'nullable':
-            schema_field['mode'] == 'NULLABLE'
+            schema_field['mode'] == 'NULLABLE',
+        'repeated':
+            schema_field['mode'] == 'REPEATED'
     })
   return schema_dicts
 
@@ -118,7 +128,8 @@ def _AssignTypeToRow(schema, row):
   for idx, schema_field in enumerate(schema):
     type_func = schema_field['type_conversion_function']
     row_dict[schema_field['name']] = type_func(row['f'][idx]['v'],
-                                               schema_field['nullable'])
+                                               schema_field['nullable'],
+                                               schema_field['repeated'])
   return row_dict
 
 
@@ -252,8 +263,20 @@ def QueryRequest(client,
     logging.error('QueryRequest succeeded, but there were missing fields.')
     return False, []
 
-  return True, _RowsResponseToDicts(response['schema']['fields'],
-                                    response['rows'])
+  rows = _RowsResponseToDicts(response['schema']['fields'], response['rows'])
+  while 'pageToken' in response:
+    response = client.jobs().getQueryResults(
+        projectId=project_id,
+        jobId=response['jobReference']['jobId'],
+        pageToken=response['pageToken']).execute()
+
+    if response.get('errors'):
+      logging.error('QueryRequest reported errors: %s', response.get('errors'))
+      return False, []
+
+    rows += _RowsResponseToDicts(response['schema']['fields'],
+                                 response['rows'])
+  return True, rows
 
 
 def ReportEventsToBigquery(events_and_ids, project_id, dataset_id, table_id):

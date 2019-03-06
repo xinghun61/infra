@@ -42,6 +42,11 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertTrue('type_conversion_function' in new_schema[0])
     self.assertEqual(new_schema[0]['type_conversion_function']('1'), 1)
 
+    schema = [{'type': 'INTEGER', 'name': 'field_name', 'mode': 'REPEATED'}]
+    new_schema = bigquery_helper._SchemaResponseToDicts(schema)
+    self.assertEqual(new_schema[0]['type_conversion_function'](
+        [{'v':'1'}, {'v':'2'}], repeated=True), [1, 2])
+
     schema = [{'type': 'BOOLEAN', 'name': 'field_name', 'mode': 'NONNULLABLE'}]
     new_schema = bigquery_helper._SchemaResponseToDicts(schema)
     self.assertEqual(new_schema[0]['name'], 'field_name')
@@ -49,12 +54,22 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertTrue('type_conversion_function' in new_schema[0])
     self.assertEqual(new_schema[0]['type_conversion_function']('true'), True)
 
+    schema = [{'type': 'BOOLEAN', 'name': 'field_name', 'mode': 'REPEATED'}]
+    new_schema = bigquery_helper._SchemaResponseToDicts(schema)
+    self.assertEqual(new_schema[0]['type_conversion_function'](
+        [{'v':'true'}, {'v':'false'}], repeated=True), [True, False])
+
     schema = [{'type': 'STRING', 'name': 'field_name', 'mode': 'NULLABLE'}]
     new_schema = bigquery_helper._SchemaResponseToDicts(schema)
     self.assertEqual(new_schema[0]['name'], 'field_name')
     self.assertEqual(new_schema[0]['nullable'], True)
     self.assertTrue('type_conversion_function' in new_schema[0])
     self.assertEqual(new_schema[0]['type_conversion_function']('str'), 'str')
+
+    schema = [{'type': 'STRING', 'name': 'field_name', 'mode': 'REPEATED'}]
+    new_schema = bigquery_helper._SchemaResponseToDicts(schema)
+    self.assertEqual(new_schema[0]['type_conversion_function'](
+        [{'v':'asdf1'}, {'v':'asdf2'}], repeated=True), ['asdf1', 'asdf2'])
 
     schema = [{'type': 'TIMESTAMP', 'name': 'field_name', 'mode': 'NULLABLE'}]
     new_schema = bigquery_helper._SchemaResponseToDicts(schema)
@@ -64,6 +79,15 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertEqual(
         new_schema[0]['type_conversion_function'](_UTC_TIMESTAMP_OF_START_TIME),
         _UTC_DATETIME_OF_START_TIME)
+
+    schema = [{'type': 'TIMESTAMP', 'name': 'field_name', 'mode': 'REPEATED'}]
+    new_schema = bigquery_helper._SchemaResponseToDicts(schema)
+    self.assertEqual(new_schema[0]['type_conversion_function']([
+        {'v':_UTC_TIMESTAMP_OF_START_TIME},
+        {'v':_UTC_TIMESTAMP_OF_START_TIME}
+    ], repeated=True), [
+        _UTC_DATETIME_OF_START_TIME, _UTC_DATETIME_OF_START_TIME
+    ])
 
   def testAssignTypeToRow(self):
     schema = bigquery_helper._SchemaResponseToDicts([{
@@ -243,6 +267,61 @@ class BigqueryHelperTest(unittest.TestCase):
     self.assertTrue(mock_client.jobs().query().execute.called)
     self.assertTrue(success)
     self.assertEqual(len(rows), 1)
+
+  @mock.patch.object(
+      bigquery_helper, '_RowsResponseToDicts', return_value=[{
+          'foo': 1
+      }])
+  def testBigqueryPagedResults(self, _):
+    mock_client = mock.Mock()
+    mock_client.jobs().query().execute.return_value = {
+        "totalRows": 2,
+        "jobComplete": True,
+        "schema": {
+            "fields": 'mock_fields'
+        },
+        "rows": ["rows"],
+        "pageToken": "dummy page token",
+        "jobReference": {"jobId": "dummy job id"},
+    }
+    mock_client.jobs().getQueryResults().execute.return_value = {
+        "schema": {
+            "fields": 'mock_fields'
+        },
+        "rows": ["rows2"],
+    }
+    success, rows = bigquery_helper.QueryRequest(mock_client, 'project',
+                                                 'query')
+    self.assertTrue(mock_client.jobs().query().execute.called)
+    self.assertTrue(mock_client.jobs().getQueryResults().execute.called)
+    self.assertTrue(success)
+    self.assertEqual(len(rows), 2)
+
+  @mock.patch.object(
+      bigquery_helper, '_RowsResponseToDicts', return_value=[{
+          'foo': 1
+      }])
+  def testBigqueryPagedResultsError(self, _):
+    mock_client = mock.Mock()
+    mock_client.jobs().query().execute.return_value = {
+        "totalRows": 2,
+        "jobComplete": True,
+        "schema": {
+            "fields": 'mock_fields'
+        },
+        "rows": ["rows"],
+        "pageToken": "dummy page token",
+        "jobReference": {"jobId": "dummy job id"},
+    }
+    mock_client.jobs().getQueryResults().execute.return_value = {
+        "errors": ["error"],
+    }
+    success, rows = bigquery_helper.QueryRequest(mock_client, 'project',
+                                                 'query')
+    self.assertTrue(mock_client.jobs().query().execute.called)
+    self.assertTrue(mock_client.jobs().getQueryResults().execute.called)
+    self.assertFalse(success)
+    self.assertEqual(rows, [])
 
   def testBigqueryQueryRequestIncomplete(self):
     mock_client = mock.Mock()
