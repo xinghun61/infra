@@ -1,5 +1,5 @@
 [define category_css]css/ph_detail.css[end]
-[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
 
 [# Note: No UI element permission checking needed on this page. ]
 

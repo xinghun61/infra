@@ -131,6 +131,7 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
   }
 
   _isVideo(contentType) {
+    if (!contentType) return;
     return contentType.startsWith('video/');
   }
 

@@ -1,5 +1,5 @@
 [define category_css]css/ph_detail.css[end]
-[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
 
 <form action="advsearch.do" method="POST" style="margin:6px;margin-top:12px;" autocomplete="false">
 

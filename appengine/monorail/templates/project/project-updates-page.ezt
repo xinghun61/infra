@@ -1,6 +1,6 @@
 [define page_css]css/d_updates_page.css[end]
 
-[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
 
 [include "../features/updates-page.ezt"]
 

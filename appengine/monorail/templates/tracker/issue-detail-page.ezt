@@ -1,6 +1,6 @@
 [define title][issue.local_id][end]
 [define category_css]css/ph_detail.css[end]
-[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
 
 [define any_visible_deleted]false[end]
 [for comments]

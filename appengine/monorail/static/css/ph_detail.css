@@ -71,8 +71,8 @@ pre.prettyprint {
 @media (min-width: 425px) {
   #meta-float, #summary-float {
     position: sticky;
-    top: 0;
     z-index: 1;
+    top: var(--monorail-header-height);
   }
   #summary-float {
     margin: 0;
@@ -84,6 +84,13 @@ pre.prettyprint {
     z-index: 1;
   }
 }
+
+@media (max-width: 840px) {
+  #meta-float, #summary-float {
+    top: 0;
+  }
+}
+
 #meta-float th { white-space: nowrap; }
 .labelediting input { margin: 0 3px 4px 0; }
 .labelediting input { color: #060; }

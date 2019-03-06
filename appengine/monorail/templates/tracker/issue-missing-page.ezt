@@ -3,7 +3,7 @@
 [else]
   [define title]Issue Not Found[end]
 [end]
-[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
 
 <h3>[title]</h3>
 

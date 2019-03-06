@@ -1,6 +1,6 @@
 [define title]New Issue[end]
 [define category_css]css/ph_detail.css[end]
-[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
 
 [# Note: base permission for this page is CreateIssue]
 

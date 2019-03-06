@@ -418,10 +418,6 @@ export class MrComments extends ReduxMixin(PolymerElement) {
     }
   }
 
-  _isVideo(contentType) {
-    return contentType.startsWith('video/');
-  }
-
   _deleteAttachment(e) {
     const issueRef = {
       projectName: e.target.dataset.projectName,

@@ -10,8 +10,9 @@ import '../mr-dropdown/mr-dropdown.js';
 import '../mr-dropdown/mr-account-dropdown.js';
 import './mr-search-bar.js';
 
-// TODO(zhangtiff): Mpve these styles outside of FLT folder.
+// TODO(zhangtiff): Move these styles outside of FLT folder.
 import '../flt/shared/mr-flt-styles.js';
+import {prpcClient} from '../../prpc-client-instance.js';
 
 import ClientLogger from '../../monitoring/client-logger';
 
@@ -80,6 +81,9 @@ export class MrHeader extends PolymerElement {
           font-size: 20px;
           color: var(--chops-primary-icon-color);
         }
+        i.material-icons[hidden] {
+          display: none;
+        }
         .right-section {
           font-size: inherit;
           display: flex;
@@ -90,16 +94,18 @@ export class MrHeader extends PolymerElement {
         }
       </style>
       <a href\$="/p/[[projectName]]/">
-        <template is="dom-if" if="[[presentationConfig.projectThumbnailUrl]]">
+        <template is="dom-if" if="[[projectThumbnailUrl]]">
           <img
             class="project-logo"
-            src$="[[presentationConfig.projectThumbnailUrl]]"
+            src$="[[projectThumbnailUrl]]"
             title="Issues"
           />
         </template>
-        <template is="dom-if" if="[[!presentationConfig.projectThumbnailUrl]]">
-          <i class="material-icons" title="Issues">home</i>
-        </template>
+        <i
+          class="material-icons"
+          title="Issues"
+          hidden\$="[[projectThumbnailUrl]]"
+        >home</i>
       </a>
       <mr-dropdown
         class="project-selector"
@@ -118,6 +124,7 @@ export class MrHeader extends PolymerElement {
         default-can="[[_computeDefaultCan(queryParams.can)]]"
         initial-value="[[_computeInitialSearch(
           presentationConfig.defaultQuery, queryParams.q)]]"
+        query-params="[[queryParams]]"
       ></mr-search-bar>
 
       <div class="right-section">
@@ -158,6 +165,7 @@ export class MrHeader extends PolymerElement {
         type: String,
         observer: '_projectChanged',
       },
+      projectThumbnailUrl: String,
       userDisplayName: {
         type: String,
         observer: '_userChanged',
@@ -182,10 +190,13 @@ export class MrHeader extends PolymerElement {
   connectedCallback() {
     super.connectedCallback();
 
+    // Remove question mark at the start.
+    const queryString = window.location.search.substring(1);
+
     // TODO(zhangtiff): Replace this with page.js integration.
     // Note: Until we add page.js integration, this does not handle
     // frontend route changes.
-    this.queryParams = qs.parse(window.location.search);
+    this.queryParams = qs.parse(queryString);
   }
 
   ready() {
@@ -194,10 +205,11 @@ export class MrHeader extends PolymerElement {
   }
 
   _projectChanged(projectName) {
-    const presentationConfigPromise = window.prpcClient.call(
+    const presentationConfigPromise = prpcClient.call(
       'monorail.Projects', 'GetPresentationConfig', {projectName});
     presentationConfigPromise.then((presentationConfig) => {
       this.presentationConfig = presentationConfig;
+      this.projectThumbnailUrl = presentationConfig.projectThumbnailUrl;
     });
   }
 
@@ -207,7 +219,7 @@ export class MrHeader extends PolymerElement {
     // TODO(zhangtiff): Add this state to Redux. This is left out from
     //   Redux for now because this code is meant to run on non-SPA pages
     //   as well.
-    const userProjectsPromise = window.prpcClient.call(
+    const userProjectsPromise = prpcClient.call(
       'monorail.Projects', 'GetUserProjects', {});
     userProjectsPromise.then((userProjects) => {
       this.userProjects = userProjects;
@@ -273,7 +285,8 @@ export class MrHeader extends PolymerElement {
   }
 
   _computeInitialSearch(defaultQuery, q) {
-    return q ? q : defaultQuery;
+    const qIsString = typeof q === 'string';
+    return qIsString ? q : defaultQuery;
   }
 
   _computeDefaultCan(can) {

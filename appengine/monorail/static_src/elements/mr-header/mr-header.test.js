@@ -24,9 +24,9 @@ suite('mr-header', () => {
 
   test('presentationConfig renders', () => {
     element.issueEntryUrl = 'https://google.com/test/';
+    element.projectThumbnailUrl = 'http://images.google.com/';
     element.presentationConfig = {
       projectSummary: 'The best project',
-      projectThumbnailUrl: 'http://images.google.com/',
     };
 
     flush();

@@ -1,7 +1,7 @@
 [define title]People[end]
 [define category_css]css/ph_list.css[end]
 [if-any is_hotlist][define category2_css]css/ph_detail.css[end][end]
-[include "../framework/master-header.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
 [include "../framework/js-placeholders.ezt"]
 
 <form method="POST" action=[if-any is_hotlist]"people.do"[else]"list.do"[end] id="membership_form">

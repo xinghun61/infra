@@ -2,12 +2,9 @@
 [define category_css]css/ph_list.css[end]
 [define page_css]css/ph_detail.css[end][# needed for infopeek]
 
-[if-any projectname]
-  [include "../framework/master-header.ezt" "showtabs"]
-[else]
-  [include "../framework/master-header.ezt" "hidetabs"]
-[end]
-[include "../framework/js-placeholders.ezt" "showtabs"]
+[include "../framework/master-header.ezt" "hidetabs"]
+
+[include "../framework/js-placeholders.ezt"]
 
 <div id="colcontrol">
  [if-any search_error_message]
