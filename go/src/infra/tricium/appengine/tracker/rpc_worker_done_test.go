@@ -378,9 +378,10 @@ func TestCreateAnalysisResults(t *testing.T) {
 		areq := track.AnalyzeRequest{}
 		ares := track.AnalyzeRequestResult{}
 		comments := []*track.Comment{}
+		selections := []*track.CommentSelection{}
 
 		areq.GitRef = "refs/changes/88/508788/102"
-		result, err := createAnalysisResults(&wres, &areq, &ares, comments)
+		result, err := createAnalysisResults(&wres, &areq, &ares, comments, selections)
 		So(err, ShouldBeNil)
 		So(result, ShouldNotBeNil)
 		So(result.RevisionNumber, ShouldEqual, 102)
@@ -391,8 +392,9 @@ func TestCreateAnalysisResults(t *testing.T) {
 		areq := track.AnalyzeRequest{}
 		ares := track.AnalyzeRequestResult{}
 		comments := []*track.Comment{}
+		selections := []*track.CommentSelection{}
 
-		result, err := createAnalysisResults(&wres, &areq, &ares, comments)
+		result, err := createAnalysisResults(&wres, &areq, &ares, comments, selections)
 		So(err, ShouldNotBeNil)
 		So(result, ShouldBeNil)
 	})
@@ -444,9 +446,36 @@ func TestCreateAnalysisResults(t *testing.T) {
 				Category:     "analyzerName/categoryName",
 				Comment:      []byte(inChangeCommentJSON),
 				CreationTime: time.Now(),
-			}}
+			},
+			{
+				UUID:         "1234",
+				Parent:       nil,
+				Platforms:    platformBitPosToMask(tricium.Platform_OSX),
+				Analyzer:     "notSelected",
+				Category:     "notSelected/categoryName",
+				Comment:      []byte(inChangeCommentJSON),
+				CreationTime: time.Now(),
+			},
+		}
+		selections := []*track.CommentSelection{
+			{
+				ID:       1,
+				Parent:   nil,
+				Included: true,
+			},
+			{
+				ID:       1,
+				Parent:   nil,
+				Included: true,
+			},
+			{
+				ID:       1,
+				Parent:   nil,
+				Included: false,
+			},
+		}
 
-		result, err := createAnalysisResults(&wres, &areq, &ares, comments)
+		result, err := createAnalysisResults(&wres, &areq, &ares, comments, selections)
 		So(err, ShouldBeNil)
 		So(result, ShouldNotBeNil)
 		So(result.GerritRevision.Host, ShouldEqual, areq.GerritHost)
@@ -470,6 +499,7 @@ func TestCreateAnalysisResults(t *testing.T) {
 			So(gcomment.CreatedTime, ShouldResemble, tutils.TimestampProto(comments[i].CreationTime))
 			platforms, _ := getPlatforms(comments[i].Platforms)
 			So(gcomment.Platforms, ShouldResemble, platforms)
+			So(gcomment.Selected, ShouldEqual, selections[i].Included)
 		}
 	})
 }

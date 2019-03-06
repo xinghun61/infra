@@ -98,7 +98,7 @@ func getPlatforms(platforms int64) ([]tricium.Platform_Name, error) {
 }
 
 // Create and populate an AnalysisRun given the datastore entities.
-func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment) (*apibq.AnalysisRun, error) {
+func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment, selections []*track.CommentSelection) (*apibq.AnalysisRun, error) {
 	revisionNumber, err := strconv.Atoi(gerrit.PatchSetNumber(areq.GitRef))
 	if err != nil {
 		return nil, err
@@ -138,6 +138,9 @@ func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeReque
 			Analyzer:    comment.Analyzer,
 			Platforms:   p,
 		}
+		if selections != nil {
+			cinfo.Selected = selections[i].Included
+		}
 		gcomments[i] = &cinfo
 	}
 
@@ -170,8 +173,8 @@ func flushResultsToBQ(c context.Context) error {
 }
 
 // Stream analyzer results to BigQuery for metrics and ad hoc analysis.
-func streamToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment) error {
-	run, err := createAnalysisResults(wres, areq, ares, comments)
+func streamToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment, selections []*track.CommentSelection) error {
+	run, err := createAnalysisResults(wres, areq, ares, comments, selections)
 	if err != nil {
 		return err
 	}
@@ -364,6 +367,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	if err := ds.Get(c, request); err != nil {
 		return errors.Reason("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err).Err()
 	}
+	var selections []*track.CommentSelection
+	numSelectedComments := 0
 
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
@@ -378,9 +383,9 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 					return errors.Annotate(err, "failed to add Comment entries").Err()
 				}
 				entities := make([]interface{}, 0, len(comments)*2)
-				selections, err := createCommentSelections(c, request, comments)
+				selections, err = createCommentSelections(c, request, comments)
 				if err != nil {
-					logging.Warningf(c, `Error creating comment selections: %v`, err)
+					logging.Warningf(c, "Error creating comment selections: %v", err)
 					// On error still write the comment selections which specify they
 					// were not included.
 				}
@@ -390,6 +395,9 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 						selections[i],
 						&track.CommentFeedback{ID: 1, Parent: commentKey},
 					}...)
+					if selections[i].Included {
+						numSelectedComments++
+					}
 				}
 				if err := ds.Put(c, entities); err != nil {
 					return errors.Annotate(err, "failed to add CommentSelection/CommentFeedback entries").Err()
@@ -475,25 +483,24 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return err
 	}
 
+	if !tricium.IsDone(functionState) {
+		// Only report results to Gerrit and copy to BigQuery when done.
+		return nil
+	}
+
 	// Notify reporter.
-	if gerrit.IsGerritProjectRequest(request) {
-		if tricium.IsDone(functionState) {
-			// Only report results if there were comments.
-			if len(comments) == 0 {
-				return nil
-			}
-			b, err := proto.Marshal(&admin.ReportResultsRequest{
-				RunId:    req.RunId,
-				Analyzer: functionRun.ID,
-			})
-			if err != nil {
-				return errors.Annotate(err, "failed to encode ReportResults request").Err()
-			}
-			t := tq.NewPOSTTask("/gerrit/internal/report-results", nil)
-			t.Payload = b
-			if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
-				return errors.Annotate(err, "failed to enqueue reporter results request").Err()
-			}
+	if numSelectedComments > 0 && gerrit.IsGerritProjectRequest(request) {
+		b, err := proto.Marshal(&admin.ReportResultsRequest{
+			RunId:    req.RunId,
+			Analyzer: functionRun.ID,
+		})
+		if err != nil {
+			return errors.Annotate(err, "failed to encode ReportResults request").Err()
+		}
+		t := tq.NewPOSTTask("/gerrit/internal/report-results", nil)
+		t.Payload = b
+		if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
+			return errors.Annotate(err, "failed to enqueue reporter results request").Err()
 		}
 	}
 
@@ -501,7 +508,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	if err := ds.Get(c, result); err != nil {
 		return errors.Annotate(err, "failed to get AnalyzeRequestResult entity").Err()
 	}
-	return streamToBigQuery(c, workerRes, request, result, comments)
+	return streamToBigQuery(c, workerRes, request, result, comments, selections)
 }
 
 // collectComments collects the comments in the results from the analyzer.

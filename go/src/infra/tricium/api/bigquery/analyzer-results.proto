@@ -29,6 +29,11 @@ message AnalysisRun {
 
     // Platforms this comment applies to.
     repeated tricium.Platform.Name platforms = 4;
+
+    // Has this comment been selected to be displayed on the review?
+    // For example, comments outside of the changed lines are not included
+    // (i.e. selected) in the results posted to the Gerrit change.
+    bool selected = 5;
   }
 
   // The revision information for the Gerrit change being analyzed by this
