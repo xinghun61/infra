@@ -168,6 +168,10 @@ message InspectPoolResponse {
 
         // AccountID is the account id of the request.
         string account_id = 4;
+
+        // Age in seconds of the task, measured from the last time at which
+        // the running state was confirmed.
+        int32 age_seconds = 5;
     }
 
     // RunningTasks is a description of the running tasks according to
@@ -180,6 +184,10 @@ message InspectPoolResponse {
 
         // AccountID is the account id of the request.
         string account_id = 2;
+
+        // Age in seconds of waiting task, measured from the last time at
+        // which the waiting state was confirmed.
+        int32 age_seconds = 3;
     }
 
     // WaitingTasks is a description of the tasks that are waiting
@@ -192,6 +200,10 @@ message InspectPoolResponse {
 
         // Dimensions are the dimensions of the bot.
         repeated string dimensions = 2;
+
+        // Age in seconds of bot, measured from the last time at which the
+        // idle state was confirmed.
+        int32 age_seconds = 3;
     }
 
     // IdleBots is a description of the idle bots according to quotascheduler.
