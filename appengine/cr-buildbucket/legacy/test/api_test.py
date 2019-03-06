@@ -817,7 +817,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     props = {'p': '0'}
     model.BuildOutputProperties(
         key=model.BuildOutputProperties.key_for(build.key),
-        properties=bbutil.dict_to_struct(props)
+        properties=bbutil.dict_to_struct(props).SerializeToString(),
     ).put()
     result_details = {'properties': props}
 
@@ -876,7 +876,7 @@ class V1ApiTest(testing.EndpointsTestCase):
     props = {'a': 'b'}
     model.BuildOutputProperties(
         key=model.BuildOutputProperties.key_for(build.key),
-        properties=bbutil.dict_to_struct(props)
+        properties=bbutil.dict_to_struct(props).SerializeToString(),
     ).put()
     result_details = {'properties': props}
 

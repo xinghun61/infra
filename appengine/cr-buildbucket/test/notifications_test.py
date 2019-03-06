@@ -66,8 +66,8 @@ class NotificationsTest(testing.AppengineTestCase):
 
     out_props = model.BuildOutputProperties(
         key=model.BuildOutputProperties.key_for(build.key),
-        properties=bbutil.dict_to_struct({'a': 'b'})
     )
+    out_props.serialize(bbutil.dict_to_struct({'a': 'b'}))
 
     @ndb.transactional
     def txn():

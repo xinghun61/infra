@@ -285,9 +285,7 @@ class UpdateBuildTests(BaseTestCase):
     expected.MergeFrom(build_steps.step_container)
 
     out_props = model.BuildOutputProperties.key_for(build.key).get()
-    self.assertEqual(
-        test_util.msg_to_dict(out_props.properties), expected_props
-    )
+    self.assertEqual(test_util.msg_to_dict(out_props.parse()), expected_props)
 
   def test_missing_token(self):
     build = build_pb2.Build(

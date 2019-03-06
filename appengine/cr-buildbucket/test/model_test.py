@@ -168,7 +168,7 @@ class ToBuildProtosTests(testing.AppengineTestCase):
     build = test_util.build()
     model.BuildOutputProperties(
         key=model.BuildOutputProperties.key_for(build.key),
-        properties=props,
+        properties=props.SerializeToString(),
     ).put()
 
     actual = self.to_proto(build, load_output_properties=True)

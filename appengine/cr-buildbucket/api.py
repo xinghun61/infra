@@ -287,6 +287,7 @@ def update_build_async(req, _res, ctx, _mask):
   validation.validate_update_build_request(req)
 
   update_paths = set(req.update_mask.paths)
+  out_prop_bytes = req.build.output.properties.SerializeToString()
 
   @ndb.transactional_tasklet
   def txn_async():
@@ -311,7 +312,7 @@ def update_build_async(req, _res, ctx, _mask):
       to_put.append(
           model.BuildOutputProperties(
               key=model.BuildOutputProperties.key_for(build.key),
-              properties=build_proto.output.properties,
+              properties=out_prop_bytes,
           )
       )
 

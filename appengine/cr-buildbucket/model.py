@@ -370,7 +370,18 @@ class BuildDetailEntity(ndb.Model):
 
 class BuildOutputProperties(BuildDetailEntity):
   """Stores buildbucket.v2.Build.output.properties."""
-  properties = datastore_utils.ProtobufProperty(struct_pb2.Struct)
+
+  # google.protobuf.Struct message in binary form.
+  properties = ndb.BlobProperty()
+
+  def parse(self):  # pragma: no cover
+    s = struct_pb2.Struct()
+    s.ParseFromString(self.properties or '')
+    return s
+
+  def serialize(self, struct):  # pragma: no cover
+    assert isinstance(struct, struct_pb2.Struct)
+    self.properties = struct.SerializeToString()
 
 
 class BuildSteps(BuildDetailEntity):
@@ -497,6 +508,4 @@ def builds_to_protos_async(
     if out_props_f:
       out_props = yield out_props_f
       if out_props:  # pragma: no branch
-        # This deep-copies output properties.
-        # TODO(nodir): parse proto bytes here, not on entity loading.
-        d.output.properties.CopyFrom(out_props.properties)
+        d.output.properties.ParseFromString(out_props.properties)

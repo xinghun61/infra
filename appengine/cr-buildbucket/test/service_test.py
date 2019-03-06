@@ -495,9 +495,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertTrue(build.proto.HasField('end_time'))
 
     out_props = model.BuildOutputProperties.key_for(build.key).get()
-    self.assertEqual(
-        test_util.msg_to_dict(out_props.properties), {'foo': 'bar'}
-    )
+    self.assertEqual(test_util.msg_to_dict(out_props.parse()), {'foo': 'bar'})
 
   def test_succeed_failed(self):
     build = test_util.build(id=1, status=common_pb2.FAILURE)

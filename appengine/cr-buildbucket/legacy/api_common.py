@@ -167,7 +167,7 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   result_details['properties'] = {}
   if build_output_properties:
     result_details['properties'] = _properties_to_dict(
-        build_output_properties.properties
+        build_output_properties.parse()
     )
 
   bp = build.proto

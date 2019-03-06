@@ -87,9 +87,8 @@ class ApiCommonTests(testing.AppengineTestCase):
         'url': 'https://ci.example.com/8991715593768927232',
     }
 
-    out_props = model.BuildOutputProperties(
-        properties=bbutil.dict_to_struct({'a': 'b'})
-    )
+    out_props = model.BuildOutputProperties()
+    out_props.serialize(bbutil.dict_to_struct({'a': 'b'}))
     build = test_util.build(
         status=common_pb2.INFRA_FAILURE,
         output=dict(summary_markdown='bad'),

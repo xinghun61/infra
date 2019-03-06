@@ -377,7 +377,7 @@ def _put_output_properties_async(build_key, legacy_result_details):
     props.update(prop_dict)
     yield model.BuildOutputProperties(
         key=model.BuildOutputProperties.key_for(build_key),
-        properties=props,
+        properties=props.SerializeToString(),
     ).put_async()
 
 
