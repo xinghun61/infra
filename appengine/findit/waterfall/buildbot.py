@@ -12,6 +12,8 @@ import json
 import re
 import urllib
 
+from google.protobuf.field_mask_pb2 import FieldMask
+
 from common import rpc_util
 from common.waterfall import buildbucket_client
 from gae_libs.caches import PickledMemCache
@@ -64,7 +66,7 @@ _CI_BUILD_URL_PATTERN = re.compile(
     '(?:/.*)?$')
 
 _CI_BUILD_LONG_URL_PATTERN = re.compile(
-    r'^https?://ci\.chromium\.org/p/chromium/builders/([^/]+)/([^/]+)/(\d+)')
+    r'^https?://ci\.chromium\.org/p/([^/]+)/builders/([^/]+)/([^/]+)/(\d+)')
 
 _BUILD_URL_PATTERNS = [  # yapf: disable
     _BUILD_URL_PATTERN,
@@ -179,8 +181,8 @@ def GetMasterNameFromUrl(url):
 def _ComputeCacheKeyForLuciBuilder(func, args, kwargs, namespace):
   """Returns a key for the Luci builder passed over to _GetBuildbotMasterName"""
   params = inspect.getcallargs(func, *args, **kwargs)
-  return '%s-%s::%s' % (namespace, params['bucket_name'],
-                        params['builder_name'])
+  return '%s-%s::%s::%s' % (namespace, params['project'], params['bucket_name'],
+                            params['builder_name'])
 
 
 # TODO(crbug/802940): Remove this when the API of getting LUCI build is ready.
@@ -188,22 +190,17 @@ def _ComputeCacheKeyForLuciBuilder(func, args, kwargs, namespace):
     PickledMemCache(),
     namespace='luci-builder-to-master',
     key_generator=_ComputeCacheKeyForLuciBuilder)
-def _GetBuildbotMasterName(bucket_name, builder_name, build_number):
-  """Gets buildbot master name based on build_address."""
-  build_address = '%s/%s/%d' % (bucket_name, builder_name, build_number)
-  res = buildbucket_client.SearchBuilds(tags=[(
-      'tag', 'build_address:%s' % build_address)])
-  if not res or len(res.get('builds', [])) < 1:
+def _GetBuildbotMasterName(project, bucket_name, builder_name, build_number):
+  """Gets buildbot master name using builder_info and build_number."""
+  build = buildbucket_client.GetV2BuildByBuilderAndBuildNumber(
+      project, bucket_name, builder_name, build_number,
+      FieldMask(paths=['input.properties.fields.mastername']))
+  if not build:
+    logging.error('Failed to get mastername for %s::%s::%s::%d', project,
+                  bucket_name, builder_name, build_number)
     return None
 
-  parameters_json = res['builds'][0].get('result_details_json')
-  try:
-    properties = json.loads(parameters_json).get('properties', {})
-    return properties.get('mastername') or properties.get('parent_mastername')
-  except (ValueError, TypeError):
-    logging.exception('Failed to get buildbot master name for luci build %s.',
-                      build_address)
-    return None
+  return build.input.properties['mastername']
 
 
 # TODO(crbug/802940): Remove this when the API of getting LUCI build is ready.
@@ -213,9 +210,9 @@ def _ParseCIBuildLongUrl(url):
   if not match:
     return None
 
-  bucket_name, builder_name, build_number = match.groups()
+  project, bucket_name, builder_name, build_number = match.groups()
   builder_name = urllib.unquote(builder_name)
-  master_name = _GetBuildbotMasterName(bucket_name, builder_name,
+  master_name = _GetBuildbotMasterName(project, bucket_name, builder_name,
                                        int(build_number))
   if not master_name:
     return None
@@ -390,7 +387,7 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
       continue
 
     step_logs = step_data.get('logs')
-    if step_logs and 'preamble' == step_logs[0][0]:
+    if step_logs and step_logs[0][0] == 'preamble':
       # Skip a annotating step like "steps" or "slave_steps", which wraps other
       # steps. A failed annotated step like "content_browsertests" will make
       # the annotating step like "steps" fail too. Such annotating steps have a

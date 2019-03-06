@@ -319,3 +319,26 @@ class BuildBucketClientTest(testing.AppengineTestCase):
 
     self.assertEqual(expected_build_number,
                      buildbucket_client.GetBuildNumberFromBuildId(build_id))
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testGetV2BuildByBuilderAndBuildNumber(self, mock_post):
+    master_name = 'tryserver.chromium.win'
+
+    mock_build = Build()
+    mock_build.input.properties['mastername'] = master_name
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_build.SerializeToString()
+    mock_post.return_value = (200, binary_data, mock_headers)
+
+    build = buildbucket_client.GetV2BuildByBuilderAndBuildNumber(
+        'chromium', 'try', 'win10_chromium_x64_rel_ng', 123)
+    self.assertEqual(master_name, build.input.properties['mastername'])
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testGetV2BuildByBuilderAndBuildNumberRequestFail(self, mock_post):
+    mock_headers = {'X-Prpc-Grpc-Code': '404'}
+    mock_post.return_value = (404, None, mock_headers)
+
+    build = buildbucket_client.GetV2BuildByBuilderAndBuildNumber(
+        'chromium', 'try', 'win10_chromium_x64_rel_ng', 123)
+    self.assertIsNone(build)
