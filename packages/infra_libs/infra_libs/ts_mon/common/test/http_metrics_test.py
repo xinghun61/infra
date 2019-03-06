@@ -25,6 +25,26 @@ class TestHttpMetrics(unittest.TestCase):
     self.state_patcher.stop()
     super(TestHttpMetrics, self).tearDown()
 
+  def test_update_http_metrics(self):
+    http_metrics.update_http_metrics(
+        'test_client', 'test_name', 200, 125.4,
+        request_size=100, response_size=200)
+    fields = {'status': 200, 'name': 'test_name', 'client':'test_client'}
+    self.assertEqual(1, http_metrics.response_status.get(fields))
+    fields = {'name': 'test_name', 'client':'test_client'}
+    self.assertEqual(125.4, http_metrics.durations.get(fields).sum)
+    self.assertEqual(100, http_metrics.request_bytes.get(fields).sum)
+    self.assertEqual(200, http_metrics.response_bytes.get(fields).sum)
+
+  def test_update_http_metrics_no_sizes(self):
+    http_metrics.update_http_metrics('test_client', 'test_name', 200, 125.4)
+    fields = {'status': 200, 'name': 'test_name', 'client':'test_client'}
+    self.assertEqual(1, http_metrics.response_status.get(fields))
+    fields = {'name': 'test_name', 'client':'test_client'}
+    self.assertEqual(125.4, http_metrics.durations.get(fields).sum)
+    self.assertIsNone(http_metrics.request_bytes.get(fields))
+    self.assertIsNone(http_metrics.response_bytes.get(fields))
+
   def test_update_http_server_metrics(self):
     http_metrics.update_http_server_metrics(
         '/', 200, 125.4,
