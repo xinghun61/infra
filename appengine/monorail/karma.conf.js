@@ -9,6 +9,7 @@ const path = require('path');
 process.env.CHROME_BIN = require('puppeteer').executablePath()
 
 module.exports = function(config) {
+  const isDebug = config.logLevel === 'DEBUG';
   config.set({
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
@@ -108,12 +109,20 @@ module.exports = function(config) {
 
     // start these browsers
     // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['ChromeHeadless'],
+    browsers: isDebug ? ['Chrome_latest'] : ['ChromeHeadless'],
+
+
+    customLaunchers: {
+      Chrome_latest: {
+        base: 'Chrome',
+        version: 'latest',
+      },
+    },
 
 
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
-    singleRun: true,
+    singleRun: isDebug ? false : true,
 
     // Concurrency level
     // how many browser should be started simultaneous
