@@ -9,7 +9,7 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import '../../chops/chops-button/chops-button.js';
 import {fieldTypes} from '../../shared/field-types.js';
-import {fltHelpers} from '../shared/flt-helpers.js';
+import {arrayDifference} from '../shared/flt-helpers.js';
 import '../shared/flt-helpers.js';
 import '../shared/mr-flt-styles.js';
 
@@ -228,14 +228,14 @@ export class MrEditField extends PolymerElement {
 
   getValuesAdded() {
     if (!this.getValues().length) return [];
-    return fltHelpers.arrayDifference(this.getValues(), this.initialValues,
-      this._equalsIgnoreCase);
+    return arrayDifference(
+      this.getValues(), this.initialValues, this._equalsIgnoreCase);
   }
 
   getValuesRemoved() {
     if (!this.multi && this.getValues().length > 0) return [];
-    return fltHelpers.arrayDifference(this.initialValues, this.getValues(),
-      this._equalsIgnoreCase);
+    return arrayDifference(
+      this.initialValues, this.getValues(), this._equalsIgnoreCase);
   }
 
   getValues() {

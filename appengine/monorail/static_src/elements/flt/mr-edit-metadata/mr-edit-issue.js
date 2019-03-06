@@ -9,6 +9,7 @@ import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import './mr-edit-metadata.js';
+import {loadAttachments} from '../shared/flt-helpers.js';
 import '../shared/mr-flt-styles.js';
 
 // Match: projectName:localIdFormat
@@ -97,7 +98,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     const message = this._generateMessage(data);
 
     // Add files to message.
-    const loads = form.loadAttachments();
+    const loads = loadAttachments(form.newAttachments);
     Promise.all(loads).then((uploads) => {
       if (uploads && uploads.length) {
         message.uploads = uploads;

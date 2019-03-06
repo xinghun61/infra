@@ -79,6 +79,7 @@ suite('mr-edit-descriptions', () => {
 
   test('selects last issue description', () => {
     element._fieldName = '';
+    element.reset();
     flush();
     assert.equal(element._displayedContent, 'last description');
     assert.equal(element._displayedTitle, 'Description');
@@ -86,21 +87,22 @@ suite('mr-edit-descriptions', () => {
 
   test('selects last survey', () => {
     element._fieldName = 'foo';
+    element.reset();
     flush();
     assert.equal(element._displayedContent, 'last foo survey');
     assert.equal(element._displayedTitle, 'foo Survey');
   });
 
   test('toggle sendEmail', () => {
-    element._sendEmail = false;
+    element.reset();
     flush();
     const sendEmail = element.shadowRoot.querySelector('#sendEmail');
 
     sendEmail.click();
-    assert.equal(element._sendEmail, true);
-    sendEmail.click();
     assert.equal(element._sendEmail, false);
     sendEmail.click();
     assert.equal(element._sendEmail, true);
+    sendEmail.click();
+    assert.equal(element._sendEmail, false);
   });
 });

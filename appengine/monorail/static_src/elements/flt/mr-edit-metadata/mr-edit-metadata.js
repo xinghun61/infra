@@ -149,7 +149,11 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       </template>
       <form id="editForm">
         <textarea id="commentText" placeholder="Add a comment"></textarea>
-        <vaadin-upload files="{{_newAttachments}}" no-auto hidden$="[[disableAttachments]]">
+        <vaadin-upload
+          files="{{newAttachments}}"
+          no-auto
+          hidden$="[[disableAttachments]]"
+        >
           <i class="material-icons" slot="drop-label-icon">cloud_upload</i>
         </vaadin-upload>
         <div class="input-grid">
@@ -401,7 +405,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Boolean,
         value: true,
       },
-      _newAttachments: Array,
+      newAttachments: Array,
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
@@ -461,27 +465,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     if (!isDirty || confirm('Discard your changes?')) {
       this.dispatchEvent(new CustomEvent('discard'));
     }
-  }
-
-  loadAttachments() {
-    if (!this._newAttachments || !this._newAttachments.length) return [];
-    return this._newAttachments.map((f) => {
-      return this._loadLocalFile(f);
-    });
-  }
-
-  _loadLocalFile(f) {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onloadend = () => {
-        resolve({filename: f.name, content: btoa(r.result)});
-      };
-      r.onerror = () => {
-        reject(r.error);
-      };
-
-      r.readAsBinaryString(f);
-    });
   }
 
   getDelta() {

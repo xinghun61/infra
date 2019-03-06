@@ -9,6 +9,7 @@ import {fieldTypes} from '../../shared/field-types.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../chops/chops-dialog/chops-dialog.js';
+import {loadAttachments} from '../shared/flt-helpers.js';
 import '../shared/mr-flt-styles.js';
 
 
@@ -21,6 +22,30 @@ import '../shared/mr-flt-styles.js';
 export class MrEditDescription extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      <dom-module id="upload-theme" theme-for="vaadin-upload-file">
+        <!-- Custom styling to hide some unused controls and add some
+             extra affordances. -->
+        <template>
+          <style>
+            [part="start-button"], [part="status"], [part="progress"] {
+              display:none;
+            }
+            [part="row"]:hover {
+              background: #eee;
+            }
+            [part="clear-button"] {
+              cursor: pointer;
+              font-size: 100%;
+            }
+            [part="clear-button"]:before {
+              font-family: sans-serif;
+              content: 'X';
+            }
+          </style>
+        </template>
+      </dom-module>
       <style include="mr-flt-styles">
         chops-dialog {
           font-size: 85%;
@@ -28,6 +53,9 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
             width: 800px;
             max-width: 100%;
           };
+        }
+        .attachments {
+          margin: 0.5em 0;
         }
         .content {
           padding: 0.5em 0;
@@ -56,6 +84,29 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
           class="content"
           value="{{_displayedContent::input}}"
         ></textarea>
+        <h3 class="medium-heading">
+          Add attachments
+        </h3>
+        <div class="attachments">
+          <template is="dom-repeat" items="[[_attachments]]" as="attachment">
+            <label title$="[[option.docstring]]">
+              <chops-checkbox
+                type="checkbox"
+                checked="true"
+                class="kept-attachment"
+                on-checked-change="_keptAttachmentIdsChanged"
+                data-attachment-id\$="[[attachment.attachmentId]]"
+              />
+              <a href="[[attachment.viewUrl]]" target="_blank">
+                [[attachment.filename]]
+              </a>
+            </label>
+            <br>
+          </template>
+          <vaadin-upload files="{{_newAttachments}}" no-auto>
+            <i class="material-icons" slot="drop-label-icon">cloud_upload</i>
+          </vaadin-upload>
+        </div>
         <div class="edit-controls">
           <chops-checkbox
             id="sendEmail"
@@ -84,18 +135,15 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       comments: Array,
       issueId: String,
       projectName: String,
-      _fieldName: String,
-      _sendEmail: Boolean,
+      _attachments: Array,
       _boldLines: Array,
       _displayedContent: String,
       _displayedTitle: String,
+      _fieldName: String,
+      _keptAttachmentIds: Object,
+      _newAttachments: Array,
+      _sendEmail: Boolean,
     };
-  }
-
-  static get observers() {
-    return [
-      '_computeDisplayed(comments, _fieldName)',
-    ];
   }
 
   static mapStateToProps(state, element) {
@@ -106,9 +154,14 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
     };
   }
 
-  open(e) {
-    this.$.dialog.open();
-    this._fieldName = e.detail.fieldName;
+  _keptAttachmentIdsChanged(e) {
+    e.target.checked = e.detail.checked;
+    const attachmentId = Number.parseInt(e.target.dataset.attachmentId);
+    if (e.target.checked) {
+      this._keptAttachmentIds.add(attachmentId);
+    } else {
+      this._keptAttachmentIds.delete(attachmentId);
+    }
   }
 
   _computeDisplayed(comments, fieldName) {
@@ -119,6 +172,11 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
     for (const comment of comments.slice().reverse()) {
       if (this._isDescription(comment, fieldName)) {
         content = comment.content;
+        if (comment.attachments) {
+          this._keptAttachmentIds = new Set(comment.attachments.map(
+            (attachment) => Number.parseInt(attachment.attachmentId)));
+          this._attachments = comment.attachments;
+        }
         break;
       }
     }
@@ -150,7 +208,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       }
     });
 
-    this.set('_boldLines', boldLines);
+    this._boldLines = boldLines;
     this._displayedContent = cleanContent;
   }
 
@@ -173,6 +231,26 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
     this._sendEmail = e.detail.checked;
   }
 
+  open(e) {
+    this.$.dialog.open();
+    this._fieldName = e.detail.fieldName;
+    this.reset();
+  }
+
+  reset() {
+    this._attachments = [];
+    this._boldLines = [];
+    this._displayedContent = '';
+    this._keptAttachmentIds = new Set();
+    this._newAttachments = [];
+
+    this._computeDisplayed(this.comments, this._fieldName);
+    this.shadowRoot.querySelectorAll('.kept-attachment').forEach((checkbox) => {
+      checkbox.checked = true;
+    });
+    this.shadowRoot.querySelector('#sendEmail').checked = true;
+  }
+
   cancel() {
     this.$.dialog.close();
   }
@@ -180,6 +258,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
   save() {
     const commentContent = this._markupNewContent();
     const sendEmail = this._sendEmail;
+    const keptAttachments = Array.from(this._keptAttachmentIds);
     const message = {
       issueRef: {
         projectName: this.projectName,
@@ -187,18 +266,29 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       },
       isDescription: true,
       commentContent,
+      keptAttachments,
       sendEmail,
     };
-    if (!this._fieldName) {
-      actionCreator.updateIssue(this.dispatchAction.bind(this), message);
-    } else {
-      message.fieldRef = {
-        type: fieldTypes.APPROVAL_TYPE,
-        fieldName: this._fieldName,
-      };
-      actionCreator.updateApproval(this.dispatchAction.bind(this), message);
-    }
-    this.$.dialog.close();
+
+    const loads = loadAttachments(this._newAttachments);
+    Promise.all(loads).then((uploads) => {
+      if (uploads && uploads.length) {
+        message.uploads = uploads;
+      }
+
+      if (!this._fieldName) {
+        actionCreator.updateIssue(this.dispatchAction.bind(this), message);
+      } else {
+        message.fieldRef = {
+          type: fieldTypes.APPROVAL_TYPE,
+          fieldName: this._fieldName,
+        };
+        actionCreator.updateApproval(this.dispatchAction.bind(this), message);
+      }
+      this.$.dialog.close();
+    }).catch((reason) => {
+      console.error('loading file for attachment: ', reason);
+    });
   }
 }
 

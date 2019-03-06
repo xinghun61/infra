@@ -14,6 +14,7 @@ import '../../mr-comment-content/mr-description.js';
 import '../mr-comments/mr-comments.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-metadata.js';
+import {loadAttachments} from '../shared/flt-helpers.js';
 import '../shared/mr-flt-styles.js';
 
 const APPROVER_RESTRICTED_STATUSES = new Set(
@@ -350,7 +351,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     const form = this.$.metadataForm;
     const data = form.getDelta();
     const sendEmail = form.sendEmail;
-    const loads = form.loadAttachments();
+    const loads = loadAttachments(form.newAttachments);
     const delta = this._generateDelta(data);
 
     Promise.all(loads).then((uploads) => {
