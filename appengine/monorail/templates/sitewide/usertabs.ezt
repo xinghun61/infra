@@ -30,18 +30,3 @@
   </span>
 
 </div>
-
-
-[is arg0 "t3"]
-    <div class="at [user_updates_tab_mode]" style="margin-left: 2em">
-      <span class="inst1">
-        <a href="[viewed_user.profile_url]updates">From [viewed_user.display_name]</a>
-      </span>
-      <span class="inst2">
-        <a href="[viewed_user.profile_url]updates/projects">Starred Projects</a>
-      </span>
-      <span class="inst3">
-        <a href="[viewed_user.profile_url]updates/developers">Starred Developers</a>
-      </span>
-    </div>
-[end]
