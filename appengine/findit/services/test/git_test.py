@@ -371,14 +371,13 @@ class GitTest(wf_testcase.WaterfallTestCase):
         Contributor('author', 'author@abc.com', '2018-05-17 00:49:48'),
         git.GetAuthor(revision))
 
-  def testGetRevisionsBoundedByCommitPositions(self):
+  def testMapCommitPositionsToGitHashes(self):
     self.mock(
         GitilesRepository, 'GetNChangeLogs',
         self._GenerateGetNChangeLogsMock(timedelta(minutes=25), next_rev=None))
     expected_revs = {100: 'rev_100', 99: 'rev_99', 98: 'rev_98'}
-    self.assertEqual(
-        expected_revs,
-        git.GetRevisionsBoundedByCommitPositions('rev_100', 100, 98))
+    self.assertEqual(expected_revs,
+                     git.MapCommitPositionsToGitHashes('rev_100', 100, 98))
 
   def testGetRevisionForCommitPositionByAnotherCommit(self):
     self.mock(

@@ -208,15 +208,26 @@ def ChangeCommittedWithinTime(revision, hours=24):
   return in_time
 
 
-def GetRevisionsBoundedByCommitPositions(end_revision, end_commit_position,
-                                         start_commit_position):
-  """Gets revisions between start_commit_position and end_commit_position.
+def MapCommitPositionsToGitHashes(end_revision, end_commit_position,
+                                  start_commit_position):
+  """Gets git_hashes of commit_positions between start_commit_position and
+    end_commit_position, both ends are included.
 
   Args:
     end_revision (str): Revision of the end commit.
     end_commit_position (int): Commit position of the end commit.
-    start_commit_position (int): Commit position of the end commit. It cannot be
-      greater than end_commit_position.
+    start_commit_position (int): Commit position of the start commit.
+      It cannot be greater than end_commit_position.
+
+  Returns:
+    dict: A map of commit_positions in range to the corresponding git_hashes.
+    For example, return
+    {
+      1: 'rev1',
+      2: 'rev2',
+      3: 'rev3'
+    }
+    if end_commit_position is 3 and start_commit_position is 1.
   """
   assert start_commit_position <= end_commit_position, (
       'start_commit_position {} is greater than end_commit_position {}'.format(
@@ -236,7 +247,7 @@ def GetRevisionForCommitPositionByAnotherCommit(
 
   requested_commit_position should not be greater than the base_commit_position.
   """
-  revisions = GetRevisionsBoundedByCommitPositions(
-      base_revision, base_commit_position, requested_commit_position)
+  revisions = MapCommitPositionsToGitHashes(base_revision, base_commit_position,
+                                            requested_commit_position)
 
-  return revisions.get(requested_commit_position) or None
+  return revisions.get(requested_commit_position)
