@@ -1401,7 +1401,7 @@ class IssueService(object):
       self, cnxn, services, reporter_id, project_id,
       config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
-      is_description=False, timestamp=None):
+      is_description=False, timestamp=None, kept_attachments=None):
     """Update the issue in the database and return a set of update tuples.
 
     Args:
@@ -1425,6 +1425,9 @@ class IssueService(object):
       is_description: True if the comment is a new description for the issue.
       timestamp: int timestamp set during testing, otherwise defaults to
           int(time.time()).
+      kept_attachments: This should be a list of int attachment ids for
+          attachments kept from previous descriptions, if the comment is
+          a change to the issue description
 
     Returns:
       A tuple (amendments, comment_pb) with a list of Amendment PBs that
@@ -1489,7 +1492,8 @@ class IssueService(object):
 
     comment_pb = self.CreateIssueComment(
         cnxn, issue, reporter_id, comment, amendments=amendments,
-        is_description=is_description, attachments=attachments, commit=False)
+        is_description=is_description, attachments=attachments, commit=False,
+        kept_attachments=kept_attachments)
     self._UpdateIssuesModified(
         cnxn, iids_to_invalidate, modified_timestamp=issue.modified_timestamp,
         invalidate=invalidate)
@@ -2638,7 +2642,7 @@ class IssueService(object):
   def DeltaUpdateIssueApproval(
       self, cnxn, modifier_id, config, issue, approval, approval_delta,
       comment_content=None, is_description=False, attachments=None,
-      commit=True):
+      commit=True, kept_attachments=None):
     """Update the issue's approval in the database."""
     amendments = []
 
@@ -2689,7 +2693,8 @@ class IssueService(object):
     comment_pb = self.CreateIssueComment(
         cnxn, issue, modifier_id, comment_content, amendments=amendments,
         approval_id=approval.approval_id, is_description=is_description,
-        attachments=attachments, commit=False)
+        attachments=attachments, commit=False,
+        kept_attachments=kept_attachments)
 
     if commit:
       cnxn.Commit()

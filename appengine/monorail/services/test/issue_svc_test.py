@@ -1143,7 +1143,8 @@ class IssueServiceTest(unittest.TestCase):
             ('proj', 2), None, default_project_name='proj')]
     self.services.issue.CreateIssueComment(
         self.cnxn, issue, commenter_id, 'comment text', attachments=None,
-        amendments=amendments, commit=False, is_description=False)
+        amendments=amendments, commit=False, is_description=False,
+        kept_attachments=None)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {issue.issue_id, target_issue.issue_id},
         modified_timestamp=self.now, invalidate=True)
@@ -1937,7 +1938,7 @@ class IssueServiceTest(unittest.TestCase):
 
     self.services.issue.DeltaUpdateIssueApproval(
         self.cnxn, 111L, config, issue, av, approval_delta, 'some comment',
-        attachments=[], commit=False)
+        attachments=[], commit=False, kept_attachments=[1, 2, 3])
 
     self.assertEqual(av, final_av)
 
@@ -1968,7 +1969,8 @@ class IssueServiceTest(unittest.TestCase):
             label_rows, ignore=True, commit=False)
     self.services.issue.CreateIssueComment.assert_called_once_with(
         self.cnxn, issue, 111L, 'some comment', amendments=amendments,
-        approval_id=23, is_description=False, attachments=[], commit=False)
+        approval_id=23, is_description=False, attachments=[], commit=False,
+        kept_attachments=[1, 2, 3])
 
   def testDeltaUpdateIssueApproval_IsDescription(self):
     config = self.services.config.GetProjectConfig(
@@ -1987,7 +1989,8 @@ class IssueServiceTest(unittest.TestCase):
 
     self.services.issue.CreateIssueComment.assert_called_once_with(
         self.cnxn, issue, 111L, 'better response', amendments=[],
-        approval_id=23, is_description=True, attachments=None, commit=False)
+        approval_id=23, is_description=True, attachments=None, commit=False,
+        kept_attachments=None)
 
   def testUpdateIssueApprovalStatus(self):
     av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)

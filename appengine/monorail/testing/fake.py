@@ -1793,7 +1793,7 @@ class IssueService(object):
       self, cnxn, services, reporter_id, project_id,
       config, issue, delta, index_now=False, comment=None, attachments=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
-      is_description=False, timestamp=None):
+      is_description=False, timestamp=None, kept_attachments=None):
     # Return a bogus amendments list if any of the fields changed
     amendments, _ = tracker_bizobj.ApplyIssueDelta(
         cnxn, self, issue, delta, config)
@@ -1803,7 +1803,8 @@ class IssueService(object):
 
     comment_pb = self.CreateIssueComment(
         cnxn, issue, reporter_id, comment, attachments=attachments,
-        amendments=amendments, is_description=is_description)
+        amendments=amendments, is_description=is_description,
+        kept_attachments=kept_attachments)
 
     self.indexer_called = index_now
     return amendments, comment_pb
@@ -1853,7 +1854,12 @@ class IssueService(object):
             mimetype=mimetype,
             gcs_object_id='gcs_object_id(%s)' % filename)
         comment.attachments.append(attach)
-      self.attachments_by_id[aid] = attach, pid, comment.id
+        self.attachments_by_id[aid] = attach, pid, comment.id
+
+    if kept_attachments:
+      comment.attachments.extend([
+          self.attachments_by_id[aid][0]
+          for aid in kept_attachments])
 
     return comment
 

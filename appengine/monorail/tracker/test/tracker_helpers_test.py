@@ -1393,3 +1393,82 @@ class GetLabelOptionsTest(unittest.TestCase):
                 dict(name='Restrict-Smoke-Over21',
                      doc='Permission Over21 needed to use Smoke')]
     self.assertListEqual(expected, choices)
+
+
+class FilterKeptAttachmentsTest(unittest.TestCase):
+  def testFilterKeptAttachments(self):
+    comments = [
+        tracker_pb2.IssueComment(
+            is_description=True,
+            attachments=[tracker_pb2.Attachment(attachment_id=1)]),
+        tracker_pb2.IssueComment(),
+        tracker_pb2.IssueComment(
+            is_description=True,
+            attachments=[
+                tracker_pb2.Attachment(attachment_id=2),
+                tracker_pb2.Attachment(attachment_id=3)]),
+        tracker_pb2.IssueComment(),
+        tracker_pb2.IssueComment(
+            approval_id=24,
+            is_description=True,
+            attachments=[tracker_pb2.Attachment(attachment_id=4)])]
+
+    filtered = tracker_helpers.FilterKeptAttachments(
+        True, [1, 2, 3, 4], comments, None)
+    self.assertEqual([2, 3], filtered)
+
+  def testApprovalDescription(self):
+    comments = [
+        tracker_pb2.IssueComment(
+            is_description=True,
+            attachments=[tracker_pb2.Attachment(attachment_id=1)]),
+        tracker_pb2.IssueComment(),
+        tracker_pb2.IssueComment(
+            is_description=True,
+            attachments=[
+                tracker_pb2.Attachment(attachment_id=2),
+                tracker_pb2.Attachment(attachment_id=3)]),
+        tracker_pb2.IssueComment(),
+        tracker_pb2.IssueComment(
+            approval_id=24,
+            is_description=True,
+            attachments=[tracker_pb2.Attachment(attachment_id=4)])]
+
+    filtered = tracker_helpers.FilterKeptAttachments(
+        True, [1, 2, 3, 4], comments, 24)
+    self.assertEqual([4], filtered)
+
+  def testNotAnIssueDescription(self):
+    comments = [
+        tracker_pb2.IssueComment(
+            is_description=True,
+            attachments=[tracker_pb2.Attachment(attachment_id=1)]),
+        tracker_pb2.IssueComment(),
+        tracker_pb2.IssueComment(
+            is_description=True,
+            attachments=[
+                tracker_pb2.Attachment(attachment_id=2),
+                tracker_pb2.Attachment(attachment_id=3)]),
+        tracker_pb2.IssueComment(),
+        tracker_pb2.IssueComment(
+            approval_id=24,
+            is_description=True,
+            attachments=[tracker_pb2.Attachment(attachment_id=4)])]
+
+    filtered = tracker_helpers.FilterKeptAttachments(
+        False, [1, 2, 3, 4], comments, None)
+    self.assertIsNone(filtered)
+
+  def testNoDescriptionsInComments(self):
+    comments = [
+        tracker_pb2.IssueComment(),
+        tracker_pb2.IssueComment()]
+
+    filtered = tracker_helpers.FilterKeptAttachments(
+        True, [1, 2, 3, 4], comments, None)
+    self.assertEqual([], filtered)
+
+  def testNoComments(self):
+    filtered = tracker_helpers.FilterKeptAttachments(
+        True, [1, 2, 3, 4], [], None)
+    self.assertEqual([], filtered)

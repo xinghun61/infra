@@ -1181,6 +1181,36 @@ def _BuildRestrictionChoices(freq_restrictions, actions, custom_permissions):
   return choices
 
 
+def FilterKeptAttachments(
+    is_description, kept_attachments, comments, approval_id):
+  """Filter kept attachments to be a subset of last description's attachments.
+
+  Args:
+    is_description: bool, if the comment is a change to the issue description.
+    kept_attachments: list of ints with the attachment ids for attachments
+        kept from previous descriptions, if the comment is a change to the
+        issue description.
+    comments: list of IssueComment PBs for the issue we want to edit.
+    approval_id: int id of the APPROVAL_TYPE fielddef, if we're editing an
+        approval description, or None otherwise.
+
+  Returns:
+    A list of kept_attachment ids that are a subset of the last description.
+  """
+  if not is_description:
+    return None
+
+  attachment_ids = set()
+  for comment in reversed(comments):
+    if comment.is_description and comment.approval_id == approval_id:
+      attachment_ids = set([a.attachment_id for a in comment.attachments])
+      break
+
+  kept_attachments = [
+      aid for aid in kept_attachments if aid in attachment_ids]
+  return kept_attachments
+
+
 class Error(Exception):
   """Base class for errors from this module."""
 

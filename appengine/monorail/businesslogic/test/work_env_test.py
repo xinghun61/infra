@@ -1115,7 +1115,8 @@ class WorkEnvTest(unittest.TestCase):
 
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
         self.mr.cnxn, 111L, config, issue, av_24, delta,
-        comment_content='please review', is_description=False, attachments=None)
+        comment_content='please review', is_description=False, attachments=None,
+        kept_attachments=None)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendApprovalChangeNotification')
@@ -1140,7 +1141,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
         self.mr.cnxn, 111L, config, issue, av_24, delta,
         comment_content='better response', is_description=True,
-        attachments=None)
+        attachments=None, kept_attachments=None)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendApprovalChangeNotification')
@@ -1155,7 +1156,7 @@ class WorkEnvTest(unittest.TestCase):
 
     av_24 = tracker_pb2.ApprovalValue(
         approval_id=24, approver_ids=[111L],
-        status=tracker_pb2.ApprovalStatus.NOT_SET,set_on=1234, setter_id=999L)
+        status=tracker_pb2.ApprovalStatus.NOT_SET, set_on=1234, setter_id=999L)
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
                                issue_id=78901, approval_values=[av_24])
     self.services.issue.TestAddIssue(issue)
@@ -1170,7 +1171,42 @@ class WorkEnvTest(unittest.TestCase):
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
         self.mr.cnxn, 111L, config, issue, av_24, delta,
         comment_content='please review', is_description=False,
-        attachments=attachments)
+        attachments=attachments, kept_attachments=None)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendApprovalChangeNotification')
+  @mock.patch(
+      'tracker.tracker_helpers.FilterKeptAttachments')
+  def testUpdateIssueApproval_KeptAttachments(
+      self, mockFilterKeptAttachments, _mockPrepareAndSend):
+    """We can keep attachments from previous descriptions."""
+    self.services.issue.DeltaUpdateIssueApproval = mock.Mock()
+    mockFilterKeptAttachments.return_value = [1, 2]
+
+    self.SignIn()
+
+    config = fake.MakeTestConfig(789, [], [])
+    self.services.config.StoreConfig('cnxn', config)
+
+    av_24 = tracker_pb2.ApprovalValue(
+        approval_id=24, approver_ids=[111L],
+        status=tracker_pb2.ApprovalStatus.NOT_SET, set_on=1234, setter_id=999L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+                               issue_id=78901, approval_values=[av_24])
+    self.services.issue.TestAddIssue(issue)
+
+    delta = tracker_pb2.ApprovalDelta()
+    with self.work_env as we:
+      we.UpdateIssueApproval(
+          78901, 24, delta, 'Another Desc', True, kept_attachments=[1, 2, 3])
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    mockFilterKeptAttachments.assert_called_once_with(
+        True, [1, 2, 3], comments, 24)
+    self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
+        self.mr.cnxn, 111L, config, issue, av_24, delta,
+        comment_content='Another Desc', is_description=True,
+        attachments=None, kept_attachments=[1, 2])
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
@@ -1325,6 +1361,7 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual('New summary', issue.summary)
     self.assertEqual([333L], issue.cc_ids)
     self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
+
     comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
     comment_pb = comments[-1]
     self.assertEqual([], comment_pb.attachments)
@@ -1334,13 +1371,40 @@ class WorkEnvTest(unittest.TestCase):
 
     attachments = [
         ('README.md', 'readme content', 'text/plain'),
-        ('hello.txt', 'hello content', 'text/plain'),
-        ]
+        ('hello.txt', 'hello content', 'text/plain')]
     with self.work_env as we:
       we.UpdateIssue(issue, delta, 'Getting started', attachments=attachments)
     comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
     comment_pb = comments[-1]
     self.assertEqual(2, len(comment_pb.attachments))
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_KeptAttachments(self, _fake_pasicn):
+    """We can attach files as we make a change."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+
+    # Add some initial attachments
+    delta = tracker_pb2.IssueDelta()
+    attachments = [
+        ('README.md', 'readme content', 'text/plain'),
+        ('hello.txt', 'hello content', 'text/plain')]
+    with self.work_env as we:
+      we.UpdateIssue(
+          issue, delta, 'New Description', attachments=attachments,
+          is_description=True)
+
+    with self.work_env as we:
+      we.UpdateIssue(
+          issue, delta, 'Yet Another Description', is_description=True,
+          kept_attachments=[1, 2, 3])
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertEqual(1, len(comment_pb.attachments))
+    self.assertEqual('hello.txt', comment_pb.attachments[0].filename)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')

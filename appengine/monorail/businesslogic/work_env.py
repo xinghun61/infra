@@ -1010,7 +1010,7 @@ class WorkEnv(object):
 
   def UpdateIssueApproval(self, issue_id, approval_id, approval_delta,
                           comment_content, is_description, attachments=None,
-                          send_email=True):
+                          send_email=True, kept_attachments=None):
     """Update an issue's approval."""
 
     issue, approval_value = self.services.issue.GetIssueApproval(
@@ -1026,6 +1026,12 @@ class WorkEnv(object):
           project, attachments)
         self.services.project.UpdateProject(
           self.mc.cnxn, issue.project_id, attachment_bytes_used=new_bytes_used)
+
+    if kept_attachments:
+      with self.mc.profiler.Phase('Filtering kept attachments'):
+        kept_attachments = tracker_helpers.FilterKeptAttachments(
+            is_description, kept_attachments, self.ListIssueComments(issue),
+            approval_id)
 
     if approval_delta.status:
       if not permissions.CanUpdateApprovalStatus(
@@ -1047,7 +1053,8 @@ class WorkEnv(object):
       comment_pb = self.services.issue.DeltaUpdateIssueApproval(
           self.mc.cnxn, self.mc.auth.user_id, config, issue, approval_value,
           approval_delta, comment_content=comment_content,
-          is_description=is_description, attachments=attachments)
+          is_description=is_description, attachments=attachments,
+          kept_attachments=kept_attachments)
       send_notifications.PrepareAndSendApprovalChangeNotification(
           issue_id, approval_id, framework_helpers.GetHostPort(), comment_pb.id,
           send_email=send_email)
@@ -1075,7 +1082,7 @@ class WorkEnv(object):
 
   def UpdateIssue(
       self, issue, delta, comment_content, attachments=None, send_email=True,
-      is_description=False):
+      is_description=False, kept_attachments=None):
     """Update an issue with a set of changes and add a comment.
 
     Args:
@@ -1085,6 +1092,9 @@ class WorkEnv(object):
       attachments: List [(filename, contents, mimetype),...] of attachments.
       send_email: set to False to suppress email notifications.
       is_description: True if this adds a new issue description.
+      kept_attachments: This should be a list of int attachment ids for
+          attachments kept from previous descriptions, if the comment is
+          a change to the issue description
 
     Returns:
       Nothing.
@@ -1097,15 +1107,23 @@ class WorkEnv(object):
     if attachments:
       with self.mc.profiler.Phase('Accounting for quota'):
         new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
-          project, attachments)
+            project, attachments)
         self.services.project.UpdateProject(
-          self.mc.cnxn, issue.project_id, attachment_bytes_used=new_bytes_used)
+            self.mc.cnxn, issue.project_id,
+            attachment_bytes_used=new_bytes_used)
+
+    if kept_attachments:
+      with self.mc.profiler.Phase('Filtering kept attachments'):
+        kept_attachments = tracker_helpers.FilterKeptAttachments(
+            is_description, kept_attachments, self.ListIssueComments(issue),
+            None)
 
     with self.mc.profiler.Phase('Updating issue %r' % (issue.issue_id)):
       _amendments, comment_pb = self.services.issue.DeltaUpdateIssue(
           self.mc.cnxn, self.services, self.mc.auth.user_id, issue.project_id,
           config, issue, delta, comment=comment_content,
-          attachments=attachments, is_description=is_description)
+          attachments=attachments, is_description=is_description,
+          kept_attachments=kept_attachments)
 
     with self.mc.profiler.Phase('Following up after issue update'):
       # TODO(jrobbins): side effects of setting merged_into.

@@ -219,7 +219,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       attachments = converters.IngestAttachmentUploads(request.uploads)
       we.UpdateIssue(
           issue, delta, request.comment_content, send_email=request.send_email,
-          attachments=attachments, is_description=request.is_description)
+          attachments=attachments, is_description=request.is_description,
+          kept_attachments=list(request.kept_attachments))
       related_refs = we.GetRelatedIssueRefs([issue])
 
     with mc.profiler.Phase('making user views'):
@@ -433,7 +434,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       av, _comment = we.UpdateIssueApproval(
           issue.issue_id, approval_fd.field_id, approval_delta,
           request.comment_content, request.is_description,
-          attachments=attachments, send_email=request.send_email)
+          attachments=attachments, send_email=request.send_email,
+          kept_attachments=list(request.kept_attachments))
 
     with mc.profiler.Phase('converting to response objects'):
       users_by_id = framework_views.MakeAllUserViews(

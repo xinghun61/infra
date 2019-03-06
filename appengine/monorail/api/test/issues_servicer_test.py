@@ -1012,6 +1012,7 @@ class IssuesServicerTest(unittest.TestCase):
           issue_objects_pb2.AttachmentUpload(
               filename='a.txt',
               content='aaaaa')])
+    request.kept_attachments.extend([1, 2, 3])
     request.send_email = True
 
     mc = monorailcontext.MonorailContext(
@@ -1051,7 +1052,8 @@ class IssuesServicerTest(unittest.TestCase):
     work_env.WorkEnv(mc, self.services).UpdateIssueApproval.\
     assert_called_once_with(
         self.issue_1.issue_id, 3, ANY, u'Well, actually', False,
-        attachments=[(u'a.txt', 'aaaaa', 'text/plain')], send_email=True)
+        attachments=[(u'a.txt', 'aaaaa', 'text/plain')], send_email=True,
+        kept_attachments=[1, 2, 3])
     self.assertEqual(expected, actual)
 
   @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
@@ -1101,7 +1103,8 @@ class IssuesServicerTest(unittest.TestCase):
     ).UpdateIssueApproval.assert_called_once_with(
         self.issue_1.issue_id, 3,
         tracker_pb2.ApprovalDelta(),
-        u'Better response.', True, attachments=[], send_email=False)
+        u'Better response.', True, attachments=[], send_email=False,
+        kept_attachments=[])
     self.assertEqual(expected, actual)
 
   @patch('businesslogic.work_env.WorkEnv.UpdateIssueApproval')
@@ -1144,7 +1147,8 @@ class IssuesServicerTest(unittest.TestCase):
     mockUpdateIssueApproval.assert_called_once_with(
         self.issue_1.issue_id, 3,
         tracker_pb2.ApprovalDelta(),
-        u'Better response.', True, attachments=[], send_email=False)
+        u'Better response.', True, attachments=[], send_email=False,
+        kept_attachments=[])
 
   @patch('businesslogic.work_env.WorkEnv.ConvertIssueApprovalsTemplate')
   def testConvertIssueApprovalsTemplate(self, mockWorkEnvConvertApprovals):
