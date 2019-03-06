@@ -49,9 +49,7 @@ func WriteInfrastructure(infrastructure *Infrastructure, dataDir string) error {
 // WriteInfrastructureToString marshals infrastructure inventory information into a string.
 func WriteInfrastructureToString(infra *Infrastructure) (string, error) {
 	infra = proto.Clone(infra).(*Infrastructure)
-	if infra != nil {
-		sortInfrastructure(infra)
-	}
+	sortInfrastructure(infra)
 
 	m := proto.TextMarshaler{}
 	var b bytes.Buffer
@@ -60,6 +58,10 @@ func WriteInfrastructureToString(infra *Infrastructure) (string, error) {
 }
 
 func sortInfrastructure(infra *Infrastructure) {
+	if infra == nil {
+		return
+	}
+
 	ss := infra.Servers
 	sort.SliceStable(ss, func(i, j int) bool {
 		return strings.ToLower(ss[i].GetHostname()) < strings.ToLower(ss[j].GetHostname())

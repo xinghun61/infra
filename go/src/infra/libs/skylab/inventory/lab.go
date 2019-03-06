@@ -61,9 +61,7 @@ func WriteLab(lab *Lab, dataDir string) error {
 // WriteLabToString marshals lab inventory information into a string.
 func WriteLabToString(lab *Lab) (string, error) {
 	lab = proto.Clone(lab).(*Lab)
-	if lab != nil {
-		sortLab(lab)
-	}
+	sortLab(lab)
 	m := proto.TextMarshaler{}
 	var b bytes.Buffer
 	err := m.Marshal(&b, lab)
@@ -72,6 +70,10 @@ func WriteLabToString(lab *Lab) (string, error) {
 
 // sortLab deep sorts lab in place.
 func sortLab(lab *Lab) {
+	if lab == nil {
+		return
+	}
+
 	for _, d := range lab.Duts {
 		sortCommonDeviceSpecs(d.GetCommon())
 	}
