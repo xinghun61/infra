@@ -96,7 +96,7 @@ def make_gitiles_json_call(url, n=1000):
   attempts = 4
   for i in range(attempts):
     logging.info('scanning %s', full_url)
-    result = urlfetch.fetch(full_url, deadline=60)
+    result = urlfetch.fetch(full_url, deadline=180)
     if result.status_code == 200:
       # Gitiles serves JSONP, so we strip it out here.
       assert result.content[0:5] == ')]}\'\n'
