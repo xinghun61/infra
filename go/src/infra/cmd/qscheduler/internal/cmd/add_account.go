@@ -7,7 +7,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -63,14 +62,10 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 	poolID := args[0]
 	accountID := args[1]
 
-	chargeRateFloats := make([]float32, len(c.chargeRates))
-	for i, c := range c.chargeRates {
-		f, err := strconv.ParseFloat(c, 32)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid charge rate: %s\n", err.Error())
-			return 1
-		}
-		chargeRateFloats[i] = float32(f)
+	chargeRateFloats, err := toFloats(c.chargeRates)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		return 1
 	}
 
 	ctx := cli.GetContext(a, c, env)

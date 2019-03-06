@@ -8,6 +8,7 @@ import (
 	"context"
 	"flag"
 	"net/http"
+	"strconv"
 
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -78,4 +79,16 @@ func newViewClient(ctx context.Context, a *authcli.Flags, e *envFlags) (qschedul
 	}
 
 	return qscheduler.NewQSchedulerViewPRPCClient(p), nil
+}
+
+func toFloats(s []string) ([]float32, error) {
+	floats := make([]float32, len(s))
+	for i, c := range s {
+		f, err := strconv.ParseFloat(c, 32)
+		if err != nil {
+			return nil, err
+		}
+		floats[i] = float32(f)
+	}
+	return floats, nil
 }
