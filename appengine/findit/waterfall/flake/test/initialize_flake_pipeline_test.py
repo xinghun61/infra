@@ -7,6 +7,7 @@ import mock
 
 from common import constants
 from common.swarmbucket import swarmbucket
+from dto.commit_id_range import CommitID
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from libs import analysis_status
@@ -179,6 +180,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     start_commit_position = 1000
     start_build_info = BuildInfo('m', 'b 1', 123)
     start_build_info.commit_position = start_commit_position
+    start_build_info.chromium_revision = 'r1000'
     start_build_info.buildbucket_id = buildbucket_id
     mocked_build_info.return_value = (200, start_build_info)
     mocked_analysis.pipeline_status_path.return_value = 'status'
@@ -205,8 +207,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key='urlsafe_key',
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            culprit_commit_position=None,
-            next_commit_position=start_commit_position),
+            culprit_commit_id=None,
+            next_commit_id=CommitID(
+                commit_position=start_commit_position,
+                revision=start_build_info.chromium_revision)),
         commit_position_range=IntRange(lower=None, upper=start_commit_position),
         dimensions=ListOfBasestring.FromSerializable(
             ['os:Mac', 'cpu:x86', 'pool:luci.chromium.findit']),

@@ -4,6 +4,7 @@
 
 import mock
 
+from dto.commit_id_range import CommitID
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs import pipelines
@@ -28,7 +29,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class NextCommitPositionPipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   def testNextCommitPositionPipelineFoundCulprit(self, mock_next_commit):
     master_name = 'm'
     builder_name = 'b'
@@ -37,10 +38,8 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     test_name = 't'
     start_commit_position = 1000
 
-    calculated_next_commit_position = None
-    culprit_commit_position = 1000
-    mock_next_commit.return_value = (calculated_next_commit_position,
-                                     culprit_commit_position)
+    culprit_commit_id = CommitID(commit_position=1000, revision='r1000')
+    mock_next_commit.return_value = (None, culprit_commit_id)
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -59,11 +58,11 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertEqual(culprit_commit_position,
-                     next_commit_position_output['culprit_commit_position'])
-    self.assertIsNone(next_commit_position_output['next_commit_position'])
+    self.assertEqual(culprit_commit_id.ToSerializable(),
+                     next_commit_position_output['culprit_commit_id'])
+    self.assertIsNone(next_commit_position_output['next_commit_id'])
 
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   def testNextCommitPositionPipelineNotReproducible(self, mock_next_commit):
     master_name = 'm'
     builder_name = 'b'
@@ -91,13 +90,13 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
-    self.assertIsNone(next_commit_position_output['next_commit_position'])
+    self.assertIsNone(next_commit_position_output['culprit_commit_id'])
+    self.assertIsNone(next_commit_position_output['next_commit_id'])
 
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
   @mock.patch.object(next_commit_position_utils,
-                     'GetNextCommitPositionFromHeuristicResults')
+                     'GetNextCommitIdFromHeuristicResults')
   def testNextCommitPositionPipelineWithHeuristicResults(
       self, mock_heuristic_result, mock_run_heuristic, mock_next_commit):
     master_name = 'm'
@@ -107,7 +106,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     test_name = 't'
     start_commit_position = 1000
     suspect_commit_position = 95
-    expected_next_commit_position = 94
+    expected_next_commit_id = CommitID(commit_position=94, revision='r94')
 
     suspect = FlakeCulprit.Create('repo', 'revision', suspect_commit_position)
     suspect.commit_position = suspect_commit_position
@@ -119,12 +118,10 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     analysis.put()
 
     mock_run_heuristic.return_value = False
-    mock_heuristic_result.return_value = expected_next_commit_position
+    mock_heuristic_result.return_value = expected_next_commit_id
 
-    calculated_next_commit_position = 999
-    culprit_commit_position = None
-    mock_next_commit.return_value = (calculated_next_commit_position,
-                                     culprit_commit_position)
+    calculated_next_commit_id = CommitID(commit_position=999, revision='r999')
+    mock_next_commit.return_value = (calculated_next_commit_id, None)
 
     next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -139,15 +136,15 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
-    self.assertEqual(expected_next_commit_position,
-                     next_commit_position_output['next_commit_position'])
+    self.assertIsNone(next_commit_position_output['culprit_commit_id'])
+    self.assertEqual(expected_next_commit_id.ToSerializable(),
+                     next_commit_position_output['next_commit_id'])
     mock_heuristic_result.assert_called_once_with(analysis.key.urlsafe())
 
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
   @mock.patch.object(next_commit_position_utils,
-                     'GetNextCommitPositionFromHeuristicResults')
+                     'GetNextCommitIdFromHeuristicResults')
   @mock.patch.object(heuristic_analysis, 'RunHeuristicAnalysis')
   def testNextCommitPositionPipelineRunHeuristicResults(
       self, _, mock_heuristic_result, mock_can_run_heuristic, mock_next_commit):
@@ -157,19 +154,17 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     start_commit_position = 1000
-    expected_next_commit_position = 94
+    expected_next_commit_id = CommitID(commit_position=94, revision='r94')
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.put()
 
     mock_can_run_heuristic.return_value = True
-    mock_heuristic_result.side_effect = [None, expected_next_commit_position]
+    mock_heuristic_result.side_effect = [None, expected_next_commit_id]
 
-    calculated_next_commit_position = 999
-    culprit_commit_position = None
-    mock_next_commit.return_value = (calculated_next_commit_position,
-                                     culprit_commit_position)
+    calculated_next_commit_id = CommitID(commit_position=999, revision='r999')
+    mock_next_commit.return_value = (calculated_next_commit_id, None)
 
     next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -184,19 +179,21 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
-    self.assertEqual(expected_next_commit_position,
-                     next_commit_position_output['next_commit_position'])
+    self.assertIsNone(next_commit_position_output['culprit_commit_id'])
+    self.assertEqual(expected_next_commit_id.ToSerializable(),
+                     next_commit_position_output['next_commit_id'])
 
+  @mock.patch.object(next_commit_position_utils,
+                     'GenerateCommitIDsForBoundingTargets')
   @mock.patch.object(build_util, 'GetBuildInfo')
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
   @mock.patch.object(next_commit_position_utils,
-                     'GetNextCommitPositionFromHeuristicResults')
+                     'GetNextCommitIdFromHeuristicResults')
   @mock.patch.object(heuristic_analysis, 'RunHeuristicAnalysis')
   def testNextCommitPositionPipelineRunHeuristicResultsNoResults(
       self, _, mock_heuristic_result, mock_can_run_heuristic, mock_next_commit,
-      mock_reference_build):
+      mock_reference_build, mock_bound_commits):
     master_name = 'm'
     builder_name = 'b'
     build_number = 105
@@ -205,7 +202,8 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     test_name = 't'
     start_commit_position = 1000
     lower_bound_commit_position = 990
-    lower_bound_revision = 'r990'
+    lower_bound_commit_id = CommitID(
+        commit_position=lower_bound_commit_position, revision='r990')
     start_revision = 'r1000'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -218,7 +216,8 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     mock_can_run_heuristic.return_value = True
     mock_heuristic_result.return_value = None
 
-    mock_next_commit.return_value = (999, None)
+    calculated_next_commit_id = CommitID(commit_position=999, revision='r999')
+    mock_next_commit.return_value = (calculated_next_commit_id, None)
 
     target_name = 'browser_tests'
     step_metadata = StepMetadata(
@@ -245,7 +244,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     lower_bound_target = IsolatedTarget.Create(
         build_id - 1, luci_name, bucket_name, master_name, builder_name,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_1', lower_bound_commit_position, lower_bound_revision)
+        'hash_1', lower_bound_commit_position, lower_bound_commit_id.revision)
     lower_bound_target.put()
 
     upper_bound_target = IsolatedTarget.Create(
@@ -253,6 +252,9 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
         'hash_2', start_commit_position, start_revision)
     upper_bound_target.put()
+    mock_bound_commits.return_value = (
+        lower_bound_commit_id,
+        CommitID(commit_position=start_commit_position, revision='r1000'))
 
     next_commit_position_input = NextCommitPositionInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -267,11 +269,11 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
-    self.assertEqual(lower_bound_commit_position,
-                     next_commit_position_output['next_commit_position'])
+    self.assertIsNone(next_commit_position_output['culprit_commit_id'])
+    self.assertEqual(lower_bound_commit_id.ToSerializable(),
+                     next_commit_position_output['next_commit_id'])
 
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   @mock.patch.object(next_commit_position_utils, 'GetEarliestCommitPosition')
   def testNextCommitPositionPipelineLongStandingFlake(
       self, mock_earliest_commit, mock_next_commit):
@@ -284,7 +286,9 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     cutoff_commit_position = 500
 
     mock_earliest_commit.return_value = cutoff_commit_position
-    mock_next_commit.return_value = (cutoff_commit_position - 1, None)
+    next_commit_id = CommitID(
+        commit_position=cutoff_commit_position - 1, revision='r499')
+    mock_next_commit.return_value = (next_commit_id, None)
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -303,14 +307,17 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
-    self.assertIsNone(next_commit_position_output['next_commit_position'])
+    self.assertIsNone(next_commit_position_output['culprit_commit_id'])
+    self.assertIsNone(next_commit_position_output['next_commit_id'])
 
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(next_commit_position_utils,
+                     'GenerateCommitIDsForBoundingTargets')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testNextCommitPositionPipelineContinueAnalysis(
-      self, mock_reference_build, mock_heuristic, mock_next_commit):
+      self, mock_reference_build, mock_heuristic, mock_next_commit,
+      mock_bound_commits):
     master_name = 'm'
     builder_name = 'b'
     parent_mastername = 'p_m'
@@ -320,9 +327,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     start_commit_position = 1000
-    expected_next_commit_position = 990
-    expected_next_revision = 'r990'
-    start_revision = 'r1000'
+    expected_next_commit_id = CommitID(commit_position=990, revision='r990')
 
     reference_build = BuildInfo(master_name, builder_name, build_number)
     reference_build.commit_position = start_commit_position
@@ -331,10 +336,8 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     mock_reference_build.return_value = (None, reference_build)
     mock_heuristic.return_value = False
 
-    calculated_next_commit_position = 999
-    culprit_commit_position = None
-    mock_next_commit.return_value = (calculated_next_commit_position,
-                                     culprit_commit_position)
+    calculated_next_commit_id = CommitID(commit_position=999, revision='r999')
+    mock_next_commit.return_value = (calculated_next_commit_id, None)
 
     target_name = 'browser_tests'
     step_metadata = StepMetadata(
@@ -357,15 +360,18 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     lower_bound_target = IsolatedTarget.Create(
         build_id - 1, luci_name, bucket_name, parent_mastername,
         parent_buildername, gitiles_host, gitiles_project, gitiles_ref,
-        gerrit_patch, target_name, 'hash_1', expected_next_commit_position,
-        expected_next_revision)
+        gerrit_patch, target_name, 'hash_1',
+        expected_next_commit_id.commit_position, None)
     lower_bound_target.put()
 
     upper_bound_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, parent_mastername, parent_buildername,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_2', start_commit_position, start_revision)
+        'hash_2', start_commit_position, None)
     upper_bound_target.put()
+    mock_bound_commits.return_value = (
+        expected_next_commit_id,
+        CommitID(commit_position=start_commit_position, revision='r1000'))
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -387,12 +393,14 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
-    self.assertEqual(expected_next_commit_position,
-                     next_commit_position_output['next_commit_position'])
+    self.assertIsNone(next_commit_position_output['culprit_commit_id'])
+    self.assertEqual(expected_next_commit_id.ToSerializable(),
+                     next_commit_position_output['next_commit_id'])
+    mock_bound_commits.assert_called_once_with(
+        analysis.data_points, lower_bound_target, upper_bound_target)
 
   @mock.patch.object(build_util, 'GetBuildInfo')
-  @mock.patch.object(lookback_algorithm, 'GetNextCommitPosition')
+  @mock.patch.object(lookback_algorithm, 'GetNextCommitId')
   @mock.patch.object(step_util, 'GetValidBoundingBuildsForStep')
   @mock.patch.object(step_util, 'GetBoundingIsolatedTargets')
   @mock.patch.object(MasterFlakeAnalysis, 'CanRunHeuristicAnalysis')
@@ -406,14 +414,12 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     start_commit_position = 1000
-    expected_next_commit_position = 990
+    expected_next_commit_id = CommitID(commit_position=990, revision='r990')
 
     mock_heuristic.return_value = False
 
-    calculated_next_commit_position = 999
-    culprit_commit_position = None
-    mock_next_commit.return_value = (calculated_next_commit_position,
-                                     culprit_commit_position)
+    calculated_next_commit_id = CommitID(commit_position=999, revision='r999')
+    mock_next_commit.return_value = (calculated_next_commit_id, None)
 
     target_name = 'browser_tests'
     step_metadata = StepMetadata(
@@ -431,7 +437,8 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     mock_reference_build.return_value = (None, reference_build)
 
     lower_bound_build = BuildInfo(master_name, builder_name, build_number - 1)
-    lower_bound_build.commit_position = expected_next_commit_position
+    lower_bound_build.commit_position = expected_next_commit_id.commit_position
+    lower_bound_build.chromium_revision = expected_next_commit_id.revision
     upper_bound_build = BuildInfo(master_name, builder_name, build_number)
     upper_bound_build.commit_position = start_commit_position
     mock_bounding_builds.return_value = (lower_bound_build, upper_bound_build)
@@ -459,6 +466,6 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     next_commit_position_output = pipeline_job.outputs.default.value
 
     self.assertFalse(pipeline_job.was_aborted)
-    self.assertIsNone(next_commit_position_output['culprit_commit_position'])
-    self.assertEqual(expected_next_commit_position,
-                     next_commit_position_output['next_commit_position'])
+    self.assertIsNone(next_commit_position_output['culprit_commit_id'])
+    self.assertEqual(expected_next_commit_id.ToSerializable(),
+                     next_commit_position_output['next_commit_id'])

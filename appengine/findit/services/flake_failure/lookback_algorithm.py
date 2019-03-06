@@ -4,7 +4,10 @@
 
 import math
 
+from dto.commit_id_range import CommitID
+from dto.commit_id_range import CommitIDRange
 from dto.int_range import IntRange
+from services import git
 from services.flake_failure import pass_rate_util
 
 
@@ -26,12 +29,17 @@ def _Bisect(regression_range):
   assert lower_bound is not None, 'Cannot bisect without lower bound'
   assert upper_bound is not None, 'Cannot bisect without upper bound'
 
-  next_commit_position = BisectPoint(lower_bound, upper_bound)
+  next_commit_position = BisectPoint(lower_bound.commit_position,
+                                     upper_bound.commit_position)
 
-  if next_commit_position == lower_bound:
+  if next_commit_position == lower_bound.commit_position:
     return None, upper_bound
 
-  return next_commit_position, None
+  return CommitID(
+      commit_position=next_commit_position,
+      revision=git.GetRevisionForCommitPositionByAnotherCommit(
+          upper_bound.revision, upper_bound.commit_position,
+          next_commit_position)), None
 
 
 def _DetermineNextCommitPosition(data_points):
@@ -62,9 +70,11 @@ def _DetermineNextCommitPosition(data_points):
   """
   flakes_in_a_row = 0
 
+  earliest_data_point = None
   for i, current_data_point in enumerate(data_points):
     pass_rate = current_data_point.pass_rate
     commit_position = current_data_point.commit_position
+    earliest_data_point = current_data_point
 
     if pass_rate_util.TestDoesNotExist(pass_rate):
       if flakes_in_a_row > 0:
@@ -78,9 +88,13 @@ def _DetermineNextCommitPosition(data_points):
         previous_data_point = data_points[i - 1]
 
         return _Bisect(
-            IntRange(
-                lower=current_data_point.commit_position,
-                upper=previous_data_point.commit_position))
+            CommitIDRange(
+                lower=CommitID(
+                    commit_position=current_data_point.commit_position,
+                    revision=current_data_point.git_hash),
+                upper=CommitID(
+                    commit_position=previous_data_point.commit_position,
+                    revision=previous_data_point.git_hash)))
       else:
         # No flaky region has been identified, no findings.
         return None, None
@@ -98,7 +112,9 @@ def _DetermineNextCommitPosition(data_points):
         # If the previous point and this one have adjacent commit positions,
         # the culprit is found.
         if previous_data_point.commit_position - commit_position == 1:
-          return None, previous_data_point.commit_position
+          return None, CommitID(
+              commit_position=previous_data_point.commit_position,
+              revision=previous_data_point.git_hash)
 
         if flakes_in_a_row == 1:
           # Begin the search 1 commit back from the flaky point.
@@ -121,7 +137,12 @@ def _DetermineNextCommitPosition(data_points):
 
         next_commit_position = (
             previous_data_point.commit_position - next_step_size)
-        return next_commit_position, None
+        return CommitID(
+            commit_position=next_commit_position,
+            revision=git.GetRevisionForCommitPositionByAnotherCommit(
+                previous_data_point.git_hash,
+                previous_data_point.commit_position,
+                next_commit_position)), None
       else:
         # Stable/not reproducible.
         return None, None
@@ -130,22 +151,28 @@ def _DetermineNextCommitPosition(data_points):
     flakes_in_a_row += 1
 
   # Further analysis is neeed.
-  earliest_commit_position = commit_position
   if flakes_in_a_row == 1:
     next_step_size = 1
   else:
     previous_data_point = data_points[-2]
 
     # Data points are assumed to be sorted in reverse order.
-    assert previous_data_point.commit_position > earliest_commit_position
+    assert (previous_data_point.commit_position >
+            earliest_data_point.commit_position)
 
     # Exponential search using a quadraticially increasing step size.
-    step_size = previous_data_point.commit_position - earliest_commit_position
+    step_size = (
+        previous_data_point.commit_position -
+        earliest_data_point.commit_position)
     next_step_size = _NextHighestSquare(step_size)
 
-  next_commit_position = earliest_commit_position - next_step_size
+  next_commit_position = earliest_data_point.commit_position - next_step_size
 
-  return next_commit_position, None
+  return CommitID(
+      commit_position=next_commit_position,
+      revision=git.GetRevisionForCommitPositionByAnotherCommit(
+          earliest_data_point.git_hash, earliest_data_point.commit_position,
+          next_commit_position)), None
 
 
 def _NextHighestSquare(n):
@@ -179,7 +206,7 @@ def BisectPoint(lower_bound, upper_bound):
   return lower_bound + (upper_bound - lower_bound) / 2
 
 
-def GetNextCommitPosition(data_points, use_bisect, regression_range):
+def GetNextCommitId(data_points, use_bisect, regression_range):
   """Determines the next point to analyze to be handled by the caller.
 
   Args:
@@ -189,8 +216,8 @@ def GetNextCommitPosition(data_points, use_bisect, regression_range):
         regression range is available bisect may not be preferred in case the
         range is too wide to produce meaningful results. This flag allows the
         caller to determine whether it wants bisect to be performed or not.
-    regression_range (IntRange): The most up-to-date regression range available
-        within the analysis.
+    regression_range (CommitIDRange): The most up-to-date regression range
+      available within the analysis.
   """
   if use_bisect:
     return _Bisect(regression_range)

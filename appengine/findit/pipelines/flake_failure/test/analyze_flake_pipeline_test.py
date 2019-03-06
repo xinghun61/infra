@@ -5,6 +5,7 @@
 import datetime
 import mock
 
+from dto.commit_id_range import CommitID
 from dto.flakiness import Flakiness
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
@@ -69,7 +70,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=None, culprit_commit_position=None),
+            next_commit_id=None, culprit_commit_id=None),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
@@ -93,13 +94,11 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
 
   @mock.patch.object(
       flake_analysis_util, 'ShouldTakeAutoAction', return_value=True)
-  @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
   @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulprit(
-      self, mocked_culprit_identified, mocked_confidence, mocked_culprit,
-      mocked_revision, _):
+      self, mocked_culprit_identified, mocked_confidence, mocked_culprit, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -126,15 +125,16 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
                                   culprit_commit_position)
     culprit.put()
 
-    mocked_revision.return_value = {'git_sha': culprit_revision}
     mocked_confidence.return_value = confidence_score
     mocked_culprit.return_value = culprit
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=None,
-            culprit_commit_position=culprit_commit_position),
+            next_commit_id=None,
+            culprit_commit_id=CommitID(
+                commit_position=culprit_commit_position,
+                revision=culprit_revision)),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
@@ -165,18 +165,15 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertEqual(confidence_score, analysis.confidence_in_culprit)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
-    mocked_revision.assert_called_once_with(mock.ANY, 999)
     mocked_culprit_identified.assert_called_once_with(analysis.key.urlsafe())
 
   @mock.patch.object(
       flake_analysis_util, 'ShouldTakeAutoAction', return_value=False)
-  @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
   @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulpritNoAutoAction(
-      self, mocked_culprit_identified, mocked_confidence, mocked_culprit,
-      mocked_revision, _):
+      self, mocked_culprit_identified, mocked_confidence, mocked_culprit, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -202,15 +199,16 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
                                   culprit_commit_position)
     culprit.put()
 
-    mocked_revision.return_value = {'git_sha': culprit_revision}
     mocked_confidence.return_value = confidence_score
     mocked_culprit.return_value = culprit
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=None,
-            culprit_commit_position=culprit_commit_position),
+            next_commit_id=None,
+            culprit_commit_id=CommitID(
+                commit_position=culprit_commit_position,
+                revision=culprit_revision)),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,
@@ -231,9 +229,7 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
 
   @mock.patch.object(
       flake_analysis_util, 'CanStartAnalysisImmediately', return_value=True)
-  @mock.patch.object(crrev, 'RedirectByCommitPosition')
-  def testAnalyzeFlakePipelineCanStartAnalysisImmediately(
-      self, mocked_revision, _):
+  def testAnalyzeFlakePipelineCanStartAnalysisImmediately(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -258,8 +254,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         waterfall_mastername='w',
         isolate_target_name='s')
 
-    mocked_revision.return_value = {'git_sha': start_revision}
-
     expected_flakiness = Flakiness(
         build_url=build_url,
         commit_position=start_commit_position,
@@ -269,8 +263,9 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=start_commit_position,
-            culprit_commit_position=None),
+            next_commit_id=CommitID(
+                commit_position=start_commit_position, revision=start_revision),
+            culprit_commit_id=None),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
@@ -307,8 +302,10 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         commit_position_range=IntRange(lower=None, upper=None),
         step_metadata=step_metadata)
 
+    next_commit_id = CommitID(
+        commit_position=next_commit_position, revision='r999')
     expected_next_commit_position_output = NextCommitPositionOutput(
-        next_commit_position=next_commit_position, culprit_commit_position=None)
+        next_commit_id=next_commit_id, culprit_commit_id=None)
 
     expected_recursive_analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
@@ -339,14 +336,11 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.start()
     self.execute_queued_tasks()
-    mocked_revision.assert_called_once_with(mock.ANY, start_commit_position)
 
   @mock.patch.object(
       flake_analysis_util, 'CanStartAnalysisImmediately', return_value=False)
-  @mock.patch.object(crrev, 'RedirectByCommitPosition')
   @mock.patch.object(flake_analysis_util, 'CalculateDelaySecondsBetweenRetries')
-  def testAnalyzeFlakePipelineStartTaskAfterDelay(self, mocked_delay,
-                                                  mocked_revision, _):
+  def testAnalyzeFlakePipelineStartTaskAfterDelay(self, mocked_delay, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     # Random date in the past, for coverage.
     analysis.request_time = datetime.datetime(2015, 1, 1, 1, 1, 1)
@@ -366,14 +360,14 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         waterfall_mastername='w',
         isolate_target_name='s')
 
-    mocked_revision.return_value = {'git_sha': start_revision}
     mocked_delay.return_value = delay
 
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=start_commit_position,
-            culprit_commit_position=None),
+            next_commit_id=CommitID(
+                commit_position=start_commit_position, revision=start_revision),
+            culprit_commit_id=None),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
@@ -384,8 +378,9 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     expected_retried_analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=start_commit_position,
-            culprit_commit_position=None),
+            next_commit_id=CommitID(
+                commit_position=start_commit_position, revision=start_revision),
+            culprit_commit_id=None),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
@@ -401,7 +396,6 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
     pipeline_job.start()
     self.execute_queued_tasks()
-    mocked_revision.assert_called_once_with(mock.ANY, 1000)
 
   def testOnFinalizedNoError(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -410,7 +404,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=1000, culprit_commit_position=None),
+            next_commit_id=CommitID(commit_position=1000, revision='rev'),
+            culprit_commit_id=None),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
@@ -430,7 +425,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=1000, culprit_commit_position=None),
+            next_commit_id=CommitID(commit_position=1000, revision='rev'),
+            culprit_commit_id=None),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable(['os:testOS']),
         manually_triggered=False,
@@ -449,7 +445,8 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_position=1000, culprit_commit_position=None),
+            next_commit_id=CommitID(commit_position=1000, revision='rev'),
+            culprit_commit_id=None),
         commit_position_range=IntRange(lower=None, upper=None),
         dimensions=ListOfBasestring.FromSerializable([]),
         manually_triggered=False,

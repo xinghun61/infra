@@ -7,6 +7,8 @@ import logging
 import mock
 
 from common.waterfall import buildbucket_client
+from dto.commit_id_range import CommitID
+from dto.commit_id_range import CommitIDRange
 from dto.int_range import IntRange
 from gae_libs.testcase import TestCase
 from libs import analysis_status
@@ -244,77 +246,96 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = []
     self.assertEqual(
-        IntRange(lower=None, upper=None), analysis.GetLatestRegressionRange())
+        CommitIDRange(lower=None, upper=None),
+        analysis.GetLatestRegressionRange())
 
   def testGetLatestRegressionRangeRangeNoUpperBound(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(commit_position=100, pass_rate=0.5)
+        DataPoint.Create(commit_position=100, pass_rate=0.5, git_hash='rev100')
     ]
 
     self.assertEqual(
-        IntRange(lower=None, upper=100), analysis.GetLatestRegressionRange())
+        CommitIDRange(
+            lower=None, upper=CommitID(commit_position=100, revision='rev100')),
+        analysis.GetLatestRegressionRange())
 
   def testGetLatestRegressionRangeRangeNoLowerBound(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(commit_position=100, pass_rate=1.0)
+        DataPoint.Create(commit_position=100, pass_rate=1.0, git_hash='rev100')
     ]
     self.assertEqual(
-        IntRange(lower=100, upper=None), analysis.GetLatestRegressionRange())
+        CommitIDRange(
+            lower=CommitID(commit_position=100, revision='rev100'), upper=None),
+        analysis.GetLatestRegressionRange())
 
   def testGetLatestRegressionRangeNoUpperBoundMultipleDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(commit_position=100, pass_rate=0.5),
-        DataPoint.Create(commit_position=90, pass_rate=0.5)
+        DataPoint.Create(commit_position=90, pass_rate=0.5, git_hash='rev90')
     ]
     self.assertEqual(
-        IntRange(lower=None, upper=90), analysis.GetLatestRegressionRange())
+        CommitIDRange(
+            lower=None, upper=CommitID(commit_position=90, revision='rev90')),
+        analysis.GetLatestRegressionRange())
 
   def testGetLatestRegressionRange(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(commit_position=91, pass_rate=0.9),
-        DataPoint.Create(commit_position=90, pass_rate=1.0),
+        DataPoint.Create(commit_position=91, pass_rate=0.9, git_hash='rev91'),
+        DataPoint.Create(commit_position=90, pass_rate=1.0, git_hash='rev90'),
     ]
     self.assertEqual(
-        IntRange(lower=90, upper=91), analysis.GetLatestRegressionRange())
+        CommitIDRange(
+            lower=CommitID(commit_position=90, revision='rev90'),
+            upper=CommitID(commit_position=91, revision='rev91')),
+        analysis.GetLatestRegressionRange())
 
   def testGetLatestRegressionRangeIgnoreRecentStable(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(commit_position=100, pass_rate=1.0),
-        DataPoint.Create(commit_position=91, pass_rate=0.9),
-        DataPoint.Create(commit_position=90, pass_rate=1.0),
+        DataPoint.Create(commit_position=91, pass_rate=0.9, git_hash='rev91'),
+        DataPoint.Create(commit_position=90, pass_rate=1.0, git_hash='rev90'),
     ]
     self.assertEqual(
-        IntRange(lower=90, upper=91), analysis.GetLatestRegressionRange())
+        CommitIDRange(
+            lower=CommitID(commit_position=90, revision='rev90'),
+            upper=CommitID(commit_position=91, revision='rev91')),
+        analysis.GetLatestRegressionRange())
 
   def testGetLatestRegressionRangeMultipleRanges(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(commit_position=95, pass_rate=0.6),
-        DataPoint.Create(commit_position=92, pass_rate=1.0),
+        DataPoint.Create(commit_position=95, pass_rate=0.6, git_hash='rev95'),
+        DataPoint.Create(commit_position=92, pass_rate=1.0, git_hash='rev92'),
         DataPoint.Create(commit_position=91, pass_rate=0.9),
         DataPoint.Create(commit_position=90, pass_rate=1.0),
     ]
     self.assertEqual(
-        IntRange(lower=92, upper=95), analysis.GetLatestRegressionRange())
+        CommitIDRange(
+            lower=CommitID(commit_position=92, revision='rev92'),
+            upper=CommitID(commit_position=95, revision='rev95')),
+        analysis.GetLatestRegressionRange())
 
   def testGetLatestRegressionRangeMultipleDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(commit_position=96, pass_rate=0.8),
-        DataPoint.Create(commit_position=95, pass_rate=0.9),
-        DataPoint.Create(commit_position=94, pass_rate=0.0),
+        DataPoint.Create(commit_position=95, pass_rate=0.9, git_hash='rev95'),
+        DataPoint.Create(commit_position=94, pass_rate=0.0, git_hash='rev94'),
         DataPoint.Create(commit_position=93, pass_rate=0.6),
         DataPoint.Create(commit_position=92, pass_rate=1.0),
         DataPoint.Create(commit_position=91, pass_rate=0.9),
         DataPoint.Create(commit_position=90, pass_rate=1.0),
     ]
     self.assertEqual(
-        IntRange(lower=94, upper=95), analysis.GetLatestRegressionRange())
+        CommitIDRange(
+            lower=CommitID(commit_position=94, revision='rev94'),
+            upper=CommitID(commit_position=95, revision='rev95')),
+        analysis.GetLatestRegressionRange())
 
   def testInitializeRunning(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

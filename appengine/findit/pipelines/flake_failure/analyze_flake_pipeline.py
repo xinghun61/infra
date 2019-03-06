@@ -5,12 +5,10 @@
 from google.appengine.ext import ndb
 
 from common import monitoring
-from common.findit_http_client import FinditHttpClient
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import pipeline
-from infra_api_clients import crrev
 from libs import analysis_status
 from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
@@ -117,9 +115,12 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
           {'type': 'flake'})
 
     commit_position_parameters = parameters.analyze_commit_position_parameters
-    commit_position_to_analyze = commit_position_parameters.next_commit_position
+    commit_position_to_analyze = (
+        commit_position_parameters.next_commit_id.commit_position
+        if commit_position_parameters.next_commit_id else None)
     culprit_commit_position = (
-        commit_position_parameters.culprit_commit_position)
+        commit_position_parameters.culprit_commit_id.commit_position
+        if commit_position_parameters.culprit_commit_id else None)
 
     if commit_position_to_analyze is None:
       # No commit position to analyze. The analysis is finished.
@@ -136,10 +137,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
         return
 
       # Create a FlakeCulprit.
-      commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
-                                                   culprit_commit_position)
-      assert commit_info is not None, 'No info: r%d' % culprit_commit_position
-      culprit_revision = commit_info['git_sha']
+      culprit_revision = commit_position_parameters.culprit_commit_id.revision
+      assert culprit_revision, 'No revision for commit {}'.format(
+          culprit_commit_position)
       culprit = flake_analysis_util.UpdateCulprit(
           analysis_urlsafe_key, culprit_revision, culprit_commit_position)
       confidence_score = confidence_score_util.CalculateCulpritConfidenceScore(
@@ -187,10 +187,9 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
                   ReportEventInput, analysis_urlsafe_key=analysis_urlsafe_key))
         return
 
-    commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
-                                                 commit_position_to_analyze)
-    assert commit_info is not None, 'No info: r%d' % commit_position_to_analyze
-    revision_to_analyze = commit_info['git_sha']
+    revision_to_analyze = commit_position_parameters.next_commit_id.revision
+    assert revision_to_analyze, 'No revision for commit {}'.format(
+        commit_position_to_analyze)
 
     # Check for bot availability. If this is a user rerun or the maximum retries
     # have been reached, continue regardless of bot availability.

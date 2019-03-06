@@ -9,6 +9,9 @@ It has functions to:
   * Get information for given revisions.
 """
 
+# TODO (crbug.com/939052): Refactor utility code to allow using info of other
+# git repo.
+
 import datetime
 from datetime import timedelta
 import logging

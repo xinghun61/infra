@@ -635,10 +635,10 @@ class CheckFlake(BaseHandler):
             analysis.original_step_name or analysis.step_name,
         'test_name':
             analysis.original_test_name or analysis.test_name,
-        'regression_range_upper':
-            regression_range.upper,
-        'regression_range_lower':
-            regression_range.lower,
+        'regression_range_upper': (regression_range.upper.commit_position
+                                   if regression_range.upper else None),
+        'regression_range_lower': (regression_range.lower.commit_position
+                                   if regression_range.lower else None),
         'culprit_url':
             culprit.get('url', ''),
         'culprit_revision': (culprit.get('commit_position', 0) or

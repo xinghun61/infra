@@ -93,7 +93,7 @@ def IdentifySuspectedRevisions(analysis):
     return []
 
   upper_data_point = analysis.FindMatchingDataPointWithCommitPosition(
-      regression_range.upper)
+      regression_range.upper.commit_position)
   assert upper_data_point, 'Cannot get test location without data point'
   assert upper_data_point.git_hash, 'Upper bound revision is None'
 
@@ -114,18 +114,15 @@ def IdentifySuspectedRevisions(analysis):
         normalized_file_path, upper_data_point.git_hash))
     return []
 
-  lower_data_point = analysis.FindMatchingDataPointWithCommitPosition(
-      regression_range.lower)
-  assert lower_data_point, (
-      'Cannot get list of commits without lower data point')
-  assert lower_data_point.git_hash, 'Lower bound revision is None'
+  lower_revision = regression_range.lower.revision
+  assert lower_revision, 'Lower bound revision is None'
 
   revisions = git.GetCommitsBetweenRevisionsInOrder(
-      lower_data_point.git_hash, upper_data_point.git_hash, True)
+      lower_revision, upper_data_point.git_hash, True)
 
   if not revisions:
     analysis.LogWarning('Failed to get revisions in range [{}, {}]'.format(
-        lower_data_point.git_hash, upper_data_point.git_hash))
+        lower_revision, upper_data_point.git_hash))
     return []
 
   return GetSuspectedRevisions(git_blame, revisions)

@@ -8,6 +8,8 @@ import logging
 from google.appengine.ext import ndb
 
 from common.waterfall import buildbucket_client
+from dto.commit_id_range import CommitID
+from dto.commit_id_range import CommitIDRange
 from dto.flake_analysis_error import FlakeAnalysisError
 from dto.int_range import IntRange
 from gae_libs.model.versioned_model import VersionedModel
@@ -166,13 +168,13 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     """Gets the latest stable -> flaky commit positions in data_points.
 
     Returns:
-      (IntRange): The commit position of the latest
+      (CommitIDRange): The commit position of the latest
           stable data_point and commit position of the earliest subsequent flaky
           data point. Either point can be None if no flaky or stable points are
           found.
     """
     if not self.data_points:
-      return IntRange(lower=None, upper=None)
+      return CommitIDRange(lower=None, upper=None)
 
     if len(self.data_points) == 1:
       data_point = self.data_points[0]
@@ -180,11 +182,19 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       if pass_rate_util.IsStableDefaultThresholds(data_point.pass_rate):
         # A lower bound stable is found, but no upper bound. The caller of this
         # function should interpret this as the flakiness being unreproducible.
-        return IntRange(lower=data_point.commit_position, upper=None)
+        return CommitIDRange(
+            lower=CommitID(
+                commit_position=data_point.commit_position,
+                revision=data_point.git_hash),
+            upper=None)
 
       # The flakiness is reproducible, but no lower bound (stable) has been
       # identified yet.
-      return IntRange(lower=None, upper=data_point.commit_position)
+      return CommitIDRange(
+          lower=None,
+          upper=CommitID(
+              commit_position=data_point.commit_position,
+              revision=data_point.git_hash))
 
     # For the latest regression range, sort in reverse order by commit position.
     data_points = sorted(
@@ -209,7 +219,11 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     if latest_stable_index is None:
       # All data points are flaky. The caller should interpret this as no
       # findings yet.
-      return IntRange(lower=None, upper=data_points[-1].commit_position)
+      return CommitIDRange(
+          lower=None,
+          upper=CommitID(
+              commit_position=data_points[-1].commit_position,
+              revision=data_points[-1].git_hash))
 
     # A regression range has been identified.
     assert latest_stable_index > 0, (
@@ -218,9 +232,13 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     assert not pass_rate_util.IsStableDefaultThresholds(
         adjacent_flaky_data_point.pass_rate)
 
-    return IntRange(
-        lower=data_points[latest_stable_index].commit_position,
-        upper=adjacent_flaky_data_point.commit_position)
+    return CommitIDRange(
+        lower=CommitID(
+            commit_position=data_points[latest_stable_index].commit_position,
+            revision=data_points[latest_stable_index].git_hash),
+        upper=CommitID(
+            commit_position=adjacent_flaky_data_point.commit_position,
+            revision=adjacent_flaky_data_point.git_hash))
 
   def Reset(self):
     super(MasterFlakeAnalysis, self).Reset()

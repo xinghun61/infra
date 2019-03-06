@@ -5,6 +5,7 @@
 import logging
 
 from common import constants
+from dto.commit_id_range import CommitID
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs import appengine_util
@@ -197,8 +198,10 @@ def ScheduleAnalysisIfNeeded(
     analyze_flake_input = AnalyzeFlakeInput(
         analysis_urlsafe_key=analysis.key.urlsafe(),
         analyze_commit_position_parameters=NextCommitPositionOutput(
-            culprit_commit_position=None,
-            next_commit_position=starting_commit_position),
+            culprit_commit_id=None,
+            next_commit_id=CommitID(
+                commit_position=starting_commit_position,
+                revision=starting_build_info.chromium_revision)),
         commit_position_range=IntRange(
             lower=None, upper=starting_commit_position),
         dimensions=ListOfBasestring.FromSerializable(dimensions),
