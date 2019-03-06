@@ -37,6 +37,7 @@ func getApplication() *cli.Application {
 			authcli.SubcommandInfo(site.DefaultAuthOptions, "whoami", false),
 			subcommands.Section("Inventory Queries"),
 			cmd.Diagnose,
+			cmd.DutInfo,
 			cmd.Inventory,
 			subcommands.Section("Inventory Operations"),
 			cmd.AssignDuts,
