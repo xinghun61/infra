@@ -161,6 +161,12 @@ func (g gerritServer) PostRobotComments(c context.Context, host, change, revisio
 // Note: This method only returns lines based on the patch, and does not know
 // about which files are renamed or copied.
 func (g gerritServer) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
+	return FetchChangedLines(c, host, change, revision)
+}
+
+// FetchChangedLines fetches information about which lines were changed which
+// includes added and modified lines, and all lines in a moved or copied file.
+func FetchChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
 	url := fmt.Sprintf(
 		"https://%s/a/changes/%s/revisions/%s/patch",
 		host, change, PatchSetNumber(revision))
@@ -359,4 +365,67 @@ func (m *MockRestAPI) PostRobotComments(c context.Context, host, change, revisio
 // version that are considered changed.
 func (m *MockRestAPI) GetChangedLines(c context.Context, host, change, revision string) (ChangedLinesInfo, error) {
 	return m.ChangedLines, nil
+}
+
+// FilterRequestChangedLines will remove changed lines for all files in |request|
+// that should be ignored when considering whether to post a comment to the
+// file.
+func FilterRequestChangedLines(request *track.AnalyzeRequest, changedLines *ChangedLinesInfo) {
+	for _, file := range request.Files {
+		if file.Status == tricium.Data_RENAMED || file.Status == tricium.Data_COPIED {
+			delete(*changedLines, file.Path)
+		}
+	}
+}
+
+// CommentIsInChangedLines checks whether a comment is in the change.
+//
+// Non-file-level comments that don't overlap with the changed lines
+// should be filtered out.
+func CommentIsInChangedLines(c context.Context, trackComment *track.Comment, changedLines ChangedLinesInfo) bool {
+	var data tricium.Data_Comment
+	if trackComment.Comment == nil {
+		logging.Errorf(c, "Got a comment with a nil Comment field: %+v", trackComment)
+		return false
+	}
+
+	if err := jsonpb.UnmarshalString(string(trackComment.Comment), &data); err != nil {
+		logging.WithError(err).Errorf(c, "Failed to unmarshal comment.")
+		return false
+	}
+
+	if data.StartLine == 0 {
+		return true // File-level comment, should be kept.
+	}
+
+	// If the file has changed lines tracked, pass over comments that aren't in the diff.
+	if lines, ok := changedLines[data.Path]; ok {
+		start, end := int(data.StartLine), int(data.EndLine)
+		if end > start && data.EndChar == 0 {
+			end-- // None of data.EndLine is included in the comment.
+		}
+		if end == 0 {
+			end = start // Line comment.
+		}
+		if isInChangedLines(start, end, lines) {
+			return true
+		}
+		logging.Debugf(c, "Filtering out comment on lines [%d, %d].", start, end)
+		return false
+	}
+	logging.Debugf(c, "File %q is not in changed lines.", data.Path)
+	return false
+}
+
+// isInChangedLines checks for overlap between a comment and the change.
+//
+// Specifically, this returns true if the range defined by [start, end],
+// includes any of the lines in changedLines.
+func isInChangedLines(start, end int, changedLines []int) bool {
+	for _, line := range changedLines {
+		if line >= start && line <= end {
+			return true
+		}
+	}
+	return false
 }

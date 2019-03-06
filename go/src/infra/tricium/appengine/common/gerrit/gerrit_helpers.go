@@ -6,6 +6,7 @@ package gerrit
 
 import (
 	"fmt"
+	"infra/tricium/appengine/common/track"
 	"regexp"
 )
 
@@ -39,4 +40,9 @@ func ExtractCLPatchSetNumbers(revision string) (string, string) {
 		return "", ""
 	}
 	return matches[1], matches[2]
+}
+
+// IsGerritProjectRequest determines if the |request| is for a Gerrit project.
+func IsGerritProjectRequest(request *track.AnalyzeRequest) bool {
+	return request.GerritProject != "" && request.GerritChange != ""
 }

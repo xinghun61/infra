@@ -157,7 +157,7 @@ func TestReportResultsRequest(t *testing.T) {
 		So(ds.Put(ctx, &track.CommentSelection{
 			ID:       1,
 			Parent:   ds.KeyForObj(ctx, outsideChangeComment),
-			Included: true,
+			Included: gc.CommentIsInChangedLines(ctx, outsideChangeComment, changedLines),
 		}), ShouldBeNil)
 		So(len(comments), ShouldEqual, maxComments+2)
 
@@ -178,7 +178,7 @@ func TestReportResultsRequest(t *testing.T) {
 		So(ds.Put(ctx, &track.CommentSelection{
 			ID:       1,
 			Parent:   ds.KeyForObj(ctx, comment),
-			Included: true,
+			Included: gc.CommentIsInChangedLines(ctx, comment, changedLines),
 		}), ShouldBeNil)
 		So(len(comments), ShouldEqual, maxComments+3)
 
@@ -238,6 +238,7 @@ func TestReportResultsRequestWithRenamedOrCopiedFiles(t *testing.T) {
 			"dir/renamed_file.txt": {1, 2, 3, 4, 5, 6, 7},
 			"dir/copied_file.txt":  {1, 2, 3, 4, 5, 6, 7},
 		}
+		gc.FilterRequestChangedLines(request, &changedLines)
 		inChangeCommentJSON, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
 			Category:  "L",
 			Message:   "Line too short",
@@ -269,16 +270,17 @@ func TestReportResultsRequestWithRenamedOrCopiedFiles(t *testing.T) {
 		So(ds.Put(ctx, &track.CommentSelection{
 			ID:       1,
 			Parent:   ds.KeyForObj(ctx, comments[0]),
-			Included: true,
+			Included: gc.CommentIsInChangedLines(ctx, comments[0], changedLines),
 		}), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{
-			ID: 1, Parent: ds.KeyForObj(ctx, comments[1]),
-			Included: true,
+			ID:       1,
+			Parent:   ds.KeyForObj(ctx, comments[1]),
+			Included: gc.CommentIsInChangedLines(ctx, comments[1], changedLines),
 		}), ShouldBeNil)
 		So(ds.Put(ctx, &track.CommentSelection{
 			ID:       1,
 			Parent:   ds.KeyForObj(ctx, comments[2]),
-			Included: true,
+			Included: gc.CommentIsInChangedLines(ctx, comments[2], changedLines),
 		}), ShouldBeNil)
 
 		Convey("Does not report comments in renamed or copied files", func() {
@@ -290,118 +292,5 @@ func TestReportResultsRequestWithRenamedOrCopiedFiles(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(mock.LastComments), ShouldEqual, 1)
 		})
-	})
-}
-
-func TestCommentIsInChangedLines(t *testing.T) {
-	Convey("Test Environment", t, func() {
-
-		ctx := triciumtest.Context()
-
-		Convey("Single line comment in changed lines", func() {
-			json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
-				Path:      "dir/file.txt",
-				StartLine: 5,
-				EndLine:   5,
-				StartChar: 0,
-				EndChar:   10,
-			})
-			So(err, ShouldBeNil)
-			lines := map[string][]int{"dir/file.txt": {2, 5, 10}}
-			comment := &track.Comment{Comment: []byte(json)}
-			So(commentIsInChangedLines(ctx, comment, lines), ShouldBeTrue)
-		})
-
-		Convey("Single line comment outside of changed lines", func() {
-			json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
-				Path:      "dir/file.txt",
-				StartLine: 4,
-				EndLine:   4,
-				StartChar: 0,
-				EndChar:   10,
-			})
-			So(err, ShouldBeNil)
-			lines := map[string][]int{"dir/file.txt": {2, 5, 10}}
-			comment := &track.Comment{Comment: []byte(json)}
-			So(commentIsInChangedLines(ctx, comment, lines), ShouldBeFalse)
-		})
-
-		Convey("Single line comment outside of changed files", func() {
-			json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
-				Path:      "DELETED.txt",
-				StartLine: 5,
-				EndLine:   5,
-				StartChar: 5,
-				EndChar:   10,
-			})
-			So(err, ShouldBeNil)
-			lines := map[string][]int{"dir/file.txt": {2, 5, 10}}
-			comment := &track.Comment{Comment: []byte(json)}
-			So(commentIsInChangedLines(ctx, comment, lines), ShouldBeFalse)
-		})
-
-		Convey("Comment with line range that overlaps changed line", func() {
-			json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
-				Path:      "dir/file.txt",
-				StartLine: 3,
-				EndLine:   8,
-			})
-			So(err, ShouldBeNil)
-			lines := map[string][]int{"dir/file.txt": {2, 5, 10}}
-			comment := &track.Comment{Comment: []byte(json)}
-			So(commentIsInChangedLines(ctx, comment, lines), ShouldBeTrue)
-		})
-
-		Convey("Comment with end char == 0, implying end line is not included", func() {
-			json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
-				Path:      "dir/file.txt",
-				StartLine: 6,
-				EndLine:   10,
-			})
-			So(err, ShouldBeNil)
-			lines := map[string][]int{"dir/file.txt": {2, 5, 10}}
-			comment := &track.Comment{Comment: []byte(json)}
-			So(commentIsInChangedLines(ctx, comment, lines), ShouldBeFalse)
-		})
-
-		Convey("File-level comments are included", func() {
-			json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
-				Path: "dir/file.txt",
-			})
-			So(err, ShouldBeNil)
-			lines := map[string][]int{"dir/file.txt": {2, 5, 10}}
-			comment := &track.Comment{Comment: []byte(json)}
-			So(commentIsInChangedLines(ctx, comment, lines), ShouldBeTrue)
-		})
-
-		Convey("Line comments on changed lines are included", func() {
-			json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
-				Path:      "dir/file.txt",
-				StartLine: 2,
-			})
-			So(err, ShouldBeNil)
-			lines := map[string][]int{"dir/file.txt": {2, 5, 10}}
-			comment := &track.Comment{Comment: []byte(json)}
-			So(commentIsInChangedLines(ctx, comment, lines), ShouldBeTrue)
-		})
-	})
-}
-
-func TestIsInChangedLines(t *testing.T) {
-	Convey("Overlapping cases", t, func() {
-		So(isInChangedLines(1, 3, []int{2, 3, 4}), ShouldBeTrue)
-		So(isInChangedLines(4, 5, []int{2, 3, 4}), ShouldBeTrue)
-		// The end line is inclusive.
-		So(isInChangedLines(1, 2, []int{2, 3, 4}), ShouldBeTrue)
-		So(isInChangedLines(3, 3, []int{2, 3, 4}), ShouldBeTrue)
-	})
-
-	Convey("Non-overlapping cases", t, func() {
-		So(isInChangedLines(5, 6, []int{2, 3, 4}), ShouldBeFalse)
-		So(isInChangedLines(1, 1, []int{2, 3, 4}), ShouldBeFalse)
-	})
-
-	Convey("Invalid range cases", t, func() {
-		So(isInChangedLines(2, 0, []int{2, 3, 4}), ShouldBeFalse)
 	})
 }

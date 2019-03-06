@@ -179,6 +179,50 @@ func streamToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *trac
 	return resultsLog.Insert(c, &bq.Row{Message: run})
 }
 
+// Given the |request| and |comments| create an array of track.CommentSelection
+// the same size (and order) as |comments|. If |request| is for a Gerrit change
+// then also set CommentSelection.Included if the comment is to be reported to
+// Gerrit.
+func createCommentSelections(c context.Context, request *track.AnalyzeRequest, comments []*track.Comment) ([]*track.CommentSelection, error) {
+	selections := make([]*track.CommentSelection, len(comments))
+	for i, comment := range comments {
+		commentKey := ds.KeyForObj(c, comment)
+		selections[i] = &track.CommentSelection{
+			ID:       1,
+			Parent:   commentKey,
+			Included: true, // Default value, will override below.
+		}
+	}
+
+	if !gerrit.IsGerritProjectRequest(request) {
+		return selections, nil
+	}
+
+	// Get the changed lines for this revision.
+	changedLines, err := gerrit.FetchChangedLines(c, request.GerritHost, request.GerritChange, request.GitRef)
+	if err != nil {
+		// Upon error return a valid slice of selections which are all *not*
+		// included.
+		for _, s := range selections {
+			s.Included = false
+		}
+		return selections, errors.Annotate(err, "failed to get changed lines").Err()
+	}
+
+	gerrit.FilterRequestChangedLines(request, &changedLines)
+
+	for path, lines := range changedLines {
+		logging.Debugf(c, "Num changed lines for %s is %d.", path, len(lines))
+	}
+
+	for i, comment := range comments {
+		// TODO(crbug.com/869177): Merge results.
+		selections[i].Included = gerrit.CommentIsInChangedLines(c, comment, changedLines)
+	}
+
+	return selections, nil
+}
+
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
 	logging.Fields{
 		"runID":             req.RunId,
@@ -316,6 +360,11 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		"runState":      runState,
 	}.Infof(c, "Updating state.")
 
+	request := &track.AnalyzeRequest{ID: req.RunId}
+	if err := ds.Get(c, request); err != nil {
+		return errors.Reason("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err).Err()
+	}
+
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
 		return parallel.FanOutIn(func(taskC chan<- func() error) {
@@ -329,14 +378,16 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 					return errors.Annotate(err, "failed to add Comment entries").Err()
 				}
 				entities := make([]interface{}, 0, len(comments)*2)
-				for _, comment := range comments {
+				selections, err := createCommentSelections(c, request, comments)
+				if err != nil {
+					logging.Warningf(c, `Error creating comment selections: %v`, err)
+					// On error still write the comment selections which specify they
+					// were not included.
+				}
+				for i, comment := range comments {
 					commentKey := ds.KeyForObj(c, comment)
 					entities = append(entities, []interface{}{
-						&track.CommentSelection{
-							ID:       1,
-							Parent:   commentKey,
-							Included: true, // TODO(crbug.com/869177): Merge results.
-						},
+						selections[i],
 						&track.CommentFeedback{ID: 1, Parent: commentKey},
 					}...)
 				}
@@ -425,11 +476,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 
 	// Notify reporter.
-	request := &track.AnalyzeRequest{ID: req.RunId}
-	if err := ds.Get(c, request); err != nil {
-		return errors.Reason("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err).Err()
-	}
-	if request.GerritProject != "" && request.GerritChange != "" {
+	if gerrit.IsGerritProjectRequest(request) {
 		if tricium.IsDone(functionState) {
 			// Only report results if there were comments.
 			if len(comments) == 0 {
@@ -454,11 +501,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	if err := ds.Get(c, result); err != nil {
 		return errors.Annotate(err, "failed to get AnalyzeRequestResult entity").Err()
 	}
-	if err := streamToBigQuery(c, workerRes, request, result, comments); err != nil {
-		return err
-	}
-
-	return nil
+	return streamToBigQuery(c, workerRes, request, result, comments)
 }
 
 // collectComments collects the comments in the results from the analyzer.
