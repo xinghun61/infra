@@ -206,3 +206,37 @@ def ChangeCommittedWithinTime(revision, hours=24):
         'commit.', revision, hours)
 
   return in_time
+
+
+def GetRevisionsBoundedByCommitPositions(end_revision, end_commit_position,
+                                         start_commit_position):
+  """Gets revisions between start_commit_position and end_commit_position.
+
+  Args:
+    end_revision (str): Revision of the end commit.
+    end_commit_position (int): Commit position of the end commit.
+    start_commit_position (int): Commit position of the end commit. It cannot be
+      greater than end_commit_position.
+  """
+  assert start_commit_position <= end_commit_position, (
+      'start_commit_position {} is greater than end_commit_position {}'.format(
+          start_commit_position, end_commit_position))
+
+  git_repo = CachedGitilesRepository(FinditHttpClient(),
+                                     CHROMIUM_GIT_REPOSITORY_URL)
+  commit_position_range = end_commit_position - start_commit_position + 1
+
+  logs, _ = git_repo.GetNChangeLogs(end_revision, commit_position_range)
+  return dict((log.commit_position, log.revision) for log in logs)
+
+
+def GetRevisionForCommitPositionByAnotherCommit(
+    base_revision, base_commit_position, requested_commit_position):
+  """Gets revision of the requested commit by the information of the base commit
+
+  requested_commit_position should not be greater than the base_commit_position.
+  """
+  revisions = GetRevisionsBoundedByCommitPositions(
+      base_revision, base_commit_position, requested_commit_position)
+
+  return revisions.get(requested_commit_position) or None

@@ -59,17 +59,19 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     gitiles_project = 'chromium/src'
     gitiles_ref = 'refs/heads/master'
     gerrit_patch = ''
+    lower_bound_revision = 'r1000'
+    upper_bound_revision = 'r1010'
 
     lower_bound_target = IsolatedTarget.Create(
         build_id - 1, luci_name, bucket_name, master_name, builder_name,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_1', lower_bound_commit_position)
+        'hash_1', lower_bound_commit_position, lower_bound_revision)
     lower_bound_target.put()
 
     upper_bound_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, master_name, builder_name,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_2', upper_bound_commit_position)
+        'hash_2', upper_bound_commit_position, upper_bound_revision)
     upper_bound_target.put()
 
     self.assertEqual((lower_bound_target, upper_bound_target),
@@ -332,8 +334,8 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(step_util, '_GetStepLogViewUrl', return_value=None)
   @mock.patch.object(logdog_util, 'GetLogFromViewUrl')
   @mock.patch.object(buildbucket_client, 'GetV2Build')
-  def testGetStepLogForLuciBuildNoViewUrl(
-      self, mock_get_build, mock_get_log, _):
+  def testGetStepLogForLuciBuildNoViewUrl(self, mock_get_build, mock_get_log,
+                                          _):
     build_id = '8945610992972640896'
     mock_log = Step.Log()
     mock_log.name = 'step_metadata'
@@ -345,8 +347,8 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     mock_build.id = int(build_id)
     mock_build.steps.extend([mock_step])
     mock_get_build.return_value = mock_build
-    self.assertIsNone(step_util.GetStepLogForLuciBuild(
-        build_id, 's', None, 'step_metadata'))
+    self.assertIsNone(
+        step_util.GetStepLogForLuciBuild(build_id, 's', None, 'step_metadata'))
     self.assertFalse(mock_get_log.called)
 
   @mock.patch.object(

@@ -53,6 +53,9 @@ class IsolatedTarget(ndb.Model):
   # e.g. 557975 for 'refs/heads/master@{#557975}'.
   commit_position = ndb.IntegerProperty(required=True)
 
+  # Git_hash of the commit.
+  revision = ndb.StringProperty()
+
   # The gerrit patch in host/issue/patchset format
   # e.g. 'chromium-review.googlesource.com/1065898/2'.
   # For builds without patch this is expected to be empty.
@@ -85,7 +88,7 @@ class IsolatedTarget(ndb.Model):
   @classmethod
   def Create(cls, build_id, luci_project, bucket, master_name, builder_name,
              gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
-             target_name, isolated_hash, commit_position):
+             target_name, isolated_hash, commit_position, revision):
     return cls(
         key=cls._CreateKey(build_id, target_name),
         build_id=build_id,
@@ -100,7 +103,7 @@ class IsolatedTarget(ndb.Model):
         target_name=target_name,
         commit_position=commit_position,
         isolated_hash=isolated_hash,
-    )
+        revision=revision)
 
   @classmethod
   def FindIsolateBeforeCommitPositionByBucket(cls,

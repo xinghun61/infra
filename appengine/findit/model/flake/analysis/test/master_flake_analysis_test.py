@@ -349,10 +349,10 @@ class MasterFlakeAnalysisTest(TestCase):
 
     lower_bound_target = IsolatedTarget.Create(build_id - 1, '', '', 'm', 'b',
                                                '', '', '', '', '', '',
-                                               lower_bound_commit_position)
+                                               lower_bound_commit_position, '')
     upper_bound_target = IsolatedTarget.Create(build_id, '', '', 'm', 'b', '',
                                                '', '', '', '', '',
-                                               upper_bound_commit_position)
+                                               upper_bound_commit_position, '')
 
     analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
 
@@ -367,9 +367,9 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.Save()
 
     lower_bound_target = IsolatedTarget.Create(999, '', '', 'm', 'b', '', '',
-                                               '', '', '', '', 90)
+                                               '', '', '', '', 90, '')
     upper_bound_target = IsolatedTarget.Create(1000, '', '', 'm', 'b', '', '',
-                                               '', '', '', '', 100)
+                                               '', '', '', '', 100, '')
 
     analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
     self.assertIsNone(analysis.suspected_flake_build_number)
@@ -394,10 +394,10 @@ class MasterFlakeAnalysisTest(TestCase):
 
     lower_bound_target = IsolatedTarget.Create(build_id - 1, '', '', 'm', 'b',
                                                '', '', '', '', '', '',
-                                               lower_bound_commit_position)
+                                               lower_bound_commit_position, '')
     upper_bound_target = IsolatedTarget.Create(build_id, '', '', 'm', 'b', '',
                                                '', '', '', '', '',
-                                               upper_bound_commit_position)
+                                               upper_bound_commit_position, '')
 
     analysis.UpdateSuspectedBuild(lower_bound_target, upper_bound_target)
 

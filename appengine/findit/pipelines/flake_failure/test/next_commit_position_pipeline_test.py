@@ -205,6 +205,8 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     test_name = 't'
     start_commit_position = 1000
     lower_bound_commit_position = 990
+    lower_bound_revision = 'r990'
+    start_revision = 'r1000'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -243,13 +245,13 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     lower_bound_target = IsolatedTarget.Create(
         build_id - 1, luci_name, bucket_name, master_name, builder_name,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_1', lower_bound_commit_position)
+        'hash_1', lower_bound_commit_position, lower_bound_revision)
     lower_bound_target.put()
 
     upper_bound_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, master_name, builder_name,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_2', start_commit_position)
+        'hash_2', start_commit_position, start_revision)
     upper_bound_target.put()
 
     next_commit_position_input = NextCommitPositionInput(
@@ -319,17 +321,8 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     test_name = 't'
     start_commit_position = 1000
     expected_next_commit_position = 990
-
-    target_name = 'browser_tests'
-    step_metadata = StepMetadata(
-        canonical_step_name=None,
-        dimensions=None,
-        full_step_name=None,
-        isolate_target_name=target_name,
-        patched=True,
-        swarm_task_ids=None,
-        waterfall_buildername=None,
-        waterfall_mastername=None)
+    expected_next_revision = 'r990'
+    start_revision = 'r1000'
 
     reference_build = BuildInfo(master_name, builder_name, build_number)
     reference_build.commit_position = start_commit_position
@@ -364,13 +357,14 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     lower_bound_target = IsolatedTarget.Create(
         build_id - 1, luci_name, bucket_name, parent_mastername,
         parent_buildername, gitiles_host, gitiles_project, gitiles_ref,
-        gerrit_patch, target_name, 'hash_1', expected_next_commit_position)
+        gerrit_patch, target_name, 'hash_1', expected_next_commit_position,
+        expected_next_revision)
     lower_bound_target.put()
 
     upper_bound_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, parent_mastername, parent_buildername,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch, target_name,
-        'hash_2', start_commit_position)
+        'hash_2', start_commit_position, start_revision)
     upper_bound_target.put()
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,

@@ -85,11 +85,12 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     gerrit_patch = ''
     isolate_target_name = 'browser_tests'
     isolated_hash = 'isolated_hash'
+    git_hash = 'r1000'
 
     isolated_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, master_name, builder_name,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
-        isolate_target_name, isolated_hash, commit_position)
+        isolate_target_name, isolated_hash, commit_position, git_hash)
     isolated_target.put()
 
     get_sha_input = GetIsolateShaForTargetInput(
@@ -153,7 +154,6 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     parent_buildername = 'p_b'
     build_number = 100
     build_id = 123
-    step_name = 's'
     test_name = 't'
     requested_commit_position = 1000
     requested_revision = 'r1000'
@@ -188,7 +188,8 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     isolated_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, parent_mastername, parent_buildername,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
-        isolate_target_name, isolated_hash, requested_commit_position)
+        isolate_target_name, isolated_hash, requested_commit_position,
+        requested_revision)
     isolated_target.put()
 
     step_metadata = StepMetadata(
@@ -237,6 +238,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     dimensions = ['dimensions']
     requested_commit_position = 1000
     containing_build_commit_position = 1001
+    containing_build_revision = 'r1001'
     requested_revision = 'r1000'
     expected_sha = 'sha1'
     cache_name = 'cache'
@@ -264,7 +266,8 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     isolated_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, master_name, builder_name,
         gitiles_host, gitiles_project, gitiles_ref, gerrit_patch,
-        isolate_target_name, isolated_hash, containing_build_commit_position)
+        isolate_target_name, isolated_hash, containing_build_commit_position,
+        containing_build_revision)
     isolated_target.put()
 
     mocked_cache.return_value = cache_name

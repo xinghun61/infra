@@ -27,6 +27,7 @@ class MockedChangeLog(object):
                author=None,
                committer=None):
     self.commit_position = commit_position
+    self.revision = 'rev_{}'.format(commit_position)
     self.code_review_url = code_review_url
     self.review_change_id = str(commit_position)
     self.review_server_host = 'host'
@@ -228,15 +229,16 @@ class GitTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(git, 'GetAuthor')
   def testIsAuthoredByAutoRevertAccount(self, mock_author):
     emails = [
-      'chromium-internal-autoroll@skia-corp.google.com.iam.gserviceaccount.com',
-      'chromium-autoroll@skia-public.iam.gserviceaccount.com',
-      'v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com'
+        'chromium-internal-autoroll@'
+        'skia-corp.google.com.iam.gserviceaccount.com',
+        'chromium-autoroll@skia-public.iam.gserviceaccount.com',
+        'v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com'
     ]
 
     for email in emails:
       author = Contributor(
-        'autoroller', email,
-        datetime.strptime('Wed Jun 11 19:35:32 2014', '%a %b %d %H:%M:%S %Y'))
+          'autoroller', email,
+          datetime.strptime('Wed Jun 11 19:35:32 2014', '%a %b %d %H:%M:%S %Y'))
       mock_author.return_value = author
       self.assertTrue(git.IsAuthoredByNoAutoRevertAccount('rev1'))
 
@@ -368,3 +370,20 @@ class GitTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         Contributor('author', 'author@abc.com', '2018-05-17 00:49:48'),
         git.GetAuthor(revision))
+
+  def testGetRevisionsBoundedByCommitPositions(self):
+    self.mock(
+        GitilesRepository, 'GetNChangeLogs',
+        self._GenerateGetNChangeLogsMock(timedelta(minutes=25), next_rev=None))
+    expected_revs = {100: 'rev_100', 99: 'rev_99', 98: 'rev_98'}
+    self.assertEqual(
+        expected_revs,
+        git.GetRevisionsBoundedByCommitPositions('rev_100', 100, 98))
+
+  def testGetRevisionForCommitPositionByAnotherCommit(self):
+    self.mock(
+        GitilesRepository, 'GetNChangeLogs',
+        self._GenerateGetNChangeLogsMock(timedelta(minutes=25), next_rev=None))
+    self.assertEqual(
+        'rev_98',
+        git.GetRevisionForCommitPositionByAnotherCommit('rev_100', 100, 98))

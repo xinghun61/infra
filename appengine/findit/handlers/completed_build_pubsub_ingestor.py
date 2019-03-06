@@ -170,6 +170,7 @@ def _IngestProto(build_id):
               gerrit_patch=gerrit_patch if with_patch else '',
               target_name=target_name,
               isolated_hash=isolated_hash,
-              commit_position=commit_position))
+              commit_position=commit_position,
+              revision=properties.get('got_revision')))
   result = [key.pairs() for key in ndb.put_multi(entities)]
   return {'data': {'created_rows': result}}

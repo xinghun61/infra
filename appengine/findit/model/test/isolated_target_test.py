@@ -12,11 +12,12 @@ class IsolatedTargetTest(TestCase):
   def setUp(self):
     super(IsolatedTargetTest, self).setUp()
     for pos in range(100):
-      entry = IsolatedTarget.Create(843400990909000 + pos, 'chromium', 'ci',
-                                    'chromium.linux', 'Linux Builder',
-                                    'chromium.googlesource.com', 'chromium/src',
-                                    'refs/heads/master', '', 'browser_tests',
-                                    'abcdef%dabcdef' % pos, 55000 + pos * 13)
+      commit_position = 55000 + pos * 13
+      entry = IsolatedTarget.Create(
+          843400990909000 + pos, 'chromium', 'ci', 'chromium.linux',
+          'Linux Builder', 'chromium.googlesource.com', 'chromium/src',
+          'refs/heads/master', '', 'browser_tests', 'abcdef%dabcdef' % pos,
+          commit_position, '%d' % commit_position)
       entry.put()
 
   def testFindIsolate(self):
@@ -60,10 +61,10 @@ class IsolatedTargetTest(TestCase):
 
   def testIsolatedHash(self):
     isolated_hash = 'isolated_hash'
-    target = IsolatedTarget.Create(10000, 'chromium', 'ci', 'chromium.linux',
-                                   'Linux Builder', 'chromium.googlesource.com',
-                                   'chromium/src', 'refs/heads/master', '',
-                                   'browser_tests', isolated_hash, 55000)
+    target = IsolatedTarget.Create(
+        10000, 'chromium', 'ci', 'chromium.linux', 'Linux Builder',
+        'chromium.googlesource.com', 'chromium/src', 'refs/heads/master', '',
+        'browser_tests', isolated_hash, 55000, '55000')
     self.assertEqual(isolated_hash, target.GetIsolatedHash())
 
   def testBuildUrl(self):
@@ -71,5 +72,5 @@ class IsolatedTargetTest(TestCase):
     target = IsolatedTarget.Create(build_id, 'chromium', 'ci', 'chromium.linux',
                                    'Linux Builder', 'chromium.googlesource.com',
                                    'chromium/src', 'refs/heads/master', '',
-                                   'browser_tests', 'a1b2c3d4', 55000)
+                                   'browser_tests', 'a1b2c3d4', 55000, '55000')
     self.assertEqual('https://ci.chromium.org/b/10000', target.build_url)

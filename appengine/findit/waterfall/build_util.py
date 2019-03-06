@@ -192,10 +192,13 @@ def GetLatestCommitPositionAndRevision(master_name, builder_name, target_name):
 
   if latest_targets:
     commit_position = latest_targets[0].commit_position
-    commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
-                                                 commit_position)
-    assert commit_info is not None, 'No info: r%d' % commit_position
-    revision = commit_info['git_sha']
+    revision = latest_targets[0].revision
+    if not revision:
+      # Historical data doesn't have revision.
+      commit_info = crrev.RedirectByCommitPosition(FinditHttpClient(),
+                                                   commit_position)
+      assert commit_info is not None, 'No info: r%d' % commit_position
+      revision = commit_info['git_sha']
 
     return commit_position, revision
 

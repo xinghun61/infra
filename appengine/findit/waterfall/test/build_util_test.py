@@ -256,6 +256,24 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(IsolatedTarget, 'FindLatestIsolateByMaster')
   @mock.patch.object(crrev, 'RedirectByCommitPosition')
+  def testGetLatestCommitPositionAndRevisionWithTargetsWithRevision(
+      self, mocked_revision, mocked_target):
+    master_name = 'm'
+    builder_name = 'b'
+    target_name = 't'
+    expected_commit_position = 1000
+    expected_revision = 'r1000'
+    target = IsolatedTarget.Create(87654321, '', '', master_name, builder_name,
+                                   '', '', '', '', target_name, '',
+                                   expected_commit_position, expected_revision)
+    mocked_target.return_value = [target]
+    self.assertEqual((expected_commit_position, expected_revision),
+                     build_util.GetLatestCommitPositionAndRevision(
+                         master_name, builder_name, target_name))
+    self.assertFalse(mocked_revision.called)
+
+  @mock.patch.object(IsolatedTarget, 'FindLatestIsolateByMaster')
+  @mock.patch.object(crrev, 'RedirectByCommitPosition')
   def testGetLatestCommitPositionAndRevisionWithTargets(self, mocked_revision,
                                                         mocked_target):
     master_name = 'm'
@@ -266,7 +284,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     mocked_revision.return_value = {'git_sha': expected_revision}
     target = IsolatedTarget.Create(87654321, '', '', master_name, builder_name,
                                    '', '', '', '', target_name, '',
-                                   expected_commit_position)
+                                   expected_commit_position, None)
     mocked_target.return_value = [target]
     self.assertEqual((expected_commit_position, expected_revision),
                      build_util.GetLatestCommitPositionAndRevision(
