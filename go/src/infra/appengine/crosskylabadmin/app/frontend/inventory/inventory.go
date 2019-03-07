@@ -28,8 +28,6 @@ import (
 	"go.chromium.org/luci/common/retry/transient"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
@@ -112,15 +110,6 @@ func (is *ServerImpl) newStore(ctx context.Context) (*gitstore.InventoryStore, e
 		return nil, errors.Annotate(err, "create inventory store").Err()
 	}
 	return gitstore.NewInventoryStore(gerritC, gitilesC), nil
-}
-
-// ListServers implements the method from fleet.InventoryServer interface.
-func (is *ServerImpl) ListServers(ctx context.Context, req *fleet.ListServersRequest) (resp *fleet.ListServersResponse, err error) {
-	defer func() {
-		err = grpcutil.GRPCifyAndLogErr(ctx, err)
-	}()
-
-	return nil, status.Error(codes.Unimplemented, "ListServers not yet implemented")
 }
 
 // UpdateDutLabels implements the method from fleet.InventoryServer interface.

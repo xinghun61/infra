@@ -82,11 +82,11 @@ service Inventory {
   // AssignDutsToDrones assigns the given duts to drones.
   rpc AssignDutsToDrones(AssignDutsToDronesRequest) returns (AssignDutsToDronesResponse);
 
-  // ListServers lists the servers in the current environment.
-  rpc ListServers(ListServersRequest) returns (ListServersResponse);
-
   // ///////////////////////////////////////////////////////////////////////////
   // Inventory ReadOnly RPCs
+
+  // ListServers lists the servers in the current environment.
+  rpc ListServers(ListServersRequest) returns (ListServersResponse);
 
   // GetDutInfo returns inventory information about a single DUT.
   //

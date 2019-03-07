@@ -29,6 +29,14 @@ import (
 	"infra/libs/skylab/inventory"
 )
 
+// ListServers implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) ListServers(ctx context.Context, req *fleet.ListServersRequest) (resp *fleet.ListServersResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	return nil, status.Error(codes.Unimplemented, "ListServers not yet implemented")
+}
+
 // GetDutInfo implements the method from fleet.InventoryServer interface.
 func (is *ServerImpl) GetDutInfo(ctx context.Context, req *fleet.GetDutInfoRequest) (resp *fleet.GetDutInfoResponse, err error) {
 	defer func() {
