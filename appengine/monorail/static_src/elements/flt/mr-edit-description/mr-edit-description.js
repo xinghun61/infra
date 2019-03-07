@@ -5,6 +5,8 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
+import '@vaadin/vaadin-upload/vaadin-upload.js';
+import '@vaadin/vaadin-upload/theme/lumo/vaadin-upload.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
