@@ -18,6 +18,7 @@ TODO(vadimsh): Add more.
 """
 
 load('//lib/infra.star', 'infra')
+load('//lib/presubmit.star', 'presubmit')
 
 
 # Tell lucicfg what files it is allowed to touch.
@@ -118,6 +119,7 @@ luci.bucket(
 )
 
 infra.poller(name = 'infra-gitiles-trigger')
+presubmit.recipe()
 
 
 # Define per-subproject resources. They may refer to the shared resources

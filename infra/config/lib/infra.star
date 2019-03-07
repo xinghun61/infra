@@ -81,6 +81,10 @@ def category_from_os(os):
 infra = struct(
     REPO_URL = 'https://chromium.googlesource.com/infra/infra',
 
+    # Note: try account is also used by all presubmit builders in this project.
+    SERVICE_ACCOUNT_TRY = 'infra-try-builder@chops-service-accounts.iam.gserviceaccount.com',
+    SERVICE_ACCOUNT_CI = 'infra-ci-builder@chops-service-accounts.iam.gserviceaccount.com',
+
     cache_gclient_with_go = swarming.cache('infra_gclient_with_go'),
     cache_osx_sdk = swarming.cache('osx_sdk'),
 

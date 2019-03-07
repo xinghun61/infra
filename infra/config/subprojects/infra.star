@@ -5,6 +5,7 @@
 """Definitions of infra.git CI resources."""
 
 load('//lib/infra.star', 'infra')
+load('//lib/presubmit.star', 'presubmit')
 
 
 infra.recipe(name = 'infra_continuous')
@@ -36,7 +37,7 @@ def ci_builder(name, os, cpu='x86-64'):
       os = os,
       cpu = cpu,
       pool = 'luci.flex.ci',
-      service_account = 'infra-ci-builder@chops-service-accounts.iam.gserviceaccount.com',
+      service_account = infra.SERVICE_ACCOUNT_CI,
       build_numbers = True,
       triggered_by = ['infra-gitiles-trigger'],
   )
@@ -55,7 +56,7 @@ def try_builder(name, os, recipe=None):
       os = os,
       cpu = 'x86-64',
       pool = 'luci.flex.try',
-      service_account = 'infra-try-builder@chops-service-accounts.iam.gserviceaccount.com',
+      service_account = infra.SERVICE_ACCOUNT_TRY,
   )
   luci.cq_tryjob_verifier(
       builder = name,
@@ -88,4 +89,5 @@ try_builder(name = 'Infra Mac Tester', os = 'Mac-10.13')
 try_builder(name = 'Infra Win Tester', os = 'Windows')
 try_builder(name = 'Infra WCT Tester', os = 'Ubuntu-14.04', recipe = 'infra_wct_tester')
 
-# TODO(vadimsh): Add 'Infra Presubmit'.
+# Presubmit trybot.
+presubmit.builder(name = 'Infra Presubmit', cq_group = 'infra cq', repo_name = 'infra')
