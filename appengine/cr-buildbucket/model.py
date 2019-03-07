@@ -210,6 +210,9 @@ class Build(ndb.Model):
   # as a blob property.
   created_by = auth.IdentityProperty()
 
+  # TODO(nodir): rename to "is_luci" and remove the @property below.
+  is_luci_stored = ndb.BooleanProperty(name='is_luci')
+
   @property
   def is_luci(self):  # pragma: no cover
     return self.proto.infra.HasField('swarming')
@@ -278,6 +281,9 @@ class Build(ndb.Model):
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
+
+    self.is_luci_stored = self.proto.infra.HasField('swarming')
+
     config.validate_project_id(self.proto.builder.project)
     config.validate_bucket_name(self.proto.builder.bucket)
 
