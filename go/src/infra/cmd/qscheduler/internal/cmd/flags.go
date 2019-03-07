@@ -69,3 +69,32 @@ func (f nullableInt32) String() string {
 	}
 	return fmt.Sprintf("%d", **f.val)
 }
+
+type nullableBool struct {
+	val **bool
+}
+
+// nullableBoolValue returns a flags.Value implementation that allows
+// setting a (nullable) bool.
+func nullableBoolValue(dest **bool) nullableBool {
+	return nullableBool{dest}
+}
+
+func (f nullableBool) Set(val string) error {
+	if *f.val != nil {
+		return errors.New("value already set")
+	}
+	v, err := strconv.ParseBool(val)
+	if err != nil {
+		return err
+	}
+	*f.val = &v
+	return nil
+}
+
+func (f nullableBool) String() string {
+	if f.val == nil || *f.val == nil {
+		return "unset"
+	}
+	return strconv.FormatBool(**f.val)
+}
