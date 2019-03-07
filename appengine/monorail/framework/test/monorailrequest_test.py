@@ -164,23 +164,23 @@ class MonorailRequestUnitTest(unittest.TestCase):
   def testGetIntListParam_NoParam(self):
     mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(webapp2.Request.blank('servlet'), self.services)
-    self.assertEquals(mr.GetIntListParam('ids'), None)
-    self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
+    self.assertEqual(mr.GetIntListParam('ids'), None)
+    self.assertEqual(mr.GetIntListParam('ids', default_value=['test']),
                       ['test'])
 
   def testGetIntListParam_OneValue(self):
     mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(webapp2.Request.blank('servlet?ids=11'), self.services)
-    self.assertEquals(mr.GetIntListParam('ids'), [11])
-    self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
+    self.assertEqual(mr.GetIntListParam('ids'), [11])
+    self.assertEqual(mr.GetIntListParam('ids', default_value=['test']),
                       [11])
 
   def testGetIntListParam_MultiValue(self):
     mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(
         webapp2.Request.blank('servlet?ids=21,22,23'), self.services)
-    self.assertEquals(mr.GetIntListParam('ids'), [21, 22, 23])
-    self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
+    self.assertEqual(mr.GetIntListParam('ids'), [21, 22, 23])
+    self.assertEqual(mr.GetIntListParam('ids', default_value=['test']),
                       [21, 22, 23])
 
   def testGetIntListParam_BogusValue(self):
@@ -199,10 +199,10 @@ class MonorailRequestUnitTest(unittest.TestCase):
     """If request has no param, default param values should be used."""
     mr = monorailrequest.MonorailRequest(self.services)
     mr.ParseRequest(webapp2.Request.blank('servlet'), self.services)
-    self.assertEquals(mr.GetParam('r', 3), 3)
-    self.assertEquals(mr.GetIntParam('r', 3), 3)
-    self.assertEquals(mr.GetPositiveIntParam('r', 3), 3)
-    self.assertEquals(mr.GetIntListParam('r', [3, 4]), [3, 4])
+    self.assertEqual(mr.GetParam('r', 3), 3)
+    self.assertEqual(mr.GetIntParam('r', 3), 3)
+    self.assertEqual(mr.GetPositiveIntParam('r', 3), 3)
+    self.assertEqual(mr.GetIntListParam('r', [3, 4]), [3, 4])
 
   def _MRWithMockRequest(
       self, path, headers=None, *mr_args, **mr_kwargs):
@@ -214,25 +214,45 @@ class MonorailRequestUnitTest(unittest.TestCase):
   def testParseQueryParameters(self):
     mr = self._MRWithMockRequest(
         '/p/proj/issues/list?q=foo+OR+bar&num=50')
-    self.assertEquals('foo OR bar', mr.query)
-    self.assertEquals(50, mr.num)
+    self.assertEqual('foo OR bar', mr.query)
+    self.assertEqual(50, mr.num)
+
+  def testParseQueryParameters_ModeMissing(self):
+    mr = self._MRWithMockRequest(
+        '/p/proj/issues/list?q=foo+OR+bar&num=50')
+    self.assertEqual('list', mr.mode)
+
+  def testParseQueryParameters_ModeList(self):
+    mr = self._MRWithMockRequest(
+        '/p/proj/issues/list?q=foo+OR+bar&num=50&mode=')
+    self.assertEqual('list', mr.mode)
+
+  def testParseQueryParameters_ModeGrid(self):
+    mr = self._MRWithMockRequest(
+        '/p/proj/issues/list?q=foo+OR+bar&num=50&mode=grid')
+    self.assertEqual('grid', mr.mode)
+
+  def testParseQueryParameters_ModeChart(self):
+    mr = self._MRWithMockRequest(
+        '/p/proj/issues/list?q=foo+OR+bar&num=50&mode=chart')
+    self.assertEqual('chart', mr.mode)
 
   def testParseRequest_Scheme(self):
     mr = self._MRWithMockRequest('/p/proj/')
-    self.assertEquals('http', mr.request.scheme)
+    self.assertEqual('http', mr.request.scheme)
 
   def testParseRequest_HostportAndCurrentPageURL(self):
     mr = self._MRWithMockRequest('/p/proj/', headers={
         'Host': 'example.com',
         'Cookie': 'asdf',
         })
-    self.assertEquals('http', mr.request.scheme)
-    self.assertEquals('example.com', mr.request.host)
-    self.assertEquals('http://example.com/p/proj/', mr.current_page_url)
+    self.assertEqual('http', mr.request.scheme)
+    self.assertEqual('example.com', mr.request.host)
+    self.assertEqual('http://example.com/p/proj/', mr.current_page_url)
 
   def testParseRequest_ProjectFound(self):
     mr = self._MRWithMockRequest('/p/proj/')
-    self.assertEquals(mr.project, self.project)
+    self.assertEqual(mr.project, self.project)
 
   def testParseRequest_ProjectNotFound(self):
     with self.assertRaises(exceptions.NoSuchProjectException):
@@ -240,24 +260,24 @@ class MonorailRequestUnitTest(unittest.TestCase):
 
   def testViewedUser_WithEmail(self):
     mr = self._MRWithMockRequest('/u/jrobbins@example.com/')
-    self.assertEquals('jrobbins@example.com', mr.viewed_username)
-    self.assertEquals(111, mr.viewed_user_auth.user_id)
-    self.assertEquals(
+    self.assertEqual('jrobbins@example.com', mr.viewed_username)
+    self.assertEqual(111, mr.viewed_user_auth.user_id)
+    self.assertEqual(
         self.services.user.GetUser('fake cnxn', 111),
         mr.viewed_user_auth.user_pb)
 
   def testViewedUser_WithUserID(self):
     mr = self._MRWithMockRequest('/u/111/')
-    self.assertEquals('jrobbins@example.com', mr.viewed_username)
-    self.assertEquals(111, mr.viewed_user_auth.user_id)
-    self.assertEquals(
+    self.assertEqual('jrobbins@example.com', mr.viewed_username)
+    self.assertEqual(111, mr.viewed_user_auth.user_id)
+    self.assertEqual(
         self.services.user.GetUser('fake cnxn', 111),
         mr.viewed_user_auth.user_pb)
 
   def testViewedUser_NoSuchEmail(self):
     with self.assertRaises(webapp2.HTTPException) as cm:
       self._MRWithMockRequest('/u/unknownuser@example.com/')
-    self.assertEquals(404, cm.exception.code)
+    self.assertEqual(404, cm.exception.code)
 
   def testViewedUser_NoSuchUserID(self):
     with self.assertRaises(exceptions.NoSuchUserException):
@@ -276,11 +296,11 @@ class MonorailRequestUnitTest(unittest.TestCase):
                       antitamper_re=re.compile(r'^$'))
 
     # test empty value
-    self.assertEquals('', mr.GetParam(
+    self.assertEqual('', mr.GetParam(
         'empty', default_value='default', antitamper_re=re.compile(r'^$')))
 
     # test default
-    self.assertEquals('default', mr.GetParam(
+    self.assertEqual('default', mr.GetParam(
         'undefined', default_value='default'))
 
   def testComputeColSpec(self):
@@ -288,13 +308,13 @@ class MonorailRequestUnitTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/detail?id=123')
     mr.ComputeColSpec(None)
-    self.assertEquals(tracker_constants.DEFAULT_COL_SPEC, mr.col_spec)
+    self.assertEqual(tracker_constants.DEFAULT_COL_SPEC, mr.col_spec)
 
     # No config passed, but set in URL
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/detail?id=123&colspec=a b C')
     mr.ComputeColSpec(None)
-    self.assertEquals('a b C', mr.col_spec)
+    self.assertEqual('a b C', mr.col_spec)
 
     config = tracker_pb2.ProjectIssueConfig()
 
@@ -302,13 +322,13 @@ class MonorailRequestUnitTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/detail?id=123')
     mr.ComputeColSpec(config)
-    self.assertEquals(tracker_constants.DEFAULT_COL_SPEC, mr.col_spec)
+    self.assertEqual(tracker_constants.DEFAULT_COL_SPEC, mr.col_spec)
 
     # No default in the config, but set in URL
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/detail?id=123&colspec=a b C')
     mr.ComputeColSpec(config)
-    self.assertEquals('a b C', mr.col_spec)
+    self.assertEqual('a b C', mr.col_spec)
 
     config.default_col_spec = 'd e f'
 
@@ -316,26 +336,26 @@ class MonorailRequestUnitTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/detail?id=123')
     mr.ComputeColSpec(config)
-    self.assertEquals('d e f', mr.col_spec)
+    self.assertEqual('d e f', mr.col_spec)
 
     # Default in the config, but overrided via URL
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/detail?id=123&colspec=a b C')
     mr.ComputeColSpec(config)
-    self.assertEquals('a b C', mr.col_spec)
+    self.assertEqual('a b C', mr.col_spec)
 
     # project colspec contains hotlist columns
     mr = testing_helpers.MakeMonorailRequest(
         path='p/proj/issues/detail?id=123&colspec=Rank Adder Adder Owner')
     mr.ComputeColSpec(None)
-    self.assertEquals(tracker_constants.DEFAULT_COL_SPEC, mr.col_spec)
+    self.assertEqual(tracker_constants.DEFAULT_COL_SPEC, mr.col_spec)
 
     # hotlist columns are not deleted when page is a hotlist page
     mr = testing_helpers.MakeMonorailRequest(
         path='u/jrobbins@example.com/hotlists/TestHotlist?colspec=Rank Adder',
         hotlist=self.hotlist)
     mr.ComputeColSpec(None)
-    self.assertEquals('Rank Adder', mr.col_spec)
+    self.assertEqual('Rank Adder', mr.col_spec)
 
   def testComputeColSpec_XSS(self):
     config_1 = tracker_pb2.ProjectIssueConfig()
@@ -432,13 +452,13 @@ class TestMonorailRequestFunctions(unittest.TestCase):
     self.assertIsNone(username)
     self.assertIsNone(hotlist_id)
     self.assertIsNone(hotlist_name)
-    self.assertEquals('proj', project_name)
+    self.assertEqual('proj', project_name)
 
   def testExtractPathIdentifiers_ViewedUserOnly(self):
     (username, project_name, hotlist_id,
      hotlist_name) = monorailrequest._ParsePathIdentifiers(
          '/u/jrobbins@example.com/')
-    self.assertEquals('jrobbins@example.com', username)
+    self.assertEqual('jrobbins@example.com', username)
     self.assertIsNone(project_name)
     self.assertIsNone(hotlist_id)
     self.assertIsNone(hotlist_name)
@@ -447,7 +467,7 @@ class TestMonorailRequestFunctions(unittest.TestCase):
     (username, project_name, hotlist_id,
      hotlist_name) = monorailrequest._ParsePathIdentifiers(
          '/u/jrobbins@example.com/updates')
-    self.assertEquals('jrobbins@example.com', username)
+    self.assertEqual('jrobbins@example.com', username)
     self.assertIsNone(project_name)
     self.assertIsNone(hotlist_id)
     self.assertIsNone(hotlist_name)
@@ -456,7 +476,7 @@ class TestMonorailRequestFunctions(unittest.TestCase):
     (username, project_name, hotlist_id,
      hotlist_name) = monorailrequest._ParsePathIdentifiers(
         '/g/user-group@example.com/updates')
-    self.assertEquals('user-group@example.com', username)
+    self.assertEqual('user-group@example.com', username)
     self.assertIsNone(project_name)
     self.assertIsNone(hotlist_id)
     self.assertIsNone(hotlist_name)
@@ -467,8 +487,8 @@ class TestMonorailRequestFunctions(unittest.TestCase):
          '/u/jrobbins@example.com/hotlists/13124?q=stuff&ts=more')
     self.assertIsNone(hotlist_name)
     self.assertIsNone(project_name)
-    self.assertEquals('jrobbins@example.com', username)
-    self.assertEquals(13124, hotlist_id)
+    self.assertEqual('jrobbins@example.com', username)
+    self.assertEqual(13124, hotlist_id)
 
   def testExtractPathIdentifiers_HotlistIssuesURLSpaceByName(self):
     (username, project_name, hotlist_id,
@@ -476,8 +496,8 @@ class TestMonorailRequestFunctions(unittest.TestCase):
          '/u/jrobbins@example.com/hotlists/testname?q=stuff&ts=more')
     self.assertIsNone(project_name)
     self.assertIsNone(hotlist_id)
-    self.assertEquals('jrobbins@example.com', username)
-    self.assertEquals('testname', hotlist_name)
+    self.assertEqual('jrobbins@example.com', username)
+    self.assertEqual('testname', hotlist_name)
 
   def testParseColSpec(self):
     parse = monorailrequest.ParseColSpec

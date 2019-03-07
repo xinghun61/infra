@@ -332,7 +332,7 @@ class MonorailRequest(MonorailRequestBase):
     # For issue list and grid mode.
     self.cursor = self.GetParam('cursor')
     self.preview = self.GetParam('preview')
-    self.mode = self.GetParam('mode', default_value='list')
+    self.mode = self.GetParam('mode') or 'list'
     self.x = self.GetParam('x', default_value='')
     self.y = self.GetParam('y', default_value='')
     self.cells = self.GetParam('cells', default_value='ids')
