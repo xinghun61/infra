@@ -647,6 +647,22 @@ def _IsServePresubmitCoverageDataEnabled():
       'serve_presubmit_coverage_data', False)
 
 
+def _GetBanner(project):
+  """If there is a service banner for a given project landing page, return it.
+
+  E.g. a maintenance announcement or outage acknowledgement, etc.
+
+  The setting is expected to be a dict mapping a project to the contents of the
+  div tag for the banner. If no project banner is defined, return the default
+  one.
+
+  This expected to be None if no banner is to be shown.
+  """
+  banners = waterfall_config.GetCodeCoverageSettings().get(
+      'project_banners', {})
+  return banners.get(project, banners.get('default'))
+
+
 def _GetPathRootAndSeparatorFromDataType(data_type):
   """Returns the path of the root and path separator for the given data type."""
   if data_type in ('files', 'dirs'):
@@ -908,6 +924,7 @@ class ServeCodeCoverageData(BaseHandler):
               'data': data,
               'data_type': data_type,
               'path_parts': path_parts,
+              'banner': _GetBanner(project),
           },
           'template': template,
       }

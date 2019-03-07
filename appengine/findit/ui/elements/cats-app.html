@@ -101,6 +101,17 @@
       .group-name: hover {
         color: black;
       }
+      .hidden {
+        display: none;
+      }
+      .banner {
+        background-color: lightgoldenrodyellow;
+        padding: 10px;
+        margin: 10px;
+        border-radius: 5px;
+        font-family: sans-serif;
+        font-style: italic;
+      }
     </style>
 
     <app-messages></app-messages>
@@ -152,6 +163,13 @@
           </paper-tabs>
         </app-toolbar>
       </app-header>
+      <div id="banner" class$="{{_bannerClass(banner.message)}}">
+        <b>Notice:</b>
+        [[banner.message]]
+        <template is="dom-if" if="[[banner.bug]]">
+          <a href="http://crbug.com/[[banner.bug]]">[[banner.bug]]</a>
+        </template>
+      </div>
       <div id="main-content">
         <template is="dom-if" if="[[pageHeader]]">
           <h2>[[pageHeader]]</h2>
@@ -186,6 +204,18 @@
            type: String,
            value: undefined,
          },
+         banner: {
+           type: Object,
+           value: {},
+         },
+       },
+
+       _bannerClass : function (msg) {
+         // CSS class for the div containing the message given.
+         if (!msg) {
+           return "hidden";
+         }
+         return "banner";
        },
 
        ready : function () {
