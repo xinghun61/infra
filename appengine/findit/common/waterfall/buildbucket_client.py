@@ -9,7 +9,6 @@ import logging
 import urllib
 
 from buildbucket_proto.build_pb2 import Build
-from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.rpc_pb2 import GetBuildRequest
 from common.findit_http_client import FinditHttpClient
 from libs.math.integers import constrain
@@ -76,7 +75,7 @@ class TryJob(
             'cache_name',  # Optional. Nme of the cache in the Swarmingbot.
             'dimensions',  # Optional. Dimensions used to match a Swarmingbot.
             'pubsub_callback',  # Optional. PubSub callback info.
-            'priority',  # Optional swarming priority 20 (high) to 255 (low).
+            'priority',  # Optional swarming priority 1 (high) thru 200 (low).
             'expiration_secs',  # Optional seconds to expire the try job. i.e.
             # give up if no bot becomes available when the
             # task has been pending this long.
@@ -317,7 +316,8 @@ def GetV2Build(build_id, fields=None):
   request = GetBuildRequest(id=int(build_id), fields=fields)
   status_code, content, response_headers = FinditHttpClient().Post(
       _BUILDBUCKET_V2_GET_BUILD_ENDPOINT,
-      request.SerializeToString())
+      request.SerializeToString(),
+      headers={'Content-Type': 'application/prpc; encoding=binary'})
   if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
     result = Build()
     result.ParseFromString(content)
@@ -337,24 +337,3 @@ def GetBuildNumberFromBuildId(build_id):
     logging.error('Unable to get build number from build id %s' % build_id)
     logging.error(e.message)
     return None
-
-
-def GetV2BuildByBuilderAndBuildNumber(project,
-                                      bucket,
-                                      builder_name,
-                                      build_number,
-                                      fields=None):
-  """Get a buildbucket build from the v2 API by build info."""
-  builder = BuilderID(project=project, bucket=bucket, builder=builder_name)
-  request = GetBuildRequest(
-      builder=builder, build_number=build_number, fields=fields)
-  status_code, content, response_headers = FinditHttpClient().Post(
-      _BUILDBUCKET_V2_GET_BUILD_ENDPOINT,
-      request.SerializeToString())
-  if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
-    result = Build()
-    result.ParseFromString(content)
-    return result
-  logging.warning('Unexpected prpc code: %s',
-                  response_headers.get('X-Prpc-Grpc-Code'))
-  return None
