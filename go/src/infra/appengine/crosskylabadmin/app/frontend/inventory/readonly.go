@@ -24,7 +24,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/config"
 	dsinventory "infra/appengine/crosskylabadmin/app/frontend/internal/datastore/inventory"
+	"infra/libs/skylab/inventory"
 )
 
 // GetDutInfo implements the method from fleet.InventoryServer interface.
@@ -66,8 +68,20 @@ func (is *ServerImpl) UpdateCachedInventory(ctx context.Context, req *fleet.Upda
 	if err := store.Refresh(ctx); err != nil {
 		return nil, err
 	}
-	if err := dsinventory.UpdateDUTs(ctx, store.Lab.GetDuts()); err != nil {
+	duts := dutsInCurrentEnvironment(ctx, store.Lab.GetDuts())
+	if err := dsinventory.UpdateDUTs(ctx, duts); err != nil {
 		return nil, err
 	}
 	return &fleet.UpdateCachedInventoryResponse{}, nil
+}
+
+func dutsInCurrentEnvironment(ctx context.Context, duts []*inventory.DeviceUnderTest) []*inventory.DeviceUnderTest {
+	env := config.Get(ctx).Inventory.Environment
+	filtered := make([]*inventory.DeviceUnderTest, 0, len(duts))
+	for _, d := range duts {
+		if d.GetCommon().GetEnvironment().String() == env {
+			filtered = append(filtered, d)
+		}
+	}
+	return filtered
 }
