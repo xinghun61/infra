@@ -4,26 +4,33 @@
     "es6": true
   },
   "parserOptions": {
-    "ecmaVersion": 2017
-  },
+    "ecmaVersion": 2017, "sourceType": "module" },
   "plugins": [
     "html"
   ],
-  "extends": ["eslint:recommended", "google"],
-  "parserOptions": {
-    "sourceType": "module"
-  },
+  "extends": [
+    "eslint:recommended",
+    "google"
+  ],
   "globals": {
     "assert": false,
     "fixture": false,
     "Polymer": false,
     "setup": false,
+    "sinon": false,
     "suite": false,
+    "teardown": false,
     "test": false,
     "WCT": false
   },
   "rules": {
     "require-jsdoc": "off",
-    "no-console": "off"
+    "no-console": "off",
+    "max-len": [
+      "error", {
+        "ignoreTemplateLiterals": true,
+        "ignoreUrls": true
+      }
+    ]
   }
 }

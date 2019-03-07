@@ -16,7 +16,7 @@ suite('<tricium-feedback>', () => {
   let element;
 
   setup(() => {
-    sinon.stub(window, 'fetch');
+    window.sinon.stub(window, 'fetch');
     window.fetch.returns(Promise.resolve());
     element = fixture('element');
   });
@@ -34,11 +34,11 @@ suite('<tricium-feedback>', () => {
   test('_refresh updates data', async () => {
     const data = {
       'comments': 126,
-      'notUsefulReports': 14
+      'notUsefulReports': 14,
     };
     window.fetch.returns(Promise.resolve(newSuccessResponse(data)));
     await element._refresh();
-    assert.deepEqual(element.data, data)
+    assert.deepEqual(element.data, data);
   });
 
   function newSuccessResponse(data) {

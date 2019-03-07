@@ -3,7 +3,8 @@
 # found in the LICENSE file.
 
 .PHONY: build serve test lint
-POLYMER = node_modules/polymer-cli/bin/polymer.js
+POLYMER = node_modules/.bin/polymer
+ESLINT = node_modules/.bin/eslint
 
 # TODO(qyearsley): Investigate making this work with
 # the Go WCT runner and allowing tests to be run on CI.
@@ -31,5 +32,5 @@ test: node_modules
 
 lint: node_modules
 	$(POLYMER) lint
-	eslint src/*js
-	eslint test/*js
+	$(ESLINT) src/*.js
+	$(ESLINT) test/*.html

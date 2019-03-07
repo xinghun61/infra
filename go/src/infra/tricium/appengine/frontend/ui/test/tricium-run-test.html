@@ -11,6 +11,7 @@
 </test-fixture>
 
 <script>
+
 suite('<tricium-run>', () => {
   let element;
 
@@ -40,7 +41,7 @@ suite('<tricium-run>', () => {
           'state': 'SUCCESS',
           'swarmingUrl': 'https://chromium-swarm.appspot.com',
           'swarmingTaskId': '3e2d03fcebd87610',
-          'numComments': 1
+          'numComments': 1,
         },
       ],
     };
@@ -48,6 +49,35 @@ suite('<tricium-run>', () => {
     await element._refresh();
     console.log(element.data);
     assert.deepEqual(data, element.data);
+  });
+
+  test('_renderLink given function progress with buildbucket build', () => {
+    const f = {
+      'name': 'RecipeNoOp',
+      'state': 'SUCCESS',
+      'buildbucketHost': 'cr-buildbucket-dev.appspot.com',
+      'buildbucketBuildId': '1234567890',
+    };
+    // Below we compare the filled-in template values in order to avoid
+    // having to actually render the lit-html TemplateResult that is
+    // returned by _renderLink. This might also make the test slightly
+    // more resilient to minor template changes, but it doesn't test how
+    // the rendered HTML will actually look.
+    assert.deepEqual(
+        element._renderLink(f).values,
+        ['luci-milo-dev.appspot.com', '1234567890', '1234567890']);
+  });
+
+  test('_renderLink given function progress with swarming task', () => {
+    const f = {
+      'name': 'RecipeNoOp',
+      'state': 'SUCCESS',
+      'swarmingUrl': 'https://chromium-swarm.appspot.com',
+      'swarmingTaskId': 'deadbeef0',
+    };
+    assert.deepEqual(
+        element._renderLink(f).values,
+        ['https://chromium-swarm.appspot.com', 'deadbeef0', 'deadbeef0']);
   });
 
   function newSuccessResponse(data) {
