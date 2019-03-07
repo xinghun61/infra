@@ -104,8 +104,6 @@ var (
 type metricsBuffer struct {
 	schedulerID string
 	taskEvents  []*metrics.TaskEvent
-
-	queueSize *int
 }
 
 // newMetricsBuffer creates a metrics sink for the given scheduler.
@@ -116,7 +114,6 @@ func newMetricsBuffer(schedulerID string) *metricsBuffer {
 // reset resets the given metrics sink, erasing any previously added entries.
 func (e *metricsBuffer) reset() {
 	e.taskEvents = nil
-	e.queueSize = nil
 }
 
 // flushToBQ flushes events to bigquery.
@@ -144,9 +141,6 @@ func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 			counterReprioritized.Add(ctx, 1, event.SchedulerId, event.AccountId)
 		}
 	}
-	if e.queueSize != nil {
-		gaugeQueueSize.Set(ctx, int64(*e.queueSize), e.schedulerID)
-	}
 	return nil
 }
 
@@ -156,10 +150,14 @@ func (e *metricsBuffer) AddEvent(event *metrics.TaskEvent) {
 	e.taskEvents = append(e.taskEvents, event)
 }
 
-// recordStateMetrics records general metrics about the given state.
-func (e *metricsBuffer) recordStateMetrics(s *scheduler.Scheduler) {
-	queueSize := len(s.GetWaitingRequests())
-	e.queueSize = &queueSize
+// recordStateGaugeMetrics records general gauge metrics about the given state.
+//
+// As new metrics are added, gauge metrics about a state should be emitted here.
+// Because none of the metrics emitted herein are cumulative, it doesn't matter
+// if this is called within a datastore transaction or not, or whether the
+// transaction that called it succeeds.
+func recordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedulerID string) {
+	gaugeQueueSize.Set(ctx, int64(len(s.GetWaitingRequests())), schedulerID)
 }
 
 // recordProtoSize records a metric about a given proto's size.
