@@ -57,7 +57,10 @@ function TKR_getColspecElement() {
  * @return {Element} colspec hidden form field.
  */
 function TKR_getSearchColspecElement() {
-  return document.getElementById('search_colspec').firstChild;
+  const element = _getSearchBarComponent();
+  if (!element) return;
+
+  return element.shadowRoot.querySelector('#colspec');
 }
 
 
@@ -69,32 +72,31 @@ function TKR_getSearchColspecElement() {
  * @return {Element} artifact query form field, or undefined.
  */
 function TKR_getArtifactSearchField() {
-  let qq = document.getElementById('qq');
-  return qq ? qq.firstChild : undefined;
+  const element = _getSearchBarComponent();
+  if (!element) return;
+
+  return element.shadowRoot.querySelector('#searchq');
 }
 
 
 /**
- * Resize the artifiact search box to be bigger when the user has a long
- * query.
+ * Get the can selector. This function
+ * @return {Element} can input element.
  */
-var MAX_ARTIFACT_SEARCH_FIELD_SIZE = 75;
-var AUTOSIZE_STEP = 3;
+function TKR_getArtifactCanField() {
+  const element = _getSearchBarComponent();
+  if (!element) return;
 
-function TKR_autosizeArtifactSerchField() {
-  let qq = TKR_getArtifactSearchField();
-  if (qq) {
-    let new_size = qq.value.length + AUTOSIZE_STEP;
-    if (new_size > MAX_ARTIFACT_SEARCH_FIELD_SIZE) {
-      new_size = MAX_ARTIFACT_SEARCH_FIELD_SIZE;
-    }
-    if (new_size > qq.size) {
-      qq.size = new_size;
-    }
-  }
+  return element.shadowRoot.querySelector('#can');
 }
 
-window.setInterval(TKR_autosizeArtifactSerchField, 700);
+
+function _getSearchBarComponent() {
+  const element = document.querySelector('mr-header');
+  if (!element) return;
+
+  return element.shadowRoot.querySelector('mr-search-bar');
+}
 
 
 /**
@@ -142,7 +144,7 @@ function TKR_filterTo(prefix, suffix) {
   }
 
   newQuery += prefix + op + suffix;
-  let url = 'list?can=' + $('can').value + '&q=' + newQuery;
+  let url = 'list?can=' + TKR_getArtifactCanField().value + '&q=' + newQuery;
   if ($('sort') && $('sort').value) url += '&sort=' + $('sort').value;
   url += '&colspec=' + TKR_getColspecElement().value;
   TKR_go(url);
@@ -174,7 +176,7 @@ function TKR_addSort(colname, descending) {
 
   let isHotlist = window.location.href.includes('/hotlists/');
   let url = isHotlist ? ($('hotlist_name').value + '?') : ('list?');
-  url += ('can='+ $('can').value + '&q=' +
+  url += ('can='+ TKR_getArtifactCanField().value + '&q=' +
       TKR_getArtifactSearchField().value);
   url += '&sort=' + specs.join('+');
   url += '&colspec=' + TKR_getColspecElement().value;
