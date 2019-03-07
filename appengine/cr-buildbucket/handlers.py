@@ -107,6 +107,10 @@ def get_frontend_routes():  # pragma: no cover
 
 
 def get_backend_routes():  # pragma: no cover
+  prpc_server = prpc.Server()
+  prpc_server.add_interceptor(auth.prpc_interceptor)
+  prpc_server.add_service(api.BuildsApi())
+
   return [  # pragma: no branch
       webapp2.Route(r'/internal/cron/buildbucket/expire_build_leases',
                     expiration.CronExpireBuildLeases),
@@ -127,4 +131,4 @@ def get_backend_routes():  # pragma: no cover
       webapp2.Route(
           r'/internal/task/buildbucket/cancel_swarming_task/<host>/<task_id>',
           TaskCancelSwarmingTask),
-  ] + bulkproc.get_routes()
+  ] + bulkproc.get_routes() + prpc_server.get_routes()
