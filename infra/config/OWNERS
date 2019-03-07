@@ -1,4 +1,6 @@
 per-file recipes.cfg=recipe-roller@chromium.org
+per-file *.star=vadimsh@chromium.org
+
 iannucci@chromium.org
 nodir@chromium.org
 tandrii@chromium.org

@@ -1,0 +1,50 @@
+# Copyright 2019 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+oncalls: {
+  name: "Trooper"
+  url: "https://build.chromium.org/p/chromium/trooper.json"
+}
+
+links: {
+  name: "sources"
+  links: {
+    text: "infra/infra"
+    url: "https://chromium.googlesource.com/infra/infra"
+  }
+  links: {
+    text: "luci-py"
+    url: "https://chromium.googlesource.com/infra/luci/luci-py"
+  }
+  links: {
+    text: "luci-go"
+    url: "https://chromium.googlesource.com/infra/luci/luci-go"
+  }
+  links: {
+    text: "build"
+    url: "https://chromium.googlesource.com/chromium/tools/build"
+  }
+  links: {
+    text: "depot_tools"
+    url: "https://chromium.googlesource.com/chromium/tools/depot_tools"
+  }
+}
+
+links: {
+  name: "links"
+  links: {
+    text: "reviews"
+    url: "https://chromium-review.googlesource.com"
+    alt: "Chromium code review tool"
+  }
+  links: {
+    text: "bugs"
+    url: "https://crbug.com"
+    alt: "Chromium bug tracker"
+  }
+  links: {
+    text: "Bug a Trooper"
+    url: "http://g.co/bugatrooper"
+  }
+}
