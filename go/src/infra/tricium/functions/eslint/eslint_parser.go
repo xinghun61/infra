@@ -20,7 +20,7 @@ import (
 // Paths to the required resources relative to the executable directory.
 const (
 	nodePath   = "node/bin/node"
-	eslintPath = "node_modules/eslint/bin/eslint.js"
+	eslintPath = "node_modules/.bin/eslint"
 )
 
 // Message is the structure of ESLint error messages. See:

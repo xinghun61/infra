@@ -7,14 +7,27 @@
 
 import os
 import subprocess
-import urllib2
+import sys
 import tarfile
+import urllib2
 
 NODE_VERSION = '8.12.0'
 
 
 def main():
-    # Download a pinned version of node.js.
+    if not os.path.isdir('node'):
+        fetch_node()
+    npm_install()
+    sys.exit(0)
+
+
+def fetch_node():
+    """Downloads a pinned version of node.js and unpacks it.
+
+    The downloaded Node binary is platform-specific; it's important that the
+    platform here matches the platform where the ESLint analyzer is run because
+    the Node binary is uploaded and run by the analyzer.
+    """
     url = 'https://nodejs.org/dist/v{0}/node-v{0}-linux-x64.tar.gz'.format(
         NODE_VERSION)
     archive_name = 'node.tar.gz'
@@ -22,30 +35,34 @@ def main():
         content = urllib2.urlopen(url).read()
         f.write(content)
 
-    # Unzip and rename the resulting directory.
+    # Unzip the resulting archive.
     try:
         tar = tarfile.open(archive_name, 'r:gz')
         tar.extractall()
         tar.close()
     except tarfile.ReadError:
-        print('Error trying to read {0}'.format(archive_name))
+        print('Error trying to read {0}.'.format(archive_name))
+        sys.exit(1)
 
-    if not os.path.isdir('node'):
-        os.rename('node-v{0}-linux-x64'.format(NODE_VERSION), 'node')
+    # Rename the directory.
+    assert not os.path.isdir('node')
+    os.rename('node-v{0}-linux-x64'.format(NODE_VERSION), 'node')
 
-    # Run npm install to get eslint and all other dependencies.
+
+def npm_install():
+    """Runs npm install to get eslint and all other dependencies."""
     try:
         subprocess.check_call([
             'node/bin/node',
             'node/lib/node_modules/npm/bin/npm-cli.js',
             'install',
-            'eslint',
-            'eslint-config-google',
         ])
     except subprocess.CalledProcessError:
-        print('Failed in installing eslint dependencies')
+        print('Failed in installing eslint dependencies.')
+        sys.exit(1)
     except OSError:
-        print('Wrong binary format for the current architecture')
+        print('Wrong binary format for the current architecture.')
+        sys.exit(1)
 
 
 if __name__ == '__main__':

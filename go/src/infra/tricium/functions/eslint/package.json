@@ -1,0 +1,14 @@
+{
+  "name": "eslint-analyzer",
+  "version": "1.0.0",
+  "description": "ESLint Tricium Analyzer",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra"
+  },
+  "devDependencies": {
+    "eslint": "latest",
+    "eslint-config-google": "latest"
+  }
+}
