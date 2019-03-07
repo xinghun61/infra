@@ -29,6 +29,10 @@ func basicConverter(ls *inventory.SchedulableLabels) []string {
 		lv := "platform:" + v
 		labels = append(labels, lv)
 	}
+	if v := ls.GetReferenceDesign(); v != "" {
+		lv := "reference_design:" + v
+		labels = append(labels, lv)
+	}
 	switch v := ls.GetEcType(); v {
 	case inventory.SchedulableLabels_EC_TYPE_CHROME_OS:
 		labels = append(labels, "ec:cros")
@@ -42,9 +46,6 @@ func basicConverter(ls *inventory.SchedulableLabels) []string {
 		const plen = 6 // len("PHASE_")
 		lv := "phase:" + v.String()[plen:]
 		labels = append(labels, lv)
-	}
-	if v := ls.GetReferenceDesign(); v != "" {
-		labels = append(labels, "reference_design:"+v)
 	}
 	for _, v := range ls.GetVariant() {
 		lv := "variant:" + v
