@@ -22,7 +22,6 @@ import (
 	"infra/appengine/crosskylabadmin/app/frontend/inventory"
 
 	"github.com/golang/protobuf/proto"
-	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/grpc/grpcmon"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -53,14 +52,7 @@ func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
 	})
 
 	discovery.Enable(&api)
-
-	mwAuthenticated := mwBase.Extend(
-		auth.Authenticate(
-			server.UsersAPIAuthMethod{},
-			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		),
-	)
-	api.InstallHandlers(r, mwAuthenticated)
+	api.InstallHandlers(r, mwBase)
 }
 
 // checkAccess verifies that the request is from an authorized user.
