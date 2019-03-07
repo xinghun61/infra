@@ -14,7 +14,7 @@ func init() {
 	converters = append(converters, otherCapabilitiesConverter)
 }
 
-func boolCapabilitiesConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func boolCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	c := ls.GetCapabilities()
 	if c.GetAtrus() {
 		dims["label-atrus"] = []string{"True"}
@@ -45,7 +45,7 @@ func boolCapabilitiesConverter(dims map[string][]string, ls *inventory.Schedulab
 	}
 }
 
-func stringCapabilitiesConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func stringCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	c := ls.GetCapabilities()
 	if v := c.GetGpuFamily(); v != "" {
 		dims["label-gpu_family"] = []string{v}
@@ -67,7 +67,7 @@ func stringCapabilitiesConverter(dims map[string][]string, ls *inventory.Schedul
 	}
 }
 
-func otherCapabilitiesConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func otherCapabilitiesConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	c := ls.GetCapabilities()
 	if v := c.GetCarrier(); v != inventory.HardwareCapabilities_CARRIER_INVALID {
 		dims["label-carrier"] = []string{v.String()}

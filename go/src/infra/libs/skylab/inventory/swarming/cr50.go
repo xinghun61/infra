@@ -12,7 +12,7 @@ func init() {
 	converters = append(converters, cr50Converter)
 }
 
-func cr50Converter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func cr50Converter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	if v := ls.GetCr50Phase(); v != inventory.SchedulableLabels_CR50_PHASE_INVALID {
 		dims["label-cr50_phase"] = []string{v.String()}
 	}

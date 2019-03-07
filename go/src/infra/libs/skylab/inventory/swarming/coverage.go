@@ -13,7 +13,7 @@ func init() {
 	converters = append(converters, otherTestCoverageHintsConverter)
 }
 
-func boolTestCoverageHintsConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func boolTestCoverageHintsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	h := ls.GetTestCoverageHints()
 	if h.GetChaosDut() {
 		dims["label-chaos_dut"] = []string{"True"}
@@ -47,7 +47,7 @@ func boolTestCoverageHintsConverter(dims map[string][]string, ls *inventory.Sche
 	}
 }
 
-func otherTestCoverageHintsConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func otherTestCoverageHintsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	h := ls.GetTestCoverageHints()
 	for _, v := range h.GetCtsSparse() {
 		appendDim(dims, "label-cts_sparse", v.String())

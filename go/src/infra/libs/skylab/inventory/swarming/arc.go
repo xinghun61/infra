@@ -12,7 +12,7 @@ func init() {
 	converters = append(converters, arcConverter)
 }
 
-func arcConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func arcConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	if ls.GetArc() {
 		dims["label-arc"] = []string{"True"}
 	}

@@ -13,14 +13,14 @@ func init() {
 	converters = append(converters, selfServePoolsConverter)
 }
 
-func poolsConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func poolsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	vs := ls.GetCriticalPools()
 	for _, v := range vs {
 		appendDim(dims, "label-pool", v.String())
 	}
 }
 
-func selfServePoolsConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func selfServePoolsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	vs := ls.GetSelfServePools()
 	for _, v := range vs {
 		appendDim(dims, "label-pool", v)

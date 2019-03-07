@@ -12,7 +12,7 @@ func init() {
 	converters = append(converters, basicConverter)
 }
 
-func basicConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func basicConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	if v := ls.GetBoard(); v != "" {
 		dims["label-board"] = []string{v}
 	}

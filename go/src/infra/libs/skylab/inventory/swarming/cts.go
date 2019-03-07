@@ -12,7 +12,7 @@ func init() {
 	converters = append(converters, ctsConverter)
 }
 
-func ctsConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func ctsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	for _, v := range ls.GetCtsAbi() {
 		appendDim(dims, "label-cts_abi", v.String())
 	}

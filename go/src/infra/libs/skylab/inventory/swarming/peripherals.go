@@ -13,7 +13,7 @@ func init() {
 	converters = append(converters, otherPeripheralsConverter)
 }
 
-func boolPeripheralsConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func boolPeripheralsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	p := ls.GetPeripherals()
 	if p.GetAudioBoard() {
 		dims["label-audio_board"] = []string{"True"}
@@ -47,7 +47,7 @@ func boolPeripheralsConverter(dims map[string][]string, ls *inventory.Schedulabl
 	}
 }
 
-func otherPeripheralsConverter(dims map[string][]string, ls *inventory.SchedulableLabels) {
+func otherPeripheralsConverter(dims Dimensions, ls *inventory.SchedulableLabels) {
 	p := ls.GetPeripherals()
 	if v := p.GetChameleonType(); v != inventory.Peripherals_CHAMELEON_TYPE_INVALID {
 		dims["label-chameleon_type"] = []string{v.String()}

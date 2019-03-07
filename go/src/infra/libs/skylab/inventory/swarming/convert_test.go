@@ -79,7 +79,7 @@ board: "boardval"
 arc: true
 `
 
-var fullDimensions = map[string][]string{
+var fullDimensions = Dimensions{
 	"label-arc":                   {"True"},
 	"label-atrus":                 {"True"},
 	"label-audio_board":           {"True"},
