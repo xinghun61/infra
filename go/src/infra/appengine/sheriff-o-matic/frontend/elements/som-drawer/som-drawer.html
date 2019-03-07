@@ -47,6 +47,12 @@
         cursor: pointer;
         background-color: #eee;
       }
+
+      a.menu-item {
+        text-decoration: none;
+        color: inherit;
+      }
+
       .settings-item {
         padding-left: 32px;
         padding-bottom: 1em;
@@ -97,6 +103,9 @@
           [[page.displayText]]
         </div>
       </template>
+      <a class="menu-item" href="https://goto.google.com/flake-portal" target="_blank">
+        Flake Portal
+      </a>
     </iron-collapse>
 
     <h2 on-tap="toggleMenu" data-toggle-target="onCallMenu">
