@@ -24,3 +24,11 @@ paths:
       https://chromium.googlesource.com/infra/goma/server
       https://chromium.googlesource.com/infra/goma/server/+/master{/dir}
       https://chromium.googlesource.com/infra/goma/server/+/master{/dir}/{file}#{line}
+
+  /chromiumos/infra/proto:
+    repo: https://chromium.googlesource.com/chromiumos/infra/proto
+    vcs: git
+    display: >
+      https://chromium.googlesource.com/chromiumos/infra/proto
+      https://chromium.googlesource.com/chromiumos/infra/proto/+/master{/dir}
+      https://chromium.googlesource.com/chromiumos/infra/proto/+/master{/dir}/{file}#{line}
