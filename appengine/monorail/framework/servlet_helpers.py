@@ -132,7 +132,7 @@ def ComputeIssueEntryURL(mr, config):
     query string parameters.
   """
   if not config.custom_issue_entry_url:
-    return 'entry'
+    return '/p/%s/issues/entry' % (mr.project_name)
 
   base_url = config.custom_issue_entry_url
   sep = '&' if '?' in base_url else '?'
@@ -157,4 +157,3 @@ def IssueListURL(mr, config, query_string=None):
     if config and config.member_default_query:
       url += '?q=' + urllib.quote_plus(config.member_default_query)
   return url
-

@@ -109,7 +109,7 @@ class ComputeIssueEntryURLTest(unittest.TestCase):
         project=self.project)
 
     url = servlet_helpers.ComputeIssueEntryURL(mr, self.config)
-    self.assertEqual('entry', url)
+    self.assertEqual('/p/proj/issues/entry', url)
 
   def testComputeIssueEntryURL_Customized(self):
     _request, mr = testing_helpers.GetRequestObjects(
