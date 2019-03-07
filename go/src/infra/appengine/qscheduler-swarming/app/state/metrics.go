@@ -70,11 +70,22 @@ var (
 		field.String("account_id"),
 	)
 
+	// TODO(akeshet): Deprecate and delete this metric in favor of
+	// qscheduler/state/task_state which already incorporates it.
 	gaugeQueueSize = metric.NewInt(
 		"qscheduler/state/queue_size",
 		"The number of tasks in the queue.",
 		nil,
 		field.String("scheduler_id"),
+	)
+
+	gaugeTaskState = metric.NewInt(
+		"qscheduler/state/task_state",
+		"The number of tasks in a given running/waiting + priority state.",
+		nil,
+		field.String("scheduler_id"),
+		field.Bool("running"),
+		field.Int("priority"),
 	)
 
 	gaugeProtoSize = metric.NewInt(
@@ -158,6 +169,25 @@ func (e *metricsBuffer) AddEvent(event *metrics.TaskEvent) {
 // transaction that called it succeeds.
 func recordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedulerID string) {
 	gaugeQueueSize.Set(ctx, int64(len(s.GetWaitingRequests())), schedulerID)
+
+	var runningPerPriority [scheduler.NumPriorities + 1]int64
+	for _, w := range s.GetWorkers() {
+		if !w.IsIdle() {
+			priority := int(w.RunningPriority())
+			if priority < 0 {
+				priority = 0
+			}
+			if priority > scheduler.NumPriorities {
+				priority = scheduler.NumPriorities
+			}
+			runningPerPriority[priority]++
+		}
+	}
+	// TODO(akeshet): Include accurate information on priority of queued tasks, rather than arbitrary NumPriorities value.
+	gaugeTaskState.Set(ctx, int64(len(s.GetWaitingRequests())), schedulerID, false, scheduler.NumPriorities)
+	for priority, val := range runningPerPriority {
+		gaugeTaskState.Set(ctx, val, schedulerID, true, priority)
+	}
 }
 
 // recordProtoSize records a metric about a given proto's size.
