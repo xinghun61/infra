@@ -446,5 +446,4 @@ runOnLoad(function() {
 <script type="module" defer src="/static/js/sitewide/linked-accounts.js?version=[app_version]" nonce="[nonce]"></script>
 
 
-[include "../framework/footer-script.ezt"]
 [include "../framework/master-footer.ezt"]

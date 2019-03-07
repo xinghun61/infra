@@ -287,19 +287,13 @@
   local-ids-str="[local_ids_str]"
 ></mr-bulk-approval-update>
 
-[include "../framework/footer-script.ezt"]
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   document.getElementById('comment').select();
   _lfidprefix = 'label';
-  _fetchOptions("[projectname]", CS_env.token,
-    [project.cached_content_timestamp]);
-  _fetchUserProjects(false);
   setTimeout(_forceProperTableWidth, 100);
 
   _exposeExistingLabelFields();
-  _onload();
 
   checksubmit();
   setInterval(checksubmit, 700); [# catch changes that were not keystrokes, e.g., paste menu item.]

@@ -32,8 +32,6 @@
 </form>
 
 
-[include "../framework/footer-script.ezt"]
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   _onload();

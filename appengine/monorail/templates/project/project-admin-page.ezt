@@ -116,14 +116,6 @@
   <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
  </form>
 
-[include "../framework/footer-script.ezt"]
-
-<script type="text/javascript" nonce="[nonce]">
-runOnLoad(function() {
-  _onload();
-});
-</script>
-
 [end]
 
 [include "../framework/master-footer.ezt"]

@@ -15,6 +15,4 @@
   <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
 </form>
 
-[include "../framework/footer-script.ezt"]
-
 [include "../framework/master-footer.ezt"]

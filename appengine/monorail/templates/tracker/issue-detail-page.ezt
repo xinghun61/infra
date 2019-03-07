@@ -138,8 +138,6 @@
 </table>
 <br>
 
-[include "../framework/footer-script.ezt"]
-
 [define user_can_comment]false[end]
 [if-any read_only][else]
  [if-any page_perms.AddIssueComment]
@@ -155,12 +153,6 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _fetchOptions('[projectname]', CS_env.token,
-    [project.cached_content_timestamp]);
-  _fetchUserProjects(false);
-
-  _onload();
-
   // TODO(ehmaldonado): Remove once we use polymer to display comments and issue
   // description.
   $('code-font-toggle').addEventListener('font-toggle', function(e) {

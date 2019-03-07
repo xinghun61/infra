@@ -301,15 +301,8 @@
 </form>
 
 
-[include "../framework/footer-script.ezt"]
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _fetchOptions('[projectname]', CS_env.token,
-    [project.cached_content_timestamp]);
-
-  _onload();
-
   var needs_perm_span = document.getElementById('needs_perm_span');
   var needs_perm = document.getElementById('needs_perm');
   var needs_member = document.getElementById('needs_member');

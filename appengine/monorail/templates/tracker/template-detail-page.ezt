@@ -231,16 +231,10 @@
 
 [end][# end if not read_only]
 
-[include "../framework/footer-script.ezt"]
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
 
   [if-any allow_edit]
-    _fetchOptions('[projectname]', CS_env.token,
-      [project.cached_content_timestamp]);
-    _onload();
-
     let addPhasesCheckbox = document.getElementById('cb_add_approvals');
     addPhasesCheckbox.addEventListener('change', toggleGatesView);
 

@@ -20,6 +20,8 @@ window.prpcClient = new AutoRefreshPrpcClient(
 <script type="text/javascript" defer src="/static/js/framework/framework-stars.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/framework/project-name-check.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" defer src="/static/js/graveyard/xmlhttp.js?version=[app_version]" nonce="[nonce]"></script>
+[include "footer-script.ezt"]
+
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {

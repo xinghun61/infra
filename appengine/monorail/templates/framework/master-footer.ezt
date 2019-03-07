@@ -8,11 +8,22 @@
   <a href="https://www.google.com/policies/privacy/">Privacy</a>
 </div>
 
-  [include "debug.ezt"]
+[include "debug.ezt"]
 
-  [include "master-footer-shared.ezt"]
+[include "master-footer-shared.ezt"]
 
-  <script src="/static/dist/ezt-element-package.min.js?version=[app_version]" nonce="[nonce]"></script>
+<script src="/static/dist/ezt-element-package.min.js?version=[app_version]" nonce="[nonce]"></script>
 
- </body>
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+  [if-any projectname]
+    _fetchOptions('[projectname]', CS_env.token,
+        [project.cached_content_timestamp]);
+    _fetchUserProjects(false);
+  [end]
+  _onload();
+});
+</script>
+
+</body>
 </html>

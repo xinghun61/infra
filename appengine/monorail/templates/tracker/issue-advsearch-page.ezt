@@ -63,14 +63,8 @@
 </table>
 </form>
 
-[include "../framework/footer-script.ezt"]
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _fetchOptions('[projectname]', CS_env.token,
-    [project.cached_content_timestamp]);
-  _onload();
-
   var _idsToAddDefaultListeners = [[]
       "labelsearch", "statussearch", "componentsearch", "memberreportersearch",
       "ownersearch", "memberccsearch", "membercommentbysearch"];

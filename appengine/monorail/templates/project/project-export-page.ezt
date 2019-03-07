@@ -20,5 +20,4 @@
 
 
 
-[include "../framework/footer-script.ezt"]
 [include "../framework/master-footer.ezt"]

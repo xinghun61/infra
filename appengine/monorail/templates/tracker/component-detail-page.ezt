@@ -138,15 +138,8 @@
 </table>
 </form>
 
-[include "../framework/footer-script.ezt"]
-
 [if-any allow_edit]
 <script type="text/javascript" nonce="[nonce]">
-runOnLoad(function() {
-  _fetchOptions('[projectname]', CS_env.token,
-    [project.cached_content_timestamp]);
-
-  _onload();
   function checkSubmit() {
     _checkLeafName('[projectname]', '[component_def.parent_path]', '[component_def.leaf_name]', CS_env.token);
   }

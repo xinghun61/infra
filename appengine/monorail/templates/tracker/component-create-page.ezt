@@ -100,14 +100,8 @@
 </table>
 </form>
 
-[include "../framework/footer-script.ezt"]
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _fetchOptions('[projectname]', CS_env.token,
-    [project.cached_content_timestamp]);
-
-  _onload();
   document.getElementById('submit_btn').disabled = 'disabled';
   document.getElementById('leaf_name').focus();
 

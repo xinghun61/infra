@@ -95,7 +95,6 @@
 
 </table>
 
-[include "../framework/footer-script.ezt"]
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   function showNextQueryRow(i) {

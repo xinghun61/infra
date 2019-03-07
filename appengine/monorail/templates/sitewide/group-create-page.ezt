@@ -35,9 +35,6 @@ runOnLoad(function() {
 });
 </script>
 
-[include "../framework/footer-script.ezt"]
-
-
 [end][# not read-only]
 
 [include "../framework/master-footer.ezt"]

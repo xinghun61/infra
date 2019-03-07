@@ -118,11 +118,8 @@
 
 [end]
 
-[include "../framework/footer-script.ezt"]
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _onload();
-
   if ($("selectall")) {
     $("selectall").addEventListener("click", function() {
         _selectAllIssues();

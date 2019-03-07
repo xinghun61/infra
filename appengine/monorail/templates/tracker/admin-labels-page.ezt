@@ -115,11 +115,8 @@
 [end]
 
 
-[include "../framework/footer-script.ezt"]
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _onload();
-
   function _handleResultsClick(event) {
     var target = event.target;
     if (target.tagName == "A")

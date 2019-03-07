@@ -57,23 +57,13 @@
 
 <div id="helparea"></div>
 
-[include "../framework/footer-script.ezt"]
 [if-any grid_mode][else]
   [include "issue-list-js.ezt" "issuelist"]
 [end]
 
-<script type="text/javascript" nonce="[nonce]">
-runOnLoad(function() {
-  _onload();
-});
-</script>
-
 [if-any projectname]
  <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _fetchOptions('[projectname]', CS_env.token,
-    [project.cached_content_timestamp]);
-
   var stars = document.getElementsByClassName("star");
   for (var i = 0; i < stars.length; ++i) {
     var star = stars[[]i];
