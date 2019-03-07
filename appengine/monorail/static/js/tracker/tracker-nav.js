@@ -192,3 +192,4 @@ function TKR_sortUp(colname) {
 function TKR_sortDown(colname) {
   TKR_addSort(colname, true);
 }
+
