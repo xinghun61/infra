@@ -64,6 +64,15 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         .issue-actions a:hover {
           text-decoration: underline;
         }
+        .spam-notice {
+          padding: 1px 5px;
+          border-radius: 3px;
+          background: red;
+          color: white;
+          font-weight: bold;
+          font-size: 70%;
+          margin-right: 0.5em;
+        }
         mr-flipper {
           font-size: 0.75em;
         }
@@ -89,7 +98,12 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         }
       </style>
       <div class="main-text">
-        <h1>Issue [[issue.localId]]: [[issue.summary]]</h1>
+        <h1>
+          <template is="dom-if" if="[[issue.isSpam]]">
+            <span class="spam-notice">Spam</span>
+          </template>
+          Issue [[issue.localId]]: [[issue.summary]]
+        </h1>
         <small class="byline">
           Created by
           <mr-user-link
@@ -178,13 +192,39 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
 
   _computeIssueOptions(issuePermissions) {
     const options = [];
-    if ((issuePermissions || []).includes('deleteissue')) {
+    const permissions = issuePermissions || [];
+    if (permissions.includes('deleteissue')) {
       options.push({
         text: 'Delete issue',
         handler: this._deleteIssue.bind(this),
       });
     }
+    if (permissions.includes('flagspam')) {
+      const text = (this.issue.isSpam ? 'Un-flag' : 'Flag') + ' issue as spam';
+      options.push({
+        text,
+        handler: this._markIssue.bind(this),
+      });
+    }
     return options;
+  }
+
+  _markIssue() {
+    window.prpcClient.call('monorail.Issues', 'FlagIssues', {
+      issueRefs: [{
+        projectName: this.issue.projectName,
+        localId: this.issue.localId,
+      }],
+      flag: !this.issue.isSpam,
+    }).then(() => {
+      const message = {
+        issueRef: {
+          projectName: this.issue.projectName,
+          localId: this.issue.localId,
+        },
+      };
+      actionCreator.fetchIssue(this.dispatchAction.bind(this), message);
+    });
   }
 
   _deleteIssue() {
