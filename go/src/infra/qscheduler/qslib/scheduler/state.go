@@ -80,6 +80,12 @@ type TaskRequest struct {
 	confirmedTime time.Time
 }
 
+// ConfirmedTime returns the latest time at which the task request's state was
+// confirmed by source of truth (swarming).
+func (t *TaskRequest) ConfirmedTime() time.Time {
+	return t.confirmedTime
+}
+
 // requestProto converts a request to a TaskRequest proto. It is a convenience method.
 // Note: TaskRequest does not include the request's ID, so this conversion is lossy.
 func requestProto(r *TaskRequest, mb *mapBuilder) *protos.TaskRequest {
@@ -141,6 +147,12 @@ type Worker struct {
 	// directly confirmed as idle by external authority (via a call to MarkIdle or
 	// NotifyRequest).
 	confirmedTime time.Time
+}
+
+// ConfirmedTime returns the latest time at which the worker's state was
+// confirmed by source of truth (swarming).
+func (w *Worker) ConfirmedTime() time.Time {
+	return w.latestConfirmedTime()
 }
 
 // addRequest enqueues a new task request with the given time, (or if the task

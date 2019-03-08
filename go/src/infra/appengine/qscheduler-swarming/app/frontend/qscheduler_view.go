@@ -16,6 +16,8 @@ package frontend
 
 import (
 	"context"
+	"sort"
+	"time"
 
 	"go.chromium.org/luci/grpc/grpcutil"
 
@@ -40,22 +42,26 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		return nil, err
 	}
 
+	t0 := time.Now()
 	workers := sp.Scheduler.GetWorkers()
 	running := make([]*qscheduler.InspectPoolResponse_RunningTask, 0, len(workers))
 	idle := make([]*qscheduler.InspectPoolResponse_IdleBot, 0, len(workers))
 	for wid, w := range workers {
+		age := int32(t0.Sub(w.ConfirmedTime()).Seconds())
 		if w.IsIdle() {
 			idle = append(idle, &qscheduler.InspectPoolResponse_IdleBot{
 				Id:         string(wid),
 				Dimensions: w.Labels.ToSlice(),
+				AgeSeconds: age,
 			})
 		} else {
 			request := w.RunningRequest()
 			running = append(running, &qscheduler.InspectPoolResponse_RunningTask{
-				BotId:     string(wid),
-				Id:        string(request.ID),
-				Priority:  int32(w.RunningPriority()),
-				AccountId: string(request.AccountID),
+				BotId:      string(wid),
+				Id:         string(request.ID),
+				Priority:   int32(w.RunningPriority()),
+				AccountId:  string(request.AccountID),
+				AgeSeconds: age,
 			})
 		}
 	}
@@ -64,8 +70,9 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 	waiting := make([]*qscheduler.InspectPoolResponse_WaitingTask, 0, len(waitingRequests))
 	for rid, r := range waitingRequests {
 		waiting = append(waiting, &qscheduler.InspectPoolResponse_WaitingTask{
-			Id:        string(rid),
-			AccountId: string(r.AccountID),
+			Id:         string(rid),
+			AccountId:  string(r.AccountID),
+			AgeSeconds: int32(t0.Sub(r.ConfirmedTime()).Seconds()),
 		})
 	}
 
@@ -76,6 +83,18 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 			Value: b[:],
 		}
 	}
+
+	// Sort items by age, to make it easy and convenient for users
+	// to find oldest.
+	sort.Slice(idle, func(i, j int) bool {
+		return older(idle[i], idle[j])
+	})
+	sort.Slice(running, func(i, j int) bool {
+		return older(running[i], running[j])
+	})
+	sort.Slice(waiting, func(i, j int) bool {
+		return older(waiting[i], waiting[j])
+	})
 
 	resp = &qscheduler.InspectPoolResponse{
 		NumWaitingTasks: int32(len(waiting)),
@@ -91,4 +110,13 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 	}
 
 	return resp, nil
+}
+
+type getAgeSecondsAble interface {
+	GetAgeSeconds() int32
+}
+
+// Returns true if a is older than b.
+func older(a getAgeSecondsAble, b getAgeSecondsAble) bool {
+	return a.GetAgeSeconds() > b.GetAgeSeconds()
 }
