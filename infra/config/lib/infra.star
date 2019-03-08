@@ -32,7 +32,7 @@ def console_view(name, title, repo=None):
   )
 
 
-def cq_group(name, repo=None):
+def cq_group(name, repo=None, tree_status_host=None):
   """Defines a CQ group watching refs/heads/*."""
   luci.cq_group(
       name = name,
@@ -40,7 +40,7 @@ def cq_group(name, repo=None):
           repo = repo or infra.REPO_URL,
           refs = [r'refs/heads/.+'],
       ),
-      tree_status_host = 'infra-status.appspot.com',
+      tree_status_host = tree_status_host,
       retry_config = cq.RETRY_NONE,
   )
 

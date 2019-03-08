@@ -12,7 +12,7 @@ infra.recipe(name = 'infra_continuous')
 infra.recipe(name = 'infra_repo_trybot')
 infra.recipe(name = 'infra_wct_tester')
 infra.console_view(name = 'infra', title = 'infra/infra repository console')
-infra.cq_group(name = 'infra cq')
+infra.cq_group(name = 'infra cq', tree_status_host = 'infra-status.appspot.com')
 
 
 def ci_builder(name, os, cpu='x86-64'):
