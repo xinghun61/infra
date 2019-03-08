@@ -92,6 +92,7 @@ var (
 		"qscheduler/state/bot",
 		"The number of bots in a given state.",
 		nil,
+		field.String("scheduler_id"),
 		field.String("state"),
 		field.Int("priority"),
 	)
