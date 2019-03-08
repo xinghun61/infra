@@ -80,11 +80,19 @@ var (
 	)
 
 	gaugeTaskState = metric.NewInt(
-		"qscheduler/state/task_state",
-		"The number of tasks in a given running/waiting + priority state.",
+		"qscheduler/state/task",
+		"The number of tasks in a given state.",
 		nil,
 		field.String("scheduler_id"),
-		field.Bool("running"),
+		field.String("state"),
+		field.Int("priority"),
+	)
+
+	gaugeBotState = metric.NewInt(
+		"qscheduler/state/bot",
+		"The number of bots in a given state.",
+		nil,
+		field.String("state"),
 		field.Int("priority"),
 	)
 
@@ -171,8 +179,11 @@ func recordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedu
 	gaugeQueueSize.Set(ctx, int64(len(s.GetWaitingRequests())), schedulerID)
 
 	var runningPerPriority [scheduler.NumPriorities + 1]int64
+	var idleBots int64
 	for _, w := range s.GetWorkers() {
-		if !w.IsIdle() {
+		if w.IsIdle() {
+			idleBots++
+		} else {
 			priority := int(w.RunningPriority())
 			if priority < 0 {
 				priority = 0
@@ -184,9 +195,11 @@ func recordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedu
 		}
 	}
 	// TODO(akeshet): Include accurate information on priority of queued tasks, rather than arbitrary NumPriorities value.
-	gaugeTaskState.Set(ctx, int64(len(s.GetWaitingRequests())), schedulerID, false, scheduler.NumPriorities)
+	gaugeTaskState.Set(ctx, int64(len(s.GetWaitingRequests())), schedulerID, "waiting", scheduler.NumPriorities)
+	gaugeBotState.Set(ctx, idleBots, schedulerID, "idle", scheduler.NumPriorities)
 	for priority, val := range runningPerPriority {
-		gaugeTaskState.Set(ctx, val, schedulerID, true, priority)
+		gaugeTaskState.Set(ctx, val, schedulerID, "running", priority)
+		gaugeBotState.Set(ctx, val, schedulerID, "running", priority)
 	}
 }
 
