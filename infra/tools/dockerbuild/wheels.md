@@ -1679,6 +1679,20 @@ wheel: <
 
 * *universal*
 
+## **pefile**
+
+### 2018.8.8
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pefile-py2_py3"
+  version: "version:2018.8.8"
+>
+```
+
+
+* *universal*
+
 ## **pluggy**
 
 ### 0.6.0
