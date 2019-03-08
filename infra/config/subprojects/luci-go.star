@@ -20,16 +20,12 @@ infra.console_view(
 infra.cq_group(name = 'luci-go cq', repo = REPO_URL)
 
 
-def ci_builder(name, os, cpu='x86-64'):
+def ci_builder(name, os):
   infra.builder(
       name = name,
       bucket = 'ci',
       recipe = 'luci_go',
       os = os,
-      cpu = cpu,
-      pool = 'luci.flex.ci',
-      service_account = infra.SERVICE_ACCOUNT_CI,
-      build_numbers = True,
       triggered_by = ['luci-go-gitiles-trigger'],
   )
   luci.console_view_entry(
@@ -45,9 +41,6 @@ def try_builder(name, os, presubmit=False):
       bucket = 'try',
       recipe = 'luci_go',
       os = os,
-      cpu = 'x86-64',
-      pool = 'luci.flex.try',
-      service_account = infra.SERVICE_ACCOUNT_TRY,
       properties = {'presubmit': True} if presubmit else None,
   )
   luci.cq_tryjob_verifier(

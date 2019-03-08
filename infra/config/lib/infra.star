@@ -53,17 +53,16 @@ def builder(
       bucket,
       recipe,
 
-      # Dimensions (all required).
+      # Dimensions.
       os,
-      cpu,
-      pool,
+      cpu=None,
+      pool=None,
 
       # Swarming environ.
       service_account=None,
 
       # Misc tweaks.
       properties=None,
-      build_numbers=None,
       schedule=None,
 
       # Triggering relations.
@@ -72,15 +71,30 @@ def builder(
   """Defines a basic infra builder (CI or Try).
 
   It is a builder that needs an infra.git checkout to do stuff.
+
+  Depending on value of `bucket`, will chose a default pool (ci or flex try),
+  the service account and build_numbers settings.
   """
+  if bucket == 'ci':
+    pool = pool or 'luci.flex.ci'
+    service_account = service_account or infra.SERVICE_ACCOUNT_CI
+    build_numbers = True
+  elif bucket == 'try':
+    pool = pool or 'luci.flex.try'
+    service_account = service_account or infra.SERVICE_ACCOUNT_TRY
+    build_numbers = None  # leave it unset in the generated file
+  else:
+    fail('unknown bucket')
+
   caches = [infra.cache_gclient_with_go]
   if os.startswith('Mac'):
     caches.append(infra.cache_osx_sdk)
+
   luci.builder(
       name = name,
       bucket = bucket,
       recipe = recipe,
-      dimensions = {'os': os, 'cpu': cpu, 'pool': pool},
+      dimensions = {'os': os, 'cpu': cpu or 'x86-64', 'pool': pool},
       execution_timeout = 30 * time.minute,
       swarming_tags = ['vpython:native-python-wrapper'],
       service_account = service_account,
@@ -99,13 +113,16 @@ _OS_TO_CATEGORY = {
 }
 
 
-def category_from_os(os):
+def category_from_os(os, short=False):
   """Given e.g. 'Ubuntu-16.10' returns e.g. 'linux|16.10'."""
   # Win7 seems to be special.
   if os == 'Windows':
     return 'win|7'
   os, _, ver = os.partition('-')
-  return _OS_TO_CATEGORY.get(os, os.lower()) + '|' + ver
+  category = _OS_TO_CATEGORY.get(os, os.lower())
+  if not short:
+    category += '|' + ver
+  return category
 
 
 infra = struct(

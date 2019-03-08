@@ -22,9 +22,6 @@ def ci_builder(name, os, cpu='x86-64'):
       recipe = 'infra_continuous',
       os = os,
       cpu = cpu,
-      pool = 'luci.flex.ci',
-      service_account = infra.SERVICE_ACCOUNT_CI,
-      build_numbers = True,
       triggered_by = ['infra-gitiles-trigger'],
   )
   luci.console_view_entry(
@@ -40,9 +37,6 @@ def try_builder(name, os, recipe=None):
       bucket = 'try',
       recipe = recipe or 'infra_repo_trybot',
       os = os,
-      cpu = 'x86-64',
-      pool = 'luci.flex.try',
-      service_account = infra.SERVICE_ACCOUNT_TRY,
   )
   luci.cq_tryjob_verifier(
       builder = name,

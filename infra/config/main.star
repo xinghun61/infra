@@ -13,6 +13,9 @@ WORK IN PROGRESS:
 
 Includes CI configs for the following subprojects:
   * https://chromium.googlesource.com/infra/infra
+  * https://chromium.googlesource.com/infra/luci/gae
+  * https://chromium.googlesource.com/infra/luci/luci-go
+  * https://chromium.googlesource.com/infra/luci/luci-py
 
 TODO(vadimsh): Add more.
 """
@@ -126,5 +129,6 @@ presubmit.recipe()
 # defined above by name.
 
 exec('//subprojects/infra.star')
+exec('//subprojects/luci-gae.star')
 exec('//subprojects/luci-go.star')
 exec('//subprojects/luci-py.star')

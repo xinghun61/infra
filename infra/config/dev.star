@@ -82,7 +82,6 @@ def ci_builder(
       cpu = 'x86-64',
       pool = 'Chrome',  # no point in creating a dedicated pool on -dev
       service_account = 'adhoc-testing@luci-token-server-dev.iam.gserviceaccount.com',
-      build_numbers = True,
       schedule = 'triggered' if manual else None,
       triggered_by = [] if manual else ['infra-gitiles-trigger'],
   )
