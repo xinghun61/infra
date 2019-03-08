@@ -173,3 +173,11 @@ class ToBuildProtosTests(testing.AppengineTestCase):
 
     actual = self.to_proto(build, load_output_properties=True)
     self.assertEqual(actual.output.properties, props)
+
+  def test_infra(self):
+    build = test_util.build(
+        infra=dict(swarming=dict(hostname='swarming.example.com'))
+    )
+
+    actual = self.to_proto(build, load_infra=True)
+    self.assertEqual(actual.infra.swarming.hostname, 'swarming.example.com')

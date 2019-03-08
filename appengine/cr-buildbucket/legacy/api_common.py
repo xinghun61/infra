@@ -171,9 +171,10 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
     )
 
   bp = build.proto
-  sw = bp.infra.swarming
-  logdog = bp.infra.logdog
-  recipe = bp.infra.recipe
+  infra = build.parse_infra()
+  sw = infra.swarming
+  logdog = infra.logdog
+  recipe = infra.recipe
 
   if bp.status != common_pb2.SUCCESS and bp.output.summary_markdown:
     result_details['error'] = {

@@ -145,6 +145,7 @@ def builds_to_protos_async(builds, build_mask=None):
       load_output_properties=(
           build_mask and build_mask.includes('output.properties')
       ),
+      load_infra=build_mask and build_mask.includes('infra'),
   )
 
 

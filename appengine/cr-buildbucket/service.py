@@ -527,7 +527,7 @@ def cancel(build_id, summary_markdown='', result_details=None):
         _put_output_properties_async(build.key, result_details),
     ]
 
-    sw = build.proto.infra.swarming
+    sw = build.parse_infra().swarming
     if sw.hostname and sw.task_id:  # pragma: no branch
       futs.append(
           swarming.cancel_task_transactionally_async(sw.hostname, sw.task_id)
@@ -576,7 +576,7 @@ def _task_delete_many_builds(bucket_id, status, tags=None, created_by=None):
       raise ndb.Return(False)
     futs = [key.delete_async()]
 
-    sw = build.proto.infra.swarming
+    sw = build.parse_infra().swarming
     if sw.hostname and sw.task_id:  # pragma: no branch
       futs.append(
           swarming.cancel_task_transactionally_async(sw.hostname, sw.task_id)

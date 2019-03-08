@@ -126,7 +126,7 @@ class CreationTest(testing.AppengineTestCase):
     build = self.add(dict(properties=prop_struct))
     self.assertEqual(build.proto.input.properties, prop_struct)
     self.assertEqual(
-        build.proto.infra.buildbucket.requested_properties, prop_struct
+        build.parse_infra().buildbucket.requested_properties, prop_struct
     )
     self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
 
@@ -139,7 +139,7 @@ class CreationTest(testing.AppengineTestCase):
     ]
     build = self.add(dict(dimensions=dims))
     self.assertEqual(
-        list(build.proto.infra.buildbucket.requested_dimensions), dims
+        list(build.parse_infra().buildbucket.requested_dimensions), dims
     )
 
   def test_add_with_notify(self):
@@ -190,7 +190,7 @@ class CreationTest(testing.AppengineTestCase):
 
   def test_add_with_priority(self):
     build = self.add(dict(priority=42))
-    self.assertEqual(build.proto.infra.swarming.priority, 42)
+    self.assertEqual(build.parse_infra().swarming.priority, 42)
 
   def test_add_update_builders(self):
     recently = self.now - datetime.timedelta(minutes=1)

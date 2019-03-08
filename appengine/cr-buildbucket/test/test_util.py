@@ -92,8 +92,12 @@ BUILD_DEFAULTS = build_pb2.Build(
 )
 
 
-def build(**build_proto_fields):  # pragma: no cover
-  """Creates a model.Build from proto fields, with reasonable defaults."""
+def build(with_infra_field=False, **build_proto_fields):  # pragma: no cover
+  """Creates a model.Build from proto fields, with reasonable defaults.
+
+  If with_infra_field is True, returned Build.proto.infra will be set.
+  It should be set when testing build creation code paths.
+  """
   now = utils.utcnow()
 
   # Compute defaults.
@@ -133,9 +137,15 @@ def build(**build_proto_fields):  # pragma: no cover
             proto.number,
         )
     )
+
+  infra = copy.deepcopy(proto.infra)
+  if not with_infra_field:
+    proto.ClearField('infra')
+
   ret = model.Build(
       id=proto.id,
       proto=proto,
+      infra_bytes=infra.SerializeToString() if not with_infra_field else '',
       created_by=auth.Identity.from_bytes(proto.created_by),
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,
@@ -148,8 +158,9 @@ def build(**build_proto_fields):  # pragma: no cover
               bbutil.struct_to_dict(proto.input.properties),
       },
       canary_preference=model.CanaryPreference.PROD,
-      canary=proto.infra.buildbucket.canary,
+      canary=infra.buildbucket.canary,
       url='https://ci.example.com/%d' % proto.id,
+      is_luci=infra.HasField('swarming'),
   )
   ret.update_v1_status_fields()
   if proto.input.HasField('gitiles_commit'):

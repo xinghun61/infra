@@ -628,6 +628,7 @@ class SwarmingTest(BaseTest):
     )
 
     build = test_util.build(
+        with_infra_field=True,
         id=1,
         number=1,
         builder=build_pb2.BuilderID(
@@ -947,6 +948,7 @@ class SwarmingTest(BaseTest):
     }
 
     build = test_util.build(
+        with_infra_field=True,
         number=1,
         input=dict(experimental=True),
     )
@@ -1009,7 +1011,7 @@ class SwarmingTest(BaseTest):
         ],
     }
 
-    build = test_util.build(number=1)
+    build = test_util.build(number=1, with_infra_field=True)
 
     self.json_response = {
         'task_id': 'deadbeef',
@@ -1098,7 +1100,7 @@ class SwarmingTest(BaseTest):
         return_value='beeff00d',
     )
 
-    build = test_util.build(id=1)
+    build = test_util.build(id=1, with_infra_field=True)
     build.tags = ['builder:linux', 'buildset:1']
     build.canary_preference = model.CanaryPreference.CANARY
 
@@ -1419,6 +1421,7 @@ class SwarmingTest(BaseTest):
 
   def test_create_task_async_override_dimensions(self):
     build = test_util.build(
+        with_infra_field=True,
         infra=dict(
             buildbucket=dict(
                 requested_dimensions=[
@@ -1773,7 +1776,8 @@ class SwarmingTest(BaseTest):
     self.assertEqual(bp.start_time, case.get('start_time', tspb(0)))
     self.assertEqual(bp.end_time, case.get('end_time', tspb(0)))
     self.assertEqual(
-        list(bp.infra.swarming.bot_dimensions), case.get('bot_dimensions', [])
+        list(build.parse_infra().swarming.bot_dimensions),
+        case.get('bot_dimensions', [])
     )
 
   @mock.patch('swarming.isolate.fetch_async')
@@ -1926,7 +1930,7 @@ class SwarmingTest(BaseTest):
     self.assertIsNone(run_result)
 
   def test_generate_build_url(self):
-    build = test_util.build(id=1)
+    build = test_util.build(id=1, with_infra_field=True)
     self.assertEqual(
         swarming._generate_build_url('milo.example.com', build),
         'https://milo.example.com/b/1',
@@ -2263,7 +2267,8 @@ class CronUpdateTest(BaseTest):
 
   def test_sync_build_async_non_swarming(self):
     build = test_util.build(status=common_pb2.SCHEDULED)
-    build.proto.infra.ClearField('swarming')
+    with build.mutate_infra() as infra:
+      infra.ClearField('swarming')
     build.put()
 
     swarming.CronUpdateBuilds().update_build_async(build).get_result()

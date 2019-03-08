@@ -372,6 +372,13 @@ def add_many_async(build_request_list):
   @ndb.tasklet
   def put_and_cache_builds_async():
     """Puts new builds, updates metrics and memcache."""
+
+    # Move Build.proto.infra into Build.infra_bytes before putting.
+    for b in new_builds.itervalues():
+      b.is_luci = b.proto.infra.HasField('swarming')
+      b.infra_bytes = b.proto.infra.SerializeToString()
+      b.proto.ClearField('infra')
+
     yield ndb.put_multi_async(new_builds.values())
     memcache_sets = []
     for i, b in new_builds.iteritems():
@@ -389,15 +396,16 @@ def add_many_async(build_request_list):
   def cancel_swarming_tasks_async(cancel_all):
     futures = []
     for i, b in new_builds.iteritems():
-      sw = b.proto.infra.swarming
+      sw = b.parse_infra().swarming
       if sw.hostname and sw.task_id and (cancel_all or results[i][1]):
-        futures.append((b, swarming.cancel_task_async(sw.hostname, sw.task_id)))
-    for b, fut in futures:
+        futures.append(
+            (b, sw, swarming.cancel_task_async(sw.hostname, sw.task_id))
+        )
+    for b, sw, fut in futures:
       try:
         yield fut
       except Exception:
         # This is best effort.
-        sw = b.proto.infra.swarming
         logging.exception(
             'could not cancel swarming task\nTask: %s/%s', sw.hostname,
             sw.task_id

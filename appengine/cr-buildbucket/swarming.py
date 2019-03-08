@@ -1135,14 +1135,15 @@ def _sync_build_in_memory(
   now = utils.utcnow()
   old_status = build.proto.status
   bp = build.proto
-  sw = bp.infra.swarming
 
-  sw.ClearField('bot_dimensions')
-  for d in (task_result or {}).get('bot_dimensions', []):
-    assert isinstance(d['value'], list)
-    for v in d['value']:
-      sw.bot_dimensions.add(key=d['key'], value=v)
-  sw.bot_dimensions.sort(key=lambda d: (d.key, d.value))
+  with build.mutate_infra() as infra:
+    sw = infra.swarming
+    sw.ClearField('bot_dimensions')
+    for d in (task_result or {}).get('bot_dimensions', []):
+      assert isinstance(d['value'], list)
+      for v in d['value']:
+        sw.bot_dimensions.add(key=d['key'], value=v)
+    sw.bot_dimensions.sort(key=lambda d: (d.key, d.value))
 
   terminal_states = {
       'EXPIRED',
@@ -1352,7 +1353,7 @@ class SubNotify(webapp2.RequestHandler):
       )
 
     # Ensure the loaded build is associated with the task.
-    sw = build.proto.infra.swarming
+    sw = build.parse_infra().swarming
     if hostname != sw.hostname:
       self.stop(
           'swarming_hostname %s of build %s does not match %s', sw.hostname,
@@ -1407,7 +1408,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
 
   @ndb.tasklet
   def update_build_async(self, build):
-    sw = build.proto.infra.swarming
+    sw = build.parse_infra().swarming
     if not sw.hostname:
       return
     assert sw.task_id

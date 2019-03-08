@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import contextlib
 import datetime
 import itertools
 import random
@@ -151,10 +152,34 @@ class Build(ndb.Model):
   # Does not include:
   #   output.properties: see BuildOutputProperties
   #   steps: see BuildSteps.
+  #   infra: see infra_bytes. CAVEAT: field infra does exist during build
+  #     creation, and moved into infra_bytes right before initial datastore.put.
   #
   # Transition period: proto is either None or complete, i.e. created by
   # creation.py or fix_builds.py.
   proto = datastore_utils.ProtobufProperty(build_pb2.Build)
+
+  # Build.infra serialized to bytes.
+  infra_bytes = ndb.BlobProperty()
+
+  def parse_infra(self):  # pragma: no cover
+    """Deserializes infra_bytes."""
+    infra = build_pb2.BuildInfra()
+    if self.infra_bytes:
+      infra.ParseFromString(self.infra_bytes)
+    else:  # Backward compatibility.
+      infra.CopyFrom(self.proto.infra)
+    return infra
+
+  @contextlib.contextmanager
+  def mutate_infra(self):  # pragma: no cover
+    """Returns a context manager that provides a mutable BuildInfra object.
+
+    Deserializes infra_bytes, yields it, and serializes back.
+    """
+    infra = self.parse_infra()
+    yield infra
+    self.infra_bytes = infra.SerializeToString()
 
   # Specifies whether canary of build infrastructure should be used for this
   # build.
@@ -210,12 +235,7 @@ class Build(ndb.Model):
   # as a blob property.
   created_by = auth.IdentityProperty()
 
-  # TODO(nodir): rename to "is_luci" and remove the @property below.
-  is_luci_stored = ndb.BooleanProperty(name='is_luci')
-
-  @property
-  def is_luci(self):  # pragma: no cover
-    return self.proto.infra.HasField('swarming')
+  is_luci = ndb.BooleanProperty()
 
   @property
   def is_ended(self):  # pragma: no cover
@@ -273,7 +293,6 @@ class Build(ndb.Model):
   # It may be None only in SCHEDULED state. Otherwise it must be True or False.
   # If canary_preference is CANARY, this field value does not have to be True,
   # e.g. if the build infrastructure does not have a canary.
-  # TODO(nodir): make it computed from proto.infra.buildbucket.canary.
   canary = ndb.BooleanProperty()
 
   # ============================================================================
@@ -281,8 +300,6 @@ class Build(ndb.Model):
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
-
-    self.is_luci_stored = self.proto.infra.HasField('swarming')
 
     config.validate_project_id(self.proto.builder.project)
     config.validate_bucket_name(self.proto.builder.bucket)
@@ -480,7 +497,10 @@ def build_id_range(create_time_low, create_time_high):
 
 @ndb.tasklet
 def builds_to_protos_async(
-    builds, load_steps=False, load_output_properties=False
+    builds,
+    load_steps=False,
+    load_output_properties=False,
+    load_infra=False,
 ):
   """Converts Build objects to build_pb2.Build messages.
 
@@ -503,6 +523,9 @@ def builds_to_protos_async(
     d.CopyFrom(b.proto)
     # Old builds do not have proto.id
     d.id = b.key.id()
+
+    if load_infra and b.infra_bytes:
+      d.infra.ParseFromString(b.infra_bytes)
 
     if steps_f:
       steps = yield steps_f
