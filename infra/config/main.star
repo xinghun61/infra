@@ -56,10 +56,10 @@ luci.project(
             ],
             groups = 'all',
         ),
-        # Allow committers to use CQ and to force-trigger CI builds.
+        # Allow committers to use CQ and to force-trigger and stop CI builds.
         acl.entry(
             roles = [
-                acl.SCHEDULER_TRIGGERER,
+                acl.SCHEDULER_OWNER,
                 acl.CQ_COMMITTER,
             ],
             groups = 'project-infra-committers',

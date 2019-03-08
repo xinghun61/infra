@@ -3,10 +3,19 @@
 # found in the LICENSE file.
 
 
+LUCICFG_ENTRY_SCRIPTS = ['main.star', 'dev.star']
+
+
 def CheckChangeOnUpload(input_api, output_api):
-  return input_api.canned_checks.CheckChangedLUCIConfigs(input_api, output_api)
+  tests = []
+  for path in LUCICFG_ENTRY_SCRIPTS:
+    tests += input_api.canned_checks.CheckLucicfgGenOutput(
+        input_api, output_api, path)
+  res = input_api.RunTests(tests)
+  res += input_api.canned_checks.CheckChangedLUCIConfigs(input_api, output_api)
+  return res
 
 
 def CheckChangeOnCommit(input_api, output_api):
-  return input_api.canned_checks.CheckChangedLUCIConfigs(input_api, output_api)
+  return CheckChangeOnUpload(input_api, output_api)
 
