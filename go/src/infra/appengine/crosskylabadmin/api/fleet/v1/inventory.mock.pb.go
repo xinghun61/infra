@@ -254,6 +254,26 @@ func (mr *MockInventoryClientMockRecorder) GetDutInfo(ctx, in interface{}, opts 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDutInfo", reflect.TypeOf((*MockInventoryClient)(nil).GetDutInfo), varargs...)
 }
 
+// GetDroneConfig mocks base method
+func (m *MockInventoryClient) GetDroneConfig(ctx context.Context, in *GetDroneConfigRequest, opts ...grpc.CallOption) (*GetDroneConfigResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetDroneConfig", varargs...)
+	ret0, _ := ret[0].(*GetDroneConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDroneConfig indicates an expected call of GetDroneConfig
+func (mr *MockInventoryClientMockRecorder) GetDroneConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDroneConfig", reflect.TypeOf((*MockInventoryClient)(nil).GetDroneConfig), varargs...)
+}
+
 // UpdateDutLabels mocks base method
 func (m *MockInventoryClient) UpdateDutLabels(ctx context.Context, in *UpdateDutLabelsRequest, opts ...grpc.CallOption) (*UpdateDutLabelsResponse, error) {
 	m.ctrl.T.Helper()
@@ -480,6 +500,21 @@ func (m *MockInventoryServer) GetDutInfo(arg0 context.Context, arg1 *GetDutInfoR
 func (mr *MockInventoryServerMockRecorder) GetDutInfo(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDutInfo", reflect.TypeOf((*MockInventoryServer)(nil).GetDutInfo), arg0, arg1)
+}
+
+// GetDroneConfig mocks base method
+func (m *MockInventoryServer) GetDroneConfig(arg0 context.Context, arg1 *GetDroneConfigRequest) (*GetDroneConfigResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDroneConfig", arg0, arg1)
+	ret0, _ := ret[0].(*GetDroneConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDroneConfig indicates an expected call of GetDroneConfig
+func (mr *MockInventoryServerMockRecorder) GetDroneConfig(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDroneConfig", reflect.TypeOf((*MockInventoryServer)(nil).GetDroneConfig), arg0, arg1)
 }
 
 // UpdateDutLabels mocks base method

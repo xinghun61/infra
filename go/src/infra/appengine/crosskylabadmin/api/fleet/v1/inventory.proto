@@ -95,6 +95,11 @@ service Inventory {
   // the inventory data.
   rpc GetDutInfo(GetDutInfoRequest) returns (GetDutInfoResponse);
 
+  // GetDroneConfig returns the inventory configuration for a drone.
+  //
+  // This RPC returns possibly cached data.
+  rpc GetDroneConfig(GetDroneConfigRequest) returns (GetDroneConfigResponse);
+
   // ///////////////////////////////////////////////////////////////////////////
   // RPCs used internally by the infrastructure. Not for end-user tools.
 
@@ -496,6 +501,22 @@ message GetDutInfoResponse {
   //
   // This is a serialized inventory.DeviceUnderTest protobuf.
   bytes spec = 1;
+}
+
+message GetDroneConfigRequest {
+  // hostname of the drone, fully qualified.
+  string hostname = 1;
+}
+
+message GetDroneConfigResponse {
+  message Dut {
+    // id of the DUT.
+    string id = 1;
+    // hostname of the DUT, unqualified.
+    string hostname = 2;
+  }
+  // duts assigned to the drone.
+  repeated Dut duts = 1;
 }
 
 message UpdateDutLabelsRequest {
