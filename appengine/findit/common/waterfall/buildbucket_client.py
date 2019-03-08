@@ -317,7 +317,8 @@ def GetV2Build(build_id, fields=None):
   request = GetBuildRequest(id=int(build_id), fields=fields)
   status_code, content, response_headers = FinditHttpClient().Post(
       _BUILDBUCKET_V2_GET_BUILD_ENDPOINT,
-      request.SerializeToString())
+      request.SerializeToString(),
+      headers={'Content-Type': 'application/prpc; encoding=binary'})
   if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
     result = Build()
     result.ParseFromString(content)
@@ -350,7 +351,8 @@ def GetV2BuildByBuilderAndBuildNumber(project,
       builder=builder, build_number=build_number, fields=fields)
   status_code, content, response_headers = FinditHttpClient().Post(
       _BUILDBUCKET_V2_GET_BUILD_ENDPOINT,
-      request.SerializeToString())
+      request.SerializeToString(),
+      headers={'Content-Type': 'application/prpc; encoding=binary'})
   if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
     result = Build()
     result.ParseFromString(content)
