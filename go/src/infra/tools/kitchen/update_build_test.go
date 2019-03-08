@@ -11,10 +11,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"go.chromium.org/luci/buildbucket"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/logdog/common/types"
 	"go.chromium.org/luci/lucictx"
@@ -83,10 +86,6 @@ func TestBuildUpdater(t *testing.T) {
 		Convey(`run`, func() {
 			run := func(err1, err2 error) error {
 				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
-					md, ok := metadata.FromOutgoingContext(ctx)
-					c.So(ok, ShouldBeTrue)
-					c.So(md.Get(buildbucket.BuildTokenHeader), ShouldResemble, []string{"build token"})
-
 					c.So(req.Build.Steps[0].Name, ShouldEqual, "step1")
 					c.So(len(req.Build.Steps), ShouldBeIn, []int{1, 2})
 
@@ -119,6 +118,27 @@ func TestBuildUpdater(t *testing.T) {
 
 			Convey("first succeeded, second failed", func() {
 				So(run(nil, fmt.Errorf("fatal")), ShouldErrLike, "fatal")
+			})
+
+			Convey("first is fatal, second never occurs", func() {
+				fatal := status.Error(codes.InvalidArgument, "too large")
+				calls := 0
+				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
+					calls++
+					return nil, fatal
+				}
+				client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
+
+				errC := make(chan error)
+				go func() {
+					errC <- bu.Run(ctx, nil)
+				}()
+
+				bu.AnnotationUpdated(newAnnBytes("step1"))
+				cancel()
+
+				So(errors.Unwrap(<-errC), ShouldEqual, fatal)
+				So(calls, ShouldEqual, 1)
 			})
 
 			Convey("done is closed", func() {

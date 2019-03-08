@@ -10,7 +10,9 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/genproto/protobuf/field_mask"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 
 	"go.chromium.org/luci/buildbucket"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
@@ -85,10 +87,19 @@ func (b *buildUpdater) Run(ctx context.Context, done <-chan struct{}) error {
 
 		var err error
 		if sentVer != local.latestVer {
-			if err = b.updateBuildBytes(ctx, local.latest); err != nil {
-				logging.Errorf(ctx, "failed to update build: %s", err)
-			} else {
+			err = b.updateBuildBytes(ctx, local.latest)
+			switch status.Code(errors.Unwrap(err)) {
+			case codes.OK:
 				sentVer = local.latestVer
+
+			case codes.InvalidArgument:
+				// This is fatal.
+				return err
+
+			default:
+				// Hope another future request will succeed.
+				// There is another final UpdateBuild call anyway.
+				logging.Errorf(ctx, "failed to update build: %s", err)
 			}
 		}
 
