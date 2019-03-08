@@ -258,11 +258,12 @@ func cleanTestStep(name string) (clean string, ok bool) {
 }
 
 func cleanTestType(name string) string {
-	// We keep " (with patch)" and " (retry with patch)" suffix to make sure that
-	// results from the tryserver are not placed in the same table as waterfall
-	// results in the Flakiness Dashboard. This is needed because waterfall
-	// results are always aligned vertically by revisions, while tryserver results
-	// are run on uncommitted code and are not comparable to each other.
+	// We keep " (with patch)", " (retry with patch)", and " (retry shards with
+	// patch)" suffixes to make sure that results from the tryserver are not
+	// placed in the same table as waterfall results in the Flakiness Dashboard.
+	// This is needed because waterfall results are always aligned vertically by
+	// revisions, while tryserver results are run on uncommitted code and are not
+	// comparable to each other.
 	withPatch := false
 	if strings.Contains(name, " (with patch)") {
 		withPatch = true
@@ -273,6 +274,12 @@ func cleanTestType(name string) string {
 	if strings.Contains(name, " (retry with patch)") {
 		retryWithPatch = true
 		name = strings.Replace(name, " (retry with patch)", "", 1)
+	}
+
+	retryShardsWithPatch := false
+	if strings.Contains(name, " (retry shards with patch)") {
+		retryShardsWithPatch = true
+		name = strings.Replace(name, " (retry shards with patch)", "", 1)
 	}
 
 	// Special rule for Instrumentation test.
@@ -292,6 +299,9 @@ func cleanTestType(name string) string {
 	}
 	if retryWithPatch {
 		name += " (retry with patch)"
+	}
+	if retryShardsWithPatch {
+		name += " (retry shards with patch)"
 	}
 	return name
 }
