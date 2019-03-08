@@ -34,15 +34,23 @@ WITH
 # Filter builds to keep the ones with 'FindIt Flakiness' step.
 SELECT
   issue.cq_name,
-  issue.issue,
-  build.build_id,
-  build.gerrit_change,
+  # Info about the patch.
   build.patch_project,
+  build.gerrit_change.host AS gerrit_host,
+  # Buildbucket does not populate gerrit_change.project yet.
+  IF(build.gerrit_change.project IS NOT NULL AND build.gerrit_change.project != '', build.gerrit_change.project, build.patch_project) AS gerrit_project,
+  build.gerrit_change.change AS gerrit_cl_id,
+  build.gerrit_change.patchset AS gerrit_cl_patchset_number,
+  # Info about the code checkouted in the build.
   build.gitiles_repository,
   build.gitiles_revision_cp,
-  build.legacy_build_number,
+  # Info about the build.
+  build.build_id,
+  build.builder.project AS luci_project,
+  build.builder.bucket AS luci_bucket,
+  build.builder.builder AS luci_builder,
   build.legacy_master_name,
-  build.builder
+  build.legacy_build_number
 FROM
   issues AS issue
 CROSS JOIN

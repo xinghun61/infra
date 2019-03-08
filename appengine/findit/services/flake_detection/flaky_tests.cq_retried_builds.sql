@@ -122,13 +122,21 @@ SELECT
   fbg.cq_name,
   # Info about the patch.
   failed_build.patch_project,
-  failed_build.gerrit_change,
+  failed_build.gerrit_change.host AS gerrit_host,
+  # Buildbucket does not populate gerrit_change.project yet.
+  IF(failed_build.gerrit_change.project IS NOT NULL AND failed_build.gerrit_change.project != '', failed_build.gerrit_change.project, failed_build.patch_project) AS gerrit_project,
+  failed_build.gerrit_change.change AS gerrit_cl_id,
+  failed_build.gerrit_change.patchset AS gerrit_cl_patchset_number,
   # Info about the code checkouted in the build.
   failed_build.gitiles_repository,
   failed_build.gitiles_revision_cp,
   # Info about the build.
   failed_build.build_id,
-  failed_build.builder
+  failed_build.builder.project AS luci_project,
+  failed_build.builder.bucket AS luci_bucket,
+  failed_build.builder.builder AS luci_builder,
+  failed_build.legacy_master_name,
+  failed_build.legacy_build_number
 FROM failed_build_groups AS fbg
 CROSS JOIN
   UNNEST(fbg.failed_builds) AS failed_build
