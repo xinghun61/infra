@@ -12,6 +12,7 @@ WORK IN PROGRESS:
     some of `*.cfg` files directly.
 
 Includes CI configs for the following subprojects:
+  * Codesearch.
   * https://chromium.googlesource.com/infra/infra
   * https://chromium.googlesource.com/infra/luci/gae
   * https://chromium.googlesource.com/infra/luci/luci-go
@@ -20,6 +21,7 @@ Includes CI configs for the following subprojects:
 TODO(vadimsh): Add more.
 """
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
 load('//lib/presubmit.star', 'presubmit')
 
@@ -122,12 +124,14 @@ luci.bucket(
 )
 
 infra.poller(name = 'infra-gitiles-trigger')
+build.poller(name = 'build-gitiles-trigger')
 presubmit.recipe()
 
 
 # Define per-subproject resources. They may refer to the shared resources
 # defined above by name.
 
+exec('//subprojects/codesearch.star')
 exec('//subprojects/infra.star')
 exec('//subprojects/luci-gae.star')
 exec('//subprojects/luci-go.star')
