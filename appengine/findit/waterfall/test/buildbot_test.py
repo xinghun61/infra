@@ -7,17 +7,15 @@ from datetime import datetime
 import gzip
 import io
 import json
-import logging
 import mock
 import os
 import unittest
-import urllib
+
+from buildbucket_proto.build_pb2 import Build
 
 from common import rpc_util
-from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
 from waterfall import buildbot
-from waterfall.test import wf_testcase
 
 
 class BuildBotTest(unittest.TestCase):
@@ -119,36 +117,26 @@ class BuildBotTest(unittest.TestCase):
       result = buildbot.ParseBuildUrl(url)
       self.assertEqual(expected_result, result)
 
-  @mock.patch.object(buildbot.buildbucket_client, 'SearchBuilds')
-  def testParseCIBuildLongUrl(self, mock_search):
+  @mock.patch.object(buildbot.buildbucket_client,
+                     'GetV2BuildByBuilderAndBuildNumber')
+  def testParseCIBuildLongUrl(self, mock_get_master):
     url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
            '/Linux%20Tests%20SANDBOX/3932')
+
     master_name = 'chromium.sandbox'
-    parameters = {'properties': {'parent_mastername': master_name}}
-    mock_search.return_value = {
-        'builds': [{
-            'result_details_json': json.dumps(parameters)
-        }]
-    }
+    mock_build = Build()
+    mock_build.input.properties['mastername'] = master_name
+    mock_get_master.return_value = mock_build
     expected_result = (master_name, 'Linux Tests SANDBOX', 3932)
     self.assertEqual(expected_result, buildbot.ParseBuildUrl(url))
 
   @mock.patch.object(
-      buildbot.buildbucket_client, 'SearchBuilds', return_value={})
+      buildbot.buildbucket_client,
+      'GetV2BuildByBuilderAndBuildNumber',
+      return_value=None)
   def testParseCIBuildLongUrlNoBuilds(self, _):
     url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
            '/Linux%20Tests%20SANDBOX/3932')
-    self.assertIsNone(buildbot.ParseBuildUrl(url))
-
-  @mock.patch.object(buildbot.buildbucket_client, 'SearchBuilds')
-  def testGetBuildbotMasterNameNotSerializable(self, mock_search):
-    url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
-           '/Linux%20Tests%20SANDBOX/3932')
-    mock_search.return_value = {
-        'builds': [{
-            'result_details_json': 'Not Found'
-        }]
-    }
     self.assertIsNone(buildbot.ParseBuildUrl(url))
 
   def testParseStepUrl(self):
