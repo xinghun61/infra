@@ -126,3 +126,4 @@ presubmit.recipe()
 # defined above by name.
 
 exec('//subprojects/infra.star')
+exec('//subprojects/luci-go.star')

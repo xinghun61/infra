@@ -1,0 +1,70 @@
+# Copyright 2019 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+"""Definitions of luci-go.git CI resources."""
+
+load('//lib/infra.star', 'infra')
+
+
+REPO_URL = 'https://chromium.googlesource.com/infra/luci/luci-go'
+
+
+infra.recipe(name = 'luci_go')
+infra.poller(name = 'luci-go-gitiles-trigger', repo = REPO_URL)
+infra.console_view(
+    name = 'luci-go',
+    title = 'infra/infra repository console',
+    repo = REPO_URL,
+)
+infra.cq_group(name = 'luci-go cq', repo = REPO_URL)
+
+
+def ci_builder(name, os, cpu='x86-64'):
+  infra.builder(
+      name = name,
+      bucket = 'ci',
+      recipe = 'luci_go',
+      os = os,
+      cpu = cpu,
+      pool = 'luci.flex.ci',
+      service_account = infra.SERVICE_ACCOUNT_CI,
+      build_numbers = True,
+      triggered_by = ['luci-go-gitiles-trigger'],
+  )
+  luci.console_view_entry(
+      builder = name,
+      console_view = 'luci-go',
+      category = infra.category_from_os(os),
+  )
+
+
+def try_builder(name, os, presubmit=False):
+  infra.builder(
+      name = name,
+      bucket = 'try',
+      recipe = 'luci_go',
+      os = os,
+      cpu = 'x86-64',
+      pool = 'luci.flex.try',
+      service_account = infra.SERVICE_ACCOUNT_TRY,
+      properties = {'presubmit': True} if presubmit else None,
+  )
+  luci.cq_tryjob_verifier(
+      builder = name,
+      cq_group = 'luci-go cq',
+      disable_reuse = presubmit,
+  )
+
+
+ci_builder(name = 'luci-go-continuous-xenial-64', os = 'Ubuntu-16.04')
+ci_builder(name = 'luci-go-continuous-trusty-64', os = 'Ubuntu-14.04')
+ci_builder(name = 'luci-go-continuous-mac-10.13-64', os = 'Mac-10.13')
+ci_builder(name = 'luci-go-continuous-mac-10.9-64', os = 'Mac-10.9')
+ci_builder(name = 'luci-go-continuous-win7-64', os = 'Windows')
+ci_builder(name = 'luci-go-continuous-win10-64', os = 'Windows-10')
+
+try_builder(name = 'Luci-go Linux Trusty 64 Tester', os = 'Ubuntu-14.04')
+try_builder(name = 'Luci-go Mac Tester', os = 'Mac-10.13')
+try_builder(name = 'Luci-go Win Tester', os = 'Windows')
+try_builder(name = 'Luci-go Presubmit', os = 'Ubuntu-14.04', presubmit = True)

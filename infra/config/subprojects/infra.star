@@ -11,22 +11,8 @@ load('//lib/presubmit.star', 'presubmit')
 infra.recipe(name = 'infra_continuous')
 infra.recipe(name = 'infra_repo_trybot')
 infra.recipe(name = 'infra_wct_tester')
-
-
-luci.console_view(
-    name = 'infra',
-    repo = infra.REPO_URL,
-    title = 'infra/infra repository console',
-    header = '//data/infra_console_header.textpb',
-)
-
-
-luci.cq_group(
-    name = 'infra cq',
-    watch = cq.refset(repo = infra.REPO_URL, refs = [r'refs/heads/.+']),
-    tree_status_host = 'infra-status.appspot.com',
-    retry_config = cq.RETRY_NONE,
-)
+infra.console_view(name = 'infra', title = 'infra/infra repository console')
+infra.cq_group(name = 'infra cq')
 
 
 def ci_builder(name, os, cpu='x86-64'):

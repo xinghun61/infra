@@ -5,12 +5,12 @@
 """Functions and constants related to infra.git used by all modules."""
 
 
-def poller(name):
-  """Defines a gitiles poller of infra.git repo."""
+def poller(name, repo=None):
+  """Defines a gitiles poller."""
   luci.gitiles_poller(
       name = name,
       bucket = 'ci',
-      repo = infra.REPO_URL,
+      repo = repo or infra.REPO_URL,
   )
 
 
@@ -19,6 +19,29 @@ def recipe(name):
   luci.recipe(
       name = name,
       cipd_package = 'infra/recipe_bundles/chromium.googlesource.com/infra/infra',
+  )
+
+
+def console_view(name, title, repo=None):
+  """Defines a console view with infra header."""
+  luci.console_view(
+      name = name,
+      title = title,
+      repo = repo or infra.REPO_URL,
+      header = '//data/infra_console_header.textpb',
+  )
+
+
+def cq_group(name, repo=None):
+  """Defines a CQ group watching refs/heads/*."""
+  luci.cq_group(
+      name = name,
+      watch = cq.refset(
+          repo = repo or infra.REPO_URL,
+          refs = [r'refs/heads/.+'],
+      ),
+      tree_status_host = 'infra-status.appspot.com',
+      retry_config = cq.RETRY_NONE,
   )
 
 
@@ -39,6 +62,7 @@ def builder(
       service_account=None,
 
       # Misc tweaks.
+      properties=None,
       build_numbers=None,
       schedule=None,
 
@@ -60,6 +84,7 @@ def builder(
       execution_timeout = 30 * time.minute,
       swarming_tags = ['vpython:native-python-wrapper'],
       service_account = service_account,
+      properties = properties,
       caches = caches,
       build_numbers = build_numbers,
       schedule = schedule,
@@ -67,15 +92,20 @@ def builder(
   )
 
 
+_OS_TO_CATEGORY = {
+    'Ubuntu': 'linux',
+    'Mac': 'mac',
+    'Windows': 'win',
+}
+
+
 def category_from_os(os):
-  """Given e.g. 'Ubuntu-16.10' returns e.g. 'linux'."""
-  if os.startswith('Ubuntu'):
-    return 'linux'
-  if os.startswith('Mac'):
-    return 'mac'
-  if os.startswith('Win'):
-    return 'win'
-  return os.lower()
+  """Given e.g. 'Ubuntu-16.10' returns e.g. 'linux|16.10'."""
+  # Win7 seems to be special.
+  if os == 'Windows':
+    return 'win|7'
+  os, _, ver = os.partition('-')
+  return _OS_TO_CATEGORY.get(os, os.lower()) + '|' + ver
 
 
 infra = struct(
@@ -90,6 +120,8 @@ infra = struct(
 
     poller = poller,
     recipe = recipe,
+    console_view = console_view,
+    cq_group = cq_group,
     builder = builder,
 
     category_from_os = category_from_os,
