@@ -16,7 +16,6 @@ package operations
 
 import (
 	"context"
-	"fmt"
 
 	swarming "infra/swarming"
 
@@ -30,9 +29,6 @@ import (
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
 	"infra/qscheduler/qslib/tutils"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // AccountIDTagKey is the key used in Task tags to specify which quotascheduler
@@ -48,10 +44,6 @@ func AssignTasks(r *swarming.AssignTasksRequest) (types.Operation, *swarming.Ass
 	return func(ctx context.Context, state *types.QScheduler, events scheduler.EventSink) error {
 		idles := make([]*reconciler.IdleWorker, len(r.IdleBots))
 		for i, v := range r.IdleBots {
-			s := stringset.NewFromSlice(v.Dimensions...)
-			if !s.HasAll(state.Scheduler.Config().Labels...) {
-				return status.Errorf(codes.InvalidArgument, "bot with id %s does not have all scheduler dimensions", v.BotId)
-			}
 			idles[i] = &reconciler.IdleWorker{
 				ID:     scheduler.WorkerID(v.BotId),
 				Labels: stringset.NewFromSlice(v.Dimensions...),
@@ -134,11 +126,6 @@ func notifyTaskWaiting(ctx context.Context, sp *types.QScheduler, events schedul
 	}
 	provisionableLabels = labels.provisionable
 	baseLabels = labels.base
-
-	s := stringset.NewFromSlice(baseLabels...)
-	if !s.HasAll(sp.Scheduler.Config().Labels...) {
-		return fmt.Errorf("task with base dimensions %s does not contain all of scheduler dimensions %s", baseLabels, sp.Scheduler.Config().Labels)
-	}
 
 	if accountID, err = GetAccountID(n); err != nil {
 		return err

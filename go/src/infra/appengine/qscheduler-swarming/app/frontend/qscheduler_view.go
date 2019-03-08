@@ -104,9 +104,6 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 		WaitingTasks:    waiting,
 		IdleBots:        idle,
 		AccountBalances: responseBalance,
-		// TODO(akeshet): Add a Labels() method to scheduler to avoid
-		// needing to reach into config here.
-		Labels: sp.Scheduler.Config().Labels,
 	}
 
 	return resp, nil

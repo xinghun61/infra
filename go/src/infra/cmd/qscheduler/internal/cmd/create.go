@@ -11,8 +11,6 @@ import (
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
-	"go.chromium.org/luci/common/data/strpair"
-	"go.chromium.org/luci/common/flag"
 
 	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
 	"infra/cmd/qscheduler/internal/site"
@@ -28,9 +26,6 @@ var Create = &subcommands.Command{
 		c := &createRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
-		c.Flags.Var(flag.StringSlice(&c.labels), "label",
-			"Label that will be used by all tasks and bots for this scheduler, specified in "+
-				"the form foo:bar. May be specified multiple times.")
 		c.Flags.BoolVar(&c.allowPreemption, "allow-preemption", true, "Allow preemption.")
 
 		return c
@@ -42,7 +37,6 @@ type createRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 
-	labels          []string
 	allowPreemption bool
 }
 
@@ -61,14 +55,6 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	poolID := args[0]
 
-	for _, l := range c.labels {
-		_, v := strpair.Parse(l)
-		if v == "" {
-			fmt.Fprintf(os.Stderr, "Incorrectly formatted label %s.\n", l)
-			return 1
-		}
-	}
-
 	ctx := cli.GetContext(a, c, env)
 
 	adminService, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
@@ -79,7 +65,7 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	req := &qscheduler.CreateSchedulerPoolRequest{
 		PoolId: poolID,
-		Config: &protos.SchedulerConfig{Labels: c.labels, DisablePreemption: !c.allowPreemption},
+		Config: &protos.SchedulerConfig{DisablePreemption: !c.allowPreemption},
 	}
 
 	_, err = adminService.CreateSchedulerPool(ctx, req)

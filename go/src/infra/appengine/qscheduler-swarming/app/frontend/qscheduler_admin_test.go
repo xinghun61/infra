@@ -47,9 +47,7 @@ func TestCreateDeleteScheduler(t *testing.T) {
 		})
 
 		Convey("when CreateSchedulerPool is called with a valid config", func() {
-			config := &protos.SchedulerConfig{
-				Labels: []string{"Label 1"},
-			}
+			config := &protos.SchedulerConfig{}
 			req.Config = config
 
 			resp, err := admin.CreateSchedulerPool(ctx, &req)
