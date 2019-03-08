@@ -22,6 +22,11 @@ npm install -g vulcanize
 Google employees should follow instructions at http://go/nodejs to install
 NodeJS 4.x or later.
 
+To set up the go environment, run:
+```
+eval `../../../../env.py`
+```
+
 ## Devserver
 
 To run test-results locally:
@@ -67,7 +72,8 @@ make test
 make [deploy_staging|deploy_prod]
 ```
 
-Then migrate traffic to the new version.
+Use the migrate traffic button on the appengine console to move traffic to the
+new service. Then monitor [viceroy](go/test-results-viceroy) for 10-20 minutes.
 
 # How to upload test results to the Test Results Server
 
