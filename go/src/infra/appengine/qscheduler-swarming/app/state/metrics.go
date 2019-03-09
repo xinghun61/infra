@@ -34,6 +34,7 @@ var (
 		nil,
 		field.String("scheduler_id"),
 		field.String("account_id"),
+		field.String("reason"),
 	)
 
 	counterEnqueued = metric.NewCounter(
@@ -149,7 +150,8 @@ func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 	for _, event := range e.taskEvents {
 		switch event.EventType {
 		case metrics.TaskEvent_SWARMING_COMPLETED:
-			counterCompleted.Add(ctx, 1, event.SchedulerId, event.AccountId)
+			details := event.GetCompletedDetails()
+			counterCompleted.Add(ctx, 1, event.SchedulerId, event.AccountId, details.Reason.String())
 		case metrics.TaskEvent_SWARMING_ENQUEUED:
 			counterEnqueued.Add(ctx, 1, event.SchedulerId, event.AccountId)
 		case metrics.TaskEvent_QSCHEDULER_ASSIGNED:
