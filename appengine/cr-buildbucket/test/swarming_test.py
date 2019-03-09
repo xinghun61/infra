@@ -2262,7 +2262,7 @@ class CronUpdateTest(BaseTest):
     swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
     self.assertEqual(build.proto.status, common_pb2.INFRA_FAILURE)
-    self.assertTrue(build.proto.output.summary_markdown)
+    self.assertTrue(build.proto.summary_markdown)
     self.assertIsNone(build.lease_key)
 
   def test_sync_build_async_non_swarming(self):

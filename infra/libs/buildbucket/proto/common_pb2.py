@@ -530,11 +530,9 @@ _TIMERANGE.fields_by_name[
     'start_time'
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _TIMERANGE.fields_by_name[
-    'end_time'
-].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
+    'end_time'].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _REQUESTEDDIMENSION.fields_by_name[
-    'expiration'
-].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
+    'expiration'].message_type = google_dot_protobuf_dot_duration__pb2._DURATION
 DESCRIPTOR.message_types_by_name['GerritChange'] = _GERRITCHANGE
 DESCRIPTOR.message_types_by_name['GitilesCommit'] = _GITILESCOMMIT
 DESCRIPTOR.message_types_by_name['StringPair'] = _STRINGPAIR

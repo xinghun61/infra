@@ -176,9 +176,9 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
   logdog = infra.logdog
   recipe = infra.recipe
 
-  if bp.status != common_pb2.SUCCESS and bp.output.summary_markdown:
+  if bp.status != common_pb2.SUCCESS and bp.summary_markdown:
     result_details['error'] = {
-        'message': bp.output.summary_markdown,
+        'message': bp.summary_markdown,
     }
 
   if sw.bot_dimensions:

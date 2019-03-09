@@ -1200,12 +1200,10 @@ _BUILDRANGE = _descriptor.Descriptor(
 
 _GETBUILDREQUEST.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _GETBUILDREQUEST.fields_by_name[
-    'fields'
-].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _SEARCHBUILDSREQUEST.fields_by_name['predicate'].message_type = _BUILDPREDICATE
 _SEARCHBUILDSREQUEST.fields_by_name[
-    'fields'
-].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _SEARCHBUILDSRESPONSE.fields_by_name['builds'].message_type = build__pb2._BUILD
 _BATCHREQUEST_REQUEST.fields_by_name['get_build'
                                     ].message_type = _GETBUILDREQUEST
@@ -1218,20 +1216,20 @@ _BATCHREQUEST_REQUEST.oneofs_by_name['request'].fields.append(
     _BATCHREQUEST_REQUEST.fields_by_name['get_build']
 )
 _BATCHREQUEST_REQUEST.fields_by_name[
-    'get_build'
-].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name['request']
+    'get_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name[
+        'request']
 _BATCHREQUEST_REQUEST.oneofs_by_name['request'].fields.append(
     _BATCHREQUEST_REQUEST.fields_by_name['search_builds']
 )
 _BATCHREQUEST_REQUEST.fields_by_name[
-    'search_builds'
-].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name['request']
+    'search_builds'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name[
+        'request']
 _BATCHREQUEST_REQUEST.oneofs_by_name['request'].fields.append(
     _BATCHREQUEST_REQUEST.fields_by_name['schedule_build']
 )
 _BATCHREQUEST_REQUEST.fields_by_name[
-    'schedule_build'
-].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name['request']
+    'schedule_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name[
+        'request']
 _BATCHREQUEST.fields_by_name['requests'].message_type = _BATCHREQUEST_REQUEST
 _BATCHRESPONSE_RESPONSE.fields_by_name['get_build'
                                       ].message_type = build__pb2._BUILD
@@ -1240,33 +1238,32 @@ _BATCHRESPONSE_RESPONSE.fields_by_name['search_builds'
 _BATCHRESPONSE_RESPONSE.fields_by_name['schedule_build'
                                       ].message_type = build__pb2._BUILD
 _BATCHRESPONSE_RESPONSE.fields_by_name[
-    'error'
-].message_type = google_dot_rpc_dot_status__pb2._STATUS
+    'error'].message_type = google_dot_rpc_dot_status__pb2._STATUS
 _BATCHRESPONSE_RESPONSE.containing_type = _BATCHRESPONSE
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
     _BATCHRESPONSE_RESPONSE.fields_by_name['get_build']
 )
 _BATCHRESPONSE_RESPONSE.fields_by_name[
-    'get_build'
-].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
+    'get_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
+        'response']
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
     _BATCHRESPONSE_RESPONSE.fields_by_name['search_builds']
 )
 _BATCHRESPONSE_RESPONSE.fields_by_name[
-    'search_builds'
-].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
+    'search_builds'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
+        'response']
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
     _BATCHRESPONSE_RESPONSE.fields_by_name['schedule_build']
 )
 _BATCHRESPONSE_RESPONSE.fields_by_name[
-    'schedule_build'
-].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
+    'schedule_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
+        'response']
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
     _BATCHRESPONSE_RESPONSE.fields_by_name['error']
 )
 _BATCHRESPONSE_RESPONSE.fields_by_name[
-    'error'
-].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
+    'error'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
+        'response']
 _BATCHRESPONSE.fields_by_name['responses'
                              ].message_type = _BATCHRESPONSE_RESPONSE
 _UPDATEBUILDREQUEST.fields_by_name['build'].message_type = build__pb2._BUILD
@@ -1274,16 +1271,14 @@ _UPDATEBUILDREQUEST.fields_by_name[
     'update_mask'
 ].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _UPDATEBUILDREQUEST.fields_by_name[
-    'fields'
-].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _SCHEDULEBUILDREQUEST.fields_by_name['builder'
                                     ].message_type = build__pb2._BUILDERID
 _SCHEDULEBUILDREQUEST.fields_by_name['canary'].enum_type = common__pb2._TRINARY
 _SCHEDULEBUILDREQUEST.fields_by_name['experimental'
                                     ].enum_type = common__pb2._TRINARY
 _SCHEDULEBUILDREQUEST.fields_by_name[
-    'properties'
-].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
+    'properties'].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
 _SCHEDULEBUILDREQUEST.fields_by_name['gitiles_commit'
                                     ].message_type = common__pb2._GITILESCOMMIT
 _SCHEDULEBUILDREQUEST.fields_by_name['gerrit_changes'
@@ -1291,17 +1286,13 @@ _SCHEDULEBUILDREQUEST.fields_by_name['gerrit_changes'
 _SCHEDULEBUILDREQUEST.fields_by_name['tags'
                                     ].message_type = common__pb2._STRINGPAIR
 _SCHEDULEBUILDREQUEST.fields_by_name[
-    'dimensions'
-].message_type = common__pb2._REQUESTEDDIMENSION
+    'dimensions'].message_type = common__pb2._REQUESTEDDIMENSION
 _SCHEDULEBUILDREQUEST.fields_by_name[
-    'notify'
-].message_type = notification__pb2._NOTIFICATIONCONFIG
+    'notify'].message_type = notification__pb2._NOTIFICATIONCONFIG
 _SCHEDULEBUILDREQUEST.fields_by_name[
-    'fields'
-].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _CANCELBUILDREQUEST.fields_by_name[
-    'fields'
-].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _BUILDPREDICATE.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _BUILDPREDICATE.fields_by_name['status'].enum_type = common__pb2._STATUS
 _BUILDPREDICATE.fields_by_name['gerrit_changes'

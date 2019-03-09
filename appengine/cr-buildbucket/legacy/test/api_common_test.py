@@ -91,7 +91,7 @@ class ApiCommonTests(testing.AppengineTestCase):
     out_props.serialize(bbutil.dict_to_struct({'a': 'b'}))
     build = test_util.build(
         status=common_pb2.INFRA_FAILURE,
-        output=dict(summary_markdown='bad'),
+        summary_markdown='bad',
         infra=dict(
             swarming=dict(
                 bot_dimensions=[

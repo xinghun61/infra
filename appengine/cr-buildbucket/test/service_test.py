@@ -153,7 +153,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     build = service.cancel(1, summary_markdown='nope')
     self.assertEqual(build.proto.status, common_pb2.CANCELED)
     self.assertEqual(build.proto.end_time.ToDatetime(), utils.utcnow())
-    self.assertEqual(build.proto.output.summary_markdown, 'nope')
+    self.assertEqual(build.proto.summary_markdown, 'nope')
     self.assertEqual(
         build.proto.cancel_reason,
         build_pb2.CancelReason(canceled_by=self.current_identity.to_bytes()),
