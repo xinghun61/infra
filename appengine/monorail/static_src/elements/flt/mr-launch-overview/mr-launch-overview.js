@@ -126,7 +126,8 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
   }
 
   _shouldOfferConvert(issuePermissions, projectTemplates) {
-    return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION) && projectTemplates.length;
+    if (!issuePermissions || !projectTemplates) return false;
+    return issuePermissions.includes(ISSUE_EDIT_PERMISSION) && projectTemplates.length;
   }
 
   _convertingIssueChanged(isConversionInFlight) {

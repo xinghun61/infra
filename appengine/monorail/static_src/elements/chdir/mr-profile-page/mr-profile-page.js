@@ -8,7 +8,7 @@ import {PolymerElement} from '@polymer/polymer/polymer-element.js';
 
 import '../../mr-header/mr-header.js';
 import '../mr-activity-table/mr-activity-table.js';
-import '../mr-comments-list/mr-comments-list.js';
+import '../mr-comment-table/mr-comment-table.js';
 import '../mr-commit-table/mr-commit-table.js';
 
 /**
@@ -124,12 +124,12 @@ export class MrProfilePage extends PolymerElement {
             </mr-commit-table>
           </div>
           <div class="dataTable">
-            <mr-comments-list
+            <mr-comment-table
               user="[[viewedUser]]"
               viewed-user-id="[[viewedUserId]]"
               comments="[[comments]]"
               selected-date="{{selectedDate}}">
-            </mr-comments-list>
+            </mr-comment-table>
           </div>
         </div>
       </div>

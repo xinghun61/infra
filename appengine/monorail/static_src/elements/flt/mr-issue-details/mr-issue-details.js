@@ -7,7 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../mr-comment-content/mr-description.js';
-import '../mr-comments/mr-comments.js';
+import '../mr-comment-list/mr-comment-list.js';
 import '../mr-edit-metadata/mr-edit-issue.js';
 import '../shared/mr-flt-styles.js';
 
@@ -49,7 +49,7 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
       <h2 class="medium-heading" hidden\$="[[!_comments.length]]">
         Feature discussion / Changelog
       </h2>
-      <mr-comments
+      <mr-comment-list
         heading-level="3"
         comments="[[_comments]]"
         comments-shown-count="5"
@@ -69,7 +69,7 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
           blocking="[[issue.blockingIssueRefs]]"
           label-names="[[_labelNames]]"
         ></mr-edit-issue>
-      </mr-comments>
+      </mr-comment-list>
     `;
   }
 

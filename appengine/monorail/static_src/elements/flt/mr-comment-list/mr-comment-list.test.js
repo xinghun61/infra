@@ -3,16 +3,17 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MrComments} from './mr-comments.js';
+import sinon from 'sinon';
+import {MrCommentList} from './mr-comment-list.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {actionType} from '../../redux/redux-mixin.js';
 
 
 let element;
 
-suite('mr-comments', () => {
+suite('mr-comment-list', () => {
   setup(() => {
-    element = document.createElement('mr-comments');
+    element = document.createElement('mr-comment-list');
     document.body.appendChild(element);
     element.comments = [
       {
@@ -55,27 +56,33 @@ suite('mr-comments', () => {
         timestamp: 1549320189,
       },
     ];
+
+    sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
   });
 
   teardown(() => {
     document.body.removeChild(element);
     element.dispatchAction({type: actionType.RESET_STATE});
+
+    window.requestAnimationFrame.restore();
   });
 
   test('initializes', () => {
-    assert.instanceOf(element, MrComments);
+    assert.instanceOf(element, MrCommentList);
   });
 
   test('scrolls to comment', () => {
     flush();
 
     const commentElement = element.shadowRoot.querySelector('#c3');
-    sinon.stub(element, 'toggleComments');
+    sinon.stub(element, 'showComments');
     sinon.stub(commentElement, 'scrollIntoView');
 
     element.focusId = 'c3';
 
-    assert.isFalse(element.toggleComments.called);
+    flush();
+
+    assert.isTrue(element.showComments.called);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
   });
 
@@ -83,12 +90,14 @@ suite('mr-comments', () => {
     flush();
 
     const commentElement = element.shadowRoot.querySelector('#c1');
-    sinon.stub(element, 'toggleComments');
+    sinon.stub(element, 'showComments');
     sinon.stub(commentElement, 'scrollIntoView');
 
     element.focusId = 'c1';
 
-    assert.isTrue(element.toggleComments.called);
+    flush();
+
+    assert.isTrue(element.showComments.called);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
   });
 });

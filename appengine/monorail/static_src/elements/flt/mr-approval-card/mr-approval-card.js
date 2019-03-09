@@ -11,7 +11,7 @@ import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import '../../mr-comment-content/mr-description.js';
-import '../mr-comments/mr-comments.js';
+import '../mr-comment-list/mr-comment-list.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-metadata.js';
 import {loadAttachments} from '../shared/flt-helpers.js';
@@ -206,7 +206,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           description-list="[[_surveyList]]"
         ></mr-description>
         <h4 class="medium-heading">Approval comments / Changelog</h3>
-        <mr-comments
+        <mr-comment-list
           heading-level=5
           comments="[[_comments]]"
         >
@@ -226,7 +226,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
             on-save="save"
             on-discard="reset"
           ></mr-edit-metadata>
-        </mr-comments>
+        </mr-comment-list>
       </iron-collapse>
     `;
   }
@@ -342,6 +342,13 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     };
   }
 
+  ready() {
+    super.ready();
+    this.addEventListener('expand-parent', () => {
+      this.openCard();
+    });
+  }
+
   reset(issue) {
     if (!this.$.metadataForm) return;
     this.$.metadataForm.reset();
@@ -375,6 +382,18 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     }).catch((reason) => {
       console.error('loading file for attachment: ', reason);
     });
+  }
+
+  toggleCard(evt) {
+    this.opened = !this.opened;
+  }
+
+  openCard(evt) {
+    this.opened = true;
+
+    if (evt.detail && evt.detail.callback) {
+      evt.detail.callback();
+    }
   }
 
   _generateDelta(data) {
@@ -412,10 +431,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
 
   _displayNamesToUserRefs(list) {
     return list.map((name) => ({'displayName': name}));
-  }
-
-  toggleCard(evt) {
-    this.opened = !this.opened;
   }
 
   _computeClass(status) {

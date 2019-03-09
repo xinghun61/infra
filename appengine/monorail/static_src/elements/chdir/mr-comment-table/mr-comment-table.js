@@ -6,12 +6,12 @@ import '@polymer/polymer/polymer-legacy.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
 /**
- * `<mr-comments-list>`
+ * `<mr-comment-table>`
  *
  * The list of comments for a Monorail Polymer profile.
  *
  */
-export class MrCommentList extends PolymerElement {
+export class MrCommentTable extends PolymerElement {
   static get template() {
     return html`
       <style>
@@ -88,7 +88,7 @@ export class MrCommentList extends PolymerElement {
   }
 
   static get is() {
-    return 'mr-comments-list';
+    return 'mr-comment-table';
   }
 
   static get properties() {
@@ -142,4 +142,4 @@ export class MrCommentList extends PolymerElement {
     return !displayedComments || displayedComments.length === 0;
   }
 }
-customElements.define(MrCommentList.is, MrCommentList);
+customElements.define(MrCommentTable.is, MrCommentTable);
