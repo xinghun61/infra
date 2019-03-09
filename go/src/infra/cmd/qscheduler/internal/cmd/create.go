@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -42,13 +41,13 @@ type createRun struct {
 
 func (c *createRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "missing POOL_ID\n")
+		fmt.Fprintf(a.GetErr(), "missing POOL_ID\n")
 		c.Flags.Usage()
 		return 1
 	}
 
 	if len(args) > 1 {
-		fmt.Fprintf(os.Stderr, "too many arguments\n")
+		fmt.Fprintf(a.GetErr(), "too many arguments\n")
 		c.Flags.Usage()
 		return 1
 	}
@@ -59,7 +58,7 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	adminService, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create qsadmin client, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create qsadmin client, due to error: %s\n", err.Error())
 		return 1
 	}
 
@@ -70,11 +69,11 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 
 	_, err = adminService.CreateSchedulerPool(ctx, req)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create scheduler, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create scheduler, due to error: %s\n", err.Error())
 		return 1
 	}
 
-	fmt.Printf("Created scheduler %s\n", poolID)
+	fmt.Fprintf(a.GetOut(), "qscheduler: Created scheduler %s\n", poolID)
 
 	return 0
 }

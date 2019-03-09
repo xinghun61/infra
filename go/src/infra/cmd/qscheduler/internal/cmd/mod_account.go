@@ -7,7 +7,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/maruel/subcommands"
@@ -63,7 +62,7 @@ func (c *modAccountRun) validate(args []string) error {
 
 func (c *modAccountRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if err := c.validate(args); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		fmt.Fprintln(a.GetErr(), err.Error())
 		c.Flags.Usage()
 		return 1
 	}
@@ -73,7 +72,7 @@ func (c *modAccountRun) Run(a subcommands.Application, args []string, env subcom
 
 	chargeRateFloats, err := toFloats(c.chargeRates)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		fmt.Fprintln(a.GetErr(), err.Error())
 		return 1
 	}
 
@@ -81,7 +80,7 @@ func (c *modAccountRun) Run(a subcommands.Application, args []string, env subcom
 
 	adminClient, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {
-		fmt.Fprintf(a.GetErr(), "Unable to create qsadmin client, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create qsadmin client, due to error: %s\n", err.Error())
 		return 1
 	}
 
@@ -102,10 +101,10 @@ func (c *modAccountRun) Run(a subcommands.Application, args []string, env subcom
 
 	_, err = adminClient.ModAccount(ctx, req)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to modify account, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to modify account, due to error: %s\n", err.Error())
 		return 1
 	}
 
-	fmt.Printf("Modified account %s in scheduler %s.\n", accountID, poolID)
+	fmt.Fprintf(a.GetOut(), "qscheduler: Modified account %s in scheduler %s.\n", accountID, poolID)
 	return 0
 }

@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -48,13 +47,13 @@ type addAccountRun struct {
 
 func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	if len(args) < 2 {
-		fmt.Fprintf(os.Stderr, "not enough arguments\n")
+		fmt.Fprintf(a.GetErr(), "not enough arguments\n")
 		c.Flags.Usage()
 		return 1
 	}
 
 	if len(args) > 2 {
-		fmt.Fprintf(os.Stderr, "too many arguments\n")
+		fmt.Fprintf(a.GetErr(), "too many arguments\n")
 		c.Flags.Usage()
 		return 1
 	}
@@ -64,7 +63,7 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 
 	chargeRateFloats, err := toFloats(c.chargeRates)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
+		fmt.Fprintln(a.GetErr(), err.Error())
 		return 1
 	}
 
@@ -72,7 +71,7 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 
 	adminClient, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create qsadmin client, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create qsadmin client, due to error: %s\n", err.Error())
 		return 1
 	}
 
@@ -88,10 +87,10 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 
 	_, err = adminClient.CreateAccount(ctx, req)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to add account, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to add account, due to error: %s\n", err.Error())
 		return 1
 	}
 
-	fmt.Printf("Added account %s to scheduler %s.\n", accountID, poolID)
+	fmt.Fprintf(a.GetOut(), "qscheduler: Added account %s to scheduler %s.\n", accountID, poolID)
 	return 0
 }

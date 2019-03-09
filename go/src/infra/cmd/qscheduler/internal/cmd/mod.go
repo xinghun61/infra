@@ -65,7 +65,7 @@ func (c *modRun) Run(a subcommands.Application, args []string, env subcommands.E
 
 	adminService, err := newAdminClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {
-		fmt.Fprintf(a.GetErr(), "Unable to create qsadmin client, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create qsadmin client, due to error: %s\n", err.Error())
 		return 1
 	}
 
@@ -79,11 +79,11 @@ func (c *modRun) Run(a subcommands.Application, args []string, env subcommands.E
 
 	_, err = adminService.ModSchedulerPool(ctx, req)
 	if err != nil {
-		fmt.Fprintf(a.GetErr(), "Unable to modify scheduler, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to modify scheduler, due to error: %s\n", err.Error())
 		return 1
 	}
 
-	fmt.Printf("Modified scheduler %s\n", poolID)
+	fmt.Fprintf(a.GetOut(), "qscheduler: Modified scheduler %s\n", poolID)
 
 	return 0
 }

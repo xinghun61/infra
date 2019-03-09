@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
@@ -40,13 +39,13 @@ func (c *inspectRun) Run(a subcommands.Application, args []string, env subcomman
 	ctx := cli.GetContext(a, c, env)
 
 	if len(args) == 0 {
-		fmt.Fprintf(os.Stderr, "missing POOL_ID\n")
+		fmt.Fprintf(a.GetErr(), "missing POOL_ID\n")
 		c.Flags.Usage()
 		return 1
 	}
 
 	if len(args) > 1 {
-		fmt.Fprintf(os.Stderr, "too many arguments\n")
+		fmt.Fprintf(a.GetErr(), "too many arguments\n")
 		c.Flags.Usage()
 		return 1
 	}
@@ -55,7 +54,7 @@ func (c *inspectRun) Run(a subcommands.Application, args []string, env subcomman
 
 	viewService, err := newViewClient(ctx, &c.authFlags, &c.envFlags)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to create qsview client, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to create qsview client, due to error: %s\n", err.Error())
 		return 1
 	}
 
@@ -65,7 +64,7 @@ func (c *inspectRun) Run(a subcommands.Application, args []string, env subcomman
 
 	resp, err := viewService.InspectPool(ctx, req)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to inspect scheduler, due to error: %s\n", err.Error())
+		fmt.Fprintf(a.GetErr(), "qscheduler: Unable to inspect scheduler, due to error: %s\n", err.Error())
 		return 1
 	}
 
