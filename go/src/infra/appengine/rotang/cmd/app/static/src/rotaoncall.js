@@ -188,7 +188,7 @@ class RotaOnCall extends LitElement {
       ${this.onCall && this.onCall.map((s) => html`
         <tr>
           <td>
-            <a href="/oncall/${s.Name}">${s.Name}</a>
+            <a href="/oncall?name=${encodeURIComponent(s.Name)}">${s.Name}</a>
           </td>
           <td>
             <div class="flex-container">
