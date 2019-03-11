@@ -31,6 +31,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/botsummary"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/diagnosis"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/metrics/utilization"
 )
 
 // TrackerServerImpl implements the fleet.TrackerServer interface.
@@ -64,6 +65,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots from Swarming").Err()
 	}
+	utilization.ReportMetrics(ctx, bots)
 	bsm, err := botInfoToSummary(bots)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to extract bot summary from bot info").Err()
