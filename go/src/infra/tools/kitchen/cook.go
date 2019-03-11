@@ -713,7 +713,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res 
 
 	// While the subprocess runs, continuously read its output.
 	execMetadata := annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir)
-	if res.Annotations, err = c.watchSubprocessOutput(ctx, annoName, stdout, stderr, execMetadata, b); err != nil {
+	if res.Annotations, err = c.watchSubprocessOutput(ctx, annoName, stdout, stderr, execMetadata, b, procCancelFunc); err != nil {
 		log.Warningf(ctx, "failed to read subprocess output; killing the it and waiting for it to die")
 		procCancelFunc()
 		proc.Wait() // do not let the subprocess outlive this one.
@@ -739,7 +739,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res 
 // watchSubprocessOutput annotates stdout/stderr and writes the annotation
 // messages to a stream, and optionally sends build info to Buildbucket server
 // (if c.CallUpdateBuild is true).
-func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types.StreamName, stdout, stderr io.Reader, execMetadata *annotation.Execution, b *butler.Butler) (build *milo.Step, err error) {
+func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types.StreamName, stdout, stderr io.Reader, execMetadata *annotation.Execution, b *butler.Butler, stopSubprocess func()) (build *milo.Step, err error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -771,7 +771,13 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 			return <-errC
 		}
 		go func() {
-			errC <- bu.Run(ctx, done)
+			err := bu.Run(ctx, done)
+			if err != nil {
+				// stop the subprocess in case Run returned early and we are
+				// still running.
+				stopSubprocess()
+			}
+			errC <- err
 		}()
 	}
 
