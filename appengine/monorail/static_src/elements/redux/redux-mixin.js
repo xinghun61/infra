@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {createMixin} from 'polymer-redux';
-import {createStore} from 'redux';
+import {combineReducers, createStore} from 'redux';
 import {autolink} from '../../autolink.js';
 
 export const actionType = {
@@ -395,403 +395,267 @@ export const actionCreator = {
   },
 };
 
-export const initial = {
-  user: null,
-  userGroups: [],
-
-  // TODO(zhangtiff): Combine these into viewedIssueRef for consistency.
-  issueId: 0,
-  projectName: '',
-
-  projectConfig: {},
-  issue: {},
-  issueHotlists: [],
-  userHotlists: [],
-  comments: [],
-  commentReferences: new Map(),
-  blockerReferences: new Map(),
-  isStarred: false,
-  issuePermissions: [],
-
-  // Fields to be checked for user changes before leaving the page.
-  // TODO(ehmaldonado): Figure out a way to keep redux state serializable.
-  formsToCheck: [],
-
-  // The ID of the element to be focused, as given by the hash part of the URL.
-  focusId: null,
-  prefs: null,
-
-  fetchingUser: false,
-  fetchUserError: null,
-
-  fetchingUserHotlists: false,
-  fetchUserHotlistsError: null,
-
-  fetchingUserPrefs: false,
-  fetchUserPrefsError: null,
-
-  issueLoaded: false,
-  fetchingIssue: false,
-  fetchIssueError: null,
-
-  fetchingIssueHotlists: false,
-  fetchIssueHotlistsError: null,
-
-  fetchingIssuePermissions: false,
-  fetchIssuePermissionsError: null,
-
-  fetchingProjectConfig: false,
-  fetchProjectConfigError: null,
-
-  fetchingProjectTemplates: false,
-  fetchProjectTemplatesError: null,
-
-  fetchingComments: false,
-  fetchCommentsError: null,
-
-  fetchingCommentReferences: false,
-  fetchingCommentReferencesError: null,
-
-  fetchingBlockerReferences: false,
-  fetchingBlockerReferencesError: null,
-
-  starringIssue: false,
-  starIssueError: null,
-
-  fetchingIsStarred: false,
-  fetchIsStarredError: null,
-
-  convertingIssue: false,
-  convertIssueError: null,
-
-  updatingIssue: false,
-  updateIssueError: null,
-
-  // Assumption: It's okay to prevent the user from sending multiple
-  // approval update requests at once, even for different approvals.
-  updatingApproval: false,
-  updateApprovalError: null,
-};
-
 // Helpers for the reducers.
-export const updateIssueApproval = (issue, approval) => {
+const updateIssueApproval = (issue, approval) => {
   if (!issue.approvalValues) return issue;
   const newApprovals = issue.approvalValues.map((item, i) => {
     if (item.fieldRef.fieldName === approval.fieldRef.fieldName) {
       // PhaseRef isn't populated on the response so we want to make sure
       // it doesn't overwrite the original phaseRef with {}.
-      const a = Object.assign({}, approval, {phaseRef: item.phaseRef});
+      const a = {...approval, phaseRef: item.phaseRef};
       return a;
     }
     return item;
   });
-  return Object.assign({}, issue, {approvalValues: newApprovals});
+  return {...issue, approvalValues: newApprovals};
 }
 
-export const reducer = (state, action) => {
-  switch (action.type) {
-    case actionType.SET_FOCUS_ID:
-      return Object.assign({}, state, {focusId: action.focusId});
-
-    case actionType.RESET_STATE:
-      return Object.assign({}, initial);
-
-    case actionType.UPDATE_ISSUE_REF:
-      return Object.assign({}, state, {
-        issueId: action.issueId || state.issueId,
-        projectName: action.projectName || state.projectName,
-      });
-
-    case actionType.UPDATE_FORMS_TO_CHECK:
-      return Object.assign({}, state, {
-        formsToCheck: state.formsToCheck.concat([action.form])
-      });
-
-    case actionType.CLEAR_FORMS_TO_CHECK:
-      return Object.assign({}, state, {formsToCheck: []});
-
-    // Request for getting configuration settings for a project.
-    case actionType.FETCH_PROJECT_CONFIG_START:
-      return Object.assign({}, state, {
-        fetchProjectConfigError: null,
-        fetchingProjectConfig: true,
-      });
-    case actionType.FETCH_PROJECT_CONFIG_SUCCESS:
-      return Object.assign({}, state, {
-        projectConfig: action.projectConfig,
-        fetchingProjectConfig: false,
-      });
-    case actionType.FETCH_PROJECT_CONFIG_FAILURE:
-      return Object.assign({}, state, {
-        fetchProjectConfigError: action.error,
-        fetchingProjectConfig: false,
-      });
-
-    // Request for getting templates for a project.
-    case actionType.FETCH_PROJECT_TEMPLATES_START:
-      return Object.assign({}, state, {
-        fetchProjectTemplatesError: null,
-        fetchingProjectTemplates: true,
-      });
-    case actionType.FETCH_PROJECT_TEMPLATES_SUCCESS:
-      return Object.assign({}, state, {
-        projectTemplates: action.projectTemplates.templates,
-        fetchingProjectTemplates: false,
-      });
-    case actionType.FETCH_PROJECT_TEMPLATES_FAILURE:
-      return Object.assign({}, state, {
-        fetchProjectTemplatesError: action.error,
-        fetchingProjectTemplates: false,
-      });
-
-    // Request for getting backend metadata related to a user, such as
-    // which groups they belong to and whether they're a site admin.
-    case actionType.FETCH_USER_START:
-      return Object.assign({}, state, {
-        fetchUserError: null,
-        fetchingUser: true,
-      });
-    case actionType.FETCH_USER_SUCCESS:
-      return Object.assign({}, state, {
-        userGroups: action.groups,
-        user: action.user,
-        prefs: action.prefs,
-        fetchingUser: false,
-      });
-    case actionType.FETCH_USER_FAILURE:
-      return Object.assign({}, state, {
-        fetchUserError: action.error,
-        fetchingUser: false,
-      });
-
-    // Request for getting a user's hotlists.
-    case actionType.FETCH_USER_HOTLISTS_START:
-      return Object.assign({}, state, {
-        fetchUserHotlistsError: null,
-        fetchingUserHotlists: true,
-      });
-    case actionType.FETCH_USER_HOTLISTS_SUCCESS:
-      return Object.assign({}, state, {
-        userHotlists: action.hotlists,
-        fetchingUserHotlists: false,
-      });
-    case actionType.FETCH_USER_HOTLISTS_FAILURE:
-      return Object.assign({}, state, {
-        fetchUserHotlistsError: action.error,
-        fetchingUserHotlists: false,
-      });
-
-    // Request for getting a user's prefs.
-    case actionType.FETCH_USER_PREFS_START:
-      return Object.assign({}, state, {
-        fetchUserPrefsError: null,
-        fetchingUserPrefs: true,
-      });
-    case actionType.FETCH_USER_PREFS_SUCCESS:
-      return Object.assign({}, state, {
-        prefs: action.prefs,
-        fetchingUserPrefs: false,
-      });
-    case actionType.FETCH_USER_PREFS_FAILURE:
-      return Object.assign({}, state, {
-        fetchUserPrefsError: action.error,
-        fetchingUserPrefs: false,
-      });
-
-    // Request for getting an issue.
-    case actionType.FETCH_ISSUE_START:
-      return Object.assign({}, state, {
-        fetchIssueError: null,
-        fetchingIssue: true,
-      });
-    case actionType.FETCH_ISSUE_SUCCESS:
-      return Object.assign({}, state, {
-        issue: action.issue,
-        issueLoaded: true,
-        fetchingIssue: false,
-      });
-    case actionType.FETCH_ISSUE_FAILURE:
-      return Object.assign({}, state, {
-        fetchIssueError: action.error,
-        fetchingIssue: false,
-      });
-
-    // Request for getting an issue's hotlists.
-    case actionType.FETCH_ISSUE_HOTLISTS_START:
-      return Object.assign({}, state, {
-        fetchIssueHotlistsError: null,
-        fetchingIssueHotlists: true,
-      });
-    case actionType.FETCH_ISSUE_HOTLISTS_SUCCESS:
-      return Object.assign({}, state, {
-        issueHotlists: action.hotlists,
-        fetchingIssueHotlists: false,
-      });
-    case actionType.FETCH_ISSUE_HOTLISTS_FAILURE:
-      return Object.assign({}, state, {
-        fetchIssueHotlistsError: action.error,
-        fetchingIssueHotlists: false,
-      });
-
-    // Request for getting issue permissions.
-    case actionType.FETCH_ISSUE_PERMISSIONS_START:
-      return Object.assign({}, state, {
-        fetchIssuePermissionsError: null,
-        fetchingIssuePermissions: true,
-      });
-    case actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS:
-      return Object.assign({}, state, {
-        issuePermissions: action.permissions,
-        fetchingIssuePermissions: false,
-      });
-    case actionType.FETCH_ISSUE_PERMISSIONS_FAILURE:
-      return Object.assign({}, state, {
-        fetchIssuePermissionsError: action.error,
-        fetchingIssuePermissions: false,
-      });
-
-    // Request for starring an issue.
-    case actionType.STAR_ISSUE_START:
-      return Object.assign({}, state, {
-        starIssueError: null,
-        starringIssue: true,
-      });
-    case actionType.STAR_ISSUE_SUCCESS:
-      return Object.assign({}, state, {
-        issue: Object.assign({}, state.issue, {starCount: action.starCount}),
-        isStarred: action.isStarred,
-        starringIssue: false,
-      });
-    case actionType.STAR_ISSUE_FAILURE:
-      return Object.assign({}, state, {
-        starIssueError: action.error,
-        starringIssue: false,
-      });
-
-    // Request for getting comments for an issue.
-    case actionType.FETCH_COMMENTS_START:
-      return Object.assign({}, state, {
-        commentReferences: new Map(),
-        fetchCommentsError: null,
-        fetchingComments: true,
-      });
-    case actionType.FETCH_COMMENTS_SUCCESS:
-      return Object.assign({}, state, {
-        comments: action.comments,
-        fetchingComments: false,
-      });
-    case actionType.FETCH_COMMENTS_FAILURE:
-      return Object.assign({}, state, {
-        fetchCommentsError: action.error,
-        fetchingComments: false,
-      });
-
-     // Request for getting references in comment data for an issue.
-    case actionType.FETCH_COMMENT_REFERENCES_START:
-      return Object.assign({}, state, {
-        fetchCommentReferencesError: null,
-        fetchingCommentReferences: true,
-      });
-    case actionType.FETCH_COMMENT_REFERENCES_SUCCESS:
-      return Object.assign({}, state, {
-        commentReferences: action.commentReferences,
-        fetchingCommentReferences: false,
-      });
-    case actionType.FETCH_COMMENT_REFERENCES_FAILURE:
-      return Object.assign({}, state, {
-        fetchCommentReferencesError: action.error,
-        fetchingCommentReferences: false,
-      });
-
-    case actionType.FETCH_BLOCKER_REFERENCES_START:
-      return Object.assign({}, state, {
-        fetchBlockerReferencesError: null,
-        fetchingBlockerReferences: true,
-      });
-    case actionType.FETCH_BLOCKER_REFERENCES_SUCCESS:
-      return Object.assign({}, state, {
-        blockerReferences: action.blockerReferences,
-        fetchingBlockerReferences: false,
-      });
-    case actionType.FETCH_BLOCKER_REFERENCES_FAILURE:
-      return Object.assign({}, state, {
-        fetchBlockerReferencesError: action.error,
-        fetchingBlockerReferences: false,
-      });
-
-    // Request for getting whether an issue is starred.
-    case actionType.FETCH_IS_STARRED_START:
-      return Object.assign({}, state, {
-        fetchIsStarredError: null,
-        fetchingIsStarred: true,
-      });
-    case actionType.FETCH_IS_STARRED_SUCCESS:
-      return Object.assign({}, state, {
-        isStarred: action.isStarred,
-        fetchingIsStarred: false,
-      });
-    case actionType.FETCH_IS_STARRED_FAILURE:
-      return Object.assign({}, state, {
-        fetchIsStarredError: action.error,
-        fetchingIsStarred: false,
-      });
-
-    // Request for converting an issue.
-    case actionType.CONVERT_ISSUE_START:
-      return Object.assign({}, state, {
-        convertingIssue: true,
-        convertIssueError: null,
-      });
-    case actionType.CONVERT_ISSUE_SUCCESS:
-      return Object.assign({}, state, {
-        issue: action.issue,
-        convertingIssue: false,
-      });
-    case actionType.CONVERT_ISSUE_FAILURE:
-      return Object.assign({}, state, {
-        convertIssueError: action.error,
-        convertingIssue: false,
-      });
-
-    // Request for updating an issue.
-    case actionType.UPDATE_ISSUE_START:
-      return Object.assign({}, state, {
-        updatingIssue: true,
-        updateIssueError: null,
-      });
-    case actionType.UPDATE_ISSUE_SUCCESS:
-      return Object.assign({}, state, {
-        issue: action.issue,
-        updatingIssue: false,
-      });
-    case actionType.UPDATE_ISSUE_FAILURE:
-      return Object.assign({}, state, {
-        updateIssueError: action.error,
-        updatingIssue: false,
-      });
-
-    // Request for updating an approval.
-    case actionType.UPDATE_APPROVAL_START:
-      return Object.assign({}, state, {
-        updateApprovalError: null,
-        updatingApproval: true,
-      });
-    case actionType.UPDATE_APPROVAL_SUCCESS:
-      return Object.assign({}, state, {
-        issue: updateIssueApproval(state.issue, action.approval),
-        updatingApproval: false,
-      });
-    case actionType.UPDATE_APPROVAL_FAILURE:
-      return Object.assign({}, state, {
-        updateApprovalError: action.error,
-        updatingApproval: false,
-      });
-
-    default:
+function createReducer(initialState, handlers) {
+  return function reducer(state = initialState, action) {
+    if (handlers.hasOwnProperty(action.type)) {
+      return handlers[action.type](state, action);
+    } else {
       return state;
+    }
   }
-};
-export const store = createStore(reducer, initial,
+}
+
+function createRequestReducer(start, success, failure) {
+  return createReducer({requesting: false, error: null}, {
+    [start]: (_state, _action) => ({
+      requesting: true,
+      error: null,
+    }),
+    [success]: (_state, _action) =>({
+      requesting: false,
+      error: null,
+    }),
+    [failure]: (_state, action) => ({
+      requesting: false,
+      error: action.error,
+    }),
+  });
+}
+
+const userReducer = createReducer(null, {
+  [actionType.FETCH_USER_SUCCESS]: (_state, action) => action.user,
+});
+
+const userGroupsReducer = createReducer([], {
+  [actionType.FETCH_USER_SUCCESS]: (_state, action) => action.groups,
+});
+
+const issueIdReducer = createReducer(0, {
+  [actionType.UPDATE_ISSUE_REF]: (state, action) => action.issueId || state,
+});
+
+const projectNameReducer = createReducer('', {
+  [actionType.UPDATE_ISSUE_REF]: (state, action) => action.projectName || state,
+});
+
+const projectConfigReducer = createReducer({}, {
+  [actionType.FETCH_PROJECT_CONFIG_SUCCESS]: (_state, action) => {
+    return action.projectConfig;
+  },
+});
+
+const projectTemplatesReducer = createReducer([], {
+  [actionType.FETCH_PROJECT_TEMPLATES_SUCCESS]: (_state, action) => {
+    return action.projectTemplates.templates;
+  },
+});
+
+const issueReducer = createReducer({}, {
+  [actionType.FETCH_ISSUE_SUCCESS]: (_state, action) => action.issue,
+  [actionType.STAR_ISSUE_SUCCESS]: (state, action) => {
+    return {...state, starCount: action.starCount};
+  },
+  [actionType.CONVERT_ISSUE_SUCCESS]: (_state, action) => action.issue,
+  [actionType.UPDATE_ISSUE_SUCCESS]: (_state, action) => action.issue,
+  [actionType.UPDATE_APPROVAL_SUCCESS]: (state, action) => {
+    return updateIssueApproval(state, action.approval);
+  },
+});
+
+const issueLoadedReducer = createReducer(false, {
+  [actionType.FETCH_ISSUE_SUCCESS]: (_state, _action) => true,
+});
+
+const issueHotlistsReducer = createReducer([], {
+  [actionType.FETCH_ISSUE_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
+});
+
+const userHotlistsReducer = createReducer([], {
+  [actionType.FETCH_USER_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
+});
+
+const commentsReducer = createReducer([], {
+  [actionType.FETCH_COMMENTS_SUCCESS]: (_state, action) => action.comments,
+});
+
+const commentReferencesReducer = createReducer(new Map(), {
+  [actionType.FETCH_COMMENTS_START]: (_state, _action) => new Map(),
+  [actionType.FETCH_COMMENT_REFERENCES_SUCCESS]: (_state, action) => {
+    return action.commentReferences;
+  },
+});
+
+const blockerReferencesReducer = createReducer(new Map(), {
+  [actionType.FETCH_BLOCKER_REFERENCES_SUCCESS]: (_state, action) => {
+    return action.blockerReferences;
+  },
+});
+
+const isStarredReducer = createReducer(false, {
+  [actionType.STAR_ISSUE_SUCCESS]: (state, _action) => !state,
+  [actionType.FETCH_IS_STARRED_SUCCESS]: (_state, action) => !!action.isStarred,
+});
+
+const issuePermissionsReducer = createReducer([], {
+  [actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS]: (_state, action) => {
+    return action.permissions;
+  },
+});
+
+const formsToCheckReducer = createReducer([], {
+  [actionType.UPDATE_FORMS_TO_CHECK]: (state, action) => {
+    return [...state, action.form];
+  },
+  [actionType.CLEAR_FORMS_TO_CHECK]: () => [],
+});
+
+const focusIdReducer = createReducer(null, {
+  [actionType.SET_FOCUS_ID]: (_state, action) => action.focusId,
+});
+
+const prefsReducer = createReducer(null, {
+  [actionType.FETCH_USER_PREFS_SUCCESS]: (_state, action) => action.prefs,
+});
+
+const requestsReducer = combineReducers({
+  // Request for getting configuration settings for a project.
+  fetchProjectConfig: createRequestReducer(
+    actionType.FETCH_PROJECT_CONFIG_START,
+    actionType.FETCH_PROJECT_CONFIG_SUCCESS,
+    actionType.FETCH_PROJECT_CONFIG_FAILURE),
+  // Request for getting templates for a project.
+  fetchProjectTemplates: createRequestReducer(
+    actionType.FETCH_PROJECT_TEMPLATES_START,
+    actionType.FETCH_PROJECT_TEMPLATES_SUCCESS,
+    actionType.FETCH_PROJECT_TEMPLATES_FAILURE),
+  // Request for getting backend metadata related to a user, such as
+  // which groups they belong to and whether they're a site admin.
+  fetchUser: createRequestReducer(
+    actionType.FETCH_USER_START,
+    actionType.FETCH_USER_SUCCESS,
+    actionType.FETCH_USER_FAILURE),
+  // Request for getting a user's hotlists.
+  fetchUserHotlists: createRequestReducer(
+    actionType.FETCH_USER_HOTLISTS_START,
+    actionType.FETCH_USER_HOTLISTS_SUCCESS,
+    actionType.FETCH_USER_HOTLISTS_FAILURE),
+  // Request for getting a user's prefs.
+  fetchUserPrefs: createRequestReducer(
+    actionType.FETCH_USER_PREFS_START,
+    actionType.FETCH_USER_PREFS_SUCCESS,
+    actionType.FETCH_USER_PREFS_FAILURE),
+  // Request for getting an issue.
+  fetchIssue: createRequestReducer(
+    actionType.FETCH_ISSUE_START,
+    actionType.FETCH_ISSUE_SUCCESS,
+    actionType.FETCH_ISSUE_FAILURE),
+  // Request for getting an issue's hotlists.
+  fetchIssueHotlists: createRequestReducer(
+    actionType.FETCH_ISSUE_HOTLISTS_START,
+    actionType.FETCH_ISSUE_HOTLISTS_SUCCESS,
+    actionType.FETCH_ISSUE_HOTLISTS_FAILURE),
+  // Request for getting issue permissions.
+  fetchIssuePermissions: createRequestReducer(
+    actionType.FETCH_ISSUE_PERMISSIONS_START,
+    actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS,
+    actionType.FETCH_ISSUE_PERMISSIONS_FAILURE),
+  // Request for starring an issue.
+  starIssue: createRequestReducer(
+    actionType.STAR_ISSUE_START,
+    actionType.STAR_ISSUE_SUCCESS,
+    actionType.STAR_ISSUE_FAILURE),
+  // Request for getting comments for an issue.
+  fetchComments: createRequestReducer(
+    actionType.FETCH_COMMENTS_START,
+    actionType.FETCH_COMMENTS_SUCCESS,
+    actionType.FETCH_COMMENTS_FAILURE),
+  // Request for getting references in comment data for an issue.
+  fetchCommentReferences: createRequestReducer(
+    actionType.FETCH_COMMENT_REFERENCES_START,
+    actionType.FETCH_COMMENT_REFERENCES_SUCCESS,
+    actionType.FETCH_COMMENT_REFERENCES_FAILURE),
+  fetchBlockerReferences: createRequestReducer(
+    actionType.FETCH_BLOCKER_REFERENCES_START,
+    actionType.FETCH_BLOCKER_REFERENCES_SUCCESS,
+    actionType.FETCH_BLOCKER_REFERENCES_FAILURE),
+  // Request for getting whether an issue is starred.
+  fetchIsStarred: createRequestReducer(
+    actionType.FETCH_IS_STARRED_START,
+    actionType.FETCH_IS_STARRED_SUCCESS,
+    actionType.FETCH_IS_STARRED_FAILURE),
+  // Request for converting an issue.
+  convertIssue: createRequestReducer(
+    actionType.CONVERT_ISSUE_START,
+    actionType.CONVERT_ISSUE_SUCCESS,
+    actionType.CONVERT_ISSUE_FAILURE),
+  // Request for updating an issue.
+  updateIssue: createRequestReducer(
+    actionType.UPDATE_ISSUE_START,
+    actionType.UPDATE_ISSUE_SUCCESS,
+    actionType.UPDATE_ISSUE_FAILURE),
+  // Request for updating an approval.
+  // Assumption: It's okay to prevent the user from sending multiple
+  // approval update requests at once, even for different approvals.
+  updateApproval: createRequestReducer(
+    actionType.UPDATE_APPROVAL_START,
+    actionType.UPDATE_APPROVAL_SUCCESS,
+    actionType.UPDATE_APPROVAL_FAILURE),
+});
+
+const reducer = combineReducers({
+  user: userReducer,
+  userGroups: userGroupsReducer,
+
+  // TODO(zhangtiff): Combine these into viewedIssueRef for consistency.
+  issueId: issueIdReducer,
+  projectName: projectNameReducer,
+
+  projectConfig: projectConfigReducer,
+  projectTemplates: projectTemplatesReducer,
+  issue: issueReducer,
+  issueLoaded: issueLoadedReducer,
+  issueHotlists: issueHotlistsReducer,
+  userHotlists: userHotlistsReducer,
+  comments: commentsReducer,
+  commentReferences: commentReferencesReducer,
+  blockerReferences: blockerReferencesReducer,
+  isStarred: isStarredReducer,
+  issuePermissions: issuePermissionsReducer,
+
+  // Fields to be checked for user changes before leaving the page.
+  // TODO(ehmaldonado): Figure out a way to keep redux state serializable.
+  formsToCheck: formsToCheckReducer,
+
+  // The ID of the element to be focused, as given by the hash part of the URL.
+  focusId: focusIdReducer,
+  prefs: prefsReducer,
+
+  requests: requestsReducer,
+});
+
+function rootReducer(state, action) {
+  if (action.type == actionType.RESET_STATE) {
+    state = undefined;
+  }
+  return reducer(state, action);
+}
+
+export const store = createStore(rootReducer, undefined,
   // For debugging with the Redux Devtools extension:
   // https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd/
   window.__REDUX_DEVTOOLS_EXTENSION__

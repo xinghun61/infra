@@ -188,8 +188,8 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
       issue: state.issue,
       issueId: state.issueId,
       projectName: state.projectName,
-      updatingIssue: state.updatingIssue,
-      updateIssueError: state.updateIssueError,
+      updatingIssue: state.requests.updateIssue.requesting,
+      updateIssueError: state.requests.updateIssue.error,
       fieldDefs: selectors.fieldDefsForPhases(state),
       fieldValueMap: selectors.issueFieldValueMap(state),
     };

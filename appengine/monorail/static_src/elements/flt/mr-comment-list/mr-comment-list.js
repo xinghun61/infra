@@ -107,7 +107,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
       focusId: state.focusId,
       projectName: state.projectName,
       issuePermissions: state.issuePermissions,
-      fetchingComments: state.fetchingComments,
+      fetchingComments: state.requests.fetchComments.requesting,
     };
   }
 

@@ -89,8 +89,8 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
     return {
       approvals: state.issue.approvalValues,
       phases: state.issue.phases,
-      convertingIssue: state.convertingIssue,
-      convertIssueError: state.convertIssueError,
+      convertingIssue: state.requests.convertIssue.requesting,
+      convertIssueError: state.requests.convertIssue.error,
       issueId: state.issueId,
       issuePermissions: state.issuePermissions,
       projectName: state.projectName,

@@ -81,8 +81,8 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       issueId: state.issueId,
       projectName: state.projectName,
       projectConfig: state.projectConfig,
-      updatingIssue: state.updatingIssue,
-      updateIssueError: state.updateIssueError,
+      updatingIssue: state.requests.updateIssue.requesting,
+      updateIssueError: state.requests.updateIssue.error,
       _fieldDefs: selectors.fieldDefsForIssue(state),
     };
   }

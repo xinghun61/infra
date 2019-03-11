@@ -337,8 +337,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
       projectConfig: state.projectConfig,
       projectName: state.projectName,
       comments: state.comments,
-      updatingApproval: state.updatingApproval,
-      updateApprovalError: state.updateApprovalError,
+      updatingApproval: state.requests.updateApproval.requesting,
+      updateApprovalError: state.requests.updateApproval.error,
     };
   }
 
