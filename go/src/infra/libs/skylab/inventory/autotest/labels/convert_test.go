@@ -25,7 +25,6 @@ test_coverage_hints {
   recovery_test: true
   meet_app: true
   hangout_app: true
-  cts_sparse: 2
   chromesign: true
   chaos_dut: true
 }
@@ -125,7 +124,6 @@ var fullLabels = []string{
 	"recovery_test",
 	"reference_design:reef",
 	"servo",
-	"sparse_coverage_3",
 	"storage:storageval",
 	"stylus",
 	"telephony:telephonyval",

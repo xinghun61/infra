@@ -24,8 +24,6 @@ test_coverage_hints {
   recovery_test: true
   meet_app: true
   hangout_app: true
-  cts_sparse: 1
-  cts_sparse: 2
   chromesign: true
   chaos_dut: true
 }
@@ -93,7 +91,6 @@ var fullDimensions = Dimensions{
 	"label-chaos_dut":             {"True"},
 	"label-chromesign":            {"True"},
 	"label-conductive":            {"True"},
-	"label-cts_sparse":            {"CTS_SPARSE_2", "CTS_SPARSE_3"},
 	"label-cts_abi":               {"CTS_ABI_ARM", "CTS_ABI_X86"},
 	"label-cts_cpu":               {"CTS_CPU_ARM", "CTS_CPU_X86"},
 	"label-detachablebase":        {"True"},

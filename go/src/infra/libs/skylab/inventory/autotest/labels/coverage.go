@@ -5,17 +5,13 @@
 package labels
 
 import (
-	"strings"
-
 	"infra/libs/skylab/inventory"
 )
 
 func init() {
 	converters = append(converters, boolTestCoverageHintsConverter)
-	converters = append(converters, otherTestCoverageHintsConverter)
 
 	reverters = append(reverters, boolTestCoverageHintsReverter)
-	reverters = append(reverters, otherTestCoverageHintsReverter)
 }
 
 func boolTestCoverageHintsConverter(ls *inventory.SchedulableLabels) []string {
@@ -54,17 +50,6 @@ func boolTestCoverageHintsConverter(ls *inventory.SchedulableLabels) []string {
 	return labels
 }
 
-func otherTestCoverageHintsConverter(ls *inventory.SchedulableLabels) []string {
-	var labels []string
-	h := ls.GetTestCoverageHints()
-	for _, v := range h.GetCtsSparse() {
-		const plen = 11 // len("CTS_SPARSE_")
-		lv := "sparse_coverage_" + strings.ToLower(v.String()[plen:])
-		labels = append(labels, lv)
-	}
-	return labels
-}
-
 func boolTestCoverageHintsReverter(ls *inventory.SchedulableLabels, labels []string) []string {
 	h := ls.GetTestCoverageHints()
 	for i := 0; i < len(labels); i++ {
@@ -90,26 +75,6 @@ func boolTestCoverageHintsReverter(ls *inventory.SchedulableLabels, labels []str
 			*h.TestUsbprinting = true
 		case "usb_detect":
 			*h.UsbDetect = true
-		default:
-			continue
-		}
-		labels = removeLabel(labels, i)
-		i--
-	}
-	return labels
-}
-
-func otherTestCoverageHintsReverter(ls *inventory.SchedulableLabels, labels []string) []string {
-	h := ls.GetTestCoverageHints()
-	for i := 0; i < len(labels); i++ {
-		v := labels[i]
-		switch {
-		case strings.HasPrefix(v, "sparse_coverage_"):
-			const plen = 16 // len("sparse_coverage_")
-			vn := "CTS_SPARSE_" + strings.ToUpper(v[plen:])
-			type t = inventory.TestCoverageHints_CTSSparse
-			vals := inventory.TestCoverageHints_CTSSparse_value
-			h.CtsSparse = append(h.CtsSparse, t(vals[vn]))
 		default:
 			continue
 		}
