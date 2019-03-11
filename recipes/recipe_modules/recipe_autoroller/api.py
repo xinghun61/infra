@@ -175,8 +175,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         project_data['repo_url'], dir_path=workdir, submodules=False)
 
     with self.m.context(cwd=workdir):
-      # Introduce ourselves to git - also needed for git cl upload to work.
-      self.m.git('config', 'user.email', 'recipe-roller@chromium.org')
+      # On LUCI user.email is already configured to match that of task service
+      # account with which we'll be authenticating to Git/Gerrit.
+      # Set a nicer name than service account's long email.
       self.m.git('config', 'user.name', 'recipe-roller')
 
       # Clean up possibly left over roll branch. Ignore errors.

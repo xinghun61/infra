@@ -155,26 +155,12 @@
     "cmd": [
       "git",
       "config",
-      "user.email",
-      "recipe-roller@chromium.org"
-    ],
-    "cwd": "[CACHE]/builder/recipe_autoroller/build",
-    "infra_step": true,
-    "name": "build.git config",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "config",
       "user.name",
       "recipe-roller"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
-    "name": "build.git config (2)",
+    "name": "build.git config",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
