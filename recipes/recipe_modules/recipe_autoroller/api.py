@@ -42,8 +42,6 @@ class RepoData(object):
     }
 
 
-
-
 COMMIT_MESSAGE_HEADER = (
 """
 This is an automated CL created by the recipe roller. This CL rolls recipe
@@ -121,7 +119,6 @@ def get_commit_message(roll_result):
 class RecipeAutorollerApi(recipe_api.RecipeApi):
   def __init__(self, **kwargs):
     super(RecipeAutorollerApi, self).__init__(**kwargs)
-    self._refresh_token_file = None
 
   def roll_projects(self, projects):
     """Attempts to roll each project from the provided list.
@@ -132,10 +129,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     project_data = self.m.luci_config.get_projects()
     recipes_dir = self.m.path['cache'].join('builder', 'recipe_engine')
     self.m.file.rmtree('ensure recipe_dir gone', recipes_dir)
-    if not self.m.runtime.is_luci:
-      self.m.file.ensure_directory(
-          'ensure builder cache dir exists',
-          self.m.path['cache'].join('builder'))
+    self.m.file.ensure_directory(
+        'ensure builder cache dir exists',
+        self.m.path['cache'].join('builder'))
 
     with self.m.context(cwd=self.m.path['cache'].join('builder')):
       # Git clone really wants to have cwd set to something other than None.
@@ -230,7 +226,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           self.m.git('cl', 'set-close',
                      '--issue', repo_data.issue,
                      '--gerrit',
-                     self._git_cl_auth_flag(),
                      name='git cl set-close')
     return None
 
@@ -336,7 +331,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     upload_args.append('--cc=%s' % ','.join(sorted(cc_list)))
     upload_args.extend(['--bypass-hooks', '-f'])
     upload_args.extend(['--gerrit'])
-    upload_args.extend([self._git_cl_auth_flag()])
 
     commit_message = get_commit_message(roll_result)
 
@@ -384,12 +378,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     If no such CL has been recorded, returns (None, None).
     """
     gs_bucket = 'recipe-mega-roller-crappy-db'
-    if not self.m.runtime.is_luci:
-      gs_bucket = 'recipe-roller-cl-uploads'
     cat_result = self.m.gsutil.cat(
-        'gs://%s/repo_metadata/%s' % (gs_bucket, base64.urlsafe_b64encode(
-            # TODO(tandrii): undo hack after LUCI migration.
-            repo_url if self.m.runtime.is_luci else '!legacy!' + repo_url)),
+        'gs://%s/repo_metadata/%s' % (
+            gs_bucket, base64.urlsafe_b64encode(repo_url)),
         stdout=self.m.raw_io.output(),
         stderr=self.m.raw_io.output(),
         ok_ret=(0,1),
@@ -419,7 +410,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           '--issue', repo_data.issue,
           '--gerrit',
           '--field', 'status',
-          self._git_cl_auth_flag(),
           name='git cl status', stdout=self.m.raw_io.output(),
           step_test_data=lambda: self.m.raw_io.test_api.stream_output(
               'foo')
@@ -427,34 +417,3 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       self.m.step.active_result.step_text = status_result
 
     return repo_data, status_result
-
-  def _git_cl_auth_flag(self):
-    self.ensure_refresh_token()
-    return '--auth-refresh-token-json=%s' % self._refresh_token_file
-
-  def ensure_refresh_token(self):
-    # Ensures refresh token is available for 'recipe-roller@chromium.org'
-    # account, under which all `git cl` operations are done by recipe roller.
-    if self._refresh_token_file:
-      return
-    if not self.m.runtime.is_luci:
-      self._refresh_token_file = '/creds/refresh_tokens/recipe-roller'
-      return
-    # TODO(tandrii): create gcp_kms recipe module and use it instead.
-    # For now, this is ~copy-pasta from remote_execute_dataflow_workflow recipe.
-    cloudkms_dir = self.m.path['start_dir'].join('cloudkms')
-    self.m.cipd.ensure(
-        cloudkms_dir, {'infra/tools/luci/cloudkms/${platform}': 'latest'})
-    # Stick into directory which is guaranteed to be cleaned up by recipe.
-    creds_dir = self.m.path['cleanup'].join('creds')
-    self.m.file.ensure_directory('ensure creds dir', creds_dir)
-    plaintext = self.m.path.join(creds_dir, 'decrypted.json')
-    self.m.step('decrypt', [
-        cloudkms_dir.join('cloudkms'), 'decrypt',
-        '-input', self.repo_resource(
-            'recipes', 'recipes', 'assets', 'recipe-mega-autoroller'),
-        '-output', plaintext,
-        ('projects/chops-kms/locations/global/' +
-         'keyRings/chops-foundation/cryptoKeys/recipe-mega-autoroller'),
-    ])
-    self._refresh_token_file = plaintext  # cache only on success.

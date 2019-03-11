@@ -12,57 +12,6 @@
   },
   {
     "cmd": [
-      "cipd",
-      "ensure",
-      "-root",
-      "[START_DIR]/cloudkms",
-      "-ensure-file",
-      "infra/tools/luci/cloudkms/${platform} latest",
-      "-json-output",
-      "/path/to/tmp/json"
-    ],
-    "name": "ensure_installed",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-latest----------\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/tools/luci/cloudkms/${platform}\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "ensure-directory",
-      "--mode",
-      "0777",
-      "[CLEANUP]/creds"
-    ],
-    "infra_step": true,
-    "name": "ensure creds dir"
-  },
-  {
-    "cmd": [
-      "[START_DIR]/cloudkms/cloudkms",
-      "decrypt",
-      "-input",
-      "RECIPE_REPO[infra]/recipes/recipes/assets/recipe-mega-autoroller",
-      "-output",
-      "[CLEANUP]/creds/decrypted.json",
-      "projects/chops-kms/locations/global/keyRings/chops-foundation/cryptoKeys/recipe-mega-autoroller"
-    ],
-    "name": "decrypt"
-  },
-  {
-    "cmd": [
       "vpython",
       "-u",
       "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
@@ -89,6 +38,21 @@
     ],
     "infra_step": true,
     "name": "ensure recipe_dir gone"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/builder"
+    ],
+    "infra_step": true,
+    "name": "ensure builder cache dir exists"
   },
   {
     "cmd": [
@@ -306,8 +270,7 @@
       "123456789",
       "--gerrit",
       "--field",
-      "status",
-      "--auth-refresh-token-json=[CLEANUP]/creds/decrypted.json"
+      "status"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
@@ -324,8 +287,7 @@
       "set-close",
       "--issue",
       "123456789",
-      "--gerrit",
-      "--auth-refresh-token-json=[CLEANUP]/creds/decrypted.json"
+      "--gerrit"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
@@ -479,7 +441,6 @@
       "--bypass-hooks",
       "-f",
       "--gerrit",
-      "--auth-refresh-token-json=[CLEANUP]/creds/decrypted.json",
       "--message-file",
       "Roll recipe dependencies (trivial).\n\nThis is an automated CL created by the recipe roller. This CL rolls recipe\nchanges from upstream projects (e.g. depot_tools) into downstream projects\n(e.g. tools/build).\n\n\nMore info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug.\nrecipe_engine:\n  https://crrev.com/123abc some commit message (foo@chromium.org)\n\n\nRecipe-Tryjob-Bypass-Reason: Autoroller\nBugdroid-Send-Email: False\n"
     ],

@@ -5,7 +5,6 @@
 DEPS = [
   'build/luci_config',
 
-  'depot_tools/cipd',
   'depot_tools/git',
   'depot_tools/git_cl',
   'depot_tools/gsutil',
@@ -16,7 +15,6 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/python',
   'recipe_engine/raw_io',
-  'recipe_engine/runtime',
   'recipe_engine/step',
   'recipe_engine/time',
 ]
