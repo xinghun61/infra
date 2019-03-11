@@ -4,6 +4,7 @@
 
 """Functions and constants related to recipes ecosystem support."""
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
 
 
@@ -26,6 +27,7 @@ def _recipes():
   """Defines all recipes used by this module."""
   infra.recipe(name = 'recipe_simulation')
   infra.recipe(name = 'recipe_roll_tryjob')
+  build.recipe(name = 'led_recipes_tester')
 
 
 def simulation_tester(
@@ -87,8 +89,31 @@ def roll_trybots(upstream, downstream, cq_group):
     )
 
 
+def led_recipes_tester(name, cq_group, repo_name):
+  """Defines a builder that uses LED to test recipe changes."""
+  luci.builder(
+      name = name,
+      bucket = 'try',
+      recipe = 'led_recipes_tester',
+      properties = {'repo_name': repo_name},
+      dimensions = {
+          'os': 'Ubuntu-14.04',
+          'cpu': 'x86-64',
+          'pool': 'luci.flex.try',
+      },
+      service_account = 'infra-try-recipes-tester@chops-service-accounts.iam.gserviceaccount.com',
+      execution_timeout = 3 * time.hour,
+      swarming_tags = ['vpython:native-python-wrapper'],
+  )
+  luci.cq_tryjob_verifier(
+      builder = name,
+      cq_group = cq_group,
+  )
+
+
 recipes = struct(
     recipes = _recipes,
     simulation_tester = simulation_tester,
     roll_trybots = roll_trybots,
+    led_recipes_tester = led_recipes_tester,
 )

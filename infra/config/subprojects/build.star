@@ -5,6 +5,7 @@
 """Definitions of build.git CI resources."""
 
 load('//lib/infra.star', 'infra')
+load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -21,6 +22,20 @@ luci.cq_group(
     name = 'build cq',
     watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/.+']),
     retry_config = cq.RETRY_ALL_FAILURES,
+)
+
+
+# Presubmit trybots.
+presubmit.builder(
+    name = 'Build Presubmit',
+    cq_group = 'build cq',
+    repo_name = 'build',
+)
+# Trybot that launches a task via 'led' to verify updated recipes work.
+recipes.led_recipes_tester(
+    name = 'Build Recipes Tester',
+    cq_group = 'build cq',
+    repo_name = 'build',
 )
 
 
