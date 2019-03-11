@@ -20,7 +20,10 @@ def builder(
 
       name,
       cq_group,
-      repo_name  # e.g. 'infra' or 'luci_py', as expected by the recipe
+      repo_name,  # e.g. 'infra' or 'luci_py', as expected by the recipe
+
+      os=None,
+      experiment_percentage=None
   ):
   """Defines a try builder that runs 'run_presubmit' recipe."""
   luci.builder(
@@ -31,7 +34,7 @@ def builder(
       service_account = infra.SERVICE_ACCOUNT_TRY,
       execution_timeout = 30 * time.minute,
       dimensions = {
-          'os': 'Ubuntu-14.04',
+          'os': os or 'Ubuntu-14.04',
           'cpu': 'x86-64',
           'pool': 'luci.flex.try',
       },
@@ -41,6 +44,7 @@ def builder(
       builder = name,
       cq_group = cq_group,
       disable_reuse = True,
+      experiment_percentage = experiment_percentage,
   )
 
 

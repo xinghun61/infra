@@ -5,6 +5,7 @@
 """Definitions of recipes-py.git (aka recipe_engine) CI resources."""
 
 load('//lib/infra.star', 'infra')
+load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -21,6 +22,27 @@ infra.console_view(
     name = 'recipes-py',
     title = 'recipes-py repository console',
     repo = REPO_URL,
+)
+
+luci.cq_group(
+    name = 'recipes-py cq',
+    watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/.+']),
+    retry_config = cq.RETRY_ALL_FAILURES,
+)
+
+
+# Presubmit trybots.
+presubmit.builder(
+    name = 'Recipes-py Presubmit',
+    cq_group = 'recipes-py cq',
+    repo_name = 'recipes_py',
+)
+presubmit.builder(
+    name = 'Recipes-py Windows Presubmit',
+    cq_group = 'recipes-py cq',
+    repo_name = 'recipes_py',
+    os = 'Windows-10',
+    experiment_percentage = 100,
 )
 
 
