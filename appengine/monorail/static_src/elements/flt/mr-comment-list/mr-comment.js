@@ -86,10 +86,14 @@ export class MrComment extends ReduxMixin(PolymerElement) {
             display-name="[[comment.commenter.displayName]]"
             user-id="[[comment.commenter.userId]]"
           ></mr-user-link>
-          on
-          <chops-timestamp timestamp="[[comment.timestamp]]"></chops-timestamp>
+          <template is="dom-if" if="[[!quickMode]]">
+            on
+            <chops-timestamp
+              timestamp="[[comment.timestamp]]"
+            ></chops-timestamp>
+          </template>
         </div>
-        <template is="dom-if" if="[[_offerCommentOptions(comment)]]">
+        <template is="dom-if" if="[[_offerCommentOptions(quickMode, comment)]]">
           <div class="comment-options">
             <mr-dropdown
               items="[[_getCommentOptions(_isExpandedIfDeleted, comment)]]"
@@ -140,17 +144,23 @@ export class MrComment extends ReduxMixin(PolymerElement) {
             content="[[comment.content]]"
             is-deleted="[[comment.isDeleted]]"
           ></mr-comment-content>
-          <div hidden\$="[[comment.descriptionNum]]">
-            <template is="dom-repeat" items="[[comment.attachments]]" as="attachment">
-              <mr-attachment
-                attachment="[[attachment]]"
-                project-name="[[comment.projectName]]"
-                local-id="[[comment.localId]]"
-                sequence-num="[[comment.sequenceNum]]"
-                can-delete="[[comment.canDelete]]"
-              ></mr-attachment>
-            </template>
-          </div>
+          <template is="dom-if" if="[[!quickMode]]">
+            <div hidden\$="[[comment.descriptionNum]]">
+              <template
+                is="dom-repeat"
+                items="[[comment.attachments]]"
+                as="attachment"
+              >
+                <mr-attachment
+                  attachment="[[attachment]]"
+                  project-name="[[comment.projectName]]"
+                  local-id="[[comment.localId]]"
+                  sequence-num="[[comment.sequenceNum]]"
+                  can-delete="[[comment.canDelete]]"
+                ></mr-attachment>
+              </template>
+            </div>
+          </template>
         </div>
       </template>
     `;
@@ -165,6 +175,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
       comment: Object,
       focusId: String,
       headingLevel: String,
+      quickMode: Boolean,
       id: {
         type: String,
         reflectToAttribute: true,
@@ -243,8 +254,8 @@ export class MrComment extends ReduxMixin(PolymerElement) {
     this._isExpandedIfDeleted = !this._isExpandedIfDeleted;
   }
 
-  _offerCommentOptions(comment) {
-    return comment.canDelete || comment.canFlag;
+  _offerCommentOptions(quickMode, comment) {
+    return !quickMode && (comment.canDelete || comment.canFlag);
   }
 
   _canExpandDeletedComment(comment) {

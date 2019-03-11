@@ -8,8 +8,11 @@
 
 import './elements/mr-dropdown/mr-account-dropdown.js';
 import './elements/mr-bulk-approval-update/mr-bulk-approval-update.js';
+import './elements/mr-user-link/mr-user-link.js';
+import './elements/chops/chops-timestamp/chops-timestamp.js';
 
 import './elements/mr-header/mr-header.js';
 import './elements/mr-chart.js';
 import './elements/mr-flipper.js';
 import './elements/mr-code-font-toggle/mr-code-font-toggle.js';
+import './elements/ezt-comments.js';

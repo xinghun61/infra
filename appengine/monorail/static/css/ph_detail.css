@@ -91,6 +91,15 @@ pre.prettyprint {
   }
 }
 
+#meta-float {
+  background: var(--monorail-metadata-open-bg);
+  border: var(--chops-normal-border);
+}
+
+.closed_colors #meta-float {
+  background: var(--monorail-metadata-closed-bg);
+}
+
 #meta-float th { white-space: nowrap; }
 .labelediting input { margin: 0 3px 4px 0; }
 .labelediting input { color: #060; }
@@ -191,16 +200,16 @@ pre.prettyprint {
     padding: 1em 5px 5px 5px;
 }
 
-#issuemeta td, #issuemeta td div, #issuemeta div.widemeta {
+#meta-float td, #meta-float td div, #meta-float div.widemeta {
     max-width: 14em;
     overflow-x: hidden;
     text-overflow: ellipsis;
 }
-#issuemeta td.widemeta,  #issuemeta td.widemeta div, #issuemeta div.widemeta {
+#meta-float td.widemeta,  #meta-float td.widemeta div, #meta-float div.widemeta {
     max-width: 20em;
 }
 
-.issuemetaheader {
+.meta-floatheader {
     padding: 0 5px;
     position: relative;
     min-width: 14em;
@@ -213,16 +222,11 @@ pre.prettyprint {
     float: right;
 }
 
-#issuemeta {
-    background: var(--monorail-metadata-open-bg);
-    border: var(--chops-normal-border);
-}
-
-.closed_colors #issuemeta {
+.closed_colors #meta-float {
     background: var(--monorail-metadata-closed-bg);
 }
 
-#issuemeta table td, #issuemeta table th {
+#meta-float table td, #meta-float table th {
     margin: 0;
     padding: 0;
     padding-top: 5px;
@@ -414,7 +418,7 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   white-space:nowrap;
 }
 
-.peek #issuemeta, .peek #issuecomments {
+.peek #meta-float, .peek #issuecomments {
   height: 28em;
   max-height: 28em;
   overflow-y: auto;

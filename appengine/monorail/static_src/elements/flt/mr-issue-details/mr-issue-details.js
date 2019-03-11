@@ -108,8 +108,12 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
 
   _computeDescriptionList(comments) {
     if (!comments || !comments.length) return {};
-    return comments.filter(
-      (comment) => !comment.approvalRef && comment.descriptionNum);
+    return comments.filter((comment) => {
+      if (comment.approvalRef) {
+        return false;
+      }
+      return comment.descriptionNum || !comment.sequenceNum;
+    });
   }
 }
 customElements.define(MrIssueDetails.is, MrIssueDetails);

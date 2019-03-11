@@ -40,9 +40,6 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
           display: none;
         }
       </style>
-      <template is="dom-if" if="[[fetchingComments]]">
-        Loading comments...
-      </template>
       <button on-click="toggleComments" class="toggle" hidden\$="[[_hideToggle]]">
         [[_computeCommentToggleVerb(_commentsHidden)]]
         [[_commentsHiddenCount]]
@@ -53,9 +50,9 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
         <mr-comment
           focus-id="[[focusId]]"
           comment="[[comment]]"
-          issue-permissions="[[issuePermissions]]"
           hidden\$="[[_computeCommentHidden(_commentsHidden, _commentsHiddenCount, index)]]"
           heading-level="[[headingLevel]]"
+          quick-mode="[[quickMode]]"
         ></mr-comment>
       </template>
       <template is="dom-if" if="[[_shouldOfferEdit(issuePermissions)]]">
@@ -82,10 +79,12 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
         type: Number,
         value: 4,
       },
-      projectName: String,
       issuePermissions: Object,
       focusId: String,
-      fetchingComments: Boolean,
+      quickMode: {
+        type: Boolean,
+        value: false,
+      },
       _commentsHidden: {
         type: Boolean,
         value: true,
@@ -105,9 +104,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       focusId: state.focusId,
-      projectName: state.projectName,
       issuePermissions: state.issuePermissions,
-      fetchingComments: state.requests.fetchComments.requesting,
     };
   }
 

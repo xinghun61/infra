@@ -12,11 +12,13 @@ Summary of classes:
 """
 
 import httplib
+import json
 import logging
 import time
 from third_party import ezt
 
 import settings
+from api import converters
 from businesslogic import work_env
 from features import features_bizobj
 from features import send_notifications
@@ -47,6 +49,8 @@ from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
 from tracker import tracker_views
+
+from google.protobuf import json_format
 
 
 class IssueDetail(issuepeek.IssuePeek):
@@ -92,6 +96,40 @@ class IssueDetail(issuepeek.IssuePeek):
         'delete_form_token': delete_form_token,
      }
 
+  def _MakeIssueView(
+      self, mr, issue, users_by_id, config, issue_reporters=None):
+    """Create view objects that help display parts of an issue.
+
+    Args:
+      mr: commonly used info parsed from the request.
+      issue: issue PB for the currently viewed issue.
+      users_by_id: dictionary of {user_id: UserView,...}.
+      config: ProjectIssueConfig for the project that contains this issue.
+      issue_reporters: list of user IDs who have flagged the issue as spam.
+
+    Returns:
+      The IssueView for the whole issue.
+    """
+    with mr.profiler.Phase('getting related issues'):
+      open_related, closed_related = (
+          tracker_helpers.GetAllowedOpenAndClosedRelatedIssues(
+              self.services, mr, issue))
+      all_related_iids = list(issue.blocked_on_iids) + list(issue.blocking_iids)
+      if issue.merged_into:
+        all_related_iids.append(issue.merged_into)
+      all_related = self.services.issue.GetIssues(mr.cnxn, all_related_iids)
+
+    with mr.profiler.Phase('making issue view'):
+      issue_view = tracker_views.IssueView(
+          issue, users_by_id, config,
+          open_related=open_related, closed_related=closed_related,
+          all_related={rel.issue_id: rel for rel in all_related})
+
+    issue_reporters = issue_reporters or []
+    issue_view.flagged_spam = mr.auth.user_id in issue_reporters
+
+    return issue_view
+
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.
 
@@ -112,6 +150,7 @@ class IssueDetail(issuepeek.IssuePeek):
         issue = we.GetIssueByLocalID(
             mr.project_id, mr.local_id, use_cache=use_cache,
             allow_viewing_deleted=True)
+        comments = we.ListIssueComments(issue)
       except exceptions.NoSuchIssueException:
         issue = None
 
@@ -200,13 +239,10 @@ class IssueDetail(issuepeek.IssuePeek):
           self.services.spam.LookupIssueVerdictHistory, issue_spam_hist_cnxn,
           [issue.issue_id])
 
-    with mr.profiler.Phase('finishing getting comments and pagination'):
-      (descriptions, visible_comments,
-       cmnt_pagination) = self._PaginatePartialComments(mr, issue)
 
     users_involved_in_issue = tracker_bizobj.UsersInvolvedInIssues([issue])
     users_involved_in_comment_list = tracker_bizobj.UsersInvolvedInCommentList(
-        descriptions + visible_comments)
+        comments)
     with mr.profiler.Phase('making user views'):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, users_involved_in_issue,
@@ -217,10 +253,17 @@ class IssueDetail(issuepeek.IssuePeek):
     if issue_spam_promise:
       issue_flaggers, comment_flaggers = issue_spam_promise.WaitAndGetValue()
 
-    (issue_view, description_views,
-     comment_views) = self._MakeIssueAndCommentViews(
-         mr, issue, users_by_id, descriptions, visible_comments, config,
-         issue_flaggers, comment_flaggers)
+    issue_view = self._MakeIssueView(
+        mr, issue, users_by_id, config, issue_flaggers)
+
+    with mr.profiler.Phase('converting comments to ListCommentsResponse'):
+      issue_perms = permissions.UpdateIssuePermissions(
+          mr.perms, mr.project, issue, mr.auth.effective_ids, config=config)
+      comments_list = converters.ConvertCommentList(
+          issue, comments, config, users_by_id, comment_flaggers,
+          mr.auth.user_id, issue_perms)
+      comments_list = [
+          json_format.MessageToDict(comment) for comment in comments_list]
 
     with mr.profiler.Phase('getting starring info'):
       starred = star_promise.WaitAndGetValue()
@@ -324,22 +367,28 @@ class IssueDetail(issuepeek.IssuePeek):
     is_member = framework_bizobj.UserIsInProject(
         mr.project, mr.auth.effective_ids)
 
+    description_list = [
+        comment for i, comment in enumerate(comments_list)
+        if 'descriptionNum' in comment or i == 0]
+
+    reporter_name = comments_list[0]['commenter']['displayName']
+    reporter_user_id = comments_list[0]['commenter']['userId']
+    reported_timestamp = comments_list[0]['timestamp']
+
     return {
+        'comment_list': json.dumps(comments_list[1:]),
+        'description_list': json.dumps(description_list),
+        'reporter_name': reporter_name,
+        'reporter_user_id': reporter_user_id,
+        'reported_timestamp': reported_timestamp,
         'issue_tab_mode': 'issueDetail',
         'issue': issue_view,
         'title_summary': issue_view.summary,  # used in <head><title>
-        'first_description': description_views[0],
-        'descriptions': description_views,
-        'num_descriptions': len(description_views),
-        'multiple_descriptions': ezt.boolean(len(description_views) > 1),
-        'comments': comment_views,
-        'num_detail_rows': len(comment_views) + 4,
         'noisy': ezt.boolean(tracker_helpers.IsNoisy(
-            len(comment_views), issue.star_count)),
+            len(comments_list), issue.star_count)),
         'link_rel_canonical': framework_helpers.FormatCanonicalURL(mr, ['id']),
 
         'flipper_hotlist_id': hotlist_id,
-        'cmnt_pagination': cmnt_pagination,
         'searchtip': 'You can jump to any issue by number',
         'starred': ezt.boolean(starred),
         'discourage_plus_one': ezt.boolean(discourage_plus_one),

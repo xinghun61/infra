@@ -57,7 +57,6 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
 
   _checkedChangeHandler(e) {
     const checked = e.detail.checked;
-    this.dispatchEvent(new CustomEvent('font-toggle', {detail: {checked}}));
     if (this.userDisplayName) {
       const message = {
         prefs: [{name: 'code_font', value: '' + checked}],

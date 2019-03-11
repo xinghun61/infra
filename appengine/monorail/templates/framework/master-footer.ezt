@@ -12,8 +12,6 @@
 
 [include "master-footer-shared.ezt"]
 
-<script src="/static/dist/ezt-element-package.min.js?version=[app_version]" nonce="[nonce]"></script>
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   [if-any projectname]
