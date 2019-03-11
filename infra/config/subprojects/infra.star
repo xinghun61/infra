@@ -6,6 +6,7 @@
 
 load('//lib/infra.star', 'infra')
 load('//lib/presubmit.star', 'presubmit')
+load('//lib/recipes.star', 'recipes')
 
 
 infra.recipe(name = 'infra_continuous')
@@ -71,3 +72,12 @@ try_builder(name = 'Infra WCT Tester', os = 'Ubuntu-14.04', recipe = 'infra_wct_
 
 # Presubmit trybot.
 presubmit.builder(name = 'Infra Presubmit', cq_group = 'infra cq', repo_name = 'infra')
+
+# Recipes ecosystem.
+recipes.simulation_tester(
+    name = 'infra-continuous-recipes-tests',
+    project_under_test = 'infra',
+    triggered_by = 'infra-gitiles-trigger',
+    console_view = 'infra',
+    console_category = 'misc',
+)

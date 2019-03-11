@@ -14,10 +14,13 @@ WORK IN PROGRESS:
 Includes CI configs for the following subprojects:
   * Codesearch.
   * Gsubtreed crons.
+  * https://chromium.googlesource.com/chromium/tools/build
+  * https://chromium.googlesource.com/chromium/tools/depot_tools
   * https://chromium.googlesource.com/infra/infra
   * https://chromium.googlesource.com/infra/luci/gae
   * https://chromium.googlesource.com/infra/luci/luci-go
   * https://chromium.googlesource.com/infra/luci/luci-py
+  * https://chromium.googlesource.com/infra/luci/recipes-py
 
 TODO(vadimsh): Add more.
 """
@@ -25,6 +28,7 @@ TODO(vadimsh): Add more.
 load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
 load('//lib/presubmit.star', 'presubmit')
+load('//lib/recipes.star', 'recipes')
 
 
 # Tell lucicfg what files it is allowed to touch.
@@ -137,14 +141,18 @@ luci.bucket(
 infra.poller(name = 'infra-gitiles-trigger')
 build.poller(name = 'build-gitiles-trigger')
 presubmit.recipe()
+recipes.recipes()
 luci.list_view(name = 'cron')
 
 # Define per-subproject resources. They may refer to the shared resources
 # defined above by name.
 
+exec('//subprojects/build.star')
 exec('//subprojects/codesearch.star')
+exec('//subprojects/depot_tools.star')
 exec('//subprojects/gsubtreed.star')
 exec('//subprojects/infra.star')
 exec('//subprojects/luci-gae.star')
 exec('//subprojects/luci-go.star')
 exec('//subprojects/luci-py.star')
+exec('//subprojects/recipe_engine.star')
