@@ -70,3 +70,28 @@ luci.cq_tryjob_verifier(
     builder = 'external/infra-internal/try/release_scripts Roll Tester (depot_tools)',
     cq_group = 'depot_tools cq',
 )
+
+
+# CI builder that uploads depot_tools.zip to Google Storage.
+#
+# TODO(crbug.com/940149): Move to the prod pool.
+infra.recipe(name = 'depot_tools_builder')
+luci.builder(
+    name = 'depot_tools zip uploader',
+    bucket = 'ci',
+    recipe = 'depot_tools_builder',
+    dimensions = {
+        'cpu': 'x86-64',
+        'os': 'Ubuntu-14.04',
+        'pool': 'luci.flex.ci',
+    },
+    service_account = 'infra-ci-depot-tools-uploader@chops-service-accounts.iam.gserviceaccount.com',
+    execution_timeout = 30 * time.minute,
+    swarming_tags = ['vpython:native-python-wrapper'],
+    build_numbers = True,
+    triggered_by = ['depot_tools-gitiles-trigger'],
+)
+luci.console_view_entry(
+    builder = 'depot_tools zip uploader',
+    console_view = 'depot_tools',
+)
