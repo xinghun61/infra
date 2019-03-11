@@ -13,6 +13,7 @@ WORK IN PROGRESS:
 
 Includes CI configs for the following subprojects:
   * Codesearch.
+  * Gsubtreed crons.
   * https://chromium.googlesource.com/infra/infra
   * https://chromium.googlesource.com/infra/luci/gae
   * https://chromium.googlesource.com/infra/luci/luci-go
@@ -123,15 +124,26 @@ luci.bucket(
     ],
 )
 
+luci.bucket(
+    name = 'cron',
+    acls = [
+        acl.entry(
+            roles = acl.BUILDBUCKET_TRIGGERER,
+            users = 'luci-scheduler@appspot.gserviceaccount.com',
+        ),
+    ],
+)
+
 infra.poller(name = 'infra-gitiles-trigger')
 build.poller(name = 'build-gitiles-trigger')
 presubmit.recipe()
-
+luci.list_view(name = 'cron')
 
 # Define per-subproject resources. They may refer to the shared resources
 # defined above by name.
 
 exec('//subprojects/codesearch.star')
+exec('//subprojects/gsubtreed.star')
 exec('//subprojects/infra.star')
 exec('//subprojects/luci-gae.star')
 exec('//subprojects/luci-go.star')
