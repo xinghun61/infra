@@ -72,8 +72,9 @@ pre.prettyprint {
   #issue-main {
     display: flex;
   }
-  #meta-float {
-    height: 100%;
+  #left-part {
+    width: 10%;
+    min-width: 20em;
   }
   #right-part {
     width: 90%;
@@ -94,7 +95,7 @@ pre.prettyprint {
   }
 }
 
-#meta-float {
+#left-part {
   background: var(--monorail-metadata-open-bg);
   border: var(--chops-normal-border);
 }

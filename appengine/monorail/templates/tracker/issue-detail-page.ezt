@@ -11,7 +11,7 @@
 <div id="color_control" class="[if-any issue.is_open][else]closed_colors[end] [if-any code_font]codefont[end]">
 
 <div id="issue-main">
-  <div>
+  <div id="left-part">
     <div id="meta-float">
       <div class="issuemetaheader" style="text-align: center">
         [define user_can_star]false[end]
