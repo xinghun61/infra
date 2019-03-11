@@ -5,6 +5,7 @@
 """Definitions of depot_tools.git CI resources."""
 
 load('//lib/infra.star', 'infra')
+load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -27,6 +28,14 @@ luci.cq_group(
     name = 'depot_tools cq',
     watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/.+']),
     retry_config = cq.RETRY_ALL_FAILURES,
+)
+
+
+# Presubmit trybots.
+presubmit.builder(
+    name = 'Depot Tools Presubmit',
+    cq_group = 'depot_tools cq',
+    repo_name = 'depot_tools',
 )
 
 
