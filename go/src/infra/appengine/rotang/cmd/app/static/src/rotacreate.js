@@ -430,7 +430,7 @@ class RotaCreate extends LitElement {
                   <small>&#x1F5D1;</small>
                 </button>
               </td>
-              ${this.handleFullDay()}
+              ${this.handleAllDay()}
             </tr>
           `)}
         </tbody>
@@ -440,13 +440,18 @@ class RotaCreate extends LitElement {
     `;
   }
 
-  handleFullDay() {
-    if (!this.shifts || this.shifts.length != 1) {
+  handleAllDay() {
+    if (!this.shifts ||
+      this.shifts.length != 1 ||
+      this.shifts[0].Duration != 24) {
       return html``;
     }
-    return html`<td>${this.config.Cfg.Config.Shifts.FullDayEvents ?
+    if (!this.config) {
+      return html`<td><input id=fullDay type="checkbox"> AllDayEvents</td>`;
+    }
+    return html`<td>${this.config.Cfg.Config.Shifts.AllDayEvents ?
       html`<input id="fullDay" type="checkbox" checked>` :
-      html`<input id="fullDay" type="checkbox">`} FullDayEvents
+      html`<input id="fullDay" type="checkbox">`} AllDayEvents
     </td>`;
   }
 
@@ -652,6 +657,15 @@ class RotaCreate extends LitElement {
     return modifiers;
   }
 
+  buildAllDay() {
+    if (!this.shifts ||
+      this.shifts.length != 1 ||
+      this.shifts[0].Duration != 24) {
+      return false;
+    }
+    return this.shadowRoot.getElementById('fullDay').checked;
+  }
+
   async buildConfig() {
     const configuration = {
       Config: {
@@ -679,7 +693,7 @@ class RotaCreate extends LitElement {
             .value),
           Generator: this.shadowRoot.getElementById('shiftGenerator').value,
           Modifiers: this.buildModifiers(),
-          FullDayEvents: this.shadowRoot.getElementById('fullDay').checked,
+          FullDayEvents: this.buildAllDay(),
           Shifts: this.buildShifts(),
         },
         Expiration: Number(this.shadowRoot.getElementById('expiration').value),
