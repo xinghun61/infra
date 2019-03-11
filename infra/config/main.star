@@ -21,6 +21,7 @@ Includes CI configs for the following subprojects:
   * https://chromium.googlesource.com/infra/luci/luci-go
   * https://chromium.googlesource.com/infra/luci/luci-py
   * https://chromium.googlesource.com/infra/luci/recipes-py
+  * https://chromium.googlesource.com/infra/testing/expect_tests
 
 TODO(vadimsh): Add more.
 """
@@ -150,6 +151,7 @@ luci.list_view(name = 'cron')
 exec('//subprojects/build.star')
 exec('//subprojects/codesearch.star')
 exec('//subprojects/depot_tools.star')
+exec('//subprojects/expect_tests.star')
 exec('//subprojects/gsubtreed.star')
 exec('//subprojects/infra.star')
 exec('//subprojects/luci-gae.star')
