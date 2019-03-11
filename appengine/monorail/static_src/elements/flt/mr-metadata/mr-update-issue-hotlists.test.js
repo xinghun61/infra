@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrUpdateIssueHotlists} from './mr-update-issue-hotlists.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {actionType} from '../../redux/redux-mixin.js';
 
 let element;
@@ -16,7 +15,7 @@ suite('mr-update-issue-hotlists', () => {
     element = document.createElement('mr-update-issue-hotlists');
     document.body.appendChild(element);
 
-    form = dom(element.root).querySelector('#issueHotlistsForm');
+    form = element.shadowRoot.querySelector('#issueHotlistsForm');
   });
 
   teardown(() => {

@@ -6,7 +6,6 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import '../flt/mr-edit-metadata/mr-edit-field.js';
 import '../mr-error/mr-error.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 
 
 // TODO(jojwang): Move all useful FLT const to a shared file.
@@ -147,7 +146,7 @@ export class MrBulkApprovalUpdate extends PolymerElement {
     let message = {issueRefs: this.issueRefs};
     window.prpcClient.call('monorail.Issues', 'ListApplicableFieldDefs', message).then(
       (resp) => {
-        const root = dom(this.root);
+        const root = this.shadowRoot;
         if (resp.fieldDefs) {
           this.approvals = resp.fieldDefs.filter((fieldDef) => {
             return fieldDef.fieldRef.type == 'APPROVAL_TYPE';
@@ -167,7 +166,7 @@ export class MrBulkApprovalUpdate extends PolymerElement {
     this.responseMessage = '';
     this.errorMessage = '';
     this.toggleDisableForm();
-    const root = dom(this.root);
+    const root = this.shadowRoot;
     let selectedFieldDef = this.approvals.find(
       (approval) => {
         return approval.fieldRef.fieldName == root.querySelector('#approvalSelect').value;
@@ -217,7 +216,7 @@ export class MrBulkApprovalUpdate extends PolymerElement {
   }
 
   toggleDisableForm() {
-    const root = dom(this.root);
+    const root = this.shadowRoot;
     root.querySelectorAll('input, textarea, select, button').forEach((input) => {
       input.disabled = !input.disabled;
     });

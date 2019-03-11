@@ -4,7 +4,6 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 
 import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
@@ -88,11 +87,11 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
   }
 
   reset() {
-    dom(this.root).querySelector('#metadataForm').reset();
+    this.shadowRoot.querySelector('#metadataForm').reset();
   }
 
   save() {
-    const form = dom(this.root).querySelector('#metadataForm');
+    const form = this.shadowRoot.querySelector('#metadataForm');
     const data = form.getDelta();
     data.sendEmail = form.sendEmail;
     const message = this._generateMessage(data);

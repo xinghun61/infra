@@ -4,7 +4,6 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 
 import '../shared/mr-flt-styles.js';
 import './mr-edit-field.js';
@@ -120,7 +119,7 @@ export class MrEditStatus extends PolymerElement {
 
   getDelta() {
     const result = {};
-    const root = dom(this.root);
+    const root = this.shadowRoot;
 
     const statusInput = root.querySelector('#statusInput');
     if (statusInput) {
@@ -133,7 +132,8 @@ export class MrEditStatus extends PolymerElement {
     if (this.status === 'Duplicate' && !this._showMergedInto) {
       result['mergedInto'] = '';
     } else if (this._showMergedInto) {
-      const newMergedInto = root.querySelector('#mergedIntoInput').getValue();
+      const newMergedInto = root.querySelector(
+        '#mergedIntoInput').getValue();
       if (newMergedInto !== this.mergedInto) {
         result['mergedInto'] = newMergedInto;
       }
@@ -164,7 +164,7 @@ export class MrEditStatus extends PolymerElement {
   }
 
   _statusInputChanged() {
-    const statusInput = dom(this.root).querySelector('#statusInput');
+    const statusInput = this.shadowRoot.querySelector('#statusInput');
     this._showMergedInto = (statusInput.value === 'Duplicate');
   }
 

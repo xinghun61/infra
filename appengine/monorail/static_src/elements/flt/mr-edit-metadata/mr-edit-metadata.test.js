@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {actionType} from '../../redux/redux-mixin.js';
 
 
@@ -59,8 +58,8 @@ suite('mr-edit-metadata', () => {
 
     flush();
 
-    const statusComponent = dom(element.root).querySelector('#statusInput');
-    const root = dom(statusComponent.root);
+    const statusComponent = element.shadowRoot.querySelector('#statusInput');
+    const root = statusComponent.shadowRoot;
     root.querySelector('#statusInput').value = 'Old';
     assert.deepEqual(element.getDelta(), {
       status: 'Old',
@@ -76,15 +75,17 @@ suite('mr-edit-metadata', () => {
 
     flush();
 
-    const statusComponent = dom(element.root).querySelector('#statusInput');
-    const root = dom(statusComponent.root);
+    const statusComponent = element.shadowRoot.querySelector(
+      '#statusInput');
+    const root = statusComponent.shadowRoot;
     const statusInput = root.querySelector('#statusInput');
     statusInput.value = 'Duplicate';
     statusInput.dispatchEvent(new Event('change'));
 
     flush();
 
-    root.querySelector('#mergedIntoInput').setValue('chromium:1234');
+    root.querySelector('#mergedIntoInput').setValue(
+      'chromium:1234');
     assert.deepEqual(element.getDelta(), {
       status: 'Duplicate',
       mergedInto: 'chromium:1234',
@@ -96,7 +97,7 @@ suite('mr-edit-metadata', () => {
 
     flush();
 
-    dom(element.root).querySelector(
+    element.shadowRoot.querySelector(
       '#summaryInput').value = 'newfangled fancy summary';
     assert.deepEqual(element.getDelta(), {
       summary: 'newfangled fancy summary',
@@ -121,7 +122,7 @@ suite('mr-edit-metadata', () => {
 
     flush();
 
-    dom(element.root).querySelector(
+    element.shadowRoot.querySelector(
       '#testFieldInput').setValue('test value');
     assert.deepEqual(element.getDelta(), {
       fieldValuesAdded: [
@@ -183,7 +184,7 @@ suite('mr-edit-metadata', () => {
 
     flush();
 
-    dom(element.root).querySelector(
+    element.shadowRoot.querySelector(
       '#enumFieldInput').setValue(['one', 'two']);
     assert.deepEqual(element.getDelta(), {
       fieldValuesAdded: [

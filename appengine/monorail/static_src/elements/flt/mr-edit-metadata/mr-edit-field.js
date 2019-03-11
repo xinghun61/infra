@@ -4,7 +4,6 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import '../../chops/chops-button/chops-button.js';
@@ -198,7 +197,7 @@ export class MrEditField extends PolymerElement {
       v = [v];
     }
     if (this.multi && this._fieldIsBasic) {
-      dom(this.root).querySelectorAll('.multi').forEach((input, i) => {
+      this.shadowRoot.querySelectorAll('.multi').forEach((input, i) => {
         if (i < v.length) {
           input.value = v[i];
         } else {
@@ -206,7 +205,7 @@ export class MrEditField extends PolymerElement {
         }
       });
     } else if (this.multi) {
-      dom(this.root).querySelectorAll('.enum-input').forEach(
+      this.shadowRoot.querySelectorAll('.enum-input').forEach(
         (checkbox) => {
           checkbox.checked = this._optionInValues(v, checkbox.value);
         }
@@ -246,13 +245,13 @@ export class MrEditField extends PolymerElement {
         valueList.push(val);
       }
     } else if (this._fieldIsEnum(this.type)) {
-      dom(this.root).querySelectorAll('.enum-input').forEach((c) => {
+      this.shadowRoot.querySelectorAll('.enum-input').forEach((c) => {
         if (c.checked) {
           valueList.push(c.value.trim());
         }
       });
     } else {
-      dom(this.root).querySelectorAll('.multi').forEach((input) => {
+      this.shadowRoot.querySelectorAll('.multi').forEach((input) => {
         const val = input.value.trim();
         if (val.length) {
           valueList.push(val);
@@ -290,9 +289,9 @@ export class MrEditField extends PolymerElement {
 
   _getInput() {
     if (this._fieldIsEnum(this.type) && !this.multi) {
-      return dom(this.root).querySelector('#editSelect');
+      return this.shadowRoot.querySelector('#editSelect');
     }
-    return dom(this.root).querySelector('#editInput');
+    return this.shadowRoot.querySelector('#editInput');
   }
 
   _optionInValues(values, optionName) {

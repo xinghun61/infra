@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrConvertIssue} from './mr-convert-issue.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 
 let element;
 let form;

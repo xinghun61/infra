@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrApp} from './mr-app.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {actionType} from '../redux/redux-mixin.js';
 
 
@@ -36,7 +35,7 @@ suite('mr-app', () => {
       params: {project: 'chromium'},
     });
 
-    const approvalElement = dom(element.root).querySelector('mr-issue-page');
+    const approvalElement = element.shadowRoot.querySelector('mr-issue-page');
     assert.isDefined(approvalElement, 'approval element is defined');
     assert.equal(approvalElement.projectName, 'chromium');
     assert.equal(approvalElement.issueId, 234);

@@ -5,7 +5,6 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import {IronFocusablesHelper} from '@polymer/iron-overlay-behavior/iron-focusables-helper.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
 
 const ESC_KEYCODE = 27;
@@ -208,27 +207,27 @@ export class ChopsDialog extends mixinBehaviors([IronFocusablesHelper], PolymerE
     this.opened = !this.opened;
   }
 
-  // TODO(zhangtiff): Fix logic to get activeElement. This seems to have
-  //   broken in the Polymer 3.0 upgrade.
   _getActiveElement() {
     // document.activeElement alone isn't sufficient to find the active
     // element within shadow dom.
     let active = document.activeElement || document.body;
-    while (active.root && dom(active.root).activeElement) {
-      active = dom(active.root).activeElement;
+    let activeRoot = active.shadowRoot || active.root;
+    while (activeRoot && activeRoot.activeElement) {
+      active = activeRoot.activeElement;
+      activeRoot = active.shadowRoot || active.root;
     }
     return active;
   }
 
   _openedChanged(opened) {
     if (opened) {
-      if (this.$.dialog.showModal) {
-        this.$.dialog.showModal();
-      }
-
       // For accessibility, we want to ensure we remember the element that was
       // focused before this dialog opened.
       this._previousFocusedElement = this._getActiveElement();
+
+      if (this.$.dialog.showModal) {
+        this.$.dialog.showModal();
+      }
 
       // Focus the first element within the dialog when it's opened.
       const tabbables = this.getTabbableNodes(this);

@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrEditStatus} from './mr-edit-status.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 
 
 let element;
@@ -39,7 +38,7 @@ suite('mr-edit-status', () => {
 
     flush();
 
-    dom(element.root).querySelector('#statusInput').value = 'Old';
+    element.shadowRoot.querySelector('#statusInput').value = 'Old';
     assert.deepEqual(element.getDelta(), {
       status: 'Old',
     });
@@ -50,13 +49,13 @@ suite('mr-edit-status', () => {
 
     flush();
 
-    const statusInput = dom(element.root).querySelector('#statusInput');
+    const statusInput = element.shadowRoot.querySelector('#statusInput');
     statusInput.value = 'Duplicate';
     statusInput.dispatchEvent(new Event('change'));
 
     flush();
 
-    dom(element.root).querySelector('#mergedIntoInput').setValue('chromium:123');
+    element.shadowRoot.querySelector('#mergedIntoInput').setValue('chromium:123');
     assert.deepEqual(element.getDelta(), {
       status: 'Duplicate',
       mergedInto: 'chromium:123',
@@ -69,7 +68,7 @@ suite('mr-edit-status', () => {
 
     flush();
 
-    const statusInput = dom(element.root).querySelector('#statusInput');
+    const statusInput = element.shadowRoot.querySelector('#statusInput');
     statusInput.value = 'New';
     statusInput.dispatchEvent(new Event('change'));
 

@@ -4,7 +4,6 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 
 import '../../chops/chops-button/chops-button.js';
 import '@vaadin/vaadin-upload/vaadin-upload.js';
@@ -443,7 +442,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     // behavior with custom input elements.
     if (this.isApproval) {
       if (this.hasApproverPrivileges) {
-        const approversInput = dom(this.root).querySelector(
+        const approversInput = this.shadowRoot.querySelector(
           '#approversInput');
         if (approversInput) {
           approversInput.reset();
@@ -473,7 +472,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     }
 
     const result = {};
-    const root = dom(this.root);
+    const root = this.shadowRoot;
 
     const statusInput = root.querySelector('#statusInput');
     if (statusInput) {
@@ -580,7 +579,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   _addListChangesToDelta(delta, inputId, addedKey, removedKey) {
-    const root = dom(this.root);
+    const root = this.shadowRoot;
     const input = root.querySelector(`#${inputId}`);
     if (!input) return;
     const valuesAdded = input.getValuesAdded();
@@ -621,7 +620,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     const target = e.target;
     const forValue = target.getAttribute('for');
     if (forValue) {
-      const customInput = dom(this.root).querySelector('#' + forValue);
+      const customInput = this.shadowRoot.querySelector('#' + forValue);
       if (customInput && customInput.focus) {
         customInput.focus();
       }

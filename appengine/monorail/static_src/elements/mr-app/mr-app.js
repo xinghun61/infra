@@ -4,7 +4,6 @@
 
 import 'polymer-resin/standalone/polymer-resin.js';
 import 'noclosure-resin-bridge';
-import {dom} from '@polymer/polymer/lib/legacy/polymer.dom.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import page from 'page';
 import qs from 'qs';
@@ -133,7 +132,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       }
     }
 
-    const main = dom(this.root).querySelector('main');
+    const main = this.shadowRoot.querySelector('main');
     if (main) {
       // Clone the main tag without copying its children.
       const mainClone = main.cloneNode(false);
