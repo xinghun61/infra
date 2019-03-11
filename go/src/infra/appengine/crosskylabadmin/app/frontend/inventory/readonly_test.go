@@ -15,11 +15,12 @@
 package inventory
 
 import (
+	"testing"
+	"time"
+
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/libs/skylab/inventory"
-	"testing"
-	"time"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
@@ -77,22 +78,42 @@ func TestGetDutInfoWithConsistentDatastore(t *testing.T) {
 				So(dut.GetCommon().GetId(), ShouldEqual, "dut1_id")
 				So(dut.GetCommon().GetHostname(), ShouldEqual, "dut1_hostname")
 			})
-
-			Convey("after an ID update, GetDutInfo (by Hostname) returns updated DUT", func() {
-				setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
-					{id: "dut1_new_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
-				})
-				_, err := tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})
-				So(err, ShouldBeNil)
-
-				resp, err := tf.Inventory.GetDutInfo(tf.C, &fleet.GetDutInfoRequest{Hostname: "dut1_hostname"})
-				So(err, ShouldBeNil)
-				dut := getDutInfo(t, resp)
-				So(dut.GetCommon().GetId(), ShouldEqual, "dut1_new_id")
-				So(dut.GetCommon().GetHostname(), ShouldEqual, "dut1_hostname")
-			})
 		})
 	})
+}
+
+func TestGetDutInfoAfterUpdating(t *testing.T) {
+	t.Parallel()
+	ctx := testingContext()
+	ctx = setDutInfoCacheValidity(ctx, 100*time.Minute)
+	tf, validate := newTestFixtureWithContext(ctx, t)
+	defer validate()
+	setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		{id: "dut1_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
+	})
+	_, err := tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})
+	if err != nil {
+		t.Fatalf("UpdateCachedInventory returned non-nil error: %s", err)
+	}
+	setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		{id: "dut1_new_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
+	})
+	_, err = tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})
+	if err != nil {
+		t.Fatalf("UpdateCachedInventory returned non-nil error: %s", err)
+	}
+
+	resp, err := tf.Inventory.GetDutInfo(tf.C, &fleet.GetDutInfoRequest{Hostname: "dut1_hostname"})
+	if err != nil {
+		t.Fatalf("GetDutInfo returned non-nil error: %s", err)
+	}
+	dut := getDutInfoBasic(t, resp)
+	if id := dut.GetCommon().GetId(); id != "dut1_new_id" {
+		t.Errorf("Got DUT ID %s; want dut1_new_id", id)
+	}
+	if hostname := dut.GetCommon().GetHostname(); hostname != "dut1_hostname" {
+		t.Errorf("Got DUT hostname %s; want dut1_hostname", hostname)
+	}
 }
 
 func TestGetDutInfoWithConsistentDatastoreNoCacheValidity(t *testing.T) {
@@ -201,6 +222,7 @@ func setDutInfoCacheValidity(ctx context.Context, v time.Duration) context.Conte
 	cfg.Inventory.DutInfoCacheValidity = google.NewDuration(v)
 	return config.Use(ctx, cfg)
 }
+
 func getDutInfo(t *testing.T, di *fleet.GetDutInfoResponse) *inventory.DeviceUnderTest {
 	t.Helper()
 
@@ -208,6 +230,19 @@ func getDutInfo(t *testing.T, di *fleet.GetDutInfoResponse) *inventory.DeviceUnd
 	So(di.Spec, ShouldNotBeNil)
 	err := proto.Unmarshal(di.Spec, &dut)
 	So(err, ShouldBeNil)
+	return &dut
+}
+
+func getDutInfoBasic(t *testing.T, di *fleet.GetDutInfoResponse) *inventory.DeviceUnderTest {
+	t.Helper()
+	var dut inventory.DeviceUnderTest
+	if di.Spec == nil {
+		t.Fatalf("Got nil spec")
+	}
+	err := proto.Unmarshal(di.Spec, &dut)
+	if err != nil {
+		t.Fatalf("Unmarshal DutInfo returned non-nil error: %s", err)
+	}
 	return &dut
 }
 
