@@ -140,12 +140,26 @@
     "cmd": [
       "git",
       "config",
+      "--unset-all",
+      "user.email"
+    ],
+    "cwd": "[CACHE]/builder/recipe_autoroller/build",
+    "infra_step": true,
+    "name": "build.git config",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "config",
       "user.name",
       "recipe-roller"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
-    "name": "build.git config",
+    "name": "build.git config (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]

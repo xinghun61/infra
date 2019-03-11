@@ -177,6 +177,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     with self.m.context(cwd=workdir):
       # On LUCI user.email is already configured to match that of task service
       # account with which we'll be authenticating to Git/Gerrit.
+      # TODO(tandrii): remove this temporary cleaning of incorrectly set
+      # config, which ended up cached.
+      self.m.git('config', '--unset-all', 'user.email')
       # Set a nicer name than service account's long email.
       self.m.git('config', 'user.name', 'recipe-roller')
 
