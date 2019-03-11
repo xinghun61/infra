@@ -17,6 +17,12 @@ infra.console_view(
     repo = REPO_URL,
 )
 
+luci.cq_group(
+    name = 'build cq',
+    watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/.+']),
+    retry_config = cq.RETRY_ALL_FAILURES,
+)
+
 
 # Recipes ecosystem.
 recipes.simulation_tester(
@@ -24,4 +30,25 @@ recipes.simulation_tester(
     project_under_test = 'build',
     triggered_by = 'build-gitiles-trigger',
     console_view = 'build',
+)
+
+
+# Recipe rolls from Build.
+recipes.roll_trybots(
+    upstream = 'build',
+    downstream = [
+        'infra',
+    ],
+    cq_group = 'build cq',
+)
+
+
+# External testers (defined in another projects) for recipe rolls.
+luci.cq_tryjob_verifier(
+    builder = 'external/infra-internal/try/build_limited Roll Tester (build)',
+    cq_group = 'build cq',
+)
+luci.cq_tryjob_verifier(
+    builder = 'external/infra-internal/try/release_scripts Roll Tester (build)',
+    cq_group = 'build cq',
 )

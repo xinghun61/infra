@@ -53,3 +53,28 @@ recipes.simulation_tester(
     triggered_by = 'recipe_engine-gitiles-trigger',
     console_view = 'recipes-py',
 )
+
+
+# Recipe rolls from Recipe Engine.
+recipes.roll_trybots(
+    upstream = 'recipe_engine',
+    downstream = [
+        'depot_tools',
+        'build',
+        'infra',
+        'skia',
+        'skiabuildbot',
+    ],
+    cq_group = 'recipes-py cq',
+)
+
+
+# External testers (defined in another projects) for recipe rolls.
+luci.cq_tryjob_verifier(
+    builder = 'external/infra-internal/try/build_limited Roll Tester (recipe_engine)',
+    cq_group = 'recipes-py cq',
+)
+luci.cq_tryjob_verifier(
+    builder = 'external/infra-internal/try/release_scripts Roll Tester (recipe_engine)',
+    cq_group = 'recipes-py cq',
+)

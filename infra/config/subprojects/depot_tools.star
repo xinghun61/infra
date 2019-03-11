@@ -23,6 +23,12 @@ infra.console_view(
     repo = REPO_URL,
 )
 
+luci.cq_group(
+    name = 'depot_tools cq',
+    watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/.+']),
+    retry_config = cq.RETRY_ALL_FAILURES,
+)
+
 
 # Recipes ecosystem.
 recipes.simulation_tester(
@@ -30,4 +36,28 @@ recipes.simulation_tester(
     project_under_test = 'depot_tools',
     triggered_by = 'depot_tools-gitiles-trigger',
     console_view = 'depot_tools',
+)
+
+
+# Recipe rolls from Depot Tools.
+recipes.roll_trybots(
+    upstream = 'depot_tools',
+    downstream = [
+        'build',
+        'infra',
+        'skia',
+        'skiabuildbot',
+    ],
+    cq_group = 'depot_tools cq',
+)
+
+
+# External testers (defined in another project) for recipe rolls.
+luci.cq_tryjob_verifier(
+    builder = 'external/infra-internal/try/build_limited Roll Tester (depot_tools)',
+    cq_group = 'depot_tools cq',
+)
+luci.cq_tryjob_verifier(
+    builder = 'external/infra-internal/try/release_scripts Roll Tester (depot_tools)',
+    cq_group = 'depot_tools cq',
 )
