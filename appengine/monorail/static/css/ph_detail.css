@@ -69,19 +69,22 @@ pre.prettyprint {
 }
 
 @media (min-width: 425px) {
-  #meta-float, #summary-float {
-    position: sticky;
-    z-index: 1;
-    top: var(--monorail-header-height);
+  #issue-main {
+    display: flex;
   }
-  #summary-float {
+  #meta-float {
+    height: 100%;
+  }
+  #right-part {
+    width: 90%;
     margin: 0;
     padding: 0;
     border-bottom: 2px solid var(--chops-page-bg);
-    height: 0;
   }
-  #meta-float {
+  #meta-float, .issueheader {
+    position: sticky;
     z-index: 1;
+    top: var(--monorail-header-height);
   }
 }
 

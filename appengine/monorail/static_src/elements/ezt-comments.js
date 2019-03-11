@@ -23,6 +23,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
         mr-description {
           display: block;
           padding: 0 12px;
+          max-width: 80em;
         }
         .comments {
           margin: 1.3em 1em;
@@ -132,7 +133,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
     });
     this.dispatchAction({
       type: actionType.FETCH_COMMENTS_SUCCESS,
-      allComments,
+      comments: allComments,
     });
     actionCreator.fetchUserPrefs(
       this.dispatchAction.bind(this));

@@ -10,34 +10,36 @@
 
 <div id="color_control" class="[if-any issue.is_open][else]closed_colors[end] [if-any code_font]codefont[end]">
 
-<div id="issue-main" style="display: flex">
-  <div id="meta-float">
-    <div class="issuemetaheader" style="text-align: center">
-      [define user_can_star]false[end]
-      [if-any page_perms.SetStar]
-        [if-any read_only][else]
-          [define user_can_star]true[end]
-          <a class="star" id="star"
-            style="color:[if-any starred]cornflowerblue[else]gray[end]"
-            title="[if-any starred]Un-s[else]S[end]tar this issue"
-          >
-            [if-any starred]&#9733;[else]&#9734;[end]
-          </a>
+<div id="issue-main">
+  <div>
+    <div id="meta-float">
+      <div class="issuemetaheader" style="text-align: center">
+        [define user_can_star]false[end]
+        [if-any page_perms.SetStar]
+          [if-any read_only][else]
+            [define user_can_star]true[end]
+            <a class="star" id="star"
+              style="color:[if-any starred]cornflowerblue[else]gray[end]"
+              title="[if-any starred]Un-s[else]S[end]tar this issue"
+            >
+              [if-any starred]&#9733;[else]&#9734;[end]
+            </a>
+            [end]
           [end]
-        [end]
-      Starred by [issue.star_count]
-      [is issue.star_count "1"] user [else] users [end]
-    </div> [# end issuemetaheader]
+        Starred by [issue.star_count]
+        [is issue.star_count "1"] user [else] users [end]
+      </div> [# end issuemetaheader]
 
-    [if-any noisy]
-      <br>
-      Comments by non-members will not trigger notification emails to users who
-      starred this issue.
-    [end]
-    <div id="issue_meta_details">
-      [include "issue-meta-part.ezt" "show make changes below"]
-    </div>
-  </div> [# end meta-float]
+      [if-any noisy]
+        <br>
+        Comments by non-members will not trigger notification emails to users who
+        starred this issue.
+      [end]
+      <div id="issue_meta_details">
+        [include "issue-meta-part.ezt" "show make changes below"]
+      </div>
+    </div> [# end meta-float]
+  </div>
 
   <div id="right-part">
     <div class="issueheader">
