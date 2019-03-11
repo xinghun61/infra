@@ -223,10 +223,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # Pass --gerrit flag to match upload args below.
       if cl_status != 'closed':
         with self.m.context(cwd=workdir):
-          self.m.git('cl', 'set-close',
-                     '--issue', repo_data.issue,
-                     '--gerrit',
-                     name='git cl set-close')
+          self.m.git_cl('set-close', ['--issue', repo_data.issue, '--gerrit'],
+                        name='git cl set-close')
     return None
 
   def _get_disable_reason(self, recipes_cfg_path):
@@ -344,8 +342,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       self.m.git('commit', '-a', '-m', 'roll recipes.cfg')
       self.m.git_cl.upload(
           commit_message, upload_args, name='git cl upload')
-      issue_step = self.m.git(
-          'cl', 'issue', '--json', self.m.json.output(),
+      issue_step = self.m.git_cl(
+          'issue', ['--json', self.m.json.output()],
           name='git cl issue',
           step_test_data=lambda: self.m.json.test_api.output({
               'issue': 123456789,
@@ -405,11 +403,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # We need to explicitly pass --gerrit for git cl status --issue .
       # To keep things concistent, we also pass --gerrit for all other
       # git cl calls in the autoroller.
-      status_result = self.m.git(
-          'cl', 'status',
-          '--issue', repo_data.issue,
-          '--gerrit',
-          '--field', 'status',
+      status_result = self.m.git_cl(
+          'status',
+          ['--issue', repo_data.issue, '--gerrit', '--field', 'status'],
           name='git cl status', stdout=self.m.raw_io.output(),
           step_test_data=lambda: self.m.raw_io.test_api.stream_output(
               'foo')

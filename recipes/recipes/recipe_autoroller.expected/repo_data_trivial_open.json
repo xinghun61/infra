@@ -263,8 +263,7 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
+      "RECIPE_REPO[depot_tools]/git_cl.py",
       "status",
       "--issue",
       "123456789",
@@ -273,7 +272,6 @@
       "status"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
-    "infra_step": true,
     "name": "build.git cl status",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -282,15 +280,13 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
+      "RECIPE_REPO[depot_tools]/git_cl.py",
       "set-close",
       "--issue",
       "123456789",
       "--gerrit"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
-    "infra_step": true,
     "name": "build.git cl set-close",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -452,14 +448,12 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
+      "RECIPE_REPO[depot_tools]/git_cl.py",
       "issue",
       "--json",
       "/path/to/tmp/json"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
-    "infra_step": true,
     "name": "build.git cl issue",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",

@@ -262,8 +262,7 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
+      "RECIPE_REPO[depot_tools]/git_cl.py",
       "status",
       "--issue",
       "123456789",
@@ -272,7 +271,6 @@
       "status"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
-    "infra_step": true,
     "name": "build.git cl status",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [

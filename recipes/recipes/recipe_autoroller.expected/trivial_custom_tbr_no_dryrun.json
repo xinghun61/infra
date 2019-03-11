@@ -416,14 +416,12 @@
   },
   {
     "cmd": [
-      "git",
-      "cl",
+      "RECIPE_REPO[depot_tools]/git_cl.py",
       "issue",
       "--json",
       "/path/to/tmp/json"
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
-    "infra_step": true,
     "name": "build.git cl issue",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
