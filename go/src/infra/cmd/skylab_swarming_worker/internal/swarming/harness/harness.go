@@ -24,9 +24,8 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/admin"
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
 
-	h_botinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/dutinfo"
 	h_hostinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/resultsdir"
@@ -38,7 +37,7 @@ type Info struct {
 
 	ResultsDir string
 	DUTName    string
-	BotInfo    *botinfo.BotInfo
+	BotInfo    *swarming.BotInfo
 
 	labelUpdater labelUpdater
 
@@ -106,11 +105,11 @@ func (i *Info) getDUTName(b *swarming.Bot) string {
 	return dutName
 }
 
-func (i *Info) loadBotInfo(b *swarming.Bot) *botinfo.BotInfo {
+func (i *Info) loadBotInfo(b *swarming.Bot) *swarming.BotInfo {
 	if i.err != nil {
 		return nil
 	}
-	bi, err := h_botinfo.Open(b)
+	bi, err := botinfo.Open(b)
 	if err != nil {
 		i.err = err
 		return nil
@@ -141,7 +140,7 @@ func (i *Info) makeHostInfo(d *inventory.DeviceUnderTest) *hostinfo.HostInfo {
 	return hip.HostInfo
 }
 
-func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *botinfo.BotInfo) {
+func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *swarming.BotInfo) {
 	if i.err != nil {
 		return
 	}

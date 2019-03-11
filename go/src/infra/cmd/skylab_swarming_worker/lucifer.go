@@ -15,7 +15,6 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
 )
 
@@ -59,15 +58,15 @@ func resultsURL(b *swarming.Bot) string {
 // hostStateUpdates maps Events to the target runtime state of the
 // host.  Host events that don't need to be handled are left as
 // comment placeholders to aid cross-referencing.
-var hostStateUpdates = map[event.Event]botinfo.HostState{
-	event.HostClean:        botinfo.HostReady,
-	event.HostNeedsCleanup: botinfo.HostNeedsCleanup,
-	event.HostNeedsRepair:  botinfo.HostNeedsRepair,
-	event.HostNeedsReset:   botinfo.HostNeedsReset,
-	event.HostReady:        botinfo.HostReady,
+var hostStateUpdates = map[event.Event]swarming.HostState{
+	event.HostClean:        swarming.HostReady,
+	event.HostNeedsCleanup: swarming.HostNeedsCleanup,
+	event.HostNeedsRepair:  swarming.HostNeedsRepair,
+	event.HostNeedsReset:   swarming.HostNeedsReset,
+	event.HostReady:        swarming.HostReady,
 	// event.HostReadyToRun
 	// event.HostRunning
-	event.HostFailedRepair: botinfo.HostRepairFailed,
+	event.HostFailedRepair: swarming.HostRepairFailed,
 }
 
 func isHostStatus(e event.Event) bool {

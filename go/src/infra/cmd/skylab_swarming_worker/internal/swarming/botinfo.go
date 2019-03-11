@@ -2,10 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package botinfo provides the BotInfo struct which stores dynamic
-// information about a Swarming bot, as well as functions for
-// serializing and deserializing BotInfo.
-package botinfo
+package swarming
 
 import (
 	"encoding/json"

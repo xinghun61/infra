@@ -9,20 +9,20 @@ import (
 	"strings"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
+	"infra/cmd/skylab_swarming_worker/internal/swarming"
 )
 
 // Borrower represents borrowing BotInfo into a HostInfo.  It is used
 // for returning any relevant Hostinfo changes back to the BotInfo.
 type Borrower struct {
 	hostInfo *hostinfo.HostInfo
-	botInfo  *botinfo.BotInfo
+	botInfo  *swarming.BotInfo
 }
 
 // BorrowBotInfo takes some info stored in the BotInfo and adds it to
 // the HostInfo.  The returned Borrower should be closed to return any
 // relevant HostInfo changes back to the BotInfo.
-func BorrowBotInfo(hi *hostinfo.HostInfo, bi *botinfo.BotInfo) *Borrower {
+func BorrowBotInfo(hi *hostinfo.HostInfo, bi *swarming.BotInfo) *Borrower {
 	for label, value := range bi.ProvisionableLabels {
 		hi.Labels = append(hi.Labels, fmt.Sprintf("%s:%s", label, value))
 	}

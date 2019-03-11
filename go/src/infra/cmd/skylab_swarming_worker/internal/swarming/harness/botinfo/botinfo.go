@@ -14,12 +14,11 @@ import (
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
 )
 
 // Store holds a bot's botinfo and adds a Close method.
 type Store struct {
-	botinfo.BotInfo
+	swarming.BotInfo
 	bot *swarming.Bot
 }
 
@@ -32,7 +31,7 @@ func (s *Store) Close() error {
 	if s.bot == nil {
 		return nil
 	}
-	data, err := botinfo.Marshal(&s.BotInfo)
+	data, err := swarming.Marshal(&s.BotInfo)
 	if err != nil {
 		return errors.Annotate(err, "close botinfo").Err()
 	}
@@ -51,7 +50,7 @@ func Open(b *swarming.Bot) (*Store, error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "open botinfo").Err()
 	}
-	if err := botinfo.Unmarshal(data, &s.BotInfo); err != nil {
+	if err := swarming.Unmarshal(data, &s.BotInfo); err != nil {
 		return nil, errors.Annotate(err, "open botinfo").Err()
 	}
 	return &s, nil
