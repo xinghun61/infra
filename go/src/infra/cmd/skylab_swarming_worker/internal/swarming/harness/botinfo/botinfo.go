@@ -13,8 +13,8 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 
-	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
 )
 
 // Store holds a bot's botinfo and adds a Close method.

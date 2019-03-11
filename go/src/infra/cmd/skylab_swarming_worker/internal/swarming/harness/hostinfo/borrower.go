@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
-	"infra/cmd/skylab_swarming_worker/internal/botinfo"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
 )
 
 // Borrower represents borrowing BotInfo into a HostInfo.  It is used

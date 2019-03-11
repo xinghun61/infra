@@ -23,8 +23,8 @@ import (
 
 	"infra/cmd/skylab_swarming_worker/internal/admin"
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
-	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
 
 	h_botinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/dutinfo"

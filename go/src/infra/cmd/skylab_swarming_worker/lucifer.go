@@ -13,9 +13,9 @@ import (
 	"strings"
 
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
-	"infra/cmd/skylab_swarming_worker/internal/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/event"
 	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swarming/botinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
 )
 
