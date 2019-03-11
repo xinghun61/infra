@@ -117,7 +117,7 @@ def launch(docker_client, android_devices, args):
       logging.warning(
           'No devices detected. Rebooting host since uptime (%dm) > 1hr.',
           uptime)
-      main_helpers.reboot_host()
+      main_helpers.reboot_host(args.canary)
       return
   container_descriptors = map(
       containers.AndroidContainerDescriptor, android_devices)

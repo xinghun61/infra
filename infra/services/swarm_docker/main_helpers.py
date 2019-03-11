@@ -55,14 +55,18 @@ def get_host_uptime():
   return uptime / 60
 
 
-def update_docker(version='18.06.3~ce~3-0~ubuntu'):
+def update_docker(canary, version='18.06.3~ce~3-0~ubuntu'):
   """Update the docker package prior to reboot.
 
   This will automatically keep the docker package up to date and running prior
   to reboot will ensure that no containers are running, so no disruptions. This
   will also remove older docker packages (docker-engine) automatically.
 
+  If the bot is a docker_canary, then the latest version of docker-ce will be
+  installed, otherwise the pinned version= version will be installed.
+
   Args:
+      canary: (bool) If this is a canary host or not.
       version: (str) The version of docker-ce to ensure is installed.
   """
   # Not doing a lot of dpkg/apt-cache checking here as the runtime to just try
@@ -73,17 +77,22 @@ def update_docker(version='18.06.3~ce~3-0~ubuntu'):
     # We don't care enough to abort reboot here, only if install fails.
     logging.exception('Unable to apt-get update.')
 
+  if canary:
+    package_with_version = 'docker-ce'
+  else:
+    package_with_version = 'docker-ce=%s' % version
+
   try:
     subprocess.check_call(['/usr/bin/apt-get', 'install', '-y',
-                           'docker-ce=%s' % version])
+                           package_with_version])
   except subprocess.CalledProcessError:
     logging.exception('Unable to install/upgrade docker-ce to %s.', version)
     return False
   return True
 
 
-def reboot_host():
-  if not update_docker():
+def reboot_host(canary=False, skip_update=False):
+  if not skip_update and not update_docker(canary):
     logging.warning('Not rebooting, something went wrong.')
     return
 
@@ -151,7 +160,7 @@ def launch_containers(
             'Host uptime exceeds grace period of %d min. Rebooting host now '
             'despite %d running containers.', _REBOOT_GRACE_PERIOD_MIN,
             len(running_containers))
-        reboot_host()
+        reboot_host(args.canary)
       else:
         logging.debug(
             'Still %d containers running. Shutting them down first.',
@@ -160,7 +169,7 @@ def launch_containers(
           c.kill_swarming_bot()
     else:
       logging.debug('No running containers. Rebooting host now.')
-      reboot_host()
+      reboot_host(args.canary)
   else:  # Host uptime < max host uptime.
     # Fetch the image from the registry if it's not present locally.
     image_url = (_REGISTRY_URL + '/' + args.registry_project + '/' +
@@ -248,6 +257,9 @@ def launch_containers(
 
 def add_launch_arguments(parser):
   parser.add_argument(
+      '-c', '--canary', action='store_true', default=False,
+      help='Run this as a canary bot.')
+  parser.add_argument(
       '--max-container-uptime', type=int, default=60 * 4,
       help='Max uptime of a container, in minutes.')
   parser.add_argument(
@@ -300,7 +312,8 @@ def main_wrapper(main_func):
     sys.exit(main_func())
   except containers.FrozenEngineError:
     logging.exception('Docker engine frozen, triggering host reboot.')
-    reboot_host()
+    # Skipping updates since something is very wrong with docker here.
+    reboot_host(skip_update=True)
   except Exception as e:
     logging.exception('Exception:')
     raise e
