@@ -69,7 +69,21 @@ func (is *ServerImpl) GetDroneConfig(ctx context.Context, req *fleet.GetDroneCon
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-	return nil, status.Errorf(codes.Unimplemented, "not yet implemented")
+	e, err := dronecfg.Get(ctx, req.Hostname)
+	if err != nil {
+		if datastore.IsErrNoSuchEntity(err) {
+			return nil, status.Errorf(codes.NotFound, err.Error())
+		}
+		return nil, err
+	}
+	resp = &fleet.GetDroneConfigResponse{}
+	for _, d := range e.DUTs {
+		resp.Duts = append(resp.Duts, &fleet.GetDroneConfigResponse_Dut{
+			Id:       d.ID,
+			Hostname: d.Hostname,
+		})
+	}
+	return resp, nil
 }
 
 // UpdateCachedInventory implements the method from fleet.InventoryServer interface.
