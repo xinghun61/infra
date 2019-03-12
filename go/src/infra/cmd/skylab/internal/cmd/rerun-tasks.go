@@ -43,6 +43,7 @@ var RerunTasks = &subcommands.Command{
 		c.Flags.BoolVar(&c.outputJSON, "output-json", false, "Format output as JSON.")
 		c.Flags.Var(flag.StringSlice(&c.taskIds), "task-id", "Swarming task ids for locating tests to retry. If it's a retry task which is kicked off by rerun-tasks command, it won't be retried. May be specified multiple times.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Tasks that match all these tags (and that were not already a retry task) will be retried. Task-id and tag cannot be both specified. May be specified multiple times.")
+		c.Flags.BoolVar(&c.includePassed, "include-passed", false, "If true, rerun tasks even if they passed the first time. Only apply to tasks matched by tags.")
 		c.Flags.BoolVar(&c.dryRun, "dry-run", false, "Print tasks that would be rerun, but don't actually rerun them.")
 		return c
 	},
@@ -50,12 +51,13 @@ var RerunTasks = &subcommands.Command{
 
 type rerunTasksRun struct {
 	subcommands.CommandRunBase
-	authFlags  authcli.Flags
-	envFlags   envFlags
-	outputJSON bool
-	taskIds    []string
-	tags       []string
-	dryRun     bool
+	authFlags     authcli.Flags
+	envFlags      envFlags
+	outputJSON    bool
+	taskIds       []string
+	tags          []string
+	includePassed bool
+	dryRun        bool
 }
 
 func (c *rerunTasksRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -89,7 +91,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 			return err
 		}
 	} else {
-		if originalTasks, err = getSwarmingResultsForTags(ctx, c.tags, s); err != nil {
+		if originalTasks, err = getSwarmingResultsForTags(ctx, s, c.tags, c.includePassed); err != nil {
 			return err
 		}
 	}
@@ -173,14 +175,27 @@ func getSwarmingResultsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 	return results, nil
 }
 
-func getSwarmingResultsForTags(ctx context.Context, tags []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskResult, error) {
+func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []string, includePassed bool) ([]*swarming.SwarmingRpcsTaskResult, error) {
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
 	results, err := s.Tasks.List().Tags(tags...).Context(ctx).Do()
 	if err != nil {
 		return nil, errors.Annotate(err, fmt.Sprint("rerun tags ", tags)).Err()
 	}
-	return results.Items, nil
+	var filteredTasks []*swarming.SwarmingRpcsTaskResult
+	if !includePassed {
+		for _, r := range results.Items {
+			// Failure includes: COMPLETED_FAILURE (test failure), TIMED OUT
+			// Internal Failure includes: BOT_DIED
+			// Tasks in CANCELED, NO_RESOURCE, EXPIRED are skipped (won't be rerun)
+			if r.Failure || r.InternalFailure {
+				filteredTasks = append(filteredTasks, r)
+			}
+		}
+	} else {
+		filteredTasks = results.Items
+	}
+	return filteredTasks, nil
 }
 
 func getSwarmingRequestsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskRequest, error) {
