@@ -12,7 +12,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
 
-	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot"
 	"infra/libs/skylab/inventory"
 )
 
@@ -58,7 +58,7 @@ type UpdateFunc func(dutID string, labels *inventory.SchedulableLabels) error
 // returns a Store that should be closed to update the inventory with
 // any changes to the info, using a supplied UpdateFunc.  If
 // UpdateFunc is nil, the inventory is not updated.
-func Load(b *swarming.Bot, f UpdateFunc) (*Store, error) {
+func Load(b *swmbot.Bot, f UpdateFunc) (*Store, error) {
 	ddir, err := inventory.ReadSymlink(b.Inventory.DataDir)
 	if err != nil {
 		return nil, errors.Annotate(err, "load DUT host info").Err()

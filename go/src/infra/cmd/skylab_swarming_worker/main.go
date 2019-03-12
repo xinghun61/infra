@@ -43,8 +43,8 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/fifo"
 	"infra/cmd/skylab_swarming_worker/internal/flagx"
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
-	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot/harness"
 )
 
 func main() {
@@ -95,7 +95,7 @@ func mainInner(a *args) error {
 	ctx := context.Background()
 	// Set up Go logger for LUCI libraries.
 	ctx = gologger.StdConfig.Use(ctx)
-	b := swarming.NewBotFromEnv()
+	b := swmbot.NewBotFromEnv()
 	log.Printf("Swarming bot config: %#v", b)
 	annotWriter, err := openLogDogWriter(ctx, a.logdogAnnotationURL)
 	if err != nil {

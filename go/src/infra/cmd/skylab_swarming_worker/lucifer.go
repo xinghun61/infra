@@ -14,8 +14,8 @@ import (
 
 	"infra/cmd/skylab_swarming_worker/internal/annotations"
 	"infra/cmd/skylab_swarming_worker/internal/event"
-	"infra/cmd/skylab_swarming_worker/internal/swarming"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/harness"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot/harness"
 )
 
 type luciferResult struct {
@@ -49,7 +49,7 @@ func runLuciferCommand(i *harness.Info, w io.Writer, cmd *exec.Cmd) (*luciferRes
 	return r, err
 }
 
-func resultsURL(b *swarming.Bot) string {
+func resultsURL(b *swmbot.Bot) string {
 	return fmt.Sprintf(
 		"https://stainless.corp.google.com/browse/chromeos-autotest-results/swarming-%s/",
 		b.Task.ID)
@@ -58,15 +58,15 @@ func resultsURL(b *swarming.Bot) string {
 // hostStateUpdates maps Events to the target runtime state of the
 // host.  Host events that don't need to be handled are left as
 // comment placeholders to aid cross-referencing.
-var hostStateUpdates = map[event.Event]swarming.HostState{
-	event.HostClean:        swarming.HostReady,
-	event.HostNeedsCleanup: swarming.HostNeedsCleanup,
-	event.HostNeedsRepair:  swarming.HostNeedsRepair,
-	event.HostNeedsReset:   swarming.HostNeedsReset,
-	event.HostReady:        swarming.HostReady,
+var hostStateUpdates = map[event.Event]swmbot.HostState{
+	event.HostClean:        swmbot.HostReady,
+	event.HostNeedsCleanup: swmbot.HostNeedsCleanup,
+	event.HostNeedsRepair:  swmbot.HostNeedsRepair,
+	event.HostNeedsReset:   swmbot.HostNeedsReset,
+	event.HostReady:        swmbot.HostReady,
 	// event.HostReadyToRun
 	// event.HostRunning
-	event.HostFailedRepair: swarming.HostRepairFailed,
+	event.HostFailedRepair: swmbot.HostRepairFailed,
 }
 
 func isHostStatus(e event.Event) bool {

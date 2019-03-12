@@ -23,21 +23,21 @@ import (
 
 	"infra/cmd/skylab_swarming_worker/internal/admin"
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
-	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot"
 
-	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/botinfo"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/dutinfo"
-	h_hostinfo "infra/cmd/skylab_swarming_worker/internal/swarming/harness/hostinfo"
-	"infra/cmd/skylab_swarming_worker/internal/swarming/harness/resultsdir"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot/harness/botinfo"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot/harness/dutinfo"
+	h_hostinfo "infra/cmd/skylab_swarming_worker/internal/swmbot/harness/hostinfo"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot/harness/resultsdir"
 )
 
 // Info holds information about the Swarming harness.
 type Info struct {
-	*swarming.Bot
+	*swmbot.Bot
 
 	ResultsDir string
 	DUTName    string
-	BotInfo    *swarming.BotInfo
+	BotInfo    *swmbot.BotInfo
 
 	labelUpdater labelUpdater
 
@@ -66,7 +66,7 @@ func (i *Info) Close() error {
 // Open opens and sets up the bot and task harness needed for Autotest
 // jobs.  An Info struct is returned with necessary fields, which must
 // be closed.
-func Open(ctx context.Context, b *swarming.Bot, o ...Option) (i *Info, err error) {
+func Open(ctx context.Context, b *swmbot.Bot, o ...Option) (i *Info, err error) {
 	i = &Info{
 		Bot: b,
 		labelUpdater: labelUpdater{
@@ -96,7 +96,7 @@ func Open(ctx context.Context, b *swarming.Bot, o ...Option) (i *Info, err error
 	return i, nil
 }
 
-func (i *Info) getDUTName(b *swarming.Bot) string {
+func (i *Info) getDUTName(b *swmbot.Bot) string {
 	if i.err != nil {
 		return ""
 	}
@@ -105,7 +105,7 @@ func (i *Info) getDUTName(b *swarming.Bot) string {
 	return dutName
 }
 
-func (i *Info) loadBotInfo(b *swarming.Bot) *swarming.BotInfo {
+func (i *Info) loadBotInfo(b *swmbot.Bot) *swmbot.BotInfo {
 	if i.err != nil {
 		return nil
 	}
@@ -118,7 +118,7 @@ func (i *Info) loadBotInfo(b *swarming.Bot) *swarming.BotInfo {
 	return &bi.BotInfo
 }
 
-func (i *Info) loadDUTInfo(ctx context.Context, b *swarming.Bot) *inventory.DeviceUnderTest {
+func (i *Info) loadDUTInfo(ctx context.Context, b *swmbot.Bot) *inventory.DeviceUnderTest {
 	if i.err != nil {
 		return nil
 	}
@@ -140,7 +140,7 @@ func (i *Info) makeHostInfo(d *inventory.DeviceUnderTest) *hostinfo.HostInfo {
 	return hip.HostInfo
 }
 
-func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *swarming.BotInfo) {
+func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *swmbot.BotInfo) {
 	if i.err != nil {
 		return
 	}
@@ -148,7 +148,7 @@ func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *swarming.BotInfo)
 	i.closers = append(i.closers, hib)
 }
 
-func (i *Info) makeResultsDir(b *swarming.Bot) string {
+func (i *Info) makeResultsDir(b *swmbot.Bot) string {
 	if i.err != nil {
 		return ""
 	}

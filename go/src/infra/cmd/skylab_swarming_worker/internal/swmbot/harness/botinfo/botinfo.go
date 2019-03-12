@@ -13,13 +13,13 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 
-	"infra/cmd/skylab_swarming_worker/internal/swarming"
+	"infra/cmd/skylab_swarming_worker/internal/swmbot"
 )
 
 // Store holds a bot's botinfo and adds a Close method.
 type Store struct {
-	swarming.BotInfo
-	bot *swarming.Bot
+	swmbot.BotInfo
+	bot *swmbot.Bot
 }
 
 // Close writes the BotInfo back to disk.  This method does nothing on
@@ -31,7 +31,7 @@ func (s *Store) Close() error {
 	if s.bot == nil {
 		return nil
 	}
-	data, err := swarming.Marshal(&s.BotInfo)
+	data, err := swmbot.Marshal(&s.BotInfo)
 	if err != nil {
 		return errors.Annotate(err, "close botinfo").Err()
 	}
@@ -44,24 +44,24 @@ func (s *Store) Close() error {
 
 // Open loads the BotInfo for the Bot.  The BotInfo should be closed
 // afterward to write it back.
-func Open(b *swarming.Bot) (*Store, error) {
+func Open(b *swmbot.Bot) (*Store, error) {
 	s := Store{bot: b}
 	data, err := ioutil.ReadFile(botinfoFilePath(b))
 	if err != nil {
 		return nil, errors.Annotate(err, "open botinfo").Err()
 	}
-	if err := swarming.Unmarshal(data, &s.BotInfo); err != nil {
+	if err := swmbot.Unmarshal(data, &s.BotInfo); err != nil {
 		return nil, errors.Annotate(err, "open botinfo").Err()
 	}
 	return &s, nil
 }
 
 // botinfoFilePath returns the path for caching dimensions for the given bot.
-func botinfoFilePath(b *swarming.Bot) string {
+func botinfoFilePath(b *swmbot.Bot) string {
 	return filepath.Join(botinfoDirPath(b), fmt.Sprintf("%s.json", b.DUTID))
 }
 
 // botinfoDir returns the path to the cache directory for the given bot.
-func botinfoDirPath(b *swarming.Bot) string {
+func botinfoDirPath(b *swmbot.Bot) string {
 	return filepath.Join(b.AutotestPath, "swarming_state")
 }

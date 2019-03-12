@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/*
-Package swarming provides tools for swarming bots.
-*/
-package swarming
+// Package swmbot provides interaction with the Swarming bot running
+// the Skylab worker process.  This includes information about the
+// Swarming bot as well as any Swarming bot local state.
+package swmbot
 
 import (
 	"fmt"
