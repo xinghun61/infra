@@ -43,7 +43,7 @@ func TestGetDutInfoWithConsistentDatastore(t *testing.T) {
 		tf, validate := newTestFixtureWithContext(ctx, t)
 		defer validate()
 
-		setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{id: "dut1_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 		})
 
@@ -95,14 +95,14 @@ func TestGetDutInfoAfterUpdating(t *testing.T) {
 	inv.GitilesFactory = func(context.Context, string) (gitiles.GitilesClient, error) {
 		return gc, nil
 	}
-	setupLabInventoryArchive(ctx, gc, []testInventoryDut{
+	setGitilesDUTs(ctx, gc, []testInventoryDut{
 		{id: "dut1_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 	})
 	_, err := inv.UpdateCachedInventory(ctx, &fleet.UpdateCachedInventoryRequest{})
 	if err != nil {
 		t.Fatalf("UpdateCachedInventory returned non-nil error: %s", err)
 	}
-	setupLabInventoryArchive(ctx, gc, []testInventoryDut{
+	setGitilesDUTs(ctx, gc, []testInventoryDut{
 		{id: "dut1_new_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 	})
 	_, err = inv.UpdateCachedInventory(ctx, &fleet.UpdateCachedInventoryRequest{})
@@ -145,7 +145,7 @@ func TestGetDutInfoWithConsistentDatastoreNoCacheValidity(t *testing.T) {
 		tf, validate := newTestFixtureWithContext(ctx, t)
 		defer validate()
 
-		setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{id: "dut1_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 		})
 
@@ -186,7 +186,7 @@ func TestGetDutInfoWithEventuallyConsistentDatastore(t *testing.T) {
 		tf, validate := newTestFixtureWithContext(ctx, t)
 		defer validate()
 
-		setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{id: "dut1_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 		})
 
@@ -216,7 +216,7 @@ func TestGetDutInfoWithEventuallyConsistentDatastore(t *testing.T) {
 				So(dut.GetCommon().GetHostname(), ShouldEqual, "dut1_hostname")
 
 				Convey("after a Hostname update, GetDutInfo (by Hostname) returns NotFound", func() {
-					setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+					setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 						{id: "dut1_id", hostname: "dut1_new_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 					})
 					_, err := tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})

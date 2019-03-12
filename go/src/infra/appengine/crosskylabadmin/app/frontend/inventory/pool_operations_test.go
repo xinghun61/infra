@@ -15,12 +15,13 @@
 package inventory
 
 import (
+	"strings"
+	"testing"
+
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
 	"infra/libs/skylab/inventory"
-	"strings"
-	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
@@ -47,7 +48,7 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{})
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{})
 		So(err, ShouldBeNil)
 
 		resp, err := tf.Inventory.EnsurePoolHealthy(tf.C, &fleet.EnsurePoolHealthyRequest{
@@ -71,7 +72,7 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_cq_healthy", "link_cq_healthy", "link", "DUT_POOL_CQ"},
 			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
@@ -102,7 +103,7 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_CQ"},
 			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
@@ -146,7 +147,7 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_cq_unhealthy_1", "link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
 			{"link_cq_unhealthy_2", "link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
 			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
@@ -201,7 +202,7 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_cq_unknown", "link_cq_unknown", "link", "DUT_POOL_CQ"},
 			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
@@ -301,7 +302,7 @@ func TestEnsurePoolHealthyDryrun(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_cq_unhealthy_1", "link_cq_unhealthy_1", "link", "DUT_POOL_CQ"},
 			{"link_cq_unhealthy_2", "link_cq_unhealthy_2", "link", "DUT_POOL_CQ"},
 		})
@@ -335,7 +336,7 @@ func TestEnsurePoolHealthyCommit(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_cq_unhealthy", "link_cq_unhealthy", "link", "DUT_POOL_CQ"},
 			{"link_suites_healthy", "link_suites_healthy", "link", "DUT_POOL_SUITES"},
 		})
@@ -366,7 +367,7 @@ func TestResizePool(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{})
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{})
 		So(err, ShouldBeNil)
 
 		Convey("ResizePool to 0 DUTs in target pool makes no changes", func() {
@@ -400,7 +401,7 @@ func TestResizePool(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_suites_0", "link_suites_0", "link", "DUT_POOL_SUITES"},
 			{"link_suites_1", "link_suites_1", "link", "DUT_POOL_SUITES"},
 			{"link_suites_2", "link_suites_2", "link", "DUT_POOL_SUITES"},
@@ -455,7 +456,7 @@ func TestResizePool(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_suites_0", "link_suites_0", "link", "DUT_POOL_CQ"},
 			{"link_suites_1", "link_suites_1", "link", "DUT_POOL_CQ"},
 			{"link_suites_2", "link_suites_2", "link", "DUT_POOL_CQ"},
@@ -500,7 +501,7 @@ func TestResizePoolCommit(t *testing.T) {
 		tf, validate := newTestFixture(t)
 		defer validate()
 
-		err := setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+		err := setGitilesDUTs(tf.C, tf.FakeGitiles, []testInventoryDut{
 			{"link_suites_0", "link_suites_0", "link", "DUT_POOL_SUITES"},
 		})
 		So(err, ShouldBeNil)

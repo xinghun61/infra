@@ -16,11 +16,12 @@ package inventory
 
 import (
 	"fmt"
+	"testing"
+
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
 	"infra/libs/skylab/inventory"
-	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
@@ -109,9 +110,9 @@ type testInventoryDut struct {
 	pool     string
 }
 
-// setupLabInventoryArchive sets up fake gitiles to return the inventory of
+// setGitilesDUTs sets up fake gitiles to return the inventory of
 // duts provided.
-func setupLabInventoryArchive(c context.Context, g *fakes.GitilesClient, duts []testInventoryDut) error {
+func setGitilesDUTs(c context.Context, g *fakes.GitilesClient, duts []testInventoryDut) error {
 	return g.SetInventory(config.Get(c).Inventory, fakes.InventoryData{
 		Lab: inventoryBytesFromDUTs(duts),
 	})
@@ -146,7 +147,7 @@ type testInventoryServer struct {
 	dutIDs      []string
 }
 
-// setupLabInventoryArchive sets up fake gitiles to return the inventory of
+// setupInfraInventoryArchive sets up fake gitiles to return the inventory of
 // duts provided.
 func setupInfraInventoryArchive(c context.Context, g *fakes.GitilesClient, servers []testInventoryServer) error {
 	return g.SetInventory(config.Get(c).Inventory, fakes.InventoryData{
