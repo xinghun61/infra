@@ -1185,12 +1185,12 @@ wheel: <
 
 ## **infra_libs**
 
-### 2.0.0
+### 2.0.1
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/infra_libs-py2"
-  version: "version:2.0.0"
+  version: "version:2.0.1"
 >
 ```
 
@@ -1692,6 +1692,40 @@ wheel: <
 
 
 * *universal*
+
+## **pillow**
+
+### 5.2.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pillow/${vpython_platform}"
+  version: "version:5.2.0"
+>
+```
+
+
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x86*
+* *windows-x64*
+* *windows-x86*
+
+### 5.4.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pillow/${vpython_platform}"
+  version: "version:5.4.1"
+>
+```
+
+
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x86*
+* *windows-x64*
+* *windows-x86*
 
 ## **pluggy**
 
