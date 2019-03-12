@@ -1,6 +1,6 @@
 [if-any fields.values]
   [for fields.values]
-    <input type="number" name="custom_[fields.field_id]" value="[fields.values.val]"
+    <input type="number" name="custom_[fields.field_id][is arg2 ""][else]_[arg2][end]" value="[fields.values.val]"
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
            [if-index fields.values first]
@@ -16,11 +16,12 @@
     [if-index fields.values last]
       <u class="addMultiFieldValueWidget" data-field-id="[fields.field_id]" data-field-type="int"
          data-validate-1="[fields.field_def.min_value]" data-validate-2="[fields.field_def.max_value]"
+         data-phase-name="[arg2]"
          >Add a value</u>
     [end]
   [end]
 [else]
-    <input type="number" name="custom_[fields.field_id]" value=""
+    <input type="number" name="custom_[fields.field_id][is arg2 ""][else]_[arg2][end]" value=""
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
            [is arg0 "hidden"][else]
@@ -28,8 +29,9 @@
            [end]
            style="text-align:right; width:12em" class="multivalued customfield"
            aria-labelledby="[fields.field_id]_label">
-    <u class="addMultiFieldValueWidget" data-field-type="[fields.field_id]" data-field-type="int"
-       data-validate-1="[fields.field_def.min_value]" data-validate-2="[fields.field_def.max_value]">Add a value</u>
+    <u class="addMultiFieldValueWidget" data-field-id="[fields.field_id]" data-field-type="int"
+       data-validate-1="[fields.field_def.min_value]" data-validate-2="[fields.field_def.max_value]"
+       data-phase-name="[arg2]">Add a value</u>
 [end]
 
 [for fields.derived_values]

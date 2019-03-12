@@ -127,7 +127,7 @@
         <th>[fields.field_name]:</th>
         <td colspan="2">
           [if-any allow_edit]
-             [include "field-value-widgets.ezt" False "tmpl" False]
+             [include "field-value-widgets.ezt" False "tmpl" False ""]
           [else]
             [for fields.values]
               [fields.values.val]
@@ -179,7 +179,7 @@
           [if-any fields.field_def.is_approval_subfield]
             [fields.field_def.parent_approval_name]-[fields.field_name]:
             [if-any allow_edit]
-              [include "field-value-widgets.ezt" False "tmpl" False]
+              [include "field-value-widgets.ezt" False "tmpl" False ""]
             [else]
               [for fields.values]
                 [fields.values.val]
@@ -200,7 +200,7 @@
          [if-any fields.field_def.is_phase_field]
            [fields.field_name]:
            [if-any allow_edit]
-             [include "field-value-widgets.ezt" False "tmpl" False]
+             [include "field-value-widgets.ezt" False "tmpl" False ""]
            [else]
              [for fields.values]
                [fields.values.val]

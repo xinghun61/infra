@@ -129,7 +129,7 @@
          <tr [if-any fields.display][else]class="ifExpand"[define any_fields_to_reveal]Yes[end][end]>
           <th id="[fields.field_id]_label">[fields.field_name]:</th>
           <td colspan="2">
-            [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "" fields.field_def.is_required_bool]
+            [include "field-value-widgets.ezt" fields.field_def.is_multivalued_bool "" fields.field_def.is_required_bool ""]
             <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
           </td>
          <tr>
@@ -198,7 +198,7 @@
           [for fields][if-any fields.applicable]
             [if-any fields.field_def.is_approval_subfield]
               [fields.field_def.parent_approval_name]-[fields.field_name]:
-              [include "field-value-widgets.ezt" False "tmpl" False]
+              [include "field-value-widgets.ezt" False "tmpl" False ""]
               <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
             <br>
             [end]
@@ -214,7 +214,7 @@
          [for fields]
            [if-any fields.field_def.is_phase_field]
              [fields.field_name]:
-             [include "field-value-widgets.ezt" False "tmpl" False]
+             [include "field-value-widgets.ezt" False "tmpl" False ""]
              <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
            <br>
            [end]

@@ -1448,9 +1448,11 @@ function TKR_addGroupBy(colIndex) {
  * Add a multi-valued custom field editing widget.
  */
 function TKR_addMultiFieldValueWidget(
-    el, field_id, field_type, opt_validate_1, opt_validate_2) {
+  el, field_id, field_type, opt_validate_1, opt_validate_2, field_phase_name) {
   var widget = document.createElement('INPUT');
-  widget.name = 'custom_' + field_id;
+  widget.name = (field_phase_name && (
+    field_phase_name != '')) ? `custom_${field_id}_${field_phase_name}`
+      : `custom_${field_id}`;
   if (field_type == 'str' || field_type =='url') {
     widget.size = 90;
   }

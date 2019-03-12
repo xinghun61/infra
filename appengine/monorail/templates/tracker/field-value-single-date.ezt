@@ -5,7 +5,7 @@
 
 [# If the field has no explicit values, then show an empty form element.]
 [if-any fields.values][else]
-    <input type="date" name="custom_[fields.field_id]" id="[arg0]_custom_[fields.field_id]" value=""
+    <input type="date" name="custom_[fields.field_id][is arg2 ""][else]_[arg2][end]" id="[arg0]_custom_[fields.field_id]" value=""
            [is arg0 "hidden"][else]
              [if-any arg1] required="required"[end]
            [end]
@@ -18,7 +18,7 @@
 
 [for fields.values]
   [if-index fields.values first]
-    <input type="date" name="custom_[fields.field_id]" value="[fields.values.val]"
+    <input type="date" name="custom_[fields.field_id][is arg2 ""][else]_[arg2][end]" value="[fields.values.val]"
            [is arg0 "hidden"][else]
              [if-any arg1]required="required"[end]
            [end]

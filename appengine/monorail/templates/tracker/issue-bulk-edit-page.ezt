@@ -104,7 +104,7 @@
              [define widget_id]custom_[fields.field_id][end]
              [define multi][if-any fields.field_def.is_multivalued_bool]multi[end][end]
              [include "issue-bulk-operator-part.ezt" widget_id multi]
-             [include "field-value-widgets.ezt" False "" fields.field_def.is_required_bool]
+             [include "field-value-widgets.ezt" False "" fields.field_def.is_required_bool ""]
              <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
            </td>
          <tr>
