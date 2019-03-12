@@ -168,9 +168,11 @@ runOnLoad(function() {
     element.hidden = false;
   });
 
-  $('edit-desc-btn').addEventListener('click', function (e) {
-    $('ezt-comments').openEditDescriptionDialog({detail: {fieldName: ''}});
-  });
+  [if-any page_perms.EditIssue]
+    $('edit-desc-btn').addEventListener('click', function (e) {
+      $('ezt-comments').openEditDescriptionDialog({detail: {fieldName: ''}});
+    });
+  [end]
 
   if ($("star"))
     $("star").addEventListener("click", function (event) {

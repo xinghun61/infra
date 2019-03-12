@@ -122,7 +122,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
   showComments(evt) {
     this._commentsHidden = false;
 
-    if (evt.detail && evt.detail.callback) {
+    if (evt && evt.detail && evt.detail.callback) {
       evt.detail.callback();
     }
   }
