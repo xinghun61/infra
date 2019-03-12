@@ -14,6 +14,15 @@
       font-weight: bold;
       font-size: 18px;
     }
+    .intro-text {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 0.5em 8px;
+      margin: 0.5em auto;
+      border: 1px solid #ccc;
+      background: #f8f8f8;
+      font-size: 14px;
+    }
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/cats-app.html">
@@ -29,6 +38,10 @@
 <body>
   <cats-app id="app" components="Tools>CodeCoverage" page-header="Code Coverage: summary by revisions (Chrome Browser on Linux)">
     <div>
+    <div class="intro-text">
+    <p>These reports give test code coverage for Chromium.</p>
+    <p>Currently showing the code coverage of C/C++ code for Linux builds on the Dev branch.</p>
+    </div>
       <table>
         <thead>
           <tr class="coverage-header">
