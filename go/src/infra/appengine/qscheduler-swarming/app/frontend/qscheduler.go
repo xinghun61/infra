@@ -16,6 +16,7 @@ package frontend
 
 import (
 	"context"
+	"math/rand"
 
 	"infra/appengine/qscheduler-swarming/app/state"
 	"infra/appengine/qscheduler-swarming/app/state/operations"
@@ -99,5 +100,32 @@ func (s *BasicQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.Ge
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
 
-	return nil, status.Errorf(codes.Unimplemented, "not yet implemented")
+	store := state.NewStore(r.SchedulerId)
+	sp, err := store.Load(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var requestIDs []string
+
+	// TODO(akeshet): Select the N% most stale items, rather than 1% of tasks
+	// with uniform randomness.
+	for rid := range sp.Scheduler.GetWaitingRequests() {
+		if rand.Int31n(100) == 0 {
+			requestIDs = append(requestIDs, string(rid))
+		}
+	}
+	for _, w := range sp.Scheduler.GetWorkers() {
+		if !w.IsIdle() {
+			if rand.Int31n(100) == 0 {
+				requestIDs = append(requestIDs, string(w.RunningRequest().ID))
+			}
+		}
+	}
+
+	resp = &swarming.GetCallbacksResponse{
+		TaskIds: requestIDs,
+	}
+
+	return resp, nil
 }
