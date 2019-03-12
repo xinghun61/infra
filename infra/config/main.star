@@ -14,6 +14,7 @@ WORK IN PROGRESS:
 Includes CI configs for the following subprojects:
   * Codesearch.
   * Gsubtreed crons.
+  * WPT autoroller crons.
   * https://chromium.googlesource.com/chromium/tools/build
   * https://chromium.googlesource.com/chromium/tools/depot_tools
   * https://chromium.googlesource.com/infra/infra
@@ -158,3 +159,4 @@ exec('//subprojects/luci-gae.star')
 exec('//subprojects/luci-go.star')
 exec('//subprojects/luci-py.star')
 exec('//subprojects/recipe_engine.star')
+exec('//subprojects/wpt.star')
