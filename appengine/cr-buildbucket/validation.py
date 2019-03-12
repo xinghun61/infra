@@ -276,9 +276,14 @@ def validate_update_build_request(req):
             'too big to accept (%d > %d bytes)', size,
             model.BuildSteps.MAX_STEPS_LEN
         )
+      validate_steps(req.build.steps)
 
-    steps = dict()
-    _check_repeated(req.build, 'steps', lambda step: validate_step(step, steps))
+
+def validate_steps(steps):
+  seen_steps = dict()
+  for i, s in enumerate(steps):
+    with _enter('step[%d]' % i):
+      validate_step(s, seen_steps)
 
 
 def validate_step(step, steps):

@@ -428,21 +428,6 @@ class UpdateBuildRequestTests(BaseTestCase):
 
     self.assert_valid(msg)
 
-  def _mk_rpc(self, steps):
-    # Helper to make an UpdateBuild proto given steps.
-    return rpc_pb2.UpdateBuildRequest(
-        build=build_pb2.Build(steps=steps),
-        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
-    )
-
-  def _testcase_func_name(testcase_func, _param_num, param):  # pylint: disable=no-self-argument
-    # Helper to get parameterized function name given statuses as elements in
-    # parameterized tuple. Works for up to two (parent, child) steps.
-    return '%s_%s' % (
-        testcase_func.__name__,  # pylint: disable=no-member
-        '_'.join([status_name(arg) for arg in param.args[:2]])
-    )
-
   def test_missing_build(self):
     msg = rpc_pb2.UpdateBuildRequest(
         update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
@@ -461,39 +446,60 @@ class UpdateBuildRequestTests(BaseTestCase):
   @mock.patch('model.BuildSteps', autospec=True)
   def test_steps_too_big(self, mock_steps_mod):
     mock_steps_mod.MAX_STEPS_LEN = 13
-    msg = self._mk_rpc([
-        step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
-        step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
-    ])
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            steps=[
+                step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+                step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+    )
     self.assert_invalid(msg, r'too big to accept \(20 > 13 bytes\)')
 
+
+class ValidateStepsTests(BaseTestCase):
+  func_name = 'validate_steps'
+
+  def _testcase_func_name(testcase_func, _param_num, param):  # pylint: disable=no-self-argument
+    # Helper to get parameterized function name given statuses as elements in
+    # parameterized tuple. Works for up to two (parent, child) steps.
+    return '%s_%s' % (
+        testcase_func.__name__,  # pylint: disable=no-member
+        '_'.join([status_name(arg) for arg in param.args[:2]])
+    )
+
   def test_duplicate_step_names(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
         step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
         step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
-    ])
-    self.assert_invalid(msg, 'duplicate: u\'foo\'')
+    ]
+    self.assert_invalid(steps, 'duplicate: u\'foo\'')
 
   def test_unspecified_status(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
         step_pb2.Step(name='bar'),
-    ])
+    ]
     self.assert_invalid(
-        msg, 'must have buildbucket.v2.Status that is not STATUS_UNSPECIFIED'
+        steps, 'must have buildbucket.v2.Status that is not STATUS_UNSPECIFIED'
     )
 
   def test_nonexistent_status(self):
-    msg = self._mk_rpc([step_pb2.Step(name='foo', status=3)])
+    steps = [
+        step_pb2.Step(name='foo', status=3),
+    ]
     self.assert_invalid(
-        msg, 'must have buildbucket.v2.Status that is not STATUS_UNSPECIFIED'
+        steps, 'must have buildbucket.v2.Status that is not STATUS_UNSPECIFIED'
     )
 
   def test_start_time_with_unstarted_status(self):
-    msg = self._mk_rpc([step_pb2.Step(name='foo', status=common_pb2.SCHEDULED)])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
-    self.assert_invalid(msg, 'invalid for status SCHEDULED')
+    steps = [
+        step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    self.assert_invalid(steps, 'invalid for status SCHEDULED')
 
   @parameterized.expand([
       (common_pb2.STARTED,),
@@ -501,17 +507,21 @@ class UpdateBuildRequestTests(BaseTestCase):
       (common_pb2.FAILURE,),
   ])
   def test_started_status_without_start_time(self, status):
-    msg = self._mk_rpc([step_pb2.Step(name='foo', status=status)])
+    steps = [
+        step_pb2.Step(name='foo', status=status),
+    ]
     self.assert_invalid(
-        msg, 'start_time: required by status %s' % status_name(status)
+        steps, 'start_time: required by status %s' % status_name(status)
     )
 
   def test_nonterminal_status_with_end_time(self):
-    msg = self._mk_rpc([step_pb2.Step(name='foo', status=common_pb2.STARTED)])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
-    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
+    steps = [
+        step_pb2.Step(name='foo', status=common_pb2.STARTED),
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    steps[0].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
     self.assert_invalid(
-        msg, 'must have both or neither end_time and a terminal status'
+        steps, 'must have both or neither end_time and a terminal status'
     )
 
   @parameterized.expand([
@@ -521,10 +531,12 @@ class UpdateBuildRequestTests(BaseTestCase):
       (common_pb2.CANCELED,),
   ])
   def test_terminal_status_without_end_time(self, status):
-    msg = self._mk_rpc([step_pb2.Step(name='foo', status=status)])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    steps = [
+        step_pb2.Step(name='foo', status=status),
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
     self.assert_invalid(
-        msg, 'must have both or neither end_time and a terminal status'
+        steps, 'must have both or neither end_time and a terminal status'
     )
 
   @parameterized.expand([
@@ -534,33 +546,37 @@ class UpdateBuildRequestTests(BaseTestCase):
       (common_pb2.CANCELED,),
   ])
   def test_step_start_after_end(self, status):
-    msg = self._mk_rpc([step_pb2.Step(name='foo', status=status)])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
-    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2017, 1, 1))
-    self.assert_invalid(msg, 'start_time after end_time')
+    steps = [
+        step_pb2.Step(name='foo', status=status),
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    steps[0].end_time.FromDatetime(datetime.datetime(2017, 1, 1))
+    self.assert_invalid(steps, 'start_time after end_time')
 
   def test_missing_steps_shallow(self):
-    msg = self._mk_rpc([step_pb2.Step(name='a|b', status=common_pb2.SCHEDULED)])
-    self.assert_invalid(msg, r'parent to u\'a\|b\' must precede')
+    steps = [
+        step_pb2.Step(name='a|b', status=common_pb2.SCHEDULED),
+    ]
+    self.assert_invalid(steps, r'parent to u\'a\|b\' must precede')
 
   def test_missing_steps_deep(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.STARTED),
         step_pb2.Step(name='a|b', status=common_pb2.STARTED),
         step_pb2.Step(name='a|b|c', status=common_pb2.STARTED),
         step_pb2.Step(name='a|b|c|d|e', status=common_pb2.STARTED),
-    ])
+    ]
     for i in range(4):
-      msg.build.steps[i].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+      steps[i].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
 
-    self.assert_invalid(msg, r'parent to u\'a\|b\|c\|d\|e\' must precede')
+    self.assert_invalid(steps, r'parent to u\'a\|b\|c\|d\|e\' must precede')
 
   def test_unstarted_parent(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.SCHEDULED),
         step_pb2.Step(name='a|b', status=common_pb2.SCHEDULED),
-    ])
-    self.assert_invalid(msg, 'parent u\'a\' must be at least STARTED')
+    ]
+    self.assert_invalid(steps, 'parent u\'a\' must be at least STARTED')
 
   @parameterized.expand(
       [
@@ -576,21 +592,19 @@ class UpdateBuildRequestTests(BaseTestCase):
       testcase_func_name=_testcase_func_name,
   )
   def test_nonterminal_with_terminal_parent(self, child, parent, needs_start):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=parent),
         step_pb2.Step(name='a|b', status=common_pb2.SUCCESS),
         step_pb2.Step(name='a|c', status=child),
-    ])
+    ]
     for i in range(3):
       if i < 2 or needs_start:
-        msg.build.steps[i].start_time.FromDatetime(
-            datetime.datetime(2018, 1, 1)
-        )
+        steps[i].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
       if i < 2:
-        msg.build.steps[i].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
+        steps[i].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
 
     self.assert_invalid(
-        msg,
+        steps,
         r'non-terminal \(%s\) u\'a\|c\' must have STARTED parent u\'a\' \(%s\)'
         % (status_name(child), status_name(parent))
     )
@@ -604,7 +618,7 @@ class UpdateBuildRequestTests(BaseTestCase):
       testcase_func_name=_testcase_func_name,
   )
   def test_parent_status_better_than_child(self, child, parent):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.CANCELED),
         step_pb2.Step(name='a|b', status=common_pb2.CANCELED),
         step_pb2.Step(name='a|b|c', status=common_pb2.SUCCESS),
@@ -613,13 +627,13 @@ class UpdateBuildRequestTests(BaseTestCase):
         step_pb2.Step(name='a|b|e|f', status=child),
         step_pb2.Step(name='a|b|e|f|g', status=common_pb2.SUCCESS),
         step_pb2.Step(name='a|b|e|f|h', status=common_pb2.SUCCESS),
-    ])
+    ]
     for i in range(8):
-      msg.build.steps[i].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
-      msg.build.steps[i].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
+      steps[i].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+      steps[i].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
 
     self.assert_invalid(
-        msg,
+        steps,
         r'u\'a\|b\|e\|f\'\'s status %s is worse than parent u\'a\|b\|e\'\'s '
         'status %s' % (status_name(child), status_name(parent))
     )
@@ -637,7 +651,7 @@ class UpdateBuildRequestTests(BaseTestCase):
       testcase_func_name=_testcase_func_name,
   )
   def test_consistent_statuses(self, child, parent, needs_end):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.STARTED),
         step_pb2.Step(name='a|b', status=common_pb2.STARTED),
         step_pb2.Step(name='a|b|c', status=common_pb2.STARTED),
@@ -646,67 +660,67 @@ class UpdateBuildRequestTests(BaseTestCase):
         step_pb2.Step(name='a|b|e|f', status=child),
         step_pb2.Step(name='a|b|e|f|g', status=common_pb2.SUCCESS),
         step_pb2.Step(name='a|b|e|f|h', status=common_pb2.SUCCESS),
-    ])
+    ]
     for i in range(8):
-      msg.build.steps[i].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+      steps[i].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
       if i > 4 or (i == 4 and needs_end):
-        msg.build.steps[i].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
+        steps[i].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
 
-    self.assert_valid(msg)
+    self.assert_valid(steps)
 
   def test_start_before_parent_start(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.SUCCESS),
         step_pb2.Step(name='a|b', status=common_pb2.SUCCESS),
-    ])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2019, 1, 1))
-    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
-    msg.build.steps[1].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
-    msg.build.steps[1].end_time.FromDatetime(datetime.datetime(2018, 2, 1))
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2019, 1, 1))
+    steps[0].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
+    steps[1].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    steps[1].end_time.FromDatetime(datetime.datetime(2018, 2, 1))
 
     self.assert_invalid(
-        msg, r'start_time: cannot precede parent u\'a\'\'s start time'
+        steps, r'start_time: cannot precede parent u\'a\'\'s start time'
     )
 
   def test_start_after_parent_end(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.FAILURE),
         step_pb2.Step(name='a|b', status=common_pb2.FAILURE),
-    ])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
-    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2018, 2, 1))
-    msg.build.steps[1].start_time.FromDatetime(datetime.datetime(2019, 1, 1))
-    msg.build.steps[1].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    steps[0].end_time.FromDatetime(datetime.datetime(2018, 2, 1))
+    steps[1].start_time.FromDatetime(datetime.datetime(2019, 1, 1))
+    steps[1].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
 
     self.assert_invalid(
-        msg, r'start_time: cannot follow parent u\'a\'\'s end time'
+        steps, r'start_time: cannot follow parent u\'a\'\'s end time'
     )
 
   def test_end_before_parent_start(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.INFRA_FAILURE),
         step_pb2.Step(name='a|b', status=common_pb2.INFRA_FAILURE),
-    ])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2019, 1, 1))
-    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
-    msg.build.steps[1].end_time.FromDatetime(datetime.datetime(2018, 2, 1))
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2019, 1, 1))
+    steps[0].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
+    steps[1].end_time.FromDatetime(datetime.datetime(2018, 2, 1))
 
     self.assert_invalid(
-        msg, r'end_time: cannot precede parent u\'a\'\'s start time'
+        steps, r'end_time: cannot precede parent u\'a\'\'s start time'
     )
 
   def test_end_after_parent_end(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=common_pb2.FAILURE),
         step_pb2.Step(name='a|b', status=common_pb2.FAILURE),
-    ])
-    msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
-    msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
-    msg.build.steps[1].start_time.FromDatetime(datetime.datetime(2018, 2, 1))
-    msg.build.steps[1].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
+    ]
+    steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+    steps[0].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
+    steps[1].start_time.FromDatetime(datetime.datetime(2018, 2, 1))
+    steps[1].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
 
     self.assert_invalid(
-        msg, r'end_time: cannot follow parent u\'a\'\'s end time'
+        steps, r'end_time: cannot follow parent u\'a\'\'s end time'
     )
 
   @parameterized.expand(
@@ -752,23 +766,23 @@ class UpdateBuildRequestTests(BaseTestCase):
       self, child, parent, child_started, child_ended, parent_started,
       parent_ended
   ):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(name='a', status=parent),
         step_pb2.Step(name='a|b', status=child)
-    ])
+    ]
     if parent_started:
-      msg.build.steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
+      steps[0].start_time.FromDatetime(datetime.datetime(2018, 1, 1))
     if parent_ended:
-      msg.build.steps[0].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
+      steps[0].end_time.FromDatetime(datetime.datetime(2019, 2, 1))
     if child_started:
-      msg.build.steps[1].start_time.FromDatetime(datetime.datetime(2018, 2, 1))
+      steps[1].start_time.FromDatetime(datetime.datetime(2018, 2, 1))
     if child_ended:
-      msg.build.steps[1].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
+      steps[1].end_time.FromDatetime(datetime.datetime(2019, 1, 1))
 
-    self.assert_valid(msg)
+    self.assert_valid(steps)
 
   def test_duplicate_log_names(self):
-    msg = self._mk_rpc([
+    steps = [
         step_pb2.Step(
             name='foo',
             status=common_pb2.SCHEDULED,
@@ -791,8 +805,8 @@ class UpdateBuildRequestTests(BaseTestCase):
             ],
         ),
         step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
-    ])
-    self.assert_invalid(msg, 'duplicate: u\'tree\'')
+    ]
+    self.assert_invalid(steps, 'duplicate: u\'tree\'')
 
 
 class BuildPredicateTests(BaseTestCase):
