@@ -52,6 +52,9 @@ class StatusError(Exception):
 
 
 not_found = lambda *args: StatusError(prpc.StatusCode.NOT_FOUND, *args)
+failed_precondition = (
+    lambda *args: StatusError(prpc.StatusCode.FAILED_PRECONDITION, *args)
+)
 invalid_argument = (
     lambda *args: StatusError(prpc.StatusCode.INVALID_ARGUMENT, *args)
 )
@@ -300,6 +303,9 @@ def update_build_async(req, _res, ctx, _mask):
       raise not_found(
           'Cannot update nonexisting build with id %s', build_proto.id
       )
+    if build.is_ended:
+      raise failed_precondition('Cannot update an ended build')
+
     to_put = [build]
 
     if 'build.steps' in update_paths:

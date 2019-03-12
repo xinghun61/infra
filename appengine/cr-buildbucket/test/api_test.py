@@ -332,22 +332,31 @@ class UpdateBuildTests(BaseTestCase):
         expected_details='invalid build proto',
     )
 
-  @mock.patch('service.get_async', autospec=True)
-  def test_invalid_id(self, mock_get_async):
-    mock_get_async.return_value = future(None)
-
-    build = build_pb2.Build(
-        id=123,
-        status=common_pb2.STARTED,
+  def test_invalid_id(self):
+    req, ctx = self._mk_update_req(
+        build_pb2.Build(
+            id=123,
+            status=common_pb2.STARTED,
+        )
     )
-
-    req, ctx = self._mk_update_req(build)
     self.call(
         self.api.UpdateBuild,
         req,
         ctx=ctx,
         expected_code=prpc.StatusCode.NOT_FOUND,
         expected_details='Cannot update nonexisting build with id 123',
+    )
+
+  def test_ended_build(self):
+    test_util.build(id=123, status=common_pb2.SUCCESS).put()
+
+    req, ctx = self._mk_update_req(build_pb2.Build(id=123))
+    self.call(
+        self.api.UpdateBuild,
+        req,
+        ctx=ctx,
+        expected_code=prpc.StatusCode.FAILED_PRECONDITION,
+        expected_details='Cannot update an ended build',
     )
 
   def test_invalid_user(self):
