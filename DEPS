@@ -35,6 +35,10 @@ deps = {
      "{chromium_git}/infra/luci/gae@" +
      "2e2072ed4889f770e6e135554b716fd54a7d0646",
 
+  "infra/go/src/go.chromium.org/chromiumos/infra/proto":
+     "{chromium_git}/chromiumos/infra/proto@" +
+     "472dc306b21970cb668338ac5a045b1ab54164de",
+
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
      "{external_github}/twbs/bootstrap.git@" +
