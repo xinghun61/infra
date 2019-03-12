@@ -12,7 +12,7 @@ import (
 )
 
 // loadDUTName returns the Swarming bot's DUT's name.
-func loadDUTName(b *swmbot.Bot) (string, error) {
+func loadDUTName(b *swmbot.Info) (string, error) {
 	ddir, err := inventory.ReadSymlink(b.Inventory.DataDir)
 	if err != nil {
 		return "", errors.Annotate(err, "load DUT name").Err()

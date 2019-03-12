@@ -33,7 +33,7 @@ import (
 
 // Info holds information about the Swarming harness.
 type Info struct {
-	*swmbot.Bot
+	*swmbot.Info
 
 	ResultsDir string
 	DUTName    string
@@ -66,9 +66,9 @@ func (i *Info) Close() error {
 // Open opens and sets up the bot and task harness needed for Autotest
 // jobs.  An Info struct is returned with necessary fields, which must
 // be closed.
-func Open(ctx context.Context, b *swmbot.Bot, o ...Option) (i *Info, err error) {
+func Open(ctx context.Context, b *swmbot.Info, o ...Option) (i *Info, err error) {
 	i = &Info{
-		Bot: b,
+		Info: b,
 		labelUpdater: labelUpdater{
 			ctx:     ctx,
 			taskURL: b.TaskURL(),
@@ -96,7 +96,7 @@ func Open(ctx context.Context, b *swmbot.Bot, o ...Option) (i *Info, err error) 
 	return i, nil
 }
 
-func (i *Info) getDUTName(b *swmbot.Bot) string {
+func (i *Info) getDUTName(b *swmbot.Info) string {
 	if i.err != nil {
 		return ""
 	}
@@ -105,7 +105,7 @@ func (i *Info) getDUTName(b *swmbot.Bot) string {
 	return dutName
 }
 
-func (i *Info) loadBotInfo(b *swmbot.Bot) *swmbot.BotInfo {
+func (i *Info) loadBotInfo(b *swmbot.Info) *swmbot.BotInfo {
 	if i.err != nil {
 		return nil
 	}
@@ -118,7 +118,7 @@ func (i *Info) loadBotInfo(b *swmbot.Bot) *swmbot.BotInfo {
 	return &bi.BotInfo
 }
 
-func (i *Info) loadDUTInfo(ctx context.Context, b *swmbot.Bot) *inventory.DeviceUnderTest {
+func (i *Info) loadDUTInfo(ctx context.Context, b *swmbot.Info) *inventory.DeviceUnderTest {
 	if i.err != nil {
 		return nil
 	}
@@ -148,7 +148,7 @@ func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *swmbot.BotInfo) {
 	i.closers = append(i.closers, hib)
 }
 
-func (i *Info) makeResultsDir(b *swmbot.Bot) string {
+func (i *Info) makeResultsDir(b *swmbot.Info) string {
 	if i.err != nil {
 		return ""
 	}

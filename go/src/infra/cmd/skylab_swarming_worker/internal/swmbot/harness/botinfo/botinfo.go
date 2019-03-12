@@ -19,7 +19,7 @@ import (
 // Store holds a bot's botinfo and adds a Close method.
 type Store struct {
 	swmbot.BotInfo
-	bot *swmbot.Bot
+	bot *swmbot.Info
 }
 
 // Close writes the BotInfo back to disk.  This method does nothing on
@@ -44,7 +44,7 @@ func (s *Store) Close() error {
 
 // Open loads the BotInfo for the Bot.  The BotInfo should be closed
 // afterward to write it back.
-func Open(b *swmbot.Bot) (*Store, error) {
+func Open(b *swmbot.Info) (*Store, error) {
 	s := Store{bot: b}
 	data, err := ioutil.ReadFile(botinfoFilePath(b))
 	if err != nil {
@@ -57,11 +57,11 @@ func Open(b *swmbot.Bot) (*Store, error) {
 }
 
 // botinfoFilePath returns the path for caching dimensions for the given bot.
-func botinfoFilePath(b *swmbot.Bot) string {
+func botinfoFilePath(b *swmbot.Info) string {
 	return filepath.Join(botinfoDirPath(b), fmt.Sprintf("%s.json", b.DUTID))
 }
 
 // botinfoDir returns the path to the cache directory for the given bot.
-func botinfoDirPath(b *swmbot.Bot) string {
+func botinfoDirPath(b *swmbot.Info) string {
 	return filepath.Join(b.AutotestPath, "swarming_state")
 }

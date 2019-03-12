@@ -12,9 +12,9 @@ import (
 	"infra/cmd/skylab_swarming_worker/internal/lucifer"
 )
 
-func TestBot_LuciferConfig(t *testing.T) {
+func TestInfo_LuciferConfig(t *testing.T) {
 	t.Parallel()
-	b := &Bot{
+	b := &Info{
 		AutotestPath:  "/usr/local/autotest",
 		LuciferBinDir: "/opt/lucifer",
 	}

@@ -95,7 +95,7 @@ func mainInner(a *args) error {
 	ctx := context.Background()
 	// Set up Go logger for LUCI libraries.
 	ctx = gologger.StdConfig.Use(ctx)
-	b := swmbot.NewBotFromEnv()
+	b := swmbot.GetInfo()
 	log.Printf("Swarming bot config: %#v", b)
 	annotWriter, err := openLogDogWriter(ctx, a.logdogAnnotationURL)
 	if err != nil {
