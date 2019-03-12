@@ -50,7 +50,7 @@ func (c *versionRun) innerRun(a subcommands.Application, args []string, env subc
 	if err != nil {
 		return err
 	}
-	pkgs, err := cipd.InstalledPackages(cipd.CmdClient{}, root)
+	pkgs, err := cipd.InstalledPackages(root)
 	if err != nil {
 		return err
 	}

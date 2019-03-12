@@ -27,44 +27,21 @@ type Pin struct {
 	InstanceID string `json:"instance_id"`
 }
 
-// InstalledPackages returns information about installed packages.
-func InstalledPackages(c Client, root string) ([]Package, error) {
-	out, err := c.InstalledPackages(root)
+// InstalledPackages returns information about installed CIPD packages.
+func InstalledPackages(root string) ([]Package, error) {
+	out, err := installedPackages(root)
 	if err != nil {
 		return nil, errors.Annotate(err, "get CIPD packages for %s", root).Err()
 	}
-	var obj struct {
-		Result map[string][]Package `json:"result"`
-	}
-	err = json.Unmarshal(out, &obj)
+	pkgs, err := unmarshalPackages(out)
 	if err != nil {
 		return nil, errors.Annotate(err, "get CIPD packages for %s", root).Err()
-	}
-	if obj.Result == nil {
-		return nil, errors.Reason("get CIPD packages for %s: bad JSON", root).Err()
-	}
-	pkgs, ok := obj.Result[""]
-	if !ok {
-		return nil, errors.Reason("get CIPD packages for %s: bad JSON", root).Err()
 	}
 	return pkgs, nil
 }
 
-// Client is the interface for a CIPD client.  This can be used to
-// mock out the standard CIPD client or otherwise modify how CIPD is
-// called.
-type Client interface {
-	// InstalledPackages returns JSON encoded information about
-	// CIPD packages installed in the given CIPD root.  See
-	// example for JSON format.
-	InstalledPackages(root string) ([]byte, error)
-}
-
-// CmdClient provides the standard implementation of the Client interface.
-type CmdClient struct{}
-
-// InstalledPackages implements the Client interface.
-func (CmdClient) InstalledPackages(root string) ([]byte, error) {
+// installedPackages returns the raw JSON from running a cipd installed command.
+func installedPackages(root string) ([]byte, error) {
 	f, err := ioutil.TempFile("", "skylab-version")
 	if err != nil {
 		return nil, err
@@ -79,4 +56,21 @@ func (CmdClient) InstalledPackages(root string) ([]byte, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+func unmarshalPackages(jsonData []byte) ([]Package, error) {
+	var obj struct {
+		Result map[string][]Package `json:"result"`
+	}
+	if err := json.Unmarshal(jsonData, &obj); err != nil {
+		return nil, errors.Annotate(err, "unmarshal packages").Err()
+	}
+	if obj.Result == nil {
+		return nil, errors.Reason("unmarshal packages: bad JSON").Err()
+	}
+	pkgs, ok := obj.Result[""]
+	if !ok {
+		return nil, errors.Reason("unmarshal packages: bad JSON").Err()
+	}
+	return pkgs, nil
 }

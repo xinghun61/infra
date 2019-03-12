@@ -10,10 +10,9 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-type fakeClient struct{}
-
-func (fakeClient) InstalledPackages(root string) ([]byte, error) {
-	return []byte(`{
+func TestUnmarshalPackages(t *testing.T) {
+	t.Parallel()
+	jsonData := []byte(`{
   "result": {
     "": [
       {
@@ -26,14 +25,10 @@ func (fakeClient) InstalledPackages(root string) ([]byte, error) {
       }
     ]
   }
-}`), nil
-}
-
-func TestInstalledPackages(t *testing.T) {
-	t.Parallel()
-	got, err := InstalledPackages(fakeClient{}, "/nonexistent")
+}`)
+	got, err := unmarshalPackages(jsonData)
 	if err != nil {
-		t.Fatalf("InstalledPackages returned error: %s", err)
+		t.Fatalf("unmarshalPackages returned error: %s", err)
 	}
 	want := []Package{
 		{
