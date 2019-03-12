@@ -449,7 +449,7 @@ class RotaCreate extends LitElement {
     if (!this.config) {
       return html`<td><input id=fullDay type="checkbox"> AllDayEvents</td>`;
     }
-    return html`<td>${this.config.Cfg.Config.Shifts.AllDayEvents ?
+    return html`<td>${this.config.Cfg.Config.Shifts.FullDayEvents ?
       html`<input id="fullDay" type="checkbox" checked>` :
       html`<input id="fullDay" type="checkbox">`} AllDayEvents
     </td>`;
