@@ -55,7 +55,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         }
         h2 {
           margin: 0;
-          font-size: 105%;
+          font-size: 16px;
           font-weight: normal;
           padding: 0.5em 8px;
           box-sizing: border-box;
@@ -66,38 +66,49 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         }
         h2 em {
           margin-left: 16px;
-          font-size: 80%;
+          font-size: 12px;
+        }
+        .chip {
+          display: inline-block;
+          font-size: 12px;
+          padding: 0.25em 8px;
+          margin: 0 2px;
+          border-radius: 16px;
+          background: var(--chops-blue-gray-50);
         }
         .phase-edit {
           padding: 0.1em 8px;
         }
       </style>
       <h2>
-        <span>
+        <div>
           Approvals<span hidden\$="[[_isEmpty(phaseName)]]">:
             [[phaseName]]
           </span>
-          <span hidden\$="[[!_setPhaseFields.length]]">
-            -
-            <template is="dom-repeat" items="[[_setPhaseFields]]" as="field">
-              [[field.fieldRef.fieldName]]
-              <mr-field-values
-                name="[[field.fieldRef.fieldName]]"
-                type="[[field.fieldRef.type]]"
-                values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
-                project-name="[[projectName]]"
-              ></mr-field-values><span hidden\$="[[_isLastItem(_setPhaseFields.length, index)]]">;
-            </span></template>
+          <template is="dom-if" if="[[_isPhaseWithMilestone(phaseName)]]">
+            <template is="dom-repeat" items="[[fieldDefs]]" as="field">
+              <div class="chip">
+                [[field.fieldRef.fieldName]]:
+                <mr-field-values
+                  name="[[field.fieldRef.fieldName]]"
+                  type="[[field.fieldRef.type]]"
+                  values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+                  project-name="[[projectName]]"
+                ></mr-field-values>
+              </div>
+            </template>
             <em hidden\$="[[!_nextDate]]">
               [[_dateDescriptor]]
               <chops-timestamp timestamp="[[_nextDate]]"></chops-timestamp>
             </em>
-          </span>
-        </span>
-        <chops-button hidden\$="[[_isEmpty(phaseName)]]" on-click="edit" class="de-emphasized phase-edit">
-          <i class="material-icons">create</i>
-          Edit
-        </chops-button>
+          </template>
+        </div>
+        <template is="dom-if" if="[[_isPhaseWithMilestone(phaseName)]]">
+          <chops-button on-click="edit" class="de-emphasized phase-edit">
+            <i class="material-icons">create</i>
+            Edit
+          </chops-button>
+        </template>
       </h2>
       <template is="dom-repeat" items="[[approvals]]">
         <mr-approval-card approvers="[[item.approverRefs]]" setter="[[item.setterRef]]" field-name="[[item.fieldRef.fieldName]]" phase-name="[[phaseName]]" status-enum="[[item.status]]" survey="[[item.survey]]" survey-template="[[item.surveyTemplate]]" urls="[[item.urls]]" labels="[[item.labels]]" users="[[item.users]]"></mr-approval-card>
@@ -109,7 +120,18 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         <h3 id="phaseDialogTitle" class="medium-heading">
           Editing phase: [[phaseName]]
         </h3>
-        <mr-edit-metadata id="metadataForm" field-defs="[[fieldDefs]]" field-values="[[fieldValues]]" phase-name="[[phaseName]]" disabled="[[updatingIssue]]" error="[[updateIssueError.description]]" on-save="save" on-discard="cancel" is-approval="" disable-attachments=""></mr-edit-metadata>
+        <mr-edit-metadata
+          id="metadataForm"
+          field-defs="[[fieldDefs]]"
+          field-values="[[fieldValues]]"
+          phase-name="[[phaseName]]"
+          disabled="[[updatingIssue]]"
+          error="[[updateIssueError.description]]"
+          on-save="save"
+          on-discard="cancel"
+          is-approval=""
+          disable-attachments=""
+        ></mr-edit-metadata>
       </chops-dialog>
     `;
   }
@@ -174,10 +196,6 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
       _dateDescriptor: {
         type: String,
         computed: '_computeDateDescriptor(_status)',
-      },
-      _setPhaseFields: {
-        type: Array,
-        computed: '_computeSetPhaseFields(fieldDefs, fieldValueMap, phaseName)',
       },
       _milestoneData: Object,
     };
@@ -279,15 +297,6 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     return 'Due by ';
   }
 
-  _computeSetPhaseFields(fieldDefs, fieldValueMap, phaseName) {
-    // monorail:4692, remove later
-    if (!PHASES_WITH_MILESTONES.includes(phaseName)) return [];
-    if (!fieldDefs || !fieldValueMap) return [];
-    return fieldDefs.filter((fd) => fieldValueMap.has(
-      this._makeFieldValueMapKey(fd.fieldRef.fieldName, phaseName)
-    ));
-  }
-
   _computeMilestoneFieldValue(fieldValueMap, phaseName, fieldName) {
     const values = this._valuesForField(fieldValueMap, fieldName, phaseName);
     return values.length ? values[0] : undefined;
@@ -333,12 +342,12 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     });
   }
 
-  _isEmpty(str) {
-    return !str || !str.length;
+  _isPhaseWithMilestone(phaseName) {
+    return PHASES_WITH_MILESTONES.includes(phaseName);
   }
 
-  _isLastItem(l, i) {
-    return i >= l - 1;
+  _isEmpty(str) {
+    return !str || !str.length;
   }
 }
 customElements.define(MrPhase.is, MrPhase);
