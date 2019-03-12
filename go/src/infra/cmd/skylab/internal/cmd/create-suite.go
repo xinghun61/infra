@@ -56,6 +56,7 @@ suite. No retry if it is 0.`)
 			`Autotest keyval for test. Key may not contain : character. May be
 specified multiple times.`)
 		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quotascheduler account for test jobs.")
+		c.Flags.BoolVar(&c.orphan, "orphan", false, "Create a suite that doesn't wait for its child tests to finish. Internal or expert use ONLY!")
 		return c
 	},
 }
@@ -74,6 +75,7 @@ type createSuiteRun struct {
 	tags        []string
 	keyvals     []string
 	qsAccount   string
+	orphan      bool
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -102,7 +104,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	if err != nil {
 		return err
 	}
-	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, c.qsAccount, priority, c.timeoutMins, c.maxRetries, dimensions, keyvals)
+	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, c.qsAccount, priority, c.timeoutMins, c.maxRetries, dimensions, keyvals, c.orphan)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -123,7 +125,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
-	fmt.Fprintf(a.GetOut(), "Created Swarming task %s\n", swarmingTaskURL(e, taskID))
+	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", swarmingTaskURL(e, taskID))
 	return nil
 }
 
@@ -159,16 +161,16 @@ func newTaskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPai
 	}
 }
 
-func getSuiteSlices(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, dimensions []string, keyvals map[string]string) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSuiteSlices(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, dimensions []string, keyvals map[string]string, orphan bool) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	dims, err := toPairs(dimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
-	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, qsAccount, priority, timeoutMins, maxRetries, keyvals)
+	cmd := getRunSuiteCmd(board, model, pool, image, suiteName, qsAccount, priority, timeoutMins, maxRetries, keyvals, orphan)
 	return []*swarming.SwarmingRpcsTaskSlice{newTaskSlice(cmd, dims, timeoutMins)}, nil
 }
 
-func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, keyvals map[string]string) []string {
+func getRunSuiteCmd(board string, model string, pool string, image string, suiteName string, qsAccount string, priority int, timeoutMins int, maxRetries int, keyvals map[string]string, orphan bool) []string {
 	cmd := []string{
 		"/usr/local/autotest/bin/run_suite_skylab",
 		"--build", image,
@@ -176,9 +178,12 @@ func getRunSuiteCmd(board string, model string, pool string, image string, suite
 		"--pool", pool,
 		"--suite_name", suiteName,
 		"--priority", strconv.Itoa(priority),
-		"--timeout_mins", strconv.Itoa(timeoutMins),
-		// By default the script creates the suite and return immediately, to avoid task timeout.
-		"--create_and_return"}
+		"--timeout_mins", strconv.Itoa(timeoutMins)}
+
+	if orphan {
+		cmd = append(cmd, "--create_and_return")
+	}
+
 	if model != "" {
 		cmd = append(cmd, "--model", model)
 	}
