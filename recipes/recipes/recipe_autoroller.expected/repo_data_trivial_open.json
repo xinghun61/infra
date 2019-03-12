@@ -461,13 +461,13 @@
       "----",
       "cp",
       "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_roll_ts_utc\": \"2016-01-01T00:00:03\", \"trivial\": true}",
-      "gs://recipe-mega-roller-crappy-db/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
+      "gs://recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
     ],
     "infra_step": true,
     "name": "build.gsutil upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-mega-roller-crappy-db/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ=@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ=@@@"
     ]
   },
   {

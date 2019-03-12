@@ -87,7 +87,7 @@ _GS_BUCKET = 'recipe-mega-roller-crappy-db'
 
 
 def _gs_path(repo_url):
-  return base64.urlsafe_b64encode(repo_url)
+  return 'repo_metadata/%s' % base64.urlsafe_b64encode(repo_url)
 
 
 def get_commit_message(roll_result):
@@ -378,7 +378,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     If no such CL has been recorded, returns (None, None).
     """
     cat_result = self.m.gsutil.cat(
-        'gs://%s/repo_metadata/%s' % (_GS_BUCKET, _gs_path(repo_url)),
+        'gs://%s/%s' % (_GS_BUCKET, _gs_path(repo_url)),
         stdout=self.m.raw_io.output(),
         stderr=self.m.raw_io.output(),
         ok_ret=(0,1),
