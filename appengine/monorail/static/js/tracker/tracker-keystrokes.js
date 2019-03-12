@@ -112,25 +112,24 @@ function TKR_buildKeystrokeHelp() {
   let keysTable = TKR_createChild(
     dialog, 'table', null, null, null, 'width: 100%');
   let headerRow = TKR_createChild(keysTable, 'tr');
+  TKR_createKeysHelpHeader(headerRow, 'Anywhere');
   TKR_createKeysHelpHeader(headerRow, 'Issue list');
   TKR_createKeysHelpHeader(headerRow, 'Issue details');
-  TKR_createKeysHelpHeader(headerRow, 'Anywhere');
   let row1 = TKR_createChild(keysTable, 'tr');
+  TKR_createKeysHelpItem(row1, '/', null, 'focus on the issue search field');
   TKR_createKeysHelpItem(row1, 'k', 'j', 'up/down in the list');
   TKR_createKeysHelpItem(row1, 'k', 'j', 'prev/next issue in list');
-  TKR_createKeysHelpItem(row1, '/', null, 'focus on the issue search field');
   let row2 = TKR_createChild(keysTable, 'tr');
+  TKR_createKeysHelpItem(row2, 'c', null, 'compose a new issue');
   TKR_createKeysHelpItem(row2, 'o', '<Enter>', 'open the current issue');
   TKR_createKeysHelpItem(row2, 'u', null, 'up to issue list');
-  TKR_createKeysHelpItem(row2, 'c', null, 'compose a new issue');
   let row3 = TKR_createChild(keysTable, 'tr');
-  TKR_createKeysHelpItem(row3, 'Shift-O', null, 'open issue in new tab');
-  TKR_createKeysHelpItem(row3, 'p', 'n', 'prev/next comment');
   TKR_createKeysHelpItem(row3, 's', null, 'star the current issue');
-  let row4 = TKR_createChild(keysTable, 'tr');
-  TKR_createKeysHelpItem(row4, 'x', null, 'select the current issue');
+  TKR_createKeysHelpItem(row3, 'Shift-O', null, 'open issue in new tab');
   TKR_createKeysHelpItem(row4, 'r', null, 'add comment & make changes');
+  let row4 = TKR_createChild(keysTable, 'tr');
   TKR_createKeysHelpItem(row4, '?', null, 'show this help dialog');
+  TKR_createKeysHelpItem(row4, 'x', null, 'select the current issue');
 
   let footer = TKR_createChild(
     dialog, 'div', null, null, null,
