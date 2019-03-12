@@ -144,9 +144,20 @@ class TestStatusConversion(unittest.TestCase):
 
 class ToBuildProtosTests(testing.AppengineTestCase):
 
-  def to_proto(self, build, **kwargs):
+  def to_proto(
+      self,
+      build,
+      load_steps=False,
+      load_output_properties=False,
+      load_infra=False
+  ):
     proto = build_pb2.Build()
-    model.builds_to_protos_async([(build, proto)], **kwargs).get_result()
+    model.builds_to_protos_async(
+        [(build, proto)],
+        load_steps=load_steps,
+        load_output_properties=load_output_properties,
+        load_infra=load_infra,
+    ).get_result()
     return proto
 
   def test_steps(self):

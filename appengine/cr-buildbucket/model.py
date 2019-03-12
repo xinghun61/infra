@@ -497,10 +497,7 @@ def build_id_range(create_time_low, create_time_high):
 
 @ndb.tasklet
 def builds_to_protos_async(
-    builds,
-    load_steps=False,
-    load_output_properties=False,
-    load_infra=False,
+    builds, load_steps, load_output_properties, load_infra
 ):
   """Converts Build objects to build_pb2.Build messages.
 

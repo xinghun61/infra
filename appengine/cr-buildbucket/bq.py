@@ -141,11 +141,7 @@ def _export_builds(dataset, builds, deadline):
   logging.info('sending %d rows', len(builds))
 
   pairs = [(b, build_pb2.Build()) for b in builds]
-  model.builds_to_protos_async(
-      pairs,
-      load_steps=True,
-      load_output_properties=True,
-  ).get_result()
+  model.builds_to_protos_async(pairs, True, True, True).get_result()
 
   # Clear fields that we don't want in BigQuery.
   for _, proto in pairs:
