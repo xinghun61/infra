@@ -92,3 +92,12 @@ func (s *BasicQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.Not
 	}
 	return result, nil
 }
+
+// GetCallbacks implements QSchedulerServer.
+func (s *BasicQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.GetCallbacksRequest) (resp *swarming.GetCallbacksResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+
+	return nil, status.Errorf(codes.Unimplemented, "not yet implemented")
+}

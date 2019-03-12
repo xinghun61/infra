@@ -138,3 +138,11 @@ func (s *BatchedQSchedulerServer) NotifyTasks(ctx context.Context, r *swarming.N
 		return nil, ctx.Err()
 	}
 }
+
+// GetCallbacks implements QSchedulerServer.
+func (s *BatchedQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.GetCallbacksRequest) (resp *swarming.GetCallbacksResponse, err error) {
+	// GetCancellations is a read-only RPC. There is no datastore contention
+	// concern, so it does not need to be batched. Use the basic implementation.
+	basic := BasicQSchedulerServer{}
+	return basic.GetCallbacks(ctx, r)
+}

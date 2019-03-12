@@ -73,3 +73,20 @@ func (s *DecoratedExternalScheduler) NotifyTasks(c context.Context, req *NotifyT
 	}
 	return
 }
+
+func (s *DecoratedExternalScheduler) GetCallbacks(c context.Context, req *GetCallbacksRequest) (rsp *GetCallbacksResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "GetCallbacks", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.GetCallbacks(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "GetCallbacks", rsp, err)
+	}
+	return
+}
