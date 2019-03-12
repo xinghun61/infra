@@ -81,11 +81,13 @@ export class MrComment extends ReduxMixin(PolymerElement) {
           <a href\$="#[[id]]">
             Comment [[comment.sequenceNum]]
           </a>
-          by
-          <mr-user-link
-            display-name="[[comment.commenter.displayName]]"
-            user-id="[[comment.commenter.userId]]"
-          ></mr-user-link>
+          <template is="dom-if" if="[[comment.commenter]]">
+            by
+            <mr-user-link
+              display-name="[[comment.commenter.displayName]]"
+              user-id="[[comment.commenter.userId]]"
+            ></mr-user-link>
+          </template>
           <template is="dom-if" if="[[!quickMode]]">
             on
             <chops-timestamp

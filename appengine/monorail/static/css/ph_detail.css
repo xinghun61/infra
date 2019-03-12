@@ -100,7 +100,7 @@ pre.prettyprint {
   border: var(--chops-normal-border);
 }
 
-.closed_colors #meta-float {
+.closed_colors #left-part {
   background: var(--monorail-metadata-closed-bg);
 }
 

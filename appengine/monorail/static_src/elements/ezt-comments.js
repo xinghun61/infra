@@ -22,7 +22,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
       <style>
         mr-description {
           display: block;
-          padding: 0 12px;
+          padding: 8px 12px;
           max-width: 80em;
         }
         .comments {
