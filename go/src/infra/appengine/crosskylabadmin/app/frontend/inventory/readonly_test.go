@@ -20,12 +20,15 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
 	"infra/libs/skylab/inventory"
 
 	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/proto/gerrit"
+	"go.chromium.org/luci/common/proto/gitiles"
 	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/common/retry"
 	"golang.org/x/net/context"
@@ -86,24 +89,28 @@ func TestGetDutInfoAfterUpdating(t *testing.T) {
 	t.Parallel()
 	ctx := testingContext()
 	ctx = setDutInfoCacheValidity(ctx, 100*time.Minute)
-	tf, validate := newTestFixtureWithContext(ctx, t)
-	defer validate()
-	setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+
+	gc := fakes.NewGitilesClient()
+	inv := fakeServer()
+	inv.GitilesFactory = func(context.Context, string) (gitiles.GitilesClient, error) {
+		return gc, nil
+	}
+	setupLabInventoryArchive(ctx, gc, []testInventoryDut{
 		{id: "dut1_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 	})
-	_, err := tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})
+	_, err := inv.UpdateCachedInventory(ctx, &fleet.UpdateCachedInventoryRequest{})
 	if err != nil {
 		t.Fatalf("UpdateCachedInventory returned non-nil error: %s", err)
 	}
-	setupLabInventoryArchive(tf.C, tf.FakeGitiles, []testInventoryDut{
+	setupLabInventoryArchive(ctx, gc, []testInventoryDut{
 		{id: "dut1_new_id", hostname: "dut1_hostname", model: "link", pool: "DUT_POOL_SUITES"},
 	})
-	_, err = tf.Inventory.UpdateCachedInventory(tf.C, &fleet.UpdateCachedInventoryRequest{})
+	_, err = inv.UpdateCachedInventory(ctx, &fleet.UpdateCachedInventoryRequest{})
 	if err != nil {
 		t.Fatalf("UpdateCachedInventory returned non-nil error: %s", err)
 	}
 
-	resp, err := tf.Inventory.GetDutInfo(tf.C, &fleet.GetDutInfoRequest{Hostname: "dut1_hostname"})
+	resp, err := inv.GetDutInfo(ctx, &fleet.GetDutInfoRequest{Hostname: "dut1_hostname"})
 	if err != nil {
 		t.Fatalf("GetDutInfo returned non-nil error: %s", err)
 	}
@@ -114,6 +121,21 @@ func TestGetDutInfoAfterUpdating(t *testing.T) {
 	if hostname := dut.GetCommon().GetHostname(); hostname != "dut1_hostname" {
 		t.Errorf("Got DUT hostname %s; want dut1_hostname", hostname)
 	}
+}
+
+func fakeServer() *ServerImpl {
+	return &ServerImpl{
+		GerritFactory:  gerritFactory,
+		GitilesFactory: gitilesFactory,
+	}
+}
+
+func gerritFactory(context.Context, string) (gerrit.GerritClient, error) {
+	return &fakes.GerritClient{}, nil
+}
+
+func gitilesFactory(context.Context, string) (gitiles.GitilesClient, error) {
+	return fakes.NewGitilesClient(), nil
 }
 
 func TestGetDutInfoWithConsistentDatastoreNoCacheValidity(t *testing.T) {
