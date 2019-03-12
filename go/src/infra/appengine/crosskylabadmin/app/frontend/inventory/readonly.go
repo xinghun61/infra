@@ -25,6 +25,7 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/dronecfg"
 	dsinventory "infra/appengine/crosskylabadmin/app/frontend/internal/datastore/inventory"
 	"infra/libs/skylab/inventory"
 )
@@ -88,6 +89,10 @@ func (is *ServerImpl) UpdateCachedInventory(ctx context.Context, req *fleet.Upda
 	if err := dsinventory.UpdateDUTs(ctx, duts); err != nil {
 		return nil, err
 	}
+	es := makeDroneConfigs(store.Infrastructure, store.Lab)
+	if err := dronecfg.Update(ctx, es); err != nil {
+		return nil, err
+	}
 	return &fleet.UpdateCachedInventoryResponse{}, nil
 }
 
@@ -100,4 +105,44 @@ func dutsInCurrentEnvironment(ctx context.Context, duts []*inventory.DeviceUnder
 		}
 	}
 	return filtered
+}
+
+func makeDroneConfigs(inf *inventory.Infrastructure, lab *inventory.Lab) []dronecfg.Entity {
+	dutHostnames := makeDUTHostnameMap(lab.GetDuts())
+	var entities []dronecfg.Entity
+	for _, s := range inf.GetServers() {
+		if !isDrone(s) {
+			continue
+		}
+		e := dronecfg.Entity{
+			Hostname: s.GetHostname(),
+		}
+		for _, d := range s.GetDutUids() {
+			e.DUTs = append(e.DUTs, dronecfg.DUT{
+				ID:       d,
+				Hostname: dutHostnames[d],
+			})
+		}
+		entities = append(entities, e)
+	}
+	return entities
+}
+
+// makeDUTHostnameMap makes a mapping from DUT IDs to DUT hostnames.
+func makeDUTHostnameMap(duts []*inventory.DeviceUnderTest) map[string]string {
+	m := make(map[string]string)
+	for _, d := range duts {
+		c := d.GetCommon()
+		m[c.GetId()] = c.GetHostname()
+	}
+	return m
+}
+
+func isDrone(s *inventory.Server) bool {
+	for _, r := range s.GetRoles() {
+		if r == inventory.Server_ROLE_SKYLAB_DRONE {
+			return true
+		}
+	}
+	return false
 }
