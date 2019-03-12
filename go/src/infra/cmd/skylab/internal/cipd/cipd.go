@@ -42,20 +42,8 @@ func InstalledPackages(root string) ([]Package, error) {
 
 // installedPackages returns the raw JSON from running a cipd installed command.
 func installedPackages(root string) ([]byte, error) {
-	f, err := ioutil.TempFile("", "skylab-version")
-	if err != nil {
-		return nil, err
-	}
-	defer os.Remove(f.Name())
-	cmd := exec.Command("cipd", "installed", "-root", root, "-json-output", f.Name())
-	if _, err := cmd.Output(); err != nil {
-		return nil, err
-	}
-	out, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
+	cmd := exec.Command("cipd", "installed", "-root", root)
+	return jsonCmdOutput(cmd)
 }
 
 func unmarshalPackages(jsonData []byte) ([]Package, error) {
@@ -73,4 +61,22 @@ func unmarshalPackages(jsonData []byte) ([]Package, error) {
 		return nil, errors.Reason("unmarshal packages: bad JSON").Err()
 	}
 	return pkgs, nil
+}
+
+// Run a cipd command that supports -json-output and return the raw JSON.
+func jsonCmdOutput(cmd *exec.Cmd) ([]byte, error) {
+	f, err := ioutil.TempFile("", "skylab-cipd-output")
+	if err != nil {
+		return nil, errors.Annotate(err, "JSON command output").Err()
+	}
+	defer os.Remove(f.Name())
+	cmd.Args = append(cmd.Args, "-json-output", f.Name())
+	if _, err := cmd.Output(); err != nil {
+		return nil, errors.Annotate(err, "JSON command output").Err()
+	}
+	out, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, errors.Annotate(err, "JSON command output").Err()
+	}
+	return out, nil
 }
