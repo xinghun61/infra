@@ -39,7 +39,7 @@ import (
 func TestGetDutInfoWithConsistentDatastore(t *testing.T) {
 	Convey("On happy path and a single DUT in the inventory", t, func() {
 		ctx := testingContext()
-		ctx = setDutInfoCacheValidity(ctx, 100*time.Minute)
+		ctx = withDutInfoCacheValidity(ctx, 100*time.Minute)
 		tf, validate := newTestFixtureWithContext(ctx, t)
 		defer validate()
 
@@ -88,7 +88,7 @@ func TestGetDutInfoWithConsistentDatastore(t *testing.T) {
 func TestGetDutInfoAfterUpdating(t *testing.T) {
 	t.Parallel()
 	ctx := testingContext()
-	ctx = setDutInfoCacheValidity(ctx, 100*time.Minute)
+	ctx = withDutInfoCacheValidity(ctx, 100*time.Minute)
 
 	gc := fakes.NewGitilesClient()
 	inv := fakeServer()
@@ -141,7 +141,7 @@ func gitilesFactory(context.Context, string) (gitiles.GitilesClient, error) {
 func TestGetDutInfoWithConsistentDatastoreNoCacheValidity(t *testing.T) {
 	Convey("With no cache validity a single DUT in the inventory", t, func() {
 		ctx := testingContext()
-		ctx = setDutInfoCacheValidity(ctx, 0*time.Second)
+		ctx = withDutInfoCacheValidity(ctx, 0*time.Second)
 		tf, validate := newTestFixtureWithContext(ctx, t)
 		defer validate()
 
@@ -181,7 +181,7 @@ func TestGetDutInfoWithConsistentDatastoreNoCacheValidity(t *testing.T) {
 func TestGetDutInfoWithEventuallyConsistentDatastore(t *testing.T) {
 	Convey("With eventually consistent datastore and a single DUT in the inventory", t, func() {
 		ctx := testingContext()
-		ctx = setDutInfoCacheValidity(ctx, 100*time.Second)
+		ctx = withDutInfoCacheValidity(ctx, 100*time.Second)
 		datastore.GetTestable(ctx).Consistent(false)
 		tf, validate := newTestFixtureWithContext(ctx, t)
 		defer validate()
@@ -239,7 +239,7 @@ func TestGetDutInfoWithEventuallyConsistentDatastore(t *testing.T) {
 	})
 }
 
-func setDutInfoCacheValidity(ctx context.Context, v time.Duration) context.Context {
+func withDutInfoCacheValidity(ctx context.Context, v time.Duration) context.Context {
 	cfg := config.Get(ctx)
 	cfg.Inventory.DutInfoCacheValidity = google.NewDuration(v)
 	return config.Use(ctx, cfg)
