@@ -248,6 +248,8 @@ class ApiRateLimiter(RateLimiter):
     keysets = _CreateApiCacheKeys(client_id, client_email, now)
     qpm_limit = client_config_svc.GetQPMDict().get(
         client_email, DEFAULT_API_QPM)
+    if qpm_limit < DEFAULT_API_QPM:
+      qpm_limit = DEFAULT_API_QPM
     window_limit = qpm_limit * N_MINUTES
     self._AuxCheckStart(
         keysets, window_limit,

@@ -16,6 +16,7 @@ import settings
 
 from framework import ratelimiter
 from services import service_manager
+from services import client_config_svc
 from testing import fake
 from testing import testing_helpers
 
@@ -339,14 +340,14 @@ class ApiRateLimiterTest(unittest.TestCase):
   def tearDown(self):
     self.testbed.deactivate()
 
-  def testCheckStart_pass(self):
+  def testCheckStart_Allowed(self):
     now = 0.0
     self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
     self.ratelimiter.CheckStart(self.client_id, None, now)
     self.ratelimiter.CheckStart(None, None, now)
     self.ratelimiter.CheckStart('anonymous', None, now)
 
-  def testCheckStart_fail(self):
+  def testCheckStart_Rejected(self):
     now = 0.0
     keysets = ratelimiter._CreateApiCacheKeys(
         self.client_id, self.client_email, now)
@@ -356,6 +357,51 @@ class ApiRateLimiterTest(unittest.TestCase):
       memcache.add_multi(value)
     with self.assertRaises(ratelimiter.ApiRateLimitExceeded):
       self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
+
+  def testCheckStart_Allowed_HigherQPMSpecified(self):
+    """Client goes over the default, but has a higher QPM set."""
+    now = 0.0
+    keysets = ratelimiter._CreateApiCacheKeys(
+        self.client_id, self.client_email, now)
+    qpm_dict = client_config_svc.GetQPMDict()
+    qpm_dict[self.client_email] = ratelimiter.DEFAULT_API_QPM + 10
+    # The client used 1 request more than the default limit in each of the
+    # 5 minutes in our 5 minute sample window, so 5 over to the total.
+    values = [{key: ratelimiter.DEFAULT_API_QPM + 1 for key in keyset} for
+              keyset in keysets]
+    for value in values:
+      memcache.add_multi(value)
+    self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
+    del qpm_dict[self.client_email]
+
+  def testCheckStart_Allowed_LowQPMIgnored(self):
+    """Client specifies a QPM lower than the default and default is used."""
+    now = 0.0
+    keysets = ratelimiter._CreateApiCacheKeys(
+        self.client_id, self.client_email, now)
+    qpm_dict = client_config_svc.GetQPMDict()
+    qpm_dict[self.client_email] = ratelimiter.DEFAULT_API_QPM - 10
+    values = [{key: ratelimiter.DEFAULT_API_QPM for key in keyset} for
+              keyset in keysets]
+    for value in values:
+      memcache.add_multi(value)
+    self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
+    del qpm_dict[self.client_email]
+
+  def testCheckStart_Rejected_LowQPMIgnored(self):
+    """Client specifies a QPM lower than the default and default is used."""
+    now = 0.0
+    keysets = ratelimiter._CreateApiCacheKeys(
+        self.client_id, self.client_email, now)
+    qpm_dict = client_config_svc.GetQPMDict()
+    qpm_dict[self.client_email] = ratelimiter.DEFAULT_API_QPM - 10
+    values = [{key: ratelimiter.DEFAULT_API_QPM + 1 for key in keyset} for
+              keyset in keysets]
+    for value in values:
+      memcache.add_multi(value)
+    with self.assertRaises(ratelimiter.ApiRateLimitExceeded):
+      self.ratelimiter.CheckStart(self.client_id, self.client_email, now)
+    del qpm_dict[self.client_email]
 
   def testCheckEnd(self):
     start_time = 0.0
