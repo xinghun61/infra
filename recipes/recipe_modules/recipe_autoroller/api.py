@@ -83,6 +83,13 @@ ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE, ROLL_SKIP = range(4)
 _ROLL_STALE_THRESHOLD = datetime.timedelta(hours=2)
 
 
+_GS_BUCKET = 'recipe-mega-roller-crappy-db'
+
+
+def _gs_path(repo_url):
+  return base64.urlsafe_b64encode(repo_url)
+
+
 def get_commit_message(roll_result):
   """Construct a roll commit message from 'recipes.py autoroll' result.
   """
@@ -362,9 +369,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         repo_data.issue_url)
 
     self.m.gsutil.upload(
-        self.m.json.input(repo_data.to_json()),
-        'recipe-roller-cl-uploads',
-        'repo_metadata/%s' % base64.urlsafe_b64encode(repo_url))
+        self.m.json.input(repo_data.to_json()), _GS_BUCKET, _gs_path(repo_url))
 
   def _get_pending_cl_status(self, repo_url, workdir):
     """Returns (current_repo_data, git_cl_status_string) of the last known
@@ -372,10 +377,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     If no such CL has been recorded, returns (None, None).
     """
-    gs_bucket = 'recipe-mega-roller-crappy-db'
     cat_result = self.m.gsutil.cat(
-        'gs://%s/repo_metadata/%s' % (
-            gs_bucket, base64.urlsafe_b64encode(repo_url)),
+        'gs://%s/repo_metadata/%s' % (_GS_BUCKET, _gs_path(repo_url)),
         stdout=self.m.raw_io.output(),
         stderr=self.m.raw_io.output(),
         ok_ret=(0,1),
