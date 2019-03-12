@@ -124,7 +124,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
         window.CS_env.token, window.CS_env.tokenExpiresSec);
     }
 
-    const allComments = this.commentList.concat(this.descriptionList);
+    const allComments = [this.descriptionList[0]].concat(this.commentList);
     // mr-comment-content relies on projectName being set on the redux state.
     this.dispatchAction({
       type: actionType.UPDATE_ISSUE_REF,
