@@ -152,12 +152,19 @@ class Build(ndb.Model):
   # Does not include:
   #   output.properties: see BuildOutputProperties
   #   steps: see BuildSteps.
-  #   infra: see infra_bytes. CAVEAT: field infra does exist during build
-  #     creation, and moved into infra_bytes right before initial datastore.put.
+  #   input.properties: see input_properties_bytes.
+  #     CAVEAT: field input.properties does exist during build creation, and
+  #     moved into input_properties_bytes right before initial datastore.put.
+  #   infra: see infra_bytes.
+  #     CAVEAT: field infra does exist during build creation, and moved into
+  #     infra_bytes right before initial datastore.put.
   #
   # Transition period: proto is either None or complete, i.e. created by
   # creation.py or fix_builds.py.
   proto = datastore_utils.ProtobufProperty(build_pb2.Build)
+
+  # Build.input.properties serialized to bytes.
+  input_properties_bytes = ndb.BlobProperty()
 
   # Build.infra serialized to bytes.
   infra_bytes = ndb.BlobProperty()
@@ -497,7 +504,8 @@ def build_id_range(create_time_low, create_time_high):
 
 @ndb.tasklet
 def builds_to_protos_async(
-    builds, load_steps, load_output_properties, load_infra
+    builds, load_input_properties, load_output_properties, load_steps,
+    load_infra
 ):
   """Converts Build objects to build_pb2.Build messages.
 
@@ -523,6 +531,9 @@ def builds_to_protos_async(
 
     if load_infra and b.infra_bytes:
       d.infra.ParseFromString(b.infra_bytes)
+
+    if load_input_properties and b.input_properties_bytes:
+      d.input.properties.ParseFromString(b.input_properties_bytes)
 
     if steps_f:
       steps = yield steps_f

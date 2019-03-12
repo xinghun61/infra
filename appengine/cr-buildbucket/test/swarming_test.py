@@ -489,6 +489,7 @@ class SwarmingTest(BaseTest):
   def test_is_migrating_builder_prod_async_no_host(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     build = test_util.build(
+        for_creation=True,
         input=dict(
             properties=bbutil.dict_to_struct({
                 'mastername': 'tryserver.chromium.linux',
@@ -505,6 +506,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = test_util.build(
+        for_creation=True,
         input=dict(
             properties=bbutil.dict_to_struct({
                 'mastername': 'tryserver.chromium.linux',
@@ -536,13 +538,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = test_util.build(
-        input=dict(
-            properties=bbutil.dict_to_struct({
-                'mastername': 'tryserver.chromium.linux',
-            })
-        ),
-    )
-    build = test_util.build(
+        for_creation=True,
         input=dict(
             properties=bbutil.dict_to_struct({
                 'luci_migration_master_name': 'custom_master',
@@ -562,6 +558,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = test_util.build(
+        for_creation=True,
         input=dict(
             properties=bbutil.dict_to_struct({
                 'mastername': 'tryserver.chromium.linux',
@@ -579,6 +576,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = test_util.build(
+        for_creation=True,
         input=dict(
             properties=bbutil.dict_to_struct({
                 'mastername': 'tryserver.chromium.linux',
@@ -596,6 +594,7 @@ class SwarmingTest(BaseTest):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
     builder_cfg.luci_migration_host = 'migration.example.com'
     build = test_util.build(
+        for_creation=True,
         input=dict(
             properties=bbutil.dict_to_struct({
                 'mastername': 'tryserver.chromium.linux',
@@ -628,7 +627,7 @@ class SwarmingTest(BaseTest):
     )
 
     build = test_util.build(
-        with_infra_field=True,
+        for_creation=True,
         id=1,
         number=1,
         builder=build_pb2.BuilderID(
@@ -948,7 +947,7 @@ class SwarmingTest(BaseTest):
     }
 
     build = test_util.build(
-        with_infra_field=True,
+        for_creation=True,
         number=1,
         input=dict(experimental=True),
     )
@@ -1011,7 +1010,7 @@ class SwarmingTest(BaseTest):
         ],
     }
 
-    build = test_util.build(number=1, with_infra_field=True)
+    build = test_util.build(number=1, for_creation=True)
 
     self.json_response = {
         'task_id': 'deadbeef',
@@ -1100,7 +1099,7 @@ class SwarmingTest(BaseTest):
         return_value='beeff00d',
     )
 
-    build = test_util.build(id=1, with_infra_field=True)
+    build = test_util.build(id=1, for_creation=True)
     build.tags = ['builder:linux', 'buildset:1']
     build.canary_preference = model.CanaryPreference.CANARY
 
@@ -1421,7 +1420,7 @@ class SwarmingTest(BaseTest):
 
   def test_create_task_async_override_dimensions(self):
     build = test_util.build(
-        with_infra_field=True,
+        for_creation=True,
         infra=dict(
             buildbucket=dict(
                 requested_dimensions=[
@@ -1930,7 +1929,7 @@ class SwarmingTest(BaseTest):
     self.assertIsNone(run_result)
 
   def test_generate_build_url(self):
-    build = test_util.build(id=1, with_infra_field=True)
+    build = test_util.build(id=1, for_creation=True)
     self.assertEqual(
         swarming._generate_build_url('milo.example.com', build),
         'https://milo.example.com/b/1',

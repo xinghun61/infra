@@ -495,6 +495,8 @@ class BuildBucketApi(remote.Service):
         tags=build.proto.tags,
         gerrit_changes=build.proto.input.gerrit_changes[:],
     )
+    if build.input_properties_bytes:  # pragma: no branch
+      sbr.properties.ParseFromString(build.input_properties_bytes)
     if build.proto.input.HasField('gitiles_commit'):  # pragma: no branch
       sbr.gitiles_commit.CopyFrom(build.proto.input.gitiles_commit)
 

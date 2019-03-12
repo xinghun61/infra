@@ -8,6 +8,7 @@ from components import auth
 from components import net
 from components import utils
 from google.appengine.ext import ndb
+from google.protobuf import struct_pb2
 from testing_utils import testing
 import mock
 
@@ -124,7 +125,9 @@ class CreationTest(testing.AppengineTestCase):
     props = {'foo': 'bar', 'qux': 1}
     prop_struct = bbutil.dict_to_struct(props)
     build = self.add(dict(properties=prop_struct))
-    self.assertEqual(build.proto.input.properties, prop_struct)
+    actual = struct_pb2.Struct()
+    actual.ParseFromString(build.input_properties_bytes)
+    self.assertEqual(actual, prop_struct)
     self.assertEqual(
         build.parse_infra().buildbucket.requested_properties, prop_struct
     )

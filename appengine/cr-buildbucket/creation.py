@@ -373,8 +373,12 @@ def add_many_async(build_request_list):
   def put_and_cache_builds_async():
     """Puts new builds, updates metrics and memcache."""
 
-    # Move Build.proto.infra into Build.infra_bytes before putting.
+    # Move Build.input.properties and Build.proto.infra into
+    # Build.input_properties_bytes and Build.infra_bytes before putting.
     for b in new_builds.itervalues():
+      b.input_properties_bytes = b.proto.input.properties.SerializeToString()
+      b.proto.input.ClearField('properties')
+
       b.is_luci = b.proto.infra.HasField('swarming')
       b.infra_bytes = b.proto.infra.SerializeToString()
       b.proto.ClearField('infra')

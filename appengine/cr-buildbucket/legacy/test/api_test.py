@@ -338,10 +338,11 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   @mock.patch('creation.add_async', autospec=True)
   def test_retry(self, add_async):
+    props = bbutil.dict_to_struct({'foo': 'bar'})
     orig_build = test_util.build(
         id=1,
         input=dict(
-            properties=bbutil.dict_to_struct({'foo': 'bar'}),
+            properties=props,
             gitiles_commit=dict(
                 host='gitiles.example.com',
                 project='chromium/src',
@@ -382,7 +383,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                     pubsub_topic='projects/foo/topic/bar',
                     user_data='hello',
                 ),
-                properties=orig_build.proto.input.properties,
+                properties=props,
                 tags=orig_build.proto.tags,
                 canary=common_pb2.NO,
                 gitiles_commit=orig_build.proto.input.gitiles_commit,

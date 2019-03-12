@@ -92,11 +92,11 @@ BUILD_DEFAULTS = build_pb2.Build(
 )
 
 
-def build(with_infra_field=False, **build_proto_fields):  # pragma: no cover
+def build(for_creation=False, **build_proto_fields):  # pragma: no cover
   """Creates a model.Build from proto fields, with reasonable defaults.
 
-  If with_infra_field is True, returned Build.proto.infra will be set.
-  It should be set when testing build creation code paths.
+  If for_creation is True, returned Build.proto.{infra, input.properties} will
+  be set.
   """
   now = utils.utcnow()
 
@@ -139,13 +139,18 @@ def build(with_infra_field=False, **build_proto_fields):  # pragma: no cover
     )
 
   infra = copy.deepcopy(proto.infra)
-  if not with_infra_field:
+  input_properties = copy.deepcopy(proto.input.properties)
+  if not for_creation:
     proto.ClearField('infra')
+    proto.input.ClearField('properties')
 
   ret = model.Build(
       id=proto.id,
       proto=proto,
-      infra_bytes=infra.SerializeToString() if not with_infra_field else '',
+      input_properties_bytes=(
+          input_properties.SerializeToString() if not for_creation else ''
+      ),
+      infra_bytes=infra.SerializeToString() if not for_creation else '',
       created_by=auth.Identity.from_bytes(proto.created_by),
       create_time=proto.create_time.ToDatetime(),
       status_changed_time=now,

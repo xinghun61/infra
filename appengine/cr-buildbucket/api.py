@@ -144,10 +144,13 @@ def builds_to_protos_async(builds, build_mask=None):
 
   return model.builds_to_protos_async(
       builds,
-      load_steps=build_mask and build_mask.includes('steps'),
       load_output_properties=(
           build_mask and build_mask.includes('output.properties')
       ),
+      load_input_properties=(
+          build_mask and build_mask.includes('input.properties')
+      ),
+      load_steps=build_mask and build_mask.includes('steps'),
       load_infra=build_mask and build_mask.includes('infra'),
   )
 
