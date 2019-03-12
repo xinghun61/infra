@@ -231,7 +231,8 @@ function ac_keyevent_(event) {
   let source = event.target || event.srcElement;
   if (source.shadowRoot) {
     // Find the element within the shadowDOM.
-    source = event.path[0];
+		const path = event.path || event.composedPath();
+	  source = path[0];
   }
   if (('INPUT' == source.tagName && source.type.match(/^text|email$/i))
        || 'TEXTAREA' == source.tagName) {

@@ -32,7 +32,7 @@ var _listeners = {
 /*
  * Map of key names to char code. This map is consulted before
  * charCodeAt(0) is used to determine the character code.
- * 
+ *
  * This map also serves as a definitive list of supported "special" keys.
  * See _codeForEvent for details.
  */
@@ -153,8 +153,9 @@ function _getSourceElement(e) {
 	}
 
 	if (element.shadowRoot) {
-	    // Find the element within the shadowDOM.
-	    element = e.path[0];
+	  // Find the element within the shadowDOM.
+		const path = e.path || e.composedPath();
+	  element = path[0];
 	}
 
 	// If the source element is a text node, the parent is the object
