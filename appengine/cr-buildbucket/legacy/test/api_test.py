@@ -351,6 +351,7 @@ class V1ApiTest(testing.EndpointsTestCase):
         ),
     )
     orig_build.parameters.pop('changes')
+    orig_build.tags = ['a:b']
     orig_build.put()
 
     retried_build = test_util.build(
@@ -384,7 +385,7 @@ class V1ApiTest(testing.EndpointsTestCase):
                     user_data='hello',
                 ),
                 properties=props,
-                tags=orig_build.proto.tags,
+                tags=[dict(key='a', value='b')],
                 canary=common_pb2.NO,
                 gitiles_commit=orig_build.proto.input.gitiles_commit,
             ),

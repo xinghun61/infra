@@ -147,6 +147,7 @@ class ToBuildProtosTests(testing.AppengineTestCase):
   def to_proto(
       self,
       build,
+      load_tags=False,
       load_input_properties=False,
       load_output_properties=False,
       load_steps=False,
@@ -155,12 +156,26 @@ class ToBuildProtosTests(testing.AppengineTestCase):
     proto = build_pb2.Build()
     model.builds_to_protos_async(
         [(build, proto)],
+        load_tags=load_tags,
         load_input_properties=load_input_properties,
         load_output_properties=load_output_properties,
         load_steps=load_steps,
         load_infra=load_infra,
     ).get_result()
     return proto
+
+  def test_tags(self):
+    build = test_util.build()
+    self.assertFalse(build.proto.tags)
+    build.tags = [
+        'a:b',
+        'builder:hidden',
+    ]
+
+    actual = self.to_proto(build, load_tags=True)
+    self.assertEqual(
+        list(actual.tags), [common_pb2.StringPair(key='a', value='b')]
+    )
 
   def test_steps(self):
     build = test_util.build()

@@ -173,9 +173,6 @@ class CreationTest(testing.AppengineTestCase):
     )
     self.assertIn('buildset:' + bs, build.tags)
     self.assertIn('gitiles_ref:refs/heads/master', build.tags)
-    self.assertIn(
-        common_pb2.StringPair(key='buildset', value=bs), build.proto.tags
-    )
 
   def test_add_with_gerrit_change(self):
     cl = common_pb2.GerritChange(
@@ -187,9 +184,6 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.proto.input.gerrit_changes[:], [cl])
     bs = 'patch/gerrit/gerrit.example.com/1234/5'
     self.assertIn('buildset:' + bs, build.tags)
-    self.assertIn(
-        common_pb2.StringPair(key='buildset', value=bs), build.proto.tags
-    )
 
   def test_add_with_priority(self):
     build = self.add(dict(priority=42))

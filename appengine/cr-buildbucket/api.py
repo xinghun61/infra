@@ -136,22 +136,20 @@ def builds_to_protos_async(builds, build_mask=None):
   Like model.builds_to_protos_async, but accepts a build mask and mutates
   model.Build entities in addition to build_pb2.Build.
   """
-
   # Trim model.Build.proto before deep-copying into destination.
   if build_mask:  # pragma: no branch
     for b, _ in builds:
       build_mask.trim(b.proto)
 
+  includes = lambda path: build_mask and build_mask.includes(path)
+
   return model.builds_to_protos_async(
       builds,
-      load_output_properties=(
-          build_mask and build_mask.includes('output.properties')
-      ),
-      load_input_properties=(
-          build_mask and build_mask.includes('input.properties')
-      ),
-      load_steps=build_mask and build_mask.includes('steps'),
-      load_infra=build_mask and build_mask.includes('infra'),
+      load_tags=includes('tags'),
+      load_output_properties=includes('output.properties'),
+      load_input_properties=includes('input.properties'),
+      load_steps=includes('steps'),
+      load_infra=includes('infra'),
   )
 
 

@@ -122,7 +122,7 @@ def parse_v1_tags(v1_tags):
   for t in v1_tags:
     key, value = buildtags.parse(t)
 
-    if key == 'gitiles_ref':
+    if key == buildtags.GITILES_REF_KEY:
       gitiles_ref = value
       continue
 
@@ -492,9 +492,9 @@ class BuildBucketApi(remote.Service):
         canary=model.CANARY_PREFERENCE_TO_TRINARY[
             (build.canary_preference or model.CanaryPreference.AUTO)],
         properties=build.proto.input.properties,
-        tags=build.proto.tags,
         gerrit_changes=build.proto.input.gerrit_changes[:],
     )
+    build.tags_to_protos(sbr.tags)
     if build.input_properties_bytes:  # pragma: no branch
       sbr.properties.ParseFromString(build.input_properties_bytes)
     if build.proto.input.HasField('gitiles_commit'):  # pragma: no branch

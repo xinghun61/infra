@@ -152,6 +152,7 @@ class Build(ndb.Model):
   # Does not include:
   #   output.properties: see BuildOutputProperties
   #   steps: see BuildSteps.
+  #   tags: stored in tags attribute, because we have to index them anyway.
   #   input.properties: see input_properties_bytes.
   #     CAVEAT: field input.properties does exist during build creation, and
   #     moved into input_properties_bytes right before initial datastore.put.
@@ -227,8 +228,8 @@ class Build(ndb.Model):
   # instead.
   create_time = ndb.DateTimeProperty()
 
-  # Superset of proto.tags. May contain auto-added tags.
-  # A list of colon-separated key-value pairs.
+  # A list of colon-separated key-value pairs. Indexed.
+  # Used to populate tags in builds_to_protos_async, if requested.
   tags = ndb.StringProperty(repeated=True)
 
   # If True, the build won't affect monitoring and won't be surfaced in
@@ -386,6 +387,13 @@ class Build(ndb.Model):
     self.lease_expiration_date = None
     self.leasee = None
 
+  def tags_to_protos(self, dest):
+    """Adds non-hidden self.tags to a repeated StringPair container."""
+    for t in self.tags:
+      k, v = buildtags.parse(t)
+      if k not in buildtags.HIDDEN_TAG_KEYS:
+        dest.add(key=k, value=v)
+
 
 class BuildDetailEntity(ndb.Model):
   """A base class for a Datastore entity that stores some details of one Build.
@@ -504,8 +512,12 @@ def build_id_range(create_time_low, create_time_high):
 
 @ndb.tasklet
 def builds_to_protos_async(
-    builds, load_input_properties, load_output_properties, load_steps,
-    load_infra
+    builds,
+    load_tags,
+    load_input_properties,
+    load_output_properties,
+    load_steps,
+    load_infra,
 ):
   """Converts Build objects to build_pb2.Build messages.
 
@@ -528,6 +540,9 @@ def builds_to_protos_async(
     d.CopyFrom(b.proto)
     # Old builds do not have proto.id
     d.id = b.key.id()
+
+    if load_tags and not d.tags:
+      b.tags_to_protos(d.tags)
 
     if load_infra and b.infra_bytes:
       d.infra.ParseFromString(b.infra_bytes)

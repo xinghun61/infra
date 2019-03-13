@@ -137,6 +137,7 @@ def build(for_creation=False, **build_proto_fields):  # pragma: no cover
             proto.number,
         )
     )
+  proto.ClearField('tags')
 
   infra = copy.deepcopy(proto.infra)
   input_properties = copy.deepcopy(proto.input.properties)

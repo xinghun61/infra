@@ -316,6 +316,7 @@ def _buildbucket_property(build):
   export.ClearField('update_time')
   export.input.ClearField('properties')
   export.infra.buildbucket.ClearField('requested_properties')
+  build.tags_to_protos(export.tags)
   return {
       'build': json_format.MessageToDict(export),
       'hostname': app_identity.get_default_version_hostname(),

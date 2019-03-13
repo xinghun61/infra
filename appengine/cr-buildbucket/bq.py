@@ -143,6 +143,7 @@ def _export_builds(dataset, builds, deadline):
   pairs = [(b, build_pb2.Build()) for b in builds]
   model.builds_to_protos_async(
       pairs,
+      load_tags=True,
       load_input_properties=True,
       load_output_properties=True,
       load_steps=True,

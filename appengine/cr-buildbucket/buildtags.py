@@ -18,6 +18,7 @@ DELIMITER = ':'
 BUILDER_KEY = 'builder'
 BUILD_ADDRESS_KEY = 'build_address'
 BUILDSET_KEY = 'buildset'
+GITILES_REF_KEY = 'gitiles_ref'
 RESERVED_KEYS = {
     BUILD_ADDRESS_KEY,
 }
@@ -33,6 +34,13 @@ RE_BUILDSET_GITILES_COMMIT = re.compile(
 # Gerrit CL buildset pattern. Example:
 # patch/gerrit/chromium-review.googlesource.com/677784/5
 RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/([^/]+)/(\d+)/(\d+)$')
+
+# Tags keys hidden in v2 responses.
+HIDDEN_TAG_KEYS = {
+    BUILDER_KEY,
+    BUILD_ADDRESS_KEY,
+    GITILES_REF_KEY,
+}
 
 
 def builder_tag(builder):  # pragma: no cover
