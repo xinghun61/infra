@@ -25,7 +25,12 @@ import (
 // EventSink defines the interface for a class that records scheduler
 // events, for metrics or analytics purposes.
 type EventSink interface {
+	// AddEvent emits a task event to this sink.
 	AddEvent(*metrics.TaskEvent)
+
+	// WithFields returns a child sink, that will emit events with the given
+	// field overrides.
+	WithFields(isCallback bool) EventSink
 }
 
 // nullEventSink is a trivial implementation of MetricsSink that discards
@@ -34,6 +39,11 @@ type nullEventSink struct{}
 
 // AddEvent implements EventSink.
 func (m *nullEventSink) AddEvent(_ *metrics.TaskEvent) {}
+
+// WithFields implements EventSink.
+func (m *nullEventSink) WithFields(isCallback bool) EventSink {
+	return m
+}
 
 // NullEventSink is a trivial MetricsSink that discards metrics.
 var NullEventSink EventSink = &nullEventSink{}

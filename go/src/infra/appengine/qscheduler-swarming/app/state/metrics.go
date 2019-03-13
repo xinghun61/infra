@@ -124,17 +124,21 @@ var (
 // successful datastore transaction.
 type metricsBuffer struct {
 	schedulerID string
-	taskEvents  []*metrics.TaskEvent
+	taskEvents  *[]*metrics.TaskEvent
+	isCallback  *bool
 }
 
 // newMetricsBuffer creates a metrics sink for the given scheduler.
 func newMetricsBuffer(schedulerID string) *metricsBuffer {
-	return &metricsBuffer{schedulerID: schedulerID}
+	return &metricsBuffer{
+		schedulerID: schedulerID,
+		taskEvents:  &[]*metrics.TaskEvent{},
+	}
 }
 
 // reset resets the given metrics sink, erasing any previously added entries.
 func (e *metricsBuffer) reset() {
-	e.taskEvents = nil
+	e.taskEvents = &[]*metrics.TaskEvent{}
 }
 
 // flushToBQ flushes events to bigquery.
@@ -142,12 +146,12 @@ func (e *metricsBuffer) reset() {
 // This can be called inside of a datastore transaction, in which case events
 // will only be flushed if the transaction succeeds.
 func (e *metricsBuffer) flushToBQ(ctx context.Context) error {
-	return eventlog.TaskEvents(ctx, e.taskEvents...)
+	return eventlog.TaskEvents(ctx, *e.taskEvents...)
 }
 
 // flushToTsMon flushes events to ts_mon.
 func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
-	for _, event := range e.taskEvents {
+	for _, event := range *e.taskEvents {
 		switch event.EventType {
 		case metrics.TaskEvent_SWARMING_COMPLETED:
 			details := event.GetCompletedDetails()
@@ -169,7 +173,19 @@ func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 // AddEvent implements scheduler.EventSink.
 func (e *metricsBuffer) AddEvent(event *metrics.TaskEvent) {
 	event.SchedulerId = e.schedulerID
-	e.taskEvents = append(e.taskEvents, event)
+	if e.isCallback != nil {
+		event.IsCallback = *e.isCallback
+	}
+	*e.taskEvents = append(*e.taskEvents, event)
+}
+
+// WithFields implements scheduler.EventSink.
+func (e *metricsBuffer) WithFields(isCallback bool) scheduler.EventSink {
+	return &metricsBuffer{
+		isCallback:  &isCallback,
+		schedulerID: e.schedulerID,
+		taskEvents:  e.taskEvents,
+	}
 }
 
 // recordStateGaugeMetrics records general gauge metrics about the given state.
