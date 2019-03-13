@@ -97,8 +97,14 @@ message TaskEvent {
   // Category is the EventCategory for this event's EventType.
   EventCategory category = 13;
 
+  // IsCallback specifies whether this event was due to a notification callback
+  // from swarming that was requested by the scheduler. This is for diagnostic
+  // purposes only, and is only applicable for events of category
+  // CATEGORY_SWARMING.
+  bool is_callback = 14;
+
   // Reserved field values for additional non-details fields to be added.
-  reserved 14 to 99;
+  reserved 15 to 99;
 
   // EnqueuedDetails represents event details that are specific to the
   // ENQUEUED event type.
