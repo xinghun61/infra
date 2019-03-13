@@ -483,8 +483,8 @@ class UserService(object):
 
     return user
 
-  def GetUser(self, _cnxn, user_id):
-    return self.test_users.get(user_id)
+  def GetUser(self, cnxn, user_id):
+    return self.GetUsersByIDs(cnxn, [user_id])[user_id]
 
   def _CreateUser(self, _cnxn, email):
     if email in self.users_by_email:

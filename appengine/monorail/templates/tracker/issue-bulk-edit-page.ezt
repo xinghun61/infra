@@ -295,6 +295,15 @@ runOnLoad(function() {
 
   _exposeExistingLabelFields();
 
+  [if-any errors.custom_fields]
+    var field_error;
+    [for errors.custom_fields]
+      field_error = document.getElementById('error_custom_' + [errors.custom_fields.field_id]);
+      field_error.textContent = "[errors.custom_fields.message]";
+      field_error.style.display = "";
+    [end]
+  [end]
+
   checksubmit();
   setInterval(checksubmit, 700); [# catch changes that were not keystrokes, e.g., paste menu item.]
 

@@ -183,6 +183,11 @@ class IssueBulkEdit(servlet.Servlet):
 
     parsed = tracker_helpers.ParseIssueRequest(
         mr.cnxn, post_data, self.services, mr.errors, mr.project_name)
+    bounce_labels = (
+        parsed.labels[:] +
+        ['-%s' % lr for lr in parsed.labels_remove])
+    bounce_fields = tracker_views.MakeBounceFieldValueViews(
+        parsed.fields.vals, config)
     field_helpers.ShiftEnumFieldsIntoLabels(
         parsed.labels, parsed.labels_remove,
         parsed.fields.vals, parsed.fields.vals_remove,
@@ -191,6 +196,9 @@ class IssueBulkEdit(servlet.Servlet):
         mr.cnxn, self.services.user, parsed.fields.vals, config)
     field_vals_remove = field_helpers.ParseFieldValues(
         mr.cnxn, self.services.user, parsed.fields.vals_remove, config)
+
+    field_helpers.ValidateCustomFields(
+        mr, self.services, field_vals, config, mr.errors)
 
     # Treat status '' as no change and explicit 'clear' as clearing the status.
     status = parsed.status
@@ -382,9 +390,6 @@ class IssueBulkEdit(servlet.Servlet):
       bounce_cc_parts = (
           parsed.users.cc_usernames +
           ['-%s' % ccur for ccur in parsed.users.cc_usernames_remove])
-      bounce_labels = (
-          parsed.labels +
-          ['-%s' % lr for lr in parsed.labels_remove])
       self.PleaseCorrect(
           mr, initial_status=parsed.status,
           initial_owner=parsed.users.owner_username,
@@ -392,7 +397,8 @@ class IssueBulkEdit(servlet.Servlet):
           initial_cc=', '.join(bounce_cc_parts),
           initial_comment=parsed.comment,
           initial_components=parsed.components.entered_str,
-          labels=bounce_labels)
+          labels=bounce_labels,
+          fields=bounce_fields)
       return
 
     with mr.profiler.Phase('reindexing issues'):

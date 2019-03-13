@@ -162,7 +162,7 @@ class IssueBulkEditTest(unittest.TestCase):
     self.assertEqual(400, self.servlet.response.status)
 
   def testProcessFormData_NoUser(self):
-    """Test PDF when the user is not logged in."""
+    """Test PFD when the user is not logged in."""
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project)
     mr.local_id_list = [99999]
@@ -245,6 +245,30 @@ class IssueBulkEditTest(unittest.TestCase):
     last_comment = comments[-1]
     first_amendment = last_comment.amendments[0]
     return first_amendment.field, first_amendment.newvalue
+
+  def testProcessFormData_BadUserField(self):
+    """Test PFD when a nonexistent user is added as a field value."""
+    local_id_1, _ = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
+        [], [], [], [], 111L, 'test issue')
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.project,
+        perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
+        user_info={'user_id': 111})
+    mr.local_id_list = [local_id_1]
+
+    fd = tracker_bizobj.MakeFieldDef(
+        12345, 789, 'PM', tracker_pb2.FieldTypes.USER_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+    self.config.field_defs.append(fd)
+
+    post_data = fake.PostData(
+        custom_12345=['ghost@gmail.com'], owner=['owner@example.com'], can=[1],
+        q=[''], colspec=[''], sort=[''], groupby=[''], start=[0], num=[100])
+    self._MockMethods()
+    self.servlet.ProcessFormData(mr, post_data)
+    self.assertEqual('User not found', mr.errors.custom_fields[0].message)
 
   def testProcessFormData_CustomFields(self):
     """Test PFD processes edits to custom fields."""
