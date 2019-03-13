@@ -211,8 +211,9 @@ def validate_schedule_build_request(
     with _enter('builder'):
       validate_builder_id(req.builder, require_builder=require_builder)
 
-  if not allow_reserved_properties:  # pragma: no branch
-    with _enter('properties'):
+  with _enter('properties'):
+    validate_struct(req.properties)
+    if not allow_reserved_properties:  # pragma: no branch
       for path in RESERVED_PROPERTY_PATHS:
         if _struct_has_path(req.properties, path):
           _err('property path %r is reserved', path)
@@ -249,6 +250,12 @@ def validate_schedule_build_request(
   if req.HasField('notify'):  # pragma: no branch
     with _enter('notify'):
       validate_notification_config(req.notify)
+
+
+def validate_struct(struct):
+  for name, value in struct.fields.iteritems():
+    if not value.WhichOneof('kind'):
+      _enter_err(name, 'value is not set; for null, initialize null_value')
 
 
 def validate_notification_config(notify):

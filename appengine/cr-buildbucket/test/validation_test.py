@@ -8,6 +8,7 @@ import os
 import unittest
 
 from google.protobuf import field_mask_pb2
+from google.protobuf import struct_pb2
 from google.protobuf import text_format
 from parameterized import parameterized
 
@@ -273,6 +274,16 @@ class ScheduleBuildRequestTests(BaseTestCase):
     )
     msg.properties.update({'a': 1, '$recipe_engine/runtime': {'b': 1}})
     self.assert_valid(msg)
+
+  def test_empty_property_value(self):
+    msg = rpc_pb2.ScheduleBuildRequest(
+        request_id='request id',
+        builder=dict(project='chromium', bucket='try', builder='linux-rel'),
+        properties=dict(fields=dict(a=struct_pb2.Value()),),
+    )
+    self.assert_invalid(
+        msg, r'properties\.a: value is not set; for null, initialize null_value'
+    )
 
   def test_repeating_dimension_key_and_expiration(self):
     msg = rpc_pb2.ScheduleBuildRequest(
