@@ -21,13 +21,14 @@ from model.isolated_target import IsolatedTarget
 
 
 class CompletedBuildPubsubIngestorTest(AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/index-isolated-builds',
-           completed_build_pubsub_ingestor.CompletedBuildPubsubIngestor),
-      ],
-      debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/index-isolated-builds',
+       completed_build_pubsub_ingestor.CompletedBuildPubsubIngestor),
+  ],
+                                       debug=True)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
   @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
@@ -38,8 +39,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     mock_build.output.properties['mastername'] = 'chromium.linux'
     mock_build.output.properties['buildername'] = 'Linux Builder'
     mock_build.output.properties.get_or_create_struct(
-        'swarm_hashes_ref/heads/mockmaster(at){#123}')[
-            'mock_target'] = 'mock_hash'
+        'swarm_hashes_ref/heads/mockmaster(at){#123}'
+    )['mock_target'] = 'mock_hash'
     gitiles_commit = mock_build.input.gitiles_commit
     gitiles_commit.host = 'gitiles.host'
     gitiles_commit.project = 'gitiles/project'
@@ -61,7 +62,9 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
                     json.dumps({
                         'build': {
                             'project': 'chromium',
-                            'status': 'COMPLETED'
+                            'bucket': 'luci.chromium.ci',
+                            'status': 'COMPLETED',
+                            'parameters_json': '{"builder_name": "builder"}',
                         }
                     })),
         },
@@ -79,6 +82,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(1, len(json.loads(response.body)['created_rows']))
 
   @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
+  @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testPushNoBuild(self, mock_post, *_):
@@ -95,7 +100,10 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
                     json.dumps({
                         'build': {
                             'project': 'chromium',
-                            'status': 'COMPLETED'
+                            'bucket': 'luci.chromium.ci',
+                            'status': 'COMPLETED',
+                            'result': 'SUCCESS',
+                            'parameters_json': '{"builder_name": "builder"}',
                         }
                     })),
         },
@@ -104,6 +112,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
         '/index-isolated-builds?format=json', params=request_body, status=404)
     self.assertEqual(404, response.status_int)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
   @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
@@ -118,7 +128,9 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
                     json.dumps({
                         'build': {
                             'project': 'chromium',
-                            'status': 'PENDING'
+                            'bucket': 'luci.chromium.ci',
+                            'status': 'PENDING',
+                            'parameters_json': '{"builder_name": "builder"}',
                         }
                     })),
         },
@@ -128,6 +140,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertFalse(mock_post.called)
     self.assertEqual(200, response.status_int)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
   @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
@@ -140,6 +154,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertFalse(mock_post.called)
     self.assertEqual(200, response.status_int)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
   @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
@@ -171,7 +187,9 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
                     json.dumps({
                         'build': {
                             'project': 'chromium',
-                            'status': 'COMPLETED'
+                            'bucket': 'luci.chromium.ci',
+                            'status': 'COMPLETED',
+                            'parameters_json': '{"builder_name": "builder"}',
                         }
                     })),
         },
@@ -182,6 +200,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertNotIn('created_rows', response.body)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
+  @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testNoMasternameBuild(self, mock_post, *_):
@@ -190,8 +210,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     mock_build.status = 12
     mock_build.output.properties['buildername'] = 'Linux Builder'
     mock_build.output.properties.get_or_create_struct(
-        'swarm_hashes_ref/heads/mockmaster(at){#123}')[
-            'mock_target'] = 'mock_hash'
+        'swarm_hashes_ref/heads/mockmaster(at){#123}'
+    )['mock_target'] = 'mock_hash'
     gitiles_commit = mock_build.input.gitiles_commit
     gitiles_commit.host = 'gitiles.host'
     gitiles_commit.project = 'gitiles/project'
@@ -213,7 +233,9 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
                     json.dumps({
                         'build': {
                             'project': 'chromium',
-                            'status': 'COMPLETED'
+                            'bucket': 'luci.chromium.ci',
+                            'status': 'COMPLETED',
+                            'parameters_json': '{"builder_name": "builder"}',
                         }
                     })),
         },
@@ -223,6 +245,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual(200, response.status_int)
     self.assertNotIn('created_rows', response.body)
 
+  @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
   @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
@@ -236,11 +260,11 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     mock_build.output.properties['target_buildername'] = (
         'linux_chromium_compile_dbg_ng')
     mock_build.output.properties.get_or_create_struct(
-        'swarm_hashes_ref/heads/mockmaster(at){#123}_with_patch')[
-            'mock_target'] = 'mock_hash'
+        'swarm_hashes_ref/heads/mockmaster(at){#123}_with_patch'
+    )['mock_target'] = 'mock_hash'
     mock_build.output.properties.get_or_create_struct(
-        'swarm_hashes_ref/heads/mockmaster(at){#123}_without_patch')[
-            'mock_target'] = 'mock_hash_without'
+        'swarm_hashes_ref/heads/mockmaster(at){#123}_without_patch'
+    )['mock_target'] = 'mock_hash_without'
     mock_build.output.properties['repository'] = (
         'https://test.googlesource.com/team/project.git')
     mock_build.output.properties['gitiles_ref'] = 'refs/heads/mockmaster'
@@ -265,7 +289,9 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
                     json.dumps({
                         'build': {
                             'project': 'chromium',
-                            'status': 'COMPLETED'
+                            'bucket': 'luci.chromium.ci',
+                            'status': 'COMPLETED',
+                            'parameters_json': '{"builder_name": "builder"}',
                         }
                     })),
         },
@@ -285,6 +311,8 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
     self.assertEqual('linux_chromium_compile_dbg_ng', entry.builder_name)
 
   @mock.patch.object(completed_build_pubsub_ingestor,
+                     '_HandlePossibleFailuresInBuild')
+  @mock.patch.object(completed_build_pubsub_ingestor,
                      '_HandlePossibleCodeCoverageBuild')
   @mock.patch.object(FinditHttpClient, 'Post')
   def testPushIgnoreV2Push(self, mock_post, *_):
@@ -299,7 +327,9 @@ class CompletedBuildPubsubIngestorTest(AppengineTestCase):
                     json.dumps({
                         'build': {
                             'project': 'chromium',
-                            'status': 'COMPLETED'
+                            'bucket': 'luci.chromium.ci',
+                            'status': 'COMPLETED',
+                            'parameters_json': '{"builder_name": "builder"}',
                         }
                     })),
         },

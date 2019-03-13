@@ -5,6 +5,16 @@ queue:
     min_backoff_seconds: 15
     task_retry_limit: 3
 
+- name: failure-detection-queue
+  mode: push
+  rate: 20/s
+  bucket_size: 100
+  max_concurrent_requests: 40
+  target: findit-backend
+  retry_parameters:
+    min_backoff_seconds: 15
+    task_retry_limit: 3
+
 - name: waterfall-analysis-queue
   mode: push
   rate: 20/s

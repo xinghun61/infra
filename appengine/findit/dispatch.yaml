@@ -8,6 +8,9 @@ dispatch:
   - url: "*/coverage/task/*"
     module: code-coverage-backend
 
+  - url: "*/findit/internal/*"
+    module: findit-backend
+
   - url: "*/flake/detection/cron/*"
     module: flake-detection-backend
 

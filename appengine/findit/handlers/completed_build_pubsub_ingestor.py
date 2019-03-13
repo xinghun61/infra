@@ -34,18 +34,25 @@ class CompletedBuildPubsubIngestor(BaseHandler):
 
   def HandlePost(self):
     build_id = None
+    build_result = None
     status = None
     project = None
+    bucket = None
+    builder_name = None
     try:
       envelope = json.loads(self.request.body)
-      build_id = envelope['message']['attributes']['build_id']
       version = envelope['message']['attributes'].get('version')
       if version and version != 'v1':
         logging.info('Ignoring versions other than v1')
         return
+      build_id = envelope['message']['attributes']['build_id']
       build = json.loads(base64.b64decode(envelope['message']['data']))['build']
+      build_result = build.get('result')
       status = build['status']
       project = build['project']
+      bucket = build['bucket']
+      parameters_json = json.loads(build['parameters_json'])
+      builder_name = parameters_json['builder_name']
     except (ValueError, KeyError) as e:
       # Ignore requests with invalid message.
       logging.debug('build_id: %r', build_id)
@@ -54,8 +61,10 @@ class CompletedBuildPubsubIngestor(BaseHandler):
       return
 
     if status == 'COMPLETED':
-      _HandlePossibleCodeCoverageBuild(int(build_id))  # TODO: revert.
+      _HandlePossibleCodeCoverageBuild(int(build_id))
       if project == 'chromium':
+        _HandlePossibleFailuresInBuild(project, bucket, builder_name,
+                                       int(build_id), build_result)
         return _IngestProto(int(build_id))
     # We don't care about pending or non-chromium builds, so we accept the
     # notification by returning 200, and prevent pubsub from retrying it.
@@ -70,6 +79,26 @@ def _HandlePossibleCodeCoverageBuild(build_id):  # pragma: no cover
         url='/coverage/task/process-data/build/%s' % build_id,
         target='code-coverage-backend',  # Always use the default version.
         queue_name='code-coverage-process-data')
+  except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
+    logging.warning('Build %s was already scheduled to be processed', build_id)
+
+
+def _HandlePossibleFailuresInBuild(project, bucket, builder_name, build_id,
+                                   build_result):  # pragma: no cover
+  """Schedules a taskqueue task to process a completed failed build."""
+  try:
+    taskqueue.add(
+        name='buildfailure-%s' % build_id,  # Avoid duplicate tasks.
+        url='/findit/internal/v2/task/build-completed',
+        params={
+            'project': project,
+            'bucket': bucket,
+            'builder_name': builder_name,
+            'build_id': build_id,
+            'bulid_result': build_result,
+        },
+        target=appengine_util.GetTargetNameForModule('findit-backend'),
+        queue_name='failure-detection-queue')
   except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
     logging.warning('Build %s was already scheduled to be processed', build_id)
 
