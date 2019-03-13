@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import json
 import logging
 import mock
@@ -461,3 +462,20 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         None,
         step_util.GetIsolateTargetName(
             'm', 'b', 200, 'viz_browser_tests (with patch) on Android'))
+
+  def testGetStepStartAndEndTime(self):
+    build_id = '8945610992972640896'
+    start_time = datetime.datetime(2019, 3, 6)
+    end_time = datetime.datetime(2019, 3, 6, 0, 0, 10)
+    step = Step()
+    step.name = 's'
+    step.start_time.FromDatetime(start_time)
+    step.end_time.FromDatetime(end_time)
+    build = Build()
+    build.id = int(build_id)
+    build.steps.extend([step])
+
+    self.assertEqual((start_time, end_time),
+                     step_util.GetStepStartAndEndTime(build, 's'))
+    self.assertEqual((None, None), step_util.GetStepStartAndEndTime(
+        build, 's2'))

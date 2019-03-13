@@ -13,14 +13,17 @@ import re
 
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
+from google.protobuf.field_mask_pb2 import FieldMask
 
 from common.findit_http_client import FinditHttpClient
+from common.waterfall import buildbucket_client
 from gae_libs import appengine_util
 from gae_libs.caches import CompressedMemCache
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import test_name_util
 from libs import time_util
 from libs.cache_decorator import Cached
+from libs.structured_object import StructuredObject
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.flake import Flake
@@ -83,6 +86,15 @@ _ROUGH_MAX_BUILD_CYCLE_HOURS = 2
 
 # Overlap between queries.
 _CQ_HIDDEN_FLAKE_QUERY_OVERLAP_MINUTES = 20
+
+_FLAKE_TYPE_TO_FLAKINESS_METADATA_CATEGORY = {
+    FlakeType.CQ_FALSE_REJECTION:
+        'Failing With Patch Tests That Caused Build Failure',
+    FlakeType.RETRY_WITH_PATCH:
+        'Step Layer Flakiness',
+}
+
+_FLAKINESS_METADATA_STEP = 'FindIt Flakiness'
 
 
 def _CreateFlakeFromRow(row):
@@ -600,3 +612,116 @@ def StoreDetectedCIFlakes(master_name, builder_name, build_number, flaky_tests):
       FlakeType.CI_FAILED_STEP, 'N/A')
   monitoring.OnFlakeDetectionDetectNewOccurrences(
       flake_type=flake_type_desc, num_occurrences=len(new_occurrences))
+
+
+class DetectFlakesFromBuildParam(StructuredObject):
+  """Inputs of a task to detect a type of flakes from a flaky cq build.
+
+  Supported flake types:
+    - FlakeType.CQ_FALSE_REJECTION
+    - FlakeType.RETRY_WITH_PATCH
+  """
+  build_id = int
+  flake_type_desc = basestring
+
+
+def GetFlakesFromFlakyCQBuild(build_id, build_pb, flake_type_enum):
+  """Looks for a specific type of flakes from a CQ build.
+
+  This function currently supports two types of flakes:
+  - flakes that caused retried builds.
+  - flakes that caused retried steps.
+
+  For cq hidden flakes and ci flakes, do not use this function.
+
+  Args:
+    build_id (int): Id of the build.
+    build_pb (buildbucket build.proto): Information of the build.
+    flake_type_enum (FlakeType): Type of the flakes being detected.
+
+  Returns:
+    (dict): A dict of list for steps containing flaky tests and the test list.
+    {
+      'abc_tests (with patch) on Windows-10-15063': [ # step_ui_name
+        'test1',
+        'test2',
+        ...
+      ],
+      ...
+    }
+  """
+  flake_category = _FLAKE_TYPE_TO_FLAKINESS_METADATA_CATEGORY.get(
+      flake_type_enum)
+  assert flake_category, '{} is not covered by flakiness metadata.'.format(
+      flake_type.FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum))
+
+  http_client = FinditHttpClient()
+  flakiness_metadata = step_util.GetStepLogFromBuildObject(
+      build_pb, _FLAKINESS_METADATA_STEP, http_client, log_name='step_metadata')
+  assert flakiness_metadata, (
+      'Failed to get flakiness_metadata for build {}'.format(build_id))
+
+  return flakiness_metadata.get(flake_category) or {}
+
+
+def ProcessBuildForFlakes(task_param):
+  """Detects a type of flakes from a build.
+
+  Args:
+    task_param(DetectFlakesFromBuildParam): Parameters of the task of detecting
+      a type of flakes from a build.
+  """
+  build_id = task_param.build_id
+  flake_type_enum = flake_type.DESCRIPTION_TO_FLAKE_TYPE.get(
+      task_param.flake_type_desc)
+
+  build_pb = buildbucket_client.GetV2Build(
+      build_id, FieldMask(paths=['name', 'builder', 'input', 'steps']))
+  assert build_pb, 'Error retrieving buildbucket build id: {}'.format(build_id)
+
+  luci_project = build_pb.builder.project
+  luci_bucket = build_pb.builder.bucket
+  luci_builder = build_pb.builder.builder
+  legacy_master_name = build_pb.input.properties['mastername']
+  legacy_build_number = build_pb.number
+  gerrit_cl_id = build_pb.input.gerrit_changes[
+      0].change if build_pb.input.gerrit_changes else None
+
+  flake_info = GetFlakesFromFlakyCQBuild(build_id, build_pb, flake_type_enum)
+
+  new_flakes = []
+  new_occurrences = []
+  for step_ui_name, tests in flake_info.iteritems():
+    normalized_step_name = Flake.NormalizeStepName(
+        step_name=step_ui_name,
+        master_name=legacy_master_name,
+        builder_name=luci_builder,
+        build_number=legacy_build_number)
+
+    # Uses the start time of a step as the flake happen time.
+    step_start_time, _ = step_util.GetStepStartAndEndTime(
+        build_pb, step_ui_name)
+    for test in tests:
+      normalized_test_name = Flake.NormalizeTestName(test, step_ui_name)
+      test_label_name = Flake.GetTestLabelName(test, step_ui_name)
+      flake = Flake.Get(
+          luci_project=luci_project,
+          step_name=normalized_step_name,
+          test_name=normalized_test_name)
+      if not flake:  # pragma: no branch
+        flake = Flake.Create(
+            luci_project=luci_project,
+            normalized_step_name=normalized_step_name,
+            normalized_test_name=normalized_test_name,
+            test_label_name=test_label_name)
+        new_flakes.append(flake)
+
+      occurrence = FlakeOccurrence.Create(
+          flake_type_enum, build_id, step_ui_name, test, luci_project,
+          luci_bucket, luci_builder, legacy_master_name, legacy_build_number,
+          step_start_time, gerrit_cl_id, flake.key)
+      new_occurrences.append(occurrence)
+
+  _StoreMultipleLocalEntities(new_flakes)
+  _StoreMultipleLocalEntities(new_occurrences)
+  _UpdateFlakeMetadata(new_occurrences)

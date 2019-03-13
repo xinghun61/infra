@@ -30,7 +30,14 @@ FLAKE_TYPE_DESCRIPTIONS = {
     FlakeType.CQ_FALSE_REJECTION: 'cq false rejection',
     FlakeType.RETRY_WITH_PATCH: 'cq retry with patch',
     FlakeType.CQ_HIDDEN_FLAKE: 'cq hidden flake',
-    FlakeType.CI_FAILED_STEP: 'ci failed step'
+    FlakeType.CI_FAILED_STEP: 'ci failed step',
+}
+
+DESCRIPTION_TO_FLAKE_TYPE = {
+    'cq false rejection': FlakeType.CQ_FALSE_REJECTION,
+    'cq retry with patch': FlakeType.RETRY_WITH_PATCH,
+    'cq hidden flake': FlakeType.CQ_HIDDEN_FLAKE,
+    'ci failed step': FlakeType.CI_FAILED_STEP
 }
 
 # Weights for each type of flakes.

@@ -7,6 +7,11 @@ import json
 import mock
 import textwrap
 
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
+from buildbucket_proto.step_pb2 import Step
+
+from common.waterfall import buildbucket_client
 from dto.test_location import TestLocation as DTOTestLocation
 from libs import time_util
 from model.flake.detection.flake_occurrence import BuildConfiguration
@@ -15,6 +20,7 @@ from model.flake.flake import Flake
 from model.flake.flake import TAG_DELIMITER
 from model.flake.flake import TestLocation as NDBTestLocation
 from model.flake.flake_type import FlakeType
+from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from model.wf_build import WfBuild
 from services import bigquery_helper
 from services import step_util
@@ -761,3 +767,68 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         'webgl_conformance_tests',
         detect_flake_occurrences._GetTestSuiteForOccurrence(
             row, 'normalized_test_name', 'telemetry_gpu_integration_test'))
+
+  @mock.patch.object(detect_flake_occurrences, '_UpdateFlakeMetadata')
+  @mock.patch.object(Flake, 'NormalizeStepName', return_value='step1')
+  @mock.patch.object(Flake, 'NormalizeTestName', side_effect=['s1_t1', 's1_t2'])
+  @mock.patch.object(Flake, 'GetTestLabelName', side_effect=['s1_t1', 's1_t2'])
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  @mock.patch.object(step_util, 'GetStepLogFromBuildObject')
+  def testProcessBuildForFlakes(self, mock_metadata, mock_build, *_):
+    flake_type_enum = FlakeType.CQ_FALSE_REJECTION
+    build_id = 123
+    luci_project = 'luci_project'
+    luci_bucket = 'luci_bucket'
+    luci_builder = 'luci_builder'
+    legacy_master_name = 'legacy_master_name'
+    start_time = datetime(2019, 3, 6)
+    end_time = datetime(2019, 3, 6, 0, 0, 10)
+
+    findit_step = Step()
+    findit_step.name = 'FindIt Flakiness'
+    step1 = Step()
+    step1.name = 'step1 (with patch)'
+    step1.start_time.FromDatetime(start_time)
+    step1.end_time.FromDatetime(end_time)
+    builder = BuilderID(
+        project=luci_project,
+        bucket=luci_bucket,
+        builder=luci_builder,
+    )
+    build = Build(id=build_id, builder=builder, number=build_id)
+    build.steps.extend([findit_step, step1])
+    build.input.properties['mastername'] = legacy_master_name
+    mock_change = build.input.gerrit_changes.add()
+    mock_change.host = 'mock.gerrit.host'
+    mock_change.change = 12345
+    mock_change.patchset = 1
+    mock_build.return_value = build
+
+    flakiness_metadata = {
+        'Failing With Patch Tests That Caused Build Failure': {
+            'step1 (with patch)': ['s1_t1', 's1_t2']
+        },
+        'Step Layer Flakiness': {}
+    }
+    mock_metadata.return_value = flakiness_metadata
+
+    # Flake object for s2_t1 exists.
+    flake1 = Flake.Create(
+        luci_project=luci_project,
+        normalized_step_name='step1',
+        normalized_test_name='s1_t1',
+        test_label_name='s1_t1')
+    flake1.put()
+
+    detect_flake_occurrences.ProcessBuildForFlakes(
+        detect_flake_occurrences.DetectFlakesFromBuildParam(
+            build_id=build_id,
+            flake_type_desc=FLAKE_TYPE_DESCRIPTIONS[flake_type_enum]))
+
+    flake1_occurrence_num = FlakeOccurrence.query(ancestor=flake1.key).count()
+    self.assertEqual(1, flake1_occurrence_num)
+
+    flake2 = Flake.Get(luci_project, 'step1', 's1_t2')
+    self.assertIsNotNone(flake2)
+    flake2_occurrence_num = FlakeOccurrence.query(ancestor=flake2.key).count()
+    self.assertEqual(1, flake2_occurrence_num)

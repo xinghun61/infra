@@ -172,18 +172,18 @@ def _GetAnnotationsProtoForPath(host, project, path, http_client):
     return None
 
 
-def _GetStreamForStep(step_name, data, log_type='stdout'):
+def _GetStreamForStep(step_name, data, log_name='stdout'):
   for substep in data.substep:
     if substep.step.name != step_name:
       continue
 
-    if log_type.lower() == 'stdout':
+    if log_name.lower() == 'stdout':
       # Gets stdout_stream.
       return substep.step.stdout_stream.name
 
     # Gets stream for step_metadata.
     for link in substep.step.other_links:
-      if link.label.lower() == log_type:
+      if link.label.lower() == log_name:
         return link.logdog_stream.name
 
   return None
@@ -226,10 +226,10 @@ def GetLogFromViewUrl(base_log, http_client):
   return log
 
 
-def _GetLog(annotations, step_name, log_type, http_client):
+def _GetLog(annotations, step_name, log_name, http_client):
   if not annotations:
     return None
-  stream = _GetStreamForStep(step_name, annotations, log_type)
+  stream = _GetStreamForStep(step_name, annotations, log_name)
   if not stream:
     return None
   env = annotations.command.environ
@@ -246,11 +246,11 @@ def _GetLog(annotations, step_name, log_type, http_client):
 
 
 # TODO(crbug/902137): Remove this after all builders are migrated to LUCI.
-def GetStepLogLegacy(log_location, step_name, log_type, http_client):
+def GetStepLogLegacy(log_location, step_name, log_name, http_client):
   host, project, path = _GetQueryParametersForAnnotation(log_location)
   if not host:
     logging.error('Failed to get log_location info for logdog stream.')
     return None
 
   annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
-  return _GetLog(annotations, step_name, log_type, http_client)
+  return _GetLog(annotations, step_name, log_name, http_client)

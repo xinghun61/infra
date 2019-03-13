@@ -317,12 +317,12 @@ def IsStepSupportedByFindit(test_result_object, step_name, master_name):
   return True
 
 
-def _ParseStepLogIfAppropriate(data, log_type):
+def _ParseStepLogIfAppropriate(data, log_name):
   """PConditionally parses the contents of data, based on the log type."""
   if not data:
     return None
 
-  if log_type.lower() == 'json.output[ninja_info]':
+  if log_name.lower() == 'json.output[ninja_info]':
     # Check if data is malformatted.
     try:
       json.loads(data)
@@ -330,24 +330,24 @@ def _ParseStepLogIfAppropriate(data, log_type):
       logging.error('json.output[ninja_info] is malformatted')
       return None
 
-  if log_type.lower() not in ['stdout', 'json.output[ninja_info]']:
+  if log_name.lower() not in ['stdout', 'json.output[ninja_info]']:
     try:
       return json.loads(data) if data else None
     except ValueError:
       logging.error(
-          'Failed to json load data for %s. Data is: %s.' % (log_type, data))
+          'Failed to json load data for %s. Data is: %s.' % (log_name, data))
       return None
 
   return data
 
 
-def _GetStepLogViewUrl(build, full_step_name, log_type):
+def _GetStepLogViewUrl(build, full_step_name, log_name):
   """Gets view url of the requested log.
 
   Args:
     build(A buildbucket_proto.build_pb2.Build proto): Information about a build.
     full_step_name(str): Full name of the step.
-    log_type(str): Type of the log.
+    log_name(str): Type of the log.
 
   Returns:
     (str): view_url of the requested log.
@@ -355,26 +355,59 @@ def _GetStepLogViewUrl(build, full_step_name, log_type):
   for step in build.steps or []:
     if step.name == full_step_name:
       for log in step.logs or []:
-        if log.name.lower() == log_type:
+        if log.name.lower() == log_name:
           return log.view_url
 
   return None
 
 
+def GetStepLogFromBuildObject(build,
+                              full_step_name,
+                              http_client,
+                              log_name='stdout'):
+  """Returns specific log of the specified step from build_pb2.Build object.
+
+  Args:
+    build(build_pb2.Build): See
+    https://cs.chromium.org/chromium/infra/go/src/go.chromium.org/luci/buildbucket/proto/build.proto # pylint:disable=line-too-long
+    full_step_name(str): Full name of the step.
+    http_client(FinditHttpClient): Http_client to make the request.
+    log_name(str): Name of the log.
+
+  Returns:
+    Requested Log after processing based on the log_name.
+    - return the log as it is if the log name is 'stdout' or
+      'json.output[ninja_info]'
+    - return the deserialized log otherwise.
+  """
+  log_view_url = _GetStepLogViewUrl(build, full_step_name, log_name)
+  if not log_view_url:
+    logging.exception('Didn\'t retrieve log_view_url at build: %s for %s of %s.'
+                      % (build.id, log_name, full_step_name))
+    return None
+
+  data = logdog_util.GetLogFromViewUrl(log_view_url, http_client)
+
+  return _ParseStepLogIfAppropriate(data, log_name)
+
+
 def GetStepLogForLuciBuild(build_id,
                            full_step_name,
                            http_client,
-                           log_type='stdout'):
+                           log_name='stdout'):
   """Returns specific log of the specified step in a LUCI build.
 
   Args:
     build_id(str): Buildbucket id.
     full_step_name(str): Full name of the step.
     http_client(FinditHttpClient): Http_client to make the request.
-    log_type(str): Type of the log.
+    log_name(str): Name of the log.
 
   Returns:
-    Requested Log processed by _ParseStepLogIfAppropriate.
+    Requested Log after processing based on the log_name.
+    - return the log as it is if the log name is 'stdout' or
+      'json.output[ninja_info]'
+    - return the deserialized log otherwise.
   """
 
   build = buildbucket_client.GetV2Build(build_id, FieldMask(paths=['steps']))
@@ -382,16 +415,7 @@ def GetStepLogForLuciBuild(build_id,
     logging.exception('Error retrieving buildbucket build id: %s' % build_id)
     return None
 
-  log_view_url = _GetStepLogViewUrl(build, full_step_name, log_type)
-  if not log_view_url:
-    logging.exception(
-        'Didn\'t retrieve log_view_url at build: %s for %s of %s.' % (
-            build_id, log_type, full_step_name))
-    return None
-
-  data = logdog_util.GetLogFromViewUrl(log_view_url, http_client)
-
-  return _ParseStepLogIfAppropriate(data, log_type)
+  return GetStepLogFromBuildObject(build, full_step_name, http_client, log_name)
 
 
 def _CanonicalStepNameKeyGenerator(func, args, kwargs, namespace=None):
@@ -421,7 +445,7 @@ def GetWaterfallBuildStepLog(master_name,
                              build_number,
                              full_step_name,
                              http_client,
-                             log_type='stdout'):
+                             log_name='stdout'):
   """Returns specific log of the specified step."""
 
   _, build = build_util.DownloadBuildData(master_name, builder_name,
@@ -430,13 +454,13 @@ def GetWaterfallBuildStepLog(master_name,
   if build.build_id:
     # This build should be a LUCI build.
     return GetStepLogForLuciBuild(build.build_id, full_step_name, http_client,
-                                  log_type)
+                                  log_name)
 
   # This build is a buildbot build, fall back to the legacy way of getting log.
   data = logdog_util.GetStepLogLegacy(build.log_location, full_step_name,
-                                      log_type, http_client)
+                                      log_name, http_client)
 
-  return _ParseStepLogIfAppropriate(data, log_type)
+  return _ParseStepLogIfAppropriate(data, log_name)
 
 
 @Cached(
@@ -490,3 +514,16 @@ def StepIsSupportedForMaster(master_name, builder_name, build_number,
                                                build_number, step_name)
   return waterfall_config.StepIsSupportedForMaster(canonical_step_name,
                                                    master_name)
+
+
+def GetStepStartAndEndTime(build, full_step_name):
+  """Gets a step's start_time and end_time from Build.
+
+  Returns:
+    (start_time, end_time)
+  """
+  for step in build.steps or []:
+    if step.name == full_step_name:
+      return step.start_time.ToDatetime(), step.end_time.ToDatetime()
+
+  return None, None
