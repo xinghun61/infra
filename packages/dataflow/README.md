@@ -27,6 +27,13 @@ experimented with these yet, but they are worth exploring!
 
 [Beam Docs](https://beam.apache.org/documentation/)
 
+# Unit Testing
+
+From the root of the infra repository, run the command
+```
+./test.py test packages/dataflow
+```
+
 # Workflow Testing
 
 There are a couple requirements to testing your Dataflow workflow.
@@ -56,8 +63,8 @@ If you don't see the correct project id, reach out to an
 [editor](https://pantheon.corp.google.com/iam-admin/iam) of that project to
 request access.
 
-Finally, run the command below to test your workflow. Note: Job names should
-match the regular expression [a-z]\([-a-z0-9]{0,38}[a-z0-9]).
+Finally, run the command below to test your workflow as a remote job. Note: Job
+names should match the regular expression [a-z]\([-a-z0-9]{0,38}[a-z0-9]).
 
 ```
 python <path-to-dataflow-job> --job_name <pick-a-job-name> \
@@ -72,7 +79,25 @@ your browser and you should see your job running. Wait until it succeeds.
 Running the test will leave behind a directory,
 `packages/dataflow/dataflow.egg-info`, that you must manually clean up.
 
+To run the workflow locally, first set credentials using
+```
+export GOOGLE_APPLICATION_CREDENTIALS=<path_to_credentials>
+```
+
+Then
+```
+python cq_attempts.py --output <dummy_path> --project <name_of_test_project>
+```
+
 # Updating the package
+
+Changes to this directory are automatically mirrored in a synthesized
+[repo](https://chromium.googlesource.com/infra/infra/packages/dataflow/). To
+deploy changes to this repository:
+* Land the changes.
+* Submit a separate CL that updates the version in `setup.py`.
+* Build and upload a new wheel.
+* Submit a single CL that updates the remote execution recipe and deps.pyl.
 
 Jobs scheduled with the
 [remote_execute_dataflow_workflow](../../recipes/recipes/remote_execute_dataflow_workflow.py)
