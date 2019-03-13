@@ -20,6 +20,7 @@ type Environment struct {
 	SwarmingService string
 	LogDogHost      string
 	AdminService    string
+	ServiceAccount  string
 }
 
 // Prod is the environment for prod.
@@ -28,6 +29,7 @@ var Prod = Environment{
 	SwarmingService: "https://chromeos-swarming.appspot.com/",
 	LogDogHost:      "luci-logdog.appspot.com",
 	AdminService:    "chromeos-skylab-bot-fleet.appspot.com",
+	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts.iam.gserviceaccount.com",
 }
 
 // Dev is the environment for dev.
@@ -36,6 +38,7 @@ var Dev = Environment{
 	SwarmingService: "https://chromium-swarm-dev.appspot.com/",
 	LogDogHost:      "luci-logdog-dev.appspot.com",
 	AdminService:    "skylab-staging-bot-fleet.appspot.com",
+	ServiceAccount:  "skylab-admin-task@chromeos-service-accounts-dev.iam.gserviceaccount.com",
 }
 
 // DefaultAuthOptions is an auth.Options struct prefilled with chrome-infra

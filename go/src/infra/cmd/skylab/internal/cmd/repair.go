@@ -91,8 +91,9 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 			"pool:ChromeOSSkylab",
 			"skylab-tool:repair",
 		},
-		TaskSlices: slices,
-		Priority:   25,
+		TaskSlices:     slices,
+		Priority:       25,
+		ServiceAccount: e.ServiceAccount,
 	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
