@@ -137,7 +137,7 @@ class BuildRequest(_BuildRequestBase):
     if sbr.builder.builder:  # pragma: no branch
       tags.add((buildtags.BUILDER_KEY, sbr.builder.builder))
 
-    if sbr.HasField('gitiles_commit'):
+    if sbr.gitiles_commit.id:
       bs = buildtags.gitiles_commit_buildset(sbr.gitiles_commit)
       tags.add((buildtags.BUILDSET_KEY, bs))
       if sbr.gitiles_commit.ref:  # pragma: no branch

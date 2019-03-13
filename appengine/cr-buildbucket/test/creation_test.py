@@ -174,6 +174,17 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIn('buildset:' + bs, build.tags)
     self.assertIn('gitiles_ref:refs/heads/master', build.tags)
 
+  def test_add_with_gitiles_commit_without_id(self):
+    gitiles_commit = common_pb2.GitilesCommit(
+        host='gitiles.example.com',
+        project='chromium/src',
+        ref='refs/heads/master',
+    )
+
+    build = self.add(dict(gitiles_commit=gitiles_commit))
+    self.assertFalse(any(t.startswith('buildset:commit') for t in build.tags))
+    self.assertFalse(any(t.startswith('gititles_ref:') for t in build.tags))
+
   def test_add_with_gerrit_change(self):
     cl = common_pb2.GerritChange(
         host='gerrit.example.com',
