@@ -44,6 +44,17 @@ class URLRedirectTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       url_redirect.URLRedirect,
       '_GetHostAndPath',
+      return_value=('old.host.com', '/stable/url'))
+  @mock.patch.object(url_redirect, '_REDIRECTION_MAPPING',
+                     _REDIRECTION_MAPPING_MOCK)
+  def testRedirectToNewHostAndStablePath(self, *_):
+    response = self.test_app.get('/stable/url')
+    self.assertEqual(
+        response.headers.get('Location', ''), 'https://new.host.com/stable/url')
+
+  @mock.patch.object(
+      url_redirect.URLRedirect,
+      '_GetHostAndPath',
       return_value=('stable.host.com', '/old/url2'))
   @mock.patch.object(url_redirect, '_REDIRECTION_MAPPING',
                      _REDIRECTION_MAPPING_MOCK)

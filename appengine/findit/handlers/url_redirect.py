@@ -68,8 +68,8 @@ class URLRedirect(BaseHandler):
     setting = _REDIRECTION_MAPPING.get(hostname, {})
     new_hostname = setting.get('hostname', hostname)
 
-    new_path = setting.get('url-mappings', {}).get(path)
-    if new_hostname == hostname and not new_path:
+    new_path = setting.get('url-mappings', {}).get(path, path)
+    if new_hostname == hostname and new_path == path:
       return self.CreateError('Page not found', 404)
 
     new_url = 'https://%s%s' % (new_hostname, new_path)
