@@ -73,6 +73,7 @@ func eventCommon(request *TaskRequest, w *Worker, s *state, t time.Time) *metric
 func eventEnqueued(request *TaskRequest, s *state, t time.Time, details *metrics.TaskEvent_EnqueuedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, nil, s, t)
 	e.EventType = metrics.TaskEvent_SWARMING_ENQUEUED
+	e.Category = metrics.TaskEvent_CATEGORY_SWARMING
 	e.Details = &metrics.TaskEvent_EnqueuedDetails_{EnqueuedDetails: details}
 	return e
 }
@@ -81,6 +82,7 @@ func eventEnqueued(request *TaskRequest, s *state, t time.Time, details *metrics
 func eventAssigned(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_AssignedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_ASSIGNED
+	e.Category = metrics.TaskEvent_CATEGORY_QSCHEDULER
 	e.Details = &metrics.TaskEvent_AssignedDetails_{AssignedDetails: details}
 	return e
 }
@@ -89,6 +91,7 @@ func eventAssigned(request *TaskRequest, w *Worker, s *state, t time.Time, detai
 func eventPreempted(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_PreemptedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_PREEMPTED
+	e.Category = metrics.TaskEvent_CATEGORY_QSCHEDULER
 	e.Details = &metrics.TaskEvent_PreemptedDetails_{PreemptedDetails: details}
 	return e
 }
@@ -97,6 +100,7 @@ func eventPreempted(request *TaskRequest, w *Worker, s *state, t time.Time, deta
 func eventReprioritized(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_ReprioritizedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_QSCHEDULER_REPRIORITIZED
+	e.Category = metrics.TaskEvent_CATEGORY_QSCHEDULER
 	e.Details = &metrics.TaskEvent_ReprioritizedDetails_{ReprioritizedDetails: details}
 	return e
 }
@@ -105,6 +109,7 @@ func eventReprioritized(request *TaskRequest, w *Worker, s *state, t time.Time, 
 func eventCompleted(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_CompletedDetails) *metrics.TaskEvent {
 	e := eventCommon(request, w, s, t)
 	e.EventType = metrics.TaskEvent_SWARMING_COMPLETED
+	e.Category = metrics.TaskEvent_CATEGORY_SWARMING
 	e.Details = &metrics.TaskEvent_CompletedDetails_{CompletedDetails: details}
 	return e
 }
