@@ -7,6 +7,7 @@ package common
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"go.chromium.org/luci/buildbucket/proto"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
@@ -130,12 +131,21 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (
 		}
 	}
 
+	// We don't want to include "pool" in the request to buildbucket; the pool
+	// is already defined in the builder definition in cr-buildbucket.cfg.
+	var dimensions []string
+	for _, d := range worker.Dimensions {
+		if !strings.HasPrefix(d, "pool:") {
+			dimensions = append(dimensions, d)
+		}
+	}
+
 	parameters := map[string]interface{}{
 		"builder_name": "tricium",
 		"properties":   properties,
 		"swarming": map[string]interface{}{
 			"override_builder_cfg": map[string]interface{}{
-				"dimensions": worker.Dimensions,
+				"dimensions": dimensions,
 				"recipe": map[string]interface{}{
 					"name":         recipe.Recipe.Name,
 					"cipd_package": recipe.Recipe.CipdPackage,

@@ -42,7 +42,11 @@ func TestParametersJSON(t *testing.T) {
 			},
 			"swarming": map[string]interface{}{
 				"override_builder_cfg": map[string]interface{}{
-					"dimensions": []interface{}{"pool:Chrome", "os:Ubuntu13.04"},
+					// Note: the "pool" dimension is never included in the
+					// dimensions in a buildbucket request; the pool must be
+					// specified in the cr-buildbucket.cfg that defines the
+					// builder.
+					"dimensions": []interface{}{"os:Ubuntu13.04"},
 					"recipe": map[string]interface{}{
 						"name":         "recipe",
 						"cipd_package": "infra/recipe_bundle",
