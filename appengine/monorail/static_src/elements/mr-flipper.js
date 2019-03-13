@@ -8,8 +8,7 @@ export default class MrFlipper extends HTMLElement {
     return 'mr-flipper';
   }
 
-  constructor() {
-    super();
+  connectedCallback() {
     this.current = null;
     this.totalCount = null;
     this.prevUrl = null;
