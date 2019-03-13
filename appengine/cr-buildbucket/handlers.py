@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.appengine.api import users as gae_users
+
 from components import auth
 from components import config as config_api
 from components import decorators
@@ -18,9 +20,11 @@ import bq
 import bulkproc
 import config
 import expiration
+import model
 import notifications
 import service
 import swarming
+import user
 
 README_MD = (
     'https://chromium.googlesource.com/infra/infra/+/master/'
@@ -51,17 +55,27 @@ class BuildRPCHandler(webapp2.RequestHandler):  # pragma: no cover
     return self.redirect(api_path)
 
 
-class ViewBuildHandler(webapp2.RequestHandler):  # pragma: no cover
+class ViewBuildHandler(auth.AuthenticatingHandler):  # pragma: no cover
   """Redirects to API explorer to see the build."""
 
+  @auth.public
   def get(self, build_id):
-    settings = config.get_settings_async().get_result()
-    milo_hostname = settings.swarming.milo_hostname
-    if not milo_hostname:
-      self.response.write('Milo hostname is not configured')
-      self.abort(500)
+    try:
+      build_id = int(build_id)
+    except ValueError as ex:
+      self.response.write(ex.message)
+      self.abort(400)
 
-    return self.redirect('https://%s/b/%s' % (str(milo_hostname), build_id))
+    build = model.Build.get_by_id(build_id)
+    can_view = build and user.can_view_build_async(build).get_result()
+
+    if not can_view:
+      if auth.get_current_identity().is_anonymous:
+        return self.redirect(gae_users.create_login_url(self.request.url))
+      self.response.write('build %d not found' % build_id)
+      self.abort(404)
+
+    return self.redirect(str(build.url))
 
 
 class TaskCancelSwarmingTask(webapp2.RequestHandler):  # pragma: no cover
