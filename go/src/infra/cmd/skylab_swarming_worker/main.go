@@ -75,7 +75,7 @@ func parseArgs() *args {
 	flag.StringVar(&a.logdogAnnotationURL, "logdog-annotation-url", "",
 		"LogDog annotation URL, like logdog://HOST/PROJECT/PREFIX/+/annotations")
 	flag.StringVar(&a.adminService, "admin-service", "",
-		"Admin service host, used by repair to update labels, e.g. foo.appspot.com")
+		"Admin service host, e.g. foo.appspot.com")
 	flag.BoolVar(&a.xClientTest, "client-test", false,
 		"This is a client side test")
 	flag.Var(lflag.CommaList(&a.xProvisionLabels), "provision-labels",
