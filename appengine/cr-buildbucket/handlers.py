@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.appengine.api import users as gae_users
-
 from components import auth
 from components import config as config_api
 from components import decorators
@@ -62,8 +60,8 @@ class ViewBuildHandler(auth.AuthenticatingHandler):  # pragma: no cover
   def get(self, build_id):
     try:
       build_id = int(build_id)
-    except ValueError as ex:
-      self.response.write(ex.message)
+    except ValueError:
+      self.response.write('invalid build id')
       self.abort(400)
 
     build = model.Build.get_by_id(build_id)
@@ -71,7 +69,7 @@ class ViewBuildHandler(auth.AuthenticatingHandler):  # pragma: no cover
 
     if not can_view:
       if auth.get_current_identity().is_anonymous:
-        return self.redirect(gae_users.create_login_url(self.request.url))
+        return self.redirect(self.create_login_url(self.request.url))
       self.response.write('build %d not found' % build_id)
       self.abort(404)
 
