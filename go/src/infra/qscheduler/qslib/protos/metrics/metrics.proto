@@ -94,8 +94,11 @@ message TaskEvent {
   // BotDimensions are the dimensions of the bot (if relevant).
   repeated string bot_dimensions = 12;
 
+  // Category is the EventCategory for this event's EventType.
+  EventCategory category = 13;
+
   // Reserved field values for additional non-details fields to be added.
-  reserved 13 to 99;
+  reserved 14 to 99;
 
   // EnqueuedDetails represents event details that are specific to the
   // ENQUEUED event type.
