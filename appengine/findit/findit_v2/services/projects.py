@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """This module is for the configuration of supported projects."""
 
+from findit_v2.services.chromeos_api import ChromeOSProjectAPI
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 
 # Supported projects by Findit. The names here are defined by Buildbucket.
@@ -33,5 +34,6 @@ GERRIT_PROJECTS = {
     },
     'chromeos': {
         'dependencies': 'placeholder/path/to/the/manifest.xml',
+        'project-api': ChromeOSProjectAPI(),
     }
 }
