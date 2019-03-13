@@ -32,7 +32,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
         }
         span[code-font] {
           font-family: monospace;
-          font-size: 11px;
+          font-size: 12px;
         }
       </style>
       <span is-deleted\$="[[isDeleted]]" code-font\$="[[_codeFont]]">
