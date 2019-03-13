@@ -5,18 +5,21 @@
 package cmd
 
 import (
+	"bufio"
 	"fmt"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
+	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/grpc/prpc"
 
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/cmd/skylab/internal/site"
-	"infra/libs/skylab/inventory"
 )
 
 // InternalListDroneDuts subcommand: List DUTs for a drone.
 var InternalListDroneDuts = &subcommands.Command{
-	UsageLine: "internal-list-drone-duts",
+	UsageLine: "internal-list-drone-duts HOSTNAME",
 	ShortDesc: "list DUTs for a drone",
 	LongDesc: `List DUTs for a drone.
 
@@ -24,8 +27,7 @@ For internal use only.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &internalListDroneDutsRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
-		c.Flags.StringVar(&c.dataDir, "datadir", "", "Path to the directory containing skylab inventory data.")
-		c.Flags.StringVar(&c.hostname, "hostname", "", "FQDN of the drone.")
+		c.envFlags.Register(&c.Flags)
 		return c
 	},
 }
@@ -33,8 +35,7 @@ For internal use only.`,
 type internalListDroneDutsRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
-	dataDir   string
-	hostname  string
+	envFlags  envFlags
 }
 
 func (c *internalListDroneDutsRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -46,35 +47,31 @@ func (c *internalListDroneDutsRun) Run(a subcommands.Application, args []string,
 }
 
 func (c *internalListDroneDutsRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	ddir, err := inventory.ReadSymlink(c.dataDir)
+	if len(args) != 1 {
+		return NewUsageError(c.Flags, "exactly one HOSTNAME must be provided")
+	}
+	hostname := args[0]
+	ctx := cli.GetContext(a, c, env)
+	hc, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
 		return err
 	}
-	inf, err := inventory.LoadInfrastructure(ddir)
+	siteEnv := c.envFlags.Env()
+	ic := fleet.NewInventoryPRPCClient(&prpc.Client{
+		C:       hc,
+		Host:    siteEnv.AdminService,
+		Options: site.DefaultPRPCOptions,
+	})
+	req := fleet.GetDroneConfigRequest{Hostname: hostname}
+	res, err := ic.GetDroneConfig(ctx, &req)
 	if err != nil {
 		return err
 	}
-	var dutIDs []string
-	for _, s := range inf.GetServers() {
-		if s.GetHostname() == c.hostname {
-			dutIDs = s.GetDutUids()
-			break
-		}
-	}
-	if len(dutIDs) == 0 {
-		return nil
-	}
-	lab, err := inventory.LoadLab(ddir)
-	if err != nil {
-		return err
-	}
-	dutNames := make(map[string]string)
-	for _, d := range lab.GetDuts() {
-		c := d.GetCommon()
-		dutNames[c.GetId()] = c.GetHostname()
-	}
-	for _, id := range dutIDs {
-		fmt.Println(id, dutNames[id])
+
+	bw := bufio.NewWriter(a.GetOut())
+	defer bw.Flush()
+	for _, d := range res.GetDuts() {
+		fmt.Fprintf(bw, "%s %s\n", d.GetId(), d.GetHostname())
 	}
 	return nil
 }
