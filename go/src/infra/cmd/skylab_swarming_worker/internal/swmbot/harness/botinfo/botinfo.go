@@ -18,7 +18,7 @@ import (
 
 // Store holds a bot's botinfo and adds a Close method.
 type Store struct {
-	swmbot.BotInfo
+	swmbot.LocalState
 	bot *swmbot.Info
 }
 
@@ -31,7 +31,7 @@ func (s *Store) Close() error {
 	if s.bot == nil {
 		return nil
 	}
-	data, err := swmbot.Marshal(&s.BotInfo)
+	data, err := swmbot.Marshal(&s.LocalState)
 	if err != nil {
 		return errors.Annotate(err, "close botinfo").Err()
 	}
@@ -50,7 +50,7 @@ func Open(b *swmbot.Info) (*Store, error) {
 	if err != nil {
 		return nil, errors.Annotate(err, "open botinfo").Err()
 	}
-	if err := swmbot.Unmarshal(data, &s.BotInfo); err != nil {
+	if err := swmbot.Unmarshal(data, &s.LocalState); err != nil {
 		return nil, errors.Annotate(err, "open botinfo").Err()
 	}
 	return &s, nil

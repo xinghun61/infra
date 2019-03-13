@@ -12,7 +12,7 @@ import (
 // Test that Dumping and Loading a BotInfo struct returns an identical struct.
 func TestMarshalAndUnmarshal(t *testing.T) {
 	t.Parallel()
-	bi := BotInfo{
+	bi := LocalState{
 		HostState: HostReady,
 		ProvisionableLabels: ProvisionableLabels{
 			"cros-version":        "lumpy-release/R00-0.0.0.0",
@@ -26,7 +26,7 @@ func TestMarshalAndUnmarshal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error dumping dimensions: %s", err)
 	}
-	var got BotInfo
+	var got LocalState
 	err = Unmarshal(data, &got)
 	if err != nil {
 		t.Fatalf("Error loading test file: %s", err)
@@ -38,7 +38,7 @@ func TestMarshalAndUnmarshal(t *testing.T) {
 
 func TestUnmarshalInitializesBotInfo(t *testing.T) {
 	t.Parallel()
-	var bi BotInfo
+	var bi LocalState
 	data, err := Marshal(&bi)
 	if err != nil {
 		t.Fatalf("Error dumping dimensions: %s", err)
@@ -48,7 +48,7 @@ func TestUnmarshalInitializesBotInfo(t *testing.T) {
 		t.Fatalf("Error loading test file: %s", err)
 	}
 
-	exp := BotInfo{
+	exp := LocalState{
 		ProvisionableLabels:     ProvisionableLabels{},
 		ProvisionableAttributes: ProvisionableAttributes{},
 	}

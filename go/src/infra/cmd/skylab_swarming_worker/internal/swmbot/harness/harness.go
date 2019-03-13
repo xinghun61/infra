@@ -37,7 +37,7 @@ type Info struct {
 
 	ResultsDir string
 	DUTName    string
-	BotInfo    *swmbot.BotInfo
+	BotInfo    *swmbot.LocalState
 
 	labelUpdater labelUpdater
 
@@ -105,7 +105,7 @@ func (i *Info) getDUTName(b *swmbot.Info) string {
 	return dutName
 }
 
-func (i *Info) loadBotInfo(b *swmbot.Info) *swmbot.BotInfo {
+func (i *Info) loadBotInfo(b *swmbot.Info) *swmbot.LocalState {
 	if i.err != nil {
 		return nil
 	}
@@ -115,7 +115,7 @@ func (i *Info) loadBotInfo(b *swmbot.Info) *swmbot.BotInfo {
 		return nil
 	}
 	i.closers = append(i.closers, bi)
-	return &bi.BotInfo
+	return &bi.LocalState
 }
 
 func (i *Info) loadDUTInfo(ctx context.Context, b *swmbot.Info) *inventory.DeviceUnderTest {
@@ -140,7 +140,7 @@ func (i *Info) makeHostInfo(d *inventory.DeviceUnderTest) *hostinfo.HostInfo {
 	return hip.HostInfo
 }
 
-func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *swmbot.BotInfo) {
+func (i *Info) addBotInfoToHostInfo(hi *hostinfo.HostInfo, bi *swmbot.LocalState) {
 	if i.err != nil {
 		return
 	}

@@ -8,9 +8,9 @@ import (
 	"encoding/json"
 )
 
-// BotInfo contains persistent bot information that is cached on the
+// LocalState contains persistent bot information that is cached on the
 // Skylab drone.
-type BotInfo struct {
+type LocalState struct {
 	HostState               HostState               `json:"state"`
 	ProvisionableLabels     ProvisionableLabels     `json:"provisionable_labels"`
 	ProvisionableAttributes ProvisionableAttributes `json:"provisionable_attributes"`
@@ -38,12 +38,12 @@ const (
 )
 
 // Marshal returns the encoding of the BotInfo.
-func Marshal(bi *BotInfo) ([]byte, error) {
+func Marshal(bi *LocalState) ([]byte, error) {
 	return json.Marshal(bi)
 }
 
 // Unmarshal decodes BotInfo from the encoded data.
-func Unmarshal(data []byte, bi *BotInfo) error {
+func Unmarshal(data []byte, bi *LocalState) error {
 	if err := json.Unmarshal(data, bi); err != nil {
 		return err
 	}

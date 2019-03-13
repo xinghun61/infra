@@ -16,13 +16,13 @@ import (
 // for returning any relevant Hostinfo changes back to the BotInfo.
 type Borrower struct {
 	hostInfo *hostinfo.HostInfo
-	botInfo  *swmbot.BotInfo
+	botInfo  *swmbot.LocalState
 }
 
 // BorrowBotInfo takes some info stored in the BotInfo and adds it to
 // the HostInfo.  The returned Borrower should be closed to return any
 // relevant HostInfo changes back to the BotInfo.
-func BorrowBotInfo(hi *hostinfo.HostInfo, bi *swmbot.BotInfo) *Borrower {
+func BorrowBotInfo(hi *hostinfo.HostInfo, bi *swmbot.LocalState) *Borrower {
 	for label, value := range bi.ProvisionableLabels {
 		hi.Labels = append(hi.Labels, fmt.Sprintf("%s:%s", label, value))
 	}
