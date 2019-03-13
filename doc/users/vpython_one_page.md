@@ -41,7 +41,7 @@ setting `venv=True` when using the `python` recipe_module.
 
 ### What if I need a new VPython wheel?
 First check to see if the wheel is already available in [wheels.md]. If not,
-file a bug [here](https://bugs.chromium.org/p/chromium/issues/entry?summary=Need%20VPython%20Wheel&description=Link%20to%20PyPI:%20%0AWheel%20Name:%20%0AVersion:%20%0APlatform(s)%20Required:&components=Infra%3EPlatform%3EAdmin).
+file a bug [here](https://bugs.chromium.org/p/chromium/issues/entry?summary=Need%20VPython%20Wheel&description=Link%20to%20PyPI:%20%0AWheel%20Name:%20%0AVersion:%20%0APlatform(s)%20Required:%20%0A%0A%0ANote%20to%20Foundation%20Trooper:%0AFollow%20https://chromium.googlesource.com/infra/infra/+/master/infra/tools/dockerbuild/README.wheels.md&components=Infra>Platform>Admin).
 
 [go/vpython-and-you]: ./vpython_one_page.md
 [VPython]: ./vpython.md

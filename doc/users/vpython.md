@@ -672,4 +672,6 @@ Feel free to reach out to Chrome Operations if you have any questions or want to
 discuss `vpython` integration design.
 
 * `luci-eng@google.com`
+* [Existing vpython wheels](https://chromium.googlesource.com/infra/infra/+/master/infra/tools/dockerbuild/wheels.md)
+* [Request new vpython wheel](https://bugs.chromium.org/p/chromium/issues/entry?summary=Need%20VPython%20Wheel&description=Link%20to%20PyPI:%20%0AWheel%20Name:%20%0AVersion:%20%0APlatform(s)%20Required:%20%0A%0A%0ANote%20to%20Foundation%20Trooper:%0AFollow%20https://chromium.googlesource.com/infra/infra/+/master/infra/tools/dockerbuild/README.wheels.md&components=Infra>Platform>Admin)
 * [File a Bug](https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure)
