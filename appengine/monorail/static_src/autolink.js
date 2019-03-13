@@ -301,10 +301,8 @@ function markupAutolinks(plainString, componentRefs, currentProjectName) {
       textRuns.push({tag: 'br'});
     } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
       textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
-    } else if (componentRefs && componentRefs.size) {
-      textRuns.push(...autolinkChunk(chunk, componentRefs, currentProjectName));
     } else {
-      textRuns.push({content: chunk});
+      textRuns.push(...autolinkChunk(chunk, componentRefs, currentProjectName));
     }
   });
   return textRuns;

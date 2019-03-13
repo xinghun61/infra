@@ -36,18 +36,21 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
         }
       </style>
       <span is-deleted\$="[[isDeleted]]" code-font\$="[[_codeFont]]">
-        <template is="dom-repeat" items="[[_textRuns]]" as="run">
-          <b class="line" hidden\$="[[!_isTagEqual(run.tag, 'b')]]">[[run.content]]</b>
-          <br hidden\$="[[!_isTagEqual(run.tag, 'br')]]">
-          <a
-            class="line"
-            hidden\$="[[!_isTagEqual(run.tag, 'a')]]"
-            target="_blank"
-            href\$="[[run.href]]"
-            class\$="[[run.css]]"
-          >[[run.content]]</a>
-          <span class="line" hidden\$="[[run.tag]]">[[run.content]]</span>
-        </template>
+        <template is="dom-repeat" items="[[_textRuns]]" as="run"
+          ><b
+             class="line"
+             hidden\$="[[!_isTagEqual(run.tag, 'b')]]"
+           >[[run.content]]</b
+          ><br hidden\$="[[!_isTagEqual(run.tag, 'br')]]"
+          ><a
+             class="line"
+             hidden\$="[[!_isTagEqual(run.tag, 'a')]]"
+             target="_blank"
+             href\$="[[run.href]]"
+             class\$="[[run.css]]"
+           >[[run.content]]</a
+          ><span class="line" hidden\$="[[run.tag]]">[[run.content]]</span
+        ></template>
       </span>
     `;
   }
