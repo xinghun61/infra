@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package harness
+package dutinfo
 
 import (
 	"go.chromium.org/luci/common/errors"
@@ -11,8 +11,8 @@ import (
 	"infra/libs/skylab/inventory"
 )
 
-// loadDUTName returns the Swarming bot's DUT's name.
-func loadDUTName(b *swmbot.Info) (string, error) {
+// LoadDUTName returns the Swarming bot's DUT's name.
+func LoadDUTName(b *swmbot.Info) (string, error) {
 	ddir, err := inventory.ReadSymlink(b.Inventory.DataDir)
 	if err != nil {
 		return "", errors.Annotate(err, "load DUT name").Err()

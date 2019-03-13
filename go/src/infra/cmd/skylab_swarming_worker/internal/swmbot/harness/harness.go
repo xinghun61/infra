@@ -100,7 +100,7 @@ func (i *Info) getDUTName(b *swmbot.Info) string {
 	if i.err != nil {
 		return ""
 	}
-	dutName, err := loadDUTName(b)
+	dutName, err := dutinfo.LoadDUTName(b)
 	i.err = err
 	return dutName
 }
