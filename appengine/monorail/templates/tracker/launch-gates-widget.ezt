@@ -32,7 +32,6 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _onload();
   let phaseNum = 0;
   [for initial_phases]
     document.getElementsByName(`phase_${phaseNum++}`)[0].value = '[format "js"][initial_phases.name][end]';

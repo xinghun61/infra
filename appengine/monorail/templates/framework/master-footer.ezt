@@ -12,16 +12,5 @@
 
 [include "master-footer-shared.ezt"]
 
-<script type="text/javascript" nonce="[nonce]">
-runOnLoad(function() {
-  [if-any projectname]
-    _fetchOptions('[projectname]', CS_env.token,
-        [project.cached_content_timestamp]);
-    _fetchUserProjects(false);
-  [end]
-  _onload();
-});
-</script>
-
 </body>
 </html>

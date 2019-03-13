@@ -77,8 +77,6 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _onload();
-
   if ($("hotlist_star")) {
     [# The user viewing this page wants to star this hotlist]
     $("hotlist_star").addEventListener("click", function () {

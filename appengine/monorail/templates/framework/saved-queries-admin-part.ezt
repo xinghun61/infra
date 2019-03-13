@@ -104,7 +104,6 @@ runOnLoad(function() {
    }
   }
   _fetchUserProjects(true);
-  _onload();
 
   var addARowLinks = document.getElementsByClassName("fakelink");
   for (var i = 0; i < addARowLinks.length; ++i) {

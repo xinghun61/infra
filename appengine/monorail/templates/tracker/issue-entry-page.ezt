@@ -375,7 +375,6 @@ runOnLoad(function() {
   };
 
   _lfidprefix = 'labelenter';
-  _onload();
   [if-any any_errors]
    function _clearOnFirstEvent(){}
   [end]

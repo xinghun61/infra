@@ -34,8 +34,6 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _onload();
-
   [# TODO(jrobbins): move this to compiled Javascript. ]
   var submit = document.getElementById('submit_btn');
   submit.disabled = 'disabled';
