@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
-	"go.chromium.org/luci/appengine/bqlog"
 	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
@@ -157,21 +156,6 @@ func createAnalysisResults(wres *track.WorkerRunResult, areq *track.AnalyzeReque
 	return &analysisRun, nil
 }
 
-var resultsLog = bqlog.Log{
-	QueueName: "analysis-results-queue", // See queue.yaml.
-	DatasetID: "analyzer",               // See setup_bigquery.sh.
-	TableID:   "results",                // See setup_bigquery.sh.
-}
-
-// flushResultsToBQ sends all buffered results to BigQuery.
-//
-// It is fine to call flushResultsToBQ concurrently from multiple request
-// handlers, if necessary (it will effectively parallelize the flush).
-func flushResultsToBQ(c context.Context) error {
-	_, err := resultsLog.Flush(c)
-	return err
-}
-
 // Stream analyzer results to BigQuery for metrics and ad hoc analysis.
 func streamToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *track.AnalyzeRequest, ares *track.AnalyzeRequestResult, comments []*track.Comment, selections []*track.CommentSelection) error {
 	run, err := createAnalysisResults(wres, areq, ares, comments, selections)
@@ -179,7 +163,7 @@ func streamToBigQuery(c context.Context, wres *track.WorkerRunResult, areq *trac
 		return err
 	}
 
-	return resultsLog.Insert(c, &bq.Row{Message: run})
+	return common.ResultsLog.Insert(c, &bq.Row{Message: run})
 }
 
 // Given the |request| and |comments| create an array of track.CommentSelection

@@ -15,7 +15,7 @@ cron:
   schedule: every 1 minutes
   target: default
 
-- description: "Flush analysis run results to BigQuery"
-  url: /tracker/internal/cron/bqlog/analysis-flush
+- description: "Flush all pending rows to BigQuery"
+  url: /tracker/internal/cron/bqlog/flush
   schedule: every 1 minutes
   target: default

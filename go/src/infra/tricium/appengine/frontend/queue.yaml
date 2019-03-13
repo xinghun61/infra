@@ -1,3 +1,4 @@
+# Push queues
 queue:
 - name: analyze-queue
   mode: push
@@ -29,5 +30,7 @@ queue:
   rate: 1/s
   retry_parameters:
     task_retry_limit: 10
+
+# Pull queues
 - name: analysis-results-queue
   mode: pull

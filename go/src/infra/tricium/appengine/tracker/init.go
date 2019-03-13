@@ -24,9 +24,9 @@ func init() {
 	r.POST("/tracker/internal/worker-launched", base, workerLaunchedHandler)
 	r.POST("/tracker/internal/workflow-launched", base, workflowLaunchedHandler)
 
-	r.GET("/tracker/internal/cron/bqlog/analysis-flush", base.Extend(gaemiddleware.RequireCron),
+	r.GET("/tracker/internal/cron/bqlog/flush", base.Extend(gaemiddleware.RequireCron),
 		func(c *router.Context) {
-			if err := flushResultsToBQ(c.Context); err != nil {
+			if _, err := common.ResultsLog.Flush(c.Context); err != nil {
 				http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 				return
 			}
