@@ -18,7 +18,7 @@ LUCI_PROJECTS = {
         'ci': ['Linux Builder'],
     },
     'chromeos': {
-        'ci': [],
+        'postsubmit': ['arm-generic-postsubmit'],
     }
 }
 

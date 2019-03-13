@@ -25,8 +25,9 @@ def OnBuildCompletion(project, bucket, builder_name, build_id, build_result):
   if not supported_builders or builder_name not in supported_builders:
     return False
 
-  assert bucket == 'ci', 'Only support ci bucket for %s, but got %s' % (project,
-                                                                        bucket)
+  assert bucket in [
+      'ci', 'postsubmit'
+  ], 'Only support ci/postsubmit bucket for %s, but got %s' % (project, bucket)
 
   # Skip builds that didn't fail.
   if build_result != 'FAILURE':
@@ -36,17 +37,19 @@ def OnBuildCompletion(project, bucket, builder_name, build_id, build_result):
 
   build = buildbucket_client.GetV2Build(build_id, fields=FieldMask(paths=['*']))
 
-  if (build.input.gitiles_commit.host !=
-      projects.GERRIT_PROJECTS[project]['gitiles-host'] or
-      build.input.gitiles_commit.project !=
-      projects.GERRIT_PROJECTS[project]['name']):
+  # TODO (crbug.com/941625): Not skip the checking for chromeos.
+  if (project != 'chromeos' and
+      (build.input.gitiles_commit.host !=
+       projects.GERRIT_PROJECTS[project]['gitiles-host'] or
+       build.input.gitiles_commit.project !=
+       projects.GERRIT_PROJECTS[project]['name'])):
     logging.warning('Unexpected gitiles project for build: %r', build_id)
     return False
 
   context = Context(
       luci_project_name=project,
-      gitiles_host=projects.GERRIT_PROJECTS[project]['gitiles-host'],
-      gitiles_project=projects.GERRIT_PROJECTS[project]['name'],
+      gitiles_host=build.input.gitiles_commit.host,
+      gitiles_project=build.input.gitiles_commit.project,
       gitiles_ref=build.input.gitiles_commit.ref,
       gitiles_id=build.input.gitiles_commit.id)
 
