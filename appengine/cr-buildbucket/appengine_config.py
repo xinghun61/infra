@@ -4,3 +4,6 @@
 
 components_ereporter2_RECIPIENTS_AUTH_GROUP = 'buildbucket-ereporter2-reports'
 components_ereporter2_VIEWERS_AUTH_GROUP = 'buildbucket-ereporter2-viewers'
+
+from components import utils
+utils.fix_protobuf_package()

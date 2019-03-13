@@ -13,8 +13,6 @@ import logging
 import webapp2
 
 from components import endpoints_webapp2
-from components import utils
-utils.fix_protobuf_package()
 
 import gae_ts_mon
 

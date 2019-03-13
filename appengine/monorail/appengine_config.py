@@ -13,3 +13,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'third_party'))
 
 import httplib2
 import oauth2client
+
+from components import utils
+utils.fix_protobuf_package()
