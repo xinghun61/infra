@@ -211,15 +211,21 @@ class Build(ndb.Model):
   # ID of the LUCI project to which this build belongs.
   project = ndb.ComputedProperty(lambda self: self.proto.builder.project)
 
-  # A container of builds, defines a security domain.
-  # Format: "<project_id>/<bucket_name>".
-  # "luci.<project_id>." prefix is stripped from bucket name,
-  # e.g. "chromium/try", not "chromium/luci.chromium.try".
+  # Indexed string "<project_id>/<bucket_name>".
+  # Example: "chromium/try".
+  # Prefix "luci.<project_id>." is stripped from bucket name.
   bucket_id = ndb.ComputedProperty(
       lambda self: config.format_bucket_id(
           self.proto.builder.project, self.proto.builder.bucket))
 
-  # TODO(nodir): add builder_id property for fast search by builder.
+  # Indexed string "<project_id>/<bucket_name>/<builder_name>".
+  # Example: "chromium/try/linux-rel".
+  # Prefix "luci.<project_id>." is stripped from bucket name.
+  builder_id = ndb.ComputedProperty(
+      lambda self: '%s/%s/%s' % (
+          self.proto.builder.project,
+          self.proto.builder.bucket,
+          self.proto.builder.builder))
 
   # Value of proto.create_time.
   # Making this property computed is not-entirely trivial because
