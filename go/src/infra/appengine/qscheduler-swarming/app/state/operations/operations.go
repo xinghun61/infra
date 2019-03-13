@@ -79,6 +79,10 @@ func NotifyTasks(r *swarming.NotifyTasksRequest) (types.Operation, *swarming.Not
 			return errors.Errorf("Scheduler with id %s has nil config.", r.SchedulerId)
 		}
 
+		if r.IsCallback {
+			events = events.WithFields(true)
+		}
+
 		for _, n := range r.Notifications {
 			var t taskState
 			var ok bool
