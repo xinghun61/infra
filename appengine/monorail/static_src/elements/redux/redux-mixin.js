@@ -442,7 +442,7 @@ const userReducer = createReducer(null, {
 });
 
 const userGroupsReducer = createReducer([], {
-  [actionType.FETCH_USER_SUCCESS]: (state, action) => action.groups || state,
+  [actionType.FETCH_USER_SUCCESS]: (_state, action) => action.groups || [],
 });
 
 const issueIdReducer = createReducer(0, {
