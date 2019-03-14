@@ -42,24 +42,32 @@ func (c *versionRun) Run(a subcommands.Application, args []string, env subcomman
 }
 
 func (c *versionRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	d, err := executableDir()
+	p, err := findSkylabPackage()
 	if err != nil {
 		return err
+	}
+	fmt.Printf("%s\t%s\ttracking %s\n", p.Package, p.Pin.InstanceID, p.Tracking)
+	return nil
+}
+
+func findSkylabPackage() (*cipd.Package, error) {
+	d, err := executableDir()
+	if err != nil {
+		return nil, errors.Annotate(err, "find skylab package").Err()
 	}
 	root, err := findCIPDRootDir(d)
 	if err != nil {
-		return err
+		return nil, errors.Annotate(err, "find skylab package").Err()
 	}
 	pkgs, err := cipd.InstalledPackages(root)
 	if err != nil {
-		return err
+		return nil, errors.Annotate(err, "find skylab package").Err()
 	}
 	for _, p := range pkgs {
 		if !strings.HasPrefix(p.Package, "chromiumos/infra/skylab/") {
 			continue
 		}
-		fmt.Printf("%s\t%s\ttracking %s\n", p.Package, p.Pin.InstanceID, p.Tracking)
-		return nil
+		return &p, nil
 	}
-	return errors.Reason("could not find installed skylab CIPD package").Err()
+	return nil, errors.Reason("find skylab package: not found").Err()
 }
