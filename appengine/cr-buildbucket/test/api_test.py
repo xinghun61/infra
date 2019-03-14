@@ -261,18 +261,15 @@ class UpdateBuildTests(BaseTestCase):
     self.call(self.api.UpdateBuild, req, ctx=ctx)
 
     persisted = model.BuildSteps.key_for(build.key).get()
-    self.assertEqual(persisted.step_container.steps, build_proto.steps)
+    persisted_container = build_pb2.Build()
+    persisted.read_steps(persisted_container)
+    self.assertEqual(persisted_container.steps, build_proto.steps)
 
   def test_update_properties(self):
     build = test_util.build(id=123, status=common_pb2.STARTED)
     build.put()
 
     expected_props = {'a': 1}
-    build_steps = model.BuildSteps(
-        key=model.BuildSteps.key_for(build.key),
-        step_container=build_pb2.Build(steps=[dict(name='bot_update')]),
-    )
-    build_steps.put()
 
     build_proto = build_pb2.Build(id=123)
     build_proto.output.properties.update(expected_props)
@@ -281,9 +278,6 @@ class UpdateBuildTests(BaseTestCase):
         build_proto, paths=['build.output.properties']
     )
     self.call(self.api.UpdateBuild, req, ctx=ctx)
-
-    expected = copy.deepcopy(build_proto)
-    expected.MergeFrom(build_steps.step_container)
 
     out_props = model.BuildOutputProperties.key_for(build.key).get()
     self.assertEqual(test_util.msg_to_dict(out_props.parse()), expected_props)

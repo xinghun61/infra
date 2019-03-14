@@ -295,7 +295,8 @@ def update_build_async(req, _res, ctx, _mask):
         prpc.StatusCode.PERMISSION_DENIED, '%s not permitted to update build' %
         auth.get_current_identity().to_bytes()
     )
-  validation.validate_update_build_request(req)
+  build_steps = model.BuildSteps.make(req.build)
+  validation.validate_update_build_request(req, build_steps)
 
   update_paths = set(req.update_mask.paths)
 
@@ -328,10 +329,6 @@ def update_build_async(req, _res, ctx, _mask):
     futures = []
 
     if 'build.steps' in update_paths:
-      build_steps = model.BuildSteps(
-          key=model.BuildSteps.key_for(build.key),
-          step_container=build_pb2.Build(steps=req.build.steps),
-      )
       futures.append(build_steps.put_async())
 
     if 'build.output.properties' in update_paths:

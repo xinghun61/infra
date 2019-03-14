@@ -206,8 +206,7 @@ class SegmentTest(TestBase):
   def test_build_steps_keys_only(self, enqueue_tasks):
     build_steps = [
         model.BuildSteps(
-            parent=ndb.Key(model.Build, i),
-            step_container=build_pb2.Build(),
+            parent=ndb.Key(model.Build, i), step_container_bytes=''
         ) for i in xrange(50, 60)
     ]
     ndb.put_multi(build_steps)

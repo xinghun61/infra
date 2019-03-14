@@ -70,7 +70,7 @@ class ExpireBuildTests(testing.AppengineTestCase):
     old_build = test_util.build(create_time=test_util.dt2ts(old_build_time))
     old_build_steps = model.BuildSteps(
         key=model.BuildSteps.key_for(old_build.key),
-        step_container=build_pb2.Build(),
+        step_container_bytes='',
     )
 
     new_build_time = utils.utcnow() - model.BUILD_STORAGE_DURATION / 2

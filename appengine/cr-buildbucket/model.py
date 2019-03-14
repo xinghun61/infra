@@ -6,6 +6,7 @@ import contextlib
 import datetime
 import itertools
 import random
+import zlib
 
 from components import auth
 from components import datastore_utils
@@ -431,21 +432,56 @@ class BuildOutputProperties(BuildDetailEntity):
 class BuildSteps(BuildDetailEntity):
   """Stores buildbucket.v2.Build.steps."""
 
-  # max length of steps attribute, uncompressed.
-  MAX_STEPS_LEN = 1024 * 1024
+  # max length of step_container_bytes attribute.
+  MAX_STEPS_LEN = 1e6
 
   # buildbucket.v2.Build binary protobuf message with only "steps" field set.
-  step_container = datastore_utils.ProtobufProperty(
-      build_pb2.Build,
-      name='steps',
-      max_length=MAX_STEPS_LEN,
-      compressed=True,
-  )
+  # zlib-compressed if step_container_bytes_zipped is True.
+  step_container_bytes = ndb.BlobProperty(name='steps')
+
+  # Whether step_container_bytes are zlib-compressed.
+  # We don't reuse ndb compression because we want to enforce the size limit
+  # at the API level after compression.
+  step_container_bytes_zipped = ndb.BooleanProperty(indexed=False)
 
   def _pre_put_hook(self):
     """Checks BuildSteps invariants before putting."""
     super(BuildSteps, self)._pre_put_hook()
-    assert self.step_container is not None
+    assert self.step_container_bytes is not None
+    assert len(self.step_container_bytes) <= self.MAX_STEPS_LEN
+
+  @classmethod
+  def make(cls, build_proto):
+    """Creates BuildSteps for the build_proto.
+
+    Does not verify step size.
+    """
+    assert build_proto.id
+    build_key = ndb.Key(Build, build_proto.id)
+    ret = cls(key=cls.key_for(build_key))
+    ret.write_steps(build_proto)
+    return ret
+
+  def write_steps(self, build_proto):
+    """Serializes build_proto.steps into self."""
+    container = build_pb2.Build(steps=build_proto.steps)
+    container_bytes = container.SerializeToString()
+
+    # Compress only if necessary.
+    zipped = len(container_bytes) > self.MAX_STEPS_LEN
+    if zipped:
+      container_bytes = zlib.compress(container_bytes)
+
+    self.step_container_bytes = container_bytes
+    self.step_container_bytes_zipped = zipped
+
+  def read_steps(self, build_proto):
+    """Deserializes steps into build_proto.steps."""
+    container_bytes = self.step_container_bytes
+    if self.step_container_bytes_zipped:
+      container_bytes = zlib.decompress(container_bytes)
+    build_proto.ClearField('steps')
+    build_proto.MergeFromString(container_bytes)
 
 
 # Tuple of classes representing entity kinds that living under Build entity.
@@ -559,9 +595,7 @@ def builds_to_protos_async(
     if steps_f:
       steps = yield steps_f
       if steps:  # pragma: no branch
-        # This deep-copies steps
-        # TODO(nodir): parse proto bytes here, not on entity loading.
-        d.steps.extend(steps.step_container.steps)
+        steps.read_steps(d)
 
     if out_props_f:
       out_props = yield out_props_f

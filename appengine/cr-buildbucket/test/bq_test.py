@@ -62,9 +62,9 @@ class BigQueryExportTest(testing.AppengineTestCase):
     ]
     ndb.put_multi(builds)
 
-    model.BuildSteps(
-        key=model.BuildSteps.key_for(builds[0].key),
-        step_container=build_pb2.Build(
+    build_steps = model.BuildSteps(key=model.BuildSteps.key_for(builds[0].key))
+    build_steps.write_steps(
+        build_pb2.Build(
             steps=[
                 dict(
                     name='bot_update',
@@ -73,8 +73,9 @@ class BigQueryExportTest(testing.AppengineTestCase):
                     logs=[dict(name='stdout')],
                 ),
             ],
-        ),
-    ).put()
+        )
+    )
+    build_steps.put()
     self.queue.add([
         taskqueue.Task(method='PULL', payload=json.dumps({'id': b.key.id()}))
         for b in builds

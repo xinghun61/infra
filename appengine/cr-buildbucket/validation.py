@@ -13,7 +13,6 @@ import contextlib
 import re
 import threading
 
-from proto import build_pb2
 from proto import common_pb2
 
 import buildtags
@@ -287,9 +286,13 @@ UPDATE_BUILD_STATUSES = {
 }
 
 
-def validate_update_build_request(req):
-  """Validates rpc_pb2.UpdateBuildRequest."""
-  # Check the set of fields being updated.
+def validate_update_build_request(req, build_steps=None):
+  """Validates rpc_pb2.UpdateBuildRequest.
+
+  build_steps is prepared model.BuildSteps corresponding to req.build.steps.
+  If None, then validate_update_build_request will serialize potentially large
+  req.build.steps.
+  """
   update_paths = set(req.update_mask.paths)
   with _enter('update_mask', 'paths'):
     unsupported = update_paths - UPDATE_BUILD_FIELD_PATHS
@@ -298,6 +301,9 @@ def validate_update_build_request(req):
 
   # Check build values, if present in the mask.
   with _enter('build'):
+    with _enter('id'):
+      _check_truth(req.build.id)
+
     if 'build.status' in update_paths:
       if req.build.status not in UPDATE_BUILD_STATUSES:
         _enter_err(
@@ -312,9 +318,11 @@ def validate_update_build_request(req):
 
     if 'build.steps' in update_paths:  # pragma: no branch
       with _enter('steps'):
-        size = build_pb2.Build(steps=req.build.steps).ByteSize()
-        if size > model.BuildSteps.MAX_STEPS_LEN:
-          _too_big(size, model.BuildSteps.MAX_STEPS_LEN)
+        build_steps = build_steps or model.BuildSteps.make(req.build)
+        limit = model.BuildSteps.MAX_STEPS_LEN
+        if len(build_steps.step_container_bytes) > limit:
+          _err('too big to accept')
+
         validate_steps(req.build.steps)
 
 

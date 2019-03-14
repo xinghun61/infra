@@ -429,6 +429,7 @@ class UpdateBuildRequestTests(BaseTestCase):
 
   @staticmethod
   def _mk_req(paths, **build_fields):
+    build_fields.setdefault('id', 1)
     return rpc_pb2.UpdateBuildRequest(
         build=build_fields, update_mask=field_mask_pb2.FieldMask(paths=paths)
     )
@@ -451,16 +452,18 @@ class UpdateBuildRequestTests(BaseTestCase):
         msg, r'update_mask\.paths: unsupported path\(s\) .+build\.input.+'
     )
 
-  @mock.patch('model.BuildSteps.MAX_STEPS_LEN', 13)
+  @mock.patch('model.BuildSteps.MAX_STEPS_LEN', 10)
   def test_steps_too_big(self):
-    msg = self._mk_req(
-        ['build.steps'],
-        steps=[
-            step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
-            step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
-        ],
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            id=1,
+            steps=[
+                step_pb2.Step(name='x' * 1000, status=common_pb2.SCHEDULED),
+            ]
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
     )
-    self.assert_invalid(msg, r'too big to accept \(20 > 13 bytes\)')
+    self.assert_invalid(msg, r'build\.steps: too big to accept')
 
   @mock.patch('validation.MAX_SUMMARY_MARKDOWN_SIZE', 10)
   def test_summary_markdown_too_big(self):

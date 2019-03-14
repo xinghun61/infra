@@ -4,8 +4,7 @@
 
 import datetime
 import unittest
-
-from google.appengine.ext import ndb
+import mock
 
 from testing_utils import testing
 from test import test_util
@@ -59,13 +58,6 @@ class BuildTest(testing.AppengineTestCase):
       self.assertTrue(in_range(time_high - unit))
       self.assertFalse(in_range(time_high))
       self.assertFalse(in_range(time_high + unit))
-
-  def test_build_steps_without_step_container(self):
-    build_steps = model.BuildSteps(
-        key=model.BuildSteps.key_for(ndb.Key(model.Build, 1)),
-    )
-    with self.assertRaises(AssertionError):
-      build_steps.put()
 
 
 class TestStatusConversion(unittest.TestCase):
@@ -178,15 +170,13 @@ class ToBuildProtosTests(testing.AppengineTestCase):
     )
 
   def test_steps(self):
-    build = test_util.build()
+    build = test_util.build(id=1)
     steps = [
         step_pb2.Step(name='a', status=common_pb2.SUCCESS),
         step_pb2.Step(name='b', status=common_pb2.STARTED),
     ]
-    model.BuildSteps(
-        key=model.BuildSteps.key_for(build.key),
-        step_container=build_pb2.Build(steps=steps),
-    ).put()
+    build_steps = model.BuildSteps.make(build_pb2.Build(id=1, steps=steps))
+    build_steps.put()
 
     actual = self.to_proto(build, load_steps=True)
     self.assertEqual(list(actual.steps), steps)
@@ -216,3 +206,19 @@ class ToBuildProtosTests(testing.AppengineTestCase):
 
     actual = self.to_proto(build, load_infra=True)
     self.assertEqual(actual.infra.swarming.hostname, 'swarming.example.com')
+
+
+class BuildStepsTest(testing.AppengineTestCase):
+
+  @mock.patch('model.BuildSteps.MAX_STEPS_LEN', 1000)
+  def test_large(self):
+    container = build_pb2.Build(steps=[dict(name='x' * 1000)])
+    entity = model.BuildSteps()
+    entity.write_steps(container)
+    self.assertTrue(entity.step_container_bytes_zipped)
+    entity.put()
+
+    entity = entity.key.get()
+    actual = build_pb2.Build()
+    entity.read_steps(actual)
+    self.assertEqual(actual, container)
