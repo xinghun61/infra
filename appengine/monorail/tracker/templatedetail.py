@@ -80,7 +80,8 @@ class TemplateDetail(servlet.Servlet):
         template.labels, field_name_set)
 
     field_views = tracker_views.MakeAllFieldValueViews(
-      config, template.labels, [], template.field_values, users_by_id)
+        config, template.labels, [], template.field_values, users_by_id,
+        phases=template.phases)
     approval_subfields_present = any(
         fv.field_def.is_approval_subfield for fv in field_views)
     phase_fields_present = any(

@@ -418,11 +418,18 @@ class FieldValueViewTest(unittest.TestCase):
     self.estdays_fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None,
         None, False, False, False, 3, 99, None, False, None, None,
-        None, 'no_action', 'descriptive docstring', False, None, False)
+        None, 'no_action', 'descriptive docstring', False, approval_id=None,
+        is_phase_field=False)
     self.designdoc_fd = tracker_bizobj.MakeFieldDef(
         2, 789, 'DesignDoc', tracker_pb2.FieldTypes.STR_TYPE, 'Enhancement',
         None, False, False, False, None, None, None, False, None, None,
-        None, 'no_action', 'descriptive docstring', False, None, False)
+        None, 'no_action', 'descriptive docstring', False, approval_id=None,
+        is_phase_field=False)
+    self.mtarget_fd = tracker_bizobj.MakeFieldDef(
+        3, 789, 'M-Target', tracker_pb2.FieldTypes.INT_TYPE, 'Enhancement',
+        None, False, False, False, None, None, None, False, None, None,
+        None, 'no_action', 'doc doc', False, approval_id=None,
+        is_phase_field=True)
     self.config.field_defs = [self.estdays_fd, self.designdoc_fd]
 
   def testNoValues(self):
@@ -430,7 +437,8 @@ class FieldValueViewTest(unittest.TestCase):
     values = []
     derived_values = []
     estdays_fvv = tracker_views.FieldValueView(
-        self.estdays_fd, self.config, values, derived_values, ['defect'])
+        self.estdays_fd, self.config, values, derived_values, ['defect'],
+        phase_name='Gate')
     self.assertEqual('EstDays', estdays_fvv.field_def.field_name)
     self.assertEqual(3, estdays_fvv.field_def.min_value)
     self.assertEqual(99, estdays_fvv.field_def.max_value)
@@ -445,6 +453,8 @@ class FieldValueViewTest(unittest.TestCase):
         self.estdays_fd, self.config, values, derived_values, ['defect'])
     self.assertEqual(values, estdays_fvv.values)
     self.assertEqual(derived_values, estdays_fvv.derived_values)
+    self.assertEqual('', estdays_fvv.phase_name)
+    self.assertEqual(ezt.boolean(False), estdays_fvv.field_def.is_phase_field)
 
   def testApplicability(self):
     """We know whether a field should show an editing widget."""
@@ -452,6 +462,8 @@ class FieldValueViewTest(unittest.TestCase):
     designdoc_fvv = tracker_views.FieldValueView(
         self.designdoc_fd, self.config, [], [], ['defect'])
     self.assertFalse(designdoc_fvv.applicable)
+    self.assertEqual('', designdoc_fvv.phase_name)
+    self.assertEqual(ezt.boolean(False), designdoc_fvv.field_def.is_phase_field)
 
     # Has a value.
     designdoc_fvv = tracker_views.FieldValueView(
@@ -512,6 +524,12 @@ class FieldValueViewTest(unittest.TestCase):
         self.estdays_fd, self.config, [], [], ['enhancement'])
     self.assertTrue(estdays_fvv.display)
 
+  def testPhaseField(self):
+    mtarget_fvv = tracker_views.FieldValueView(
+        self.mtarget_fd, self.config, [], [], [], phase_name='Stage')
+    self.assertEqual('Stage', mtarget_fvv.phase_name)
+    self.assertEqual(ezt.boolean(True), mtarget_fvv.field_def.is_phase_field)
+
 
 class FVVFunctionsTest(unittest.TestCase):
 
@@ -544,10 +562,11 @@ class FVVFunctionsTest(unittest.TestCase):
     labels = []
     derived_labels = []
     field_values = []
+    phases = []
     precomp_view_info = tracker_views._PrecomputeInfoForValueViews(
-        labels, derived_labels, field_values, self.config)
+        labels, derived_labels, field_values, self.config, phases)
     (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
-     label_docs) = precomp_view_info
+     label_docs, phases_by_name) = precomp_view_info
     self.assertEqual({}, labels_by_prefix)
     self.assertEqual({}, der_labels_by_prefix)
     self.assertEqual({}, field_values_by_id)
@@ -555,6 +574,7 @@ class FVVFunctionsTest(unittest.TestCase):
         {'priority-high': 'Must be resolved',
          'priority-low': 'Can be slipped'},
         label_docs)
+    self.assertEqual({}, phases_by_name)
 
   def testPrecomputeInfoForValueViews_SomeValues(self):
     """We can precompute info needed for an issue with fields and labels."""
@@ -564,10 +584,14 @@ class FVVFunctionsTest(unittest.TestCase):
     field_values = [
         tracker_bizobj.MakeFieldValue(1, 5, None, None, None, None, False),
         ]
+    phase_1 = tracker_pb2.Phase(phase_id=1, name='Stable')
+    phase_2 = tracker_pb2.Phase(phase_id=2, name='Beta')
+    phase_3 = tracker_pb2.Phase(phase_id=3, name='stable')
     precomp_view_info = tracker_views._PrecomputeInfoForValueViews(
-        labels, derived_labels, field_values, self.config)
+        labels, derived_labels, field_values, self.config,
+        phases=[phase_1, phase_2, phase_3])
     (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
-     _label_docs) = precomp_view_info
+     _label_docs, phases_by_name) = precomp_view_info
     self.assertEqual(
         {'priority': ['Low'],
          'feature': ['UI', 'Installer'],
@@ -579,6 +603,10 @@ class FVVFunctionsTest(unittest.TestCase):
     self.assertEqual(
         {1: field_values},
         field_values_by_id)
+    self.assertEqual(
+        {'stable': [phase_1, phase_3],
+         'beta': [phase_2]},
+        phases_by_name)
 
   def testMakeAllFieldValueViews(self):
     labels = ['Priority-Low', 'GoodFirstBug', 'Feature-UI', 'Feature-Installer',
@@ -588,33 +616,48 @@ class FVVFunctionsTest(unittest.TestCase):
         4, 789, 'UIMocks', tracker_pb2.FieldTypes.URL_TYPE,
         'Enhancement', None, False, False, False, None, None, None,
         False, None, None, None, 'no_action', 'descriptive docstring',
-        False, 23, False))
+        False, approval_id=23, is_phase_field=False))
     self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
         5, 789, 'LegalFAQs', tracker_pb2.FieldTypes.URL_TYPE,
         'Enhancement', None, False, False, False, None, None, None,
         False, None, None, None, 'no_action', 'descriptive docstring',
-        False, 26, False))
+        False, approval_id=26, is_phase_field=False))
     self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
         23, 789, 'Legal', tracker_pb2.FieldTypes.APPROVAL_TYPE,
         'Enhancement', None, False, False, False, None, None, None,
         False, None, None, None, 'no_action', 'descriptive docstring',
-        False, None, False))
+        False, approval_id=None, is_phase_field=False))
     self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
         26, 789, 'UI', tracker_pb2.FieldTypes.APPROVAL_TYPE,
         'Enhancement', None, False, False, False, None, None, None,
         False, None, None, None, 'no_action', 'descriptive docstring',
-        False, None, False))
+        False, approval_id=None, is_phase_field=False))
+    self.config.field_defs.append(tracker_bizobj.MakeFieldDef(
+        27, 789, 'M-Target', tracker_pb2.FieldTypes.INT_TYPE,
+        'Enhancement', None, False, False, False, None, None, None,
+        False, None, None, None, 'no_action', 'descriptive docstring',
+        False, approval_id=None, is_phase_field=True))
     field_values = [
-        tracker_bizobj.MakeFieldValue(1, 5, None, None, None, None, False)
+        tracker_bizobj.MakeFieldValue(1, 5, None, None, None, None, False),
+        tracker_bizobj.MakeFieldValue(
+            27, 74, None, None, None, None, False, phase_id=3),
+        # phase_id=4 does not belong to any of the phases given below.
+        # this field value should not show up in the views.
+        tracker_bizobj.MakeFieldValue(
+            27, 79, None, None, None, None, False, phase_id=4),
         ]
     users_by_id = {}
+    phase_1 = tracker_pb2.Phase(phase_id=1, name='Stable')
+    phase_2 = tracker_pb2.Phase(phase_id=2, name='Beta')
+    phase_3 = tracker_pb2.Phase(phase_id=3, name='stable')
     fvvs = tracker_views.MakeAllFieldValueViews(
         self.config, labels, derived_labels, field_values, users_by_id,
-        parent_approval_ids=[23])
-    self.assertEqual(7, len(fvvs))
+        parent_approval_ids=[23], phases=[phase_1, phase_2, phase_3])
+    self.assertEqual(9, len(fvvs))
     # Values are sorted by (applicable_type, field_name).
+    logging.info([fv.field_name for fv in fvvs])
     (estdays_fvv, launch_milestone_fvv, legal_fvv, legal_faq_fvv,
-     os_fvv, ui_fvv, ui_mocks_fvv) = fvvs
+      beta_mtarget_fvv, stable_mtarget_fvv, os_fvv, ui_fvv, ui_mocks_fvv) = fvvs
     self.assertEqual('EstDays', estdays_fvv.field_name)
     self.assertEqual(1, len(estdays_fvv.values))
     self.assertEqual(0, len(estdays_fvv.derived_values))
@@ -625,11 +668,21 @@ class FVVFunctionsTest(unittest.TestCase):
     self.assertEqual(0, len(os_fvv.values))
     self.assertEqual(2, len(os_fvv.derived_values))
     self.assertEqual(ui_mocks_fvv.field_name, 'UIMocks')
+    self.assertEqual(ui_mocks_fvv.phase_name, '')
     self.assertTrue(ui_mocks_fvv.applicable)
     self.assertEqual(legal_faq_fvv.field_name, 'LegalFAQs')
     self.assertFalse(legal_faq_fvv.applicable)
     self.assertFalse(legal_fvv.applicable)
     self.assertFalse(ui_fvv.applicable)
+    self.assertEqual('M-Target', stable_mtarget_fvv.field_name)
+    self.assertEqual('stable', stable_mtarget_fvv.phase_name)
+    self.assertEqual(1, len(stable_mtarget_fvv.values))
+    self.assertEqual(74, stable_mtarget_fvv.values[0].val)
+    self.assertEqual(0, len(stable_mtarget_fvv.derived_values))
+    self.assertEqual('M-Target', beta_mtarget_fvv.field_name)
+    self.assertEqual('beta', beta_mtarget_fvv.phase_name)
+    self.assertEqual(0, len(beta_mtarget_fvv.values))
+    self.assertEqual(0, len(beta_mtarget_fvv.values))
 
   def testMakeFieldValueView(self):
     pass  # Covered by testMakeAllFieldValueViews()

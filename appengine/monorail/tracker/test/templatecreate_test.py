@@ -109,7 +109,7 @@ class TemplateCreateTest(unittest.TestCase):
 
   def testGatherPageData(self):
     precomp_view_info = tracker_views._PrecomputeInfoForValueViews(
-        [], [], [], self.config)
+        [], [], [], self.config, [])
     fv = tracker_views._MakeFieldValueView(
         self.fd_1, self.config, precomp_view_info, {})
     page_data = self.servlet.GatherPageData(self.mr)
@@ -130,7 +130,7 @@ class TemplateCreateTest(unittest.TestCase):
     self.assertEqual(page_data['fields'][0].field_name, fv.field_name)
     self.assertEqual(page_data['initial_admins'], '')
     self.assertEqual(page_data['approval_subfields_present'], ezt.boolean(True))
-    self.assertEqual(page_data['phase_fields_present'], ezt.boolean(True))
+    self.assertEqual(page_data['phase_fields_present'], ezt.boolean(False))
 
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(

@@ -207,22 +207,6 @@
       </tr>
     [end]
 
-    [if-any phase_fields_present]
-      <tr id="phasefield-row">
-        <th>Gate fields:</th>
-        <td colspan="2">
-         [for fields]
-           [if-any fields.field_def.is_phase_field]
-             [fields.field_name]:
-             [include "field-value-widgets.ezt" False "tmpl" False ""]
-             <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
-           <br>
-           [end]
-         [end]
-        </td>
-      </tr>
-    [end]
-
      [include "../framework/label-validation-row.ezt"]
      [include "../framework/component-validation-row.ezt"]
     </table>

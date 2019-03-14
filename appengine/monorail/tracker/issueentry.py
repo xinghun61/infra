@@ -137,12 +137,13 @@ class IssueEntry(servlet.Servlet):
               if not tracker_bizobj.LabelIsMaskedByField(
                   lab, enum_field_name_set)]
 
-    approval_ids = [av.approval_id for av in template.approval_values]
     field_user_views = tracker_views.MakeFieldUserViews(
         mr.cnxn, template, self.services.user)
+    approval_ids = [av.approval_id for av in template.approval_values]
     field_views = tracker_views.MakeAllFieldValueViews(
         config, link_or_template_labels, [], template.field_values,
-        field_user_views, parent_approval_ids=approval_ids)
+        field_user_views, parent_approval_ids=approval_ids,
+        phases=template.phases)
 
     # TODO(jrobbins): remove "or []" after next release.
     (prechecked_approvals, required_approval_ids,

@@ -192,28 +192,6 @@
     </tr>
   [end]
 
-  [if-any phase_fields_present]
-    <tr id="phasefield-row">
-      <th>Gate fields:</th>
-      <td colspan="2">
-       [for fields]
-         [if-any fields.field_def.is_phase_field]
-           [fields.field_name]:
-           [if-any allow_edit]
-             [include "field-value-widgets.ezt" False "tmpl" False ""]
-           [else]
-             [for fields.values]
-               [fields.values.val]
-             [end]
-           [end]
-         <br>
-         [end]
-       [end]
-      </td>
-    </tr>
-  [end]
-
-
   [if-any allow_edit]
     <tr>
       <td></td>

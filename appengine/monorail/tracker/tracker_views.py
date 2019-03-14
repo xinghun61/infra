@@ -504,7 +504,8 @@ class FieldValueView(object):
   """Wrapper class that makes it easier to display a custom field value."""
 
   def __init__(
-      self, fd, config, values, derived_values, issue_types, applicable=None):
+      self, fd, config, values, derived_values, issue_types, applicable=None,
+      phase_name=None):
     """Make several values related to this field available as attrs.
 
     Args:
@@ -515,6 +516,7 @@ class FieldValueView(object):
       issue_types: set of lowered string values from issues' "Type-*" labels.
       applicable: optional boolean that overrides the rule that determines
           when a field is applicable.
+      phase_name: name of the phase this field value belongs to.
     """
     self.field_def = FieldDefView(fd, config)
     self.field_id = fd.field_id
@@ -522,6 +524,7 @@ class FieldValueView(object):
     self.field_docstring = fd.docstring
     self.field_docstring_short = template_helpers.FitUnsafeText(
         fd.docstring, 60)
+    self.phase_name = phase_name or ""
 
     self.values = values
     self.derived_values = derived_values
@@ -551,7 +554,8 @@ class FieldValueView(object):
         (self.applicable and not fd.is_niche))
 
 
-def _PrecomputeInfoForValueViews(labels, derived_labels, field_values, config):
+def _PrecomputeInfoForValueViews(labels, derived_labels, field_values, config,
+                                 phases):
   """Organize issue values into datastructures used to make FieldValueViews."""
   field_values_by_id = collections.defaultdict(list)
   for fv in field_values:
@@ -565,16 +569,25 @@ def _PrecomputeInfoForValueViews(labels, derived_labels, field_values, config):
       derived_labels, lower_enum_field_names)
   label_docs = {wkl.label.lower(): wkl.label_docstring
                 for wkl in config.well_known_labels}
-  return labels_by_prefix, der_labels_by_prefix, field_values_by_id, label_docs
+  phases_by_name = collections.defaultdict(list)
+  # group issue phases by name
+  for phase in phases:
+    phases_by_name[phase.name.lower()].append(phase)
+  return (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
+          label_docs, phases_by_name)
 
 
 def MakeAllFieldValueViews(
     config, labels, derived_labels, field_values, users_by_id,
-    parent_approval_ids=None):
-  """Return a list of FieldValues, each containing values from the issue."""
+    parent_approval_ids=None, phases=None):
+  """Return a list of FieldValues, each containing values from the issue.
+     A phase field value view will be created for each unique phase name found
+     in the given list a phases. Phase field value views will not be created
+     if the phases list is empty.
+  """
   parent_approval_ids = parent_approval_ids or []
   precomp_view_info = _PrecomputeInfoForValueViews(
-      labels, derived_labels, field_values, config)
+      labels, derived_labels, field_values, config, phases or [])
   def GetApplicable(fd):
     if fd.approval_id and fd.approval_id in parent_approval_ids:
       return True
@@ -584,17 +597,27 @@ def MakeAllFieldValueViews(
                           applicable=GetApplicable(fd))
       # TODO(jrobbins): field-level view restrictions, display options
       for fd in config.field_defs
-      if not fd.is_deleted]
+      if not fd.is_deleted and not fd.is_phase_field]
+
+  # Make a phase field's view for each unique phase_name found in phases.
+  (_, _, _, _, phases_by_name) = precomp_view_info
+  for phase_name in phases_by_name.keys():
+    field_value_views.extend([
+        _MakeFieldValueView(
+            fd, config, precomp_view_info, users_by_id, phase_name=phase_name)
+        for fd in config.field_defs if fd.is_phase_field])
+
   field_value_views = sorted(
       field_value_views, key=lambda f: (f.applicable_type, f.field_name))
   return field_value_views
 
 
 def _MakeFieldValueView(
-    fd, config, precomp_view_info, users_by_id, applicable=None):
+    fd, config, precomp_view_info, users_by_id, applicable=None,
+    phase_name=None):
   """Return a FieldValueView with all values from the issue for that field."""
   (labels_by_prefix, der_labels_by_prefix, field_values_by_id,
-   label_docs) = precomp_view_info
+   label_docs, phases_by_name) = precomp_view_info
 
   field_name_lower = fd.field_name.lower()
   values = []
@@ -608,12 +631,24 @@ def _MakeFieldValueView(
         der_labels_by_prefix.get(field_name_lower, []),
         field_name_lower, label_docs)
   else:
+    # Phases with the same name may have different phase_ids. Phases
+    # are defined during template creation and updating a template structure
+    # may result in new phase rows to be created while existing issues
+    # are referencing older phase rows.
+    phase_ids_for_phase_name = [
+        phase.phase_id for phase in phases_by_name.get(phase_name, [])]
+    # If a phase_name is given, we must filter field_values_by_id fvs to those
+    # that belong to the given phase. This is not done for labels
+    # because monorail does not support phase enum_type field values.
     values = _MakeFieldValueItems(
-        [fv for fv in field_values_by_id.get(
-            fd.field_id, []) if not fv.derived],
+        [fv for fv in field_values_by_id.get(fd.field_id, [])
+         if not fv.derived and
+         (not phase_name or (fv.phase_id in phase_ids_for_phase_name))],
         users_by_id)
     derived_values = _MakeFieldValueItems(
-        [fv for fv in field_values_by_id.get(fd.field_id, []) if fv.derived],
+        [fv for fv in field_values_by_id.get(fd.field_id, [])
+         if fv.derived and
+         (not phase_name or (fv.phase_id in phase_ids_for_phase_name))],
         users_by_id)
 
   issue_types = (labels_by_prefix.get('type', []) +
@@ -621,7 +656,7 @@ def _MakeFieldValueView(
   issue_types_lower = [it.lower() for it in issue_types]
 
   return FieldValueView(fd, config, values, derived_values, issue_types_lower,
-                        applicable=applicable)
+                        applicable=applicable, phase_name=phase_name)
 
 
 def _MakeFieldValueItems(field_values, users_by_id):
