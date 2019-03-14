@@ -28,12 +28,12 @@ import (
 
 // DutInfo subcommand: Get DUT inventory information
 var DutInfo = &subcommands.Command{
-	UsageLine: "dut-info [-json] HOSTNAME",
+	UsageLine: "dut-info [-json] [-full] HOSTNAME",
 	ShortDesc: "print Device Under Test inventory information",
 	LongDesc: `Print Device Under Test inventory information.
 
-By default, information is printed in a human-readable format. This format may
-change without prior notice.
+By default, only the most commonly used information is printed in a
+human-readable format. This format may change without prior notice.
 
 If you need a stable output format, use -json, which dumps a JSON-encoded
 serialization of the inventory.DeviceUnderTest protobuf.
@@ -49,7 +49,8 @@ https://chromium.googlesource.com/infra/infra/+/refs/heads/master/go/src/infra/
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 
-		c.Flags.BoolVar(&c.asJSON, "json", false, "Print inventory as JSON-encoded protobuf.")
+		c.Flags.BoolVar(&c.asJSON, "json", false, "Print inventory as JSON-encoded protobuf. Implies -full.")
+		c.Flags.BoolVar(&c.full, "full", false, "Print full DUT information, including less frequently used fields.")
 		return c
 	},
 }
@@ -60,6 +61,7 @@ type dutInfoRun struct {
 	envFlags  envFlags
 
 	asJSON bool
+	full   bool
 }
 
 func (c *dutInfoRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -94,10 +96,14 @@ func (c *dutInfoRun) innerRun(a subcommands.Application, args []string, env subc
 
 	bw := bufio.NewWriter(os.Stdout)
 	defer bw.Flush()
-	if c.asJSON {
+	switch {
+	case c.asJSON:
 		return printProtoJSON(bw, dut)
+	case c.full:
+		return printHumanizedInfoFull(bw, dut)
+	default:
+		return printHumanizedInfoShort(bw, dut)
 	}
-	return printHumanizedInfo(bw, dut)
 }
 
 func getDutInfo(ctx context.Context, ic fleet.InventoryClient, hostname string) (*inventory.DeviceUnderTest, error) {
@@ -112,9 +118,15 @@ func getDutInfo(ctx context.Context, ic fleet.InventoryClient, hostname string) 
 	return &dut, nil
 }
 
-func printHumanizedInfo(w io.Writer, dut *inventory.DeviceUnderTest) error {
+// printHumanizedInfoShort prints the most commonly used dut information in a
+// human-readable format.
+//
+// This function modifies dut to remove the already printed information.
+func printHumanizedInfoShort(w io.Writer, dut *inventory.DeviceUnderTest) (err error) {
 	tw := tabwriter.NewWriter(w, 0, 2, 2, ' ', 0)
-	defer tw.Flush()
+	defer func() {
+		err = tw.Flush()
+	}()
 
 	c := dut.GetCommon()
 	fmt.Fprintf(tw, "Hostname:\t%s\n", c.GetHostname())
@@ -147,12 +159,20 @@ func printHumanizedInfo(w io.Writer, dut *inventory.DeviceUnderTest) error {
 			fmt.Fprintf(tw, "\t%s\t%s\n", k, v)
 		}
 	}
+	return nil
+}
 
-	fmt.Fprintf(tw, "\nOther inventory data:\n")
+// printHumanizedInfoFull prints all the dut information in a human-readable
+// format.
+func printHumanizedInfoFull(w io.Writer, dut *inventory.DeviceUnderTest) error {
+	if err := printHumanizedInfoShort(w, dut); err != nil {
+		return err
+	}
+	fmt.Fprintf(w, "\nOther inventory data:\n")
 	// TODO(pprabhu) Use printProtoJSON once all protobuf fields have been made
 	// optional. There is no clean way to skip printing Hostname and other
 	// required fields currently.
-	return printProtoText(tw, dut)
+	return printProtoText(w, dut)
 }
 
 func printProtoText(w io.Writer, dut *inventory.DeviceUnderTest) error {
