@@ -25,7 +25,7 @@ cron:
   schedule: every 5 minutes from 16:00 to 00:00
 
 - description: Query and store flakes on cq.
-  url: /flake/detection/cron/detect-cq-false-rejection-flakes
+  url: /flake/detection/cron/detect-flakes
   schedule: every 30 minutes
   retry_parameters:
     job_retry_limit: 0
