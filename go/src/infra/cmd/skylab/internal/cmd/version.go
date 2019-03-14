@@ -5,6 +5,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -46,7 +47,16 @@ func (c *versionRun) innerRun(a subcommands.Application, args []string, env subc
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s\t%s\ttracking %s\n", p.Package, p.Pin.InstanceID, p.Tracking)
+	ctx := context.Background()
+	d, err := describe(ctx, p.Package, p.Pin.InstanceID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Package:\t%s\n", p.Package)
+	fmt.Printf("Version:\t%s\n", p.Pin.InstanceID)
+	fmt.Printf("Updated:\t%s\n", d.RegisteredTs)
+	fmt.Printf("Tracking:\t%s\n", p.Tracking)
 	return nil
 }
 
