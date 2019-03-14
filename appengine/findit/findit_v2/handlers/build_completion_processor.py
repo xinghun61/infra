@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import json
+import logging
 
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 
@@ -23,7 +24,12 @@ class BuildCompletionProcessor(BaseHandler):
     #   "build_id": 123243434,
     #   "build_result": "FAILURE",
     # }
-    build = json.loads(self.request.body)
+    try:
+      build = json.loads(self.request.body)
+    except ValueError:
+      logging.debug(self.request.body)
+      raise
+
     project = build['project']
     bucket = build['bucket'].split('.')[-1]  # "luci.chromium.ci" => "ci"
     builder_name = build['builder_name']

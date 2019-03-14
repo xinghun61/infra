@@ -90,13 +90,13 @@ def _HandlePossibleFailuresInBuild(project, bucket, builder_name, build_id,
     taskqueue.add(
         name='buildfailure-%s' % build_id,  # Avoid duplicate tasks.
         url='/findit/internal/v2/task/build-completed',
-        params={
+        payload=json.dumps({
             'project': project,
             'bucket': bucket,
             'builder_name': builder_name,
             'build_id': build_id,
-            'bulid_result': build_result,
-        },
+            'build_result': build_result,
+        }),
         target=appengine_util.GetTargetNameForModule('findit-backend'),
         queue_name='failure-detection-queue')
   except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
