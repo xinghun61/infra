@@ -137,6 +137,9 @@ message Inventory {
   // RPCs) for dut_info_cache_validity after it has been deleted from the
   // inventory.
   google.protobuf.Duration dut_info_cache_validity = 9;
+
+  // update_limit_per_minute is used to rate limit some inventory updates.
+  int32 update_limit_per_minute = 10;
 }
 
 message PoolBalancer {

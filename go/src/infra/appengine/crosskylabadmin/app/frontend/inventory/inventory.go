@@ -18,6 +18,7 @@ package inventory
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -28,6 +29,8 @@ import (
 	"go.chromium.org/luci/common/retry/transient"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
@@ -62,6 +65,10 @@ type ServerImpl struct {
 	// TODO(pprabhu) Move tracker/tasker to individual sub-packages and inject
 	// dependencies directly (instead of factory functions).
 	TrackerFactory TrackerFactory
+
+	// updateLimiter rate limits UpdateDutLabels.
+	updateLimiter     rateLimiter
+	updateLimiterOnce sync.Once
 }
 
 var transientErrorRetriesTemplate = retry.ExponentialBackoff{
@@ -117,6 +124,10 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
+	is.initUpdateLimiterOnce(ctx)
+	if !is.updateLimiter.TryRequest() {
+		return nil, status.Error(codes.Unavailable, "update is rate limited")
+	}
 	req2, err := unpackUpdateDutLabelsRequest(req)
 	if err != nil {
 		return nil, err
@@ -136,6 +147,15 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 		retry.LogCallback(ctx, "updateDutLabels"),
 	)
 	return resp, err
+}
+
+// initUpdateLimiterOnce initializes the updateLimiter.  This should
+// be called before using updateLimiter always.
+func (is *ServerImpl) initUpdateLimiterOnce(ctx context.Context) {
+	is.updateLimiterOnce.Do(func() {
+		is.updateLimiter.limitPerPeriod = int(config.Get(ctx).Inventory.UpdateLimitPerMinute)
+		is.updateLimiter.period = time.Minute
+	})
 }
 
 func unpackUpdateDutLabelsRequest(req *fleet.UpdateDutLabelsRequest) (updateDutLabelsRequest, error) {
