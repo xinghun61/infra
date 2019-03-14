@@ -163,7 +163,11 @@ Component view shows
 * Manage [post-analysis bug]:
    * Automatically file a bug if no bug attached to the flake.
    * Automatically comment on an existing bug.
+
+![Analysis Bug]
 * Post a comment on the culprit's code review.
+
+![Analysis Comment]
 * Auto revert the culprit if the culprit added the flaky test.
 
 [Analysis] supports verifying a flake fix is working by re-analyzing the flake at tip of tree.
@@ -185,6 +189,8 @@ For questions and general discussions, please use [findit group].
 + For full test history, use the [Legacy Flakiness Dashboard].
 
 [Analysis]: https://findit-for-me.appspot.com/p/chromium/flake-portal/analysis
+[Analysis Bug]: images/flake_analysis_bug.png
+[Analysis Comment]: images/flake_analysis_comment.png
 [Analyze Tip-of-tree]: images/analyze_tip_of_tree.png
 [binary==content_browsertests]: https://analysis.chromium.org/p/chromium/flake-portal/flakes?flake_filter=binary::content_browsertests
 [builder==win7_chromium_rel_ng]: https://analysis.chromium.org/p/chromium/flake-portal/flakes?flake_filter=builder::win7_chromium_rel_ng

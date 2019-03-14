@@ -43,7 +43,7 @@ please fix!
 If the culprit above is wrong, please file a bug using this link:
 {wrong_result_link}
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
+Automatically posted by the findit-for-me app (https://goo.gl/6D5FZh).""")
 
 # The link to include with bug updates about wrong findings for users to
 # report.
@@ -67,7 +67,7 @@ Analysis: {analysis_link}
 
 This flake is either longstanding, has low flakiness, or is not reproducible.
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
+Automatically posted by the findit-for-me app (https://goo.gl/6D5FZh).""")
 
 # Flake detection bug templates.
 _FLAKE_DETECTION_BUG_DESCRIPTION = textwrap.dedent("""
@@ -108,7 +108,7 @@ _FLAKE_DETECTION_FOOTER_TEMPLATE = textwrap.dedent(
     """If the result above is wrong, please file a bug using this link:
 {wrong_results_bug_link}
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
+Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC).""")
 
 ############### Below are bug templates for flake groups. ###############
 # Bug template for a group of detected flakes.

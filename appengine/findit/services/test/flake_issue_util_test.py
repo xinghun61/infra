@@ -245,7 +245,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   def testDisableCreateAndUpdateBugs(self, mock_create_bug_fn,
                                      mock_update_bug_fn):
     self.UpdateUnitTestConfigSettings(
-        'action_settings', {'max_flake_detetion_bug_updates_per_day': 0})
+        'action_settings', {'max_flake_detection_bug_updates_per_day': 0})
 
     flake = Flake.query().fetch()[0]
     occurrences = FlakeOccurrence.query(
@@ -328,7 +328,7 @@ within 30 minutes then find an appropriate owner.
 If the result above is wrong, please file a bug using this link:
 {}
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
+Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
                                           ).format(flake.key.urlsafe(),
                                                    expected_wrong_result_link)
 
@@ -408,7 +408,7 @@ https://analysis.chromium.org/p/chromium/flake-portal/flakes/occurrences?key={}.
 If the result above is wrong, please file a bug using this link:
 {}
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
+Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
                                       ).format(flake.key.urlsafe(),
                                                sheriff_queue_message,
                                                expected_wrong_result_link)

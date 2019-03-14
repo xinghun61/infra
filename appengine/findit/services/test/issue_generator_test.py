@@ -36,7 +36,7 @@ https://analysis.chromium.org/p/chromium/flake-portal/flakes?bug_id={}.
 If the result above is wrong, please file a bug using this link:
 {}
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
+Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC).""")
 
 _EXPECTED_GROUP_COMMENT = textwrap.dedent("""
 Findit has detected 5+ new flake occurrences of tests in this bug
@@ -50,7 +50,7 @@ https://analysis.chromium.org/p/chromium/flake-portal/flakes?bug_id={}.
 If the result above is wrong, please file a bug using this link:
 {}
 
-Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).""")
+Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC).""")
 
 
 class IssueGeneratorTest(WaterfallTestCase):
