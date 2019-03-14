@@ -11,7 +11,7 @@
       "GOARCH": "arm64",
       "GOOS": "linux"
     },
-    "name": "[GOOS:linux GOARCH:arm64].cipd - build packages"
+    "name": "[GOOS:linux GOARCH:arm64]cipd - build packages"
   },
   {
     "cmd": [
@@ -33,7 +33,7 @@
       "GOARCH": "arm64",
       "GOOS": "linux"
     },
-    "name": "[GOOS:linux GOARCH:arm64].cipd - upload packages",
+    "name": "[GOOS:linux GOARCH:arm64]cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",

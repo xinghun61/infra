@@ -235,7 +235,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "zlib-1.2.11"
   },
   {
@@ -298,7 +297,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "libidn2-2.0.4"
   },
   {
@@ -362,7 +360,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "curl-7.59.0"
   },
   {
@@ -430,7 +427,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "pcre2-10.23"
   },
   {
@@ -494,7 +490,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "autoconf-2.69"
   },
   {

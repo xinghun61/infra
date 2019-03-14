@@ -276,7 +276,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.bzip2-1.0.6",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -329,7 +328,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.ncurses-6.0",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -463,7 +461,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.readline-7.0",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -528,7 +525,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.zlib-1.2.11",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -594,7 +590,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.sqlite-autoconf-3190300",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -665,7 +660,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.libnsl-1.0.4",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -731,7 +725,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.openssl-1.1.0f",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -808,7 +801,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.libffi",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -845,7 +837,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.sed-4.2.2",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -910,7 +901,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.autoconf-2.69",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1172,7 +1162,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.provision SSL",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1627,7 +1616,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "git.zlib-1.2.11",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1693,7 +1681,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "git.libidn2-2.0.4",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1760,7 +1747,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "git.openssl-1.1.0f",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1837,10 +1823,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
-    "env": {
-      "LIBS": "-ldl -lpthread"
-    },
     "name": "git.curl-7.59.0",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1923,7 +1905,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "git.pcre2-10.23",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1990,7 +1971,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/git/checkout",
     "name": "git.autoconf-2.69",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3221,7 +3201,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/swig/checkout",
     "name": "swig.autoconf-2.69",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3286,12 +3265,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/swig/checkout",
-    "env_prefixes": {
-      "PATH": [
-        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
-      ]
-    },
     "name": "swig.automake-1.15",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3376,7 +3349,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/swig/checkout",
     "name": "swig.pcre-8.41",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"

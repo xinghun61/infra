@@ -322,14 +322,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "bottom_dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0"
-    },
     "name": "building bottom_dep.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -423,14 +415,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "bottom_dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0"
-    },
     "name": "building bottom_dep.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -613,14 +597,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "bottom_dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0"
-    },
     "name": "building bottom_dep.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -750,14 +726,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "deep_dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0.0"
-    },
     "name": "building deep_dep.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -910,14 +878,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "deep_dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0.0"
-    },
     "name": "building deep_dep.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1068,14 +1028,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building fetch_and_package.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1214,14 +1166,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "fetch_and_package",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building fetch_and_package.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1351,14 +1295,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "posix_tool",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.2.0"
-    },
     "name": "building posix_tool.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1427,14 +1363,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "posix_tool",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.2.0"
-    },
     "name": "building posix_tool.fetch sources.unpack_archive",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -1600,14 +1528,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "posix_tool",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.2.0"
-    },
     "name": "building posix_tool.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1790,14 +1710,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "posix_tool",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.2.0"
-    },
     "name": "building posix_tool.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1948,14 +1860,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "windows_experiment",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building windows_experiment.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -2035,14 +1939,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "windows_experiment",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building windows_experiment.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -2225,14 +2121,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "windows_experiment",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building windows_experiment.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -2364,15 +2252,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "tool",
-      "_3PP_PATCH_VERSION": "chops.1",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.5.0-rc1"
-    },
     "name": "building tool.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -2380,15 +2259,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "tool",
-      "_3PP_PATCH_VERSION": "chops.1",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.5.0-rc1"
-    },
     "name": "building tool.fetch sources.installing deps",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -2696,15 +2566,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "tool",
-      "_3PP_PATCH_VERSION": "chops.1",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.5.0-rc1"
-    },
     "name": "building tool.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -2895,15 +2756,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "tool",
-      "_3PP_PATCH_VERSION": "chops.1",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.5.0-rc1"
-    },
     "name": "building tool.run test",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3096,15 +2948,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "tool",
-      "_3PP_PATCH_VERSION": "chops.1",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.5.0-rc1"
-    },
     "name": "building tool.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3194,7 +3037,7 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "infra_step": true,
-    "name": "building tool.git ls-remote",
+    "name": "building tool (2).git ls-remote",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -3262,14 +3105,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0.0"
-    },
     "name": "building dep.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3277,14 +3112,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0.0"
-    },
     "name": "building dep.fetch sources.installing tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -3322,14 +3149,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0.0"
-    },
     "name": "building dep.fetch sources.installing deps",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -3453,14 +3272,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0.0"
-    },
     "name": "building dep.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3643,14 +3454,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "dep",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "1.0.0"
-    },
     "name": "building dep.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3801,14 +3604,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building pkg.fetch sources",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3816,14 +3611,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building pkg.fetch sources.installing tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -3861,14 +3648,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building pkg.fetch sources.installing deps",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -4008,14 +3787,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building pkg.run installation",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -4198,14 +3969,6 @@
   },
   {
     "cmd": [],
-    "env": {
-      "GOARCH": "amd64",
-      "GOOS": "linux",
-      "_3PP_PACKAGE_NAME": "pkg",
-      "_3PP_PLATFORM": "linux-amd64",
-      "_3PP_TOOL_PLATFORM": "linux-amd64",
-      "_3PP_VERSION": "2.0.0"
-    },
     "name": "building pkg.do upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"

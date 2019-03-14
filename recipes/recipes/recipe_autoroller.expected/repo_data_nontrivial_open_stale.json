@@ -282,7 +282,7 @@
       "failure": {
         "step": "Aggregate step failure."
       },
-      "humanReason": "1 out of 2 aggregated steps failed: Step('build.stale roll') failed with return_code 1"
+      "humanReason": "1 out of 1 aggregated steps failed: Step('build.stale roll') failed with return_code 1"
     },
     "name": "$result"
   }

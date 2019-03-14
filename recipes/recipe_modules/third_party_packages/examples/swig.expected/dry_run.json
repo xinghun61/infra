@@ -244,7 +244,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/swig/checkout",
     "name": "autoconf-2.69"
   },
   {
@@ -306,12 +305,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/swig/checkout",
-    "env_prefixes": {
-      "PATH": [
-        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
-      ]
-    },
     "name": "automake-1.15"
   },
   {
@@ -393,7 +386,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/swig/checkout",
     "name": "pcre-8.41"
   },
   {

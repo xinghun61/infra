@@ -250,7 +250,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "bzip2-1.0.6"
   },
   {
@@ -300,7 +299,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "ncurses-6.0"
   },
   {
@@ -431,7 +429,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "readline-7.0"
   },
   {
@@ -493,7 +490,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "zlib-1.2.11"
   },
   {
@@ -556,7 +552,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "sqlite-autoconf-3190300"
   },
   {
@@ -624,7 +619,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "libnsl-1.0.4"
   },
   {
@@ -687,7 +681,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "openssl-1.1.0f"
   },
   {
@@ -761,7 +754,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "libffi"
   },
   {
@@ -795,7 +787,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "sed-4.2.2"
   },
   {
@@ -857,7 +848,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "autoconf-2.69"
   },
   {
@@ -1092,7 +1082,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "provision SSL"
   },
   {

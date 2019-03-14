@@ -244,7 +244,7 @@
         "/opt/infra-system/bin"
       ]
     },
-    "name": "[GOOS:linux GOARCH:arm].cipd - build packages"
+    "name": "[GOOS:linux GOARCH:arm]cipd - build packages"
   },
   {
     "cmd": [
@@ -271,7 +271,7 @@
         "/opt/infra-system/bin"
       ]
     },
-    "name": "[GOOS:linux GOARCH:arm].cipd - upload packages",
+    "name": "[GOOS:linux GOARCH:arm]cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",
@@ -306,7 +306,7 @@
         "/opt/infra-system/bin"
       ]
     },
-    "name": "[GOOS:linux GOARCH:arm64].cipd - build packages"
+    "name": "[GOOS:linux GOARCH:arm64]cipd - build packages"
   },
   {
     "cmd": [
@@ -333,7 +333,7 @@
         "/opt/infra-system/bin"
       ]
     },
-    "name": "[GOOS:linux GOARCH:arm64].cipd - upload packages",
+    "name": "[GOOS:linux GOARCH:arm64]cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"failed\": [], @@@",

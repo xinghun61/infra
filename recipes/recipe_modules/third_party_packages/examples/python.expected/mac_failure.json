@@ -275,10 +275,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "bzip2-1.0.6"
   },
   {
@@ -337,10 +333,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "ncurses-6.0"
   },
   {
@@ -495,10 +487,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "readline-7.0"
   },
   {
@@ -572,10 +560,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "zlib-1.2.11"
   },
   {
@@ -650,10 +634,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "sqlite-autoconf-3190300"
   },
   {
@@ -746,10 +726,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "openssl-0.9.8zh"
   },
   {
@@ -839,10 +815,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "sed-4.2.2"
   },
   {
@@ -916,10 +888,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
     "name": "autoconf-2.69"
   },
   {
