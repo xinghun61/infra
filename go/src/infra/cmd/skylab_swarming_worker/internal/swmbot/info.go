@@ -51,7 +51,7 @@ func GetInfo() *Info {
 		},
 		LuciferBinDir: os.Getenv("LUCIFER_TOOLS_DIR"),
 		Task: Task{
-			ID: os.Getenv("SWARMING_TASK_ID"),
+			RunID: os.Getenv("SWARMING_TASK_ID"),
 		},
 	}
 }
@@ -65,7 +65,7 @@ type Inventory struct {
 
 // Task describes the bot's current task.
 type Task struct {
-	ID string
+	RunID string
 }
 
 // LuciferConfig returns the lucifer.Config for the Swarming bot.
@@ -80,10 +80,10 @@ func (b *Info) LuciferConfig() lucifer.Config {
 func (b *Info) ResultsDir() string {
 	// TODO(pprabhu): Reflect the requesting swarming server URL in the resultdir.
 	// This will truly disambiguate results between different swarming servers.
-	return filepath.Join(b.AutotestPath, "results", fmt.Sprintf("swarming-%s", b.Task.ID))
+	return filepath.Join(b.AutotestPath, "results", fmt.Sprintf("swarming-%s", b.Task.RunID))
 }
 
 // TaskURL returns the URL for the current Swarming task.
 func (b *Info) TaskURL() string {
-	return fmt.Sprintf("https://chromeos-swarming.appspot.com/task?id=%s", b.Task.ID)
+	return fmt.Sprintf("https://chromeos-swarming.appspot.com/task?id=%s", b.Task.RunID)
 }

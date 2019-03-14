@@ -52,7 +52,7 @@ func runLuciferCommand(i *harness.Info, w io.Writer, cmd *exec.Cmd) (*luciferRes
 func resultsURL(b *swmbot.Info) string {
 	return fmt.Sprintf(
 		"https://stainless.corp.google.com/browse/chromeos-autotest-results/swarming-%s/",
-		b.Task.ID)
+		b.Task.RunID)
 }
 
 // hostStateUpdates maps Events to the target runtime state of the
