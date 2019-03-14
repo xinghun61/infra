@@ -35,6 +35,8 @@ _REDIRECTION_MAPPING = {
                 '/p/chromium/flake-portal/flakes',
             '/waterfall/flake':
                 '/p/chromium/flake-portal/analysis/analyze',
+            '/waterfall/build-failure':
+                '/waterfall/failure',
             '/waterfall/flake/flake-culprit':
                 '/p/chromium/flake-portal/analysis/culprit',
             '/waterfall/list-analyses':
