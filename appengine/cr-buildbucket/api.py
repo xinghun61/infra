@@ -7,6 +7,7 @@ import functools
 import logging
 
 from google.appengine.ext import ndb
+from google.protobuf import field_mask_pb2
 from google.protobuf import symbol_database
 
 from components import auth
@@ -26,6 +27,7 @@ import config
 import creation
 import default_field_masks
 import errors
+import events
 import model
 import search
 import service
@@ -282,8 +284,12 @@ def update_build_async(req, _res, ctx, _mask):
   In practice, clients does not need the response, they just want to provide
   the data.
   """
-  logging.debug('updating build %d', req.build.id)
+  now = utils.utcnow()
+  build_id = req.build.id
+  logging.debug('updating build %d', build_id)
+
   validate_build_token(req, ctx)
+
   if not (yield user.can_update_build_async()):
     raise StatusError(
         prpc.StatusCode.PERMISSION_DENIED, '%s not permitted to update build' %
@@ -292,42 +298,82 @@ def update_build_async(req, _res, ctx, _mask):
   validation.validate_update_build_request(req)
 
   update_paths = set(req.update_mask.paths)
+
+  # Prepare a field mask to merge req.build into model.Build.proto.
+  # Exclude fields that are stored elsewhere.
+  # Note that update_paths was (indirectly) validated by validation.py
+  # against a whitelist.
+  model_build_proto_mask = protoutil.Mask.from_field_mask(
+      field_mask_pb2.FieldMask(
+          paths=list(update_paths - {'build.steps', 'build.output.properties'})
+      ),
+      rpc_pb2.UpdateBuildRequest.DESCRIPTOR,
+      update_mask=True,
+  ).submask('build')
+
   out_prop_bytes = req.build.output.properties.SerializeToString()
 
   @ndb.transactional_tasklet
   def txn_async():
-    build_proto = req.build
 
     # Get an existing build.
-    build = yield model.Build.get_by_id_async(build_proto.id)
+    build = yield model.Build.get_by_id_async(build_id)
     if not build:
-      raise not_found(
-          'Cannot update nonexisting build with id %s', build_proto.id
-      )
+      raise not_found('Cannot update nonexisting build with id %s', build_id)
     if build.is_ended:
       raise failed_precondition('Cannot update an ended build')
 
-    to_put = [build]
+    orig_status = build.status
+
+    futures = []
 
     if 'build.steps' in update_paths:
       build_steps = model.BuildSteps(
           key=model.BuildSteps.key_for(build.key),
-          step_container=build_pb2.Build(steps=build_proto.steps),
+          step_container=build_pb2.Build(steps=req.build.steps),
       )
-      to_put.append(build_steps)
+      futures.append(build_steps.put_async())
 
     if 'build.output.properties' in update_paths:
-      to_put.append(
+      futures.append(
           model.BuildOutputProperties(
               key=model.BuildOutputProperties.key_for(build.key),
               properties=out_prop_bytes,
-          )
+          ).put_async()
       )
 
-    # Store and convert back to build_pb2.Build proto for return.
-    yield ndb.put_multi_async(to_put)
+    if model_build_proto_mask:
+      # Merge the rest into build.proto using model_build_proto_mask.
+      model_build_proto_mask.merge(req.build, build.proto)
 
-  yield txn_async()
+    # If we are updating build status, update some other dependent fields
+    # and schedule notifications.
+    status_changed = orig_status != build.proto.status
+    if status_changed:
+      if build.proto.status == common_pb2.STARTED:
+        if not build.proto.HasField('start_time'):  # pragma: no branch
+          build.proto.start_time.FromDatetime(now)
+        futures.append(events.on_build_starting_async(build))
+      else:
+        assert model.is_terminal_status(build.proto.status), build.proto.status
+        build.clear_lease()
+        if not build.proto.HasField('end_time'):  # pragma: no branch
+          build.proto.end_time.FromDatetime(now)
+        futures.append(events.on_build_completing_async(build))
+
+    # TODO(crbug.com/936892): check has steps => status is not SCHEDULED.
+
+    futures.append(build.put_async())
+    yield futures
+    raise ndb.Return(build, status_changed)
+
+  build, status_changed = yield txn_async()
+  if status_changed:
+    if build.proto.status == common_pb2.STARTED:
+      events.on_build_started(build)
+    else:
+      assert model.is_terminal_status(build.proto.status), build.proto.status
+      events.on_build_completed(build)
 
 
 @rpc_impl_async('ScheduleBuild')

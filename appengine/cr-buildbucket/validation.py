@@ -28,6 +28,10 @@ class Error(Exception):
 
 PUBSUB_USER_DATA_MAX_LENGTH = 4096
 
+# Maximum size of Build.summary_markdown and Step.summary_markdown fields.
+# Defined in proto files.
+MAX_SUMMARY_MARKDOWN_SIZE = 1024  # 1 Kb
+
 # swarming.py and api.py reserve these properties.
 # swarming.py does a redundant check, see validate_build_parameters().
 RESERVED_PROPERTY_PATHS = [
@@ -264,26 +268,54 @@ def validate_notification_config(notify):
     _enter_err('user_data', 'must be <= %d bytes', PUBSUB_USER_DATA_MAX_LENGTH)
 
 
+# Set of UpdateBuildRequest field paths updatable via UpdateBuild RPC.
+UPDATE_BUILD_FIELD_PATHS = {
+    'build.status',
+    'build.summary_markdown',
+    'build.infra_failure_reason',
+    'build.steps',
+    'build.output.properties',
+}
+# Set of valid build statuses supported by UpdateBuild RPC.
+UPDATE_BUILD_STATUSES = {
+    common_pb2.STARTED,
+    # kitchen does not actually use SUCCESS. It relies on swarming pubsub
+    # handler in Buildbucket because a task may fail after recipe succeeded.
+    common_pb2.SUCCESS,
+    common_pb2.FAILURE,
+    common_pb2.INFRA_FAILURE,
+}
+
+
 def validate_update_build_request(req):
   """Validates rpc_pb2.UpdateBuildRequest."""
-  if not req.HasField('build'):
-    _enter_err('build', 'required')
-
+  # Check the set of fields being updated.
+  update_paths = set(req.update_mask.paths)
   with _enter('update_mask', 'paths'):
-    supported = {'build.steps', 'build.output.properties'}
-    unsupported = set(req.update_mask.paths) - supported
+    unsupported = update_paths - UPDATE_BUILD_FIELD_PATHS
     if unsupported:
       _err('unsupported path(s) %r', sorted(unsupported))
 
+  # Check build values, if present in the mask.
   with _enter('build'):
-    with _enter('steps'):
-      size = build_pb2.Build(steps=req.build.steps).ByteSize()
-      if size > model.BuildSteps.MAX_STEPS_LEN:
-        _err(
-            'too big to accept (%d > %d bytes)', size,
-            model.BuildSteps.MAX_STEPS_LEN
+    if 'build.status' in update_paths:
+      if req.build.status not in UPDATE_BUILD_STATUSES:
+        _enter_err(
+            'status', 'invalid status %s for UpdateBuild',
+            common_pb2.Status.Name(req.build.status)
         )
-      validate_steps(req.build.steps)
+
+    if ('build.summary_markdown' in update_paths and
+        len(req.build.summary_markdown) > MAX_SUMMARY_MARKDOWN_SIZE):
+      with _enter('summary_markdown'):
+        _too_big(len(req.build.summary_markdown), MAX_SUMMARY_MARKDOWN_SIZE)
+
+    if 'build.steps' in update_paths:  # pragma: no branch
+      with _enter('steps'):
+        size = build_pb2.Build(steps=req.build.steps).ByteSize()
+        if size > model.BuildSteps.MAX_STEPS_LEN:
+          _too_big(size, model.BuildSteps.MAX_STEPS_LEN)
+        validate_steps(req.build.steps)
 
 
 def validate_steps(steps):
@@ -299,6 +331,10 @@ def validate_step(step, steps):
   _check_truth(step, 'name')
   if step.name in steps:
     _enter_err('name', 'duplicate: %r', step.name)
+
+  if len(step.summary_markdown) > MAX_SUMMARY_MARKDOWN_SIZE:
+    with _enter('summary_markdown'):
+      _too_big(len(step.summary_markdown), MAX_SUMMARY_MARKDOWN_SIZE)
 
   validate_internal_timing_consistency(step)
 
@@ -456,6 +492,10 @@ def _validate_predicate_output_gitiles_commit(commit):
 
 ################################################################################
 # Internals.
+
+
+def _too_big(size, limit):
+  _err('too big to accept (%d > %d bytes)', size, limit)
 
 
 def _struct_has_path(struct, path):

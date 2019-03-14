@@ -427,46 +427,54 @@ class ScheduleBuildRequestTests(BaseTestCase):
 class UpdateBuildRequestTests(BaseTestCase):
   func_name = 'validate_update_build_request'
 
+  @staticmethod
+  def _mk_req(paths, **build_fields):
+    return rpc_pb2.UpdateBuildRequest(
+        build=build_fields, update_mask=field_mask_pb2.FieldMask(paths=paths)
+    )
+
   def test_valid(self):
     # Comprehensive validity test. Some specific cases are covered later.
     build = build_pb2.Build()
     with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
       text_format.Merge(f.read(), build)
-    msg = rpc_pb2.UpdateBuildRequest(
-        build=build,
-        update_mask=field_mask_pb2.FieldMask(paths=['build.steps'])
+    msg = self._mk_req(
+        ['build.status', 'build.steps'],
+        status=common_pb2.SUCCESS,
+        steps=build.steps,
     )
-
     self.assert_valid(msg)
 
-  def test_missing_build(self):
-    msg = rpc_pb2.UpdateBuildRequest(
-        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
-    )
-    self.assert_invalid(msg, 'required')
-
   def test_unsupported_paths(self):
-    msg = rpc_pb2.UpdateBuildRequest(
-        build=build_pb2.Build(),
-        update_mask=field_mask_pb2.FieldMask(paths=['build.input'],)
-    )
+    msg = self._mk_req(['build.input'])
     self.assert_invalid(
         msg, r'update_mask\.paths: unsupported path\(s\) .+build\.input.+'
     )
 
-  @mock.patch('model.BuildSteps', autospec=True)
-  def test_steps_too_big(self, mock_steps_mod):
-    mock_steps_mod.MAX_STEPS_LEN = 13
-    msg = rpc_pb2.UpdateBuildRequest(
-        build=build_pb2.Build(
-            steps=[
-                step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
-                step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
-            ]
-        ),
-        update_mask=field_mask_pb2.FieldMask(paths=['build.steps']),
+  @mock.patch('model.BuildSteps.MAX_STEPS_LEN', 13)
+  def test_steps_too_big(self):
+    msg = self._mk_req(
+        ['build.steps'],
+        steps=[
+            step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),
+            step_pb2.Step(name='bar', status=common_pb2.SCHEDULED),
+        ],
     )
     self.assert_invalid(msg, r'too big to accept \(20 > 13 bytes\)')
+
+  @mock.patch('validation.MAX_SUMMARY_MARKDOWN_SIZE', 10)
+  def test_summary_markdown_too_big(self):
+    msg = self._mk_req(
+        ['build.summary_markdown'],
+        summary_markdown='a very long string',
+    )
+    self.assert_invalid(msg, r'too big to accept \(18 > 10 bytes\)')
+
+  def test_set_scheduled_status(self):
+    msg = self._mk_req(['build.status'], status=common_pb2.SCHEDULED)
+    self.assert_invalid(
+        msg, r'build\.status: invalid status SCHEDULED for UpdateBuild'
+    )
 
 
 class ValidateStepsTests(BaseTestCase):
@@ -479,6 +487,13 @@ class ValidateStepsTests(BaseTestCase):
         testcase_func.__name__,  # pylint: disable=no-member
         '_'.join([status_name(arg) for arg in param.args[:2]])
     )
+
+  @mock.patch('validation.MAX_SUMMARY_MARKDOWN_SIZE', 10)
+  def test_summary_markdown_too_big(self):
+    steps = [
+        step_pb2.Step(name='foo', summary_markdown='a very long string'),
+    ]
+    self.assert_invalid(steps, r'too big to accept \(18 > 10 bytes\)')
 
   def test_duplicate_step_names(self):
     steps = [

@@ -237,9 +237,11 @@ class UpdateBuildTests(BaseTestCase):
         return_value=future(True),
     )
 
-  def _mk_update_req(self, build, token='token'):
-    build_req = rpc_pb2.UpdateBuildRequest(build=build)
-    build_req.update_mask.paths[:] = ['build.steps']
+  def _mk_update_req(self, build, token='token', paths=None):
+    build_req = rpc_pb2.UpdateBuildRequest(
+        build=build,
+        update_mask=dict(paths=paths or []),
+    )
     ctx = prpc_context.ServicerContext()
     if token:
       metadata = ctx.invocation_metadata()
@@ -255,8 +257,7 @@ class UpdateBuildTests(BaseTestCase):
       text = protoutil.parse_multiline(f.read())
       text_format.Merge(text, build_proto)
 
-    req, ctx = self._mk_update_req(build_proto)
-    req.fields.paths[:] = ['id', 'steps']
+    req, ctx = self._mk_update_req(build_proto, paths=['build.steps'])
     self.call(self.api.UpdateBuild, req, ctx=ctx)
 
     persisted = model.BuildSteps.key_for(build.key).get()
@@ -276,9 +277,9 @@ class UpdateBuildTests(BaseTestCase):
     build_proto = build_pb2.Build(id=123)
     build_proto.output.properties.update(expected_props)
 
-    req, ctx = self._mk_update_req(build_proto)
-    req.update_mask.paths[:] = ['build.output.properties']
-    req.fields.paths[:] = ['id', 'steps', 'output.properties']
+    req, ctx = self._mk_update_req(
+        build_proto, paths=['build.output.properties']
+    )
     self.call(self.api.UpdateBuild, req, ctx=ctx)
 
     expected = copy.deepcopy(build_proto)
@@ -286,6 +287,65 @@ class UpdateBuildTests(BaseTestCase):
 
     out_props = model.BuildOutputProperties.key_for(build.key).get()
     self.assertEqual(test_util.msg_to_dict(out_props.parse()), expected_props)
+
+  @mock.patch('events.on_build_starting_async', autospec=True)
+  @mock.patch('events.on_build_started', autospec=True)
+  def test_started(self, on_build_started, on_build_starting_async):
+    on_build_starting_async.return_value = future(None)
+    build = test_util.build(id=123)
+    build.put()
+
+    req, ctx = self._mk_update_req(
+        build_pb2.Build(id=123, status=common_pb2.STARTED),
+        paths=['build.status'],
+    )
+    self.call(self.api.UpdateBuild, req, ctx=ctx)
+
+    build = build.key.get()
+    self.assertEqual(build.proto.status, common_pb2.STARTED)
+    self.assertEqual(build.proto.start_time.ToDatetime(), self.now)
+    on_build_starting_async.assert_called_once_with(build)
+    on_build_started.assert_called_once_with(build)
+
+  @mock.patch('events.on_build_completing_async', autospec=True)
+  @mock.patch('events.on_build_completed', autospec=True)
+  def test_failed(self, on_build_completed, on_build_completing_async):
+    on_build_completing_async.return_value = future(None)
+    build = test_util.build(id=123)
+    build.put()
+
+    req, ctx = self._mk_update_req(
+        build_pb2.Build(
+            id=123,
+            status=common_pb2.FAILURE,
+            summary_markdown='bad',
+        ),
+        paths=['build.status', 'build.summary_markdown'],
+    )
+    self.call(self.api.UpdateBuild, req, ctx=ctx)
+
+    build = build.key.get()
+    self.assertEqual(build.proto.status, common_pb2.FAILURE)
+    self.assertEqual(build.proto.summary_markdown, 'bad')
+    self.assertEqual(build.proto.end_time.ToDatetime(), self.now)
+    on_build_completing_async.assert_called_once_with(build)
+    on_build_completed.assert_called_once_with(build)
+
+  def test_empty_summary(self):
+    build = test_util.build(
+        id=123, status=common_pb2.STARTED, summary_markdown='ok'
+    )
+    build.put()
+
+    req, ctx = self._mk_update_req(
+        # No summary in the build.
+        build_pb2.Build(id=123),
+        paths=['build.summary_markdown'],
+    )
+    self.call(self.api.UpdateBuild, req, ctx=ctx)
+
+    build = build.key.get()
+    self.assertEqual(build.proto.summary_markdown, '')
 
   def test_missing_token(self):
     build = build_pb2.Build(
