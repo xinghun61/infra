@@ -108,6 +108,17 @@ var (
 		field.String("type"),
 	)
 
+	gaugeAccountBalance = metric.NewInt(
+		"qscheduler/state/account",
+		"The balance of a given account, in priority buckets.",
+		&types.MetricMetadata{
+			Units: types.Seconds,
+		},
+		field.String("scheduler_id"),
+		field.String("account_id"),
+		field.Int("priority"),
+	)
+
 	distributionOperationsPerBatch = metric.NewCumulativeDistribution(
 		"qscheduler/state/batcher/operations",
 		"Number of operations handled within a batch.",
@@ -219,6 +230,12 @@ func recordStateGaugeMetrics(ctx context.Context, s *scheduler.Scheduler, schedu
 	for priority, val := range runningPerPriority {
 		gaugeTaskState.Set(ctx, val, schedulerID, "running", priority)
 		gaugeBotState.Set(ctx, val, schedulerID, "running", priority)
+	}
+
+	for aid, balance := range s.GetBalances() {
+		for priority, value := range balance {
+			gaugeAccountBalance.Set(ctx, int64(value), schedulerID, string(aid), priority)
+		}
 	}
 }
 
