@@ -28,7 +28,13 @@ class UserTest(testing.AppengineTestCase):
     self.patch(
         'components.auth.get_current_identity',
         autospec=True,
-        return_value=self.current_identity
+        side_effect=lambda: self.current_identity
+    )
+    self.peer_identity = self.current_identity
+    self.patch(
+        'components.auth.get_peer_identity',
+        autospec=True,
+        side_effect=lambda: self.peer_identity
     )
     user.clear_request_cache()
 
@@ -54,6 +60,7 @@ class UserTest(testing.AppengineTestCase):
             Acl(role=Acl.READER, group='c-readers'),
             Acl(role=Acl.READER, identity='user:a@example.com'),
             Acl(role=Acl.WRITER, group='c-writers'),
+            Acl(role=Acl.READER, identity='project:p1'),
         ]
     )
     all_buckets = [('p1', bucket_a), ('p2', bucket_b), ('p3', bucket_c)]
@@ -92,6 +99,15 @@ class UserTest(testing.AppengineTestCase):
     auth.is_admin.return_value = True
     self.assertEqual(self.get_role('p1/a'), Acl.WRITER)
     self.assertEqual(self.get_role('p1/non.existing'), None)
+
+  @mock.patch('components.auth.is_group_member', autospec=True)
+  def test_get_role_for_project(self, is_group_member):
+    is_group_member.side_effect = lambda g, _=None: False
+
+    self.current_identity = auth.Identity.from_bytes('project:p1')
+    self.assertEqual(self.get_role('p1/a'), Acl.WRITER)  # implicit
+    self.assertEqual(self.get_role('p2/b'), None)  # no roles at all
+    self.assertEqual(self.get_role('p3/c'), Acl.READER)  # via explicit ACL
 
   @mock.patch('components.auth.is_group_member', autospec=True)
   def test_get_accessible_buckets_async(self, is_group_member):
@@ -165,19 +181,40 @@ class UserTest(testing.AppengineTestCase):
   def mock_role(self, role):
     self.patch('user.get_role_async', return_value=future(role))
 
+  def can(self, action):
+    return user.can_async('project/bucket', action).get_result()
+
   def test_can(self):
     self.mock_role(Acl.READER)
 
-    can = lambda action: user.can_async('project/bucket', action).get_result()
-
-    self.assertTrue(can(user.Action.VIEW_BUILD))
-    self.assertFalse(can(user.Action.CANCEL_BUILD))
-    self.assertFalse(can(user.Action.SET_NEXT_NUMBER))
+    self.assertTrue(self.can(user.Action.VIEW_BUILD))
+    self.assertFalse(self.can(user.Action.CANCEL_BUILD))
+    self.assertFalse(self.can(user.Action.SET_NEXT_NUMBER))
 
     # Memcache coverage
-    self.assertFalse(can(user.Action.SET_NEXT_NUMBER))
+    self.assertFalse(self.can(user.Action.SET_NEXT_NUMBER))
 
     self.assertFalse(user.can_add_build_async('project/bucket').get_result())
+
+  def test_can_project_fallback(self):
+    self.current_identity = auth.Identity.from_bytes('project:proj')
+
+    good_peer = auth.Identity.from_bytes('user:good@example.com')
+    bad_peer = auth.Identity.from_bytes('user:bad@example.com')
+
+    def get_role(_, ident):
+      return future(Acl.READER if ident == good_peer else None)
+
+    self.patch(
+        'user.get_role_async',
+        autospec=True,
+        side_effect=get_role,
+    )
+
+    self.peer_identity = good_peer
+    self.assertTrue(self.can(user.Action.VIEW_BUILD))
+    self.peer_identity = bad_peer
+    self.assertFalse(self.can(user.Action.VIEW_BUILD))
 
   def test_can_no_roles(self):
     self.mock_role(None)
@@ -239,6 +276,9 @@ class GetOrCreateCachedFutureTest(testing.AppengineTestCase):
     # This test essentially asserts ndb behavior that we assume in
     # user._get_or_create_cached_future.
 
+    ident1 = auth.Identity.from_bytes('user:1@example.com')
+    ident2 = auth.Identity.from_bytes('user:2@example.com')
+
     # First define a correct async function that uses caching.
     log = []
 
@@ -251,9 +291,14 @@ class GetOrCreateCachedFutureTest(testing.AppengineTestCase):
 
     def compute_cached_async(x):
       log.append('compute_cached_async(%r)' % x)
-      return user._get_or_create_cached_future(x, lambda: compute_async(x))
+      # Use different identities to make sure _get_or_create_cached_future is
+      # OK with that.
+      ident = ident1 if x % 2 else ident2
+      return user._get_or_create_cached_future(
+          ident, x, lambda: compute_async(x)
+      )
 
-    # Now call compute_cached_async a few tiems, but stop on the first result,
+    # Now call compute_cached_async a few times, but stop on the first result,
     # and exit the current ndb context leaving remaining futures unfinished.
 
     class Error(Exception):

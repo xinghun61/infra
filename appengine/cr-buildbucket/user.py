@@ -150,18 +150,24 @@ def can_update_build_async():  # pragma: no cover
 ## Implementation.
 
 
-def get_role_async(bucket_id):
-  """Returns the most permissive role of the current identity in |bucket_id|.
+def get_role_async(bucket_id, identity=None):
+  """Returns the most permissive role of the given user in |bucket_id|.
 
   The most permissive role is the role that allows most actions, e.g. WRITER
   is more permissive than READER.
+
+  Returns None if there's no such bucket or the given identity has no roles in
+  it at all.
   """
   config.validate_bucket_id(bucket_id)
+
+  identity = identity or auth.get_current_identity()
+  assert isinstance(identity, auth.Identity), identity
+  identity_str = identity.to_bytes()
 
   @ndb.tasklet
   def impl():
     ctx = ndb.get_context()
-    identity_str = auth.get_current_identity().to_bytes()
     cache_key = 'role/%s/%s' % (identity_str, bucket_id)
     cache = yield ctx.memcache_get(cache_key)
     if cache is not None:
@@ -170,8 +176,22 @@ def get_role_async(bucket_id):
     _, bucket_cfg = yield config.get_bucket_async(bucket_id)
     if not bucket_cfg:
       raise ndb.Return(None)
-    if auth.is_admin():
+    if auth.is_admin(identity):
       raise ndb.Return(project_config_pb2.Acl.WRITER)
+
+    # A LUCI service calling us in the context of some project is allowed to
+    # do anything it wants in that project. We trust all LUCI services to do
+    # authorization on their own for this case. A cross-project request must be
+    # explicitly authorized in Buildbucket ACLs though (so we proceed to the
+    # bucket_cfg check below).
+    if identity.is_project:
+      project_id, _ = config.parse_bucket_id(bucket_id)
+      if project_id == identity.name:
+        logging.debug(
+            'crbug.com/938083: access to %s is authorized via X-Luci-Project',
+            bucket_id
+        )
+        raise ndb.Return(project_config_pb2.Acl.WRITER)
 
     # Roles are just numbers. The higher the number, the more permissions
     # the identity has. We exploit this here to get the single maximally
@@ -181,21 +201,38 @@ def get_role_async(bucket_id):
       if rule.role <= role:
         continue
       if (rule.identity == identity_str or
-          (rule.group and auth.is_group_member(rule.group))):
+          (rule.group and auth.is_group_member(rule.group, identity))):
         role = rule.role
     yield ctx.memcache_set(cache_key, (role,), time=60)
     raise ndb.Return(role)
 
-  return _get_or_create_cached_future('role/%s' % bucket_id, impl)
+  return _get_or_create_cached_future(identity, 'role/%s' % bucket_id, impl)
 
 
 @ndb.tasklet
 def can_async(bucket_id, action):
   config.validate_bucket_id(bucket_id)
   assert isinstance(action, Action)
+  min_role = ACTION_TO_MIN_ROLE[action]
 
-  role = yield get_role_async(bucket_id)
-  raise ndb.Return(role is not None and role >= ACTION_TO_MIN_ROLE[action])
+  identity = auth.get_current_identity()
+  role = yield get_role_async(bucket_id, identity)
+  if role is not None and role >= min_role:
+    raise ndb.Return(True)
+
+  # TODO(crbug.com/938083): Temporary fallback to checking that the immediate
+  # peer (e.g. LUCI Scheduler own account) has the role, to avoid breaking
+  # everything during the migration period.
+  if identity.is_project:
+    role = yield get_role_async(bucket_id, auth.get_peer_identity())
+    if role is not None and role >= min_role:
+      logging.warning(
+          'crbug.com/938083: %s should have role %d in %s' %
+          (identity.to_bytes(), role, bucket_id)
+      )
+      raise ndb.Return(True)
+
+  raise ndb.Return(False)
 
 
 def get_accessible_buckets_async():
@@ -210,6 +247,8 @@ def get_accessible_buckets_async():
       a set of bucket ids strings
       or None if all buckets are available.
   """
+
+  # TODO(vadimsh): This function doesn't understand 'project:...' identities.
 
   @ndb.tasklet
   def impl():
@@ -243,7 +282,9 @@ def get_accessible_buckets_async():
     yield ctx.memcache_set(cache_key, available_buckets, 10 * 60)
     raise ndb.Return(available_buckets)
 
-  return _get_or_create_cached_future('accessible_buckets', impl)
+  return _get_or_create_cached_future(
+      auth.get_current_identity(), 'accessible_buckets', impl
+  )
 
 
 @utils.cache
@@ -255,17 +296,22 @@ def self_identity():  # pragma: no cover
 def delegate_async(target_service_host, tag=''):
   """Mints a delegation token for the current identity."""
   tag = tag or ''
+  identity = auth.get_current_identity()
+
+  # TODO(vadimsh): 'identity' here can be 'project:<...>' and we happily create
+  # a delegation token for it, which is weird. Buildbucket should call Swarming
+  # using 'project:<...>' identity directly, not through a delegation token.
 
   def impl():
     return auth.delegate_async(
         audience=[self_identity()],
         services=['https://%s' % target_service_host],
-        impersonate=auth.get_current_identity(),
+        impersonate=identity,
         tags=[tag] if tag else [],
     )
 
   return _get_or_create_cached_future(
-      'delegation_token:%s:%s' % (target_service_host, tag), impl
+      identity, 'delegation_token:%s:%s' % (target_service_host, tag), impl
   )
 
 
@@ -294,13 +340,18 @@ def parse_identity(identity):
 _thread_local = threading.local()
 
 
-def _get_or_create_cached_future(key, create_future):
-  """Returns a future cached for the current GAE request.
+def _get_or_create_cached_future(identity, key, create_future):
+  """Returns a future cached in the current GAE request context.
+
+  Uses the pair (identity, key) as the caching key.
 
   Using this function may cause RuntimeError with a deadlock if the returned
   future is not waited for before leaving an ndb context, but that's a bug
   in the first place.
   """
+  assert isinstance(identity, auth.Identity), identity
+  full_key = (identity, key)
+
   # Docs:
   # https://cloud.google.com/appengine/docs/standard/python/how-requests-are-handled#request-ids
   req_id = os.environ['REQUEST_LOG_ID']
@@ -309,18 +360,16 @@ def _get_or_create_cached_future(key, create_future):
     cache = {
         'request_id': req_id,
         'futures': {},
-        'current_identity': auth.get_current_identity(),
     }
     _thread_local.request_cache = cache
-  assert cache['current_identity'] == auth.get_current_identity()
 
-  fut_entry = cache['futures'].get(key)
+  fut_entry = cache['futures'].get(full_key)
   if fut_entry is None:
     fut_entry = {
         'future': create_future(),
         'ndb_context': ndb.get_context(),
     }
-    cache['futures'][key] = fut_entry
+    cache['futures'][full_key] = fut_entry
   assert (
       fut_entry['future'].done() or
       ndb.get_context() is fut_entry['ndb_context']
