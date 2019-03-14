@@ -113,11 +113,8 @@ func getBucketForBotInfo(bi *swarming.SwarmingRpcsBotInfo) bucket {
 }
 
 func getStatusForBotInfo(bi *swarming.SwarmingRpcsBotInfo) status {
-	// botState values are defined at
-	// https://chromium.googlesource.com/infra/luci/luci-py/+/fcbc3c95fb00f8f16c002041c95a86b7f7274fcd/appengine/swarming/proto/api/swarming.proto#172
 	// dutState values are defined at
 	// https://chromium.googlesource.com/infra/infra/+/e70c5ed1f9dddec833fad7e87567c0ded19fd565/go/src/infra/cmd/skylab_swarming_worker/internal/botinfo/botinfo.go#32
-	botState := bi.State
 	dutState := ""
 	for _, d := range bi.Dimensions {
 		switch d.Key {
@@ -129,20 +126,18 @@ func getStatusForBotInfo(bi *swarming.SwarmingRpcsBotInfo) status {
 		}
 	}
 
-	if !isBotHealthy(botState) {
+	// Order matters: a bot may be dead and still have a task associated with it.
+	if !isBotHealthy(bi) {
 		return "[None]"
 	}
+	botBusy := bi.TaskId != ""
 
 	switch dutState {
 	case "ready":
-		switch botState {
-		case "IDLE":
-			return "Ready"
-		case "BUSY":
+		if botBusy {
 			return "Running"
-		default:
-			return "[None]"
 		}
+		return "Ready"
 
 	case "running":
 		return "Running"
@@ -164,24 +159,20 @@ func getStatusForBotInfo(bi *swarming.SwarmingRpcsBotInfo) status {
 		return "Verifying"
 
 	case "repair_failed":
-		switch botState {
-		case "IDLE":
-			return "RepairFailed"
-		case "BUSY":
+		if botBusy {
 			// TODO(pprabhu) Repeated attempts to repair a RepairFailed DUT are
 			// better counted towards RepairFailed.
 			return "Repairing"
-		default:
-			return "[None]"
 		}
+		return "RepairFailed"
 
 	default:
 		return "[None]"
 	}
 }
 
-func isBotHealthy(botState string) bool {
-	return botState == "IDLE" || botState == "BUSY"
+func isBotHealthy(bi *swarming.SwarmingRpcsBotInfo) bool {
+	return !(bi.Deleted || bi.IsDead || bi.Quarantined)
 }
 
 func summarizeValues(vs []string) string {
