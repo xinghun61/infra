@@ -192,7 +192,9 @@ export class MrSearchBar extends PolymerElement {
           autocomplete="off"
         />
         <template is="dom-repeat" items="[[keptQueryParams]]" as="param">
-          <input type="hidden" id\$="[[param]]" name\$="[[param]]" value\$="[[_getParam(queryParams, param)]]" />
+          <template is="dom-if" if="[[_getParam(queryParams, param)]]">
+            <input type="hidden" id\$="[[param]]" name\$="[[param]]" value\$="[[_getParam(queryParams, param)]]" />
+          </template>
         </template>
         <button type="submit">
           <i class="material-icons">search</i>
