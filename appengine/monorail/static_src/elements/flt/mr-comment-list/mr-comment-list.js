@@ -110,8 +110,8 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
 
   ready() {
     super.ready();
-    this.addEventListener('expand-parent', () => {
-      this.showComments();
+    this.addEventListener('expand-parent', (evt) => {
+      this.showComments(evt);
     });
   }
 

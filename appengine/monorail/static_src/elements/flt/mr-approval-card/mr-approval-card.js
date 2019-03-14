@@ -344,8 +344,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
 
   ready() {
     super.ready();
-    this.addEventListener('expand-parent', () => {
-      this.openCard();
+    this.addEventListener('expand-parent', (evt) => {
+      this.openCard(evt);
     });
   }
 
@@ -391,7 +391,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
   openCard(evt) {
     this.opened = true;
 
-    if (evt.detail && evt.detail.callback) {
+    if (evt && evt.detail && evt.detail.callback) {
       evt.detail.callback();
     }
   }
