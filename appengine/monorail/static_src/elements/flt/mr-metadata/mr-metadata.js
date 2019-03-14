@@ -528,9 +528,8 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
     }
 
     Promise.all(promises).then((results) => {
-      actionCreator.fetchIssueHotlists(this.dispatchAction.bind(this), issueRef);
-      actionCreator.fetchUserHotlists(
-        this.dispatchAction.bind(this), this.user.email);
+      this.dispatchAction(actionCreator.fetchIssueHotlists(issueRef));
+      this.dispatchAction(actionCreator.fetchUserHotlists(this.user.email));
       this.$.updateHotlistsDialog.close();
     }, (error) => {
       this.$.updateHotlistsForm.error = error.description;
@@ -564,12 +563,12 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
       });
 
     reorderRequest.then((response) => {
-      actionCreator.fetchIssue(this.dispatchAction.bind(this), {
+      this.dispatchAction(actionCreator.fetchIssue({
         issueRef: {
           projectName: this.projectName,
           localId: this.issueId,
         },
-      });
+      }));
     }, (error) => {
       this.$.viewBlockedOnTable.reset();
       this.$.viewBlockedOnTable.error = error.description;

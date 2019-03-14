@@ -234,7 +234,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
       sequenceNum: comment.sequenceNum,
       delete: comment.isDeleted === undefined,
     }).then((resp) => {
-      actionCreator.fetchComments(this.dispatchAction.bind(this), {issueRef});
+      this.dispatchAction(actionCreator.fetchComments({issueRef}));
     });
   }
 
@@ -248,7 +248,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
       sequenceNum: comment.sequenceNum,
       flag: comment.isSpam === undefined,
     }).then((resp) => {
-      actionCreator.fetchComments(this.dispatchAction.bind(this), {issueRef});
+      this.dispatchAction(actionCreator.fetchComments({issueRef}));
     });
   }
 
@@ -339,7 +339,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
       });
 
     promise.then(() => {
-      actionCreator.fetchComments(this.dispatchAction.bind(this), {issueRef});
+      this.dispatchAction(actionCreator.fetchComments({issueRef}));
     }, (error) => {
       console.log('Failed to (un)delete attachment', error);
     });

@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 import {createMixin} from 'polymer-redux';
-import {combineReducers, createStore} from 'redux';
+import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
+import thunk from 'redux-thunk';
 import {autolink} from '../../autolink.js';
 
 export const actionType = {
@@ -81,30 +82,30 @@ export const actionType = {
 };
 
 export const actionCreator = {
-  fetchCommentReferences: (dispatch, comments, projectName) => {
+  fetchCommentReferences: (comments, projectName) => async (dispatch) => {
     dispatch({type: actionType.FETCH_COMMENT_REFERENCES_START});
 
-    autolink.getReferencedArtifacts(comments, projectName).then(
-      (refs) => {
-        const commentRefs = new Map();
-        refs.forEach(({componentName, existingRefs}) => {
-          commentRefs.set(componentName, existingRefs);
-        });
-        dispatch({
-          type: actionType.FETCH_COMMENT_REFERENCES_SUCCESS,
-          commentReferences: commentRefs,
-        });
-    }, (error) => {
+    try {
+      const refs = await autolink.getReferencedArtifacts(comments, projectName);
+      const commentRefs = new Map();
+      refs.forEach(({componentName, existingRefs}) => {
+        commentRefs.set(componentName, existingRefs);
+      });
+      dispatch({
+        type: actionType.FETCH_COMMENT_REFERENCES_SUCCESS,
+        commentReferences: commentRefs,
+      });
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_COMMENT_REFERENCES_FAILURE,
         error,
       });
-    });
+    }
   },
   // TODO(zhangtiff): Figure out if we can reduce request/response sizes by
   // diffing issues to fetch against issues we already know about to avoid
   // fetching duplicate info.
-  fetchBlockerReferences: (dispatch, issue) => {
+  fetchBlockerReferences: (issue) => async (dispatch) => {
     if (!issue) return;
     dispatch({type: actionType.FETCH_BLOCKER_REFERENCES_START});
 
@@ -117,10 +118,10 @@ export const actionCreator = {
     const message = {
       issueRefs: refsToFetch,
     };
-    const listReferencedIssues =  window.prpcClient.call(
+    try {
+      const resp = await window.prpcClient.call(
         'monorail.Issues', 'ListReferencedIssues', message);
 
-    listReferencedIssues.then((resp) => {
       let blockerReferences = new Map();
 
       const openIssues = resp.openRefs || [];
@@ -143,45 +144,45 @@ export const actionCreator = {
         type: actionType.FETCH_BLOCKER_REFERENCES_SUCCESS,
         blockerReferences: blockerReferences,
       });
-    }, (error) => {
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_BLOCKER_REFERENCES_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchIssue: (dispatch, message) => {
+  fetchIssue: (message) => async (dispatch) => {
     dispatch({type: actionType.FETCH_ISSUE_START});
 
-    const getIssue = window.prpcClient.call(
-      'monorail.Issues', 'GetIssue', message
-    );
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'GetIssue', message
+      );
 
-    getIssue.then((resp) => {
       dispatch({
         type: actionType.FETCH_ISSUE_SUCCESS,
         issue: resp.issue,
       });
 
-      actionCreator.fetchIssuePermissions(dispatch, message);
+      dispatch(actionCreator.fetchIssuePermissions(message));
       if (!resp.issue.isDeleted) {
-        actionCreator.fetchBlockerReferences(dispatch, resp.issue);
-        actionCreator.fetchIssueHotlists(dispatch, message.issueRef);
+        dispatch(actionCreator.fetchBlockerReferences(resp.issue));
+        dispatch(actionCreator.fetchIssueHotlists(message.issueRef));
       }
-    }, (error) => {
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_ISSUE_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchIssueHotlists: (dispatch, issue) => {
+  fetchIssueHotlists: (issue) => async (dispatch) => {
     dispatch({type: actionType.FETCH_ISSUE_HOTLISTS_START});
 
-    const getIssueHotlists = window.prpcClient.call(
-      'monorail.Features', 'ListHotlistsByIssue', {issue});
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Features', 'ListHotlistsByIssue', {issue});
 
-    getIssueHotlists.then((resp) => {
       const hotlists = (resp.hotlists || []);
       hotlists.sort((hotlistA, hotlistB) => {
         return hotlistA.name.localeCompare(hotlistB.name);
@@ -190,49 +191,49 @@ export const actionCreator = {
         type: actionType.FETCH_ISSUE_HOTLISTS_SUCCESS,
         hotlists,
       });
-    }, (error) => {
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_ISSUE_HOTLISTS_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchUser: (dispatch, displayName) => {
+  fetchUser: (displayName) => async (dispatch) => {
     dispatch({type: actionType.FETCH_USER_START});
 
     const message = {
       userRef: {displayName},
     };
 
-    const allPromises = [
-      window.prpcClient.call(
-        'monorail.Users', 'GetUser', message),
-      window.prpcClient.call(
-        'monorail.Users', 'GetMemberships', message),
-    ];
+    try {
+      const resp = await Promise.all([
+        window.prpcClient.call(
+          'monorail.Users', 'GetUser', message),
+        window.prpcClient.call(
+          'monorail.Users', 'GetMemberships', message),
+      ]);
 
-    Promise.all(allPromises).then((resp) => {
       dispatch({
         type: actionType.FETCH_USER_SUCCESS,
         user: resp[0],
         groups: resp[1].groupRefs,
       });
-      actionCreator.fetchUserHotlists(dispatch, displayName);
-      actionCreator.fetchUserPrefs(dispatch);
-    }, (error) => {
+      dispatch(actionCreator.fetchUserHotlists(displayName));
+      dispatch(actionCreator.fetchUserPrefs());
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_USER_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchUserHotlists: (dispatch, displayName) => {
+  fetchUserHotlists: (displayName) => async (dispatch) => {
     dispatch({type: actionType.FETCH_USER_HOTLISTS_START});
 
-    const getUserHotlists = window.prpcClient.call(
-      'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
 
-    getUserHotlists.then((resp) => {
       const hotlists = (resp.hotlists || []);
       hotlists.sort((hotlistA, hotlistB) => {
         return hotlistA.name.localeCompare(hotlistB.name);
@@ -241,20 +242,20 @@ export const actionCreator = {
         type: actionType.FETCH_USER_HOTLISTS_SUCCESS,
         hotlists,
       });
-    }, (error) => {
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_USER_HOTLISTS_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchUserPrefs: (dispatch) => {
+  fetchUserPrefs: () => async (dispatch) => {
     dispatch({type: actionType.FETCH_USER_PREFS_START});
 
-    const getUserPrefs = window.prpcClient.call(
-      'monorail.Users', 'GetUserPrefs', {});
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Users', 'GetUserPrefs', {});
 
-    getUserPrefs.then((resp) => {
       const prefs = new Map((resp.prefs || []).map((pref) => {
         return [pref.name, pref.value];
       }));
@@ -262,78 +263,79 @@ export const actionCreator = {
         type: actionType.FETCH_USER_PREFS_SUCCESS,
         prefs,
       });
-    }, (error) => {
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_USER_PREFS_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchIssuePermissions: (dispatch, message) => {
+  fetchIssuePermissions: (message) => async (dispatch) => {
     dispatch({type: actionType.FETCH_ISSUE_PERMISSIONS_START});
 
-    const getIssuePermissions = window.prpcClient.call(
-      'monorail.Issues', 'ListIssuePermissions', message
-    );
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'ListIssuePermissions', message
+      );
 
-    getIssuePermissions.then((resp) => {
       dispatch({
         type: actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS,
         permissions: resp.permissions,
       });
-    }, (error) => {
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_ISSUE_PERMISSIONS_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchComments: (dispatch, message) => {
+  fetchComments: (message) => async (dispatch) => {
     dispatch({type: actionType.FETCH_COMMENTS_START});
 
-    const getComments = window.prpcClient.call(
-      'monorail.Issues', 'ListComments', message
-    );
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'ListComments', message
+      );
 
-    getComments.then((resp) => {
       dispatch({
         type: actionType.FETCH_COMMENTS_SUCCESS,
         comments: resp.comments,
       });
-      actionCreator.fetchCommentReferences(
-          dispatch, resp.comments, message.issueRef.projectName);
-    }, (error) => {
+      dispatch(actionCreator.fetchCommentReferences(
+        resp.comments, message.issueRef.projectName));
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_COMMENTS_FAILURE,
         error,
       });
-    });
+    };
   },
-  fetchIsStarred: (dispatch, message) => {
+  fetchIsStarred: (message) => async (dispatch) => {
     dispatch({type: actionType.FETCH_IS_STARRED_START});
 
-    const getIsStarred = window.prpcClient.call(
-      'monorail.Issues', 'IsIssueStarred', message
-    );
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'IsIssueStarred', message
+      );
 
-    getIsStarred.then((resp) => {
       dispatch({
         type: actionType.FETCH_IS_STARRED_SUCCESS,
         isStarred: resp.isStarred,
       });
-    }, (error) => {
+    } catch (error) {
       dispatch({
         type: actionType.FETCH_IS_STARRED_FAILURE,
         error,
       });
-    });
+    };
   },
-  updateApproval: (dispatch, message) => {
+  updateApproval: (message) => async (dispatch) => {
     dispatch({type: actionType.UPDATE_APPROVAL_START});
 
-    window.prpcClient.call(
-      'monorail.Issues', 'UpdateApproval', message
-    ).then((resp) => {
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'UpdateApproval', message);
+
       dispatch({
         type: actionType.UPDATE_APPROVAL_SUCCESS,
         approval: resp.approval,
@@ -341,21 +343,22 @@ export const actionCreator = {
       const baseMessage = {
         issueRef: message.issueRef,
       };
-      actionCreator.fetchIssue(dispatch, baseMessage);
-      actionCreator.fetchComments(dispatch, baseMessage);
-    }, (error) => {
+      dispatch(actionCreator.fetchIssue(baseMessage));
+      dispatch(actionCreator.fetchComments(baseMessage));
+    } catch (error) {
       dispatch({
         type: actionType.UPDATE_APPROVAL_FAILURE,
         error: error,
       });
-    });
+    };
   },
-  updateIssue: (dispatch, message) => {
+  updateIssue: (message) => async (dispatch) => {
     dispatch({type: actionType.UPDATE_ISSUE_START});
 
-    window.prpcClient.call(
-      'monorail.Issues', 'UpdateIssue', message
-    ).then((resp) => {
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'UpdateIssue', message);
+
       dispatch({
         type: actionType.UPDATE_ISSUE_SUCCESS,
         issue: resp.issue,
@@ -363,21 +366,22 @@ export const actionCreator = {
       const fetchCommentsMessage = {
         issueRef: message.issueRef,
       };
-      actionCreator.fetchComments(dispatch, fetchCommentsMessage);
-      actionCreator.fetchBlockerReferences(dispatch, resp.issue);
-    }, (error) => {
+      dispatch(actionCreator.fetchComments(fetchCommentsMessage));
+      dispatch(actionCreator.fetchBlockerReferences(resp.issue));
+    } catch (error) {
       dispatch({
         type: actionType.UPDATE_ISSUE_FAILURE,
         error: error,
       });
-    });
+    };
   },
-  convertIssue: (dispatch, message) => {
+  convertIssue: (message) => async (dispatch) => {
     dispatch({type: actionType.CONVERT_ISSUE_START});
 
-    window.prpcClient.call(
-        'monorail.Issues', 'ConvertIssueApprovalsTemplate', message
-    ).then((resp) => {
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'ConvertIssueApprovalsTemplate', message);
+
       dispatch({
         type: actionType.CONVERT_ISSUE_SUCCESS,
         issue: resp.issue,
@@ -385,13 +389,13 @@ export const actionCreator = {
       const fetchCommentsMessage = {
         issueRef: message.issueRef,
       };
-      actionCreator.fetchComments(dispatch, fetchCommentsMessage);
-    }, (error) => {
+      dispatch(actionCreator.fetchComments(fetchCommentsMessage));
+    } catch (error) {
       dispatch({
         type: actionType.CONVERT_ISSUE_FAILURE,
         error: error,
       });
-    });
+    };
   },
 };
 
@@ -655,11 +659,11 @@ function rootReducer(state, action) {
   return reducer(state, action);
 }
 
-export const store = createStore(rootReducer, undefined,
-  // For debugging with the Redux Devtools extension:
-  // https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd/
-  window.__REDUX_DEVTOOLS_EXTENSION__
-    && window.__REDUX_DEVTOOLS_EXTENSION__()
-);
+// For debugging with the Redux Devtools extension:
+// https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd/
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+export const store = createStore(rootReducer, composeEnhancers(
+  applyMiddleware(thunk)
+));
 
 export const ReduxMixin = createMixin(store);

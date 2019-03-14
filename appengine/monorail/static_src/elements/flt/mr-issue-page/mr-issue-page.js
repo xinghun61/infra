@@ -295,13 +295,13 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       },
     };
 
-    actionCreator.fetchIssue(this.dispatchAction.bind(this), message);
-    actionCreator.fetchComments(this.dispatchAction.bind(this), message);
-    actionCreator.fetchIsStarred(this.dispatchAction.bind(this), message);
+    this.dispatchAction(actionCreator.fetchIssue(message));
+    this.dispatchAction(actionCreator.fetchComments(message));
+    this.dispatchAction(actionCreator.fetchIsStarred(message));
   }
 
   _userDisplayNameChanged(userDisplayName) {
-    actionCreator.fetchUser(this.dispatchAction.bind(this), userDisplayName);
+    this.dispatchAction(actionCreator.fetchUser(userDisplayName));
   }
 
   _undeleteIssue() {

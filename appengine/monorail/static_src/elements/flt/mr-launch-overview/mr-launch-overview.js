@@ -114,7 +114,7 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
   }
 
   saveConvertIssue() {
-    actionCreator.convertIssue(this.dispatchAction.bind(this), {
+    this.dispatchAction(actionCreator.convertIssue({
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
@@ -122,7 +122,7 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
       templateName: this.$.convertIssueForm.selectedTemplate,
       commentContent: this.$.convertIssueForm.$.commentContent.value,
       sendEmail: this.$.convertIssueForm.sendEmail,
-    });
+    }));
   }
 
   _shouldOfferConvert(issuePermissions, projectTemplates) {

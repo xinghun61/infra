@@ -7,7 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-button/chops-button.js';
 import './mr-comment.js';
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
 import '../shared/mr-flt-styles.js';
 
 const ISSUE_EDIT_PERMISSION = 'editissue';

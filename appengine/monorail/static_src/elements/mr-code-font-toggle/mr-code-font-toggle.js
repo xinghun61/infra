@@ -64,7 +64,7 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
       const setPrefsCall = window.prpcClient.call(
         'monorail.Users', 'SetUserPrefs', message);
       setPrefsCall.then((resp) => {
-        actionCreator.fetchUserPrefs(this.dispatchAction.bind(this));
+        this.dispatchAction(actionCreator.fetchUserPrefs());
       }).catch((reason) => {
         console.error('SetUserPrefs failed: ' + reason);
       });

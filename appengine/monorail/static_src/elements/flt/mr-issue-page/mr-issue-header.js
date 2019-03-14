@@ -223,7 +223,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           localId: this.issue.localId,
         },
       };
-      actionCreator.fetchIssue(this.dispatchAction.bind(this), message);
+      this.dispatchAction(actionCreator.fetchIssue(message));
     });
   }
 
@@ -243,7 +243,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
             localId: this.issue.localId,
           },
         };
-        actionCreator.fetchIssue(this.dispatchAction.bind(this), message);
+        this.dispatchAction(actionCreator.fetchIssue(message));
       });
     }
   }

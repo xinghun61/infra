@@ -135,10 +135,9 @@ export class EztComments extends ReduxMixin(PolymerElement) {
       type: actionType.FETCH_COMMENTS_SUCCESS,
       comments: allComments,
     });
-    actionCreator.fetchUserPrefs(
-      this.dispatchAction.bind(this));
-    actionCreator.fetchCommentReferences(
-      this.dispatchAction.bind(this), allComments, this.projectName);
+    this.dispatchAction(actionCreator.fetchUserPrefs());
+    this.dispatchAction(actionCreator.fetchCommentReferences(
+      allComments, this.projectName));
   }
 }
 customElements.define(EztComments.is, EztComments);

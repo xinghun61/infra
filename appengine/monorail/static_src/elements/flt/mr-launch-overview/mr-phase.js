@@ -264,7 +264,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     }
 
     if (message.commentContent || message.delta) {
-      actionCreator.updateIssue(this.dispatchAction.bind(this), message);
+      this.dispatchAction(actionCreator.updateIssue(message));
     }
   }
 

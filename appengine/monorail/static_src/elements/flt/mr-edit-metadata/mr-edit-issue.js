@@ -104,7 +104,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       }
 
       if (message.commentContent || message.delta || message.uploads) {
-        actionCreator.updateIssue(this.dispatchAction.bind(this), message);
+        this.dispatchAction(actionCreator.updateIssue(message));
       }
     }).catch((reason) => {
       console.error('loading file for attachment: ', reason);

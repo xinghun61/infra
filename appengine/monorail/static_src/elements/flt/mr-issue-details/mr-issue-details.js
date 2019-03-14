@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import '../mr-edit-metadata/mr-edit-issue.js';

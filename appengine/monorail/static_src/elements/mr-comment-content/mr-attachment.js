@@ -165,7 +165,7 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
       });
 
     promise.then(() => {
-      actionCreator.fetchComments(this.dispatchAction.bind(this), {issueRef});
+      this.dispatchAction(actionCreator.fetchComments({issueRef}));
     }, (error) => {
       console.log('Failed to (un)delete attachment', error);
     });

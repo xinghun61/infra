@@ -364,7 +364,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     Promise.all(loads).then((uploads) => {
       if (data.comment || Object.keys(delta).length > 0 ||
           uploads.length > 0) {
-        actionCreator.updateApproval(this.dispatchAction.bind(this), {
+        this.dispatchAction(actionCreator.updateApproval({
           issueRef: {
             projectName: this.projectName,
             localId: this.issueId,
@@ -377,7 +377,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           approvalDelta: delta,
           uploads: uploads,
           sendEmail: sendEmail,
-        });
+        }));
       }
     }).catch((reason) => {
       console.error('loading file for attachment: ', reason);

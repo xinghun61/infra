@@ -279,13 +279,13 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       }
 
       if (!this._fieldName) {
-        actionCreator.updateIssue(this.dispatchAction.bind(this), message);
+        this.dispatchAction(actionCreator.updateIssue(message));
       } else {
         message.fieldRef = {
           type: fieldTypes.APPROVAL_TYPE,
           fieldName: this._fieldName,
         };
-        actionCreator.updateApproval(this.dispatchAction.bind(this), message);
+        this.dispatchAction(actionCreator.updateApproval(message));
       }
       this.$.dialog.close();
     }).catch((reason) => {
