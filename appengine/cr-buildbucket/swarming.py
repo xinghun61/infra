@@ -1224,6 +1224,13 @@ def _sync_build_in_memory(
     if started_ts:
       bp.start_time.FromDatetime(started_ts)
     bp.end_time.FromDatetime(ts('completed_ts') or ts('abandoned_ts') or now)
+
+    # It is possible that swarming task was marked as NO_RESOURCE the moment
+    # it was created. Swarming VM time is not synchronized with buildbucket VM
+    # time, so adjust end_time if needed.
+    if bp.end_time.ToDatetime() < bp.create_time.ToDatetime():
+      bp.end_time.CopyFrom(bp.create_time)
+
     if build_run_result:
       ann = build_run_result.get('annotations') or {}
       build.result_details = {

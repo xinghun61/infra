@@ -1746,6 +1746,18 @@ class SwarmingTest(BaseTest):
           'resource_exhaustion': True,
           'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
+      # NO_RESOURCE with abandoned_ts before creation time.
+      (
+          {
+              'task_result': {
+                  'state': 'NO_RESOURCE',
+                  'abandoned_ts': '2015-11-29T00:15:18.162860',
+              },
+              'status': common_pb2.INFRA_FAILURE,
+              'resource_exhaustion': True,
+              'end_time': test_util.dt2ts(NOW),
+          },
+      ),
   ])
   def test_sync(self, case):
     logging.info('test case: %s', case)
