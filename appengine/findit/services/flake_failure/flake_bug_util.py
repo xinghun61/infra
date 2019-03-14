@@ -87,9 +87,11 @@ def ShouldUpdateBugForAnalysis(analysis):
 
 
 def UnderDailyLimit():
+  # TODO(crbug.com/942222): Distinguish between Flake Analyzer and Flake
+  # Detection bug operations.
   action_settings = waterfall_config.GetActionSettings()
   daily_bug_limit = action_settings.get(
-      'max_flake_bug_updates_per_day',
+      'max_flake_detection_bug_updates_per_day',
       flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
   query = master_flake_analysis.MasterFlakeAnalysis.query(
       master_flake_analysis.MasterFlakeAnalysis.request_time >= time_util

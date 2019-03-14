@@ -149,7 +149,8 @@ _DEFAULT_ACTION_SETTINGS = {
     'auto_create_revert_daily_threshold_flake': 10,
     'auto_commit_revert_daily_threshold_flake': 4,
     'rotations_url': ('https://rota-ng.appspot.com/legacy/all_rotations.js'),
-    'max_flake_bug_updates_per_day': 30,
+    'max_flake_detection_bug_updates_per_day': 30,
+    'max_flake_analysis_bug_updates_per_day': 30,
     'minimum_confidence_to_update_endpoints': 0.7,
     'minimum_confidence_to_revert_flake_culprit': 1.0,
 }

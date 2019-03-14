@@ -175,8 +175,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
     groups_wo_issue, groups_w_issue = (
         flake_issue_util.GetFlakeGroupsForActionsOnBugs(flakes_with_occurrences)
     )
-    self.UpdateUnitTestConfigSettings('action_settings',
-                                      {'max_flake_bug_updates_per_day': 0})
+    self.UpdateUnitTestConfigSettings(
+        'action_settings', {'max_flake_detection_bug_updates_per_day': 0})
     flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
     self.assertFalse(mock_create_bug.called)
 
@@ -244,8 +244,8 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(monorail_util, 'CreateBug')
   def testDisableCreateAndUpdateBugs(self, mock_create_bug_fn,
                                      mock_update_bug_fn):
-    self.UpdateUnitTestConfigSettings('action_settings',
-                                      {'max_flake_bug_updates_per_day': 0})
+    self.UpdateUnitTestConfigSettings(
+        'action_settings', {'max_flake_detetion_bug_updates_per_day': 0})
 
     flake = Flake.query().fetch()[0]
     occurrences = FlakeOccurrence.query(
@@ -1264,8 +1264,8 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N)."""
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 12, 20))
   def testGetRemainingDailyUpdatesCount(self, _):
-    self.UpdateUnitTestConfigSettings('action_settings',
-                                      {'max_flake_bug_updates_per_day': 5})
+    self.UpdateUnitTestConfigSettings(
+        'action_settings', {'max_flake_detection_bug_updates_per_day': 5})
     flake_issue_1 = FlakeIssue.Create('chromium', 12345)
     flake_issue_1.last_updated_time_by_flake_detection = datetime.datetime(
         2018, 12, 19, 12, 0, 0)  # Updated within 24 hours.

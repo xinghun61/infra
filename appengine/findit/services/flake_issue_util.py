@@ -510,8 +510,10 @@ def GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report):
 
 def GetRemainingDailyUpdatesCount():
   """Returns how many FlakeIssue updates can be made within the daily limit."""
+  # TODO(crbug.com/942222): Distinguish between Flake Analyzer and Flake
+  # Detection bugs.
   action_settings = waterfall_config.GetActionSettings()
-  limit = action_settings.get('max_flake_bug_updates_per_day',
+  limit = action_settings.get('max_flake_detection_bug_updates_per_day',
                               flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)

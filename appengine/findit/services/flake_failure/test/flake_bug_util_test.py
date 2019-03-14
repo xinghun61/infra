@@ -343,7 +343,7 @@ class FlakeBugUtilTest(WaterfallTestCase):
   def testUnderDailyLimitIfOver(self, _):
     self.UpdateUnitTestConfigSettings(
         config_property='action_settings',
-        override_data={'max_flake_bug_updates_per_day': 2})
+        override_data={'max_flake_detection_bug_updates_per_day': 2})
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
