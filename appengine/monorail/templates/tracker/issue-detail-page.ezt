@@ -65,7 +65,7 @@
       </div>
 
       <div>
-        <span id="code-font-toggle-slot"></span>
+        <span id="mr-code-font-toggle-slot"></span>
         <a href="[issue.crbug_url]" class="material-icons" title="crbug link">
           link
         </a>
@@ -144,29 +144,21 @@
 
 <div id="helparea"></div>
 
-<mr-flipper
-  id="mr-flipper"
-  hidden="true"
->
-<mr-code-font-toggle
-  id="code-font-toggle"
-  title="code font"
-  style="float:right; margin: 3px;"
-  [if-any code_font]initial-value="true"[end]
-  [if-any logged_in_user]user-display-name="[logged_in_user.email]"[end]
-  hidden="true"
-></mr-code-font-toggle>
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   $('ezt-comments').initialize();
 
-  const delayedElements = ['mr-flipper', 'code-font-toggle'];
-  delayedElements.forEach((id) => {
-    const slot = $(id + '-slot');
-    const element = $(id);
-    slot.appendChild(element);
-    element.hidden = false;
-  });
+  $('mr-flipper-slot').appendChild(document.createElement('mr-flipper'));
+  const mrCodeFontToggle = document.createElement('mr-code-font-toggle');
+  mrCodeFontToggle.title = 'code font';
+  mrCodeFontToggle.style = 'float:right; margin: 3px;';
+  [if-any code_font]
+    mrCodeFontToggle.initialValue = true;
+  [end]
+  [if-any logged_in_user]
+    mrCodeFontToggle.userDisplayName = "[logged_in_user.email]";
+  [end]
+  $('mr-code-font-toggle-slot').appendChild(mrCodeFontToggle);
 
   [if-any page_perms.EditIssue]
     $('edit-desc-btn').addEventListener('click', function (e) {
