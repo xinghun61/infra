@@ -619,9 +619,9 @@ class ProcessCodeCoverageData(BaseHandler):
       # after the bug is fixed.
       gs_bucket = 'code-coverage-data'
       commit = build.input.gitiles_commit
-      gs_path = ('postsubmit/%s/%s/%s/coverage/%s/%s/metadata') % (
-          commit.host, commit.project, commit.id, build.builder.builder,
-          build_id)
+      gs_path = ('postsubmit/%s/%s/%s/%s/%s/%s/metadata') % (
+          commit.host, commit.project, commit.id, build.builder.bucket,
+          build.builder.builder, build_id)
 
     # Ensure that the coverage data is ready.
     if not gs_bucket or not gs_path:
