@@ -707,11 +707,12 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
   @mock.patch.object(detect_flake_occurrences, '_UpdateFlakeMetadata')
   @mock.patch.object(Flake, 'NormalizeStepName', return_value='step1')
-  @mock.patch.object(Flake, 'NormalizeTestName', side_effect=['s1_t1', 's1_t2'])
-  @mock.patch.object(Flake, 'GetTestLabelName', side_effect=['s1_t1', 's1_t2'])
+  @mock.patch.object(Flake, 'NormalizeTestName')
+  @mock.patch.object(Flake, 'GetTestLabelName')
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(step_util, 'GetStepLogFromBuildObject')
-  def testProcessBuildForFlakes(self, mock_metadata, mock_build, *_):
+  def testProcessBuildForFlakes(self, mock_metadata, mock_build,
+                                mock_normalized_test_name, mock_lable_name, *_):
     flake_type_enum = FlakeType.CQ_FALSE_REJECTION
     build_id = 123
     luci_project = 'luci_project'
@@ -735,11 +736,18 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     build = Build(id=build_id, builder=builder, number=build_id)
     build.steps.extend([findit_step, step1])
     build.input.properties['mastername'] = legacy_master_name
+    build.input.properties['patch_project'] = 'chromium/src'
     mock_change = build.input.gerrit_changes.add()
     mock_change.host = 'mock.gerrit.host'
     mock_change.change = 12345
     mock_change.patchset = 1
     mock_build.return_value = build
+
+    def _MockTestName(test_name, _step_ui_name):  # pylint: disable=unused-argument
+      return test_name
+
+    mock_normalized_test_name.side_effect = _MockTestName
+    mock_lable_name.side_effect = _MockTestName
 
     flakiness_metadata = {
         'Failing With Patch Tests That Caused Build Failure': {
@@ -789,7 +797,8 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
     # First time query for build 123.
     QueryAndStoreFlakes(flake_type)
-    self.assertEqual(1, len(taskqueue_task_names))
+    self.assertEqual(['detect-flake-123-cq_false_rejection'],
+                     taskqueue_task_names)
 
     self._AddRowToBuildQueryResponse(
         query_response=query_response, gerrit_cl_id='10001', build_id='124')
@@ -805,4 +814,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     # Queries for build 123 - 125.
     QueryAndStoreFlakes(flake_type)
 
-    self.assertEqual(2, len(taskqueue_task_names))
+    self.assertItemsEqual([
+        'detect-flake-124-cq_false_rejection',
+        'detect-flake-125-cq_false_rejection'
+    ], taskqueue_task_names)

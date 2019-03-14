@@ -558,7 +558,8 @@ def _EnqueueDetectFlakeByBuildTasks(build_id, flake_type_desc):
       build_id=build_id, flake_type_desc=flake_type_desc).ToSerializable()
 
   try:
-    task_name = 'detect-flake-{}-{}'.format(build_id, flake_type_desc)
+    task_name = 'detect-flake-{}-{}'.format(build_id,
+                                            flake_type_desc.replace(' ', '_'))
     taskqueue.add(
         name=task_name,
         url=_DETECT_FLAKES_IN_BUILD_TASK_URL,
@@ -739,7 +740,7 @@ def ProcessBuildForFlakes(task_param):
   flake_type_enum = DESCRIPTION_TO_FLAKE_TYPE.get(task_param.flake_type_desc)
 
   build_pb = buildbucket_client.GetV2Build(
-      build_id, FieldMask(paths=['name', 'builder', 'input', 'steps']))
+      build_id, FieldMask(paths=['number', 'builder', 'input', 'steps']))
   assert build_pb, 'Error retrieving buildbucket build id: {}'.format(build_id)
 
   luci_project = build_pb.builder.project
@@ -747,43 +748,51 @@ def ProcessBuildForFlakes(task_param):
   luci_builder = build_pb.builder.builder
   legacy_master_name = build_pb.input.properties['mastername']
   legacy_build_number = build_pb.number
-  gerrit_cl_id = build_pb.input.gerrit_changes[
-      0].change if build_pb.input.gerrit_changes else None
+  gerrit_changes = build_pb.input.gerrit_changes
+
+  gerrit_cl_id = None
+  gerrit_project = None
+  if gerrit_changes:
+    gerrit_cl_id = build_pb.input.gerrit_changes[0].change
+    gerrit_project = build_pb.input.gerrit_changes[0].project
+
+  # Fall-back approach to get gerrit_cl_id and gerrit_project
+  gerrit_cl_id = gerrit_cl_id or (build_pb.input.properties['patch_issue']
+                                  if 'patch_issue' in build_pb.input.properties
+                                  else None)
+  gerrit_project = gerrit_project or (
+      build_pb.input.properties['patch_project']
+      if 'patch_project' in build_pb.input.properties else None)
+
+  if not gerrit_cl_id:
+    return
 
   flake_info = GetFlakesFromFlakyCQBuild(build_id, build_pb, flake_type_enum)
+
+  row = {
+      'luci_project': luci_project,
+      'luci_bucket': luci_bucket,
+      'luci_builder': luci_builder,
+      'legacy_master_name': legacy_master_name,
+      'legacy_build_number': legacy_build_number,
+      'build_id': build_id,
+      'gerrit_project': gerrit_project,
+      'gerrit_cl_id': gerrit_cl_id
+  }
 
   new_flakes = []
   new_occurrences = []
   for step_ui_name, tests in flake_info.iteritems():
-    normalized_step_name = Flake.NormalizeStepName(
-        step_name=step_ui_name,
-        master_name=legacy_master_name,
-        builder_name=luci_builder,
-        build_number=legacy_build_number)
-
     # Uses the start time of a step as the flake happen time.
     step_start_time, _ = step_util.GetStepStartAndEndTime(
         build_pb, step_ui_name)
+    row['step_ui_name'] = step_ui_name
+    row['test_start_msec'] = step_start_time
     for test in tests:
-      normalized_test_name = Flake.NormalizeTestName(test, step_ui_name)
-      test_label_name = Flake.GetTestLabelName(test, step_ui_name)
-      flake = Flake.Get(
-          luci_project=luci_project,
-          step_name=normalized_step_name,
-          test_name=normalized_test_name)
-      if not flake:  # pragma: no branch
-        flake = Flake.Create(
-            luci_project=luci_project,
-            normalized_step_name=normalized_step_name,
-            normalized_test_name=normalized_test_name,
-            test_label_name=test_label_name)
-        new_flakes.append(flake)
-
-      occurrence = FlakeOccurrence.Create(
-          flake_type_enum, build_id, step_ui_name, test, luci_project,
-          luci_bucket, luci_builder, legacy_master_name, legacy_build_number,
-          step_start_time, gerrit_cl_id, flake.key)
-      new_occurrences.append(occurrence)
+      row['test_name'] = test
+      new_flakes.append(_CreateFlakeFromRow(row))
+      new_occurrences.append(
+          _CreateFlakeOccurrenceFromRow(row, flake_type_enum))
 
   _StoreMultipleLocalEntities(new_flakes)
   _StoreMultipleLocalEntities(new_occurrences)
