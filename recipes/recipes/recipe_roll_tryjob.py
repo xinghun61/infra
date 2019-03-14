@@ -67,8 +67,12 @@ def _checkout_project(
     s.revision = revision
 
   with api.context(cwd=workdir):
-    return api.bot_update.ensure_checkout(
+    ret = api.bot_update.ensure_checkout(
         gclient_config=gclient_config, patch=patch, manifest_name=name)
+    with api.context(cwd=workdir.join(project)):
+      # Clean out those stale pyc's!
+      api.git('clean', '-xf')
+    return ret
 
 
 def RunSteps(api, upstream_project, downstream_project):
