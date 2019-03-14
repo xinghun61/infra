@@ -46,16 +46,22 @@ if appengine_util.IsInProductionApp():
 
 # "flake-detection-backend" module.
 flake_detection_backend_web_pages_handler_mappings = [
+    # TODO(crbug.com/941576) remove obsolete urls.
     ('/flake/detection/cron/detect-cq-false-rejection-flakes',
-     detect_flakes.DetectCQFalseRejectionFlakesCronJob),
+     detect_flakes.DetectFlakesCronJob),
+    ('/flake/detection/cron/detect-flakes', detect_flakes.DetectFlakesCronJob),
     ('/flake/detection/cron/generate-flakiness-report',
      generate_report.PrepareFlakinessReport),
     ('/flake/detection/cron/update-flake-counts',
      update_flake_counts.UpdateFlakeCountsCron),
     ('/flake/detection/task/detect-cq-false-rejection-flakes',
-     detect_flakes.DetectCQFalseRejectionFlakes),
+     detect_flakes.FlakeDetectionAndAutoAction),
+    ('/flake/detection/task/detect-flakes',
+     detect_flakes.FlakeDetectionAndAutoAction),
+    ('/flake/detection/task/detect-flakes-from-build',
+     detect_flakes.DetectFlakesFromFlakyCQBuild),
     ('/flake/detection/task/update-flake-counts',
-     update_flake_counts.UpdateFlakeCountsTask)
+     update_flake_counts.UpdateFlakeCountsTask),
 ]
 flake_detection_backend_web_application = webapp2.WSGIApplication(
     flake_detection_backend_web_pages_handler_mappings, debug=False)

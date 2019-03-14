@@ -12,13 +12,16 @@ import os
 import re
 
 from google.appengine.api import memcache
+from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 
+from common import constants
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from gae_libs import appengine_util
 from gae_libs.caches import CompressedMemCache
+from gae_libs.caches import PickledMemCache
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import test_name_util
 from libs import time_util
@@ -28,8 +31,9 @@ from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import DEFAULT_COMPONENT
 from model.flake.flake import Flake
 from model.flake.flake import TestLocation
-from model.flake import flake_type
+from model.flake.flake_type import DESCRIPTION_TO_FLAKE_TYPE
 from model.flake.flake_type import FlakeType
+from model.flake.flake_type import FLAKE_TYPE_DESCRIPTIONS
 from model.wf_build import WfBuild
 from services import bigquery_helper
 from services import monitoring
@@ -41,11 +45,11 @@ _MAP_FLAKY_TESTS_QUERY_PATH = {
     FlakeType.CQ_FALSE_REJECTION:
         os.path.realpath(
             os.path.join(__file__, os.path.pardir,
-                         'flaky_tests.cq_false_rejection.sql')),
+                         'flaky_tests.cq_retried_builds.sql')),
     FlakeType.RETRY_WITH_PATCH:
         os.path.realpath(
             os.path.join(__file__, os.path.pardir,
-                         'flaky_tests.retry_with_patch.sql')),
+                         'flaky_tests.cq_builds_with_retried_steps.sql')),
     FlakeType.CQ_HIDDEN_FLAKE:
         os.path.realpath(
             os.path.join(__file__, os.path.pardir,
@@ -93,6 +97,11 @@ _FLAKE_TYPE_TO_FLAKINESS_METADATA_CATEGORY = {
     FlakeType.RETRY_WITH_PATCH:
         'Step Layer Flakiness',
 }
+
+_DETECT_FLAKES_IN_BUILD_TASK_URL = (
+    '/flake/detection/task/detect-flakes-from-build')
+
+_FLAKE_TASK_CACHED_SECONDS = 24 * 60 * 60
 
 _FLAKINESS_METADATA_STEP = 'FindIt Flakiness'
 
@@ -504,22 +513,9 @@ def _GetCQHiddenFlakeQueryStartTime():
           last_query_time <= last_query_time_right_bourndary else (None, None))
 
 
-def QueryAndStoreFlakes(flake_type_enum):
-  """Runs the query to fetch flake occurrences and store them."""
-
-  parameters = None
-  if flake_type_enum == FlakeType.CQ_HIDDEN_FLAKE:
-    start_time_string, end_time_string = _GetCQHiddenFlakeQueryStartTime()
-    if not start_time_string:
-      # Only runs this query every 2 hours.
-      return
-    parameters = [('hidden_flake_query_start_time', 'TIMESTAMP',
-                   start_time_string),
-                  ('hidden_flake_query_end_time', 'TIMESTAMP', end_time_string)]
-
+def _ExecuteQuery(flake_type_enum, parameters=None):
   path = _MAP_FLAKY_TESTS_QUERY_PATH[flake_type_enum]
-  flake_type_desc = flake_type.FLAKE_TYPE_DESCRIPTIONS.get(
-      flake_type_enum, 'N/A')
+  flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum, 'N/A')
   with open(path) as f:
     query = f.read()
   success, rows = bigquery_helper.ExecuteQuery(
@@ -529,10 +525,88 @@ def QueryAndStoreFlakes(flake_type_enum):
     logging.error('Failed executing the query to detect %s flakes.',
                   flake_type_desc)
     monitoring.OnFlakeDetectionQueryFailed(flake_type=flake_type_desc)
+    return None
+
+  logging.info('Fetched %d rows for %s from BigQuery.', len(rows),
+               flake_type_desc)
+  return rows
+
+
+class DetectFlakesFromFlakyCQBuildParam(StructuredObject):
+  """Inputs of a task to detect a type of flakes from a flaky cq build.
+
+  Supported flake types:
+    - FlakeType.CQ_FALSE_REJECTION
+    - FlakeType.RETRY_WITH_PATCH
+  """
+  build_id = int
+  flake_type_desc = basestring
+
+
+@Cached(
+    PickledMemCache(),
+    namespace='flake_task',
+    expire_time=_FLAKE_TASK_CACHED_SECONDS)
+def _EnqueueDetectFlakeByBuildTasks(build_id, flake_type_desc):
+  """Enqueues a task to detect a type of flakes for the build in the row.
+
+  Caches task names to deduplicate tasks for the same build and flake_type.
+  """
+  target = appengine_util.GetTargetNameForModule(
+      constants.FLAKE_DETECTION_BACKEND)
+  params = DetectFlakesFromFlakyCQBuildParam(
+      build_id=build_id, flake_type_desc=flake_type_desc).ToSerializable()
+
+  try:
+    task_name = 'detect-flake-{}-{}'.format(build_id, flake_type_desc)
+    taskqueue.add(
+        name=task_name,
+        url=_DETECT_FLAKES_IN_BUILD_TASK_URL,
+        payload=json.dumps(params),
+        target=target,
+        queue_name=constants.FLAKE_DETECTION_MULTITASK_QUEUE)
+    return task_name
+  except (taskqueue.TombstonedTaskError, taskqueue.TaskAlreadyExistsError):
+    logging.info('%s flakes of build %s was already checked.', flake_type_desc,
+                 build_id)
+
+
+def QueryAndStoreFlakes(flake_type_enum):
+  """Runs the query to fetch flake related data and use it to detect flakes
+     for cq false rejections and cq retry with patch."""
+  flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum)
+  assert flake_type_enum in [
+      FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH
+  ], ('{} is not supported in flakiness metadata.'.format(flake_type_desc))
+  rows = _ExecuteQuery(flake_type_enum)
+  if not rows:
     return
 
-  logging.info('Fetched %d %s flake occurrences from BigQuery.', len(rows),
-               flake_type_desc)
+  for row in rows:
+    _EnqueueDetectFlakeByBuildTasks(row['build_id'], flake_type_desc)
+
+
+def QueryAndStoreHiddenFlakes(flake_type_enum=FlakeType.CQ_HIDDEN_FLAKE):
+  """Runs the query to fetch hidden flake occurrences and store them.
+
+  Currently only supports hidden flakes on CQ, later we could use the same
+  approach for hidden flakes on CI.
+
+  Hidden flakes are not listed in each build's flakiness metadata since
+  there should be many of them in many builds.
+  Use a query to directly query hidden flakes from bigquery.
+  """
+  start_time_string, end_time_string = _GetCQHiddenFlakeQueryStartTime()
+  if not start_time_string:
+    # Only runs this query every 2 hours.
+    return
+  parameters = [('hidden_flake_query_start_time', 'TIMESTAMP',
+                 start_time_string),
+                ('hidden_flake_query_end_time', 'TIMESTAMP', end_time_string)]
+
+  rows = _ExecuteQuery(flake_type_enum, parameters)
+  if rows is None:
+    return
 
   local_flakes = [_CreateFlakeFromRow(row) for row in rows]
   _StoreMultipleLocalEntities(local_flakes)
@@ -547,6 +621,7 @@ def QueryAndStoreFlakes(flake_type_enum):
     # Updates memecache for the new last_cq_hidden_flake_query_time.
     _CacheLastCQHiddenFlakeQueryTime(time_util.GetUTCNow())
 
+  flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum, 'N/A')
   monitoring.OnFlakeDetectionDetectNewOccurrences(
       flake_type=flake_type_desc, num_occurrences=len(new_occurrences))
 
@@ -574,7 +649,7 @@ def StoreDetectedCIFlakes(master_name, builder_name, build_number, flaky_tests):
   luci_project, luci_bucket = build_util.GetBuilderInfoForLUCIBuild(
       build.build_id)
 
-  if not luci_project or not luci_bucket:
+  if not luci_project or not luci_bucket:  # pragma: no branch.
     logging.debug(
         'Could not get luci_project or luci_bucket from'
         ' build %s/%s/%d.', master_name, builder_name, build_number)
@@ -608,21 +683,9 @@ def StoreDetectedCIFlakes(master_name, builder_name, build_number, flaky_tests):
   new_occurrences = _StoreMultipleLocalEntities(local_flake_occurrences)
   _UpdateFlakeMetadata(new_occurrences)
 
-  flake_type_desc = flake_type.FLAKE_TYPE_DESCRIPTIONS.get(
-      FlakeType.CI_FAILED_STEP, 'N/A')
+  flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(FlakeType.CI_FAILED_STEP, 'N/A')
   monitoring.OnFlakeDetectionDetectNewOccurrences(
       flake_type=flake_type_desc, num_occurrences=len(new_occurrences))
-
-
-class DetectFlakesFromBuildParam(StructuredObject):
-  """Inputs of a task to detect a type of flakes from a flaky cq build.
-
-  Supported flake types:
-    - FlakeType.CQ_FALSE_REJECTION
-    - FlakeType.RETRY_WITH_PATCH
-  """
-  build_id = int
-  flake_type_desc = basestring
 
 
 def GetFlakesFromFlakyCQBuild(build_id, build_pb, flake_type_enum):
@@ -653,7 +716,7 @@ def GetFlakesFromFlakyCQBuild(build_id, build_pb, flake_type_enum):
   flake_category = _FLAKE_TYPE_TO_FLAKINESS_METADATA_CATEGORY.get(
       flake_type_enum)
   assert flake_category, '{} is not covered by flakiness metadata.'.format(
-      flake_type.FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum))
+      FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum))
 
   http_client = FinditHttpClient()
   flakiness_metadata = step_util.GetStepLogFromBuildObject(
@@ -668,12 +731,12 @@ def ProcessBuildForFlakes(task_param):
   """Detects a type of flakes from a build.
 
   Args:
-    task_param(DetectFlakesFromBuildParam): Parameters of the task of detecting
-      a type of flakes from a build.
+    task_param(DetectFlakesFromFlakyCQBuildParam): Parameters of the task to
+      detect cq false rejection or retry with patch flakes from a flaky cq
+      build.
   """
   build_id = task_param.build_id
-  flake_type_enum = flake_type.DESCRIPTION_TO_FLAKE_TYPE.get(
-      task_param.flake_type_desc)
+  flake_type_enum = DESCRIPTION_TO_FLAKE_TYPE.get(task_param.flake_type_desc)
 
   build_pb = buildbucket_client.GetV2Build(
       build_id, FieldMask(paths=['name', 'builder', 'input', 'steps']))

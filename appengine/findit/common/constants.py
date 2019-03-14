@@ -23,6 +23,7 @@ WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE = 'waterfall-flake-analysis-request'
 RERUN_TRYJOB_QUEUE = 'rerun-tryjob'
 FLAKE_DETECTION_QUEUE = 'flake-detection-queue'
 AUTO_ACTION_QUEUE = 'auto-action-queue'
+FLAKE_DETECTION_MULTITASK_QUEUE = 'flake-detection-multitask-queue'
 
 # Waterfall-related.
 WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL = (

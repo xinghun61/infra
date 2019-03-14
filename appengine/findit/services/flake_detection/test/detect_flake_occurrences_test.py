@@ -10,6 +10,7 @@ import textwrap
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.step_pb2 import Step
+from google.appengine.api import taskqueue
 
 from common.waterfall import buildbucket_client
 from dto.test_location import TestLocation as DTOTestLocation
@@ -35,14 +36,116 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 
 class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
-  def _GetEmptyQueryResponse(self):
+  def _GetEmptyBuildQueryResponse(self):
     """Returns an empty query response for testing.
 
-    The returned response is empty, please call _AddRowToQueryResponse method
+    The returned response is empty, please call _AddRowToBuildQueryResponse
     to add rows for testing. Note that the fields in the schema and the
-    parameters of the _AddRowToQueryResponse method must match exactly
+    parameters of the _AddRowToFlakeQueryResponse method must match exactly
     (including orders), so if a new field is added to the schema, please
-    update _AddRowToQueryResponse accordingly.
+    update _AddRowToFlakeQueryResponse accordingly.
+    """
+    return {
+        'rows': [],
+        'jobComplete': True,
+        'totalRows': '0',
+        'schema': {
+            'fields': [{
+                'type': 'STRING',
+                'name': 'gerrit_project',
+                'mode': 'NULLABLE'
+            }, {
+                'type': 'STRING',
+                'name': 'luci_project',
+                'mode': 'NULLABLE'
+            }, {
+                'type': 'STRING',
+                'name': 'luci_bucket',
+                'mode': 'NULLABLE'
+            }, {
+                'type': 'STRING',
+                'name': 'luci_builder',
+                'mode': 'NULLABLE'
+            },
+                       {
+                           'type': 'STRING',
+                           'name': 'legacy_master_name',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'INTEGER',
+                           'name': 'legacy_build_number',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'INTEGER',
+                           'name': 'build_id',
+                           'mode': 'NULLABLE'
+                       },
+                       {
+                           'type': 'INTEGER',
+                           'name': 'gerrit_cl_id',
+                           'mode': 'NULLABLE'
+                       }]
+        }
+    }
+
+  def _AddRowToBuildQueryResponse(self,
+                                  query_response,
+                                  luci_project='chromium',
+                                  luci_bucket='try',
+                                  luci_builder='linux_chromium_rel_ng',
+                                  legacy_master_name='tryserver.chromium.linux',
+                                  legacy_build_number='999',
+                                  build_id='123',
+                                  gerrit_cl_id='98765',
+                                  gerrit_project='chromium/src'):
+    """Adds a row to the provided query response for testing.
+
+    To obtain a query response for testing for the initial time, please call
+    _GetEmptyBuildQueryResponse. Note that the fields in the schema and the
+    parameters of this method must match exactly (including orders), so if a new
+    field is added to the schema, please update this method accordingly.
+    """
+    row = {
+        'f': [
+            {
+                'v': gerrit_project
+            },
+            {
+                'v': luci_project
+            },
+            {
+                'v': luci_bucket
+            },
+            {
+                'v': luci_builder
+            },
+            {
+                'v': legacy_master_name
+            },
+            {
+                'v': legacy_build_number
+            },
+            {
+                'v': build_id
+            },
+            {
+                'v': gerrit_cl_id
+            },
+        ]
+    }
+    query_response['rows'].append(row)
+    query_response['totalRows'] = str(int(query_response['totalRows']) + 1)
+
+  def _GetEmptyFlakeQueryResponse(self):
+    """Returns an empty query response for testing.
+
+    The returned response is empty, please call _AddRowToFlakeQueryResponse
+    to add rows for testing. Note that the fields in the schema and the
+    parameters of the _AddRowToFlakeQueryResponse method must match exactly
+    (including orders), so if a new field is added to the schema, please
+    update _AddRowToFlakeQueryResponse accordingly.
     """
     return {
         'rows': [],
@@ -104,23 +207,23 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         }
     }
 
-  def _AddRowToQueryResponse(self,
-                             query_response,
-                             luci_project='chromium',
-                             luci_bucket='try',
-                             luci_builder='linux_chromium_rel_ng',
-                             legacy_master_name='tryserver.chromium.linux',
-                             legacy_build_number='999',
-                             build_id='123',
-                             step_ui_name='fake_step',
-                             test_name='fake_test',
-                             test_start_msec='0',
-                             gerrit_cl_id='98765',
-                             gerrit_project='chromium/src'):
+  def _AddRowToFlakeQueryResponse(self,
+                                  query_response,
+                                  luci_project='chromium',
+                                  luci_bucket='try',
+                                  luci_builder='linux_chromium_rel_ng',
+                                  legacy_master_name='tryserver.chromium.linux',
+                                  legacy_build_number='999',
+                                  build_id='123',
+                                  step_ui_name='fake_step',
+                                  test_name='fake_test',
+                                  test_start_msec='0',
+                                  gerrit_cl_id='98765',
+                                  gerrit_project='chromium/src'):
     """Adds a row to the provided query response for testing.
 
     To obtain a query response for testing for the initial time, please call
-    _GetEmptyQueryResponse. Note that the fields in the schema and the
+    _GetEmptyFlakeQueryResponse. Note that the fields in the schema and the
     parameters of this method must match exactly (including orders), so if a new
     field is added to the schema, please update this method accordingly.
     """
@@ -239,184 +342,6 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         'watchlist1': r'path/to/source\.cc',
         'watchlist2': r'a/to/file1\.cc|b/to/file2\.cc',
     }, detect_flake_occurrences._GetChromiumWATCHLISTS())
-
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
-  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testOneFlakeOccurrence(self, mocked_get_client, *_):
-    query_response = self._GetEmptyQueryResponse()
-    self._AddRowToQueryResponse(query_response=query_response)
-
-    mocked_client = mock.Mock()
-    mocked_get_client.return_value = mocked_client
-    mocked_client.jobs().query().execute.return_value = query_response
-
-    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
-
-    all_flakes = Flake.query().fetch()
-    self.assertEqual(1, len(all_flakes))
-    self.assertIsNotNone(all_flakes[0].last_occurred_time)
-
-    all_false_rejection_occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    self.assertEqual(1, len(all_false_rejection_occurrences))
-    self.assertEqual(all_flakes[0],
-                     all_false_rejection_occurrences[0].key.parent().get())
-
-    QueryAndStoreFlakes(FlakeType.RETRY_WITH_PATCH)
-    all_retry_with_patch_occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.RETRY_WITH_PATCH).fetch()
-    self.assertEqual(1, len(all_retry_with_patch_occurrences))
-    self.assertEqual(all_flakes[0],
-                     all_retry_with_patch_occurrences[0].key.parent().get())
-
-    all_flake_occurrences = FlakeOccurrence.query(
-        ancestor=all_flakes[0].key).fetch()
-    self.assertEqual(2, len(all_flake_occurrences))
-
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
-  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testIdenticalFlakeOccurrences(self, mocked_get_client, *_):
-    query_response = self._GetEmptyQueryResponse()
-    self._AddRowToQueryResponse(query_response=query_response)
-    self._AddRowToQueryResponse(query_response=query_response)
-
-    mocked_client = mock.Mock()
-    mocked_get_client.return_value = mocked_client
-    mocked_client.jobs().query().execute.return_value = query_response
-
-    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
-
-    all_flakes = Flake.query().fetch()
-    self.assertEqual(1, len(all_flakes))
-
-    all_flake_occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    self.assertEqual(1, len(all_flake_occurrences))
-    self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
-
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
-  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testFlakeOccurrencesWithDifferentParent(self, mocked_get_client, *_):
-    query_response = self._GetEmptyQueryResponse()
-    self._AddRowToQueryResponse(
-        query_response=query_response,
-        build_id='123',
-        step_ui_name='step_ui_name1',
-        test_name='suite1.test1')
-    self._AddRowToQueryResponse(
-        query_response=query_response,
-        build_id='678',
-        step_ui_name='step_ui_name2',
-        test_name='suite2.test2')
-
-    mocked_client = mock.Mock()
-    mocked_get_client.return_value = mocked_client
-    mocked_client.jobs().query().execute.return_value = query_response
-
-    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
-
-    all_flakes = Flake.query().fetch()
-    self.assertEqual(2, len(all_flakes))
-
-    all_flake_occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    self.assertEqual(2, len(all_flake_occurrences))
-    parent1 = all_flake_occurrences[0].key.parent().get()
-    parent2 = all_flake_occurrences[1].key.parent().get()
-    self.assertTrue(parent1 in all_flakes)
-    self.assertTrue(parent2 in all_flakes)
-    self.assertNotEqual(parent1, parent2)
-
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
-  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testParameterizedGtestFlakeOccurrences(self, mocked_get_client, *_):
-    query_response = self._GetEmptyQueryResponse()
-    self._AddRowToQueryResponse(
-        query_response=query_response,
-        step_ui_name='step_ui_name',
-        test_name='instance1/suite.test/0')
-    self._AddRowToQueryResponse(
-        query_response=query_response,
-        step_ui_name='step_ui_name',
-        test_name='instance2/suite.test/1')
-
-    mocked_client = mock.Mock()
-    mocked_get_client.return_value = mocked_client
-    mocked_client.jobs().query().execute.return_value = query_response
-
-    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
-
-    all_flakes = Flake.query().fetch()
-    self.assertEqual(1, len(all_flakes))
-
-    all_flake_occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    self.assertEqual(2, len(all_flake_occurrences))
-    self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
-    self.assertEqual(all_flakes[0], all_flake_occurrences[1].key.parent().get())
-
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetTestLocation', return_value=None)
-  @mock.patch.object(
-      detect_flake_occurrences,
-      '_GetChromiumDirectoryToComponentMapping',
-      return_value={})
-  @mock.patch.object(
-      detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
-  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
-  def testGtestWithPrefixesFlakeOccurrences(self, mocked_get_client, *_):
-    query_response = self._GetEmptyQueryResponse()
-    self._AddRowToQueryResponse(
-        query_response=query_response,
-        step_ui_name='step_ui_name',
-        test_name='suite.test')
-    self._AddRowToQueryResponse(
-        query_response=query_response,
-        step_ui_name='step_ui_name',
-        test_name='suite.PRE_PRE_test')
-
-    mocked_client = mock.Mock()
-    mocked_get_client.return_value = mocked_client
-    mocked_client.jobs().query().execute.return_value = query_response
-
-    QueryAndStoreFlakes(FlakeType.CQ_FALSE_REJECTION)
-
-    all_flakes = Flake.query().fetch()
-    self.assertEqual(1, len(all_flakes))
-
-    all_flake_occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type == FlakeType.CQ_FALSE_REJECTION).fetch()
-    self.assertEqual(2, len(all_flake_occurrences))
-    self.assertEqual(all_flakes[0], all_flake_occurrences[0].key.parent().get())
-    self.assertEqual(all_flakes[0], all_flake_occurrences[1].key.parent().get())
 
   @mock.patch.object(
       detect_flake_occurrences,
@@ -628,13 +553,13 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
     mock_query.side_effect = [(False, []), (True, [])]
 
-    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+    detect_flake_occurrences.QueryAndStoreHiddenFlakes()
     self.assertIsNone(detect_flake_occurrences._GetLastCQHiddenFlakeQueryTime())
-    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+    detect_flake_occurrences.QueryAndStoreHiddenFlakes()
     self.assertEqual(
         datetime(2018, 12, 20),
         detect_flake_occurrences._GetLastCQHiddenFlakeQueryTime())
-    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+    detect_flake_occurrences.QueryAndStoreHiddenFlakes()
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2018, 12, 20))
@@ -677,17 +602,17 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
       detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
   @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
   def testDetectCQHiddenFlakes(self, mocked_get_client, *_):
-    query_response = self._GetEmptyQueryResponse()
+    query_response = self._GetEmptyFlakeQueryResponse()
     test_name1 = 'suite.test'
     test_name2 = 'suite.test_1'
 
-    self._AddRowToQueryResponse(
+    self._AddRowToFlakeQueryResponse(
         query_response=query_response,
         step_ui_name='step_ui_name',
         test_name=test_name1,
         gerrit_cl_id='10000')
 
-    self._AddRowToQueryResponse(
+    self._AddRowToFlakeQueryResponse(
         query_response=query_response,
         step_ui_name='step_ui_name',
         test_name=test_name1,
@@ -695,7 +620,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         build_id='124',
         test_start_msec='1')
 
-    self._AddRowToQueryResponse(
+    self._AddRowToFlakeQueryResponse(
         query_response=query_response,
         luci_builder='another_builder',
         step_ui_name='step_ui_name',
@@ -703,7 +628,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
         gerrit_cl_id='10001',
         build_id='125')
 
-    self._AddRowToQueryResponse(
+    self._AddRowToFlakeQueryResponse(
         query_response=query_response,
         step_ui_name='step_ui_name',
         test_name=test_name2,
@@ -712,10 +637,22 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     mocked_get_client.return_value = mocked_client
     mocked_client.jobs().query().execute.return_value = query_response
 
-    QueryAndStoreFlakes(FlakeType.CQ_HIDDEN_FLAKE)
+    detect_flake_occurrences.QueryAndStoreHiddenFlakes()
 
     all_flake_occurrences = FlakeOccurrence.query().fetch()
     self.assertEqual(4, len(all_flake_occurrences))
+
+  def testStoreDetectedCIFlakesNoBuild(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    flaky_tests = {'s': ['t1', 't2']}
+
+    detect_flake_occurrences.StoreDetectedCIFlakes(master_name, builder_name,
+                                                   build_number, flaky_tests)
+
+    flake = Flake.Get('chromium', 'normalized_step_name', 't1')
+    self.assertIsNone(flake)
 
   @mock.patch.object(
       detect_flake_occurrences, '_GetChromiumWATCHLISTS', return_value={})
@@ -821,7 +758,7 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     flake1.put()
 
     detect_flake_occurrences.ProcessBuildForFlakes(
-        detect_flake_occurrences.DetectFlakesFromBuildParam(
+        detect_flake_occurrences.DetectFlakesFromFlakyCQBuildParam(
             build_id=build_id,
             flake_type_desc=FLAKE_TYPE_DESCRIPTIONS[flake_type_enum]))
 
@@ -830,5 +767,42 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
 
     flake2 = Flake.Get(luci_project, 'step1', 's1_t2')
     self.assertIsNotNone(flake2)
-    flake2_occurrence_num = FlakeOccurrence.query(ancestor=flake2.key).count()
-    self.assertEqual(1, flake2_occurrence_num)
+
+  @mock.patch.object(taskqueue, 'add')
+  @mock.patch.object(bigquery_helper, '_GetBigqueryClient')
+  def testDetectFlakeBuilds(self, mocked_get_client, mock_add_task):
+    flake_type = FlakeType.CQ_FALSE_REJECTION
+
+    query_response = self._GetEmptyBuildQueryResponse()
+    self._AddRowToBuildQueryResponse(
+        query_response=query_response, build_id='123', gerrit_cl_id='10000')
+    mocked_client = mock.Mock()
+    mocked_get_client.return_value = mocked_client
+    mocked_client.jobs().query().execute.return_value = query_response
+
+    taskqueue_task_names = []
+
+    def _MockAddTask(name, **kwargs):  # pylint: disable=unused-argument
+      taskqueue_task_names.append(name)
+
+    mock_add_task.side_effect = _MockAddTask
+
+    # First time query for build 123.
+    QueryAndStoreFlakes(flake_type)
+    self.assertEqual(1, len(taskqueue_task_names))
+
+    self._AddRowToBuildQueryResponse(
+        query_response=query_response, gerrit_cl_id='10001', build_id='124')
+
+    self._AddRowToBuildQueryResponse(
+        query_response=query_response,
+        luci_builder='another_builder',
+        gerrit_cl_id='10001',
+        build_id='125')
+
+    mocked_client.jobs().query().execute.return_value = query_response
+    taskqueue_task_names = []
+    # Queries for build 123 - 125.
+    QueryAndStoreFlakes(flake_type)
+
+    self.assertEqual(2, len(taskqueue_task_names))
