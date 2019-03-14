@@ -10,6 +10,7 @@ from recipe_engine.recipe_api import Property
 DEPS = [
   'depot_tools/cipd',
   'depot_tools/gitiles',
+  'depot_tools/osx_sdk',
   'recipe_engine/platform',
   'recipe_engine/properties',
   'recipe_engine/runtime',
@@ -33,27 +34,28 @@ def RunSteps(api, cross_platform):
     api.cipd.set_service_account_credentials(
         api.cipd.default_bot_service_account_credentials)
 
-  with api.step.defer_results():
-    with api.step.nest('python'):
-      api.third_party_packages.python.package()
-    with api.step.nest('git'):
-      api.third_party_packages.git.package()
-    with api.step.nest('gcloud'):
-      api.third_party_packages.gcloud.package()
-    with api.step.nest('gsutil'):
-      api.third_party_packages.gsutil.package()
-    with api.step.nest('ninja'):
-      api.third_party_packages.ninja.package()
-    with api.step.nest('cmake'):
-      api.third_party_packages.cmake.package()
-    with api.step.nest('swig'):
-      api.third_party_packages.swig.package()
-    with api.step.nest('go'):
-      api.third_party_packages.go.package()
-    with api.step.nest('firebase'):
-      api.third_party_packages.firebase.package()
-    with api.step.nest('dep'):
-      api.third_party_packages.dep.package()
+  with api.osx_sdk('mac'):
+    with api.step.defer_results():
+      with api.step.nest('python'):
+        api.third_party_packages.python.package()
+      with api.step.nest('git'):
+        api.third_party_packages.git.package()
+      with api.step.nest('gcloud'):
+        api.third_party_packages.gcloud.package()
+      with api.step.nest('gsutil'):
+        api.third_party_packages.gsutil.package()
+      with api.step.nest('ninja'):
+        api.third_party_packages.ninja.package()
+      with api.step.nest('cmake'):
+        api.third_party_packages.cmake.package()
+      with api.step.nest('swig'):
+        api.third_party_packages.swig.package()
+      with api.step.nest('go'):
+        api.third_party_packages.go.package()
+      with api.step.nest('firebase'):
+        api.third_party_packages.firebase.package()
+      with api.step.nest('dep'):
+        api.third_party_packages.dep.package()
 
 
 def GenTests(api):
