@@ -83,7 +83,7 @@ func (b *Info) ResultsDir() string {
 	return filepath.Join(b.AutotestPath, "results", fmt.Sprintf("swarming-%s", b.Task.RunID))
 }
 
-// TaskURL returns the URL for the current Swarming task.
-func (b *Info) TaskURL() string {
+// TaskRunURL returns the URL for the current Swarming task execution.
+func (b *Info) TaskRunURL() string {
 	return fmt.Sprintf("https://chromeos-swarming.appspot.com/task?id=%s", b.Task.RunID)
 }

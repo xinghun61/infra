@@ -71,7 +71,7 @@ func Open(ctx context.Context, b *swmbot.Info, o ...Option) (i *Info, err error)
 		Info: b,
 		labelUpdater: labelUpdater{
 			ctx:     ctx,
-			taskURL: b.TaskURL(),
+			taskURL: b.TaskRunURL(),
 		},
 	}
 	defer func(i *Info) {
