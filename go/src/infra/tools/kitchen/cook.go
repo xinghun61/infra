@@ -714,9 +714,13 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res 
 	// While the subprocess runs, continuously read its output.
 	execMetadata := annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir)
 	if res.Annotations, err = c.watchSubprocessOutput(ctx, annoName, stdout, stderr, execMetadata, b, procCancelFunc); err != nil {
-		log.Warningf(ctx, "failed to read subprocess output; killing the it and waiting for it to die")
+		log.Errorf(ctx, "failed to read subprocess output: %s", err)
+		log.Errorf(ctx, "killing it and waiting for it to die")
 		procCancelFunc()
-		proc.Wait() // do not let the subprocess outlive this one.
+		// do not let the subprocess outlive this one.
+		if werr := proc.Wait(); werr != nil {
+			log.Errorf(ctx, "the subprocess died: %s", werr)
+		}
 
 		return errors.Annotate(err, "failed to read subprocess output").Err()
 	}
@@ -773,8 +777,7 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 		go func() {
 			err := bu.Run(ctx, done)
 			if err != nil {
-				// stop the subprocess in case Run returned early and we are
-				// still running.
+				log.Errorf(ctx, "build runner failed; killing the subprocess: %s", err)
 				stopSubprocess()
 			}
 			errC <- err
