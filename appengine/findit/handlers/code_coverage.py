@@ -70,8 +70,12 @@ _BLACKLISTED_DEPS = {
 _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP = {
     'linux': {
         'bucket': 'coverage',
-        'builder': 'linux-code-coverage'
-    }
+        'builder': 'linux-code-coverage',
+    },
+    'chromeos-vm': {
+        'bucket': 'ci',
+        'builder': 'chromeos-vm-code-coverage',
+    },
 }
 
 
@@ -963,6 +967,7 @@ class ServeCodeCoverageData(BaseHandler):
               'ref': ref,
               'revision': revision,
               'path': path,
+              'platform': platform,
               'path_root': path_root,
               'data': data,
               'data_type': data_type,

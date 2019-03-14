@@ -76,7 +76,7 @@
                 {{datum.commit_timestamp}}
               </td>
               <td>
-                <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&revision={{datum.gitiles_commit.revision}}&path=//">Link</a>
+                <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&revision={{datum.gitiles_commit.revision}}&path=//&platform={{platform}}">Link</a>
               </td>
               {% for name in ('line', 'function', 'region') %}
                 {% set found = False %}
