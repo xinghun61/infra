@@ -19,6 +19,8 @@ class CodeCoverageTest(WaterfallTestCase):
     project = 'chromium/src'
     ref = 'refs/heads/master'
     revision = '99999'
+    bucket = 'coverage'
+    builder = 'linux-code-coverage'
     commit_position = 100
     commit_timestamp = datetime.datetime(2018, 1, 1)
 
@@ -52,6 +54,8 @@ class CodeCoverageTest(WaterfallTestCase):
         project=project,
         ref=ref,
         revision=revision,
+        bucket=bucket,
+        builder=builder,
         commit_position=commit_position,
         commit_timestamp=commit_timestamp,
         manifest=manifest,
@@ -62,8 +66,8 @@ class CodeCoverageTest(WaterfallTestCase):
 
     # Test key.
     self.assertEqual(
-        'chromium.googlesource.com$chromium/src$refs/heads/master$99999',
-        report.key.id())
+        'chromium.googlesource.com$chromium/src$refs/heads/master$99999$'
+        'coverage$linux-code-coverage', report.key.id())
 
     # Test Create.
     fetched_reports = PostsubmitReport.query().fetch()
@@ -77,7 +81,9 @@ class CodeCoverageTest(WaterfallTestCase):
             server_host=server_host,
             project=project,
             ref=ref,
-            revision=revision))
+            revision=revision,
+            bucket=bucket,
+            builder=builder))
 
   def testCreateAndGetPresubmitCoverageData(self):
     server_host = 'chromium-review.googlesource.com'
@@ -134,6 +140,8 @@ class CodeCoverageTest(WaterfallTestCase):
     ref = 'refs/heads/master'
     revision = '99999'
     path = '//dir/test.cc'
+    bucket = 'coverage'
+    builder = 'linux-code-coverage'
     data = {
         'path': '//dir/test.cc',
         'lines': [{
@@ -152,13 +160,16 @@ class CodeCoverageTest(WaterfallTestCase):
         ref=ref,
         revision=revision,
         path=path,
+        bucket=bucket,
+        builder=builder,
         data=data)
     file_coverage_data.put()
 
     # Test key.
     self.assertEqual(
-        'chromium.googlesource.com$chromium/src$refs/heads/master$99999$'
-        '//dir/test.cc', file_coverage_data.key.id())
+        ('chromium.googlesource.com$chromium/src$refs/heads/master$99999$'
+         '//dir/test.cc$coverage$linux-code-coverage'),
+        file_coverage_data.key.id())
 
     # Test Create.
     fetched_file_coverage_data = FileCoverageData.query().fetch()
@@ -173,7 +184,9 @@ class CodeCoverageTest(WaterfallTestCase):
             project=project,
             ref=ref,
             revision=revision,
-            path=path))
+            path=path,
+            bucket=bucket,
+            builder=builder))
 
   def testAndCreateAndGetDirectoryCoverageData(self):
     server_host = 'chromium.googlesource.com'
@@ -182,6 +195,8 @@ class CodeCoverageTest(WaterfallTestCase):
     revision = '99999'
     data_type = 'dirs'
     path = '//dir/'
+    bucket = 'coverage'
+    builder = 'linux-code-coverage'
     data = {
         'dirs': [],
         'files': [],
@@ -209,13 +224,15 @@ class CodeCoverageTest(WaterfallTestCase):
         revision=revision,
         data_type=data_type,
         path=path,
+        bucket=bucket,
+        builder=builder,
         data=data)
     dir_coverage_data.put()
 
     # Test key.
     self.assertEqual(
         'chromium.googlesource.com$chromium/src$refs/heads/master$99999$'
-        'dirs$//dir/', dir_coverage_data.key.id())
+        'dirs$//dir/$coverage$linux-code-coverage', dir_coverage_data.key.id())
 
     # Test Create.
     fetched_dir_coverage_data = SummaryCoverageData.query().fetch()
@@ -231,7 +248,9 @@ class CodeCoverageTest(WaterfallTestCase):
             ref=ref,
             revision=revision,
             data_type=data_type,
-            path=path))
+            path=path,
+            bucket=bucket,
+            builder=builder))
 
   def testAndCreateAndGetComponentCoverageData(self):
     server_host = 'chromium.googlesource.com'
@@ -240,6 +259,8 @@ class CodeCoverageTest(WaterfallTestCase):
     revision = '99999'
     data_type = 'components'
     path = 'Test>Component'
+    bucket = 'coverage'
+    builder = 'linux-code-coverage'
     data = {
         'dirs': [],
         'files': [],
@@ -267,13 +288,16 @@ class CodeCoverageTest(WaterfallTestCase):
         revision=revision,
         data_type=data_type,
         path=path,
+        bucket=bucket,
+        builder=builder,
         data=data)
     component_coverage_data.put()
 
     # Test key.
     self.assertEqual(
         'chromium.googlesource.com$chromium/src$refs/heads/master$99999$'
-        'components$Test>Component', component_coverage_data.key.id())
+        'components$Test>Component$coverage$linux-code-coverage',
+        component_coverage_data.key.id())
 
     # Test Create.
     fetched_component_coverage_data = SummaryCoverageData.query().fetch()
@@ -290,4 +314,6 @@ class CodeCoverageTest(WaterfallTestCase):
             ref=ref,
             revision=revision,
             data_type=data_type,
-            path=path))
+            path=path,
+            bucket=bucket,
+            builder=builder))

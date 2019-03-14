@@ -56,6 +56,11 @@ class PostsubmitReport(ndb.Model):
   # Timestamp when the commit was committed.
   commit_timestamp = ndb.DateTimeProperty(indexed=True, required=True)
 
+  # TODO(crbug.com/939443): Make it required once data are backfilled.
+  # Name of the luci builder that generates the data.
+  bucket = ndb.StringProperty(indexed=True, required=False)
+  builder = ndb.StringProperty(indexed=True, required=False)
+
   # Manifest of all the code checkouts when the coverage report is generated.
   # In descending order by the length of the relative path in the root checkout.
   manifest = ndb.LocalStructuredProperty(
@@ -75,8 +80,10 @@ class PostsubmitReport(ndb.Model):
   visible = ndb.BooleanProperty(indexed=True, default=False, required=True)
 
   @classmethod
-  def _CreateKey(cls, server_host, project, ref, revision):
-    return ndb.Key(cls, '%s$%s$%s$%s' % (server_host, project, ref, revision))
+  def _CreateKey(cls, server_host, project, ref, revision, bucket, builder):
+    return ndb.Key(
+        cls, '%s$%s$%s$%s$%s$%s' % (server_host, project, ref, revision, bucket,
+                                    builder))
 
   @classmethod
   def Create(cls,
@@ -84,18 +91,22 @@ class PostsubmitReport(ndb.Model):
              project,
              ref,
              revision,
+             bucket,
+             builder,
              commit_timestamp,
              manifest,
              summary_metrics,
              build_id,
              visible,
              commit_position=None):
-    key = cls._CreateKey(server_host, project, ref, revision)
+    key = cls._CreateKey(server_host, project, ref, revision, bucket, builder)
     gitiles_commit = GitilesCommit(
         server_host=server_host, project=project, ref=ref, revision=revision)
     return cls(
         key=key,
         gitiles_commit=gitiles_commit,
+        bucket=bucket,
+        builder=builder,
         commit_position=commit_position,
         commit_timestamp=commit_timestamp,
         manifest=manifest,
@@ -104,8 +115,16 @@ class PostsubmitReport(ndb.Model):
         visible=visible)
 
   @classmethod
-  def Get(cls, server_host, project, ref, revision):
-    return cls._CreateKey(server_host, project, ref, revision).get()
+  def Get(cls, server_host, project, ref, revision, bucket, builder):
+    entity = cls._CreateKey(server_host, project, ref, revision, bucket,
+                            builder).get()
+    if entity:
+      return entity
+
+    # TODO(crbug.com/939443): Remove following code once data are backfilled.
+    legacy_key = ndb.Key(cls,
+                         '%s$%s$%s$%s' % (server_host, project, ref, revision))
+    return legacy_key.get()
 
 
 class CLPatchset(ndb.Model):
@@ -172,26 +191,49 @@ class FileCoverageData(ndb.Model):
   # Source absoluate file path.
   path = ndb.StringProperty(indexed=True, required=True)
 
+  # TODO(crbug.com/939443): Make it required once data are backfilled.
+  # Name of the luci builder that generates the data.
+  bucket = ndb.StringProperty(indexed=True, required=False)
+  builder = ndb.StringProperty(indexed=True, required=False)
+
   # Coverage data for a single file.
   data = ndb.JsonProperty(indexed=False, compressed=True, required=True)
 
   @classmethod
-  def _CreateKey(cls, server_host, project, ref, revision, path):
+  def _CreateKey(cls, server_host, project, ref, revision, path, bucket,
+                 builder):
     return ndb.Key(
-        cls, '%s$%s$%s$%s$%s' % (server_host, project, ref, revision, path))
+        cls, '%s$%s$%s$%s$%s$%s$%s' % (server_host, project, ref, revision,
+                                       path, bucket, builder))
 
   @classmethod
-  def Create(cls, server_host, project, ref, revision, path, data):
+  def Create(cls, server_host, project, ref, revision, path, bucket, builder,
+             data):
     assert path.startswith('//'), 'File path must start with "//"'
 
-    key = cls._CreateKey(server_host, project, ref, revision, path)
+    key = cls._CreateKey(server_host, project, ref, revision, path, bucket,
+                         builder)
     gitiles_commit = GitilesCommit(
         server_host=server_host, project=project, ref=ref, revision=revision)
-    return cls(key=key, gitiles_commit=gitiles_commit, path=path, data=data)
+    return cls(
+        key=key,
+        gitiles_commit=gitiles_commit,
+        path=path,
+        bucket=bucket,
+        builder=builder,
+        data=data)
 
   @classmethod
-  def Get(cls, server_host, project, ref, revision, path):
-    return cls._CreateKey(server_host, project, ref, revision, path).get()
+  def Get(cls, server_host, project, ref, revision, path, bucket, builder):
+    entity = cls._CreateKey(server_host, project, ref, revision, path, bucket,
+                            builder).get()
+    if entity:
+      return entity
+
+    # TODO(crbug.com/939443): Remove following code once data are backfilled.
+    legacy_key = ndb.Key(
+        cls, '%s$%s$%s$%s$%s' % (server_host, project, ref, revision, path))
+    return legacy_key.get()
 
 
 class SummaryCoverageData(ndb.Model):
@@ -210,21 +252,29 @@ class SummaryCoverageData(ndb.Model):
   # >> or Blink>Fonts for components.
   path = ndb.StringProperty(indexed=True, required=True)
 
+  # TODO(crbug.com/939443): Make them required once data are backfilled.
+  # Name of the luci builder that generates the data.
+  bucket = ndb.StringProperty(indexed=True, required=False)
+  builder = ndb.StringProperty(indexed=True, required=False)
+
   # Coverage data for a directory or a component.
   data = ndb.JsonProperty(indexed=False, compressed=True, required=True)
 
   @classmethod
-  def _CreateKey(cls, server_host, project, ref, revision, data_type, path):
+  def _CreateKey(cls, server_host, project, ref, revision, data_type, path,
+                 bucket, builder):
     return ndb.Key(
-        cls, '%s$%s$%s$%s$%s$%s' % (server_host, project, ref, revision,
-                                    data_type, path))
+        cls, '%s$%s$%s$%s$%s$%s$%s$%s' % (server_host, project, ref, revision,
+                                          data_type, path, bucket, builder))
 
   @classmethod
-  def Create(cls, server_host, project, ref, revision, data_type, path, data):
+  def Create(cls, server_host, project, ref, revision, data_type, path, bucket,
+             builder, data):
     if data_type == 'dirs':
       assert path.startswith('//'), 'Directory path must start with //'
 
-    key = cls._CreateKey(server_host, project, ref, revision, data_type, path)
+    key = cls._CreateKey(server_host, project, ref, revision, data_type, path,
+                         bucket, builder)
     gitiles_commit = GitilesCommit(
         server_host=server_host, project=project, ref=ref, revision=revision)
     return cls(
@@ -232,9 +282,20 @@ class SummaryCoverageData(ndb.Model):
         gitiles_commit=gitiles_commit,
         data_type=data_type,
         path=path,
+        bucket=bucket,
+        builder=builder,
         data=data)
 
   @classmethod
-  def Get(cls, server_host, project, ref, revision, data_type, path):
-    return cls._CreateKey(server_host, project, ref, revision, data_type,
-                          path).get()
+  def Get(cls, server_host, project, ref, revision, data_type, path, bucket,
+          builder):
+    entity = cls._CreateKey(server_host, project, ref, revision, data_type,
+                            path, bucket, builder).get()
+    if entity:
+      return entity
+
+    # TODO(crbug.com/939443): Remove following code once data are backfilled.
+    legacy_key = ndb.Key(
+        cls, '%s$%s$%s$%s$%s$%s' % (server_host, project, ref, revision,
+                                    data_type, path))
+    return legacy_key.get()

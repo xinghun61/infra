@@ -66,6 +66,8 @@ def _CreateSamplePostsubmitReport(manifest=None):
       project='chromium/src',
       ref='refs/heads/master',
       revision='aaaaa',
+      bucket='coverage',
+      builder='linux-code-coverage',
       commit_position=100,
       commit_timestamp=datetime.datetime(2018, 1, 1),
       manifest=manifest,
@@ -86,6 +88,8 @@ def _CreateSampleDirectoryCoverageData():
       revision='aaaaa',
       data_type='dirs',
       path='//dir/',
+      bucket='coverage',
+      builder='linux-code-coverage',
       data={
           'dirs': [],
           'path':
@@ -112,6 +116,8 @@ def _CreateSampleComponentCoverageData():
       revision='aaaaa',
       data_type='components',
       path='Component>Test',
+      bucket='coverage',
+      builder='linux-code-coverage',
       data={
           'dirs': [{
               'path': '//dir/',
@@ -137,6 +143,8 @@ def _CreateSampleRootComponentCoverageData():
       revision='aaaaa',
       data_type='components',
       path='>>',
+      bucket='coverage',
+      builder='linux-code-coverage',
       data={
           'dirs': [{
               'path': 'Component>Test',
@@ -159,6 +167,8 @@ def _CreateSampleFileCoverageData():
       ref='refs/heads/master',
       revision='aaaaa',
       path='//dir/test.cc',
+      bucket='coverage',
+      builder='linux-code-coverage',
       data={
           'path': '//dir/test.cc',
           'revision': 'bbbbb',
@@ -461,11 +471,13 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
 
     host = 'chromium.googlesource.com'
     project = 'chromium/src'
+    platform = 'linux'
 
     report = _CreateSamplePostsubmitReport()
     report.put()
 
-    request_url = ('/p/chromium/coverage?host=%s&project=%s') % (host, project)
+    request_url = ('/p/chromium/coverage?host=%s&project=%s&platform=%s') % (
+        host, project, platform)
     response = self.test_app.get(request_url)
     self.assertEqual(200, response.status_int)
 
@@ -477,6 +489,7 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     ref = 'refs/heads/master'
     revision = 'aaaaa'
     path = '//dir/'
+    platform = 'linux'
 
     report = _CreateSamplePostsubmitReport()
     report.put()
@@ -485,8 +498,8 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     dir_coverage_data.put()
 
     request_url = (
-        '/p/chromium/coverage/dir?host=%s&project=%s&ref=%s&revision=%s&path=%s'
-    ) % (host, project, ref, revision, path)
+        '/p/chromium/coverage/dir?host=%s&project=%s&ref=%s&revision=%s'
+        '&path=%s&platform=%s') % (host, project, ref, revision, path, platform)
     response = self.test_app.get(request_url)
     self.assertEqual(200, response.status_int)
 
@@ -498,6 +511,7 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     ref = 'refs/heads/master'
     revision = 'aaaaa'
     path = 'Component>Test'
+    platform = 'linux'
 
     report = _CreateSamplePostsubmitReport()
     report.put()
@@ -506,8 +520,8 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     component_coverage_data.put()
 
     request_url = ('/p/chromium/coverage/component?host=%s&project=%s&ref=%s'
-                   '&revision=%s&path=%s') % (host, project, ref, revision,
-                                              path)
+                   '&revision=%s&path=%s&platform=%s') % (
+                       host, project, ref, revision, path, platform)
     response = self.test_app.get(request_url)
     self.assertEqual(200, response.status_int)
 
@@ -521,6 +535,7 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     ref = 'refs/heads/master'
     revision = 'aaaaa'
     path = '//dir/test.cc'
+    platform = 'linux'
 
     report = _CreateSamplePostsubmitReport()
     report.put()
@@ -529,8 +544,8 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     file_coverage_data.put()
 
     request_url = ('/p/chromium/coverage/file?host=%s&project=%s&ref=%s'
-                   '&revision=%s&path=%s') % (host, project, ref, revision,
-                                              path)
+                   '&revision=%s&path=%s&platform=%s') % (
+                       host, project, ref, revision, path, platform)
     response = self.test_app.get(request_url)
     self.assertEqual(200, response.status_int)
     mock_get_file_from_gs.assert_called_with(
@@ -548,8 +563,8 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     file_coverage_data.put()
 
     request_url = ('/p/chromium/coverage/file?host=%s&project=%s&ref=%s'
-                   '&revision=%s&path=%s') % (
+                   '&revision=%s&path=%s&platform=%s') % (
                        'chromium.googlesource.com', 'chromium/src',
-                       'refs/heads/master', 'aaaaa', '//dir/test.cc')
+                       'refs/heads/master', 'aaaaa', '//dir/test.cc', 'linux')
     response = self.test_app.get(request_url)
     self.assertEqual(200, response.status_int)

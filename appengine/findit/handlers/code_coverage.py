@@ -64,6 +64,16 @@ _BLACKLISTED_DEPS = {
     ],
 }
 
+# A mapping from platform to builder name for postsubmit coverage data, this
+# conversion is needed because the data models are indexed by builder names
+# instead of platforms.
+_POSTSUBMIT_PLATFORM_TO_BUILDER_MAP = {
+    'linux': {
+        'bucket': 'coverage',
+        'builder': 'linux-code-coverage'
+    }
+}
+
 
 def _GetValidatedData(gs_url):  # pragma: no cover.
   """Returns the json data from the given GS url after validation.
@@ -333,7 +343,7 @@ def _IsReportSuspicious(report):
     True if the report is suspicious, otherwise False.
   """
 
-  def _GetLineCoveragePercentage(report):
+  def _GetLineCoveragePercentage(report):  # pragma: no cover
     line_coverage_percentage = None
     summary = report.summary_metrics
     for feature_summary in summary:
@@ -348,12 +358,15 @@ def _IsReportSuspicious(report):
 
   target_server_host = report.gitiles_commit.server_host
   target_project = report.gitiles_commit.project
+  target_bucket = report.bucket
+  target_builder = report.builder
   most_recent_visible_reports = PostsubmitReport.query(
       PostsubmitReport.gitiles_commit.server_host == target_server_host,
       PostsubmitReport.gitiles_commit.project == target_project,
-      PostsubmitReport.visible == True).order(
-          -PostsubmitReport.commit_position).order(
-              -PostsubmitReport.commit_timestamp).fetch(1)
+      PostsubmitReport.bucket == target_bucket,
+      PostsubmitReport.builder == target_builder, PostsubmitReport.visible ==
+      True).order(-PostsubmitReport.commit_position).order(
+          -PostsubmitReport.commit_timestamp).fetch(1)
   if not most_recent_visible_reports:
     logging.warn('No existing visible reports to use for reference, the new '
                  'report is determined as not suspicious by default')
@@ -397,7 +410,8 @@ class FetchSourceFile(BaseHandler):
 class ProcessCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
-  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, build_id):
+  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, bucket,
+                                 builder, build_id):
     # Load the commit log first so that we could fail fast before redo all.
     repo_url = 'https://%s/%s.git' % (commit.host, commit.project)
     change_log = CachedGitilesRepository(FinditHttpClient(),
@@ -413,6 +427,8 @@ class ProcessCodeCoverageData(BaseHandler):
         project=commit.project,
         ref=commit.ref,
         revision=commit.id,
+        bucket=bucket,
+        builder=builder,
         commit_position=change_log.commit_position,
         commit_timestamp=change_log.committer.time,
         manifest=manifest,
@@ -480,6 +496,8 @@ class ProcessCodeCoverageData(BaseHandler):
                 ref=commit.ref,
                 revision=commit.id,
                 path=group_data['path'],
+                bucket=bucket,
+                builder=builder,
                 data=group_data)
           else:
             coverage_data = SummaryCoverageData.Create(
@@ -489,6 +507,8 @@ class ProcessCodeCoverageData(BaseHandler):
                 revision=commit.id,
                 data_type=actual_data_type,
                 path=group_data['path'],
+                bucket=bucket,
+                builder=builder,
                 data=group_data)
 
           entities.append(coverage_data)
@@ -505,6 +525,8 @@ class ProcessCodeCoverageData(BaseHandler):
             revision=commit.id,
             data_type='components',
             path='>>',
+            bucket=bucket,
+            builder=builder,
             data={
                 'dirs': component_summaries,
                 'path': '>>'
@@ -619,7 +641,8 @@ class ProcessCodeCoverageData(BaseHandler):
     else:  # For a commit, we save the data by file and directory.
       assert build.input.gitiles_commit is not None, 'Expect a commit'
       self._ProcessFullRepositoryData(build.input.gitiles_commit, data,
-                                      full_gs_dir, build_id)
+                                      full_gs_dir, build.builder.bucket,
+                                      build.builder.builder, build_id)
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""
@@ -736,6 +759,7 @@ class ServeCodeCoverageData(BaseHandler):
     revision = self.request.get('revision')
     path = self.request.get('path')
     data_type = self.request.get('data_type')
+    platform = self.request.get('platform', 'linux')
 
     if not data_type and path:
       if path.endswith('/'):
@@ -747,11 +771,13 @@ class ServeCodeCoverageData(BaseHandler):
 
     logging.info('host=%s', host)
     logging.info('project=%s', project)
+    logging.info('ref=%s', ref)
     logging.info('change=%s', change)
     logging.info('patchset=%s', patchset)
     logging.info('revision=%s', revision)
     logging.info('data_type=%s', data_type)
     logging.info('path=%s', path)
+    logging.info('platform=%s', platform)
 
     if change and patchset:
       logging.info('Servicing coverage data for presubmit')
@@ -803,12 +829,19 @@ class ServeCodeCoverageData(BaseHandler):
       logging.info('Servicing coverage data for postsubmit')
       template = None
 
+      if platform not in _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP:
+        return BaseHandler.CreateError(
+            'Platform: %s is not supported' % platform, 404)
+      bucket = _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP[platform]['bucket']
+      builder = _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP[platform]['builder']
+
       if not revision:
         query = PostsubmitReport.query(
             PostsubmitReport.gitiles_commit.server_host == host,
-            PostsubmitReport.gitiles_commit.project == project).order(
-                -PostsubmitReport.commit_position).order(
-                    -PostsubmitReport.commit_timestamp)
+            PostsubmitReport.gitiles_commit.project == project,
+            PostsubmitReport.bucket == bucket, PostsubmitReport.builder ==
+            builder).order(-PostsubmitReport.commit_position).order(
+                -PostsubmitReport.commit_timestamp)
         entities, _, _ = query.fetch_page(100)
 
         # TODO(crbug.com/926237): Move the conversion to client side and use
@@ -830,7 +863,12 @@ class ServeCodeCoverageData(BaseHandler):
         data_type = 'project'
       else:
         report = PostsubmitReport.Get(
-            server_host=host, project=project, ref=ref, revision=revision)
+            server_host=host,
+            project=project,
+            ref=ref,
+            revision=revision,
+            bucket=bucket,
+            builder=builder)
         if not report:
           return BaseHandler.CreateError('Report record not found', 404)
 
@@ -853,7 +891,9 @@ class ServeCodeCoverageData(BaseHandler):
               project=project,
               ref=ref,
               revision=revision,
-              path=path)
+              path=path,
+              bucket=bucket,
+              builder=builder)
         else:
           entity = SummaryCoverageData.Get(
               server_host=host,
@@ -861,7 +901,9 @@ class ServeCodeCoverageData(BaseHandler):
               ref=ref,
               revision=revision,
               data_type=data_type,
-              path=path)
+              path=path,
+              bucket=bucket,
+              builder=builder)
 
         if not entity:
           return BaseHandler.CreateError('Requested path does not exist', 404)

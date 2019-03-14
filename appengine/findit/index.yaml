@@ -378,6 +378,8 @@ indexes:
   properties:
   - name: gitiles_commit.project
   - name: gitiles_commit.server_host
+  - name: bucket
+  - name: builder
   - name: visible
   - name: commit_position
     direction: desc
@@ -388,6 +390,8 @@ indexes:
   properties:
   - name: gitiles_commit.project
   - name: gitiles_commit.server_host
+  - name: bucket
+  - name: builder
   - name: commit_position
     direction: desc
   - name: commit_timestamp
