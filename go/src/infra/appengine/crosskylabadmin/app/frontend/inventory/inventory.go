@@ -117,20 +117,14 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
+	req2, err := unpackUpdateDutLabelsRequest(req)
+	if err != nil {
+		return nil, err
+	}
 	store, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
 	}
-	req2 := updateDutLabelsRequest{
-		dutID:  req.GetDutId(),
-		reason: req.GetReason(),
-		labels: &inventory.SchedulableLabels{},
-	}
-	if err := proto.Unmarshal(req.GetLabels(), req2.labels); err != nil {
-		return nil, err
-	}
-	// Discard unknown labels to not break the inventory schema.
-	proto.DiscardUnknown(req2.labels)
 	err = retry.Retry(
 		ctx,
 		transientErrorRetries(),
@@ -142,6 +136,20 @@ func (is *ServerImpl) UpdateDutLabels(ctx context.Context, req *fleet.UpdateDutL
 		retry.LogCallback(ctx, "updateDutLabels"),
 	)
 	return resp, err
+}
+
+func unpackUpdateDutLabelsRequest(req *fleet.UpdateDutLabelsRequest) (updateDutLabelsRequest, error) {
+	req2 := updateDutLabelsRequest{
+		dutID:  req.GetDutId(),
+		reason: req.GetReason(),
+		labels: &inventory.SchedulableLabels{},
+	}
+	if err := proto.Unmarshal(req.GetLabels(), req2.labels); err != nil {
+		return updateDutLabelsRequest{}, err
+	}
+	// Discard unknown labels to not break the inventory schema.
+	proto.DiscardUnknown(req2.labels)
+	return req2, nil
 }
 
 type updateDutLabelsRequest struct {
