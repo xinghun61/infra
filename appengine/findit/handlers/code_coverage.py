@@ -595,7 +595,8 @@ class ProcessCodeCoverageData(BaseHandler):
     # Only process Chromium coverage bots.
     if (build.builder.project not in ('chromium', 'chrome') or
         build.builder.bucket not in ('coverage', 'ci', 'try') or
-        build.builder.builder not in ('linux-code-coverage',
+        build.builder.builder not in ('chromeos-vm-code-coverage',
+                                      'linux-code-coverage',
                                       'linux-coverage-rel')):
       return
 
