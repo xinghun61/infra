@@ -372,7 +372,7 @@ class IssueDetail(issuepeek.IssuePeek):
         if 'descriptionNum' in comment or i == 0]
 
     reporter_name = comments_list[0]['commenter']['displayName']
-    reporter_user_id = comments_list[0]['commenter']['userId']
+    reporter_user_id = comments_list[0]['commenter'].get('userId', 0)
     reported_timestamp = comments_list[0]['timestamp']
 
     return {
