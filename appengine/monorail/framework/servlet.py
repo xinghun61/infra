@@ -307,10 +307,9 @@ class Servlet(webapp2.RequestHandler):
             " %(rep_samp)s"  # Report 40 chars of any inline violation.
             " 'unsafe-inline'"  # Only counts in browsers that lack CSP2.
             " 'strict-dynamic'"  # Allows <script nonce> to load more.
-            " https://www.gstatic.com/recaptcha/api2/"
             " 'self' 'nonce-%(nonce)s'; "
-            "child-src https://www.google.com/recaptcha/; "
-            "frame-src https://www.google.com/recaptcha/; "
+            "child-src 'none'; "
+            "frame-src 'none'; "
             "img-src %(scheme)s data: blob: ; "
             "style-src %(scheme)s 'unsafe-inline'; "
             "object-src 'none'; "
