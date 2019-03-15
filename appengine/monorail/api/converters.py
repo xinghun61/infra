@@ -46,6 +46,7 @@ def ConvertApprovalValues(approval_values, phases, users_by_id, config):
     ConvertApproval(
       av, users_by_id, config, phase=phases_by_id.get(av.phase_id))
     for av in approval_values]
+  result = [av for av in result if av]
   return result
 
 
@@ -55,6 +56,11 @@ def ConvertApproval(approval_value, users_by_id, config, phase=None):
   fd = tracker_bizobj.FindFieldDefByID(approval_value.approval_id, config)
   if fd:
     approval_name = fd.field_name
+  else:
+    logging.info(
+        'Ignoring approval value referencing a non-existing field: %r',
+        approval_value)
+    return None
 
   field_ref = ConvertFieldRef(
       approval_value.approval_id, approval_name,
@@ -161,6 +167,9 @@ def ConvertLabels(explicit_labels, derived_labels):
 def ConvertComponentRef(component_id, config, is_derived=False):
   """Make a ComponentRef from the component_id and project config."""
   component_def = tracker_bizobj.FindComponentDefByID(component_id, config)
+  if not component_def:
+    logging.info('Ignoring non-existing component id %s', component_id)
+    return None
   result = common_pb2.ComponentRef(
       path=component_def.path,
       is_derived=is_derived)
@@ -173,6 +182,7 @@ def ConvertComponents(explicit_component_ids, derived_component_ids, config):
   result += [
       ConvertComponentRef(cid, config, is_derived=True)
       for cid in derived_component_ids]
+  result = [cr for cr in result if cr]
   return result
 
 
@@ -251,18 +261,21 @@ def ConvertFieldValues(
          for value in values])
 
   for fv in field_values:
-    value = tracker_bizobj.GetFieldValue(fv, users_by_id)
     field_def = fds_by_id.get(fv.field_id)
-    field_name = ''
-    field_type = None
+    if not field_def:
+      logging.info(
+          'Ignoring field value referencing a non-existent field: %r', fv)
+      continue
+
+    value = tracker_bizobj.GetFieldValue(fv, users_by_id)
+    field_name = field_def.field_name
+    field_type = field_def.field_type
     approval_name = None
-    if field_def:
-      field_name = field_def.field_name
-      field_type = field_def.field_type
-      if field_def.approval_id is not None:
-        approval_def = fds_by_id.get(field_def.approval_id)
-        if approval_def:
-          approval_name = approval_def.field_name
+
+    if field_def.approval_id is not None:
+      approval_def = fds_by_id.get(field_def.approval_id)
+      if approval_def:
+        approval_name = approval_def.field_name
 
     fvs.append(ConvertFieldValue(
         fv.field_id, field_name, value, field_type, approval_name=approval_name,

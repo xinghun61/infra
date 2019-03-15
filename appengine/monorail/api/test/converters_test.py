@@ -115,7 +115,9 @@ class ConverterFunctionsTest(unittest.TestCase):
         approval_id=11, status=tracker_pb2.ApprovalStatus.NEED_INFO,
         setter_id=111L, set_on=now, approver_ids=[111L, 222L],
         phase_id=21)
-    av_12 = tracker_pb2.ApprovalValue(  # Note: no approval def, no phase.
+    # Note: no approval def, no phase, so it won't be returned.
+    # TODO(ehmaldonado): Figure out support for "foreign" fields.
+    av_12 = tracker_pb2.ApprovalValue(
         approval_id=12, status=tracker_pb2.ApprovalStatus.NOT_SET,
         setter_id=111L, set_on=now, approver_ids=[111L])
     phase_21 = tracker_pb2.Phase(phase_id=21, name='Stable', rank=1)
@@ -137,22 +139,7 @@ class ConverterFunctionsTest(unittest.TestCase):
             user_id=111L, display_name='one@example.com'),
         phase_ref=issue_objects_pb2.PhaseRef(phase_name='Stable'))
 
-    expected_av_2 = issue_objects_pb2.Approval(
-        field_ref=common_pb2.FieldRef(
-            field_id=12,
-            field_name='',
-            type=common_pb2.APPROVAL_TYPE),
-        approver_refs=[
-            common_pb2.UserRef(user_id=111L, display_name='one@example.com'),
-            ],
-        status=issue_objects_pb2.NOT_SET,
-        set_on=now,
-        setter_ref=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
-        phase_ref=issue_objects_pb2.PhaseRef(),
-        )
-
-    self.assertEqual([expected_av_1, expected_av_2], actual)
+    self.assertEqual([expected_av_1], actual)
 
   def testConvertApproval(self):
     """We can convert ApprovalValues to protoc Approvals."""
@@ -188,6 +175,20 @@ class ConverterFunctionsTest(unittest.TestCase):
     )
 
     self.assertEqual(expected, actual)
+
+  def testConvertApproval_NonExistentApproval(self):
+    approval_value = tracker_pb2.ApprovalValue(
+        approval_id=3,
+        status=tracker_pb2.ApprovalStatus.NEED_INFO,
+        setter_id=222L,
+        set_on=2345,
+        approver_ids=[111L],
+        phase_id=1
+    )
+    phase = tracker_pb2.Phase(phase_id=1, name='Canary')
+    self.assertIsNone(converters.ConvertApproval(
+        approval_value, self.users_by_id, self.config, phase=phase))
+
 
   def testConvertApprovalStatus(self):
     """We can convert a protorpc ApprovalStatus to a protoc ApprovalStatus."""
@@ -313,6 +314,9 @@ class ConverterFunctionsTest(unittest.TestCase):
             is_derived=True),
         converters.ConvertComponentRef(2, self.config, True))
 
+    self.assertIsNone(
+        converters.ConvertComponentRef(3, self.config, True))
+
   def testConvertComponents(self):
     """We can convert a list of components."""
     self.config.component_defs = [
@@ -324,8 +328,8 @@ class ConverterFunctionsTest(unittest.TestCase):
     actual = converters.ConvertComponents([], [], self.config)
     self.assertEqual([], actual)
 
-    # A mix of explicit and derived components
-    actual = converters.ConvertComponents([1], [2], self.config)
+    # A mix of explicit, derived, and non-existing components
+    actual = converters.ConvertComponents([1, 4], [2, 3], self.config)
     expected = [
         common_pb2.ComponentRef(path='UI', is_derived=False),
         common_pb2.ComponentRef(path='DB', is_derived=True),
@@ -404,13 +408,15 @@ class ConverterFunctionsTest(unittest.TestCase):
         1, None, 'string', None, None, None, False)
     fv_2 = tracker_bizobj.MakeFieldValue(
         2, 34, None, None, None, None, False)
+    fv_3 = tracker_bizobj.MakeFieldValue(
+        111, None, 'value', None, None, None, False)
     labels = ['Pre-label', 'not-label-enum', 'prenot-label']
     der_labels =  ['Pre-label2']
     phases = [tracker_pb2.Phase(name='Canary', phase_id=17)]
     fv_1.phase_id=17
 
     actual = converters.ConvertFieldValues(
-        self.config, labels, der_labels, [fv_1, fv_2], {}, phases=phases)
+        self.config, labels, der_labels, [fv_1, fv_2, fv_3], {}, phases=phases)
 
     self.maxDiff = None
     expected = [
