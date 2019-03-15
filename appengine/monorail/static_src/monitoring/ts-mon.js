@@ -18,7 +18,6 @@ export const PAGE_TYPES = Object.freeze({
 });
 
 export default class MonorailTSMon extends TSMonClient {
-
   constructor() {
     super(TS_MON_JS_PATH);
     this.clientId = MonorailTSMon.generateClientId();
@@ -76,7 +75,6 @@ export default class MonorailTSMon extends TSMonClient {
         ['document_visible', TSMonClient.boolField('document_visible')],
       ]))
     );
-    this.recordPageLoadTiming(PAGE_LOAD_MAX_THRESHOLD);
   }
 
   fetchImpl(rawMetricValues) {
@@ -107,7 +105,9 @@ export default class MonorailTSMon extends TSMonClient {
     }
   }
 
-  recordPageLoadTiming(maxThresholdMs=null) {
+  // Make sure this function runs after the page is loaded.
+  recordPageLoadTiming(pageType, maxThresholdMs=null) {
+    if (!pageType) return;
     // See timing definitions here:
     // https://developer.mozilla.org/en-US/docs/Web/API/PerformanceNavigationTiming
     const t = window.performance.timing;
@@ -117,7 +117,7 @@ export default class MonorailTSMon extends TSMonClient {
       PAGE_TYPES.ISSUE_LIST,
       PAGE_TYPES.ISSUE_DETAIL,
     ]);
-    const pageType = MonorailTSMon.getPageTypeFromPath(window.location.pathname);
+
     if (measurePageTypes.has(pageType)) {
       if (maxThresholdMs !== null && domContentLoadedMs > maxThresholdMs) {
         return;
@@ -132,20 +132,12 @@ export default class MonorailTSMon extends TSMonClient {
     }
   }
 
-  // Returns an enum from PAGE_TYPES or null based on path.
-  static getPageTypeFromPath(path) {
-    const regexToPageType = {
-      '/p/[A-Za-z0-9\-]+/issues/detail': PAGE_TYPES.ISSUE_DETAIL,
-      '/p/[A-Za-z0-9\-]+/issues/list': PAGE_TYPES.ISSUE_LIST,
-    };
+  recordIssueDetailTiming(maxThresholdMs=PAGE_LOAD_MAX_THRESHOLD) {
+    this.recordPageLoadTiming(PAGE_TYPES.ISSUE_DETAIL, maxThresholdMs);
+  }
 
-    for (const [regex, pageType] of Object.entries(regexToPageType)) {
-      if (path.match(regex)) {
-        return pageType;
-      }
-    }
-
-    return null;
+  recordIssueListTiming(maxThresholdMs=PAGE_LOAD_MAX_THRESHOLD) {
+    this.recordPageLoadTiming(PAGE_TYPES.ISSUE_LIST, maxThresholdMs);
   }
 
   // Uses the window object to ensure that only one ts_mon JS client
@@ -191,3 +183,6 @@ export default class MonorailTSMon extends TSMonClient {
     return document.visibilityState === 'visible';
   }
 }
+
+// For integration with EZT pages, which don't use ES modules.
+window.getTSMonClient = MonorailTSMon.getGlobalClient;

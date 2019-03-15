@@ -146,6 +146,8 @@
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
+  window.getTSMonClient().recordIssueDetailTiming();
+
   $('ezt-comments').initialize();
 
   $('mr-flipper-slot').appendChild(document.createElement('mr-flipper'));
@@ -189,7 +191,6 @@ runOnLoad(function() {
       return "You have unsaved changes. Leave this page and discard them?";
     }
   };
-
 });
 </script>
 

@@ -1,5 +1,7 @@
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
+  window.getTSMonClient().recordIssueListTiming();
+
   [# Pass the list of column names from HTML to JS ]
   window._allColumnNames = [
     [for column_values]'[column_values.column_name]'[if-index column_values last][else], [end][end]

@@ -75,21 +75,17 @@ suite('MonorailTSMon', () => {
   });
 
   suite('recordPageLoadTiming', () => {
-    let getPageTypeFromPathStub;
     setup(() => {
-      getPageTypeFromPathStub = sinon.stub(MonorailTSMon, 'getPageTypeFromPath');
       mts.pageLoadMetric = {add: sinon.spy()};
       sinon.stub(MonorailTSMon, 'isPageVisible').callsFake(() => (true));
     });
 
     teardown(() => {
-      MonorailTSMon.getPageTypeFromPath.restore();
       MonorailTSMon.isPageVisible.restore();
     });
 
     test('records page load on issue list page', () => {
-      getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_LIST);
-      mts.recordPageLoadTiming();
+      mts.recordIssueListTiming();
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
       assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
@@ -103,8 +99,7 @@ suite('MonorailTSMon', () => {
     });
 
     test('records page load on issue detail page', () => {
-      getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_DETAIL);
-      mts.recordPageLoadTiming();
+      mts.recordIssueDetailTiming();
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
       assert.isString(mts.pageLoadMetric.add.getCall(0).args[1].get(
@@ -118,31 +113,22 @@ suite('MonorailTSMon', () => {
     });
 
     test('does not record page load timing on other pages', () => {
-      getPageTypeFromPathStub.returns('rutabaga');
-      mts.recordPageLoadTiming();
-      sinon.assert.notCalled(mts.pageLoadMetric.add);
-    });
-
-    test('does not record page load timing if no page type found', () => {
-      getPageTypeFromPathStub.returns(null);
       mts.recordPageLoadTiming();
       sinon.assert.notCalled(mts.pageLoadMetric.add);
     });
 
     test('does not record page load timing if over max threshold', () => {
-      getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_DETAIL);
       window.performance = {
         timing: {
           navigationStart: 1000,
           domContentLoadedEventEnd: 2001,
         },
       };
-      mts.recordPageLoadTiming(1000);
+      mts.recordIssueDetailTiming(1000);
       sinon.assert.notCalled(mts.pageLoadMetric.add);
     });
 
     test('records page load on issue detail page if under threshold', () => {
-      getPageTypeFromPathStub.returns(PAGE_TYPES.ISSUE_DETAIL);
       MonorailTSMon.isPageVisible.restore();
       sinon.stub(MonorailTSMon, 'isPageVisible').callsFake(() => (false));
       window.performance = {
@@ -151,7 +137,7 @@ suite('MonorailTSMon', () => {
           domContentLoadedEventEnd: 1999,
         },
       };
-      mts.recordPageLoadTiming(1000);
+      mts.recordIssueDetailTiming(1000);
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[0], 999);
@@ -163,27 +149,6 @@ suite('MonorailTSMon', () => {
         'template_name'), 'issue_detail');
       assert.equal(mts.pageLoadMetric.add.getCall(0).args[1].get(
         'document_visible'), false);
-    });
-  });
-
-  suite('getPageTypeFromPath', () => {
-    test('returns null by default', () => {
-      const actual = MonorailTSMon.getPageTypeFromPath('/rutabgaga');
-      assert.equal(actual, null);
-    });
-
-    test('picks up issue detail path', () => {
-      const path = '/p/rutabaga/issues/detail?id=1#c3';
-      const actual = MonorailTSMon.getPageTypeFromPath(path);
-      assert.equal(actual, PAGE_TYPES.ISSUE_DETAIL);
-      assert.equal(actual, 'issue_detail');
-    });
-
-    test('picks up issue list path', () => {
-      const path = '/p/ruta-0baga/issues/list?mode=list#things';
-      const actual = MonorailTSMon.getPageTypeFromPath(path);
-      assert.equal(actual, PAGE_TYPES.ISSUE_LIST);
-      assert.equal(actual, 'issue_list');
     });
   });
 
