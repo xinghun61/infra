@@ -11,7 +11,7 @@ import {fieldTypes} from '../../shared/field-types.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../chops/chops-dialog/chops-dialog.js';
-import {loadAttachments} from '../shared/flt-helpers.js';
+import {loadAttachments} from '../../shared/helpers.js';
 import '../shared/mr-flt-styles.js';
 
 

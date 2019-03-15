@@ -14,7 +14,7 @@ import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-metadata.js';
-import {loadAttachments} from '../shared/flt-helpers.js';
+import {loadAttachments} from '../../shared/helpers.js';
 import '../shared/mr-flt-styles.js';
 
 const APPROVER_RESTRICTED_STATUSES = new Set(

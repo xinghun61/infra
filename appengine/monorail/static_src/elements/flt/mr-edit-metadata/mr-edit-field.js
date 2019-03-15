@@ -8,8 +8,8 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import '../../chops/chops-button/chops-button.js';
 import {fieldTypes} from '../../shared/field-types.js';
-import {arrayDifference} from '../shared/flt-helpers.js';
-import '../shared/flt-helpers.js';
+import {arrayDifference} from '../../shared/helpers.js';
+import '../../shared/helpers.js';
 import '../shared/mr-flt-styles.js';
 
 /**

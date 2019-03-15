@@ -8,7 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import './mr-edit-metadata.js';
-import {loadAttachments} from '../shared/flt-helpers.js';
+import {loadAttachments} from '../../shared/helpers.js';
 import '../shared/mr-flt-styles.js';
 
 // Match: projectName:localIdFormat
