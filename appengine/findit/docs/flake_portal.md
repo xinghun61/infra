@@ -115,7 +115,8 @@ Occurrences of the same tests are aggregated and presented in following forms:
 
 ### Bug Filing Criteria
 To avoid noise, a flake bug is filed on Monorail only if all the following requirements are met:
-* At least 3 unreported CQ false rejection occurrences impacting different CLs within the past 24 hours.
+* At least 3 unreported CQ false rejection or cq retry with patch occurrences impacting different
+ CLs within the past 24 hours.
 * Any bug can only be created or updated at most once within any 24 hours window.
 * At most 30 bugs can be created or updated automatically within any 24 hours window.
 
