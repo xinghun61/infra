@@ -491,13 +491,6 @@ class ValidateStepsTests(BaseTestCase):
         '_'.join([status_name(arg) for arg in param.args[:2]])
     )
 
-  @mock.patch('validation.MAX_SUMMARY_MARKDOWN_SIZE', 10)
-  def test_summary_markdown_too_big(self):
-    steps = [
-        step_pb2.Step(name='foo', summary_markdown='a very long string'),
-    ]
-    self.assert_invalid(steps, r'too big to accept \(18 > 10 bytes\)')
-
   def test_duplicate_step_names(self):
     steps = [
         step_pb2.Step(name='foo', status=common_pb2.SCHEDULED),

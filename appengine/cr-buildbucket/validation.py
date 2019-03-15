@@ -27,9 +27,8 @@ class Error(Exception):
 
 PUBSUB_USER_DATA_MAX_LENGTH = 4096
 
-# Maximum size of Build.summary_markdown and Step.summary_markdown fields.
-# Defined in proto files.
-MAX_SUMMARY_MARKDOWN_SIZE = 1024  # 1 Kb
+# Maximum size of Build.summary_markdown field. Defined in build.proto.
+MAX_SUMMARY_MARKDOWN_SIZE = 4000  # 4 KB
 
 # swarming.py and api.py reserve these properties.
 # swarming.py does a redundant check, see validate_build_parameters().
@@ -339,10 +338,6 @@ def validate_step(step, steps):
   _check_truth(step, 'name')
   if step.name in steps:
     _enter_err('name', 'duplicate: %r', step.name)
-
-  if len(step.summary_markdown) > MAX_SUMMARY_MARKDOWN_SIZE:
-    with _enter('summary_markdown'):
-      _too_big(len(step.summary_markdown), MAX_SUMMARY_MARKDOWN_SIZE)
 
   validate_internal_timing_consistency(step)
 
