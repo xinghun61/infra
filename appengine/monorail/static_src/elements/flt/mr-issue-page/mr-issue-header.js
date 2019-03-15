@@ -12,6 +12,7 @@ import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
+import '../shared/mr-flt-styles.js';
 
 
 const DELETE_ISSUE_CONFIRMATION_NOTICE = `\
@@ -150,7 +151,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       issuePermissions: Object,
       _issueOptions: {
         type: Array,
-        computed: '_computeIssueOptions(issuePermissions)',
+        computed: '_computeIssueOptions(issuePermissions, issue)',
       },
       _flipperCount: {
         type: Number,
@@ -168,6 +169,8 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         type: Number,
         computed: '_computePrevId(issue.localId)',
       },
+      _action: String,
+      _targetProjectError: String,
     };
   }
 
@@ -190,21 +193,32 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
     return id - 1;
   }
 
-  _computeIssueOptions(issuePermissions) {
+  _computeIssueOptions(issuePermissions, issue) {
     const options = [];
     const permissions = issuePermissions || [];
-    if (permissions.includes('deleteissue')) {
-      options.push({
-        text: 'Delete issue',
-        handler: this._deleteIssue.bind(this),
-      });
-    }
     if (permissions.includes('flagspam')) {
       const text = (this.issue.isSpam ? 'Un-flag' : 'Flag') + ' issue as spam';
       options.push({
         text,
         handler: this._markIssue.bind(this),
       });
+    }
+    if (permissions.includes('deleteissue')) {
+      // TODO(ehmaldonado): Consider moving this to a shared selector.
+      const hasRestrictions = (issue.labelRefs || []).some((labelRef) => {
+        return labelRef.label.startsWith('Restrict-');
+      });
+      options.push({
+        text: 'Delete issue',
+        handler: this._deleteIssue.bind(this),
+      });
+      if (!hasRestrictions) {
+        options.push({separator: true});
+        options.push({
+          text: 'Move issue',
+          handler: this._openMoveCopyIssue.bind(this, 'Move'),
+        });
+      }
     }
     return options;
   }
@@ -255,6 +269,17 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       detail: {
         dialogId: 'edit-description',
         fieldName: '',
+      },
+    }));
+  }
+
+  _openMoveCopyIssue(action) {
+    this.dispatchEvent(new CustomEvent('open-dialog', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        dialogId: 'move-copy-issue',
+        action,
       },
     }));
   }
