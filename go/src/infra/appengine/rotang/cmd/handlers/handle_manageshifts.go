@@ -249,6 +249,9 @@ func (h *State) handleGeneratedShifts(ctx *router.Context, cfg *rotang.Configura
 		return err
 	}
 	for i, s := range shifts {
+		if resShifts[i].EvtID == "" {
+			logging.Warningf(ctx.Context, "No EvtID recieved for shift: %v", s)
+		}
 		s.EvtID = resShifts[i].EvtID
 		if err := shiftStorer.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
 			return err
@@ -279,8 +282,8 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 		for _, shift := range split.Shifts {
 			if cfg.Config.Enabled {
 				cshift, err := h.calendar.UpdateEvent(ctx, cfg, &shift)
-				if err != nil && status.Code(err) != codes.NotFound {
-					return err
+				if err != nil {
+					logging.Warningf(ctx.Context, "Updating  calendar entry for shift: %v failed: %v", shift, err)
 				}
 				if err == nil {
 					shift.EvtID = cshift.EvtID
@@ -311,9 +314,8 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 		if cfg.Config.Enabled {
 			if err := h.calendar.DeleteEvent(ctx, cfg, &s); err != nil {
 				if status.Code(err) != codes.NotFound {
-					return err
+					logging.Warningf(ctx.Context, "Deleting calendar entry for shift: %v failed: %v", s, err)
 				}
-				logging.Warningf(ctx.Context, "deleting calendar event for shift: %v, not found", s)
 			}
 		}
 	}

@@ -246,6 +246,9 @@ func eventsToShifts(ctx context.Context, events *gcal.Events, name string, shift
 		return nil, status.Errorf(codes.InvalidArgument, "no shifts")
 	}
 	for _, e := range events.Items {
+		if e.Id == "" {
+			logging.Warningf(ctx, "Calendar event has empty ID, e: %v", e)
+		}
 		shift := shifts.Shifts[0].Name
 		nm := strings.Split(e.Summary, nameShiftSeparator)
 		if len(nm) > 1 {

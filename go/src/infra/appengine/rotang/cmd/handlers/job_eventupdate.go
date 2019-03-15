@@ -49,7 +49,7 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 	for _, s := range shifts {
 		resShift, err := h.calendar.Event(ctx, cfg, &s)
 		if err != nil {
-			if status.Code(err) == codes.NotFound {
+			if status.Code(err) == codes.NotFound || s.EvtID == "" {
 				if err := h.createNonExists(ctx, cfg, s); err != nil {
 					return err
 				}
@@ -104,6 +104,9 @@ func (h *State) createNonExists(ctx *router.Context, cfg *rotang.Configuration, 
 	}
 	if len(shifts) != 1 {
 		return status.Errorf(codes.Internal, "wrong number of shifts returned, got: %c expected: %d", len(shifts), 1)
+	}
+	if shifts[0].EvtID == "" {
+		logging.Warningf(ctx.Context, "CreateEvent returned calendar event with no EvtID for shift: %v", shifts[0])
 	}
 	shift.EvtID = shifts[0].EvtID
 	return h.shiftStore(ctx.Context).UpdateShift(ctx.Context, cfg.Config.Name, &shift)
