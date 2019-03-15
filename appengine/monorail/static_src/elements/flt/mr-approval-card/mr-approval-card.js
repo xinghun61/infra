@@ -176,7 +176,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
       </button>
       <iron-collapse class="card-content" id="cardCollapse" opened="[[opened]]">
         <div class="approver-notice">
-          <template is="dom-if" if="[[_isApprovalOwner]]">
+          <template is="dom-if" if="[[_isApprover]]">
             You are an approver for this bit.
           </template>
           <template is="dom-if" if="[[user.isSiteAdmin]]">
@@ -302,15 +302,15 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         type: Array,
         computed: '_computeSurveyList(comments, fieldName)',
       },
-      _isApprovalOwner: {
+      _isApprover: {
         type: Boolean,
-        computed: '_computeIsApprovalOwner(approvers, user.email, userGroups)',
+        computed: '_computeIsApprover(approvers, user.email, userGroups)',
         observer: '_openUserCards',
       },
       _hasApproverPrivileges: {
         type: Boolean,
         computed: `_computeHasApproverPrivileges(user.isSiteAdmin,
-          _isApprovalOwner)`,
+          _isApprover)`,
       },
       _expandIcon: {
         type: String,
@@ -452,7 +452,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     return CLASS_ICON_MAP[cl];
   }
 
-  _computeIsApprovalOwner(approvers, userEmail, userGroups) {
+  _computeIsApprover(approvers, userEmail, userGroups) {
     if (!userEmail || !approvers) return false;
     userGroups = userGroups || [];
     return !!approvers.find((a) => {
@@ -462,8 +462,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     });
   }
 
-  _computeHasApproverPrivileges(isSiteAdmin, isApprovalOwner) {
-    return isSiteAdmin || isApprovalOwner;
+  _computeHasApproverPrivileges(isSiteAdmin, isApprover) {
+    return isSiteAdmin || isApprover;
   }
 
   // TODO(zhangtiff): Change data flow here so that this is only computed
@@ -499,25 +499,26 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
   }
 
   _filterStatuses(status, statuses, hasApproverPrivileges) {
-    const currentStatusIsRestricted =
-      APPROVER_RESTRICTED_STATUSES.has(status);
     return statuses.filter((s) => {
-      const includeCurrentStatus = s.status === status;
-      // These statuses should only be set by approvers.
-      // Non-approvers can't change statuses when they're set to an
-      // approvers-only status.
-      if (!hasApproverPrivileges &&
-          (APPROVER_RESTRICTED_STATUSES.has(s.status) ||
-          currentStatusIsRestricted)
-      ) {
-        return includeCurrentStatus;
+      if (s.status === status) {
+        // The current status should always appear as an option.
+        return true;
       }
-      return includeCurrentStatus || s.status !== 'NotSet';
+
+      if (!hasApproverPrivileges
+          && APPROVER_RESTRICTED_STATUSES.has(s.status)) {
+        // If you are not an approver and and this status is restricted,
+        // you can't change to this status.
+        return false;
+      }
+
+      // No one can set statuses to NotSet, not even approvers.
+      return s.status !== 'NotSet';
     });
   }
 
-  _openUserCards(isApprovalOwner) {
-    if (!this.opened && isApprovalOwner) {
+  _openUserCards(isApprover) {
+    if (!this.opened && isApprover) {
       this.opened = true;
     }
   }

@@ -25,15 +25,15 @@ suite('mr-approval-card', () => {
     assert.instanceOf(element, MrApprovalCard);
   });
 
-  test('_isApprovalOwner true when user is an approver', () => {
-    const userNotInList = element._computeIsApprovalOwner([
+  test('_isApprover true when user is an approver', () => {
+    const userNotInList = element._computeIsApprover([
       {displayName: 'tester@user.com'},
       {displayName: 'test@notuser.com'},
       {displayName: 'hello@world.com'},
     ], 'test@user.com', []);
     assert.isFalse(userNotInList);
 
-    const userInList = element._computeIsApprovalOwner([
+    const userInList = element._computeIsApprover([
       {displayName: 'tester@user.com'},
       {displayName: 'test@notuser.com'},
       {displayName: 'hello@world.com'},
@@ -41,7 +41,7 @@ suite('mr-approval-card', () => {
     ], 'test@user.com', []);
     assert.isTrue(userInList);
 
-    const userGroupNotInList = element._computeIsApprovalOwner([
+    const userGroupNotInList = element._computeIsApprover([
       {displayName: 'tester@user.com'},
       {displayName: 'nongroup@group.com'},
       {displayName: 'group@nongroup.com'},
@@ -53,7 +53,7 @@ suite('mr-approval-card', () => {
     ]);
     assert.isFalse(userGroupNotInList);
 
-    const userGroupInList = element._computeIsApprovalOwner([
+    const userGroupInList = element._computeIsApprover([
       {displayName: 'tester@user.com'},
       {displayName: 'group@group.com'},
       {displayName: 'test@notuser.com'},
@@ -75,5 +75,71 @@ suite('mr-approval-card', () => {
         'Your site admin privileges give you full access to edit this approval.'
       );
     });
+  });
+
+  test('site admins see all approval statuses except NotSet', () => {
+    element.user = {isSiteAdmin: true};
+
+    assert.isFalse(element._isApprover);
+
+    element.statusEnum = 'NEEDS_REVIEW';
+
+    assert.equal(element._availableStatuses.length, 7);
+    assert.equal(element._availableStatuses[0].status, 'NeedsReview');
+    assert.equal(element._availableStatuses[1].status, 'NA');
+    assert.equal(element._availableStatuses[2].status, 'ReviewRequested');
+    assert.equal(element._availableStatuses[3].status, 'ReviewStarted');
+    assert.equal(element._availableStatuses[4].status, 'NeedInfo');
+    assert.equal(element._availableStatuses[5].status, 'Approved');
+    assert.equal(element._availableStatuses[6].status, 'NotApproved');
+  });
+
+  test('approvers see all approval statuses except NotSet', () => {
+    element.user = {isSiteAdmin: false, email: 'test@email.com'};
+    element.approvers = [{displayName: 'test@email.com'}];
+
+    assert.isTrue(element._isApprover);
+
+    element.statusEnum = 'NEEDS_REVIEW';
+
+    assert.equal(element._availableStatuses.length, 7);
+    assert.equal(element._availableStatuses[0].status, 'NeedsReview');
+    assert.equal(element._availableStatuses[1].status, 'NA');
+    assert.equal(element._availableStatuses[2].status, 'ReviewRequested');
+    assert.equal(element._availableStatuses[3].status, 'ReviewStarted');
+    assert.equal(element._availableStatuses[4].status, 'NeedInfo');
+    assert.equal(element._availableStatuses[5].status, 'Approved');
+    assert.equal(element._availableStatuses[6].status, 'NotApproved');
+  });
+
+  test('non-approvers see non-restricted approval statuses', () => {
+    element.user = {isSiteAdmin: false, displayName: 'test@email.com'};
+    element.approvers = [{displayName: 'test@otheremail.com'}];
+
+    assert.isFalse(element._isApprover);
+
+    element.statusEnum = 'NEEDS_REVIEW';
+
+    assert.equal(element._availableStatuses.length, 4);
+    assert.equal(element._availableStatuses[0].status, 'NeedsReview');
+    assert.equal(element._availableStatuses[1].status, 'ReviewRequested');
+    assert.equal(element._availableStatuses[2].status, 'ReviewStarted');
+    assert.equal(element._availableStatuses[3].status, 'NeedInfo');
+  });
+
+  test('non-approvers see restricted approval status when set', () => {
+    element.user = {isSiteAdmin: false, displayName: 'test@email.com'};
+    element.approvers = [{displayName: 'test@otheremail.com'}];
+
+    assert.isFalse(element._isApprover);
+
+    element.statusEnum = 'APPROVED';
+
+    assert.equal(element._availableStatuses.length, 5);
+    assert.equal(element._availableStatuses[0].status, 'NeedsReview');
+    assert.equal(element._availableStatuses[1].status, 'ReviewRequested');
+    assert.equal(element._availableStatuses[2].status, 'ReviewStarted');
+    assert.equal(element._availableStatuses[3].status, 'NeedInfo');
+    assert.equal(element._availableStatuses[4].status, 'Approved');
   });
 });
