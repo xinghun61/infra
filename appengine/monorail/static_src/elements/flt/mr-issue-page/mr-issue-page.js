@@ -12,6 +12,7 @@ import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
 import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
+import * as user from '../../redux/user.js';
 import '../shared/mr-flt-styles.js';
 import '../mr-edit-description/mr-edit-description.js';
 import './mr-move-copy-issue.js';
@@ -207,7 +208,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       fetchingIssue: state.requests.fetchIssue.requesting,
       fetchingProjectConfig: state.requests.fetchProjectConfig.requesting,
       fetchIssueError: state.requests.fetchIssue.error,
-      _user: state.user,
+      _user: user.currentUser(state),
     };
   }
 
@@ -308,7 +309,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   }
 
   _userDisplayNameChanged(userDisplayName) {
-    this.dispatchAction(actionCreator.fetchUser(userDisplayName));
+    this.dispatchAction(user.fetch(userDisplayName));
   }
 
   _undeleteIssue() {

@@ -4,8 +4,8 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as user from '../../redux/user.js';
 import '../shared/mr-flt-styles.js';
 
 export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
@@ -126,7 +126,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issueHotlists: state.issueHotlists,
-      userHotlists: state.userHotlists,
+      userHotlists: user.currentUser(state).hotlists,
     };
   }
 

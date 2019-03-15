@@ -5,7 +5,8 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin, actionCreator, actionType} from '../redux/redux-mixin.js';
+import {ReduxMixin} from '../redux/redux-mixin.js';
+import * as user from '../redux/user.js';
 import '../chops/chops-toggle/chops-toggle.js';
 
 /**
@@ -46,7 +47,7 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      prefs: state.prefs,
+      prefs: user.currentUser(state).prefs,
     };
   }
 
@@ -64,17 +65,14 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
       const setPrefsCall = window.prpcClient.call(
         'monorail.Users', 'SetUserPrefs', message);
       setPrefsCall.then((resp) => {
-        this.dispatchAction(actionCreator.fetchUserPrefs());
+        this.dispatchAction(user.fetchPrefs());
       }).catch((reason) => {
         console.error('SetUserPrefs failed: ' + reason);
       });
     } else {
       const newPrefs = new Map(this.prefs);
       newPrefs.set('code_font', '' + checked);
-      this.dispatchAction({
-        type: actionType.FETCH_USER_PREFS_SUCCESS,
-        prefs: newPrefs,
-      });
+      this.dispatchAction(user.setPrefs(newPrefs));
     }
   }
 }

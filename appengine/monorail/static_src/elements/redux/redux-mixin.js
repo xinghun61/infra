@@ -6,6 +6,8 @@ import {createMixin} from 'polymer-redux';
 import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import {autolink} from '../../autolink.js';
+import {createReducer, createRequestReducer} from './redux-helpers.js';
+import * as user from './user.js';
 
 export const actionType = {
   // Misc global state.
@@ -23,18 +25,6 @@ export const actionType = {
   FETCH_PROJECT_TEMPLATES_START: 'FETCH_PROJECT_TEMPLATES_START',
   FETCH_PROJECT_TEMPLATES_SUCCESS: 'FETCH_PROJECT_TEMPLATES_SUCCESS',
   FETCH_PROJECT_TEMPLATES_FAILURE: 'FETCH_PROJECT_TEMPLATES_FAILURE',
-
-  FETCH_USER_START: 'FETCH_USER_START',
-  FETCH_USER_SUCCESS: 'FETCH_USER_SUCCESS',
-  FETCH_USER_FAILURE: 'FETCH_USER_FAILURE',
-
-  FETCH_USER_HOTLISTS_START: 'FETCH_USER_HOTLISTS_START',
-  FETCH_USER_HOTLISTS_SUCCESS: 'FETCH_USER_HOTLISTS_SUCCESS',
-  FETCH_USER_HOTLISTS_FAILURE: 'FETCH_USER_HOTLISTS_FAILURE',
-
-  FETCH_USER_PREFS_START: 'FETCH_USER_PREFS_START',
-  FETCH_USER_PREFS_SUCCESS: 'FETCH_USER_PREFS_SUCCESS',
-  FETCH_USER_PREFS_FAILURE: 'FETCH_USER_PREFS_FAILURE',
 
   FETCH_ISSUE_START: 'FETCH_ISSUE_START',
   FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
@@ -194,78 +184,6 @@ export const actionCreator = {
     } catch (error) {
       dispatch({
         type: actionType.FETCH_ISSUE_HOTLISTS_FAILURE,
-        error,
-      });
-    };
-  },
-  fetchUser: (displayName) => async (dispatch) => {
-    dispatch({type: actionType.FETCH_USER_START});
-
-    const message = {
-      userRef: {displayName},
-    };
-
-    try {
-      const resp = await Promise.all([
-        window.prpcClient.call(
-          'monorail.Users', 'GetUser', message),
-        window.prpcClient.call(
-          'monorail.Users', 'GetMemberships', message),
-      ]);
-
-      dispatch({
-        type: actionType.FETCH_USER_SUCCESS,
-        user: resp[0],
-        groups: resp[1].groupRefs,
-      });
-      dispatch(actionCreator.fetchUserHotlists(displayName));
-      dispatch(actionCreator.fetchUserPrefs());
-    } catch (error) {
-      dispatch({
-        type: actionType.FETCH_USER_FAILURE,
-        error,
-      });
-    };
-  },
-  fetchUserHotlists: (displayName) => async (dispatch) => {
-    dispatch({type: actionType.FETCH_USER_HOTLISTS_START});
-
-    try {
-      const resp = await window.prpcClient.call(
-        'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
-
-      const hotlists = (resp.hotlists || []);
-      hotlists.sort((hotlistA, hotlistB) => {
-        return hotlistA.name.localeCompare(hotlistB.name);
-      });
-      dispatch({
-        type: actionType.FETCH_USER_HOTLISTS_SUCCESS,
-        hotlists,
-      });
-    } catch (error) {
-      dispatch({
-        type: actionType.FETCH_USER_HOTLISTS_FAILURE,
-        error,
-      });
-    };
-  },
-  fetchUserPrefs: () => async (dispatch) => {
-    dispatch({type: actionType.FETCH_USER_PREFS_START});
-
-    try {
-      const resp = await window.prpcClient.call(
-        'monorail.Users', 'GetUserPrefs', {});
-
-      const prefs = new Map((resp.prefs || []).map((pref) => {
-        return [pref.name, pref.value];
-      }));
-      dispatch({
-        type: actionType.FETCH_USER_PREFS_SUCCESS,
-        prefs,
-      });
-    } catch (error) {
-      dispatch({
-        type: actionType.FETCH_USER_PREFS_FAILURE,
         error,
       });
     };
@@ -436,41 +354,6 @@ const updateIssueApproval = (issue, approval) => {
   return {...issue, approvalValues: newApprovals};
 }
 
-function createReducer(initialState, handlers) {
-  return function reducer(state = initialState, action) {
-    if (handlers.hasOwnProperty(action.type)) {
-      return handlers[action.type](state, action);
-    } else {
-      return state;
-    }
-  }
-}
-
-function createRequestReducer(start, success, failure) {
-  return createReducer({requesting: false, error: null}, {
-    [start]: (_state, _action) => ({
-      requesting: true,
-      error: null,
-    }),
-    [success]: (_state, _action) =>({
-      requesting: false,
-      error: null,
-    }),
-    [failure]: (_state, action) => ({
-      requesting: false,
-      error: action.error,
-    }),
-  });
-}
-
-const userReducer = createReducer(null, {
-  [actionType.FETCH_USER_SUCCESS]: (_state, action) => action.user,
-});
-
-const userGroupsReducer = createReducer([], {
-  [actionType.FETCH_USER_SUCCESS]: (_state, action) => action.groups || [],
-});
-
 const issueIdReducer = createReducer(0, {
   [actionType.UPDATE_ISSUE_REF]: (state, action) => action.issueId || state,
 });
@@ -509,10 +392,6 @@ const issueLoadedReducer = createReducer(false, {
 
 const issueHotlistsReducer = createReducer([], {
   [actionType.FETCH_ISSUE_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
-});
-
-const userHotlistsReducer = createReducer([], {
-  [actionType.FETCH_USER_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
 });
 
 const commentsReducer = createReducer([], {
@@ -554,10 +433,6 @@ const focusIdReducer = createReducer(null, {
   [actionType.SET_FOCUS_ID]: (_state, action) => action.focusId,
 });
 
-const prefsReducer = createReducer(null, {
-  [actionType.FETCH_USER_PREFS_SUCCESS]: (_state, action) => action.prefs,
-});
-
 const requestsReducer = combineReducers({
   // Request for getting configuration settings for a project.
   fetchProjectConfig: createRequestReducer(
@@ -569,22 +444,6 @@ const requestsReducer = combineReducers({
     actionType.FETCH_PROJECT_TEMPLATES_START,
     actionType.FETCH_PROJECT_TEMPLATES_SUCCESS,
     actionType.FETCH_PROJECT_TEMPLATES_FAILURE),
-  // Request for getting backend metadata related to a user, such as
-  // which groups they belong to and whether they're a site admin.
-  fetchUser: createRequestReducer(
-    actionType.FETCH_USER_START,
-    actionType.FETCH_USER_SUCCESS,
-    actionType.FETCH_USER_FAILURE),
-  // Request for getting a user's hotlists.
-  fetchUserHotlists: createRequestReducer(
-    actionType.FETCH_USER_HOTLISTS_START,
-    actionType.FETCH_USER_HOTLISTS_SUCCESS,
-    actionType.FETCH_USER_HOTLISTS_FAILURE),
-  // Request for getting a user's prefs.
-  fetchUserPrefs: createRequestReducer(
-    actionType.FETCH_USER_PREFS_START,
-    actionType.FETCH_USER_PREFS_SUCCESS,
-    actionType.FETCH_USER_PREFS_FAILURE),
   // Request for getting an issue.
   fetchIssue: createRequestReducer(
     actionType.FETCH_ISSUE_START,
@@ -644,8 +503,7 @@ const requestsReducer = combineReducers({
 });
 
 const reducer = combineReducers({
-  user: userReducer,
-  userGroups: userGroupsReducer,
+  user: user.reducer,
 
   // TODO(zhangtiff): Combine these into viewedIssueRef for consistency.
   issueId: issueIdReducer,
@@ -656,7 +514,6 @@ const reducer = combineReducers({
   issue: issueReducer,
   issueLoaded: issueLoadedReducer,
   issueHotlists: issueHotlistsReducer,
-  userHotlists: userHotlistsReducer,
   comments: commentsReducer,
   commentReferences: commentReferencesReducer,
   blockerReferences: blockerReferencesReducer,
@@ -669,7 +526,6 @@ const reducer = combineReducers({
 
   // The ID of the element to be focused, as given by the hash part of the URL.
   focusId: focusIdReducer,
-  prefs: prefsReducer,
 
   requests: requestsReducer,
 });

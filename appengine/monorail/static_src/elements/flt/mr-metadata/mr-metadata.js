@@ -11,6 +11,7 @@ import '../../mr-bug-link/mr-bug-link.js';
 import '../../mr-user-link/mr-user-link.js';
 import {actionCreator} from '../../redux/redux-mixin.js';
 import {selectors} from '../../redux/selectors.js';
+import * as user from '../../redux/user.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
 import '../shared/mr-flt-styles.js';
 import './mr-field-values.js';
@@ -381,7 +382,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
     return {
       projectName: state.projectName,
       issueId: state.issueId,
-      user: state.user,
+      user: user.currentUser(state),
       issuePermissions: state.issuePermissions,
       blockerReferences: state.blockerReferences,
       issueHotlists: state.issueHotlists,
@@ -529,7 +530,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
 
     Promise.all(promises).then((results) => {
       this.dispatchAction(actionCreator.fetchIssueHotlists(issueRef));
-      this.dispatchAction(actionCreator.fetchUserHotlists(this.user.email));
+      this.dispatchAction(user.fetchHotlists(this.user.email));
       this.$.updateHotlistsDialog.close();
     }, (error) => {
       this.$.updateHotlistsForm.error = error.description;

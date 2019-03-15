@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import {autolink} from '../../autolink.js';
 import {ReduxMixin} from '../redux/redux-mixin.js';
+import * as user from '../redux/user.js';
 
 /**
  * `<mr-comment-content>`
@@ -84,7 +85,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
     return {
       commentReferences: state.commentReferences,
       projectName: state.projectName,
-      prefs: state.prefs,
+      prefs: user.currentUser(state).prefs,
     };
   }
 

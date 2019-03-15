@@ -9,6 +9,7 @@ import '../../chops/chops-dialog/chops-dialog.js';
 import '@polymer/iron-collapse/iron-collapse.js';
 import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import * as user from '../../redux/user.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
@@ -252,7 +253,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
       },
       fieldDefsByApprovalName: Object,
       user: Object,
-      userGroups: Object,
       issue: {
         type: Object,
         observer: 'reset',
@@ -307,7 +307,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
       },
       _isApprover: {
         type: Boolean,
-        computed: '_computeIsApprover(approvers, user.email, userGroups)',
+        computed: '_computeIsApprover(approvers, user.email, user.groups)',
         observer: '_openUserCards',
       },
       _hasApproverPrivileges: {
@@ -333,8 +333,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       fieldDefsByApprovalName: selectors.fieldDefsByApprovalName(state),
-      user: state.user,
-      userGroups: state.userGroups,
+      user: user.currentUser(state),
       issue: state.issue,
       issueId: state.issueId,
       projectConfig: state.projectConfig,

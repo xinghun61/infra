@@ -5,6 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import {ReduxMixin, actionType, actionCreator} from './redux/redux-mixin.js';
+import * as user from './redux/user.js';
 import AutoRefreshPrpcClient from '../prpc.js';
 import './flt/mr-comment-list/mr-comment-list.js';
 import './mr-comment-content/mr-description.js';
@@ -135,7 +136,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
       type: actionType.FETCH_COMMENTS_SUCCESS,
       comments: allComments,
     });
-    this.dispatchAction(actionCreator.fetchUserPrefs());
+    this.dispatchAction(user.fetchPrefs());
     this.dispatchAction(actionCreator.fetchCommentReferences(
       allComments, this.projectName));
   }
