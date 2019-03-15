@@ -76,6 +76,10 @@ _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP = {
         'bucket': 'ci',
         'builder': 'chromeos-vm-code-coverage',
     },
+    'linux-chromeos': {
+        'bucket': 'ci',
+        'builder': 'linux-chromeos-code-coverage',
+    },
 }
 
 
@@ -600,6 +604,7 @@ class ProcessCodeCoverageData(BaseHandler):
     if (build.builder.project not in ('chromium', 'chrome') or
         build.builder.bucket not in ('coverage', 'ci', 'try') or
         build.builder.builder not in ('chromeos-vm-code-coverage',
+                                      'linux-chromeos-code-coverage',
                                       'linux-code-coverage',
                                       'linux-coverage-rel')):
       return
