@@ -7,6 +7,7 @@
 
 import collections
 import unittest
+import logging
 
 from framework import framework_views
 from framework import table_view_helpers
@@ -48,15 +49,46 @@ class TableCellTest(unittest.TestCase):
   USERS_BY_ID = {}
 
   def setUp(self):
-    self.issue1 = MakeTestIssue(
+    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            1, 789, 'Goats', tracker_pb2.FieldTypes.INT_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'Num of Goats in the season', False, is_phase_field=True),
+        tracker_bizobj.MakeFieldDef(
+            2, 789, 'DogNames', tracker_pb2.FieldTypes.STR_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'good dog names', False),
+        tracker_bizobj.MakeFieldDef(
+            3, 789, 'Approval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            None, None, False, False, False, None, None, None, False, None,
+            None, None, None, 'Tracks review from cows', False)
+    ]
+    self.config.approval_defs = [tracker_pb2.ApprovalDef(approval_id=3)]
+    self.issue = MakeTestIssue(
         local_id=1, issue_id=100001, summary='One')
-    self.issue2 = MakeTestIssue(
-        local_id=2, issue_id=100002, summary='Two')
-    self.issue3 = MakeTestIssue(
-        local_id=3, issue_id=100003, summary='Three')
-    self.table_cell_kws = {
+    self.issue.field_values = [
+        tracker_bizobj.MakeFieldValue(
+            1, 34, None, None, None, None, False, phase_id=23),
+        tracker_bizobj.MakeFieldValue(
+            1, 35, None, None, None, None, False, phase_id=24),
+        tracker_bizobj.MakeFieldValue(
+            2, None, 'Waffles', None, None, None, False),
+    ]
+    self.issue.phases = [
+        tracker_pb2.Phase(phase_id=23, name='winter'),
+        tracker_pb2.Phase(phase_id=24, name='summer')]
+    self.issue.approval_values = [
+        tracker_pb2.ApprovalValue(
+            approval_id=3, approver_ids=[111L, 222L, 333L])]
+    self.users_by_id = {
+        111L: framework_views.StuffUserView(111, 'foo@example.com', False),
+        222L: framework_views.StuffUserView(222, 'foo2@example.com', True),
+    }
+
+    self.summary_table_cell_kws = {
         'col': None,
-        'users_by_id': self.USERS_BY_ID,
+        'users_by_id': {},
         'non_col_labels': [('lab', False)],
         'label_values': {},
         'related_issues': {},
@@ -66,7 +98,8 @@ class TableCellTest(unittest.TestCase):
   def testTableCellSummary(self):
     """TableCellSummary stores the data given to it."""
     cell = table_view_helpers.TableCellSummary(
-        MakeTestIssue(4, 4, 'Lame default summary.'), **self.table_cell_kws)
+        MakeTestIssue(4, 4, 'Lame default summary.'),
+        **self.summary_table_cell_kws)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_SUMMARY)
     self.assertEqual(cell.values[0].item, 'Lame default summary.')
     self.assertEqual(cell.non_column_labels[0].value, 'lab')
@@ -74,47 +107,41 @@ class TableCellTest(unittest.TestCase):
   def testTableCellSummary_NoPythonEscaping(self):
     """TableCellSummary stores the summary without escaping it in python."""
     cell = table_view_helpers.TableCellSummary(
-        MakeTestIssue(4, 4, '<b>bold</b> "summary".'), **self.table_cell_kws)
+        MakeTestIssue(4, 4, '<b>bold</b> "summary".'),
+        **self.summary_table_cell_kws)
     self.assertEqual(cell.values[0].item,'<b>bold</b> "summary".')
+
+  def testTableCellCustom_normal(self):
+    """TableCellCustom stores the value of a custom FieldValue."""
+    cell_dognames = table_view_helpers.TableCellCustom(
+        self.issue, col='dognames', config=self.config)
+    self.assertEqual(cell_dognames.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell_dognames.values[0].item, 'Waffles')
+
+  def testTableCellCustom_phasefields(self):
+    """TableCellCustom stores the value of a custom FieldValue."""
+    cell_winter = table_view_helpers.TableCellCustom(
+        self.issue, col='winter.goats', config=self.config)
+    self.assertEqual(cell_winter.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell_winter.values[0].item, 34)
+
+    cell_summer = table_view_helpers.TableCellCustom(
+        self.issue, col='summer.goats', config=self.config)
+    self.assertEqual(cell_summer.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell_summer.values[0].item, 35)
 
   def testTableCellApprovalStatus(self):
     """TableCellApprovalStatus stores the status of an ApprovalValue."""
-    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    config.field_defs = [
-        tracker_bizobj.MakeFieldDef(
-            3, 789, 'Approval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
-            None, None, False, False, False, None, None, None, False, None,
-            None, None, None, 'Tracks review from cows', False)
-    ]
-    config.approval_defs = [tracker_pb2.ApprovalDef(approval_id=3)]
-    test_issue = MakeTestIssue(4, 4, 'sum')
-    test_issue.approval_values = [
-        tracker_pb2.ApprovalValue(approval_id=3)]
     cell = table_view_helpers.TableCellApprovalStatus(
-        test_issue, 'Approval', config)
+        self.issue, col='Approval', config=self.config)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(cell.values[0].item, 'NOT_SET')
 
   def testTableCellApprovalApprover(self):
     """TableCellApprovalApprover stores the approvers of an ApprovalValue."""
-    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    config.field_defs = [
-        tracker_bizobj.MakeFieldDef(
-            3, 789, 'Approval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
-            None, None, False, False, False, None, None, None, False, None,
-            None, None, None, 'Tracks review from cows', False)
-    ]
-    config.approval_defs = [tracker_pb2.ApprovalDef(approval_id=3)]
-    test_issue = MakeTestIssue(4, 4, 'sum')
-    test_issue.approval_values = [
-        tracker_pb2.ApprovalValue(
-            approval_id=3, approver_ids=[111L, 222L, 333L])]
-    users_by_id = {
-        111L: framework_views.StuffUserView(111, 'foo@example.com', False),
-        222L: framework_views.StuffUserView(222, 'foo2@example.com', True),
-        }
     cell = table_view_helpers.TableCellApprovalApprover(
-        test_issue, 'Approval-approver', config, users_by_id)
+        self.issue, col='Approval-approver', config=self.config,
+        users_by_id=self.users_by_id)
     self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
     self.assertEqual(len(cell.values), 2)
     self.assertItemsEqual([cell.values[0].item, cell.values[1].item],
@@ -251,7 +278,30 @@ class TableViewHelpersTest(unittest.TestCase):
     self.assertEquals(unshown, ['Mstone', 'Priority', 'Visibility'])
 
   def testComputeUnshownColumns_FieldDefs(self):
-    shown_cols = ['a', 'b', 'a1', 'a2-approver', 'f3']
+    search_results = [
+        fake.MakeTestIssue(
+            789, 1, 'sum 1', 'New', 111L,
+            field_values=[
+                tracker_bizobj.MakeFieldValue(
+                    5, 74, None, None, None, None, False, phase_id=4),
+                tracker_bizobj.MakeFieldValue(
+                    6, 78, None, None, None, None, False, phase_id=5)],
+            phases=[
+                tracker_pb2.Phase(phase_id=4, name='goats'),
+                tracker_pb2.Phase(phase_id=5, name='sheep')]),
+        fake.MakeTestIssue(
+            789, 2, 'sum 2', 'New', 111L,
+            field_values=[
+                tracker_bizobj.MakeFieldValue(
+                    5, 74, None, None, None, None, False, phase_id=3),
+                tracker_bizobj.MakeFieldValue(
+                    6, 77, None, None, None, None, False, phase_id=3)],
+            phases=[
+                tracker_pb2.Phase(phase_id=3, name='Goats'),
+                tracker_pb2.Phase(phase_id=3, name='Goats-Exp')]),
+    ]
+
+    shown_cols = ['a', 'b', 'a1', 'a2-approver', 'f3', 'goats.g1', 'sheep.g2']
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     config.default_col_spec = ''
     config.well_known_labels = []
@@ -272,12 +322,22 @@ class TableViewHelpersTest(unittest.TestCase):
           4, 789, 'f4', tracker_pb2.FieldTypes.INT_TYPE,
           None, None, False, False, False, None, None, None, False, None,
           None, None, None, 'chicken gobbles', False),
+      tracker_bizobj.MakeFieldDef(
+          5, 789, 'g1', tracker_pb2.FieldTypes.INT_TYPE,
+          None, None, False, False, False, None, None, None, False, None,
+          None, None, None, 'fluff', False, is_phase_field=True),
+      tracker_bizobj.MakeFieldDef(
+          6, 789, 'g2', tracker_pb2.FieldTypes.INT_TYPE,
+          None, None, False, False, False, None, None, None, False, None,
+          None, None, None, 'poof', False, is_phase_field=True),
     ]
     builtin_cols = []
 
     unshown = table_view_helpers.ComputeUnshownColumns(
-        EMPTY_SEARCH_RESULTS, shown_cols, config, builtin_cols)
-    self.assertEqual(unshown, ['a1-approver', 'a2', 'f4'])
+        search_results, shown_cols, config, builtin_cols)
+    self.assertEqual(unshown, [
+        'a1-approver', 'a2', 'f4',
+        'goats-exp.g1', 'goats-exp.g2', 'goats.g2', 'sheep.g1'])
 
   def testExtractUniqueValues_NoColumns(self):
     column_values = table_view_helpers.ExtractUniqueValues(
@@ -581,7 +641,11 @@ class TableViewHelpersTest(unittest.TestCase):
         None, None, False,
         False, False, None, None, None, False, None, None, None, None,
         'Tracks reviews from cows', False)
-    self.config.field_defs = [os_fd, deadline_fd, approval_fd]
+    goats_fd = tracker_bizobj.MakeFieldDef(
+        4, 789, 'goats', tracker_pb2.FieldTypes.INT_TYPE, None, None, False,
+        False, False, None, None, None, False, None, None, None, None,
+        'Num goats in each phase', False, is_phase_field=True)
+    self.config.field_defs = [os_fd, deadline_fd, approval_fd, goats_fd]
 
     # The column is defined in cell_factories.
     actual = table_view_helpers.ChooseCellFactory(
@@ -621,6 +685,15 @@ class TableViewHelpersTest(unittest.TestCase):
         [(table_view_helpers.TableCellApprovalApprover, 'CowApproval-approver'),
          (table_view_helpers.TableCellKeyLabels, 'CowApproval-approver')],
         actual.factory_col_list)
+
+    # The column specifies a phase custom field.
+    actual = table_view_helpers.ChooseCellFactory(
+        'winter.goats', cell_factories, self.config)
+    self.assertEqual(
+         [(table_view_helpers.TableCellCustom, 'winter.goats'),
+          (table_view_helpers.TableCellKeyLabels, 'winter.goats')],
+         actual.factory_col_list)
+
 
     # Column that don't match one of the other cases is assumed to be a label.
     actual = table_view_helpers.ChooseCellFactory(

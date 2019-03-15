@@ -11,6 +11,7 @@ HTML tables that list project artifacts much easier to do with EZT.
 """
 
 import collections
+import itertools
 import logging
 
 from third_party import ezt
@@ -68,19 +69,29 @@ def ComputeUnshownColumns(results, shown_columns, config, built_in_cols):
   for wkl in config.well_known_labels:
     _MaybeAddLabel(wkl.label)
 
+  phase_names = set(itertools.chain.from_iterable(
+      (phase.name.lower() for phase in result.phases) for result in results))
   # The user can add a column for any custom field
   field_ids_alread_seen = set()
   for fd in config.field_defs:
     field_lower = fd.field_name.lower()
     field_ids_alread_seen.add(fd.field_id)
-    if field_lower not in shown_set and field_lower not in unshown_set:
+    if fd.is_phase_field:
+      for name in phase_names:
+        phase_field_col = name + '.' + field_lower
+        if (phase_field_col not in shown_set and
+            phase_field_col not in unshown_set):
+          unshown_list.append(phase_field_col)
+          unshown_set.add(phase_field_col)
+    elif field_lower not in shown_set and field_lower not in unshown_set:
       unshown_list.append(fd.field_name)
       unshown_set.add(field_lower)
+
     if fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE:
       approval_lower_approver = (
           field_lower + tracker_constants.APPROVER_COL_SUFFIX)
-      if (approval_lower_approver not in shown_set
-          and approval_lower_approver not in unshown_set):
+      if (approval_lower_approver not in shown_set and
+          approval_lower_approver not in unshown_set):
         unshown_list.append(
             fd.field_name + tracker_constants.APPROVER_COL_SUFFIX)
         unshown_set.add(approval_lower_approver)
@@ -637,6 +648,12 @@ class TableCellCustom(TableCell):
     explicit_values = []
     derived_values = []
     cell_type = CELL_TYPE_ATTR
+    phase_names_by_id = {
+        phase.phase_id: phase.name.lower() for phase in art.phases}
+    phase_name = None
+    # Check if col represents a phase field value in the form <phase>.<field>
+    if '.' in col:
+      phase_name, col = col.split('.', 1)
     for fv in art.field_values:
       # TODO(jrobbins): for cross-project search this could be a list.
       fd = tracker_bizobj.FindFieldDefByID(fv.field_id, config)
@@ -645,7 +662,8 @@ class TableCellCustom(TableCell):
         # field value is moved to a different project.
         logging.warn('Issue ID %r has undefined field value %r',
                      art.issue_id, fv)
-      elif fd.field_name.lower() == col:
+      elif fd.field_name.lower() == col and (
+          phase_names_by_id.get(fv.phase_id) == phase_name):
         if fd.field_type == tracker_pb2.FieldTypes.URL_TYPE:
           cell_type = CELL_TYPE_URL
         if fd.field_type == tracker_pb2.FieldTypes.STR_TYPE:
@@ -713,6 +731,9 @@ def ChooseCellFactory(col, cell_factories, config):
   if col.endswith(tracker_constants.APPROVER_COL_SUFFIX):
     possible_field_name = col[:-len(tracker_constants.APPROVER_COL_SUFFIX)]
     is_approver_col = True
+  # Check if col represents a phase field value in the form <phase>.<field>
+  elif '.' in possible_field_name:
+    possible_field_name = possible_field_name.split('.')[-1]
 
   fd = tracker_bizobj.FindFieldDef(possible_field_name, config)
   if fd:

@@ -211,7 +211,7 @@ class SortingTest(unittest.TestCase):
     art.field_values = [tracker_bizobj.MakeFieldValue(
         3, 6078, None, None, None, None, False)]
 
-    field_defs = [
+    all_field_defs = [
         tracker_bizobj.MakeFieldDef(
             3, 789, 'samename', tracker_pb2.FieldTypes.INT_TYPE,
             None, None, False, False, False, None, None, None, False, None,
@@ -219,21 +219,56 @@ class SortingTest(unittest.TestCase):
         tracker_bizobj.MakeFieldDef(
             4, 788, 'samename', tracker_pb2.FieldTypes.APPROVAL_TYPE,
             None, None, False, False, False, None, None, None, False, None,
-            None, None, None, 'cow spots', False)
+            None, None, None, 'cow spots', False),
+        tracker_bizobj.MakeFieldDef(
+            4, 788, 'notsamename', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            None, None, False, False, False, None, None, None, False, None,
+            None, None, None, 'should get filtered out', False)
     ]
 
-    accessor = sorting._IndexOrLexicalList([], field_defs, 'samename', {})
+    accessor = sorting._IndexOrLexicalList([], all_field_defs, 'samename', {})
     self.assertEqual([6078, 'value1'], accessor(art))
     neg_accessor = MakeDescending(accessor)
     self.assertEqual(
         [sorting.DescendingValue('value1'), -6078], neg_accessor(art))
+
+  def testIndexOrLexicalList_PhaseCustomFields(self):
+    art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111L)
+    art.labels = ['summer.goats-value1']
+    art.field_values = [
+        tracker_bizobj.MakeFieldValue(
+            3, 33, None, None, None, None, False, phase_id=77),
+        tracker_bizobj.MakeFieldValue(
+            3, 34, None, None, None, None, False, phase_id=77),
+        tracker_bizobj.MakeFieldValue(
+            3, 1000, None, None, None, None, False, phase_id=78)]
+    art.phases = [tracker_pb2.Phase(phase_id=77, name='summer'),
+                  tracker_pb2.Phase(phase_id=78, name='winter')]
+
+    all_field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            3, 789, 'goats', tracker_pb2.FieldTypes.INT_TYPE,
+            None, None, False, False, True, None, None, None, False, None,
+            None, None, None, 'goats love mineral', False, is_phase_field=True),
+        tracker_bizobj.MakeFieldDef(
+            4, 788, 'boo', tracker_pb2.FieldTypes.APPROVAL_TYPE,
+            None, None, False, False, False, None, None, None, False, None,
+            None, None, None, 'ahh', False),
+        ]
+
+    accessor = sorting._IndexOrLexicalList(
+        [], all_field_defs, 'summer.goats', {})
+    self.assertEqual([33, 34, 'value1'], accessor(art))
+    neg_accessor = MakeDescending(accessor)
+    self.assertEqual(
+        [sorting.DescendingValue('value1'), -34, -33], neg_accessor(art))
 
   def testIndexOrLexicalList_ApprovalStatus(self):
     art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111L)
     art.labels = ['samename-value1']
     art.approval_values = [tracker_pb2.ApprovalValue(approval_id=4)]
 
-    field_defs = [
+    all_field_defs = [
         tracker_bizobj.MakeFieldDef(
             3, 789, 'samename', tracker_pb2.FieldTypes.INT_TYPE,
             None, None, False, False, False, None, None, None, False, None,
@@ -244,7 +279,7 @@ class SortingTest(unittest.TestCase):
             None, None, None, 'cow spots', False)
     ]
 
-    accessor = sorting._IndexOrLexicalList([], field_defs, 'samename', {})
+    accessor = sorting._IndexOrLexicalList([], all_field_defs, 'samename', {})
     self.assertEqual([0, 'value1'], accessor(art))
     neg_accessor = MakeDescending(accessor)
     self.assertEqual([sorting.DescendingValue('value1'),
@@ -257,7 +292,7 @@ class SortingTest(unittest.TestCase):
     art.approval_values = [
         tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[333L])]
 
-    field_defs = [
+    all_field_defs = [
         tracker_bizobj.MakeFieldDef(
             4, 788, 'samename', tracker_pb2.FieldTypes.APPROVAL_TYPE,
             None, None, False, False, False, None, None, None, False, None,
@@ -266,7 +301,7 @@ class SortingTest(unittest.TestCase):
     users_by_id = {333L: framework_views.StuffUserView(333, 'a@test.com', True)}
 
     accessor = sorting._IndexOrLexicalList(
-        [], field_defs, 'samename-approver', users_by_id)
+        [], all_field_defs, 'samename-approver', users_by_id)
     self.assertEqual(['a@test.com', 'value1'], accessor(art))
     neg_accessor = MakeDescending(accessor)
     self.assertEqual([sorting.DescendingValue('value1'),

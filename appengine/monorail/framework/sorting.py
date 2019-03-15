@@ -462,17 +462,25 @@ def _IndexOrLexicalList(wk_values, full_fd_list, col_name, users_by_id):
   # Column name does not end with APPROVER_COL_SUFFIX, so relevant values
   # are Approval statuses or Field Values for fields named col_name and
   # values from labels with the key equal to col_name.
+  field_name = col_name
+  phase_name = None
+  if '.' in col_name:
+    phase_name, field_name = col_name.split('.', 1)
+
   fd_list = [fd for fd in full_fd_list
-             if (fd.field_name.lower() == col_name and
-                 fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE)]
-  approval_fds = [fd for fd in fd_list if
-                  fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
+             if (fd.field_name.lower() == field_name and
+                 fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE and
+                 bool(phase_name) == fd.is_phase_field)]
+  approval_fds = []
+  if not phase_name:
+    approval_fds = [fd for fd in fd_list if
+                    fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
 
   def Accessor(art):
     """Custom-made function to return a sort value for any issue."""
     idx_or_lex_list = (
         _SortableApprovalStatusValues(art, approval_fds) +
-        _SortableFieldValues(art, fd_list, users_by_id) +
+        _SortableFieldValues(art, fd_list, users_by_id, phase_name) +
         _SortableLabelValues(art, col_name, well_known_value_indexes))
     if not idx_or_lex_list:
       return MAX_STRING  # issues with no value sort to the end of the list.
@@ -509,12 +517,17 @@ def _SortableApprovalApproverValues(art, fd_list, users_by_id):
   return sortable_value_list
 
 
-def _SortableFieldValues(art, fd_list, users_by_id):
+def _SortableFieldValues(art, fd_list, users_by_id, phase_name):
   """Return a list of field values relevant to one UI table column."""
+  phase_id = None
+  if phase_name:
+    phase_id = next((
+        phase.phase_id for phase in art.phases
+        if phase.name.lower() == phase_name), None)
   sortable_value_list = []
   for fd in fd_list:
     for fv in art.field_values:
-      if fv.field_id == fd.field_id:
+      if fv.field_id == fd.field_id and fv.phase_id == phase_id:
         sortable_value_list.append(
             tracker_bizobj.GetFieldValue(fv, users_by_id))
 
