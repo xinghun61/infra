@@ -31,6 +31,10 @@ const issueType = createSelector(
     return;
   }
 );
+const issueIsOpen = createSelector(
+  viewedIssue,
+  (issue) => issue && issue.statusRef && issue.statusRef.meansOpen
+);
 // values (from issue.fieldValues) is an array with one entry per value.
 // We want to turn this into a map of fieldNames -> values.
 const issueFieldValueMap = createSelector(
@@ -132,6 +136,7 @@ export const selectors = Object.freeze({
   fieldDefs,
   issueFieldValues,
   issueType,
+  issueIsOpen,
   issueFieldValueMap,
   componentsMap,
   componentsForIssue,

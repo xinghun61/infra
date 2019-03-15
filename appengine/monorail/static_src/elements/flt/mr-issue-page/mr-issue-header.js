@@ -9,6 +9,7 @@ import '../../mr-flipper.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {selectors} from '../../redux/selectors.js';
 import '../../mr-user-link/mr-user-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
@@ -42,6 +43,9 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           display: flex;
           justify-content: flex-end;
           align-items: center;
+        }
+        :host([issue-closed]) {
+          background-color: var(--monorail-metadata-closed-bg);
         }
         h1 {
           font-size: 100%;
@@ -149,6 +153,10 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         value: () => {},
       },
       issuePermissions: Object,
+      issueClosed: {
+        type: Boolean,
+        reflectToAttribute: true,
+      },
       _issueOptions: {
         type: Array,
         computed: '_computeIssueOptions(issuePermissions, issue)',
@@ -178,6 +186,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
     return {
       issue: state.issue,
       issuePermissions: state.issuePermissions,
+      issueClosed: !selectors.issueIsOpen(state),
     };
   }
 

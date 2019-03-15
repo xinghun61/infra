@@ -13,6 +13,7 @@ import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
 import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
 import * as user from '../../redux/user.js';
+import {selectors} from '../../redux/selectors.js';
 import '../shared/mr-flt-styles.js';
 import '../mr-edit-description/mr-edit-description.js';
 import './mr-move-copy-issue.js';
@@ -27,6 +28,9 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-flt-styles">
+        :host([issue-closed]) .metadata-container {
+          background: var(--monorail-metadata-closed-bg);
+        }
         .container-issue {
           width: 100%;
           flex-direction: column;
@@ -177,6 +181,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issue: Object,
       issueId: Number,
       issueLoaded: Boolean,
+      issueClosed: {
+        type: Boolean,
+        reflectToAttribute: true,
+      },
       issuePermissions: Object,
       projectName: {
         type: String,
@@ -203,6 +211,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issue: state.issue,
       issueId: state.issueId,
       issueLoaded: state.issueLoaded,
+      issueClosed: !selectors.issueIsOpen(state),
       issuePermissions: state.issuePermissions,
       projectName: state.projectName,
       fetchingIssue: state.requests.fetchIssue.requesting,
