@@ -23,7 +23,14 @@ const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
 export class MrEditIssue extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style include="mr-flt-styles"></style>
+      <style include="mr-flt-styles">
+        h2 a {
+          text-decoration: none;
+        }
+      </style>
+      <h2 id="makechanges" class="medium-heading">
+        <a href="#makechanges">Add a comment and make changes</a>
+      </h2>
       <mr-edit-metadata
         id="metadataForm"
         owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
@@ -62,6 +69,10 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       projectConfig: Object,
       updatingIssue: Boolean,
       updateIssueError: Object,
+      focusId: {
+        type: String,
+        observer: '_focusIdChanged',
+      },
       _labelNames: {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',
@@ -82,6 +93,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       projectConfig: state.projectConfig,
       updatingIssue: state.requests.updateIssue.requesting,
       updateIssueError: state.requests.updateIssue.error,
+      focusId: state.focusId,
       _fieldDefs: selectors.fieldDefsForIssue(state),
     };
   }
@@ -109,6 +121,23 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     }).catch((reason) => {
       console.error('loading file for attachment: ', reason);
     });
+  }
+
+  focus() {
+    const editHeader = this.shadowRoot.querySelector('#makechanges');
+    editHeader.scrollIntoView();
+
+    const editForm = this.shadowRoot.querySelector('#metadataForm');
+    editForm.focus();
+  }
+
+  _focusIdChanged(focusId) {
+    if (!focusId) return;
+    // TODO(zhangtiff): Generalize logic to focus elements based on ID
+    // to a reuseable class mixin.
+    if (focusId.toLowerCase() === 'makechanges') {
+      this.focus();
+    }
   }
 
   _generateMessage(data) {

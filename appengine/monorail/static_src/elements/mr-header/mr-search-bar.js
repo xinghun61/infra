@@ -243,6 +243,12 @@ export class MrSearchBar extends PolymerElement {
         type: Array,
         computed: '_computeSearchMenuItems(projectName)',
       },
+      _boundFocus: {
+        type: Function,
+        value: function() {
+          return this.focus.bind(this);
+        },
+      },
     };
   }
 
@@ -270,6 +276,23 @@ export class MrSearchBar extends PolymerElement {
       cl.logPause('issue-search', 'user-time');
       cl.logStart('issue-search', 'computer-time');
     });
+
+
+    // Global event listeners. Make sure to unbind these when the
+    // element disconnects.
+
+    window.addEventListener('focus-search', this._boundFocus);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    window.removeEventListener('focus-search', this._boundFocus);
+  }
+
+  focus() {
+    const search = this.shadowRoot.querySelector('#searchq');
+    search.focus();
   }
 
   _computeSearchMenuItems(projectName) {

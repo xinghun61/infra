@@ -27,10 +27,11 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
           color: var(--chops-link-color);
           border: 0;
           border-bottom: var(--chops-normal-border);
+          border-top: var(--chops-normal-border);
           width: 100%;
           padding: 0.5em 8px;
           text-align: left;
-          font-size: 110%;
+          font-size: 14px;
         }
         button.toggle:hover {
           cursor: pointer;

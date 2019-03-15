@@ -329,6 +329,28 @@ export const actionCreator = {
       });
     };
   },
+  starIssue: (issueRef, starred) => async (dispatch) => {
+    dispatch({type: actionType.STAR_ISSUE_START});
+
+    const message = {issueRef, starred};
+
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'StarIssue', message
+      );
+
+      dispatch({
+        type: actionType.STAR_ISSUE_SUCCESS,
+        starCount: resp.starCount,
+        isStarred: starred,
+      });
+    } catch (error) {
+      dispatch({
+        type: actionType.STAR_ISSUE_FAILURE,
+        error,
+      });
+    }
+  },
   updateApproval: (message) => async (dispatch) => {
     dispatch({type: actionType.UPDATE_APPROVAL_START});
 

@@ -184,6 +184,11 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       fetchingIssue: Boolean,
       fetchingProjectConfig: Boolean,
       fetchIssueError: String,
+      queryParams: {
+        type: Object,
+        value: () => {},
+      },
+      issueEntryUrl: String,
       userDisplayName: {
         type: String,
         observer: '_userDisplayNameChanged',

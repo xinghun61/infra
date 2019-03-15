@@ -11,6 +11,7 @@ import qs from 'qs';
 import {ReduxMixin, actionType} from '../redux/redux-mixin.js';
 import '../flt/mr-issue-page/mr-issue-page.js';
 import '../mr-header/mr-header.js';
+import '../mr-keystrokes/mr-keystrokes.js';
 
 /**
  * `<mr-app>`
@@ -27,6 +28,12 @@ export class MrApp extends ReduxMixin(PolymerElement) {
           'safeTypesBridge': security.polymer_resin.noclosure_bridge,
         });
       </script>
+      <mr-keystrokes
+        project-name="[[projectName]]"
+        issue-id="[[queryParams.id]]"
+        query-params="[[queryParams]]"
+        issue-entry-url="[[issueEntryUrl]]"
+      ></mr-keystrokes>
       <mr-header
         project-name="[[projectName]]"
         user-display-name="[[userDisplayName]]"
@@ -49,6 +56,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       logoutUrl: String,
       projectName: String,
       userDisplayName: String,
+      queryParams: Object,
       _boundLoadApprovalPage: {
         type: Function,
         value: function() {
@@ -115,6 +123,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       // Run query string parsing on all routes.
       // Based on: https://visionmedia.github.io/page.js/#plugins
       ctx.query = qs.parse(ctx.querystring);
+      this.queryParams = ctx.query;
       this._currentContext = ctx;
 
       next();
@@ -151,9 +160,13 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
     this.projectName = ctx.params.project;
 
+    // TODO(zhangtiff): Make sure the properties passed in to the loaded
+    // component can still dynamically change.
     this.loadWebComponent('mr-issue-page', {
       'projectName': ctx.params.project,
       'userDisplayName': this.userDisplayName,
+      'issueEntryUrl': this.issueEntryUrl,
+      'queryParams': ctx.params,
     });
   }
 }

@@ -5,7 +5,7 @@
 import {assert} from 'chai';
 import {MrEditIssue} from './mr-edit-issue.js';
 import {actionType} from '../../redux/redux-mixin.js';
-
+import sinon from 'sinon';
 
 let element;
 
@@ -22,5 +22,16 @@ suite('mr-edit-issue', () => {
 
   test('initializes', () => {
     assert.instanceOf(element, MrEditIssue);
+  });
+
+  test('scrolls into view', () => {
+    const header = element.shadowRoot.querySelector('#makechanges');
+    sinon.stub(header, 'scrollIntoView');
+
+    element.focusId = 'makechanges';
+
+    assert.isTrue(header.scrollIntoView.calledOnce);
+
+    header.scrollIntoView.restore();
   });
 });

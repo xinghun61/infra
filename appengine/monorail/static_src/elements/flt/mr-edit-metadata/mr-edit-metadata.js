@@ -466,6 +466,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     }
   }
 
+  focus() {
+    this.shadowRoot.querySelector('#commentText').focus();
+  }
+
   getDelta() {
     if (!this.isConnected) {
       return {};

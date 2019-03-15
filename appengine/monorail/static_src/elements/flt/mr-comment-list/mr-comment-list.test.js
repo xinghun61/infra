@@ -84,6 +84,8 @@ suite('mr-comment-list', () => {
 
     assert.isTrue(element.showComments.called);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
+
+    commentElement.scrollIntoView.restore();
   });
 
   test('scrolls to hidden comment', () => {
@@ -99,5 +101,7 @@ suite('mr-comment-list', () => {
 
     assert.isTrue(element.showComments.called);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
+
+    commentElement.scrollIntoView.restore();
   });
 });

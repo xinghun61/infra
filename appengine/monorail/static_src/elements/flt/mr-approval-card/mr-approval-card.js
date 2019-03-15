@@ -114,6 +114,10 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           font-size: inherit;
           line-height: inherit;
         }
+        mr-description {
+          display: block;
+          margin-bottom: 0.5em;
+        }
         .approver-notice {
           padding: 0.25em 0;
           width: 100%;
@@ -205,9 +209,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           class="survey"
           description-list="[[_surveyList]]"
         ></mr-description>
-        <h4 class="medium-heading">Approval comments / Changelog</h3>
         <mr-comment-list
-          heading-level=5
+          heading-level=4
           comments="[[_comments]]"
         >
           <h4 id$="[[_editId]]" class="medium-heading">

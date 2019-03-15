@@ -6,7 +6,8 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {selectors} from '../../redux/selectors.js';
-import {ReduxMixin, actionType} from '../../redux/redux-mixin.js';
+import {ReduxMixin, actionType, actionCreator} from
+  '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';
 import '../shared/mr-flt-styles.js';
 import './mr-metadata.js';
@@ -167,33 +168,14 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
 
   toggleStar() {
     if (!this._canStar) return;
-    this.dispatchAction({type: actionType.STAR_ISSUE_START});
 
     const newIsStarred = !this.isStarred;
-    const message = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
-      starred: newIsStarred,
+    const issueRef = {
+      projectName: this.projectName,
+      localId: this.issueId,
     };
 
-    const starIssue = window.prpcClient.call(
-      'monorail.Issues', 'StarIssue', message
-    );
-
-    starIssue.then((resp) => {
-      this.dispatchAction({
-        type: actionType.STAR_ISSUE_SUCCESS,
-        starCount: resp.starCount,
-        isStarred: newIsStarred,
-      });
-    }, (error) => {
-      this.dispatchAction({
-        type: actionType.STAR_ISSUE_FAILURE,
-        error,
-      });
-    });
+    this.dispatchAction(actionCreator.starIssue(issueRef, newIsStarred));
   }
 
   _computeCanStar(fetching, starring) {

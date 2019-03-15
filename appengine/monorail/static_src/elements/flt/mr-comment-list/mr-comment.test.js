@@ -51,5 +51,7 @@ suite('mr-comment', () => {
     element.focusId = 'c3';
 
     assert.isTrue(element.scrollIntoView.calledOnce);
+
+    element.scrollIntoView.restore();
   });
 });

@@ -4,7 +4,7 @@
 
 // With lists a and b, get the elements that are in a but not in b.
 // result = a - b
-function arrayDifference(listA, listB, equals) {
+export function arrayDifference(listA, listB, equals) {
   if (!equals) {
     equals = (a, b) => (a === b);
   }
@@ -15,7 +15,7 @@ function arrayDifference(listA, listB, equals) {
   });
 }
 
-function loadAttachments(attachments) {
+export function loadAttachments(attachments) {
   if (!attachments || !attachments.length) return [];
   return attachments.map(_loadLocalFile);
 }
@@ -33,5 +33,3 @@ function _loadLocalFile(f) {
     r.readAsBinaryString(f);
   });
 }
-
-export {arrayDifference, loadAttachments};

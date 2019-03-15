@@ -46,15 +46,11 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
         }
       </style>
       <mr-description description-list="[[_descriptionList]]"></mr-description>
-      <h2 class="medium-heading" hidden\$="[[!_comments.length]]">
-        Feature discussion / Changelog
-      </h2>
       <mr-comment-list
-        heading-level="3"
+        heading-level="2"
         comments="[[_comments]]"
         comments-shown-count="5"
       >
-        <h3 id="editIssue" class="medium-heading">Add a comment and make changes</h3>
         <mr-edit-issue
           id="metadataForm"
           owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
