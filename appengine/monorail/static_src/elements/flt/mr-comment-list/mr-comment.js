@@ -78,7 +78,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
         class="comment-header"
       >
         <div>
-          <a href\$="/p/[[comment.projectName]]/issues/detail?id=[[comment.localId]]#[[id]]">
+          <a href\$="?id=[[comment.localId]]#[[id]]">
             Comment [[comment.sequenceNum]]
           </a>
           <template is="dom-if" if="[[comment.commenter]]">

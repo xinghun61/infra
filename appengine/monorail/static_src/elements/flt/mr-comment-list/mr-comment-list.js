@@ -112,7 +112,12 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
   ready() {
     super.ready();
     this.addEventListener('expand-parent', (evt) => {
-      this.showComments(evt);
+      // Only uncollapse comments if the comment firing the event is
+      // collapsed.
+      const path = evt.path || evt.composedPath();
+      if (path[0].hidden) {
+        this.showComments(evt);
+      }
     });
   }
 

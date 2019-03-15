@@ -178,7 +178,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           [[_status]]
         </span>
       </button>
-      <iron-collapse class="card-content" id="cardCollapse" opened="[[opened]]">
+      <iron-collapse class="card-content" id="cardCollapse" opened="[[opened]]" no-animation>
         <div class="approver-notice">
           <template is="dom-if" if="[[_isApprover]]">
             You are an approver for this bit.

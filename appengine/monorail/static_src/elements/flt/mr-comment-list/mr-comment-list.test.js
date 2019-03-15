@@ -82,7 +82,7 @@ suite('mr-comment-list', () => {
 
     flush();
 
-    assert.isTrue(element.showComments.called);
+    assert.isFalse(element.showComments.called);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
 
     commentElement.scrollIntoView.restore();
