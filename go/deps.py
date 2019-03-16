@@ -671,8 +671,10 @@ def install(workspace, force=False, update_out=None, skip_bundle=False):
         except CallFailed as e:
           if retry < GLIDE_INSTALL_RETRIES - 1:
             delay = 2 ** retry
-            print 'Failed to install dependencies. Retrying after %d sec.' % (
-                delay)
+            print(
+                'Failed to install dependencies. Deleting Glide cache and '
+                'retrying after %d sec.' % delay)
+            obliterate_glide_cache(workspace)
             time.sleep(delay)
           else:
             raise e
