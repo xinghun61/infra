@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -16,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab/internal/site"
+	"infra/cmd/skylab_swarming_worker/worker"
 )
 
 // Repair subcommand: Repair hosts.
@@ -65,16 +67,35 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 	return nil
 }
 
+// envWrapper wraps Environment to satisfy the worker.Environment
+// interface.
+type envWrapper struct {
+	e site.Environment
+}
+
+func (e envWrapper) LUCIProject() string {
+	return e.e.LUCIProject
+}
+
+func (e envWrapper) LogDogHost() string {
+	return e.e.LogDogHost
+}
+
+func (e envWrapper) AdminService() string {
+	return e.e.AdminService
+}
+
+func (e envWrapper) GenerateLogPrefix() string {
+	return "skylab/" + uuid.New().String()
+}
+
 func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environment, host string) (taskID string, err error) {
-	log := generateAnnotationURL(e)
+	c := worker.Command{TaskName: "admin_repair"}
+	c.Config(worker.Env(envWrapper{e}))
 	slices := []*swarming.SwarmingRpcsTaskSlice{{
 		ExpirationSecs: 600,
 		Properties: &swarming.SwarmingRpcsTaskProperties{
-			Command: []string{
-				"/opt/infra-tools/skylab_swarming_worker",
-				"-task-name", "admin_repair",
-				"-logdog-annotation-url", log,
-			},
+			Command: c.Args(),
 			Dimensions: []*swarming.SwarmingRpcsStringPair{
 				{Key: "pool", Value: "ChromeOSSkylab"},
 				{Key: "dut_name", Value: host},
@@ -86,7 +107,7 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 	r := &swarming.SwarmingRpcsNewTaskRequest{
 		Name: "admin_repair",
 		Tags: []string{
-			fmt.Sprintf("log_location:%s", log),
+			fmt.Sprintf("log_location:%s", c.LogDogAnnotationURL),
 			fmt.Sprintf("luci_project:%s", e.LUCIProject),
 			"pool:ChromeOSSkylab",
 			"skylab-tool:repair",
