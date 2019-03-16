@@ -35,6 +35,7 @@ func getApplication() *cli.Application {
 			cmd.ImportServoAttributes,
 			cmd.ListDuplicates,
 			cmd.Migrate,
+			cmd.Summarize,
 		},
 	}
 }
