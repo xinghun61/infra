@@ -94,24 +94,24 @@ func (mr *MockInventoryClientMockRecorder) GetDeploymentStatus(ctx, in interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentStatus", reflect.TypeOf((*MockInventoryClient)(nil).GetDeploymentStatus), varargs...)
 }
 
-// DeleteDut mocks base method
-func (m *MockInventoryClient) DeleteDut(ctx context.Context, in *DeleteDutRequest, opts ...grpc.CallOption) (*DeleteDutResponse, error) {
+// DeleteDuts mocks base method
+func (m *MockInventoryClient) DeleteDuts(ctx context.Context, in *DeleteDutsRequest, opts ...grpc.CallOption) (*DeleteDutsResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "DeleteDut", varargs...)
-	ret0, _ := ret[0].(*DeleteDutResponse)
+	ret := m.ctrl.Call(m, "DeleteDuts", varargs...)
+	ret0, _ := ret[0].(*DeleteDutsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// DeleteDut indicates an expected call of DeleteDut
-func (mr *MockInventoryClientMockRecorder) DeleteDut(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// DeleteDuts indicates an expected call of DeleteDuts
+func (mr *MockInventoryClientMockRecorder) DeleteDuts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDut", reflect.TypeOf((*MockInventoryClient)(nil).DeleteDut), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDuts", reflect.TypeOf((*MockInventoryClient)(nil).DeleteDuts), varargs...)
 }
 
 // EnsurePoolHealthy mocks base method
@@ -382,19 +382,19 @@ func (mr *MockInventoryServerMockRecorder) GetDeploymentStatus(arg0, arg1 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDeploymentStatus", reflect.TypeOf((*MockInventoryServer)(nil).GetDeploymentStatus), arg0, arg1)
 }
 
-// DeleteDut mocks base method
-func (m *MockInventoryServer) DeleteDut(arg0 context.Context, arg1 *DeleteDutRequest) (*DeleteDutResponse, error) {
+// DeleteDuts mocks base method
+func (m *MockInventoryServer) DeleteDuts(arg0 context.Context, arg1 *DeleteDutsRequest) (*DeleteDutsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteDut", arg0, arg1)
-	ret0, _ := ret[0].(*DeleteDutResponse)
+	ret := m.ctrl.Call(m, "DeleteDuts", arg0, arg1)
+	ret0, _ := ret[0].(*DeleteDutsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// DeleteDut indicates an expected call of DeleteDut
-func (mr *MockInventoryServerMockRecorder) DeleteDut(arg0, arg1 interface{}) *gomock.Call {
+// DeleteDuts indicates an expected call of DeleteDuts
+func (mr *MockInventoryServerMockRecorder) DeleteDuts(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDut", reflect.TypeOf((*MockInventoryServer)(nil).DeleteDut), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteDuts", reflect.TypeOf((*MockInventoryServer)(nil).DeleteDuts), arg0, arg1)
 }
 
 // EnsurePoolHealthy mocks base method

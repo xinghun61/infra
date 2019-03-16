@@ -46,8 +46,8 @@ service Inventory {
   rpc GetDeploymentStatus(GetDeploymentStatusRequest) returns
       (GetDeploymentStatusResponse);
 
-  // Delete a DUT from inventory.
-  rpc DeleteDut(DeleteDutRequest) returns (DeleteDutResponse);
+  // Delete DUTs from inventory.
+  rpc DeleteDuts(DeleteDutsRequest) returns (DeleteDutsResponse);
 
   // ///////////////////////////////////////////////////////////////////////////
   // DUT pool balancing RPCs
@@ -201,14 +201,17 @@ message GetDeploymentStatusResponse{
   string task_url = 4;
 }
 
-message DeleteDutRequest {
-  // inventory.CommonDeviceSpecs.Id for the DUT to delete.
-  string dut_id = 1;
+message DeleteDutsRequest {
+  // inventory.CommonDeviceSpecs.Hostname for the DUT to delete.
+  repeated string hostnames = 1;
 }
 
-message DeleteDutResponse {
-  // URL for the inventory change that removed the requested DUT.
+message DeleteDutsResponse {
+  // URL for the inventory change that removed the requested DUTs.
   string change_url = 1;
+
+  // ids lists the inventory IDs of the DUTs deleted.
+  repeated string ids = 2;
 }
 
 message DutDeploymentActions {

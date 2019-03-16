@@ -74,19 +74,19 @@ func (s *DecoratedInventory) GetDeploymentStatus(c context.Context, req *GetDepl
 	return
 }
 
-func (s *DecoratedInventory) DeleteDut(c context.Context, req *DeleteDutRequest) (rsp *DeleteDutResponse, err error) {
+func (s *DecoratedInventory) DeleteDuts(c context.Context, req *DeleteDutsRequest) (rsp *DeleteDutsResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
-		newCtx, err = s.Prelude(c, "DeleteDut", req)
+		newCtx, err = s.Prelude(c, "DeleteDuts", req)
 		if err == nil {
 			c = newCtx
 		}
 	}
 	if err == nil {
-		rsp, err = s.Service.DeleteDut(c, req)
+		rsp, err = s.Service.DeleteDuts(c, req)
 	}
 	if s.Postlude != nil {
-		err = s.Postlude(c, "DeleteDut", rsp, err)
+		err = s.Postlude(c, "DeleteDuts", rsp, err)
 	}
 	return
 }

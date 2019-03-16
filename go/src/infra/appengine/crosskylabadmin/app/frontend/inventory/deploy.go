@@ -37,7 +37,7 @@ func (*ServerImpl) GetDeploymentStatus(ctx context.Context, req *fleet.GetDeploy
 	return nil, status.Errorf(codes.Unimplemented, "get deployment status: not implemented yet")
 }
 
-// DeleteDut implements the method from fleet.InventoryServer interface.
-func (*ServerImpl) DeleteDut(ctx context.Context, req *fleet.DeleteDutRequest) (*fleet.DeleteDutResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "deploy dut: not implemented yet")
+// DeleteDuts implements the method from fleet.InventoryServer interface.
+func (*ServerImpl) DeleteDuts(ctx context.Context, req *fleet.DeleteDutsRequest) (*fleet.DeleteDutsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "delete duts: not implemented yet")
 }
