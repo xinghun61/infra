@@ -5,7 +5,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -44,15 +43,9 @@ func runLuciferCommand(i *harness.Info, w io.Writer, cmd *exec.Cmd) (*luciferRes
 	}
 	err := event.RunCommand(cmd, f)
 	annotations.BuildStep(w, "Epilog")
-	annotations.StepLink(w, "Task results (Stainless)", resultsURL(i.Info))
+	annotations.StepLink(w, "Task results (Stainless)", i.Info.Task.StainlessURL())
 	annotations.StepClosed(w)
 	return r, err
-}
-
-func resultsURL(b *swmbot.Info) string {
-	return fmt.Sprintf(
-		"https://stainless.corp.google.com/browse/chromeos-autotest-results/swarming-%s/",
-		b.Task.RunID)
 }
 
 // hostStateUpdates maps Events to the target runtime state of the

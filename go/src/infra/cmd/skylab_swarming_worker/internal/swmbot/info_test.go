@@ -5,6 +5,8 @@
 package swmbot
 
 import (
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
@@ -25,5 +27,18 @@ func TestInfo_LuciferConfig(t *testing.T) {
 	}
 	if diff := pretty.Compare(want, got); diff != "" {
 		t.Errorf("LuciferConfig() differs -want +got:\n %s", diff)
+	}
+}
+
+func TestTask_StainlessURL(t *testing.T) {
+	t.Parallel()
+	task := &Task{
+		RunID: "3e4391423c3a431a",
+	}
+	// Stainless browser expects directory paths to contain a trailing /
+	suffix := filepath.Join("swarming-3e4391423c3a4310", "a") + "/"
+	got := task.StainlessURL()
+	if !strings.HasSuffix(got, suffix) {
+		t.Errorf("Stainless URL does not have suffix %s: %s", suffix, got)
 	}
 }

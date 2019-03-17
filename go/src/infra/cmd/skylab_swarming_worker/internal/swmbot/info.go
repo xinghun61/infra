@@ -80,10 +80,22 @@ func (b *Info) LuciferConfig() lucifer.Config {
 func (b *Info) ResultsDir() string {
 	// TODO(pprabhu): Reflect the requesting swarming server URL in the resultdir.
 	// This will truly disambiguate results between different swarming servers.
-	return filepath.Join(b.AutotestPath, "results", fmt.Sprintf("swarming-%s", b.Task.RunID))
+	return filepath.Join(b.AutotestPath, "results", resultsSubdir(b.Task.RunID))
 }
 
 // TaskRunURL returns the URL for the current Swarming task execution.
 func (b *Info) TaskRunURL() string {
 	return fmt.Sprintf("https://chromeos-swarming.appspot.com/task?id=%s", b.Task.RunID)
+}
+
+// StainlessURL returns the URL to the stainless logs browser for logs offloaded
+// from this task.
+func (t *Task) StainlessURL() string {
+	return fmt.Sprintf(
+		"https://stainless.corp.google.com/browse/chromeos-autotest-results/%s/",
+		resultsSubdir(t.RunID))
+}
+
+func resultsSubdir(runID string) string {
+	return filepath.Join(fmt.Sprintf("swarming-%s0", runID[:len(runID)-1]), runID[len(runID)-1:])
 }
