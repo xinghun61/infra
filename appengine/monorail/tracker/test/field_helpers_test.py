@@ -323,12 +323,15 @@ class FieldHelpersTest(unittest.TestCase):
 
   def testParseFieldValues_Empty(self):
     field_val_strs = {}
+    phase_field_val_strs = {}
     field_values = field_helpers.ParseFieldValues(
-        self.mr.cnxn, self.services.user, field_val_strs, self.config)
+        self.mr.cnxn, self.services.user, field_val_strs,
+        phase_field_val_strs, self.config)
     self.assertEqual([], field_values)
 
   def testParseFieldValues_EmptyPhases(self):
     field_val_strs = {126: ['70']}
+    phase_field_val_strs = {}
     fd_phase = tracker_bizobj.MakeFieldDef(
         126, 789, 'Target', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
@@ -336,7 +339,8 @@ class FieldHelpersTest(unittest.TestCase):
         False, is_phase_field=True)
     self.config.field_defs.extend([fd_phase])
     field_values = field_helpers.ParseFieldValues(
-        self.mr.cnxn, self.services.user, field_val_strs, self.config)
+        self.mr.cnxn, self.services.user, field_val_strs,
+        phase_field_val_strs, self.config)
     self.assertEqual([], field_values)
 
   def testParseFieldValues_Normal(self):
@@ -362,11 +366,16 @@ class FieldHelpersTest(unittest.TestCase):
         123: ['80386', '68040'],
         124: ['2009-02-13'],
         125: ['www.google.com'],
-        126: ['70'],
     }
+    phase_field_val_strs = {
+        126: {'beta': ['89'],
+              'stable': ['70'],
+              'missing': ['234'],
+        }}
     field_values = field_helpers.ParseFieldValues(
-        self.mr.cnxn, self.services.user, field_val_strs, self.config,
-        phase_ids=[30, 40])
+        self.mr.cnxn, self.services.user, field_val_strs,
+        phase_field_val_strs, self.config,
+        phase_ids_by_name={'stable': [30, 40], 'beta': [88]})
     fv1 = tracker_bizobj.MakeFieldValue(
         123, 80386, None, None, None, None, False)
     fv2 = tracker_bizobj.MakeFieldValue(
@@ -376,10 +385,12 @@ class FieldHelpersTest(unittest.TestCase):
     fv4 = tracker_bizobj.MakeFieldValue(
         125, None, None, None, None, 'http://www.google.com', False)
     fv5 = tracker_bizobj.MakeFieldValue(
-        126, 70, None, None, None, None, False, phase_id=30)
+        126, 89, None, None, None, None, False, phase_id=88)
     fv6 = tracker_bizobj.MakeFieldValue(
+        126, 70, None, None, None, None, False, phase_id=30)
+    fv7 = tracker_bizobj.MakeFieldValue(
         126, 70, None, None, None, None, False, phase_id=40)
-    self.assertEqual([fv1, fv2, fv3, fv4, fv5, fv6], field_values)
+    self.assertEqual([fv1, fv2, fv3, fv4, fv5, fv6, fv7], field_values)
 
   def test_IntType(self):
     fd = tracker_bizobj.MakeFieldDef(

@@ -207,6 +207,7 @@ def ParseOneFieldValue(cnxn, user_service, fd, val_str):
     logging.error('Cant parse field with unexpected type %r', fd.field_type)
     return None
 
+
 def ParseOnePhaseFieldValue(cnxn, user_service, fd, val_str, phase_ids):
   """Return a list containing a FieldValue PB for each phase."""
   phase_fvs = []
@@ -214,25 +215,32 @@ def ParseOnePhaseFieldValue(cnxn, user_service, fd, val_str, phase_ids):
     # TODO(jojwang): monorail:3970, create the FieldValue once and find some
     # proto2 CopyFrom() method to create a new one for each phase.
     fv = ParseOneFieldValue(cnxn, user_service, fd, val_str)
-    fv.phase_id = phase_id
-    phase_fvs.append(fv)
+    if fv:
+      fv.phase_id = phase_id
+      phase_fvs.append(fv)
 
   return phase_fvs
 
-def ParseFieldValues(
-    cnxn, user_service, field_val_strs, config, phase_ids=None):
+
+def ParseFieldValues(cnxn, user_service, field_val_strs, phase_field_val_strs,
+                     config, phase_ids_by_name=None):
   """Return a list of FieldValue PBs based on the given dict of strings."""
   field_values = []
   for fd in config.field_defs:
-    if fd.field_id not in field_val_strs:
-      continue
-    for val_str in field_val_strs[fd.field_id]:
-      if fd.is_phase_field and phase_ids:
-        phase_fvs = ParseOnePhaseFieldValue(
-            cnxn, user_service, fd, val_str, phase_ids)
-        field_values.extend(phase_fvs)
-        # We do not save phase fields when there are no phases.
-      elif not fd.is_phase_field:
+    if fd.is_phase_field and (
+        fd.field_id in phase_field_val_strs) and phase_ids_by_name:
+      fvs_by_phase_name = phase_field_val_strs.get(fd.field_id, {})
+      for phase_name, val_strs in fvs_by_phase_name.iteritems():
+        phase_ids = phase_ids_by_name.get(phase_name)
+        if not phase_ids:
+          continue
+        for val_str in val_strs:
+          field_values.extend(
+              ParseOnePhaseFieldValue(
+                  cnxn, user_service, fd, val_str, phase_ids=phase_ids))
+    # We do not save phase fields when there are no phases.
+    elif not fd.is_phase_field and (fd.field_id in field_val_strs):
+      for val_str in field_val_strs[fd.field_id]:
         fv = ParseOneFieldValue(cnxn, user_service, fd, val_str)
         if fv:
           field_values.append(fv)

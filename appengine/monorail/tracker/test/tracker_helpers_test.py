@@ -199,12 +199,18 @@ class HelpersTest(unittest.TestCase):
         'custom_1': ['https://hello.com'],
         'custom_12': ['https://blah.com'],
         'custom_14': ['https://remove.com'],
+        'custom_15_goats': ['2', '3'],
+        'custom_15_sheep': ['3', '5'],
+        'custom_16_sheep': ['yarn'],
         'op_custom_14': ['remove'],
         'op_custom_12': ['clear'],
+        'op_custom_16_sheep': ['remove'],
         'ignore': 'no matter',}))
     self.assertEquals(parsed_fields, tracker_helpers.ParsedFields(
         {1:['https://hello.com'], 12: ['https://blah.com']},
-        {14: ['https://remove.com']}, [12]))
+        {14: ['https://remove.com']}, [12],
+        {15: {'goats': ['2', '3'], 'sheep': ['3', '5']}},
+        {16: {'sheep': ['yarn']}}))
 
   def testParseIssueRequestAttachments(self):
     file1 = testing_helpers.Blank(

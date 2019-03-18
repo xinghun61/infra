@@ -117,6 +117,24 @@
      [end]
    </tbody>
 
+   [for issue_phase_names]
+     [for fields]
+       [is fields.phase_name issue_phase_names]
+         [# TODO(jojwang): monorail:5154, bulk-editing single phase values not supported]
+         [if-any fields.field_def.is_multivalued_bool]
+           <tr><th>[issue_phase_names].[fields.field_name]:</th>
+             <td colspan="2">
+               [define widget_id]custom_[fields.field_id]_[issue_phase_names][end]
+               [include "issue-bulk-operator-part.ezt" widget_id "multi"]
+               [include "field-value-widgets.ezt" False "" fields.field_def.is_required_bool issue_phase_names]
+               <div class="fielderror" style="display:none" id="error_custom_[issue_phase_names]_[fields.field_id]"></div>
+             </td>
+           </tr>
+         [end]
+       [end]
+     [end]
+   [end]
+
    <tr><th>Labels:</th>
        <td colspan="2" class="labelediting">
         <div id="enterrow1">

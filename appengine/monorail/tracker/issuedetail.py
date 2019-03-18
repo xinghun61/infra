@@ -601,7 +601,8 @@ class IssueDetail(issuepeek.IssuePeek):
         parsed.labels, parsed.labels_remove,
         parsed.fields.vals, parsed.fields.vals_remove, config)
     field_values = field_helpers.ParseFieldValues(
-        mr.cnxn, self.services.user, parsed.fields.vals, config)
+        mr.cnxn, self.services.user, parsed.fields.vals,
+        parsed.fields.phase_vals, config)
 
     component_ids = tracker_helpers.LookupComponentIDs(
         parsed.components.paths, config, mr.errors)

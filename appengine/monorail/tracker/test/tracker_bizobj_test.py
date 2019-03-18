@@ -1070,6 +1070,56 @@ class BizobjTest(unittest.TestCase):
     amendment = tracker_bizobj.ApplyLabelChanges(issue, self.config, [], [])
     self.assertIsNone(amendment)
 
+  def testApplyFieldValueChanges(self):
+    self.config.field_defs = [
+        tracker_pb2.FieldDef(
+            field_id=1, project_id=789, field_name='EstDays',
+            field_type=tracker_pb2.FieldTypes.INT_TYPE),
+        tracker_pb2.FieldDef(
+            field_id=2, project_id=789, field_name='SleepHrs',
+            field_type=tracker_pb2.FieldTypes.INT_TYPE, is_phase_field=True),
+        tracker_pb2.FieldDef(
+            field_id=3, project_id=789, field_name='Chickens',
+            field_type=tracker_pb2.FieldTypes.STR_TYPE, is_phase_field=True,
+            is_multivalued=True),
+    ]
+    original_keep = [
+        tracker_pb2.FieldValue(field_id=3, str_value='bok', phase_id=45)]
+    original_replace = [
+        tracker_pb2.FieldValue(field_id=1, int_value=72),
+        tracker_pb2.FieldValue(field_id=2, int_value=88, phase_id=44),
+    ]
+    issue = tracker_pb2.Issue(
+        phases=[
+            tracker_pb2.Phase(phase_id=45, name='high-school'),
+            tracker_pb2.Phase(phase_id=44, name='college')])
+    issue.field_values = original_keep + original_replace
+
+    fvs_add_ignore = [
+        tracker_pb2.FieldValue(field_id=3, str_value='egg', phase_id=42)]
+    fvs_add = [
+        tracker_pb2.FieldValue(field_id=1, int_value=73),  # replace
+        tracker_pb2.FieldValue(field_id=2, int_value=99, phase_id=44),  #replace
+        tracker_pb2.FieldValue(field_id=2, int_value=100, phase_id=45),  # added
+        # added
+        tracker_pb2.FieldValue(field_id=3, str_value='rooster', phase_id=45),
+    ]
+    fvs_remove = []
+    fields_clear = []
+    amendments = tracker_bizobj.ApplyFieldValueChanges(
+        issue, self.config, fvs_add+fvs_add_ignore, fvs_remove, fields_clear)
+
+    self.assertEqual(
+        amendments,
+        [tracker_bizobj.MakeFieldAmendment(1, self.config, [73]),
+         tracker_bizobj.MakeFieldAmendment(
+             2, self.config, [99], phase_name='college'),
+         tracker_bizobj.MakeFieldAmendment(
+             2, self.config, [100], phase_name='high-school'),
+         tracker_bizobj.MakeFieldAmendment(
+             3, self.config, ['rooster'], phase_name='high-school')])
+    self.assertEqual(issue.field_values, original_keep + fvs_add)
+
   def testApplyIssueDelta_NoChange(self):
     """A delta with no change should change nothing."""
     issue = tracker_pb2.Issue(

@@ -264,10 +264,13 @@ class IssueEntry(servlet.Servlet):
 
     # See monorail:4692 and the use of PHASES_WITH_MILESTONES
     # in elements/flt/mr-launch-overview/mr-phase.js
+    phase_ids_by_name = {
+        phase.name: phase.phase_id for phase in template.phases
+        if phase.name in PHASES_WITH_MILESTONES}
     field_values = field_helpers.ParseFieldValues(
-        mr.cnxn, self.services.user, parsed.fields.vals, config,
-        phase_ids=[phase.phase_id for phase in phases
-                   if phase.name in PHASES_WITH_MILESTONES])
+        mr.cnxn, self.services.user, parsed.fields.vals,
+        parsed.fields.phase_vals, config,
+        phase_ids_by_name=phase_ids_by_name)
 
     labels = _DiscardUnusedTemplateLabelPrefixes(parsed.labels)
     component_ids = tracker_helpers.LookupComponentIDs(

@@ -104,7 +104,9 @@ _EXAMPLE_ISSUE_RESTRICTIONS = [
 ParsedComponents = collections.namedtuple(
     'ParsedComponents', 'entered_str, paths, paths_remove')
 ParsedFields = collections.namedtuple(
-    'ParsedFields', 'vals, vals_remove, fields_clear')
+    'ParsedFields',
+    'vals, vals_remove, fields_clear, '
+    'phase_vals, phase_vals_remove')
 ParsedUsers = collections.namedtuple(
     'ParsedUsers', 'owner_username, owner_id, cc_usernames, '
     'cc_usernames_remove, cc_ids, cc_ids_remove')
@@ -241,16 +243,31 @@ def _ParseIssueRequestFields(post_data):
   """Iterate over post_data and return custom field values found in it."""
   field_val_strs = {}
   field_val_strs_remove = {}
+  phase_field_val_strs = collections.defaultdict(dict)
+  phase_field_val_strs_remove = collections.defaultdict(dict)
   for key in post_data.keys():
     if key.startswith(_CUSTOM_FIELD_NAME_PREFIX):
       val_strs = [v for v in post_data.getall(key) if v]
       if val_strs:
-        field_id = int(key[len(_CUSTOM_FIELD_NAME_PREFIX):])
+        try:
+          field_id = int(key[len(_CUSTOM_FIELD_NAME_PREFIX):])
+          phase_name = None
+        except ValueError:  # key must be in format <field_id>_<phase_name>
+          field_id, phase_name = key[len(_CUSTOM_FIELD_NAME_PREFIX):].split(
+              '_', 1)
+          field_id = int(field_id)
         if post_data.get('op_' + key) == 'remove':
-          field_val_strs_remove[field_id] = val_strs
+          if phase_name:
+            phase_field_val_strs_remove[field_id][phase_name] = val_strs
+          else:
+            field_val_strs_remove[field_id] = val_strs
         else:
-          field_val_strs[field_id] = val_strs
+          if phase_name:
+            phase_field_val_strs[field_id][phase_name] = val_strs
+          else:
+            field_val_strs[field_id] = val_strs
 
+  # TODO(jojwang): monorail:5154, no support for clearing phase field values.
   fields_clear = []
   op_prefix = 'op_' + _CUSTOM_FIELD_NAME_PREFIX
   for op_key in post_data.keys():
@@ -259,7 +276,9 @@ def _ParseIssueRequestFields(post_data):
         field_id = int(op_key[len(op_prefix):])
         fields_clear.append(field_id)
 
-  return ParsedFields(field_val_strs, field_val_strs_remove, fields_clear)
+  return ParsedFields(
+      field_val_strs, field_val_strs_remove, fields_clear,
+      phase_field_val_strs, phase_field_val_strs_remove)
 
 
 def _ParseIssueRequestAttachments(post_data):

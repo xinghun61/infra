@@ -10,7 +10,9 @@ Summary of classes:
      user to update them all at once.
 """
 
+import collections
 import httplib
+import itertools
 import logging
 import time
 
@@ -92,8 +94,11 @@ class IssueBulkEdit(servlet.Servlet):
           if lab.lower().startswith('type-')}
       type_label_set &= new_type_set
 
+    issue_phases = list(
+        itertools.chain.from_iterable(issue.phases for issue in issues))
+
     field_views = tracker_views.MakeAllFieldValueViews(
-        config, type_label_set, [], [], {})
+        config, type_label_set, [], [], {}, phases=issue_phases)
     # Explicitly set all field views to not required. We do not want to force
     # users to have to set it for issues missing required fields.
     # See https://bugs.chromium.org/p/monorail/issues/detail?id=500 for more
@@ -138,6 +143,8 @@ class IssueBulkEdit(servlet.Servlet):
         'restrict_to_known': ezt.boolean(config.restrict_to_known),
         'page_perms': page_perms,
         'statuses_offer_merge': config.statuses_offer_merge,
+        'issue_phase_names': list(
+            {phase.name.lower() for phase in issue_phases}),
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -192,10 +199,24 @@ class IssueBulkEdit(servlet.Servlet):
         parsed.labels, parsed.labels_remove,
         parsed.fields.vals, parsed.fields.vals_remove,
         config)
+    issue_list = self.services.issue.GetIssuesByLocalIDs(
+        mr.cnxn, mr.project_id, mr.local_id_list)
+    issue_phases = list(
+        itertools.chain.from_iterable(issue.phases for issue in issue_list))
+    phase_ids_by_name = collections.defaultdict(set)
+    for phase in issue_phases:
+      phase_ids_by_name[phase.name.lower()].add(phase.phase_id)
+    # Note: Not all parsed phase field values will be applicable to every issue.
+    # tracker_bizobj.ApplyFieldValueChanges will take care of not adding
+    # phase field values to issues that don't contain the correct phase.
     field_vals = field_helpers.ParseFieldValues(
-        mr.cnxn, self.services.user, parsed.fields.vals, config)
+        mr.cnxn, self.services.user, parsed.fields.vals,
+        parsed.fields.phase_vals, config,
+        phase_ids_by_name=phase_ids_by_name)
     field_vals_remove = field_helpers.ParseFieldValues(
-        mr.cnxn, self.services.user, parsed.fields.vals_remove, config)
+        mr.cnxn, self.services.user, parsed.fields.vals_remove,
+        parsed.fields.phase_vals_remove, config,
+        phase_ids_by_name=phase_ids_by_name)
 
     field_helpers.ValidateCustomFields(
         mr, self.services, field_vals, config, mr.errors)

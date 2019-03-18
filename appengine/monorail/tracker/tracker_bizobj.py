@@ -872,11 +872,14 @@ def ApplyLabelChanges(issue, config, labels_add, labels_remove):
 
 def ApplyFieldValueChanges(issue, config, fvs_add, fvs_remove, fields_clear):
   """Updates the PB issue's field_values and returns an amendments list."""
+  phase_names_dict = {phase.phase_id: phase.name for phase in issue.phases}
+  phase_ids = phase_names_dict.keys()
   (field_vals, update_fields_add,
    update_fields_remove) = MergeFields(
-       issue.field_values, fvs_add, fvs_remove,
+       issue.field_values,
+       [fv for fv in fvs_add if not fv.phase_id or fv.phase_id in phase_ids],
+       [fv for fv in fvs_remove if not fv.phase_id or fv.phase_id in phase_ids],
        config.field_defs)
-  phase_names_dict = {phase.phase_id: phase.name for phase in issue.phases}
   amendments = []
   if update_fields_add or update_fields_remove:
     issue.field_values = field_vals

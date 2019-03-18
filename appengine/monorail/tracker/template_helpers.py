@@ -110,8 +110,11 @@ def GetTemplateInfoFromParsed(mr, services, parsed, config):
   component_ids = tracker_helpers.LookupComponentIDs(
       parsed.component_paths, config, mr.errors)
 
+  # TODO(jojwang): monorail:4678 Process phase field values.
+  phase_field_val_strs = {}
   field_values = field_helpers.ParseFieldValues(
-      mr.cnxn, services.user, parsed.field_val_strs, config)
+      mr.cnxn, services.user, parsed.field_val_strs,
+      phase_field_val_strs, config)
   for fv in field_values:
     logging.info('field_value is %r: %r',
                  fv.field_id, tracker_bizobj.GetFieldValue(fv, {}))
