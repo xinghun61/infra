@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
+	"infra/cmd/skylab_swarming_worker/worker"
 )
 
 const showTaskLimit = 5
@@ -232,7 +233,7 @@ func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsT
 
 // createRerunRequest modifies a request to produce rerun a Skylab task.
 func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID string, siteEnv site.Environment) (*swarming.SwarmingRpcsNewTaskRequest, error) {
-	newURL := generateAnnotationURL(siteEnv)
+	newURL := worker.GenerateLogDogURL(siteEnv.Wrapped())
 	for _, s := range original.TaskSlices {
 		cmd := s.Properties.Command
 		if cmd[0] != "/opt/infra-tools/skylab_swarming_worker" {

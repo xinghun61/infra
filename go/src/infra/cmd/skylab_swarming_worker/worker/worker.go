@@ -95,14 +95,20 @@ type Environment interface {
 // Skylab environment (e.g., dev vs prod).
 func Env(e Environment) Option {
 	return func(c *Command) {
-		u := logDogURL{
-			Host:    e.LogDogHost(),
-			Project: e.LUCIProject(),
-			Prefix:  e.GenerateLogPrefix(),
-		}
-		c.LogDogAnnotationURL = u.String()
+		c.LogDogAnnotationURL = GenerateLogDogURL(e)
 		c.AdminService = e.AdminService()
 	}
+}
+
+// GenerateLogDogURL generates a LogDog annotation URL that is
+// suitable for a worker command.
+func GenerateLogDogURL(e Environment) string {
+	u := logDogURL{
+		Host:    e.LogDogHost(),
+		Project: e.LUCIProject(),
+		Prefix:  e.GenerateLogPrefix(),
+	}
+	return u.String()
 }
 
 // logDogURL is a constructor for LogDog annotation URLs.

@@ -142,7 +142,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	e := c.envFlags.Env()
 
-	logdogURL := generateAnnotationURL(e)
+	logdogURL := worker.GenerateLogDogURL(e.Wrapped())
 	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions, keyvals, c.testArgs, c.timeoutMins)
 	if err != nil {
 		return errors.Annotate(err, "create test").Err()
