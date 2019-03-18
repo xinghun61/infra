@@ -223,3 +223,23 @@ func TestAddRequest(t *testing.T) {
 		t.Errorf("AddRequest did not enqueue request.")
 	}
 }
+
+func TestExpireWorker(t *testing.T) {
+	Convey("Given an empty scheduler, with an an idle worker", t, func() {
+		ctx := context.Background()
+		tm := time.Unix(0, 0)
+		s := scheduler.New(tm)
+		s.MarkIdle(ctx, "worker1", nil, tm, scheduler.NullEventSink)
+		So(s.GetWorkers(), ShouldHaveLength, 1)
+		Convey("when time is updated by less than expiry threshold, worker is still idle.", func() {
+			t2 := tm.Add(150 * time.Second)
+			s.UpdateTime(ctx, t2)
+			So(s.GetWorkers(), ShouldHaveLength, 1)
+		})
+		Convey("when time is updated by more than expiry threshold, worker is removed.", func() {
+			t2 := tm.Add(301 * time.Second)
+			s.UpdateTime(ctx, t2)
+			So(s.GetWorkers(), ShouldBeEmpty)
+		})
+	})
+}

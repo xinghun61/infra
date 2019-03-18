@@ -31,6 +31,7 @@ import (
 	"go.chromium.org/luci/common/data/stringset"
 
 	"infra/qscheduler/qslib/protos"
+	"infra/qscheduler/qslib/tutils"
 )
 
 // Scheduler encapsulates the state and configuration of a running
@@ -212,6 +213,8 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) {
 	}
 
 	state.lastUpdateTime = t
+
+	s.expireWorkers()
 }
 
 // MarkIdle marks the given worker as idle, and with the given provisionable,
@@ -270,4 +273,22 @@ func (s *Scheduler) GetBalances() map[AccountID]Balance {
 func (s *Scheduler) DeleteAccount(aid AccountID) {
 	delete(s.config.AccountConfigs, string(aid))
 	delete(s.state.balances, aid)
+}
+
+// expireWorkers deletes idle workers that haven't been heard from recently.
+func (s *Scheduler) expireWorkers() {
+	expiry := 300 * time.Second
+	if s.config.BotExpiration != nil {
+		expiry = tutils.Duration(s.config.BotExpiration)
+	}
+
+	for wid, w := range s.state.workers {
+		if !w.IsIdle() {
+			continue
+		}
+		elapsed := s.state.lastUpdateTime.Sub(w.ConfirmedTime())
+		if elapsed > expiry {
+			delete(s.state.workers, wid)
+		}
+	}
 }
