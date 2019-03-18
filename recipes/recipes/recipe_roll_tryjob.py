@@ -6,33 +6,37 @@ from recipe_engine.recipe_api import Property
 
 
 DEPS = [
-  'build/luci_config',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
   'depot_tools/tryserver',
+  'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
-  'recipe_engine/raw_io',
   'recipe_engine/runtime',
-  'recipe_engine/service_account',
   'recipe_engine/step',
 ]
 
 
 PROPERTIES = {
-  'upstream_project': Property(
+  'upstream_id': Property(
       kind=str,
-      help='Project to patch'),
+      help='ID of the project to patch'),
+  'upstream_url': Property(
+      kind=str,
+      help='URL of git repo of the upstream project'),
 
-  'downstream_project': Property(
+  'downstream_id': Property(
       kind=str,
-      help=('Project that includes |upstream_project| in recipes.cfg to be '
-            'tested with upstream patch')),
+      help=('ID of the project that includes |upstream_id| in its recipes.cfg '
+            'to be tested with upstream patch')),
+  'downstream_url': Property(
+      kind=str,
+      help='URL of the git repo of the downstream project'),
 }
 
 
@@ -75,27 +79,24 @@ def _checkout_project(
     return ret
 
 
-def RunSteps(api, upstream_project, downstream_project):
+def RunSteps(api, upstream_id, upstream_url, downstream_id, downstream_url):
+  # NOTE: this recipe is only useful as a tryjob with patch applied against
+  # upstream repo, which means upstream_url must always match that specified in
+  # api.buildbucket.build.input.gerrit_changes[0]. upstream_url remains as a
+  # required parameter for symmetric input for upstream/downstream.
+  # TODO: figure out upstream_id from downstream's repo recipes.cfg file using
+  # patch and deprecated both upstream_id and upstream_url parameters.
   workdir_base = api.path['cache'].join('recipe_roll_tryjob')
-  upstream_workdir = workdir_base.join(upstream_project)
-  downstream_workdir = workdir_base.join(downstream_project)
+  upstream_workdir = workdir_base.join(upstream_id)
+  downstream_workdir = workdir_base.join(downstream_id)
   engine_workdir = workdir_base.join('recipe_engine')
 
-  api.luci_config.set_config('basic')
-  # If you are running this recipe locally and fail to access internal repos,
-  # do "$ luci-auth login ...".
-  api.luci_config.c.auth_token = (
-      api.service_account.default().get_access_token())
-
-  project_data = api.luci_config.get_projects()
-
   upstream_checkout_step = _checkout_project(
-      api, upstream_workdir, upstream_project,
-      project_data[upstream_project]['repo_url'], patch=False, name="upstream")
+      api, upstream_workdir, upstream_id, upstream_url,
+      patch=False, name="upstream")
   downstream_checkout_step = _checkout_project(
-      api, downstream_workdir, downstream_project,
-      project_data[downstream_project]['repo_url'], patch=False,
-      name="downstream")
+      api, downstream_workdir, downstream_id, downstream_url,
+      patch=False, name="downstream")
 
   upstream_checkout = upstream_workdir.join(
       upstream_checkout_step.json.output['root'])
@@ -104,7 +105,7 @@ def RunSteps(api, upstream_project, downstream_project):
 
   # Use recipe engine version matching the upstream one.
   # This most closely simulates rolling the upstream change.
-  if upstream_project == 'recipe_engine':
+  if upstream_id == 'recipe_engine':
     engine_checkout = upstream_checkout
   else:
     engine_url, engine_revision = _get_recipe_dep(
@@ -125,7 +126,7 @@ def RunSteps(api, upstream_project, downstream_project):
     orig_downstream_test = api.python('test (without patch)',
         recipes_py,
         ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_project, upstream_checkout),
+         '-O', '%s=%s' % (upstream_id, upstream_checkout),
          'test', 'run', '--json', api.json.output()],
         venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
@@ -136,7 +137,7 @@ def RunSteps(api, upstream_project, downstream_project):
     orig_downstream_train = api.python('train (without patch)',
         recipes_py,
         ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_project, upstream_checkout),
+         '-O', '%s=%s' % (upstream_id, upstream_checkout),
          'test', 'train', '--json', api.json.output()],
         venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
@@ -144,22 +145,20 @@ def RunSteps(api, upstream_project, downstream_project):
     orig_downstream_train = ex.result
 
   upstream_revision = upstream_checkout_step.json.output[
-      'manifest'][upstream_project]['revision']
+      'manifest'][upstream_id]['revision']
   _checkout_project(
-       api, upstream_workdir, upstream_project,
-       project_data[upstream_project]['repo_url'], patch=True,
-       revision=upstream_revision, name="upstream_patched")
+       api, upstream_workdir, upstream_id, upstream_url,
+       patch=True, revision=upstream_revision, name="upstream_patched")
 
   downstream_revision = downstream_checkout_step.json.output[
-      'manifest'][downstream_project]['revision']
+      'manifest'][downstream_id]['revision']
   _checkout_project(
-       api, downstream_workdir, downstream_project,
-       project_data[downstream_project]['repo_url'], patch=False,
-       revision=downstream_revision, name="downstream_patched")
+       api, downstream_workdir, downstream_id, downstream_url,
+       patch=False, revision=downstream_revision, name="downstream_patched")
 
   # Since we patched upstream repo (potentially including recipes.cfg),
   # make sure to keep our recipe engine checkout in sync.
-  if upstream_project != 'recipe_engine':
+  if upstream_id != 'recipe_engine':
     engine_url, engine_revision = _get_recipe_dep(
         api, upstream_checkout.join('infra', 'config', 'recipes.cfg'),
         'recipe_engine')
@@ -172,7 +171,7 @@ def RunSteps(api, upstream_project, downstream_project):
     patched_downstream_test = api.python('test (with patch)',
         recipes_py,
         ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_project, upstream_checkout),
+         '-O', '%s=%s' % (upstream_id, upstream_checkout),
          'test', 'run', '--json', api.json.output()],
         venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
@@ -183,7 +182,7 @@ def RunSteps(api, upstream_project, downstream_project):
     patched_downstream_train = api.python('train (with patch)',
         recipes_py,
         ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_project, upstream_checkout),
+         '-O', '%s=%s' % (upstream_id, upstream_checkout),
          'test', 'train', '--json', api.json.output()],
         venv=True,
         step_test_data=lambda: api.json.test_api.output({}))
@@ -213,16 +212,16 @@ def RunSteps(api, upstream_project, downstream_project):
   manual_change_footer = cl_footers.get(MANUAL_CHANGE_FOOTER, [])
   bypass_footer = cl_footers.get(BYPASS_FOOTER, [])
 
-  if downstream_project in manual_change_footer:
+  if downstream_id in manual_change_footer:
     api.python.succeeding_step(
         'result',
         ('Recognized %s footer for %s.' %
-             (MANUAL_CHANGE_FOOTER, downstream_project)))
-  elif downstream_project in nontrivial_roll_footer:
+             (MANUAL_CHANGE_FOOTER, downstream_id)))
+  elif downstream_id in nontrivial_roll_footer:
     api.python.succeeding_step(
         'result',
         ('Recognized %s footer for %s.' %
-             (NONTRIVIAL_ROLL_FOOTER, downstream_project)))
+             (NONTRIVIAL_ROLL_FOOTER, downstream_id)))
 
   try:
     train_diff = api.python('diff (train)',
@@ -245,176 +244,140 @@ def RunSteps(api, upstream_project, downstream_project):
     return
 
   if train_diff.retcode == 0:
-    if (downstream_project not in manual_change_footer and
-        downstream_project not in nontrivial_roll_footer):
+    if (downstream_id not in manual_change_footer and
+        downstream_id not in nontrivial_roll_footer):
       api.python.failing_step(
           'result',
           ('Add "%s: %s" footer to the CL to acknowledge the change will '
            'require nontrivial roll in %r repo') % (
-               NONTRIVIAL_ROLL_FOOTER, downstream_project, downstream_project))
+               NONTRIVIAL_ROLL_FOOTER, downstream_id, downstream_id))
     return
 
-  if downstream_project in manual_change_footer:
+  if downstream_id in manual_change_footer:
     api.python.succeeding_step(
         'result',
         ('Recognized %s footer for %s.' %
-             (MANUAL_CHANGE_FOOTER, downstream_project)))
+             (MANUAL_CHANGE_FOOTER, downstream_id)))
   else:
     api.python.failing_step(
         'result',
         ('Add "%s: %s" footer to the CL to acknowledge the change will require '
          'manual code changes in %r repo') % (
-             MANUAL_CHANGE_FOOTER, downstream_project, downstream_project))
+             MANUAL_CHANGE_FOOTER, downstream_id, downstream_id))
 
 
 def GenTests(api):
-  def test(name):
-    return api.test(name) + api.runtime(is_luci=True, is_experimental=False)
+  def test(name, upstream_id='recipe_engine', downstream_id='depot_tools',
+           cl_description=None):
+    repo_urls = {
+      'build':
+        'https://chromium.googlesource.com/chromium/tools/build',
+      'depot_tools':
+        'https://chromium.googlesource.com/chromium/tools/depot_tools',
+      'recipe_engine':
+        'https://chromium.googlesource.com/infra/luci/recipes-py',
+    }
+    res = (
+        api.test(name)
+        + api.runtime(is_luci=True, is_experimental=False)
+        + api.properties(
+            upstream_id=upstream_id,
+            upstream_url=repo_urls[upstream_id],
+            downstream_id=downstream_id,
+            downstream_url=repo_urls[downstream_id])
+        + api.buildbucket.try_build(
+            git_repo=repo_urls[upstream_id],
+            change_number=456789,
+            patch_set=12)
+    )
+    if cl_description:
+      res += api.override_step_data('gerrit changes', api.json.output([{
+        'revisions': {
+            'deadbeef': {'_number': 12, 'commit': {'message': cl_description}},
+         }
+      }]))
+    return res
 
   yield (
-    test('basic') +
-    api.properties.generic(
-        upstream_project='recipe_engine',
-        downstream_project='depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools'))
+    test('basic')
   )
 
   yield (
     test('without_patch_test_fail') +
-    api.properties.generic(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (without patch)', retcode=1)
   )
 
   yield (
     test('without_patch_train_fail') +
-    api.properties.generic(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('train (without patch)', retcode=1)
   )
 
   yield (
     test('with_patch_test_fail') +
-    api.properties.generic(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1)
   )
 
   yield (
     test('with_patch_train_fail') +
-    api.properties.generic(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('train (with patch)', retcode=1)
   )
 
   yield (
-    test('diff_test_fail') +
-    api.properties.tryserver(
-        upstream_project='recipe_engine',
-        downstream_project='depot_tools',
-        gerrit_project='chromium/tools/depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    test('diff_test_fail', cl_description='No-Footers.') +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
-    api.override_step_data(
-      'gerrit changes', api.json.output(
-        [{'revisions': {1: {'_number': 12, 'commit': {'message': ''}}}}])) +
-    api.override_step_data(
-        'parse description', api.json.output({}))
+    api.override_step_data('parse description', api.json.output({}))
   )
 
   yield (
-    test('diff_test_fail_ack') +
-    api.properties.tryserver(
-        upstream_project='recipe_engine',
-        downstream_project='depot_tools',
-        gerrit_project='chromium/tools/depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    test('diff_test_fail_ack',
+         cl_description='Recipe-Nontrivial-Roll: depot_tools') +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
-    api.override_step_data(
-      'gerrit changes', api.json.output(
-        [{'revisions': {1: {'_number': 12, 'commit': {
-          'message': 'Recipe-Nontrivial-Roll: depot_tools'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Nontrivial-Roll': ['depot_tools']}))
   )
 
   yield (
-    test('diff_train_fail') +
-    api.properties.tryserver(
-        upstream_project='recipe_engine',
-        downstream_project='depot_tools',
-        gerrit_project='chromium/tools/depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    test('diff_train_fail',
+         cl_description='Recipe-Nontrivial-Roll: depot_tools') +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
-    api.override_step_data(
-      'gerrit changes', api.json.output(
-        [{'revisions': {1: {'_number': 12, 'commit': {
-          'message': 'Recipe-Nontrivial-Roll: depot_tools'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Nontrivial-Roll': ['depot_tools']}))
   )
 
   yield (
-    test('diff_train_fail_ack') +
-    api.properties.tryserver(
-        upstream_project='recipe_engine',
-        downstream_project='depot_tools',
-        gerrit_project='chromium/tools/depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    test('diff_train_fail_ack',
+         cl_description='Recipe-Manual-Change: depot_tools') +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
-    api.override_step_data(
-      'gerrit changes', api.json.output(
-        [{'revisions': {1: {'_number': 12, 'commit': {
-          'message': 'Recipe-Manual-Change: depot_tools'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Manual-Change': ['depot_tools']}))
   )
 
   yield (
-    test('diff_train_fail_ack_engine_checkout') +
-    api.properties.tryserver(
-        upstream_project='depot_tools',
-        downstream_project='build',
-        gerrit_project='chromium/tools/build') +
-    api.luci_config.get_projects(('depot_tools', 'build')) +
+    test('diff_train_fail_ack_engine_checkout',
+         upstream_id='depot_tools', downstream_id='build',
+         cl_description='Recipe-Manual-Change: build') +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
-    api.override_step_data(
-      'gerrit changes', api.json.output(
-        [{'revisions': {1: {'_number': 12, 'commit': {
-          'message': 'Recipe-Manual-Change: build'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Manual-Change': ['build']}))
   )
 
   yield (
-    test('bypass') +
-    api.properties.tryserver(
-        upstream_project='recipe_engine',
-        downstream_project='depot_tools',
-        gerrit_project='chromium/tools/depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    test('bypass',
+         cl_description='Recipe-Tryjob-Bypass-Reason: Autoroller') +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
-    api.override_step_data(
-      'gerrit changes', api.json.output(
-        [{'revisions': {1: {'_number': 12, 'commit': {
-          'message': 'Recipe-Tryjob-Bypass-Reason: Autoroller'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Tryjob-Bypass-Reason': ['Autoroller']}))
