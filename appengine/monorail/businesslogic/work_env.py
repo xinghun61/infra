@@ -1176,7 +1176,11 @@ class WorkEnv(object):
           kept_attachments=kept_attachments)
 
     with self.mc.profiler.Phase('Following up after issue update'):
-      # TODO(jrobbins): side effects of setting merged_into.
+      if delta.merged_into:
+        merged_into_issue = self.GetIssue(
+            delta.merged_into, use_cache=False, allow_viewing_deleted=True)
+        tracker_helpers.MergeCCsAndAddComment(
+            self.services, self.mc, issue, merged_into_issue)
       self.services.project.UpdateRecentActivity(
           self.mc.cnxn, issue.project_id)
 

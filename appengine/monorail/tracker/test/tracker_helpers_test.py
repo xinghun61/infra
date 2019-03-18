@@ -751,8 +751,6 @@ class HelpersTest(unittest.TestCase):
     source_issue_2 = fake.MakeTestIssue(
         789, 101, 'Source issue 2', 'New', 0L)
 
-    project = self.services.project.TestAddProject(
-        'testproj', owner_ids=[222L], project_id=789)
     self.services.issue.TestAddIssue(target_issue)
     self.services.issue.TestAddIssue(source_issue)
     self.services.issue.TestAddIssue(source_issue_2)
@@ -766,7 +764,7 @@ class HelpersTest(unittest.TestCase):
     # Merging source into target should create a comment.
     self.assertIsNotNone(
         tracker_helpers.MergeCCsAndAddComment(
-            self.services, mr, source_issue, project, target_issue))
+            self.services, mr, source_issue, target_issue))
     updated_issue_comments = self.services.issue.GetCommentsForIssue(
         'fake cnxn', target_issue.issue_id)
     for comment in initial_issue_comments:
@@ -783,7 +781,7 @@ class HelpersTest(unittest.TestCase):
     # Merging source 2 into target should make a comment, but not update CCs.
     self.assertIsNotNone(
         tracker_helpers.MergeCCsAndAddComment(
-            self.services, mr, source_issue_2, project, updated_target_issue))
+            self.services, mr, source_issue_2, updated_target_issue))
     updated_target_issue = self.services.issue.GetIssueByLocalID(
         'fake cnxn', 789, 10)
     self.assertNotIn(0L, updated_target_issue.cc_ids)
@@ -799,8 +797,6 @@ class HelpersTest(unittest.TestCase):
     source_issue.labels.append('Restrict-View-Commit')
     target_issue_2.labels.append('Restrict-View-Commit')
 
-    project = self.services.project.TestAddProject(
-        'testproj', owner_ids=[222L], project_id=789)
     self.services.issue.TestAddIssue(source_issue)
     self.services.issue.TestAddIssue(target_issue)
     self.services.issue.TestAddIssue(target_issue_2)
@@ -811,7 +807,7 @@ class HelpersTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(user_info={'user_id': 111L})
     self.assertIsNotNone(
         tracker_helpers.MergeCCsAndAddComment(
-            self.services, mr, source_issue, project, target_issue))
+            self.services, mr, source_issue, target_issue))
 
     # When the source is restricted, we update the target comments...
     updated_issue_comments = self.services.issue.GetCommentsForIssue(
@@ -827,7 +823,7 @@ class HelpersTest(unittest.TestCase):
     # ...unless both issues have the same restrictions.
     self.assertIsNotNone(
         tracker_helpers.MergeCCsAndAddComment(
-            self.services, mr, source_issue, project, target_issue_2))
+            self.services, mr, source_issue, target_issue_2))
     updated_target_issue_2 = self.services.issue.GetIssueByLocalID(
         'fake cnxn', 789, 11)
     self.assertIn(111L, updated_target_issue_2.cc_ids)

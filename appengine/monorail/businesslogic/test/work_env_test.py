@@ -1469,6 +1469,33 @@ class WorkEnvTest(unittest.TestCase):
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_MergeInto(self, _fake_pasicn):
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    issue2 = fake.MakeTestIssue(789, 2, 'summary2', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    self.services.issue.TestAddIssue(issue2)
+    delta = tracker_pb2.IssueDelta(
+        merged_into=issue2.issue_id,
+        status='Duplicate')
+
+    issue.cc_ids = [111L, 222L, 333L, 444L]
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, '')
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue2.issue_id)
+
+    # Original issue marked as duplicate.
+    self.assertEqual('Duplicate', issue.status)
+    # Target issue has original issue's CCs.
+    self.assertEqual([444L, 333L, 222L, 111L], issue2.cc_ids)
+    # A comment was added to the target issue.
+    self.assertEqual(
+        'Issue 1 has been merged into this issue.',
+        comments[-1].content)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Attachments(self, fake_pasicn):
     """We can attach files as we make a change."""
     self.SignIn()

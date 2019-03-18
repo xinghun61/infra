@@ -350,8 +350,7 @@ class IssueBulkEdit(servlet.Servlet):
               mr.cnxn, self.services, mr, merge_into_issue.issue_id,
               merge_into_project, new_starrers)
           tracker_helpers.MergeCCsAndAddCommentMultipleIssues(
-              self.services, mr, editable_issues, merge_into_project,
-              merge_into_issue)
+              self.services, mr, editable_issues, merge_into_issue)
 
         if move_to and editable_issues:
           tracker_fulltext.UnindexIssues(

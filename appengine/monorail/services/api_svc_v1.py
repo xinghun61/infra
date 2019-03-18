@@ -541,7 +541,7 @@ class MonorailApi(remote.Service):
           mar.cnxn, self._services, mar,
           merge_into_issue.issue_id, merge_into_project, new_starrers)
       merge_comment_pb = tracker_helpers.MergeCCsAndAddComment(
-        self._services, mar, issue, merge_into_project, merge_into_issue)
+        self._services, mar, issue, merge_into_issue)
       send_notifications.PrepareAndSendIssueChangeNotification(
           merge_into_issue.issue_id, framework_helpers.GetHostPort(),
           mar.auth.user_id, send_email=True, comment_id=merge_comment_pb.id)

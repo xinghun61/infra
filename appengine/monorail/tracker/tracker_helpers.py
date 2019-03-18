@@ -772,15 +772,14 @@ def IsNoisy(num_comments, num_starrers):
           num_starrers >= tracker_constants.NOISY_ISSUE_STARRER_COUNT)
 
 
-def MergeCCsAndAddComment(
-    services, mr, issue, merge_into_project, merge_into_issue):
+def MergeCCsAndAddComment(services, mr, issue, merge_into_issue):
   """Modify the CC field of the target issue and add a comment to it."""
   return MergeCCsAndAddCommentMultipleIssues(
-      services, mr, [issue], merge_into_project, merge_into_issue)
+      services, mr, [issue], merge_into_issue)
 
 
 def MergeCCsAndAddCommentMultipleIssues(
-    services, mr, issues, merge_into_project, merge_into_issue):
+    services, mr, issues, merge_into_issue):
   """Modify the CC field of the target issue and add a comment to it."""
   merge_into_restricts = permissions.GetRestrictions(merge_into_issue)
   merge_comment = ''
@@ -812,7 +811,7 @@ def MergeCCsAndAddCommentMultipleIssues(
 
   _, merge_comment_pb = services.issue.ApplyIssueComment(
       mr.cnxn, services, mr.auth.user_id,
-      merge_into_project.project_id, merge_into_issue.local_id,
+      merge_into_issue.project_id, merge_into_issue.local_id,
       merge_into_issue.summary, merge_into_issue.status,
       merge_into_issue.owner_id, list(target_cc) + list(add_cc),
       merge_into_issue.labels, merge_into_issue.field_values,

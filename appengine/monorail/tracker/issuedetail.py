@@ -761,7 +761,7 @@ class IssueDetail(issuepeek.IssuePeek):
             mr.cnxn, self.services, mr,
             merge_into_iid, merge_into_project, new_starrers)
         merge_comment_pb = tracker_helpers.MergeCCsAndAddComment(
-            self.services, mr, issue, merge_into_project, merge_into_issue)
+            self.services, mr, issue, merge_into_issue)
       elif merge_into_issue:
         merge_comment_pb = None
         logging.info('merge denied: target issue %s not modified',
