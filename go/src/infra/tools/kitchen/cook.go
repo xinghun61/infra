@@ -198,8 +198,7 @@ func (c *cookRun) runRecipe(ctx context.Context, env environ.Env) *build.BuildRu
 		return fail(errors.Annotate(err, "could not parse recipe result").Err())
 	}
 
-	// TODO(nodir): verify consistency between result.Build and result.RecipeResult.
-
+	// TODO(nodir): remove result.
 	if result.RecipeResult.GetFailure() != nil && result.RecipeResult.GetFailure().GetFailure() == nil {
 		// The recipe run has failed and the failure type is not step failure.
 		result.InfraFailure = &build.InfraFailure{
@@ -423,6 +422,38 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Run the recipe.
 	result := c.runRecipe(ctx, env)
+
+	// Make a final UpdateBuild call.
+	if c.bu != nil {
+		// The final UpdateBuild call is critical.
+		// If it fails, it is fatal to the build.
+
+		req, err := c.bu.ParseAnnotations(ctx, result.Annotations)
+		if err != nil {
+			return fail(errors.Annotate(err, "failed to parse final annotations").Err())
+		}
+
+		// If the build failed, update the build status.
+		// If it suceeded, do not set it just yet, since there are more ways
+		// the swarming task can fail.
+		switch {
+		case result.InfraFailure != nil:
+			req.Build.Status = buildbucketpb.Status_INFRA_FAILURE
+			req.Build.SummaryMarkdown = result.InfraFailure.Text
+			req.UpdateMask.Paths = append(req.UpdateMask.Paths, "build.status", "build.summary_markdown")
+
+		case result.RecipeResult.GetFailure() != nil:
+			// Note: if this recipe failure is an infra failure,
+			// result.InfraFailure above is non-nil.
+			req.Build.Status = buildbucketpb.Status_FAILURE
+			req.Build.SummaryMarkdown = result.RecipeResult.GetFailure().HumanReason
+			req.UpdateMask.Paths = append(req.UpdateMask.Paths, "build.status", "build.summary_markdown")
+		}
+
+		if err := c.bu.UpdateBuild(ctx, req); err != nil {
+			return fail(errors.Annotate(err, "failed to send final build state to buildbucket").Err())
+		}
+	}
 
 	return result
 }
@@ -821,23 +852,7 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 	}
 
 	// Read the final annotation.
-	final := annoteeProcessor.Finish().RootStep().Proto()
-
-	// Make a final UpdateBuild call.
-	if c.bu != nil {
-		// The final UpdateBuild call is critical.
-		// If it fails, it is fatal to the build.
-
-		req, err := c.bu.ParseAnnotations(ctx, final)
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to parse final annotations").Err()
-		}
-
-		if err := c.bu.UpdateBuild(ctx, req); err != nil {
-			return nil, errors.Annotate(err, "failed to send final build state to buildbucket").Err()
-		}
-	}
-	return final, nil
+	return annoteeProcessor.Finish().RootStep().Proto(), nil
 }
 
 // newBuildUpdater creates a buildUpdater that uses system auth for RPCs.
