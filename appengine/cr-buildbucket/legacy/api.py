@@ -36,34 +36,15 @@ import user
 import validation
 
 
-class ErrorReason(messages.Enum):
-  LEASE_EXPIRED = 1
-  CANNOT_LEASE_BUILD = 2
-  BUILD_NOT_FOUND = 3
-  INVALID_INPUT = 4
-  INVALID_BUILD_STATE = 5
-  BUILD_IS_COMPLETED = 6
-  BUILDER_NOT_FOUND = 7
-
-
-ERROR_REASON_MAP = {
-    errors.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
-    errors.BuilderNotFoundError: ErrorReason.BUILDER_NOT_FOUND,
-    errors.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
-    errors.InvalidInputError: ErrorReason.INVALID_INPUT,
-    errors.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
-}
-
-
 class ErrorMessage(messages.Message):
-  reason = messages.EnumField(ErrorReason, 1, required=True)
+  reason = messages.EnumField(errors.LegacyReason, 1, required=True)
   message = messages.StringField(2, required=True)
 
 
 def exception_to_error_message(ex):
   assert isinstance(ex, errors.Error)
-  assert type(ex) in ERROR_REASON_MAP  # pylint: disable=unidiomatic-typecheck
-  return ErrorMessage(reason=ERROR_REASON_MAP[type(ex)], message=ex.message)
+  assert ex.legacy_reason is not None
+  return ErrorMessage(reason=ex.legacy_reason, message=ex.message)
 
 
 class PubSubCallbackMessage(messages.Message):
@@ -639,7 +620,7 @@ class BuildBucketApi(remote.Service):
       return BuildResponseMessage(
           error=ErrorMessage(
               message='Could not lease build',
-              reason=ErrorReason.CANNOT_LEASE_BUILD,
+              reason=errors.LegacyReason.CANNOT_LEASE_BUILD,
           )
       )
 

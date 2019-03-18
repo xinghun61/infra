@@ -6,6 +6,9 @@ import datetime
 import re
 import string
 
+from protorpc import messages
+
+from components import prpc
 from components import utils
 
 BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-]{1,100}$')
@@ -15,36 +18,65 @@ BUILDER_NAME_VALID_CHARS = string.ascii_letters + string.digits + '()-_. '
 _BUILDER_NAME_VALID_CHAR_SET = frozenset(BUILDER_NAME_VALID_CHARS)
 
 
+class LegacyReason(messages.Enum):
+  LEASE_EXPIRED = 1
+  CANNOT_LEASE_BUILD = 2
+  BUILD_NOT_FOUND = 3
+  INVALID_INPUT = 4
+  INVALID_BUILD_STATE = 5
+  BUILD_IS_COMPLETED = 6
+  BUILDER_NOT_FOUND = 7
+
+
+# TODO(nodir): add PermissionDenied and use instead auth.AuthorizationError.
+
+
 class Error(Exception):
 
+  code = prpc.StatusCode.INTERNAL
+  legacy_reason = None
+
   def __init__(self, message=''):
-    # passing None instead of empty docstring so that
-    # Exception class applies its own default.
-    super(Error, self).__init__(message or self.__doc__ or None)
+    super(Error, self).__init__(message or self.__doc__ or self.code.name)
 
 
 class NotFoundError(Error):
   """Requested resource not found."""
 
+  code = prpc.StatusCode.NOT_FOUND
+
 
 class BuildNotFoundError(NotFoundError):
   """Requested build was not found."""
+
+  legacy_reason = LegacyReason.BUILD_NOT_FOUND
 
 
 class BuilderNotFoundError(NotFoundError):
   """Requested builder was not found."""
 
+  legacy_reason = LegacyReason.BUILDER_NOT_FOUND
+
 
 class BuildIsCompletedError(Error):
   """Build is complete and cannot be changed."""
+
+  code = prpc.StatusCode.FAILED_PRECONDITION
+  legacy_reason = LegacyReason.BUILD_IS_COMPLETED
 
 
 class InvalidInputError(Error):
   """Raised when service method argument value is invalid."""
 
+  code = prpc.StatusCode.INVALID_ARGUMENT
+  legacy_reason = LegacyReason.INVALID_INPUT
+
 
 class LeaseExpiredError(Error):
   """Raised when provided lease_key does not match the current one."""
+
+  code = prpc.StatusCode.INVALID_ARGUMENT
+  legacy_reason = LegacyReason.LEASE_EXPIRED
 
 
 class TagIndexIncomplete(Error):

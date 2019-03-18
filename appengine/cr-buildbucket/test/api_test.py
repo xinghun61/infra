@@ -542,6 +542,7 @@ class BatchTests(BaseTestCase):
     add_many_async.return_value = future([
         (test_util.build(id=42), None),
         (None, errors.InvalidInputError('bad')),
+        (None, Exception('unexpected')),
         (None, auth.AuthorizationError('bad')),
     ])
 
@@ -549,32 +550,14 @@ class BatchTests(BaseTestCase):
         lambda bucket_id, _: future('forbidden' not in bucket_id)
     )
 
+    linux_builder = dict(project='chromium', bucket='try', builder='linux')
+    win_builder = dict(project='chromium', bucket='try', builder='windows')
     req = rpc_pb2.BatchRequest(
         requests=[
-            dict(
-                schedule_build=dict(
-                    builder=dict(
-                        project='chromium', bucket='try', builder='linux'
-                    ),
-                    request_id='0',
-                )
-            ),
-            dict(
-                schedule_build=dict(
-                    builder=dict(
-                        project='chromium', bucket='try', builder='windows'
-                    ),
-                    request_id='1',
-                )
-            ),
-            dict(
-                schedule_build=dict(
-                    builder=dict(
-                        project='chromium', bucket='try', builder='windows'
-                    ),
-                    request_id='2',
-                )
-            ),
+            dict(schedule_build=dict(request_id='0', builder=linux_builder)),
+            dict(schedule_build=dict(request_id='1', builder=win_builder)),
+            dict(schedule_build=dict(request_id='2', builder=win_builder)),
+            dict(schedule_build=dict(request_id='3', builder=win_builder)),
             dict(
                 schedule_build=dict(
                     builder=dict(
@@ -590,25 +573,19 @@ class BatchTests(BaseTestCase):
     )
 
     res = self.call(self.api.Batch, req)
+
+    codes = [r.error.code for r in res.responses]
+    self.assertEqual(
+        codes, [
+            prpc.StatusCode.OK.value,
+            prpc.StatusCode.INVALID_ARGUMENT.value,
+            prpc.StatusCode.INTERNAL.value,
+            prpc.StatusCode.PERMISSION_DENIED.value,
+            prpc.StatusCode.PERMISSION_DENIED.value,
+            prpc.StatusCode.INVALID_ARGUMENT.value,
+        ]
+    )
     self.assertEqual(res.responses[0].schedule_build.id, 42)
-    self.assertEqual(
-        res.responses[1],
-        rpc_pb2.BatchResponse.Response(
-            error=dict(
-                code=prpc.StatusCode.INVALID_ARGUMENT.value,
-                message='bad',
-            )
-        )
-    )
-    self.assertEqual(
-        res.responses[2].error.code, prpc.StatusCode.PERMISSION_DENIED.value
-    )
-    self.assertEqual(
-        res.responses[3].error.code, prpc.StatusCode.PERMISSION_DENIED.value
-    )
-    self.assertEqual(
-        res.responses[4].error.code, prpc.StatusCode.INVALID_ARGUMENT.value
-    )
 
 
 class BuildPredicateToSearchQueryTests(BaseTestCase):

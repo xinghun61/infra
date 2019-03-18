@@ -40,7 +40,7 @@ import validation
 BUILD_TOKEN_HEADER = 'x-build-token'
 
 
-class StatusError(Exception):
+class StatusError(errors.Error):
 
   def __init__(self, code, *details_and_args):
     if details_and_args:
@@ -48,9 +48,8 @@ class StatusError(Exception):
     else:
       details = code[1]
 
-    super(StatusError, self).__init__('%s: %s' % (code, details))
     self.code = code
-    self.details = details
+    super(StatusError, self).__init__(details)
 
 
 not_found = lambda *args: StatusError(prpc.StatusCode.NOT_FOUND, *args)
@@ -118,9 +117,9 @@ def rpc_impl_async(rpc_name):
         except validation.Error as ex:
           raise invalid_argument('%s', ex.message)
 
-      except StatusError as ex:
+      except errors.Error as ex:
         ctx.set_code(ex.code)
-        ctx.set_details(ex.details)
+        ctx.set_details(ex.message)
         raise ndb.Return(None)
 
     return decorated
@@ -438,14 +437,16 @@ def schedule_build_multi(batch):
   ]
   results = creation.add_many_async(build_requests).get_result()
   for rr, (build, ex) in zip(to_schedule, results):
-    if isinstance(ex, errors.InvalidInputError):
-      rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
+    if isinstance(ex, errors.Error):
+      rr.response.error.code = ex.code.value
       rr.response.error.message = ex.message
     elif isinstance(ex, auth.AuthorizationError):
       rr.response.error.code = prpc.StatusCode.PERMISSION_DENIED.value
       rr.response.error.message = ex.message
+    elif ex:
+      rr.response.error.code = prpc.StatusCode.INTERNAL.value
+      rr.response.error.message = ex.message
     else:
-      assert not ex, ex
       # Since this is a new build, no other entities need to be loaded
       # and we use model.Build.proto directly.
       rr.response.schedule_build.MergeFrom(build.proto)
