@@ -1312,19 +1312,40 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 12, 20))
-  def testGetRemainingDailyUpdatesCount(self, _):
+  def testGetRemainingPreAnalysisDailyBugUpdatesCount(self, _):
     self.UpdateUnitTestConfigSettings(
         'action_settings', {'max_flake_detection_bug_updates_per_day': 5})
     flake_issue_1 = FlakeIssue.Create('chromium', 12345)
     flake_issue_1.last_updated_time_by_flake_detection = datetime.datetime(
-        2018, 12, 19, 12, 0, 0)  # Updated within 24 hours.
+        2018, 12, 19, 12, 1, 0)  # Updated within 24 hours, counts.
     flake_issue_1.put()
     flake_issue_2 = FlakeIssue.Create('chromium', 12346)
-    flake_issue_2.last_updated_time_with_analysis_results = datetime.datetime(
-        2018, 12, 19, 12, 1, 0)  # Already commented with analysis results.
+    flake_issue_2.last_updated_time_by_flake_detection = datetime.datetime(
+        2018, 12, 19, 0, 0, 0)  # Updated exactly 24 ago, doesn't count.'
     flake_issue_2.put()
     flake_issue_3 = FlakeIssue.Create('chromium', 12347)
     flake_issue_3.last_updated_time_by_flake_detection = datetime.datetime(
-        2018, 12, 18, 12, 0, 0)  # Over 24 hours old.
+        2018, 12, 18, 12, 0, 0)  # Over 24 hours old, doesn't count.'
     flake_issue_3.put()
-    self.assertEqual(3, flake_issue_util.GetRemainingDailyUpdatesCount())
+    self.assertEqual(
+        4, flake_issue_util.GetRemainingPreAnalysisDailyBugUpdatesCount())
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 12, 20))
+  def testGetRemainingPostAnalysisDailyBugUpdatesCount(self, _):
+    self.UpdateUnitTestConfigSettings(
+        'action_settings', {'max_flake_analysis_bug_updates_per_day': 5})
+    flake_issue_1 = FlakeIssue.Create('chromium', 12345)
+    flake_issue_1.last_updated_time_with_analysis_results = datetime.datetime(
+        2018, 12, 19, 1, 0, 0)  # Updated within 24 hours, counts.
+    flake_issue_1.put()
+    flake_issue_2 = FlakeIssue.Create('chromium', 12346)
+    flake_issue_2.last_updated_time_with_analysis_results = datetime.datetime(
+        2018, 12, 19, 0, 0, 0)  # Updated exaxstly 24 hours ago, doesn't count.
+    flake_issue_2.put()
+    flake_issue_3 = FlakeIssue.Create('chromium', 12347)
+    flake_issue_3.last_updated_time_with_analysis_results = datetime.datetime(
+        2018, 12, 18, 12, 0, 0)  # Over 24 hours old, doesn't count.'
+    flake_issue_3.put()
+    self.assertEqual(
+        4, flake_issue_util.GetRemainingPostAnalysisDailyBugUpdatesCount())

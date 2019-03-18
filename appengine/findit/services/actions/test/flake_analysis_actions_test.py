@@ -299,7 +299,9 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     self.assertEqual(destination_issue.key, flake_issue.merge_destination_key)
 
   @mock.patch.object(
-      flake_issue_util, 'GetRemainingDailyUpdatesCount', return_value=1)
+      flake_issue_util,
+      'GetRemainingPostAnalysisDailyBugUpdatesCount',
+      return_value=1)
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   @mock.patch.object(monorail_util, 'GetComments')
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')

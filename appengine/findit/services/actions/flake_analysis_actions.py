@@ -223,7 +223,7 @@ def UpdateMonorailBugWithCulprit(analysis_urlsafe_key):
     return
 
   # Don't comment if Findit has filled the daily quota of monorail updates.
-  if flake_issue_util.GetRemainingDailyUpdatesCount() <= 0:
+  if flake_issue_util.GetRemainingPostAnalysisDailyBugUpdatesCount() <= 0:
     logging.info(
         'Skipping updating issue %s due to maximum daily bug limit being '
         'reached', issue_link)
