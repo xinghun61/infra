@@ -112,9 +112,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	taskName := c.Flags.Arg(0)
 	userDimensions := c.Flags.Args()[1:]
 
-	dimensions := make([]string, 2)
-	dimensions[0] = "pool:ChromeOSSkylab"
-	dimensions[1] = "dut_state:ready"
+	dimensions := []string{"pool:ChromeOSSkylab", "dut_state:ready"}
 	if c.board != "" {
 		dimensions = append(dimensions, "label-board:"+c.board)
 	}
