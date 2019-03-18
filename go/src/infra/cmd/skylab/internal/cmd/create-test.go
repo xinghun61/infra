@@ -214,15 +214,24 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 		return nil, errors.Annotate(err, "create slices").Err()
 	}
 
-	s0cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, nil, testArgs)
+	cmd := worker.Command{
+		TaskName:            taskName,
+		LogDogAnnotationURL: annotationURL,
+		ClientTest:          clientTest,
+		Keyvals:             keyvals,
+		TestArgs:            testArgs,
+	}
+
 	s0Dims := append(basePairs, provisionablePairs...)
-	slices[0] = taskSlice(s0cmd, s0Dims, timeoutMins)
+	slices[0] = taskSlice(cmd.Args(), s0Dims, timeoutMins)
 
 	// Note: This is the common case.
 	if len(provisionableDimensions) != 0 {
-		s1cmd := skylabWorkerCommand(taskName, clientTest, keyvals, annotationURL, provisionableDimensions, testArgs)
+		// Make a copy before mutating.
+		cmd := cmd
+		cmd.ProvisionLabels = provisionDimensionsToLabels(provisionableDimensions)
 		s1Dims := basePairs
-		slices = append(slices, taskSlice(s1cmd, s1Dims, timeoutMins))
+		slices = append(slices, taskSlice(cmd.Args(), s1Dims, timeoutMins))
 	}
 
 	finalSlice := slices[len(slices)-1]
@@ -231,24 +240,6 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 	finalSlice.ExpirationSecs = int64(timeoutMins * 60)
 
 	return slices, nil
-}
-
-// skylabWorkerCommand returns a commandline slice for skylab_swarming_worker, as it should
-// be run on a bot.
-//
-// Note: provisionDimensions (if supplied) may be suppled with their "provisionable-" prefix,
-// and this prefix will be tripped to turn them into provisionable labels.
-func skylabWorkerCommand(taskName string, clientTest bool, keyvals map[string]string, annotationURL string,
-	provisionDimensions []string, testArgs string) []string {
-	cmd := worker.Command{
-		TaskName:            taskName,
-		LogDogAnnotationURL: annotationURL,
-		ClientTest:          clientTest,
-		Keyvals:             keyvals,
-		ProvisionLabels:     provisionDimensionsToLabels(provisionDimensions),
-		TestArgs:            testArgs,
-	}
-	return cmd.Args()
 }
 
 // provisionDimensionsToLabels converts provisionable dimensions to labels.
