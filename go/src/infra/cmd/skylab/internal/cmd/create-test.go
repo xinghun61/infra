@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
+	"infra/cmd/skylab_swarming_worker/worker"
 )
 
 // CreateTest subcommand: create a test task.
@@ -240,32 +240,17 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 // and this prefix will be tripped to turn them into provisionable labels.
 func skylabWorkerCommand(taskName string, clientTest bool, keyvals map[string]string, annotationURL string,
 	provisionDimensions []string, testArgs string) []string {
-	cmd := []string{}
-	cmd = append(cmd, "/opt/infra-tools/skylab_swarming_worker")
-	cmd = append(cmd, "-task-name", taskName)
-	if clientTest {
-		cmd = append(cmd, "-client-test")
-	}
-	if len(keyvals) > 0 {
-		keyvalsJSON, err := json.Marshal(keyvals)
-		if err != nil {
-			// keyvals is a string-to-string map, there should be no chance of an error here.
-			panic(err)
-		}
-		cmd = append(cmd, "-keyvals", string(keyvalsJSON))
-	}
-	if annotationURL != "" {
-		cmd = append(cmd, "-logdog-annotation-url", annotationURL)
-	}
-	if testArgs != "" {
-		cmd = append(cmd, "-test-args", testArgs)
+	cmd := worker.Command{
+		TaskName:            taskName,
+		LogDogAnnotationURL: annotationURL,
+		ClientTest:          clientTest,
+		Keyvals:             keyvals,
+		TestArgs:            testArgs,
 	}
 	provisionableLabels := make([]string, len(provisionDimensions))
 	for i, l := range provisionDimensions {
 		provisionableLabels[i] = strings.TrimPrefix(l, "provisionable-")
 	}
-	if len(provisionableLabels) != 0 {
-		cmd = append(cmd, "-provision-labels", strings.Join(provisionableLabels, ","))
-	}
-	return cmd
+	cmd.ProvisionLabels = provisionableLabels
+	return cmd.Args()
 }
