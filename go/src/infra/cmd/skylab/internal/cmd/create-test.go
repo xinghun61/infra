@@ -245,12 +245,17 @@ func skylabWorkerCommand(taskName string, clientTest bool, keyvals map[string]st
 		LogDogAnnotationURL: annotationURL,
 		ClientTest:          clientTest,
 		Keyvals:             keyvals,
+		ProvisionLabels:     provisionDimensionsToLabels(provisionDimensions),
 		TestArgs:            testArgs,
 	}
-	provisionableLabels := make([]string, len(provisionDimensions))
-	for i, l := range provisionDimensions {
-		provisionableLabels[i] = strings.TrimPrefix(l, "provisionable-")
-	}
-	cmd.ProvisionLabels = provisionableLabels
 	return cmd.Args()
+}
+
+// provisionDimensionsToLabels converts provisionable dimensions to labels.
+func provisionDimensionsToLabels(dims []string) []string {
+	labels := make([]string, len(dims))
+	for i, l := range dims {
+		labels[i] = strings.TrimPrefix(l, "provisionable-")
+	}
+	return labels
 }
