@@ -81,6 +81,7 @@ type SwarmingClient interface {
 	ListRecentTasks(c context.Context, tags []string, state string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	ListSortedRecentTasksForBot(c context.Context, botID string, limit int) ([]*swarming.SwarmingRpcsTaskResult, error)
 	CreateTask(c context.Context, name string, args *SwarmingCreateTaskArgs) (string, error)
+	GetTaskResult(ctx context.Context, tid string) (*swarming.SwarmingRpcsTaskResult, error)
 }
 
 // SwarmingCreateTaskArgs contains the arguments to SwarmingClient.CreateTask.
@@ -193,6 +194,17 @@ func (sc *swarmingClientImpl) CreateTask(c context.Context, name string, args *S
 		return "", errors.Reason("Failed to create task").InternalReason(err.Error()).Err()
 	}
 	return resp.TaskId, nil
+}
+
+// GetTaskResult gets the task result for a given task ID.
+func (sc *swarmingClientImpl) GetTaskResult(ctx context.Context, tid string) (*swarming.SwarmingRpcsTaskResult, error) {
+	call := sc.Task.Result(tid)
+	ctx, _ = context.WithTimeout(ctx, 60*time.Second)
+	resp, err := call.Context(ctx).Do()
+	if err != nil {
+		return nil, errors.Reason("failed to get result for task %s", tid).InternalReason(err.Error()).Err()
+	}
+	return resp, nil
 }
 
 // ListRecentTasks lists tasks with the given tags and in the given state.

@@ -110,6 +110,21 @@ func (mr *MockSwarmingClientMockRecorder) CreateTask(c, name, args interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateTask", reflect.TypeOf((*MockSwarmingClient)(nil).CreateTask), c, name, args)
 }
 
+// GetTaskResult mocks base method
+func (m *MockSwarmingClient) GetTaskResult(ctx context.Context, tid string) (*v1.SwarmingRpcsTaskResult, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTaskResult", ctx, tid)
+	ret0, _ := ret[0].(*v1.SwarmingRpcsTaskResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTaskResult indicates an expected call of GetTaskResult
+func (mr *MockSwarmingClientMockRecorder) GetTaskResult(ctx, tid interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTaskResult", reflect.TypeOf((*MockSwarmingClient)(nil).GetTaskResult), ctx, tid)
+}
+
 // MockBotTasksCursor is a mock of BotTasksCursor interface
 type MockBotTasksCursor struct {
 	ctrl     *gomock.Controller
