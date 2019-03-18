@@ -30,6 +30,9 @@ message Config {
   // Inventory contains configuration information about skylab inventory
   // repo.
   Inventory inventory = 5;
+
+  // endpoint contains configuration of specific API endpoints.
+  Endpoint endpoint = 6;
 }
 
 // Swarming contains information about the Swarming instance that hosts the bots
@@ -152,4 +155,28 @@ message PoolBalancer {
   // Maximum number of unhealthy DUTs per model that can be balanced away from
   // a single target pool.
   int32 max_unhealthy_duts = 3;
+}
+
+message Endpoint {
+  DeployDut deploy_dut = 1;
+}
+
+message DeployDut {
+  // Amount of time the deploy Skylab task can be PENDING.
+  //
+  // This should be long enough for the newly updated inventory information to
+  // propagate to the Swarming bots.
+  google.protobuf.Duration task_expiration_timeout = 1;
+
+  // Amount of time the deploy Skylab task is allowed to run.
+  //
+  // This should be enough for possibly installing firmware and test image on
+  // the DUT.
+  google.protobuf.Duration task_execution_timeout = 2;
+
+  // Priority of the deploy Skylab task.
+  //
+  // This should be the same as, or higher priority (i.e., numerically lower)
+  // than other admin tasks.
+  int64 task_priority = 3;
 }
