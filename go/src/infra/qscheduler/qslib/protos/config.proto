@@ -14,6 +14,8 @@
 syntax = "proto3";
 package protos;
 
+import "google/protobuf/duration.proto";
+
 // SchedulerConfig represents configuration information about the behavior of
 // accounts for this quota scheduler pool.
 message SchedulerConfig {
@@ -24,6 +26,13 @@ message SchedulerConfig {
   bool disable_preemption = 2;
 
   reserved 3;
+
+  // BotExpiration is the duration after which a bot will no longer be
+  // considered idle, if the scheduler doesn't receive any assignment requests
+  // for it.
+  //
+  // If unspecified, defaults to 300 seconds.
+  google.protobuf.Duration bot_expiration = 4;
 }
 
 // AccountConfig represents per-quota-account configuration information, such
