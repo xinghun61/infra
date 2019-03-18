@@ -7,7 +7,11 @@
 // to construct a command line for running skylab_swarming_worker.
 package worker
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
 // DefaultPath is the default path for skylab_swarming_worker.
 const DefaultPath = "/opt/infra-tools/skylab_swarming_worker"
@@ -22,7 +26,11 @@ type Command struct {
 	// LogDogAnnotationURL can be set automatically with Env.
 	LogDogAnnotationURL string
 	// AdminService can be set automatically with Env.
-	AdminService string
+	AdminService    string
+	ClientTest      bool
+	ProvisionLabels []string
+	Keyvals         map[string]string
+	TestArgs        string
 }
 
 // Args returns the arg strings for running the command.
@@ -41,6 +49,23 @@ func (c *Command) Args() []string {
 	}
 	if c.AdminService != "" {
 		args = append(args, "-admin-service", c.AdminService)
+	}
+	if c.ClientTest {
+		args = append(args, "-client-test")
+	}
+	if len(c.ProvisionLabels) > 0 {
+		args = append(args, "-provision-labels", strings.Join(c.ProvisionLabels, ","))
+	}
+	if c.Keyvals != nil {
+		b, err := json.Marshal(c.Keyvals)
+		// Marshal map[string]string should never error.
+		if err != nil {
+			panic(err)
+		}
+		args = append(args, "-keyvals", string(b))
+	}
+	if c.TestArgs != "" {
+		args = append(args, "-test-args", c.TestArgs)
 	}
 	return args
 }
