@@ -143,7 +143,14 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	e := c.envFlags.Env()
 
 	logdogURL := worker.GenerateLogDogURL(e.Wrapped())
-	slices, err := getSlices(taskName, c.client, logdogURL, provisionableLabels, dimensions, keyvals, c.testArgs, c.timeoutMins)
+	cmd := worker.Command{
+		TaskName:            taskName,
+		LogDogAnnotationURL: logdogURL,
+		ClientTest:          c.client,
+		Keyvals:             keyvals,
+		TestArgs:            c.testArgs,
+	}
+	slices, err := getSlices(cmd, provisionableLabels, dimensions, c.timeoutMins)
 	if err != nil {
 		return errors.Annotate(err, "create test").Err()
 	}
@@ -201,8 +208,7 @@ func taskSlice(command []string, dimensions []*swarming.SwarmingRpcsStringPair, 
 }
 
 // getSlices generates and returns the set of swarming task slices for the given test task.
-func getSlices(taskName string, clientTest bool, annotationURL string, provisionableDimensions []string,
-	dimensions []string, keyvals map[string]string, testArgs string, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
+func getSlices(cmd worker.Command, provisionableDimensions []string, dimensions []string, timeoutMins int) ([]*swarming.SwarmingRpcsTaskSlice, error) {
 	slices := make([]*swarming.SwarmingRpcsTaskSlice, 1, 2)
 
 	basePairs, err := toPairs(dimensions)
@@ -212,14 +218,6 @@ func getSlices(taskName string, clientTest bool, annotationURL string, provision
 	provisionablePairs, err := toPairs(provisionableDimensions)
 	if err != nil {
 		return nil, errors.Annotate(err, "create slices").Err()
-	}
-
-	cmd := worker.Command{
-		TaskName:            taskName,
-		LogDogAnnotationURL: annotationURL,
-		ClientTest:          clientTest,
-		Keyvals:             keyvals,
-		TestArgs:            testArgs,
 	}
 
 	s0Dims := append(basePairs, provisionablePairs...)
