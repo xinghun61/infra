@@ -410,6 +410,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           step_test_data=lambda: self.m.raw_io.test_api.stream_output(
               'foo')
       ).stdout.strip()
-      self.m.step.active_result.step_text = status_result
+      self.m.step.active_result.presentation.step_text = status_result
 
     return repo_data, status_result

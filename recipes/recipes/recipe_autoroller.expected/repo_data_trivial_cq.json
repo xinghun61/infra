@@ -261,7 +261,8 @@
     "name": "build.git cl status",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@commit@@@"
     ]
   },
   {
