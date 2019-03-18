@@ -207,6 +207,20 @@ wheel: <
 * *manylinux-x64*
 * *manylinux-x86*
 
+## **absl-py**
+
+### 0.7.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/absl-py-py2_py3"
+  version: "version:0.7.1"
+>
+```
+
+
+* *universal*
+
 ## **aenum**
 
 ### 2.1.2
