@@ -770,7 +770,7 @@ SHORTHAND = {
                    r'('
                    r'(LOWER\(Phase\d+\.name\) IS NULL OR )?'
                    r'LOWER\(Phase\d+\.name\) '
-                   r'(%s %%s|IN \(%%s(, ?%%s)*\))'
+                   r'(%s %%s|IN \(%%s(, ?%%s)*\))?'
                    r'( (AND|OR) )?'
                    r')+'
                    r'\)?' % COMPARE_OP_PAT),
@@ -844,6 +844,9 @@ JOIN_RE_LIST = [
         r'( AND {tab_col} = {placeholder})?'
         r' AND \({tab_col} IS NULL OR'
         r' {tab_col} != {placeholder}\)$'),
+    _MakeRE(
+        r'^{table}{opt_alias} ON {tab_col} = {tab_col}'
+        r' AND LOWER\({tab_col}\) = LOWER\({placeholder}\)'),
     _MakeRE(
         r'^{table}{opt_alias} ON {tab_col} = {tab_col} AND {email_cond}$'),
     _MakeRE(

@@ -163,6 +163,49 @@ class AST2SortTest(unittest.TestCase):
   def testProcessCustomAndLabelSD(self):
     pass  # TODO(jrobbins): fill in this test case
 
+  def testProcessCustomAndLabelSD_PhaseField(self):
+    harmonized_labels = []
+    bear_fd = tracker_pb2.FieldDef(
+        field_id=1, field_name='DropBear', project_id=789,
+        field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    bear2_fd = tracker_pb2.FieldDef(
+        field_id=2, field_name='DropBear', project_id=788,
+        field_type=tracker_pb2.FieldTypes.STR_TYPE)
+    koala_fd = tracker_pb2.FieldDef(
+        field_id=3, field_name='koala', project_id=789,
+        field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    bear_app_fd = tracker_pb2.FieldDef(
+        field_id=4, field_name='dropbear', project_id=789,
+        field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
+    harmonized_fields = [bear_fd, bear2_fd, koala_fd, bear_app_fd]
+    phase_name = 'stable'
+    alias = 'Sort0'
+    sort_dir = 'DESC'
+    sd = 'stable.dropbear'
+    left_joins, order_by = ast2sort._ProcessCustomAndLabelSD(
+        sd, harmonized_labels, harmonized_fields, alias, sort_dir,
+        self.fmt)
+
+    expected_joins = []
+    expected_order = []
+    int_left_joins, int_order_by = ast2sort._CustomFieldSortClauses(
+        [bear_fd, bear2_fd], tracker_pb2.FieldTypes.INT_TYPE, 'int_value',
+        alias, sort_dir, phase_name=phase_name)
+    str_left_joins, str_order_by = ast2sort._CustomFieldSortClauses(
+        [bear_fd, bear2_fd], tracker_pb2.FieldTypes.STR_TYPE, 'str_value',
+        alias, sort_dir, phase_name=phase_name)
+    user_left_joins, user_order_by = ast2sort._CustomFieldSortClauses(
+        [bear_fd, bear2_fd], tracker_pb2.FieldTypes.USER_TYPE, 'user_id',
+        alias, sort_dir, phase_name=phase_name)
+    label_left_joinss, label_order_by = ast2sort._LabelSortClauses(
+        sd, harmonized_labels, self.fmt)
+    expected_joins.extend(
+        int_left_joins + str_left_joins + user_left_joins + label_left_joinss)
+    expected_order.extend(
+        int_order_by + str_order_by + user_order_by + label_order_by)
+    self.assertEqual(left_joins, expected_joins)
+    self.assertEqual(order_by, expected_order)
+
   def testApprovalFieldSortClauses_Status(self):
     approval_fd_list = [
         tracker_pb2.FieldDef(field_id=2, project_id=789,
@@ -248,6 +291,58 @@ class AST2SortTest(unittest.TestCase):
       ('FIELD({alias}.label_id, {odd_label_ph}) {rev_sort_dir}',
        [199]),
       order_by[1])
+
+  def testCustomFieldSortClauses_Normal(self):
+    fd_list = [
+      tracker_pb2.FieldDef(field_id=1, project_id=789,
+                           field_type=tracker_pb2.FieldTypes.INT_TYPE),
+      tracker_pb2.FieldDef(field_id=2, project_id=788,
+                           field_type=tracker_pb2.FieldTypes.STR_TYPE),
+    ]
+    left_joins, order_by = ast2sort._CustomFieldSortClauses(
+        fd_list, tracker_pb2.FieldTypes.INT_TYPE, 'int_value', 'Sort0', 'DESC')
+
+    self.assertEqual(
+        left_joins, [
+            ('Issue2FieldValue AS Sort0_int_value '
+             'ON Issue.id = Sort0_int_value.issue_id '
+             'AND Sort0_int_value.field_id IN (%s)', [1]),
+        ])
+    self.assertEqual(
+        order_by, [
+            ('ISNULL(Sort0_int_value.int_value) DESC', []),
+            ('Sort0_int_value.int_value DESC', []),
+        ])
+
+  def testCustomFieldSortClauses_PhaseUser(self):
+    fd_list = [
+      tracker_pb2.FieldDef(field_id=1, project_id=789,
+                           field_type=tracker_pb2.FieldTypes.INT_TYPE),
+      tracker_pb2.FieldDef(field_id=2, project_id=788,
+                           field_type=tracker_pb2.FieldTypes.STR_TYPE),
+      tracker_pb2.FieldDef(field_id=3, project_id=788,
+                           field_type=tracker_pb2.FieldTypes.USER_TYPE),
+    ]
+    left_joins, order_by = ast2sort._CustomFieldSortClauses(
+        fd_list, tracker_pb2.FieldTypes.USER_TYPE, 'user_id', 'Sort0', 'DESC',
+        phase_name='Stable')
+
+    self.assertEqual(
+        left_joins, [
+            ('Issue2FieldValue AS Sort0_user_id '
+             'ON Issue.id = Sort0_user_id.issue_id '
+             'AND Sort0_user_id.field_id IN (%s)', [3]),
+            ('IssuePhaseDef AS Sort0_user_id_phase '
+             'ON Sort0_user_id.phase_id = Sort0_user_id_phase.id '
+             'AND LOWER(Sort0_user_id_phase.name) = LOWER(%s)', ['Stable']),
+            ('User AS Sort0_user_id_user '
+             'ON Sort0_user_id.user_id = Sort0_user_id_user.user_id', []),
+        ])
+    self.assertEqual(
+        order_by, [
+            ('ISNULL(Sort0_user_id_user.email) DESC', []),
+            ('Sort0_user_id_user.email DESC', []),
+        ])
 
   def testOneSortDirective_NativeSortable(self):
     left_joins, order_by = ast2sort._OneSortDirective(

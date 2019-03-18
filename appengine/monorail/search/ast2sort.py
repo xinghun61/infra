@@ -226,9 +226,11 @@ def _ProcessCustomAndLabelSD(
   """Convert a label or custom field sort directive into SQL."""
   left_joins = []
   order_by = []
+  phase_name = None
   # If a custom field is an approval_type with no suffix, the
   # approvals should be sorted by status.
   approval_suffix = '-status'
+  approval_fd_list = []
 
   # Check for reserved suffixes in col_name sd.
   # TODO(jojwang): check for other suffixes in
@@ -240,10 +242,15 @@ def _ProcessCustomAndLabelSD(
                         if fd.field_name.lower() == field_name]
     approval_suffix = tracker_constants.APPROVER_COL_SUFFIX
   else:
+    field_name = sd
+    if '.' in sd:
+      phase_name, field_name = sd.split('.', 1)
+
     fd_list = [fd for fd in harmonized_fields
-               if fd.field_name.lower() == sd]
-    approval_fd_list = [fd for fd in fd_list if
-                      fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
+               if fd.field_name.lower() == field_name]
+    if not phase_name:
+      approval_fd_list = [fd for fd in fd_list if
+                          fd.field_type == tracker_pb2.FieldTypes.APPROVAL_TYPE]
 
   # 'alias' is used for all the CustomField, Approval, and Label sort clauses.
   # Custom field aliases are alwyas appended by the value_col name.
@@ -252,13 +259,13 @@ def _ProcessCustomAndLabelSD(
   if fd_list:
     int_left_joins, int_order_by = _CustomFieldSortClauses(
         fd_list, tracker_pb2.FieldTypes.INT_TYPE, 'int_value',
-        alias, sort_dir)
+        alias, sort_dir, phase_name=phase_name)
     str_left_joins, str_order_by = _CustomFieldSortClauses(
         fd_list, tracker_pb2.FieldTypes.STR_TYPE, 'str_value',
-        alias, sort_dir)
+        alias, sort_dir, phase_name=phase_name)
     user_left_joins, user_order_by = _CustomFieldSortClauses(
         fd_list, tracker_pb2.FieldTypes.USER_TYPE, 'user_id',
-        alias, sort_dir)
+        alias, sort_dir, phase_name=phase_name)
     left_joins.extend(int_left_joins + str_left_joins + user_left_joins)
     order_by.extend(int_order_by + str_order_by + user_order_by)
 
@@ -354,7 +361,7 @@ def _LabelSortClauses(sd, harmonized_labels, fmt):
 
 
 def _CustomFieldSortClauses(
-    fd_list, value_type, value_column, alias, sort_dir):
+    fd_list, value_type, value_column, alias, sort_dir, phase_name=None):
   """Give LEFT JOIN and ORDER BY terms for custom fields of the given type."""
   relevant_fd_list = [fd for fd in fd_list if fd.field_type == value_type]
   if not relevant_fd_list:
@@ -364,12 +371,20 @@ def _CustomFieldSortClauses(
   def Fmt(sql_str):
     return sql_str.format(
         value_column=value_column, sort_dir=sort_dir,
-        field_ids_ph=field_ids_ph, alias=alias + '_' + value_column)
+        field_ids_ph=field_ids_ph, alias=alias + '_' + value_column,
+        phase_name=phase_name)
 
   left_joins = [
       (Fmt('Issue2FieldValue AS {alias} ON Issue.id = {alias}.issue_id '
            'AND {alias}.field_id IN ({field_ids_ph})'),
        [fd.field_id for fd in relevant_fd_list])]
+
+  if phase_name:
+    left_joins.append(
+        (Fmt('IssuePhaseDef AS {alias}_phase '
+             'ON {alias}.phase_id = {alias}_phase.id '
+             'AND LOWER({alias}_phase.name) = LOWER(%s)'),
+         [phase_name]))
 
   if value_type == tracker_pb2.FieldTypes.USER_TYPE:
     left_joins.append(
