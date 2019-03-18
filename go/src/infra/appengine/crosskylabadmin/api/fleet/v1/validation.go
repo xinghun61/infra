@@ -131,6 +131,50 @@ func (r *DutSelector) Validate() error {
 }
 
 // Validate returns an error if r is invalid.
+func (r *DeployDutRequest) Validate() error {
+	if r.NewSpecs == nil {
+		return status.Errorf(codes.InvalidArgument, "new_specs must be set")
+	}
+	if r.Actions != nil {
+		return r.Actions.Validate()
+	}
+	return nil
+}
+
+// Validate returns an error if r is invalid.
+func (r *RedeployDutRequest) Validate() error {
+	if r.NewSpecs != nil && r.OldSpecs == nil {
+		return status.Errorf(codes.InvalidArgument, "old_specs must be set when new_specs is set")
+	}
+	if r.Actions != nil {
+		return r.Actions.Validate()
+	}
+	return nil
+}
+
+// Validate returns an error if a is invalid.
+func (a *DutDeploymentActions) Validate() error {
+	if a.StageImageToUsb {
+		return status.Errorf(codes.Unimplemented, "action stage_image_to_usb not yet implemented")
+	}
+	if a.InstallFirmware {
+		return status.Errorf(codes.Unimplemented, "action install_firmware not yet implemented")
+	}
+	if a.InstallTestImage {
+		return status.Errorf(codes.Unimplemented, "action install_test_image not yet implemented")
+	}
+	return nil
+}
+
+// Validate returns an error if r is invalid.
+func (r *GetDeploymentStatusRequest) Validate() error {
+	if r.DeploymentId == "" {
+		return status.Errorf(codes.InvalidArgument, "deployment_id is required")
+	}
+	return nil
+}
+
+// Validate returns an error if r is invalid.
 func (r *DeleteDutsRequest) Validate() error {
 	if len(r.Hostnames) == 0 {
 		return status.Errorf(codes.InvalidArgument, "must specify at least one hostname")

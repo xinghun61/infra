@@ -101,6 +101,16 @@ func testingContext() context.Context {
 			InfrastructureDataPath: "data/skylab/server_db.textpb",
 			Environment:            "ENVIRONMENT_STAGING",
 		},
+		Tasker: &config.Tasker{
+			BackgroundTaskExecutionTimeoutSecs: 3600,
+			BackgroundTaskExpirationSecs:       300,
+		},
+		Swarming: &config.Swarming{
+			Host:              "https://fake-host.appspot.com",
+			BotPool:           "ChromeOSSkylab",
+			FleetAdminTaskTag: "fake-tag",
+			LuciProjectTag:    "fake-project",
+		},
 	})
 	datastore.GetTestable(c).Consistent(true)
 

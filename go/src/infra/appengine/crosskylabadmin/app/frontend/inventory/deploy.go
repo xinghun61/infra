@@ -17,10 +17,19 @@ package inventory
 import (
 	"fmt"
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/deploy"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/worker"
 	"infra/libs/skylab/inventory"
 
+	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
 	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -29,8 +38,38 @@ import (
 )
 
 // DeployDut implements the method from fleet.InventoryServer interface.
-func (*ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest) (*fleet.DeployDutResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "deploy dut: not implemented yet")
+func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest) (resp *fleet.DeployDutResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	if err = req.Validate(); err != nil {
+		return nil, err
+	}
+
+	var specs inventory.CommonDeviceSpecs
+	if err := proto.Unmarshal(req.GetNewSpecs(), &specs); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid new_specs")
+	}
+	if specs.GetHostname() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "DUT hostname not set in new_specs")
+	}
+
+	s, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sc, err := is.newSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	if err != nil {
+		return nil, err
+	}
+
+	attemptID, err := initializeDeployAttempt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ds := deployDUT(ctx, s, sc, attemptID, &specs)
+	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
+	return &fleet.DeployDutResponse{DeploymentId: attemptID}, nil
 }
 
 // RedeployDut implements the method from fleet.InventoryServer interface.
@@ -39,8 +78,37 @@ func (*ServerImpl) RedeployDut(ctx context.Context, req *fleet.RedeployDutReques
 }
 
 // GetDeploymentStatus implements the method from fleet.InventoryServer interface.
-func (*ServerImpl) GetDeploymentStatus(ctx context.Context, req *fleet.GetDeploymentStatusRequest) (*fleet.GetDeploymentStatusResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "get deployment status: not implemented yet")
+func (is *ServerImpl) GetDeploymentStatus(ctx context.Context, req *fleet.GetDeploymentStatusRequest) (resp *fleet.GetDeploymentStatusResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	if err = req.Validate(); err != nil {
+		return nil, err
+	}
+
+	sc, err := is.newSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	if err != nil {
+		return nil, err
+	}
+
+	ds, err := deploy.GetStatus(ctx, req.DeploymentId)
+	if err != nil {
+		return nil, status.Errorf(codes.NotFound, "no deployment attempt with ID %s", req.DeploymentId)
+	}
+	if !ds.IsFinal {
+		if err = refreshDeployStatus(ctx, sc, ds); err != nil {
+			return nil, err
+		}
+		if err := deploy.UpdateStatus(ctx, req.DeploymentId, ds); err != nil {
+			return nil, err
+		}
+	}
+
+	return &fleet.GetDeploymentStatusResponse{
+		Status:    ds.Status,
+		ChangeUrl: ds.ChangeURL,
+		TaskUrl:   swarming.URLForTask(ctx, ds.TaskID),
+	}, nil
 }
 
 // DeleteDuts implements the method from fleet.InventoryServer interface.
@@ -84,6 +152,151 @@ func (is *ServerImpl) DeleteDuts(ctx context.Context, req *fleet.DeleteDutsReque
 		Ids:       removedIDs,
 	}, nil
 
+}
+
+// initializeDeployAttempt initializes internal state for a deployment attempt.
+//
+// This function returns a new ID for this deployment attempt.
+func initializeDeployAttempt(ctx context.Context) (string, error) {
+	attemptID, err := deploy.PutStatus(ctx, &deploy.Status{
+		Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED,
+		Reason: "unknown",
+	})
+	if err != nil {
+		return "", errors.Annotate(err, "initialize deploy attempt").Err()
+	}
+	return attemptID, nil
+}
+
+// deployDUT kicks off a new DUT deployment.
+//
+// Errors are communicated via returned deploy.Status
+func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nd *inventory.CommonDeviceSpecs) *deploy.Status {
+	var err error
+	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
+	ds.ChangeURL, err = addDUTToFleet(ctx, s, nd)
+	if err != nil {
+		failDeployStatus(ds, "failed to add dut to fleet")
+		return ds
+	}
+	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, nd.GetId())
+	if err != nil {
+		failDeployStatus(ds, "failed to create deploy task")
+		return ds
+	}
+	return ds
+}
+
+// addDUTToFleet adds a new DUT with given specs to the inventory and assigns
+// it to a drone.
+func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs) (string, error) {
+	var respURL string
+	f := func() error {
+		if err := s.Refresh(ctx); err != nil {
+			return errors.Annotate(err, "add dut to fleet").Err()
+		}
+
+		hostname := nd.GetHostname()
+		m := mapHostnameToDUTs(s.Lab.Duts)
+		if _, ok := m[hostname]; ok {
+			return errors.Reason("dut with hostname %s already exists", hostname).Err()
+		}
+
+		id := addDUTToStore(s, nd)
+		if _, err := assignDutToDrone(ctx, s.Infrastructure, m, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
+			return errors.Annotate(err, "add dut to fleet").Err()
+		}
+
+		url, err := s.Commit(ctx, fmt.Sprintf("Add new DUT %s", hostname))
+		if err != nil {
+			return errors.Annotate(err, "add dut to fleet").Err()
+		}
+
+		respURL = url
+		return nil
+	}
+
+	err := retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "addDUTToFleet"))
+	return respURL, err
+}
+
+// addDUTToStore adds a new DUT with the given specs to the store.
+//
+// This function returns a new ID for the added DUT.
+func addDUTToStore(s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs) string {
+	id := uuid.New().String()
+	nd.Id = &id
+	// TODO(crbug/912977) DUTs under deployment are not marked specially in the
+	// inventory yet. This causes two problems:
+	// - Another admin task (say repair) may get scheduled on the new bot
+	//   before the deploy task we create.
+	// - If the deploy task fails, the DUT will still enter the fleet, but may
+	//   not be ready for use.
+	s.Lab.Duts = append(s.Lab.Duts, &inventory.DeviceUnderTest{
+		Common: nd,
+	})
+	return id
+}
+
+// scheduleDUTPreparationTask schedules a Skylab DUT preparation task.
+func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, dutID string) (string, error) {
+	taskCfg := config.Get(ctx).GetEndpoint().GetDeployDut()
+	tags := swarming.AddCommonTags(ctx, fmt.Sprintf("deploy_task:%s", dutID))
+	// TODO(crbug/912977) This should actually be a admin_deploy task that runs
+	// additional DUT preparation steps before running repair.
+	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
+	tags = append(tags, at.Tags...)
+	return sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
+		Cmd:                  at.Cmd,
+		DutID:                dutID,
+		ExecutionTimeoutSecs: taskCfg.GetTaskExecutionTimeout().GetSeconds(),
+		ExpirationSecs:       taskCfg.GetTaskExpirationTimeout().GetSeconds(),
+		Priority:             taskCfg.GetTaskPriority(),
+		Tags:                 tags,
+	}))
+}
+
+// refreshDeployStatus refreshes the status of given deployment attempt from
+// Swarming.
+func refreshDeployStatus(ctx context.Context, sc clients.SwarmingClient, ds *deploy.Status) error {
+	if ds.TaskID == "" {
+		failDeployStatus(ds, "unknown deploy task ID")
+		return nil
+	}
+
+	tr, err := sc.GetTaskResult(ctx, ds.TaskID)
+	if err != nil {
+		return errors.Annotate(err, "refresh deploy status").Err()
+	}
+
+	switch tr.State {
+	case "COMPLETED":
+		if tr.Failure || tr.InternalFailure {
+			ds.Status = fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED
+		} else {
+			ds.Status = fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_SUCCEEDED
+		}
+		ds.IsFinal = true
+	case "PENDING", "RUNNING":
+		ds.Status = fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS
+	default:
+		failDeployStatus(ds, "deploy Skylab task failed")
+	}
+	return nil
+}
+
+// failDeployStatus updates ds to correspond to a failed deploy with the given
+// reason.
+func failDeployStatus(ds *deploy.Status, reason string) {
+	ds.IsFinal = true
+	ds.Status = fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED
+	ds.Reason = reason
+}
+
+func updateDeployStatusIgnoringErrors(ctx context.Context, attemptID string, ds *deploy.Status) {
+	if err := deploy.UpdateStatus(ctx, attemptID, ds); err != nil {
+		logging.Errorf(ctx, "Failed to update status for deploy attempt %s to %v", attemptID, ds)
+	}
 }
 
 // removeDUTWithHostnames deletes duts with the given hostnames.
