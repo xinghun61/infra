@@ -84,6 +84,15 @@ section:
 This says the wheel `scandir-1.9.0` is either built from source (.tar.gz) or is
 prebuilt (for the following `packaged` platforms).
 
+[Authenticated to GCloud Container
+Registry](https://cloud.google.com/container-registry/docs/advanced-authentication)
+with
+
+    gcloud auth configure-docker
+
+(otherwise dockerbuild will create containers from scratch, which takes time.)
+
+
 Finally, we need to build it:
 
     path/to/infra.git/run.py         \
