@@ -214,13 +214,6 @@ func (s *Scheduler) UpdateTime(ctx context.Context, t time.Time) {
 	state.lastUpdateTime = t
 }
 
-// IdleWorker describes a worker that is idle, along with
-// the provisionable labels that it possesses.
-type IdleWorker struct {
-	WorkerID string
-	Labels   stringset.Set
-}
-
 // MarkIdle marks the given worker as idle, and with the given provisionable,
 // labels, as of the given time. If this call is contradicted by newer knowledge
 // of state, then it does nothing.
