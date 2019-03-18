@@ -1,33 +1,6 @@
 [
   {
     "cmd": [
-      "luci-auth",
-      "token",
-      "-lifetime",
-      "3m"
-    ],
-    "infra_step": true,
-    "name": "get access token for default account",
-    "stdout": "/path/to/tmp/"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
-      "--url",
-      "https://luci-config.appspot.com/_ah/api/config/v1/projects",
-      "--status-json",
-      "/path/to/tmp/json",
-      "--outfile",
-      "/path/to/tmp/json",
-      "--headers-json",
-      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
-    ],
-    "name": "Get luci-config projects"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
@@ -79,7 +52,7 @@
       "--path",
       "[CACHE]/builder/recipe_autoroller/build",
       "--url",
-      "https://repo.repo/build"
+      "https://example.com/build.git"
     ],
     "name": "build.git setup",
     "~followup_annotations": [
@@ -235,7 +208,7 @@
       "RECIPE_REPO[depot_tools]/gsutil.py",
       "----",
       "cat",
-      "gs://recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
+      "gs://recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9leGFtcGxlLmNvbS9idWlsZC5naXQ="
     ],
     "infra_step": true,
     "name": "build.gsutil repo_state",
@@ -433,13 +406,13 @@
       "----",
       "cp",
       "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_roll_ts_utc\": \"2012-05-14T12:53:21\", \"trivial\": false}",
-      "gs://recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
+      "gs://recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9leGFtcGxlLmNvbS9idWlsZC5naXQ="
     ],
     "infra_step": true,
     "name": "build.gsutil upload",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ=@@@"
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/recipe-mega-roller-crappy-db/repo_metadata/aHR0cHM6Ly9leGFtcGxlLmNvbS9idWlsZC5naXQ=@@@"
     ]
   },
   {

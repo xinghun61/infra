@@ -3,8 +3,6 @@
 # found in the LICENSE file.
 
 DEPS = [
-  'build/luci_config',
-
   'depot_tools/git',
   'depot_tools/git_cl',
   'depot_tools/gsutil',

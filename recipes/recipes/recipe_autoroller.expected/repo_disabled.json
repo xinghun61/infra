@@ -1,33 +1,6 @@
 [
   {
     "cmd": [
-      "luci-auth",
-      "token",
-      "-lifetime",
-      "3m"
-    ],
-    "infra_step": true,
-    "name": "get access token for default account",
-    "stdout": "/path/to/tmp/"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
-      "--url",
-      "https://luci-config.appspot.com/_ah/api/config/v1/projects",
-      "--status-json",
-      "/path/to/tmp/json",
-      "--outfile",
-      "/path/to/tmp/json",
-      "--headers-json",
-      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
-    ],
-    "name": "Get luci-config projects"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
@@ -79,7 +52,7 @@
       "--path",
       "[CACHE]/builder/recipe_autoroller/build",
       "--url",
-      "https://repo.repo/build"
+      "https://example.com/build.git"
     ],
     "name": "build.git setup",
     "~followup_annotations": [
