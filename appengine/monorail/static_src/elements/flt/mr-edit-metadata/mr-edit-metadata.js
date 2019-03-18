@@ -18,6 +18,8 @@ import './mr-edit-field.js';
 import './mr-edit-status.js';
 
 
+const EDIT_ISSUE_PERMISSION = 'editissue';
+
 /**
  * `<mr-edit-metadata>`
  *
@@ -155,156 +157,158 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         >
           <i class="material-icons" slot="drop-label-icon">cloud_upload</i>
         </vaadin-upload>
-        <div class="input-grid">
-          <template is="dom-if" if="[[!isApproval]]">
-            <label for="summaryInput">Summary:</label>
-            <input id="summaryInput" value$="[[summary]]" />
-          </template>
-          <template is="dom-if" if="[[statuses.length]]">
-            <label for="statusInput">Status:</label>
+        <template is="dom-if" if="[[_canEditIssue]]">
+          <div class="input-grid">
+            <template is="dom-if" if="[[!isApproval]]">
+              <label for="summaryInput">Summary:</label>
+              <input id="summaryInput" value$="[[summary]]" />
+            </template>
+            <template is="dom-if" if="[[statuses.length]]">
+              <label for="statusInput">Status:</label>
 
-            <mr-edit-status
-              id="statusInput"
-              status="[[status]]"
-              statuses="[[statuses]]"
-              is-approval="[[isApproval]]"
-              merged-into="[[_mapIssueRefToIssueString(mergedInto, projectName)]]"
-            ></mr-edit-status>
-          </template>
+              <mr-edit-status
+                id="statusInput"
+                status="[[status]]"
+                statuses="[[statuses]]"
+                is-approval="[[isApproval]]"
+                merged-into="[[_mapIssueRefToIssueString(mergedInto, projectName)]]"
+              ></mr-edit-status>
+            </template>
 
 
-          <template is="dom-if" if="[[!isApproval]]">
-            <label for="ownerInput" on-click="_clickLabelForCustomInput">Owner:</label>
-            <mr-edit-field
-              id="ownerInput"
-              type="USER_TYPE"
-              initial-values="[[_wrapList(ownerName)]]"
-            ></mr-edit-field>
+            <template is="dom-if" if="[[!isApproval]]">
+              <label for="ownerInput" on-click="_clickLabelForCustomInput">Owner:</label>
+              <mr-edit-field
+                id="ownerInput"
+                type="USER_TYPE"
+                initial-values="[[_wrapList(ownerName)]]"
+              ></mr-edit-field>
 
-            <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
-            <mr-edit-field
-              id="ccInput"
-              name="cc"
-              type="USER_TYPE"
-              initial-values="[[_ccNames]]"
-              derived-values="[[_derivedCCs]]"
-              multi
-            ></mr-edit-field>
+              <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
+              <mr-edit-field
+                id="ccInput"
+                name="cc"
+                type="USER_TYPE"
+                initial-values="[[_ccNames]]"
+                derived-values="[[_derivedCCs]]"
+                multi
+              ></mr-edit-field>
 
-            <label for="componentsInput" on-click="_clickLabelForCustomInput">Components:</label>
-            <mr-edit-field
-              id="componentsInput"
-              name="component"
-              type="STR_TYPE"
-              initial-values="[[_mapComponentRefsToNames(components)]]"
-              ac-type="component"
-              multi
-            ></mr-edit-field>
-          </template>
+              <label for="componentsInput" on-click="_clickLabelForCustomInput">Components:</label>
+              <mr-edit-field
+                id="componentsInput"
+                name="component"
+                type="STR_TYPE"
+                initial-values="[[_mapComponentRefsToNames(components)]]"
+                ac-type="component"
+                multi
+              ></mr-edit-field>
+            </template>
 
-          <template is="dom-if" if="[[_and(hasApproverPrivileges, isApproval)]]">
-            <label for="approversInput" on-click="_clickLabelForCustomInput">Approvers:</label>
-            <mr-edit-field
-              id="approversInput"
-              type="USER_TYPE"
-              initial-values="[[_mapUserRefsToNames(approvers)]]"
-              name="approver"
-              multi
-            ></mr-edit-field>
-          </template>
+            <template is="dom-if" if="[[_and(hasApproverPrivileges, isApproval)]]">
+              <label for="approversInput" on-click="_clickLabelForCustomInput">Approvers:</label>
+              <mr-edit-field
+                id="approversInput"
+                type="USER_TYPE"
+                initial-values="[[_mapUserRefsToNames(approvers)]]"
+                name="approver"
+                multi
+              ></mr-edit-field>
+            </template>
 
-          <template is="dom-repeat" items="[[_fieldDefsWithGroups]]" as="group">
-            <fieldset class="group">
-              <legend>[[group.groupName]]</legend>
-              <div class="input-grid">
-                <template is="dom-repeat" items="[[group.fieldDefs]]" as="field">
-                  <label
-                    hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
-                    for$="[[_idForField(field.fieldRef.fieldName)]]"
-                    on-click="_clickLabelForCustomInput"
-                    title$="[[field.docstring]]"
-                  >
-                    [[field.fieldRef.fieldName]]:
-                  </label>
-                  <mr-edit-field
-                    hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
-                    id$="[[_idForField(field.fieldRef.fieldName)]]"
-                    name="[[field.fieldRef.fieldName]]"
-                    type="[[field.fieldRef.type]]"
-                    options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
-                    initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
-                    multi="[[field.isMultivalued]]"
-                  ></mr-edit-field>
-                </template>
-              </div>
-            </fieldset>
-          </template>
+            <template is="dom-repeat" items="[[_fieldDefsWithGroups]]" as="group">
+              <fieldset class="group">
+                <legend>[[group.groupName]]</legend>
+                <div class="input-grid">
+                  <template is="dom-repeat" items="[[group.fieldDefs]]" as="field">
+                    <label
+                      hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
+                      for$="[[_idForField(field.fieldRef.fieldName)]]"
+                      on-click="_clickLabelForCustomInput"
+                      title$="[[field.docstring]]"
+                    >
+                      [[field.fieldRef.fieldName]]:
+                    </label>
+                    <mr-edit-field
+                      hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
+                      id$="[[_idForField(field.fieldRef.fieldName)]]"
+                      name="[[field.fieldRef.fieldName]]"
+                      type="[[field.fieldRef.type]]"
+                      options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
+                      initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+                      multi="[[field.isMultivalued]]"
+                    ></mr-edit-field>
+                  </template>
+                </div>
+              </fieldset>
+            </template>
 
-          <template is="dom-repeat" items="[[_fieldDefsWithoutGroup]]" as="field">
-            <label
-              hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
-              for$="[[_idForField(field.fieldRef.fieldName)]]"
-              on-click="_clickLabelForCustomInput"
-              title$="[[field.docstring]]"
-            >
-              [[field.fieldRef.fieldName]]:
-            </label>
-            <mr-edit-field
-              hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
-              id$="[[_idForField(field.fieldRef.fieldName)]]"
-              name="[[field.fieldRef.fieldName]]"
-              type="[[field.fieldRef.type]]"
-              options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
-              initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
-              multi="[[field.isMultivalued]]"
-            ></mr-edit-field>
-          </template>
+            <template is="dom-repeat" items="[[_fieldDefsWithoutGroup]]" as="field">
+              <label
+                hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
+                for$="[[_idForField(field.fieldRef.fieldName)]]"
+                on-click="_clickLabelForCustomInput"
+                title$="[[field.docstring]]"
+              >
+                [[field.fieldRef.fieldName]]:
+              </label>
+              <mr-edit-field
+                hidden$="[[_fieldIsHidden(showNicheFields, field.isNiche)]]"
+                id$="[[_idForField(field.fieldRef.fieldName)]]"
+                name="[[field.fieldRef.fieldName]]"
+                type="[[field.fieldRef.type]]"
+                options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
+                initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+                multi="[[field.isMultivalued]]"
+              ></mr-edit-field>
+            </template>
 
-          <template is="dom-if" if="[[!isApproval]]">
-            <label for="blockedOnInput" on-click="_clickLabelForCustomInput">Blocked on:</label>
-            <mr-edit-field
-              id="blockedOnInput"
-              initial-values="[[_mapBlockerRefsToIdStrings(blockedOn, projectName)]]"
-              name="blocked-on"
-              multi
-            ></mr-edit-field>
+            <template is="dom-if" if="[[!isApproval]]">
+              <label for="blockedOnInput" on-click="_clickLabelForCustomInput">Blocked on:</label>
+              <mr-edit-field
+                id="blockedOnInput"
+                initial-values="[[_mapBlockerRefsToIdStrings(blockedOn, projectName)]]"
+                name="blocked-on"
+                multi
+              ></mr-edit-field>
 
-            <label for="blockingInput" on-click="_clickLabelForCustomInput">Blocking:</label>
-            <mr-edit-field
-              id="blockingInput"
-              initial-values="[[_mapBlockerRefsToIdStrings(blocking, projectName)]]"
-              name="blocking"
-              multi
-            ></mr-edit-field>
+              <label for="blockingInput" on-click="_clickLabelForCustomInput">Blocking:</label>
+              <mr-edit-field
+                id="blockingInput"
+                initial-values="[[_mapBlockerRefsToIdStrings(blocking, projectName)]]"
+                name="blocking"
+                multi
+              ></mr-edit-field>
 
-            <label for="labelsInput" on-click="_clickLabelForCustomInput">Labels:</label>
-            <mr-edit-field
-              id="labelsInput"
-              ac-type="label"
-              initial-values="[[labelNames]]"
-              derived-values="[[derivedLabels]]"
-              name="label"
-              multi
-            ></mr-edit-field>
-          </template>
+              <label for="labelsInput" on-click="_clickLabelForCustomInput">Labels:</label>
+              <mr-edit-field
+                id="labelsInput"
+                ac-type="label"
+                initial-values="[[labelNames]]"
+                derived-values="[[derivedLabels]]"
+                name="label"
+                multi
+              ></mr-edit-field>
+            </template>
 
-          <span hidden$="[[!_nicheFieldCount]]"></span>
-          <button type="button" class="toggle" on-click="toggleNicheFields" hidden$="[[!_nicheFieldCount]]">
-            <span hidden$="[[showNicheFields]]">
-              Show all fields ([[_nicheFieldCount]] currently hidden)
-            </span>
-            <span hidden$="[[!showNicheFields]]">
-              Hide niche fields ([[_nicheFieldCount]] currently shown)
-            </span>
-          </button>
+            <span hidden$="[[!_nicheFieldCount]]"></span>
+            <button type="button" class="toggle" on-click="toggleNicheFields" hidden$="[[!_nicheFieldCount]]">
+              <span hidden$="[[showNicheFields]]">
+                Show all fields ([[_nicheFieldCount]] currently hidden)
+              </span>
+              <span hidden$="[[!showNicheFields]]">
+                Hide niche fields ([[_nicheFieldCount]] currently shown)
+              </span>
+            </button>
 
-          <span></span>
-          <chops-checkbox
-            id="sendEmail"
-            on-checked-change="_sendEmailChecked"
-            checked="[[sendEmail]]"
-          >Send email</chops-checkbox>
-        </div>
+            <span></span>
+            <chops-checkbox
+              id="sendEmail"
+              on-checked-change="_sendEmailChecked"
+              checked="[[sendEmail]]"
+            >Send email</chops-checkbox>
+          </div>
+        </template>
         <div class="edit-actions">
           <chops-button
             on-click="discard"
@@ -383,6 +387,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Boolean,
         value: false,
       },
+      issuePermissions: Object,
       hasApproverPrivileges: {
         type: Boolean,
         value: false,
@@ -417,6 +422,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Array,
         computed: '_computeDerivedCCs(cc)',
       },
+      _canEditIssue: {
+        type: Boolean,
+        computed: '_computeCanEditIssue(issuePermissions)',
+      },
     };
   }
 
@@ -425,6 +434,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       projectConfig: state.projectConfig,
       projectName: state.projectName,
       fieldValueMap: selectors.issueFieldValueMap(state),
+      issuePermissions: state.issuePermissions,
     };
   }
 
@@ -478,14 +488,18 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     const result = {};
     const root = this.shadowRoot;
 
-    const statusInput = root.querySelector('#statusInput');
-    if (statusInput) {
-      Object.assign(result, statusInput.getDelta());
-    }
-
     const commentContent = root.querySelector('#commentText').value;
     if (commentContent) {
       result['comment'] = commentContent;
+    }
+
+    if (!this._canEditIssue) {
+      return result;
+    }
+
+    const statusInput = root.querySelector('#statusInput');
+    if (statusInput) {
+      Object.assign(result, statusInput.getDelta());
     }
 
     if (this.isApproval) {
@@ -633,6 +647,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   _idForField(name) {
     return `${name}Input`;
+  }
+
+  _computeCanEditIssue(issuePermissions) {
+    return (issuePermissions || []).includes(EDIT_ISSUE_PERMISSION);
   }
 
   _computeCCNames(users) {

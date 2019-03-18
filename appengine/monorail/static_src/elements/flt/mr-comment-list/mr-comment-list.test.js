@@ -58,6 +58,9 @@ suite('mr-comment-list', () => {
     ];
 
     sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
+
+    // Disable Redux state mapping for testing.
+    MrCommentList.mapStateToProps = () => {};
   });
 
   teardown(() => {
@@ -103,5 +106,21 @@ suite('mr-comment-list', () => {
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
 
     commentElement.scrollIntoView.restore();
+  });
+
+  test('edit-metadata is displayed if user has addissuecomment', () => {
+    element.issuePermissions = ['addissuecomment'];
+
+    flush();
+
+    assert.isNotNull(element.shadowRoot.querySelector('#edit-metadata-slot'));
+  });
+
+  test('edit-metadata is hidden if user has no addissuecomment', () => {
+    element.issuePermissions = [];
+
+    flush();
+
+    assert.isNull(element.shadowRoot.querySelector('#edit-metadata-slot'));
   });
 });

@@ -10,7 +10,7 @@ import './mr-comment.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import '../shared/mr-flt-styles.js';
 
-const ISSUE_EDIT_PERMISSION = 'editissue';
+const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
 
 /**
  * `<mr-comment-list>`
@@ -56,8 +56,8 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
           quick-mode="[[quickMode]]"
         ></mr-comment>
       </template>
-      <template is="dom-if" if="[[_shouldOfferEdit(issuePermissions)]]">
-        <slot></slot>
+      <template is="dom-if" if="[[_canAddComment(issuePermissions)]]">
+        <slot id="edit-metadata-slot"></slot>
       </template>
     `;
   }
@@ -133,8 +133,8 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
     }
   }
 
-  _shouldOfferEdit(issuePermissions) {
-    return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION);
+  _canAddComment(issuePermissions) {
+    return (issuePermissions || []).includes(ADD_ISSUE_COMMENT_PERMISSION);
   }
 
   _computeCommentHidden(commentsHidden, commentsHiddenCount, index) {

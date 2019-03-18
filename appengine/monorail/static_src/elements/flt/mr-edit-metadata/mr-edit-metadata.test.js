@@ -13,7 +13,11 @@ let element;
 suite('mr-edit-metadata', () => {
   setup(() => {
     element = document.createElement('mr-edit-metadata');
+    element.issuePermissions = ['editissue'];
     document.body.appendChild(element);
+
+    // Disable Redux state mapping for testing.
+    MrEditMetadata.mapStateToProps = () => {};
   });
 
   teardown(() => {
@@ -252,5 +256,15 @@ suite('mr-edit-metadata', () => {
     assert.lengthOf(element.shadowRoot.querySelector(
       '#fakeFieldInput').getValue(), 0);
     assert.lengthOf(uploader.files, 0);
+  });
+
+  test('no edit issue permission', () => {
+    element.issuePermissions = [];
+    flush();
+
+    assert.isNull(
+      element.shadowRoot.querySelector('#inputGrid'));
+    assert.isNull(
+      element.shadowRoot.querySelector('#summaryInput'));
   });
 });
