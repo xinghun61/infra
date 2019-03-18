@@ -39,6 +39,10 @@ class TestAndroidContainerDescriptor(unittest.TestCase):
 
 
 class TestCrosDockerClient(unittest.TestCase):
+
+  def setUp(self):
+    self.exected_sysctls = {'net.ipv6.conf.lo.disable_ipv6': 0}
+
   @mock.patch.object(swarm_containers.DockerClient, 'create_container')
   @mock.patch('socket.gethostbyname')
   def test_create_container(self, mock_gethost, mock_create_container):
@@ -56,7 +60,7 @@ class TestCrosDockerClient(unittest.TestCase):
     }
     mock_create_container.assert_called_once_with(
         desc, 'image', 'swarm-url.com', {}, additional_env=expected_env,
-        privileged=True)
+        privileged=True, sysctls=self.exected_sysctls)
     self.assertEquals(len(fake_container_backend.exec_inputs), 1)
     self.assertIn(
         containers.UNIVERSAL_CROS_HOSTNAME,
@@ -78,5 +82,5 @@ class TestCrosDockerClient(unittest.TestCase):
     }
     mock_create_container.assert_called_once_with(
         desc, 'image', 'swarm-url.com', {}, additional_env=expected_env,
-        privileged=True)
+        privileged=True, sysctls=self.exected_sysctls)
     self.assertEquals(len(fake_container_backend.exec_inputs), 0)

@@ -61,11 +61,17 @@ class CrosDockerClient(containers.DockerClient):
     env = {
         CROS_SSH_ID_ENV_VAR: container_desc.ssh_id_path,
     }
+    # The `cros flash` tool uses IPv6 loopback to communicate to the local dev
+    # server. IPv6 is disabled by default on later versions of Docker, so
+    # explicitly enable it.
+    sysctls = {
+      'net.ipv6.conf.lo.disable_ipv6': 0,
+    }
     # Create the container with elevated privileges so the CrOS chroot (needed
     # for DUT flashing) can be created.
     container = super(CrosDockerClient, self).create_container(
         container_desc, image_name, swarming_url, labels,
-        additional_env=env, privileged=True)
+        additional_env=env, privileged=True, sysctls=sysctls)
 
     # Add an entry to /etc/hosts that points a universal hostname to the
     # cros device.
