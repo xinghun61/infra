@@ -9,9 +9,9 @@ const CRBUG_LINK_RE = /(\b(https?:\/\/)?crbug\.com\/)((\b[-a-z0-9]+)(\/))?(\d+)\
 const CRBUG_LINK_RE_PROJECT_GROUP = 4;
 const CRBUG_LINK_RE_ID_GROUP = 6;
 const ISSUE_TRACKER_RE = /(\b(issues?|bugs?)[ \t]*(:|=)?)([ \t]*((\b[-a-z0-9]+)[:\#])?(\#?)(\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
-const PROJECT_LOCALID_RE = /(((\b[-a-z0-9]+)[:\#])?(\#?)(\d+))/gi;
-const PROJECT_LOCALID_RE_PROJECT_GROUP = 3;
-const PROJECT_LOCALID_RE_ID_GROUP = 5;
+const PROJECT_LOCALID_RE = /((\b(issue|bug)[ \t]*(:|=)?[ \t]*)?((\b[-a-z0-9]+)[:\#])?(\#?)(\d+))/gi;
+const PROJECT_LOCALID_RE_PROJECT_GROUP = 6;
+const PROJECT_LOCALID_RE_ID_GROUP = 8;
 const IMPLIED_EMAIL_RE = /\b[a-z]((-|\.)?[a-z0-9])+@[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b/gi;
 // TODO(zhangtiff): Add (?<![-/._]) back to the beginning of the 3 Regexes below
 // once Firefox supports lookaheads.
@@ -155,7 +155,8 @@ function ReplaceIssueRef(stringMatch, projectName, localId, components) {
           (ref.projectName.toLowerCase() === projectName.toLowerCase());
     });
     if (openRef) {
-      return createIssueRefRun(projectName, localId, false, stringMatch);
+      return createIssueRefRun(
+        projectName, localId, openRef.summary, false, stringMatch);
     }
   }
   if (components.closedRefs && components.closedRefs.length) {
@@ -164,7 +165,8 @@ function ReplaceIssueRef(stringMatch, projectName, localId, components) {
           (ref.projectName.toLowerCase() === projectName.toLowerCase());
     });
     if (closedRef) {
-      return createIssueRefRun(projectName, localId, true, stringMatch);
+      return createIssueRefRun(
+        projectName, localId, closedRef.summary, true, stringMatch);
     }
   }
   return {content: stringMatch};
@@ -260,11 +262,12 @@ function ReplaceRevisionRef(match, _components, _currentProjectName) {
 }
 
 // Create custom textrun functions.
-function createIssueRefRun(projectName, localId, isClosed, content) {
+function createIssueRefRun(projectName, localId, summary, isClosed, content) {
   return {
     tag: 'a',
     css: isClosed ? 'strike-through' : '',
     href: `/p/${projectName}/issues/detail?id=${localId}`,
+    title: summary || '',
     content: content,
   };
 }

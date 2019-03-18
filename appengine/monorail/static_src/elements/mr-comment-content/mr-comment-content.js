@@ -49,6 +49,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
              target="_blank"
              href\$="[[run.href]]"
              class\$="[[run.css]]"
+             title\$="[[run.title]]"
            >[[run.content]]</a
           ><span class="line" hidden\$="[[run.tag]]">[[run.content]]</span
         ></template>
