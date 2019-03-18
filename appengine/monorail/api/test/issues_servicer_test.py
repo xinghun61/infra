@@ -2313,7 +2313,7 @@ class IssuesServicerTest(unittest.TestCase):
 
     self.assertEqual(
         issues_pb2.MoveIssueResponse(
-            moved_issue_ref=common_pb2.IssueRef(
+            new_issue_ref=common_pb2.IssueRef(
                 project_name='dest',
                 local_id=1)),
         response)
@@ -2323,3 +2323,32 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(target_project.project_id, moved_issue.project_id)
     self.assertEqual(issue.summary, moved_issue.summary)
     self.assertEqual(moved_issue.reporter_id, 111L)
+
+  @patch('services.tracker_fulltext.IndexIssues')
+  def testCopyIssue_Normal(self, _mock_index):
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+
+    request = issues_pb2.CopyIssueRequest(
+        issue_ref=common_pb2.IssueRef(
+            project_name='proj',
+            local_id=1),
+        target_project_name='proj')
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.issues_svcr.CopyIssue, mc, request)
+
+    self.assertEqual(
+        issues_pb2.CopyIssueResponse(
+            new_issue_ref=common_pb2.IssueRef(
+                project_name='proj',
+                local_id=3)),
+        response)
+
+    copied_issue = self.services.issue.GetIssueByLocalID(self.cnxn,
+        self.project.project_id, 3)
+    self.assertEqual(self.project.project_id, copied_issue.project_id)
+    self.assertEqual(issue.summary, copied_issue.summary)
+    self.assertEqual(copied_issue.reporter_id, 111L)

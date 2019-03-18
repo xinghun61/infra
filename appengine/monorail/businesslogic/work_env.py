@@ -778,6 +778,56 @@ class WorkEnv(object):
 
     return issue
 
+  def CopyIssue(self, issue, target_project):
+    """Copy issue to the target_project.
+
+    The current user needs to have permission to delete the current issue, and
+    to edit issues on the target project.
+
+    Args:
+      issue: the issue PB.
+      target_project: the project PB where the issue should be copied to.
+    Returns:
+      The issue PB of the new issue on the target project.
+    """
+    self._AssertPermInIssue(issue, permissions.DELETE_ISSUE)
+    self._AssertPermInProject(permissions.EDIT_ISSUE, target_project)
+
+    if permissions.GetRestrictions(issue):
+      raise exceptions.InputException(
+          'Issues with Restrict labels are not allowed to be copied')
+
+    with self.mc.profiler.Phase('Copying Issue'):
+      copied_issue = self.services.issue.CopyIssues(
+          self.mc.cnxn, target_project, [issue], self.services.user,
+          self.mc.auth.user_id)[0]
+
+      issue_ref = 'issue %s:%s' % (issue.project_name, issue.local_id)
+      copied_issue_ref = 'issue %s:%s' % (
+          copied_issue.project_name, copied_issue.local_id)
+
+      # Add comment to the original issue.
+      content = 'Copied %s to %s' % (issue_ref, copied_issue_ref)
+      self.services.issue.CreateIssueComment(
+          self.mc.cnxn, issue, self.mc.auth.user_id, content)
+
+      # Add comment to the newly created issue.
+      # Add project amendment only if the project changed.
+      amendments = []
+      if issue.project_id != copied_issue.project_id:
+        amendments.append(
+            tracker_bizobj.MakeProjectAmendment(target_project.project_name))
+      new_issue_content = 'Copied %s from %s' % (copied_issue_ref, issue_ref)
+      self.services.issue.CreateIssueComment(
+          self.mc.cnxn, copied_issue, self.mc.auth.user_id, new_issue_content,
+          amendments=amendments)
+
+      tracker_fulltext.IndexIssues(
+          self.mc.cnxn, [copied_issue], self.services.user, self.services.issue,
+          self.services.config)
+
+    return copied_issue
+
   def _MergeLinkedAccounts(self, me_user_id):
     """Return a list of the given user ID and any linked accounts."""
     if not me_user_id:

@@ -762,6 +762,130 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         we.MoveIssue(issue, target_project)
 
+  @mock.patch('services.tracker_fulltext.IndexIssues')
+  def testCopyIssue_Normal(self, mock_index):
+    """We can copy issues."""
+    issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, issue_id=78901, project_name='proj')
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988, committer_ids=[111L])
+
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      copied_issue = we.CopyIssue(issue, target_project)
+
+    self.assertEqual(copied_issue.project_name, 'dest')
+    self.assertEqual(copied_issue.local_id, 1)
+
+    # Original issue should still exist.
+    self.services.issue.GetIssueByLocalID('cnxn', 789, 1)
+
+    copied_issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', target_project.project_id, 1)
+    self.assertEqual(target_project.project_id, copied_issue.project_id)
+    self.assertEqual(issue.summary, copied_issue.summary)
+    self.assertEqual(copied_issue.reporter_id, 111L)
+
+    mock_index.assert_called_once_with(
+       self.mr.cnxn, [copied_issue], self.services.user, self.services.issue,
+       self.services.config)
+
+    comment = self.services.issue.GetCommentsForIssue(
+        'cnxn', copied_issue.issue_id)[-1]
+    self.assertEqual(1, len(comment.amendments))
+    amendment = comment.amendments[0]
+    self.assertEqual(
+        tracker_pb2.Amendment(
+            field=tracker_pb2.FieldID.PROJECT,
+            newvalue='dest',
+            added_user_ids=[],
+            removed_user_ids=[]),
+        amendment)
+
+  @mock.patch('services.tracker_fulltext.IndexIssues')
+  def testCopyIssue_SameProject(self, mock_index):
+    """We can copy issues."""
+    issue = fake.MakeTestIssue(
+        789, 1, 'sum', 'New', 111L, issue_id=78901, project_name='proj')
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.project
+
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      copied_issue = we.CopyIssue(issue, target_project)
+
+    self.assertEqual(copied_issue.project_name, 'proj')
+    self.assertEqual(copied_issue.local_id, 2)
+
+    # Original issue should still exist.
+    self.services.issue.GetIssueByLocalID('cnxn', 789, 1)
+
+    copied_issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', target_project.project_id, 2)
+    self.assertEqual(target_project.project_id, copied_issue.project_id)
+    self.assertEqual(issue.summary, copied_issue.summary)
+    self.assertEqual(copied_issue.reporter_id, 111L)
+
+    mock_index.assert_called_once_with(
+       self.mr.cnxn, [copied_issue], self.services.user, self.services.issue,
+       self.services.config)
+    comment = self.services.issue.GetCommentsForIssue(
+        'cnxn', copied_issue.issue_id)[-1]
+    self.assertEqual(0, len(comment.amendments))
+
+  def testCopyIssue_Anon(self):
+    """Anon can't copy issues."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988)
+
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CopyIssue(issue, target_project)
+
+  def testCopyIssue_CantDeleteIssue(self):
+    """We can't copy issues if we don't have DeleteIssue perm on the issue."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=988, committer_ids=[111L])
+
+    self.SignIn(user_id=111L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CopyIssue(issue, target_project)
+
+  def testCopyIssue_CantEditIssueOnTargetProject(self):
+    """We can't copy issues if we don't have EditIssue perm on target."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=989)
+
+    self.SignIn(user_id=111L)
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.CopyIssue(issue, target_project)
+
+  def testCopyIssue_CantRestrictions(self):
+    """We can't copy issues if they have restriction labels."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue.labels = ['Restrict-Foo-Bar']
+    self.services.issue.TestAddIssue(issue)
+    self.project.owner_ids = [111L]
+    target_project = self.services.project.TestAddProject(
+      'dest', project_id=989, committer_ids=[111L])
+
+    self.SignIn(user_id=111L)
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.CopyIssue(issue, target_project)
+
   def testListIssues_Normal(self):
     """We can do a query that generates some results."""
     pass  # TODO(jrobbins): add unit test

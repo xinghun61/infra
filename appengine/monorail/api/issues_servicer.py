@@ -707,6 +707,21 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       moved_issue = we.MoveIssue(issue, target_project)
 
     result = issues_pb2.MoveIssueResponse(
-        moved_issue_ref=converters.ConvertIssueRef(
+        new_issue_ref=converters.ConvertIssueRef(
             (moved_issue.project_name, moved_issue.local_id)))
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def CopyIssue(self, mc, request):
+    """Copy an issue."""
+    _project, issue, _config = self._GetProjectIssueAndConfig(
+        mc, request.issue_ref, use_cache=False)
+
+    with work_env.WorkEnv(mc, self.services) as we:
+      target_project = we.GetProjectByName(request.target_project_name)
+      copied_issue = we.CopyIssue(issue, target_project)
+
+    result = issues_pb2.CopyIssueResponse(
+        new_issue_ref=converters.ConvertIssueRef(
+            (copied_issue.project_name, copied_issue.local_id)))
     return result

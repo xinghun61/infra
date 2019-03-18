@@ -227,6 +227,10 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           text: 'Move issue',
           handler: this._openMoveCopyIssue.bind(this, 'Move'),
         });
+        options.push({
+          text: 'Copy issue',
+          handler: this._openMoveCopyIssue.bind(this, 'Copy'),
+        });
       }
     }
     return options;

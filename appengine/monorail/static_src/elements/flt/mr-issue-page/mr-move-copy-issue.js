@@ -112,15 +112,16 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
   }
 
   save() {
-    window.prpcClient.call('monorail.Issues', 'MoveIssue', {
+    const method = this._action + 'Issue';
+    window.prpcClient.call('monorail.Issues', method, {
       issueRef: {
         localId: this.issueId,
         projectName: this.projectName,
       },
       targetProjectName: this.$.targetProjectInput.value,
     }).then((response) => {
-      const projectName = response.movedIssueRef.projectName;
-      const localId = response.movedIssueRef.localId;
+      const projectName = response.newIssueRef.projectName;
+      const localId = response.newIssueRef.localId;
       page(`/p/${projectName}/issues/detail?id=${localId}`);
       this.cancel();
     }, (error) => {

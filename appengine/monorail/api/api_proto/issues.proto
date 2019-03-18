@@ -41,6 +41,7 @@ service Issues {
   rpc FlagComment (FlagCommentRequest) returns (FlagCommentResponse) {}
   rpc ListIssuePermissions (ListIssuePermissionsRequest) returns (ListIssuePermissionsResponse) {}
   rpc MoveIssue (MoveIssueRequest) returns (MoveIssueResponse) {}
+  rpc CopyIssue (CopyIssueRequest) returns (CopyIssueResponse) {}
 }
 
 
@@ -409,5 +410,19 @@ message MoveIssueRequest {
 
 // Next available tag: 2
 message MoveIssueResponse {
-  IssueRef moved_issue_ref = 1;
+  IssueRef new_issue_ref = 1;
+}
+
+
+// Next available tag: 4
+message CopyIssueRequest {
+  RequestTrace trace = 1;
+  IssueRef issue_ref = 2;
+  string target_project_name = 3;
+}
+
+
+// Next available tag: 2
+message CopyIssueResponse {
+  IssueRef new_issue_ref = 1;
 }
