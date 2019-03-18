@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/google/uuid"
 	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/grpc/prpc"
@@ -21,6 +22,38 @@ type Environment struct {
 	LogDogHost      string
 	AdminService    string
 	ServiceAccount  string
+}
+
+// Wrapped returns the environment wrapped in a helper type to satisfy
+// the worker.Environment interface.
+func (e Environment) Wrapped() EnvWrapper {
+	return EnvWrapper{e: e}
+}
+
+// EnvWrapper wraps Environment to satisfy the worker.Environment
+// interface.
+type EnvWrapper struct {
+	e Environment
+}
+
+// LUCIProject implements worker.Environment.
+func (e EnvWrapper) LUCIProject() string {
+	return e.e.LUCIProject
+}
+
+// LogDogHost implements worker.Environment.
+func (e EnvWrapper) LogDogHost() string {
+	return e.e.LogDogHost
+}
+
+// AdminService implements worker.Environment.
+func (e EnvWrapper) AdminService() string {
+	return e.e.AdminService
+}
+
+// GenerateLogPrefix implements worker.Environment.
+func (e EnvWrapper) GenerateLogPrefix() string {
+	return "skylab/" + uuid.New().String()
 }
 
 // Prod is the environment for prod.

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -67,31 +66,9 @@ func (c *repairRun) innerRun(a subcommands.Application, args []string, env subco
 	return nil
 }
 
-// envWrapper wraps Environment to satisfy the worker.Environment
-// interface.
-type envWrapper struct {
-	e site.Environment
-}
-
-func (e envWrapper) LUCIProject() string {
-	return e.e.LUCIProject
-}
-
-func (e envWrapper) LogDogHost() string {
-	return e.e.LogDogHost
-}
-
-func (e envWrapper) AdminService() string {
-	return e.e.AdminService
-}
-
-func (e envWrapper) GenerateLogPrefix() string {
-	return "skylab/" + uuid.New().String()
-}
-
 func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environment, host string) (taskID string, err error) {
 	c := worker.Command{TaskName: "admin_repair"}
-	c.Config(worker.Env(envWrapper{e}))
+	c.Config(worker.Env(e.Wrapped()))
 	slices := []*swarming.SwarmingRpcsTaskSlice{{
 		ExpirationSecs: 600,
 		Properties: &swarming.SwarmingRpcsTaskProperties{
