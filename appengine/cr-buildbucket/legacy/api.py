@@ -806,12 +806,12 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def cancel(self, request):
     """Cancels a build."""
-    build = service.cancel(
+    build = service.cancel_async(
         request.id,
         result_details=parse_json_object(
             request.result_details_json, 'result_details_json'
         ),
-    )
+    ).get_result()
     return build_to_response_message(build)
 
   ####### CANCEL_BATCH #########################################################
@@ -843,11 +843,13 @@ class BuildBucketApi(remote.Service):
     result_details = parse_json_object(
         request.result_details_json, 'result_details_json'
     )
-    for build_id in request.build_ids:
+    futs = [(
+        build_id, service.cancel_async(build_id, result_details=result_details)
+    ) for build_id in request.build_ids]
+    for build_id, cancel_fut in futs:
       one_res = res.OneResult(build_id=build_id)
       try:
-        build = service.cancel(build_id, result_details=result_details)
-        one_res.build = build_to_message(build)
+        one_res.build = build_to_message(cancel_fut.get_result())
       except errors.Error as ex:
         one_res.error = exception_to_error_message(ex)
       res.results.append(one_res)

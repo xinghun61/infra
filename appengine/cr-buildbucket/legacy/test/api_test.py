@@ -862,18 +862,18 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   ####### CANCEL ###############################################################
 
-  @mock.patch('service.cancel', autospec=True)
+  @mock.patch('service.cancel_async', autospec=True)
   def test_cancel(self, cancel):
-    cancel.return_value = test_util.build(id=1)
+    cancel.return_value = future(test_util.build(id=1))
     req = {'id': '1'}
     res = self.call_api('cancel', req).json_body
     cancel.assert_called_once_with(1, result_details=None)
     self.assertEqual(res['build']['id'], '1')
 
-  @mock.patch('service.cancel', autospec=True)
+  @mock.patch('service.cancel_async', autospec=True)
   def test_cancel_with_details(self, cancel):
     build = test_util.build(id=1)
-    cancel.return_value = build
+    cancel.return_value = future(build)
 
     props = {'a': 'b'}
     model.BuildOutputProperties(
@@ -899,13 +899,16 @@ class V1ApiTest(testing.EndpointsTestCase):
 
   ####### CANCEL_BATCH #########################################################
 
-  @mock.patch('service.cancel')
+  @mock.patch('service.cancel_async')
   def test_cancel_batch(self, cancel):
     props = {'p': 0}
     build = test_util.build(
         id=1, output=dict(properties=bbutil.dict_to_struct(props))
     )
-    cancel.side_effect = [build, errors.BuildIsCompletedError]
+    cancel.side_effect = [
+        future(build),
+        future_exception(errors.BuildIsCompletedError()),
+    ]
     req = {
         'build_ids': ['1', '2'],
         'result_details_json': json.dumps(build.result_details),

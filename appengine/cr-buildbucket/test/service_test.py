@@ -150,7 +150,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   @mock.patch('swarming.cancel_task_async', autospec=True)
   def test_cancel(self, cancel_task_async):
     test_util.build(id=1).put()
-    build = service.cancel(1, summary_markdown='nope')
+    build = service.cancel_async(1, summary_markdown='nope').get_result()
     self.assertEqual(build.proto.status, common_pb2.CANCELED)
     self.assertEqual(build.proto.end_time.ToDatetime(), utils.utcnow())
     self.assertEqual(build.proto.summary_markdown, 'nope')
@@ -164,33 +164,33 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_cancel_is_idempotent(self):
     build = test_util.build(id=1)
     build.put()
-    service.cancel(1)
-    service.cancel(1)
+    service.cancel_async(1).get_result()
+    service.cancel_async(1).get_result()
 
   def test_cancel_started_build(self):
     self.new_started_build(id=1).put()
-    service.cancel(1)
+    service.cancel_async(1).get_result()
 
   def test_cancel_nonexistent_build(self):
     with self.assertRaises(errors.BuildNotFoundError):
-      service.cancel(1)
+      service.cancel_async(1).get_result()
 
   def test_cancel_with_auth_error(self):
     self.new_started_build(id=1)
     self.mock_cannot(user.Action.CANCEL_BUILD)
     with self.assertRaises(auth.AuthorizationError):
-      service.cancel(1)
+      service.cancel_async(1).get_result()
 
   def test_cancel_completed_build(self):
     build = test_util.build(id=1, status=common_pb2.SUCCESS)
     build.put()
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.cancel(1)
+      service.cancel_async(1).get_result()
 
   def test_cancel_result_details(self):
     test_util.build(id=1).put()
     result_details = {'message': 'bye bye build'}
-    build = service.cancel(1, result_details=result_details)
+    build = service.cancel_async(1, result_details=result_details).get_result()
     self.assertEqual(build.result_details, result_details)
 
   def test_peek(self):

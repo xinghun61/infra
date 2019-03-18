@@ -485,7 +485,8 @@ def fail(
   )
 
 
-def cancel(build_id, summary_markdown='', result_details=None):
+@ndb.tasklet
+def cancel_async(build_id, summary_markdown='', result_details=None):
   """Cancels build. Does not require a lease key.
 
   The current user has to have a permission to cancel a build in the
@@ -500,17 +501,17 @@ def cancel(build_id, summary_markdown='', result_details=None):
     Canceled Build.
   """
 
-  @ndb.transactional
-  def txn():
+  @ndb.transactional_tasklet
+  def txn_async():
     identity_str = auth.get_current_identity().to_bytes()
 
-    build = model.Build.get_by_id(build_id)
+    build = yield model.Build.get_by_id_async(build_id)
     if build is None:
       raise errors.BuildNotFoundError()
-    if not user.can_cancel_build_async(build).get_result():
+    if not (yield user.can_cancel_build_async(build)):
       raise user.current_identity_cannot('cancel build %s', build.key.id())
     if build.proto.status == common_pb2.CANCELED:
-      return False, build
+      raise ndb.Return(False, build)
     if build.is_ended:
       raise errors.BuildIsCompletedError('Cannot cancel a completed build')
     now = utils.utcnow()
@@ -532,13 +533,13 @@ def cancel(build_id, summary_markdown='', result_details=None):
       futs.append(
           swarming.cancel_task_transactionally_async(sw.hostname, sw.task_id)
       )
-    _fut_results(*futs)
-    return True, build
+    yield futs
+    raise ndb.Return(True, build)
 
-  updated, build = txn()
+  updated, build = yield txn_async()
   if updated:
     events.on_build_completed(build)
-  return build
+  raise ndb.Return(build)
 
 
 def delete_many_builds(bucket_id, status, tags=None, created_by=None):
