@@ -225,3 +225,11 @@ func getDUTByID(lab *inventory.Lab, id string) (*inventory.DeviceUnderTest, bool
 	}
 	return nil, false
 }
+
+func mapHostnameToDUTs(duts []*inventory.DeviceUnderTest) map[string]*inventory.DeviceUnderTest {
+	m := make(map[string]*inventory.DeviceUnderTest)
+	for _, d := range duts {
+		m[d.GetCommon().GetHostname()] = d
+	}
+	return m
+}

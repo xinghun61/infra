@@ -281,14 +281,6 @@ func sortDronesByAscendingDUTCount(ds []*inventory.Server) {
 	})
 }
 
-func mapHostnameToDUTs(duts []*inventory.DeviceUnderTest) map[string]*inventory.DeviceUnderTest {
-	m := make(map[string]*inventory.DeviceUnderTest)
-	for _, d := range duts {
-		m[d.GetCommon().GetHostname()] = d
-	}
-	return m
-}
-
 // removeDutFromServer removes the given Dut from the given server, if it exists.
 //
 // Duts should only occur once on a server; this function only removes the first occurrence.
