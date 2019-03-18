@@ -79,7 +79,7 @@ func TestBuildUpdater(t *testing.T) {
 			}
 			client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
 
-			err := bu.UpdateBuild(ctx, newAnn("step1"))
+			err := bu.UpdateBuild(ctx, &buildbucketpb.UpdateBuildRequest{})
 			So(err, ShouldBeNil)
 		})
 

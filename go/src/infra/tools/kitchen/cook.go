@@ -85,6 +85,8 @@ type cookRun struct {
 	systemAuth   *AuthContext // used by kitchen itself for logdog, bigquery, git
 	recipeAuth   *AuthContext // used by the recipe
 	buildSecrets *buildbucketpb.BuildSecrets
+
+	bu *buildUpdater
 }
 
 // kitchenProperties defines the structure of "$kitchen" build property.
@@ -345,6 +347,16 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	fail := func(err error) *build.BuildRunResult {
 		return &build.BuildRunResult{InfraFailure: infraFailure(err)}
 	}
+
+	// If we are asked to call UpdateBuild, prepare a buildUpdater.
+	if c.CallUpdateBuild {
+		var err error
+		c.bu, err = c.newBuildUpdater()
+		if err != nil {
+			return fail(errors.Annotate(err, "failed to create a build updater").Err())
+		}
+	}
+
 	// Process input.
 	if len(args) != 0 {
 		return fail(inputError("unexpected arguments: %v", args))
@@ -726,7 +738,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, env environ.Env, res 
 	}
 
 	// Wait for the subprocess to finish.
-	// Most likely it already finished because annotee exits when stdout/stderr
+	// Most likely it already finished because watching stops when stdout/stderr
 	// are closed.
 	waitErr := proc.Wait()
 	switch waitRC, hasRC := exitcode.Get(waitErr); {
@@ -760,13 +772,8 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 	}
 
 	var stopBU func() error
-	var bu *buildUpdater
-	if c.CallUpdateBuild {
-		bu, err = c.newBuildUpdater()
-		if err != nil {
-			return nil, errors.Annotate(err, "failed to create a build updater").Err()
-		}
-		annoteeOpts.AnnotationUpdated = bu.AnnotationUpdated
+	if c.bu != nil {
+		annoteeOpts.AnnotationUpdated = c.bu.AnnotationUpdated
 
 		errC := make(chan error)
 		done := make(chan struct{})
@@ -775,7 +782,7 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 			return <-errC
 		}
 		go func() {
-			err := bu.Run(ctx, done)
+			err := c.bu.Run(ctx, done)
 			if err != nil {
 				log.Errorf(ctx, "build runner failed; killing the subprocess: %s", err)
 				stopSubprocess()
@@ -816,15 +823,20 @@ func (c *cookRun) watchSubprocessOutput(ctx context.Context, annStreamName types
 	// Read the final annotation.
 	final := annoteeProcessor.Finish().RootStep().Proto()
 
-	// Call UpdateBuild with the final annotation.
-	if bu != nil {
-		if err := bu.UpdateBuild(ctx, final); err != nil {
-			// This call is critical.
-			// If it fails, it is fatal to the build.
+	// Make a final UpdateBuild call.
+	if c.bu != nil {
+		// The final UpdateBuild call is critical.
+		// If it fails, it is fatal to the build.
+
+		req, err := c.bu.ParseAnnotations(ctx, final)
+		if err != nil {
+			return nil, errors.Annotate(err, "failed to parse final annotations").Err()
+		}
+
+		if err := c.bu.UpdateBuild(ctx, req); err != nil {
 			return nil, errors.Annotate(err, "failed to send final build state to buildbucket").Err()
 		}
 	}
-
 	return final, nil
 }
 

@@ -116,30 +116,24 @@ func (b *buildUpdater) updateBuildBytes(ctx context.Context, annBytes []byte) er
 	if err := proto.Unmarshal(annBytes, ann); err != nil {
 		return errors.Annotate(err, "failed to parse annotation proto").Err()
 	}
-	return b.UpdateBuild(ctx, ann)
-}
-
-// UpdateBuild makes an UpdateBuild RPC based on the annotation,
-// see also b.parseRequest.
-func (b *buildUpdater) UpdateBuild(ctx context.Context, ann *milo.Step) error {
-	req, err := b.parseRequest(ctx, ann)
+	req, err := b.ParseAnnotations(ctx, ann)
 	if err != nil {
 		return errors.Annotate(err, "failed to parse UpdateBuild request").Err()
 	}
-
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(buildbucket.BuildTokenHeader, b.buildToken))
-	if _, err = b.client.UpdateBuild(ctx, req); err != nil {
-		return errors.Annotate(err, "UpdateBuild RPC failed").Err()
-	}
-
-	return nil
+	return b.UpdateBuild(ctx, req)
 }
 
-// parseRequest converts a binary-serialized annotation proto to an UpdateBuild
-// RPC request.
-// The returned request only attempts to update steps and output properties
-// and asks no build fields in response.
-func (b *buildUpdater) parseRequest(ctx context.Context, ann *milo.Step) (*buildbucketpb.UpdateBuildRequest, error) {
+// UpdateBuild updates a build on the buildbucket server.
+// Includes a build token in the request.
+func (b *buildUpdater) UpdateBuild(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) error {
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(buildbucket.BuildTokenHeader, b.buildToken))
+	_, err := b.client.UpdateBuild(ctx, req)
+	return err
+}
+
+// ParseAnnotations converts an annotation proto to a UpdateBuildRequest that
+// updates steps and output properties.
+func (b *buildUpdater) ParseAnnotations(ctx context.Context, ann *milo.Step) (*buildbucketpb.UpdateBuildRequest, error) {
 	steps, err := buildbucket.ConvertBuildSteps(ctx, ann.Substep, b.annAddr)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to parse steps from an annotation proto").Err()
@@ -167,8 +161,6 @@ func (b *buildUpdater) parseRequest(ctx context.Context, ann *milo.Step) (*build
 				"build.output.properties",
 			},
 		},
-		// minimize output by asking nothing back.
-		Fields: &field_mask.FieldMask{},
 	}, nil
 }
 
