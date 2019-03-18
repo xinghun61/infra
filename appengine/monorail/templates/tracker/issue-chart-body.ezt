@@ -4,7 +4,7 @@
   <div class="help" style="padding: 1em;">
     <h2 style="font-size: 1.2em; margin: 0 0 0.5em;">Supported query parameters:</h2>
     <span style="font-family: monospace;">
-      cc, component, hotlist_id, label, owner, reporter, status
+      cc, component, hotlist, label, owner, reporter, status
     </span>
     <br /><br />
     <a href="https://bugs.chromium.org/p/monorail/issues/entry?owner=jeffcarp@chromium.org&labels=Feature-Charts">
