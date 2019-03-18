@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 """A continuous builder which runs recipe tests."""
 
+import json
+
 from recipe_engine.recipe_api import Property
 
 DEPS = [
@@ -17,93 +19,97 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/step',
-
-  'build/luci_config',
-  'build/puppet_service_account',
 ]
 
 PROPERTIES = {
-  'project_under_test': Property(
-      default='build', kind=str, help='luci-config project to run tests for'),
-  'auth_with_account': Property(
-      default=None, kind=str,
-      help="Try to authenticate with given service account."),
+  'git_repo': Property(
+      kind=str,
+      default=None,
+      help='Git repo URL in which to simulate recipes. '
+           'It must contain infra/config/recipes.cfg file. '
+           'If not specified, uses buildbucket.gitiles_commit.'),
 }
 
 
-def RunSteps(api, project_under_test, auth_with_account):
-  if auth_with_account:
-    api.luci_config.c.auth_token = api.puppet_service_account.get_access_token(
-        auth_with_account)
+# Assumption of current recipe world.
+CFG_PATH = 'infra/config/recipes.cfg'
+
+
+def RunSteps(api, git_repo):
+  if api.buildbucket.gitiles_commit.project:
+    triggered_on = 'https://%s/%s' % (
+        api.buildbucket.gitiles_commit.host,
+        api.buildbucket.gitiles_commit.project)
+    if git_repo is None:
+      git_repo = triggered_on
+    elif git_repo != triggered_on:
+      raise api.step.InfraFailure(
+          'Conflicting git repo URLs:\n'
+          '  `git_repo` property %r\n'
+          '  but triggered on Gitiles commit {%s}' %
+          (git_repo, api.buildbucket.gitiles_commit))
 
   safe_project_name = ''.join(
-      c if c.isalnum() else '_' for c in project_under_test)
+      c if c.isalnum() else '_'
+      for c in git_repo.replace('.googlesource.com', ''))
   root_dir = api.path['cache'].join('builder', safe_project_name)
   api.file.ensure_directory('ensure cache dir', root_dir)
   c = api.gclient.make_config()
   soln = c.solutions.add()
-  soln.name = project_under_test
-  soln.url = api.luci_config.get_project_metadata(
-      project_under_test)['repo_url']
+  soln.name = 's'
+  soln.url = git_repo
   soln.revision = 'HEAD'
 
   with api.context(cwd=root_dir):
     api.bot_update.ensure_checkout(gclient_config=c)
 
-  # TODO(martiniss): allow recipes.cfg patches to take affect
-  # This requires getting the refs.cfg from luci_config, reading the local
-  # patched version, etc.
-  result = api.luci_config.get_ref_config(
-      project_under_test, 'refs/heads/master', 'recipes.cfg')
-  cfg_path = result['url'].split(result['revision'])[-1]
-  recipes_path = api.json.loads(result['content']).get('recipes_path', '')
-
-  api.step(
-      'recipe simulation test', [
-          root_dir.join(
-              project_under_test,
-              *(recipes_path.split('/') + ['recipes.py'])),
-          '--package', root_dir.join(
-              project_under_test,
-              *cfg_path.split('/')),
-          'test', 'run',
-      ])
+  recipes_cfg_path = root_dir.join('s', *CFG_PATH.split('/'))
+  cfg = json.loads(api.file.read_raw('read %s' % CFG_PATH, recipes_cfg_path))
+  recipes_py_path = root_dir.join(
+      's', *(cfg['recipes_path'].split('/') + ['recipes.py']))
+  api.step('recipe simulation test', [
+    recipes_py_path,
+    'test', 'run',
+  ])
 
 
 def GenTests(api):
   yield (
-      api.test('normal') +
+      api.test('gitiles_commit') +
       api.buildbucket.ci_build(
-          project='infra',
-          builder='recipe simulation tester',
-          # This hardcodes test repo URL in luci_config/test_api.py
-          git_repo='https://repo.repo/build',
+          # NOTE: this git_repo doesn't become a property, it's to simulate
+          # api.buildbucket.gitiles_commit.
+					git_repo='https://chromium.googlesource.com/chromium/tools/build',
       ) +
-      api.properties(
-          project_under_test='build',
-      ) +
-      api.luci_config.get_projects(('build',)) +
-      api.luci_config.get_ref_config(
-          'build', 'refs/heads/master', 'recipes.cfg',
-          content='{"recipes_path": "foobar"}',
-          found_at_path='infra/config/')
+      api.step_data('read %s' % CFG_PATH, api.file.read_raw('''
+        {
+					"api_version": 2,
+					"project_id": "build",
+					"recipes_path": "scripts/slave",
+					"repo_name": "build"
+				}
+      '''))
   )
-
   yield (
-      api.test('with_auth') +
+      api.test('tip_of_tree') +
+      api.properties(
+					git_repo='https://chromium.googlesource.com/infra/infra',
+      ) +
+      api.step_data('read %s' % CFG_PATH, api.file.read_raw('''
+        {
+					"api_version": 2,
+					"project_id": "infra",
+					"recipes_path": "recipes",
+					"repo_name": "infra"
+				}
+      '''))
+  )
+  yield (
+      api.test('conflicting_repo_urls') +
       api.buildbucket.ci_build(
-          project='infra',
-          builder='recipe simulation tester',
-          # This hardcodes test repo URL in luci_config/test_api.py
-          git_repo='https://repo.repo/build',
+					git_repo='https://chromium.googlesource.com/chromium/tools/build',
       ) +
       api.properties(
-          project_under_test='build',
-          auth_with_account='build_limited',
-      ) +
-      api.luci_config.get_projects(('build',)) +
-      api.luci_config.get_ref_config(
-          'build', 'refs/heads/master', 'recipes.cfg',
-          content='{}',
-          found_at_path='custom/config/dir/')
+					git_repo='https://chromium.googlesource.com/infra/infra.GIT',
+      )
   )
