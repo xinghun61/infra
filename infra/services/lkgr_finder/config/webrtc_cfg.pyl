@@ -60,8 +60,7 @@
         'Mac64 Debug',
         'Mac64 Release',
         'Win (more configs)',
-        # TODO(webrtc:10399): reenable asan
-        # 'Win32 ASan',
+        'Win32 ASan',
         'Win32 Debug (Clang)',
         'Win32 Release (Clang)',
         'Win32 Release',
