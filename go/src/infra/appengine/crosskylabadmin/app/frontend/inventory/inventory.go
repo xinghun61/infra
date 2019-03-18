@@ -45,6 +45,9 @@ type GerritFactory func(c context.Context, host string) (gerrit.GerritClient, er
 // GitilesFactory is a contsructor for a GerritClient
 type GitilesFactory func(c context.Context, host string) (gitiles.GitilesClient, error)
 
+// SwarmingFactory is a constructor for a SwarmingClient.
+type SwarmingFactory func(c context.Context, host string) (clients.SwarmingClient, error)
+
 // TrackerFactory is a constructor for a TrackerServer object.
 type TrackerFactory func() fleet.TrackerServer
 
@@ -59,6 +62,11 @@ type ServerImpl struct {
 	//
 	// If GitilesFactory is nil, clients.NewGitilesClient is used.
 	GitilesFactory GitilesFactory
+
+	// SwarmingFactory is an optional factory function for creating clients.
+	//
+	// If SwarmingFactory is nil, clients.NewSwarmingClient is used.
+	SwarmingFactory SwarmingFactory
 
 	// TrackerServerFactory is a required factory function for creating a tracker object.
 	//
@@ -104,6 +112,13 @@ func (is *ServerImpl) newGitilesClient(c context.Context, host string) (gitiles.
 		return is.GitilesFactory(c, host)
 	}
 	return clients.NewGitilesClient(c, host)
+}
+
+func (is *ServerImpl) newSwarmingClient(ctx context.Context, host string) (clients.SwarmingClient, error) {
+	if is.SwarmingFactory != nil {
+		return is.SwarmingFactory(ctx, host)
+	}
+	return clients.NewSwarmingClient(ctx, host)
 }
 
 func (is *ServerImpl) newStore(ctx context.Context) (*gitstore.InventoryStore, error) {

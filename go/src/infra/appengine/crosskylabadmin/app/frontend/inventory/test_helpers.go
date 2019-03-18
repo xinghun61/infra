@@ -19,6 +19,8 @@ import (
 	"testing"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/clients"
+	"infra/appengine/crosskylabadmin/app/clients/mock"
 	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
 	"infra/libs/skylab/inventory"
@@ -40,9 +42,10 @@ type testFixture struct {
 
 	Inventory fleet.InventoryServer
 
-	FakeGerrit  *fakes.GerritClient
-	FakeGitiles *fakes.GitilesClient
-	MockTracker *fleet.MockTrackerServer
+	FakeGerrit   *fakes.GerritClient
+	FakeGitiles  *fakes.GitilesClient
+	MockSwarming *mock.MockSwarmingClient
+	MockTracker  *fleet.MockTrackerServer
 }
 
 // newTextFixture creates a new testFixture to be used in unittests.
@@ -58,8 +61,12 @@ func newTestFixture(t *testing.T) (testFixture, func()) {
 
 func newTestFixtureWithContext(ctx context.Context, t *testing.T) (testFixture, func()) {
 	tf := testFixture{T: t, C: ctx}
+	mc := gomock.NewController(t)
+
 	tf.FakeGerrit = &fakes.GerritClient{}
 	tf.FakeGitiles = fakes.NewGitilesClient()
+	tf.MockSwarming = mock.NewMockSwarmingClient(mc)
+	tf.MockTracker = fleet.NewMockTrackerServer(mc)
 	tf.Inventory = &ServerImpl{
 		GerritFactory: func(context.Context, string) (gerrit.GerritClient, error) {
 			return tf.FakeGerrit, nil
@@ -67,13 +74,13 @@ func newTestFixtureWithContext(ctx context.Context, t *testing.T) (testFixture, 
 		GitilesFactory: func(context.Context, string) (gitiles.GitilesClient, error) {
 			return tf.FakeGitiles, nil
 		},
+		SwarmingFactory: func(context.Context, string) (clients.SwarmingClient, error) {
+			return tf.MockSwarming, nil
+		},
 		TrackerFactory: func() fleet.TrackerServer {
 			return tf.MockTracker
 		},
 	}
-
-	mc := gomock.NewController(t)
-	tf.MockTracker = fleet.NewMockTrackerServer(mc)
 
 	validate := func() {
 		mc.Finish()
