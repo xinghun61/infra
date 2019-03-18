@@ -22,6 +22,10 @@ export class MrDropdown extends PolymerElement {
           height: 100%;
           font-size: inherit;
         }
+        :host([hidden]) {
+          display: none;
+          visibility: hidden;
+        }
         :host(:not([opened])) .menu {
           display: none;
           visibility: hidden;
@@ -116,6 +120,7 @@ export class MrDropdown extends PolymerElement {
             </a>
           </template>
         </template>
+        <slot></slot>
       </div>
     `;
   }

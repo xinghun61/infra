@@ -3,7 +3,12 @@
 // found in the LICENSE file.
 
 import {fieldTypes} from '../shared/field-types.js';
+import {removePrefix} from '../shared/helpers.js';
 import {createSelector} from 'reselect';
+
+const RESTRICT_VIEW_PREFIX = 'restrict-view-';
+const RESTRICT_EDIT_PREFIX = 'restrict-editissue-';
+const RESTRICT_COMMENT_PREFIX = 'restrict-addissuecomment-';
 
 // TODO(zhangtiff): Eventually Monorail's Redux state will store
 // multiple issues, and this selector will have to find the viewed
@@ -29,6 +34,53 @@ const issueType = createSelector(
       return typeFieldValue.value;
     }
     return;
+  }
+);
+const issueRestrictions = createSelector(
+  viewedIssue,
+  (issue) => {
+    if (!issue || !issue.labelRefs) return {};
+
+    const restrictions = {};
+
+    issue.labelRefs.forEach((labelRef) => {
+      const label = labelRef.label;
+      const lowerCaseLabel = label.toLowerCase();
+
+      if (lowerCaseLabel.startsWith(RESTRICT_VIEW_PREFIX)) {
+        const permissionType = removePrefix(label, RESTRICT_VIEW_PREFIX);
+        if (!('view' in restrictions)) {
+          restrictions['view'] = [permissionType];
+        } else {
+          restrictions['view'].push(permissionType);
+        }
+      } else if (lowerCaseLabel.startsWith(RESTRICT_EDIT_PREFIX)) {
+        const permissionType = removePrefix(label, RESTRICT_EDIT_PREFIX);
+        if (!('edit' in restrictions)) {
+          restrictions['edit'] = [permissionType];
+        } else {
+          restrictions['edit'].push(permissionType);
+        }
+      } else if (lowerCaseLabel.startsWith(RESTRICT_COMMENT_PREFIX)) {
+        const permissionType = removePrefix(label, RESTRICT_COMMENT_PREFIX);
+        if (!('comment' in restrictions)) {
+          restrictions['comment'] = [permissionType];
+        } else {
+          restrictions['comment'].push(permissionType);
+        }
+      }
+    });
+
+    return restrictions;
+  }
+);
+const issueIsRestricted = createSelector(
+  issueRestrictions,
+  (restrictions) => {
+    if (!restrictions) return false;
+    return ('view' in restrictions && !!restrictions['view'].length) ||
+      ('edit' in restrictions && !!restrictions['edit'].length) ||
+      ('comment' in restrictions && !!restrictions['comment'].length);
   }
 );
 const issueIsOpen = createSelector(
@@ -136,6 +188,8 @@ export const selectors = Object.freeze({
   fieldDefs,
   issueFieldValues,
   issueType,
+  issueRestrictions,
+  issueIsRestricted,
   issueIsOpen,
   issueFieldValueMap,
   componentsMap,

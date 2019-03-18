@@ -10,6 +10,7 @@ import '../../chops/chops-dialog/chops-dialog.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import {selectors} from '../../redux/selectors.js';
+import {arrayToEnglish} from '../../shared/helpers.js';
 import '../../mr-user-link/mr-user-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
@@ -41,7 +42,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           padding: 0.25em 16px;
           box-sizing: border-box;
           display: flex;
-          justify-content: flex-end;
+          justify-content: space-between;
           align-items: center;
         }
         :host([issue-closed]) {
@@ -54,12 +55,24 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           padding: 0;
           margin: 0;
         }
+        mr-flipper {
+          font-size: 13px;
+        }
+        mr-dropdown.lock-icon {
+          /* Make lock icon line up nicely with other text in spite
+           * of having padding.
+           */
+          margin-left: -8px;
+        }
+        .lock-tooltip {
+          width: 200px;
+          font-size: 14px;
+          padding: 0.5em 8px;
+        }
         .issue-actions {
           min-width: fit-content;
-          margin: 3px;
-          font-size: 0.75em;
           display: flex;
-          flex-direction: column;
+          flex-direction: row;
           align-items: center;
         }
         .issue-actions a {
@@ -68,6 +81,13 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         }
         .issue-actions a:hover {
           text-decoration: underline;
+        }
+        .code-font-and-description-edit {
+          min-width: fit-content;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          font-size: 12px;
         }
         .spam-notice {
           padding: 1px 5px;
@@ -78,15 +98,19 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           font-size: 70%;
           margin-right: 0.5em;
         }
-        mr-flipper {
-          font-size: 0.75em;
-        }
         .byline {
           display: block;
           font-size: 12px;
           width: 100%;
           line-height: 140%;
           color: hsl(227, 15%, 35%);
+        }
+        .main-text-outer {
+          flex-basis: 100%;
+          display: flex;
+          justify-content: flex-start;
+          flex-direction: row;
+          align-items: center;
         }
         .main-text {
           flex-basis: 100%;
@@ -102,36 +126,50 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
-      <div class="main-text">
-        <h1>
-          <template is="dom-if" if="[[issue.isSpam]]">
-            <span class="spam-notice">Spam</span>
-          </template>
-          Issue [[issue.localId]]: [[issue.summary]]
-        </h1>
-        <small class="byline">
-          Created by
-          <mr-user-link
-            display-name="[[issue.reporterRef.displayName]]"
-            user-id="[[issue.reporterRef.userId]]"
-          ></mr-user-link>
-          on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
-        </small>
+      <div class="main-text-outer">
+        <mr-dropdown
+          class="lock-icon"
+          menu-alignment="left"
+          icon="lock"
+          title\$="[[_restrictionText]]"
+          hidden\$="[[!isRestricted]]"
+        >
+          <div class="lock-tooltip">
+            [[_restrictionText]]
+          </div>
+        </mr-dropdown>
+        <div class="main-text">
+          <h1>
+            <template is="dom-if" if="[[issue.isSpam]]">
+              <span class="spam-notice">Spam</span>
+            </template>
+            Issue [[issue.localId]]: [[issue.summary]]
+          </h1>
+          <small class="byline">
+            Created by
+            <mr-user-link
+              display-name="[[issue.reporterRef.displayName]]"
+              user-id="[[issue.reporterRef.userId]]"
+            ></mr-user-link>
+            on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
+          </small>
+        </div>
       </div>
       <div class="issue-actions">
-        <mr-code-font-toggle
-          user-display-name="[[userDisplayName]]"
-        ></mr-code-font-toggle>
-        <a on-click="_openEditDescription">Edit description</a>
+        <div class="code-font-and-description-edit">
+          <mr-code-font-toggle
+            user-display-name="[[userDisplayName]]"
+          ></mr-code-font-toggle>
+          <a on-click="_openEditDescription">Edit description</a>
+        </div>
+        <template is="dom-if" if="[[_issueOptions.length]]">
+          <mr-dropdown
+            items="[[_issueOptions]]"
+            icon="more_vert"
+          ></mr-dropdown>
+        </template>
+        <mr-flipper></mr-flipper>
       </div>
-
-      <template is="dom-if" if="[[_issueOptions.length]]">
-        <mr-dropdown
-          items="[[_issueOptions]]"
-          icon="more_vert"
-        ></mr-dropdown>
-      </template>
-      <mr-flipper></mr-flipper>
     `;
   }
 
@@ -157,9 +195,19 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         type: Boolean,
         reflectToAttribute: true,
       },
+      restrictions: Object,
+      isRestricted: {
+        type: Boolean,
+        value: false,
+      },
+      _restrictionText: {
+        type: String,
+        computed: '_computeRestrictionText(restrictions)',
+      },
       _issueOptions: {
         type: Array,
-        computed: '_computeIssueOptions(issuePermissions, issue)',
+        computed: `_computeIssueOptions(issuePermissions, issue.isSpam,
+          isRestricted)`,
       },
       _flipperCount: {
         type: Number,
@@ -187,7 +235,24 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       issue: state.issue,
       issuePermissions: state.issuePermissions,
       issueClosed: !selectors.issueIsOpen(state),
+      restrictions: selectors.issueRestrictions(state),
+      isRestricted: selectors.issueIsRestricted(state),
     };
+  }
+
+  _computeRestrictionText(restrictions) {
+    if (!restrictions) return;
+    if ('view' in restrictions && restrictions['view'].length) {
+      return `Only users with ${arrayToEnglish(restrictions['view'])
+      } permission can see this issue.`;
+    } else if ('edit' in restrictions && restrictions['edit'].length) {
+      return `Only users with ${arrayToEnglish(restrictions['edit'])
+      } permission may make changes.`;
+    } else if ('comment' in restrictions && restrictions['comment'].length) {
+      return `Only users with ${arrayToEnglish(restrictions['comment'])
+      } permission may comment.`;
+    }
+    return '';
   }
 
   _computeFlipperIndex(i, count) {
@@ -202,26 +267,22 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
     return id - 1;
   }
 
-  _computeIssueOptions(issuePermissions, issue) {
+  _computeIssueOptions(issuePermissions, isSpam, isRestricted) {
     const options = [];
     const permissions = issuePermissions || [];
     if (permissions.includes('flagspam')) {
-      const text = (this.issue.isSpam ? 'Un-flag' : 'Flag') + ' issue as spam';
+      const text = (isSpam ? 'Un-flag' : 'Flag') + ' issue as spam';
       options.push({
         text,
         handler: this._markIssue.bind(this),
       });
     }
     if (permissions.includes('deleteissue')) {
-      // TODO(ehmaldonado): Consider moving this to a shared selector.
-      const hasRestrictions = (issue.labelRefs || []).some((labelRef) => {
-        return labelRef.label.startsWith('Restrict-');
-      });
       options.push({
         text: 'Delete issue',
         handler: this._deleteIssue.bind(this),
       });
-      if (!hasRestrictions) {
+      if (!isRestricted) {
         options.push({separator: true});
         options.push({
           text: 'Move issue',

@@ -7,7 +7,6 @@ import {selectors} from './selectors.js';
 import {fieldTypes} from '../shared/field-types.js';
 
 suite('selectors', () => {
-
   test('viewedIssue', () => {
     assert.isUndefined(selectors.viewedIssue({}));
     assert.deepEqual(selectors.viewedIssue({issue: {localId: 100}}),
@@ -42,6 +41,66 @@ suite('selectors', () => {
         {fieldRef: {fieldName: 'Type'}, value: 'Defect'},
       ]},
     }), 'Defect');
+  });
+
+  test('issueRestrictions', () => {
+    assert.deepEqual(selectors.issueRestrictions({}), {});
+    assert.deepEqual(selectors.issueRestrictions(
+      {issue: {}}), {});
+    assert.deepEqual(selectors.issueRestrictions(
+      {issue: {labelRefs: []}}), {});
+
+    assert.deepEqual(selectors.issueRestrictions({issue: {labelRefs: [
+      {label: 'IgnoreThis'},
+      {label: 'IgnoreThis2'},
+    ]}}), {});
+
+    assert.deepEqual(selectors.issueRestrictions({issue: {labelRefs: [
+      {label: 'IgnoreThis'},
+      {label: 'IgnoreThis2'},
+      {label: 'Restrict-View-Google'},
+      {label: 'Restrict-EditIssue-hello'},
+      {label: 'Restrict-EditIssue-test'},
+      {label: 'Restrict-AddIssueComment-HELLO'},
+    ]}}), {
+      'view': ['Google'],
+      'edit': ['hello', 'test'],
+      'comment': ['HELLO'],
+    });
+  });
+
+  test('issueIsRestricted', () => {
+    assert.isFalse(selectors.issueIsRestricted({}));
+    assert.isFalse(selectors.issueIsRestricted({}));
+    assert.isFalse(selectors.issueIsRestricted({issue: {}}));
+    assert.isFalse(selectors.issueIsRestricted({issue: {labelRefs: []}}));
+
+    assert.isTrue(selectors.issueIsRestricted({issue: {labelRefs: [
+      {label: 'IgnoreThis'},
+      {label: 'IgnoreThis2'},
+      {label: 'Restrict-View-Google'},
+    ]}}));
+
+    assert.isFalse(selectors.issueIsRestricted({issue: {labelRefs: [
+      {label: 'IgnoreThis'},
+      {label: 'IgnoreThis2'},
+      {label: 'Restrict-View'},
+      {label: 'Restrict'},
+      {label: 'RestrictView'},
+      {label: 'Restt-View'},
+    ]}}));
+
+    assert.isTrue(selectors.issueIsRestricted({issue: {labelRefs: [
+      {label: 'restrict-view-google'},
+    ]}}));
+
+    assert.isTrue(selectors.issueIsRestricted({issue: {labelRefs: [
+      {label: 'restrict-EditIssue-world'},
+    ]}}));
+
+    assert.isTrue(selectors.issueIsRestricted({issue: {labelRefs: [
+      {label: 'RESTRICT-ADDISSUECOMMENT-everyone'},
+    ]}}));
   });
 
   test('issueFieldValueMap', () => {

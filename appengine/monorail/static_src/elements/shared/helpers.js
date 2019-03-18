@@ -33,3 +33,14 @@ function _loadLocalFile(f) {
     r.readAsBinaryString(f);
   });
 }
+
+export function removePrefix(str, prefix) {
+  return str.substr(prefix.length);
+}
+
+// TODO(zhangtiff): Make this more grammatically correct for
+// more than two items.
+export function arrayToEnglish(arr) {
+  if (!arr) return '';
+  return arr.join(' and ');
+}

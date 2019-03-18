@@ -111,10 +111,6 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
           <br>
         </template>
       </div>
-      <div class="restricted">
-        <strong><i class="material-icons">lock</i>Restricted</strong>
-        Only users with Google permission can see this issue.
-      </div>
     `;
   }
 
