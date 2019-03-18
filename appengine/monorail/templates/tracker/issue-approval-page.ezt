@@ -11,3 +11,9 @@
 ></mr-app>
 
 [include "../framework/polymer-footer.ezt"]
+
+<script>
+  window.addEventListener('load', () => {
+    window.getTSMonClient().recordIssueDetailSpaTiming();
+  });
+</script>

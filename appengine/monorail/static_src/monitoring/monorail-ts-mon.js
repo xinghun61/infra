@@ -14,6 +14,7 @@ const TS_MON_CLIENT_GLOBAL_NAME = '__tsMonClient';
 const PAGE_LOAD_MAX_THRESHOLD = 60000;
 export const PAGE_TYPES = Object.freeze({
   ISSUE_DETAIL: 'issue_detail',
+  ISSUE_DETAIL_SPA: 'issue_detail_spa',
   ISSUE_LIST: 'issue_list',
 });
 
@@ -116,6 +117,7 @@ export default class MonorailTSMon extends TSMonClient {
     const measurePageTypes = new Set([
       PAGE_TYPES.ISSUE_LIST,
       PAGE_TYPES.ISSUE_DETAIL,
+      PAGE_TYPES.ISSUE_DETAIL_SPA,
     ]);
 
     if (measurePageTypes.has(pageType)) {
@@ -134,6 +136,10 @@ export default class MonorailTSMon extends TSMonClient {
 
   recordIssueDetailTiming(maxThresholdMs=PAGE_LOAD_MAX_THRESHOLD) {
     this.recordPageLoadTiming(PAGE_TYPES.ISSUE_DETAIL, maxThresholdMs);
+  }
+
+  recordIssueDetailSpaTiming(maxThresholdMs=PAGE_LOAD_MAX_THRESHOLD) {
+    this.recordPageLoadTiming(PAGE_TYPES.ISSUE_DETAIL_SPA, maxThresholdMs);
   }
 
   recordIssueListTiming(maxThresholdMs=PAGE_LOAD_MAX_THRESHOLD) {

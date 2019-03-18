@@ -1,7 +1,7 @@
 import {assert} from 'chai';
 import sinon from 'sinon';
 
-import MonorailTSMon, {PAGE_TYPES} from './ts-mon.js';
+import MonorailTSMon, {PAGE_TYPES} from './monorail-ts-mon.js';
 
 suite('MonorailTSMon', () => {
   let mts;

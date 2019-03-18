@@ -4,7 +4,7 @@
  * license that can be found in the LICENSE file.
  */
 
-import MonorailTSMon from './ts-mon.js';
+import MonorailTSMon from './monorail-ts-mon.js';
 
 /*
 ClientLogger is a JavaScript library for tracking events with Google Analytics

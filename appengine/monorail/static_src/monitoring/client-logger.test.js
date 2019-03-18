@@ -2,7 +2,7 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 
 import ClientLogger from './client-logger.js';
-import MonorailTSMon from './ts-mon.js';
+import MonorailTSMon from './monorail-ts-mon.js';
 
 suite('ClientLogger', () => {
   const startedKey = 'ClientLogger.rutabaga.started';
