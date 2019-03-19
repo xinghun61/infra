@@ -248,41 +248,6 @@
   {
     "cmd": [
       "npx",
-      "bower",
-      "install"
-    ],
-    "cwd": "[START_DIR]/infra/appengine/monorail",
-    "env": {
-      "PATH": "[START_DIR]/packages/bin:<PATH>"
-    },
-    "name": "monorail bower install"
-  },
-  {
-    "cmd": [
-      "npx",
-      "run-wct"
-    ],
-    "cwd": "[START_DIR]/infra/appengine/monorail",
-    "env": {
-      "PATH": "[START_DIR]/packages/bin:<PATH>"
-    },
-    "name": "monorail run-wct"
-  },
-  {
-    "cmd": [
-      "npx",
-      "nyc",
-      "report"
-    ],
-    "cwd": "[START_DIR]/infra/appengine/monorail",
-    "env": {
-      "PATH": "[START_DIR]/packages/bin:<PATH>"
-    },
-    "name": "monorail generate js coverage report"
-  },
-  {
-    "cmd": [
-      "npx",
       "karma",
       "start"
     ],

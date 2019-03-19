@@ -70,9 +70,6 @@ def RunInfraWCT(api, env):
   cwd = api.path['checkout'].join('appengine', 'monorail')
   with api.context(env=env, cwd=cwd):
     api.step('monorail npm install', ['npm', 'install'])
-    api.step('monorail bower install', ['npx', 'bower', 'install'])
-    api.step('monorail run-wct', ['npx', 'run-wct'])
-    api.step('monorail generate js coverage report', ['npx', 'nyc', 'report'])
     api.step('monorail karma start', ['npx', 'karma', 'start'])
 
   cwd = api.path['checkout'].join('go', 'src', 'infra', 'appengine',
