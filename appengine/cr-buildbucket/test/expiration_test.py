@@ -12,7 +12,6 @@ from testing_utils import testing
 
 from test import test_util
 from test.test_util import future
-from proto import build_pb2
 from proto import common_pb2
 import expiration
 import model
@@ -24,15 +23,7 @@ class ExpireBuildTests(testing.AppengineTestCase):
     super(ExpireBuildTests, self).setUp()
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
-
-    self.patch(
-        'notifications.enqueue_tasks_async',
-        autospec=True,
-        return_value=future(None)
-    )
-    self.patch(
-        'bq.enqueue_pull_task_async', autospec=True, return_value=future(None)
-    )
+    self.patch('tq.enqueue_async', autospec=True, return_value=future(None))
 
   def test_reschedule_builds_with_expired_leases(self):
     build = test_util.build()

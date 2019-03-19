@@ -58,14 +58,7 @@ class BaseTest(testing.AppengineTestCase):
     super(BaseTest, self).setUp()
     user.clear_request_cache()
 
-    self.patch(
-        'notifications.enqueue_tasks_async',
-        autospec=True,
-        return_value=future(None)
-    )
-    self.patch(
-        'bq.enqueue_pull_task_async', autospec=True, return_value=future(None)
-    )
+    self.patch('tq.enqueue_async', autospec=True, return_value=future(None))
 
     self.now = NOW
     self.patch(

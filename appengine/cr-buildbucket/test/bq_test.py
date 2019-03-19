@@ -16,7 +16,6 @@ import mock
 
 from proto import build_pb2
 from proto import common_pb2
-from proto import step_pb2
 from test import test_util
 import bq
 import bqh
@@ -40,17 +39,21 @@ class BigQueryExportTest(testing.AppengineTestCase):
     self.queue = taskqueue.Queue('bq-export-prod')
     self.dataset = 'builds'
 
-  @mock.patch('bq.enqueue_pull_task_async', autospec=True)
-  def test_enqueue_bq_export_async(self, enqueue_pull_task_async):
-    enqueue_pull_task_async.return_value = test_util.future(None)
+  @mock.patch('tq.enqueue_async', autospec=True)
+  def test_enqueue_bq_export_async(self, enqueue_async):
+    enqueue_async.return_value = test_util.future(None)
 
     build = test_util.build(id=1, status=common_pb2.SUCCESS)
 
     ndb.transactional(  # pylint: disable=no-value-for-parameter
         lambda: bq.enqueue_bq_export_async(build).get_result())()
 
-    enqueue_pull_task_async.assert_called_once_with(
-        'bq-export-prod', json.dumps({'id': 1})
+    enqueue_async.assert_called_once_with(
+        'bq-export-prod',
+        [{
+            'method': 'PULL',
+            'payload': {'id': 1},
+        }],
     )
 
   def test_cron_export_builds_to_bq(self):

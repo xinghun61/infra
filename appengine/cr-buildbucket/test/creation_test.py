@@ -71,11 +71,7 @@ class CreationTest(testing.AppengineTestCase):
         return_value='buildbucket.example.com'
     )
 
-    self.patch(
-        'notifications.enqueue_tasks_async',
-        autospec=True,
-        return_value=future(None)
-    )
+    self.patch('tq.enqueue_async', autospec=True, return_value=future(None))
     self.patch(
         'config.get_settings_async',
         autospec=True,

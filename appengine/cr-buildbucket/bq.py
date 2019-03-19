@@ -20,27 +20,21 @@ import bqh
 
 from proto import build_pb2
 import model
+import tq
 
 
-# Mocked in tests.
-@ndb.tasklet
-def enqueue_pull_task_async(queue, payload):  # pragma: no cover
-  task = taskqueue.Task(payload=payload, method='PULL')
-  # Cannot just return add_async's return value because it is
-  # a non-Future object and does not play nice with `yield fut1, fut2` construct
-  yield task.add_async(queue_name=queue, transactional=True)
-
-
-@ndb.tasklet
-def enqueue_bq_export_async(build):  # pragma: no cover
+def enqueue_bq_export_async(build):
   """Enqueues a pull task to export a completed build to BigQuery."""
   assert ndb.in_transaction()
   assert build
   assert build.is_ended
 
-  yield enqueue_pull_task_async(
+  return tq.enqueue_async(
       'bq-export-experimental' if build.experimental else 'bq-export-prod',
-      json.dumps({'id': build.key.id()})
+      [{
+          'method': 'PULL',
+          'payload': {'id': build.key.id()},
+      }],
   )
 
 

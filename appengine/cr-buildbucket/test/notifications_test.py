@@ -8,6 +8,7 @@ import json
 from components import utils
 utils.fix_protobuf_package()
 
+from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 import webtest
@@ -22,6 +23,7 @@ import bbutil
 import main
 import model
 import notifications
+import tq
 
 
 class NotificationsTest(testing.AppengineTestCase):
@@ -34,14 +36,7 @@ class NotificationsTest(testing.AppengineTestCase):
     )
 
     self.patch(
-        'notifications.enqueue_tasks_async',
-        autospec=True,
-        return_value=test_util.future(None)
-    )
-    self.patch(
-        'bq.enqueue_pull_task_async',
-        autospec=True,
-        return_value=test_util.future(None)
+        'tq.enqueue_async', autospec=True, return_value=test_util.future(None)
     )
 
     self.patch(
@@ -86,17 +81,21 @@ class NotificationsTest(testing.AppengineTestCase):
         'id': 1,
         'mode': 'callback',
     }
-    notifications.enqueue_tasks_async.assert_called_with(
+    tq.enqueue_async.assert_called_with(
         'backend-default', [
             {
                 'url': '/internal/task/buildbucket/notify/1',
-                'payload': json.dumps(global_task_payload, sort_keys=True),
-                'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
+                'payload': global_task_payload,
+                'retry_options': {
+                    'task_age_limit': model.BUILD_TIMEOUT.total_seconds(),
+                },
             },
             {
                 'url': '/internal/task/buildbucket/notify/1',
-                'payload': json.dumps(callback_task_payload, sort_keys=True),
-                'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
+                'payload': callback_task_payload,
+                'retry_options': {
+                    'task_age_limit': model.BUILD_TIMEOUT.total_seconds(),
+                },
             },
         ]
     )
@@ -150,12 +149,14 @@ class NotificationsTest(testing.AppengineTestCase):
         'id': 1,
         'mode': 'global',
     }
-    notifications.enqueue_tasks_async.assert_called_with(
+    tq.enqueue_async.assert_called_with(
         'backend-default', [
             {
                 'url': '/internal/task/buildbucket/notify/1',
-                'payload': json.dumps(global_task_payload, sort_keys=True),
-                'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
+                'payload': global_task_payload,
+                'retry_options': {
+                    'task_age_limit': model.BUILD_TIMEOUT.total_seconds(),
+                },
             },
         ]
     )

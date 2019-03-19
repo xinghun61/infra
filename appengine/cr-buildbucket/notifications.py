@@ -5,10 +5,8 @@
 """PubSub notifications about builds."""
 
 import json
-import logging
 
 from google.appengine.api import app_identity
-from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 import webapp2
 
@@ -17,23 +15,7 @@ from components import pubsub
 
 from legacy import api_common
 import model
-
-
-# Mocked in tests.
-@ndb.tasklet
-def enqueue_tasks_async(queue, task_defs):  # pragma: no cover
-  tasks = [
-      taskqueue.Task(
-          url=t['url'],
-          payload=t['payload'],
-          retry_options=taskqueue.TaskRetryOptions(
-              task_age_limit=t['age_limit_sec']
-          )
-      ) for t in task_defs
-  ]
-  # Cannot just return add_async's return value because it is
-  # a non-Future object and does not play nice with `yield fut1, fut2` construct
-  yield taskqueue.Queue(queue).add_async(tasks, transactional=True)
+import tq
 
 
 def enqueue_notifications_async(build):
@@ -41,22 +23,16 @@ def enqueue_notifications_async(build):
   assert build
 
   def mktask(mode):
-    return {
-        'url':
-            '/internal/task/buildbucket/notify/%d' % build.key.id(),
-        'payload':
-            json.dumps({
-                'id': build.key.id(),
-                'mode': mode,
-            }, sort_keys=True),
-        'age_limit_sec':
-            model.BUILD_TIMEOUT.total_seconds(),
-    }
+    return dict(
+        url='/internal/task/buildbucket/notify/%d' % build.key.id(),
+        payload=dict(id=build.key.id(), mode=mode),
+        retry_options=dict(task_age_limit=model.BUILD_TIMEOUT.total_seconds()),
+    )
 
-  task_defs = [mktask('global')]
+  tasks = [mktask('global')]
   if build.pubsub_callback:  # pragma: no branch
-    task_defs.append(mktask('callback'))
-  return enqueue_tasks_async('backend-default', task_defs)
+    tasks.append(mktask('callback'))
+  return tq.enqueue_async('backend-default', tasks)
 
 
 class TaskPublishNotification(webapp2.RequestHandler):

@@ -4,7 +4,6 @@
 
 import contextlib
 import datetime
-import json
 
 from components import auth
 from components import utils
@@ -87,14 +86,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         return_value='buildbucket.example.com'
     )
 
-    self.patch(
-        'notifications.enqueue_tasks_async',
-        autospec=True,
-        return_value=future(None)
-    )
-    self.patch(
-        'bq.enqueue_pull_task_async', autospec=True, return_value=future(None)
-    )
+    self.patch('tq.enqueue_async', autospec=True, return_value=future(None))
     self.patch(
         'config.get_settings_async',
         autospec=True,
@@ -388,41 +380,17 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   @contextlib.contextmanager
   def callback_test(self, build):
-    build.pubsub_callback = model.PubSubCallback(
-        topic='projects/example/topics/buildbucket',
-        user_data='hello',
-        auth_token='secret',
-    )
-    build.put()
-    yield
-    notifications.enqueue_tasks_async.assert_called_with(
-        'backend-default', [
-            {
-                'url':
-                    '/internal/task/buildbucket/notify/%d' % build.key.id(),
-                'payload':
-                    json.dumps({
-                        'id': build.key.id(),
-                        'mode': 'global',
-                    },
-                               sort_keys=True),
-                'age_limit_sec':
-                    model.BUILD_TIMEOUT.total_seconds(),
-            },
-            {
-                'url':
-                    '/internal/task/buildbucket/notify/%d' % build.key.id(),
-                'payload':
-                    json.dumps({
-                        'id': build.key.id(),
-                        'mode': 'callback',
-                    },
-                               sort_keys=True),
-                'age_limit_sec':
-                    model.BUILD_TIMEOUT.total_seconds(),
-            },
-        ]
-    )
+    with mock.patch('notifications.enqueue_notifications_async', autospec=True):
+      notifications.enqueue_notifications_async.return_value = future(None)
+      build.pubsub_callback = model.PubSubCallback(
+          topic='projects/example/topics/buildbucket',
+          user_data='hello',
+          auth_token='secret',
+      )
+      build.put()
+      yield
+      build = build.key.get()
+      notifications.enqueue_notifications_async.assert_called_with(build)
 
   def test_start_creates_notification_task(self):
     build = self.new_leased_build()
