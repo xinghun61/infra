@@ -155,8 +155,8 @@ class HelpersTest(unittest.TestCase):
 
   def testClassifyPlusMinusItems(self):
     add, remove = tracker_helpers._ClassifyPlusMinusItems([])
-    self.assertEquals([], add)
-    self.assertEquals([], remove)
+    self.assertEqual([], add)
+    self.assertEqual([], remove)
 
     add, remove = tracker_helpers._ClassifyPlusMinusItems(
         ['', ' ', '  \t', '-'])
@@ -206,7 +206,7 @@ class HelpersTest(unittest.TestCase):
         'op_custom_12': ['clear'],
         'op_custom_16_sheep': ['remove'],
         'ignore': 'no matter',}))
-    self.assertEquals(parsed_fields, tracker_helpers.ParsedFields(
+    self.assertEqual(parsed_fields, tracker_helpers.ParsedFields(
         {1:['https://hello.com'], 12: ['https://blah.com']},
         {14: ['https://remove.com']}, [12],
         {15: {'goats': ['2', '3'], 'sheep': ['3', '5']}},
@@ -231,12 +231,12 @@ class HelpersTest(unittest.TestCase):
         value='')
 
     attachments = tracker_helpers._ParseIssueRequestAttachments({})
-    self.assertEquals([], attachments)
+    self.assertEqual([], attachments)
 
     attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
         'file1': [file1],
         }))
-    self.assertEquals(
+    self.assertEqual(
         [('hello.c', 'hello world', 'text/plain')],
         attachments)
 
@@ -244,7 +244,7 @@ class HelpersTest(unittest.TestCase):
         'file1': [file1],
         'file2': [file2],
         }))
-    self.assertEquals(
+    self.assertEqual(
         [('hello.c', 'hello world', 'text/plain'),
          ('README', 'Welcome to our project', 'text/plain')],
         attachments)
@@ -252,7 +252,7 @@ class HelpersTest(unittest.TestCase):
     attachments = tracker_helpers._ParseIssueRequestAttachments(fake.PostData({
         'file3': [file3],
         }))
-    self.assertEquals(
+    self.assertEqual(
         [('FILENAME.EXT', 'Abort, Retry, or Fail?',
           'application/octet-stream')],
         attachments)
@@ -262,7 +262,7 @@ class HelpersTest(unittest.TestCase):
         'file3': [file3],
         'file4': [file4],  # Does not appear in result
         }))
-    self.assertEquals(
+    self.assertEqual(
         [('FILENAME.EXT', 'Abort, Retry, or Fail?',
           'application/octet-stream')],
         attachments)
@@ -274,76 +274,76 @@ class HelpersTest(unittest.TestCase):
     post_data = {}
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
+    self.assertEqual('', parsed_users.owner_username)
+    self.assertEqual(
         framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual([], parsed_users.cc_usernames)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
+    self.assertEqual([], parsed_users.cc_ids)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
         'owner': [''],
         })
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
+    self.assertEqual('', parsed_users.owner_username)
+    self.assertEqual(
         framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual([], parsed_users.cc_usernames)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
+    self.assertEqual([], parsed_users.cc_ids)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
         'owner': [' \t'],
         })
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
+    self.assertEqual('', parsed_users.owner_username)
+    self.assertEqual(
         framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual([], parsed_users.cc_usernames)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
+    self.assertEqual([], parsed_users.cc_ids)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
         'owner': ['b@example.com'],
         })
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('b@example.com', parsed_users.owner_username)
-    self.assertEquals(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual('b@example.com', parsed_users.owner_username)
+    self.assertEqual(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
+    self.assertEqual([], parsed_users.cc_usernames)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
+    self.assertEqual([], parsed_users.cc_ids)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
         'owner': ['b@example.com'],
         })
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('b@example.com', parsed_users.owner_username)
-    self.assertEquals(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
-    self.assertEquals([], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual('b@example.com', parsed_users.owner_username)
+    self.assertEqual(TEST_ID_MAP['b@example.com'], parsed_users.owner_id)
+    self.assertEqual([], parsed_users.cc_usernames)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
+    self.assertEqual([], parsed_users.cc_ids)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
         'cc': ['b@example.com'],
         })
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
+    self.assertEqual('', parsed_users.owner_username)
+    self.assertEqual(
         framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
-    self.assertEquals(['b@example.com'], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
-    self.assertEquals([TEST_ID_MAP['b@example.com']], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual(['b@example.com'], parsed_users.cc_usernames)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
+    self.assertEqual([TEST_ID_MAP['b@example.com']], parsed_users.cc_ids)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
         'cc': ['-b@example.com, c@example.com,,'
@@ -351,16 +351,16 @@ class HelpersTest(unittest.TestCase):
         })
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('', parsed_users.owner_username)
-    self.assertEquals(
+    self.assertEqual('', parsed_users.owner_username)
+    self.assertEqual(
         framework_constants.NO_USER_SPECIFIED, parsed_users.owner_id)
     self.assertItemsEqual(['c@example.com', 'a@example.com'],
                           parsed_users.cc_usernames)
-    self.assertEquals(['b@example.com'], parsed_users.cc_usernames_remove)
+    self.assertEqual(['b@example.com'], parsed_users.cc_usernames_remove)
     self.assertItemsEqual([TEST_ID_MAP['c@example.com'],
                            TEST_ID_MAP['a@example.com']],
                           parsed_users.cc_ids)
-    self.assertEquals([TEST_ID_MAP['b@example.com']],
+    self.assertEqual([TEST_ID_MAP['b@example.com']],
                       parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
@@ -369,15 +369,15 @@ class HelpersTest(unittest.TestCase):
         })
     parsed_users = tracker_helpers._ParseIssueRequestUsers(
         'fake connection', post_data, self.services)
-    self.assertEquals('fuhqwhgads@example.com', parsed_users.owner_username)
+    self.assertEqual('fuhqwhgads@example.com', parsed_users.owner_username)
     gen_uid = framework_helpers.MurmurHash3_x86_32(parsed_users.owner_username)
-    self.assertEquals(gen_uid, parsed_users.owner_id)  # autocreated user
+    self.assertEqual(gen_uid, parsed_users.owner_id)  # autocreated user
     self.assertItemsEqual(
         ['c@example.com', 'fuhqwhgads@example.com'], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
     self.assertItemsEqual(
        [TEST_ID_MAP['c@example.com'], gen_uid], parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
     post_data = fake.PostData({
         'cc': ['C@example.com, b@exAmple.cOm'],
@@ -386,11 +386,11 @@ class HelpersTest(unittest.TestCase):
         'fake connection', post_data, self.services)
     self.assertItemsEqual(
         ['c@example.com', 'b@example.com'], parsed_users.cc_usernames)
-    self.assertEquals([], parsed_users.cc_usernames_remove)
+    self.assertEqual([], parsed_users.cc_usernames_remove)
     self.assertItemsEqual(
        [TEST_ID_MAP['c@example.com'], TEST_ID_MAP['b@example.com']],
        parsed_users.cc_ids)
-    self.assertEquals([], parsed_users.cc_ids_remove)
+    self.assertEqual([], parsed_users.cc_ids_remove)
 
   def testParseBlockers_BlockedOnNothing(self):
     """Was blocked on nothing, still nothing."""
@@ -614,6 +614,22 @@ class HelpersTest(unittest.TestCase):
 
   # MakeViewsForUsersInIssuesTest is tested in MakeViewsForUsersInIssuesTest.
 
+  def testFormatIssueListURL_JumpedToIssue(self):
+    """If we jumped to issue 123, the list is can=1&q=id-123."""
+    config = tracker_pb2.ProjectIssueConfig()
+    path = '/p/proj/issues/detail?id=123&q=123'
+    mr = testing_helpers.MakeMonorailRequest(
+        path=path, headers={'Host': 'code.google.com'})
+    mr.ComputeColSpec(config)
+
+    absolute_base_url = 'http://code.google.com'
+
+    url_1 = tracker_helpers.FormatIssueListURL(mr, config)
+    self.assertEqual(
+        '%s/p/proj/issues/list?can=1&%s&q=id%%3D123' % (
+            absolute_base_url, self.default_colspec_param),
+        url_1)
+
   def testFormatIssueListURL_NoCurrentState(self):
     config = tracker_pb2.ProjectIssueConfig()
     path = '/p/proj/issues/detail?id=123'
@@ -624,28 +640,28 @@ class HelpersTest(unittest.TestCase):
     absolute_base_url = 'http://code.google.com'
 
     url_1 = tracker_helpers.FormatIssueListURL(mr, config)
-    self.assertEquals(
+    self.assertEqual(
         '%s/p/proj/issues/list?%s&q=' % (
             absolute_base_url, self.default_colspec_param),
         url_1)
 
     url_2 = tracker_helpers.FormatIssueListURL(
         mr, config, foo=123)
-    self.assertEquals(
+    self.assertEqual(
         '%s/p/proj/issues/list?%s&foo=123&q=' % (
             absolute_base_url, self.default_colspec_param),
         url_2)
 
     url_3 = tracker_helpers.FormatIssueListURL(
         mr, config, foo=123, bar='abc')
-    self.assertEquals(
+    self.assertEqual(
         '%s/p/proj/issues/list?bar=abc&%s&foo=123&q=' % (
             absolute_base_url, self.default_colspec_param),
         url_3)
 
     url_4 = tracker_helpers.FormatIssueListURL(
         mr, config, baz='escaped+encoded&and100% "safe"')
-    self.assertEquals(
+    self.assertEqual(
         '%s/p/proj/issues/list?'
         'baz=escaped%%2Bencoded%%26and100%%25%%20%%22safe%%22&%s&q=' % (
             absolute_base_url, self.default_colspec_param),
@@ -661,32 +677,32 @@ class HelpersTest(unittest.TestCase):
     absolute_base_url = 'http://localhost:8080'
 
     url_1 = tracker_helpers.FormatIssueListURL(mr, config)
-    self.assertEquals(
+    self.assertEqual(
         '%s/p/proj/issues/list?colspec=a%%20b%%20c'
         '&groupby=d&q=&sort=aa' % absolute_base_url,
         url_1)
 
     url_2 = tracker_helpers.FormatIssueListURL(
         mr, config, foo=123)
-    self.assertEquals(
+    self.assertEqual(
         '%s/p/proj/issues/list?'
         'colspec=a%%20b%%20c&foo=123&groupby=d&q=&sort=aa' % absolute_base_url,
         url_2)
 
     url_3 = tracker_helpers.FormatIssueListURL(
         mr, config, colspec='X Y Z')
-    self.assertEquals(
+    self.assertEqual(
         '%s/p/proj/issues/list?colspec=a%%20b%%20c'
         '&groupby=d&q=&sort=aa' % absolute_base_url,
         url_3)
 
   def testFormatRelativeIssueURL(self):
-    self.assertEquals(
+    self.assertEqual(
         '/p/proj/issues/attachment',
         tracker_helpers.FormatRelativeIssueURL(
             'proj', urls.ISSUE_ATTACHMENT))
 
-    self.assertEquals(
+    self.assertEqual(
         '/p/proj/issues/detail?id=123',
         tracker_helpers.FormatRelativeIssueURL(
             'proj', urls.ISSUE_DETAIL, id=123))
@@ -694,20 +710,20 @@ class HelpersTest(unittest.TestCase):
   @mock.patch('google.appengine.api.app_identity.get_application_id')
   def testFormatCrBugURL_Prod(self, mock_get_app_id):
     mock_get_app_id.return_value = 'monorail-prod'
-    self.assertEquals(
+    self.assertEqual(
         'https://crbug.com/proj/123',
         tracker_helpers.FormatCrBugURL('proj', 123))
-    self.assertEquals(
+    self.assertEqual(
         'https://crbug.com/123456',
         tracker_helpers.FormatCrBugURL('chromium', 123456))
 
   @mock.patch('google.appengine.api.app_identity.get_application_id')
   def testFormatCrBugURL_NonProd(self, mock_get_app_id):
     mock_get_app_id.return_value = 'monorail-staging'
-    self.assertEquals(
+    self.assertEqual(
         '/p/proj/issues/detail?id=123',
         tracker_helpers.FormatCrBugURL('proj', 123))
-    self.assertEquals(
+    self.assertEqual(
         '/p/chromium/issues/detail?id=123456',
         tracker_helpers.FormatCrBugURL('chromium', 123456))
 
@@ -1199,7 +1215,7 @@ class IssueMergeTest(unittest.TestCase):
             (permissions.OWNER_ACTIVE_PERMISSIONSET, True)):
       mr.perms = perm_set
       merge_allowed = tracker_helpers.IsMergeAllowed(issue, mr, self.services)
-      self.assertEquals(expected_merge_allowed, merge_allowed)
+      self.assertEqual(expected_merge_allowed, merge_allowed)
 
   def testMergeIssueStars(self):
     mr = testing_helpers.MakeMonorailRequest()
@@ -1245,7 +1261,7 @@ class MergeLinkedMembersTest(unittest.TestCase):
     """When no candidate accounts are linked, they are all returned."""
     actual = tracker_helpers._MergeLinkedMembers(
         self.cnxn, self.services.user, [111L, 222L])
-    self.assertEquals([111L, 222L], actual)
+    self.assertEqual([111L, 222L], actual)
 
   def testSomeLinkedButNoMasking(self):
     """If an account has linked accounts, but they are not here, keep it."""
@@ -1253,14 +1269,14 @@ class MergeLinkedMembersTest(unittest.TestCase):
     self.user2.linked_parent_id = 999L
     actual = tracker_helpers._MergeLinkedMembers(
         self.cnxn, self.services.user, [111L, 222L])
-    self.assertEquals([111L, 222L], actual)
+    self.assertEqual([111L, 222L], actual)
 
   def testParentMasksChild(self):
     """When two accounts linked, only the parent is returned."""
     self.user2.linked_parent_id = 111L
     actual = tracker_helpers._MergeLinkedMembers(
         self.cnxn, self.services.user, [111L, 222L])
-    self.assertEquals([111L], actual)
+    self.assertEqual([111L], actual)
 
 
 class FilterMemberDataTest(unittest.TestCase):
@@ -1368,11 +1384,11 @@ class GetLabelOptionsTest(unittest.TestCase):
 
   def testBuildRestrictionChoices(self):
     choices = tracker_helpers._BuildRestrictionChoices([], [], [])
-    self.assertEquals([], choices)
+    self.assertEqual([], choices)
 
     choices = tracker_helpers._BuildRestrictionChoices(
         [], ['Hop', 'Jump'], [])
-    self.assertEquals([], choices)
+    self.assertEqual([], choices)
 
     freq = [('View', 'B', 'You need permission B to do anything'),
             ('A', 'B', 'You need B to use A')]

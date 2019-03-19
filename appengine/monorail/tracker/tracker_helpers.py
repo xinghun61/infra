@@ -582,7 +582,10 @@ def FormatIssueListURL(
   """Format a link back to list view as configured by user."""
   if project_names is None:
     project_names = [mr.project_name]
-  if not tracker_constants.JUMP_RE.match(mr.query):
+  if tracker_constants.JUMP_RE.match(mr.query):
+    kwargs['q'] = 'id=%s' % mr.query
+    kwargs['can'] = 1  # The specified issue might be closed.
+  else:
     kwargs['q'] = mr.query
     if mr.can and mr.can != 2:
       kwargs['can'] = mr.can

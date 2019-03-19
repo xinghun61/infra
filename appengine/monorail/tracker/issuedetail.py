@@ -1248,9 +1248,9 @@ def _GetBinnedHotlistViews(visible_hotlist_views, involved_users):
 def _ComputeBackToListURL(mr, issue, config, hotlist, services):
   """Construct a URL to return the user to the place that they came from."""
   if hotlist:
-    return hotlist_helpers.GetURLOfHotlist(mr.cnxn, hotlist, services.user)
-  back_to_list_url = None
-  if not tracker_constants.JUMP_RE.match(mr.query):
+    back_to_list_url = hotlist_helpers.GetURLOfHotlist(
+        mr.cnxn, hotlist, services.user)
+  else:
     back_to_list_url = tracker_helpers.FormatIssueListURL(
         mr, config, cursor='%s:%d' % (issue.project_name, issue.local_id))
 
