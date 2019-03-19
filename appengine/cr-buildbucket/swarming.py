@@ -957,19 +957,6 @@ def create_task_async(build):
 
   sw.task_service_account = task_req.get('service_account', '')
 
-  # Mark the build as leased.
-  exp = sum(int(t['expiration_secs']) for t in task_def['task_slices'])
-  # This is not exactly true but #closeenough.
-  exp += int(
-      task_def['task_slices'][-1]['properties']['execution_timeout_secs']
-  )
-  # Adding an hour definitely helps with the #closeenough.
-  exp += 24 * 60 * 60
-  build.lease_expiration_date = utils.utcnow() + datetime.timedelta(seconds=exp)
-  build.regenerate_lease_key()
-  build.leasee = user.self_identity()
-  build.never_leased = False
-
 
 def _generate_build_url(milo_hostname, build):
   if not milo_hostname:
@@ -1198,7 +1185,6 @@ def _sync_build_in_memory(
     bp.start_time.FromDatetime(ts('started_ts') or now)
   elif build.is_ended:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
-    build.clear_lease()
 
     started_ts = ts('started_ts')
     if started_ts:

@@ -45,22 +45,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'a' * 40,
         test_util.parse_bucket_cfg(
             '''
-            name: "luci.chromium.try"
+            name: "try"
             acls {
               role: READER
               identity: "anonymous:anonymous"
-            }
-            swarming {
-              hostname: "chromium-swarm.appspot.com"
-              builders {
-                name: "linux"
-                build_numbers: YES
-                recipe {
-                  cipd_package: "infra/recipe_bundle"
-                  cipd_version: "refs/heads/master"
-                  name: "recipe"
-                }
-              }
             }
             '''
         ),
@@ -70,10 +58,22 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'a' * 40,
         test_util.parse_bucket_cfg(
             '''
-            name: "master.chromium"
+            name: "luci"
             acls {
               role: READER
               identity: "anonymous:anonymous"
+            }
+            swarming {
+              builders {
+                name: "linux"
+                swarming_host: "chromium-swarm.appspot.com"
+                build_numbers: YES
+                recipe {
+                  cipd_package: "infra/recipe_bundle"
+                  cipd_version: "refs/heads/master"
+                  name: "recipe"
+                }
+              }
             }
             '''
         ),
@@ -124,15 +124,22 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     builds = []
     build_ids = model.create_build_ids(utils.utcnow(), count)
     for build_id in build_ids:
-      builds.append(test_util.build(id=build_id, **build_proto_fields))
+      builds.append(self.classic_build(id=build_id, **build_proto_fields))
       self.now += datetime.timedelta(seconds=1)
     ndb.put_multi(builds)
     return builds
 
+  @staticmethod
+  def classic_build(**build_proto_fields):
+    build = test_util.build(**build_proto_fields)
+    build.infra_bytes = None
+    build.is_luci = False
+    return build
+
   #################################### GET #####################################
 
   def test_get(self):
-    test_util.build(id=1).put()
+    self.classic_build(id=1).put()
     build = service.get_async(1).get_result()
     self.assertEqual(build, build)
 
@@ -141,7 +148,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_get_with_auth_error(self):
     self.mock_cannot(user.Action.VIEW_BUILD)
-    test_util.build(id=1).put()
+    self.classic_build(id=1).put()
     with self.assertRaises(auth.AuthorizationError):
       service.get_async(1).get_result()
 
@@ -162,7 +169,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.status_changed_time, utils.utcnow())
 
   def test_cancel_is_idempotent(self):
-    build = test_util.build(id=1)
+    build = self.classic_build(id=1)
     build.put()
     service.cancel_async(1).get_result()
     service.cancel_async(1).get_result()
@@ -182,55 +189,55 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       service.cancel_async(1).get_result()
 
   def test_cancel_completed_build(self):
-    build = test_util.build(id=1, status=common_pb2.SUCCESS)
+    build = self.classic_build(id=1, status=common_pb2.SUCCESS)
     build.put()
     with self.assertRaises(errors.BuildIsCompletedError):
       service.cancel_async(1).get_result()
 
   def test_cancel_result_details(self):
-    test_util.build(id=1).put()
+    self.classic_build(id=1).put()
     result_details = {'message': 'bye bye build'}
     build = service.cancel_async(1, result_details=result_details).get_result()
     self.assertEqual(build.result_details, result_details)
 
   def test_peek(self):
-    build = test_util.build()
+    build = self.classic_build()
     build.put()
     builds, _ = service.peek(bucket_ids=[build.bucket_id])
     self.assertEqual(builds, [build])
 
   def test_peek_multi(self):
-    build1 = test_util.build(
+    build1 = self.classic_build(
         id=1,
-        builder=dict(project='chromium', bucket='ci'),
+        builder=dict(project='chromium', bucket='try'),
     )
-    build2 = test_util.build(
+    build2 = self.classic_build(
         id=2,
-        builder=dict(project='chromium', bucket='ci'),
+        builder=dict(project='chromium', bucket='try'),
     )
     assert build1.bucket_id == build2.bucket_id
     ndb.put_multi([build1, build2])
-    builds, _ = service.peek(bucket_ids=['chromium/ci'])
+    builds, _ = service.peek(bucket_ids=['chromium/try'])
     self.assertEqual(builds, [build2, build1])
 
   def test_peek_with_paging(self):
-    self.put_many_builds(builder=dict(project='chromium', bucket='ci'))
+    self.put_many_builds(builder=dict(project='chromium', bucket='try'))
     first_page, next_cursor = service.peek(
-        bucket_ids=['chromium/ci'], max_builds=10
+        bucket_ids=['chromium/try'], max_builds=10
     )
     self.assertTrue(first_page)
     self.assertTrue(next_cursor)
 
     second_page, _ = service.peek(
-        bucket_ids=['chromium/ci'], start_cursor=next_cursor
+        bucket_ids=['chromium/try'], start_cursor=next_cursor
     )
 
     self.assertTrue(all(b not in second_page for b in first_page))
 
   def test_peek_with_bad_cursor(self):
-    self.put_many_builds(builder=dict(project='chromium', bucket='ci'))
+    self.put_many_builds(builder=dict(project='chromium', bucket='try'))
     with self.assertRaises(errors.InvalidInputError):
-      service.peek(bucket_ids=['chromium/ci'], start_cursor='abc')
+      service.peek(bucket_ids=['chromium/try'], start_cursor='abc')
 
   def test_peek_without_buckets(self):
     with self.assertRaises(errors.InvalidInputError):
@@ -238,14 +245,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_peek_with_auth_error(self):
     self.mock_cannot(user.Action.SEARCH_BUILDS)
-    build = test_util.build(builder=dict(project='chromium', bucket='ci'))
+    build = self.classic_build(builder=dict(project='chromium', bucket='try'))
     build.put()
     with self.assertRaises(auth.AuthorizationError):
-      service.peek(bucket_ids=['chromium/ci'])
+      service.peek(bucket_ids=['chromium/try'])
 
   def test_peek_does_not_return_leased_builds(self):
-    self.new_leased_build(builder=dict(project='chromium', bucket='ci'))
-    builds, _ = service.peek(['chromium/ci'])
+    self.new_leased_build(builder=dict(project='chromium', bucket='try'))
+    builds, _ = service.peek(['chromium/try'])
     self.assertFalse(builds)
 
   #################################### LEASE ###################################
@@ -259,13 +266,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     return build
 
   def new_leased_build(self, **build_proto_fields):
-    build = test_util.build(**build_proto_fields)
+    build = self.classic_build(**build_proto_fields)
     build.put()
     return self.lease(build.key.id())
 
   def test_lease(self):
     expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
-    test_util.build(id=1).put()
+    self.classic_build(id=1).put()
     build = self.lease(1, lease_expiration_date=expiration_date)
     self.assertTrue(build.is_leased)
     self.assertGreater(build.lease_expiration_date, utils.utcnow())
@@ -273,7 +280,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_lease_build_with_auth_error(self):
     self.mock_cannot(user.Action.LEASE_BUILD)
-    test_util.build(id=1).put()
+    self.classic_build(id=1).put()
     with self.assertRaises(auth.AuthorizationError):
       self.lease(1)
 
@@ -286,9 +293,15 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       service.lease(build_id=42)
 
   def test_cannot_lease_completed_build(self):
-    build = test_util.build(id=1, status=common_pb2.SUCCESS)
+    build = self.classic_build(id=1, status=common_pb2.SUCCESS)
     build.put()
     self.lease(1, expect_success=False)
+
+  def test_cannot_lease_luci_build(self):
+    build = test_util.build(id=1)
+    build.put()
+    with self.assertRaises(errors.InvalidInputError):
+      self.lease(1)
 
   ################################### UNELASE ##################################
 
@@ -309,7 +322,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     service.reset(1)
 
   def test_reset_completed_build(self):
-    test_util.build(id=1, status=common_pb2.SUCCESS).put()
+    self.classic_build(id=1, status=common_pb2.SUCCESS).put()
     with self.assertRaises(errors.BuildIsCompletedError):
       service.reset(1)
 
@@ -360,12 +373,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     service.start(1, lease_key, url + '1', False)
 
   def test_start_non_leased_build(self):
-    test_util.build(id=1).put()
+    self.classic_build(id=1).put()
     with self.assertRaises(errors.LeaseExpiredError):
       service.start(1, 42, None, False)
 
   def test_start_completed_build(self):
-    test_util.build(id=1, status=common_pb2.SUCCESS).put()
+    self.classic_build(id=1, status=common_pb2.SUCCESS).put()
     with self.assertRaises(errors.BuildIsCompletedError):
       service.start(1, 42, None, False)
 
@@ -427,13 +440,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.lease_expiration_date, new_expiration_date)
 
   def test_heartbeat_completed(self):
-    test_util.build(id=1, status=common_pb2.CANCELED).put()
+    self.classic_build(id=1, status=common_pb2.CANCELED).put()
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     with self.assertRaises(errors.BuildIsCompletedError):
       service.heartbeat(1, 0, lease_expiration_date=new_expiration_date)
 
   def test_heartbeat_resource_exhaustion(self):
-    build = test_util.build(
+    build = self.classic_build(
         id=1,
         status=common_pb2.INFRA_FAILURE,
         infra_failure_reason=dict(resource_exhaustion=True),
@@ -498,7 +511,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(test_util.msg_to_dict(out_props.parse()), {'foo': 'bar'})
 
   def test_succeed_failed(self):
-    build = test_util.build(id=1, status=common_pb2.FAILURE)
+    build = self.classic_build(id=1, status=common_pb2.FAILURE)
     build.put()
     with self.assertRaises(errors.BuildIsCompletedError):
       service.succeed(1, 42)
@@ -606,14 +619,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_delete_many_builds_auth_error(self):
     self.mock_cannot(user.Action.DELETE_SCHEDULED_BUILDS)
     with self.assertRaises(auth.AuthorizationError):
-      service.delete_many_builds('chromium/ci', model.BuildStatus.SCHEDULED)
+      service.delete_many_builds('chromium/try', model.BuildStatus.SCHEDULED)
 
   def test_delete_many_builds_schedule_task(self):
-    service.delete_many_builds('chromium/ci', model.BuildStatus.SCHEDULED)
+    service.delete_many_builds('chromium/try', model.BuildStatus.SCHEDULED)
 
   def test_delete_many_completed_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.delete_many_builds('chromium/ci', model.BuildStatus.COMPLETED)
+      service.delete_many_builds('chromium/try', model.BuildStatus.COMPLETED)
 
   ################################ PAUSE BUCKET ################################
 
@@ -656,7 +669,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(len(builds), 0)
 
   def test_pause_then_unpause(self):
-    build = test_util.build(builder=dict(project='chromium', bucket='ci'))
+    build = self.classic_build(builder=dict(project='chromium', bucket='try'))
     build.put()
 
     config.put_bucket(
@@ -684,9 +697,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.pause('a/#', True)
 
-  def test_pause_swarming_bucket(self):
+  def test_pause_luci_bucket(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.pause('chromium/try', True)
+      service.pause('chromium/luci', True)
 
   ############################ UNREGISTER BUILDERS #############################
 
