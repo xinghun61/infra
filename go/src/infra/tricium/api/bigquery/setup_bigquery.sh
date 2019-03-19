@@ -87,7 +87,7 @@ if ! (bqschemaupdater -force -message apibq.AnalysisRun \
   echo "and run this script again."
   exit 1
 fi
-if ! (bqschemaupdater -force -message apibq.Event \
+if ! (bqschemaupdater -force -message apibq.FeedbackEvent \
   -table "${APPID}.events.feedback"); then
   echo ""
   echo ""
