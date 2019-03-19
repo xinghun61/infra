@@ -6,7 +6,6 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-button/chops-button.js';
-import '../../chops/chops-header/chops-header.js';
 import './mr-issue-header.js';
 import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
