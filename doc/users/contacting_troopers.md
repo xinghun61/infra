@@ -66,7 +66,7 @@ actually increase the time taken to respond to an issue. Behind the scenes, our
 Troopers will review and triage the bug, as-needed, to corresponding Chrome
 Operations teams to be addressed.
 
-All requests should contain the “Infra-Trooper” label such that we can properly
+All requests should contain the “Infra-Troopers” label such that we can properly
 triage the request and to indicate that this is user-filed.
 
 *   Untriaged: Your issue will show up in the queue to the trooper as untriaged.
