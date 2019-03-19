@@ -143,8 +143,11 @@ func (r *DeployDutRequest) Validate() error {
 
 // Validate returns an error if r is invalid.
 func (r *RedeployDutRequest) Validate() error {
-	if r.NewSpecs != nil && r.OldSpecs == nil {
-		return status.Errorf(codes.InvalidArgument, "old_specs must be set when new_specs is set")
+	if r.OldSpecs == nil {
+		return status.Errorf(codes.InvalidArgument, "old_specs must be set")
+	}
+	if r.NewSpecs == nil {
+		return status.Errorf(codes.InvalidArgument, "new_specs must be set")
 	}
 	if r.Actions != nil {
 		return r.Actions.Validate()

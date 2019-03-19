@@ -120,15 +120,13 @@ func TestDeployDut(t *testing.T) {
 				Id:       &ignoredID,
 				Hostname: &dutHostname,
 			}
-			ns, err := proto.Marshal(specs)
-			So(err, ShouldBeNil)
 
 			// TODO(pprabhu) Check arguments of this call after testing utilities
 			// from ../test_common.go are refactored into a package.
 			deployTaskID := "swarming-task"
 			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(deployTaskID, nil)
 			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
-				NewSpecs: ns,
+				NewSpecs: marshalOrPanic(specs),
 			})
 			So(err, ShouldBeNil)
 			deploymentID := resp.DeploymentId
@@ -189,6 +187,137 @@ func TestDeployDut(t *testing.T) {
 	})
 }
 
+func TestRedeployDut(t *testing.T) {
+	Convey("With one DUT in the inventory", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		env := inventory.Environment_ENVIRONMENT_STAGING
+		oldSpecs := &inventory.CommonDeviceSpecs{
+			Environment: &env,
+			Hostname:    stringPtr("dut_hostname_1"),
+			Id:          stringPtr("dut_id_1"),
+			Labels: &inventory.SchedulableLabels{
+				Model:         stringPtr("link"),
+				CriticalPools: []inventory.SchedulableLabels_DUTPool{inventory.SchedulableLabels_DUT_POOL_SUITES},
+			},
+		}
+
+		err := tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
+			Lab: inventoryBytesFromDUTs([]testInventoryDut{
+				{"dut_id_1", "dut_hostname_1", "link", "DUT_POOL_SUITES"},
+			}),
+			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
+				{
+					hostname:    "fake-drone.google.com",
+					environment: inventory.Environment_ENVIRONMENT_STAGING,
+					dutIDs:      []string{"dut_id_1"},
+				},
+			}),
+		})
+		So(err, ShouldBeNil)
+
+		Convey("Update DUT with empty old specs returns error", func() {
+			_, err = tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
+				NewSpecs: marshalOrPanic(oldSpecs),
+			})
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Update DUT with empty new specs returns error", func() {
+			_, err = tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
+				OldSpecs: marshalOrPanic(oldSpecs),
+			})
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Update DUT with different DUT ID across specs returns error", func() {
+			newSpecs := &inventory.CommonDeviceSpecs{}
+			proto.Merge(newSpecs, oldSpecs)
+			newSpecs.Id = stringPtr("changed_id")
+			So(err, ShouldBeNil)
+			_, err = tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
+				OldSpecs: marshalOrPanic(oldSpecs),
+				NewSpecs: marshalOrPanic(newSpecs),
+			})
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Update DUT with same old and new specs triggers deploy task", func() {
+			// TODO(pprabhu) Check arguments of this call after testing utilities
+			// from ../test_common.go are refactored into a package.
+			deployTaskID := "swarming-task"
+			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(deployTaskID, nil)
+
+			resp, err := tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
+				OldSpecs: marshalOrPanic(oldSpecs),
+				NewSpecs: marshalOrPanic(oldSpecs),
+			})
+			So(err, ShouldBeNil)
+			So(resp, ShouldNotBeNil)
+			deploymentID := resp.GetDeploymentId()
+			So(deploymentID, ShouldNotEqual, "")
+
+			// There were no DUT specs update, so there should be no inventory chanage.
+			So(tf.FakeGerrit.Changes, ShouldHaveLength, 0)
+
+			Convey("then GetDeploymentStatus with correct ID returns IN_PROGRESS status", func() {
+				tf.MockSwarming.EXPECT().GetTaskResult(gomock.Any(), deployTaskID).Return(&swarming.SwarmingRpcsTaskResult{
+					State: "RUNNING",
+				}, nil)
+				resp, err := tf.Inventory.GetDeploymentStatus(tf.C, &fleet.GetDeploymentStatusRequest{DeploymentId: deploymentID})
+				So(err, ShouldBeNil)
+				So(resp.Status, ShouldEqual, fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS)
+				// There were no DUT specs update, so there should be no inventory chanage.
+				So(resp.ChangeUrl, ShouldEqual, "")
+				So(resp.TaskUrl, ShouldContainSubstring, deployTaskID)
+			})
+		})
+
+		Convey("Update DUT with different old and new specs updates inventory and triggers deploy task", func() {
+			newSpecs := &inventory.CommonDeviceSpecs{}
+			proto.Merge(newSpecs, oldSpecs)
+			newSpecs.Hostname = stringPtr("updated_hostname")
+
+			// TODO(pprabhu) Check arguments of this call after testing utilities
+			// from ../test_common.go are refactored into a package.
+			deployTaskID := "swarming-task"
+			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).Return(deployTaskID, nil)
+
+			resp, err := tf.Inventory.RedeployDut(tf.C, &fleet.RedeployDutRequest{
+				OldSpecs: marshalOrPanic(oldSpecs),
+				NewSpecs: marshalOrPanic(newSpecs),
+			})
+
+			So(err, ShouldBeNil)
+			So(resp, ShouldNotBeNil)
+			deploymentID := resp.GetDeploymentId()
+			So(deploymentID, ShouldNotEqual, "")
+
+			lab, err := getLabFromChange(tf.FakeGerrit)
+			So(err, ShouldBeNil)
+			So(lab.Duts, ShouldHaveLength, 1)
+			dut := lab.Duts[0]
+			common := dut.GetCommon()
+			So(common.GetId(), ShouldEqual, newSpecs.GetId())
+			// Verify hostname was updated.
+			So(common.GetHostname(), ShouldEqual, newSpecs.GetHostname())
+
+			Convey("then GetDeploymentStatus with correct ID returns IN_PROGRESS status", func() {
+				tf.MockSwarming.EXPECT().GetTaskResult(gomock.Any(), deployTaskID).Return(&swarming.SwarmingRpcsTaskResult{
+					State: "RUNNING",
+				}, nil)
+				resp, err := tf.Inventory.GetDeploymentStatus(tf.C, &fleet.GetDeploymentStatusRequest{DeploymentId: deploymentID})
+				So(err, ShouldBeNil)
+				So(resp.Status, ShouldEqual, fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS)
+				So(resp.ChangeUrl, ShouldNotEqual, "")
+				So(resp.TaskUrl, ShouldContainSubstring, deployTaskID)
+			})
+
+		})
+	})
+}
+
 // getLabFromChange gets the inventory.Lab committed to fakes.GerritClient
 //
 // This function assumes that only one change was committed.
@@ -224,4 +353,17 @@ func getInfrastructureFromChange(fg *fakes.GerritClient) (*inventory.Infrastruct
 	var infra inventory.Infrastructure
 	err := inventory.LoadInfrastructureFromString(f, &infra)
 	return &infra, err
+}
+
+func stringPtr(s string) *string {
+	return &s
+}
+
+// marshalOrPanic serializes the given proto.Message or panics on failure.
+func marshalOrPanic(m proto.Message) []byte {
+	s, err := proto.Marshal(m)
+	if err != nil {
+		panic(err)
+	}
+	return s
 }

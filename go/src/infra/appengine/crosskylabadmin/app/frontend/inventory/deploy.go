@@ -46,9 +46,9 @@ func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest
 		return nil, err
 	}
 
-	var specs inventory.CommonDeviceSpecs
-	if err := proto.Unmarshal(req.GetNewSpecs(), &specs); err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid new_specs")
+	specs, err := parseDUTSpecs(req.GetNewSpecs())
+	if err != nil {
+		return nil, err
 	}
 	if specs.GetHostname() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "DUT hostname not set in new_specs")
@@ -67,14 +67,52 @@ func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest
 	if err != nil {
 		return nil, err
 	}
-	ds := deployDUT(ctx, s, sc, attemptID, &specs)
+	ds := deployDUT(ctx, s, sc, attemptID, specs)
 	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
 	return &fleet.DeployDutResponse{DeploymentId: attemptID}, nil
 }
 
 // RedeployDut implements the method from fleet.InventoryServer interface.
-func (*ServerImpl) RedeployDut(ctx context.Context, req *fleet.RedeployDutRequest) (*fleet.RedeployDutResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "redeploy dut: not implemented yet")
+func (is *ServerImpl) RedeployDut(ctx context.Context, req *fleet.RedeployDutRequest) (resp *fleet.RedeployDutResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	if err = req.Validate(); err != nil {
+		return nil, err
+	}
+
+	oldSpecs, err := parseDUTSpecs(req.GetOldSpecs())
+	if err != nil {
+		return nil, err
+	}
+	newSpecs, err := parseDUTSpecs(req.GetNewSpecs())
+	if err != nil {
+		return nil, err
+	}
+	if oldSpecs.GetId() == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "empty ID in old_specs")
+	}
+	if newSpecs.GetId() != oldSpecs.GetId() {
+		return nil, status.Errorf(codes.InvalidArgument, "new_specs ID %s does not match old_specs ID %s",
+			newSpecs.GetId(), oldSpecs.GetId())
+	}
+
+	s, err := is.newStore(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sc, err := is.newSwarmingClient(ctx, config.Get(ctx).Swarming.Host)
+	if err != nil {
+		return nil, err
+	}
+
+	attemptID, err := initializeDeployAttempt(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ds := redeployDUT(ctx, s, sc, attemptID, oldSpecs, newSpecs)
+	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
+	return &fleet.RedeployDutResponse{DeploymentId: attemptID}, nil
 }
 
 // GetDeploymentStatus implements the method from fleet.InventoryServer interface.
@@ -256,6 +294,63 @@ func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, 
 	}))
 }
 
+// redeployDUT kicks off a redeployment of an existing DUT.
+//
+// Errors are communicated via returned deploy.Status
+func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, oldSpecs, newSpecs *inventory.CommonDeviceSpecs) *deploy.Status {
+	var err error
+	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
+
+	if !proto.Equal(oldSpecs, newSpecs) {
+		ds.ChangeURL, err = updateDUTSpecs(ctx, s, oldSpecs, newSpecs)
+		if err != nil {
+			failDeployStatus(ds, "failed to update DUT specs")
+			return ds
+		}
+	}
+
+	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, oldSpecs.GetId())
+	if err != nil {
+		failDeployStatus(ds, "failed to create deploy task")
+		return ds
+	}
+	return ds
+}
+
+// updateDUTSpecs updates the DUT specs for an existing DUT in the inventory.
+func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, oldSpecs, newSpecs *inventory.CommonDeviceSpecs) (string, error) {
+	var respURL string
+	f := func() error {
+		if err := s.Refresh(ctx); err != nil {
+			return errors.Annotate(err, "add new dut to inventory").Err()
+		}
+
+		dut, exists := getDUTByID(s.Lab, oldSpecs.GetId())
+		if !exists {
+			return status.Errorf(codes.NotFound, "no DUT with ID %s", oldSpecs.GetId())
+		}
+		// TODO(crbug/929776) DUTs under deployment are not marked specially in the
+		// inventory yet. This causes two problems:
+		// - Another admin task (say repair) may get scheduled on the new bot
+		//   before the deploy task we create.
+		// - If the deploy task fails, the DUT will still enter the fleet, but may
+		//   not be ready for use.
+		if !proto.Equal(dut.GetCommon(), oldSpecs) {
+			return errors.Reason("DUT specs update conflict").Err()
+		}
+		dut.Common = newSpecs
+
+		url, err := s.Commit(ctx, fmt.Sprintf("Update DUT %s", oldSpecs.GetId()))
+		if err != nil {
+			return errors.Annotate(err, "update DUT specs").Err()
+		}
+		respURL = url
+		return nil
+	}
+	err := retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "updateDUTSpecs"))
+	return respURL, err
+}
+
 // refreshDeployStatus refreshes the status of given deployment attempt from
 // Swarming.
 func refreshDeployStatus(ctx context.Context, sc clients.SwarmingClient, ds *deploy.Status) error {
@@ -325,4 +420,12 @@ func deleteAtIndex(duts []*inventory.DeviceUnderTest, i int) []*inventory.Device
 	copy(duts[i:], duts[i+1:])
 	duts[len(duts)-1] = nil
 	return duts[:len(duts)-1]
+}
+
+func parseDUTSpecs(specs []byte) (*inventory.CommonDeviceSpecs, error) {
+	var parsed inventory.CommonDeviceSpecs
+	if err := proto.Unmarshal(specs, &parsed); err != nil {
+		return nil, errors.Annotate(err, "parse DUT specs").Tag(grpcutil.InvalidArgumentTag).Err()
+	}
+	return &parsed, nil
 }
