@@ -28,15 +28,13 @@ export default class AutoRefreshPrpcClient {
    */
   async ensureTokenIsValid() {
     if (AutoRefreshPrpcClient.isTokenExpired(this.tokenExpiresSec)) {
+      const headers = {'X-Xsrf-Token': this.token};
       const message = {
-        trace: {
-          token: this.token
-        },
         token: this.token,
         tokenPath: 'xhr',
       };
       const freshToken = await this.prpcClient.call(
-          'monorail.Sitewide', 'RefreshToken', message);
+          'monorail.Sitewide', 'RefreshToken', message, headers);
       this.token = freshToken.token;
       this.tokenExpiresSec = freshToken.tokenExpiresSec;
     }
@@ -51,8 +49,8 @@ export default class AutoRefreshPrpcClient {
    */
   call(service, method, message) {
     return this.ensureTokenIsValid().then(() => {
-        message.trace = {token: this.token};
-        return this.prpcClient.call(service, method, message);
+        const headers = {'X-Xsrf-Token': this.token};
+        return this.prpcClient.call(service, method, message, headers);
     });
   }
 

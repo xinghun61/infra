@@ -80,6 +80,31 @@ suite('PrpcClient.call', () => {
     assert.deepEqual(resMessage, {rutabaga: 'response'});
   });
 
+  test('set additional headers', async () => {
+    client = new PrpcClient({
+      host: 'host',
+      accessToken: 'access-token',
+      insecure: false,
+      fetchImpl: fetchStub,
+    });
+    const additionalHeaders = {'X-Xsrf-Token': 'something'};
+    const resMessage = await client.call(
+        'service', 'method', message, additionalHeaders);
+    sinon.assert.calledWith(fetchStub,
+        'https://host/prpc/service/method', {
+          credentials: 'omit',
+          method: 'POST',
+          headers: {
+            accept: 'application/json',
+            authorization: 'Bearer access-token',
+            'content-type': 'application/json',
+            'X-Xsrf-Token': 'something',
+          },
+          body: '{"rutabaga":"request"}',
+        });
+    assert.deepEqual(resMessage, {rutabaga: 'response'});
+  });
+
   test('gRPC non-OK message', async () => {
     response = new Response('an error message');
     response.headers.set('X-Prpc-Grpc-Code', '5');

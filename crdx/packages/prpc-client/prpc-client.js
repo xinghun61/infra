@@ -75,6 +75,7 @@
      * @param service {string} Full service name, including package name.
      * @param method {string} Service method name.
      * @param message {Object} The protobuf message to send.
+     * @param additionalHeaders {Object} Dict of headers to add to the request.
      * Note: because this method is async the following exceptions reject
      * the returned Promise.
      * @throws {TypeError} for invalid arguments.
@@ -84,7 +85,7 @@
      * @return {Promise<Object>} a promise resolving the response message
      * or rejecting with an error..
      */
-    async call(service, method, message) {
+    async call(service, method, message, additionalHeaders) {
       if (!service) {
         throw new TypeError('missing required argument: service');
       }
@@ -100,7 +101,7 @@
 
       const protocol = this.insecure === true ? 'http:' : 'https:';
       const url = `${protocol}//${this.host}/prpc/${service}/${method}`;
-      const options = this._requestOptions(message);
+      const options = this._requestOptions(message, additionalHeaders);
 
       const response = await this.fetchImpl(url, options);
 
@@ -133,11 +134,14 @@
     /**
      * @return {Object} the options used in fetch().
      */
-    _requestOptions(message) {
+    _requestOptions(message, additionalHeaders) {
       const headers = {
         'accept': 'application/json',
         'content-type': 'application/json',
       };
+      if (additionalHeaders) {
+        Object.assign(headers, additionalHeaders);
+      }
       if (this.accessToken) {
         headers.authorization = `Bearer ${this.accessToken}`;
       }

@@ -26,7 +26,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@chopsui/prpc-client": "0.0.1",
+    "@chopsui/prpc-client": "0.0.2",
     "@chopsui/tsmon-client": "0.0.1",
     "@polymer/font-roboto": "^3.0.0",
     "@polymer/iron-a11y-keys-behavior": "^3.0.0",

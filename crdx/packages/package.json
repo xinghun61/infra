@@ -27,7 +27,7 @@
     "webpack-cli": "^3.2.3"
   },
   "dependencies": {
-    "@chopsui/prpc-client": "0.0.1",
-    "@chopsui/tsmon-client": "0.0.1"
+    "@chopsui/prpc-client": "file:prpc-client",
+    "@chopsui/tsmon-client": "file:tsmon-client"
   }
 }

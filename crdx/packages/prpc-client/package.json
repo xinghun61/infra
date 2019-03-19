@@ -1,6 +1,6 @@
 {
   "name": "@chopsui/prpc-client",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "pRPC client for making requests.",
   "main": "prpc-client.js",
   "scripts": {
