@@ -47,21 +47,9 @@ def builder_tag(builder):  # pragma: no cover
   return unparse(BUILDER_KEY, builder)
 
 
-def build_address_tag(bucket, builder, number):  # pragma: no cover
+def build_address_tag(builder_id, number):  # pragma: no cover
   """Returns a build_address tag."""
-  return unparse(BUILD_ADDRESS_KEY, build_address(bucket, builder, number))
-
-
-def parse_build_address(address):
-  """Parses a build address into its components. Opposite of build_address()."""
-  parts = address.split('/', 2)
-  if len(parts) != 3:
-    raise ValueError('number of slashes must be exactly 2')
-  try:
-    number = int(parts[2])
-  except ValueError:
-    raise ValueError('invalid build number "%s"' % parts[2])
-  return parts[0], parts[1], number
+  return unparse(BUILD_ADDRESS_KEY, build_address(builder_id, number))
 
 
 def parse(tag):  # pragma: no cover
@@ -76,9 +64,11 @@ def unparse(key, value):  # pragma: no cover
   return '%s%s%s' % (key, DELIMITER, value)
 
 
-def build_address(bucket, builder, number):  # pragma: no cover
+def build_address(builder_id, number):  # pragma: no cover
   """Returns value for build_address tag."""
-  return '%s/%s/%d' % (bucket, builder, number)
+  return 'luci.%s.%s/%s/%d' % (
+      builder_id.project, builder_id.bucket, builder_id.builder, number
+  )
 
 
 def gitiles_commit_buildset(gitiles_commit):  # pragma: no cover

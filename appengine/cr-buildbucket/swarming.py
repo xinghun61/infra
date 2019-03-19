@@ -894,7 +894,6 @@ def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
   Creates a swarming task definition.
 
   Sets build.proto.infra.swarming.hostname, canary and url.
-  May add "build_address" tag.
 
   Returns a task_def dict.
   """
@@ -902,16 +901,6 @@ def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
     raise errors.InvalidInputError(
         'Swarming buckets do not support creation of leased builds'
     )
-
-  if build.proto.number:  # pragma: no branch
-    build.tags.append(
-        buildtags.build_address_tag(
-            api_common.format_luci_bucket(build.bucket_id),
-            builder_cfg.name,
-            build.proto.number,
-        )
-    )
-    build.tags.sort()
 
   build.url = _generate_build_url(settings.milo_hostname, build)
 

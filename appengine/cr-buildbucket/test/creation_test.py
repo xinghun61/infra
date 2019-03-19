@@ -245,22 +245,21 @@ class CreationTest(testing.AppengineTestCase):
       self.add()
 
   def test_add_with_build_numbers(self):
-    build_numbers = {}
-
-    def create_task_async(build):
-      build_numbers[build.parameters['i']] = build.proto.number
-      return future(None)
-
-    swarming.create_task_async.side_effect = create_task_async
-
-    (_, ex0), (_, ex1) = creation.add_many_async([
-        self.build_request(parameters={'i': 1},),
-        self.build_request(parameters={'i': 2},),
+    linux_try = build_pb2.BuilderID(
+        project='chromium', bucket='try', builder='linux'
+    )
+    (b1, ex1), (b2, ex2) = creation.add_many_async([
+        self.build_request(dict(builder=linux_try)),
+        self.build_request(dict(builder=linux_try)),
     ]).get_result()
 
-    self.assertIsNone(ex0)
     self.assertIsNone(ex1)
-    self.assertEqual(build_numbers, {1: 1, 2: 2})
+    self.assertEqual(b1.proto.number, 1)
+    self.assertIn('build_address:luci.chromium.try/linux/1', b1.tags)
+
+    self.assertIsNone(ex2)
+    self.assertEqual(b2.proto.number, 2)
+    self.assertIn('build_address:luci.chromium.try/linux/2', b2.tags)
 
   @mock.patch('sequence.try_return_async', autospec=True)
   def test_add_with_build_numbers_and_return(self, try_return_async):
@@ -320,7 +319,7 @@ class CreationTest(testing.AppengineTestCase):
             tags=[dict(key='builder', value='linux')],
         )
     )
-    self.assertEqual(build.tags, ['builder:linux'])
+    self.assertIn('builder:linux', build.tags)
 
   def test_buildset_index(self):
     build = self.add(

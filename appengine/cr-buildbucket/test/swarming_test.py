@@ -645,7 +645,6 @@ class SwarmingTest(BaseTest):
             ],
         ),
     )
-    build.tags = ['builder:linux', 'buildset:1']
 
     build.parameters['changes'] = [{
         'author': {'email': 'bob@example.com'},
@@ -1100,7 +1099,6 @@ class SwarmingTest(BaseTest):
     )
 
     build = test_util.build(id=1, for_creation=True)
-    build.tags = ['builder:linux', 'buildset:1']
     build.canary_preference = model.CanaryPreference.CANARY
 
     self.json_response = {

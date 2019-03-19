@@ -272,20 +272,12 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'buildbucket': {
                     'hostname': 'cr-buildbucket.appspot.com',
                     'build': {
-                        'project':
-                            'chromium',
-                        'bucket':
-                            'luci.chromium.try',
-                        'created_by':
-                            'anonymous:anonymous',
-                        'created_ts':
-                            1448841600000000,
-                        'id':
-                            '1',
-                        'tags': [
-                            'build_address:luci.chromium.try/linux/1',
-                            'builder:linux',
-                        ],
+                        'project': 'chromium',
+                        'bucket': 'luci.chromium.try',
+                        'created_by': 'anonymous:anonymous',
+                        'created_ts': 1448841600000000,
+                        'id': '1',
+                        'tags': ['builder:linux'],
                     },
                 },
                 '$recipe_engine/buildbucket': {
@@ -362,7 +354,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         u'name':
             u'bb-1-chromium-linux',
         u'tags': [
-            u'build_address:luci.chromium.try/linux/1',
             u'buildbucket_bucket:chromium/try',
             u'buildbucket_build_id:1',
             u'buildbucket_hostname:cr-buildbucket.appspot.com',

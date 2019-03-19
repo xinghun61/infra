@@ -219,12 +219,7 @@ def get_build_async(req, res, _ctx, mask):
   if req.id:
     build = yield service.get_async(req.id)
   else:
-    tag = buildtags.build_address_tag(
-        # TODO(crbug.com/851036): migrate build_address to use short buckets.
-        'luci.%s.%s' % (req.builder.project, req.builder.bucket),
-        req.builder.builder,
-        req.build_number,
-    )
+    tag = buildtags.build_address_tag(req.builder, req.build_number)
     q = search.Query(
         bucket_ids=[bucket_id_string(req.builder)],
         tags=[tag],

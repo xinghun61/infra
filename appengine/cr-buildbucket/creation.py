@@ -348,7 +348,13 @@ def add_many_async(build_request_list):
     for seq_name, indexes in numbered.iteritems():
       build_number = yield build_number_futs[seq_name]
       for i in sorted(indexes):
-        new_builds[i].proto.number = build_number
+        b = new_builds[i]
+        b.proto.number = build_number
+        b.tags.append(
+            buildtags.build_address_tag(b.proto.builder, b.proto.number)
+        )
+        b.tags.sort()
+
         build_number += 1
 
     create_futs = {}

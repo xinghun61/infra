@@ -123,20 +123,10 @@ def build(for_creation=False, **build_proto_fields):  # pragma: no cover
         proto.input.properties
     )
 
-  bucket_id = config.format_bucket_id(
-      proto.builder.project, proto.builder.bucket
-  )
-
   tags = {buildtags.unparse(t.key, t.value) for t in proto.tags}
   tags.add('builder:%s' % proto.builder.builder)
   if proto.number:
-    tags.add(
-        buildtags.build_address_tag(
-            api_common.format_luci_bucket(bucket_id),
-            proto.builder.builder,
-            proto.number,
-        )
-    )
+    tags.add(buildtags.build_address_tag(proto.builder, proto.number))
   proto.ClearField('tags')
 
   infra = copy.deepcopy(proto.infra)
