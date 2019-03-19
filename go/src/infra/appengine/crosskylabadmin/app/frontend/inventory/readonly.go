@@ -18,6 +18,7 @@ package inventory
 
 import (
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
@@ -48,11 +49,11 @@ func (is *ServerImpl) GetDutInfo(ctx context.Context, req *fleet.GetDutInfoReque
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
 
-	var spec []byte
+	var dut *dsinventory.DeviceUnderTest
 	if req.Id != "" {
-		spec, err = dsinventory.GetSerializedDUTByID(ctx, req.Id)
+		dut, err = dsinventory.GetSerializedDUTByID(ctx, req.Id)
 	} else {
-		spec, err = dsinventory.GetSerializedDUTByHostname(ctx, req.Hostname)
+		dut, err = dsinventory.GetSerializedDUTByHostname(ctx, req.Hostname)
 	}
 
 	if err != nil {
@@ -61,7 +62,10 @@ func (is *ServerImpl) GetDutInfo(ctx context.Context, req *fleet.GetDutInfoReque
 		}
 		return nil, err
 	}
-	return &fleet.GetDutInfoResponse{Spec: spec}, nil
+	return &fleet.GetDutInfoResponse{
+		Spec:    dut.Data,
+		Updated: google.NewTimestamp(dut.Updated),
+	}, nil
 }
 
 // GetDroneConfig implements the method from fleet.InventoryServer interface.

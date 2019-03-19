@@ -32,14 +32,12 @@ const (
 	cacheValidityDuration  = 15 * time.Minute
 )
 
-type dutEntity struct {
-	_kind      string         `gae:"$kind,cachedInventoryDut"`
-	Collection *datastore.Key `gae:"$parent"`
-	ID         string         `gae:"$id"`
-	Hostname   string
-	Updated    time.Time
+// DeviceUnderTest is a serialized cached inventory.DeviceUnderTest
+type DeviceUnderTest struct {
 	// Data is a serialized inventory.DeviceUnderTest.
-	Data []byte `gae:",noindex"`
+	Data []byte
+	// Updated is the last time Data was refreshed from the source-of-truth.
+	Updated time.Time
 }
 
 // UpdateDUTs updates the datastore cache of DUT inventory.
@@ -65,7 +63,7 @@ func UpdateDUTs(ctx context.Context, duts []*inventory.DeviceUnderTest) error {
 }
 
 // GetSerializedDUTByID gets the cached, serialized, inventory.DeviceUnderTest for a DUT.
-func GetSerializedDUTByID(ctx context.Context, id string) (data []byte, rerr error) {
+func GetSerializedDUTByID(ctx context.Context, id string) (dut *DeviceUnderTest, rerr error) {
 	defer func() {
 		if rerr != nil {
 			rerr = errors.Annotate(rerr, "get dut with ID %s", id).Err()
@@ -76,11 +74,11 @@ func GetSerializedDUTByID(ctx context.Context, id string) (data []byte, rerr err
 	if err := datastore.Get(ctx, e); err != nil {
 		return nil, err
 	}
-	return getDUTDataIfNotStale(ctx, e)
+	return getDUTIfNotStale(ctx, e)
 }
 
 // GetSerializedDUTByHostname gets the cached, serialized inventory.DeviceUnderTest for a DUT.
-func GetSerializedDUTByHostname(ctx context.Context, hostname string) (data []byte, rerr error) {
+func GetSerializedDUTByHostname(ctx context.Context, hostname string) (data *DeviceUnderTest, rerr error) {
 	defer func() {
 		if rerr != nil {
 			rerr = errors.Annotate(rerr, "get dut with hostname %s", hostname).Err()
@@ -104,13 +102,13 @@ func GetSerializedDUTByHostname(ctx context.Context, hostname string) (data []by
 	case 0:
 		return nil, datastore.ErrNoSuchEntity
 	case 1:
-		return getDUTDataIfNotStale(ctx, es[0])
+		return getDUTIfNotStale(ctx, es[0])
 	default:
 		// Found more than 1 entity for the given hostname. This can happen when a
 		// DUT is swapped for a given hostname. The old DUT hasn't yet been removed
 		// from the cache, but the new one has been added. In this case, we return
 		// the DUT in the entity that was refreshed last.
-		return getDUTDataIfNotStale(ctx, getLatestDUTEntity(es))
+		return getDUTIfNotStale(ctx, getLatestDUTEntity(es))
 	}
 }
 
@@ -143,17 +141,30 @@ func getLatestDUTEntity(es []*dutEntity) *dutEntity {
 	return r
 }
 
-func getDUTDataIfNotStale(ctx context.Context, e *dutEntity) ([]byte, error) {
+func getDUTIfNotStale(ctx context.Context, e *dutEntity) (*DeviceUnderTest, error) {
 	if isEntityStale(ctx, e) {
 		logging.Infof(ctx, "Found stale dutEntity with ID %s. Purging.", e.ID)
 		deleteDUTEntityIgnoringErrors(ctx, e)
 		return nil, datastore.ErrNoSuchEntity
 	}
-	return e.Data, nil
+	return &DeviceUnderTest{
+		Data:    e.Data,
+		Updated: e.Updated,
+	}, nil
 }
 
 func isEntityStale(ctx context.Context, e *dutEntity) bool {
 	validity := google.DurationFromProto(config.Get(ctx).GetInventory().GetDutInfoCacheValidity())
 	now := time.Now().UTC()
 	return now.Sub(e.Updated) > validity
+}
+
+type dutEntity struct {
+	_kind      string         `gae:"$kind,cachedInventoryDut"`
+	Collection *datastore.Key `gae:"$parent"`
+	ID         string         `gae:"$id"`
+	Hostname   string
+	Updated    time.Time
+	// Data is a serialized inventory.DeviceUnderTest.
+	Data []byte `gae:",noindex"`
 }
