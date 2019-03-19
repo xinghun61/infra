@@ -397,6 +397,11 @@ func (ac *AuthContext) writeGitConfig() error {
 			KnownGerritHosts:    nil,   // don't force non-anonymous fetch for public hosts
 		}
 	}
+
+	if shouldEnableGitProtocolV2() {
+		cfg.GitProtocolVersion = 2
+	}
+
 	return cfg.Write(filepath.Join(ac.gitHome, ".gitconfig"))
 }
 
