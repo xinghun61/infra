@@ -772,7 +772,7 @@ class SwarmingTest(BaseTest):
                             'swarming': {
                                 'hostname': 'swarming.example.com',
                                 'taskId': 'deadbeef',
-                                'taskServiceAccount': 'service@example.com'
+                                'taskServiceAccount': 'robot@example.com'
                             },
                         },
                         'createdBy': 'anonymous:anonymous',
@@ -1200,7 +1200,7 @@ class SwarmingTest(BaseTest):
                             'swarming': {
                                 'hostname': 'swarming.example.com',
                                 'taskId': 'deadbeef',
-                                'taskServiceAccount': 'service@example.com'
+                                'taskServiceAccount': 'robot@example.com'
                             },
                         },
                         'createdBy': 'anonymous:anonymous',

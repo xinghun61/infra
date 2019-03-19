@@ -882,7 +882,7 @@ def prepare_task_def_async(build, fake_build=False):
   """Prepares a swarming task definition.
 
   Validates the new build.
-  Sets build.proto.infra.swarming.hostname, canary and url.
+  Mutates build.
   Creates a swarming task definition.
 
   Returns a task_def dict.
@@ -897,6 +897,7 @@ def prepare_task_def_async(build, fake_build=False):
   )
 
   build.url = _generate_build_url(settings.milo_hostname, build)
+  build.proto.infra.swarming.task_service_account = builder_cfg.service_account
 
   if build.experimental is None:
     build.experimental = (builder_cfg.experimental == project_config_pb2.YES)
@@ -906,6 +907,16 @@ def prepare_task_def_async(build, fake_build=False):
   build.proto.input.experimental = build.experimental
 
   task_def = yield _create_task_def_async(builder_cfg, build, fake_build)
+
+  for t in task_def.get('tags', []):  # pragma: no branch
+    key, value = buildtags.parse(t)
+    if key == 'log_location':
+      host, project, prefix, _ = logdog.parse_url(value)
+      build.proto.infra.logdog.hostname = host
+      build.proto.infra.logdog.project = project
+      build.proto.infra.logdog.prefix = prefix
+      break
+
   raise ndb.Return(task_def)
 
 
@@ -943,19 +954,7 @@ def create_task_async(build):
 
   task_id = res['task_id']
   logging.info('Created a swarming task %s', task_id)
-
   sw.task_id = task_id
-
-  task_req = res.get('request', {})
-  for t in task_req.get('tags', []):
-    key, value = buildtags.parse(t)
-    if key == 'log_location':
-      host, project, prefix, _ = logdog.parse_url(value)
-      build.proto.infra.logdog.hostname = host
-      build.proto.infra.logdog.project = project
-      build.proto.infra.logdog.prefix = prefix
-
-  sw.task_service_account = task_req.get('service_account', '')
 
 
 def _generate_build_url(milo_hostname, build):
