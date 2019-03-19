@@ -15,6 +15,8 @@ import '../../mr-user-link/mr-user-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
 import '../shared/mr-flt-styles.js';
+import {ISSUE_EDIT_PERMISSION, ISSUE_DELETE_PERMISSION,
+  ISSUE_FLAGSPAM_PERMISSION} from '../../shared/permissions.js';
 
 
 const DELETE_ISSUE_CONFIRMATION_NOTICE = `\
@@ -195,6 +197,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         type: Boolean,
         reflectToAttribute: true,
       },
+      projectTemplates: Array,
       restrictions: Object,
       isRestricted: {
         type: Boolean,
@@ -207,7 +210,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       _issueOptions: {
         type: Array,
         computed: `_computeIssueOptions(issuePermissions, issue.isSpam,
-          isRestricted)`,
+          isRestricted, projectTemplates)`,
       },
       _flipperCount: {
         type: Number,
@@ -237,6 +240,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       issueClosed: !selectors.issueIsOpen(state),
       restrictions: selectors.issueRestrictions(state),
       isRestricted: selectors.issueIsRestricted(state),
+      projectTemplates: state.projectTemplates,
     };
   }
 
@@ -267,34 +271,51 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
     return id - 1;
   }
 
-  _computeIssueOptions(issuePermissions, isSpam, isRestricted) {
-    const options = [];
+  _computeIssueOptions(issuePermissions, isSpam, isRestricted,
+      projectTemplates) {
+    // We create two edit Arrays for the top and bottom half of the menu,
+    // to be separated by a separator in the UI.
+    const editOptions = [];
+    const riskyOptions = [];
     const permissions = issuePermissions || [];
-    if (permissions.includes('flagspam')) {
+    const templates = projectTemplates || [];
+
+
+    if (permissions.includes(ISSUE_FLAGSPAM_PERMISSION)) {
       const text = (isSpam ? 'Un-flag' : 'Flag') + ' issue as spam';
-      options.push({
+      riskyOptions.push({
         text,
         handler: this._markIssue.bind(this),
       });
     }
-    if (permissions.includes('deleteissue')) {
-      options.push({
+    if (permissions.includes(ISSUE_DELETE_PERMISSION)) {
+      riskyOptions.push({
         text: 'Delete issue',
         handler: this._deleteIssue.bind(this),
       });
       if (!isRestricted) {
-        options.push({separator: true});
-        options.push({
+        editOptions.push({
           text: 'Move issue',
           handler: this._openMoveCopyIssue.bind(this, 'Move'),
         });
-        options.push({
+        editOptions.push({
           text: 'Copy issue',
           handler: this._openMoveCopyIssue.bind(this, 'Copy'),
         });
       }
     }
-    return options;
+
+    if (permissions.includes(ISSUE_EDIT_PERMISSION) && templates.length) {
+      editOptions.push({
+        text: 'Convert issue template',
+        handler: this._openConvertIssue.bind(this),
+      });
+    }
+
+    if (editOptions.length && riskyOptions.length) {
+      editOptions.push({separator: true});
+    }
+    return editOptions.concat(riskyOptions);
   }
 
   _markIssue() {
@@ -354,6 +375,16 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       detail: {
         dialogId: 'move-copy-issue',
         action,
+      },
+    }));
+  }
+
+  _openConvertIssue(action) {
+    this.dispatchEvent(new CustomEvent('open-dialog', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        dialogId: 'convert-issue',
       },
     }));
   }

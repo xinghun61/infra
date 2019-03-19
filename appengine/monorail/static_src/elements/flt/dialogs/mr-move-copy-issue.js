@@ -64,11 +64,11 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
           </div>
 
           <div class="edit-actions">
-            <chops-button on-click="save" class="emphasized">
-              [[_action]]
-            </chops-button>
             <chops-button on-click="cancel" class="de-emphasized">
               Cancel
+            </chops-button>
+            <chops-button on-click="save" class="emphasized">
+              [[_action]] issue
             </chops-button>
           </div>
         </div>

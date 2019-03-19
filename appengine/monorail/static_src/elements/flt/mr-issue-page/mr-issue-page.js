@@ -15,8 +15,10 @@ import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js'
 import * as user from '../../redux/user.js';
 import {selectors} from '../../redux/selectors.js';
 import '../shared/mr-flt-styles.js';
-import '../mr-edit-description/mr-edit-description.js';
-import './mr-move-copy-issue.js';
+
+import '../dialogs/mr-edit-description.js';
+import '../dialogs/mr-move-copy-issue.js';
+import '../dialogs/mr-convert-issue.js';
 
 /**
  * `<mr-issue-page>`
@@ -129,6 +131,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       </style>
       <mr-edit-description id='edit-description'></mr-edit-description>
       <mr-move-copy-issue id='move-copy-issue'></mr-move-copy-issue>
+      <mr-convert-issue id='convert-issue'></mr-convert-issue>
 
       <template is="dom-if" if="[[_showLoading(issueLoaded, fetchIssueError)]]">
         <div class="container-outside">

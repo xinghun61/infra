@@ -1,0 +1,178 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import '@polymer/polymer/polymer-legacy.js';
+import {PolymerElement, html} from '@polymer/polymer';
+
+import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import '../../chops/chops-button/chops-button.js';
+import '../../chops/chops-dialog/chops-dialog.js';
+import '../../mr-error/mr-error.js';
+import '../shared/mr-flt-styles.js';
+
+// TODO(zhangtiff): Make dialog components subclass chops-dialog instead of
+// using slots/containment once we switch to LitElement.
+/**
+ * `<mr-convert-issue>`
+ *
+ * This allows a user to update the structure of an issue to that of
+ * a chosen project template.
+ *
+ */
+export class MrConvertIssue extends ReduxMixin(PolymerElement) {
+  static get template() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <style include="mr-flt-styles">
+        label {
+          font-weight: bold;
+          text-align: right;
+        }
+        form {
+          padding: 1em 8px;
+          display: block;
+          font-size: 12px;
+          --mr-edit-field-styles: {
+            box-sizing: border-box;
+            width: 95%;
+            padding: 0.25em 4px;
+          };
+        }
+        textarea {
+          min-height: 80px;
+          border: var(--chops-accessible-border);
+          padding: 0.5em 4px;
+        }
+        .edit-actions {
+          width: 100%;
+          margin: 0.5em 0;
+          text-align: right;
+        }
+        .input-grid {
+          padding: 0.5em 0;
+          display: grid;
+          max-width: 100%;
+          grid-gap: 10px;
+          grid-template-columns: 120px auto;
+          align-items: flex-start;
+        }
+      </style>
+      <chops-dialog>
+        <h3 class="medium-heading">Convert issue to new template structure</h3>
+        <form id="convertIssueForm">
+          <div class="input-grid">
+            <label for="templateInput">Pick a template: </label>
+            <select id="templateInput" on-change="_templateInputChanged">
+              <option value="">--Please choose a project template--</option>
+              <template is="dom-repeat" items="[[projectTemplates]]" as="projTempl">
+                <option value="[[projTempl.templateName]]">
+                  [[projTempl.templateName]]
+                </option>
+              </template>
+            </select>
+            <label for="commentContent">Comment: </label>
+            <textarea id="commentContent" placeholder="Add a comment"></textarea>
+            <span></span>
+            <chops-checkbox
+              on-checked-change="_sendEmailChecked"
+              checked="[[sendEmail]]"
+            >Send email</chops-checkbox>
+          </div>
+          <mr-error hidden\$=[[!convertIssueError]]>
+            [[convertIssueError.description]]
+          </mr-error>
+          <div class="edit-actions">
+            <chops-button on-click="close" class="de-emphasized discard-button">
+              Discard changes
+            </chops-button>
+            <chops-button on-click="save" class="emphasized" disabled\$="[[!selectedTemplate]]">
+              Convert issue
+            </chops-button>
+          </div>
+        </form>
+      </chops-dialog>
+    `;
+  }
+
+  static get is() {
+    return 'mr-convert-issue';
+  }
+
+  static get properties() {
+    return {
+      convertingIssue: {
+        type: Boolean,
+        observer: '_convertingIssueChanged',
+      },
+      convertIssueError: Object,
+      issueId: Number,
+      issuePermissions: Object,
+      projectName: String,
+      projectTemplates: Array,
+      selectedTemplate: {
+        type: String,
+        // value needs to be set for save button to be disabled the first time.
+        value: '',
+      },
+      sendEmail: {
+        type: Boolean,
+        value: true,
+      },
+    };
+  }
+
+  static mapStateToProps(state, element) {
+    return {
+      convertingIssue: state.requests.convertIssue.requesting,
+      convertIssueError: state.requests.convertIssue.error,
+      issueId: state.issueId,
+      issuePermissions: state.issuePermissions,
+      projectName: state.projectName,
+      projectTemplates: state.projectTemplates,
+    };
+  }
+
+  open() {
+    this.reset();
+    this.shadowRoot.querySelector('chops-dialog').open();
+  }
+
+  close() {
+    this.shadowRoot.querySelector('chops-dialog').close();
+  }
+
+  reset() {
+    this.shadowRoot.querySelector('#convertIssueForm').reset();
+  }
+
+  save() {
+    const commentContent = this.shadowRoot.querySelector('#commentContent');
+    this.dispatchAction(actionCreator.convertIssue({
+      issueRef: {
+        projectName: this.projectName,
+        localId: this.issueId,
+      },
+      templateName: this.selectedTemplate,
+      commentContent: commentContent.value,
+      sendEmail: this.sendEmail,
+    }));
+  }
+
+  _convertingIssueChanged(isConversionInFlight) {
+    if (!isConversionInFlight && !this.convertIssueError) {
+      this.close();
+    }
+  }
+
+  _sendEmailChecked(evt) {
+    this.sendEmail = evt.detail.checked;
+  }
+
+  _templateInputChanged() {
+    this.selectedTemplate = this.shadowRoot.querySelector(
+      '#templateInput').value;
+  }
+}
+
+customElements.define(MrConvertIssue.is, MrConvertIssue);

@@ -6,6 +6,8 @@ import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
 import {store, actionType} from '../../redux/redux-mixin.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
+import {ISSUE_EDIT_PERMISSION,
+  ISSUE_FLAGSPAM_PERMISSION} from '../../shared/permissions.js';
 
 let element;
 let lockIcon;
@@ -118,4 +120,59 @@ suite('mr-issue-header', () => {
     assert.equal(lockIcon.title, restrictString);
     assert.include(lockTooltip.textContent, restrictString);
   });
+
+  test('_computeIssueOptions toggles spam', () => {
+    element.issuePermissions = [ISSUE_FLAGSPAM_PERMISSION];
+    element.issue = {isSpam: false};
+    assert.isDefined(findOptionWithText(element._issueOptions,
+      'Flag issue as spam'));
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Un-flag issue as spam'));
+
+    element.issue = {isSpam: true};
+
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Flag issue as spam'));
+    assert.isDefined(findOptionWithText(element._issueOptions,
+      'Un-flag issue as spam'));
+
+    element.issuePermissions = [];
+
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Flag issue as spam'));
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Un-flag issue as spam'));
+
+    element.issue = {isSpam: false};
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Flag issue as spam'));
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Un-flag issue as spam'));
+  });
+
+  test('_computeIssueOptions toggles convert issue', () => {
+    element.issuePermissions = [];
+    element.projectTemplates = [];
+
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Convert issue template'));
+
+    element.projectTemplates = [{templateName: 'test'}];
+
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Convert issue template'));
+
+    element.issuePermissions = [ISSUE_EDIT_PERMISSION];
+    element.projectTemplates = [];
+    assert.isUndefined(findOptionWithText(element._issueOptions,
+      'Convert issue template'));
+
+    element.projectTemplates = [{templateName: 'test'}];
+    assert.isDefined(findOptionWithText(element._issueOptions,
+      'Convert issue template'));
+  });
 });
+
+function findOptionWithText(issueOptions, text) {
+  return issueOptions.find((option) => option.text === text);
+}

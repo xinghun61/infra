@@ -14,7 +14,7 @@ suite('mr-convert-issue', () => {
     element = document.createElement('mr-convert-issue');
     document.body.appendChild(element);
 
-    form = element.$.convertIssueForm;
+    form = element.shadowRoot.querySelector('#convertIssueForm');
   });
 
   teardown(() => {
@@ -29,5 +29,4 @@ suite('mr-convert-issue', () => {
     let buttons = element.shadowRoot.querySelectorAll('chops-button');
     assert.isTrue(buttons[buttons.length - 1].disabled);
   });
-
 });

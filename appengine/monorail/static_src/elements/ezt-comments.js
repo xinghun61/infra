@@ -9,7 +9,7 @@ import * as user from './redux/user.js';
 import AutoRefreshPrpcClient from '../prpc.js';
 import './flt/mr-comment-list/mr-comment-list.js';
 import './mr-comment-content/mr-description.js';
-import './flt/mr-edit-description/mr-edit-description.js';
+import './flt/dialogs/mr-edit-description.js';
 
 /**
  * `<ezt-comments>`

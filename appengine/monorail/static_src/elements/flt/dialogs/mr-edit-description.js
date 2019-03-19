@@ -50,11 +50,17 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       </dom-module>
       <style include="mr-flt-styles">
         chops-dialog {
-          font-size: 85%;
           --chops-dialog-theme: {
             width: 800px;
             max-width: 100%;
           };
+        }
+        textarea {
+          min-height: 300px;
+          max-height: 500px;
+          border: var(--chops-accessible-border);
+          padding: 0.5em 4px;
+          margin: 0.5em 0;
         }
         .attachments {
           margin: 0.5em 0;
@@ -68,13 +74,6 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
           display: flex;
           justify-content: space-between;
           align-items: center;
-        }
-        textarea.content {
-          min-height: 200px;
-          max-height: 500px;
-          border: var(--chops-accessible-border);
-          padding: 0.5em 4px;
-          margin: 0.5em 0;
         }
       </style>
       <chops-dialog id='dialog'>
