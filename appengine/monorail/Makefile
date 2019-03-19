@@ -98,7 +98,7 @@ node_deps:
 	npm install
 
 karma: node_deps
-	npx karma start --log-level debug
+	npx karma start --debug
 
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py
