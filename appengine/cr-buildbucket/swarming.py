@@ -1184,6 +1184,7 @@ def _sync_build_in_memory(
     bp.start_time.FromDatetime(ts('started_ts') or now)
   elif build.is_ended:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
+    build.clear_lease()  # old builds might have it.
 
     started_ts = ts('started_ts')
     if started_ts:
@@ -1231,8 +1232,7 @@ def _sync_build_async(build_id, task_result, bucket_id, builder):
 
     if build.proto.status == common_pb2.STARTED:
       futures.append(events.on_build_starting_async(build))
-    elif build.is_ended:  # pragma: no cover
-      # This code is coverd by tests, but pycover reports coverage incorrectly!
+    elif build.is_ended:  # pragma: no branch
       futures.append(events.on_build_completing_async(build))
 
     yield futures
