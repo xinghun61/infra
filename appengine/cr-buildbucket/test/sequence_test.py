@@ -27,13 +27,6 @@ class SequenceTest(testing.AppengineTestCase):
       sequence.set_next('a', 1)
     sequence.set_next('b', 1)
 
-  def test_try_return_async(self):
-    self.assertTrue(sequence.try_return_async('a', 1).get_result())
-    self.assertEqual(sequence.generate_async('a', 1).get_result(), 1)
-    self.assertEqual(sequence.generate_async('a', 1).get_result(), 2)
-    self.assertFalse(sequence.try_return_async('a', 1).get_result())
-    self.assertTrue(sequence.try_return_async('a', 2).get_result())
-
   def test_migration(self):
     old_name = 'luci.chromium.try/linux'
     new_name = 'chromium/try/linux'

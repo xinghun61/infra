@@ -87,6 +87,11 @@ class BuildRequest(_BuildRequestBase):
     )
     return self
 
+  @property
+  def bucket_id(self):
+    builder_id = self.schedule_build_request.builder
+    return config.format_bucket_id(builder_id.project, builder_id.bucket)
+
   def _request_id_memcache_key(self, identity=None):
     req_id = self.schedule_build_request.request_id
     if req_id is None:  # pragma: no cover
@@ -218,6 +223,7 @@ def add_many_async(build_request_list):
   """Adds many builds in a batch, for each BuildRequest.
 
   Does not check permissions.
+  Assumes build_request_list is valid.
 
   Returns:
     A list of (new_build, exception) tuples in the same order.
@@ -240,6 +246,13 @@ def add_many_async(build_request_list):
   identity = auth.get_current_identity()
   ctx = ndb.get_context()
   new_builds = {}  # {i: model.Build}
+
+  # Fetch and index configs.
+  bucket_ids = {br.bucket_id for br in build_request_list}
+  bucket_cfgs = yield config.get_buckets_async(bucket_ids)
+  builder_cfgs = {}  # {bucket_id: {builder_name: cfg}}
+  for bucket_id, bucket_cfg in bucket_cfgs.iteritems():
+    builder_cfgs[bucket_id] = {b.name: b for b in bucket_cfg.swarming.builders}
 
   logging.info(
       '%s is creating %d builds', auth.get_current_identity(),
@@ -320,18 +333,8 @@ def add_many_async(build_request_list):
       yield ndb.put_multi_async(to_put)
 
   @ndb.tasklet
-  def create_swarming_tasks_async():
-    """Creates a swarming task for each new build in a swarming bucket."""
-
-    # Fetch and index swarmbucket builder configs.
-    bucket_ids = {b.bucket_id for b in new_builds.itervalues()}
-    bucket_cfgs = yield config.get_buckets_async(bucket_ids)
-    builder_cfgs = {}  # {bucket_id: {builder_name: cfg}}
-    for bucket_id, bucket_cfg in bucket_cfgs.iteritems():
-      builder_cfgs[bucket_id] = {
-          b.name: b for b in bucket_cfg.swarming.builders
-      }
-
+  def generate_build_numbers_async():
+    """Sets model.Build.proto.number and adds build_address tag."""
     # For each swarmbucket builder with build numbers, generate numbers.
     # Filter and index new_builds first.
     numbered = {}  # {seq_name: [i]}
@@ -340,6 +343,7 @@ def add_many_async(build_request_list):
       if cfg and cfg.build_numbers == project_config_pb2.YES:
         seq_name = sequence.builder_seq_name(b.proto.builder)
         numbered.setdefault(seq_name, []).append(i)
+
     # Now actually generate build numbers.
     build_number_futs = {
         seq_name: sequence.generate_async(seq_name, len(indexes))
@@ -357,6 +361,8 @@ def add_many_async(build_request_list):
 
         build_number += 1
 
+  @ndb.tasklet
+  def create_swarming_tasks_async():
     create_futs = {}
     for i, b in new_builds.iteritems():
       cfg = bucket_cfgs[b.bucket_id]
@@ -364,19 +370,12 @@ def add_many_async(build_request_list):
         create_futs[i] = swarming.create_task_async(b)
 
     for i, fut in create_futs.iteritems():
-      build = new_builds[i]
-      success = False
       try:
         with _with_swarming_api_error_converter():
           yield fut
-          success = True
       except Exception as ex:
         results[i] = (None, ex)
         del new_builds[i]
-      finally:
-        if not success and build.proto.number:  # pragma: no branch
-          seq_name = sequence.builder_seq_name(build.proto.builder)
-          yield _try_return_build_number_async(seq_name, build.proto.number)
 
   @ndb.tasklet
   def put_and_cache_builds_async():
@@ -428,6 +427,7 @@ def add_many_async(build_request_list):
   create_new_builds()
   if new_builds:
     yield update_builders_async()
+    yield generate_build_numbers_async()
     yield create_swarming_tasks_async()
     success = False
     try:
@@ -449,18 +449,6 @@ def add_many_async(build_request_list):
 
 def _should_update_builder(probability):  # pragma: no cover
   return random.random() < probability
-
-
-@ndb.tasklet
-def _try_return_build_number_async(seq_name, build_number):
-  try:
-    returned = yield sequence.try_return_async(seq_name, build_number)
-    if not returned:  # pragma: no cover
-      # Log an error to alert on high rates of number losses with info
-      # on bucket/builder.
-      logging.error('lost a build number in builder %s', seq_name)
-  except Exception:  # pragma: no cover
-    logging.exception('exception when returning a build number')
 
 
 @contextlib.contextmanager

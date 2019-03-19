@@ -120,31 +120,6 @@ def set_next(seq_name, next_number):
   txn()
 
 
-@ndb.tasklet
-def try_return_async(seq_name, number):
-  """Attempts to return the generated number back to the sequence.
-
-  Returns False if the number wasn't returned and cannot be reused by someone
-  else.
-  """
-  yield _migrate_entity_async(seq_name)
-
-  @ndb.transactional_tasklet
-  def txn_async():
-    seq = yield NumberSequence.get_by_id_async(seq_name)
-    if not seq:
-      # If there is not sequence entity, the number can be used by someone else.
-      raise ndb.Return(True)
-    if seq.next_number != number + 1:
-      raise ndb.Return(False)
-    seq.next_number = number
-    yield seq.put_async()
-    raise ndb.Return(True)
-
-  ret = yield txn_async()
-  raise ndb.Return(ret)
-
-
 def builder_seq_name(builder_id):  # pragma: no cover
   """Returns name of a number sequence for the builder.
 

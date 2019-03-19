@@ -261,20 +261,6 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(b2.proto.number, 2)
     self.assertIn('build_address:luci.chromium.try/linux/2', b2.tags)
 
-  @mock.patch('sequence.try_return_async', autospec=True)
-  def test_add_with_build_numbers_and_return(self, try_return_async):
-    try_return_async.return_value = future(None)
-
-    class Error(Exception):
-      pass
-
-    swarming.create_task_async.return_value = future_exception(Error())
-
-    with self.assertRaises(Error):
-      self.add()
-
-    try_return_async.assert_called_with('chromium/try/linux', 1)
-
   def test_add_with_swarming_200_and_400(self):
 
     def create_task_async(b):
