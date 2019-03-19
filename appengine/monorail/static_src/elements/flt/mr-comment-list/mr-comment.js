@@ -62,7 +62,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
           box-sizing: border-box;
         }
         .deleted-comment-notice {
-          color: #888;
+          margin-left: 4px;
         }
         .issue-diff {
           background: var(--chops-card-details-bg);
@@ -78,21 +78,27 @@ export class MrComment extends ReduxMixin(PolymerElement) {
         class="comment-header"
       >
         <div>
-          <a href\$="?id=[[comment.localId]]#[[id]]">
-            Comment [[comment.sequenceNum]]
-          </a>
-          <template is="dom-if" if="[[comment.commenter]]">
+          <a
+            href\$="?id=[[comment.localId]]#[[id]]"
+          >Comment [[comment.sequenceNum]]</a>
+
+          <template is="dom-if" if="[[!_hideDeletedComment]]">
             by
             <mr-user-link
               display-name="[[comment.commenter.displayName]]"
               user-id="[[comment.commenter.userId]]"
             ></mr-user-link>
+            <template is="dom-if" if="[[!quickMode]]">
+              on
+              <chops-timestamp
+                timestamp="[[comment.timestamp]]"
+              ></chops-timestamp>
+            </template>
           </template>
-          <template is="dom-if" if="[[!quickMode]]">
-            on
-            <chops-timestamp
-              timestamp="[[comment.timestamp]]"
-            ></chops-timestamp>
+          <template is="dom-if" if="[[_hideDeletedComment]]">
+            <span class="deleted-comment-notice">
+              Deleted
+            </span>
           </template>
         </div>
         <template is="dom-if" if="[[_offerCommentOptions(quickMode, comment)]]">
@@ -104,14 +110,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
           </div>
         </template>
       </span>
-      <template is="dom-if" if="[[_hideDeletedComment(_isExpandedIfDeleted, comment)]]">
-        <div class="comment-body">
-          <span class="deleted-comment-notice">
-            Deleted comment
-          </span>
-        </div>
-      </template>
-      <template is="dom-if" if="[[!_hideDeletedComment(_isExpandedIfDeleted, comment)]]">
+      <template is="dom-if" if="[[!_hideDeletedComment]]">
         <template is="dom-if" if="[[_showDiff(comment)]]">
           <div class="issue-diff">
             <template is="dom-repeat" items="[[comment.amendments]]" as="delta">
@@ -189,7 +188,14 @@ export class MrComment extends ReduxMixin(PolymerElement) {
         computed: '_computeIsHighlighted(id, focusId)',
         observer: '_onHighlight',
       },
-      _isExpandedIfDeleted: Boolean,
+      _isExpandedIfDeleted: {
+        type: Boolean,
+        value: false,
+      },
+      _hideDeletedComment: {
+        type: Boolean,
+        computed: '_computeHideDeletedComment(_isExpandedIfDeleted, comment)',
+      },
     };
   }
 
@@ -201,6 +207,10 @@ export class MrComment extends ReduxMixin(PolymerElement) {
   _computeIsHighlighted(id, focusId) {
     if (!id || !focusId) return;
     return id === focusId;
+  }
+
+  _computeHideDeletedComment(isExpandedIfDeleted, comment) {
+    return Boolean(comment.isDeleted && !isExpandedIfDeleted);
   }
 
   _onHighlight(highlighted) {
@@ -263,10 +273,6 @@ export class MrComment extends ReduxMixin(PolymerElement) {
   _canExpandDeletedComment(comment) {
     return ((comment.isSpam && comment.canFlag)
             || (comment.isDeleted && comment.canDelete));
-  }
-
-  _hideDeletedComment(isExpandedIfDeleted, comment) {
-    return comment.isDeleted && !isExpandedIfDeleted;
   }
 
   _getCommentOptions(isExpandedIfDeleted, comment) {

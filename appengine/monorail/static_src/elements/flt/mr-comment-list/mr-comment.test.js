@@ -14,7 +14,6 @@ let element;
 suite('mr-comment', () => {
   setup(() => {
     element = document.createElement('mr-comment');
-    document.body.appendChild(element);
     element.comment = {
       canFlag: true,
       localId: 898395,
@@ -28,6 +27,7 @@ suite('mr-comment', () => {
       sequenceNum: 3,
       timestamp: 1549319989,
     };
+    document.body.appendChild(element);
 
     sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
   });
