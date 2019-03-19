@@ -879,21 +879,11 @@ def _get_builder_async(build):
 
 @ndb.tasklet
 def prepare_task_def_async(build, fake_build=False):
-  settings = yield _get_settings_async()
-  builder_cfg = yield _get_builder_async(build)
-  ret = yield _prepare_task_def_async(build, builder_cfg, settings, fake_build)
-  raise ndb.Return(ret)
-
-
-@ndb.tasklet
-def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
   """Prepares a swarming task definition.
 
   Validates the new build.
-  If configured, generates a build number and updates the build.
-  Creates a swarming task definition.
-
   Sets build.proto.infra.swarming.hostname, canary and url.
+  Creates a swarming task definition.
 
   Returns a task_def dict.
   """
@@ -901,6 +891,10 @@ def _prepare_task_def_async(build, builder_cfg, settings, fake_build):
     raise errors.InvalidInputError(
         'Swarming buckets do not support creation of leased builds'
     )
+
+  settings, builder_cfg = yield (
+      _get_settings_async(), _get_builder_async(build)
+  )
 
   build.url = _generate_build_url(settings.milo_hostname, build)
 
@@ -924,10 +918,7 @@ def create_task_async(build):
   Raises:
     errors.InvalidInputError if build attribute values are invalid.
   """
-  settings = yield _get_settings_async()
-  builder_cfg = yield _get_builder_async(build)
-
-  task_def = yield _prepare_task_def_async(build, builder_cfg, settings, False)
+  task_def = yield prepare_task_def_async(build, False)
 
   sw = build.proto.infra.swarming
   res = yield _call_api_async(
