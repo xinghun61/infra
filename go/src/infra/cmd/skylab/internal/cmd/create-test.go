@@ -140,20 +140,19 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	e := c.envFlags.Env()
 
-	logdogURL := worker.GenerateLogDogURL(e.Wrapped())
 	cmd := worker.Command{
-		TaskName:            taskName,
-		LogDogAnnotationURL: logdogURL,
-		ClientTest:          c.client,
-		Keyvals:             keyvals,
-		TestArgs:            c.testArgs,
+		TaskName:   taskName,
+		ClientTest: c.client,
+		Keyvals:    keyvals,
+		TestArgs:   c.testArgs,
 	}
+	cmd.Config(worker.Env(e.Wrapped()))
 	slices, err := getSlices(cmd, provisionableLabels, dimensions, c.timeoutMins)
 	if err != nil {
 		return errors.Annotate(err, "create test").Err()
 	}
 
-	tags := append(c.tags, "skylab-tool:create-test", "log_location:"+logdogURL, "luci_project:"+e.LUCIProject)
+	tags := append(c.tags, "skylab-tool:create-test", "log_location:"+cmd.LogDogAnnotationURL, "luci_project:"+e.LUCIProject)
 	if c.qsAccount != "" {
 		tags = append(tags, "qs_account:"+c.qsAccount)
 	}
