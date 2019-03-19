@@ -347,15 +347,6 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		return &build.BuildRunResult{InfraFailure: infraFailure(err)}
 	}
 
-	// If we are asked to call UpdateBuild, prepare a buildUpdater.
-	if c.CallUpdateBuild {
-		var err error
-		c.bu, err = c.newBuildUpdater()
-		if err != nil {
-			return fail(errors.Annotate(err, "failed to create a build updater").Err())
-		}
-	}
-
 	// Process input.
 	if len(args) != 0 {
 		return fail(inputError("unexpected arguments: %v", args))
@@ -419,6 +410,16 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	}
 	defer c.recipeAuth.Close()
 	defer c.systemAuth.Close()
+
+	// If we are asked to call UpdateBuild, prepare a buildUpdater.
+	// Must happen after c.systemAuth is initialized.
+	if c.CallUpdateBuild {
+		var err error
+		c.bu, err = c.newBuildUpdater()
+		if err != nil {
+			return fail(errors.Annotate(err, "failed to create a build updater").Err())
+		}
+	}
 
 	// Run the recipe.
 	result := c.runRecipe(ctx, env)
