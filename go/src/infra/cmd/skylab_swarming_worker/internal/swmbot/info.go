@@ -18,7 +18,6 @@ import (
 // Info contains information about the current Swarming bot.
 type Info struct {
 	AutotestPath  string
-	Env           string
 	DUTID         string
 	Inventory     Inventory
 	LuciferBinDir string
@@ -34,7 +33,6 @@ type Info struct {
 //   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
 //   INVENTORY_TOOLS_DIR: Path to the skylab inventory tools intallation.
 //   INVENTORY_DATA_DIR: Path to the skylab_inventory data checkout.
-//   INVENTORY_ENVIRONMENT: skylab_inventory environment this bot is part of.
 //   SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
 //
 // Per-task variables:
@@ -43,7 +41,6 @@ type Info struct {
 func GetInfo() *Info {
 	return &Info{
 		AutotestPath: os.Getenv("AUTOTEST_DIR"),
-		Env:          os.Getenv("INVENTORY_ENVIRONMENT"),
 		DUTID:        os.Getenv("SKYLAB_DUT_ID"),
 		Inventory: Inventory{
 			DataDir:  os.Getenv("INVENTORY_DATA_DIR"),
