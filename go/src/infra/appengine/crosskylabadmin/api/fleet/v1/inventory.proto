@@ -4,6 +4,7 @@
 
 syntax = "proto3";
 
+import "google/protobuf/timestamp.proto";
 import "infra/appengine/crosskylabadmin/api/fleet/v1/common.proto";
 
 package crosskylabadmin.fleet;
@@ -504,6 +505,12 @@ message GetDutInfoResponse {
   //
   // This is a serialized inventory.DeviceUnderTest protobuf.
   bytes spec = 1;
+
+  // Timestamp of the latest update of the cached specs in this response.
+  //
+  // Returned specs are guaranteed to be up-to-date with the source of truth as
+  // of this timestamp.
+  google.protobuf.Timestamp updated = 2;
 }
 
 message GetDroneConfigRequest {
