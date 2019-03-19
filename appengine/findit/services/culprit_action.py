@@ -156,8 +156,8 @@ def RevertCulprit(parameters, analysis_id):
         codereview_info)
     _UpdateCulprit(
         parameters.cl_key,
-        revert_status=constants.AUTO_REVERT_STATUS_TO_ANALYSIS_STATUS[
-            revert_status],
+        revert_status=constants
+        .AUTO_REVERT_STATUS_TO_ANALYSIS_STATUS[revert_status],
         revert_cl=revert_cl,
         skip_revert_reason=skip_reason)
     return revert_status
@@ -371,6 +371,5 @@ def GetCodeReviewDataForACulprit(culprit_urlsafe_key):
   """
   culprit = entity_util.GetEntityFromUrlsafeKey(culprit_urlsafe_key)
   assert culprit, 'Could\'t get culprit object for key %s' % culprit_urlsafe_key
-  repo_name = culprit.repo_name
   revision = culprit.revision
-  return git.GetCodeReviewInfoForACommit(repo_name, revision)
+  return git.GetCodeReviewInfoForACommit(revision)

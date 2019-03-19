@@ -185,7 +185,8 @@ class GitTest(wf_testcase.WaterfallTestCase):
       return_value=['r4', 'r3', 'r2', 'r1'])
   def testGetCommitsBetweenRevisionsInOrderAscending(self, _):
     self.assertEqual(['r1', 'r2', 'r3', 'r4'],
-                     git.GetCommitsBetweenRevisionsInOrder('r0', 'r4', True))
+                     git.GetCommitsBetweenRevisionsInOrder(
+                         'r0', 'r4', ascending=True))
 
   @mock.patch.object(
       CachedGitilesRepository,
@@ -193,7 +194,8 @@ class GitTest(wf_testcase.WaterfallTestCase):
       return_value=['r4', 'r3', 'r2', 'r1'])
   def testGetCommitsBetweenRevisionsInOrderDescending(self, _):
     self.assertEqual(['r4', 'r3', 'r2', 'r1'],
-                     git.GetCommitsBetweenRevisionsInOrder('r0', 'r4', False))
+                     git.GetCommitsBetweenRevisionsInOrder(
+                         'r0', 'r4', ascending=False))
 
   def testCountRecentCommitsFew(self):
     self.mock(GitilesRepository, 'GetNChangeLogs',
@@ -355,13 +357,12 @@ class GitTest(wf_testcase.WaterfallTestCase):
             'time': '2018-05-17 00:49:48'
         },
     }
-    self.assertEqual(expected_info,
-                     git.GetCodeReviewInfoForACommit('chromium', revision))
+    self.assertEqual(expected_info, git.GetCodeReviewInfoForACommit(revision))
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog', return_value=None)
   def testGetCodeReviewInfoForACommitFailedToGetChangeLog(self, _):
     revision = 'rev2'
-    self.assertEqual({}, git.GetCodeReviewInfoForACommit('chromium', revision))
+    self.assertEqual({}, git.GetCodeReviewInfoForACommit(revision))
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testGetAuthor(self, mock_change_log):

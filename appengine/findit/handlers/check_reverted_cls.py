@@ -74,9 +74,8 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
     # Findit did not deem this suspected cl as needing revert. No action needed.
     return False, None, None
 
-  repo = suspected_cl.repo_name
   revision = suspected_cl.revision
-  culprit_info = git.GetCodeReviewInfoForACommit(repo, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(revision)
   review_server_host = culprit_info.get('review_server_host')
   change_id = culprit_info.get('review_change_id')
 
@@ -121,8 +120,8 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
 
         if reverting_user == constants.DEFAULT_SERVICE_ACCOUNT:
           # The sheriff used Findit's reverting CL.
-          cq_attempt = revert.reverting_cl.commit_attempts[
-              revert_commit.patchset_id]
+          cq_attempt = revert.reverting_cl.commit_attempts[revert_commit
+                                                           .patchset_id]
           _UpdateSuspectedCL(
               suspected_cl,
               sheriff_action_time=cq_attempt.last_cq_timestamp,

@@ -255,9 +255,8 @@ def NotifyCulprit(culprit, bug_id):
   """
   assert culprit
 
-  repo_name = culprit.repo_name
   revision = culprit.revision
-  culprit_info = git.GetCodeReviewInfoForACommit(repo_name, revision)
+  culprit_info = git.GetCodeReviewInfoForACommit(revision)
 
   review_server_host = culprit_info.get('review_server_host')
   review_change_id = culprit_info.get('review_change_id')

@@ -105,9 +105,8 @@ def IdentifySuspectedRevisions(analysis):
     return []
 
   normalized_file_path = extractor_util.NormalizeFilePath(test_location.file)
-  git_repo = CachedGitilesRepository(_FINDIT_HTTP_CLIENT,
-                                     constants.CHROMIUM_GIT_REPOSITORY_URL)
-  git_blame = git_repo.GetBlame(normalized_file_path, upper_data_point.git_hash)
+  git_blame = git.GetGitBlame(constants.CHROMIUM_GIT_REPOSITORY_URL,
+                              upper_data_point.git_hash, normalized_file_path)
 
   if git_blame is None:
     analysis.LogWarning('Failed to get git blame for {}, {}'.format(
@@ -118,7 +117,10 @@ def IdentifySuspectedRevisions(analysis):
   assert lower_revision, 'Lower bound revision is None'
 
   revisions = git.GetCommitsBetweenRevisionsInOrder(
-      lower_revision, upper_data_point.git_hash, True)
+      lower_revision,
+      upper_data_point.git_hash,
+      repo_url=constants.CHROMIUM_GIT_REPOSITORY_URL,
+      ascending=True)
 
   if not revisions:
     analysis.LogWarning('Failed to get revisions in range [{}, {}]'.format(
@@ -204,12 +206,10 @@ def SaveFlakeCulpritsForSuspectedRevisions(analysis_urlsafe_key,
         FlakeCulprit.Create(repo_name, revision, commit_position))
 
     if suspect.url is None:
-      git_repo = CachedGitilesRepository(_FINDIT_HTTP_CLIENT,
-                                         constants.CHROMIUM_GIT_REPOSITORY_URL)
-      change_log = git_repo.GetChangeLog(revision)
+      commits_info = git.GetCommitsInfo([revision])
 
-      if change_log:
-        suspect.url = change_log.code_review_url or change_log.commit_url
+      if commits_info:
+        suspect.url = commits_info[revision]['url']
         suspect.put()
       else:
         logging.error('Unable to retrieve change logs for %s', revision)

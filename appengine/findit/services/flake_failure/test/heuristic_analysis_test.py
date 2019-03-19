@@ -92,10 +92,10 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
             'r4': 4,
         }, [(None, 'r1'), ('r2', 'r3'), ('r3', 'r4')]))
 
-  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  @mock.patch.object(git, 'GetCommitsInfo')
   @mock.patch.object(git, 'GetCommitPositionFromRevision')
   def testSaveFlakeCulpritsForSuspectedRevisions(self, mocked_commit_position,
-                                                 mocked_fn):
+                                                 mocked_commit_info):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -114,15 +114,15 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
-    mocked_fn.return_value = ChangeLog(
-        None,
-        None,
-        suspected_revision,
-        None,
-        None,
-        None,
-        None,
-        code_review_url='url')
+    mocked_commit_info.return_value = {
+        suspected_revision: {
+            'revision': suspected_revision,
+            'repo_name': 'chromium',
+            'commit_position': suspected_commit_position,
+            'url': 'url',
+            'author': 'author@email.com'
+        }
+    }
 
     heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
         analysis.key.urlsafe(), suspected_revisions)
@@ -133,10 +133,10 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(suspect)
     self.assertIn(suspect.key.urlsafe(), analysis.suspect_urlsafe_keys)
 
-  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  @mock.patch.object(git, 'GetCommitsInfo')
   @mock.patch.object(git, 'GetCommitPositionFromRevision')
   def testSaveFlakeCulpritsForSuspectedRevisionsNoChangeLog(
-      self, mocked_commit_position, mocked_fn):
+      self, mocked_commit_position, mocked_commit_info):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -156,12 +156,10 @@ class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
-    mocked_fn.return_value = None
+    mocked_commit_info.return_value = None
     heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
         analysis.key.urlsafe(), suspected_revisions)
 
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
     suspect = FlakeCulprit.Get('chromium', suspected_revision)
     self.assertIsNone(suspect)
 
