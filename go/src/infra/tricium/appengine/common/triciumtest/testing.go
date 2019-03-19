@@ -34,6 +34,7 @@ func Context() context.Context {
 	tq.GetTestable(ctx).CreateQueue(common.PollProjectQueue)
 	tq.GetTestable(ctx).CreateQueue(common.TrackerQueue)
 	tq.GetTestable(ctx).CreatePullQueue(common.AnalysisResultsQueue)
+	tq.GetTestable(ctx).CreatePullQueue(common.FeedbackEventsQueue)
 	ds.GetTestable(ctx).Consistent(true)
 	return ctx
 }

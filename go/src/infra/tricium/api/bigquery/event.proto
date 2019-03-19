@@ -1,0 +1,35 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package apibq;
+
+import "infra/tricium/api/v1/data.proto";
+import "google/protobuf/timestamp.proto";
+
+// FeedbackEvent represents one event such as sending comments or a "not
+// useful" click.
+//
+// The purpose of recording these events is to be able to track the feedback on
+// comments -- for example, what's the proportion "not useful" clicks to
+// comments produced for each analyzer or category?
+message FeedbackEvent {
+  // Types of event.
+  enum Type {
+    NONE = 0;
+    NOT_USEFUL = 1;
+    COMMENT_POST = 2;
+  }
+
+  // Type of event.
+  Type type = 1;
+
+  // Time when the event occurred.
+  google.protobuf.Timestamp time = 2;
+
+  // Related comments. For comment post events, this will be the comments
+  // sent; for a "not useful" click, this would be the one related comment.
+  repeated tricium.Data.Comment comments = 3;
+}

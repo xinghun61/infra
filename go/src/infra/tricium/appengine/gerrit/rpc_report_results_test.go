@@ -10,9 +10,11 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
+	tq "go.chromium.org/gae/service/taskqueue"
 
-	"infra/tricium/api/admin/v1"
+	admin "infra/tricium/api/admin/v1"
 	tricium "infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	gc "infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
@@ -104,6 +106,10 @@ func TestReportResultsRequest(t *testing.T) {
 			So(err, ShouldBeNil)
 			// This only includes the two selected comments.
 			So(len(mock.LastComments), ShouldEqual, len(comments)-1)
+
+			Convey("A successful request also sends a row to BQ", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.FeedbackEventsQueue]), ShouldEqual, 1)
+			})
 		})
 
 		Convey("Does not report results when reporting is disabled", func() {
@@ -116,6 +122,10 @@ func TestReportResultsRequest(t *testing.T) {
 			}, mock)
 			So(err, ShouldBeNil)
 			So(len(mock.LastComments), ShouldEqual, 0)
+
+			Convey("When no comments are posted, no rows are sent to BQ", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.FeedbackEventsQueue]), ShouldEqual, 0)
+			})
 		})
 
 		// Put more comments in until the number of included comments

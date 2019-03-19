@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/server/router"
 
@@ -26,7 +27,19 @@ func init() {
 
 	r.GET("/tracker/internal/cron/bqlog/flush", base.Extend(gaemiddleware.RequireCron),
 		func(c *router.Context) {
-			if _, err := common.ResultsLog.Flush(c.Context); err != nil {
+			// Flush all BigQuery rows; rows for separate tables can be flushed
+			// in parallel.
+			err := parallel.FanOutIn(func(ch chan<- func() error) {
+				ch <- func() error {
+					_, err := common.ResultsLog.Flush(c.Context)
+					return err
+				}
+				ch <- func() error {
+					_, err := common.EventsLog.Flush(c.Context)
+					return err
+				}
+			})
+			if err != nil {
 				http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 				return
 			}

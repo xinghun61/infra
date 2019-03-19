@@ -8,10 +8,22 @@ import (
 	"go.chromium.org/luci/appengine/bqlog"
 )
 
+// Below are bqlog.Log definitions; for each Log there should be a separate
+// queue. The queue must be listed in queue.yaml, and the dataset and table
+// should match that in setup_bigquery.sh.
+
 // ResultsLog includes rows with analyzer results created when an analysis
 // workflow is complete.
 var ResultsLog = bqlog.Log{
-	QueueName: AnalysisResultsQueue, // Must be listed in queue.yaml.
-	DatasetID: "analyzer",           // Must match setup_bigquery.sh.
-	TableID:   "results",            // Must match setup_bigquery.sh.
+	QueueName: AnalysisResultsQueue,
+	DatasetID: "analyzer",
+	TableID:   "results",
+}
+
+// EventsLog includes rows for events, such as "not useful" clicks and sending
+// of comments.
+var EventsLog = bqlog.Log{
+	QueueName: FeedbackEventsQueue,
+	DatasetID: "events",
+	TableID:   "feedback",
 }

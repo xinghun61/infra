@@ -5,13 +5,18 @@
 package frontend
 
 import (
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes"
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 
-	"infra/tricium/api/v1"
+	apibq "infra/tricium/api/bigquery"
+	tricium "infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -48,6 +53,10 @@ func reportNotUseful(c context.Context, commentID string) (*tricium.ReportNotUse
 	}
 
 	if err = incrementCount(c, comment); err != nil {
+		return nil, err
+	}
+
+	if err := streamToBigQuery(c, comment); err != nil {
 		return nil, err
 	}
 
@@ -89,6 +98,27 @@ func incrementCount(c context.Context, comment *track.Comment) error {
 	feedback.NotUsefulReports++
 	if err := ds.Put(c, feedback); err != nil {
 		return errors.Annotate(err, "failed to store CommentFeedback").Err()
+	}
+	return nil
+}
+
+// streamToBigQuery adds an event row for the event of the not useful report.
+func streamToBigQuery(c context.Context, comment *track.Comment) error {
+	// The time used is the current time, but this time is not recorded in
+	// datastore anywhere. Ideally the time used here should also be recorded
+	// in datastore so that the data in BQ can be determined from datastore.
+	// See crbug.com/943633.
+	message := &tricium.Data_Comment{}
+	if err := jsonpb.UnmarshalString(string(comment.Comment), message); err != nil {
+		return errors.Annotate(err, "failed to unmarshal comment message").Err()
+	}
+	event := &apibq.FeedbackEvent{
+		Type:     apibq.FeedbackEvent_NOT_USEFUL,
+		Time:     ptypes.TimestampNow(),
+		Comments: []*tricium.Data_Comment{message},
+	}
+	if err := common.EventsLog.Insert(c, &bq.Row{Message: event}); err != nil {
+		return errors.Annotate(err, "failed in add row to bqlog.Log").Err()
 	}
 	return nil
 }

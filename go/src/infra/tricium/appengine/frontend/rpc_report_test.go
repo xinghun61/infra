@@ -8,10 +8,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/golang/protobuf/jsonpb"
 	. "github.com/smartystreets/goconvey/convey"
 	ds "go.chromium.org/gae/service/datastore"
+	tq "go.chromium.org/gae/service/taskqueue"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 	"infra/tricium/appengine/common/triciumtest"
 )
@@ -41,7 +44,18 @@ func TestReportNotUseful(t *testing.T) {
 			Parent: ds.KeyForObj(ctx, function),
 		}
 		So(ds.Put(ctx, worker), ShouldBeNil)
-		comment := &track.Comment{UUID: commentID, Parent: ds.KeyForObj(ctx, worker), Platforms: 1}
+		json, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_Comment{
+			Path:      "dir/file.txt",
+			Message:   "comment message",
+			StartLine: 4,
+		})
+		So(err, ShouldBeNil)
+		comment := &track.Comment{
+			UUID:      commentID,
+			Comment:   []byte(json),
+			Parent:    ds.KeyForObj(ctx, worker),
+			Platforms: 1,
+		}
 		So(ds.Put(ctx, comment), ShouldBeNil)
 		feedback := &track.CommentFeedback{ID: 1, Parent: ds.KeyForObj(ctx, comment)}
 		So(ds.Put(ctx, feedback), ShouldBeNil)
@@ -56,6 +70,10 @@ func TestReportNotUseful(t *testing.T) {
 			})
 			So(ds.Get(ctx, feedback), ShouldBeNil)
 			So(feedback.NotUsefulReports, ShouldEqual, 1)
+
+			Convey("A successful request also sends a row to BQ", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.FeedbackEventsQueue]), ShouldEqual, 1)
+			})
 		})
 
 		Convey("Request for unknown comment gives error", func() {
@@ -65,6 +83,10 @@ func TestReportNotUseful(t *testing.T) {
 			So(response, ShouldBeNil)
 			So(ds.Get(ctx, feedback), ShouldBeNil)
 			So(feedback.NotUsefulReports, ShouldEqual, 0)
+
+			Convey("An unsuccessful request sends no row to BQ", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.FeedbackEventsQueue]), ShouldEqual, 0)
+			})
 		})
 
 		Convey("Request with no comment gives error", func() {

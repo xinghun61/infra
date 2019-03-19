@@ -32,5 +32,7 @@ queue:
     task_retry_limit: 10
 
 # Pull queues
-- name: analysis-results-queue
+- name: bigquery-analysis-results-queue
+  mode: pull
+- name: bigquery-feedback-events-queue
   mode: pull

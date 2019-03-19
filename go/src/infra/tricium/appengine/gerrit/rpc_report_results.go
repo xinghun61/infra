@@ -5,14 +5,20 @@
 package gerrit
 
 import (
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes"
 	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
 
-	"infra/tricium/api/admin/v1"
+	admin "infra/tricium/api/admin/v1"
+	apibq "infra/tricium/api/bigquery"
+	tricium "infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	gc "infra/tricium/appengine/common/gerrit"
 	"infra/tricium/appengine/common/track"
 )
@@ -89,5 +95,47 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit gc
 		logging.Infof(c, "No comments to report.")
 		return nil
 	}
+
+	if err := streamToBigQuery(c, includedComments); err != nil {
+		logging.WithError(err).Errorf(c, "Failed to prepare to send rows to BigQuery.")
+	}
+
 	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GitRef, req.RunId, includedComments)
+}
+
+// streamToBigQuery adds an event row for the event of sending comments.
+//
+// The comments here should be only the included comments that will actually be
+// sent to Gerrit. The purpose of adding rows to the events table for all
+// posted comments is to make it easier to compare the number of feedback
+// events for comments to the total number of comments sent.
+func streamToBigQuery(c context.Context, comments []*track.Comment) error {
+	// The time that's use for the event is the creation time of the first
+	// comment in the slice; we use; by using this time, the time used for the
+	// BQ row is determined deterministically based on something else, and
+	// could be backfilled from datastore.
+	if len(comments) == 0 {
+		return errors.New("streamToBigQuery unexpectedly called when posting zero comments")
+	}
+	time, err := ptypes.TimestampProto(comments[0].CreationTime)
+	if err != nil {
+		return errors.Annotate(err, "failed to get comment timestamp").Err()
+	}
+	var commentMessages []*tricium.Data_Comment
+	for _, c := range comments {
+		message := &tricium.Data_Comment{}
+		if err := jsonpb.UnmarshalString(string(c.Comment), message); err != nil {
+			return errors.Annotate(err, "failed to unmarshal comment message").Err()
+		}
+		commentMessages = append(commentMessages, message)
+	}
+	event := &apibq.FeedbackEvent{
+		Type:     apibq.FeedbackEvent_COMMENT_POST,
+		Time:     time,
+		Comments: commentMessages,
+	}
+	if err := common.EventsLog.Insert(c, &bq.Row{Message: event}); err != nil {
+		return errors.Annotate(err, "failed in add row to bqlog.Log").Err()
+	}
+	return nil
 }
