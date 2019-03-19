@@ -100,10 +100,6 @@ def make_http(args):
 def make_call(service, method, json_body, args):
   """Call the server and print the response contents."""
   body = json.loads(json_body)
-  if args.test_account or args.xsrf_token:
-    body['trace'] = {}
-    body['trace']['test_account'] = args.test_account
-    body['trace']['token'] = args.xsrf_token
 
   url_base = URL_BASE
   if args.host:
@@ -116,6 +112,10 @@ def make_call(service, method, json_body, args):
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       }
+  if args.test_account:
+    headers['x-test-account'] = args.test_account
+  if args.xsrf_token:
+    headers['x-xsrf-token'] = args.xsrf_token
   body = json.dumps(body)
 
   logging.debug('Body: %r' % body)
