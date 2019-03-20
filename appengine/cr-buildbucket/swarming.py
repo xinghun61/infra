@@ -1382,9 +1382,8 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @ndb.tasklet
   def update_build_async(self, build):
     sw = build.parse_infra().swarming
-    if not sw.hostname:
+    if not sw.hostname or not sw.task_id:
       return
-    assert sw.task_id
 
     result = yield _load_task_result_async(sw.hostname, sw.task_id)
     if not result:
