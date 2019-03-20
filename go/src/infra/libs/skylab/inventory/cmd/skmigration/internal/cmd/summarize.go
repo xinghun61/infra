@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/maruel/subcommands"
@@ -95,6 +96,9 @@ type modelCounts map[string]int
 func summarize(duts []*inventory.DeviceUnderTest) poolCounts {
 	pCounts := make(poolCounts)
 	for _, d := range duts {
+		if strings.HasSuffix(d.GetCommon().GetHostname(), "migrated-do-not-use") {
+			continue
+		}
 		ls := d.GetCommon().GetLabels()
 		cp := ls.GetCriticalPools()
 		var p string
