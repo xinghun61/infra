@@ -778,7 +778,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
         'commenter': commenter_view,
         'comment': comment_view,
         }
-    subject = '[%s Approval] %s (Issue %s)' % (
+    subject = '%s Approval: %s (Issue %s)' % (
         approval_name, issue.summary, issue.local_id)
     email_body = self.email_template.GetResponse(email_data)
     body = notify_helpers._TruncateBody(email_body)
