@@ -1124,7 +1124,7 @@ def _sync_build_in_memory(
   state = (task_result or {}).get('state')
   if build_run_result_error:
     bp.status = common_pb2.INFRA_FAILURE
-    bp.summary_markdown = bbutil.escape_markdown(
+    bp.summary_markdown = (
         '`%s` returned by the swarming task is bad: %s.' %
         (_BUILD_RUN_RESULT_FILENAME, build_run_result_error)
     )
