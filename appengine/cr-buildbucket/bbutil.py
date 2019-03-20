@@ -7,10 +7,17 @@
 Has "bb" prefix to avoid confusion with components.utils.
 """
 
+import re
+
 from google.protobuf import json_format
 from google.protobuf import struct_pb2
 
 from proto import common_pb2
+
+MD_SPECIAL_CHARS = '!\"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~"'
+MD_SPECIAL_CHARS_RE = re.compile(
+    r'([%s])' % ''.join(re.escape(c) for c in MD_SPECIAL_CHARS)
+)
 
 TRINARY_TO_BOOLISH = {
     common_pb2.UNSET: None,
@@ -40,3 +47,8 @@ def update_struct(dest, src):  # pragma: no cover
   for key, value in src.fields.iteritems():
     # This will create a new struct_pb2.Value if one does not exist.
     dest.fields[key].CopyFrom(value)
+
+
+def escape_markdown(text):
+  """Converts plaintext into equivalent markdown."""
+  return MD_SPECIAL_CHARS_RE.sub(r'\\\1', text)
