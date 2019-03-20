@@ -203,7 +203,6 @@ func init() {
 	r.GET("/manageshifts", protected, h.HandleManageShifts)
 	r.GET("/legacy/:name", tmw, h.HandleLegacy)
 	r.GET("/oncall", protected, h.HandleOncall)
-	r.GET("/oncall/:name", protected, h.HandleOncall)
 	r.GET("/memberjson", protected, h.HandleMember)
 	r.GET("/switchlist", protected, h.HandleRotaSwitchList)
 	r.GET("/switchrota", protected, h.HandleRotaSwitch)

@@ -26,14 +26,14 @@ func (h *State) HandleOncall(ctx *router.Context) {
 	}
 
 	now := clock.Now(ctx.Context)
-	rota := ctx.Params.ByName("name")
+	rota := ctx.Request.FormValue("name")
 
 	var tas templates.Args
 	var err error
 	if rota == "" {
 		tas, err = h.genAllRotas(ctx, usr.Email, now)
 	} else {
-		tas, err = h.genSingleRota(ctx, usr.Email, ctx.Params.ByName("name"), now)
+		tas, err = h.genSingleRota(ctx, usr.Email, rota, now)
 	}
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)

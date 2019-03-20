@@ -7,10 +7,10 @@ import (
 	"infra/appengine/rotang"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/kylelemons/godebug/pretty"
 	"go.chromium.org/luci/auth/identity"
 	"go.chromium.org/luci/server/auth"
@@ -26,6 +26,7 @@ func TestHandleOncall(t *testing.T) {
 
 	tests := []struct {
 		name  string
+		rota  string
 		email string
 		fail  bool
 		ctx   *router.Context
@@ -35,39 +36,27 @@ func TestHandleOncall(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctxCancel,
 			Writer:  httptest.NewRecorder(),
-			Params: httprouter.Params{
-				{
-					Key:   "name",
-					Value: "Test Rota",
-				},
-			},
+			Request: httptest.NewRequest("GET", "/oncall", nil),
 		},
+		rota: "Test Rota",
 	}, {
 		name: "Not logged in",
 		fail: true,
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Params: httprouter.Params{
-				{
-					Key:   "name",
-					Value: "Test Rota",
-				},
-			},
+			Request: httptest.NewRequest("GET", "/oncall", nil),
 		},
+		rota: "Test Rota",
 	}, {
 		name: "Single rota",
 		fail: true,
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
-			Params: httprouter.Params{
-				{
-					Key:   "name",
-					Value: "Test Rota",
-				},
-			},
+			Request: httptest.NewRequest("GET", "/oncall", nil),
 		},
+		rota:  "Test Rota",
 		email: "test@user.com",
 	}, {
 		name: "All rotas",
@@ -75,6 +64,7 @@ func TestHandleOncall(t *testing.T) {
 		ctx: &router.Context{
 			Context: ctx,
 			Writer:  httptest.NewRecorder(),
+			Request: httptest.NewRequest("GET", "/oncall", nil),
 		},
 		email: "test@user.com",
 	},
@@ -88,6 +78,7 @@ func TestHandleOncall(t *testing.T) {
 				Identity: identity.Identity("user:" + tst.email),
 			})
 		}
+		tst.ctx.Request.Form = url.Values{"name": []string{tst.rota}}
 
 		h.HandleOncall(tst.ctx)
 
