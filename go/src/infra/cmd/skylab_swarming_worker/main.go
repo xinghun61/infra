@@ -96,6 +96,11 @@ func mainInner(a *args) error {
 	// Set up Go logger for LUCI libraries.
 	ctx = gologger.StdConfig.Use(ctx)
 	b := swmbot.GetInfo()
+	// TODO(ayatane): Support -admin-service flag while it's being
+	// replaced by the ADMIN_SERVICE envvar.
+	if a.adminService != "" {
+		b.AdminService = a.adminService
+	}
 	log.Printf("Swarming bot config: %#v", b)
 	annotWriter, err := openLogDogWriter(ctx, a.logdogAnnotationURL)
 	if err != nil {

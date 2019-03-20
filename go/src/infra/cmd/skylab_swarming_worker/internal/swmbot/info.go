@@ -17,6 +17,7 @@ import (
 
 // Info contains information about the current Swarming bot.
 type Info struct {
+	AdminService  string
 	AutotestPath  string
 	DUTID         string
 	Inventory     Inventory
@@ -29,6 +30,7 @@ type Info struct {
 //
 // Per-bot variables:
 //
+//   ADMIN_SERVICE: Admin service host, e.g. foo.appspot.com.
 //   AUTOTEST_DIR: Path to the autotest checkout on server.
 //   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
 //   INVENTORY_TOOLS_DIR: Path to the skylab inventory tools intallation.
@@ -40,6 +42,7 @@ type Info struct {
 //   SWARMING_TASK_ID: task id of the swarming task being serviced.
 func GetInfo() *Info {
 	return &Info{
+		AdminService: os.Getenv("ADMIN_SERVICE"),
 		AutotestPath: os.Getenv("AUTOTEST_DIR"),
 		DUTID:        os.Getenv("SKYLAB_DUT_ID"),
 		Inventory: Inventory{
