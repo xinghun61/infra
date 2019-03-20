@@ -10,6 +10,7 @@ process.env.CHROME_BIN = require('puppeteer').executablePath()
 
 module.exports = function(config) {
   const isDebug = process.argv.some((arg) => arg === '--debug');
+  const coverage = process.argv.some((arg) => arg === '--coverage');
   config.set({
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
@@ -75,7 +76,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['progress', 'coverage'],
+    reporters: ['progress'].concat(coverage ? ['coverage'] : []),
 
 
     // configure coverage reporter
