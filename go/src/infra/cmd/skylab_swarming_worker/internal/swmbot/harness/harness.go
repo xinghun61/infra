@@ -14,14 +14,11 @@ import (
 	"log"
 
 	"github.com/golang/protobuf/proto"
-	"go.chromium.org/luci/auth"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/lucictx"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/libs/skylab/inventory"
 
-	"infra/cmd/skylab_swarming_worker/internal/admin"
 	"infra/cmd/skylab_swarming_worker/internal/autotest/hostinfo"
 	"infra/cmd/skylab_swarming_worker/internal/swmbot"
 
@@ -190,7 +187,7 @@ func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) 
 		return nil
 	}
 	log.Printf("Calling admin service to update labels")
-	client, err := u.makeClient()
+	client, err := swmbot.InventoryClient(u.ctx, u.botInfo)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
@@ -206,25 +203,6 @@ func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) 
 		log.Printf("Updated DUT labels at %s", url)
 	}
 	return nil
-}
-
-func (u labelUpdater) makeClient() (fleet.InventoryClient, error) {
-	ctx, err := lucictx.SwitchLocalAccount(u.ctx, "task")
-	if err != nil {
-		return nil, err
-	}
-	o := auth.Options{
-		Method: auth.LUCIContextMethod,
-		Scopes: []string{
-			auth.OAuthScopeEmail,
-			"https://www.googleapis.com/auth/cloud-platform",
-		},
-	}
-	c, err := admin.NewInventoryClient(ctx, u.botInfo.AdminService, o)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
 }
 
 func (u labelUpdater) makeRequest(dutID string, labels *inventory.SchedulableLabels) (*fleet.UpdateDutLabelsRequest, error) {
