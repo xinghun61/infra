@@ -7,6 +7,7 @@
 package dutinfo
 
 import (
+	"context"
 	"log"
 
 	"github.com/golang/protobuf/proto"
@@ -58,7 +59,7 @@ type UpdateFunc func(dutID string, labels *inventory.SchedulableLabels) error
 // returns a Store that should be closed to update the inventory with
 // any changes to the info, using a supplied UpdateFunc.  If
 // UpdateFunc is nil, the inventory is not updated.
-func Load(b *swmbot.Info, f UpdateFunc) (*Store, error) {
+func Load(ctx context.Context, b *swmbot.Info, f UpdateFunc) (*Store, error) {
 	ddir, err := inventory.ReadSymlink(b.Inventory.DataDir)
 	if err != nil {
 		return nil, errors.Annotate(err, "load DUT host info").Err()

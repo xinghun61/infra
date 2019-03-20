@@ -122,7 +122,7 @@ func (i *Info) loadDUTInfo(ctx context.Context, b *swmbot.Info) *inventory.Devic
 	if i.err != nil {
 		return nil
 	}
-	dis, err := dutinfo.Load(b, i.labelUpdater.update)
+	dis, err := dutinfo.Load(ctx, b, i.labelUpdater.update)
 	if err != nil {
 		i.err = err
 		return nil
