@@ -9,14 +9,14 @@ import {PolymerElement, html} from '@polymer/polymer';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-dialog/chops-dialog.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         .target-project-dialog {
           display: block;
           font-size: 12px;

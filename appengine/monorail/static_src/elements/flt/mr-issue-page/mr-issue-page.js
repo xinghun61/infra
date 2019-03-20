@@ -13,7 +13,7 @@ import '../mr-launch-overview/mr-launch-overview.js';
 import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
 import * as user from '../../redux/user.js';
 import {selectors} from '../../redux/selectors.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 import '../dialogs/mr-edit-description.js';
 import '../dialogs/mr-move-copy-issue.js';
@@ -28,7 +28,7 @@ import '../dialogs/mr-convert-issue.js';
 export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host([issue-closed]) .metadata-container {
           background: var(--monorail-metadata-closed-bg);
         }

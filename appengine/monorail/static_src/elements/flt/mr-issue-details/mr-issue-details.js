@@ -9,7 +9,7 @@ import {ReduxMixin} from '../../redux/redux-mixin.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import '../mr-edit-metadata/mr-edit-issue.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 /**
  * `<mr-issue-details>`
@@ -20,7 +20,7 @@ import '../shared/mr-flt-styles.js';
 export class MrIssueDetails extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           font-size: 85%;
           background-color: white;

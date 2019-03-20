@@ -6,13 +6,13 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as user from '../../redux/user.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           padding: 1em;
           display: block;

@@ -7,7 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../chops/chops-button/chops-button.js';
 import {ReduxMixin, actionCreator} from '../redux/redux-mixin.js';
-import '../flt/shared/mr-flt-styles.js';
+import '../shared/mr-shared-styles.js';
 
 /**
  * `<mr-attachment>`
@@ -18,7 +18,7 @@ import '../flt/shared/mr-flt-styles.js';
 export class MrAttachment extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         .attachment-view {
           margin-left: .7em;
         }

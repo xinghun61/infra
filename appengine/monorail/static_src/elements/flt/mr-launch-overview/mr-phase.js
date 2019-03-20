@@ -12,7 +12,7 @@ import '../mr-approval-card/mr-approval-card.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-field-values.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 const TARGET_PHASE_MILESTONE_MAP = {
   'Beta': 'feature_freeze',
@@ -42,7 +42,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           display: block;
         }

@@ -9,7 +9,7 @@ import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import './mr-edit-metadata.js';
 import {loadAttachments} from '../../shared/helpers.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
@@ -23,7 +23,7 @@ const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
 export class MrEditIssue extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         h2 a {
           text-decoration: none;
         }

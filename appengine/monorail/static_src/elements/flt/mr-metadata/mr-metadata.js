@@ -13,7 +13,7 @@ import {actionCreator} from '../../redux/redux-mixin.js';
 import {selectors} from '../../redux/selectors.js';
 import * as user from '../../redux/user.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 import './mr-field-values.js';
 import './mr-issue-table.js';
 import './mr-update-issue-hotlists.js';
@@ -29,7 +29,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           display: table;
           table-layout: fixed;

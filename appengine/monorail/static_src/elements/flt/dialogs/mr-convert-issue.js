@@ -9,7 +9,7 @@ import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../mr-error/mr-error.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 // TODO(zhangtiff): Make dialog components subclass chops-dialog instead of
 // using slots/containment once we switch to LitElement.
@@ -24,7 +24,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         label {
           font-weight: bold;
           text-align: right;

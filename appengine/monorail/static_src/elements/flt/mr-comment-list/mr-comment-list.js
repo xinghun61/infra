@@ -8,7 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-button/chops-button.js';
 import './mr-comment.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
 
@@ -21,7 +21,7 @@ const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
 export class MrCommentList extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         button.toggle {
           background: none;
           color: var(--chops-link-color);

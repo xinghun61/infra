@@ -11,7 +11,7 @@ import '../mr-dropdown/mr-account-dropdown.js';
 import './mr-search-bar.js';
 
 // TODO(zhangtiff): Move these styles outside of FLT folder.
-import '../flt/shared/mr-flt-styles.js';
+import '../shared/mr-shared-styles.js';
 import {prpcClient} from '../../prpc-client-instance.js';
 
 import ClientLogger from '../../monitoring/client-logger';
@@ -26,7 +26,7 @@ export class MrHeader extends PolymerElement {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           color: var(--chops-header-text-color);
           box-sizing: border-box;

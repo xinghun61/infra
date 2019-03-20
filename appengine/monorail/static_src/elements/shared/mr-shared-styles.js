@@ -4,7 +4,7 @@
 
 const $_documentContainer = document.createElement('template');
 
-$_documentContainer.innerHTML = `<dom-module id="mr-flt-styles">
+$_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
   <template>
     <style>
       a.button {

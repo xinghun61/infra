@@ -9,7 +9,7 @@ import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionType, actionCreator} from
   '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 import './mr-metadata.js';
 
 /**
@@ -22,7 +22,7 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           box-sizing: border-box;
           padding: 0.5em 16px;

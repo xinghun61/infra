@@ -14,7 +14,7 @@ import {arrayToEnglish} from '../../shared/helpers.js';
 import '../../mr-user-link/mr-user-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_DELETE_PERMISSION,
   ISSUE_FLAGSPAM_PERMISSION} from '../../shared/permissions.js';
 

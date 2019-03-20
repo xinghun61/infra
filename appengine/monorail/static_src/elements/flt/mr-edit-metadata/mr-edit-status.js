@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 import './mr-edit-field.js';
 
 
@@ -18,7 +18,7 @@ import './mr-edit-field.js';
 export class MrEditStatus extends PolymerElement {
   static get template() {
     return html`
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           width: 95%;
           --mr-edit-field-styles: {

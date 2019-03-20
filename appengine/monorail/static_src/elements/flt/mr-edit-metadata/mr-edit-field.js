@@ -10,7 +10,7 @@ import '../../chops/chops-button/chops-button.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import {arrayDifference} from '../../shared/helpers.js';
 
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 /**
  * `<mr-edit-field>`
@@ -23,7 +23,7 @@ export class MrEditField extends PolymerElement {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           display: block;
         }

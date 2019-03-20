@@ -10,7 +10,7 @@ import '@vaadin/vaadin-upload/vaadin-upload.js';
 import '@vaadin/vaadin-upload/theme/lumo/vaadin-upload.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../mr-error/mr-error.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
 import {selectors} from '../../redux/selectors.js';
 import {actionType} from '../../redux/redux-mixin.js';
@@ -53,7 +53,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           </style>
         </template>
       </dom-module>
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           display: block;
           font-size: 12px;

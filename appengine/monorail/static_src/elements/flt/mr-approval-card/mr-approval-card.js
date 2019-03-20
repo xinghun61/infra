@@ -16,7 +16,7 @@ import '../mr-comment-list/mr-comment-list.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-metadata.js';
 import {loadAttachments} from '../../shared/helpers.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 const APPROVER_RESTRICTED_STATUSES = new Set(
   ['NA', 'Approved', 'NotApproved']);
@@ -83,7 +83,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           width: 100%;
           background-color: white;

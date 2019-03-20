@@ -8,13 +8,13 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../mr-bug-link/mr-bug-link.js';
 import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 export class MrIssueTable extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         :host {
           display: block;
         }

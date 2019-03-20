@@ -12,7 +12,7 @@ import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import {loadAttachments} from '../../shared/helpers.js';
-import '../shared/mr-flt-styles.js';
+import '../../shared/mr-shared-styles.js';
 
 
 /**
@@ -48,7 +48,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
           </style>
         </template>
       </dom-module>
-      <style include="mr-flt-styles">
+      <style include="mr-shared-styles">
         chops-dialog {
           --chops-dialog-theme: {
             width: 800px;
