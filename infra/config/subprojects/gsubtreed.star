@@ -30,14 +30,12 @@ def gsubtreed_cron(
       dimensions = {
           # Share machines with other gsubtreed- builders.
           'builder': 'gsubtreed-shared',
-          'cpu': 'x86-64',
           'os': 'Ubuntu-14.04',
           'pool': 'luci.infra.cron',
       },
       service_account = service_account,
       # 1 stuck builder shouldn't block others using the same pool of machines.
       execution_timeout = execution_timeout or 10 * time.minute,
-      swarming_tags = ['vpython:native-python-wrapper'],
       schedule = 'with 240s interval',
   )
   luci.list_view_entry(

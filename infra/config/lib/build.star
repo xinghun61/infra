@@ -4,6 +4,8 @@
 
 """Functions and constants related to build.git used by all modules."""
 
+load('//lib/infra.star', 'infra')
+
 
 def poller(name):
   """Defines a gitiles poller."""
@@ -22,7 +24,38 @@ def recipe(name):
   )
 
 
+def presubmit(
+      *,
+
+      name,
+      cq_group,
+      repo_name,  # e.g. 'infra' or 'luci_py', as expected by the recipe
+
+      os=None,
+      experiment_percentage=None
+  ):
+  """Defines a try builder that runs 'run_presubmit' recipe."""
+  luci.builder(
+      name = name,
+      bucket = 'try',
+      recipe = 'run_presubmit',
+      properties = {'repo_name': repo_name, 'runhooks': True},
+      service_account = infra.SERVICE_ACCOUNT_TRY,
+      dimensions = {
+          'os': os or 'Ubuntu-14.04',
+          'pool': 'luci.flex.try',
+      },
+  )
+  luci.cq_tryjob_verifier(
+      builder = name,
+      cq_group = cq_group,
+      disable_reuse = True,
+      experiment_percentage = experiment_percentage,
+  )
+
+
 build = struct(
     poller = poller,
     recipe = recipe,
+    presubmit = presubmit,
 )

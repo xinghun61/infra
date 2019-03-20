@@ -4,8 +4,8 @@
 
 """Definitions of luci-py.git CI resources."""
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
-load('//lib/presubmit.star', 'presubmit')
 
 
 infra.cq_group(
@@ -13,7 +13,7 @@ infra.cq_group(
     repo = 'https://chromium.googlesource.com/infra/luci/luci-py',
 )
 
-presubmit.builder(
+build.presubmit(
     name = 'Luci-py Presubmit',
     cq_group = 'luci-py cq',
     repo_name = 'luci_py',

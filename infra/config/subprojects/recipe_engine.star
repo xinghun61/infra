@@ -4,8 +4,8 @@
 
 """Definitions of recipes-py.git (aka recipe_engine) CI resources."""
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
-load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -32,12 +32,12 @@ luci.cq_group(
 
 
 # Presubmit trybots.
-presubmit.builder(
+build.presubmit(
     name = 'Recipes-py Presubmit',
     cq_group = 'recipes-py cq',
     repo_name = 'recipes_py',
 )
-presubmit.builder(
+build.presubmit(
     name = 'Recipes-py Windows Presubmit',
     cq_group = 'recipes-py cq',
     repo_name = 'recipes_py',

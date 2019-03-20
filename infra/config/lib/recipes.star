@@ -45,13 +45,10 @@ def simulation_tester(
       properties = {'project_under_test': project_under_test},
       dimensions = {
           'os': 'Ubuntu-14.04',
-          'cpu': 'x86-64',
           'pool': 'luci.flex.ci',
       },
       service_account = infra.SERVICE_ACCOUNT_CI,
       build_numbers = True,
-      execution_timeout = 30 * time.minute,
-      swarming_tags = ['vpython:native-python-wrapper'],
       triggered_by = [triggered_by],
   )
   if console_view:
@@ -76,12 +73,9 @@ def roll_trybots(upstream, downstream, cq_group):
         },
         dimensions = {
             'os': 'Ubuntu-14.04',
-            'cpu': 'x86-64',
             'pool': 'luci.flex.try',
         },
         service_account = infra.SERVICE_ACCOUNT_TRY,
-        execution_timeout = 30 * time.minute,
-        swarming_tags = ['vpython:native-python-wrapper'],
     )
     luci.cq_tryjob_verifier(
         builder = name,
@@ -98,12 +92,10 @@ def led_recipes_tester(name, cq_group, repo_name):
       properties = {'repo_name': repo_name},
       dimensions = {
           'os': 'Ubuntu-14.04',
-          'cpu': 'x86-64',
           'pool': 'luci.flex.try',
       },
       service_account = 'infra-try-recipes-tester@chops-service-accounts.iam.gserviceaccount.com',
       execution_timeout = 3 * time.hour,
-      swarming_tags = ['vpython:native-python-wrapper'],
   )
   luci.cq_tryjob_verifier(
       builder = name,

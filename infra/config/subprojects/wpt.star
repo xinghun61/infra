@@ -15,13 +15,11 @@ def cron(name, recipe, execution_timeout=None):
       recipe = recipe,
       dimensions = {
           'builder': name,
-          'cpu': 'x86-64',
           'os': 'Ubuntu-14.04',
           'pool': 'luci.infra.cron',
       },
       service_account = 'wpt-autoroller@chops-service-accounts.iam.gserviceaccount.com',
       execution_timeout = execution_timeout or time.hour,
-      swarming_tags = ['vpython:native-python-wrapper'],
       schedule = 'with 60s interval',
   )
   luci.list_view_entry(

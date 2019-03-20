@@ -4,8 +4,8 @@
 
 """Definitions of depot_tools.git CI resources."""
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
-load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -32,7 +32,7 @@ luci.cq_group(
 
 
 # Presubmit trybots.
-presubmit.builder(
+build.presubmit(
     name = 'Depot Tools Presubmit',
     cq_group = 'depot_tools cq',
     repo_name = 'depot_tools',
@@ -81,13 +81,10 @@ luci.builder(
     bucket = 'ci',
     recipe = 'depot_tools_builder',
     dimensions = {
-        'cpu': 'x86-64',
         'os': 'Ubuntu-14.04',
         'pool': 'luci.flex.ci',
     },
     service_account = 'infra-ci-depot-tools-uploader@chops-service-accounts.iam.gserviceaccount.com',
-    execution_timeout = 30 * time.minute,
-    swarming_tags = ['vpython:native-python-wrapper'],
     build_numbers = True,
     triggered_by = ['depot_tools-gitiles-trigger'],
 )

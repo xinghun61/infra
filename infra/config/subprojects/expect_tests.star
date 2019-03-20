@@ -4,7 +4,7 @@
 
 """Definitions of expect_tests.git CI resources."""
 
-load('//lib/presubmit.star', 'presubmit')
+load('//lib/build.star', 'build')
 
 
 REPO_URL = 'https://chromium.googlesource.com/infra/testing/expect_tests'
@@ -16,7 +16,7 @@ luci.cq_group(
 )
 
 
-presubmit.builder(
+build.presubmit(
     name = 'Expect-Tests Presubmit',
     cq_group = 'expect_tests cq',
     repo_name = 'expect_tests',

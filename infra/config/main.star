@@ -7,7 +7,6 @@
 
 WORK IN PROGRESS:
   * Doesn't affect anything.
-  * Not hooked up to presubmit tests.
   * If you just want to change a config, this is not the right place yet. Modify
     some of `*.cfg` files directly.
 
@@ -29,7 +28,6 @@ TODO(vadimsh): Add more.
 
 load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
-load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -104,6 +102,12 @@ luci.milo(
 luci.cq(status_host = 'chromium-cq-status.appspot.com')
 
 
+# Global builder defaults.
+luci.builder.defaults.swarming_tags.set(['vpython:native-python-wrapper'])
+luci.builder.defaults.execution_timeout.set(30 * time.minute)
+luci.builder.defaults.dimensions.set({'cpu': 'x86-64'})
+
+
 # Resources shared by all subprojects.
 
 
@@ -142,12 +146,12 @@ luci.bucket(
 
 infra.poller(name = 'infra-gitiles-trigger')
 build.poller(name = 'build-gitiles-trigger')
-presubmit.recipe()
+build.recipe(name = 'run_presubmit')
 recipes.recipes()
 luci.list_view(name = 'cron')
 
-# Define per-subproject resources. They may refer to the shared resources
-# defined above by name.
+# Per-subproject resources. They may refer to the shared resources defined
+# above by name.
 
 exec('//subprojects/build.star')
 exec('//subprojects/codesearch.star')

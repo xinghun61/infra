@@ -4,8 +4,8 @@
 
 """Definitions of infra.git CI resources."""
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
-load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -16,7 +16,7 @@ infra.console_view(name = 'infra', title = 'infra/infra repository console')
 infra.cq_group(name = 'infra cq', tree_status_host = 'infra-status.appspot.com')
 
 
-def ci_builder(name, os, cpu='x86-64'):
+def ci_builder(name, os, cpu=None):
   infra.builder(
       name = name,
       bucket = 'ci',
@@ -71,7 +71,7 @@ try_builder(name = 'Infra Win Tester', os = 'Windows')
 try_builder(name = 'Infra WCT Tester', os = 'Ubuntu-14.04', recipe = 'infra_wct_tester')
 
 # Presubmit trybot.
-presubmit.builder(name = 'Infra Presubmit', cq_group = 'infra cq', repo_name = 'infra')
+build.presubmit(name = 'Infra Presubmit', cq_group = 'infra cq', repo_name = 'infra')
 
 # Recipes ecosystem.
 recipes.simulation_tester(

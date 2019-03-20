@@ -4,8 +4,8 @@
 
 """Definitions of build.git CI resources."""
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
-load('//lib/presubmit.star', 'presubmit')
 load('//lib/recipes.star', 'recipes')
 
 
@@ -26,7 +26,7 @@ luci.cq_group(
 
 
 # Presubmit trybots.
-presubmit.builder(
+build.presubmit(
     name = 'Build Presubmit',
     cq_group = 'build cq',
     repo_name = 'build',
