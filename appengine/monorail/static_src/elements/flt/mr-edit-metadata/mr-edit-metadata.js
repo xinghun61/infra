@@ -10,6 +10,8 @@ import '@vaadin/vaadin-upload/vaadin-upload.js';
 import '@vaadin/vaadin-upload/theme/lumo/vaadin-upload.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../mr-error/mr-error.js';
+import {displayNameToUserRef, labelStringToRef, componentStringToRef,
+  issueStringToRef, issueRefToString} from '../../shared/converters.js';
 import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
 import {selectors} from '../../redux/selectors.js';
@@ -171,7 +173,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 status="[[status]]"
                 statuses="[[statuses]]"
                 is-approval="[[isApproval]]"
-                merged-into="[[_mapIssueRefToIssueString(mergedInto, projectName)]]"
+                merged-into="[[_computeMergedIntoString(projectName, mergedInto)]]"
               ></mr-edit-status>
             </template>
 
@@ -480,26 +482,20 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     this.shadowRoot.querySelector('#commentText').focus();
   }
 
+  getCommentContent() {
+    if (!this.isConnected) return '';
+    return this.shadowRoot.querySelector('#commentText').value;
+  }
+
   getDelta() {
-    if (!this.isConnected) {
-      return {};
-    }
+    if (!this.isConnected || !this._canEditIssue) return {}
 
     const result = {};
     const root = this.shadowRoot;
 
-    const commentContent = root.querySelector('#commentText').value;
-    if (commentContent) {
-      result['comment'] = commentContent;
-    }
-
-    if (!this._canEditIssue) {
-      return result;
-    }
-
     const statusInput = root.querySelector('#statusInput');
     if (statusInput) {
-      Object.assign(result, statusInput.getDelta());
+      Object.assign(result, statusInput.getDelta(this.projectName));
     }
 
     if (this.isApproval) {
@@ -507,11 +503,13 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         const approversInput = root.querySelector('#approversInput');
         const approversAdded = approversInput.getValuesAdded();
         if (approversAdded && approversAdded.length) {
-          result['approversAdded'] = approversAdded;
+          result.approverRefsAdd = approversAdded.map(
+            displayNameToUserRef);
         }
         const approversRemoved = approversInput.getValuesRemoved();
         if (approversRemoved && approversRemoved.length) {
-          result['approversRemoved'] = approversRemoved;
+          result.approverRefsRemove = approversRemoved.map(
+            displayNameToUserRef);
         }
       }
     } else {
@@ -522,7 +520,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       if (summaryInput) {
         const newSummary = summaryInput.value;
         if (newSummary !== this.summary) {
-          result['summary'] = newSummary;
+          result.summary = newSummary;
         }
       }
 
@@ -530,24 +528,26 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       if (ownerInput) {
         const newOwner = ownerInput.getValue();
         if (newOwner !== this.ownerName) {
-          result['owner'] = newOwner;
+          result.ownerRef = displayNameToUserRef(newOwner);
         }
       }
 
       this._addListChangesToDelta(result, 'labelsInput',
-        'labelsAdded', 'labelsRemoved');
+        'labelRefsAdd', 'labelRefsRemove', labelStringToRef);
 
       this._addListChangesToDelta(result, 'ccInput',
-        'ccAdded', 'ccRemoved');
+        'ccRefsAdd', 'ccRefsRemove', displayNameToUserRef);
 
       this._addListChangesToDelta(result, 'componentsInput',
-        'componentsAdded', 'componentsRemoved');
+        'componentRefsAdd', 'componentRefsRemove', componentStringToRef);
 
       this._addListChangesToDelta(result, 'blockedOnInput',
-        'blockedOnAdded', 'blockedOnRemoved');
+        'blockedOnRefsAdd', 'blockedOnRefsRemove',
+        issueStringToRef.bind(null, this.projectName));
 
       this._addListChangesToDelta(result, 'blockingInput',
-        'blockingAdded', 'blockingRemoved');
+        'blockingRefsAdd', 'blockingRefsRemove',
+        issueStringToRef.bind(null, this.projectName));
     }
 
     let fieldValuesAdded = [];
@@ -583,10 +583,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     });
 
     if (fieldValuesAdded.length) {
-      result['fieldValuesAdded'] = fieldValuesAdded;
+      result.fieldValsAdd = fieldValuesAdded;
     }
     if (fieldValuesRemoved.length) {
-      result['fieldValuesRemoved'] = fieldValuesRemoved;
+      result.fieldValsRemove = fieldValuesRemoved;
     }
 
     return result;
@@ -596,17 +596,17 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     this.showNicheFields = !this.showNicheFields;
   }
 
-  _addListChangesToDelta(delta, inputId, addedKey, removedKey) {
+  _addListChangesToDelta(delta, inputId, addedKey, removedKey, mapFn) {
     const root = this.shadowRoot;
     const input = root.querySelector(`#${inputId}`);
     if (!input) return;
     const valuesAdded = input.getValuesAdded();
     const valuesRemoved = input.getValuesRemoved();
     if (valuesAdded && valuesAdded.length) {
-      delta[addedKey] = valuesAdded;
+      delta[addedKey] = valuesAdded.map(mapFn);
     }
     if (valuesRemoved && valuesRemoved.length) {
-      delta[removedKey] = valuesRemoved;
+      delta[removedKey] = valuesRemoved.map(mapFn);
     }
   }
 
@@ -614,17 +614,9 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     return fieldDefs.reduce((acc, fd) => acc + (fd.isNiche | 0), 0);
   }
 
-  _mapIssueRefToIssueString(ref, projectName) {
-    if (!ref) return '';
-    if (ref.projectName === projectName) {
-      return `${ref.localId}`;
-    }
-    return `${ref.projectName}:${ref.localId}`;
-  }
-
   _mapBlockerRefsToIdStrings(arr, projectName) {
     if (!arr || !arr.length) return [];
-    return arr.map((v) => this._mapIssueRefToIssueString(v, projectName));
+    return arr.map(issueRefToString.bind(null, projectName));
   }
 
   // For simulating && in templating.
@@ -702,6 +694,12 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   _sendEmailChecked(evt) {
     this.sendEmail = evt.detail.checked;
+  }
+
+  // Needed because Polymer doesn't accept non member functions.
+  // TODO(ehmaldonado): Remove
+  _computeMergedIntoString(projectName, ref) {
+    return [issueRefToString(projectName, ref)];
   }
 }
 

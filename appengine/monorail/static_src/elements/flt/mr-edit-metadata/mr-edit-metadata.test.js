@@ -70,6 +70,22 @@ suite('mr-edit-metadata', () => {
     });
   });
 
+  test('not changing status produces no delta', () => {
+    element.statuses = [
+      {'status': 'Duplicate'},
+    ];
+    element.status = 'Duplicate';
+    element.mergedInto = {
+      projectName: 'chromium',
+      localId: 1234,
+    };
+    element.projectName = 'chromium';
+
+    flush();
+
+    assert.deepEqual(element.getDelta(), {});
+  });
+
   test('changing status to duplicate produces delta change', () => {
     element.statuses = [
       {'status': 'New'},
@@ -92,7 +108,10 @@ suite('mr-edit-metadata', () => {
       'chromium:1234');
     assert.deepEqual(element.getDelta(), {
       status: 'Duplicate',
-      mergedInto: 'chromium:1234',
+      mergedIntoRef: {
+        projectName: 'chromium',
+        localId: 1234,
+      },
     });
   });
 
@@ -129,7 +148,7 @@ suite('mr-edit-metadata', () => {
     element.shadowRoot.querySelector(
       '#testFieldInput').setValue('test value');
     assert.deepEqual(element.getDelta(), {
-      fieldValuesAdded: [
+      fieldValsAdd: [
         {
           fieldRef: {
             fieldName: 'testField',
@@ -138,6 +157,31 @@ suite('mr-edit-metadata', () => {
           value: 'test value',
         },
       ],
+    });
+  });
+
+  test('changing blockedon produces delta change', () => {
+    element.blockedOn = [
+      {projectName: 'chromium', localId: '1234'},
+      {projectName: 'monorail', localId: '4567'},
+    ];
+    element.projectName = 'chromium';
+
+    flush();
+
+    const blockedOnInput = element.shadowRoot.querySelector('#blockedOnInput');
+    const inputs = blockedOnInput.shadowRoot.querySelectorAll('.multi');
+    inputs[1].value = 'v8:5678';
+
+    assert.deepEqual(element.getDelta(), {
+      blockedOnRefsAdd: [{
+        projectName: 'v8',
+        localId: 5678,
+      }],
+      blockedOnRefsRemove: [{
+        projectName: 'monorail',
+        localId: 4567,
+      }],
     });
   });
 
@@ -191,7 +235,7 @@ suite('mr-edit-metadata', () => {
     element.shadowRoot.querySelector(
       '#enumFieldInput').setValue(['one', 'two']);
     assert.deepEqual(element.getDelta(), {
-      fieldValuesAdded: [
+      fieldValsAdd: [
         {
           fieldRef: {
             fieldName: 'enumField',
@@ -266,5 +310,61 @@ suite('mr-edit-metadata', () => {
       element.shadowRoot.querySelector('#inputGrid'));
     assert.isNull(
       element.shadowRoot.querySelector('#summaryInput'));
+  });
+
+  test('duplicate issue is rendered correctly', () => {
+    element.statuses = [
+      {'status': 'Duplicate'},
+    ];
+    element.status = 'Duplicate';
+    element.projectName = 'chromium';
+    element.mergedInto = {
+      projectName: 'chromium',
+      localId: 1234,
+    };
+
+    flush();
+
+    const statusComponent = element.shadowRoot.querySelector(
+      '#statusInput');
+    const root = statusComponent.shadowRoot;
+    assert.equal(
+      root.querySelector('#mergedIntoInput').getValue(), '1234');
+  });
+
+  test('duplicate issue on different project is rendered correctly', () => {
+    element.statuses = [
+      {'status': 'Duplicate'},
+    ];
+    element.status = 'Duplicate';
+    element.projectName = 'chromium';
+    element.mergedInto = {
+      projectName: 'monorail',
+      localId: 1234,
+    };
+
+    flush();
+
+    const statusComponent = element.shadowRoot.querySelector(
+      '#statusInput');
+    const root = statusComponent.shadowRoot;
+    assert.equal(
+      root.querySelector('#mergedIntoInput').getValue(), 'monorail:1234');
+  });
+
+  test('blocking issues are rendered correctly', () => {
+    element.blocking = [
+      {projectName: 'chromium', localId: '1234'},
+      {projectName: 'monorail', localId: '4567'},
+    ];
+    element.projectName = 'chromium';
+
+    flush();
+
+    const blockingInput = element.shadowRoot.querySelector('#blockingInput');
+    const inputs = blockingInput.shadowRoot.querySelectorAll('.multi');
+    const inputsValues = Array.from(inputs).map((input) => input.value);
+
+    assert.deepEqual(['1234', 'monorail:4567', ''], inputsValues);
   });
 });

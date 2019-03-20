@@ -104,9 +104,15 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
 
   save() {
     const form = this.shadowRoot.querySelector('#metadataForm');
-    const data = form.getDelta();
-    data.sendEmail = form.sendEmail;
-    const message = this._generateMessage(data);
+    const message = {
+      issueRef: {
+        projectName: this.projectName,
+        localId: this.issueId,
+      },
+      delta: form.getDelta(),
+      commentContent: form.getCommentContent(),
+      sendEmail: form.sendEmail,
+    };
 
     // Add files to message.
     const loads = loadAttachments(form.newAttachments);
@@ -138,134 +144,6 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     if (focusId.toLowerCase() === 'makechanges') {
       this.focus();
     }
-  }
-
-  _generateMessage(data) {
-    let message = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
-    };
-
-    if (data.sendEmail) {
-      message.sendEmail = true;
-    }
-
-    let delta = {};
-
-    if (data.comment) {
-      message['commentContent'] = data.comment;
-    }
-
-    if (data.owner !== undefined) {
-      delta['ownerRef'] = this._displayNameToUserRef(data.owner);
-    }
-
-    if (data.status !== undefined) {
-      delta['status'] = data.status;
-    }
-
-    if (data.mergedInto === '') {
-      delta['mergedIntoRef'] = {};
-    } else if (data.mergedInto !== undefined) {
-      delta['mergedIntoRef'] = this._issueStringToIssueRef(data.mergedInto);
-    }
-
-    if (data.summary) {
-      delta['summary'] = data.summary;
-    }
-
-    const ccAdded = data.ccAdded || [];
-    const ccRemoved = data.ccRemoved || [];
-
-    if (ccAdded.length) {
-      delta['ccRefsAdd'] = ccAdded.map(this._displayNameToUserRef);
-    }
-
-    if (ccRemoved.length) {
-      delta['ccRefsRemove'] = ccRemoved.map(this._displayNameToUserRef);
-    }
-
-    const componentsAdded = data.componentsAdded || [];
-    const componentsRemoved = data.componentsRemoved || [];
-
-    if (componentsAdded.length) {
-      delta['compRefsAdd'] = componentsAdded.map((path) => ({path}));
-    }
-
-    if (componentsRemoved.length) {
-      delta['compRefsRemove'] = componentsRemoved.map((path) => ({path}));
-    }
-
-    const labelsAdded = data.labelsAdded || [];
-    const labelsRemoved = data.labelsRemoved || [];
-
-    if (labelsAdded.length) {
-      delta['labelRefsAdd'] = labelsAdded.map((label) => ({label}));
-    }
-
-    if (labelsRemoved.length) {
-      delta['labelRefsRemove'] = labelsRemoved.map((label) => ({label}));
-    }
-
-    const blockingAdded = data.blockingAdded || [];
-    const blockingRemoved = data.blockingRemoved || [];
-
-    if (blockingAdded.length) {
-      delta['blockingRefsAdd'] = blockingAdded.map(
-        this._issueStringToIssueRef.bind(this));
-    }
-
-    if (blockingRemoved.length) {
-      delta['blockingRefsRemove'] = blockingRemoved.map(
-        this._issueStringToIssueRef.bind(this));
-    }
-
-    const blockedOnAdded = data.blockedOnAdded || [];
-    const blockedOnRemoved = data.blockedOnRemoved || [];
-
-    if (blockedOnAdded.length) {
-      delta['blockedOnRefsAdd'] = blockedOnAdded.map(
-        this._issueStringToIssueRef.bind(this));
-    }
-
-    if (blockedOnRemoved.length) {
-      delta['blockedOnRefsRemove'] = blockedOnRemoved.map(
-        this._issueStringToIssueRef.bind(this));
-    }
-
-    const fieldValuesAdded = data.fieldValuesAdded || [];
-    const fieldValuesRemoved = data.fieldValuesRemoved || [];
-
-    if (fieldValuesAdded.length) {
-      delta['fieldValsAdd'] = data.fieldValuesAdded;
-    }
-
-    if (fieldValuesRemoved.length) {
-      delta['fieldValsRemove'] = data.fieldValuesRemoved;
-    }
-
-    if (Object.keys(delta).length > 0) {
-      message.delta = delta;
-    }
-
-    return message;
-  }
-
-  _displayNameToUserRef(name) {
-    return {'displayName': name};
-  }
-
-  _issueStringToIssueRef(idStr) {
-    const matches = idStr.match(ISSUE_ID_REGEX);
-    if (!matches) {
-      // TODO(zhangtiff): Add proper clientside form validation.
-      throw new Error('Bug has an invalid input format');
-    }
-    const projectName = matches[1] ? matches[1] : this.projectName;
-    const localId = Number.parseInt(matches[2]);
-    return {localId, projectName};
   }
 
   _computeLabelNames(labels) {

@@ -5,6 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
+import {issueStringToRef} from '../../shared/converters.js';
 import '../../shared/mr-shared-styles.js';
 import './mr-edit-field.js';
 
@@ -77,7 +78,6 @@ export class MrEditStatus extends PolymerElement {
       <template is="dom-if" if="[[_showMergedInto]]">
         <div class="grid-input">
           <label for="mergedIntoInput" id="mergedIntoLabel">Merged into:</label>
-
           <mr-edit-field
             id="mergedIntoInput"
             initial-values="[[mergedInto]]"
@@ -117,7 +117,7 @@ export class MrEditStatus extends PolymerElement {
     };
   }
 
-  getDelta() {
+  getDelta(projectName) {
     const result = {};
     const root = this.shadowRoot;
 
@@ -130,12 +130,12 @@ export class MrEditStatus extends PolymerElement {
     }
 
     if (this.status === 'Duplicate' && !this._showMergedInto) {
-      result['mergedInto'] = '';
+      result['mergedIntoRef'] = {};
     } else if (this._showMergedInto) {
       const newMergedInto = root.querySelector(
         '#mergedIntoInput').getValue();
-      if (newMergedInto !== this.mergedInto) {
-        result['mergedInto'] = newMergedInto;
+      if (newMergedInto !== this.mergedInto[0]) {
+        result['mergedIntoRef'] = issueStringToRef(projectName, newMergedInto);
       }
     }
 

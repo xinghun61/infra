@@ -358,10 +358,12 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
 
   save() {
     const form = this.$.metadataForm;
-    const data = form.getDelta();
-    const sendEmail = form.sendEmail;
     const loads = loadAttachments(form.newAttachments);
-    const delta = this._generateDelta(data);
+
+    const approvalDelta = form.getDelta();
+    if (approvalDelta.status) {
+      approvalDelta.status = TEXT_TO_STATUS_ENUM[delta.status];
+    }
 
     Promise.all(loads).then((uploads) => {
       if (data.comment || Object.keys(delta).length > 0 ||
@@ -375,10 +377,10 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
             type: fieldTypes.APPROVAL_TYPE,
             fieldName: this.fieldName,
           },
-          commentContent: data.comment,
-          approvalDelta: delta,
+          commentContent: form.getCommentContent(),
+          approvalDelta: approvalDelta,
           uploads: uploads,
-          sendEmail: sendEmail,
+          sendEmail: form.sendEmail,
         }));
       }
     }).catch((reason) => {
@@ -396,39 +398,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     if (evt && evt.detail && evt.detail.callback) {
       evt.detail.callback();
     }
-  }
-
-  _generateDelta(data) {
-    let delta = {};
-
-    if (data.status) {
-      delta['status'] = TEXT_TO_STATUS_ENUM[data.status];
-    }
-
-    const approversAdded = data.approversAdded || [];
-    const approversRemoved = data.approversRemoved || [];
-
-    if (approversAdded.length > 0) {
-      delta['approverRefsAdd'] = this._displayNamesToUserRefs(
-        approversAdded);
-    }
-
-    if (approversRemoved.length > 0) {
-      delta['approverRefsRemove'] = this._displayNamesToUserRefs(
-        approversRemoved);
-    }
-
-    const fieldValuesAdded = data.fieldValuesAdded || [];
-    const fieldValuesRemoved = data.fieldValuesRemoved || [];
-
-    if (fieldValuesAdded.length) {
-      delta['fieldValsAdd'] = data.fieldValuesAdded;
-    }
-
-    if (fieldValuesRemoved.length) {
-      delta['fieldValsRemove'] = data.fieldValuesRemoved;
-    }
-    return delta;
   }
 
   _displayNamesToUserRefs(list) {

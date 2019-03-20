@@ -105,7 +105,13 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       // Check if there were forms with unsaved data before loading the next
       // page.
       const isDirty = this.formsToCheck.some((form) => {
-        return (Object.keys(form.getDelta()).length !== 0);
+        if (Object.keys(form.getDelta()).length !== 0) {
+          return true;
+        }
+        if (form.getCommentContent()) {
+          return true;
+        }
+        return false;
       });
       if (!isDirty || confirm('Discard your changes?')) {
         // Clear the forms to be checked, since we're navigating away.

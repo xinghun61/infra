@@ -58,7 +58,10 @@ suite('mr-edit-status', () => {
     element.shadowRoot.querySelector('#mergedIntoInput').setValue('chromium:123');
     assert.deepEqual(element.getDelta(), {
       status: 'Duplicate',
-      mergedInto: 'chromium:123',
+      mergedIntoRef: {
+        projectName: 'chromium',
+        localId: 123,
+      },
     });
   });
 
@@ -76,7 +79,7 @@ suite('mr-edit-status', () => {
 
     assert.deepEqual(element.getDelta(), {
       status: 'New',
-      mergedInto: '',
+      mergedIntoRef: {},
     });
   });
 });
