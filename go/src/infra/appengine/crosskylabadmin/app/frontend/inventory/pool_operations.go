@@ -284,7 +284,12 @@ func applyChanges(lab *inventory.Lab, changes []*fleet.PoolChange) error {
 	newPool := make(map[string]inventory.SchedulableLabels_DUTPool)
 	for _, c := range changes {
 		oldPool[c.DutId] = inventory.SchedulableLabels_DUTPool(inventory.SchedulableLabels_DUTPool_value[c.OldPool])
-		newPool[c.DutId] = inventory.SchedulableLabels_DUTPool(inventory.SchedulableLabels_DUTPool_value[c.NewPool])
+		np, ok := inventory.SchedulableLabels_DUTPool_value[c.NewPool]
+		if !ok {
+			// TODO: Add support for moving devices to non-critical pools.
+			return fmt.Errorf("invalid destination pool %s, not a known critical pool", c.NewPool)
+		}
+		newPool[c.DutId] = inventory.SchedulableLabels_DUTPool(np)
 	}
 
 	for _, d := range lab.Duts {
