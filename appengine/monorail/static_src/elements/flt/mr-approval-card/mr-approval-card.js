@@ -351,21 +351,23 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
   }
 
   reset(issue) {
-    if (!this.$.metadataForm) return;
-    this.$.metadataForm.reset();
+    const form = this.shadowRoot.querySelector('#metadataForm');
+    if (!form) return;
+    form.reset();
   }
 
   save() {
-    const form = this.$.metadataForm;
+    const form = this.shadowRoot.querySelector('#metadataForm');
     const loads = loadAttachments(form.newAttachments);
 
+    const commentContent = form.getCommentContent();
     const approvalDelta = form.getDelta();
     if (approvalDelta.status) {
-      approvalDelta.status = TEXT_TO_STATUS_ENUM[delta.status];
+      approvalDelta.status = TEXT_TO_STATUS_ENUM[approvalDelta.status];
     }
 
     Promise.all(loads).then((uploads) => {
-      if (data.comment || Object.keys(delta).length > 0 ||
+      if (commentContent || Object.keys(approvalDelta).length > 0 ||
           uploads.length > 0) {
         this.dispatchAction(actionCreator.updateApproval({
           issueRef: {
@@ -376,10 +378,10 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
             type: fieldTypes.APPROVAL_TYPE,
             fieldName: this.fieldName,
           },
-          commentContent: form.getCommentContent(),
-          approvalDelta: approvalDelta,
-          uploads: uploads,
           sendEmail: form.sendEmail,
+          commentContent,
+          approvalDelta,
+          uploads,
         }));
       }
     }).catch((reason) => {

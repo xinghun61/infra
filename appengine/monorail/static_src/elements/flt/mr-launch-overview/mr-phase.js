@@ -111,7 +111,18 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         </template>
       </h2>
       <template is="dom-repeat" items="[[approvals]]">
-        <mr-approval-card approvers="[[item.approverRefs]]" setter="[[item.setterRef]]" field-name="[[item.fieldRef.fieldName]]" phase-name="[[phaseName]]" status-enum="[[item.status]]" survey="[[item.survey]]" survey-template="[[item.surveyTemplate]]" urls="[[item.urls]]" labels="[[item.labels]]" users="[[item.users]]"></mr-approval-card>
+        <mr-approval-card
+          approvers="[[item.approverRefs]]"
+          setter="[[item.setterRef]]"
+          field-name="[[item.fieldRef.fieldName]]"
+          phase-name="[[phaseName]]"
+          status-enum="[[item.status]]"
+          survey="[[item.survey]]"
+          survey-template="[[item.surveyTemplate]]"
+          urls="[[item.urls]]"
+          labels="[[item.labels]]"
+          users="[[item.users]]"
+        ></mr-approval-card>
       </template>
       <template is="dom-if" if="[[!approvals.length]]">
         No tasks for this phase.
@@ -227,41 +238,27 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
   }
 
   save() {
-    const metadata = this.$.metadataForm;
-    const data = metadata.getDelta();
-    let message = {
+    const form = this.shadowRoot.querySelector('#metadataForm');
+    const delta = form.getDelta();
+
+    if (delta.fieldValsAdd) {
+      delta.fieldValsAdd = delta.fieldValsAdd.map(
+        (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
+    }
+    if (delta.fieldValsRemove) {
+      delta.fieldValsRemove = delta.fieldValsRemove.map(
+        (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
+    }
+
+    const message = {
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,
       },
+      delta: delta,
+      sendEmail: form.sendEmail,
+      commentContent: form.getCommentContent(),
     };
-
-    if (metadata.sendEmail) {
-      message.sendEmail = true;
-    }
-
-    let delta = {};
-
-    const fieldValuesAdded = data.fieldValuesAdded || [];
-    const fieldValuesRemoved = data.fieldValuesRemoved || [];
-
-    if (fieldValuesAdded.length) {
-      delta['fieldValsAdd'] = data.fieldValuesAdded.map(
-        (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
-    }
-
-    if (fieldValuesRemoved.length) {
-      delta['fieldValsRemove'] = data.fieldValuesRemoved.map(
-        (fv) => Object.assign({phaseRef: {phaseName: this.phaseName}}, fv));
-    }
-
-    if (data.comment) {
-      message['commentContent'] = data.comment;
-    }
-
-    if (Object.keys(delta).length > 0) {
-      message.delta = delta;
-    }
 
     if (message.commentContent || message.delta) {
       this.dispatchAction(actionCreator.updateIssue(message));
