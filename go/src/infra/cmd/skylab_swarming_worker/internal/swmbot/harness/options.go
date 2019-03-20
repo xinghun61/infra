@@ -8,19 +8,11 @@ package harness
 type Option func(*Info)
 
 // UpdateInventory returns an Option that enables inventory updates.
-// The admin service for updating needs to be provided,
-// e.g. foo.appspot.com.
-func UpdateInventory() Option {
-	return func(i *Info) {
-		i.labelUpdater.updateLabels = true
-	}
-}
-
-// TaskName returns an Option that sets the task name.  The task name
-// is for informational purposes only.  For example, it is used to
-// provide context for inventory label updates.
-func TaskName(name string) Option {
+// A task name to be associated with the inventory update should be
+// provided.
+func UpdateInventory(name string) Option {
 	return func(i *Info) {
 		i.labelUpdater.taskName = name
+		i.labelUpdater.updateLabels = true
 	}
 }
