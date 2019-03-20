@@ -1,0 +1,68 @@
+// Copyright 2019 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package arquebus.config;
+
+import "google/protobuf/duration.proto";
+
+option go_package = "config";
+
+// Config is the service-wide configuration data for Arquebus
+message Config {
+    // AccessGroup is the luci-auth group who has access to admin pages and
+    // APIs.
+    string access_group = 1;
+
+    // The endpoint for Monorail APIs.
+    string monorail_hostname = 2;
+
+    // A list of Assigner config(s).
+    repeated Assigner assigners = 3;
+}
+
+// IssueQuery describes the issue query to be used for searching unassigned
+// issues in Monorail.
+message IssueQuery {
+  // Free-form text query.
+  string q = 1;
+  // String name of the projects to search issues for, e.g. "chromium".
+  repeated string project_names = 2;
+}
+
+// Assigner contains specifications for an Assigner job.
+message Assigner {
+  // The unique ID of the Assigner.
+  //
+  // This value will be used in URLs of UI, so keep it short.
+  string id = 1;
+
+  // An email list of the owners of the Assigner.
+  repeated string owners = 2;
+
+  // The duration between each Assigner run.
+  //
+  // The assigner is scheduled to run every a given interval, specified in this
+  // field. Effectively, this is the interval between the start of two
+  // consecutive schedules.
+  google.protobuf.Duration interval = 3;
+
+  // IssueQuery describes the search criteria to look for issues to assign.
+  IssueQuery issue_query = 4;
+
+  // The name of a rotation to assign open issues to.
+  //
+  // All the values should be the name of a rotation in RotaNG. If multiple
+  // rotations are specified, Assigner iterates the rotations in the order
+  // until it finds a currently available trooper/oncaller, and then assigns
+  // open issues to the trooper/oncaller.
+  repeated string rotations = 5;
+
+  // If DryRun is set, Assigner doesn't update the found issues.
+  bool dry_run = 6;
+
+  // The description shown on UI.
+  string description = 7;
+}
