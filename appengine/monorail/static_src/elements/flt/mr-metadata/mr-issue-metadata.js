@@ -25,7 +25,7 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       <style include="mr-shared-styles">
         :host {
           box-sizing: border-box;
-          padding: 0.5em 16px;
+          padding: 0.5em 8px;
           max-width: 100%;
           display: block;
         }
@@ -72,6 +72,7 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
           cursor: pointer;
           padding: 0;
           margin: 0;
+          margin-right: 4px;
         }
         .star-line button[disabled] {
           opacity: 0.5;
@@ -80,11 +81,14 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         .star-line i.material-icons {
           color: hsl(120, 5%, 66%);
         }
+        .star-line i.material-icons.starred {
+          color: cornflowerblue;
+        }
       </style>
       <div class="star-line">
         <button on-click="toggleStar" disabled\$="[[!_canStar]]">
           <template is="dom-if" if="[[isStarred]]">
-            <i class="material-icons" title="You've starred this issue">star</i>
+            <i class="material-icons starred" title="You've starred this issue">star</i>
           </template>
           <template is="dom-if" if="[[!isStarred]]">
             <i class="material-icons" title="Click to star this issue">star_border</i>

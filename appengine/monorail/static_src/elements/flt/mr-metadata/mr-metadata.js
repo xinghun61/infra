@@ -48,6 +48,16 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
           text-align: left;
           width: 40%;
         }
+        button.linkify {
+          display: flex;
+          align-items: center;
+          text-decoration: none;
+          padding: 0.25em 0;
+        }
+        button.linkify i.material-icons {
+          margin-right: 4px;
+          font-size: 20px;
+        }
         .group-separator {
           border-top: var(--chops-normal-border);
         }
@@ -210,11 +220,13 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
               </mr-bug-link>
               <br />
             </template>
-            <chops-button
-              on-click="openViewBlockedOn">
-              <i class="material-icons">view_list</i>
-              &nbsp;View details
-            </chops-button>
+            <button
+              class="linkify"
+              on-click="openViewBlockedOn"
+            >
+              <i class="material-icons">list</i>
+              View details
+            </button>
           </td>
         </tr>
         <chops-dialog id="viewBlockedOnDialog">
@@ -270,11 +282,12 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
                 <br />
               </template>
             </template>
-            <chops-button
-              on-click="openUpdateHotlists">
-              <i class="material-icons">create</i>
-              Update your hotlists
-            </chops-button>
+            <button
+              class="linkify"
+              on-click="openUpdateHotlists"
+            >
+              <i class="material-icons">create</i> Update your hotlists
+            </button>
           </td>
         </tr>
       </template>

@@ -22,7 +22,7 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     return html`
       <style include="mr-shared-styles">
         :host {
-          font-size: 85%;
+          font-size: 12px;
           background-color: white;
           padding: 0;
           padding-bottom: 1em;

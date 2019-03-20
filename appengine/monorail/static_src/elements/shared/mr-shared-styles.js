@@ -7,6 +7,24 @@ const $_documentContainer = document.createElement('template');
 $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
   <template>
     <style>
+      :root {
+        --mr-edit-field-styles: {
+          box-sizing: border-box;
+          width: 95%;
+          padding: 0.25em 4px;
+          font-size: 13px;
+        };
+      }
+      .linkify {
+        text-decoration: underline;
+        color: var(--chops-link-color);
+        display: inline;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        background: 0;
+        cursor: pointer;
+      }
       a.button {
         /* Links that look like buttons. */
         display: inline-flex;
@@ -53,6 +71,9 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         color: hsl(227, 60%, 39%);
         margin: 0;
         border-bottom: var(--chops-normal-border);
+      }
+      .medium-heading chops-button {
+        line-height: 1.6;
       }
     </style>
   </template>

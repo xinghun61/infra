@@ -17,11 +17,6 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
           padding: 1em;
           display: block;
           font-size: 12px;
-          --mr-edit-field-styles: {
-            box-sizing: border-box;
-            width: 95%;
-            padding: 0.25em 4px;
-          };
         }
         select,
         input {
@@ -99,11 +94,9 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
         </template>
         <div class="edit-actions">
           <chops-button on-click="discard" class="de-emphasized discard-button" disabled="[[disabled]]">
-            <i class="material-icons">close</i>
             Discard changes
           </chops-button>
           <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
-            <i class="material-icons">create</i>
             Save changes
           </chops-button>
         </div>

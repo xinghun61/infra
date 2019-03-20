@@ -22,19 +22,14 @@ export class MrEditStatus extends PolymerElement {
       <style include="mr-shared-styles">
         :host {
           width: 95%;
-          --mr-edit-field-styles: {
-            box-sizing: border-box;
-            width: 100%;
-            padding: 0.25em 4px;
-          }
         }
         select {
           @apply --mr-edit-field-styles;
         }
         .grid-input {
-          margin-top: 10px;
+          margin-top: 8px;
           display: grid;
-          grid-gap: 10px;
+          grid-gap: 8px;
           grid-template-columns: auto 1fr;
         }
         label {

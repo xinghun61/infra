@@ -37,11 +37,10 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         :host {
           width: 100%;
           margin-top: 0;
-          font-size: 18px;
+          font-size: 16px;
           background-color: var(--monorail-metadata-open-bg);
           border-bottom: var(--chops-normal-border);
-          font-weight: normal;
-          padding: 0.25em 16px;
+          padding: 0.25em 8px;
           box-sizing: border-box;
           display: flex;
           justify-content: space-between;
@@ -53,12 +52,15 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         h1 {
           font-size: 100%;
           line-height: 140%;
-          font-weight: normal;
+          font-weight: bolder;
           padding: 0;
           margin: 0;
         }
         mr-flipper {
-          font-size: 13px;
+          border-left: var(--chops-normal-border);
+          padding-left: 8px;
+          margin-left: 4px;
+          font-size: 12px;
         }
         mr-dropdown.lock-icon {
           /* Make lock icon line up nicely with other text in spite
@@ -88,7 +90,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           min-width: fit-content;
           display: flex;
           flex-direction: column;
-          align-items: center;
+          align-items: flex-end;
           font-size: 12px;
         }
         .spam-notice {
@@ -97,7 +99,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           background: red;
           color: white;
           font-weight: bold;
-          font-size: 70%;
+          font-size: 14px;
           margin-right: 0.5em;
         }
         .byline {
@@ -105,7 +107,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           font-size: 12px;
           width: 100%;
           line-height: 140%;
-          color: hsl(227, 15%, 35%);
+          color: var(--chops-text-color);
         }
         .main-text-outer {
           flex-basis: 100%;

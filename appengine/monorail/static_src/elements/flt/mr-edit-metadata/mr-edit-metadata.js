@@ -114,7 +114,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           padding: 0.5em 0;
           display: grid;
           max-width: 100%;
-          grid-gap: 10px;
+          grid-gap: 8px;
           grid-template-columns: 120px auto;
           align-items: flex-start;
         }
@@ -142,7 +142,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
             text-align: left;
           }
           .input-grid {
-            grid-gap: 4px;
+            grid-gap: 8px;
             grid-template-columns: 100%;
           }
         }
@@ -317,11 +317,9 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
             class="de-emphasized discard-button"
             disabled="[[disabled]]"
           >
-            <i class="material-icons">close</i>
             Discard changes
           </chops-button>
           <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
-            <i class="material-icons">create</i>
             Save changes
           </chops-button>
         </div>

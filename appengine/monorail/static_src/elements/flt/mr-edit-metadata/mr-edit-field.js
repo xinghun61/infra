@@ -40,12 +40,12 @@ export class MrEditField extends PolymerElement {
         }
         .derived {
           font-style: italic;
-          color: #222;
+          color: var(--chops-text-color);
         }
         .multi-grid {
           width: 95%;
           display: grid;
-          grid-gap: 4px;
+          grid-gap: 8px;
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         }
         .multi-grid > input {
@@ -104,7 +104,6 @@ export class MrEditField extends PolymerElement {
             </template>
           </div>
           <chops-button on-click="_addEntry" class="de-emphasized">
-            <i class="material-icons">add</i>
             Add entry
           </chops-button>
         </template>

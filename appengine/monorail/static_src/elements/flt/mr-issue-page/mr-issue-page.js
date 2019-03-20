@@ -39,7 +39,8 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           justify-content: flex-start;
         }
         .container-issue-content {
-          padding: 0 16px;
+          padding: 0;
+          padding-left: 16px;
           overflow: hidden;
           flex-grow: 1;
           display: flex;
@@ -64,18 +65,12 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         .container-deleted {
           padding: 16px;
         }
-        .main-item {
-          flex-grow: 0;
-          flex-shrink: 0;
-          box-sizing: border-box;
-          min-height: 100%;
-        }
         .metadata-container {
-          font-size: 85%;
+          font-size: 12px;
           background: var(--monorail-metadata-open-bg);
           border-right: var(--chops-normal-border);
           border-bottom: var(--chops-normal-border);
-          width: 17%;
+          width: 16%;
           min-width: 256px;
           flex-grow: 0;
           flex-shrink: 0;
@@ -90,26 +85,35 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           width: 100%;
         }
         mr-issue-details {
+          min-width: 50%;
+          max-width: 1000px;
+          flex-grow: 1;
+          box-sizing: border-box;
+          min-height: 100%;
           padding-right: 16px;
-          border-right: var(--chops-normal-border);
-          width: 50%;
         }
         mr-issue-metadata {
           position: sticky;
           top: var(--monorail-header-height);
         }
         mr-launch-overview {
+          border-left: var(--chops-normal-border);
           padding-left: 16px;
+          padding-right: 16px;
+          flex-grow: 0;
+          flex-shrink: 0;
           width: 50%;
+          box-sizing: border-box;
+          min-height: 100%;
         }
         @media (max-width: 1024px) {
           .container-issue-content {
             flex-direction: column;
+            padding: 0 16px;
           }
-          .main-item {
+          mr-issue-details, mr-launch-overview {
             width: 100%;
             padding: 0;
-            min-height: 0;
             border: 0;
           }
         }
@@ -122,6 +126,14 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
             height: auto;
             border: 0;
             border-bottom: var(--chops-normal-border);
+          }
+          mr-issue-metadata {
+            min-width: auto;
+            max-width: auto;
+            width: 100%;
+            padding: 0;
+            min-height: 0;
+            border: 0;
           }
           mr-issue-metadata, mr-issue-header {
             position: static;

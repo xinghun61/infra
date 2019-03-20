@@ -33,11 +33,6 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
           padding: 1em 8px;
           display: block;
           font-size: 12px;
-          --mr-edit-field-styles: {
-            box-sizing: border-box;
-            width: 95%;
-            padding: 0.25em 4px;
-          };
         }
         textarea {
           min-height: 80px;

@@ -27,6 +27,9 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
           justify-content: flex-start;
           align-items: stretch;
         }
+        :host([hidden]) {
+          display: none;
+        }
         mr-phase {
           margin-bottom: 0.75em;
         }
@@ -46,8 +49,19 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
-      approvals: Array,
-      phases: Array,
+      approvals: {
+        type: Array,
+        value: () => [],
+      },
+      phases: {
+        type: Array,
+        value: () => [],
+      },
+      hidden: {
+        type: Boolean,
+        reflectToAttribute: true,
+        computed: '_computeIsHidden(phases, approvals)',
+      },
       _phaselessApprovals: {
         type: Array,
         computed: '_approvalsForPhase(approvals)',
@@ -61,6 +75,10 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
       approvals: state.issue.approvalValues,
       phases: state.issue.phases,
     };
+  }
+
+  _computeIsHidden(phases, approvals) {
+    return (!phases || !phases.length) && (!approvals || !approvals.length);
   }
 
   _approvalsForPhase(approvals, phaseName) {

@@ -87,7 +87,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         :host {
           width: 100%;
           background-color: white;
-          font-size: 85%;
+          font-size: 12px;
           border-bottom: var(--chops-normal-border);
           box-sizing: border-box;
           display: block;
@@ -141,7 +141,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           margin: 0;
           width: 100%;
           border: 0;
-          font-size: 120%;
+          font-size: 15px;
           font-weight: normal;
           box-sizing: border-box;
           display: flex;
@@ -152,7 +152,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           cursor: pointer;
         }
         .status {
-          font-size: 80%;
+          font-size: 13px;
           color: var(--approval-accent-color);
           display: inline-flex;
           align-items: center;
@@ -202,7 +202,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         >
           [[fieldName]] Survey
           <chops-button on-click="_openEditSurvey">
-            <i class="material-icons">create</i>
             Edit responses
           </chops-button>
         </h4>
