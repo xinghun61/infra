@@ -64,13 +64,6 @@ luci.builder.defaults.swarming_tags.set(['vpython:native-python-wrapper'])
 luci.builder.defaults.execution_timeout.set(30 * time.minute)
 luci.builder.defaults.dimensions.set({'cpu': 'x86-64'})
 
-infra.poller(name = 'infra-gitiles-trigger')
-
-infra.recipe(name = 'infra_continuous')
-infra.recipe(name = 'goma_hello_world')
-infra.recipe(name = 'gerrit_hello_world')
-infra.recipe(name = 'gsutil_hello_world')
-
 
 def ci_builder(
       name,
@@ -81,13 +74,13 @@ def ci_builder(
   infra.builder(
       name = name,
       bucket = 'ci',
-      recipe = recipe,
+      recipe = infra.recipe(recipe),
       os = os,
       cpu = 'x86-64',
       pool = 'Chrome',  # no point in creating a dedicated pool on -dev
       service_account = 'adhoc-testing@luci-token-server-dev.iam.gserviceaccount.com',
       schedule = 'triggered' if manual else None,
-      triggered_by = [] if manual else ['infra-gitiles-trigger'],
+      triggered_by = [] if manual else [infra.poller()],
   )
 
 

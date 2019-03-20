@@ -10,8 +10,6 @@ load('//lib/infra.star', 'infra')
 REPO_URL = 'https://chromium.googlesource.com/infra/luci/gae'
 
 
-infra.recipe(name = 'luci_gae')
-infra.poller(name = 'luci-gae-gitiles-trigger', repo = REPO_URL)
 infra.console_view(
     name = 'luci-gae',
     title = 'luci-gae repository console',
@@ -24,9 +22,15 @@ def ci_builder(name, os):
   infra.builder(
       name = name,
       bucket = 'ci',
-      recipe = 'luci_gae',
+      recipe = infra.recipe('luci_gae'),
       os = os,
-      triggered_by = ['luci-gae-gitiles-trigger'],
+      triggered_by = [
+          luci.gitiles_poller(
+              name = 'luci-gae-gitiles-trigger',
+              bucket = 'ci',
+              repo = REPO_URL,
+          ),
+      ],
   )
   luci.console_view_entry(
       builder = name,
@@ -39,7 +43,7 @@ def try_builder(name, os, presubmit=False):
   infra.builder(
       name = name,
       bucket = 'try',
-      recipe = 'luci_gae',
+      recipe = infra.recipe('luci_gae'),
       os = os,
   )
   luci.cq_tryjob_verifier(

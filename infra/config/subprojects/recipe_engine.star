@@ -12,12 +12,6 @@ load('//lib/recipes.star', 'recipes')
 REPO_URL = 'https://chromium.googlesource.com/infra/luci/recipes-py'
 
 
-luci.gitiles_poller(
-    name = 'recipe_engine-gitiles-trigger',
-    bucket = 'ci',
-    repo = REPO_URL,
-)
-
 infra.console_view(
     name = 'recipes-py',
     title = 'recipes-py repository console',
@@ -50,7 +44,11 @@ build.presubmit(
 recipes.simulation_tester(
     name = 'recipe_engine-recipes-tests',
     project_under_test = 'recipe_engine',
-    triggered_by = 'recipe_engine-gitiles-trigger',
+    triggered_by = luci.gitiles_poller(
+        name = 'recipe_engine-gitiles-trigger',
+        bucket = 'ci',
+        repo = REPO_URL,
+    ),
     console_view = 'recipes-py',
 )
 

@@ -26,11 +26,12 @@ luci.console_view(
 )
 
 
-luci.gitiles_poller(
-    name = 'codesearch-src-trigger',
-    bucket = 'codesearch',
-    repo = 'https://chromium.googlesource.com/chromium/src',
-)
+def chromium_src_poller():
+  return luci.gitiles_poller(
+      name = 'codesearch-src-trigger',
+      bucket = 'codesearch',
+      repo = 'https://chromium.googlesource.com/chromium/src',
+  )
 
 
 def builder(
@@ -85,7 +86,7 @@ def builder(
 def chromium_genfiles(short_name, name, os=None):
   builder(
       name = name,
-      recipe = 'chromium_codesearch',
+      recipe = build.recipe('chromium_codesearch'),
       os = os,
       caches = [swarming.cache(
           path = 'generated',
@@ -111,7 +112,7 @@ def sync_submodules(
     properties['extra_submodules'] = extra_submodules
   builder(
       name = name,
-      recipe = 'sync_submodules',
+      recipe = infra.recipe('sync_submodules'),
       properties = properties,
       category = 'submodules',
       short_name = short_name,
@@ -129,7 +130,7 @@ def update_submodules_mirror(
   builder(
       name = name,
       execution_timeout = time.hour,
-      recipe = 'update_submodules_mirror',
+      recipe = infra.recipe('update_submodules_mirror'),
       properties = {
           'source_repo': source_repo,
           'target_repo': target_repo,
@@ -141,16 +142,10 @@ def update_submodules_mirror(
   )
 
 
-build.recipe(name = 'chromium_codesearch_initiator')
-build.recipe(name = 'chromium_codesearch')
-infra.recipe(name = 'sync_submodules')
-infra.recipe(name = 'update_submodules_mirror')
-
-
 # Runs every two hours (at predictable times).
 builder(
     name = 'codesearch-gen-chromium-initiator',
-    recipe = 'chromium_codesearch_initiator',
+    recipe = build.recipe('chromium_codesearch_initiator'),
     category = 'gen|init',
     schedule = '0 */2 * * *',
 )
@@ -167,20 +162,20 @@ sync_submodules(
     name = 'codesearch-submodules-build',
     short_name = 'bld',
     source_repo = 'https://chromium.googlesource.com/chromium/tools/build',
-    triggered_by = 'build-gitiles-trigger',
+    triggered_by = build.poller(),
 )
 sync_submodules(
     name = 'codesearch-submodules-infra',
     short_name = 'inf',
     source_repo = 'https://chromium.googlesource.com/infra/infra',
-    triggered_by = 'infra-gitiles-trigger',
+    triggered_by = infra.poller(),
 )
 sync_submodules(
     name = 'codesearch-submodules-chromium',
     short_name = 'src',
     source_repo = 'https://chromium.googlesource.com/chromium/src',
     extra_submodules = 'src/out=https://chromium.googlesource.com/chromium/src/out',
-    triggered_by = 'codesearch-src-trigger',
+    triggered_by = chromium_src_poller(),
 )
 
 
@@ -189,19 +184,19 @@ update_submodules_mirror(
     short_name = 'src',
     source_repo = 'https://chromium.googlesource.com/chromium/src',
     target_repo = 'https://chromium.googlesource.com/experimental/codesearch/grimoire/chromium/src',
-    triggered_by = 'codesearch-src-trigger',
+    triggered_by = chromium_src_poller(),
 )
 update_submodules_mirror(
     name = 'codesearch-update-submodules-mirror-infra',
     short_name = 'infra',
     source_repo = 'https://chromium.googlesource.com/infra/infra',
     target_repo = 'https://chromium.googlesource.com/experimental/codesearch/grimoire/infra/infra',
-    triggered_by = 'infra-gitiles-trigger',
+    triggered_by = infra.poller(),
 )
 update_submodules_mirror(
     name = 'codesearch-update-submodules-mirror-build',
     short_name = 'build',
     source_repo = 'https://chromium.googlesource.com/chromium/tools/build',
     target_repo = 'https://chromium.googlesource.com/experimental/codesearch/grimoire/chromium/tools/build',
-    triggered_by = 'build-gitiles-trigger',
+    triggered_by = build.poller(),
 )

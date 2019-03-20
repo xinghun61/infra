@@ -23,13 +23,6 @@ def _friendly(proj):
   return _FRIENDLY_NAME.get(proj, proj)
 
 
-def _recipes():
-  """Defines all recipes used by this module."""
-  infra.recipe(name = 'recipe_simulation')
-  infra.recipe(name = 'recipe_roll_tryjob')
-  build.recipe(name = 'led_recipes_tester')
-
-
 def simulation_tester(
       name,
       project_under_test,
@@ -41,7 +34,7 @@ def simulation_tester(
   luci.builder(
       name = name,
       bucket = 'ci',
-      recipe = 'recipe_simulation',
+      recipe = infra.recipe('recipe_simulation'),
       properties = {'project_under_test': project_under_test},
       dimensions = {
           'os': 'Ubuntu-14.04',
@@ -66,7 +59,7 @@ def roll_trybots(upstream, downstream, cq_group):
     luci.builder(
         name = name,
         bucket = 'try',
-        recipe = 'recipe_roll_tryjob',
+        recipe = infra.recipe('recipe_roll_tryjob'),
         properties = {
             'upstream_project': upstream,
             'downstream_project': proj,
@@ -88,7 +81,7 @@ def led_recipes_tester(name, cq_group, repo_name):
   luci.builder(
       name = name,
       bucket = 'try',
-      recipe = 'led_recipes_tester',
+      recipe = build.recipe('led_recipes_tester'),
       properties = {'repo_name': repo_name},
       dimensions = {
           'os': 'Ubuntu-14.04',
@@ -104,7 +97,6 @@ def led_recipes_tester(name, cq_group, repo_name):
 
 
 recipes = struct(
-    recipes = _recipes,
     simulation_tester = simulation_tester,
     roll_trybots = roll_trybots,
     led_recipes_tester = led_recipes_tester,

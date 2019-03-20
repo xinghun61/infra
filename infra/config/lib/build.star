@@ -7,10 +7,10 @@
 load('//lib/infra.star', 'infra')
 
 
-def poller(name):
-  """Defines a gitiles poller."""
-  luci.gitiles_poller(
-      name = name,
+def poller():
+  """Defines a gitiles poller polling build.git repo."""
+  return luci.gitiles_poller(
+      name = 'build-gitiles-trigger',
       bucket = 'ci',
       repo = 'https://chromium.googlesource.com/chromium/tools/build',
   )
@@ -18,7 +18,7 @@ def poller(name):
 
 def recipe(name):
   """Defines a recipe hosted in the build.git recipe bundle."""
-  luci.recipe(
+  return luci.recipe(
       name = name,
       cipd_package = 'infra/recipe_bundles/chromium.googlesource.com/chromium/tools/build',
   )
@@ -38,7 +38,7 @@ def presubmit(
   luci.builder(
       name = name,
       bucket = 'try',
-      recipe = 'run_presubmit',
+      recipe = build.recipe('run_presubmit'),
       properties = {'repo_name': repo_name, 'runhooks': True},
       service_account = infra.SERVICE_ACCOUNT_TRY,
       dimensions = {

@@ -7,9 +7,6 @@
 load('//lib/infra.star', 'infra')
 
 
-infra.recipe(name = 'gsubtreed')
-
-
 def gsubtreed_cron(
       name,
       service_account,
@@ -20,7 +17,7 @@ def gsubtreed_cron(
   luci.builder(
       name = name,
       bucket = 'cron',
-      recipe = 'gsubtreed',
+      recipe = infra.recipe('gsubtreed'),
       properties = {
           # Don't loop, run just once. For lesser used gsubtreeds, rate of
           # commit is low. This also allows for more efficient machine sharing.

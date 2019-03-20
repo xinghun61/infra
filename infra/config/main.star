@@ -26,11 +26,6 @@ Includes CI configs for the following subprojects:
 TODO(vadimsh): Add more.
 """
 
-load('//lib/build.star', 'build')
-load('//lib/infra.star', 'infra')
-load('//lib/recipes.star', 'recipes')
-
-
 # Tell lucicfg what files it is allowed to touch.
 lucicfg.config(
     config_dir = 'generated',
@@ -144,10 +139,6 @@ luci.bucket(
     ],
 )
 
-infra.poller(name = 'infra-gitiles-trigger')
-build.poller(name = 'build-gitiles-trigger')
-build.recipe(name = 'run_presubmit')
-recipes.recipes()
 luci.list_view(name = 'cron')
 
 # Per-subproject resources. They may refer to the shared resources defined

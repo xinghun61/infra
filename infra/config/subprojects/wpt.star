@@ -8,11 +8,10 @@ load('//lib/infra.star', 'infra')
 
 
 def cron(name, recipe, execution_timeout=None):
-  infra.recipe(name = recipe)
   luci.builder(
       name = name,
       bucket = 'cron',
-      recipe = recipe,
+      recipe = infra.recipe(recipe),
       dimensions = {
           'builder': name,
           'os': 'Ubuntu-14.04',

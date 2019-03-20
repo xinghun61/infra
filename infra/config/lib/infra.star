@@ -5,18 +5,18 @@
 """Functions and constants related to infra.git used by all modules."""
 
 
-def poller(name, repo=None):
-  """Defines a gitiles poller."""
-  luci.gitiles_poller(
-      name = name,
+def poller():
+  """Defines a gitiles poller polling infra.git repo."""
+  return luci.gitiles_poller(
+      name = 'infra-gitiles-trigger',
       bucket = 'ci',
-      repo = repo or infra.REPO_URL,
+      repo = infra.REPO_URL,
   )
 
 
 def recipe(name):
   """Defines a recipe hosted in the infra.git recipe bundle."""
-  luci.recipe(
+  return luci.recipe(
       name = name,
       cipd_package = 'infra/recipe_bundles/chromium.googlesource.com/infra/infra',
   )

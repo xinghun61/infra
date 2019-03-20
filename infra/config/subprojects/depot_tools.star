@@ -75,11 +75,10 @@ luci.cq_tryjob_verifier(
 # CI builder that uploads depot_tools.zip to Google Storage.
 #
 # TODO(crbug.com/940149): Move to the prod pool.
-infra.recipe(name = 'depot_tools_builder')
 luci.builder(
     name = 'depot_tools zip uploader',
     bucket = 'ci',
-    recipe = 'depot_tools_builder',
+    recipe = infra.recipe('depot_tools_builder'),
     dimensions = {
         'os': 'Ubuntu-14.04',
         'pool': 'luci.flex.ci',

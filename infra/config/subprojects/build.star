@@ -43,7 +43,7 @@ recipes.led_recipes_tester(
 recipes.simulation_tester(
     name = 'build-recipes-tests',
     project_under_test = 'build',
-    triggered_by = 'build-gitiles-trigger',
+    triggered_by = build.poller(),
     console_view = 'build',
 )
 

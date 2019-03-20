@@ -10,8 +10,6 @@ load('//lib/infra.star', 'infra')
 REPO_URL = 'https://chromium.googlesource.com/infra/luci/luci-go'
 
 
-infra.recipe(name = 'luci_go')
-infra.poller(name = 'luci-go-gitiles-trigger', repo = REPO_URL)
 infra.console_view(
     name = 'luci-go',
     title = 'infra/infra repository console',
@@ -24,9 +22,15 @@ def ci_builder(name, os):
   infra.builder(
       name = name,
       bucket = 'ci',
-      recipe = 'luci_go',
+      recipe = infra.recipe('luci_go'),
       os = os,
-      triggered_by = ['luci-go-gitiles-trigger'],
+      triggered_by = [
+          luci.gitiles_poller(
+              name = 'luci-go-gitiles-trigger',
+              bucket = 'ci',
+              repo = REPO_URL,
+          ),
+      ],
   )
   luci.console_view_entry(
       builder = name,
@@ -39,7 +43,7 @@ def try_builder(name, os, presubmit=False):
   infra.builder(
       name = name,
       bucket = 'try',
-      recipe = 'luci_go',
+      recipe = infra.recipe('luci_go'),
       os = os,
       properties = {'presubmit': True} if presubmit else None,
   )

@@ -9,9 +9,6 @@ load('//lib/infra.star', 'infra')
 load('//lib/recipes.star', 'recipes')
 
 
-infra.recipe(name = 'infra_continuous')
-infra.recipe(name = 'infra_repo_trybot')
-infra.recipe(name = 'infra_wct_tester')
 infra.console_view(name = 'infra', title = 'infra/infra repository console')
 infra.cq_group(name = 'infra cq', tree_status_host = 'infra-status.appspot.com')
 
@@ -20,10 +17,10 @@ def ci_builder(name, os, cpu=None):
   infra.builder(
       name = name,
       bucket = 'ci',
-      recipe = 'infra_continuous',
+      recipe = infra.recipe('infra_continuous'),
       os = os,
       cpu = cpu,
-      triggered_by = ['infra-gitiles-trigger'],
+      triggered_by = [infra.poller()],
   )
   luci.console_view_entry(
       builder = name,
@@ -36,7 +33,7 @@ def try_builder(name, os, recipe=None):
   infra.builder(
       name = name,
       bucket = 'try',
-      recipe = recipe or 'infra_repo_trybot',
+      recipe = infra.recipe(recipe or 'infra_repo_trybot'),
       os = os,
   )
   luci.cq_tryjob_verifier(
@@ -77,7 +74,7 @@ build.presubmit(name = 'Infra Presubmit', cq_group = 'infra cq', repo_name = 'in
 recipes.simulation_tester(
     name = 'infra-continuous-recipes-tests',
     project_under_test = 'infra',
-    triggered_by = 'infra-gitiles-trigger',
+    triggered_by = infra.poller(),
     console_view = 'infra',
     console_category = 'misc',
 )
