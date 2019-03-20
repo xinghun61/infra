@@ -194,7 +194,7 @@ class IssueBulkEdit(servlet.Servlet):
         parsed.labels[:] +
         ['-%s' % lr for lr in parsed.labels_remove])
     bounce_fields = tracker_views.MakeBounceFieldValueViews(
-        parsed.fields.vals, config)
+        parsed.fields.vals, parsed.fields.phase_vals, config)
     field_helpers.ShiftEnumFieldsIntoLabels(
         parsed.labels, parsed.labels_remove,
         parsed.fields.vals, parsed.fields.vals_remove,

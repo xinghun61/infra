@@ -248,7 +248,7 @@ class IssueEntry(servlet.Servlet):
         mr.cnxn, post_data, self.services, mr.errors, mr.project_name)
     bounce_labels = parsed.labels[:]
     bounce_fields = tracker_views.MakeBounceFieldValueViews(
-        parsed.fields.vals, config)
+        parsed.fields.vals, parsed.fields.phase_vals, config)
     field_helpers.ShiftEnumFieldsIntoLabels(
         parsed.labels, parsed.labels_remove, parsed.fields.vals,
         parsed.fields.vals_remove, config)

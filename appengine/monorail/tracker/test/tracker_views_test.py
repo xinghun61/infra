@@ -695,26 +695,41 @@ class FVVFunctionsTest(unittest.TestCase):
     fd = tracker_pb2.FieldDef(
         field_id=3, field_type=tracker_pb2.FieldTypes.INT_TYPE,
         applicable_type='', field_name='EstDays')
+    phase_fd = tracker_pb2.FieldDef(
+        field_id=4, field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        applicable_type='', field_name='Gump')
     config.field_defs = [fd,
+                         phase_fd,
                          tracker_pb2.FieldDef(
-        field_id=4, field_type=tracker_pb2.FieldTypes.STR_TYPE)
+        field_id=5, field_type=tracker_pb2.FieldTypes.STR_TYPE)
     ]
     parsed_fvs = {3: [455]}
-    fvs = tracker_views.MakeBounceFieldValueViews(parsed_fvs, config)
+    parsed_phase_fvs = {
+        4: {'stable': [73, 74], 'beta': [8], 'beta-exp': [75]},
+    }
+    fvs = tracker_views.MakeBounceFieldValueViews(
+        parsed_fvs, parsed_phase_fvs, config)
 
-    ezt_fv = template_helpers.EZTItem(val=455, docstring='', idx=0)
-    expected = tracker_views.FieldValueView(fd, config, [ezt_fv], [], [])
+    self.assertEqual(len(fvs), 4)
+
+    estdays_ezt_fv = template_helpers.EZTItem(val=455, docstring='', idx=0)
+    expected = tracker_views.FieldValueView(
+        fd, config, [estdays_ezt_fv], [], [])
     self.assertEqual(fvs[0].field_name, expected.field_name)
     self.assertEqual(fvs[0].values[0].val, expected.values[0].val)
     self.assertEqual(fvs[0].values[0].idx, expected.values[0].idx)
     self.assertTrue(fvs[0].applicable)
 
-    fd.approval_id=23
+    self.assertEqual(fvs[1].field_name, phase_fd.field_name)
+    self.assertEqual(fvs[2].field_name, phase_fd.field_name)
+    self.assertEqual(fvs[3].field_name, phase_fd.field_name)
+
+    fd.approval_id = 23
     config.field_defs = [fd,
                          tracker_pb2.FieldDef(
                              field_id=23, field_name='Legal',
                              field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)]
-    fvs = tracker_views.MakeBounceFieldValueViews(parsed_fvs, config)
+    fvs = tracker_views.MakeBounceFieldValueViews(parsed_fvs, {}, config)
     self.assertTrue(fvs[0].applicable)
 
 

@@ -670,7 +670,7 @@ def _MakeFieldValueItems(field_values, users_by_id):
   return result
 
 
-def MakeBounceFieldValueViews(field_vals, config):
+def MakeBounceFieldValueViews(field_vals, phase_field_vals, config):
   """Return a list of field values to display on a validation bounce page."""
   field_value_views = []
   for fd in config.field_defs:
@@ -681,6 +681,15 @@ def MakeBounceFieldValueViews(field_vals, config):
           for idx, v in enumerate(field_vals[fd.field_id])]
       field_value_views.append(FieldValueView(
           fd, config, val_items, [], None, applicable=True))
+    elif fd.field_id in phase_field_vals:
+      vals_by_phase_name = phase_field_vals.get(fd.field_id)
+      for phase_name, values in vals_by_phase_name.iteritems():
+        val_items = [
+            template_helpers.EZTItem(val=v, docstring='', idx=idx)
+            for idx, v in enumerate(values)]
+        field_value_views.append(FieldValueView(
+            fd, config, val_items, [], None, applicable=False,
+            phase_name=phase_name))
 
   return field_value_views
 
