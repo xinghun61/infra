@@ -13,6 +13,7 @@ type Option func(*Info)
 func UpdateInventory(adminService string) Option {
 	return func(i *Info) {
 		i.labelUpdater.adminService = adminService
+		i.labelUpdater.updateLabels = true
 	}
 }
 

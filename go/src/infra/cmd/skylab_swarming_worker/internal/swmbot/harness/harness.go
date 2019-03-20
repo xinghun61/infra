@@ -180,12 +180,13 @@ type labelUpdater struct {
 	adminService string
 	taskURL      string
 	taskName     string
+	updateLabels bool
 }
 
 // update is a dutinfo.UpdateFunc for updating DUT inventory labels.
 // If adminServiceURL is empty, this method does nothing.
 func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) error {
-	if u.adminService == "" {
+	if u.adminService == "" || !u.updateLabels {
 		log.Printf("Skipping label update since no admin service was provided")
 		return nil
 	}
