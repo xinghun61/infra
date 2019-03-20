@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/genproto/protobuf/field_mask"
@@ -16,6 +17,7 @@ import (
 
 	"go.chromium.org/luci/buildbucket"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/milo"
@@ -41,6 +43,14 @@ type buildUpdater struct {
 // Logs transient errors and returns a fatal error, if any.
 // Stops when done is closed or ctx is done.
 func (b *buildUpdater) Run(ctx context.Context, done <-chan struct{}) error {
+	return b.run(ctx, done, b.updateBuildBytes)
+}
+
+func (b *buildUpdater) run(
+	ctx context.Context,
+	done <-chan struct{},
+	update func(ctx context.Context, annBytes []byte) error,
+) error {
 	cond := sync.NewCond(&sync.Mutex{})
 	// protected by cond.L
 	var state struct {
@@ -75,8 +85,20 @@ func (b *buildUpdater) Run(ctx context.Context, done <-chan struct{}) error {
 	}()
 
 	// Send requests.
+
 	var sentVer int
+	// how long did we wait after most recent update call
+	var errSleep time.Duration
+	var lastRequestTime time.Time
 	for {
+		// Ensure at least 1s between calls.
+		if !lastRequestTime.IsZero() {
+			ellapsed := clock.Since(ctx, lastRequestTime)
+			if d := time.Second - ellapsed; d > 0 {
+				clock.Sleep(clock.Tag(ctx, "update-build-distance"), d)
+			}
+		}
+
 		// Wait for news.
 		cond.L.Lock()
 		if sentVer == state.latestVer && !state.done {
@@ -87,9 +109,12 @@ func (b *buildUpdater) Run(ctx context.Context, done <-chan struct{}) error {
 
 		var err error
 		if sentVer != local.latestVer {
-			err = b.updateBuildBytes(ctx, local.latest)
+			lastRequestTime = clock.Now(ctx)
+
+			err = update(ctx, local.latest)
 			switch status.Code(errors.Unwrap(err)) {
 			case codes.OK:
+				errSleep = 0
 				sentVer = local.latestVer
 
 			case codes.InvalidArgument:
@@ -100,6 +125,16 @@ func (b *buildUpdater) Run(ctx context.Context, done <-chan struct{}) error {
 				// Hope another future request will succeed.
 				// There is another final UpdateBuild call anyway.
 				logging.Errorf(ctx, "failed to update build: %s", err)
+
+				// Sleep.
+				if errSleep == 0 {
+					errSleep = time.Second
+				} else if errSleep < 16*time.Second {
+					errSleep *= 2
+				}
+				logging.Debugf(ctx, "will sleep for %s", errSleep)
+
+				clock.Sleep(clock.Tag(ctx, "update-build-error"), errSleep)
 			}
 		}
 

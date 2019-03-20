@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
@@ -17,6 +18,8 @@ import (
 
 	"go.chromium.org/luci/buildbucket"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/logdog/common/types"
@@ -56,7 +59,11 @@ func TestBuildUpdater(t *testing.T) {
 		defer ctrl.Finish()
 		client := buildbucketpb.NewMockBuildsClient(ctrl)
 
-		ctx, cancel := context.WithCancel(context.Background())
+		// Ensure tests don't hang.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+
+		ctx, clk := testclock.UseTime(ctx, testclock.TestRecentTimeUTC)
+
 		bu := &buildUpdater{
 			buildID:    42,
 			buildToken: "build token",
@@ -77,33 +84,38 @@ func TestBuildUpdater(t *testing.T) {
 				res := &buildbucketpb.Build{}
 				return res, nil
 			}
-			client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
+			client.EXPECT().
+				UpdateBuild(gomock.Any(), gomock.Any()).
+				AnyTimes().
+				DoAndReturn(updateBuild)
 
 			err := bu.UpdateBuild(ctx, &buildbucketpb.UpdateBuildRequest{})
 			So(err, ShouldBeNil)
 		})
 
 		Convey(`run`, func() {
-			run := func(err1, err2 error) error {
-				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
-					c.So(req.Build.Steps[0].Name, ShouldEqual, "step1")
-					c.So(len(req.Build.Steps), ShouldBeIn, []int{1, 2})
+			update := func(ctx context.Context, annBytes []byte) error {
+				return nil
+			}
 
-					res := &buildbucketpb.Build{}
-					if len(req.Build.Steps) == 1 {
-						return res, err1
-					}
-					return res, err2
-				}
-				client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
-
-				errC := make(chan error)
+			errC := make(chan error)
+			done := make(chan struct{})
+			start := func() {
 				go func() {
-					errC <- bu.Run(ctx, nil)
+					errC <- bu.run(ctx, done, update)
 				}()
+			}
 
-				bu.AnnotationUpdated(newAnnBytes("step1"))
-				bu.AnnotationUpdated(newAnnBytes("step1", "step2"))
+			run := func(err1, err2 error) error {
+				update = func(ctx context.Context, annBytes []byte) error {
+					if string(annBytes) == "1" {
+						return err1
+					}
+					return err2
+				}
+				start()
+				bu.AnnotationUpdated([]byte("1"))
+				bu.AnnotationUpdated([]byte("2"))
 				cancel()
 				return <-errC
 			}
@@ -120,40 +132,69 @@ func TestBuildUpdater(t *testing.T) {
 				So(run(nil, fmt.Errorf("fatal")), ShouldErrLike, "fatal")
 			})
 
+			Convey("minDistance", func() {
+				var sleepDuration time.Duration
+				clk.SetTimerCallback(func(d time.Duration, t clock.Timer) {
+					if testclock.HasTags(t, "update-build-distance") {
+						sleepDuration += d
+						clk.Add(d)
+					}
+				})
+
+				start()
+				bu.AnnotationUpdated([]byte("1"))
+				bu.AnnotationUpdated([]byte("2"))
+				cancel()
+				So(<-errC, ShouldBeNil)
+				So(sleepDuration, ShouldBeGreaterThanOrEqualTo, time.Second)
+			})
+
+			Convey("errSleep", func() {
+				attempt := 0
+				clk.SetTimerCallback(func(d time.Duration, t clock.Timer) {
+					switch {
+					case testclock.HasTags(t, "update-build-distance"):
+						clk.Add(d)
+					case testclock.HasTags(t, "update-build-error"):
+						clk.Add(d)
+						attempt++
+						if attempt == 4 {
+							bu.AnnotationUpdated([]byte("2"))
+						}
+					}
+				})
+
+				update = func(ctx context.Context, annBytes []byte) error {
+					if string(annBytes) == "1" {
+						return fmt.Errorf("err")
+					}
+
+					close(done)
+					return nil
+				}
+
+				start()
+				bu.AnnotationUpdated([]byte("1"))
+				So(<-errC, ShouldBeNil)
+			})
+
 			Convey("first is fatal, second never occurs", func() {
 				fatal := status.Error(codes.InvalidArgument, "too large")
 				calls := 0
-				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
+				update = func(ctx context.Context, annBytes []byte) error {
 					calls++
-					return nil, fatal
+					return fatal
 				}
-				client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
-
-				errC := make(chan error)
-				go func() {
-					errC <- bu.Run(ctx, nil)
-				}()
-
-				bu.AnnotationUpdated(newAnnBytes("step1"))
+				start()
+				bu.AnnotationUpdated([]byte("1"))
 				cancel()
-
 				So(errors.Unwrap(<-errC), ShouldEqual, fatal)
 				So(calls, ShouldEqual, 1)
 			})
 
 			Convey("done is closed", func() {
-				updateBuild := func(ctx context.Context, req *buildbucketpb.UpdateBuildRequest) (*buildbucketpb.Build, error) {
-					return &buildbucketpb.Build{}, nil
-				}
-				client.EXPECT().UpdateBuild(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(updateBuild)
-
-				done := make(chan struct{})
-				errC := make(chan error)
-				go func() {
-					errC <- bu.Run(ctx, done)
-				}()
-
-				bu.AnnotationUpdated(newAnnBytes("step1"))
+				start()
+				bu.AnnotationUpdated([]byte("1"))
 				close(done)
 				So(<-errC, ShouldBeNil)
 			})
