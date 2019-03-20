@@ -1428,7 +1428,6 @@ function TKR_addGroupBy(colIndex) {
   }
 
   TKR_getColspecElement().value = filteredCols.join(' ');
-  TKR_getSearchColspecElement().value = filteredCols.join(' ');
 
   var groupSpec = $('groupbyspec');
   var shownGroupings = groupSpec.value.split(' ');
