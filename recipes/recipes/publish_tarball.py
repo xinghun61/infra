@@ -201,34 +201,30 @@ def export_nacl_tarball(api, version):
         'chromium-%s-nacl.tar.xz' % version)
 
 
-def RunSteps(api):
-  if 'version' not in api.properties:
-    ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
-                           stdout=api.raw_io.output()).stdout
-    missing_releases = set()
-    # TODO(phajdan.jr): find better solution than hardcoding version number.
-    # We do that currently (carryover from a solution this recipe is replacing)
-    # to avoid running into errors with older releases.
-    # Exclude ios - it often uses internal buildspecs so public ones don't work.
-    for release in api.omahaproxy.history(
-        min_major_version=66, exclude_platforms=['ios']):
-      if release['channel'] not in ('stable', 'beta', 'dev', 'canary'):
-        continue
-      version = release['version']
-      if not published_all_tarballs(version, ls_result):
-        missing_releases.add(version)
-    for version in missing_releases:
-      if version not in BLACKLISTED_VERSIONS:
-        if api.runtime.is_luci:
-          api.scheduler.emit_trigger(
-              api.scheduler.BuildbucketTrigger(properties={'version': version}),
-              project='infra',
-              jobs=['publish_tarball'])
-        else:
-          # TODO(tandrii, thomasanderson): remove post LUCI migration.
-          api.trigger({'buildername': 'publish_tarball', 'version': version})
-    return
+def trigger_publish_tarball_jobs(api):
+  ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
+                         stdout=api.raw_io.output()).stdout
+  missing_releases = set()
+  # TODO(phajdan.jr): find better solution than hardcoding version number.
+  # We do that currently (carryover from a solution this recipe is replacing)
+  # to avoid running into errors with older releases.
+  # Exclude ios - it often uses internal buildspecs so public ones don't work.
+  for release in api.omahaproxy.history(
+      min_major_version=66, exclude_platforms=['ios']):
+    if release['channel'] not in ('stable', 'beta', 'dev', 'canary'):
+      continue
+    version = release['version']
+    if not published_all_tarballs(version, ls_result):
+      missing_releases.add(version)
+  for version in missing_releases:
+    if version not in BLACKLISTED_VERSIONS:
+      api.scheduler.emit_trigger(
+          api.scheduler.BuildbucketTrigger(properties={'version': version}),
+          project='infra',
+          jobs=['publish_tarball'])
 
+
+def publish_tarball(api):
   version = api.properties['version']
 
   ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
@@ -318,18 +314,11 @@ def RunSteps(api):
           'chromium-%s.tar.xz' % version)
 
       # Trigger a tarball build now that the full tarball has been uploaded.
-      if api.runtime.is_luci:
-        api.scheduler.emit_trigger(
-            api.scheduler.BuildbucketTrigger(properties={'version': version}),
-            project='infra',
-            jobs=['Build From Tarball'],
-        )
-      else:
-        # TODO(tandrii, thomasanderson): remove post LUCI migration.
-        api.trigger({
-            'builder_name': 'Build From Tarball',
-            'properties': {'version': version},
-        })
+      api.scheduler.emit_trigger(
+          api.scheduler.BuildbucketTrigger(properties={'version': version}),
+          project='infra',
+          jobs=['Build From Tarball'],
+      )
 
     if not published_test_tarball(version, ls_result):
       export_tarball(
@@ -351,17 +340,16 @@ def RunSteps(api):
       export_nacl_tarball(api, version)
 
 
-def GenTests(api):
-  # TODO(tandrii, thomasanderson): remove this test post LUCI migration.
-  yield (
-    api.test('basic.legacy') +
-    api.properties.generic(version='69.0.3493.0') +
-    api.platform('linux', 64) +
-    api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
-    api.path.exists(api.path['checkout'].join(
-        'third_party', 'node', 'node_modules.tar.gz.sha1'))
-  )
+def RunSteps(api):
+  if 'version' not in api.properties:
+    # This code path executes on 'publish_tarball_dispatcher' builder.
+    trigger_publish_tarball_jobs(api)
+  else:
+    # This code path executes on 'publish_tarball' builder.
+    publish_tarball(api)
 
+
+def GenTests(api):
   yield (
     api.test('basic') +
     api.runtime(is_luci=True, is_experimental=False) +
@@ -374,6 +362,7 @@ def GenTests(api):
 
   yield (
     api.test('dupe') +
+    api.runtime(is_luci=True, is_experimental=False) +
     api.properties.generic(version='69.0.3493.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output(
@@ -386,19 +375,12 @@ def GenTests(api):
 
   yield (
     api.test('clang-no-fuchsia') +
+    api.runtime(is_luci=True, is_experimental=False) +
     api.properties.generic(version='71.0.3551.0') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
     api.path.exists(api.path['checkout'].join(
         'third_party', 'node', 'node_modules.tar.gz.sha1'))
-  )
-
-  # TODO(tandrii, thomasanderson): remove this test post LUCI migration.
-  yield (
-    api.test('trigger.legacy') +
-    api.properties.generic() +
-    api.platform('linux', 64) +
-    api.step_data('gsutil ls', stdout=api.raw_io.output(''))
   )
 
   yield (
