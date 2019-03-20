@@ -22,11 +22,11 @@ import (
 
 // Task queue names.
 const (
-	AnalysisResultsQueue = "analysis-results-queue"
+	AnalysisResultsQueue = "bigquery-analysis-results-queue"
 	AnalyzeQueue         = "analyze-queue"
 	DriverQueue          = "driver-queue"
 	FeedbackEventsQueue  = "bigquery-feedback-events-queue"
-	GerritReporterQueue  = "bigquery-gerrit-reporter-queue"
+	GerritReporterQueue  = "gerrit-reporter-queue"
 	LauncherQueue        = "launcher-queue"
 	PollProjectQueue     = "poll-project-queue"
 	TrackerQueue         = "tracker-queue"
