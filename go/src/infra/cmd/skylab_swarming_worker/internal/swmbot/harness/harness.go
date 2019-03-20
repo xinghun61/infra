@@ -71,7 +71,7 @@ func Open(ctx context.Context, b *swmbot.Info, o ...Option) (i *Info, err error)
 		Info: b,
 		labelUpdater: labelUpdater{
 			ctx:     ctx,
-			taskURL: b.TaskRunURL(),
+			botInfo: b,
 		},
 	}
 	defer func(i *Info) {
@@ -177,8 +177,7 @@ func (i *Info) exposeHostInfo(hi *hostinfo.HostInfo, resultsDir string, dutName 
 // labelUpdater implements an update method that is used as a dutinfo.UpdateFunc.
 type labelUpdater struct {
 	ctx          context.Context
-	adminService string
-	taskURL      string
+	botInfo      *swmbot.Info
 	taskName     string
 	updateLabels bool
 }
@@ -186,7 +185,7 @@ type labelUpdater struct {
 // update is a dutinfo.UpdateFunc for updating DUT inventory labels.
 // If adminServiceURL is empty, this method does nothing.
 func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) error {
-	if u.adminService == "" || !u.updateLabels {
+	if u.botInfo.AdminService == "" || !u.updateLabels {
 		log.Printf("Skipping label update since no admin service was provided")
 		return nil
 	}
@@ -221,7 +220,7 @@ func (u labelUpdater) makeClient() (fleet.InventoryClient, error) {
 			"https://www.googleapis.com/auth/cloud-platform",
 		},
 	}
-	c, err := admin.NewInventoryClient(ctx, u.adminService, o)
+	c, err := admin.NewInventoryClient(ctx, u.botInfo.AdminService, o)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +235,7 @@ func (u labelUpdater) makeRequest(dutID string, labels *inventory.SchedulableLab
 	req := fleet.UpdateDutLabelsRequest{
 		DutId:  dutID,
 		Labels: d,
-		Reason: fmt.Sprintf("%s %s", u.taskName, u.taskURL),
+		Reason: fmt.Sprintf("%s %s", u.taskName, u.botInfo.TaskRunURL()),
 	}
 	return &req, nil
 }

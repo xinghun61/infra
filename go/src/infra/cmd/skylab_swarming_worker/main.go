@@ -111,7 +111,7 @@ func mainInner(a *args) error {
 	var ho []harness.Option
 	if updatesInventory(a.taskName) {
 		ho = append(ho, harness.TaskName("repair"))
-		ho = append(ho, harness.UpdateInventory(a.adminService))
+		ho = append(ho, harness.UpdateInventory())
 	}
 	i, err = harness.Open(ctx, b, ho...)
 	if err != nil {

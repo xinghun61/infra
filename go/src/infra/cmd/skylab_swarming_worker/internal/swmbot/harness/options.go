@@ -10,9 +10,8 @@ type Option func(*Info)
 // UpdateInventory returns an Option that enables inventory updates.
 // The admin service for updating needs to be provided,
 // e.g. foo.appspot.com.
-func UpdateInventory(adminService string) Option {
+func UpdateInventory() Option {
 	return func(i *Info) {
-		i.labelUpdater.adminService = adminService
 		i.labelUpdater.updateLabels = true
 	}
 }
