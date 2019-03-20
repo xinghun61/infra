@@ -134,17 +134,22 @@ func TestBuildUpdater(t *testing.T) {
 
 			Convey("minDistance", func() {
 				var sleepDuration time.Duration
+				open := true
 				clk.SetTimerCallback(func(d time.Duration, t clock.Timer) {
 					if testclock.HasTags(t, "update-build-distance") {
 						sleepDuration += d
 						clk.Add(d)
+
+						if open {
+							close(done)
+							open = false
+						}
+
 					}
 				})
 
 				start()
 				bu.AnnotationUpdated([]byte("1"))
-				bu.AnnotationUpdated([]byte("2"))
-				cancel()
 				So(<-errC, ShouldBeNil)
 				So(sleepDuration, ShouldBeGreaterThanOrEqualTo, time.Second)
 			})
