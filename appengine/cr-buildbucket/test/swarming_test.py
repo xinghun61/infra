@@ -1773,10 +1773,11 @@ class SwarmingTest(BaseTest):
     bp = build.proto
     self.assertEqual(bp.status, case['status'])
     self.assertEqual(
-        bp.status_details.is_timeout, case.get('is_timeout', False)
+        bp.status_details.HasField('timeout'),
+        case.get('is_timeout', False),
     )
     self.assertEqual(
-        bp.status_details.is_resource_exhaustion,
+        bp.status_details.HasField('resource_exhaustion'),
         case.get('is_resource_exhaustion', False)
     )
 

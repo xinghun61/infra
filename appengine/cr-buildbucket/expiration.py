@@ -91,7 +91,7 @@ def expire_builds():
 
     build.clear_lease()
     build.proto.status = common_pb2.INFRA_FAILURE
-    build.proto.status_details.is_timeout = True
+    build.proto.status_details.timeout.SetInParent()
     build.proto.end_time.FromDatetime(now)
     build.status_changed_time = now
     yield build.put_async(), events.on_build_completing_async(build)

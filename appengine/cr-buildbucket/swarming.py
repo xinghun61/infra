@@ -1149,16 +1149,16 @@ def _sync_build_in_memory(
     elif state == 'NO_RESOURCE':
       # Task did not start.
       bp.status = common_pb2.INFRA_FAILURE
-      bp.status_details.is_resource_exhaustion = True
+      bp.status_details.resource_exhaustion.SetInParent()
     elif state == 'EXPIRED':
       # Task did not start.
       bp.status = common_pb2.INFRA_FAILURE
-      bp.status_details.is_resource_exhaustion = True
-      bp.status_details.is_timeout = True
+      bp.status_details.resource_exhaustion.SetInParent()
+      bp.status_details.timeout.SetInParent()
     elif state == 'TIMED_OUT':
       # Task started, but timed out.
       bp.status = common_pb2.INFRA_FAILURE
-      bp.status_details.is_timeout = True
+      bp.status_details.timeout.SetInParent()
     elif state == 'BOT_DIED' or task_result.get('internal_failure'):
       bp.status = common_pb2.INFRA_FAILURE
     elif build_run_result is None:

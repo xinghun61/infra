@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
         'Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'
     ),
     serialized_pb=_b(
-        '\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"C\n\rStatusDetails\x12\x1e\n\x16is_resource_exhaustion\x18\x01 \x01(\x08\x12\x12\n\nis_timeout\x18\x02 \x01(\x08\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"Y\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\x12\x10\n\x08position\x18\x05 \x01(\r\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"i\n\tTimeRange\x12.\n\nstart_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"_\n\x12RequestedDimension\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x12-\n\nexpiration\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration*\x87\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x0e\n\nENDED_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44*%\n\x07Trinary\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
+        '\n\x0c\x63ommon.proto\x12\x0e\x62uildbucket.v2\x1a\x1egoogle/protobuf/duration.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc3\x01\n\rStatusDetails\x12M\n\x13resource_exhaustion\x18\x03 \x01(\x0b\x32\x30.buildbucket.v2.StatusDetails.ResourceExhaustion\x12\x36\n\x07timeout\x18\x04 \x01(\x0b\x32%.buildbucket.v2.StatusDetails.Timeout\x1a\x14\n\x12ResourceExhaustion\x1a\t\n\x07TimeoutJ\x04\x08\x01\x10\x02J\x04\x08\x02\x10\x03\"O\n\x0cGerritChange\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06\x63hange\x18\x03 \x01(\x03\x12\x10\n\x08patchset\x18\x04 \x01(\x03\"Y\n\rGitilesCommit\x12\x0c\n\x04host\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\n\n\x02id\x18\x03 \x01(\t\x12\x0b\n\x03ref\x18\x04 \x01(\t\x12\x10\n\x08position\x18\x05 \x01(\r\"(\n\nStringPair\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"i\n\tTimeRange\x12.\n\nstart_time\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\"_\n\x12RequestedDimension\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x12-\n\nexpiration\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration*\x87\x01\n\x06Status\x12\x16\n\x12STATUS_UNSPECIFIED\x10\x00\x12\r\n\tSCHEDULED\x10\x01\x12\x0b\n\x07STARTED\x10\x02\x12\x0e\n\nENDED_MASK\x10\x04\x12\x0b\n\x07SUCCESS\x10\x0c\x12\x0b\n\x07\x46\x41ILURE\x10\x14\x12\x11\n\rINFRA_FAILURE\x10$\x12\x0c\n\x08\x43\x41NCELED\x10\x44*%\n\x07Trinary\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_duration__pb2.DESCRIPTOR,
@@ -96,8 +96,8 @@ _STATUS = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=585,
-    serialized_end=720,
+    serialized_start=714,
+    serialized_end=849,
 )
 _sym_db.RegisterEnumDescriptor(_STATUS)
 
@@ -120,8 +120,8 @@ _TRINARY = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=722,
-    serialized_end=759,
+    serialized_start=851,
+    serialized_end=888,
 )
 _sym_db.RegisterEnumDescriptor(_TRINARY)
 
@@ -138,6 +138,44 @@ UNSET = 0
 YES = 1
 NO = 2
 
+_STATUSDETAILS_RESOURCEEXHAUSTION = _descriptor.Descriptor(
+    name='ResourceExhaustion',
+    full_name='buildbucket.v2.StatusDetails.ResourceExhaustion',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=250,
+    serialized_end=270,
+)
+
+_STATUSDETAILS_TIMEOUT = _descriptor.Descriptor(
+    name='Timeout',
+    full_name='buildbucket.v2.StatusDetails.Timeout',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=272,
+    serialized_end=281,
+)
+
 _STATUSDETAILS = _descriptor.Descriptor(
     name='StatusDetails',
     full_name='buildbucket.v2.StatusDetails',
@@ -146,15 +184,15 @@ _STATUSDETAILS = _descriptor.Descriptor(
     containing_type=None,
     fields=[
         _descriptor.FieldDescriptor(
-            name='is_resource_exhaustion',
-            full_name='buildbucket.v2.StatusDetails.is_resource_exhaustion',
+            name='resource_exhaustion',
+            full_name='buildbucket.v2.StatusDetails.resource_exhaustion',
             index=0,
-            number=1,
-            type=8,
-            cpp_type=7,
+            number=3,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -164,15 +202,15 @@ _STATUSDETAILS = _descriptor.Descriptor(
             file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
-            name='is_timeout',
-            full_name='buildbucket.v2.StatusDetails.is_timeout',
+            name='timeout',
+            full_name='buildbucket.v2.StatusDetails.timeout',
             index=1,
-            number=2,
-            type=8,
-            cpp_type=7,
+            number=4,
+            type=11,
+            cpp_type=10,
             label=1,
             has_default_value=False,
-            default_value=False,
+            default_value=None,
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -183,15 +221,18 @@ _STATUSDETAILS = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[],
+    nested_types=[
+        _STATUSDETAILS_RESOURCEEXHAUSTION,
+        _STATUSDETAILS_TIMEOUT,
+    ],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=97,
-    serialized_end=164,
+    serialized_start=98,
+    serialized_end=293,
 )
 
 _GERRITCHANGE = _descriptor.Descriptor(
@@ -282,8 +323,8 @@ _GERRITCHANGE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=166,
-    serialized_end=245,
+    serialized_start=295,
+    serialized_end=374,
 )
 
 _GITILESCOMMIT = _descriptor.Descriptor(
@@ -392,8 +433,8 @@ _GITILESCOMMIT = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=247,
-    serialized_end=336,
+    serialized_start=376,
+    serialized_end=465,
 )
 
 _STRINGPAIR = _descriptor.Descriptor(
@@ -448,8 +489,8 @@ _STRINGPAIR = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=338,
-    serialized_end=378,
+    serialized_start=467,
+    serialized_end=507,
 )
 
 _TIMERANGE = _descriptor.Descriptor(
@@ -504,8 +545,8 @@ _TIMERANGE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=380,
-    serialized_end=485,
+    serialized_start=509,
+    serialized_end=614,
 )
 
 _REQUESTEDDIMENSION = _descriptor.Descriptor(
@@ -578,10 +619,15 @@ _REQUESTEDDIMENSION = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=487,
-    serialized_end=582,
+    serialized_start=616,
+    serialized_end=711,
 )
 
+_STATUSDETAILS_RESOURCEEXHAUSTION.containing_type = _STATUSDETAILS
+_STATUSDETAILS_TIMEOUT.containing_type = _STATUSDETAILS
+_STATUSDETAILS.fields_by_name['resource_exhaustion'
+                             ].message_type = _STATUSDETAILS_RESOURCEEXHAUSTION
+_STATUSDETAILS.fields_by_name['timeout'].message_type = _STATUSDETAILS_TIMEOUT
 _TIMERANGE.fields_by_name[
     'start_time'
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
@@ -603,12 +649,32 @@ StatusDetails = _reflection.GeneratedProtocolMessageType(
     'StatusDetails',
     (_message.Message,),
     dict(
+        ResourceExhaustion=_reflection.GeneratedProtocolMessageType(
+            'ResourceExhaustion',
+            (_message.Message,),
+            dict(
+                DESCRIPTOR=_STATUSDETAILS_RESOURCEEXHAUSTION,
+                __module__='common_pb2'
+                # @@protoc_insertion_point(class_scope:buildbucket.v2.StatusDetails.ResourceExhaustion)
+            )
+        ),
+        Timeout=_reflection.GeneratedProtocolMessageType(
+            'Timeout',
+            (_message.Message,),
+            dict(
+                DESCRIPTOR=_STATUSDETAILS_TIMEOUT,
+                __module__='common_pb2'
+                # @@protoc_insertion_point(class_scope:buildbucket.v2.StatusDetails.Timeout)
+            )
+        ),
         DESCRIPTOR=_STATUSDETAILS,
         __module__='common_pb2'
         # @@protoc_insertion_point(class_scope:buildbucket.v2.StatusDetails)
     )
 )
 _sym_db.RegisterMessage(StatusDetails)
+_sym_db.RegisterMessage(StatusDetails.ResourceExhaustion)
+_sym_db.RegisterMessage(StatusDetails.Timeout)
 
 GerritChange = _reflection.GeneratedProtocolMessageType(
     'GerritChange',

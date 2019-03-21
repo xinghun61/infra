@@ -53,7 +53,7 @@ class ExpireBuildTests(testing.AppengineTestCase):
     expiration.expire_builds()
     build = build.key.get()
     self.assertEqual(build.proto.status, common_pb2.INFRA_FAILURE)
-    self.assertTrue(build.proto.status_details.is_timeout)
+    self.assertTrue(build.proto.status_details.HasField('timeout'))
     self.assertIsNone(build.lease_key)
 
   def test_delete_builds(self):

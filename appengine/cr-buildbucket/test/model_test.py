@@ -122,7 +122,7 @@ class TestStatusConversion(unittest.TestCase):
         model.Build(
             proto=build_pb2.Build(
                 status=common_pb2.INFRA_FAILURE,
-                status_details=dict(is_timeout=True)
+                status_details=dict(timeout=dict())
             ),
             status_legacy=model.BuildStatus.COMPLETED,
             result=model.BuildResult.CANCELED,

@@ -462,7 +462,7 @@ def cancel_build_async(req, res, _ctx, mask):
 BATCH_REQUEST_TYPE_TO_RPC_IMPL = {
     'get_build': get_build_async,
     'search_builds': search_builds_async,
-    # TODO(crbug.com/926999): implement 'cancel_build'
+    'cancel_build': cancel_build_async,
 }
 assert set(BATCH_REQUEST_TYPE_TO_RPC_IMPL) | {'schedule_build'} == set(
     rpc_pb2.BatchRequest.Request.DESCRIPTOR.fields_by_name

@@ -414,7 +414,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     build = self.classic_build(
         id=1,
         status=common_pb2.INFRA_FAILURE,
-        status_details=dict(is_timeout=True),
+        status_details=dict(timeout=dict()),
     )
     build.put()
 
