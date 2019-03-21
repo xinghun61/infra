@@ -18,9 +18,8 @@ import {selectors} from '../../redux/selectors.js';
 import {actionType} from '../../redux/redux-mixin.js';
 import './mr-edit-field.js';
 import './mr-edit-status.js';
+import {ISSUE_EDIT_PERMISSION} from '../../shared/permissions.js';
 
-
-const EDIT_ISSUE_PERMISSION = 'editissue';
 
 /**
  * `<mr-edit-metadata>`
@@ -537,7 +536,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         'ccRefsAdd', 'ccRefsRemove', displayNameToUserRef);
 
       this._addListChangesToDelta(result, 'componentsInput',
-        'componentRefsAdd', 'componentRefsRemove', componentStringToRef);
+        'compRefsAdd', 'compRefsRemove', componentStringToRef);
 
       this._addListChangesToDelta(result, 'blockedOnInput',
         'blockedOnRefsAdd', 'blockedOnRefsRemove',
@@ -640,7 +639,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   _computeCanEditIssue(issuePermissions) {
-    return (issuePermissions || []).includes(EDIT_ISSUE_PERMISSION);
+    return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION);
   }
 
   _computeCCNames(users) {

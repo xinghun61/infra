@@ -6,6 +6,7 @@ import {assert} from 'chai';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {actionType} from '../../redux/redux-mixin.js';
+import {ISSUE_EDIT_PERMISSION} from '../../shared/permissions.js';
 
 
 let element;
@@ -252,6 +253,40 @@ suite('mr-edit-metadata', () => {
         },
       ],
     });
+  });
+
+  test('adding components produces delta', () => {
+    element.isApproval = false;
+    element.issuePermissions = [ISSUE_EDIT_PERMISSION];
+
+    flush();
+
+    const compInput = element.shadowRoot.querySelector('#componentsInput');
+
+    compInput.setValue(['Hello>World']);
+    assert.deepEqual(element.getDelta(), {
+      compRefsAdd: [
+        {path: 'Hello>World'},
+      ],
+    });
+
+    // TODO(zhangtiff): Fix this. This test currently breaks on multiple values
+    // because of a bug in setValue().
+    /*
+    compInput.setValue(['Hello>World', 'Test', 'Multi']);
+
+    assert.deepEqual(element.getDelta(), {
+      compRefsAdd: [
+        {path: 'Hello>World'},
+        {path: 'Test'},
+        {path: 'Multi'},
+      ],
+    });
+    */
+
+    compInput.setValue([]);
+
+    assert.deepEqual(element.getDelta(), {});
   });
 
   test('approver input appears when user has privileges', () => {

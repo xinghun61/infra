@@ -162,8 +162,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
               <a href$="/p/[[projectName]]/issues/list?q=component:[[item.path]]"
                 title$="[[item.path]] = [[item.docstring]]"
               >
-                [[item.path]]
-              </a>
+                [[item.path]]</a><br />
             </template>
           </td>
         </tr>
