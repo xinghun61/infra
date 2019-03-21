@@ -443,7 +443,11 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   reset() {
-    this.$.editForm.reset();
+    this.shadowRoot.querySelector('#editForm').reset();
+    const statusInput = this.shadowRoot.querySelector('#statusInput');
+    if (statusInput) {
+      statusInput.reset();
+    }
 
     // Since custom elements containing <input> elements have the inputs
     // wrapped in ShadowDOM, those inputs don't get reset with the rest of

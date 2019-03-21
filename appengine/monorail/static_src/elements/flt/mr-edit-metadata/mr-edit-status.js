@@ -4,6 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import {issueStringToRef} from '../../shared/converters.js';
 import '../../shared/mr-shared-styles.js';
@@ -110,6 +111,18 @@ export class MrEditStatus extends PolymerElement {
       },
       _showMergedInto: Boolean,
     };
+  }
+
+  reset() {
+    const mergedIntoInput = this.shadowRoot.querySelector('#mergedIntoInput');
+    if (mergedIntoInput) {
+      mergedIntoInput.reset();
+    }
+    const initialIndex = this.statuses.findIndex(
+      (option) => this.status === option.status);
+    this.shadowRoot.querySelector('#statusInput').selectedIndex = initialIndex;
+    this._initialStatusChanged();
+    flush();
   }
 
   getDelta(projectName) {
