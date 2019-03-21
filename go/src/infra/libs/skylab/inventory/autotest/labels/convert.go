@@ -24,7 +24,7 @@ var converters []converter
 // the Autotest labels it is responsible for.
 type converter func(*inventory.SchedulableLabels) []string
 
-// Revert converts DUT inventory labels to Autotest labels.
+// Revert converts Autotest labels to DUT inventory labels.
 func Revert(labels []string) *inventory.SchedulableLabels {
 	ls := newScheduableLabels()
 	for _, r := range reverters {
