@@ -1149,8 +1149,15 @@ class WorkEnv(object):
     Returns:
       Nothing.
     """
+    try:
+      self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
+    except permissions.PermissionException as e:
+      if delta == tracker_pb2.IssueDelta():  # No issue changes.
+        self._AssertPermInIssue(issue, permissions.ADD_ISSUE_COMMENT)
+      else:  # TODO(jrobbins): Add EditIssueCc, EditIssueSummary, etc.
+        raise e
+
     project = self.GetProject(issue.project_id)
-    self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
     config = self.GetProjectConfig(issue.project_id)
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
 

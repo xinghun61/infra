@@ -330,11 +330,12 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual(response, issues_pb2.ListApplicableFieldDefsResponse(
         field_defs=converted_field_defs))
 
-  def testUpdateIssue_Denied(self):
+  def testUpdateIssue_Denied_Edit(self):
     """We reject requests to update an issue when the user lacks perms."""
     request = issues_pb2.UpdateIssueRequest()
     request.issue_ref.project_name = 'proj'
     request.issue_ref.local_id = 1
+    request.delta.summary.value = 'new summary'
 
     # Anon user can never update.
     mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
@@ -352,6 +353,36 @@ class IssuesServicerTest(unittest.TestCase):
 
     # Signed in user cannot edit this issue.
     self.issue_1.labels = ['Restrict-EditIssue-CoreTeam']
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+  def testUpdateIssue_JustAComment(self):
+    """We check AddIssueComment when the user is only commenting."""
+    request = issues_pb2.UpdateIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 1
+    # Note: no delta.
+
+    # Anon user can never update.
+    mc = monorailcontext.MonorailContext(self.services, cnxn=self.cnxn)
+    mc.LookupLoggedInUserPerms(self.project)
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # Signed in user cannot view this issue.
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='approver3@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    self.issue_1.labels = ['Restrict-View-CoreTeam']
+    with self.assertRaises(permissions.PermissionException):
+      self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # Signed in user cannot edit this issue, but they can still comment.
+    self.issue_1.labels = ['Restrict-EditIssue-CoreTeam']
+    self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
+
+    # Signed in user cannot post even a text comment.
+    self.issue_1.labels = ['Restrict-AddIssueComment-CoreTeam']
     with self.assertRaises(permissions.PermissionException):
       self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
 
