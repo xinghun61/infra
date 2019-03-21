@@ -269,8 +269,8 @@ def validate_notification_config(notify):
 # Set of UpdateBuildRequest field paths updatable via UpdateBuild RPC.
 UPDATE_BUILD_FIELD_PATHS = {
     'build.status',
+    'build.status_details',
     'build.summary_markdown',
-    'build.infra_failure_reason',
     'build.steps',
     'build.output.properties',
 }

@@ -100,10 +100,7 @@ class TestStatusConversion(unittest.TestCase):
   def test_infra_failure(self):
     self.compare(
         model.Build(
-            proto=build_pb2.Build(
-                status=common_pb2.INFRA_FAILURE,
-                infra_failure_reason=dict(resource_exhaustion=False)
-            ),
+            proto=build_pb2.Build(status=common_pb2.INFRA_FAILURE),
             status_legacy=model.BuildStatus.COMPLETED,
             result=model.BuildResult.FAILURE,
             failure_reason=model.FailureReason.INFRA_FAILURE
@@ -125,7 +122,7 @@ class TestStatusConversion(unittest.TestCase):
         model.Build(
             proto=build_pb2.Build(
                 status=common_pb2.INFRA_FAILURE,
-                infra_failure_reason=dict(resource_exhaustion=True)
+                status_details=dict(is_timeout=True)
             ),
             status_legacy=model.BuildStatus.COMPLETED,
             result=model.BuildResult.CANCELED,

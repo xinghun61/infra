@@ -15,7 +15,6 @@ from proto import rpc_pb2
 def _build_default_field_paths(prefix=''):  # pragma: no cover
   paths = [
       'builder',
-      'cancel_reason',
       'create_time',
       'created_by',
       'end_time',
@@ -26,6 +25,7 @@ def _build_default_field_paths(prefix=''):  # pragma: no cover
       'number',
       'start_time',
       'status',
+      'status_details',
       'update_time',
       # TODO(nodir): add the following fields when they are defined in the
       # proto:

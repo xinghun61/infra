@@ -366,8 +366,7 @@ class Build(ndb.Model):
       self.failure_reason = FailureReason.BUILD_FAILURE
     elif status == common_pb2.INFRA_FAILURE:
       self.status_legacy = BuildStatus.COMPLETED
-      if self.proto.infra_failure_reason.resource_exhaustion:
-        # In python implementation, V2 resource exhaustion is V1 timeout.
+      if self.proto.status_details.is_timeout:
         self.result = BuildResult.CANCELED
         self.cancelation_reason = CancelationReason.TIMEOUT
       else:

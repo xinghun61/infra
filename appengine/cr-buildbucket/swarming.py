@@ -1146,13 +1146,19 @@ def _sync_build_in_memory(
   elif state in terminal_states:
     if state in ('CANCELED', 'KILLED'):
       bp.status = common_pb2.CANCELED
-    elif state in ('EXPIRED', 'NO_RESOURCE'):
+    elif state == 'NO_RESOURCE':
       # Task did not start.
       bp.status = common_pb2.INFRA_FAILURE
-      bp.infra_failure_reason.resource_exhaustion = True
+      bp.status_details.is_resource_exhaustion = True
+    elif state == 'EXPIRED':
+      # Task did not start.
+      bp.status = common_pb2.INFRA_FAILURE
+      bp.status_details.is_resource_exhaustion = True
+      bp.status_details.is_timeout = True
     elif state == 'TIMED_OUT':
       # Task started, but timed out.
       bp.status = common_pb2.INFRA_FAILURE
+      bp.status_details.is_timeout = True
     elif state == 'BOT_DIED' or task_result.get('internal_failure'):
       bp.status = common_pb2.INFRA_FAILURE
     elif build_run_result is None:

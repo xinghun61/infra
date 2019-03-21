@@ -153,10 +153,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.proto.status, common_pb2.CANCELED)
     self.assertEqual(build.proto.end_time.ToDatetime(), utils.utcnow())
     self.assertEqual(build.proto.summary_markdown, 'nope')
-    self.assertEqual(
-        build.proto.cancel_reason,
-        build_pb2.CancelReason(canceled_by=self.current_identity.to_bytes()),
-    )
+    self.assertEqual(build.proto.canceled_by, self.current_identity.to_bytes())
     cancel_task_async.assert_called_with('swarming.example.com', 'deadbeef')
     self.assertEqual(build.status_changed_time, utils.utcnow())
 
@@ -413,11 +410,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.BuildIsCompletedError):
       service.heartbeat(1, 0, lease_expiration_date=new_expiration_date)
 
-  def test_heartbeat_resource_exhaustion(self):
+  def test_heartbeat_timeout(self):
     build = self.classic_build(
         id=1,
         status=common_pb2.INFRA_FAILURE,
-        infra_failure_reason=dict(resource_exhaustion=True),
+        status_details=dict(is_timeout=True),
     )
     build.put()
 

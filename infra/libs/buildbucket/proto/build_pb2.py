@@ -24,7 +24,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
         'Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'
     ),
     serialized_pb=_b(
-        '\n\x0b\x62uild.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x0c\x63ommon.proto\x1a\nstep.proto\"\xaa\x08\n\x05\x42uild\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x0e\n\x06number\x18\x03 \x01(\x05\x12\x12\n\ncreated_by\x18\x04 \x01(\t\x12/\n\x0b\x63reate_time\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nstart_time\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x0bupdate_time\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\x0c \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x18\n\x10summary_markdown\x18\x14 \x01(\t\x12)\n\x08\x63ritical\x18\x15 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12\x42\n\x14infra_failure_reason\x18\r \x01(\x0b\x32\".buildbucket.v2.InfraFailureReasonH\x00\x12\x35\n\rcancel_reason\x18\x0e \x01(\x0b\x32\x1c.buildbucket.v2.CancelReasonH\x00\x12*\n\x05input\x18\x0f \x01(\x0b\x32\x1b.buildbucket.v2.Build.Input\x12,\n\x06output\x18\x10 \x01(\x0b\x32\x1c.buildbucket.v2.Build.Output\x12#\n\x05steps\x18\x11 \x03(\x0b\x32\x14.buildbucket.v2.Step\x12)\n\x05infra\x18\x12 \x01(\x0b\x32\x1a.buildbucket.v2.BuildInfra\x12(\n\x04tags\x18\x13 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x1a\xb7\x01\n\x05Input\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x35\n\x0egitiles_commit\x18\x02 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12\x14\n\x0c\x65xperimental\x18\x05 \x01(\x08\x1ax\n\x06Output\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x35\n\x0egitiles_commit\x18\x03 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommitJ\x04\x08\x02\x10\x03J\x04\x08\x04\x10\x05\x42\x0f\n\rstatus_reasonJ\x04\x08\x05\x10\x06\")\n\x0c\x43\x61ncelReason\x12\x13\n\x0b\x63\x61nceled_by\x18\x02 \x01(\tJ\x04\x08\x01\x10\x02\"7\n\x12InfraFailureReason\x12\x1b\n\x13resource_exhaustion\x18\x02 \x01(\x08J\x04\x08\x01\x10\x02\"\xdc\x05\n\nBuildInfra\x12;\n\x0b\x62uildbucket\x18\x01 \x01(\x0b\x32&.buildbucket.v2.BuildInfra.Buildbucket\x12\x35\n\x08swarming\x18\x02 \x01(\x0b\x32#.buildbucket.v2.BuildInfra.Swarming\x12\x31\n\x06logdog\x18\x03 \x01(\x0b\x32!.buildbucket.v2.BuildInfra.LogDog\x12\x31\n\x06recipe\x18\x04 \x01(\x0b\x32!.buildbucket.v2.BuildInfra.Recipe\x1a\xb7\x01\n\x0b\x42uildbucket\x12\x1f\n\x17service_config_revision\x18\x02 \x01(\t\x12\x0e\n\x06\x63\x61nary\x18\x04 \x01(\x08\x12\x35\n\x14requested_properties\x18\x05 \x01(\x0b\x32\x17.google.protobuf.Struct\x12@\n\x14requested_dimensions\x18\x06 \x03(\x0b\x32\".buildbucket.v2.RequestedDimension\x1a\xce\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x0f\n\x07task_id\x18\x02 \x01(\t\x12\x1c\n\x14task_service_account\x18\x03 \x01(\t\x12\x10\n\x08priority\x18\x04 \x01(\x05\x12;\n\x0ftask_dimensions\x18\x05 \x03(\x0b\x32\".buildbucket.v2.RequestedDimension\x12\x32\n\x0e\x62ot_dimensions\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x1a;\n\x06LogDog\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06prefix\x18\x03 \x01(\t\x1a,\n\x06Recipe\x12\x14\n\x0c\x63ipd_package\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"=\n\tBuilderID\x12\x0f\n\x07project\x18\x01 \x01(\t\x12\x0e\n\x06\x62ucket\x18\x02 \x01(\t\x12\x0f\n\x07\x62uilder\x18\x03 \x01(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
+        '\n\x0b\x62uild.proto\x12\x0e\x62uildbucket.v2\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x0c\x63ommon.proto\x1a\nstep.proto\"\xf6\x07\n\x05\x42uild\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x0e\n\x06number\x18\x03 \x01(\x05\x12\x12\n\ncreated_by\x18\x04 \x01(\t\x12\x13\n\x0b\x63\x61nceled_by\x18\x17 \x01(\t\x12/\n\x0b\x63reate_time\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12.\n\nstart_time\x18\x07 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x65nd_time\x18\x08 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12/\n\x0bupdate_time\x18\t \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12&\n\x06status\x18\x0c \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x18\n\x10summary_markdown\x18\x14 \x01(\t\x12)\n\x08\x63ritical\x18\x15 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12\x35\n\x0estatus_details\x18\x16 \x01(\x0b\x32\x1d.buildbucket.v2.StatusDetails\x12*\n\x05input\x18\x0f \x01(\x0b\x32\x1b.buildbucket.v2.Build.Input\x12,\n\x06output\x18\x10 \x01(\x0b\x32\x1c.buildbucket.v2.Build.Output\x12#\n\x05steps\x18\x11 \x03(\x0b\x32\x14.buildbucket.v2.Step\x12)\n\x05infra\x18\x12 \x01(\x0b\x32\x1a.buildbucket.v2.BuildInfra\x12(\n\x04tags\x18\x13 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x1a\xb7\x01\n\x05Input\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x35\n\x0egitiles_commit\x18\x02 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12\x14\n\x0c\x65xperimental\x18\x05 \x01(\x08\x1ax\n\x06Output\x12+\n\nproperties\x18\x01 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x35\n\x0egitiles_commit\x18\x03 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommitJ\x04\x08\x02\x10\x03J\x04\x08\x04\x10\x05J\x04\x08\x05\x10\x06J\x04\x08\r\x10\x0eJ\x04\x08\x0e\x10\x0f\"\xdc\x05\n\nBuildInfra\x12;\n\x0b\x62uildbucket\x18\x01 \x01(\x0b\x32&.buildbucket.v2.BuildInfra.Buildbucket\x12\x35\n\x08swarming\x18\x02 \x01(\x0b\x32#.buildbucket.v2.BuildInfra.Swarming\x12\x31\n\x06logdog\x18\x03 \x01(\x0b\x32!.buildbucket.v2.BuildInfra.LogDog\x12\x31\n\x06recipe\x18\x04 \x01(\x0b\x32!.buildbucket.v2.BuildInfra.Recipe\x1a\xb7\x01\n\x0b\x42uildbucket\x12\x1f\n\x17service_config_revision\x18\x02 \x01(\t\x12\x0e\n\x06\x63\x61nary\x18\x04 \x01(\x08\x12\x35\n\x14requested_properties\x18\x05 \x01(\x0b\x32\x17.google.protobuf.Struct\x12@\n\x14requested_dimensions\x18\x06 \x03(\x0b\x32\".buildbucket.v2.RequestedDimension\x1a\xce\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x0f\n\x07task_id\x18\x02 \x01(\t\x12\x1c\n\x14task_service_account\x18\x03 \x01(\t\x12\x10\n\x08priority\x18\x04 \x01(\x05\x12;\n\x0ftask_dimensions\x18\x05 \x03(\x0b\x32\".buildbucket.v2.RequestedDimension\x12\x32\n\x0e\x62ot_dimensions\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x1a;\n\x06LogDog\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x0f\n\x07project\x18\x02 \x01(\t\x12\x0e\n\x06prefix\x18\x03 \x01(\t\x1a,\n\x06Recipe\x12\x14\n\x0c\x63ipd_package\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"=\n\tBuilderID\x12\x0f\n\x07project\x18\x01 \x01(\t\x12\x0e\n\x06\x62ucket\x18\x02 \x01(\t\x12\x0f\n\x07\x62uilder\x18\x03 \x01(\tB6Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_timestamp__pb2.DESCRIPTOR,
@@ -122,8 +122,8 @@ _BUILD_INPUT = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=859,
-    serialized_end=1042,
+    serialized_start=812,
+    serialized_end=995,
 )
 
 _BUILD_OUTPUT = _descriptor.Descriptor(
@@ -178,8 +178,8 @@ _BUILD_OUTPUT = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1044,
-    serialized_end=1164,
+    serialized_start=997,
+    serialized_end=1117,
 )
 
 _BUILD = _descriptor.Descriptor(
@@ -262,9 +262,27 @@ _BUILD = _descriptor.Descriptor(
             file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
+            name='canceled_by',
+            full_name='buildbucket.v2.Build.canceled_by',
+            index=4,
+            number=23,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR
+        ),
+        _descriptor.FieldDescriptor(
             name='create_time',
             full_name='buildbucket.v2.Build.create_time',
-            index=4,
+            index=5,
             number=6,
             type=11,
             cpp_type=10,
@@ -282,7 +300,7 @@ _BUILD = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='start_time',
             full_name='buildbucket.v2.Build.start_time',
-            index=5,
+            index=6,
             number=7,
             type=11,
             cpp_type=10,
@@ -300,7 +318,7 @@ _BUILD = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='end_time',
             full_name='buildbucket.v2.Build.end_time',
-            index=6,
+            index=7,
             number=8,
             type=11,
             cpp_type=10,
@@ -318,7 +336,7 @@ _BUILD = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='update_time',
             full_name='buildbucket.v2.Build.update_time',
-            index=7,
+            index=8,
             number=9,
             type=11,
             cpp_type=10,
@@ -336,7 +354,7 @@ _BUILD = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='status',
             full_name='buildbucket.v2.Build.status',
-            index=8,
+            index=9,
             number=12,
             type=14,
             cpp_type=8,
@@ -354,7 +372,7 @@ _BUILD = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='summary_markdown',
             full_name='buildbucket.v2.Build.summary_markdown',
-            index=9,
+            index=10,
             number=20,
             type=9,
             cpp_type=9,
@@ -372,7 +390,7 @@ _BUILD = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='critical',
             full_name='buildbucket.v2.Build.critical',
-            index=10,
+            index=11,
             number=21,
             type=14,
             cpp_type=8,
@@ -388,28 +406,10 @@ _BUILD = _descriptor.Descriptor(
             file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
-            name='infra_failure_reason',
-            full_name='buildbucket.v2.Build.infra_failure_reason',
-            index=11,
-            number=13,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='cancel_reason',
-            full_name='buildbucket.v2.Build.cancel_reason',
+            name='status_details',
+            full_name='buildbucket.v2.Build.status_details',
             index=12,
-            number=14,
+            number=22,
             type=11,
             cpp_type=10,
             label=1,
@@ -524,93 +524,9 @@ _BUILD = _descriptor.Descriptor(
     is_extendable=False,
     syntax='proto3',
     extension_ranges=[],
-    oneofs=[
-        _descriptor.OneofDescriptor(
-            name='status_reason',
-            full_name='buildbucket.v2.Build.status_reason',
-            index=0,
-            containing_type=None,
-            fields=[]
-        ),
-    ],
+    oneofs=[],
     serialized_start=121,
-    serialized_end=1187,
-)
-
-_CANCELREASON = _descriptor.Descriptor(
-    name='CancelReason',
-    full_name='buildbucket.v2.CancelReason',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='canceled_by',
-            full_name='buildbucket.v2.CancelReason.canceled_by',
-            index=0,
-            number=2,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1189,
-    serialized_end=1230,
-)
-
-_INFRAFAILUREREASON = _descriptor.Descriptor(
-    name='InfraFailureReason',
-    full_name='buildbucket.v2.InfraFailureReason',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='resource_exhaustion',
-            full_name='buildbucket.v2.InfraFailureReason.resource_exhaustion',
-            index=0,
-            number=2,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1232,
-    serialized_end=1287,
+    serialized_end=1135,
 )
 
 _BUILDINFRA_BUILDBUCKET = _descriptor.Descriptor(
@@ -704,8 +620,8 @@ _BUILDINFRA_BUILDBUCKET = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1523,
-    serialized_end=1706,
+    serialized_start=1371,
+    serialized_end=1554,
 )
 
 _BUILDINFRA_SWARMING = _descriptor.Descriptor(
@@ -832,8 +748,8 @@ _BUILDINFRA_SWARMING = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1709,
-    serialized_end=1915,
+    serialized_start=1557,
+    serialized_end=1763,
 )
 
 _BUILDINFRA_LOGDOG = _descriptor.Descriptor(
@@ -906,8 +822,8 @@ _BUILDINFRA_LOGDOG = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1917,
-    serialized_end=1976,
+    serialized_start=1765,
+    serialized_end=1824,
 )
 
 _BUILDINFRA_RECIPE = _descriptor.Descriptor(
@@ -962,8 +878,8 @@ _BUILDINFRA_RECIPE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1978,
-    serialized_end=2022,
+    serialized_start=1826,
+    serialized_end=1870,
 )
 
 _BUILDINFRA = _descriptor.Descriptor(
@@ -1059,8 +975,8 @@ _BUILDINFRA = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1290,
-    serialized_end=2022,
+    serialized_start=1138,
+    serialized_end=1870,
 )
 
 _BUILDERID = _descriptor.Descriptor(
@@ -1133,8 +1049,8 @@ _BUILDERID = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=2024,
-    serialized_end=2085,
+    serialized_start=1872,
+    serialized_end=1933,
 )
 
 _BUILD_INPUT.fields_by_name[
@@ -1163,23 +1079,13 @@ _BUILD.fields_by_name[
 ].message_type = google_dot_protobuf_dot_timestamp__pb2._TIMESTAMP
 _BUILD.fields_by_name['status'].enum_type = common__pb2._STATUS
 _BUILD.fields_by_name['critical'].enum_type = common__pb2._TRINARY
-_BUILD.fields_by_name['infra_failure_reason'].message_type = _INFRAFAILUREREASON
-_BUILD.fields_by_name['cancel_reason'].message_type = _CANCELREASON
+_BUILD.fields_by_name['status_details'
+                     ].message_type = common__pb2._STATUSDETAILS
 _BUILD.fields_by_name['input'].message_type = _BUILD_INPUT
 _BUILD.fields_by_name['output'].message_type = _BUILD_OUTPUT
 _BUILD.fields_by_name['steps'].message_type = step__pb2._STEP
 _BUILD.fields_by_name['infra'].message_type = _BUILDINFRA
 _BUILD.fields_by_name['tags'].message_type = common__pb2._STRINGPAIR
-_BUILD.oneofs_by_name['status_reason'].fields.append(
-    _BUILD.fields_by_name['infra_failure_reason']
-)
-_BUILD.fields_by_name['infra_failure_reason'
-                     ].containing_oneof = _BUILD.oneofs_by_name['status_reason']
-_BUILD.oneofs_by_name['status_reason'].fields.append(
-    _BUILD.fields_by_name['cancel_reason']
-)
-_BUILD.fields_by_name['cancel_reason'].containing_oneof = _BUILD.oneofs_by_name[
-    'status_reason']
 _BUILDINFRA_BUILDBUCKET.fields_by_name[
     'requested_properties'
 ].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
@@ -1198,8 +1104,6 @@ _BUILDINFRA.fields_by_name['swarming'].message_type = _BUILDINFRA_SWARMING
 _BUILDINFRA.fields_by_name['logdog'].message_type = _BUILDINFRA_LOGDOG
 _BUILDINFRA.fields_by_name['recipe'].message_type = _BUILDINFRA_RECIPE
 DESCRIPTOR.message_types_by_name['Build'] = _BUILD
-DESCRIPTOR.message_types_by_name['CancelReason'] = _CANCELREASON
-DESCRIPTOR.message_types_by_name['InfraFailureReason'] = _INFRAFAILUREREASON
 DESCRIPTOR.message_types_by_name['BuildInfra'] = _BUILDINFRA
 DESCRIPTOR.message_types_by_name['BuilderID'] = _BUILDERID
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -1234,28 +1138,6 @@ Build = _reflection.GeneratedProtocolMessageType(
 _sym_db.RegisterMessage(Build)
 _sym_db.RegisterMessage(Build.Input)
 _sym_db.RegisterMessage(Build.Output)
-
-CancelReason = _reflection.GeneratedProtocolMessageType(
-    'CancelReason',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_CANCELREASON,
-        __module__='build_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.CancelReason)
-    )
-)
-_sym_db.RegisterMessage(CancelReason)
-
-InfraFailureReason = _reflection.GeneratedProtocolMessageType(
-    'InfraFailureReason',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_INFRAFAILUREREASON,
-        __module__='build_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.InfraFailureReason)
-    )
-)
-_sym_db.RegisterMessage(InfraFailureReason)
 
 BuildInfra = _reflection.GeneratedProtocolMessageType(
     'BuildInfra',

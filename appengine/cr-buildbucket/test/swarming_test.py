@@ -1700,6 +1700,7 @@ class SwarmingTest(BaseTest):
               'completed_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.INFRA_FAILURE,
+          'is_timeout': True,
           'start_time': tspb(seconds=1517260502, nanos=649750000),
           'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
@@ -1709,7 +1710,8 @@ class SwarmingTest(BaseTest):
               'abandoned_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.INFRA_FAILURE,
-          'resource_exhaustion': True,
+          'is_resource_exhaustion': True,
+          'is_timeout': True,
           'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       ({
@@ -1734,7 +1736,7 @@ class SwarmingTest(BaseTest):
               'abandoned_ts': '2018-01-30T00:15:18.162860',
           },
           'status': common_pb2.INFRA_FAILURE,
-          'resource_exhaustion': True,
+          'is_resource_exhaustion': True,
           'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
       # NO_RESOURCE with abandoned_ts before creation time.
@@ -1745,7 +1747,7 @@ class SwarmingTest(BaseTest):
                   'abandoned_ts': '2015-11-29T00:15:18.162860',
               },
               'status': common_pb2.INFRA_FAILURE,
-              'resource_exhaustion': True,
+              'is_resource_exhaustion': True,
               'end_time': test_util.dt2ts(NOW),
           },
       ),
@@ -1771,8 +1773,11 @@ class SwarmingTest(BaseTest):
     bp = build.proto
     self.assertEqual(bp.status, case['status'])
     self.assertEqual(
-        bp.infra_failure_reason.resource_exhaustion,
-        case.get('resource_exhaustion', False)
+        bp.status_details.is_timeout, case.get('is_timeout', False)
+    )
+    self.assertEqual(
+        bp.status_details.is_resource_exhaustion,
+        case.get('is_resource_exhaustion', False)
     )
 
     self.assertEqual(bp.start_time, case.get('start_time', tspb(0)))

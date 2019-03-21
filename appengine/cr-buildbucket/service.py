@@ -522,7 +522,7 @@ def cancel_async(build_id, summary_markdown='', result_details=None):
     build.status_changed_time = now
     build.result_details = result_details
     build.proto.summary_markdown = summary_markdown
-    build.proto.cancel_reason.canceled_by = identity_str
+    build.proto.canceled_by = identity_str
     build.proto.end_time.FromDatetime(now)
     build.clear_lease()
     futs = [
