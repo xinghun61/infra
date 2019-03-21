@@ -64,21 +64,22 @@ _BLACKLISTED_DEPS = {
     ],
 }
 
-# A mapping from platform to builder name for postsubmit coverage data, this
-# conversion is needed because the data models are indexed by builder names
-# instead of platforms.
-_POSTSUBMIT_PLATFORM_TO_BUILDER_MAP = {
+# A mapping from platform to related info such as builder name and ui name.
+_POSTSUBMIT_PLATFORM_INFO_MAP = {
     'linux': {
         'bucket': 'coverage',
         'builder': 'linux-code-coverage',
+        'ui_name': 'Linux',
     },
     'chromeos-vm': {
         'bucket': 'ci',
         'builder': 'chromeos-vm-code-coverage',
+        'ui_name': 'ChromeOS VM',
     },
     'linux-chromeos': {
         'bucket': 'ci',
         'builder': 'linux-chromeos-code-coverage',
+        'linux-chromeos': 'ChromeOS on Linux',
     },
 }
 
@@ -839,11 +840,11 @@ class ServeCodeCoverageData(BaseHandler):
       logging.info('Servicing coverage data for postsubmit')
       template = None
 
-      if platform not in _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP:
+      if platform not in _POSTSUBMIT_PLATFORM_INFO_MAP:
         return BaseHandler.CreateError(
             'Platform: %s is not supported' % platform, 404)
-      bucket = _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP[platform]['bucket']
-      builder = _POSTSUBMIT_PLATFORM_TO_BUILDER_MAP[platform]['builder']
+      bucket = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['bucket']
+      builder = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['builder']
 
       if not revision:
         query = PostsubmitReport.query(
@@ -967,17 +968,30 @@ class ServeCodeCoverageData(BaseHandler):
       path_root, _ = _GetPathRootAndSeparatorFromDataType(data_type)
       return {
           'data': {
-              'host': host,
-              'project': project,
-              'ref': ref,
-              'revision': revision,
-              'path': path,
-              'platform': platform,
-              'path_root': path_root,
-              'data': data,
-              'data_type': data_type,
-              'path_parts': path_parts,
-              'banner': _GetBanner(project),
+              'host':
+                  host,
+              'project':
+                  project,
+              'ref':
+                  ref,
+              'revision':
+                  revision,
+              'path':
+                  path,
+              'platform':
+                  platform,
+              'platform_ui_name':
+                  _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['ui_name'],
+              'path_root':
+                  path_root,
+              'data':
+                  data,
+              'data_type':
+                  data_type,
+              'path_parts':
+                  path_parts,
+              'banner':
+                  _GetBanner(project),
           },
           'template': template,
       }
