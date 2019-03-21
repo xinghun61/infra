@@ -930,6 +930,203 @@ func TestHandleRotaModify(t *testing.T) {
 			},
 		},
 	}, {
+		name: "TZFair Verify OK",
+		user: "test@user.com",
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+		},
+		rota: jsonRota{
+			Cfg: rotang.Configuration{
+				Config: rotang.Config{
+					Name:        "Test Rotation",
+					Owners:      []string{"test@user.com"},
+					Description: "Describe the rotation",
+					Calendar:    "cal@cal",
+					Email: rotang.Email{
+						Subject: "You're on call!",
+						Body:    "Darn",
+					},
+					Shifts: rotang.ShiftConfig{
+						Generator: "TZFair",
+						Shifts: []rotang.Shift{
+							{
+								Name:     "MTV All Day",
+								Duration: fullDay,
+							},
+						},
+						ShiftMembers: 2,
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "test1@test.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "test2@test.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+			Members: []jsonMember{
+				{
+					Name:  "First Test",
+					Email: "test1@test.com",
+					TZ:    "America/Los_Angeles",
+				}, {
+					Name:  "Second Test",
+					Email: "test2@test.com",
+					TZ:    "Australia/Sydney",
+				},
+			},
+		},
+		want: rotang.Configuration{
+			Config: rotang.Config{
+				Name:        "Test Rotation",
+				Owners:      []string{"test@user.com"},
+				Description: "Describe the rotation",
+				Calendar:    "cal@cal",
+				Email: rotang.Email{
+					Subject: "You're on call!",
+					Body:    "Darn",
+				},
+				Shifts: rotang.ShiftConfig{
+					Generator: "TZFair",
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV All Day",
+							Duration: fullDay,
+						},
+					},
+					ShiftMembers: 2,
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "test1@test.com",
+					ShiftName: "MTV All Day",
+				}, {
+					Email:     "test2@test.com",
+					ShiftName: "MTV All Day",
+				},
+			},
+		},
+	}, {
+		name: "TZFair too many timezones",
+		fail: true,
+		user: "test@user.com",
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+		},
+		rota: jsonRota{
+			Cfg: rotang.Configuration{
+				Config: rotang.Config{
+					Name:        "Test Rotation",
+					Owners:      []string{"test@user.com"},
+					Description: "Describe the rotation",
+					Calendar:    "cal@cal",
+					Email: rotang.Email{
+						Subject: "You're on call!",
+						Body:    "Darn",
+					},
+					Shifts: rotang.ShiftConfig{
+						Generator: "TZFair",
+						Shifts: []rotang.Shift{
+							{
+								Name:     "MTV All Day",
+								Duration: fullDay,
+							},
+						},
+						ShiftMembers: 2,
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "test1@test.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "test2@test.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "test3@test.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+			Members: []jsonMember{
+				{
+					Name:  "First Test",
+					Email: "test1@test.com",
+					TZ:    "America/Los_Angeles",
+				}, {
+					Name:  "Second Test",
+					Email: "test2@test.com",
+					TZ:    "Australia/Sydney",
+				}, {
+					Name:  "Third Test",
+					Email: "test3@test.com",
+					TZ:    "Asia/Tokyo",
+				},
+			},
+		},
+	}, {
+		name: "TZFair not enough timezones",
+		fail: true,
+		user: "test@user.com",
+		ctx: &router.Context{
+			Context: ctx,
+			Writer:  httptest.NewRecorder(),
+		},
+		rota: jsonRota{
+			Cfg: rotang.Configuration{
+				Config: rotang.Config{
+					Name:        "Test Rotation",
+					Owners:      []string{"test@user.com"},
+					Description: "Describe the rotation",
+					Calendar:    "cal@cal",
+					Email: rotang.Email{
+						Subject: "You're on call!",
+						Body:    "Darn",
+					},
+					Shifts: rotang.ShiftConfig{
+						Generator: "TZFair",
+						Shifts: []rotang.Shift{
+							{
+								Name:     "MTV All Day",
+								Duration: fullDay,
+							},
+						},
+						ShiftMembers: 2,
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "test1@test.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "test2@test.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+			Members: []jsonMember{
+				{
+					Name:  "First Test",
+					Email: "test1@test.com",
+					TZ:    "America/Los_Angeles",
+				}, {
+					Name:  "Second Test",
+					Email: "test2@test.com",
+					TZ:    "America/Los_Angeles",
+				}, {
+					Name:  "Second Test",
+					Email: "test2@test.com",
+					TZ:    "America/Los_Angeles",
+				},
+			},
+		},
+	}, {
 		name: "Invalid Timezone",
 		fail: true,
 		user: "test@user.com",

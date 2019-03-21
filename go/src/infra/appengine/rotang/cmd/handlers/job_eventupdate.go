@@ -49,7 +49,7 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 	for _, s := range shifts {
 		resShift, err := h.calendar.Event(ctx, cfg, &s)
 		if err != nil {
-			if status.Code(err) == codes.NotFound || s.EvtID == "" {
+			if status.Code(err) == codes.NotFound {
 				if err := h.createNonExists(ctx, cfg, s); err != nil {
 					return err
 				}
@@ -60,6 +60,10 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 		}
 		if shiftsEqual(s, *resShift) {
 			continue
+		}
+		if resShift.EvtID == "" {
+			logging.Warningf(ctx.Context, "calendar.Event, EvtID emtpy for shift: %v", resShift)
+			resShift.EvtID = s.EvtID
 		}
 		resShift.Comment = s.Comment
 		if err = h.shiftStore(ctx.Context).UpdateShift(ctx.Context, cfg.Config.Name, resShift); err != nil {

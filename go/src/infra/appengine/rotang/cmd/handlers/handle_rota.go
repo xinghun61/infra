@@ -93,7 +93,26 @@ func (h *State) validateConfig(ctx *router.Context, jr *jsonRota) error {
 	jr.Cfg.Config.Owners = cleanOwners
 
 	if dur, ok := checkShiftDuration(&jr.Cfg); !ok {
-		return status.Errorf(codes.InvalidArgument, "shift durations does not add up to 24h,got %v", dur)
+		return status.Errorf(codes.InvalidArgument, "shift durations does not add up to 24h, got %v", dur)
+	}
+	if err := validateTZFair(jr); err != nil {
+		return err
+	}
+	return nil
+}
+
+// validateTZFair validates that the number of TZs are equal to the number of sheriffs to schedule.
+func validateTZFair(jf *jsonRota) error {
+	// This validation only applies to TZFair rotations.
+	if jf.Cfg.Config.Shifts.Generator != "TZFair" {
+		return nil
+	}
+	tzMap := make(map[string]int)
+	for _, m := range jf.Members {
+		tzMap[m.TZ]++
+	}
+	if len(tzMap) != jf.Cfg.Config.Shifts.ShiftMembers {
+		return status.Errorf(codes.InvalidArgument, "number of timezones larger than members/shift, tzMap: %v", tzMap)
 	}
 	return nil
 }
