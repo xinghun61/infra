@@ -17,6 +17,8 @@ package utilization
 
 import (
 	"context"
+	"fmt"
+	"infra/libs/skylab/inventory"
 
 	"go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/tsmon/field"
@@ -104,7 +106,12 @@ func getBucketForBotInfo(bi *swarming.SwarmingRpcsBotInfo) bucket {
 		case "label-model":
 			b.model = summarizeValues(d.Value)
 		case "label-pool":
-			b.pool = summarizeValues(d.Value)
+			p := summarizeValues(d.Value)
+			if isManagedPool(p) {
+				b.pool = fmt.Sprintf("managed:%s", p)
+			} else {
+				b.pool = p
+			}
 		default:
 			// Ignore other dimensions.
 		}
@@ -184,4 +191,9 @@ func summarizeValues(vs []string) string {
 	default:
 		return "[Multiple]"
 	}
+}
+
+func isManagedPool(p string) bool {
+	_, ok := inventory.SchedulableLabels_DUTPool_value[p]
+	return ok
 }
