@@ -62,12 +62,13 @@ export class MrEditField extends PolymerElement {
                 name$="[[name]]"
                 value$="[[option.optionName]]"
                 checked$="[[_optionInValues(initialValues, option.optionName)]]"
+                on-change="_onChange"
               />
               [[option.optionName]]
             </label>
           </template>
         </template>
-        <select id="editSelect" hidden$="[[multi]]">
+        <select id="editSelect" hidden$="[[multi]]" on-change="_onChange">
           <option value="">----</option>
           <template is="dom-repeat" items="[[options]]" as="option">
             <option
@@ -100,6 +101,7 @@ export class MrEditField extends PolymerElement {
                 value$="[[item]]"
                 data-ac-type$="[[_acType]]"
                 autocomplete$="[[_computeDomAutocomplete(_acType)]]"
+                on-keyup="_onChange"
               />
             </template>
           </div>
@@ -114,6 +116,7 @@ export class MrEditField extends PolymerElement {
           value$="[[_initialValue]]"
           data-ac-type$="[[_acType]]"
           autocomplete$="[[_computeDomAutocomplete(_acType)]]"
+          on-keyup="_onChange"
         />
       </template>
     `;
@@ -326,6 +329,9 @@ export class MrEditField extends PolymerElement {
     return (initialValues.length ? initialValues[0] : '');
   }
 
+  _onChange() {
+    this.dispatchEvent(new CustomEvent('change'));
+  }
 }
 
 customElements.define(MrEditField.is, MrEditField);

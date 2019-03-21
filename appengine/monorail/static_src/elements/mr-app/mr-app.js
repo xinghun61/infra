@@ -9,6 +9,7 @@ import page from 'page';
 import qs from 'qs';
 
 import {ReduxMixin, actionType} from '../redux/redux-mixin.js';
+import {arrayToEnglish} from '../shared/helpers.js';
 import '../flt/mr-issue-page/mr-issue-page.js';
 import '../mr-header/mr-header.js';
 import '../mr-keystrokes/mr-keystrokes.js';
@@ -57,13 +58,13 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       projectName: String,
       userDisplayName: String,
       queryParams: Object,
+      dirtyForms: Array,
       _boundLoadApprovalPage: {
         type: Function,
         value: function() {
           return this._loadApprovalPage.bind(this);
         },
       },
-      formsToCheck: Array,
       _currentContext: {
         type: Object,
         value: {},
@@ -73,7 +74,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      formsToCheck: state.formsToCheck,
+      dirtyForms: state.dirtyForms,
       prevContext: state.prevContext,
     };
   }
@@ -104,18 +105,9 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
       // Check if there were forms with unsaved data before loading the next
       // page.
-      const isDirty = this.formsToCheck.some((form) => {
-        if (Object.keys(form.getDelta()).length !== 0) {
-          return true;
-        }
-        if (form.getCommentContent()) {
-          return true;
-        }
-        return false;
-      });
-      if (!isDirty || confirm('Discard your changes?')) {
+      if (this._confirmDiscard()) {
         // Clear the forms to be checked, since we're navigating away.
-        this.dispatchAction({type: actionType.CLEAR_FORMS_TO_CHECK});
+        this.dispatchAction({type: actionType.CLEAR_DIRTY_FORMS});
       } else {
         Object.assign(ctx, this._currentContext);
         // Set ctx.handled to false, so we don't push the state to browser's
@@ -174,6 +166,14 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       'issueEntryUrl': this.issueEntryUrl,
       'queryParams': ctx.params,
     });
+  }
+
+  _confirmDiscard() {
+    if (!this.dirtyForms.length) return true;
+    const dirtyFormsMessage =
+      'Discard your changes in the following forms?\n' +
+      arrayToEnglish(this.dirtyForms);
+    return confirm(dirtyFormsMessage);
   }
 }
 

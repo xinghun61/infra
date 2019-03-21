@@ -134,6 +134,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         </h3>
         <mr-edit-metadata
           id="metadataForm"
+          form-name="[[phaseName]]"
           field-defs="[[fieldDefs]]"
           field-values="[[fieldValues]]"
           phase-name="[[phaseName]]"
@@ -232,10 +233,11 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
 
   cancel() {
     this.$.editPhase.close();
+    this.reset();
   }
 
   reset() {
-    this.$.metadataForm.reset();
+    this.shadowRoot.querySelector('#metadataForm').reset();
   }
 
   save() {

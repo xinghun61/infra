@@ -34,6 +34,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       </h2>
       <mr-edit-metadata
         id="metadataForm"
+        form-name="Issue Edit"
         owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
         cc="[[issue.ccRefs]]"
         status="[[issue.statusRef.status]]"

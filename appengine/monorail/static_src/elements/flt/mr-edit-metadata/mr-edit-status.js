@@ -77,6 +77,7 @@ export class MrEditStatus extends PolymerElement {
           <mr-edit-field
             id="mergedIntoInput"
             initial-values="[[mergedInto]]"
+            on-change="_onChange"
           ></mr-edit-field>
         </div>
       </template>`;
@@ -174,10 +175,15 @@ export class MrEditStatus extends PolymerElement {
   _statusInputChanged() {
     const statusInput = this.shadowRoot.querySelector('#statusInput');
     this._showMergedInto = (statusInput.value === 'Duplicate');
+    this._onChange();
   }
 
   _initialStatusChanged() {
     this._showMergedInto = (this.status === 'Duplicate');
+  }
+
+  _onChange() {
+    this.dispatchEvent(new CustomEvent('change'));
   }
 }
 

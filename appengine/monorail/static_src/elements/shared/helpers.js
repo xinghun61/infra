@@ -44,3 +44,7 @@ export function arrayToEnglish(arr) {
   if (!arr) return '';
   return arr.join(' and ');
 }
+
+export function isEmptyObject(obj) {
+  return Object.keys(obj).length === 0;
+}

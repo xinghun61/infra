@@ -14,8 +14,8 @@ export const actionType = {
   // Misc global state.
   RESET_STATE: 'RESET_STATE',
   UPDATE_ISSUE_REF: 'UPDATE_ISSUE_REF',
-  UPDATE_FORMS_TO_CHECK: 'UPDATE_FORMS_TO_CHECK',
-  CLEAR_FORMS_TO_CHECK: 'CLEAR_FORMS_TO_CHECK',
+  REPORT_DIRTY_FORM: 'REPORT_DIRTY_FORM',
+  CLEAR_DIRTY_FORMS: 'CLEAR_DIRTY_FORMS',
   SET_FOCUS_ID: 'SET_FOCUS_ID',
 
   // AJAX request state.
@@ -403,11 +403,18 @@ const issuePermissionsReducer = createReducer([], {
   },
 });
 
-const formsToCheckReducer = createReducer([], {
-  [actionType.UPDATE_FORMS_TO_CHECK]: (state, action) => {
-    return [...state, action.form];
+const dirtyFormsReducer = createReducer([], {
+  [actionType.REPORT_DIRTY_FORM]: (state, action) => {
+    const newState = [...state];
+    const index = state.indexOf(action.name);
+    if (action.isDirty && index === -1) {
+      newState.push(action.name);
+    } else if (!action.isDirty && index !== -1) {
+      newState.splice(index, 1);
+    }
+    return newState;
   },
-  [actionType.CLEAR_FORMS_TO_CHECK]: () => [],
+  [actionType.CLEAR_DIRTY_FORMS]: () => [],
 });
 
 const focusIdReducer = createReducer(null, {
@@ -490,9 +497,8 @@ const reducer = combineReducers({
   isStarred: isStarredReducer,
   issuePermissions: issuePermissionsReducer,
 
-  // Fields to be checked for user changes before leaving the page.
-  // TODO(ehmaldonado): Figure out a way to keep redux state serializable.
-  formsToCheck: formsToCheckReducer,
+  // Forms to be checked for user changes before leaving the page.
+  dirtyForms: dirtyFormsReducer,
 
   // The ID of the element to be focused, as given by the hash part of the URL.
   focusId: focusIdReducer,

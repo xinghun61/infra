@@ -218,6 +218,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           </h4>
           <mr-edit-metadata
             id="metadataForm"
+            form-name="[[phaseName]] > [[fieldName]]"
             approvers="[[approvers]]"
             field-defs="[[fieldDefs]]"
             statuses="[[_availableStatuses]]"

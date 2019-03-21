@@ -4,6 +4,8 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+import {Debouncer} from '@polymer/polymer/lib/utils/debounce.js';
+import {timeOut} from '@polymer/polymer/lib/utils/async.js';
 
 import '../../chops/chops-button/chops-button.js';
 import '@vaadin/vaadin-upload/vaadin-upload.js';
@@ -12,6 +14,7 @@ import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../mr-error/mr-error.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString} from '../../shared/converters.js';
+import {isEmptyObject} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
 import * as project from '../../redux/project.js';
@@ -151,7 +154,11 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         <mr-error>[[error]]</mr-error>
       </template>
       <form id="editForm">
-        <textarea id="commentText" placeholder="Add a comment"></textarea>
+        <textarea
+          id="commentText"
+          placeholder="Add a comment"
+          on-keyup="_onChange"
+        ></textarea>
         <vaadin-upload
           files="{{newAttachments}}"
           no-auto
@@ -163,7 +170,11 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           <div class="input-grid">
             <template is="dom-if" if="[[!isApproval]]">
               <label for="summaryInput">Summary:</label>
-              <input id="summaryInput" value$="[[summary]]" />
+              <input
+                id="summaryInput"
+                value$="[[summary]]"
+                on-keyup="_onChange"
+              />
             </template>
             <template is="dom-if" if="[[statuses.length]]">
               <label for="statusInput">Status:</label>
@@ -174,6 +185,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 statuses="[[statuses]]"
                 is-approval="[[isApproval]]"
                 merged-into="[[_computeMergedIntoString(projectName, mergedInto)]]"
+                on-change="_onChange"
               ></mr-edit-status>
             </template>
 
@@ -184,6 +196,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 id="ownerInput"
                 type="USER_TYPE"
                 initial-values="[[_wrapList(ownerName)]]"
+                on-change="_onChange"
               ></mr-edit-field>
 
               <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
@@ -193,6 +206,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 type="USER_TYPE"
                 initial-values="[[_ccNames]]"
                 derived-values="[[_derivedCCs]]"
+                on-change="_onChange"
                 multi
               ></mr-edit-field>
 
@@ -203,6 +217,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 type="STR_TYPE"
                 initial-values="[[_mapComponentRefsToNames(components)]]"
                 ac-type="component"
+                on-change="_onChange"
                 multi
               ></mr-edit-field>
             </template>
@@ -214,6 +229,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 type="USER_TYPE"
                 initial-values="[[_mapUserRefsToNames(approvers)]]"
                 name="approver"
+                on-change="_onChange"
                 multi
               ></mr-edit-field>
             </template>
@@ -239,6 +255,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                       options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
                       initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
                       multi="[[field.isMultivalued]]"
+                      on-change="_onChange"
                     ></mr-edit-field>
                   </template>
                 </div>
@@ -262,6 +279,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
                 initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
                 multi="[[field.isMultivalued]]"
+                on-change="_onChange"
               ></mr-edit-field>
             </template>
 
@@ -271,6 +289,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 id="blockedOnInput"
                 initial-values="[[_mapBlockerRefsToIdStrings(blockedOn, projectName)]]"
                 name="blocked-on"
+                on-change="_onChange"
                 multi
               ></mr-edit-field>
 
@@ -279,6 +298,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 id="blockingInput"
                 initial-values="[[_mapBlockerRefsToIdStrings(blocking, projectName)]]"
                 name="blocking"
+                on-change="_onChange"
                 multi
               ></mr-edit-field>
 
@@ -289,6 +309,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 initial-values="[[labelNames]]"
                 derived-values="[[derivedLabels]]"
                 name="label"
+                on-change="_onChange"
                 multi
               ></mr-edit-field>
             </template>
@@ -333,6 +354,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   static get properties() {
     return {
+      formName: String,
       fieldValueMap: Object,
       approvers: {
         type: Array,
@@ -426,6 +448,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Boolean,
         computed: '_computeCanEditIssue(issuePermissions)',
       },
+      _debouncedOnChange: Object,
     };
   }
 
@@ -436,11 +459,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       fieldValueMap: selectors.issueFieldValueMap(state),
       issuePermissions: state.issuePermissions,
     };
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    this.dispatchAction({type: actionType.UPDATE_FORMS_TO_CHECK, form: this});
   }
 
   reset() {
@@ -467,6 +485,8 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       el.reset();
     });
     this.shadowRoot.querySelector('vaadin-upload').files = [];
+
+    this._onChange();
   }
 
   save() {
@@ -474,7 +494,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   discard() {
-    const isDirty = Object.keys(this.getDelta()).length !== 0;
+    const isDirty = this.getCommentContent() || !isEmptyObject(this.getDelta());
     if (!isDirty || confirm('Discard your changes?')) {
       this.dispatchEvent(new CustomEvent('discard'));
     }
@@ -485,12 +505,11 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   getCommentContent() {
-    if (!this.isConnected) return '';
     return this.shadowRoot.querySelector('#commentText').value;
   }
 
   getDelta() {
-    if (!this.isConnected || !this._canEditIssue) return {}
+    if (!this._canEditIssue) return {};
 
     const result = {};
     const root = this.shadowRoot;
@@ -596,6 +615,21 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   toggleNicheFields() {
     this.showNicheFields = !this.showNicheFields;
+  }
+
+  _onChange() {
+    this._debouncedOnChange = Debouncer.debounce(
+      this._debouncedOnChange,
+      timeOut.after(400),
+      () => {
+        const delta = this.getDelta();
+        const commentContent = this.getCommentContent();
+        this.dispatchAction({
+          type: actionType.REPORT_DIRTY_FORM,
+          name: this.formName,
+          isDirty: !isEmptyObject(delta) || Boolean(commentContent),
+        });
+      });
   }
 
   _addListChangesToDelta(delta, inputId, addedKey, removedKey, mapFn) {
