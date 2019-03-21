@@ -20,6 +20,8 @@ import model
 
 class ApiCommonTests(testing.AppengineTestCase):
 
+  maxDiff = None
+
   def setUp(self):
     super(ApiCommonTests, self).setUp()
     self.patch(
@@ -64,6 +66,7 @@ class ApiCommonTests(testing.AppengineTestCase):
             },
         },
         'error': {'message': 'bad'},
+        'ui': {'info': 'bad'},
     }
     expected = {
         'project': 'chromium',
@@ -73,7 +76,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         'completed_ts': '1483228800000000',
         'id': '8991715593768927232',
         'parameters_json': props_json,
-        'result_details_json': json.dumps(result_details),
+        'result_details_json': json.dumps(result_details, sort_keys=True),
         'status': 'COMPLETED',
         'result': 'FAILURE',
         'failure_reason': 'INFRA_FAILURE',

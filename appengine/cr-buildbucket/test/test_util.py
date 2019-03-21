@@ -14,13 +14,11 @@ from google.protobuf import timestamp_pb2
 from components import auth
 from components import utils
 
-from legacy import api_common
 from proto import build_pb2
 from proto import common_pb2
 from proto.config import project_config_pb2
 import bbutil
 import buildtags
-import config
 import model
 
 

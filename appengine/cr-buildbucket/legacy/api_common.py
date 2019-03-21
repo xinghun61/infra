@@ -169,6 +169,8 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
     result_details['properties'] = _properties_to_dict(
         build_output_properties.parse()
     )
+  if build.proto.summary_markdown:
+    result_details['ui'] = {'info': build.proto.summary_markdown}
 
   bp = build.proto
   infra = build.parse_infra()
@@ -217,7 +219,7 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       parameters_json=json.dumps(build.parameters, sort_keys=True),
       status=build.status_legacy,
       result=build.result,
-      result_details_json=json.dumps(result_details),
+      result_details_json=json.dumps(result_details, sort_keys=True),
       cancelation_reason=build.cancelation_reason,
       failure_reason=build.failure_reason,
       lease_key=build.lease_key if include_lease_key else None,
