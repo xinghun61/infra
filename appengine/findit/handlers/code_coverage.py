@@ -79,7 +79,7 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
     'linux-chromeos': {
         'bucket': 'ci',
         'builder': 'linux-chromeos-code-coverage',
-        'linux-chromeos': 'ChromeOS on Linux',
+        'ui_name': 'ChromeOS on Linux',
     },
 }
 
