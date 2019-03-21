@@ -61,5 +61,31 @@ func TestReportMetrics(t *testing.T) {
 			So(dutmonMetric.Get(ctx, "reef", "electro", "managed:DUT_POOL_CQ", "Ready", false), ShouldEqual, 1)
 			So(dutmonMetric.Get(ctx, "reef", "electro", "DUT_POOL_CQ", "Ready", false), ShouldEqual, 0)
 		})
+
+		Convey("Multiple calls to ReportMetric keep metric unchanged", func() {
+			bi := &swarming.SwarmingRpcsBotInfo{State: "IDLE", Dimensions: []*swarming.SwarmingRpcsStringListPair{
+				{Key: "dut_state", Value: []string{"ready"}},
+				{Key: "label-board", Value: []string{"reef"}},
+				{Key: "label-model", Value: []string{"electro"}},
+				{Key: "label-pool", Value: []string{"some_random_pool"}},
+			}}
+			ReportMetrics(ctx, []*swarming.SwarmingRpcsBotInfo{bi, bi, bi})
+			ReportMetrics(ctx, []*swarming.SwarmingRpcsBotInfo{bi, bi, bi})
+			So(dutmonMetric.Get(ctx, "reef", "electro", "some_random_pool", "Ready", false), ShouldEqual, 3)
+		})
+
+		Convey("ReportMetric should stop counting bots that disappear", func() {
+			bi := &swarming.SwarmingRpcsBotInfo{State: "IDLE", Dimensions: []*swarming.SwarmingRpcsStringListPair{
+				{Key: "dut_state", Value: []string{"ready"}},
+				{Key: "label-board", Value: []string{"reef"}},
+				{Key: "label-model", Value: []string{"electro"}},
+				{Key: "label-pool", Value: []string{"some_random_pool"}},
+			}}
+			ReportMetrics(ctx, []*swarming.SwarmingRpcsBotInfo{bi, bi, bi})
+			So(dutmonMetric.Get(ctx, "reef", "electro", "some_random_pool", "Ready", false), ShouldEqual, 3)
+			ReportMetrics(ctx, []*swarming.SwarmingRpcsBotInfo{bi})
+			So(dutmonMetric.Get(ctx, "reef", "electro", "some_random_pool", "Ready", false), ShouldEqual, 1)
+		})
+
 	})
 }
