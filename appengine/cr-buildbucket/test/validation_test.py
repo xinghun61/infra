@@ -424,6 +424,27 @@ class ScheduleBuildRequestTests(BaseTestCase):
     self.assert_invalid(msg, r'notify.user_data: must be <= 4096 bytes')
 
 
+class CancelBuildRequestTests(BaseTestCase):
+  func_name = 'validate_cancel_build_request'
+
+  def test_valid(self):
+    msg = rpc_pb2.CancelBuildRequest(id=1, summary_markdown='unnecessary')
+    self.assert_valid(msg)
+
+  def test_no_build(self):
+    msg = rpc_pb2.CancelBuildRequest(summary_markdown='unnecessary')
+    self.assert_invalid(msg, 'id: required')
+
+  @mock.patch('validation.MAX_BUILD_SUMMARY_MARKDOWN_SIZE', 10)
+  def test_big_summary(self):
+    msg = rpc_pb2.CancelBuildRequest(
+        id=1, summary_markdown='a very long string'
+    )
+    self.assert_invalid(
+        msg, r'summary_markdown: too big to accept \(18 > 10 bytes\)'
+    )
+
+
 class UpdateBuildRequestTests(BaseTestCase):
   func_name = 'validate_update_build_request'
 
@@ -465,13 +486,15 @@ class UpdateBuildRequestTests(BaseTestCase):
     )
     self.assert_invalid(msg, r'build\.steps: too big to accept')
 
-  @mock.patch('validation.MAX_SUMMARY_MARKDOWN_SIZE', 10)
+  @mock.patch('validation.MAX_BUILD_SUMMARY_MARKDOWN_SIZE', 10)
   def test_summary_markdown_too_big(self):
     msg = self._mk_req(
         ['build.summary_markdown'],
         summary_markdown='a very long string',
     )
-    self.assert_invalid(msg, r'too big to accept \(18 > 10 bytes\)')
+    self.assert_invalid(
+        msg, r'build\.summary_markdown: too big to accept \(18 > 10 bytes\)'
+    )
 
   def test_set_scheduled_status(self):
     msg = self._mk_req(['build.status'], status=common_pb2.SCHEDULED)

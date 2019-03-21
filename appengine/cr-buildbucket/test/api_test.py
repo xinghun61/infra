@@ -464,6 +464,20 @@ class ScheduleBuildTests(BaseTestCase):
     )
 
 
+class CancelBuildTests(BaseTestCase):
+
+  @mock.patch('service.cancel_async', autospec=True)
+  def test_cancel(self, cancel_async):
+    cancel_async.return_value = future(
+        test_util.build(id=54, status=common_pb2.CANCELED),
+    )
+    req = rpc_pb2.CancelBuildRequest(id=54, summary_markdown='unnecesary')
+    res = self.call(self.api.CancelBuild, req)
+    self.assertEqual(res.id, 54)
+    self.assertEqual(res.status, common_pb2.CANCELED)
+    cancel_async.assert_called_once_with(54, summary_markdown='unnecesary')
+
+
 class BatchTests(BaseTestCase):
 
   @mock.patch('service.get_async', autospec=True)

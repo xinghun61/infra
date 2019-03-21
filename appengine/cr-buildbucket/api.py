@@ -447,11 +447,22 @@ def schedule_build_multi(batch):
       rr.response.schedule_build.MergeFrom(build.proto)
 
 
+@rpc_impl_async('CancelBuild')
+@ndb.tasklet
+def cancel_build_async(req, res, _ctx, mask):
+  validation.validate_cancel_build_request(req)
+  build = yield service.cancel_async(
+      req.id, summary_markdown=req.summary_markdown
+  )
+  yield build_to_proto_async(build, res, mask)
+
+
 # Maps an rpc_pb2.BatchRequest.Request field name to an async function
 #   (req, ctx) => ndb.Future of res.
 BATCH_REQUEST_TYPE_TO_RPC_IMPL = {
     'get_build': get_build_async,
     'search_builds': search_builds_async,
+    # TODO(crbug.com/926999): implement 'cancel_build'
 }
 assert set(BATCH_REQUEST_TYPE_TO_RPC_IMPL) | {'schedule_build'} == set(
     rpc_pb2.BatchRequest.Request.DESCRIPTOR.fields_by_name
@@ -487,6 +498,11 @@ class BuildsApi(object):
   def ScheduleBuild(self, req, ctx):
     res = build_pb2.Build()
     schedule_build_async(req, res, ctx).get_result()
+    return self._res_if_ok(res, ctx)
+
+  def CancelBuild(self, req, ctx):
+    res = build_pb2.Build()
+    cancel_build_async(req, res, ctx).get_result()
     return self._res_if_ok(res, ctx)
 
   def Batch(self, req, ctx):

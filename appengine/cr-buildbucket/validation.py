@@ -28,7 +28,7 @@ class Error(Exception):
 PUBSUB_USER_DATA_MAX_LENGTH = 4096
 
 # Maximum size of Build.summary_markdown field. Defined in build.proto.
-MAX_SUMMARY_MARKDOWN_SIZE = 4000  # 4 KB
+MAX_BUILD_SUMMARY_MARKDOWN_SIZE = 4000  # 4 KB
 
 # swarming.py and api.py reserve these properties.
 # swarming.py does a redundant check, see validate_build_parameters().
@@ -150,7 +150,7 @@ def validate_builder_id(builder_id, require_bucket=True, require_builder=True):
 
 ################################################################################
 # Validation of rpc.proto messages.
-# The order of functions must match the order of messages in common.proto.
+# The order of functions must match the order of messages in rpc.proto.
 
 
 def validate_get_build_request(req):
@@ -254,6 +254,12 @@ def validate_schedule_build_request(
       validate_notification_config(req.notify)
 
 
+def validate_cancel_build_request(req):
+  _check_truth(req, 'id')
+  with _enter('summary_markdown'):
+    validate_build_summary_markdown(req.summary_markdown)
+
+
 def validate_struct(struct):
   for name, value in struct.fields.iteritems():
     if not value.WhichOneof('kind'):
@@ -310,10 +316,9 @@ def validate_update_build_request(req, build_steps=None):
             common_pb2.Status.Name(req.build.status)
         )
 
-    if ('build.summary_markdown' in update_paths and
-        len(req.build.summary_markdown) > MAX_SUMMARY_MARKDOWN_SIZE):
+    if 'build.summary_markdown' in update_paths:
       with _enter('summary_markdown'):
-        _too_big(len(req.build.summary_markdown), MAX_SUMMARY_MARKDOWN_SIZE)
+        validate_build_summary_markdown(req.build.summary_markdown)
 
     if 'build.steps' in update_paths:  # pragma: no branch
       with _enter('steps'):
@@ -323,6 +328,13 @@ def validate_update_build_request(req, build_steps=None):
           _err('too big to accept')
 
         validate_steps(req.build.steps)
+
+
+def validate_build_summary_markdown(summary_markdown):
+  size = len(summary_markdown)
+  limit = MAX_BUILD_SUMMARY_MARKDOWN_SIZE
+  if size > limit:
+    _err('too big to accept (%d > %d bytes)', size, limit)
 
 
 def validate_steps(steps):
@@ -495,10 +507,6 @@ def _validate_predicate_output_gitiles_commit(commit):
 
 ################################################################################
 # Internals.
-
-
-def _too_big(size, limit):
-  _err('too big to accept (%d > %d bytes)', size, limit)
 
 
 def _struct_has_path(struct, path):
