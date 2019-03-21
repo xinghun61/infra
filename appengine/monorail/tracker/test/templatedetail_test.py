@@ -186,8 +186,6 @@ class TemplateDetailTest(unittest.TestCase):
     self.assertEqual(len(page_data['approvals']), 2)
     self.assertItemsEqual(page_data['prechecked_approvals'],
                           ['3_phase_0', '4_phase_1'])
-    self.assertTrue(page_data['approval_subfields_present'])
-    self.assertTrue(page_data['phase_fields_present'])
 
   def testProcessFormData_Reject(self):
     post_data = fake.PostData(

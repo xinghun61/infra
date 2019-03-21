@@ -144,8 +144,6 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual(page_data['initial_status'], 'New')
     self.assertTrue(page_data['clear_summary_on_click'])
     self.assertTrue(page_data['must_edit_summary'])
-    self.assertEqual(page_data['approval_subfields_present'],
-                     ezt.boolean(False))
     self.assertEqual(page_data['labels'], ['NotEnum-Not-Masked'])
 
   def testGatherPageData_Approvals(self):
@@ -170,7 +168,7 @@ class IssueEntryTest(unittest.TestCase):
     self.services.config.StoreConfig(mr.cnxn, config)
     template = tracker_pb2.TemplateDef()
     template.phases = [tracker_pb2.Phase(
-        phase_id=1, rank=4, name='Canary')]
+        phase_id=1, rank=4, name='Stable')]
     template.approval_values = [tracker_pb2.ApprovalValue(
         approval_id=24, phase_id=1,
         status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
@@ -180,12 +178,9 @@ class IssueEntryTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertEqual(page_data['approvals'][0].field_name, 'UXReview')
     self.assertEqual(page_data['initial_phases'][0],
-                          tracker_pb2.Phase(phase_id=1, name='Canary', rank=4))
+                          tracker_pb2.Phase(phase_id=1, name='Stable', rank=4))
     self.assertEqual(page_data['prechecked_approvals'], ['24_phase_0'])
     self.assertEqual(page_data['required_approval_ids'], [24])
-    self.assertEqual(page_data['approval_subfields_present'],
-                     ezt.boolean(False))
-    self.assertEqual(page_data['phase_fields_present'], ezt.boolean(False))
 
     # phase fields row shown when config contains phase fields.
     config.field_defs.append(tracker_bizobj.MakeFieldDef(
@@ -195,33 +190,16 @@ class IssueEntryTest(unittest.TestCase):
         'no_action', 'doc', False, is_phase_field=True))
     self.services.config.StoreConfig(mr.cnxn, config)
     page_data = self.servlet.GatherPageData(mr)
-    self.assertEqual(page_data['phase_fields_present'],
-                     ezt.boolean(True))
-
-    # approval subfields in config shown when chosen
-    # template has the parent approval.
-    config.field_defs.append(
-        tracker_bizobj.MakeFieldDef(
-            25, mr.project_id, 'UXReview-SubField',
-            tracker_pb2.FieldTypes.INT_TYPE, None, '', False, False,
-            False, None, None, '', False, '', '',
-            tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False,
-            approval_id=24))
-    self.services.config.StoreConfig(mr.cnxn, config)
-    page_data = self.servlet.GatherPageData(mr)
-    self.assertEqual(page_data['approval_subfields_present'],
-                     ezt.boolean(True))
+    self.assertEqual(page_data['issue_phase_names'], ['stable'])
 
     # approval subfields in config hidden when chosen template does not contain
     # its parent approval
     template = tracker_pb2.TemplateDef()
     self.services.template.GetTemplateByName.return_value = template
     page_data = self.servlet.GatherPageData(mr)
-    self.assertEqual(page_data['approval_subfields_present'],
-                     ezt.boolean(False))
     self.assertEqual(page_data['approvals'], [])
     # phase fields row hidden when template has no phases
-    self.assertEqual(page_data['phase_fields_present'], ezt.boolean(False))
+    self.assertEqual(page_data['issue_phase_names'], [])
 
   def testGatherPageData_DefaultOwnerAvailability(self):
     user = self.services.user.TestAddUser('user@invalid', 100)

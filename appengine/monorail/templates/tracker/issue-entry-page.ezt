@@ -180,32 +180,40 @@
          [end]
         </td>
        </tr>
-      </tbody>
+     </tbody>
 
      [if-any approvals]
-       <tr>
-         <th>Launch Gates:</th>
-         <td colspan="7">
-           [include "launch-gates-widget.ezt"]
-         </td>
-       </tr>
+        <tr>
+          <th>Launch Gates:</th>
+          <td colspan="7">
+            [include "launch-gates-widget.ezt"]
+          </td>
+        </tr>
      [end]
 
-    [if-any approval_subfields_present]
-      <tr id="subfield-row">
-        <th>Approval subfields:</th>
-        <td colspan="2">
-          [for fields][if-any fields.applicable]
-            [if-any fields.field_def.is_approval_subfield]
-              [fields.field_def.parent_approval_name]-[fields.field_name]:
-              [include "field-value-widgets.ezt" False "tmpl" False ""]
-              <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div>
-            <br>
-            [end]
-          [end][end]
-        <td>
-      </tr>
-    [end]
+     [for fields][if-any fields.applicable][if-any fields.field_def.is_approval_subfield]
+     <tr is="subfield-row">
+       <th>[fields.field_def.parent_approval_name] [fields.field_name]:</th>
+       <td colspan="2">
+         [include "field-value-widgets.ezt" False "tmpl" False ""]
+         <div class="fielderror" style="display:none" id="error_custom_[fields.field_id]"></div\
+>
+       </td>
+     </tr>
+    [end][end][end]
+    
+    [for issue_phase_names]
+      [for fields]
+        [is fields.phase_name issue_phase_names]
+        <tr>
+          <th>[issue_phase_names].[fields.field_name]:</th>
+            <td colspan="2">
+              [include "field-value-widgets.ezt" False "tmpl" False issue_phase_names]
+              <div class="fielderror" style="display:none" id="error_custom_[issue_phase_names]_[fields.field_id]"></div>
+            </td>
+          </th>
+        </tr>
+      [end][end][end]
 
      [include "../framework/label-validation-row.ezt"]
      [include "../framework/component-validation-row.ezt"]

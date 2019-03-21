@@ -151,11 +151,6 @@ class IssueEntry(servlet.Servlet):
          template.approval_values or [], template.phases, config)
     approvals = [view for view in field_views if view.field_id in
                  approval_ids]
-    approval_subfields_present = any(
-        fv.field_def.approval_id in approval_ids for fv in field_views)
-    phase_fields_present = any(
-        fv.field_def.is_phase_field for fv in field_views) and any(
-            phase.name for phase in phases)
 
     page_data = {
         'issue_tab_mode': 'issueEntry',
@@ -199,8 +194,11 @@ class IssueEntry(servlet.Servlet):
         'approvals': approvals,
         'prechecked_approvals': prechecked_approvals,
         'required_approval_ids': required_approval_ids,
-        'approval_subfields_present': ezt.boolean(approval_subfields_present),
-        'phase_fields_present': ezt.boolean(phase_fields_present),
+        # See monorail:4692 and the use of PHASES_WITH_MILESTONES
+        # in elements/flt/mr-launch-overview/mr-phase.js
+        'issue_phase_names': list(
+            {phase.name.lower() for phase in phases if phase.name
+             in PHASES_WITH_MILESTONES}),
         }
 
     return page_data
@@ -262,11 +260,8 @@ class IssueEntry(servlet.Servlet):
      phases) = issue_tmpl_helpers.FilterApprovalsAndPhases(
          template.approval_values or [], template.phases, config)
 
-    # See monorail:4692 and the use of PHASES_WITH_MILESTONES
-    # in elements/flt/mr-launch-overview/mr-phase.js
     phase_ids_by_name = {
-        phase.name: phase.phase_id for phase in template.phases
-        if phase.name in PHASES_WITH_MILESTONES}
+        phase.name.lower(): [phase.phase_id] for phase in template.phases}
     field_values = field_helpers.ParseFieldValues(
         mr.cnxn, self.services.user, parsed.fields.vals,
         parsed.fields.phase_vals, config,
