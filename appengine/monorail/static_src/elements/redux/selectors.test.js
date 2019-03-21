@@ -13,14 +13,6 @@ suite('selectors', () => {
       {localId: 100});
   });
 
-  test('fieldDefs', () => {
-    assert.isUndefined(selectors.fieldDefs({}));
-    assert.isUndefined(selectors.fieldDefs({projectConfig: {}}));
-    assert.deepEqual(selectors.fieldDefs({
-      projectConfig: {fieldDefs: [{fieldName: 'test'}]},
-    }), [{fieldName: 'test'}]);
-  });
-
   test('issueFieldValues', () => {
     assert.isUndefined(selectors.issueFieldValues({}));
     assert.isUndefined(selectors.issueFieldValues({issue: {}}));
@@ -121,23 +113,23 @@ suite('selectors', () => {
   });
 
   test('fieldDefsForIssue', () => {
-    assert.deepEqual(selectors.fieldDefsForIssue({}), []);
+    assert.deepEqual(selectors.fieldDefsForIssue({project: {}}), []);
 
     // Remove approval-related fields, regardless of issue.
-    assert.deepEqual(selectors.fieldDefsForIssue({projectConfig: {
+    assert.deepEqual(selectors.fieldDefsForIssue({project: {config: {
       fieldDefs: [
         {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
         {fieldRef: {fieldName: 'ignoreMe', type: fieldTypes.APPROVAL_TYPE}},
         {fieldRef: {fieldName: 'LookAway', approvalName: 'ThisIsAnApproval'}},
         {fieldRef: {fieldName: 'phaseField'}, isPhaseField: true},
       ],
-    }}), [
+    }}}), [
       {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
     ]);
 
     // Filter defs by applicableType.
     assert.deepEqual(selectors.fieldDefsForIssue({
-      projectConfig: {
+      project: {config: {
         fieldDefs: [
           {fieldRef: {fieldName: 'intyInt', type: fieldTypes.INT_TYPE}},
           {fieldRef: {fieldName: 'enum', type: fieldTypes.ENUM_TYPE}},
@@ -146,7 +138,7 @@ suite('selectors', () => {
           {fieldRef: {fieldName: 'defectsOnly', type: fieldTypes.STR_TYPE},
             applicableType: 'Defect'},
         ],
-      },
+      }},
       issue: {
         fieldValues: [
           {fieldRef: {fieldName: 'Type'}, value: 'Defect'},
@@ -158,27 +150,5 @@ suite('selectors', () => {
       {fieldRef: {fieldName: 'defectsOnly', type: fieldTypes.STR_TYPE},
         applicableType: 'Defect'},
     ]);
-  });
-
-  test('fieldDefsByApprovalName', () => {
-    assert.deepEqual(selectors.fieldDefsByApprovalName({}), new Map());
-
-    assert.deepEqual(selectors.fieldDefsByApprovalName({projectConfig: {
-      fieldDefs: [
-        {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
-        {fieldRef: {fieldName: 'ignoreMe', type: fieldTypes.APPROVAL_TYPE}},
-        {fieldRef: {fieldName: 'yay', approvalName: 'ThisIsAnApproval'}},
-        {fieldRef: {fieldName: 'ImAField', approvalName: 'ThisIsAnApproval'}},
-        {fieldRef: {fieldName: 'TalkToALawyer', approvalName: 'Legal'}},
-      ],
-    }}), new Map([
-      ['ThisIsAnApproval', [
-        {fieldRef: {fieldName: 'yay', approvalName: 'ThisIsAnApproval'}},
-        {fieldRef: {fieldName: 'ImAField', approvalName: 'ThisIsAnApproval'}},
-      ]],
-      ['Legal', [
-        {fieldRef: {fieldName: 'TalkToALawyer', approvalName: 'Legal'}},
-      ]],
-    ]));
   });
 });

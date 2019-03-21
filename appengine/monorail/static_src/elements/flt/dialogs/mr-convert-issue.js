@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import * as project from '../../redux/project.js';
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../mr-error/mr-error.js';
@@ -124,7 +125,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
       issueId: state.issueId,
       issuePermissions: state.issuePermissions,
       projectName: state.projectName,
-      projectTemplates: state.projectTemplates,
+      projectTemplates: project.project(state).templates,
     };
   }
 

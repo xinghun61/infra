@@ -86,7 +86,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
     return {
       commentReferences: state.commentReferences,
       projectName: state.projectName,
-      prefs: user.currentUser(state).prefs,
+      prefs: user.user(state).prefs,
     };
   }
 

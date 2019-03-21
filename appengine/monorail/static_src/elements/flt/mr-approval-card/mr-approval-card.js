@@ -7,9 +7,9 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
 import '@polymer/iron-collapse/iron-collapse.js';
-import {selectors} from '../../redux/selectors.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import * as user from '../../redux/user.js';
+import * as project from '../../redux/project.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
@@ -331,11 +331,11 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      fieldDefsByApprovalName: selectors.fieldDefsByApprovalName(state),
-      user: user.currentUser(state),
+      fieldDefsByApprovalName: project.fieldDefsByApprovalName(state),
+      user: user.user(state),
       issue: state.issue,
       issueId: state.issueId,
-      projectConfig: state.projectConfig,
+      projectConfig: project.project(state).config,
       projectName: state.projectName,
       comments: state.comments,
       updatingApproval: state.requests.updateApproval.requesting,

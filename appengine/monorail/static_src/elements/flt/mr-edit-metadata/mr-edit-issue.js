@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import {selectors} from '../../redux/selectors.js';
+import * as project from '../../redux/project.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import './mr-edit-metadata.js';
 import {loadAttachments} from '../../shared/helpers.js';
@@ -90,7 +91,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       issue: state.issue,
       issueId: state.issueId,
       projectName: state.projectName,
-      projectConfig: state.projectConfig,
+      projectConfig: project.project(state).config,
       updatingIssue: state.requests.updateIssue.requesting,
       updateIssueError: state.requests.updateIssue.error,
       focusId: state.focusId,

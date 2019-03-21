@@ -14,6 +14,7 @@ import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString} from '../../shared/converters.js';
 import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
+import * as project from '../../redux/project.js';
 import {selectors} from '../../redux/selectors.js';
 import {actionType} from '../../redux/redux-mixin.js';
 import './mr-edit-field.js';
@@ -430,7 +431,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      projectConfig: state.projectConfig,
+      projectConfig: project.project(state).config,
       projectName: state.projectName,
       fieldValueMap: selectors.issueFieldValueMap(state),
       issuePermissions: state.issuePermissions,

@@ -8,6 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-dialog/chops-dialog.js';
 import {selectors} from '../../redux/selectors.js';
 import {actionCreator} from '../../redux/redux-mixin.js';
+import * as project from '../../redux/project.js';
 import '../mr-approval-card/mr-approval-card.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-field-values.js';
@@ -219,7 +220,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
       projectName: state.projectName,
       updatingIssue: state.requests.updateIssue.requesting,
       updateIssueError: state.requests.updateIssue.error,
-      fieldDefs: selectors.fieldDefsForPhases(state),
+      fieldDefs: project.fieldDefsForPhases(state),
       fieldValueMap: selectors.issueFieldValueMap(state),
     };
   }

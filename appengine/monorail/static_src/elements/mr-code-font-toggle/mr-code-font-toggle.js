@@ -47,7 +47,7 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      prefs: user.currentUser(state).prefs,
+      prefs: user.user(state).prefs,
     };
   }
 

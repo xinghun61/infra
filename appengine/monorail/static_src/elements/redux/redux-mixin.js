@@ -8,6 +8,7 @@ import thunk from 'redux-thunk';
 import {autolink} from '../../autolink.js';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import * as user from './user.js';
+import * as project from './project.js';
 
 export const actionType = {
   // Misc global state.
@@ -18,14 +19,6 @@ export const actionType = {
   SET_FOCUS_ID: 'SET_FOCUS_ID',
 
   // AJAX request state.
-  FETCH_PROJECT_CONFIG_START: 'FETCH_PROJECT_CONFIG_START',
-  FETCH_PROJECT_CONFIG_SUCCESS: 'FETCH_PROJECT_CONFIG_SUCCESS',
-  FETCH_PROJECT_CONFIG_FAILURE: 'FETCH_PROJECT_CONFIG_FAILURE',
-
-  FETCH_PROJECT_TEMPLATES_START: 'FETCH_PROJECT_TEMPLATES_START',
-  FETCH_PROJECT_TEMPLATES_SUCCESS: 'FETCH_PROJECT_TEMPLATES_SUCCESS',
-  FETCH_PROJECT_TEMPLATES_FAILURE: 'FETCH_PROJECT_TEMPLATES_FAILURE',
-
   FETCH_ISSUE_START: 'FETCH_ISSUE_START',
   FETCH_ISSUE_SUCCESS: 'FETCH_ISSUE_SUCCESS',
   FETCH_ISSUE_FAILURE: 'FETCH_ISSUE_FAILURE',
@@ -362,18 +355,6 @@ const projectNameReducer = createReducer('', {
   [actionType.UPDATE_ISSUE_REF]: (state, action) => action.projectName || state,
 });
 
-const projectConfigReducer = createReducer({}, {
-  [actionType.FETCH_PROJECT_CONFIG_SUCCESS]: (_state, action) => {
-    return action.projectConfig;
-  },
-});
-
-const projectTemplatesReducer = createReducer([], {
-  [actionType.FETCH_PROJECT_TEMPLATES_SUCCESS]: (_state, action) => {
-    return action.projectTemplates.templates;
-  },
-});
-
 const issueReducer = createReducer({}, {
   [actionType.FETCH_ISSUE_SUCCESS]: (_state, action) => action.issue,
   [actionType.STAR_ISSUE_SUCCESS]: (state, action) => {
@@ -434,16 +415,6 @@ const focusIdReducer = createReducer(null, {
 });
 
 const requestsReducer = combineReducers({
-  // Request for getting configuration settings for a project.
-  fetchProjectConfig: createRequestReducer(
-    actionType.FETCH_PROJECT_CONFIG_START,
-    actionType.FETCH_PROJECT_CONFIG_SUCCESS,
-    actionType.FETCH_PROJECT_CONFIG_FAILURE),
-  // Request for getting templates for a project.
-  fetchProjectTemplates: createRequestReducer(
-    actionType.FETCH_PROJECT_TEMPLATES_START,
-    actionType.FETCH_PROJECT_TEMPLATES_SUCCESS,
-    actionType.FETCH_PROJECT_TEMPLATES_FAILURE),
   // Request for getting an issue.
   fetchIssue: createRequestReducer(
     actionType.FETCH_ISSUE_START,
@@ -503,14 +474,13 @@ const requestsReducer = combineReducers({
 });
 
 const reducer = combineReducers({
+  project: project.reducer,
   user: user.reducer,
 
   // TODO(zhangtiff): Combine these into viewedIssueRef for consistency.
   issueId: issueIdReducer,
   projectName: projectNameReducer,
 
-  projectConfig: projectConfigReducer,
-  projectTemplates: projectTemplatesReducer,
   issue: issueReducer,
   issueLoaded: issueLoadedReducer,
   issueHotlists: issueHotlistsReducer,

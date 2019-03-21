@@ -20,13 +20,17 @@ const FETCH_PREFS_FAILURE = 'user/FETCH_PREFS_FAILURE';
 
 /* State Shape
 {
-    currentUser: {
-        ...user: Object,
-        groups: Array,
-        hotlists: Array,
-        prefs: Map,
-    },
-    requests: Object,
+  currentUser: {
+    ...user: Object,
+    groups: Array,
+    hotlists: Array,
+    prefs: Map,
+  },
+  requests: {
+    fetch: Object,
+    fetchHotlists: Object,
+    fetchPrefs: Object,
+  },
 }
 */
 
@@ -67,7 +71,7 @@ export const reducer = combineReducers({
 });
 
 // Selectors
-export const currentUser = (state) => state.user.currentUser;
+export const user = (state) => state.user.currentUser;
 
 // Action Creators
 export const fetch = (displayName) => async (dispatch) => {

@@ -394,7 +394,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
     return {
       projectName: state.projectName,
       issueId: state.issueId,
-      user: user.currentUser(state),
+      user: user.user(state),
       issuePermissions: state.issuePermissions,
       blockerReferences: state.blockerReferences,
       issueHotlists: state.issueHotlists,

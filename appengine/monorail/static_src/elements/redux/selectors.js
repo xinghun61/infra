@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {createSelector} from 'reselect';
 import {fieldTypes} from '../shared/field-types.js';
 import {removePrefix} from '../shared/helpers.js';
-import {createSelector} from 'reselect';
+import * as project from './project.js';
 
 const RESTRICT_VIEW_PREFIX = 'restrict-view-';
 const RESTRICT_EDIT_PREFIX = 'restrict-editissue-';
@@ -13,17 +14,14 @@ const RESTRICT_COMMENT_PREFIX = 'restrict-addissuecomment-';
 // TODO(zhangtiff): Eventually Monorail's Redux state will store
 // multiple issues, and this selector will have to find the viewed
 // issue based on a viewed issue ref.
-const viewedIssue = (state) => state.issue;
-const projectConfig = (state) => state.projectConfig;
-const fieldDefs = createSelector(
-  projectConfig,
-  (config) => config && config.fieldDefs
-);
-const issueFieldValues = createSelector(
+export const viewedIssue = (state) => state.issue;
+
+export const issueFieldValues = createSelector(
   viewedIssue,
   (issue) => issue && issue.fieldValues
 );
-const issueType = createSelector(
+
+export const issueType = createSelector(
   issueFieldValues,
   (fieldValues) => {
     if (!fieldValues) return;
@@ -36,6 +34,7 @@ const issueType = createSelector(
     return;
   }
 );
+
 const issueRestrictions = createSelector(
   viewedIssue,
   (issue) => {
@@ -74,6 +73,7 @@ const issueRestrictions = createSelector(
     return restrictions;
   }
 );
+
 const issueIsRestricted = createSelector(
   issueRestrictions,
   (restrictions) => {
@@ -83,13 +83,15 @@ const issueIsRestricted = createSelector(
       ('comment' in restrictions && !!restrictions['comment'].length);
   }
 );
+
 const issueIsOpen = createSelector(
   viewedIssue,
   (issue) => issue && issue.statusRef && issue.statusRef.meansOpen
 );
+
 // values (from issue.fieldValues) is an array with one entry per value.
 // We want to turn this into a map of fieldNames -> values.
-const issueFieldValueMap = createSelector(
+export const issueFieldValueMap = createSelector(
   issueFieldValues,
   (fieldValues) => {
     if (!fieldValues) return new Map();
@@ -110,30 +112,19 @@ const issueFieldValueMap = createSelector(
     return acc;
   }
 );
-// Look up components by path.
-const componentsMap = createSelector(
-  projectConfig,
-  (config) => {
-    if (!config || !config.componentDefs) return new Map();
-    const acc = new Map();
-    for (const v of config.componentDefs) {
-      let key = v.path;
-      acc.set(key, v);
-    }
-    return acc;
-  }
-);
+
 // Get the list of full componentDefs for the viewed issue.
-const componentsForIssue = createSelector(
+export const componentsForIssue = createSelector(
   viewedIssue,
-  componentsMap,
+  project.componentsMap,
   (issue, components) => {
     if (!issue || !issue.componentRefs) return [];
     return issue.componentRefs.map((comp) => components.get(comp.path));
   }
 );
-const fieldDefsForIssue = createSelector(
-  fieldDefs,
+
+export const fieldDefsForIssue = createSelector(
+  project.fieldDefs,
   issueType,
   (fieldDefs, issueType) => {
     if (!fieldDefs) return [];
@@ -157,44 +148,15 @@ const fieldDefsForIssue = createSelector(
     });
   }
 );
-const fieldDefsForPhases = createSelector(
-  fieldDefs,
-  (fieldDefs) => {
-    if (!fieldDefs) return [];
-    return fieldDefs.filter((f) => f.isPhaseField);
-  }
-);
-const fieldDefsByApprovalName = createSelector(
-  fieldDefs,
-  (fieldDefs) => {
-    if (!fieldDefs) return new Map();
-    const acc = new Map();
-    for (const fd of fieldDefs) {
-      if (fd.fieldRef && fd.fieldRef.approvalName) {
-        if (acc.has(fd.fieldRef.approvalName)) {
-          acc.get(fd.fieldRef.approvalName).push(fd);
-        } else {
-          acc.set(fd.fieldRef.approvalName, [fd]);
-        }
-      }
-    }
-    return acc;
-  }
-);
 
 export const selectors = Object.freeze({
   viewedIssue,
-  projectConfig,
-  fieldDefs,
   issueFieldValues,
   issueType,
   issueRestrictions,
   issueIsRestricted,
   issueIsOpen,
   issueFieldValueMap,
-  componentsMap,
   componentsForIssue,
   fieldDefsForIssue,
-  fieldDefsForPhases,
-  fieldDefsByApprovalName,
 });

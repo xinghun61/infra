@@ -119,7 +119,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issueHotlists: state.issueHotlists,
-      userHotlists: user.currentUser(state).hotlists,
+      userHotlists: user.user(state).hotlists,
     };
   }
 

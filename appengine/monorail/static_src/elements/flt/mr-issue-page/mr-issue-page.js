@@ -10,7 +10,8 @@ import './mr-issue-header.js';
 import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
-import {ReduxMixin, actionType, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
 import {selectors} from '../../redux/selectors.js';
 import '../../shared/mr-shared-styles.js';
@@ -229,9 +230,9 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issuePermissions: state.issuePermissions,
       projectName: state.projectName,
       fetchingIssue: state.requests.fetchIssue.requesting,
-      fetchingProjectConfig: state.requests.fetchProjectConfig.requesting,
+      fetchingProjectConfig: project.fetchingConfig(state),
       fetchIssueError: state.requests.fetchIssue.error,
-      _user: user.currentUser(state),
+      _user: user.user(state),
     };
   }
 
@@ -263,52 +264,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   _projectNameChanged(projectName) {
     if (!projectName || this.fetchingProjectConfig) return;
     // Reload project config and templates when the project name changes.
-
-    this.dispatchAction({type: actionType.FETCH_PROJECT_CONFIG_START});
-
-    const message = {
-      projectName,
-    };
-
-    const getConfig = window.prpcClient.call(
-      'monorail.Projects', 'GetConfig', message
-    );
-
-    // TODO(zhangtiff): Remove this once we properly stub out prpc calls.
-    if (!getConfig) return;
-
-    getConfig.then((resp) => {
-      this.dispatchAction({
-        type: actionType.FETCH_PROJECT_CONFIG_SUCCESS,
-        projectConfig: resp,
-      });
-    }, (error) => {
-      this.dispatchAction({
-        type: actionType.FETCH_PROJECT_CONFIG_FAILURE,
-        error,
-      });
-    });
-
-    this.dispatchAction({type: actionType.FETCH_PROJECT_TEMPLATES_START});
-
-    const listTemplates = window.prpcClient.call(
-      'monorail.Projects', 'ListProjectTemplates', message
-    );
-
-    // TODO(zhangtiff): Remove (see above TODO).
-    if (!listTemplates) return;
-
-    listTemplates.then((resp) => {
-      this.dispatchAction({
-        type: actionType.FETCH_PROJECT_TEMPLATES_SUCCESS,
-        projectTemplates: resp,
-      });
-    }, (error) => {
-      this.dispatchAction({
-        type: actionType.FETCH_PROJECT_TEMPLATES_FAILURE,
-        error,
-      });
-    });
+    this.dispatchAction(project.fetch(projectName));
   }
 
   _showLoading(issueLoaded, fetchIssueError) {

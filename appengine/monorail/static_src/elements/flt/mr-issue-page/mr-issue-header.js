@@ -9,6 +9,7 @@ import '../../mr-flipper.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import * as project from '../../redux/project.js';
 import {selectors} from '../../redux/selectors.js';
 import {arrayToEnglish} from '../../shared/helpers.js';
 import '../../mr-user-link/mr-user-link.js';
@@ -242,7 +243,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       issueClosed: !selectors.issueIsOpen(state),
       restrictions: selectors.issueRestrictions(state),
       isRestricted: selectors.issueIsRestricted(state),
-      projectTemplates: state.projectTemplates,
+      projectTemplates: project.project(state).templates,
     };
   }
 

@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {selectors} from '../../redux/selectors.js';
+import * as project from '../../redux/project.js';
 import {ReduxMixin, actionType, actionCreator} from
   '../../redux/redux-mixin.js';
 import '../../mr-user-link/mr-user-link.js';
@@ -149,7 +150,7 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       issue: state.issue,
       issueId: state.issueId,
       projectName: state.projectName,
-      projectConfig: state.projectConfig,
+      projectConfig: project.project(state).config,
       isStarred: state.isStarred,
       fetchingIsStarred: state.requests.fetchIsStarred.requesting,
       starringIssue: state.requests.starIssue.requesting,
