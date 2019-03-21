@@ -26,11 +26,9 @@ from proto import api_clients_config_pb2
 CONFIG_FILE_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
     'testing', 'api_clients.cfg')
-MONORAIL_CONFIG_SET = urllib.quote(
-    'services/%s' % app_identity.get_application_id(), safe='')
 LUCI_CONFIG_URL = (
     'https://luci-config.appspot.com/_ah/api/config/v1/config_sets'
-    '/%s/config/api_clients.cfg') % MONORAIL_CONFIG_SET
+    '/services/monorail-prod/config/api_clients.cfg')
 
 
 client_config_svc = None
