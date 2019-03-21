@@ -49,31 +49,9 @@ def update_bootstrap(repo, workdir):
     env=env)
 
 
-def get_cookies():
-  """Returns a cookielib.CookieJar object containing the git cookies."""
-  cookie_file = subprocess.check_output(['git', 'config', 'http.cookiefile'])
-  if not cookie_file:
-    logging.info('Cookie file entry not found in gitconfig. Defaults to netrc.')
-    return None
-  else:
-    logging.info('Found cookie file located at: %s' % cookie_file)
-  with utils.temporary_directory() as tempdir:
-    # Hack here because the gitcookie from googlesource doesn't contain the
-    # magic netscape header that cookielib.MozillaCookieJar expects.
-    temp_cookie_file = os.path.join(tempdir, 'cookies.txt')
-    with open(temp_cookie_file, 'wb') as new_f:
-      new_f.write(cookielib.MozillaCookieJar.header)
-      with open(cookie_file.strip(), 'rb') as orig_f:
-        new_f.write(orig_f.read())
-    cookies = cookielib.MozillaCookieJar(temp_cookie_file)
-    cookies.load()
-    return cookies
-
-
 def get_project_list(project):
   """Fetch the list of all git repositories in a project."""
-  cookies = get_cookies()
-  r = requests.get('%s?format=TEXT' % project, cookies=cookies)
+  r = requests.get('%s?format=TEXT' % project)
   if r.status_code == 403:
     raise FailedToFetchProjectList('Auth failed, check your git credentials.')
   return ['%s%s' % (project, repo) for repo in r.text.splitlines()

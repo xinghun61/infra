@@ -25,66 +25,23 @@ class CacheUpdaterTest(unittest.TestCase):
     self.assertEqual(args.project, 'http://asdf.com')
     self.assertRaises(SystemExit, parser.parse_args, [])
 
-  def test_get_cookies(self):
-    with utils.temporary_directory() as tempdir:
-      fake_cookie_file = os.path.join(tempdir, 'gitcookie')
-      with open(fake_cookie_file, 'wb') as f:
-        f.write(fake_cookie)
-
-      with mock.patch.object(subprocess, 'check_output',
-                             return_value=fake_cookie_file) as _:
-        cookies = list(git_cache_updater.get_cookies())
-
-    self.assertEquals(1, len(cookies))
-    cookie = cookies[0]
-
-    self.assertEquals('o', cookie.name)
-    self.assertEquals('foo=barbaz', cookie.value)
-    self.assertIsNone(cookie.port)
-    self.assertEquals(False, cookie.port_specified)
-    self.assertEquals('.googlesource.com', cookie.domain)
-    self.assertEquals(True, cookie.domain_specified)
-    self.assertEquals(True, cookie.domain_initial_dot)
-    self.assertEquals('/', cookie.path)
-    self.assertEquals(False, cookie.path_specified)
-    self.assertEquals(True, cookie.secure)
-    self.assertEquals(2147483647, cookie.expires)
-    self.assertEquals(False, cookie.discard)
-    self.assertIsNone(cookie.comment)
-    self.assertIsNone(cookie.comment_url)
-    self.assertEquals(False, cookie.rfc2109)
-
-  def test_get_no_cookies(self):
-    with utils.temporary_directory() as tempdir:
-      fake_cookie_file = os.path.join(tempdir, 'gitcookie')
-      with open(fake_cookie_file, 'wb') as f:
-        f.write(fake_cookie)
-
-      with mock.patch.object(subprocess, 'check_output',
-                             return_value=None) as _:
-        return git_cache_updater.get_cookies()
-
   @mock.patch('requests.get')
   def test_get_proj_list(self, req_get):
     req_get.return_value = mock.Mock(
         text='foo\nbar\nbaz\nall-projects',
         status_code=200)
-    with mock.patch.object(
-          git_cache_updater, 'get_cookies', return_value=None) as _:
-      result = git_cache_updater.get_project_list('proj')
+    result = git_cache_updater.get_project_list('proj')
     self.assertEquals(result, ['projfoo', 'projbar', 'projbaz'])
-    req_get.assert_called_with('proj?format=TEXT', cookies=None)
+    req_get.assert_called_with('proj?format=TEXT')
 
   @mock.patch('requests.get')
   def test_get_proj_list_403(self, req_get):
     req_get.return_value = mock.Mock(
         text='foo\nbar\nbaz\nall-projects',
         status_code=403)
-    with mock.patch.object(
-          git_cache_updater, 'get_cookies', return_value=None) as _:
-      self.assertRaises(
-          git_cache_updater.FailedToFetchProjectList,
-          git_cache_updater.get_project_list, 'proj')
+    self.assertRaises(
+        git_cache_updater.FailedToFetchProjectList,
+        git_cache_updater.get_project_list, 'proj')
 
   def test_run(self):
     with mock.patch.object(
