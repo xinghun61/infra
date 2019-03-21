@@ -2,26 +2,30 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-/*
-Program skylab_swarming_worker executes a Skylab task via Lucifer.
+// Program skylab_swarming_worker executes a Skylab task via Lucifer.
+//
+// skylab_swarming_worker uses lucifer_run_job to actually run the autotest
+// job. Once lucifer_run_job is kicked off, skylab_swarming_worker handles Lucifer
+// events, translating them to task updates and runtime status updates of the
+// swarming bot. If the swarming task is canceled, lucifer_swarming_worker aborts
+// the Lucifer run.
+//
+// The following environment variables control skylab_swarming_worker
+// execution.
+//
+// Per-bot variables:
+//
+//   ADMIN_SERVICE: Admin service host, e.g. foo.appspot.com.
+//   AUTOTEST_DIR: Path to the autotest checkout on server.
+//   INVENTORY_TOOLS_DIR: Path to the skylab inventory tools intallation.
+//   INVENTORY_DATA_DIR: Path to the skylab_inventory data checkout.
+//   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
+//   SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
+//
+// Per-task variables:
+//
+//   SWARMING_TASK_ID: task id of the swarming task being serviced.
 
-skylab_swarming_worker uses lucifer_run_job to actually run the autotest
-job. Once lucifer_run_job is kicked off, skylab_swarming_worker handles Lucifer
-events, translating them to task updates and runtime status updates of the
-swarming bot. If the swarming task is canceled, lucifer_swarming_worker aborts
-the Lucifer run.
-
-Following environment variables control skylab_swarming_worker execution.
-Per-bot variables:
-  AUTOTEST_DIR: Path to the autotest checkout on server.
-  LUCIFER_TOOLS_DIR: Path to the lucifer installation.
-  INVENTORY_TOOLS_DIR: Path to the skylab inventory tools intallation.
-  INVENTORY_DATA_DIR: Path to the skylab_inventory data checkout.
-  INVENTORY_ENVIRONMENT: skylab_inventory environment this bot is part of.
-  SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
-Per-task variables:
-  SWARMING_TASK_ID: task id of the swarming task being serviced.
-*/
 package main
 
 import (
