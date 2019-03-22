@@ -8,11 +8,14 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"golang.org/x/net/context"
 
 	"infra/monitoring/messages"
 
+	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/common/logging"
 	milo "go.chromium.org/luci/milo/api/proto"
 )
@@ -21,7 +24,36 @@ type miloClient struct {
 	BuildBot milo.BuildbotClient
 }
 
-func (r *miloClient) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+func miloBuildCacheKey(master *messages.MasterLocation, builder string, buildNum int64) string {
+	return fmt.Sprintf("miloBuild:%s:%s:%d", master.String(), builder, buildNum)
+}
+
+func (r *miloClient) cachedBuild(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) ([]byte, error) {
+	cacheKey := miloBuildCacheKey(master, builder, buildNum)
+	item, err := memcache.GetKey(ctx, cacheKey)
+	if err != nil && err != memcache.ErrCacheMiss {
+		return nil, err
+	}
+
+	var b []byte
+	if err == memcache.ErrCacheMiss {
+		b, err = r.uncachedBuild(ctx, master, builder, buildNum)
+		if err != nil {
+			return nil, err
+		}
+
+		item = memcache.NewItem(ctx, cacheKey).SetValue(b).SetExpiration(30 * time.Minute)
+		err = memcache.Set(ctx, item)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return item.Value(), nil
+}
+
+func (r *miloClient) uncachedBuild(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) ([]byte, error) {
 	req := &milo.BuildbotBuildRequest{
 		Master:            master.Name(),
 		Builder:           builder,
@@ -33,9 +65,16 @@ func (r *miloClient) Build(ctx context.Context, master *messages.MasterLocation,
 		logging.Errorf(ctx, "error getting build %s/%s/%d: %v", master.Name(), builder, buildNum, err)
 		return nil, err
 	}
+	return resp.Data, nil
+}
 
+func (r *miloClient) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+	data, err := r.cachedBuild(ctx, master, builder, buildNum)
+	if err != nil {
+		return nil, err
+	}
 	build := &messages.Build{}
-	if err := json.Unmarshal(resp.Data, build); err != nil {
+	if err := json.Unmarshal(data, build); err != nil {
 		return nil, err
 	}
 

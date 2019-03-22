@@ -26,8 +26,7 @@ import (
 	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
-
-	"go.chromium.org/luci/milo/api/proto"
+	milo "go.chromium.org/luci/milo/api/proto"
 	"go.chromium.org/luci/server/auth"
 )
 
