@@ -35,6 +35,10 @@ export const actionType = {
   STAR_ISSUE_SUCCESS: 'STAR_ISSUE_SUCCESS',
   STAR_ISSUE_FAILURE: 'STAR_ISSUE_FAILURE',
 
+  PRESUBMIT_ISSUE_START: 'PRESUBMIT_ISSUE_START',
+  PRESUBMIT_ISSUE_SUCCESS: 'PRESUBMIT_ISSUE_SUCCESS',
+  PRESUBMIT_ISSUE_FAILURE: 'PRESUBMIT_ISSUE_FAILURE',
+
   FETCH_IS_STARRED_START: 'FETCH_IS_STARRED_START',
   FETCH_IS_STARRED_SUCCESS: 'FETCH_IS_STARRED_SUCCESS',
   FETCH_IS_STARRED_FAILURE: 'FETCH_IS_STARRED_FAILURE',
@@ -262,6 +266,24 @@ export const actionCreator = {
       });
     }
   },
+  presubmitIssue: (message) => async (dispatch) => {
+    dispatch({type: actionType.PRESUBMIT_ISSUE_START});
+
+    try {
+      const resp = await window.prpcClient.call(
+        'monorail.Issues', 'PresubmitIssue', message);
+
+      dispatch({
+        type: actionType.PRESUBMIT_ISSUE_SUCCESS,
+        presubmitResponse: resp,
+      });
+    } catch (error) {
+      dispatch({
+        type: actionType.PRESUBMIT_ISSUE_FAILURE,
+        error: error,
+      });
+    }
+  },
   updateApproval: (message) => async (dispatch) => {
     dispatch({type: actionType.UPDATE_APPROVAL_START});
 
@@ -397,6 +419,12 @@ const isStarredReducer = createReducer(false, {
   [actionType.FETCH_IS_STARRED_SUCCESS]: (_state, action) => !!action.isStarred,
 });
 
+const presubmitResponseReducer = createReducer({}, {
+  [actionType.PRESUBMIT_ISSUE_SUCCESS]: (state, action) => {
+    return action.presubmitResponse;
+  },
+});
+
 const issuePermissionsReducer = createReducer([], {
   [actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS]: (_state, action) => {
     return action.permissions;
@@ -442,6 +470,11 @@ const requestsReducer = combineReducers({
     actionType.STAR_ISSUE_START,
     actionType.STAR_ISSUE_SUCCESS,
     actionType.STAR_ISSUE_FAILURE),
+  // Request for checking an issue before submitting.
+  presubmitIssue: createRequestReducer(
+    actionType.PRESUBMIT_ISSUE_START,
+    actionType.PRESUBMIT_ISSUE_SUCCESS,
+    actionType.PRESUBMIT_ISSUE_FAILURE),
   // Request for getting comments for an issue.
   fetchComments: createRequestReducer(
     actionType.FETCH_COMMENTS_START,
@@ -496,6 +529,8 @@ const reducer = combineReducers({
   blockerReferences: blockerReferencesReducer,
   isStarred: isStarredReducer,
   issuePermissions: issuePermissionsReducer,
+
+  presubmitResponse: presubmitResponseReducer,
 
   // Forms to be checked for user changes before leaving the page.
   dirtyForms: dirtyFormsReducer,

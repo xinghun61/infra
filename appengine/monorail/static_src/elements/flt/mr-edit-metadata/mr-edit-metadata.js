@@ -12,6 +12,7 @@ import '@vaadin/vaadin-upload/vaadin-upload.js';
 import '@vaadin/vaadin-upload/theme/lumo/vaadin-upload.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../mr-error/mr-error.js';
+import '../../mr-warning/mr-warning.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString} from '../../shared/converters.js';
 import {isEmptyObject} from '../../shared/helpers.js';
@@ -108,6 +109,16 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         button.toggle:hover {
           cursor: pointer;
           text-decoration: underline;
+        }
+        .presubmit-derived {
+          color: gray;
+          font-style: italic;
+          text-decoration-line: underline;
+          text-decoration-style: dotted;
+        }
+        .presubmit-derived-header {
+          color: gray;
+          font-weight: bold;
         }
         .discard-button {
           margin-right: 16px;
@@ -346,6 +357,21 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
               checked="[[sendEmail]]"
             >Send email</chops-checkbox>
           </template>
+
+          <template is="dom-if" if="[[_hasErrorsOrWarnings(presubmitResponse)]]">
+            <span></span>
+            <div id="presubmit-errors-and-warnings">
+              <template is="dom-repeat" items="[[presubmitResponse.warnings]]">
+                <mr-warning title="[[item.why]]">[[item.value]]</mr-warning>
+              </template>
+              // TODO(ehmaldonado): Look into blocking submission on presubmit
+              // errors.
+              <template is="dom-repeat" items="[[presubmitResponse.errors]]">
+                <mr-error title="[[item.why]]">[[item.value]]</mr-error>
+              </template>
+            </div>
+          </template>
+
           <span></span>
           <div class="edit-actions">
             <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
@@ -359,6 +385,49 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
               Discard
             </chops-button>
           </div>
+
+          <template is="dom-if" if="[[_hasDerivedValues(presubmitResponse)]]">
+            <span></span>
+            <div class="presubmit-derived-header">
+              Filter rules and components will add
+            </div>
+          </template>
+
+          <template is="dom-if" if="[[presubmitResponse.derivedCcs]]">
+            <label
+              for="derived-ccs"
+              class="presubmit-derived-header"
+            >CCs:</label>
+            <div id="derived-ccs">
+              <template
+                is="dom-repeat"
+                items="[[presubmitResponse.derivedCcs]]"
+              >
+                <span
+                  title="[[item.why]]"
+                  class="presubmit-derived"
+                >[[item.value]]</span>
+              </template>
+            </div>
+          </template>
+
+          <template is="dom-if" if="[[presubmitResponse.derivedLabels]]">
+            <label
+              for="derived-labels"
+              class="presubmit-derived-header"
+            >Labels:</label>
+            <div id="derived-labels">
+              <template
+                is="dom-repeat"
+                items="[[presubmitResponse.derivedLabels]]"
+              >
+                <span
+                  title="[[item.why]]"
+                  class="presubmit-derived"
+                >[[item.value]]</span>
+              </template>
+            </div>
+          </template>
         </div>
       </form>
     `;
@@ -448,6 +517,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         value: true,
       },
       newAttachments: Array,
+      presubmitResponse: Object,
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
@@ -470,6 +540,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
+      presubmitResponse: state.presubmitResponse,
       projectConfig: project.project(state).config,
       projectName: state.projectName,
       fieldValueMap: selectors.issueFieldValueMap(state),
@@ -615,6 +686,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           name: this.formName,
           isDirty: !isEmptyObject(delta) || Boolean(commentContent),
         });
+        this.dispatchEvent(new CustomEvent('change', {detail: {delta}}));
       });
   }
 
@@ -644,6 +716,16 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   // For simulating && in templating.
   _and(a, b) {
     return a && b;
+  }
+
+  _hasDerivedValues(response) {
+    return ((response.derivedCcs && response.derivedCcs.length)
+      || (response.derivedLabels && response.derivedLabels.length));
+  }
+
+  _hasErrorsOrWarnings(response) {
+    return ((response.errors && response.errors.length)
+      || (response.warnings && response.warnings.length));
   }
 
   // This function exists because <label for="inputId"> doesn't work for custom

@@ -50,6 +50,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
         derived-labels="[[_derivedLabels]]"
         on-save="save"
         on-discard="reset"
+        on-change="_presubmitIssue"
         disabled="[[updatingIssue]]"
         error="[[updateIssueError.description]]"
       ></mr-edit-metadata>
@@ -160,6 +161,17 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
 
   _omitEmptyDisplayName(displayName) {
     return displayName === '----' ? '' : displayName;
+  }
+
+  _presubmitIssue(evt) {
+    const message = {
+      issueRef: {
+        projectName: this.projectName,
+        localId: this.issueId,
+      },
+      issueDelta: evt.detail.delta,
+    };
+    this.dispatchAction(actionCreator.presubmitIssue(message));
   }
 }
 

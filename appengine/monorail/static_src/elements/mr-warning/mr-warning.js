@@ -6,12 +6,12 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 /**
- * `<mr-error>`
+ * `<mr-warnings>`
  *
- * A container for showing errors.
+ * A container for showing warnings.
  *
  */
-export class MrError extends PolymerElement {
+export class MrWarning extends PolymerElement {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -25,26 +25,26 @@ export class MrError extends PolymerElement {
           width: 100%;
           margin: 0.5em 0;
           padding: 0.25em 8px;
-          border: 1px solid #B71C1C;
+          border: 1px solid #FF6F00;
           border-radius: 4px;
-          background: #FFEBEE;
+          background: #FFF8E1;
         }
         :host([hidden]) {
           display: none;
         }
         i.material-icons {
-          color: #B71C1C;
+          color: #FF6F00;
           margin-right: 4px;
         }
       </style>
-      <i class="material-icons">close</i>
+      <i class="material-icons">warning</i>
       <slot></slot>
     `;
   }
 
   static get is() {
-    return 'mr-error';
+    return 'mr-warning';
   }
 }
 
-customElements.define(MrError.is, MrError);
+customElements.define(MrWarning.is, MrWarning);
