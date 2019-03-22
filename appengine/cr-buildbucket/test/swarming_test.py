@@ -36,7 +36,6 @@ from test import test_util
 from test.test_util import future, future_exception
 import bbutil
 import errors
-import isolate
 import model
 import swarming
 import user
@@ -951,7 +950,6 @@ class SyncBuildTest(BaseTest):
               'started_ts': '2018-01-29T21:15:02.649750',
               'completed_ts': '2018-01-30T00:15:18.162860',
           },
-          'build_run_result': {},
           'status': common_pb2.SUCCESS,
           'start_time': tspb(seconds=1517260502, nanos=649750000),
           'end_time': tspb(seconds=1517271318, nanos=162860000),
@@ -969,11 +967,6 @@ class SyncBuildTest(BaseTest):
                   {'key': 'pool', 'value': ['luci.chromium.try']},
                   {'key': 'id', 'value': ['bot1']},
               ],
-          },
-          'build_run_result': {
-              'annotationUrl':
-                  'logdog://logdog.example.com/chromium/prefix/+/annotations',
-              'annotations': {},
           },
           'status':
               common_pb2.SUCCESS,
@@ -995,49 +988,7 @@ class SyncBuildTest(BaseTest):
               'started_ts': '2018-01-29T21:15:02.649750',
               'completed_ts': '2018-01-30T00:15:18.162860',
           },
-          'build_run_result': {},
           'status': common_pb2.FAILURE,
-          'start_time': tspb(seconds=1517260502, nanos=649750000),
-          'end_time': tspb(seconds=1517271318, nanos=162860000),
-      },),
-      ({
-          'task_result': {
-              'state': 'COMPLETED',
-              'failure': True,
-              'started_ts': '2018-01-29T21:15:02.649750',
-              'completed_ts': '2018-01-30T00:15:18.162860',
-          },
-          'build_run_result': {
-              'infraFailure': {
-                  'type': 'BOOTSTRAPPER_ERROR',
-                  'text': 'it is not good',
-              },
-          },
-          'status': common_pb2.INFRA_FAILURE,
-          'start_time': tspb(seconds=1517260502, nanos=649750000),
-          'end_time': tspb(seconds=1517271318, nanos=162860000),
-      },),
-      ({
-          'task_result': {
-              'state': 'COMPLETED',
-              'failure': True,
-              'started_ts': '2018-01-29T21:15:02.649750',
-              'completed_ts': '2018-01-30T00:15:18.162860',
-          },
-          'build_run_result': None,
-          'status': common_pb2.INFRA_FAILURE,
-          'start_time': tspb(seconds=1517260502, nanos=649750000),
-          'end_time': tspb(seconds=1517271318, nanos=162860000),
-      },),
-      ({
-          'task_result': {
-              'state': 'COMPLETED',
-              'failure': True,
-              'started_ts': '2018-01-29T21:15:02.649750',
-              'completed_ts': '2018-01-30T00:15:18.162860',
-          },
-          'build_run_result_error': swarming._BUILD_RUN_RESULT_CORRUPTED,
-          'status': common_pb2.INFRA_FAILURE,
           'start_time': tspb(seconds=1517260502, nanos=649750000),
           'end_time': tspb(seconds=1517271318, nanos=162860000),
       },),
@@ -1124,20 +1075,10 @@ class SyncBuildTest(BaseTest):
   ])
   def test_sync(self, case):
     logging.info('test case: %s', case)
-    self.patch(
-        'swarming._load_build_run_result_async',
-        autospec=True,
-        return_value=future((
-            case.get('build_run_result'),
-            case.get('build_run_result_error', None),
-        )),
-    )
     build = test_util.build(id=1)
     build.put()
 
-    swarming._sync_build_async(
-        1, case['task_result'], 'luci.chromium.ci', 'linux-rel'
-    ).get_result()
+    swarming._sync_build_async(1, case['task_result']).get_result()
 
     build = build.key.get()
     bp = build.proto
@@ -1157,158 +1098,6 @@ class SyncBuildTest(BaseTest):
         list(build.parse_infra().swarming.bot_dimensions),
         case.get('bot_dimensions', [])
     )
-
-
-class LoadBuildRunResultTest(BaseTest):
-
-  @mock.patch('swarming.isolate.fetch_async')
-  def test_success(self, fetch_isolate_async):
-    self.assertEqual(
-        swarming._load_build_run_result_async({}, 'luci.chromium.ci',
-                                              'linux-rel').get_result(),
-        (None, None),
-    )
-
-    expected = {
-        'infra_failure': {'text': 'not good'},
-    }
-    fetch_isolate_async.side_effect = [
-        # isolated
-        future(
-            json.dumps({
-                'files': {
-                    swarming._BUILD_RUN_RESULT_FILENAME: {
-                        'h': 'deadbeef',
-                        's': 2048,
-                    },
-                },
-            })
-        ),
-        # build-run-result.json
-        future(json.dumps(expected)),
-    ]
-    actual, error = swarming._load_build_run_result_async({
-        'id': 'taskid',
-        'outputs_ref': {
-            'isolatedserver': 'https://isolate.example.com',
-            'namespace': 'default-gzip',
-            'isolated': 'badcoffee',
-        },
-    }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertIsNone(error)
-    self.assertEqual(expected, actual)
-    fetch_isolate_async.assert_any_call(
-        isolate.Location(
-            'isolate.example.com',
-            'default-gzip',
-            'badcoffee',
-        )
-    )
-    fetch_isolate_async.assert_any_call(
-        isolate.Location(
-            'isolate.example.com',
-            'default-gzip',
-            'deadbeef',
-        )
-    )
-
-  @mock.patch('swarming.isolate.fetch_async')
-  def test_too_large(self, fetch_isolate_async):
-    fetch_isolate_async.return_value = future(
-        json.dumps({
-            'files': {
-                swarming._BUILD_RUN_RESULT_FILENAME: {
-                    'h': 'deadbeef',
-                    's': 1 + (2 << 20),
-                },
-            },
-        })
-    )
-    actual, error = swarming._load_build_run_result_async({
-        'id': 'taskid',
-        'outputs_ref': {
-            'isolatedserver': 'https://isolate.example.com',
-            'namespace': 'default-gzip',
-            'isolated': 'badcoffee',
-        },
-    }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertEqual(error, swarming._BUILD_RUN_RESULT_TOO_LARGE)
-    self.assertIsNone(actual)
-
-  @mock.patch('swarming.isolate.fetch_async')
-  def test_no_result(self, fetch_isolate_async):
-    # isolated only, without the result
-    fetch_isolate_async.return_value = future(
-        json.dumps({
-            'files': {'soemthing_else.txt': {
-                'h': 'deadbeef',
-                's': 2048,
-            }},
-        })
-    )
-    actual, error = swarming._load_build_run_result_async({
-        'id': 'taskid',
-        'outputs_ref': {
-            'isolatedserver': 'https://isolate.example.com',
-            'namespace': 'default-gzip',
-            'isolated': 'badcoffee',
-        },
-    }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertIsNone(error)
-    self.assertIsNone(actual)
-
-  def test_non_https_server(self):
-    run_result, error = swarming._load_build_run_result_async({
-        'id': 'taskid',
-        'outputs_ref': {
-            'isolatedserver': 'http://isolate.example.com',
-            'namespace': 'default-gzip',
-            'isolated': 'badcoffee',
-        },
-    }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertEqual(error, swarming._BUILD_RUN_RESULT_CORRUPTED)
-    self.assertIsNone(run_result)
-
-  @mock.patch('swarming.isolate.fetch_async')
-  def test_load_build_run_result_invalid_json(self, fetch_isolate_async):
-    fetch_isolate_async.return_value = future('{"incomplete_json')
-    run_result, error = swarming._load_build_run_result_async({
-        'id': 'taskid',
-        'outputs_ref': {
-            'isolatedserver': 'https://isolate.example.com',
-            'namespace': 'default-gzip',
-            'isolated': 'badcoffee',
-        },
-    }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertEqual(error, swarming._BUILD_RUN_RESULT_CORRUPTED)
-    self.assertIsNone(run_result)
-
-  @mock.patch('swarming.isolate.fetch_async')
-  def test_isolate_error(self, fetch_isolate_async):
-    fetch_isolate_async.side_effect = isolate.Error()
-    with self.assertRaises(isolate.Error):
-      swarming._load_build_run_result_async({
-          'id': 'taskid',
-          'outputs_ref': {
-              'isolatedserver': 'https://isolate.example.com',
-              'namespace': 'default-gzip',
-              'isolated': 'badcoffee',
-          },
-      }, 'luci.chromium.ci', 'linux-rel').get_result()
-
-  @mock.patch('swarming.isolate.fetch_async')
-  def test_not_found(self, fetch_isolate_async):
-    fetch_isolate_async.return_value = future(None)
-    run_result, error = swarming._load_build_run_result_async({
-        'id': 'taskid',
-        'outputs_ref': {
-            'isolatedserver': 'https://isolate.example.com',
-            'namespace': 'default-gzip',
-            'isolated': 'badcoffee',
-        },
-    }, 'luci.chromium.ci', 'linux-rel').get_result()
-    self.assertEqual(error, swarming._BUILD_RUN_RESULT_CORRUPTED)
-    self.assertIsNone(run_result)
 
 
 class MigrationTest(BaseTest):
@@ -1441,12 +1230,6 @@ class SubNotifyTest(BaseTest):
   def setUp(self):
     super(SubNotifyTest, self).setUp()
     self.handler = swarming.SubNotify(response=webapp2.Response())
-
-    self.patch(
-        'swarming._load_build_run_result_async',
-        autospec=True,
-        return_value=future(({}, False)),
-    )
 
   def test_unpack_msg(self):
     self.assertEqual(
@@ -1662,12 +1445,6 @@ class CronUpdateTest(BaseTest):
   def setUp(self):
     super(CronUpdateTest, self).setUp()
     self.now += datetime.timedelta(minutes=5)
-
-    self.patch(
-        'swarming._load_build_run_result_async',
-        autospec=True,
-        return_value=future(({}, False)),
-    )
 
   @mock.patch('swarming._load_task_result_async', autospec=True)
   def test_sync_build_async(self, load_task_result_async):
