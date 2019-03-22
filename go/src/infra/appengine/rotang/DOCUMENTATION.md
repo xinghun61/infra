@@ -19,6 +19,7 @@ This document contains information on how to use the RotaNG web interface.
     - [Current](#current)
     - [Generate](#generate)
   - [Shift Modifiers](#shift-modifiers)
+- [Test Email](#test-email)
 - [Developer Information](./DEVINFO.md)
 - [Migrate Information](./SWITCH.md)
 
@@ -56,6 +57,8 @@ If you can't find a replacement, reach out to the rotation owner.
 
 You'll not be considered for those dates when shifts are scheduled.
 Already scheduled shifts will be unaffected , you'll have to swap  with someone for those.
+
+Note: *For the OOO entries to be saved you need to click the `Update` button when finished*
 
 ## Rotation Owner
 
@@ -313,3 +316,11 @@ A shift scheduled for Monday - Wednesday would be turned into three one day shif
 
 This lays the groundwork for single day swaps instead of having to swap a full shift.
 The UI will need to catch up to make this useful.
+
+## Test Email
+
+On the front page following the [Test Email](https://rota-ng.appspot.com/emailtest) link takes you to a list of all the
+rotations you own and/or are a member of. 
+
+- Clicking the `Test` button expands the Email template.
+- Clicking the `Send` button sends the generated email to the logged in user.
