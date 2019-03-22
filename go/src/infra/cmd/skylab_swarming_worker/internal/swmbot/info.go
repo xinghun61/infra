@@ -17,12 +17,13 @@ import (
 
 // Info contains information about the current Swarming bot.
 type Info struct {
-	AdminService  string
-	AutotestPath  string
-	DUTID         string
-	Inventory     Inventory
-	LuciferBinDir string
-	Task          Task
+	AdminService    string
+	AutotestPath    string
+	DUTID           string
+	Inventory       Inventory
+	LuciferBinDir   string
+	SwarmingService string
+	Task            Task
 }
 
 // GetInfo returns the Info for the current Swarming bot, built from
@@ -36,6 +37,7 @@ type Info struct {
 //   INVENTORY_DATA_DIR: Path to the skylab_inventory data checkout.
 //   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
 //   SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
+//   SWARMING_SERVICE: Swarming service host, e.g. https://foo.appspot.com.
 //
 // Per-task variables:
 //
@@ -49,7 +51,8 @@ func GetInfo() *Info {
 			DataDir:  os.Getenv("INVENTORY_DATA_DIR"),
 			ToolsDir: os.Getenv("INVENTORY_TOOLS_DIR"),
 		},
-		LuciferBinDir: os.Getenv("LUCIFER_TOOLS_DIR"),
+		LuciferBinDir:   os.Getenv("LUCIFER_TOOLS_DIR"),
+		SwarmingService: os.Getenv("SWARMING_SERVICE"),
 		Task: Task{
 			RunID: os.Getenv("SWARMING_TASK_ID"),
 		},
@@ -85,7 +88,11 @@ func (b *Info) ResultsDir() string {
 
 // TaskRunURL returns the URL for the current Swarming task execution.
 func (b *Info) TaskRunURL() string {
-	return fmt.Sprintf("https://chromeos-swarming.appspot.com/task?id=%s", b.Task.RunID)
+	// TODO(ayatane): Remove this fallback once SWARMING_SERVICE is passed down here.
+	if b.SwarmingService == "" {
+		return fmt.Sprintf("https://chromeos-swarming.appspot.com/task?id=%s", b.Task.RunID)
+	}
+	return fmt.Sprintf("%s/task?id=%s", b.SwarmingService, b.Task.RunID)
 }
 
 // StainlessURL returns the URL to the stainless logs browser for logs offloaded
