@@ -5,8 +5,10 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"text/tabwriter"
 
 	"github.com/maruel/subcommands"
@@ -20,7 +22,7 @@ import (
 
 // RemoveDuts subcommand: RemoveDuts a DUT from a drone.
 var RemoveDuts = &subcommands.Command{
-	UsageLine: "remove-duts [-drone DRONE] [DUT...]",
+	UsageLine: "remove-duts [-drone DRONE] [-delete] [DUT...]",
 	ShortDesc: "remove DUTs from a drone",
 	LongDesc: `Remove DUTs from a drone
 
@@ -30,7 +32,8 @@ If -drone is given, check that the DUTs are currently assigned to that
 drone.  Otherwise, the DUTs are removed from whichever drone they are
 currently assigned to.
 
-Removing DUTs from a drone stops the DUTs from being able to run tasks.`,
+Removing DUTs from a drone stops the DUTs from being able to run tasks.
+Setting -delete deletes the DUTs from the inventory entirely.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &removeDutsRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
@@ -39,6 +42,7 @@ Removing DUTs from a drone stops the DUTs from being able to run tasks.`,
 		c.Flags.StringVar(&c.reason, "reason", "", `Reason the DUT is being removed from drone.
 Please include a bug reference, especially if the DUT should be added
 back in the future.`)
+		c.Flags.BoolVar(&c.delete, "delete", false, "Delete DUT from inventory.")
 		return c
 	},
 }
@@ -48,6 +52,7 @@ type removeDutsRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 	server    string
+	delete    bool
 	reason    string
 }
 
@@ -86,23 +91,52 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 		Options: site.DefaultPRPCOptions,
 	})
 
-	resp, err := ic.RemoveDutsFromDrones(ctx, req)
+	removalResp, err := ic.RemoveDutsFromDrones(ctx, req)
 	if err != nil {
 		return err
 	}
+	if removalResp.Url != "" {
+		_ = printRemovals(a.GetOut(), removalResp)
+	}
 
-	if len(resp.Removed) == 0 {
-		fmt.Fprintln(a.GetErr(), "No DUTs removed")
+	deletionResp := &fleet.DeleteDutsResponse{}
+	if c.delete {
+		deletionResp, err = ic.DeleteDuts(ctx, &fleet.DeleteDutsRequest{Hostnames: c.Flags.Args()})
+		if err != nil {
+			return err
+		}
+	}
+	if deletionResp.ChangeUrl != "" {
+		_ = printDeletions(a.GetOut(), deletionResp)
+	}
+
+	if removalResp.Url == "" && deletionResp.ChangeUrl == "" {
+		fmt.Fprintln(a.GetOut(), "No DUTs modified")
 		return nil
 	}
 
-	t := tabwriter.NewWriter(a.GetOut(), 0, 0, 2, ' ', 0)
-	fmt.Fprintln(t, resp.Url)
-	fmt.Fprintln(t, "DUT ID\tRemoved from drone\t")
-	for _, r := range resp.Removed {
-		fmt.Fprintf(t, "%s\t%s\t\n", r.DutId, r.DroneHostname)
-	}
-	t.Flush()
-
 	return nil
+}
+
+// printRemovals prints a table of DUT removals from drones.
+func printRemovals(w io.Writer, resp *fleet.RemoveDutsFromDronesResponse) error {
+	fmt.Fprintf(w, "DUT removal from drone: %s\n", resp.Url)
+
+	t := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(t, "DUT ID\tRemoved from drone")
+	for _, r := range resp.Removed {
+		fmt.Fprintf(t, "%s\t%s\n", r.GetDutId(), r.GetDroneHostname())
+	}
+	return t.Flush()
+}
+
+// printDeletions prints a list of deleted DUTs.
+func printDeletions(w io.Writer, resp *fleet.DeleteDutsResponse) error {
+	b := bufio.NewWriter(w)
+	fmt.Fprintf(b, "DUT deletion: %s\n", resp.ChangeUrl)
+	fmt.Fprintln(b, "Deleted DUT IDs")
+	for _, id := range resp.Ids {
+		fmt.Fprintln(b, id)
+	}
+	return b.Flush()
 }
