@@ -1,5 +1,6 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="/ui/elements/flake_detection/flake-score-chart.html">
 <link rel="import" href="/ui/elements/flake_detection/grouped-occurrences.html">
 
@@ -65,7 +66,9 @@
                 <a href="[[flake_json.flake_issue.issue_link]]">[[flake_json.flake_issue.issue_id]]</a>
                 ([[flake_json.flake_issue.status]].
                 <template is="dom-if" if="[[_hasBugUpdateTime(flake_json)]]">
-                  Updated [[flake_json.flake_issue.last_updated_time_in_monorail]] ago
+                  <span>Updated [[_shortenTimeDelta(flake_json.flake_issue.last_updated_time_in_monorail)]] ago
+                    <paper-tooltip position="bottom" offset="0" fit-to-visible-bounds="true">[[flake_json.flake_issue.last_updated_time_in_monorail]] ago</paper-tooltip>
+                  </span>
                 </template>
                 )
               </td>
@@ -165,6 +168,10 @@
 
         _isFirstElement: function (index) {
            return index == 0;
+        },
+
+        _shortenTimeDelta: function (delta) {
+          return shortenTimeDelta(delta);
         },
 
         // Event handlers.
