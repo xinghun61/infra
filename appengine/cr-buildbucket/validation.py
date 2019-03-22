@@ -317,6 +317,10 @@ def validate_update_build_request(req, build_steps=None):
       with _enter('summary_markdown'):
         validate_build_summary_markdown(req.build.summary_markdown)
 
+    if 'build.output.properties' in update_paths:
+      with _enter('output', 'properties'):
+        validate_struct(req.build.output.properties)
+
     if 'build.steps' in update_paths:  # pragma: no branch
       with _enter('steps'):
         build_steps = build_steps or model.BuildSteps.make(req.build)

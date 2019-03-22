@@ -277,7 +277,7 @@ class ScheduleBuildRequestTests(BaseTestCase):
   def test_empty_property_value(self):
     msg = rpc_pb2.ScheduleBuildRequest(
         builder=dict(project='chromium', bucket='try', builder='linux-rel'),
-        properties=dict(fields=dict(a=struct_pb2.Value()),),
+        properties=dict(fields=dict(a=struct_pb2.Value())),
     )
     self.assert_invalid(
         msg, r'properties\.a: value is not set; for null, initialize null_value'
@@ -452,6 +452,19 @@ class UpdateBuildRequestTests(BaseTestCase):
     msg = self._mk_req(['build.input'])
     self.assert_invalid(
         msg, r'update_mask\.paths: unsupported path\(s\) .+build\.input.+'
+    )
+
+  def test_empty_property_value(self):
+    msg = rpc_pb2.UpdateBuildRequest(
+        build=build_pb2.Build(
+            id=1,
+            output=dict(properties=dict(fields=dict(a=struct_pb2.Value()))),
+        ),
+        update_mask=field_mask_pb2.FieldMask(paths=['build.output.properties']),
+    )
+    self.assert_invalid(
+        msg, r'build\.output\.properties\.a: value is not set; '
+        'for null, initialize null_value'
     )
 
   @mock.patch('model.BuildSteps.MAX_STEPS_LEN', 10)
