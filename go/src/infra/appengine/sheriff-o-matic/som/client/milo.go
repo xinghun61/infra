@@ -60,9 +60,10 @@ func (r *miloClient) uncachedBuild(ctx context.Context, master *messages.MasterL
 		BuildNum:          buildNum,
 		ExcludeDeprecated: true,
 	}
+	logging.Debugf(ctx, "Getting build %s/%s/%d", master.Name(), builder, buildNum)
 	resp, err := r.BuildBot.GetBuildbotBuildJSON(ctx, req)
 	if err != nil {
-		logging.Errorf(ctx, "error getting build %s/%s/%d: %v", master.Name(), builder, buildNum, err)
+		logging.Errorf(ctx, "Error getting build %s/%s/%d: %v", master.Name(), builder, buildNum, err)
 		return nil, err
 	}
 	return resp.Data, nil
@@ -100,9 +101,10 @@ func (r *miloClient) BuildExtract(ctx context.Context, master *messages.MasterLo
 		Name:              master.Name(),
 		ExcludeDeprecated: true,
 	}
+	logging.Debugf(ctx, "Getting compressed master json for %s", master.Name())
 	resp, err := r.BuildBot.GetCompressedMasterJSON(ctx, req)
 	if err != nil {
-		logging.Errorf(ctx, "error getting build extract for %s: %v", master.Name(), err)
+		logging.Errorf(ctx, "Error getting compressed master json for %s: %v", master.Name(), err)
 		return nil, err
 	}
 
