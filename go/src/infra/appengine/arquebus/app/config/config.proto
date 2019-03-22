@@ -36,17 +36,17 @@ message IssueQuery {
 message Assigner {
   // The unique ID of the Assigner.
   //
-  // This value will be used in URLs of UI, so keep it short.
+  // This value will be used in URLs of UI, so keep it short. Note that
+  // only lowercase alphabet letters and numbers are allowed. A hyphen may
+  // be placed between letters and numbers.
   string id = 1;
 
   // An email list of the owners of the Assigner.
   repeated string owners = 2;
 
-  // The duration between each Assigner run.
+  // The duration between the start of an Assigner run and the next one.
   //
-  // The assigner is scheduled to run every a given interval, specified in this
-  // field. Effectively, this is the interval between the start of two
-  // consecutive schedules.
+  // This value be at least a minute long.
   google.protobuf.Duration interval = 3;
 
   // IssueQuery describes the search criteria to look for issues to assign.

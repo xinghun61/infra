@@ -136,11 +136,15 @@ func (m *IssueQuery) GetProjectNames() []string {
 type Assigner struct {
 	// The unique ID of the Assigner.
 	//
-	// This value will be used in URLs of UI, so keep it short.
+	// This value will be used in URLs of UI, so keep it short. Note that
+	// only lowercase alphabet letters and numbers are allowed. A hyphen may
+	// be placed between letters and numbers.
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// An email list of the owners of the Assigner.
 	Owners []string `protobuf:"bytes,2,rep,name=owners,proto3" json:"owners,omitempty"`
-	// The duration between each Assigner run.
+	// The duration between the start of an Assigner run and the next one.
+	//
+	// This value be at least a minute long.
 	Interval *duration.Duration `protobuf:"bytes,3,opt,name=interval,proto3" json:"interval,omitempty"`
 	// IssueQuery describes the search criteria to look for issues to assign.
 	IssueQuery *IssueQuery `protobuf:"bytes,4,opt,name=issue_query,json=issueQuery,proto3" json:"issue_query,omitempty"`
@@ -148,7 +152,7 @@ type Assigner struct {
 	//
 	// All the values should be the name of a rotation in RotaNG. If multiple
 	// rotations are specified, Assigner iterates the rotations in the order
-	// until it finds a currently available trooper/oncaller, and then assign
+	// until it finds a currently available trooper/oncaller, and then assigns
 	// open issues to the trooper/oncaller.
 	Rotations []string `protobuf:"bytes,5,rep,name=rotations,proto3" json:"rotations,omitempty"`
 	// If DryRun is set, Assigner doesn't update the found issues.
