@@ -8,6 +8,9 @@ See http://dev.chromium.org/developers/how-tos/depottools/presubmit-scripts for
 details on the presubmit API built into gcl.
 """
 
+import os
+
+
 DISABLED_TESTS = [
     '.*appengine/chromium_status/tests/main_test.py',
     '.*appengine/chromium_build/app_test.py',
@@ -49,6 +52,9 @@ JSHINT_PROJECTS_BLACKLIST = THIRD_PARTY_DIRS
 # Paths tested are relative to the directory containing this file.
 # Ex: infra/libs/logs.py
 NOFORK_PATHS = []
+
+# This project is whitelisted to use Typescript on a trial basis.
+ROTANG_DIR = os.path.join('go', 'src', 'infra', 'appengine', 'rotang')
 
 
 def CommandInGoEnv(input_api, output_api, name, cmd, kwargs):
@@ -412,6 +418,8 @@ def NoTypescriptCheck(input_api, output_api):  # pragma: no cover
   """Checks that typescript files aren't being added to infra."""
   output = []
   for f in input_api.AffectedFiles(include_deletes=False):
+    if str(f).startswith(ROTANG_DIR):
+      continue
     if str(f).endswith('.ts'):
       output.append(output_api.PresubmitError(
           'Typescript file disallowed: %s' % f))
