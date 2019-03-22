@@ -116,7 +116,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
           >Send email</chops-checkbox>
           <div>
             <chops-button id="discard" on-click="cancel" class="de-emphasized">
-              Discard changes
+              Discard
             </chops-button>
             <chops-button id="save" on-click="save" class="emphasized">
               Save changes

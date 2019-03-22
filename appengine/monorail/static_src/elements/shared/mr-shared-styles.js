@@ -38,7 +38,6 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
       }
       chops-button, a.button {
         box-sizing: border-box;
-        border: var(--chops-normal-border);
         font-size: 12px;
         background: white;
         border-radius: 6px;
@@ -55,9 +54,6 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         background: var(--chops-primary-button-bg);
         color: var(--chops-primary-button-color);
         text-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.25);
-      }
-      chops-button.de-emphasized, a.button.de-emphasized {
-        border-color: transparent;
       }
       /* Note: decoupling heading levels from styles is useful for
        * accessibility because styles will not always line up with semantically

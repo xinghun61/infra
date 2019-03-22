@@ -94,7 +94,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
         </template>
         <div class="edit-actions">
           <chops-button on-click="discard" class="de-emphasized discard-button" disabled="[[disabled]]">
-            Discard changes
+            Discard
           </chops-button>
           <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
             Save changes

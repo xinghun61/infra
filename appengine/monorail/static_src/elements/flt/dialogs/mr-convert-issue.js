@@ -80,7 +80,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
           </mr-error>
           <div class="edit-actions">
             <chops-button on-click="close" class="de-emphasized discard-button">
-              Discard changes
+              Discard
             </chops-button>
             <chops-button on-click="save" class="emphasized" disabled\$="[[!selectedTemplate]]">
               Convert issue

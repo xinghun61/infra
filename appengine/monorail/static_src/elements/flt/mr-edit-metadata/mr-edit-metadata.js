@@ -68,6 +68,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
             padding: 0.25em 4px;
           }
         }
+        :host(.edit-actions-right) .edit-actions {
+          flex-direction: row-reverse;
+          text-align: right;
+        }
         vaadin-upload {
           margin-bottom: 1em;
         }
@@ -107,11 +111,22 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         }
         .discard-button {
           margin-right: 16px;
+          margin-left: 16px;
         }
         .edit-actions {
           width: 100%;
           margin: 0.5em 0;
-          text-align: right;
+          text-align: left;
+          display: flex;
+          flex-direction: row;
+          justify-content: flex-start;
+        }
+        .edit-actions chops-button {
+          flex-grow: 0;
+          flex-shrink: 0;
+        }
+        .edit-actions .emphasized {
+          margin-left: 0;
         }
         .input-grid {
           padding: 0.5em 0;
@@ -166,8 +181,8 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         >
           <i class="material-icons" slot="drop-label-icon">cloud_upload</i>
         </vaadin-upload>
-        <template is="dom-if" if="[[_canEditIssue]]">
-          <div class="input-grid">
+        <div class="input-grid">
+          <template is="dom-if" if="[[_canEditIssue]]">
             <template is="dom-if" if="[[!isApproval]]">
               <label for="summaryInput">Summary:</label>
               <input
@@ -330,19 +345,20 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
               on-checked-change="_sendEmailChecked"
               checked="[[sendEmail]]"
             >Send email</chops-checkbox>
+          </template>
+          <span></span>
+          <div class="edit-actions">
+            <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
+              Save changes
+            </chops-button>
+            <chops-button
+              on-click="discard"
+              class="de-emphasized discard-button"
+              disabled="[[disabled]]"
+            >
+              Discard
+            </chops-button>
           </div>
-        </template>
-        <div class="edit-actions">
-          <chops-button
-            on-click="discard"
-            class="de-emphasized discard-button"
-            disabled="[[disabled]]"
-          >
-            Discard changes
-          </chops-button>
-          <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
-            Save changes
-          </chops-button>
         </div>
       </form>
     `;
