@@ -244,7 +244,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_valid(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=dict(project='chromium', bucket='try', builder='linux-rel'),
         gitiles_commit=dict(
             host='gerrit.example.com',
@@ -277,7 +276,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_empty_property_value(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=dict(project='chromium', bucket='try', builder='linux-rel'),
         properties=dict(fields=dict(a=struct_pb2.Value()),),
     )
@@ -287,7 +285,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_repeating_dimension_key_and_expiration(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=dict(project='chromium', bucket='try', builder='linux-rel'),
         dimensions=[
             dict(key='a', value='b'),
@@ -300,7 +297,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_expiration_not_suported(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=dict(project='chromium', bucket='try', builder='linux-rel'),
         dimensions=[
             dict(key='a', value='b', expiration=dict(seconds=10)),
@@ -308,23 +304,16 @@ class ScheduleBuildRequestTests(BaseTestCase):
     )
     self.assert_invalid(msg, r'dimensions\[0\]\.expiration: not supported')
 
-  def test_empty(self):
-    msg = rpc_pb2.ScheduleBuildRequest()
-    self.assert_invalid(msg, 'request_id: required')
-
   def test_no_builder_and_template_build_id(self):
-    msg = rpc_pb2.ScheduleBuildRequest(request_id='request id')
+    msg = rpc_pb2.ScheduleBuildRequest()
     self.assert_invalid(msg, 'builder or template_build_id is required')
 
   def test_no_builder_but_template_build_id(self):
-    msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id', template_build_id=1
-    )
+    msg = rpc_pb2.ScheduleBuildRequest(template_build_id=1)
     self.assert_valid(msg)
 
   def test_incomplete_builder(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(project='chromium', bucket='try'),
     )
     self.assert_invalid(msg, 'builder.builder: required')
@@ -338,7 +327,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
     ]
     for p in properties:
       msg = rpc_pb2.ScheduleBuildRequest(
-          request_id='request id',
           builder=build_pb2.BuilderID(
               project='chromium', bucket='try', builder='linux-rel'
           ),
@@ -348,7 +336,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_gitiles_commit_incomplete(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
@@ -360,7 +347,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_gerrit_change(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
@@ -372,7 +358,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_tags(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
@@ -382,7 +367,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_dimensions(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
@@ -392,7 +376,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_priority(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
@@ -402,7 +385,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_notify_pubsub_topic(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),
@@ -412,7 +394,6 @@ class ScheduleBuildRequestTests(BaseTestCase):
 
   def test_notify_user_data(self):
     msg = rpc_pb2.ScheduleBuildRequest(
-        request_id='request id',
         builder=build_pb2.BuilderID(
             project='chromium', bucket='try', builder='linux-rel'
         ),

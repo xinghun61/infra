@@ -185,8 +185,6 @@ def put_request_message_to_build_request(put_request):
   with _wrap_validation_error():
     validation.validate_schedule_build_request(
         sbr,
-        # V1 does not require client_operation_id.
-        require_request_id=False,
         # V1 does not require "builder" parameter.
         require_builder=False,
         # Allow properties that we don't want to see in V2.

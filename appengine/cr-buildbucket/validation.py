@@ -197,12 +197,9 @@ def validate_requested_dimension(dim, expiration_support=True):
 
 def validate_schedule_build_request(
     req,
-    require_request_id=True,
     require_builder=True,
     allow_reserved_properties=False,
 ):
-  if require_request_id:  # pragma: no branch
-    _check_truth(req, 'request_id')
   if '/' in req.request_id:  # pragma: no cover
     _enter_err('request_id', 'must not contain /')
 

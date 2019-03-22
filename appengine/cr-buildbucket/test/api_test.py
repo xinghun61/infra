@@ -443,7 +443,6 @@ class ScheduleBuildTests(BaseTestCase):
     )
     req = rpc_pb2.ScheduleBuildRequest(
         builder=dict(project='chromium', bucket='try', builder='linux'),
-        request_id='0',
     )
     res = self.call(self.api.ScheduleBuild, req)
     self.assertEqual(res.id, 54)
@@ -455,7 +454,6 @@ class ScheduleBuildTests(BaseTestCase):
     user.can_async.return_value = future(False)
     req = rpc_pb2.ScheduleBuildRequest(
         builder=dict(project='chromium', bucket='try', builder='linux'),
-        request_id='0',
     )
     self.call(
         self.api.ScheduleBuild,
@@ -568,16 +566,15 @@ class BatchTests(BaseTestCase):
     win_builder = dict(project='chromium', bucket='try', builder='windows')
     req = rpc_pb2.BatchRequest(
         requests=[
-            dict(schedule_build=dict(request_id='0', builder=linux_builder)),
-            dict(schedule_build=dict(request_id='1', builder=win_builder)),
-            dict(schedule_build=dict(request_id='2', builder=win_builder)),
-            dict(schedule_build=dict(request_id='3', builder=win_builder)),
+            dict(schedule_build=dict(builder=linux_builder)),
+            dict(schedule_build=dict(builder=win_builder)),
+            dict(schedule_build=dict(builder=win_builder)),
+            dict(schedule_build=dict(builder=win_builder)),
             dict(
                 schedule_build=dict(
                     builder=dict(
                         project='chromium', bucket='forbidden', builder='nope'
                     ),
-                    request_id='3',
                 )
             ),
             dict(
