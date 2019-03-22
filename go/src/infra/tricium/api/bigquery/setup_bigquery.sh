@@ -100,3 +100,129 @@ if ! (bqschemaupdater -force -message apibq.FeedbackEvent \
 fi
 
 cd -
+
+echo "- Create BigQuery views:"
+echo ""
+echo " - analyzer.analyzer_efficacy"
+QUERY='WITH
+  every AS (
+    SELECT
+      project,
+      change,
+      analyzer,
+      SUM(num_included_comments) AS num_comments
+    FROM
+      (
+        SELECT
+          gerrit_revision.project,
+          SPLIT(gerrit_revision.git_ref, "/")[OFFSET(3)] AS change,
+          c.comment.path,
+          c.analyzer,
+          c.comment.category,
+          c.comment.start_line,
+          c.comment.end_line,
+          c.comment.start_char,
+          c.comment.end_char,
+          COUNTIF(c.selected = TRUE) AS num_included_comments
+        FROM
+          `'${APPID}'.analyzer.results`,
+          UNNEST(comments) AS c
+        GROUP BY project, change, path, analyzer, category, start_line, end_line, start_char, end_char
+      )
+    GROUP BY project, change, analyzer
+  ),
+  last_revision AS (
+    WITH
+      last_revision AS (
+        SELECT
+          gerrit_revision.project,
+          SPLIT(gerrit_revision.git_ref, "/")[OFFSET(3)] AS change,
+          MAX(revision_number) AS revision
+        FROM
+          `'${APPID}'.analyzer.results`
+        GROUP BY project, change
+      )
+    SELECT
+      project,
+      SPLIT(gerrit_revision.git_ref, "/")[OFFSET(3)] AS change,
+      last_revision.revision,
+      c.analyzer,
+      COUNTIF(c.selected = TRUE) AS num_comments
+    FROM
+      `'${APPID}'.analyzer.results`,
+      UNNEST(comments) AS c
+      JOIN
+      last_revision
+      ON gerrit_revision.project = last_revision.project AND SPLIT(gerrit_revision.git_ref, "/")[OFFSET(3)] =
+        last_revision.change AND revision_number = last_revision.revision
+    GROUP BY project, change, revision, analyzer
+  )
+SELECT
+  every.analyzer,
+  SUM(every.num_comments) AS total_comments,
+  SUM(last_revision.num_comments) AS final_comments,
+  IF(SUM(every.num_comments) > 0, 1 - (SUM(last_revision.num_comments) / SUM(every.num_comments)), NULL) AS efficacy
+FROM
+  every
+  JOIN
+  last_revision
+  ON every.project = last_revision.project AND every.analyzer = last_revision.analyzer
+GROUP BY analyzer'
+DESC="Overall analyzer efficacy for all selected comments."
+if ! (bq mk --use_legacy_sql=false --view "${QUERY}" \
+  --description "${DESC}" \
+  --project_id "${APPID}" analyzer.analyzer_efficacy); then
+  echo ""
+  echo "The view already exists. You can delete it with:"
+  echo ""
+  echo "  bq rm ${APPID}:analyzer.analyzer_efficacy"
+  echo ""
+  echo "and run this script again."
+  # Don't fail here.
+fi
+
+echo ""
+echo " - analyzer.comment_latency"
+QUERY='SELECT
+  c.analyzer,
+  requested_time,
+  c.created_time,
+  TIMESTAMP_DIFF(c.created_time, requested_time, SECOND) AS latency
+FROM
+  `'${APPID}'.analyzer.results`, UNNEST(comments) AS c
+ORDER BY requested_time'
+DESC="Latency for all comments."
+if ! (bq mk --use_legacy_sql=false --view "${QUERY}" \
+  --description "${DESC}" \
+  --project_id "${APPID}" analyzer.comment_latency); then
+  echo ""
+  echo "The view already exists. You can delete it with:"
+  echo ""
+  echo "  bq rm ${APPID}:analyzer.comment_latency"
+  echo ""
+  echo "and run this script again."
+  # Don't fail here.
+fi
+
+echo ""
+echo " - analyzer.comment_selection"
+QUERY='SELECT
+  c.analyzer,
+  c.created_time
+FROM
+  `'${APPID}'.analyzer.results`, UNNEST(comments) AS c
+WHERE
+  c.selected = TRUE
+ORDER BY c.created_time'
+DESC="The creation time and analyzer name for all selected comments"
+if ! (bq mk --use_legacy_sql=false --view "${QUERY}" \
+  --description "${DESC}" \
+  --project_id "${APPID}" analyzer.comment_selection); then
+  echo ""
+  echo "The view already exists. You can delete it with:"
+  echo ""
+  echo "  bq rm ${APPID}:analyzer.comment_selection"
+  echo ""
+  echo "and run this script again."
+  # Don't fail here.
+fi
