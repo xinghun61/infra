@@ -188,11 +188,28 @@ class SwarmbucketApi(remote.Service):
           request.build_request
       )
 
+      # Find builder config.
+      builder_id = build_request.schedule_build_request.builder
+      builder_cfg = None
+      bucket_id = config.format_bucket_id(builder_id.project, builder_id.bucket)
+      _, bucket_cfg = config.get_bucket_async(bucket_id).get_result()
+      assert bucket_cfg, 'if there is no bucket, access check would fail'
+      for cfg in bucket_cfg.swarming.builders:  # pragma: no branch
+        if cfg.name == builder_id.builder:
+          builder_cfg = cfg
+          break
+      if not builder_cfg:
+        raise endpoints.NotFoundException(
+            'Builder %s/%s/%s not found' %
+            (builder_id.project, builder_id.bucket, builder_id.builder)
+        )
+
+      # Create a fake build and prepare a task definition.
       identity = auth.get_current_identity()
       build = build_request.create_build(1, identity, utils.utcnow())
       build.proto.number = 1
       task_def = swarming.prepare_task_def_async(
-          build, fake_build=True
+          build, builder_cfg, fake_build=True
       ).get_result()
       task_def_json = json.dumps(task_def)
 
@@ -204,8 +221,6 @@ class SwarmbucketApi(remote.Service):
       raise endpoints.BadRequestException(
           'invalid build request: %s' % ex.message
       )
-    except errors.BuilderNotFoundError as ex:
-      raise endpoints.NotFoundException(ex.message)
 
   @swarmbucket_api_method(SetNextBuildNumberRequest, message_types.VoidMessage)
   def set_next_build_number(self, request):

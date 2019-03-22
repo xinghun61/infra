@@ -251,7 +251,7 @@ def search_builds_async(req, res, _ctx, mask):
   )
 
 
-def validate_build_token(req, ctx):
+def validate_build_token(build, ctx):
   """Validates build token stored in RPC metadata."""
   metadata = dict(ctx.invocation_metadata())
   token = metadata.get(BUILD_TOKEN_HEADER)
@@ -261,8 +261,11 @@ def validate_build_token(req, ctx):
         'missing token in build update request',
     )
 
+  # TODO(crbug.com/943467): return error code UNAVAILABLE if
+  # build.swarming_task_key is None.
+
   try:
-    tokens.validate_build_token(token, req.build.id)
+    tokens.validate_build_token(token, build.key.id(), build.swarming_task_key)
   except auth.InvalidTokenError as e:
     raise StatusError(prpc.StatusCode.UNAUTHENTICATED, '%s', e.message)
 
@@ -279,18 +282,31 @@ def update_build_async(req, _res, ctx, _mask):
   the data.
   """
   now = utils.utcnow()
-  build_id = req.build.id
-  logging.debug('updating build %d', build_id)
+  logging.debug('updating build %d', req.build.id)
 
-  validate_build_token(req, ctx)
+  # Validate the request.
+  build_steps = model.BuildSteps.make(req.build)
+  validation.validate_update_build_request(req, build_steps)
 
   if not (yield user.can_update_build_async()):
     raise StatusError(
         prpc.StatusCode.PERMISSION_DENIED, '%s not permitted to update build' %
         auth.get_current_identity().to_bytes()
     )
-  build_steps = model.BuildSteps.make(req.build)
-  validation.validate_update_build_request(req, build_steps)
+
+  @ndb.tasklet
+  def get_async():
+    build = yield model.Build.get_by_id_async(req.build.id)
+    if not build:
+      raise not_found(
+          'Cannot update nonexisting build with id %s', req.build.id
+      )
+    if build.is_ended:
+      raise failed_precondition('Cannot update an ended build')
+    raise ndb.Return(build)
+
+  build = yield get_async()
+  validate_build_token(build, ctx)
 
   update_paths = set(req.update_mask.paths)
 
@@ -310,13 +326,7 @@ def update_build_async(req, _res, ctx, _mask):
 
   @ndb.transactional_tasklet
   def txn_async():
-
-    # Get an existing build.
-    build = yield model.Build.get_by_id_async(build_id)
-    if not build:
-      raise not_found('Cannot update nonexisting build with id %s', build_id)
-    if build.is_ended:
-      raise failed_precondition('Cannot update an ended build')
+    build = yield get_async()
 
     orig_status = build.status
 

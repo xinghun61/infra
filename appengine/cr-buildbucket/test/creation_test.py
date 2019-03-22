@@ -5,7 +5,6 @@
 import datetime
 
 from components import auth
-from components import net
 from components import utils
 from google.appengine.ext import ndb
 from google.protobuf import struct_pb2
@@ -17,15 +16,15 @@ from proto import common_pb2
 from proto import rpc_pb2
 from proto.config import service_config_pb2
 from test import test_util
-from test.test_util import future, future_exception
 import bbutil
 import config
 import creation
 import errors
 import model
 import search
-import swarming
 import user
+
+future = test_util.future
 
 
 class CreationTest(testing.AppengineTestCase):
@@ -62,7 +61,12 @@ class CreationTest(testing.AppengineTestCase):
         '''
     )
     config.put_bucket('chromium', 'a' * 40, self.chromium_try)
-    self.patch('swarming.create_task_async', return_value=future(None))
+    self.patch(
+        'swarming.create_sync_task_async',
+        return_value=future({
+            'is_payload': True,
+        }),
+    )
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
     self.patch(
@@ -117,7 +121,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.proto.builder.builder, 'linux')
     self.assertEqual(build.created_by, auth.get_current_identity())
 
-  def test_add_with_properties(self):
+  def test_properties(self):
     props = {'foo': 'bar', 'qux': 1}
     prop_struct = bbutil.dict_to_struct(props)
     build = self.add(dict(properties=prop_struct))
@@ -129,7 +133,7 @@ class CreationTest(testing.AppengineTestCase):
     )
     self.assertEqual(build.parameters.get(model.PROPERTIES_PARAMETER), props)
 
-  def test_add_with_dimensions(self):
+  def test_dimensions(self):
     dims = [
         common_pb2.RequestedDimension(
             key='d', value='1', expiration=dict(seconds=60)
@@ -141,7 +145,7 @@ class CreationTest(testing.AppengineTestCase):
         list(build.parse_infra().buildbucket.requested_dimensions), dims
     )
 
-  def test_add_with_notify(self):
+  def test_notify(self):
     build = self.add(
         dict(
             notify=dict(
@@ -153,7 +157,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.pubsub_callback.topic, 'projects/p/topics/t')
     self.assertEqual(build.pubsub_callback.user_data, 'hello')
 
-  def test_add_with_gitiles_commit(self):
+  def test_gitiles_commit(self):
     gitiles_commit = common_pb2.GitilesCommit(
         host='gitiles.example.com',
         project='chromium/src',
@@ -170,7 +174,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIn('buildset:' + bs, build.tags)
     self.assertIn('gitiles_ref:refs/heads/master', build.tags)
 
-  def test_add_with_gitiles_commit_without_id(self):
+  def test_gitiles_commit_without_id(self):
     gitiles_commit = common_pb2.GitilesCommit(
         host='gitiles.example.com',
         project='chromium/src',
@@ -181,7 +185,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertFalse(any(t.startswith('buildset:commit') for t in build.tags))
     self.assertFalse(any(t.startswith('gititles_ref:') for t in build.tags))
 
-  def test_add_with_gerrit_change(self):
+  def test_gerrit_change(self):
     cl = common_pb2.GerritChange(
         host='gerrit.example.com',
         change=1234,
@@ -192,11 +196,11 @@ class CreationTest(testing.AppengineTestCase):
     bs = 'patch/gerrit/gerrit.example.com/1234/5'
     self.assertIn('buildset:' + bs, build.tags)
 
-  def test_add_with_priority(self):
+  def test_priority(self):
     build = self.add(dict(priority=42))
     self.assertEqual(build.parse_infra().swarming.priority, 42)
 
-  def test_add_update_builders(self):
+  def test_update_builders(self):
     recently = self.now - datetime.timedelta(minutes=1)
     while_ago = self.now - datetime.timedelta(minutes=61)
     ndb.put_multi([
@@ -219,13 +223,13 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(builders[2].key.id(), 'chromium:try:win')
     self.assertEqual(builders[2].last_scheduled, self.now)
 
-  def test_add_with_request_id(self):
+  def test_request_id(self):
     build = self.add(dict(request_id='1'))
     build2 = self.add(dict(request_id='1'))
     self.assertIsNotNone(build.key)
     self.assertEqual(build, build2)
 
-  def test_add_with_leasing(self):
+  def test_leasing(self):
     build = self.add(
         lease_expiration_date=utils.utcnow() + datetime.timedelta(seconds=10),
     )
@@ -233,68 +237,11 @@ class CreationTest(testing.AppengineTestCase):
     self.assertGreater(build.lease_expiration_date, utils.utcnow())
     self.assertIsNotNone(build.lease_key)
 
-  def test_add_with_swarming_400(self):
-    swarming.create_task_async.return_value = future_exception(
-        net.Error('', status_code=400, response='bad request')
-    )
-    with self.assertRaises(errors.InvalidInputError):
-      self.add()
-
-  def test_add_with_build_numbers(self):
-    linux_try = build_pb2.BuilderID(
-        project='chromium', bucket='try', builder='linux'
-    )
-    (b1, ex1), (b2, ex2) = creation.add_many_async([
-        self.build_request(dict(builder=linux_try)),
-        self.build_request(dict(builder=linux_try)),
-    ]).get_result()
-
-    self.assertIsNone(ex1)
-    self.assertEqual(b1.proto.number, 1)
-    self.assertIn('build_address:luci.chromium.try/linux/1', b1.tags)
-
-    self.assertIsNone(ex2)
-    self.assertEqual(b2.proto.number, 2)
-    self.assertIn('build_address:luci.chromium.try/linux/2', b2.tags)
-
-  def test_add_with_swarming_200_and_400(self):
-
-    def create_task_async(b):
-      if b.parameters['i'] == 1:
-        return future_exception(
-            net.Error('', status_code=400, response='bad request')
-        )
-      sw = b.proto.infra.swarming
-      sw.hostname = self.chromium_try.swarming.hostname
-      sw.task_id = 'deadbeef'
-      return future(None)
-
-    swarming.create_task_async.side_effect = create_task_async
-
-    (b0, ex0), (b1, ex1) = creation.add_many_async([
-        self.build_request(parameters={'i': 0}),
-        self.build_request(parameters={'i': 1})
-    ]).get_result()
-
-    self.assertIsNone(ex0)
-    self.assertEqual(b0.parameters['i'], 0)
-
-    self.assertIsNotNone(ex1)
-    self.assertIsNone(b1)
-
-  def test_add_with_swarming_403(self):
-
-    swarming.create_task_async.return_value = future_exception(
-        net.AuthError('', status_code=403, response='no no')
-    )
-    with self.assertRaisesRegexp(auth.AuthorizationError, 'no no'):
-      self.add()
-
   def test_builder_tag(self):
     build = self.add(dict(builder=dict(builder='linux')))
     self.assertTrue('builder:linux' in build.tags)
 
-  def test_add_builder_tag_coincide(self):
+  def test_builder_tag_coincide(self):
     build = self.add(
         dict(
             builder=dict(builder='linux'),
@@ -355,7 +302,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIn(build.key.id(), [e.build_id for e in index.entries])
     self.assertIn(build.bucket_id, [e.bucket_id for e in index.entries])
 
-  def test_add_many(self):
+  def test_many(self):
     results = creation.add_many_async([
         self.build_request(dict(tags=[dict(key='buildset', value='a')])),
         self.build_request(dict(tags=[dict(key='buildset', value='a')])),
@@ -379,7 +326,7 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(index.entries[1].build_id, results[0][0].key.id())
     self.assertEqual(index.entries[1].bucket_id, results[0][0].bucket_id)
 
-  def test_add_many_with_request_id(self):
+  def test_many_with_request_id(self):
     req1 = self.build_request(
         dict(
             tags=[dict(key='buildset', value='a')],
@@ -395,26 +342,47 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(len(idx.entries), 2)
     self.assertEqual(idx.entries[0].bucket_id, 'chromium/try')
 
-  @mock.patch('search.add_to_tag_index_async', autospec=True)
-  def test_add_with_tag_index_contention(self, add_to_tag_index_async):
+  @mock.patch('swarming.create_sync_task_async', autospec=True)
+  def test_create_sync_task_async_fails(self, prepare_async):
+    expected_ex1 = errors.InvalidInputError()
 
-    def mock_create_task_async(build):
-      sw = build.proto.infra.swarming
-      sw.hostname = 'swarming.example.com'
-      sw.task_id = str(build.proto.number)
-      return future(None)
+    @ndb.tasklet
+    def prepare_async_mock(build, *_args, **_kwargs):
+      if 'buildset:a' in build.tags:
+        raise expected_ex1
 
-    swarming.create_task_async.side_effect = mock_create_task_async
-    add_to_tag_index_async.side_effect = Exception('contention')
-    swarming.cancel_task_async.side_effect = [
-        future(None), future_exception(Exception())
-    ]
+    prepare_async.side_effect = prepare_async_mock
 
-    with self.assertRaisesRegexp(Exception, 'contention'):
-      creation.add_many_async([
-          self.build_request(dict(tags=[dict(key='buildset', value='a')])),
-          self.build_request(dict(tags=[dict(key='buildset', value='a')])),
-      ]).get_result()
+    ((b1, ex1), (b2, ex2)) = creation.add_many_async([
+        self.build_request(dict(tags=[dict(key='buildset', value='a')])),
+        self.build_request(dict(tags=[dict(key='buildset', value='b')])),
+    ]).get_result()
 
-    swarming.cancel_task_async.assert_any_call('swarming.example.com', '1')
-    swarming.cancel_task_async.assert_any_call('swarming.example.com', '2')
+    self.assertEqual(ex1, expected_ex1)
+    self.assertIsNone(b1)
+    self.assertIsNone(ex2)
+    self.assertIsNotNone(b2)
+
+  # @mock.patch('search.add_to_tag_index_async', autospec=True)
+  # def test_tag_index_contention(self, add_to_tag_index_async):
+
+  #   def mock_create_task_async(build):
+  #     sw = build.proto.infra.swarming
+  #     sw.hostname = 'swarming.example.com'
+  #     sw.task_id = str(build.proto.number)
+  #     return future(None)
+
+  #   swarming.create_task_async.side_effect = mock_create_task_async
+  #   add_to_tag_index_async.side_effect = Exception('contention')
+  #   swarming.cancel_task_async.side_effect = [
+  #       future(None), future_exception(Exception())
+  #   ]
+
+  #   with self.assertRaisesRegexp(Exception, 'contention'):
+  #     creation.add_many_async([
+  #         self.build_request(dict(tags=[dict(key='buildset', value='a')])),
+  #         self.build_request(dict(tags=[dict(key='buildset', value='a')])),
+  #     ]).get_result()
+
+  #   swarming.cancel_task_async.assert_any_call('swarming.example.com', '1')
+  #   swarming.cancel_task_async.assert_any_call('swarming.example.com', '2')

@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
 import os
 import datetime
 
@@ -342,6 +341,8 @@ class UpdateBuildTests(BaseTestCase):
     self.assertEqual(build.proto.summary_markdown, '')
 
   def test_missing_token(self):
+    test_util.build(id=123).put()
+
     build = build_pb2.Build(
         id=123,
         status=common_pb2.STARTED,
@@ -356,6 +357,8 @@ class UpdateBuildTests(BaseTestCase):
     )
 
   def test_invalid_token(self):
+    test_util.build(id=123).put()
+
     self.validate_build_token.side_effect = auth.InvalidTokenError
 
     build = build_pb2.Build(
@@ -414,6 +417,7 @@ class UpdateBuildTests(BaseTestCase):
     )
 
   def test_invalid_user(self):
+    test_util.build(id=123).put()
     self.can_update_build_async.return_value = future(False)
 
     build = build_pb2.Build(

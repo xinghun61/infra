@@ -538,6 +538,7 @@ def cancel_async(build_id, summary_markdown='', result_details=None):
     ]
 
     sw = build.parse_infra().swarming
+    # TODO(nodir): remove, in favor of swarming.TaskSyncBuild.
     if sw.hostname and sw.task_id:  # pragma: no branch
       futs.append(
           swarming.cancel_task_transactionally_async(sw.hostname, sw.task_id)

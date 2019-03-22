@@ -155,6 +155,7 @@ def build(for_creation=False, **build_proto_fields):  # pragma: no cover
       canary=infra.buildbucket.canary,
       url='https://ci.example.com/%d' % proto.id,
       is_luci=infra.HasField('swarming'),
+      swarming_task_key='swarming_task_key',
   )
   ret.update_v1_status_fields()
   if proto.input.HasField('gitiles_commit'):

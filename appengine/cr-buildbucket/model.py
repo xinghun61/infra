@@ -194,6 +194,15 @@ class Build(ndb.Model):
   # build.
   canary_preference = msgprop.EnumProperty(CanaryPreference, indexed=False)
 
+  # A randomly generated key associated with the created swarming task.
+  # Embedded in a build token provided to a swarming task in secret bytes.
+  # Needed in case Buildbucket unintentionally creates multiple swarming tasks
+  # associated with the build.
+  # Populated by swarming.py on swarming task creation.
+  # A part of the message in build token (tokens.py) required for UpdateBuild
+  # api.
+  swarming_task_key = ndb.StringProperty(indexed=False)
+
   # == proto-derived properties ================================================
   #
   # These properties are derived from "proto" properties.
@@ -507,6 +516,11 @@ class Builder(ndb.Model):
   # Probabilistically updated by services.py, see its _should_update_builder.
   last_scheduled = ndb.DateTimeProperty()
 
+  @classmethod
+  def make_key(cls, builder_id):  # pragma: no cover
+    bid = builder_id
+    return ndb.Key(cls, '%s:%s:%s' % (bid.project, bid.bucket, bid.builder))
+
 
 _TIME_RESOLUTION = datetime.timedelta(milliseconds=1)
 _BUILD_ID_SUFFIX_LEN = 20
@@ -531,6 +545,7 @@ def create_build_ids(dtime, count, randomness=True):
   # where N is now bits, R is random bits and V is version bits.
   build_id = int(_id_time_segment(dtime))
   build_id = build_id | ((random.getrandbits(16) << 4) if randomness else 0)
+  # Subtract so that ids are descending.
   return [build_id - i * (1 << 4) for i in xrange(count)]
 
 

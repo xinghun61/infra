@@ -4,7 +4,6 @@
 
 from testing_utils import testing
 
-from proto import build_pb2
 import tokens
 
 
@@ -12,5 +11,12 @@ class BuildTokenTests(testing.AppengineTestCase):
 
   def test_roundtrip_simple(self):
     build_id = 1234567890
-    token = tokens.generate_build_token(build_id)
-    tokens.validate_build_token(token, build_id)
+    task_key = 'task key'
+    token = tokens.generate_build_token(build_id, task_key)
+    tokens.validate_build_token(token, build_id, task_key)
+
+  def test_roundtrip_no_task_key(self):
+    build_id = 1234567890
+    task_key = None
+    token = tokens.generate_build_token(build_id, task_key)
+    tokens.validate_build_token(token, build_id, task_key)

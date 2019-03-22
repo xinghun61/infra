@@ -293,10 +293,10 @@ def self_identity():  # pragma: no cover
   return auth.Identity('user', app_identity.get_service_account_name())
 
 
-def delegate_async(target_service_host, tag=''):
+def delegate_async(target_service_host, identity=None, tag=''):
   """Mints a delegation token for the current identity."""
   tag = tag or ''
-  identity = auth.get_current_identity()
+  identity = identity or auth.get_current_identity()
 
   # TODO(vadimsh): 'identity' here can be 'project:<...>' and we happily create
   # a delegation token for it, which is weird. Buildbucket should call Swarming

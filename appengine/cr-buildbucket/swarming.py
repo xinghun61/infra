@@ -35,6 +35,7 @@ import logging
 import posixpath
 import random
 import string
+import uuid
 
 from components import config as component_config
 from components import decorators
@@ -66,6 +67,10 @@ import model
 import swarmingcfg as swarmingcfg_module
 import tokens
 import user
+
+# Name of a push task queue that synchronizes a buildbucket build and a swarming
+# task; a push task per build.
+SYNC_QUEUE_NAME = 'swarming-build-sync'
 
 _PUBSUB_TOPIC = 'swarming'
 _PARAM_SWARMING = 'swarming'
@@ -535,7 +540,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
   task = _apply_if_tags(task)
 
   _setup_swarming_request_task_slices(
-      build, builder_cfg, extra_cipd_packages, task, fake_build
+      build, builder_cfg, extra_cipd_packages, task
   )
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
@@ -567,7 +572,8 @@ def _setup_recipes(build, builder_cfg, params):
 
   # In order to allow some builders to behave like other builders, we allow
   # builders to explicitly set buildername.
-  if 'buildername' not in props:
+  # TODO(nodir): delete this "feature".
+  if 'buildername' not in props:  # pragma: no branch
     props['buildername'] = builder_cfg.name
 
   assert isinstance(build.experimental, bool)
@@ -667,7 +673,7 @@ def _calc_tags(
 
 
 def _setup_swarming_request_task_slices(
-    build, builder_cfg, extra_cipd_packages, task, fake_build
+    build, builder_cfg, extra_cipd_packages, task
 ):
   """Mutate the task request with named cache, CIPD packages and (soon) expiring
   dimensions.
@@ -678,14 +684,6 @@ def _setup_swarming_request_task_slices(
   if len(task[u'task_slices']) != 1:
     raise errors.InvalidInputError(
         'base swarming task template can only have one task_slices'
-    )
-
-  if not fake_build and build.key:  # pragma: no branch
-    secrets = launcher_pb2.BuildSecrets(
-        build_token=tokens.generate_build_token(build.key.id()),
-    )
-    task[u'task_slices'][0][u'properties'][u'secret_bytes'] = base64.b64encode(
-        secrets.SerializeToString()
     )
 
   if builder_cfg.expiration_secs > 0:
@@ -820,7 +818,7 @@ def _setup_named_caches(builder_cfg, props):
     if c.get(u'path') not in paths and c.get(u'name') not in names:
       props[u'caches'].append({u'name': c[u'name'], u'path': c[u'path']})
       v = c.get(u'wait_for_warm_cache_secs')
-      if v:
+      if v:  # pragma: no branch
         cache_fallbacks.setdefault(v, []).append(c[u'name'])
 
   props[u'caches'].sort(key=lambda p: p.get(u'path'))
@@ -843,42 +841,7 @@ def _setup_swarming_request_pubsub(task, build):
 
 
 @ndb.tasklet
-def _get_builder_async(build):
-  """Returns builder info of the build.
-
-  Raises:
-    errors.InvalidInputError if build has no builder name.
-    errors.BuilderNotFoundError if builder is not found.
-
-  Returns:
-    project_config_pb2.Builder future.
-  """
-  if not build.parameters:  # pragma: no cover | TODO(nodir): stop using params
-    raise errors.InvalidInputError(
-        'A build for bucket %r must have parameters' % build.bucket_id
-    )
-  builder_name = build.parameters.get(model.BUILDER_PARAMETER)
-  if not isinstance(builder_name, basestring):
-    raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
-
-  _, bucket_cfg = yield config.get_bucket_async(build.bucket_id)
-  assert bucket_cfg, 'if there is no bucket, this code should not have run'
-  if not bucket_cfg.HasField('swarming'):
-    raise errors.InvalidInputError(
-        'bucket %r is not a swarming bucket' % bucket_cfg.name
-    )
-
-  for builder_cfg in bucket_cfg.swarming.builders:  # pragma: no branch
-    if builder_cfg.name == builder_name:  # pragma: no branch
-      raise ndb.Return(builder_cfg)
-
-  raise errors.BuilderNotFoundError(
-      'Builder %r is not found in bucket %r' % (builder_name, build.bucket_id)
-  )
-
-
-@ndb.tasklet
-def prepare_task_def_async(build, fake_build=False):
+def prepare_task_def_async(build, builder_cfg, fake_build=False):
   """Prepares a swarming task definition.
 
   Validates the new build.
@@ -892,9 +855,7 @@ def prepare_task_def_async(build, fake_build=False):
         'Swarming buckets do not support creation of leased builds'
     )
 
-  settings, builder_cfg = yield (
-      _get_settings_async(), _get_builder_async(build)
-  )
+  settings = yield _get_settings_async()
 
   build.url = _generate_build_url(settings.milo_hostname, build)
   build.proto.infra.swarming.task_service_account = builder_cfg.service_account
@@ -921,40 +882,128 @@ def prepare_task_def_async(build, fake_build=False):
 
 
 @ndb.tasklet
-def create_task_async(build):
-  """Creates a swarming task for the build and mutates the build.
+def create_sync_task_async(build, builder_cfg):  # pragma: no cover
+  """Returns def of a push task that maintains build state until it ends.
 
-  May be called only if build's bucket is configured for swarming.
-
-  Raises:
-    errors.InvalidInputError if build attribute values are invalid.
+  Handled by TaskSyncBuild.
   """
-  task_def = yield prepare_task_def_async(build, False)
+  task_def = yield prepare_task_def_async(build, builder_cfg)
+  payload = {
+      'id': build.key.id(),
+      'task_def': task_def,
+      'generation': 0,
+  }
+  raise ndb.Return({
+      'url': '/internal/task/swarming/sync-build/%s' % build.key.id(),
+      'payload': json.dumps(payload, sort_keys=True),
+      'retry_options': {'task_age_limit': model.BUILD_TIMEOUT.total_seconds()},
+  })
 
-  sw = build.proto.infra.swarming
-  res = yield _call_api_async(
-      impersonate=True,
-      hostname=sw.hostname,
-      path='tasks/new',
-      method='POST',
-      payload=task_def,
-      # Make Swarming know what bucket the task belong too. Swarming uses
-      # this to authorize access to pools assigned to specific buckets only.
-      delegation_tag='buildbucket:bucket:%s' % build.bucket_id,
-      # Higher timeout than normal because if the task creation request
-      # fails, but the task is actually created, later we will receive a
-      # notification that the task is completed, but we won't have a build
-      # for that task, which results in errors in the log.
-      deadline=30,
-      # This code path is executed by put and put_batch request handlers.
-      # Clients should retry these requests on transient errors, so
-      # do not retry requests to swarming.
-      max_attempts=1
+
+def _insert_secrets(task_def, build_id, task_key):
+  """Inserts a build token into task_def."""
+  secrets = launcher_pb2.BuildSecrets(
+      build_token=tokens.generate_build_token(build_id, task_key),
   )
+  secret_bytes_b64 = base64.b64encode(secrets.SerializeToString())
+  for ts in task_def[u'task_slices']:
+    ts[u'properties'][u'secret_bytes'] = secret_bytes_b64
 
-  task_id = res['task_id']
-  logging.info('Created a swarming task %s', task_id)
-  sw.task_id = task_id
+
+def _create_swarming_task(build_id, task_def):
+  build = model.Build.get_by_id(build_id)
+  if not build:  # pragma: no cover
+    logging.warning('build not found')
+    return
+  sw = build.parse_infra().swarming
+  logging.info('swarming hostname: %r', sw.hostname)
+  if sw.task_id:
+    logging.warning('build already has a task %r', sw.task_id)
+    return
+
+  task_key = str(uuid.uuid4())
+  _insert_secrets(task_def, build_id, task_key)
+
+  new_task_id = None
+  try:
+    res = _call_api_async(
+        impersonate=True,
+        hostname=sw.hostname,
+        path='tasks/new',
+        method='POST',
+        payload=task_def,
+        delegation_identity=build.created_by,
+        # Make Swarming know what bucket the task belong too. Swarming uses
+        # this to authorize access to pools assigned to specific buckets only.
+        delegation_tag='buildbucket:bucket:%s' % build.bucket_id,
+        deadline=30,
+        # Try only once so we don't have multiple swarming tasks with same
+        # task_key and valid token, otherwise they will race.
+        max_attempts=1,
+    ).get_result()
+    new_task_id = res['task_id']
+    assert new_task_id
+    logging.info('Created a swarming task %r', new_task_id)
+  except net.Error as err:
+    if err.status_code >= 500 or err.status_code is None:
+      raise
+
+    _end_build(
+        build_id,
+        common_pb2.INFRA_FAILURE,
+        (
+            'Swarming responded with HTTP %d: `%s`' %
+            (err.status_code, err.message.replace('`', '"'))
+        ),
+        end_time=utils.utcnow(),
+    )
+    return
+
+  # Task was created.
+
+  @ndb.transactional
+  def txn():
+    build = model.Build.get_by_id(build_id)
+    if not build:  # pragma: no cover
+      return False
+    with build.mutate_infra() as infra:
+      sw = infra.swarming
+      if sw.task_id:
+        logging.warning('build already has a task %r', sw.task_id)
+        return False
+
+      sw.task_id = new_task_id
+
+    assert not build.swarming_task_key
+    build.swarming_task_key = task_key
+    build.put()
+    return True
+
+  updated = False
+  try:
+    updated = txn()
+  finally:
+    if not updated:
+      logging.error(
+          'created a task, but did not update datastore.\n'
+          'canceling task %s, best effort',
+          new_task_id,
+      )
+      cancel_task(sw.hostname, new_task_id)
+
+
+class TaskSyncBuild(webapp2.RequestHandler):  # pragma: no cover
+  """Sync a LUCI build with swarming."""
+
+  @decorators.require_taskqueue(SYNC_QUEUE_NAME)
+  def post(self, build_id):  # pylint: disable=unused-argument
+    body = json.loads(self.request.body)
+    _create_swarming_task(body['id'], body['task_def'])
+
+    # TODO(crbug.com/943818): Re-enqueue itself without task_def.
+    # If no task_def in body, call _sync_build_async.
+    # Remove update_builds cron.
+    # If build is canceled, cancel the task and do not re-enqueue.
 
 
 def _generate_build_url(milo_hostname, build):
@@ -1319,7 +1368,11 @@ class SubNotify(webapp2.RequestHandler):
     logging.info('Build id: %s', build_id)
     build = model.Build.get_by_id(build_id)
     if not build:
-      if utils.utcnow() < created_time + datetime.timedelta(minutes=1):
+
+      # TODO(nodir): remove this if statement.
+
+      fresh = utils.utcnow() < created_time + datetime.timedelta(minutes=1)
+      if fresh:  # pragma: no cover
         self.stop(
             'Build for a swarming task not found yet\nBuild: %s\nTask: %s',
             build_id,
@@ -1338,6 +1391,8 @@ class SubNotify(webapp2.RequestHandler):
           'swarming_hostname %s of build %s does not match %s', sw.hostname,
           build_id, hostname
       )
+    if not sw.task_id:
+      self.stop('build is not associated with a task yet', redeliver=True)
     if task_id != sw.task_id:
       self.stop(
           'swarming_task_id %s of build %s does not match %s', sw.task_id,
@@ -1411,6 +1466,9 @@ class CronUpdateBuilds(webapp2.RequestHandler):
 def get_backend_routes():  # pragma: no cover
   return [
       webapp2.Route(r'/internal/cron/swarming/update_builds', CronUpdateBuilds),
+      webapp2.Route(
+          r'/internal/task/swarming/sync-build/<build_id:\d+>', TaskSyncBuild
+      ),
       webapp2.Route(r'/_ah/push-handlers/swarming/notify', SubNotify),
   ]
 
@@ -1427,13 +1485,16 @@ def _call_api_async(
     method='GET',
     payload=None,
     delegation_tag=None,
+    delegation_identity=None,
     deadline=None,
     max_attempts=None,
 ):
   """Calls Swarming API."""
   delegation_token = None
   if impersonate:
-    delegation_token = yield user.delegate_async(hostname, delegation_tag)
+    delegation_token = yield user.delegate_async(
+        hostname, identity=delegation_identity, tag=delegation_tag
+    )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
   res = yield net.json_request_async(
       url,
@@ -1479,3 +1540,27 @@ def _parse_ts(ts):
 def _clear_dash(s):
   """Returns s if it is not '-', otherwise returns ''."""
   return s if s != '-' else ''
+
+
+def _end_build(build_id, status, summary_markdown='', end_time=None):
+  assert model.is_terminal_status(status)
+  end_time = end_time or utils.utcnow()
+
+  @ndb.transactional
+  def txn():
+    build = model.Build.get_by_id(build_id)
+    if not build:  # pragma: no cover
+      return None
+
+    build.proto.status = status
+    build.proto.summary_markdown = summary_markdown
+    build.proto.end_time.FromDatetime(end_time)
+    ndb.Future.wait_all([
+        build.put_async(),
+        events.on_build_completing_async(build)
+    ])
+    return build
+
+  build = txn()
+  if build:  # pragma: no branch
+    events.on_build_completed(build)
