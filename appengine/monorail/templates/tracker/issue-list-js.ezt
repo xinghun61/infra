@@ -34,7 +34,7 @@ runOnLoad(function() {
 
   function _handleResultsClick(event) {
     var target = event.target;
-    if (event.button >= 4)
+    if (event.button >= 3)
       return;
     if (target.classList.contains("label"))
       return;
