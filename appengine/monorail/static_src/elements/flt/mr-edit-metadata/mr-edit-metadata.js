@@ -537,17 +537,9 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
     if (this.isApproval) {
       if (this.hasApproverPrivileges) {
-        const approversInput = root.querySelector('#approversInput');
-        const approversAdded = approversInput.getValuesAdded();
-        if (approversAdded && approversAdded.length) {
-          result.approverRefsAdd = approversAdded.map(
-            displayNameToUserRef);
-        }
-        const approversRemoved = approversInput.getValuesRemoved();
-        if (approversRemoved && approversRemoved.length) {
-          result.approverRefsRemove = approversRemoved.map(
-            displayNameToUserRef);
-        }
+        this._addListChangesToDelta(
+          result, 'approversInput', 'approverRefsAdd', 'approverRefsRemove',
+          displayNameToUserRef);
       }
     } else {
       // TODO(zhangtiff): Consider representing baked-in fields such as owner,
@@ -587,44 +579,22 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         issueStringToRef.bind(null, this.projectName));
     }
 
-    let fieldValuesAdded = [];
-    let fieldValuesRemoved = [];
-
     const fieldDefs = this.fieldDefs || [];
     fieldDefs.forEach((field) => {
-      const fieldName = field.fieldRef.fieldName;
-      const input = root.querySelector(
-        `#${this._idForField(fieldName)}`);
-      const valuesAdded = input.getValuesAdded();
-      const valuesRemoved = input.getValuesRemoved();
-
-      valuesAdded.forEach((v) => {
-        fieldValuesAdded.push({
-          fieldRef: {
-            fieldName: field.fieldRef.fieldName,
-            fieldId: field.fieldRef.fieldId,
-          },
-          value: v,
-        });
-      });
-
-      valuesRemoved.forEach((v) => {
-        fieldValuesRemoved.push({
-          fieldRef: {
-            fieldName: field.fieldRef.fieldName,
-            fieldId: field.fieldRef.fieldId,
-          },
-          value: v,
-        });
-      });
+      const fieldNameInput = this._idForField(field.fieldRef.fieldName);
+      this._addListChangesToDelta(
+        result, fieldNameInput, 'fieldValsAdd', 'fieldValsRemove',
+        (v) => {
+          return {
+            fieldRef: {
+              fieldName: field.fieldRef.fieldName,
+              fieldId: field.fieldRef.fieldId,
+            },
+            value: v,
+          };
+        }
+      );
     });
-
-    if (fieldValuesAdded.length) {
-      result.fieldValsAdd = fieldValuesAdded;
-    }
-    if (fieldValuesRemoved.length) {
-      result.fieldValsRemove = fieldValuesRemoved;
-    }
 
     return result;
   }

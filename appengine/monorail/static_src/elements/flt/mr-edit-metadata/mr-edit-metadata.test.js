@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
+import sinon from 'sinon';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {actionType} from '../../redux/redux-mixin.js';
@@ -19,10 +20,12 @@ suite('mr-edit-metadata', () => {
 
     // Disable Redux state mapping for testing.
     MrEditMetadata.mapStateToProps = () => {};
+    sinon.stub(element, 'dispatchAction');
   });
 
   teardown(() => {
     document.body.removeChild(element);
+    element.dispatchAction.restore();
     element.dispatchAction({type: actionType.RESET_STATE});
   });
 
@@ -129,6 +132,7 @@ suite('mr-edit-metadata', () => {
   });
 
   test('changing custom fields produces delta', () => {
+    element.fieldValueMap = new Map([['fakeField', ['prev value']]]);
     element.fieldDefs = [
       {
         fieldRef: {
@@ -146,8 +150,8 @@ suite('mr-edit-metadata', () => {
 
     flush();
 
-    element.shadowRoot.querySelector(
-      '#testFieldInput').setValue('test value');
+    element.shadowRoot.querySelector('#testFieldInput').setValue('test value');
+    element.shadowRoot.querySelector('#fakeFieldInput').setValue('');
     assert.deepEqual(element.getDelta(), {
       fieldValsAdd: [
         {
@@ -157,6 +161,40 @@ suite('mr-edit-metadata', () => {
           },
           value: 'test value',
         },
+      ],
+      fieldValsRemove: [
+        {
+          fieldRef: {
+            fieldName: 'fakeField',
+            fieldId: 2,
+          },
+          value: 'prev value',
+        },
+      ],
+    });
+  });
+
+  test('changing approvers produces delta', () => {
+    element.isApproval = true;
+    element.hasApproverPrivileges = true;
+    element.approvers = [
+      {displayName: 'foo@example.com'},
+      {displayName: 'bar@example.com'},
+      {displayName: 'baz@example.com'},
+    ];
+
+    flush();
+
+    element.shadowRoot.querySelector('#approversInput').setValue(
+      ['chicken@example.com', 'foo@example.com', 'dog@example.com']);
+    assert.deepEqual(element.getDelta(), {
+      approverRefsAdd: [
+        {displayName: 'chicken@example.com'},
+        {displayName: 'dog@example.com'},
+      ],
+      approverRefsRemove: [
+        {displayName: 'bar@example.com'},
+        {displayName: 'baz@example.com'},
       ],
     });
   });
