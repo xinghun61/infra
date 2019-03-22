@@ -1,3 +1,7 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
 """Handles reading and providing credentials for Gerrit.
 
 This class supports reading credentials from both a '.netrc' file and a
