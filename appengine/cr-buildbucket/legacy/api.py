@@ -108,8 +108,11 @@ def parse_v1_tags(v1_tags):
       continue
 
     if key == buildtags.BUILDSET_KEY:
-      gitiles_commit = buildtags.parse_gitiles_commit_buildset(value)
-      if gitiles_commit:
+      commit = buildtags.parse_gitiles_commit_buildset(value)
+      if commit:
+        if gitiles_commit:  # pragma: no cover
+          raise errors.InvalidInputError('multiple gitiles commit')
+        gitiles_commit = commit
         continue
 
       cl = buildtags.parse_gerrit_change_buildset(value)
