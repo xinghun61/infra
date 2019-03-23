@@ -262,7 +262,7 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 	}
 	for _, p := range rejectProperties {
 		if _, ok := props[p]; ok {
-			return nil, nil, inputError("%s property must not be set", p)
+			return nil, nil, errors.Reason("%s property must not be set", p).Err()
 		}
 	}
 
@@ -279,7 +279,7 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 
 	botID, ok := env.Get("SWARMING_BOT_ID")
 	if !ok {
-		return nil, nil, inputError("no Swarming bot ID in $SWARMING_BOT_ID")
+		return nil, nil, errors.Reason("no Swarming bot ID in $SWARMING_BOT_ID").Err()
 	}
 	props["bot_id"] = botID
 
@@ -349,10 +349,10 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Process input.
 	if len(args) != 0 {
-		return fail(inputError("unexpected arguments: %v", args))
+		return fail(errors.Reason("unexpected arguments: %v", args).Err())
 	}
 	if _, err := os.Getwd(); err != nil {
-		return fail(inputError("failed to resolve CWD: %s", err))
+		return fail(errors.Reason("failed to resolve CWD: %s", err).Err())
 	}
 	if err := c.normalizeFlags(); err != nil {
 		return fail(err)
@@ -890,13 +890,13 @@ func parseProperties(properties map[string]interface{}, propertiesFile string) (
 	if propertiesFile != "" {
 		b, err := ioutil.ReadFile(propertiesFile)
 		if err != nil {
-			err = inputError("could not read properties file %s\n%s", propertiesFile, err)
+			err = errors.Reason("could not read properties file %s\n%s", propertiesFile, err).Err()
 			return nil, err
 		}
 		err = json.Unmarshal(b, &result)
 		if err != nil {
-			err = inputError("could not parse JSON from file %s\n%s\n%s",
-				propertiesFile, b, err)
+			err = errors.Reason("could not parse JSON from file %s\n%s\n%s",
+				propertiesFile, b, err).Err()
 		}
 	}
 	return

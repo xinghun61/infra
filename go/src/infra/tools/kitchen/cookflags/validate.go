@@ -5,7 +5,6 @@
 package cookflags
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,42 +17,27 @@ var (
 	validHostnameRe = regexp.MustCompile("^[a-zA-Z0-9\\-_.]+$") // good enough
 )
 
-// InputError indicates an error in the kitchen's input, e.g. command line flag
-// or env variable.
-// It is converted to InfraError.INVALID_INPUT defined in the result.proto.
-type InputError string
-
-func (e InputError) Error() string { return string(e) }
-
-// inputError returns an error that will be converted to a InfraError with
-// type INVALID_INPUT.
-func inputError(format string, args ...interface{}) error {
-	// We don't use D to keep signature of this function simple
-	// and to keep UserError as a leaf.
-	return errors.Annotate(InputError(fmt.Sprintf(format, args...)), "").Err()
-}
-
 // Normalize normalizes the contents of CookFlags, returning non-nil if there is
 // an error.
 func (c *CookFlags) Normalize() error {
 	if c.CheckoutDir == "" {
-		return inputError("empty -checkout-dir")
+		return errors.Reason("empty -checkout-dir").Err()
 	}
 	switch st, err := os.Stat(c.CheckoutDir); {
 	case os.IsNotExist(err):
-		return inputError("-checkout-dir doesn't exist")
+		return errors.Reason("-checkout-dir doesn't exist").Err()
 	case !os.IsNotExist(err) && err != nil:
 		return err
 	case err == nil && !st.IsDir():
-		return inputError("-checkout-dir is not a directory")
+		return errors.Reason("-checkout-dir is not a directory").Err()
 	}
 
 	if c.RecipeName == "" {
-		return inputError("-recipe is required")
+		return errors.Reason("-recipe is required").Err()
 	}
 
 	if len(c.Properties) > 0 && c.PropertiesFile != "" {
-		return inputError("only one of -properties or -properties-file is allowed")
+		return errors.Reason("only one of -properties or -properties-file is allowed").Err()
 	}
 
 	if c.TempDir != "" {
@@ -68,21 +52,21 @@ func (c *CookFlags) Normalize() error {
 	// Make sure gerrit hosts indeed look like hostnames.
 	for _, value := range c.KnownGerritHost {
 		if !validHostnameRe.MatchString(value) {
-			return inputError("invalid gerrit hostname %q", value)
+			return errors.Reason("invalid gerrit hostname %q", value).Err()
 		}
 	}
 
 	if c.CallUpdateBuild {
 		if c.BuildbucketHostname == "" {
-			return inputError("-call-update-build requires -buildbucket-hostname")
+			return errors.Reason("-call-update-build requires -buildbucket-hostname").Err()
 		}
 		if c.BuildbucketBuildID <= 0 {
-			return inputError("-call-update-build requires a valid -buildbucket-build-id")
+			return errors.Reason("-call-update-build requires a valid -buildbucket-build-id").Err()
 		}
 	}
 
 	if c.AnnotationURL.IsZero() {
-		return inputError("-logdog-annotation-url is required")
+		return errors.Reason("-logdog-annotation-url is required").Err()
 	}
 
 	return nil

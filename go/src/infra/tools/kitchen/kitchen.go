@@ -7,7 +7,6 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -80,32 +79,15 @@ func logAnnotatedErr(ctx context.Context, err error) {
 		strings.Join(errors.RenderStack(err), "\n"))
 }
 
-// InputError indicates an error in the kitchen's input, e.g. command line flag
-// or env variable.
-// It is converted to InfraFailure.INVALID_INPUT defined in the result.proto.
-type InputError string
-
-func (e InputError) Error() string { return string(e) }
-
-// inputError returns an error that will be converted to a InfraFailure with
-// type INVALID_INPUT.
-func inputError(format string, args ...interface{}) error {
-	// We don't use D to keep signature of this function simple
-	// and to keep UserError as a leaf.
-	return errors.Annotate(InputError(fmt.Sprintf(format, args...)), "").Err()
-}
-
 // infraFailure converts an error to a build.InfraFailure protobuf message.
+// TODO(nodir): delete this function.
 func infraFailure(err error) *build.InfraFailure {
 	failure := &build.InfraFailure{
 		Text: err.Error(),
 	}
-	switch _, isInputError := errors.Unwrap(err).(InputError); {
-	case isInputError:
-		failure.Type = build.InfraFailure_INVALID_INPUT
-	case errors.Unwrap(err) == context.Canceled:
+	if errors.Unwrap(err) == context.Canceled {
 		failure.Type = build.InfraFailure_CANCELED
-	default:
+	} else {
 		failure.Type = build.InfraFailure_BOOTSTRAPPER_ERROR
 		failure.BootstrapperCallStack = errors.RenderStack(err)
 	}
