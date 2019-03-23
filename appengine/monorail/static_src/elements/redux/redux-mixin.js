@@ -7,6 +7,7 @@ import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import {autolink} from '../../autolink.js';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
+import {issueRefToString} from '../shared/converters.js';
 import * as user from './user.js';
 import * as project from './project.js';
 
@@ -51,9 +52,12 @@ export const actionType = {
   FETCH_COMMENT_REFERENCES_SUCCESS: 'FETCH_COMMENT_REFERENCES_SUCCESS',
   FETCH_COMMENT_REFERENCES_FAILURE: 'FETCH_COMMENT_REFERENCES_FAILURE',
 
-  FETCH_BLOCKER_REFERENCES_START: 'FETCH_BLOCKER_REFERENCES_START',
-  FETCH_BLOCKER_REFERENCES_SUCCESS: 'FETCH_BLOCKER_REFERENCES_SUCCESS',
-  FETCH_BLOCKER_REFERENCES_FAILURE: 'FETCH_BLOCKER_REFERENCES_FAILURE',
+  FETCH_RELATED_ISSUES_START:
+    'FETCH_RELATED_ISSUES_START',
+  FETCH_RELATED_ISSUES_SUCCESS:
+    'FETCH_RELATED_ISSUES_SUCCESS',
+  FETCH_RELATED_ISSUES_FAILURE:
+    'FETCH_RELATED_ISSUES_FAILURE',
 
   CONVERT_ISSUE_START: 'CONVERT_ISSUE_START',
   CONVERT_ISSUE_SUCCESS: 'CONVERT_ISSUE_SUCCESS',
@@ -92,9 +96,9 @@ export const actionCreator = {
   // TODO(zhangtiff): Figure out if we can reduce request/response sizes by
   // diffing issues to fetch against issues we already know about to avoid
   // fetching duplicate info.
-  fetchBlockerReferences: (issue) => async (dispatch) => {
+  fetchRelatedIssues: (issue) => async (dispatch) => {
     if (!issue) return;
-    dispatch({type: actionType.FETCH_BLOCKER_REFERENCES_START});
+    dispatch({type: actionType.FETCH_RELATED_ISSUES_START});
 
     const refsToFetch = (issue.blockedOnIssueRefs || []).concat(
         issue.blockingIssueRefs || []);
@@ -109,31 +113,25 @@ export const actionCreator = {
       const resp = await window.prpcClient.call(
         'monorail.Issues', 'ListReferencedIssues', message);
 
-      let blockerReferences = new Map();
+      let relatedIssues = new Map();
 
       const openIssues = resp.openRefs || [];
       const closedIssues = resp.closedRefs || [];
       openIssues.forEach((issue) => {
-        blockerReferences.set(
-          `${issue.projectName}:${issue.localId}`, {
-            issue: issue,
-            isClosed: false,
-          });
+        issue.statusRef.meansOpen = true;
+        relatedIssues.set(issueRefToString(issue), issue);
       });
       closedIssues.forEach((issue) => {
-        blockerReferences.set(
-          `${issue.projectName}:${issue.localId}`, {
-            issue: issue,
-            isClosed: true,
-          });
+        issue.statusRef.meansOpen = false;
+        relatedIssues.set(issueRefToString(issue), issue);
       });
       dispatch({
-        type: actionType.FETCH_BLOCKER_REFERENCES_SUCCESS,
-        blockerReferences: blockerReferences,
+        type: actionType.FETCH_RELATED_ISSUES_SUCCESS,
+        relatedIssues: relatedIssues,
       });
     } catch (error) {
       dispatch({
-        type: actionType.FETCH_BLOCKER_REFERENCES_FAILURE,
+        type: actionType.FETCH_RELATED_ISSUES_FAILURE,
         error,
       });
     };
@@ -153,7 +151,7 @@ export const actionCreator = {
 
       dispatch(actionCreator.fetchIssuePermissions(message));
       if (!resp.issue.isDeleted) {
-        dispatch(actionCreator.fetchBlockerReferences(resp.issue));
+        dispatch(actionCreator.fetchRelatedIssues(resp.issue));
         dispatch(actionCreator.fetchIssueHotlists(message.issueRef));
       }
     } catch (error) {
@@ -161,7 +159,7 @@ export const actionCreator = {
         type: actionType.FETCH_ISSUE_FAILURE,
         error,
       });
-    };
+    }
   },
   fetchIssueHotlists: (issue) => async (dispatch) => {
     dispatch({type: actionType.FETCH_ISSUE_HOTLISTS_START});
@@ -322,7 +320,7 @@ export const actionCreator = {
         issueRef: message.issueRef,
       };
       dispatch(actionCreator.fetchComments(fetchCommentsMessage));
-      dispatch(actionCreator.fetchBlockerReferences(resp.issue));
+      dispatch(actionCreator.fetchRelatedIssues(resp.issue));
     } catch (error) {
       dispatch({
         type: actionType.UPDATE_ISSUE_FAILURE,
@@ -408,9 +406,9 @@ const commentReferencesReducer = createReducer(new Map(), {
   },
 });
 
-const blockerReferencesReducer = createReducer(new Map(), {
-  [actionType.FETCH_BLOCKER_REFERENCES_SUCCESS]: (_state, action) => {
-    return action.blockerReferences;
+const relatedIssuesReducer = createReducer(new Map(), {
+  [actionType.FETCH_RELATED_ISSUES_SUCCESS]: (_state, action) => {
+    return action.relatedIssues;
   },
 });
 
@@ -485,10 +483,10 @@ const requestsReducer = combineReducers({
     actionType.FETCH_COMMENT_REFERENCES_START,
     actionType.FETCH_COMMENT_REFERENCES_SUCCESS,
     actionType.FETCH_COMMENT_REFERENCES_FAILURE),
-  fetchBlockerReferences: createRequestReducer(
-    actionType.FETCH_BLOCKER_REFERENCES_START,
-    actionType.FETCH_BLOCKER_REFERENCES_SUCCESS,
-    actionType.FETCH_BLOCKER_REFERENCES_FAILURE),
+  fetchRelatedIssues: createRequestReducer(
+    actionType.FETCH_RELATED_ISSUES_START,
+    actionType.FETCH_RELATED_ISSUES_SUCCESS,
+    actionType.FETCH_RELATED_ISSUES_FAILURE),
   // Request for getting whether an issue is starred.
   fetchIsStarred: createRequestReducer(
     actionType.FETCH_IS_STARRED_START,
@@ -526,7 +524,7 @@ const reducer = combineReducers({
   issueHotlists: issueHotlistsReducer,
   comments: commentsReducer,
   commentReferences: commentReferencesReducer,
-  blockerReferences: blockerReferencesReducer,
+  relatedIssues: relatedIssuesReducer,
   isStarred: isStarredReducer,
   issuePermissions: issuePermissionsReducer,
 

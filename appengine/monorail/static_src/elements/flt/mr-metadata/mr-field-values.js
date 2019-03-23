@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '../../mr-user-link/mr-user-link.js';
+import '../../links/mr-user-link/mr-user-link.js';
 import {fieldTypes} from '../../shared/field-types.js';
 /**
  * `<mr-field-values>`

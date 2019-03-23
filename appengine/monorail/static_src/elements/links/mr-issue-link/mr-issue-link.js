@@ -4,14 +4,15 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+import {issueRefToString} from '../../shared/converters.js';
 
 /**
- * `<mr-bug-link>`
+ * `<mr-issue-link>`
  *
- * Displays a link to a bug.
+ * Displays a link to an issue.
  *
  */
-export class MrBugLink extends PolymerElement {
+export class MrIssueLink extends PolymerElement {
   static get template() {
     return html`
       <style>
@@ -28,17 +29,20 @@ export class MrBugLink extends PolymerElement {
   }
 
   static get is() {
-    return 'mr-bug-link';
+    return 'mr-issue-link';
   }
 
   static get properties() {
     return {
+      // The issue being viewed. Falls back gracefully if this is only a ref.
       issue: Object,
       text: String,
       isClosed: {
         type: Boolean,
         reflectToAttribute: true,
+        computed: '_computeIsClosed(issue.statusRef.meansOpen)',
       },
+      // The global current project name. NOT the issue's project name.
       projectName: String,
       _issueUrl: {
         type: String,
@@ -51,9 +55,9 @@ export class MrBugLink extends PolymerElement {
     };
   }
 
-  _showProjectName(mainProjectName, localProjectName) {
-    if (!mainProjectName || !localProjectName) return false;
-    return mainProjectName.toLowerCase() !== localProjectName.toLowerCase();
+  _computeIsClosed(isOpen) {
+    // Undefined could mean that no status has been found for the issue yet.
+    return isOpen === false;
   }
 
   _computeIssueUrl(issue) {
@@ -63,10 +67,7 @@ export class MrBugLink extends PolymerElement {
 
   _computeLinkText(projectName, issue, text) {
     if (text) return text;
-    const projectNamePart =
-      this._showProjectName(projectName, issue.projectName)
-      ? `${issue.projectName}:` : '';
-    return `Issue ${projectNamePart}${issue.localId}`;
+    return `Issue ${issueRefToString(issue, projectName)}`;
   }
 }
-customElements.define(MrBugLink.is, MrBugLink);
+customElements.define(MrIssueLink.is, MrIssueLink);

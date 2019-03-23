@@ -710,7 +710,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   _mapBlockerRefsToIdStrings(arr, projectName) {
     if (!arr || !arr.length) return [];
-    return arr.map(issueRefToString.bind(null, projectName));
+    return arr.map((ref) => issueRefToString(ref, projectName));
   }
 
   // For simulating && in templating.
@@ -803,7 +803,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   // Needed because Polymer doesn't accept non member functions.
   // TODO(ehmaldonado): Remove
   _computeMergedIntoString(projectName, ref) {
-    return [issueRefToString(projectName, ref)];
+    return [issueRefToString(ref, projectName)];
   }
 }
 

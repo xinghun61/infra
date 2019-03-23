@@ -43,15 +43,24 @@ suite('issueRefToString', () => {
     assert.equal(issueRefToString(), '');
   });
 
+  test('ref with no project name', () => {
+    assert.equal(
+      'other:1234',
+      issueRefToString({projectName: 'other', localId: 1234})
+    );
+  });
+
   test('ref with different project name', () => {
     assert.equal(
       'other:1234',
-      issueRefToString('proj', {projectName: 'other', localId: 1234}));
+      issueRefToString({projectName: 'other', localId: 1234}, 'proj')
+    );
   });
 
   test('ref with same project name', () => {
     assert.equal(
       '1234',
-      issueRefToString('proj', {projectName: 'proj', localId: 1234}));
+      issueRefToString({projectName: 'proj', localId: 1234}, 'proj')
+    );
   });
 });

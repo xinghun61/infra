@@ -12,7 +12,7 @@ import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import * as project from '../../redux/project.js';
 import {selectors} from '../../redux/selectors.js';
 import {arrayToEnglish} from '../../shared/helpers.js';
-import '../../mr-user-link/mr-user-link.js';
+import '../../links/mr-user-link/mr-user-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
 import '../../shared/mr-shared-styles.js';

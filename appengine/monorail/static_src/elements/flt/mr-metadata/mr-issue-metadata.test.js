@@ -3,26 +3,22 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MrMetadata} from './mr-metadata.js';
-import {actionType} from '../../redux/redux-mixin.js';
+import {MrIssueMetadata} from './mr-issue-metadata.js';
 
 
 let element;
 
-suite('mr-metadata', () => {
+suite('mr-issue-metadata', () => {
   setup(() => {
-    element = document.createElement('mr-metadata');
+    element = document.createElement('mr-issue-metadata');
     document.body.appendChild(element);
-
-    element.projectName = 'proj';
   });
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction({type: actionType.RESET_STATE});
   });
 
   test('initializes', () => {
-    assert.instanceOf(element, MrMetadata);
+    assert.instanceOf(element, MrIssueMetadata);
   });
 });

@@ -8,7 +8,7 @@
 
 import './elements/mr-dropdown/mr-account-dropdown.js';
 import './elements/mr-bulk-approval-update/mr-bulk-approval-update.js';
-import './elements/mr-user-link/mr-user-link.js';
+import './elements/links/mr-user-link/mr-user-link.js';
 import './elements/chops/chops-timestamp/chops-timestamp.js';
 
 import './elements/mr-header/mr-header.js';

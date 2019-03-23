@@ -8,11 +8,11 @@ import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
-import '../../mr-bug-link/mr-bug-link.js';
 import '../../mr-comment-content/mr-comment-content.js';
 import '../../mr-comment-content/mr-attachment.js';
 import '../../mr-dropdown/mr-dropdown.js';
-import '../../mr-user-link/mr-user-link.js';
+import '../../links/mr-issue-link/mr-issue-link.js';
+import '../../links/mr-user-link/mr-user-link.js';
 
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:-?([a-z0-9-]+):)?(\d+)/i;
@@ -120,11 +120,11 @@ export class MrComment extends ReduxMixin(PolymerElement) {
                 items="[[_issuesForAmendment(delta, comment.projectName)]]"
                 as="issue"
               >
-                <mr-bug-link
+                <mr-issue-link
                   project-name="[[comment.projectName]]"
                   issue="[[issue.issue]]"
                   text="[[issue.text]]"
-                ></mr-bug-link>
+                ></mr-issue-link>
               </template>
               <template is="dom-if" if="[[!_amendmentHasIssueRefs(delta.fieldName)]]">
                 [[delta.newOrDeltaValue]]

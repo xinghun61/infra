@@ -4,13 +4,17 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import {selectors} from '../../redux/selectors.js';
 import * as project from '../../redux/project.js';
 import {ReduxMixin, actionType, actionCreator} from
   '../../redux/redux-mixin.js';
-import '../../mr-user-link/mr-user-link.js';
+import * as user from '../../redux/user.js';
+import '../../links/mr-user-link/mr-user-link.js';
+import '../../links/mr-hotlist-link/mr-hotlist-link.js';
 import '../../shared/mr-shared-styles.js';
+import {issueRefToString} from '../../shared/converters.js';
 import './mr-metadata.js';
 
 /**
@@ -19,16 +23,27 @@ import './mr-metadata.js';
  * The metadata view for a single issue. Contains information such as the owner.
  *
  */
-class MrIssueMetadata extends ReduxMixin(PolymerElement) {
+export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <style include="mr-shared-styles">
         :host {
           box-sizing: border-box;
-          padding: 0.5em 8px;
+          padding: 0.25em 8px;
           max-width: 100%;
           display: block;
+        }
+        h3 {
+          display: block;
+          font-size: 12px;
+          margin: 0;
+          line-height: 160%;
+          width: 40%;
+          height: 100%;
+          overflow: ellipsis;
+          flex-grow: 0;
+          flex-shrink: 0;
         }
         a.label {
           color: hsl(120, 100%, 25%);
@@ -37,27 +52,35 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         a.label[data-derived] {
           font-style: italic;
         }
-        .restricted {
-          background: hsl(30, 100%, 93%);
-          border: var(--chops-normal-border);
-          width: 100%;
-          box-sizing: border-box;
-          padding: 0.5em 8px;
-          margin: 1em auto;
-        }
-        .restricted i.material-icons {
-          color: hsl(30, 5%, 39%);
-          display: block;
-          margin-right: 4px;
-          margin-bottom: 4px;
-        }
-        .restricted strong {
+        button.linkify {
           display: flex;
           align-items: center;
-          justify-content: center;
-          text-align: center;
+          text-decoration: none;
+          padding: 0.25em 0;
+        }
+        button.linkify i.material-icons {
+          margin-right: 4px;
+          font-size: 20px;
+        }
+        mr-hotlist-link {
+          text-overflow: ellipsis;
+          overflow: hidden;
+          display: block;
           width: 100%;
-          margin-bottom: 0.5em;
+        }
+        .bottom-section-cell, .labels-container {
+          padding: 0.5em 4px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .bottom-section-cell {
+          display: flex;
+          flex-direction: row;
+          flex-wrap: nowrap;
+          align-items: flex-start;
+        }
+        .bottom-section-content {
+          max-width: 60%;
         }
         .star-line {
           width: 100%;
@@ -104,9 +127,7 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         issue-status="[[issue.statusRef]]"
         components="[[_components]]"
         field-defs="[[_fieldDefs]]"
-        blocked-on="[[issue.blockedOnIssueRefs]]"
-        blocking="[[issue.blockingIssueRefs]]"
-        merged-into="[[issue.mergedIntoIssueRef]]"
+        merged-into="[[mergedInto]]"
         modified-timestamp="[[issue.modifiedTimestamp]]"
       ></mr-metadata>
 
@@ -116,6 +137,98 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
           <br>
         </template>
       </div>
+
+      <template is="dom-if" if="[[sortedBlockedOn.length]]">
+        <div class="bottom-section-cell">
+          <h3>BlockedOn:</h3>
+            <div class="bottom-section-content">
+            <template is="dom-repeat" items="[[sortedBlockedOn]]">
+              <mr-issue-link
+                project-name="[[projectName]]"
+                issue="[[item]]"
+              >
+              </mr-issue-link>
+              <br />
+            </template>
+            <button
+              class="linkify"
+              on-click="openViewBlockedOn"
+            >
+              <i class="material-icons">list</i>
+              View details
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <template is="dom-if" if="[[blocking]]">
+        <div class="bottom-section-cell">
+          <h3>Blocking:</h3>
+          <div class="bottom-section-content">
+            <template is="dom-repeat" items="[[blocking]]">
+              <mr-issue-link
+                project-name="[[projectName]]"
+                issue="[[item]]"
+              >
+              </mr-issue-link>
+              <br />
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <template is="dom-if" if="[[user]]">
+        <div class="bottom-section-cell">
+          <h3>Your Hotlists:</h3>
+          <div class="bottom-section-content">
+            <template is="dom-if" if="[[hotlistsByRole.user.length]]">
+              <template
+                is="dom-repeat"
+                items="[[hotlistsByRole.user]]"
+                as="hotlist"
+              >
+                <mr-hotlist-link hotlist="[[hotlist]]"></mr-hotlist-link>
+              </template>
+            </template>
+            <button
+              class="linkify"
+              on-click="openUpdateHotlists"
+            >
+              <i class="material-icons">create</i> Update your hotlists
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <template is="dom-if" if="[[hotlistsByRole.participants.length]]">
+        <div class="bottom-section-cell">
+          <h3>Participant's Hotlists:</h3>
+          <div class="bottom-section-content">
+            <template
+              is="dom-repeat"
+              items="[[hotlistsByRole.participants]]"
+              as="hotlist"
+            >
+              <mr-hotlist-link hotlist="[[hotlist]]"></mr-hotlist-link>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <template is="dom-if" if="[[hotlistsByRole.others.length]]">
+        <div class="bottom-section-cell">
+          <h3>Other Hotlists:</h3>
+          <div class="bottom-section-content">
+            <template
+              is="dom-repeat"
+              items="[[hotlistsByRole.others]]"
+              as="hotlist"
+            >
+              <mr-hotlist-link hotlist="[[hotlist]]"></mr-hotlist-link>
+            </template>
+          </div>
+        </div>
+      </template>
     `;
   }
 
@@ -129,12 +242,22 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       issueId: Number,
       projectName: String,
       projectConfig: String,
+      user: Object,
       isStarred: {
         type: Boolean,
         value: false,
       },
       fetchingIsStarred: Boolean,
       starringIssue: Boolean,
+      issueHotlists: Array,
+      blocking: Array,
+      sortedBlockedOn: Array,
+      relatedIssues: Object,
+      hotlistsByRole: {
+        type: Object,
+        computed: `_splitIssueHotlistsByRole(issueHotlists,
+          user.userId, issue.ownerRef, issue.ccRefs)`,
+      },
       _components: Array,
       _fieldDefs: Array,
       _canStar: {
@@ -149,22 +272,21 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
     return {
       issue: state.issue,
       issueId: state.issueId,
+      user: user.user(state),
       projectName: state.projectName,
       projectConfig: project.project(state).config,
       isStarred: state.isStarred,
       fetchingIsStarred: state.requests.fetchIsStarred.requesting,
       starringIssue: state.requests.starIssue.requesting,
+      blocking: selectors.issueBlockingIssues(state),
+      sortedBlockedOn: selectors.issueSortedBlockedOn(state),
+      mergedInto: selectors.issueMergedInto(state),
+      relatedIssues: state.relatedIssues,
+      issueHotlists: state.issueHotlists,
       _components: selectors.componentsForIssue(state),
       _fieldDefs: selectors.fieldDefsForIssue(state),
       _type: selectors.issueType(state),
     };
-  }
-
-  edit() {
-    this.dispatchAction({
-      type: actionType.OPEN_DIALOG,
-      dialog: DialogState.EDIT_ISSUE,
-    });
   }
 
   toggleStar() {
@@ -179,14 +301,61 @@ class MrIssueMetadata extends ReduxMixin(PolymerElement) {
     this.dispatchAction(actionCreator.starIssue(issueRef, newIsStarred));
   }
 
+  openUpdateHotlists() {
+    this.dispatchEvent(new CustomEvent('open-dialog', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        dialogId: 'update-issue-hotlists',
+      },
+    }));
+  }
+
+  openViewBlockedOn(e) {
+    this.dispatchEvent(new CustomEvent('open-dialog', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        dialogId: 'reorder-related-issues',
+      },
+    }));
+  }
+
   _computeCanStar(fetching, starring) {
     return !(fetching || starring);
   }
 
+  _userIsParticipant(user, owner, cc) {
+    if (owner && owner.userId === user.userId) {
+      return true;
+    }
+    return cc && cc.some((ccUser) => ccUser && ccUser.UserId === user.userId);
+  }
+
+  _splitIssueHotlistsByRole(issueHotlists, userId, owner, cc) {
+    const hotlists = {
+      user: [],
+      participants: [],
+      others: [],
+    };
+    (issueHotlists || []).forEach((hotlist) => {
+      if (hotlist.ownerRef.userId === userId) {
+        hotlists.user.push(hotlist);
+      } else if (this._userIsParticipant(hotlist.ownerRef, owner, cc)) {
+        hotlists.participants.push(hotlist);
+      } else {
+        hotlists.others.push(hotlist);
+      }
+    });
+    return hotlists;
+  }
+
+  // TODO(zhangtiff): Remove when upgrading to lit-element.
   _renderPluralS(count) {
     return count == 1 ? '' : 's';
   }
 
+  // TODO(zhangtiff): Remove when upgrading to lit-element.
   _renderCount(count) {
     return count ? count : 0;
   }

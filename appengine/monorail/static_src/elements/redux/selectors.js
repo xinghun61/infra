@@ -5,6 +5,7 @@
 import {createSelector} from 'reselect';
 import {fieldTypes} from '../shared/field-types.js';
 import {removePrefix} from '../shared/helpers.js';
+import {issueRefToString} from '../shared/converters.js';
 import * as project from './project.js';
 
 const RESTRICT_VIEW_PREFIX = 'restrict-view-';
@@ -86,7 +87,56 @@ const issueIsRestricted = createSelector(
 
 const issueIsOpen = createSelector(
   viewedIssue,
-  (issue) => issue && issue.statusRef && issue.statusRef.meansOpen
+  (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false
+);
+
+export const issueBlockingIssueRefs = createSelector(
+  viewedIssue,
+  (issue) => issue && issue.blockingIssueRefs || []
+);
+
+export const issueBlockedOnIssueRefs = createSelector(
+  viewedIssue,
+  (issue) => issue && issue.blockedOnIssueRefs || []
+);
+
+export const relatedIssues = (state) => state.relatedIssues;
+
+export const issueBlockingIssues = createSelector(
+  issueBlockingIssueRefs, relatedIssues,
+  (blockingRefs, relatedIssues) => blockingRefs.map((ref) => {
+    const key = issueRefToString(ref);
+    if (relatedIssues.has(key)) {
+      return relatedIssues.get(key);
+    }
+    return ref;
+  })
+);
+
+export const issueBlockedOnIssues = createSelector(
+  issueBlockedOnIssueRefs, relatedIssues,
+  (blockedOnRefs, relatedIssues) => blockedOnRefs.map((ref) => {
+    const key = issueRefToString(ref);
+    if (relatedIssues.has(key)) {
+      return relatedIssues.get(key);
+    }
+    return ref;
+  })
+);
+
+export const issueMergedInto = createSelector(
+  viewedIssue, relatedIssues,
+  (issue, relatedIssues) => issue && issue.mergedIntoRef
+    && relatedIssues.get(issueRefToString(issue.mergedIntoRef))
+);
+
+export const issueSortedBlockedOn = createSelector(
+  issueBlockedOnIssues,
+  (blockedOn) => blockedOn.sort((a, b) => {
+    const aIsOpen = a.statusRef && a.statusRef.meansOpen ? 1 : 0;
+    const bIsOpen = b.statusRef && b.statusRef.meansOpen ? 1 : 0;
+    return bIsOpen - aIsOpen;
+  })
 );
 
 // values (from issue.fieldValues) is an array with one entry per value.
@@ -156,6 +206,13 @@ export const selectors = Object.freeze({
   issueRestrictions,
   issueIsRestricted,
   issueIsOpen,
+  issueBlockingIssueRefs,
+  issueBlockedOnIssueRefs,
+  relatedIssues,
+  issueBlockingIssues,
+  issueBlockedOnIssues,
+  issueMergedInto,
+  issueSortedBlockedOn,
   issueFieldValueMap,
   componentsForIssue,
   fieldDefsForIssue,

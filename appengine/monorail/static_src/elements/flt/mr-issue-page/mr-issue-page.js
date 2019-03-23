@@ -19,6 +19,8 @@ import '../../shared/mr-shared-styles.js';
 import '../dialogs/mr-edit-description.js';
 import '../dialogs/mr-move-copy-issue.js';
 import '../dialogs/mr-convert-issue.js';
+import '../dialogs/mr-related-issues-table.js';
+import '../dialogs/mr-update-issue-hotlists.js';
 
 /**
  * `<mr-issue-page>`
@@ -141,9 +143,11 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
-      <mr-edit-description id='edit-description'></mr-edit-description>
-      <mr-move-copy-issue id='move-copy-issue'></mr-move-copy-issue>
-      <mr-convert-issue id='convert-issue'></mr-convert-issue>
+      <mr-edit-description id="edit-description"></mr-edit-description>
+      <mr-move-copy-issue id="move-copy-issue"></mr-move-copy-issue>
+      <mr-convert-issue id="convert-issue"></mr-convert-issue>
+      <mr-related-issues-table id="reorder-related-issues"></mr-related-issues-table>
+      <mr-update-issue-hotlists id="update-issue-hotlists"></mr-update-issue-hotlists>
 
       <template is="dom-if" if="[[_showLoading(issueLoaded, fetchIssueError)]]">
         <div class="container-outside">

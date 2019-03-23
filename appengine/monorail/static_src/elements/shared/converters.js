@@ -28,9 +28,10 @@ export function issueStringToRef(defaultProjectName, idStr) {
   return {localId, projectName};
 }
 
-export function issueRefToString(projectName, ref) {
+export function issueRefToString(ref, projectName) {
   if (!ref) return '';
-  if (ref.projectName === projectName) {
+  if (projectName && projectName.length &&
+      ref.projectName.toLowerCase() === projectName.toLowerCase()) {
     return `${ref.localId}`;
   }
   return `${ref.projectName}:${ref.localId}`;

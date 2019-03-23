@@ -3,15 +3,15 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MrBugLink} from './mr-bug-link.js';
+import {MrIssueLink} from './mr-issue-link.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 
 let element;
 
-suite('mr-bug-link', () => {
+suite('mr-issue-link', () => {
   setup(() => {
-    element = document.createElement('mr-bug-link');
+    element = document.createElement('mr-issue-link');
     document.body.appendChild(element);
   });
 
@@ -20,7 +20,7 @@ suite('mr-bug-link', () => {
   });
 
   test('initializes', () => {
-    assert.instanceOf(element, MrBugLink);
+    assert.instanceOf(element, MrIssueLink);
   });
 
   test('strikethrough when closed', () => {
@@ -28,7 +28,7 @@ suite('mr-bug-link', () => {
     assert.isFalse(
         window.getComputedStyle(link).getPropertyValue(
           'text-decoration').includes('line-through'));
-    element.isClosed = true;
+    element.issue = {statusRef: {meansOpen: false}};
 
     flush();
 
@@ -43,6 +43,10 @@ suite('mr-bug-link', () => {
       localId: 11,
     };
     const link = element.shadowRoot.querySelector('#bugLink');
+    assert.equal(link.textContent.trim(), 'Issue test:11');
+
+    element.projectName = 'test';
+
     assert.equal(link.textContent.trim(), 'Issue 11');
 
     element.projectName = 'other';

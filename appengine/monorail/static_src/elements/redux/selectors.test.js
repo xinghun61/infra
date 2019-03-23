@@ -95,6 +95,162 @@ suite('selectors', () => {
     ]}}));
   });
 
+  test('issueIsOpen', () => {
+    assert.isFalse(selectors.issueIsOpen({}));
+    assert.isTrue(selectors.issueIsOpen(
+      {issue: {statusRef: {meansOpen: true}}}));
+    assert.isFalse(selectors.issueIsOpen(
+      {issue: {statusRef: {meansOpen: false}}}));
+  });
+
+  test('issueBlockingIssues', () => {
+    const relatedIssues = new Map([
+      ['proj:1',
+        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]}],
+      ['proj:3',
+        {localId: 3, projectName: 'proj', labelRefs: []}],
+      ['chromium:332',
+        {localId: 332, projectName: 'chromium', labelRefs: []}],
+    ]);
+    const stateNoReferences = {
+      issue: {
+        blockingIssueRefs: [{localId: 1, projectName: 'proj'}],
+      },
+      relatedIssues: new Map(),
+    };
+    assert.deepEqual(selectors.issueBlockingIssues(stateNoReferences),
+      [{localId: 1, projectName: 'proj'}]
+    );
+
+    const stateNoIssues = {
+      issue: {
+        blockingIssueRefs: [],
+      },
+      relatedIssues: relatedIssues,
+    };
+    assert.deepEqual(selectors.issueBlockingIssues(stateNoIssues), []);
+
+    const stateIssuesWithReferences = {
+      issue: {
+        blockingIssueRefs: [
+          {localId: 1, projectName: 'proj'},
+          {localId: 332, projectName: 'chromium'},
+        ],
+      },
+      relatedIssues: relatedIssues,
+    };
+    assert.deepEqual(selectors.issueBlockingIssues(stateIssuesWithReferences),
+      [
+        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+        {localId: 332, projectName: 'chromium', labelRefs: []},
+      ]);
+  });
+
+  test('issueBlockedOnIssues', () => {
+    const relatedIssues = new Map([
+      ['proj:1',
+        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]}],
+      ['proj:3',
+        {localId: 3, projectName: 'proj', labelRefs: []}],
+      ['chromium:332',
+        {localId: 332, projectName: 'chromium', labelRefs: []}],
+    ]);
+    const stateNoReferences = {
+      issue: {
+        blockedOnIssueRefs: [{localId: 1, projectName: 'proj'}],
+      },
+      relatedIssues: new Map(),
+    };
+    assert.deepEqual(selectors.issueBlockedOnIssues(stateNoReferences),
+      [{localId: 1, projectName: 'proj'}]
+    );
+
+    const stateNoIssues = {
+      issue: {
+        blockedOnIssueRefs: [],
+      },
+      relatedIssues: relatedIssues,
+    };
+    assert.deepEqual(selectors.issueBlockedOnIssues(stateNoIssues), []);
+
+    const stateIssuesWithReferences = {
+      issue: {
+        blockedOnIssueRefs: [
+          {localId: 1, projectName: 'proj'},
+          {localId: 332, projectName: 'chromium'},
+        ],
+      },
+      relatedIssues: relatedIssues,
+    };
+    assert.deepEqual(selectors.issueBlockedOnIssues(stateIssuesWithReferences),
+      [
+        {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
+        {localId: 332, projectName: 'chromium', labelRefs: []},
+      ]);
+  });
+
+  test('issueSortedBlockedOn', () => {
+    const relatedIssues = new Map([
+      ['proj:1',
+        {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}}],
+      ['proj:3',
+        {localId: 3, projectName: 'proj', statusRef: {meansOpen: false}}],
+      ['proj:4',
+        {localId: 4, projectName: 'proj', statusRef: {meansOpen: false}}],
+      ['proj:5',
+        {localId: 5, projectName: 'proj', statusRef: {meansOpen: false}}],
+      ['chromium:332',
+        {localId: 332, projectName: 'chromium', statusRef: {meansOpen: true}}],
+    ]);
+    const stateNoReferences = {
+      issue: {
+        blockedOnIssueRefs: [
+          {localId: 3, projectName: 'proj'},
+          {localId: 1, projectName: 'proj'},
+        ],
+      },
+      relatedIssues: new Map(),
+    };
+    assert.deepEqual(selectors.issueSortedBlockedOn(stateNoReferences), [
+      {localId: 3, projectName: 'proj'},
+      {localId: 1, projectName: 'proj'},
+    ]);
+    const stateReferences = {
+      issue: {
+        blockedOnIssueRefs: [
+          {localId: 3, projectName: 'proj'},
+          {localId: 1, projectName: 'proj'},
+        ],
+      },
+      relatedIssues: relatedIssues,
+    };
+    assert.deepEqual(selectors.issueSortedBlockedOn(stateReferences), [
+      {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}},
+      {localId: 3, projectName: 'proj', statusRef: {meansOpen: false}},
+    ]);
+    const statePreservesArrayOrder = {
+      issue: {
+        blockedOnIssueRefs: [
+          {localId: 5, projectName: 'proj'}, // Closed
+          {localId: 1, projectName: 'proj'}, // Open
+          {localId: 4, projectName: 'proj'}, // Closed
+          {localId: 3, projectName: 'proj'}, // Closed
+          {localId: 332, projectName: 'chromium'}, // Open
+        ],
+      },
+      relatedIssues: relatedIssues,
+    };
+    assert.deepEqual(selectors.issueSortedBlockedOn(statePreservesArrayOrder),
+      [
+        {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}},
+        {localId: 332, projectName: 'chromium', statusRef: {meansOpen: true}},
+        {localId: 5, projectName: 'proj', statusRef: {meansOpen: false}},
+        {localId: 4, projectName: 'proj', statusRef: {meansOpen: false}},
+        {localId: 3, projectName: 'proj', statusRef: {meansOpen: false}},
+      ]
+    );
+  });
+
   test('issueFieldValueMap', () => {
     assert.deepEqual(selectors.issueFieldValueMap({}), new Map());
     assert.deepEqual(selectors.issueFieldValueMap({issue: {
