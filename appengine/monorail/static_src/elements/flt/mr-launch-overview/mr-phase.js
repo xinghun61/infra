@@ -171,6 +171,12 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         observer: '_updatingIssueChanged',
       },
       updateIssueError: Object,
+      approvals: Array,
+      fieldDefs: Array,
+      fieldValueMap: { // Set by MetadataMixin.
+        type: Object,
+        value: () => {},
+      },
       // Possible values: Target, Approved, Launched.
       _status: {
         type: String,
@@ -195,12 +201,6 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
           _approvedMilestone, _launchedMilestone)`,
         observer: '_fetchMilestoneData',
       },
-      approvals: Array,
-      fieldDefs: Array,
-      fieldValueMap: {
-        type: Object,
-        value: () => {},
-      },
       _nextDate: {
         type: Number, // Unix time.
         computed: `_computeNextDate(
@@ -216,15 +216,15 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
   }
 
   static mapStateToProps(state, element) {
-    return {
+    const superProps = super.mapStateToProps(state, element);
+    return Object.assign(superProps, {
       issue: state.issue,
       issueId: state.issueId,
       projectName: state.projectName,
       updatingIssue: state.requests.updateIssue.requesting,
       updateIssueError: state.requests.updateIssue.error,
       fieldDefs: project.fieldDefsForPhases(state),
-      fieldValueMap: selectors.issueFieldValueMap(state),
-    };
+    });
   }
 
   edit() {

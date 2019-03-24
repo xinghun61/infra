@@ -3,43 +3,61 @@
 // found in the LICENSE file.
 
 import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {selectors} from '../../redux/selectors.js';
+
+// TODO(zhangtiff): Remove this hardcoded data once backend custom
+// field grouping is implemented.
+export const HARDCODED_FIELD_GROUPS = [
+  {
+    groupName: 'Feature Team',
+    fieldNames: ['PM', 'Tech Lead', 'Tech-Lead', 'TechLead', 'TL',
+      'Team', 'UX', 'TE'],
+    applicableType: 'FLT-Launch',
+  },
+  {
+    groupName: 'Docs',
+    fieldNames: ['PRD', 'DD', 'Design Doc', 'Design-Doc',
+      'DesignDoc', 'Mocks', 'Test Plan', 'Test-Plan', 'TestPlan',
+      'Metrics'],
+    applicableType: 'FLT-Launch',
+  },
+];
 
 export const MetadataMixin = (superClass) => {
   return class extends ReduxMixin(superClass) {
     static get properties() {
       return {
+        issueType: String,
         fieldDefs: Array,
+        fieldValueMap: Object,
         fieldGroups: {
           type: Array,
-          // TODO(zhangtiff): Remove this hardcoded data once backend custom
-          // field grouping is implemented.
-          value: () => [
-            {
-              groupName: 'Feature Team',
-              fieldNames: ['PM', 'Tech Lead', 'Tech-Lead', 'TechLead', 'TL',
-                'Team', 'UX', 'TE'],
-            },
-            {
-              groupName: 'Docs',
-              fieldNames: ['PRD', 'DD', 'Design Doc', 'Design-Doc',
-                'DesignDoc', 'Mocks', 'Test Plan', 'Test-Plan', 'TestPlan',
-                'Metrics'],
-            },
-          ],
+          value: () => HARDCODED_FIELD_GROUPS,
+        },
+        _filteredGroups: {
+          type: Array,
+          computed: '_filterGroups(fieldGroups, issueType)',
         },
         _fieldGroupMap: {
           type: Object,
-          computed: '_computeFieldGroupMap(fieldGroups)',
+          computed: '_computeFieldGroupMap(_filteredGroups)',
           value: () => {},
         },
         _fieldDefsWithGroups: {
           type: Array,
-          computed: '_computeFieldDefsWithGroups(fieldDefs, fieldGroups)',
+          computed: '_computeFieldDefsWithGroups(fieldDefs, _filteredGroups)',
         },
         _fieldDefsWithoutGroup: {
           type: Array,
           computed: '_computeFieldDefsWithoutGroup(fieldDefs, _fieldGroupMap)',
         },
+      };
+    }
+
+    static mapStateToProps(state, element) {
+      return {
+        fieldValueMap: selectors.issueFieldValueMap(state),
+        issueType: selectors.issueType(state),
       };
     }
 
@@ -55,6 +73,14 @@ export const MetadataMixin = (superClass) => {
         key.push(phaseName);
       }
       return key.join(' ');
+    }
+
+    _filterGroups(fieldGroups, issueType) {
+      return fieldGroups.filter((group) => {
+        if (!group.applicableType) return true;
+        return issueType && group.applicableType.toLowerCase()
+          === issueType.toLowerCase();
+      });
     }
 
     _computeFieldGroupMap(fieldGroups) {

@@ -440,7 +440,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   static get properties() {
     return {
       formName: String,
-      fieldValueMap: Object,
       approvers: {
         type: Array,
         value: () => [],
@@ -518,6 +517,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       },
       newAttachments: Array,
       presubmitResponse: Object,
+      fieldValueMap: Object,  // Set by MetadataMixin.
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
@@ -539,13 +539,13 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   static mapStateToProps(state, element) {
-    return {
+    const superProps = super.mapStateToProps(state, element);
+    return Object.assign(superProps, {
       presubmitResponse: state.presubmitResponse,
       projectConfig: project.project(state).config,
       projectName: state.projectName,
-      fieldValueMap: selectors.issueFieldValueMap(state),
       issuePermissions: state.issuePermissions,
-    };
+    });
   }
 
   reset() {

@@ -227,17 +227,17 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
         value: 'table',
         reflectToAttribute: true,
       },
-      fieldValueMap: Object,
+      fieldValueMap: Object, // Set by MetadataMixin.
     };
   }
 
   static mapStateToProps(state, element) {
-    return {
+    const superProps = super.mapStateToProps(state, element);
+    return Object.assign(superProps, {
       projectName: state.projectName,
       issueId: state.issueId,
       relatedIssues: state.relatedIssues,
-      fieldValueMap: selectors.issueFieldValueMap(state),
-    };
+    });
   }
 
   _fieldIsHidden(fieldValueMap, fieldDef) {
