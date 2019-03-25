@@ -88,7 +88,7 @@ class ComponentReport(BaseHandler):
                 luci_project, component),
             return_code=404)
       report_json = _GenerateComponentReportJson(component_reports)
-      top_flakes, _, _ = flake_detection_utils.GetFlakesByFilter(
+      top_flakes, _, _, _, _ = flake_detection_utils.GetFlakesByFilter(
           ComponentFlakinessReport.GenerateTag('component', component),
           luci_project, cursor=None, direction='next',
           page_size=_DEFAULT_TOP_FLAKE_NUM)

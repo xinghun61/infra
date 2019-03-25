@@ -113,7 +113,7 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
     flake2_dict['flake_counts_last_week'] = flake_counts_last_week
     flake2_dict['time_delta'] = '1 day, 01:00:00'
 
-    mock_top_flakes.return_value = ([flake1, flake2], True, None)
+    mock_top_flakes.return_value = ([flake1, flake2], None, None, True, None)
 
     response = self.test_app.get(
         '/flake/report/component?component=ComponentA',
