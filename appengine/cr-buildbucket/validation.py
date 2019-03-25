@@ -10,6 +10,7 @@ value.
 """
 
 import contextlib
+import logging
 import re
 import threading
 
@@ -83,6 +84,8 @@ def validate_gerrit_change(change):
   """Validates common_pb2.GerritChange."""
   # project is not required.
   _check_truth(change, 'host', 'change', 'patchset')
+  if not change.project:  # pragma: no branch
+    logging.warning('gerrit_change.project is not specified')
 
 
 def validate_gitiles_commit(commit):
@@ -98,6 +101,9 @@ def validate_gitiles_commit(commit):
       _enter_err('ref', 'must start with "refs/"')
   if commit.position and not commit.ref:
     _err('position requires ref')
+
+  if not commit.ref:
+    logging.warning('gitiles_commit.ref is not specified')
 
 
 def validate_tags(string_pairs, mode):
