@@ -184,7 +184,6 @@ def TriggerBuildAhead(wf_master, wf_builder, bot):
           'suspected_revisions': [],
       },
       tags=[],
-      additional_build_parameters=None,
       cache_name=cache_name,
       dimensions=dimensions,
       priority=BUILD_AHEAD_PRIORITY,

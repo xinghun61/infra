@@ -36,21 +36,11 @@ class BuildBucketClientTest(testing.AppengineTestCase):
                        buildbucket_client._GetBucketName(master_name))
 
   def testTryJobToBuildbucketRequestWithTests(self):
-    try_job = buildbucket_client.TryJob(
-        'm', 'b', {'a': '1'}, ['a'],
-        {'tests': {
-            'a_tests': ['Test.One', 'Test.Two']
-        }})
+    properties = {'a': '1', 'tests': {'a_tests': ['Test.One', 'Test.Two']}}
+    try_job = buildbucket_client.TryJob('m', 'b', properties, ['a'])
     expceted_parameters = {
         'builder_name': 'b',
-        'properties': {
-            'a': '1',
-        },
-        'additional_build_parameters': {
-            'tests': {
-                'a_tests': ['Test.One', 'Test.Two']
-            }
-        }
+        'properties': properties,
     }
 
     request_json = try_job.ToBuildbucketRequest()
@@ -62,11 +52,9 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequest(self):
-    try_job = buildbucket_client.TryJob(
-        'luci.c', 'b', {'a': '1'}, ['a'],
-        {'tests': {
-            'a_tests': ['Test.One', 'Test.Two'],
-        }}, 'builder_abc123')
+    properties = {'a': '1', 'tests': {'a_tests': ['Test.One', 'Test.Two'],}}
+    try_job = buildbucket_client.TryJob('luci.c', 'b', properties, ['a'],
+                                        'builder_abc123')
     expceted_parameters = {
         'builder_name': 'b',
         'swarming': {
@@ -77,14 +65,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
                 }],
             }
         },
-        'properties': {
-            'a': '1',
-        },
-        'additional_build_parameters': {
-            'tests': {
-                'a_tests': ['Test.One', 'Test.Two']
-            }
-        }
+        'properties': properties,
     }
 
     request_json = try_job.ToBuildbucketRequest()
@@ -96,14 +77,17 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequestWithOverrides(self):
+    properties = {
+        'a': '1',
+        'recipe': 'b',
+        'tests': {
+            'a_tests': ['Test.One', 'Test.Two'],
+        }
+    }
     try_job = buildbucket_client.TryJob(
         'luci.c',
-        'b', {
-            'a': '1',
-            'recipe': 'b'
-        }, ['a'], {'tests': {
-            'a_tests': ['Test.One', 'Test.Two'],
-        }},
+        'b',
+        properties, ['a'],
         'builder_abc123', ['os:Linux'],
         priority=1)
     expceted_parameters = {
@@ -123,13 +107,11 @@ class BuildBucketClientTest(testing.AppengineTestCase):
         },
         'properties': {
             'a': '1',
-            'recipe': 'b'
-        },
-        'additional_build_parameters': {
+            'recipe': 'b',
             'tests': {
                 'a_tests': ['Test.One', 'Test.Two']
             }
-        }
+        },
     }
 
     request_json = try_job.ToBuildbucketRequest()

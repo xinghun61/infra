@@ -70,9 +70,6 @@ class TryJob(
             'builder_name',  # Tryserver builder name of the try-job.
             'properties',  # Build properties for the try-job.
             'tags',  # Tags to flag the try-job for searching or monitoring.
-            # Additional build parameters that do not fit into build properties,
-            # e.g. it is more than 1024 chars for a buildbot build property.
-            'additional_build_parameters',
             'cache_name',  # Optional. Nme of the cache in the Swarmingbot.
             'dimensions',  # Optional. Dimensions used to match a Swarmingbot.
             'pubsub_callback',  # Optional. PubSub callback info.
@@ -92,16 +89,14 @@ class TryJob(
       builder_name,
       properties,
       tags,
-      additional_build_parameters,
       cache_name=None,
       dimensions=None,
       pubsub_callback=None,
       priority=None,
       expiration_secs=None):
     return super(cls, TryJob).__new__(
-        cls, master_name, builder_name, properties, tags,
-        additional_build_parameters, cache_name, dimensions, pubsub_callback,
-        priority, expiration_secs)
+        cls, master_name, builder_name, properties, tags, cache_name,
+        dimensions, pubsub_callback, priority, expiration_secs)
 
   def _AddSwarmbucketOverrides(self, parameters):
     assert self.cache_name
@@ -139,9 +134,6 @@ class TryJob(
         'builder_name': self.builder_name,
         'properties': self.properties,
     }
-    if self.additional_build_parameters:
-      parameters_json['additional_build_parameters'] = (
-          self.additional_build_parameters)
 
     tags = self.tags[:]
     tags.append('user_agent:findit')

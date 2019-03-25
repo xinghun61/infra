@@ -44,7 +44,6 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
                 'bad_revision': 'HEAD'
             },
             tags=[],
-            additional_build_parameters=None,
             cache_name=CN,
             dimensions=[
                 'os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit',
@@ -72,7 +71,6 @@ class BuildAheadTest(wf_testcase.WaterfallTestCase):
                 'bad_revision': 'HEAD'
             },
             tags=[],
-            additional_build_parameters=None,
             cache_name=CN,
             dimensions=[
                 'os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'

@@ -339,6 +339,7 @@ def GetBuildProperties(pipeline_input):
   properties = try_job_service.GetBuildProperties(pipeline_input,
                                                   failure_type.COMPILE)
   properties['target_buildername'] = pipeline_input.build_key.builder_name
+  properties['compile_targets'] = pipeline_input.compile_targets
 
   return properties
 
@@ -346,12 +347,11 @@ def GetBuildProperties(pipeline_input):
 def ScheduleCompileTryJob(parameters, runner_id):
   master_name, builder_name, build_number = (parameters.build_key.GetParts())
   properties = GetBuildProperties(parameters)
-  additional_parameters = {'compile_targets': parameters.compile_targets}
   tryserver_mastername, tryserver_buildername = try_job_service.GetTrybot()
 
   build_id, error = try_job_service.TriggerTryJob(
-      master_name, builder_name, tryserver_mastername, tryserver_buildername,
-      properties, additional_parameters,
+      master_name, builder_name, tryserver_mastername,
+      tryserver_buildername, properties,
       failure_type.GetDescriptionForFailureType(failure_type.COMPILE),
       parameters.cache_name, parameters.dimensions, runner_id)
 

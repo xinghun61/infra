@@ -319,6 +319,7 @@ def GetBuildProperties(pipeline_input):
   properties = try_job_service.GetBuildProperties(pipeline_input,
                                                   failure_type.TEST)
   properties['target_testername'] = pipeline_input.build_key.builder_name
+  properties['tests'] = pipeline_input.targeted_tests
 
   return properties
 
@@ -541,14 +542,12 @@ def ScheduleTestTryJob(parameters, notification_id):
   master_name, builder_name, build_number = (parameters.build_key.GetParts())
 
   properties = GetBuildProperties(parameters)
-  additional_parameters = {'tests': parameters.targeted_tests}
 
   tryserver_mastername, tryserver_buildername = try_job_service.GetTrybot()
 
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,
-      properties, additional_parameters,
-      failure_type.GetDescriptionForFailureType(failure_type.TEST),
+      properties, failure_type.GetDescriptionForFailureType(failure_type.TEST),
       parameters.cache_name, parameters.dimensions, notification_id)
 
   if error:

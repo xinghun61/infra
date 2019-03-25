@@ -1110,14 +1110,15 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     expected_results = [{
         'try_job_id': '1'
-    }, {
-        'culprit': {
-            'compile': 'rev'
-        },
-        'try_job_id': '2',
-        'report': None,
-        'url': None
-    }]
+    },
+                        {
+                            'culprit': {
+                                'compile': 'rev'
+                            },
+                            'try_job_id': '2',
+                            'report': None,
+                            'url': None
+                        }]
 
     compile_try_job.UpdateTryJobResult(parameters, culprits)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
@@ -1242,7 +1243,8 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'b',
         'suspected_revisions': [],
         'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
-                                (master_name, builder_name, build_number)
+                                (master_name, builder_name, build_number),
+        'compile_targets': [],
     }
     properties = compile_try_job.GetBuildProperties(pipeline_input)
 
@@ -1286,16 +1288,17 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
             'compile': []
         },
         'top_score': 4
-    }, {
-        'revision': 'r123_1',
-        'commit_position': 1231,
-        'url': 'url_1',
-        'repo_name': 'chromium',
-        'failures': {
-            'compile': []
-        },
-        'top_score': None
-    }]
+    },
+                    {
+                        'revision': 'r123_1',
+                        'commit_position': 1231,
+                        'url': 'url_1',
+                        'repo_name': 'chromium',
+                        'failures': {
+                            'compile': []
+                        },
+                        'top_score': None
+                    }]
 
     self.assertListEqual(
         expected_cls, compile_try_job._GetUpdatedSuspectedCLs(

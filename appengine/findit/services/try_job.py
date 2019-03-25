@@ -280,8 +280,8 @@ def CreatePubSubCallback(runner_id):
 
 
 def TriggerTryJob(master_name, builder_name, tryserver_mastername,
-                  tryserver_buildername, properties, additional_parameters,
-                  try_job_type, cache_name, dimensions, runner_id):
+                  tryserver_buildername, properties, try_job_type, cache_name,
+                  dimensions, runner_id):
   """Triggers a try job through Buildbucket.
 
   Args:
@@ -290,8 +290,6 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
     tryserver_mastername (str): Name of the tryserver master for the try job.
     tryserver_buildername (str): Name of the tryserver builder for the try job.
     properties (dict): A key-value map of build properties for the try job.
-    additional_parameters (dict): Additional parameters for the try job. For
-      example, the failed target list or failed tests.
     try_job_type (int): Type of the try job, either compile or test.
     cache_name (str): The name of the build cache.
     dimensions ([str]): The bot dimensions used to allocate a Swarming bot.
@@ -304,10 +302,10 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
   # bucket is the logical successor to mastername.
   properties['mastername'] = tryserver_mastername
 
-  try_job = buildbucket_client.TryJob(
-      tryserver_mastername, tryserver_buildername, properties, [],
-      additional_parameters, cache_name, dimensions,
-      CreatePubSubCallback(runner_id))
+  try_job = buildbucket_client.TryJob(tryserver_mastername,
+                                      tryserver_buildername, properties, [],
+                                      cache_name, dimensions,
+                                      CreatePubSubCallback(runner_id))
   swarmbot_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
   error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
@@ -700,8 +698,8 @@ def OnTryJobStateChanged(try_job_id, job_type, build_json):
         buildbucket_build=build,
         error_dict=error_dict,
         error_code=error_code)
-    return (None, analysis_status.ERROR
-            if error_dict else analysis_status.PENDING)
+    return (None,
+            analysis_status.ERROR if error_dict else analysis_status.PENDING)
 
 
 def OnTryJobTimeout(try_job_id, job_type):
@@ -747,8 +745,8 @@ def OnTryJobCompleted(params, try_job_data, build, error):
   result_to_update = _UpdateTryJobEntity(params['urlsafe_try_job_key'],
                                          try_job_type, try_job_id, build.url,
                                          BuildbucketBuild.COMPLETED, report)
-  return (result_to_update[-1], analysis_status.ERROR
-          if error_dict else analysis_status.COMPLETED)
+  return (result_to_update[-1],
+          analysis_status.ERROR if error_dict else analysis_status.COMPLETED)
 
 
 def OnTryJobRunning(params, try_job_data, build, error):
@@ -772,14 +770,14 @@ def OnTryJobRunning(params, try_job_data, build, error):
       error_code=error_code,
       report=None)
 
-  return (None, analysis_status.ERROR
-          if error_dict else analysis_status.RUNNING)
+  return (None,
+          analysis_status.ERROR if error_dict else analysis_status.RUNNING)
 
 
 def GetCurrentTryJobID(urlsafe_try_job_key, runner_id):
   try_job = (
-      ndb.Key(urlsafe=urlsafe_try_job_key).get()
-      if urlsafe_try_job_key else None)
+      ndb.Key(
+          urlsafe=urlsafe_try_job_key).get() if urlsafe_try_job_key else None)
 
   if not try_job or not try_job.try_job_ids:
     return None

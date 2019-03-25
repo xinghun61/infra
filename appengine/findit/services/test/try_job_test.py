@@ -468,7 +468,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     mock_module.TriggerTryJobs.return_value = results
 
     build_id, error = try_job_service.TriggerTryJob(
-        master_name, builder_name, master_name, builder_name, {}, [],
+        master_name, builder_name, master_name, builder_name, {},
         failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
         None, None, 'pipeline_id')
 
@@ -501,8 +501,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     build_id, error = try_job_service.TriggerTryJob(
         master_name, builder_name, 'luci.chromium.findit', 'findit_variable',
-        {}, [],
-        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
+        {}, failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
         None, None, 'pipeline_id')
 
     self.assertEqual('luci.chromium.findit',
@@ -527,7 +526,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     mock_module.TriggerTryJobs.return_value = results
 
     build_id, error = try_job_service.TriggerTryJob(
-        master_name, builder_name, master_name, builder_name, {}, [],
+        master_name, builder_name, master_name, builder_name, {},
         failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
         None, None, 'pipeline_id')
 
@@ -761,8 +760,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testRecordCacheStats(self, mock_cl, *_):
     cases = [(None, None, '100', 100), ('100', '100', '200', 200),
-             ('100', '200', '100', 200), ('200', '200', '100',
-                                          200), ('100', '200', '300', 300)]
+             ('100', '200', '100', 200), ('200', '200', '100', 200),
+             ('100', '200', '300', 300)]
     for (checked_out_revision, cached_revision, bad_revision,
          synced_revision) in cases:
       mock_commit_position = mock.PropertyMock()
@@ -789,8 +788,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         try_job_service._RecordCacheStats(build, report)
         mock_add_bot.assert_called_once_with(
             'BotName',
-            int(checked_out_revision)
-            if checked_out_revision else None, synced_revision)
+            int(checked_out_revision) if checked_out_revision else None,
+            synced_revision)
 
   @mock.patch.object(swarmbot_util, 'GetBot', return_value=None)
   @mock.patch.object(swarmbot_util, 'GetBuilderCacheName', return_value=None)

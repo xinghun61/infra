@@ -1012,7 +1012,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             build_number=build_number),
         good_revision='1',
         bad_revision='2',
-        suspected_revisions=[])
+        suspected_revisions=[],
+        targeted_tests={})
 
     expected_properties = {
         'recipe':
@@ -1027,7 +1028,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             'b',
         'suspected_revisions': [],
         'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
-                                (master_name, builder_name, build_number)
+                                (master_name, builder_name, build_number),
+        'tests': {},
     }
     properties = test_try_job.GetBuildProperties(pipeline_input)
 
