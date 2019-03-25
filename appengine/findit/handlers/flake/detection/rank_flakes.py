@@ -17,6 +17,11 @@ from services.flake_detection.detect_flake_occurrences import SUPPORTED_TAGS
 _DEFAULT_LUCI_PROJECT = 'chromium'
 _DEFAULT_MONORAIL_PROJECT = 'chromium'
 
+# No need to filter for flake since we have search by test functionality;
+# 'gerrit_project' and 'luci_project' are the same for all current flakes,
+# no need to filter by them.
+_TAGS_NOT_FOR_FILTER = ['flake', 'gerrit_project', 'luci_project']
+
 
 def _GetFlakesByBug(monorail_project, bug_id):
   """Gets flakes link to the same bug.
@@ -142,7 +147,8 @@ class RankFlakes(BaseHandler):
         'flake_weights': [[
             FLAKE_TYPE_DESCRIPTIONS[flake_type], FLAKE_TYPE_WEIGHT[flake_type]
         ] for flake_type in sorted(FLAKE_TYPE_DESCRIPTIONS)],
-        'filter_names':
-            SUPPORTED_TAGS
+        'filter_names': [
+            tag for tag in SUPPORTED_TAGS if tag not in _TAGS_NOT_FOR_FILTER
+        ]
     }
     return {'template': 'flake/detection/rank_flakes.html', 'data': data}

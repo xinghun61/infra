@@ -178,8 +178,10 @@ class RankFlakesTest(WaterfallTestCase):
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
-            'filter_names':
-                SUPPORTED_TAGS
+            'filter_names': [
+                tag for tag in SUPPORTED_TAGS
+                if tag not in rank_flakes._TAGS_NOT_FOR_FILTER
+            ]
         },
                    default=str), response.body)
 
@@ -245,8 +247,10 @@ class RankFlakesTest(WaterfallTestCase):
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
-            'filter_names':
-                SUPPORTED_TAGS
+            'filter_names': [
+                tag for tag in SUPPORTED_TAGS
+                if tag not in rank_flakes._TAGS_NOT_FOR_FILTER
+            ]
         },
                    default=str), response.body)
 
@@ -283,8 +287,10 @@ class RankFlakesTest(WaterfallTestCase):
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
-            'filter_names':
-                SUPPORTED_TAGS
+            'filter_names': [
+                tag for tag in SUPPORTED_TAGS
+                if tag not in rank_flakes._TAGS_NOT_FOR_FILTER
+            ]
         },
                    default=str), response.body)
 
@@ -322,8 +328,10 @@ class RankFlakesTest(WaterfallTestCase):
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
-            'filter_names':
-                SUPPORTED_TAGS
+            'filter_names': [
+                tag for tag in SUPPORTED_TAGS
+                if tag not in rank_flakes._TAGS_NOT_FOR_FILTER
+            ]
         },
                    default=str), response.body)
 
@@ -360,7 +368,9 @@ class RankFlakesTest(WaterfallTestCase):
             'flake_weights': [('cq false rejection', 100),
                               ('cq retry with patch', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
-            'filter_names':
-                SUPPORTED_TAGS
+            'filter_names': [
+                tag for tag in SUPPORTED_TAGS
+                if tag not in rank_flakes._TAGS_NOT_FOR_FILTER
+            ]
         },
                    default=str), response.body)

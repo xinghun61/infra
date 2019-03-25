@@ -18,6 +18,10 @@
 
       paper-dropdown-menu {
         padding-right: 20px;
+
+        --paper-dropdown-menu-icon: {
+          display: block;
+        }
       }
 
       .side-by-side {
@@ -38,6 +42,9 @@
       paper-dropdown-menu[disabled] {
         --paper-input-container-disabled: {
           opacity: 1;
+        }
+        --paper-dropdown-menu-icon: {
+          display: none;
         }
       }
 
