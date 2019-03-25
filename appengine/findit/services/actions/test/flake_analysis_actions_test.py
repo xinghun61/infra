@@ -2,8 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
+from libs import time_util
 from model.flake.analysis.flake_culprit import FlakeCulprit
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.flake import Flake
@@ -86,6 +88,33 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     mocked_update_monorail.assert_called_once_with(analysis.key.urlsafe())
 
   @mock.patch.object(
+      time_util, 'GetDateDaysBeforeNow', return_value=datetime(2019, 1, 3))
+  def testMergeOrSplitFlakeIssueByCulpritFlakeIssueClosedLongAgo(self, _):
+    project = 'chromium'
+    duplicate_bug_id = 12344
+    manually_created_bug_id = 12345
+    revision = 'r1000'
+    commit_position = 1000
+
+    flake_issue = FlakeIssue.Create(project, manually_created_bug_id)
+    flake_issue.status = 'Fixed'
+    flake_issue.last_updated_time_in_monorail = datetime(2019, 1, 1)
+    flake_issue.put()
+    culprit_flake_issue = FlakeIssue.Create(project, duplicate_bug_id)
+    culprit_flake_issue.put()
+
+    flake_culprit = FlakeCulprit.Create(project, revision, commit_position)
+    flake_culprit.flake_issue_key = culprit_flake_issue.key
+    flake_culprit.put()
+
+    (duplicate,
+     destination) = flake_analysis_actions.MergeOrSplitFlakeIssueByCulprit(
+         flake_issue.key, flake_culprit.key)
+
+    self.assertIsNone(duplicate)
+    self.assertIsNone(destination)
+
+  @mock.patch.object(
       monorail_util, 'WasCreatedByFindit', side_effect=[True, False])
   @mock.patch.object(monorail_util, 'MergeDuplicateIssues')
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
@@ -98,6 +127,7 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     commit_position = 1000
 
     flake_issue = FlakeIssue.Create(project, manually_created_bug_id)
+    flake_issue.status = 'Assigned'
     flake_issue.put()
     culprit_flake_issue = FlakeIssue.Create(project, duplicate_bug_id)
     culprit_flake_issue.put()
@@ -151,8 +181,10 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     commit_position = 1000
 
     flake_issue = FlakeIssue.Create(project, duplicate_bug_id)
+    flake_issue.status = 'Untriaged'
     flake_issue.put()
     culprit_flake_issue = FlakeIssue.Create(project, merged_bug_id)
+    culprit_flake_issue.status = 'Started'
     culprit_flake_issue.put()
 
     flake_culprit = FlakeCulprit.Create(project, revision, commit_position)
@@ -183,18 +215,19 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
 
     mocked_merge_issues.assert_called_once_with(
         flake_monorail_issue, culprit_monorail_issue, mock.ANY)
-    flake_culprit = flake_culprit.key.get()
     flake_issue = flake_issue.key.get()
 
     self.assertEqual(flake_issue.key, duplicate)
     self.assertEqual(culprit_flake_issue.key, destination)
     self.assertEqual(flake_issue.merge_destination_key, culprit_flake_issue.key)
 
+  @mock.patch.object(
+      time_util, 'GetDateDaysBeforeNow', return_value=datetime(2019, 1, 2))
   @mock.patch.object(monorail_util, 'WasCreatedByFindit', return_value=True)
   @mock.patch.object(monorail_util, 'MergeDuplicateIssues')
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testMergeOrSplitFlakeIssueByCulpritIssueClosed(self, mocked_get_issue,
-                                                     mocked_merge_issues, _):
+                                                     mocked_merge_issues, *_):
     project = 'chromium'
     closed_bug_id = 12344
     open_bug_id = 12345
@@ -205,6 +238,7 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
     flake_issue.put()
     culprit_flake_issue = FlakeIssue.Create(project, closed_bug_id)
     culprit_flake_issue.status = 'Fixed'
+    culprit_flake_issue.last_updated_time_in_monorail = datetime(2019, 1, 1)
     culprit_flake_issue.put()
 
     flake_culprit = FlakeCulprit.Create(project, revision, commit_position)
@@ -344,3 +378,63 @@ class FlakeAnalysisActionsTest(WaterfallTestCase):
 
     mock_update.assert_called_once_with(bug_id, mock.ANY)
     self.assertIsNotNone(flake_issue.last_updated_time_with_analysis_results)
+
+  @mock.patch.object(flake_analysis_actions, 'MergeOrSplitFlakeIssueByCulprit')
+  @mock.patch.object(flake_analysis_actions, 'UpdateMonorailBugWithCulprit')
+  def testOnCulpritIdentifiedAttachCulpritFlakeIssue(
+      self, mocked_update_monorail, mocked_merge):
+    project = 'chromium'
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    label = 'l'
+    merged_bug_id = 12344
+    revision = 'r1000'
+    commit_position = 1000
+
+    merged_issue = FlakeIssue.Create(project, merged_bug_id)
+    merged_issue.put()
+
+    flake = Flake.Create(project, step_name, test_name, label)
+    flake.put()
+
+    culprit = FlakeCulprit.Create(project, revision, commit_position)
+    culprit.flake_issue_key = merged_issue.key
+    culprit.put()
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.flake_key = flake.key
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.confidence_in_culprit = 0.9
+    analysis.put()
+
+    flake_analysis_actions.OnCulpritIdentified(analysis.key.urlsafe())
+
+    self.assertFalse(mocked_merge.called)
+    mocked_update_monorail.assert_called_once_with(analysis.key.urlsafe())
+    flake = flake.key.get()
+    self.assertEqual(merged_issue.key, flake.flake_issue_key)
+
+  def testAttachCulpritFlakeIssueToFlakeNoFlake(self):
+    self.assertIsNone(
+        flake_analysis_actions._AttachCulpritFlakeIssueToFlake(None, None))
+
+  def testAttachCulpritFlakeIssueToFlakeNoCulpritFlakeIssue(self):
+    project = 'chromium'
+    step_name = 's'
+    test_name = 't'
+    label = 'l'
+    revision = 'r1000'
+    commit_position = 1000
+
+    flake = Flake.Create(project, step_name, test_name, label)
+    flake.put()
+
+    culprit = FlakeCulprit.Create(project, revision, commit_position)
+    culprit.put()
+    self.assertIsNone(
+        flake_analysis_actions._AttachCulpritFlakeIssueToFlake(
+            flake, culprit.key))

@@ -18,16 +18,35 @@ from services import monorail_util
 from services.flake_failure import flake_bug_util
 
 
-def _GetFlakeIssueAndCulpritKeys(analysis_urlsafe_key):
-  """Gets the FlakeIssue and FlakeCulprit keys to associate with one another."""
-  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-  assert analysis, 'Analysis {} missing unexpectedly!'.format(
-      analysis_urlsafe_key)
+def _GetMostUpdatedCulpritFlakeIssue(flake_culprit):
+  if not flake_culprit.flake_issue_key:
+    return None
 
-  flake = analysis.flake_key.get() if analysis.flake_key else None
-  flake_issue_key = flake.flake_issue_key if flake else None
+  culprit_flake_issue = flake_culprit.flake_issue_key.get()
+  assert culprit_flake_issue, (
+      'Culprit FlakeIssue {} missing unexpectedly!'.format(
+          flake_culprit.flake_issue_key))
+  return culprit_flake_issue.GetMostUpdatedIssue()
 
-  return flake_issue_key, ndb.Key(urlsafe=analysis.culprit_urlsafe_key)
+
+# pylint: disable=E1120
+@ndb.transactional(xg=True)
+def _AttachCulpritFlakeIssueToFlake(flake, flake_culprit_key):
+  """Attaches culprit flake issue to flake and returns the flake_issue's key."""
+  if not flake or not flake_culprit_key:
+    return None
+
+  flake_culprit = flake_culprit_key.get()
+  assert flake_culprit, 'FlakeCulprit {} missing unexpectedly!'.format(
+      flake_culprit_key)
+
+  culprit_flake_issue = _GetMostUpdatedCulpritFlakeIssue(flake_culprit)
+  if not culprit_flake_issue:
+    return None
+
+  flake.flake_issue_key = culprit_flake_issue.key
+  flake.put()
+  return culprit_flake_issue.key
 
 
 def _MergeFlakeIssuesAndUpdateMonorail(culprit, culprit_flake_issue,
@@ -108,6 +127,9 @@ def _MergeFlakeIssuesAndUpdateMonorail(culprit, culprit_flake_issue,
 def MergeOrSplitFlakeIssueByCulprit(flake_issue_key, flake_culprit_key):
   """Associate FlakeCulprit with FlakeIssue and provided by MasterFlakeAnalysis.
 
+    If flake_issue and/or culprit_flake_issue has been closed over a week, no
+    merge needed.
+
     The end result of this method should include:
     1. FlakeCulprit's |flake_issue_key| before and after should not change.
     2. Flakeculprit's FlakeIssue.GetMostUpdatedIssue() should be the latest
@@ -129,43 +151,35 @@ def MergeOrSplitFlakeIssueByCulprit(flake_issue_key, flake_culprit_key):
       merged and the key of the flake issue it was merged into. Returns
       (None, None) if no merge took place.
   """
-  if not flake_issue_key:  # pragma: no cover. Nothing to do if no FlakeIssue.
-    # TODO(crbug.com/907603): All flake analyses should eventually be triggered
-    # with a flake issue. This check should then be removed.
-    return None, None
-
   flake_issue = flake_issue_key.get()
   assert flake_issue, 'FlakeIssue {} missing unexpectedly!'.format(
       flake_issue_key)
 
   # At this stage, flake_issue may already have been merged as the result of
-  # another analysis, or manually in Monorail. These are expected to be rare as
+  # another analysis, or manually in Monorail. These are expected to be rare
   # as the window of opportunity for this to occur is small.
   flake_issue = flake_issue.GetMostUpdatedIssue()
 
-  culprit = flake_culprit_key.get()
-  assert culprit, 'FlakeCulprit {} missing unexpectedly!'.format(
+  if not flake_issue_util.IsFlakeIssueActionable(flake_issue):
+    return None, None
+
+  flake_culprit = flake_culprit_key.get()
+  assert flake_culprit, 'FlakeCulprit {} missing unexpectedly!'.format(
       flake_culprit_key)
 
-  culprit_flake_issue = None
-  most_updated_culprit_flake_issue = None
-  if culprit.flake_issue_key:
-    culprit_flake_issue = culprit.flake_issue_key.get()
-    assert culprit_flake_issue, (
-        'Culprit FlakeIssue {} mising unexpectedly!'.format(
-            culprit.flake_issue_key))
-    most_updated_culprit_flake_issue = culprit_flake_issue.GetMostUpdatedIssue()
-
-  if (culprit_flake_issue and not most_updated_culprit_flake_issue.closed and
-      most_updated_culprit_flake_issue.key != flake_issue.key):
-    # The culprit already has an open FlakeIssue so one should merge into the
-    # other. The calling code should then perform any syncing with impacted
-    # FlakeIssue |merge_destination_key|s.
+  most_updated_culprit_flake_issue = _GetMostUpdatedCulpritFlakeIssue(
+      flake_culprit)
+  if (most_updated_culprit_flake_issue and
+      flake_issue_util.IsFlakeIssueActionable(most_updated_culprit_flake_issue)
+      and most_updated_culprit_flake_issue.key != flake_issue.key):
+    # The culprit already has an open/newly closed FlakeIssue so one should
+    # merge into the other. The calling code should then perform any syncing
+    # with impacted FlakeIssue |merge_destination_key|s.
     return _MergeFlakeIssuesAndUpdateMonorail(
-        culprit, most_updated_culprit_flake_issue, flake_issue)
+        flake_culprit, most_updated_culprit_flake_issue, flake_issue)
 
   if (flake_issue.flake_culprit_key and
-      flake_issue.flake_culprit_key != culprit.key):  # pragma: no cover.
+      flake_issue.flake_culprit_key != flake_culprit.key):  # pragma: no cover.
     # TODO(crbug.com/907313) flake_issue has a different culprit associated.
     # Create a new FlakeIssue for the new culprit. Remove no cover when
     # implemented.
@@ -174,30 +188,39 @@ def MergeOrSplitFlakeIssueByCulprit(flake_issue_key, flake_culprit_key):
   # FlakeCulprit either doesn't have a flake_issue_key or has one that's closed.
   # Update it and the incoming FlakeIssue to point to each other for subsequent
   # analyses to deduplicate.
-  culprit.flake_issue_key = flake_issue.key
-  flake_issue.flake_culprit_key = culprit.key
+  flake_culprit.flake_issue_key = flake_issue.key
+  flake_issue.flake_culprit_key = flake_culprit.key
   flake_issue.put()
-  culprit.put()
+  flake_culprit.put()
   return None, None
 
 
 def UpdateMonorailBugWithCulprit(analysis_urlsafe_key):
   """Updates a bug in monorail with the culprit of a MasterFlakeAnalsyis"""
   analysis = entity_util.GetEntityFromUrlsafeKey(analysis_urlsafe_key)
-  assert analysis, 'Analysis missing unexpectedly!'
+  assert analysis, 'Analysis {} missing unexpectedly!'.format(
+      analysis_urlsafe_key)
 
   if not analysis.flake_key:  # pragma: no cover.
-    logging.warning('Analysis has no flake key. Bug updates should only be '
-                    'routed through Flake and FlakeIssue')
+    logging.warning(
+        'Analysis %s has no flake key. Bug updates should only be '
+        'routed through Flake and FlakeIssue', analysis_urlsafe_key)
     return
 
   flake = analysis.flake_key.get()
   assert flake, 'Analysis\' associated Flake {} missing unexpectedly!'.format(
       analysis.flake_key)
 
+  flake_urlsafe_key = flake.key.urlsafe()
+  if flake.archived:
+    logging.info('Flake %s has been archived when flake analysis %s completes.',
+                 flake_urlsafe_key, analysis_urlsafe_key)
+    return
+
   if not flake.flake_issue_key:  # pragma: no cover.
-    logging.warning('FlakeIssue has no flake key. Bug updates should only be '
-                    'routed through Flake and FlakeIssue')
+    logging.warning(
+        'Flake %s has no flake_issue_key. Bug updates should only'
+        ' be routed through Flake and FlakeIssue', flake_urlsafe_key)
     return
 
   flake_issue = flake.flake_issue_key.get()
@@ -267,20 +290,32 @@ def OnCulpritIdentified(analysis_urlsafe_key):
             analysis.confidence_in_culprit))
     return
 
-  flake_issue_key, flake_culprit_key = _GetFlakeIssueAndCulpritKeys(
+  analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+  assert analysis, 'Analysis {} missing unexpectedly!'.format(
       analysis_urlsafe_key)
 
-  # Deduplicate bugs or split them based on culprit.
-  (duplicate_flake_issue_key,
-   destination_flake_issue_key) = MergeOrSplitFlakeIssueByCulprit(
-       flake_issue_key, flake_culprit_key)
+  # TODO(crbug.com/944670): make sure every analysis links to a flake - even
+  # for manually triggered ones.
+  flake = analysis.flake_key.get() if analysis.flake_key else None
+  flake_issue_key = flake.flake_issue_key if flake else None
+  flake_issue = flake_issue_key.get() if flake_issue_key else None
+  flake_culprit_key = ndb.Key(urlsafe=analysis.culprit_urlsafe_key)
 
-  if (duplicate_flake_issue_key and
-      destination_flake_issue_key):  # pragma: no branch
-    # A merge occurred. Update potentially impacted FlakeIssue merge destination
-    # keys.
-    flake_issue_util.UpdateIssueLeaves(duplicate_flake_issue_key,
-                                       destination_flake_issue_key)
+  if not flake_issue:
+    # Attaches culprit's flake issue to the flake.
+    _AttachCulpritFlakeIssueToFlake(flake, flake_culprit_key)
+  else:
+    # Deduplicate bugs or split them based on culprit.
+    (duplicate_flake_issue_key,
+     destination_flake_issue_key) = MergeOrSplitFlakeIssueByCulprit(
+         flake_issue_key, flake_culprit_key)
+
+    if (duplicate_flake_issue_key and
+        destination_flake_issue_key):  # pragma: no branch
+      # A merge occurred. Update potentially impacted FlakeIssue merge
+      # destination keys.
+      flake_issue_util.UpdateIssueLeaves(duplicate_flake_issue_key,
+                                         destination_flake_issue_key)
 
   # TODO(crbug.com/893787): Other auto actions based on outcome.
   UpdateMonorailBugWithCulprit(analysis_urlsafe_key)

@@ -1349,3 +1349,26 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
     flake_issue_3.put()
     self.assertEqual(
         4, flake_issue_util.GetRemainingPostAnalysisDailyBugUpdatesCount())
+
+  @mock.patch.object(
+      time_util,
+      'GetDateDaysBeforeNow',
+      return_value=datetime.datetime(2019, 1, 1))
+  def testIsFlakeIssueActionable(self, _):
+    flake_issue = FlakeIssue.Create('chromium', 12367)
+    flake_issue.put()
+    self.assertEqual(True, flake_issue_util.IsFlakeIssueActionable(flake_issue))
+
+    flake_issue.status = 'Assigned'
+    flake_issue.put()
+    self.assertEqual(True, flake_issue_util.IsFlakeIssueActionable(flake_issue))
+
+    flake_issue.status = 'Fixed'
+    flake_issue.last_updated_time_in_monorail = datetime.datetime(2019, 1, 5)
+    flake_issue.put()
+    self.assertEqual(True, flake_issue_util.IsFlakeIssueActionable(flake_issue))
+
+    flake_issue.last_updated_time_in_monorail = datetime.datetime(2018, 1, 5)
+    flake_issue.put()
+    self.assertEqual(False,
+                     flake_issue_util.IsFlakeIssueActionable(flake_issue))

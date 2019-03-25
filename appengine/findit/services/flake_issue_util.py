@@ -1000,3 +1000,23 @@ def SyncOpenFlakeIssuesWithMonorail():
     if monorail_issue.status in issue_constants.CLOSED_STATUSES_NO_DUPLICATE:
       # Issue is closed, detaches it from flakes.
       _ArchiveFlakesForClosedIssue(flake_issue)
+
+
+def IsFlakeIssueActionable(flake_issue):
+  """Checks if the flake_issue is actionable.
+
+  If the issue has been closed on monorail over 7 days, the flake_issue is not
+  actionable.
+  """
+  is_bug_stale = (
+      flake_issue.status in issue_constants.CLOSED_STATUSES_NO_DUPLICATE and
+      flake_issue.last_updated_time_in_monorail and
+      flake_issue.last_updated_time_in_monorail <
+      time_util.GetDateDaysBeforeNow(days=7))
+
+  if is_bug_stale:
+    logging.info(
+        'Flake issue %d has been closed over 7 days, don\'t take action on it.',
+        flake_issue.issue_id)
+    return False
+  return True
