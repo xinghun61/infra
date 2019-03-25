@@ -57,6 +57,22 @@ class CreationTest(testing.AppengineTestCase):
               cipd_version: "refs/heads/master"
             }
           }
+          builders {
+            name: "mac"
+            recipe {
+              name: "recipe"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
+            }
+          }
+          builders {
+            name: "win"
+            recipe {
+              name: "recipe"
+              cipd_package: "infra/recipe_bundle"
+              cipd_version: "refs/heads/master"
+            }
+          }
         }
         '''
     )
@@ -120,6 +136,15 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.proto.builder.bucket, 'try')
     self.assertEqual(build.proto.builder.builder, 'linux')
     self.assertEqual(build.created_by, auth.get_current_identity())
+
+  def test_non_existing_builder(self):
+    builder_id = build_pb2.BuilderID(
+        project='chromium',
+        bucket='try',
+        builder='non-existing',
+    )
+    with self.assertRaises(errors.BuilderNotFoundError):
+      self.add(dict(builder=builder_id))
 
   def test_critical(self):
     build = self.add(dict(critical=common_pb2.YES))

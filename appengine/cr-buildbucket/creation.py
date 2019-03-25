@@ -268,7 +268,7 @@ class NewBuild(object):
     bp = b.proto
 
     sync_task = None
-    if self.builder_cfg:
+    if self.builder_cfg:  # pragma: no branch
       # This is a LUCI builder.
       try:
         sync_task = yield swarming.create_sync_task_async(b, self.builder_cfg)
@@ -281,7 +281,7 @@ class NewBuild(object):
     bp.input.ClearField('properties')
 
     # Move Build.proto.infra to Build.infra_bytes.
-    b.is_luci = bp.infra.HasField('swarming')
+    b.is_luci = bool(self.builder_cfg)
     b.infra_bytes = bp.infra.SerializeToString()
     bp.ClearField('infra')
 
@@ -340,7 +340,12 @@ def add_many_async(build_requests):
   new_builds = []
   for r in build_requests:
     builder = r.schedule_build_request.builder.builder
-    builder_cfg = builder_cfgs[r.bucket_id].get(builder)
+    bucket_builder_cfgs = builder_cfgs[r.bucket_id]
+    builder_cfg = bucket_builder_cfgs.get(builder)
+    if bucket_builder_cfgs and not builder_cfg:
+      raise errors.BuilderNotFoundError(
+          'builder "%s" not found in bucket "%s"' % (builder, r.bucket_id)
+      )
     new_builds.append(NewBuild(r, builder_cfg))
 
   # Check memcache.
