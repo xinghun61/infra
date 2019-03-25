@@ -3,6 +3,7 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
+import copy
 import logging
 
 from google.protobuf import empty_pb2
@@ -528,7 +529,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def PresubmitIssue(self, mc, request):
     """Provide the UI with warnings and suggestions."""
-    project, existing_issue, config = self._GetProjectIssueAndConfig(
+    _project, issue, config = self._GetProjectIssueAndConfig(
         mc, request.issue_ref, issue_required=False)
 
     with mc.profiler.Phase('making user views'):
@@ -542,23 +543,13 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
           mc.cnxn, self.services.user, [proposed_owner_id])
       proposed_owner_view = users_by_id[proposed_owner_id]
 
-    with mc.profiler.Phase('initializing proposed_issue'):
+    with mc.profiler.Phase('Applying IssueDelta'):
+      proposed_issue = copy.deepcopy(issue)
       issue_delta = converters.IngestIssueDelta(
           mc.cnxn, self.services, request.issue_delta, config, None,
           ignore_missing_objects=True)
-      proposed_issue = tracker_pb2.Issue(
-          project_id=project.project_id,
-          local_id=request.issue_ref.local_id,
-          summary=issue_delta.summary,
-          status=issue_delta.status,
-          owner_id=issue_delta.owner_id,
-          labels=issue_delta.labels_add,
-          component_ids=issue_delta.comp_ids_add,
-          project_name=project.project_name,
-          field_values=issue_delta.field_vals_add)
-      if existing_issue:
-        proposed_issue.attachment_count = existing_issue.attachment_count
-        proposed_issue.star_count = existing_issue.star_count
+      tracker_bizobj.ApplyIssueDelta(
+          mc.cnxn, self.services.issue, proposed_issue, issue_delta, config)
 
     with mc.profiler.Phase('applying rules'):
       _, traces = filterrules_helpers.ApplyFilterRules(

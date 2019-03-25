@@ -1490,6 +1490,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Foo', 'Foo Docstring', False,
         [], [], 0, 111L, [])
+    self.issue_1.owner_id = 0
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
         comp_refs_add=[common_pb2.ComponentRef(path='Foo')])
@@ -1568,10 +1569,33 @@ class IssuesServicerTest(unittest.TestCase):
     """Test that we can match owner rules and return errors."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L),
+        owner_ref=common_pb2.UserRef(user_id=222L),
         cc_refs_add=[
-            common_pb2.UserRef(user_id=222L),
+            common_pb2.UserRef(user_id=111L),
             common_pb2.UserRef(user_id=333L)])
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule(
+            'cc:owner@example.com', error='Owner is not to be disturbed')]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(
+            value='Owner is not to be disturbed',
+            why='Added by rule: IF cc:owner@example.com THEN ADD ERROR')],
+        [vnw for vnw in response.errors])
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_Errors_ExistingOwner(self, mockGetFilterRules):
+    """Test that we apply the rules to the issue + delta, not only delta."""
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issue_objects_pb2.IssueDelta()
 
     mockGetFilterRules.return_value = [
         filterrules_helpers.MakeRule(

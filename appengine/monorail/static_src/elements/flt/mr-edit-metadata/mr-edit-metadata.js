@@ -364,8 +364,8 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
               <template is="dom-repeat" items="[[presubmitResponse.warnings]]">
                 <mr-warning title="[[item.why]]">[[item.value]]</mr-warning>
               </template>
-              // TODO(ehmaldonado): Look into blocking submission on presubmit
-              // errors.
+              <!-- TODO(ehmaldonado): Look into blocking submission on presubmit
+              -->
               <template is="dom-repeat" items="[[presubmitResponse.errors]]">
                 <mr-error title="[[item.why]]">[[item.value]]</mr-error>
               </template>
