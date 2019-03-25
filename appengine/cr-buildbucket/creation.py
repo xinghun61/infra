@@ -93,7 +93,7 @@ class BuildRequest(_BuildRequestBase):
 
   def _request_id_memcache_key(self, identity=None):
     req_id = self.schedule_build_request.request_id
-    if req_id is None:  # pragma: no cover
+    if not req_id:  # pragma: no cover
       return None
     return (
         'request_id/%s/%s/add_build' %
