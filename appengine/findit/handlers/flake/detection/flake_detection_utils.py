@@ -8,6 +8,7 @@ import logging
 
 from google.appengine.ext import ndb
 
+from gae_libs import dashboard_util
 from libs import time_util
 from libs import analysis_status
 from model import entity_util
@@ -292,8 +293,11 @@ def GetFlakeInformation(flake, max_occurrence_count, with_occurrences=True):
   return flake_dict
 
 
-def GetFlakesByFilter(flake_filter, luci_project,
-                      limit=None):  # pragma: no cover.
+def GetFlakesByFilter(flake_filter,
+                      luci_project,
+                      cursor,
+                      direction,
+                      page_size=None):  # pragma: no cover.
   """Gets flakes by the given filter, then sorts them by the flake score.
 
   Args:
@@ -303,11 +307,18 @@ def GetFlakesByFilter(flake_filter, luci_project,
       * tag1::value1@tag2::value2
       * tag1::value1@-tag2:value2
     luci_project (str): The Luci project that the flakes are for.
-    limit (int): Limit of results required.
+    cursor (None or str): The cursor provides a cursor in the current query
+      results, allowing you to retrieve the next set based on the offset.
+    direction (str): Either previous or next.
+    page_size (int): Limit of results required in one page.
 
   Returns:
-    (flakes, grouping_search, error_message)
-    flakes (list): A list of Flake that are in descending order of flake score.
+    (flakes, prev_cursor, cursor, grouping_search, error_message)
+    flakes (list): A list of Flakes filtered by tags.
+    prev_cursor (str): The urlsafe encoding of the cursor, which is at the
+      top position of entities of the current page.
+    cursor (str): The urlsafe encoding of the cursor, which is at the
+      bottom position of entities of the current page.
     grouping_search (bool): Whether it is a group searching.
     error_message (str): An error message if there is one; otherwise None.
   """
@@ -337,7 +348,7 @@ def GetFlakesByFilter(flake_filter, luci_project,
       flakes = Flake.query(Flake.normalized_test_name == Flake
                            .NormalizeTestName(parts[1])).filter(
                                Flake.luci_project == luci_project).fetch()
-      return flakes, grouping_search, error_message
+      return flakes, '', '', grouping_search, error_message
 
     negative = False
     if parts[0][0] == '-':
@@ -355,12 +366,12 @@ def GetFlakesByFilter(flake_filter, luci_project,
 
   if invalid_filters:
     error_message = 'Unsupported tag filters: %s' % ', '.join(invalid_filters)
-    return flakes, grouping_search, error_message
+    return flakes, '', '', grouping_search, error_message
 
   if not positive_filters:
     # At least one positive filter should be given.
     error_message = 'At least one positive filter required'
-    return flakes, grouping_search, error_message
+    return flakes, '', '', grouping_search, error_message
 
   logging.info('Positive filters: %r', positive_filters)
   logging.info('Negative filters: %r', negative_filters)
@@ -369,25 +380,39 @@ def GetFlakesByFilter(flake_filter, luci_project,
       ndb.AND(Flake.luci_project == luci_project, Flake.archived == False))  # pylint: disable=singleton-comparison
   for tag in positive_filters:
     query = query.filter(Flake.tags == tag)
+  query = query.filter(Flake.flake_score_last_week > 0)
+  minimum_flake_count_in_page = max(
+      1, page_size / 2) if page_size else DEFAULT_PAGE_SIZE / 2
 
-  cursor = None
-  more = True
-  while more:
-    results, cursor, more = query.fetch_page(
-        DEFAULT_PAGE_SIZE, start_cursor=cursor)
+  while True:
+    results, prev_cursor, cursor = dashboard_util.GetPagedResults(
+        query,
+        order_properties=[
+            (Flake.flake_score_last_week, dashboard_util.DESC),
+            (Flake.last_occurred_time, dashboard_util.DESC),
+            (Flake.normalized_step_name, dashboard_util.ASC),
+            (Flake.test_label_name, dashboard_util.ASC),
+        ],
+        cursor=cursor,
+        direction=direction,
+        page_size=page_size or DEFAULT_PAGE_SIZE)
 
     for result in results:
-      if not result.flake_score_last_week:
-        continue
       if negative_filters and any(t in result.tags for t in negative_filters):
         continue
       flakes.append(result)
 
-  logging.info('Search got %d flakes', len(flakes))
-  flakes.sort(key=lambda flake: flake.flake_score_last_week, reverse=True)
+    if ((direction == dashboard_util.PREVIOUS and prev_cursor == '') or
+        cursor == '' or len(flakes) >= minimum_flake_count_in_page):
+      # No more results or gets enough flakes on a page.
+      # Ideally we expect the page shows the same amount of flakes as the
+      # page_size suggests, but in the case with negative_filters, the number of
+      # flakes left after filtering out negative_filters is unknown.
+      # Uses minimum_flake_count_in_page to cap the flake count in one page from
+      # 0.5 page_size to 1.5 page_size.
+      break
 
-  limit = limit or len(flakes)
-  return flakes[:limit], grouping_search, error_message
+  return flakes, prev_cursor, cursor, grouping_search, error_message
 
 
 def _GetFlakeCountsList(flake_counts_last_week):
@@ -450,7 +475,8 @@ def GenerateFlakesData(flakes, include_closed_bug=False):
 
     flake_dict['flake_urlsafe_key'] = flake.key.urlsafe()
     flake_dict['time_delta'] = time_util.FormatTimedelta(
-        time_util.GetUTCNow() - flake.last_occurred_time, with_days=True)
+        time_util.GetUTCNow() - flake.last_occurred_time,
+        with_days=True) if flake.last_occurred_time else None
 
     flake_dict['flake_counts_last_week'] = _GetFlakeCountsList(
         flake.flake_counts_last_week)

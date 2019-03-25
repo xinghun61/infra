@@ -101,6 +101,19 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake5.archived = True
     self.flake5.put()
 
+    self.flake6 = Flake.Create(
+        luci_project=self.luci_project,
+        normalized_step_name=self.normalized_step_name,
+        normalized_test_name='suite.test6',
+        test_label_name='suite.test6')
+    self.flake6.false_rejection_count_last_week = 5
+    self.flake6.impacted_cl_count_last_week = 3
+    self.flake6.flake_score_last_week = 108
+    self.flake6.last_occurred_time = datetime.datetime(2018, 10, 1)
+    self.flake6.flake_issue_key = self.flake_issue0.key
+    self.flake6.tags = ['suite::suite', 'test_type::flavored_tests']
+    self.flake6.put()
+
     flake_issue0_dict = self.flake_issue0.to_dict()
     flake_issue0_dict['issue_link'] = FlakeIssue.GetLinkForIssue(
         self.flake_issue0.monorail_project, self.flake_issue0.issue_id)
@@ -118,10 +131,14 @@ class RankFlakesTest(WaterfallTestCase):
     self.flake5_dict = self.flake5.to_dict()
     self.flake5_dict['flake_issue'] = flake_issue0_dict
 
-    for data, flake in ((self.flake1_dict, self.flake1), (self.flake3_dict,
-                                                          self.flake3),
-                        (self.flake4_dict, self.flake4), (self.flake5_dict,
-                                                          self.flake5)):
+    self.flake6_dict = self.flake6.to_dict()
+    self.flake6_dict['flake_issue'] = flake_issue0_dict
+
+    for data, flake in ((self.flake1_dict, self.flake1),
+                        (self.flake3_dict, self.flake3), (self.flake4_dict,
+                                                          self.flake4),
+                        (self.flake5_dict, self.flake5), (self.flake6_dict,
+                                                          self.flake6)):
       data['flake_urlsafe_key'] = flake.key.urlsafe()
       data['time_delta'] = '1 day, 01:00:00'
       data['flake_counts_last_week'] = [
@@ -158,7 +175,9 @@ class RankFlakesTest(WaterfallTestCase):
         status=200)
     self.assertEqual(
         json.dumps({
-            'flakes_data': [self.flake3_dict, self.flake4_dict],
+            'flakes_data': [
+                self.flake3_dict, self.flake4_dict, self.flake6_dict
+            ],
             'prev_cursor':
                 '',
             'cursor':
@@ -219,7 +238,7 @@ class RankFlakesTest(WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testGetFlakesBySimpleSearch(self, _):
     response = self.test_app.get(
-        '/p/chromium/flake-portal/flakes?flake_filter=suite::suite',
+        '/p/chromium/flake-portal/flakes?flake_filter=suite::suite&n=1',
         params={
             'format': 'json',
         },
@@ -231,9 +250,13 @@ class RankFlakesTest(WaterfallTestCase):
             'prev_cursor':
                 '',
             'cursor':
-                '',
+                'CtsBChwKFWZsYWtlX3Njb3JlX2xhc3Rfd2VlaxIDCLBUCh8KEmxhc3Rfb2N'
+                'jdXJyZWRfdGltZRIJCIDA_-P3490CCi4KFG5vcm1hbGl6ZWRfc3RlcF9uYW1'
+                'lEhYaFG5vcm1hbGl6ZWRfc3RlcF9uYW1lCiAKD3Rlc3RfbGFiZWxfbmFtZRIN'
+                'GgtzdWl0ZS50ZXN0MhJEagx0ZXN0YmVkLXRlc3RyNAsSBUZsYWtlIiljaHJvbW'
+                'l1bUBub3JtYWxpemVkX3N0ZXBfbmFtZUBzdWl0ZS50ZXN0MgwYACAB',
             'n':
-                '',
+                1,
             'luci_project':
                 '',
             'flake_filter':
@@ -257,21 +280,27 @@ class RankFlakesTest(WaterfallTestCase):
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 10, 2, 1))
   def testGetFlakesByAdvancedSearch(self, _):
+    cursor = ('CtsBChwKFWZsYWtlX3Njb3JlX2xhc3Rfd2VlaxIDCLBUCh8KEmxhc3Rfb2N'
+              'jdXJyZWRfdGltZRIJCIDA_-P3490CCi4KFG5vcm1hbGl6ZWRfc3RlcF9uYW1'
+              'lEhYaFG5vcm1hbGl6ZWRfc3RlcF9uYW1lCiAKD3Rlc3RfbGFiZWxfbmFtZRIN'
+              'GgtzdWl0ZS50ZXN0MhJEagx0ZXN0YmVkLXRlc3RyNAsSBUZsYWtlIiljaHJvbW'
+              'l1bUBub3JtYWxpemVkX3N0ZXBfbmFtZUBzdWl0ZS50ZXN0MgwYACAB')
+
     response = self.test_app.get(
         '/p/chromium/flake-portal/flakes?flake_filter='
-        'test_type::flavored_tests@-test_type::tests',
+        'test_type::flavored_tests@-test_type::tests&direction=previous'
+        '&cursor={}'.format(cursor),
         params={
             'format': 'json',
         },
         status=200)
-
     self.assertEqual(
         json.dumps({
             'flakes_data': [self.flake3_dict],
             'prev_cursor':
                 '',
             'cursor':
-                '',
+                cursor,
             'n':
                 '',
             'luci_project':
@@ -307,7 +336,8 @@ class RankFlakesTest(WaterfallTestCase):
     self.assertEqual(
         json.dumps({
             'flakes_data': [
-                self.flake3_dict, self.flake5_dict, self.flake1_dict
+                self.flake3_dict, self.flake5_dict, self.flake6_dict,
+                self.flake1_dict
             ],
             'prev_cursor':
                 '',

@@ -104,8 +104,10 @@ class RankFlakes(BaseHandler):
 
     if flake_filter:
       # No paging if search for a test name.
-      flakes, grouping_search, error_message = (
-          flake_detection_utils.GetFlakesByFilter(flake_filter, luci_project))
+      flakes, prev_cursor, cursor, grouping_search, error_message = (
+          flake_detection_utils.GetFlakesByFilter(
+              flake_filter, luci_project, self.request.get('cursor'),
+              self.request.get('direction').strip(), page_size))
 
       if len(flakes) == 1 and not grouping_search:
         # Only one flake is retrieved when searching a test by full name,

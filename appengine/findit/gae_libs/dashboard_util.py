@@ -13,8 +13,8 @@ from libs import time_util
 DATE_FORMAT = '%Y-%m-%d'
 
 PAGE_SIZE = 100
-_PREVIOUS = 'previous'
-_NEXT = 'next'
+PREVIOUS = 'previous'
+NEXT = 'next'
 
 # Order type of a property in forwarding paging.
 ASC = 'asc'
@@ -44,7 +44,7 @@ def GetStartAndEndDates(start_date=None, end_date=None):
 def GetPagedResults(query,
                     order_properties,
                     cursor=None,
-                    direction=_NEXT,
+                    direction=NEXT,
                     page_size=PAGE_SIZE):
   """Paging the query results with page_size.
 
@@ -67,7 +67,7 @@ def GetPagedResults(query,
   """
   cursor = Cursor(urlsafe=cursor) if cursor else None
 
-  if direction.lower() == _PREVIOUS:
+  if direction.lower() == PREVIOUS:
     for order_property, forward_order in order_properties:
       if forward_order == DESC:
         # Forward order is desc meaning backward order should be asc.
@@ -89,7 +89,7 @@ def GetPagedResults(query,
 
   next_cursor = next_cursor.urlsafe() if next_cursor else ''
   used_cursor = cursor.urlsafe() if cursor else ''
-  if direction.lower() == _PREVIOUS:
+  if direction.lower() == PREVIOUS:
     top_cursor = next_cursor if more else ''
     bottom_cursor = used_cursor
   else:
