@@ -258,7 +258,7 @@ def validate_schedule_build_request(
 
 
 def validate_cancel_build_request(req):
-  _check_truth(req, 'id')
+  _check_truth(req, 'id', 'summary_markdown')
   with _enter('summary_markdown'):
     validate_build_summary_markdown(req.summary_markdown)
 
