@@ -122,6 +122,7 @@ class BuildRequest(_BuildRequestBase):
                 requested_dimensions=sbr.dimensions,
             ),
         ),
+        critical=sbr.critical,
     )
     build_proto.create_time.FromDatetime(now)
 

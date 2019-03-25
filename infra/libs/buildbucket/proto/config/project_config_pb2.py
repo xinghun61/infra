@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
         'Z6go.chromium.org/luci/buildbucket/proto/config;configpb'
     ),
     serialized_pb=_b(
-        '\n\x14project_config.proto\x12\x0b\x62uildbucket\x1a\x1egoogle/protobuf/wrappers.proto\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"6\n\x06\x41\x63lSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\"\x85\x06\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rswarming_host\x18\x15 \x01(\t\x12\x0e\n\x06mixins\x18\n \x03(\t\x12\x10\n\x08\x63\x61tegory\x18\x06 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x12\n\ndimensions\x18\x03 \x03(\t\x12+\n\x06recipe\x18\x04 \x01(\x0b\x32\x1b.buildbucket.Builder.Recipe\x12\x10\n\x08priority\x18\x05 \x01(\r\x12\x1e\n\x16\x65xecution_timeout_secs\x18\x07 \x01(\r\x12\x17\n\x0f\x65xpiration_secs\x18\x14 \x01(\r\x12/\n\x06\x63\x61\x63hes\x18\t \x03(\x0b\x32\x1f.buildbucket.Builder.CacheEntry\x12*\n\rbuild_numbers\x18\x10 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x17\n\x0fservice_account\x18\x0c \x01(\t\x12\x33\n\x16\x61uto_builder_dimension\x18\x11 \x01(\x0e\x32\x13.buildbucket.Toggle\x12)\n\x0c\x65xperimental\x18\x12 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x1b\n\x13luci_migration_host\x18\x13 \x01(\t\x12\x45\n\x1ftask_template_canary_percentage\x18\x16 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\x1aJ\n\nCacheEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12 \n\x18wait_for_warm_cache_secs\x18\x03 \x01(\x05\x1ar\n\x06Recipe\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0c\x63ipd_package\x18\x06 \x01(\t\x12\x14\n\x0c\x63ipd_version\x18\x05 \x01(\t\x12\x12\n\nproperties\x18\x03 \x03(\t\x12\x14\n\x0cproperties_j\x18\x04 \x03(\tJ\x04\x08\x01\x10\x02J\x04\x08\x08\x10\tJ\x04\x08\x0b\x10\x0cJ\x04\x08\r\x10\x0eJ\x04\x08\x0f\x10\x10\"\xcf\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12.\n\x10\x62uilder_defaults\x18\x03 \x01(\x0b\x32\x14.buildbucket.Builder\x12&\n\x08\x62uilders\x18\x04 \x03(\x0b\x32\x14.buildbucket.Builder\x12\x45\n\x1ftask_template_canary_percentage\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\"q\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\x10\n\x08\x61\x63l_sets\x18\x04 \x03(\t\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"\x8b\x01\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket\x12%\n\x08\x61\x63l_sets\x18\x02 \x03(\x0b\x32\x13.buildbucket.AclSet\x12,\n\x0e\x62uilder_mixins\x18\x03 \x03(\x0b\x32\x14.buildbucket.Builder*$\n\x06Toggle\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x38Z6go.chromium.org/luci/buildbucket/proto/config;configpbb\x06proto3'
+        '\n\x14project_config.proto\x12\x0b\x62uildbucket\x1a\x1egoogle/protobuf/wrappers.proto\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"6\n\x06\x41\x63lSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\"\xf4\x06\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x15\n\rswarming_host\x18\x15 \x01(\t\x12\x0e\n\x06mixins\x18\n \x03(\t\x12\x10\n\x08\x63\x61tegory\x18\x06 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x12\n\ndimensions\x18\x03 \x03(\t\x12+\n\x06recipe\x18\x04 \x01(\x0b\x32\x1b.buildbucket.Builder.Recipe\x12\x33\n\nexecutable\x18\x17 \x01(\x0b\x32\x1f.buildbucket.Builder.Executable\x12\x10\n\x08priority\x18\x05 \x01(\r\x12\x1e\n\x16\x65xecution_timeout_secs\x18\x07 \x01(\r\x12\x17\n\x0f\x65xpiration_secs\x18\x14 \x01(\r\x12/\n\x06\x63\x61\x63hes\x18\t \x03(\x0b\x32\x1f.buildbucket.Builder.CacheEntry\x12*\n\rbuild_numbers\x18\x10 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x17\n\x0fservice_account\x18\x0c \x01(\t\x12\x33\n\x16\x61uto_builder_dimension\x18\x11 \x01(\x0e\x32\x13.buildbucket.Toggle\x12)\n\x0c\x65xperimental\x18\x12 \x01(\x0e\x32\x13.buildbucket.Toggle\x12\x1b\n\x13luci_migration_host\x18\x13 \x01(\t\x12\x45\n\x1ftask_template_canary_percentage\x18\x16 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\x1aJ\n\nCacheEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12 \n\x18wait_for_warm_cache_secs\x18\x03 \x01(\x05\x1a\x38\n\nExecutable\x12\x14\n\x0c\x63ipd_package\x18\x01 \x01(\t\x12\x14\n\x0c\x63ipd_version\x18\x02 \x01(\t\x1ar\n\x06Recipe\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0c\x63ipd_package\x18\x06 \x01(\t\x12\x14\n\x0c\x63ipd_version\x18\x05 \x01(\t\x12\x12\n\nproperties\x18\x03 \x03(\t\x12\x14\n\x0cproperties_j\x18\x04 \x03(\tJ\x04\x08\x01\x10\x02J\x04\x08\x08\x10\tJ\x04\x08\x0b\x10\x0cJ\x04\x08\r\x10\x0eJ\x04\x08\x0f\x10\x10\"\xcf\x01\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12.\n\x10\x62uilder_defaults\x18\x03 \x01(\x0b\x32\x14.buildbucket.Builder\x12&\n\x08\x62uilders\x18\x04 \x03(\x0b\x32\x14.buildbucket.Builder\x12\x45\n\x1ftask_template_canary_percentage\x18\x05 \x01(\x0b\x32\x1c.google.protobuf.UInt32Value\"q\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\x10\n\x08\x61\x63l_sets\x18\x04 \x03(\t\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"\x8b\x01\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket\x12%\n\x08\x61\x63l_sets\x18\x02 \x03(\x0b\x32\x13.buildbucket.AclSet\x12,\n\x0e\x62uilder_mixins\x18\x03 \x03(\x0b\x32\x14.buildbucket.Builder*$\n\x06Toggle\x12\t\n\x05UNSET\x10\x00\x12\x07\n\x03YES\x10\x01\x12\x06\n\x02NO\x10\x02\x42\x38Z6go.chromium.org/luci/buildbucket/proto/config;configpbb\x06proto3'
     ),
     dependencies=[
         google_dot_protobuf_dot_wrappers__pb2.DESCRIPTOR,
@@ -47,8 +47,8 @@ _TOGGLE = _descriptor.EnumDescriptor(
     ],
     containing_type=None,
     serialized_options=None,
-    serialized_start=1492,
-    serialized_end=1528,
+    serialized_start=1603,
+    serialized_end=1639,
 )
 _sym_db.RegisterEnumDescriptor(_TOGGLE)
 
@@ -294,8 +294,64 @@ _BUILDER_CACHEENTRY = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=809,
-    serialized_end=883,
+    serialized_start=862,
+    serialized_end=936,
+)
+
+_BUILDER_EXECUTABLE = _descriptor.Descriptor(
+    name='Executable',
+    full_name='buildbucket.Builder.Executable',
+    filename=None,
+    file=DESCRIPTOR,
+    containing_type=None,
+    fields=[
+        _descriptor.FieldDescriptor(
+            name='cipd_package',
+            full_name='buildbucket.Builder.Executable.cipd_package',
+            index=0,
+            number=1,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR
+        ),
+        _descriptor.FieldDescriptor(
+            name='cipd_version',
+            full_name='buildbucket.Builder.Executable.cipd_version',
+            index=1,
+            number=2,
+            type=9,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=_b("").decode('utf-8'),
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR
+        ),
+    ],
+    extensions=[],
+    nested_types=[],
+    enum_types=[],
+    serialized_options=None,
+    is_extendable=False,
+    syntax='proto3',
+    extension_ranges=[],
+    oneofs=[],
+    serialized_start=938,
+    serialized_end=994,
 )
 
 _BUILDER_RECIPE = _descriptor.Descriptor(
@@ -404,8 +460,8 @@ _BUILDER_RECIPE = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=885,
-    serialized_end=999,
+    serialized_start=996,
+    serialized_end=1110,
 )
 
 _BUILDER = _descriptor.Descriptor(
@@ -542,9 +598,27 @@ _BUILDER = _descriptor.Descriptor(
             file=DESCRIPTOR
         ),
         _descriptor.FieldDescriptor(
+            name='executable',
+            full_name='buildbucket.Builder.executable',
+            index=7,
+            number=23,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR
+        ),
+        _descriptor.FieldDescriptor(
             name='priority',
             full_name='buildbucket.Builder.priority',
-            index=7,
+            index=8,
             number=5,
             type=13,
             cpp_type=3,
@@ -562,7 +636,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='execution_timeout_secs',
             full_name='buildbucket.Builder.execution_timeout_secs',
-            index=8,
+            index=9,
             number=7,
             type=13,
             cpp_type=3,
@@ -580,7 +654,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='expiration_secs',
             full_name='buildbucket.Builder.expiration_secs',
-            index=9,
+            index=10,
             number=20,
             type=13,
             cpp_type=3,
@@ -598,7 +672,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='caches',
             full_name='buildbucket.Builder.caches',
-            index=10,
+            index=11,
             number=9,
             type=11,
             cpp_type=10,
@@ -616,7 +690,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='build_numbers',
             full_name='buildbucket.Builder.build_numbers',
-            index=11,
+            index=12,
             number=16,
             type=14,
             cpp_type=8,
@@ -634,7 +708,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='service_account',
             full_name='buildbucket.Builder.service_account',
-            index=12,
+            index=13,
             number=12,
             type=9,
             cpp_type=9,
@@ -652,7 +726,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='auto_builder_dimension',
             full_name='buildbucket.Builder.auto_builder_dimension',
-            index=13,
+            index=14,
             number=17,
             type=14,
             cpp_type=8,
@@ -670,7 +744,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='experimental',
             full_name='buildbucket.Builder.experimental',
-            index=14,
+            index=15,
             number=18,
             type=14,
             cpp_type=8,
@@ -688,7 +762,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='luci_migration_host',
             full_name='buildbucket.Builder.luci_migration_host',
-            index=15,
+            index=16,
             number=19,
             type=9,
             cpp_type=9,
@@ -706,7 +780,7 @@ _BUILDER = _descriptor.Descriptor(
         _descriptor.FieldDescriptor(
             name='task_template_canary_percentage',
             full_name='buildbucket.Builder.task_template_canary_percentage',
-            index=16,
+            index=17,
             number=22,
             type=11,
             cpp_type=10,
@@ -725,6 +799,7 @@ _BUILDER = _descriptor.Descriptor(
     extensions=[],
     nested_types=[
         _BUILDER_CACHEENTRY,
+        _BUILDER_EXECUTABLE,
         _BUILDER_RECIPE,
     ],
     enum_types=[],
@@ -734,7 +809,7 @@ _BUILDER = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=250,
-    serialized_end=1023,
+    serialized_end=1134,
 )
 
 _SWARMING = _descriptor.Descriptor(
@@ -843,8 +918,8 @@ _SWARMING = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1026,
-    serialized_end=1233,
+    serialized_start=1137,
+    serialized_end=1344,
 )
 
 _BUCKET = _descriptor.Descriptor(
@@ -935,8 +1010,8 @@ _BUCKET = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1235,
-    serialized_end=1348,
+    serialized_start=1346,
+    serialized_end=1459,
 )
 
 _BUILDBUCKETCFG = _descriptor.Descriptor(
@@ -1009,16 +1084,18 @@ _BUILDBUCKETCFG = _descriptor.Descriptor(
     syntax='proto3',
     extension_ranges=[],
     oneofs=[],
-    serialized_start=1351,
-    serialized_end=1490,
+    serialized_start=1462,
+    serialized_end=1601,
 )
 
 _ACL.fields_by_name['role'].enum_type = _ACL_ROLE
 _ACL_ROLE.containing_type = _ACL
 _ACLSET.fields_by_name['acls'].message_type = _ACL
 _BUILDER_CACHEENTRY.containing_type = _BUILDER
+_BUILDER_EXECUTABLE.containing_type = _BUILDER
 _BUILDER_RECIPE.containing_type = _BUILDER
 _BUILDER.fields_by_name['recipe'].message_type = _BUILDER_RECIPE
+_BUILDER.fields_by_name['executable'].message_type = _BUILDER_EXECUTABLE
 _BUILDER.fields_by_name['caches'].message_type = _BUILDER_CACHEENTRY
 _BUILDER.fields_by_name['build_numbers'].enum_type = _TOGGLE
 _BUILDER.fields_by_name['auto_builder_dimension'].enum_type = _TOGGLE
@@ -1080,6 +1157,15 @@ Builder = _reflection.GeneratedProtocolMessageType(
                 # @@protoc_insertion_point(class_scope:buildbucket.Builder.CacheEntry)
             )
         ),
+        Executable=_reflection.GeneratedProtocolMessageType(
+            'Executable',
+            (_message.Message,),
+            dict(
+                DESCRIPTOR=_BUILDER_EXECUTABLE,
+                __module__='project_config_pb2'
+                # @@protoc_insertion_point(class_scope:buildbucket.Builder.Executable)
+            )
+        ),
         Recipe=_reflection.GeneratedProtocolMessageType(
             'Recipe',
             (_message.Message,),
@@ -1096,6 +1182,7 @@ Builder = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(Builder)
 _sym_db.RegisterMessage(Builder.CacheEntry)
+_sym_db.RegisterMessage(Builder.Executable)
 _sym_db.RegisterMessage(Builder.Recipe)
 
 Swarming = _reflection.GeneratedProtocolMessageType(

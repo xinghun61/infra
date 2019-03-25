@@ -121,6 +121,10 @@ class CreationTest(testing.AppengineTestCase):
     self.assertEqual(build.proto.builder.builder, 'linux')
     self.assertEqual(build.created_by, auth.get_current_identity())
 
+  def test_critical(self):
+    build = self.add(dict(critical=common_pb2.YES))
+    self.assertEqual(build.proto.critical, common_pb2.YES)
+
   def test_properties(self):
     props = {'foo': 'bar', 'qux': 1}
     prop_struct = bbutil.dict_to_struct(props)
