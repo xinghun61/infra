@@ -21,14 +21,6 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
           display: block;
           font-size: 12px;
         }
-        .input-grid {
-          padding: 0.5em 0;
-          display: grid;
-          max-width: 100%;
-          grid-gap: 10px;
-          grid-template-columns: 120px auto;
-          align-items: flex-start;
-        }
         .error {
           max-width: 100%;
           color: red;
@@ -37,10 +29,6 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
         .edit-actions {
           width: 100%;
           margin: 0.5em 0;
-          text-align: right;
-        }
-        label {
-          font-weight: bold;
           text-align: right;
         }
         input {

@@ -107,6 +107,10 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           --approval-bg-color: hsl(5, 60%, 92%);
           --approval-accent-color: hsl(357, 100%, 39%);
         }
+        chops-button {
+          border: var(--chops-normal-border);
+          margin: 0;
+        }
         h3 {
           margin: 0;
           padding: 0;
@@ -168,7 +172,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         [role="heading"] {
           display: flex;
           justify-content: space-between;
-          align-items: baseline;
+          align-items: flex-end;
         }
       </style>
       <button class="header" on-click="toggleCard" aria-expanded$="[[_toString(opened)]]">

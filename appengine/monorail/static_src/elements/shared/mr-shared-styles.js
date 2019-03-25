@@ -11,9 +11,10 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         --mr-edit-field-styles: {
           box-sizing: border-box;
           width: 95%;
-          padding: 0.25em 4px;
+          padding: 0.125em 4px;
           font-size: 13px;
         };
+        --mr-input-grid-gap: 6px;
       }
       .linkify {
         text-decoration: underline;
@@ -38,7 +39,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
       }
       chops-button, a.button {
         box-sizing: border-box;
-        font-size: 12px;
+        font-size: 13px;
         background: white;
         border-radius: 6px;
         padding: 0.25em 8px;
@@ -63,13 +64,36 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         font-size: 16px;
         font-weight: normal;
         line-height: 1;
-        padding: 0.5em 0;
+        padding: 0.25em 0;
         color: hsl(227, 60%, 39%);
         margin: 0;
         border-bottom: var(--chops-normal-border);
       }
       .medium-heading chops-button {
         line-height: 1.6;
+      }
+      .input-grid {
+        padding: 0.5em 0;
+        display: grid;
+        max-width: 100%;
+        grid-gap: var(--mr-input-grid-gap);
+        grid-template-columns: 120px auto;
+        align-items: flex-start;
+      }
+      .input-grid label {
+        font-weight: bold;
+        text-align: right;
+        word-wrap: break-word;
+      }
+      @media (max-width: 600px) {
+        .input-grid label {
+          margin-top: var(--mr-input-grid-gap);
+          text-align: left;
+        }
+        .input-grid {
+          grid-gap: var(--mr-input-grid-gap);
+          grid-template-columns: 100%;
+        }
       }
     </style>
   </template>

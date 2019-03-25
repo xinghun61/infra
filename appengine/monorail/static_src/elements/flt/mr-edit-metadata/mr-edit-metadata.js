@@ -139,14 +139,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         .edit-actions .emphasized {
           margin-left: 0;
         }
-        .input-grid {
-          padding: 0.5em 0;
-          display: grid;
-          max-width: 100%;
-          grid-gap: 8px;
-          grid-template-columns: 120px auto;
-          align-items: flex-start;
-        }
         .group {
           width: 100%;
           border: 1px solid hsl(0, 0%, 83%);
@@ -164,16 +156,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           font-style: oblique;
           margin-top: 4px;
           margin-bottom: -8px;
-        }
-        @media (max-width: 600px) {
-          label {
-            margin-top: 8px;
-            text-align: left;
-          }
-          .input-grid {
-            grid-gap: 8px;
-            grid-template-columns: 100%;
-          }
         }
       </style>
       <template is="dom-if" if="[[error]]">

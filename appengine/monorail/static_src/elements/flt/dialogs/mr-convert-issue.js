@@ -45,14 +45,6 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
           margin: 0.5em 0;
           text-align: right;
         }
-        .input-grid {
-          padding: 0.5em 0;
-          display: grid;
-          max-width: 100%;
-          grid-gap: 10px;
-          grid-template-columns: 120px auto;
-          align-items: flex-start;
-        }
       </style>
       <chops-dialog>
         <h3 class="medium-heading">Convert issue to new template structure</h3>

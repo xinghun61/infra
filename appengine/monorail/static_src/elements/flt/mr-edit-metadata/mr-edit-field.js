@@ -45,7 +45,7 @@ export class MrEditField extends PolymerElement {
         .multi-grid {
           width: 95%;
           display: grid;
-          grid-gap: 8px;
+          grid-gap: var(--mr-input-grid-gap);
           grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
         }
         .multi-grid > input {
