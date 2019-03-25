@@ -264,3 +264,19 @@ class FlakeAnalysisUtilTest(WaterfallTestCase):
             commit_position=culprit_commit_position - 1, pass_rate=1.0)
     ]
     self.assertTrue(flake_analysis_util.ShouldTakeAutoAction(analysis, False))
+
+  def testFlakyAtMostRecentlyAnalyzedCommitStillFlaky(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.flakiness_verification_data_points = [
+        DataPoint.Create(commit_position=1000, pass_rate=0.5)
+    ]
+    self.assertTrue(
+        flake_analysis_util.FlakyAtMostRecentlyAnalyzedCommit(analysis))
+
+  def testFlakyAtMostRecentlyAnalyzedCommitStable(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=1000, pass_rate=1.0)
+    ]
+    self.assertFalse(
+        flake_analysis_util.FlakyAtMostRecentlyAnalyzedCommit(analysis))

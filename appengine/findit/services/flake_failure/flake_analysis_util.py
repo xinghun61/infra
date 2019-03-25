@@ -194,6 +194,21 @@ def ShouldTakeAutoAction(analysis, rerun):
   return True
 
 
+def FlakyAtMostRecentlyAnalyzedCommit(analysis):
+  """Determines whether the most recently analyzed data point is flaky."""
+  # Try flakiness_verification_data_points, falling back to main data_points.
+  data_points_to_check = (
+      analysis.flakiness_verification_data_points or analysis.data_points)
+  assert data_points_to_check, (
+      'Data points to check recent flakiness for analysis {} unexpectedly '
+      'missing!'.format(analysis.key.urlsafe()))
+
+  recent_data_point = sorted(
+      data_points_to_check, key=lambda x: x.commit_position, reverse=True)[0]
+
+  return not pass_rate_util.IsFullyStable(recent_data_point.pass_rate)
+
+
 def ShouldThrottleAnalysis():
   """Determines whether to throttle an analysis based on config."""
   flake_settings = waterfall_config.GetCheckFlakeSettings()

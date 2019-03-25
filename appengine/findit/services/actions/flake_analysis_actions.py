@@ -317,5 +317,7 @@ def OnCulpritIdentified(analysis_urlsafe_key):
       flake_issue_util.UpdateIssueLeaves(duplicate_flake_issue_key,
                                          destination_flake_issue_key)
 
+  # TODO(crbug.com/942224): Log bugs if no FlakeIssue and still flaky.
+
   # TODO(crbug.com/893787): Other auto actions based on outcome.
   UpdateMonorailBugWithCulprit(analysis_urlsafe_key)

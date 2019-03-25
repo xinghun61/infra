@@ -10,7 +10,6 @@ from dto.flakiness import Flakiness
 from dto.int_range import IntRange
 from dto.step_metadata import StepMetadata
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from infra_api_clients import crrev
 from libs import analysis_status
 from libs.list_of_basestring import ListOfBasestring
 from model import result_status
@@ -18,11 +17,19 @@ from model.flake.analysis.flake_culprit import FlakeCulprit
 from model.flake.analysis.data_point import DataPoint
 from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 from pipelines.delay_pipeline import DelayPipeline
+from pipelines.flake_failure.analyze_flake_pipeline import (
+    _PerformAutoActionsInput)
+from pipelines.flake_failure.analyze_flake_pipeline import (
+    _PerformAutoActionsPipeline)
 from pipelines.flake_failure.analyze_flake_pipeline import AnalyzeFlakeInput
 from pipelines.flake_failure.analyze_flake_pipeline import (
     AnalyzeFlakePipeline)
 from pipelines.flake_failure.analyze_flake_pipeline import (
     RecursiveAnalyzeFlakePipeline)
+from pipelines.flake_failure.analyze_recent_flakiness_pipeline import (
+    AnalyzeRecentFlakinessInput)
+from pipelines.flake_failure.analyze_recent_flakiness_pipeline import (
+    AnalyzeRecentFlakinessPipeline)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
@@ -61,9 +68,7 @@ from waterfall.test.wf_testcase import WaterfallTestCase
 class AnalyzeFlakePipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
-  def testAnalyzeFlakePipelineAnalysisFinishedNoFindings(
-      self, mocked_culprit_identified):
+  def testAnalyzeFlakePipelineAnalysisFinishedNoFindings(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
 
@@ -90,19 +95,16 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     self.assertIsNone(analysis.culprit_urlsafe_key)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.NOT_FOUND_UNTRIAGED, analysis.result_status)
-    mocked_culprit_identified.assert_not_called()
 
   @mock.patch.object(
       flake_analysis_util, 'ShouldTakeAutoAction', return_value=True)
   @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
   @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
-  @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
   def testAnalyzeFlakePipelineAnalysisFinishedWithCulprit(
-      self, mocked_culprit_identified, mocked_confidence, mocked_culprit, _):
+      self, mocked_confidence, mocked_culprit, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
-    build_key = 'm/b/123'
     step_name = 's'
     test_name = 't'
     culprit_commit_position = 999
@@ -142,17 +144,17 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
         retries=0,
         step_metadata=None)
 
-    expected_create_and_submit_revert_input = CreateAndSubmitRevertInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
-    expected_notify_culprit_input = NotifyCulpritInput(
+    expected_recent_flakiness_input = AnalyzeRecentFlakinessInput(
+        analysis_urlsafe_key=analysis.key.urlsafe())
+    expected_auto_action_input = _PerformAutoActionsInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
     expected_report_event_input = ReportEventInput(
         analysis_urlsafe_key=analysis.key.urlsafe())
 
-    self.MockGeneratorPipeline(CreateAndSubmitRevertPipeline,
-                               expected_create_and_submit_revert_input, True)
-    self.MockGeneratorPipeline(NotifyCulpritPipeline,
-                               expected_notify_culprit_input, True)
+    self.MockGeneratorPipeline(AnalyzeRecentFlakinessPipeline,
+                               expected_recent_flakiness_input, None)
+    self.MockGeneratorPipeline(_PerformAutoActionsPipeline,
+                               expected_auto_action_input, None)
     self.MockGeneratorPipeline(ReportAnalysisEventPipeline,
                                expected_report_event_input, None)
 
@@ -160,71 +162,44 @@ class AnalyzeFlakePipelineTest(WaterfallTestCase):
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    self.assertIsNotNone(analysis.culprit_urlsafe_key)
-    self.assertTrue(mocked_culprit.called)
-    self.assertEqual(confidence_score, analysis.confidence_in_culprit)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
-    mocked_culprit_identified.assert_called_once_with(analysis.key.urlsafe())
 
   @mock.patch.object(
-      flake_analysis_util, 'ShouldTakeAutoAction', return_value=False)
-  @mock.patch.object(flake_analysis_util, 'UpdateCulprit')
-  @mock.patch.object(confidence_score_util, 'CalculateCulpritConfidenceScore')
+      flake_analysis_util,
+      'FlakyAtMostRecentlyAnalyzedCommit',
+      return_value=True)
   @mock.patch.object(flake_analysis_actions, 'OnCulpritIdentified')
-  def testAnalyzeFlakePipelineAnalysisFinishedWithCulpritNoAutoAction(
-      self, mocked_culprit_identified, mocked_confidence, mocked_culprit, _):
+  def testPerformautoActionsPipeline(self, mocked_culprit_identified, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 's'
     test_name = 't'
-    culprit_commit_position = 999
-
+    build_key = 'm/b/123'
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.data_points = [
-        DataPoint.Create(commit_position=culprit_commit_position)
-    ]
     analysis.original_master_name = master_name
     analysis.original_builder_name = builder_name
     analysis.original_build_number = build_number
-    analysis.original_step_name = step_name
-    analysis.original_test_name = test_name
     analysis.Save()
 
-    culprit_revision = 'r999'
-    confidence_score = 0.85
-    culprit = FlakeCulprit.Create('chromium', culprit_revision,
-                                  culprit_commit_position)
-    culprit.put()
+    expected_create_and_submit_revert_input = CreateAndSubmitRevertInput(
+        analysis_urlsafe_key=analysis.key.urlsafe(), build_key=build_key)
+    expected_notify_culprit_input = NotifyCulpritInput(
+        analysis_urlsafe_key=analysis.key.urlsafe())
 
-    mocked_confidence.return_value = confidence_score
-    mocked_culprit.return_value = culprit
+    self.MockGeneratorPipeline(CreateAndSubmitRevertPipeline,
+                               expected_create_and_submit_revert_input, True)
+    self.MockGeneratorPipeline(NotifyCulpritPipeline,
+                               expected_notify_culprit_input, True)
 
-    analyze_flake_input = AnalyzeFlakeInput(
-        analysis_urlsafe_key=analysis.key.urlsafe(),
-        analyze_commit_position_parameters=NextCommitPositionOutput(
-            next_commit_id=None,
-            culprit_commit_id=CommitID(
-                commit_position=culprit_commit_position,
-                revision=culprit_revision)),
-        commit_position_range=IntRange(lower=None, upper=None),
-        dimensions=ListOfBasestring.FromSerializable([]),
-        manually_triggered=False,
-        rerun=True,
-        retries=0,
-        step_metadata=None)
-
-    pipeline_job = AnalyzeFlakePipeline(analyze_flake_input)
+    perform_auto_actions_input = _PerformAutoActionsInput(
+        analysis_urlsafe_key=analysis.key.urlsafe())
+    pipeline_job = _PerformAutoActionsPipeline(perform_auto_actions_input)
     pipeline_job.start()
     self.execute_queued_tasks()
 
-    self.assertIsNotNone(analysis.culprit_urlsafe_key)
-    self.assertTrue(mocked_culprit.called)
-    self.assertEqual(confidence_score, analysis.confidence_in_culprit)
-    self.assertEqual(analysis_status.COMPLETED, analysis.status)
-    self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
     mocked_culprit_identified.assert_called_once_with(analysis.key.urlsafe())
 
   @mock.patch.object(

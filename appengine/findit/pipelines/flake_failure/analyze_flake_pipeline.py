@@ -13,9 +13,14 @@ from libs import analysis_status
 from libs import time_util
 from libs.list_of_basestring import ListOfBasestring
 from libs.structured_object import StructuredObject
+from model import entity_util
 from model import result_status
 from model.base_build_model import BaseBuildModel
 from pipelines.delay_pipeline import DelayPipeline
+from pipelines.flake_failure.analyze_recent_flakiness_pipeline import (
+    AnalyzeRecentFlakinessInput)
+from pipelines.flake_failure.analyze_recent_flakiness_pipeline import (
+    AnalyzeRecentFlakinessPipeline)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
     CreateAndSubmitRevertInput)
 from pipelines.flake_failure.create_and_submit_revert_pipeline import (
@@ -46,6 +51,56 @@ from pipelines.report_event_pipeline import ReportEventInput
 from services.flake_failure import confidence_score_util
 from services.actions import flake_analysis_actions
 from services.flake_failure import flake_analysis_util
+
+
+class _PerformAutoActionsInput(StructuredObject):
+  analysis_urlsafe_key = basestring
+
+
+class _PerformAutoActionsPipeline(GeneratorPipeline):
+  """Temporary pipeline to execute auto actions.
+
+    TODO(crbug.com/893787): All auto-action pipelines should be refactored into
+    the auto action layer, which already accounts for bug merging by culprit.
+    Eventually auto revert, notifying culprit, etc. should all live inside there
+    as well, and their outer pipelines deprecated, including this one.
+  """
+  input_type = _PerformAutoActionsInput
+
+  def RunImpl(self, parameters):
+    analysis_urlsafe_key = parameters.analysis_urlsafe_key
+    analysis = entity_util.GetEntityFromUrlsafeKey(analysis_urlsafe_key)
+    assert analysis, 'Cannot retrieve analysis entry from datastore {}'.format(
+        analysis_urlsafe_key)
+
+    # Determine if flakiness is still persistent.
+    still_flaky = flake_analysis_util.FlakyAtMostRecentlyAnalyzedCommit(
+        analysis)
+
+    # TODO(crbug.com/905754): Call auto actions as an async taskqueue task.
+    flake_analysis_actions.OnCulpritIdentified(analysis_urlsafe_key)
+
+    if not still_flaky:  # pragma: no cover.
+      analysis.LogInfo(
+          'No further actions taken due to latest commit being stable.')
+      return
+
+    # Data needed for reverts.
+    build_key = BaseBuildModel.CreateBuildKey(analysis.original_master_name,
+                                              analysis.original_builder_name,
+                                              analysis.original_build_number)
+
+    # Revert culprit if applicable.
+    yield CreateAndSubmitRevertPipeline(
+        self.CreateInputObjectInstance(
+            CreateAndSubmitRevertInput,
+            analysis_urlsafe_key=analysis.key.urlsafe(),
+            build_key=build_key))
+
+    # Update culprit code review.
+    yield NotifyCulpritPipeline(
+        self.CreateInputObjectInstance(
+            NotifyCulpritInput, analysis_urlsafe_key=analysis_urlsafe_key))
 
 
 class AnalyzeFlakeInput(StructuredObject):
@@ -118,22 +173,22 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
     commit_position_to_analyze = (
         commit_position_parameters.next_commit_id.commit_position
         if commit_position_parameters.next_commit_id else None)
-    culprit_commit_position = (
-        commit_position_parameters.culprit_commit_id.commit_position
-        if commit_position_parameters.culprit_commit_id else None)
 
     if commit_position_to_analyze is None:
-      # No commit position to analyze. The analysis is finished.
+      # No further commit position to analyze. The analysis is completed.
+      culprit_commit_position = (
+          commit_position_parameters.culprit_commit_id.commit_position
+          if commit_position_parameters.culprit_commit_id else None)
 
       if culprit_commit_position is None:
-        # No culprit was identified. No further action.
         analysis.LogInfo('Analysis completed with no findings')
         analysis.Update(result_status=result_status.NOT_FOUND_UNTRIAGED)
 
-        # Report events to BQ.
-        yield ReportAnalysisEventPipeline(
-            self.CreateInputObjectInstance(
-                ReportEventInput, analysis_urlsafe_key=analysis_urlsafe_key))
+        if not parameters.rerun:  # pragma: no branch
+          # Don't double report for reruns.
+          yield ReportAnalysisEventPipeline(
+              self.CreateInputObjectInstance(
+                  ReportEventInput, analysis_urlsafe_key=analysis_urlsafe_key))
         return
 
       # Create a FlakeCulprit.
@@ -145,39 +200,26 @@ class AnalyzeFlakePipeline(GeneratorPipeline):
       confidence_score = confidence_score_util.CalculateCulpritConfidenceScore(
           analysis, culprit_commit_position)
 
-      # Update the analysis' culprit.
+      # Associate FlakeCulprit with the analysis.
       analysis.Update(
           confidence_in_culprit=confidence_score,
           culprit_urlsafe_key=culprit.key.urlsafe(),
           result_status=result_status.FOUND_UNTRIAGED)
 
-      # TODO(crbug.com/905754): Call auto actions as an async taskqueue task.
-      flake_analysis_actions.OnCulpritIdentified(analysis_urlsafe_key)
-
       with pipeline.InOrder():
         if flake_analysis_util.ShouldTakeAutoAction(
             analysis, parameters.rerun):  # pragma: no branch
-          # Determine the test's location for filing bugs.
-          culprit_data_point = analysis.FindMatchingDataPointWithCommitPosition(
-              culprit_commit_position)
-          assert culprit_data_point, 'Culprit unexpectedly missing!'
 
-          # Data needed for reverts.
-          build_key = BaseBuildModel.CreateBuildKey(
-              analysis.original_master_name, analysis.original_builder_name,
-              analysis.original_build_number)
-
-          # Revert culprit if applicable.
-          yield CreateAndSubmitRevertPipeline(
+          # Check recent flakiness.
+          yield AnalyzeRecentFlakinessPipeline(
               self.CreateInputObjectInstance(
-                  CreateAndSubmitRevertInput,
-                  analysis_urlsafe_key=analysis.key.urlsafe(),
-                  build_key=build_key))
+                  AnalyzeRecentFlakinessInput,
+                  analysis_urlsafe_key=analysis_urlsafe_key))
 
-          # Update culprit code review.
-          yield NotifyCulpritPipeline(
+          # Perform auto actions after checking recent flakiness.
+          yield _PerformAutoActionsPipeline(
               self.CreateInputObjectInstance(
-                  NotifyCulpritInput,
+                  _PerformAutoActionsInput,
                   analysis_urlsafe_key=analysis_urlsafe_key))
 
         if not parameters.rerun:  # pragma: no branch
