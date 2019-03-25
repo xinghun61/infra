@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/smartystreets/goconvey/convey"
 	. "go.chromium.org/luci/common/testing/assertions"
@@ -34,116 +35,87 @@ func createConfig(id string) *Config {
 	}
 }
 
-func createValidator() func([]byte) error {
-	cs := "services/arquebus"
-	p := "config.cfg"
-	ctx := context.Background()
-	r := validation.RuleSet{}
-	r.Add(cs, p, validateConfig)
-
-	return func(content []byte) error {
-		c := validation.Context{Context: ctx}
-		c.SetFile(p)
-
-		// validate
-		err := r.ValidateConfig(&c, cs, p, content)
+func TestConfigValidator(t *testing.T) {
+	t.Parallel()
+	rules := &validation.RuleSet{}
+	rules.RegisterVar("appid", func(context.Context) (string, error) {
+		return "my_app", nil
+	})
+	SetupValidation(rules)
+	validate := func(cfg *Config) error {
+		c := validation.Context{Context: context.Background()}
+		err := rules.ValidateConfig(
+			&c, "services/my_app", configFile, []byte(cfg.String()),
+		)
 		So(err, ShouldBeNil)
 		return c.Finalize()
 	}
-}
-
-func TestConfigValidator(t *testing.T) {
-	t.Parallel()
 
 	Convey("devcfg template is valid", t, func() {
 		content, err := ioutil.ReadFile(
 			"../devcfg/services/dev/config-template.cfg",
 		)
 		So(err, ShouldBeNil)
-
-		validate := createValidator()
-		ve := validate(content)
-		So(ve, ShouldBeNil)
+		cfg := &Config{}
+		So(proto.UnmarshalText(string(content), cfg), ShouldBeNil)
+		So(validate(cfg), ShouldBeNil)
 	})
 
 	Convey("empty config is valid", t, func() {
-		validate := createValidator()
-		ve := validate([]byte(""))
-		So(ve, ShouldBeNil)
+		So(validate(&Config{}), ShouldBeNil)
 	})
 
 	Convey("validateConfig catches errors", t, func() {
-		validate := createValidator()
-
 		Convey("with duplicate IDs", func() {
 			cfg := createConfig("my-assigner")
 			cfg.Assigners = append(cfg.Assigners, cfg.Assigners[0])
-			ve := validate([]byte(cfg.String()))
-			So(ve, ShouldErrLike, "duplicate id")
+			So(validate(cfg), ShouldErrLike, "duplicate id")
 		})
 
 		Convey("With invalid IDs", func() {
-			bad := []string{
-				"a-", "-a", "-", "a--b", "a@!3", "123=56",
-			}
-
-			for _, id := range bad {
-				cfg := createConfig(id)
-				ve := validate([]byte(cfg.String()))
-				So(ve, ShouldErrLike, "invalid id")
-			}
+			msg := "invalid id"
+			So(validate(createConfig("a-")), ShouldErrLike, msg)
+			So(validate(createConfig("a-")), ShouldErrLike, msg)
+			So(validate(createConfig("-a")), ShouldErrLike, msg)
+			So(validate(createConfig("-")), ShouldErrLike, msg)
+			So(validate(createConfig("a--b")), ShouldErrLike, msg)
+			So(validate(createConfig("a@!3")), ShouldErrLike, msg)
+			So(validate(createConfig("12=56")), ShouldErrLike, msg)
+			So(validate(createConfig("A-cfg")), ShouldErrLike, msg)
 		})
 
 		Convey("With invalid owners", func() {
 			cfg := createConfig("my-assigner")
 			cfg.Assigners[0].Owners = []string{"example.com"}
-			ve := validate([]byte(cfg.String()))
-			So(ve, ShouldErrLike, "invalid email address")
+			So(validate(cfg), ShouldErrLike, "invalid email address")
 		})
 
 		Convey("With missing interval", func() {
 			cfg := createConfig("my-assigner")
 			cfg.Assigners[0].Interval = nil
-			ve := validate([]byte(cfg.String()))
-			So(ve, ShouldErrLike, "missing interval")
+			So(validate(cfg), ShouldErrLike, "missing interval")
 		})
 
 		Convey("With an interval shoter than 1 minute", func() {
 			cfg := createConfig("my-assigner")
-			cfg.Assigners[0].Interval = &duration.Duration{
-				Seconds: 59,
-			}
-			ve := validate([]byte(cfg.String()))
-			So(
-				ve, ShouldErrLike,
-				"interval should be at least one minute",
-			)
+			cfg.Assigners[0].Interval = &duration.Duration{Seconds: 59}
+			So(validate(cfg), ShouldErrLike, "interval should be at least one minute")
 		})
 
 		Convey("With missing rotations", func() {
 			cfg := createConfig("my-assigner")
 			cfg.Assigners[0].Rotations = []string{}
-			ve := validate([]byte(cfg.String()))
-			So(ve, ShouldErrLike, "missing rotations")
+			So(validate(cfg), ShouldErrLike, "missing rotations")
 		})
 
 		Convey("With missing issue_query", func() {
 			cfg := createConfig("my-assigner")
 			cfg.Assigners[0].IssueQuery = nil
-			ve := validate([]byte(cfg.String()))
-			So(ve, ShouldErrLike, "missing issue_query")
-
-			cfg.Assigners[0].IssueQuery = &IssueQuery{
-				ProjectNames: []string{},
-			}
-			ve = validate([]byte(cfg.String()))
-			So(ve, ShouldErrLike, "missing q")
-
-			cfg.Assigners[0].IssueQuery = &IssueQuery{
-				Q: "text search",
-			}
-			ve = validate([]byte(cfg.String()))
-			So(ve, ShouldErrLike, "missing project_names")
+			So(validate(cfg), ShouldErrLike, "missing issue_query")
+			cfg.Assigners[0].IssueQuery = &IssueQuery{ProjectNames: []string{}}
+			So(validate(cfg), ShouldErrLike, "missing q")
+			cfg.Assigners[0].IssueQuery = &IssueQuery{Q: "text"}
+			So(validate(cfg), ShouldErrLike, "missing project_names")
 		})
 	})
 }

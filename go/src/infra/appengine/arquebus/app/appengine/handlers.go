@@ -20,6 +20,7 @@ import (
 
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/data/rand/mathrand"
+	"go.chromium.org/luci/config/validation"
 	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/arquebus/app/config"
@@ -41,6 +42,6 @@ func init() {
 	standard.InstallHandlers(r)
 	frontend.InstallHandlers(r, m)
 
-	config.SetupValidation()
+	config.SetupValidation(&validation.Rules)
 	http.DefaultServeMux.Handle("/", r)
 }

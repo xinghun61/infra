@@ -95,8 +95,7 @@ func GetConfigRevision(c context.Context) string {
 
 // SetupValidation adds validation rules for configuration data pushed via
 // luci-config.
-func SetupValidation() {
-	rules := &validation.Rules
+func SetupValidation(rules *validation.RuleSet) {
 	rules.Add("services/${appid}", configFile, validateConfig)
 }
 
