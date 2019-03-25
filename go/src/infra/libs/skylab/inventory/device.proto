@@ -30,6 +30,7 @@ message Device {
 // NEXT TAG: 2
 message DeviceUnderTest {
   required CommonDeviceSpecs common = 1;
+  optional RemovalReason removal_reason = 2;
 }
 
 // NEXT TAG: 2
@@ -85,6 +86,21 @@ message CommonDeviceSpecs {
   // updates should set this back to false.  This can be used to test
   // that automated updates are firing correctly.
   optional bool useless_switch = 11;
+}
+
+// RemovalReason describes the reason for a DUT being removed from running tasks.
+// See also go/skylab-dut-removal-reason
+// NEXT TAG: 4
+message RemovalReason {
+  // bug is a link to a bug in crbug.com or other bug tracker.  Required.
+  optional string bug = 1;
+  // comment should be a short comment to provide quick context for
+  // the removal reason.  This should not be used as a replacement for
+  // keeping the bug up to date with context.
+  optional string comment = 2;
+  // expire_time indicates when the reason for removal should be
+  // revisited so that DUTs don't get forgotten.  Required.
+  optional Timestamp expire_time = 3;
 }
 
 // NEXT TAG: 5
