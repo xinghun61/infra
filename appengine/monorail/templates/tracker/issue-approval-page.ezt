@@ -12,7 +12,7 @@
 
 [include "../framework/polymer-footer.ezt"]
 
-<script>
+<script type="text/javascript" nonce="[nonce]">
   window.addEventListener('load', () => {
     window.getTSMonClient().recordIssueDetailSpaTiming();
   });
