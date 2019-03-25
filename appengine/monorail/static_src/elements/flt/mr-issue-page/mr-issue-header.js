@@ -13,6 +13,7 @@ import * as project from '../../redux/project.js';
 import {selectors} from '../../redux/selectors.js';
 import {arrayToEnglish} from '../../shared/helpers.js';
 import '../../links/mr-user-link/mr-user-link.js';
+import '../../links/mr-crbug-link/mr-crbug-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
 import '../../mr-dropdown/mr-dropdown.js';
 import '../../shared/mr-shared-styles.js';
@@ -94,6 +95,10 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           align-items: flex-end;
           font-size: 12px;
         }
+        .code-font-and-description-edit div {
+          display: flex;
+          justify-content: space-between;
+        }
         .spam-notice {
           padding: 1px 5px;
           border-radius: 3px;
@@ -162,9 +167,12 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       </div>
       <div class="issue-actions">
         <div class="code-font-and-description-edit">
-          <mr-code-font-toggle
-            user-display-name="[[userDisplayName]]"
-          ></mr-code-font-toggle>
+          <div>
+            <mr-crbug-link issue="[[issue]]"></mr-crbug-link>
+            <mr-code-font-toggle
+              user-display-name="[[userDisplayName]]"
+            ></mr-code-font-toggle>
+          </div>
           <a on-click="_openEditDescription">Edit description</a>
         </div>
         <template is="dom-if" if="[[_issueOptions.length]]">
