@@ -155,6 +155,10 @@ func (b *buildUpdater) updateBuildBytes(ctx context.Context, annBytes []byte) er
 	if err != nil {
 		return errors.Annotate(err, "failed to parse UpdateBuild request").Err()
 	}
+
+	req.Build.Status = buildbucketpb.Status_STARTED
+	req.UpdateMask.Paths = append(req.UpdateMask.Paths, "build.status")
+
 	return b.UpdateBuild(ctx, req)
 }
 
