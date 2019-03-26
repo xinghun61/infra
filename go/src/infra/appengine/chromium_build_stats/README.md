@@ -8,19 +8,32 @@ How to:
 
 See [infra/go/README.md](../../../../README.md) for preparation.
 
- to re-generate trace-viewer contents
-  $ <CHROMIUM_SRC>/third_party/catapult/tracing/bin/trace2html /dev/null --output=tmpl/trace-viewer.html
+ to re-generate trace-viewer contents in app dir.
+```shell
+  $ (cd app; \
+      <CHROMIUM_SRC>/third_party/catapult/tracing/bin/trace2html /dev/null \
+         --output=tmpl/trace-viewer.html)
+```
 
  to compile
-   $ make build
+
+```shell
+  $ make build
+```
 
  to run locally with dev_appserver
  (note: no service account available, so you couldn't
   fetch file from gs://chrome-goma-log)
-   $ dev_appserver.py app.yaml
+
+```shell
+   $ (cd app; dev_appserver.py app.yaml)
+```
+
 
  to deploy to production
-  $ make deploy_prod
+```shell
+  $ make deploy-prod
+```
 
  and need to [migrate traffic](https://cloud.google.com/appengine/docs/standard/go/migrating-traffic).
 
@@ -29,14 +42,23 @@ See [infra/go/README.md](../../../../README.md) for preparation.
  this how-to). Re-generate it and deploy again.
 
  to run test
+
+```shell
   $ make test
+```
 
  to read go documentation
 
+```shell
   $ godoc <package>
   $ godoc <package> <symbol>
+```
+
  (or
+
+```shell
   $ godoc -http :6060
+```
  and go to http://localhost:6060
  )
 
@@ -46,13 +68,13 @@ Setup
 
 1. Make Dataset
 
-```
+```shell
 $ bq --project_id=$PROJECT mk ninjalog
 ```
 
 2. Make table
 
-```
+```shell
 # Set 2 year expiration.
 # This is for log table from buildbot.
 $ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
@@ -66,7 +88,7 @@ $ bq --project_id=$PROJECT mk --time_partitioning_type=DAY \
 
 3. Update schema
 
-```
+```shell
 $ make update-prod # or `make update-staging`
 ```
 
