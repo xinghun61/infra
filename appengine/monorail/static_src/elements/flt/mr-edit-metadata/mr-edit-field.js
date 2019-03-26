@@ -51,6 +51,9 @@ export class MrEditField extends PolymerElement {
         .multi-grid > input {
           width: unset;
         }
+        .multi-grid > chops-button {
+          margin-left: unset;
+        }
       </style>
       <template is="dom-if" if="[[_fieldIsEnum(type)]]">
         <template is="dom-if" if="[[multi]]">
@@ -104,10 +107,10 @@ export class MrEditField extends PolymerElement {
                 on-keyup="_onChange"
               />
             </template>
+            <chops-button on-click="_addEntry" class="de-emphasized">
+              Add entry
+            </chops-button>
           </div>
-          <chops-button on-click="_addEntry" class="de-emphasized">
-            Add entry
-          </chops-button>
         </template>
         <input
           id="editInput"
