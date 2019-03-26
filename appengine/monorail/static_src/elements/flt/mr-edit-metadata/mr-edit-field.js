@@ -52,7 +52,10 @@ export class MrEditField extends PolymerElement {
           width: unset;
         }
         .multi-grid > chops-button {
+          /* Use grid to determine sizing for button, not chops-button styles. */
           margin-left: unset;
+          font-size: 12px;
+          padding: 0;
         }
       </style>
       <template is="dom-if" if="[[_fieldIsEnum(type)]]">
