@@ -7,7 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../links/mr-issue-link/mr-issue-link.js';
-import {selectors} from '../../redux/selectors.js';
+import * as issue from '../../redux/issue.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../shared/mr-shared-styles.js';
 
@@ -148,7 +148,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
       issueId: state.issueId,
       projectName: state.projectName,
       issuePermissions: state.issuePermissions,
-      sortedBlockedOn: selectors.issueSortedBlockedOn(state),
+      sortedBlockedOn: issue.sortedBlockedOn(state),
     };
   }
 

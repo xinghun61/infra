@@ -11,9 +11,9 @@ import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
-import {selectors} from '../../redux/selectors.js';
 import '../../shared/mr-shared-styles.js';
 
 import '../dialogs/mr-edit-description.js';
@@ -230,7 +230,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issue: state.issue,
       issueId: state.issueId,
       issueLoaded: state.issueLoaded,
-      issueClosed: !selectors.issueIsOpen(state),
+      issueClosed: !issue.isOpen(state),
       issuePermissions: state.issuePermissions,
       projectName: state.projectName,
       fetchingIssue: state.requests.fetchIssue.requesting,

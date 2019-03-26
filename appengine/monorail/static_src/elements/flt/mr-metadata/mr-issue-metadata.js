@@ -6,15 +6,14 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-timestamp/chops-timestamp.js';
-import {selectors} from '../../redux/selectors.js';
-import * as project from '../../redux/project.js';
-import {ReduxMixin, actionType, actionCreator} from
+import {ReduxMixin, actionCreator} from
   '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
+import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
 import '../../links/mr-user-link/mr-user-link.js';
 import '../../links/mr-hotlist-link/mr-hotlist-link.js';
 import '../../shared/mr-shared-styles.js';
-import {issueRefToString} from '../../shared/converters.js';
 import './mr-metadata.js';
 
 /**
@@ -278,14 +277,14 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       isStarred: state.isStarred,
       fetchingIsStarred: state.requests.fetchIsStarred.requesting,
       starringIssue: state.requests.starIssue.requesting,
-      blocking: selectors.issueBlockingIssues(state),
-      sortedBlockedOn: selectors.issueSortedBlockedOn(state),
-      mergedInto: selectors.issueMergedInto(state),
+      blocking: issue.blockingIssues(state),
+      sortedBlockedOn: issue.sortedBlockedOn(state),
+      mergedInto: issue.mergedInto(state),
       relatedIssues: state.relatedIssues,
       issueHotlists: state.issueHotlists,
-      _components: selectors.componentsForIssue(state),
-      _fieldDefs: selectors.fieldDefsForIssue(state),
-      _type: selectors.issueType(state),
+      _components: issue.components(state),
+      _fieldDefs: issue.fieldDefs(state),
+      _type: issue.type(state),
     };
   }
 

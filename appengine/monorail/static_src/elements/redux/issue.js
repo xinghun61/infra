@@ -8,6 +8,14 @@ import {removePrefix} from '../shared/helpers.js';
 import {issueRefToString} from '../shared/converters.js';
 import * as project from './project.js';
 
+// Actions
+
+/* State Shape
+*/
+
+// Reducers
+
+// Selectors
 const RESTRICT_VIEW_PREFIX = 'restrict-view-';
 const RESTRICT_EDIT_PREFIX = 'restrict-editissue-';
 const RESTRICT_COMMENT_PREFIX = 'restrict-addissuecomment-';
@@ -15,15 +23,15 @@ const RESTRICT_COMMENT_PREFIX = 'restrict-addissuecomment-';
 // TODO(zhangtiff): Eventually Monorail's Redux state will store
 // multiple issues, and this selector will have to find the viewed
 // issue based on a viewed issue ref.
-export const viewedIssue = (state) => state.issue;
+export const issue = (state) => state.issue;
 
-export const issueFieldValues = createSelector(
-  viewedIssue,
+export const fieldValues = createSelector(
+  issue,
   (issue) => issue && issue.fieldValues
 );
 
-export const issueType = createSelector(
-  issueFieldValues,
+export const type = createSelector(
+  fieldValues,
   (fieldValues) => {
     if (!fieldValues) return;
     const typeFieldValue = fieldValues.find(
@@ -36,8 +44,8 @@ export const issueType = createSelector(
   }
 );
 
-const issueRestrictions = createSelector(
-  viewedIssue,
+export const restrictions = createSelector(
+  issue,
   (issue) => {
     if (!issue || !issue.labelRefs) return {};
 
@@ -75,8 +83,8 @@ const issueRestrictions = createSelector(
   }
 );
 
-const issueIsRestricted = createSelector(
-  issueRestrictions,
+export const isRestricted = createSelector(
+  restrictions,
   (restrictions) => {
     if (!restrictions) return false;
     return ('view' in restrictions && !!restrictions['view'].length) ||
@@ -85,25 +93,25 @@ const issueIsRestricted = createSelector(
   }
 );
 
-const issueIsOpen = createSelector(
-  viewedIssue,
+export const isOpen = createSelector(
+  issue,
   (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false
 );
 
-export const issueBlockingIssueRefs = createSelector(
-  viewedIssue,
+const blockingIssueRefs = createSelector(
+  issue,
   (issue) => issue && issue.blockingIssueRefs || []
 );
 
-export const issueBlockedOnIssueRefs = createSelector(
-  viewedIssue,
+const blockedOnIssueRefs = createSelector(
+  issue,
   (issue) => issue && issue.blockedOnIssueRefs || []
 );
 
 export const relatedIssues = (state) => state.relatedIssues;
 
-export const issueBlockingIssues = createSelector(
-  issueBlockingIssueRefs, relatedIssues,
+export const blockingIssues = createSelector(
+  blockingIssueRefs, relatedIssues,
   (blockingRefs, relatedIssues) => blockingRefs.map((ref) => {
     const key = issueRefToString(ref);
     if (relatedIssues.has(key)) {
@@ -113,8 +121,8 @@ export const issueBlockingIssues = createSelector(
   })
 );
 
-export const issueBlockedOnIssues = createSelector(
-  issueBlockedOnIssueRefs, relatedIssues,
+export const blockedOnIssues = createSelector(
+  blockedOnIssueRefs, relatedIssues,
   (blockedOnRefs, relatedIssues) => blockedOnRefs.map((ref) => {
     const key = issueRefToString(ref);
     if (relatedIssues.has(key)) {
@@ -124,14 +132,14 @@ export const issueBlockedOnIssues = createSelector(
   })
 );
 
-export const issueMergedInto = createSelector(
-  viewedIssue, relatedIssues,
+export const mergedInto = createSelector(
+  issue, relatedIssues,
   (issue, relatedIssues) => issue && issue.mergedIntoRef
     && relatedIssues.get(issueRefToString(issue.mergedIntoRef))
 );
 
-export const issueSortedBlockedOn = createSelector(
-  issueBlockedOnIssues,
+export const sortedBlockedOn = createSelector(
+  blockedOnIssues,
   (blockedOn) => blockedOn.sort((a, b) => {
     const aIsOpen = a.statusRef && a.statusRef.meansOpen ? 1 : 0;
     const bIsOpen = b.statusRef && b.statusRef.meansOpen ? 1 : 0;
@@ -141,8 +149,8 @@ export const issueSortedBlockedOn = createSelector(
 
 // values (from issue.fieldValues) is an array with one entry per value.
 // We want to turn this into a map of fieldNames -> values.
-export const issueFieldValueMap = createSelector(
-  issueFieldValues,
+export const fieldValueMap = createSelector(
+  fieldValues,
   (fieldValues) => {
     if (!fieldValues) return new Map();
     const acc = new Map();
@@ -164,8 +172,8 @@ export const issueFieldValueMap = createSelector(
 );
 
 // Get the list of full componentDefs for the viewed issue.
-export const componentsForIssue = createSelector(
-  viewedIssue,
+export const components = createSelector(
+  issue,
   project.componentsMap,
   (issue, components) => {
     if (!issue || !issue.componentRefs) return [];
@@ -173,12 +181,12 @@ export const componentsForIssue = createSelector(
   }
 );
 
-export const fieldDefsForIssue = createSelector(
+export const fieldDefs = createSelector(
   project.fieldDefs,
-  issueType,
-  (fieldDefs, issueType) => {
+  type,
+  (fieldDefs, type) => {
     if (!fieldDefs) return [];
-    issueType = issueType || '';
+    type = type || '';
     return fieldDefs.filter((f) => {
       // Skip approval type and phase fields here.
       if (f.fieldRef.approvalName
@@ -188,8 +196,8 @@ export const fieldDefsForIssue = createSelector(
       }
 
       // If this fieldDef belongs to only one type, filter out the field if
-      // that type isn't the specified issueType.
-      if (f.applicableType && issueType.toLowerCase()
+      // that type isn't the specified type.
+      if (f.applicableType && type.toLowerCase()
           !== f.applicableType.toLowerCase()) {
         return false;
       }
@@ -199,21 +207,4 @@ export const fieldDefsForIssue = createSelector(
   }
 );
 
-export const selectors = Object.freeze({
-  viewedIssue,
-  issueFieldValues,
-  issueType,
-  issueRestrictions,
-  issueIsRestricted,
-  issueIsOpen,
-  issueBlockingIssueRefs,
-  issueBlockedOnIssueRefs,
-  relatedIssues,
-  issueBlockingIssues,
-  issueBlockedOnIssues,
-  issueMergedInto,
-  issueSortedBlockedOn,
-  issueFieldValueMap,
-  componentsForIssue,
-  fieldDefsForIssue,
-});
+// Action Creators

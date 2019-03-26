@@ -8,8 +8,6 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-timestamp/chops-timestamp.js';
 import '../../links/mr-issue-link/mr-issue-link.js';
 import '../../links/mr-user-link/mr-user-link.js';
-import {actionCreator} from '../../redux/redux-mixin.js';
-import {selectors} from '../../redux/selectors.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
 import '../../shared/mr-shared-styles.js';
 import './mr-field-values.js';

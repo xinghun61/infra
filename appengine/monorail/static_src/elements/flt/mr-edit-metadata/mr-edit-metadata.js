@@ -18,7 +18,6 @@ import {isEmptyObject} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
 import * as project from '../../redux/project.js';
-import {selectors} from '../../redux/selectors.js';
 import {actionType} from '../../redux/redux-mixin.js';
 import './mr-edit-field.js';
 import './mr-edit-status.js';

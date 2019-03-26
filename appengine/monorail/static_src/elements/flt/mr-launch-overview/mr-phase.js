@@ -6,7 +6,6 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
-import {selectors} from '../../redux/selectors.js';
 import {actionCreator} from '../../redux/redux-mixin.js';
 import * as project from '../../redux/project.js';
 import '../mr-approval-card/mr-approval-card.js';

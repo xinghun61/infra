@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {ReduxMixin} from '../../redux/redux-mixin.js';
-import {selectors} from '../../redux/selectors.js';
+import * as issue from '../../redux/issue.js';
 
 // TODO(zhangtiff): Remove this hardcoded data once backend custom
 // field grouping is implemented.
@@ -56,8 +56,8 @@ export const MetadataMixin = (superClass) => {
 
     static mapStateToProps(state, element) {
       return {
-        fieldValueMap: selectors.issueFieldValueMap(state),
-        issueType: selectors.issueType(state),
+        fieldValueMap: issue.fieldValueMap(state),
+        issueType: issue.type(state),
       };
     }
 
