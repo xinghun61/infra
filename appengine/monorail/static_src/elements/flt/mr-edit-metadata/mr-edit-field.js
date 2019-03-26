@@ -122,6 +122,7 @@ export class MrEditField extends PolymerElement {
           value$="[[_initialValue]]"
           data-ac-type$="[[_acType]]"
           autocomplete$="[[_computeDomAutocomplete(_acType)]]"
+          placeholder$="[[placeholder]]"
           on-keyup="_onChange"
         />
       </template>
@@ -146,6 +147,8 @@ export class MrEditField extends PolymerElement {
         value: false,
       },
       name: String,
+      // Only used for basic, non-repeated fields.
+      placeholder: String,
       initialValues: {
         type: Array,
         value: () => [],

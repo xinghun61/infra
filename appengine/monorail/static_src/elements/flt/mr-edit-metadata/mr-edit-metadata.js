@@ -135,6 +135,16 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           margin-top: 4px;
           margin-bottom: -8px;
         }
+        i.inline-warning {
+          font-size: 20px;
+          color: #FF6F00;
+          vertical-align: bottom;
+        }
+        i.inline-info {
+          font-size: 20px;
+          color: gray;
+          vertical-align: bottom;
+        }
       </style>
       <template is="dom-if" if="[[error]]">
         <mr-error>[[error]]</mr-error>
@@ -173,11 +183,20 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
 
             <template is="dom-if" if="[[!isApproval]]">
-              <label for="ownerInput" on-click="_clickLabelForCustomInput">Owner:</label>
+              <label for="ownerInput" on-click="_clickLabelForCustomInput">
+                <template is="dom-if" if="[[_ownerMessage]]">
+                  <i
+                    class$="material-icons inline-[[_ownerIcon]]"
+                    title="[[_ownerMessage]]"
+                  >[[_ownerIcon]]</i>
+                </template>
+                Owner:
+              </label>
               <mr-edit-field
                 id="ownerInput"
                 type="USER_TYPE"
                 initial-values="[[_wrapList(ownerName)]]"
+                placeholder="[[_ownerPlaceholder]]"
                 on-change="_onChange"
               ></mr-edit-field>
 
@@ -307,7 +326,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
             </button>
           </template>
 
-          <template is="dom-if" if="[[_hasErrorsOrWarnings(presubmitResponse)]]">
+          <template is="dom-if" if="[[_hasErrorsOrWarnings]]">
             <span></span>
             <div id="presubmit-errors-and-warnings">
               <template is="dom-repeat" items="[[presubmitResponse.warnings]]">
@@ -341,47 +360,49 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
             >Send email</chops-checkbox>
           </div>
 
-          <template is="dom-if" if="[[_hasDerivedValues(presubmitResponse)]]">
-            <span></span>
-            <div class="presubmit-derived-header">
-              Filter rules and components will add
-            </div>
-          </template>
+          <template is="dom-if" if="[[!isApproval]]">
+            <template is="dom-if" if="[[_hasDerivedValues]]">
+              <span></span>
+              <div class="presubmit-derived-header">
+                Filter rules and components will add
+              </div>
+            </template>
 
-          <template is="dom-if" if="[[presubmitResponse.derivedCcs]]">
-            <label
-              for="derived-ccs"
-              class="presubmit-derived-header"
-            >CCs:</label>
-            <div id="derived-ccs">
-              <template
-                is="dom-repeat"
-                items="[[presubmitResponse.derivedCcs]]"
-              >
-                <span
-                  title="[[item.why]]"
-                  class="presubmit-derived"
-                >[[item.value]]</span>
-              </template>
-            </div>
-          </template>
+            <template is="dom-if" if="[[presubmitResponse.derivedCcs]]">
+              <label
+                for="derived-ccs"
+                class="presubmit-derived-header"
+              >CCs:</label>
+              <div id="derived-ccs">
+                <template
+                  is="dom-repeat"
+                  items="[[presubmitResponse.derivedCcs]]"
+                >
+                  <span
+                    title="[[item.why]]"
+                    class="presubmit-derived"
+                  >[[item.value]]</span>
+                </template>
+              </div>
+            </template>
 
-          <template is="dom-if" if="[[presubmitResponse.derivedLabels]]">
-            <label
-              for="derived-labels"
-              class="presubmit-derived-header"
-            >Labels:</label>
-            <div id="derived-labels">
-              <template
-                is="dom-repeat"
-                items="[[presubmitResponse.derivedLabels]]"
-              >
-                <span
-                  title="[[item.why]]"
-                  class="presubmit-derived"
-                >[[item.value]]</span>
-              </template>
-            </div>
+            <template is="dom-if" if="[[presubmitResponse.derivedLabels]]">
+              <label
+                for="derived-labels"
+                class="presubmit-derived-header"
+              >Labels:</label>
+              <div id="derived-labels">
+                <template
+                  is="dom-repeat"
+                  items="[[presubmitResponse.derivedLabels]]"
+                >
+                  <span
+                    title="[[item.why]]"
+                    class="presubmit-derived"
+                  >[[item.value]]</span>
+                </template>
+              </div>
+            </template>
           </template>
         </div>
       </form>
@@ -470,8 +491,16 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Boolean,
         value: true,
       },
-      presubmitResponse: Object,
+      presubmitResponse: {
+        type: Object,
+        observer: '_onPresubmitResponse',
+      },
       fieldValueMap: Object,  // Set by MetadataMixin.
+      _hasDerivedValues: Boolean,
+      _hasErrorsOrWarnings: Boolean,
+      _ownerIcon: String,
+      _ownerMessage: String,
+      _ownerPlaceholder: String,
       _nicheFieldCount: {
         type: Boolean,
         computed: '_computeNicheFieldCount(fieldDefs)',
@@ -684,16 +713,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     return a && b;
   }
 
-  _hasDerivedValues(response) {
-    return ((response.derivedCcs && response.derivedCcs.length)
-      || (response.derivedLabels && response.derivedLabels.length));
-  }
-
-  _hasErrorsOrWarnings(response) {
-    return ((response.errors && response.errors.length)
-      || (response.warnings && response.warnings.length));
-  }
-
   // This function exists because <label for="inputId"> doesn't work for custom
   // input elements.
   _clickLabelForCustomInput(e) {
@@ -771,6 +790,26 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   _computeMergedIntoString(projectName, ref) {
     return [issueRefToString(ref, projectName)];
   }
+
+  _onPresubmitResponse(response) {
+    this._hasDerivedValues =
+      (response.derivedCcs && response.derivedCcs.length)
+      || (response.derivedLabels && response.derivedLabels.length);
+    this._hasErrorsOrWarnings =
+      (response.errors && response.errors.length)
+      || (response.warnings && response.warnings.length);
+    this._ownerMessage = '';
+    this._ownerPlaceholder = '';
+    if (response.ownerAvailability) {
+      this._ownerMessage = response.ownerAvailability;
+      this._ownerIcon = 'warning';
+    } else if (response.derivedOwners && response.derivedOwners.length) {
+      this._ownerPlaceholder = response.derivedOwners[0].value;
+      this._ownerMessage = response.derivedOwners[0].why;
+      this._ownerIcon = 'info';
+    }
+  }
+
 }
 
 customElements.define(MrEditMetadata.is, MrEditMetadata);
