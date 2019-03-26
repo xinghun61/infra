@@ -330,7 +330,7 @@ def ScheduleFlakeTryJob(parameters, runner_id):
 
   build_id, error = try_job_service.TriggerTryJob(
       master_name, builder_name, tryserver_mastername, tryserver_buildername,
-      properties, {},
+      properties,
       failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
       parameters.flake_cache_name, dimensions, runner_id)
 
