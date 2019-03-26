@@ -6,7 +6,8 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import * as user from '../../redux/user.js';
 import '../../shared/mr-shared-styles.js';
 
@@ -185,7 +186,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
     }
 
     Promise.all(promises).then((results) => {
-      this.dispatchAction(actionCreator.fetchIssueHotlists(issueRef));
+      this.dispatchAction(issue.fetchHotlists(issueRef));
       this.dispatchAction(user.fetchHotlists(this.user.email));
       this.close();
     }, (error) => {

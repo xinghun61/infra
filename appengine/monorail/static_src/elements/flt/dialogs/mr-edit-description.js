@@ -8,7 +8,8 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../framework/mr-upload/mr-upload.js';
 import '../../mr-error/mr-error.js';
 import {fieldTypes} from '../../shared/field-types.js';
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../shared/mr-shared-styles.js';
@@ -262,14 +263,14 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       }
 
       if (!this._fieldName) {
-        this.dispatchAction(actionCreator.updateIssue(message));
+        this.dispatchAction(issue.update(message));
       } else {
         // This is editing an approval if there is no field name.
         message.fieldRef = {
           type: fieldTypes.APPROVAL_TYPE,
           fieldName: this._fieldName,
         };
-        this.dispatchAction(actionCreator.updateApproval(message));
+        this.dispatchAction(issue.updateApproval(message));
       }
       this.$.dialog.close();
     } catch (e) {

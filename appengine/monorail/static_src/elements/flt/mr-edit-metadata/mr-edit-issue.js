@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import './mr-edit-metadata.js';
@@ -123,7 +123,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     }
 
     if (message.commentContent || message.delta || message.uploads) {
-      this.dispatchAction(actionCreator.updateIssue(message));
+      this.dispatchAction(issue.update(message));
     }
   }
 
@@ -166,7 +166,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       },
       issueDelta: evt.detail.delta,
     };
-    this.dispatchAction(actionCreator.presubmitIssue(message));
+    this.dispatchAction(issue.presubmit(message));
   }
 }
 

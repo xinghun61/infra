@@ -3,9 +3,11 @@
 // found in the LICENSE file.
 
 import {createSelector} from 'reselect';
+import {autolink} from '../../autolink.js';
 import {fieldTypes} from '../shared/field-types.js';
 import {removePrefix} from '../shared/helpers.js';
 import {issueRefToString} from '../shared/converters.js';
+import {actionType} from './redux-mixin.js';
 import * as project from './project.js';
 
 // Actions
@@ -208,3 +210,300 @@ export const fieldDefs = createSelector(
 );
 
 // Action Creators
+export const fetchCommentReferences = (comments, projectName) => {
+  return async (dispatch) => {
+    dispatch({type: actionType.FETCH_COMMENT_REFERENCES_START});
+
+    try {
+      const refs = await autolink.getReferencedArtifacts(comments, projectName);
+      const commentRefs = new Map();
+      refs.forEach(({componentName, existingRefs}) => {
+        commentRefs.set(componentName, existingRefs);
+      });
+      dispatch({
+        type: actionType.FETCH_COMMENT_REFERENCES_SUCCESS,
+        commentReferences: commentRefs,
+      });
+    } catch (error) {
+      dispatch({
+        type: actionType.FETCH_COMMENT_REFERENCES_FAILURE,
+        error,
+      });
+    }
+  };
+};
+
+// TODO(zhangtiff): Figure out if we can reduce request/response sizes by
+// diffing issues to fetch against issues we already know about to avoid
+// fetching duplicate info.
+export const fetchRelatedIssues = (issue) => async (dispatch) => {
+  if (!issue) return;
+  dispatch({type: actionType.FETCH_RELATED_ISSUES_START});
+
+  const refsToFetch = (issue.blockedOnIssueRefs || []).concat(
+    issue.blockingIssueRefs || []);
+  if (issue.mergedIntoIssueRef) {
+    refsToFetch.push(issue.mergedIntoIssueRef);
+  }
+
+  const message = {
+    issueRefs: refsToFetch,
+  };
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'ListReferencedIssues', message);
+
+    const relatedIssues = new Map();
+
+    const openIssues = resp.openRefs || [];
+    const closedIssues = resp.closedRefs || [];
+    openIssues.forEach((issue) => {
+      issue.statusRef.meansOpen = true;
+      relatedIssues.set(issueRefToString(issue), issue);
+    });
+    closedIssues.forEach((issue) => {
+      issue.statusRef.meansOpen = false;
+      relatedIssues.set(issueRefToString(issue), issue);
+    });
+    dispatch({
+      type: actionType.FETCH_RELATED_ISSUES_SUCCESS,
+      relatedIssues: relatedIssues,
+    });
+  } catch (error) {
+    dispatch({
+      type: actionType.FETCH_RELATED_ISSUES_FAILURE,
+      error,
+    });
+  };
+};
+
+export const fetchIssuePageData = (message) => async (dispatch) => {
+  dispatch(actionCreator.fetchComments(message));
+  dispatch(actionCreator.fetchIssue(message));
+  dispatch(actionCreator.fetchIssuePermissions(message));
+  dispatch(actionCreator.fetchIsStarred(message));
+};
+
+export const fetch = (message) => async (dispatch) => {
+  dispatch({type: actionType.FETCH_ISSUE_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'GetIssue', message
+    );
+
+    dispatch({
+      type: actionType.FETCH_ISSUE_SUCCESS,
+      issue: resp.issue,
+    });
+
+    dispatch(fetchPermissions(message));
+    if (!resp.issue.isDeleted) {
+      dispatch(fetchRelatedIssues(resp.issue));
+      dispatch(fetchHotlists(message.issueRef));
+    }
+  } catch (error) {
+    dispatch({
+      type: actionType.FETCH_ISSUE_FAILURE,
+      error,
+    });
+  }
+};
+
+export const fetchHotlists = (issue) => async (dispatch) => {
+  dispatch({type: actionType.FETCH_ISSUE_HOTLISTS_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Features', 'ListHotlistsByIssue', {issue});
+
+    const hotlists = (resp.hotlists || []);
+    hotlists.sort((hotlistA, hotlistB) => {
+      return hotlistA.name.localeCompare(hotlistB.name);
+    });
+    dispatch({
+      type: actionType.FETCH_ISSUE_HOTLISTS_SUCCESS,
+      hotlists,
+    });
+  } catch (error) {
+    dispatch({
+      type: actionType.FETCH_ISSUE_HOTLISTS_FAILURE,
+      error,
+    });
+  };
+};
+
+export const fetchPermissions = (message) => async (dispatch) => {
+  dispatch({type: actionType.FETCH_ISSUE_PERMISSIONS_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'ListIssuePermissions', message
+    );
+
+    dispatch({
+      type: actionType.FETCH_ISSUE_PERMISSIONS_SUCCESS,
+      permissions: resp.permissions,
+    });
+  } catch (error) {
+    dispatch({
+      type: actionType.FETCH_ISSUE_PERMISSIONS_FAILURE,
+      error,
+    });
+  };
+};
+
+export const fetchComments = (message) => async (dispatch) => {
+  dispatch({type: actionType.FETCH_COMMENTS_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'ListComments', message
+    );
+
+    dispatch({
+      type: actionType.FETCH_COMMENTS_SUCCESS,
+      comments: resp.comments,
+    });
+    dispatch(fetchCommentReferences(
+      resp.comments, message.issueRef.projectName));
+  } catch (error) {
+    dispatch({
+      type: actionType.FETCH_COMMENTS_FAILURE,
+      error,
+    });
+  };
+};
+
+export const fetchIsStarred = (message) => async (dispatch) => {
+  dispatch({type: actionType.FETCH_IS_STARRED_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'IsIssueStarred', message
+    );
+
+    dispatch({
+      type: actionType.FETCH_IS_STARRED_SUCCESS,
+      isStarred: resp.isStarred,
+    });
+  } catch (error) {
+    dispatch({
+      type: actionType.FETCH_IS_STARRED_FAILURE,
+      error,
+    });
+  };
+};
+
+export const star = (issueRef, starred) => async (dispatch) => {
+  dispatch({type: actionType.STAR_ISSUE_START});
+
+  const message = {issueRef, starred};
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'StarIssue', message
+    );
+
+    dispatch({
+      type: actionType.STAR_ISSUE_SUCCESS,
+      starCount: resp.starCount,
+      isStarred: starred,
+    });
+  } catch (error) {
+    dispatch({
+      type: actionType.STAR_ISSUE_FAILURE,
+      error,
+    });
+  }
+};
+
+export const presubmit = (message) => async (dispatch) => {
+  dispatch({type: actionType.PRESUBMIT_ISSUE_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'PresubmitIssue', message);
+
+    dispatch({
+      type: actionType.PRESUBMIT_ISSUE_SUCCESS,
+      presubmitResponse: resp,
+    });
+  } catch (error) {
+    dispatch({
+      type: actionType.PRESUBMIT_ISSUE_FAILURE,
+      error: error,
+    });
+  }
+};
+
+export const updateApproval = (message) => async (dispatch) => {
+  dispatch({type: actionType.UPDATE_APPROVAL_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'UpdateApproval', message);
+
+    dispatch({
+      type: actionType.UPDATE_APPROVAL_SUCCESS,
+      approval: resp.approval,
+    });
+    const baseMessage = {
+      issueRef: message.issueRef,
+    };
+    dispatch(fetch(baseMessage));
+    dispatch(fetchComments(baseMessage));
+  } catch (error) {
+    dispatch({
+      type: actionType.UPDATE_APPROVAL_FAILURE,
+      error: error,
+    });
+  };
+};
+
+export const update = (message) => async (dispatch) => {
+  dispatch({type: actionType.UPDATE_ISSUE_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'UpdateIssue', message);
+
+    dispatch({
+      type: actionType.UPDATE_ISSUE_SUCCESS,
+      issue: resp.issue,
+    });
+    const fetchCommentsMessage = {
+      issueRef: message.issueRef,
+    };
+    dispatch(fetchComments(fetchCommentsMessage));
+    dispatch(fetchRelatedIssues(resp.issue));
+  } catch (error) {
+    dispatch({
+      type: actionType.UPDATE_ISSUE_FAILURE,
+      error: error,
+    });
+  };
+};
+
+export const convert = (message) => async (dispatch) => {
+  dispatch({type: actionType.CONVERT_ISSUE_START});
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Issues', 'ConvertIssueApprovalsTemplate', message);
+
+    dispatch({
+      type: actionType.CONVERT_ISSUE_SUCCESS,
+      issue: resp.issue,
+    });
+    const fetchCommentsMessage = {
+      issueRef: message.issueRef,
+    };
+    dispatch(fetchComments(fetchCommentsMessage));
+  } catch (error) {
+    dispatch({
+      type: actionType.CONVERT_ISSUE_FAILURE,
+      error: error,
+    });
+  };
+};

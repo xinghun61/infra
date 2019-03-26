@@ -6,7 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
-import {actionCreator} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import '../mr-approval-card/mr-approval-card.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
@@ -264,7 +264,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     };
 
     if (message.commentContent || message.delta) {
-      this.dispatchAction(actionCreator.updateIssue(message));
+      this.dispatchAction(issue.update(message));
     }
   }
 

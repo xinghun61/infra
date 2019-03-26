@@ -8,9 +8,9 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../mr-flipper.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
-import * as project from '../../redux/project.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
+import * as project from '../../redux/project.js';
 import {arrayToEnglish} from '../../shared/helpers.js';
 import '../../links/mr-user-link/mr-user-link.js';
 import '../../links/mr-crbug-link/mr-crbug-link.js';
@@ -343,7 +343,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           localId: this.issue.localId,
         },
       };
-      this.dispatchAction(actionCreator.fetchIssue(message));
+      this.dispatchAction(issue.fetch(message));
     });
   }
 
@@ -363,7 +363,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
             localId: this.issue.localId,
           },
         };
-        this.dispatchAction(actionCreator.fetchIssue(message));
+        this.dispatchAction(issue.fetch(message));
       });
     }
   }

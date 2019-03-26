@@ -7,7 +7,8 @@ import page from 'page';
 import qs from 'qs';
 import Mousetrap from 'mousetrap';
 
-import {ReduxMixin, actionCreator} from '../redux/redux-mixin.js';
+import {ReduxMixin} from '../redux/redux-mixin.js';
+import * as issue from '../redux/issue.js';
 
 
 /**
@@ -331,8 +332,7 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
             localId: this.issueId,
           };
 
-          this.dispatchAction(actionCreator.starIssue(issueRef,
-            newIsStarred));
+          this.dispatchAction(issue.star(issueRef, newIsStarred));
         }
       });
     }

@@ -5,7 +5,8 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-dialog/chops-dialog.js';
@@ -136,7 +137,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
 
   save() {
     const commentContent = this.shadowRoot.querySelector('#commentContent');
-    this.dispatchAction(actionCreator.convertIssue({
+    this.dispatchAction(issue.convert({
       issueRef: {
         projectName: this.projectName,
         localId: this.issueId,

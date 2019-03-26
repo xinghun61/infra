@@ -6,7 +6,8 @@ import {assert} from 'chai';
 import {MrEditDescription} from './mr-edit-description.js';
 import sinon from 'sinon';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {actionCreator, actionType} from '../../redux/redux-mixin.js';
+import {actionType} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 
 
 let element;
@@ -60,7 +61,7 @@ suite('mr-edit-descriptions', () => {
       call: () => Promise.resolve({}),
     };
     sinon.spy(window.prpcClient, 'call');
-    sinon.spy(actionCreator, 'updateIssue');
+    sinon.spy(issue.update);
 
     // Disable Redux state mapping for testing.
     MrEditDescription.mapStateToProps = () => {};
@@ -69,7 +70,6 @@ suite('mr-edit-descriptions', () => {
   teardown(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
-    actionCreator.updateIssue.restore();
     element.dispatchAction({type: actionType.RESET_STATE});
   });
 

@@ -7,9 +7,10 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
 import '@polymer/iron-collapse/iron-collapse.js';
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
-import * as user from '../../redux/user.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
+import * as user from '../../redux/user.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
@@ -371,7 +372,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     const uploads = await form.getAttachments();
     if (commentContent || Object.keys(approvalDelta).length > 0 ||
         uploads.length > 0) {
-      this.dispatchAction(actionCreator.updateApproval({
+      this.dispatchAction(issue.updateApproval({
         issueRef: {
           projectName: this.projectName,
           localId: this.issueId,

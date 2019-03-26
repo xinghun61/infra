@@ -10,7 +10,7 @@ import './mr-issue-header.js';
 import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
@@ -280,7 +280,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     if (!localId || !projectName || this.fetchingIssue) return;
     // Reload the issue data when the id changes.
 
-    this.dispatchAction(actionCreator.fetchIssuePageData({
+    this.dispatchAction(issue.fetchIssuePageData({
       issueRef: {
         projectName,
         localId,

@@ -6,8 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-timestamp/chops-timestamp.js';
-import {ReduxMixin, actionCreator} from
-  '../../redux/redux-mixin.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
@@ -297,7 +296,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       localId: this.issueId,
     };
 
-    this.dispatchAction(actionCreator.starIssue(issueRef, newIsStarred));
+    this.dispatchAction(issue.star(issueRef, newIsStarred));
   }
 
   openUpdateHotlists() {

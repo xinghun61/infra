@@ -5,8 +5,8 @@
 import {assert} from 'chai';
 import {MrIssueDetails} from './mr-issue-details.js';
 import sinon from 'sinon';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {actionCreator, actionType} from '../../redux/redux-mixin.js';
+import {actionType} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 
 
 let element;
@@ -18,7 +18,7 @@ suite('mr-issue-details', () => {
 
     sinon.stub(window.prpcClient, 'call').callsFake(
       () => Promise.resolve({}));
-    sinon.spy(actionCreator, 'updateIssue');
+    sinon.spy(issue.update);
 
     // Disable Redux state mapping for testing.
     MrIssueDetails.mapStateToProps = () => {};
@@ -27,7 +27,6 @@ suite('mr-issue-details', () => {
   teardown(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
-    actionCreator.updateIssue.restore();
     element.dispatchAction({type: actionType.RESET_STATE});
   });
 

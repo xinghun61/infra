@@ -7,8 +7,8 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../links/mr-issue-link/mr-issue-link.js';
+import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
-import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../shared/mr-shared-styles.js';
 
 export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
@@ -243,7 +243,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
       });
 
     reorderRequest.then((response) => {
-      this.dispatchAction(actionCreator.fetchIssue({
+      this.dispatchAction(issue.fetch({
         issueRef: {
           projectName: this.projectName,
           localId: this.issueId,

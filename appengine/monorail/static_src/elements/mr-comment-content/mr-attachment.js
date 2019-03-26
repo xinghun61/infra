@@ -6,7 +6,8 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../chops/chops-button/chops-button.js';
-import {ReduxMixin, actionCreator} from '../redux/redux-mixin.js';
+import {ReduxMixin} from '../redux/redux-mixin.js';
+import * as issue from '../redux/issue.js';
 import '../shared/mr-shared-styles.js';
 
 /**
@@ -165,7 +166,7 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
       });
 
     promise.then(() => {
-      this.dispatchAction(actionCreator.fetchComments({issueRef}));
+      this.dispatchAction(issue.fetchComments({issueRef}));
     }, (error) => {
       console.log('Failed to (un)delete attachment', error);
     });
