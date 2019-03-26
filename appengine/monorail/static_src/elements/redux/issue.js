@@ -278,10 +278,10 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
 };
 
 export const fetchIssuePageData = (message) => async (dispatch) => {
-  dispatch(actionCreator.fetchComments(message));
-  dispatch(actionCreator.fetchIssue(message));
-  dispatch(actionCreator.fetchIssuePermissions(message));
-  dispatch(actionCreator.fetchIsStarred(message));
+  dispatch(fetchComments(message));
+  dispatch(fetch(message));
+  dispatch(fetchPermissions(message));
+  dispatch(fetchIsStarred(message));
 };
 
 export const fetch = (message) => async (dispatch) => {
