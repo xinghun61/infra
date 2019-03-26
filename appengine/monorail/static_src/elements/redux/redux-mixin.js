@@ -136,6 +136,12 @@ export const actionCreator = {
       });
     };
   },
+  fetchIssuePageData: (message) => async (dispatch) => {
+    dispatch(actionCreator.fetchComments(message));
+    dispatch(actionCreator.fetchIssue(message));
+    dispatch(actionCreator.fetchIssuePermissions(message));
+    dispatch(actionCreator.fetchIsStarred(message));
+  },
   fetchIssue: (message) => async (dispatch) => {
     dispatch({type: actionType.FETCH_ISSUE_START});
 
@@ -149,7 +155,6 @@ export const actionCreator = {
         issue: resp.issue,
       });
 
-      dispatch(actionCreator.fetchIssuePermissions(message));
       if (!resp.issue.isDeleted) {
         dispatch(actionCreator.fetchRelatedIssues(resp.issue));
         dispatch(actionCreator.fetchIssueHotlists(message.issueRef));
@@ -391,6 +396,10 @@ const issueLoadedReducer = createReducer(false, {
   [actionType.FETCH_ISSUE_SUCCESS]: (_state, _action) => true,
 });
 
+const commentsLoadedReducer = createReducer(false, {
+  [actionType.FETCH_COMMENTS_SUCCESS]: (_state, _action) => true,
+});
+
 const issueHotlistsReducer = createReducer([], {
   [actionType.FETCH_ISSUE_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
 });
@@ -523,6 +532,7 @@ const reducer = combineReducers({
   issueLoaded: issueLoadedReducer,
   issueHotlists: issueHotlistsReducer,
   comments: commentsReducer,
+  commentsLoaded: commentsLoadedReducer,
   commentReferences: commentReferencesReducer,
   relatedIssues: relatedIssuesReducer,
   isStarred: isStarredReducer,

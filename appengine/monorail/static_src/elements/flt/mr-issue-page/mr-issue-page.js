@@ -143,13 +143,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
-      <mr-edit-description id="edit-description"></mr-edit-description>
-      <mr-move-copy-issue id="move-copy-issue"></mr-move-copy-issue>
-      <mr-convert-issue id="convert-issue"></mr-convert-issue>
-      <mr-related-issues-table id="reorder-related-issues"></mr-related-issues-table>
-      <mr-update-issue-hotlists id="update-issue-hotlists"></mr-update-issue-hotlists>
-
-      <template is="dom-if" if="[[_showLoading(issueLoaded, fetchIssueError)]]">
+      <template is="dom-if" if="[[_showLoading(issueLoaded, commentsLoaded, fetchIssueError)]]">
         <div class="container-outside">
           Loading...
         </div>
@@ -169,7 +163,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           </template>
         </div>
       </template>
-      <template is="dom-if" if="[[_showIssue(issueLoaded, issue)]]">
+      <template is="dom-if" if="[[_showIssue(issueLoaded, commentsLoaded, issue)]]">
         <div
           class="container-outside"
           on-open-dialog="_onOpenDialog"
@@ -187,6 +181,11 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
             </div>
           </div>
         </div>
+        <mr-edit-description id="edit-description"></mr-edit-description>
+        <mr-move-copy-issue id="move-copy-issue"></mr-move-copy-issue>
+        <mr-convert-issue id="convert-issue"></mr-convert-issue>
+        <mr-related-issues-table id="reorder-related-issues"></mr-related-issues-table>
+        <mr-update-issue-hotlists id="update-issue-hotlists"></mr-update-issue-hotlists>
       </template>
     `;
   }
@@ -200,6 +199,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issue: Object,
       issueId: Number,
       issueLoaded: Boolean,
+      commentsLoaded: Boolean,
       issueClosed: {
         type: Boolean,
         reflectToAttribute: true,
@@ -232,6 +232,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issueLoaded: state.issueLoaded,
       issueClosed: !issue.isOpen(state),
       issuePermissions: state.issuePermissions,
+      commentsLoaded: state.commentsLoaded,
       projectName: state.projectName,
       fetchingIssue: state.requests.fetchIssue.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
@@ -271,24 +272,20 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     this.dispatchAction(project.fetch(projectName));
   }
 
-  _showLoading(issueLoaded, fetchIssueError) {
-    return !issueLoaded && !fetchIssueError;
+  _showLoading(issueLoaded, commentsLoaded, fetchIssueError) {
+    return (!issueLoaded || !commentsLoaded) && !fetchIssueError;
   }
 
-  _fetchIssue(id, projectName) {
-    if (!id || !projectName || this.fetchingIssue) return;
+  _fetchIssue(localId, projectName) {
+    if (!localId || !projectName || this.fetchingIssue) return;
     // Reload the issue data when the id changes.
 
-    const message = {
+    this.dispatchAction(actionCreator.fetchIssuePageData({
       issueRef: {
-        projectName: projectName,
-        localId: id,
+        projectName,
+        localId,
       },
-    };
-
-    this.dispatchAction(actionCreator.fetchIssue(message));
-    this.dispatchAction(actionCreator.fetchComments(message));
-    this.dispatchAction(actionCreator.fetchIsStarred(message));
+    }));
   }
 
   _userDisplayNameChanged(userDisplayName) {
@@ -311,8 +308,8 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     return (issuePermissions || []).includes('deleteissue');
   }
 
-  _showIssue(issueLoaded, issue) {
-    return issueLoaded && !issue.isDeleted;
+  _showIssue(issueLoaded, commentsLoaded, issue) {
+    return issueLoaded && commentsLoaded && !issue.isDeleted;
   }
 
   _isDeleted(issueLoaded, issue) {
