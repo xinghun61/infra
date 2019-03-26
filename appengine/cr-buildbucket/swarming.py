@@ -1140,7 +1140,6 @@ def _sync_build_in_memory(build, task_result):
     bp.start_time.FromDatetime(ts('started_ts') or now)
   elif build.is_ended:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
-    build.clear_lease()  # old builds might have it.
 
     started_ts = ts('started_ts')
     if started_ts:
