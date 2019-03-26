@@ -288,6 +288,8 @@ def update_build_async(req, _res, ctx, _mask):
   build_steps = model.BuildSteps.make(req.build)
   validation.validate_update_build_request(req, build_steps)
 
+  update_paths = set(req.update_mask.paths)
+
   if not (yield user.can_update_build_async()):
     raise StatusError(
         prpc.StatusCode.PERMISSION_DENIED, '%s not permitted to update build' %
@@ -303,12 +305,28 @@ def update_build_async(req, _res, ctx, _mask):
       )
     if build.is_ended:
       raise failed_precondition('Cannot update an ended build')
+
+    # Ensure a SCHEDULED build does not have steps or output.
+    final_status = (
+        req.build.status
+        if 'build.status' in update_paths else build.proto.status
+    )
+    if final_status == common_pb2.SCHEDULED:
+      if 'build.steps' in update_paths:
+        raise invalid_argument(
+            'cannot update steps of a SCHEDULED build; '
+            'either set status to non-SCHEDULED or do not update steps'
+        )
+      if any(p.startswith('build.output.') for p in update_paths):
+        raise invalid_argument(
+            'cannot update build output fields of a SCHEDULED build; '
+            'either set status to non-SCHEDULED or do not update build output'
+        )
+
     raise ndb.Return(build)
 
   build = yield get_async()
   validate_build_token(build, ctx)
-
-  update_paths = set(req.update_mask.paths)
 
   # Prepare a field mask to merge req.build into model.Build.proto.
   # Exclude fields that are stored elsewhere.
@@ -361,8 +379,6 @@ def update_build_async(req, _res, ctx, _mask):
         if not build.proto.HasField('end_time'):  # pragma: no branch
           build.proto.end_time.FromDatetime(now)
         futures.append(events.on_build_completing_async(build))
-
-    # TODO(crbug.com/936892): check has steps => status is not SCHEDULED.
 
     futures.append(build.put_async())
     yield futures
