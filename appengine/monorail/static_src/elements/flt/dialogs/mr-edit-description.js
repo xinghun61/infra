@@ -5,13 +5,12 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '@vaadin/vaadin-upload/vaadin-upload.js';
-import '@vaadin/vaadin-upload/theme/lumo/vaadin-upload.js';
+import '../../framework/mr-upload/mr-upload.js';
+import '../../mr-error/mr-error.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../chops/chops-dialog/chops-dialog.js';
-import {loadAttachments} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 
 
@@ -26,28 +25,6 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <dom-module id="upload-theme" theme-for="vaadin-upload-file">
-        <!-- Custom styling to hide some unused controls and add some
-             extra affordances. -->
-        <template>
-          <style>
-            [part="start-button"], [part="status"], [part="progress"] {
-              display:none;
-            }
-            [part="row"]:hover {
-              background: #eee;
-            }
-            [part="clear-button"] {
-              cursor: pointer;
-              font-size: 100%;
-            }
-            [part="clear-button"]:before {
-              font-family: sans-serif;
-              content: 'X';
-            }
-          </style>
-        </template>
-      </dom-module>
       <style include="mr-shared-styles">
         chops-dialog {
           --chops-dialog-theme: {
@@ -104,10 +81,11 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
             </label>
             <br>
           </template>
-          <vaadin-upload files="{{_newAttachments}}" no-auto>
-            <i class="material-icons" slot="drop-label-icon">cloud_upload</i>
-          </vaadin-upload>
+          <mr-upload></mr-upload>
         </div>
+        <mr-error
+          hidden$="[[!_attachmentError]]"
+        >[[_attachmentError]]</mr-error>
         <div class="edit-controls">
           <chops-checkbox
             id="sendEmail"
@@ -136,13 +114,13 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       comments: Array,
       issueId: String,
       projectName: String,
+      _attachmentError: String,
       _attachments: Array,
       _boldLines: Array,
       _displayedContent: String,
       _displayedTitle: String,
       _fieldName: String,
       _keptAttachmentIds: Object,
-      _newAttachments: Array,
       _sendEmail: Boolean,
     };
   }
@@ -239,11 +217,16 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
   }
 
   reset() {
+    this._attachmentError = '';
     this._attachments = [];
     this._boldLines = [];
     this._displayedContent = '';
     this._keptAttachmentIds = new Set();
-    this._newAttachments = [];
+
+    const uploader = this.shadowRoot.querySelector('mr-upload');
+    if (uploader) {
+      uploader.reset();
+    }
 
     this._computeDisplayed(this.comments, this._fieldName);
     this.shadowRoot.querySelectorAll('.kept-attachment').forEach((checkbox) => {
@@ -256,7 +239,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
     this.$.dialog.close();
   }
 
-  save() {
+  async save() {
     const commentContent = this._markupNewContent();
     const sendEmail = this._sendEmail;
     const keptAttachments = Array.from(this._keptAttachmentIds);
@@ -271,8 +254,9 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       sendEmail,
     };
 
-    const loads = loadAttachments(this._newAttachments);
-    Promise.all(loads).then((uploads) => {
+    try {
+      const uploader = this.shadowRoot.querySelector('mr-upload');
+      const uploads = await uploader.loadFiles();
       if (uploads && uploads.length) {
         message.uploads = uploads;
       }
@@ -280,6 +264,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       if (!this._fieldName) {
         this.dispatchAction(actionCreator.updateIssue(message));
       } else {
+        // This is editing an approval if there is no field name.
         message.fieldRef = {
           type: fieldTypes.APPROVAL_TYPE,
           fieldName: this._fieldName,
@@ -287,9 +272,10 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
         this.dispatchAction(actionCreator.updateApproval(message));
       }
       this.$.dialog.close();
-    }).catch((reason) => {
-      console.error('loading file for attachment: ', reason);
-    });
+    } catch (e) {
+      this._attachmentError = `Error while loading file for attachment: ${
+        e.message}`;
+    }
   }
 }
 

@@ -35,6 +35,7 @@
    * instances of links styled with #00c have been replaced. */
   --chops-link-color: #00c;
   --chops-primary-accent-color: var(--chops-blue-700);
+  --chops-primary-accent-bg: var(--chops-blue-50);
   --chops-primary-button-bg: var(--chops-primary-accent-color);
   --chops-primary-button-color: white;
   --chops-button-bg: var(--chops-gray-200);

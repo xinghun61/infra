@@ -48,7 +48,6 @@
     "@polymer/paper-tooltip": "^3.0.0",
     "@polymer/polymer": "^3.0.0",
     "@polymer/test-fixture": "^4.0.0",
-    "@vaadin/vaadin-upload": "^4.2.1",
     "@webcomponents/shadycss": "^1.0.0",
     "@webcomponents/webcomponentsjs": "^2.2.7",
     "chart.js": "^2.7.2",

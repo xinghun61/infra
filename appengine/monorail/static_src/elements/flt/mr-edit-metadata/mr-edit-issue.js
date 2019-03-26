@@ -9,7 +9,6 @@ import {selectors} from '../../redux/selectors.js';
 import * as project from '../../redux/project.js';
 import {ReduxMixin, actionCreator} from '../../redux/redux-mixin.js';
 import './mr-edit-metadata.js';
-import {loadAttachments} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 
 // Match: projectName:localIdFormat
@@ -33,7 +32,6 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
         <a href="#makechanges">Add a comment and make changes</a>
       </h2>
       <mr-edit-metadata
-        id="metadataForm"
         form-name="Issue Edit"
         owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
         cc="[[issue.ccRefs]]"
@@ -102,11 +100,11 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
   }
 
   reset() {
-    this.shadowRoot.querySelector('#metadataForm').reset();
+    this.shadowRoot.querySelector('mr-edit-metadata').reset();
   }
 
-  save() {
-    const form = this.shadowRoot.querySelector('#metadataForm');
+  async save() {
+    const form = this.shadowRoot.querySelector('mr-edit-metadata');
     const message = {
       issueRef: {
         projectName: this.projectName,
@@ -118,25 +116,22 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     };
 
     // Add files to message.
-    const loads = loadAttachments(form.newAttachments);
-    Promise.all(loads).then((uploads) => {
-      if (uploads && uploads.length) {
-        message.uploads = uploads;
-      }
+    const uploads = await form.getAttachments();
 
-      if (message.commentContent || message.delta || message.uploads) {
-        this.dispatchAction(actionCreator.updateIssue(message));
-      }
-    }).catch((reason) => {
-      console.error('loading file for attachment: ', reason);
-    });
+    if (uploads && uploads.length) {
+      message.uploads = uploads;
+    }
+
+    if (message.commentContent || message.delta || message.uploads) {
+      this.dispatchAction(actionCreator.updateIssue(message));
+    }
   }
 
   focus() {
     const editHeader = this.shadowRoot.querySelector('#makechanges');
     editHeader.scrollIntoView();
 
-    const editForm = this.shadowRoot.querySelector('#metadataForm');
+    const editForm = this.shadowRoot.querySelector('mr-edit-metadata');
     editForm.focus();
   }
 

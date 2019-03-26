@@ -8,8 +8,7 @@ import {Debouncer} from '@polymer/polymer/lib/utils/debounce.js';
 import {timeOut} from '@polymer/polymer/lib/utils/async.js';
 
 import '../../chops/chops-button/chops-button.js';
-import '@vaadin/vaadin-upload/vaadin-upload.js';
-import '@vaadin/vaadin-upload/theme/lumo/vaadin-upload.js';
+import '../../framework/mr-upload/mr-upload.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../mr-error/mr-error.js';
 import '../../mr-warning/mr-warning.js';
@@ -37,28 +36,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <dom-module id="upload-theme" theme-for="vaadin-upload-file">
-        <!-- Custom styling to hide some unused controls and add some
-             extra affordances. -->
-        <template>
-          <style>
-            [part="start-button"], [part="status"], [part="progress"] {
-              display:none;
-            }
-            [part="row"]:hover {
-              background: #eee;
-            }
-            [part="clear-button"] {
-              cursor: pointer;
-              font-size: 100%;
-            }
-            [part="clear-button"]:before {
-              font-family: sans-serif;
-              content: 'X';
-            }
-          </style>
-        </template>
-      </dom-module>
       <style include="mr-shared-styles">
         :host {
           display: block;
@@ -73,9 +50,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           flex-direction: row-reverse;
           text-align: right;
         }
-        vaadin-upload {
-          margin-bottom: 1em;
-        }
         input {
           @apply --mr-edit-field-styles;
         }
@@ -87,9 +61,12 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         label.checkbox {
           text-align: left;
         }
+        mr-upload {
+          margin-bottom: 0.25em;
+        }
         textarea {
           width: 100%;
-          margin: 0.5em 0;
+          margin: 0.25em 0;
           box-sizing: border-box;
           border: var(--chops-accessible-border);
           height: 8em;
@@ -167,13 +144,9 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           placeholder="Add a comment"
           on-keyup="_onChange"
         ></textarea>
-        <vaadin-upload
-          files="{{newAttachments}}"
-          no-auto
+        <mr-upload
           hidden$="[[disableAttachments]]"
-        >
-          <i class="material-icons" slot="drop-label-icon">cloud_upload</i>
-        </vaadin-upload>
+        ></mr-upload>
         <div class="input-grid">
           <template is="dom-if" if="[[_canEditIssue]]">
             <template is="dom-if" if="[[!isApproval]]">
@@ -497,7 +470,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Boolean,
         value: true,
       },
-      newAttachments: Array,
       presubmitResponse: Object,
       fieldValueMap: Object,  // Set by MetadataMixin.
       _nicheFieldCount: {
@@ -553,7 +525,11 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     this.shadowRoot.querySelectorAll('mr-edit-field').forEach((el) => {
       el.reset();
     });
-    this.shadowRoot.querySelector('vaadin-upload').files = [];
+
+    const uploader = this.shadowRoot.querySelector('mr-upload');
+    if (uploader) {
+      uploader.reset();
+    }
 
     this._onChange();
   }
@@ -575,6 +551,14 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   getCommentContent() {
     return this.shadowRoot.querySelector('#commentText').value;
+  }
+
+  async getAttachments() {
+    try {
+      return await this.shadowRoot.querySelector('mr-upload').loadFiles();
+    } catch (e) {
+      this.error = `Error while loading file for attachment: ${e.message}`;
+    }
   }
 
   getDelta() {

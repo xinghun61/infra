@@ -357,10 +357,10 @@ suite('mr-edit-metadata', () => {
 
     flush();
 
-    const uploader = element.shadowRoot.querySelector('vaadin-upload');
+    const uploader = element.shadowRoot.querySelector('mr-upload');
     uploader.files = [
-      {name: 'test.png', progress: 0},
-      {name: 'rutabaga.png', progress: 0},
+      {name: 'test.png'},
+      {name: 'rutabaga.png'},
     ];
 
     element.shadowRoot.querySelector('#testFieldInput').setValue('testy test');

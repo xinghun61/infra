@@ -15,7 +15,6 @@ import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import '../mr-edit-metadata/mr-edit-metadata.js';
 import '../mr-metadata/mr-metadata.js';
-import {loadAttachments} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 
 const APPROVER_RESTRICTED_STATUSES = new Set(
@@ -221,7 +220,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
             Editing approval: [[phaseName]] &gt; [[fieldName]]
           </h4>
           <mr-edit-metadata
-            id="metadataForm"
             form-name="[[phaseName]] > [[fieldName]]"
             approvers="[[approvers]]"
             field-defs="[[fieldDefs]]"
@@ -356,42 +354,38 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
   }
 
   reset(issue) {
-    const form = this.shadowRoot.querySelector('#metadataForm');
+    const form = this.shadowRoot.querySelector('mr-edit-metadata');
     if (!form) return;
     form.reset();
   }
 
-  save() {
-    const form = this.shadowRoot.querySelector('#metadataForm');
-    const loads = loadAttachments(form.newAttachments);
+  async save() {
+    const form = this.shadowRoot.querySelector('mr-edit-metadata');
 
     const commentContent = form.getCommentContent();
     const approvalDelta = form.getDelta();
     if (approvalDelta.status) {
       approvalDelta.status = TEXT_TO_STATUS_ENUM[approvalDelta.status];
     }
-
-    Promise.all(loads).then((uploads) => {
-      if (commentContent || Object.keys(approvalDelta).length > 0 ||
-          uploads.length > 0) {
-        this.dispatchAction(actionCreator.updateApproval({
-          issueRef: {
-            projectName: this.projectName,
-            localId: this.issueId,
-          },
-          fieldRef: {
-            type: fieldTypes.APPROVAL_TYPE,
-            fieldName: this.fieldName,
-          },
-          sendEmail: form.sendEmail,
-          commentContent,
-          approvalDelta,
-          uploads,
-        }));
-      }
-    }).catch((reason) => {
-      console.error('loading file for attachment: ', reason);
-    });
+  
+    const uploads = await form.getAttachments();
+    if (commentContent || Object.keys(approvalDelta).length > 0 ||
+        uploads.length > 0) {
+      this.dispatchAction(actionCreator.updateApproval({
+        issueRef: {
+          projectName: this.projectName,
+          localId: this.issueId,
+        },
+        fieldRef: {
+          type: fieldTypes.APPROVAL_TYPE,
+          fieldName: this.fieldName,
+        },
+        sendEmail: form.sendEmail,
+        commentContent,
+        approvalDelta,
+        uploads,
+      }));
+    }
   }
 
   toggleCard(evt) {

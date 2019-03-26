@@ -15,25 +15,6 @@ export function arrayDifference(listA, listB, equals) {
   });
 }
 
-export function loadAttachments(attachments) {
-  if (!attachments || !attachments.length) return [];
-  return attachments.map(_loadLocalFile);
-}
-
-function _loadLocalFile(f) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onloadend = () => {
-      resolve({filename: f.name, content: btoa(r.result)});
-    };
-    r.onerror = () => {
-      reject(r.error);
-    };
-
-    r.readAsBinaryString(f);
-  });
-}
-
 export function removePrefix(str, prefix) {
   return str.substr(prefix.length);
 }

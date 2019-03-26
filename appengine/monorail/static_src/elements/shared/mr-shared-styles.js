@@ -26,7 +26,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         background: 0;
         cursor: pointer;
       }
-      a.button {
+      a.button, .button {
         /* Links that look like buttons. */
         display: inline-flex;
         align-items: center;
@@ -34,10 +34,10 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         text-decoration: none;
         transition: filter 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
       }
-      a.button:hover {
+      a.button:hover, .button:hover {
         filter: brightness(95%);
       }
-      chops-button, a.button {
+      chops-button, a.button, .button {
         box-sizing: border-box;
         font-size: 13px;
         background: white;
@@ -47,11 +47,11 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         margin-left: auto;
         color: var(--chops-link-color);
       }
-      chops-button i.material-icons, a.button i.material-icons {
+      chops-button i.material-icons, a.button i.material-icons, .button i.material-icons {
         display: block;
         margin-right: 4px;
       }
-      chops-button.emphasized, a.button.emphasized {
+      chops-button.emphasized, a.button.emphasized, .button.emphasized {
         background: var(--chops-primary-button-bg);
         color: var(--chops-primary-button-color);
         text-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.25);
