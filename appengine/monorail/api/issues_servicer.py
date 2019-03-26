@@ -18,6 +18,7 @@ from businesslogic import work_env
 from features import filterrules_helpers
 from features import savedqueries_helpers
 from framework import exceptions
+from framework import framework_constants
 from framework import framework_views
 from framework import permissions
 from proto import tracker_pb2
@@ -544,7 +545,12 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       proposed_owner_view = users_by_id[proposed_owner_id]
 
     with mc.profiler.Phase('Applying IssueDelta'):
-      proposed_issue = copy.deepcopy(issue)
+      if issue:
+        proposed_issue = copy.deepcopy(issue)
+      else:
+        proposed_issue = tracker_pb2.Issue(
+          owner_id=framework_constants.NO_USER_SPECIFIED,
+          project_id=config.project_id)
       issue_delta = converters.IngestIssueDelta(
           mc.cnxn, self.services, request.issue_delta, config, None,
           ignore_missing_objects=True)
