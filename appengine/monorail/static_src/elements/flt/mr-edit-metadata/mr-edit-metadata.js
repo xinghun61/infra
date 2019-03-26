@@ -50,16 +50,32 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           flex-direction: row-reverse;
           text-align: right;
         }
+        :host(.edit-actions-right) .edit-actions chops-checkbox {
+          margin-right: auto;
+          margin-left: 0;
+        }
+        .edit-actions chops-checkbox {
+          margin-top: 2px;
+          margin-left: 128px;
+        }
+        .edit-actions {
+          width: 100%;
+          max-width: 500px;
+          margin: 0.5em 0;
+          text-align: left;
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+        }
+        .edit-actions chops-button {
+          flex-grow: 0;
+          flex-shrink: 0;
+        }
+        .edit-actions .emphasized {
+          margin-left: 0;
+        }
         input {
           @apply --mr-edit-field-styles;
-        }
-        label {
-          font-weight: bold;
-          word-wrap: break-word;
-          text-align: right;
-        }
-        label.checkbox {
-          text-align: left;
         }
         mr-upload {
           margin-bottom: 0.25em;
@@ -100,21 +116,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         .discard-button {
           margin-right: 16px;
           margin-left: 16px;
-        }
-        .edit-actions {
-          width: 100%;
-          margin: 0.5em 0;
-          text-align: left;
-          display: flex;
-          flex-direction: row;
-          justify-content: flex-start;
-        }
-        .edit-actions chops-button {
-          flex-grow: 0;
-          flex-shrink: 0;
-        }
-        .edit-actions .emphasized {
-          margin-left: 0;
         }
         .group {
           width: 100%;
@@ -304,13 +305,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 Hide niche fields ([[_nicheFieldCount]] currently shown)
               </span>
             </button>
-
-            <span></span>
-            <chops-checkbox
-              id="sendEmail"
-              on-checked-change="_sendEmailChecked"
-              checked="[[sendEmail]]"
-            >Send email</chops-checkbox>
           </template>
 
           <template is="dom-if" if="[[_hasErrorsOrWarnings(presubmitResponse)]]">
@@ -339,6 +333,12 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
             >
               Discard
             </chops-button>
+
+            <chops-checkbox
+              id="sendEmail"
+              on-checked-change="_sendEmailChecked"
+              checked="[[sendEmail]]"
+            >Send email</chops-checkbox>
           </div>
 
           <template is="dom-if" if="[[_hasDerivedValues(presubmitResponse)]]">

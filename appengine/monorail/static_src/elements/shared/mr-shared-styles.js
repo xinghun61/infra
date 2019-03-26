@@ -67,6 +67,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         padding: 0.25em 0;
         color: hsl(227, 60%, 39%);
         margin: 0;
+        margin-top: 0.25em;
         border-bottom: var(--chops-normal-border);
       }
       .medium-heading chops-button {
