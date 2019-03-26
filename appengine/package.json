@@ -1,0 +1,14 @@
+{
+  "name": "eslint-checker",
+  "version": "1.0.0",
+  "description": "ESLint for Infra repos",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra"
+  },
+  "devDependencies": {
+    "eslint": "latest",
+    "eslint-config-google": "latest"
+  }
+}

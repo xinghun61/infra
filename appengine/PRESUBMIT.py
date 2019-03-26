@@ -243,6 +243,26 @@ def PylintChecks(input_api, output_api, only_changed):  # pragma: no cover
   return tests
 
 
+def ESLintChecks(input_api, output_api):  # pragma: no cover
+  try:
+    infra_root = input_api.os_path.dirname(input_api.PresubmitLocalPath())
+    import sys
+    import imp
+    old_sys_path = sys.path[:]
+    wrapper_util_path = input_api.os_path.join(
+        infra_root, 'appengine', 'js_checker.py')
+    js_checker = imp.load_source('JSChecker', wrapper_util_path)
+    # TODO(prasadv): Determine which files to exclude.
+    blacklist = []
+    file_filter = lambda f: f.LocalPath() not in blacklist
+    results = js_checker.JSChecker(
+        input_api, output_api, file_filter).RunChecks()
+  finally:
+    sys.path = old_sys_path
+
+  return results
+
+
 def CommonChecks(_input_api, _output_api):  # pragma: no cover
   return []
 
@@ -250,12 +270,15 @@ def CommonChecks(_input_api, _output_api):  # pragma: no cover
 def CheckChangeOnUpload(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
   output.extend(input_api.RunTests(PylintChecks(
-    input_api, output_api, only_changed=True)))
+      input_api, output_api, only_changed=True)))
+  output.extend(input_api.RunTests(ESLintChecks(
+      input_api, output_api)))
+
   return output
 
 
 def CheckChangeOnCommit(input_api, output_api):  # pragma: no cover
   output = CommonChecks(input_api, output_api)
   output.extend(input_api.RunTests(PylintChecks(
-    input_api, output_api, only_changed=False)))
+      input_api, output_api, only_changed=False)))
   return output
