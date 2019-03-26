@@ -44,16 +44,24 @@ class FlakeDetectionAndAutoActionTest(WaterfallTestCase):
   ],
                                        debug=True)
 
+  # @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
+  # @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreHiddenFlakes')
+  # @mock.patch.object(
+  #     flake_issue_util, 'GetFlakeGroupsForActionsOnBugs',
+  #     return_value=([], []))
+  # @mock.patch.object(flake_issue_util, 'ReportFlakesToFlakeAnalyzer')
+  # @mock.patch.object(flake_issue_util, 'ReportFlakesToMonorail')
+  # @mock.patch.object(flake_issue_util, 'GetFlakesWithEnoughOccurrences')
+  # @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
+  # def testFlakesDetected(self, mock_detect, mock_get_flakes, mock_bug,
+  #                        mock_analysis, mock_groups, mock_detect_hidden, _):
   @mock.patch.object(BaseHandler, 'IsRequestFromAppSelf', return_value=True)
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreHiddenFlakes')
-  @mock.patch.object(
-      flake_issue_util, 'GetFlakeGroupsForActionsOnBugs', return_value=([], []))
   @mock.patch.object(flake_issue_util, 'ReportFlakesToFlakeAnalyzer')
-  @mock.patch.object(flake_issue_util, 'ReportFlakesToMonorail')
   @mock.patch.object(flake_issue_util, 'GetFlakesWithEnoughOccurrences')
   @mock.patch.object(detect_flake_occurrences, 'QueryAndStoreFlakes')
-  def testFlakesDetected(self, mock_detect, mock_get_flakes, mock_bug,
-                         mock_analysis, mock_groups, mock_detect_hidden, _):
+  def testFlakesDetected(self, mock_detect, mock_get_flakes,
+                         mock_analysis, mock_detect_hidden, _):
     mock_get_flakes.return_value = []
     response = self.test_app.get(
         '/flake/detection/task/detect-flakes', status=200)
@@ -63,9 +71,9 @@ class FlakeDetectionAndAutoActionTest(WaterfallTestCase):
         mock.call(FlakeType.CQ_FALSE_REJECTION),
         mock.call(FlakeType.RETRY_WITH_PATCH)
     ])
-    mock_bug.assert_called_once_with([], [])
+    # mock_bug.assert_called_once_with([], [])
     mock_analysis.assert_called_once_with([])
-    mock_groups.assert_called_once_with([])
+    # mock_groups.assert_called_once_with([])
     self.assertTrue(mock_detect_hidden.called)
 
 
