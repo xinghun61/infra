@@ -216,6 +216,9 @@ type CompilerProxyLog struct {
 	// GomaVersion is goma version of the compiler_proxy if it is released one.
 	GomaVersion string
 
+	// CompilerProxyIDPrefix is compiler_proxy_id prefix.
+	CompilerProxyIDPrefix string
+
 	// GomaFlags is goma configuration flags.
 	GomaFlags string
 
@@ -294,6 +297,7 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 	parseSpecials := []func([]string) bool{
 		parseSpecial(&cpl.GomaRevision, "goma built revision ", false, false),
 		parseSpecial(&cpl.GomaVersion, "goma version:", false, false),
+		parseSpecial(&cpl.CompilerProxyIDPrefix, "compiler_proxy_id_prefix:", false, false),
 		parseSpecial(&cpl.GomaFlags, "goma flags:", false, false),
 		parseSpecial(&cpl.GomaLimits, "max incoming:", true, false),
 		parseSpecial(&cpl.CrashDump, " Crash Dump ", false, false),

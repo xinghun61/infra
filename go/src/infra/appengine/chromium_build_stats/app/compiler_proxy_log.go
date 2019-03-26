@@ -41,6 +41,7 @@ var (
 <tr><th>Machine <td>{{.CompilerProxyLog.Machine}}
 <tr><th>GomaRevision <td>{{.CompilerProxyLog.GomaRevision}}
 <tr><th>GomaVersion <td>{{.CompilerProxyLog.GomaVersion}}
+<tr><th>CompilerProxyID prefix<td>{{.CompilerProxyLog.CompilerProxyIDPrefix}}
 <tr><th>GomaFlags <td><pre>{{.CompilerProxyLog.GomaFlags}}</pre>
 <tr><th>GomaLimits <td>{{.CompilerProxyLog.GomaLimits}}
 <tr><th>CrashDump <td>{{.CompilerProxyLog.CrashDump}}

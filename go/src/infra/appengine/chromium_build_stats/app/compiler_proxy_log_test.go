@@ -30,6 +30,7 @@ I0911 17:43:51.723794  5777 compiler_proxy.cc:1513] goma version:68
 I0911 17:43:51.723834  5777 compiler_proxy.cc:1351] setrlimit RLIMIT_NOFILE 4096 -> 4096
 I0911 17:43:52.085327  5777 compiler_proxy.cc:1566] unix domain:/tmp/goma.ipc
 I0911 17:43:52.085346  5777 compiler_proxy.cc:1586] max incoming: 1339 max_nfile=4096 FD_SETSIZE=1024 max_num_sockets=4096 USE_EPOLL=1 threads=12+3
+I0911 17:44:01.012345  577  compile_service.cc:194] compiler_proxy_id_prefix:chrome-bot@chromeperf58:8088/2014-09-11T17:43:51.123456789+00:00/
 I0911 17:44:06.493176  5786 compile_task.cc:923] Task:0 Start ../../third_party/webrtc/system_wrappers/source/condition_variable_posix.cc gomacc_pid=5838
 I0911 17:44:06.493830  5798 subprocess_task.cc:244] ../../third_party/llvm-build/Release+Asserts/bin/clang++ started pid=5844 state=RUN
 I0911 17:44:06.493988  5787 compile_task.cc:923] Task:1 Start ../../third_party/webrtc/common_audio/signal_processing/filter_ma_fast_q12.c gomacc_pid=5840
@@ -101,6 +102,7 @@ Frontend / Count
 <tr><th>Machine <td>chromeperf58
 <tr><th>GomaRevision <td>4a694601289a8f07a6d6439631049e1ad0914dfb@1409795845
 <tr><th>GomaVersion <td>68
+<tr><th>CompilerProxyID prefix<td>chrome-bot@chromeperf58:8088/2014-09-11T17:43:51.123456789&#43;00:00/
 <tr><th>GomaFlags <td><pre>GOMA_API_KEY_FILE=/b/build/goma/goma.key
 GOMA_COMPILER_PROXY_DAEMON_MODE=true
 GOMA_COMPILER_PROXY_HTTP_THREADS=3 (auto configured)
