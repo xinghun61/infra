@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func BenchmarkParseTaskLine(b *testing.B) {
@@ -35,13 +37,20 @@ I0911 17:43:51.723834  5777 compiler_proxy.cc:1351] setrlimit RLIMIT_NOFILE 4096
 I0911 17:43:52.085327  5777 compiler_proxy.cc:1566] unix domain:/tmp/goma.ipc
 I0911 17:43:52.085346  5777 compiler_proxy.cc:1586] max incoming: 1339 max_nfile=4096 FD_SETSIZE=1024 max_num_sockets=4096 USE_EPOLL=1 threads=12+3
 I0911 17:44:01.012345  577  compile_service.cc:194] compiler_proxy_id_prefix:chrome-bot@chromeperf58:8088/2014-09-11T17:43:51.123456789+00:00/
+I0911 17:44:06.493170  5786 compile_task.cc:923] Task:0 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.493176  5786 compile_task.cc:923] Task:0 Start ../../third_party/webrtc/system_wrappers/source/condition_variable_posix.cc gomacc_pid=5838
 I0911 17:44:06.493830  5798 subprocess_task.cc:244] ../../third_party/llvm-build/Release+Asserts/bin/clang++ started pid=5844 state=RUN
+I0911 17:44:06.493980  5787 compile_task.cc:923] Task:1 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.493988  5787 compile_task.cc:923] Task:1 Start ../../third_party/webrtc/common_audio/signal_processing/filter_ma_fast_q12.c gomacc_pid=5840
+I0911 17:44:06.494810  5788 compile_task.cc:923] Task:2 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.494817  5788 compile_task.cc:923] Task:2 Start ../../third_party/lzma_sdk/7zBuf.c gomacc_pid=5842
+I0911 17:44:06.495700 5790 compile_task.cc:923] Task:3 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.495704  5790 compile_task.cc:923] Task:3 Start ../../third_party/yasm/source/patched-yasm/tools/genmacro/genmacro.c gomacc_pid=5845
+I0911 17:44:06.496720  5792 compile_task.cc:923] Task:4 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.496722  5792 compile_task.cc:923] Task:4 Start gen/ui/resources/grit/ui_resources_map.cc gomacc_pid=5848
+I0911 17:44:06.497630 5794 compile_task.cc:923] Task:5 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.497638  5794 compile_task.cc:923] Task:5 Start linking ./dump_syms /search/search.cc gomacc_pid=5850
+I0911 17:44:06.498120  5795 copmiler_service.cc:467] Task:6 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.498123  5795 copmiler_service.cc:467] Task:6 pending
 I0911 17:44:06.498575  5796 compile_task.cc:923] Task:6 Start ../../components/search/search_switches.cc gomacc_pid=5852
 I0911 17:44:07.410532  5798 subprocess_task.cc:255] ../../third_party/llvm-build/Release+Asserts/bin/clang++ terminated pid=5844 status=1
@@ -108,6 +117,9 @@ Frontend / Count
 	if got, want := cpl.CompilerProxyIDPrefix, "chrome-bot@chromeperf58:8088/2014-09-11T17:43:51.123456789+00:00/"; got != want {
 		t.Errorf("cpl.CompilerProxyIDPrefix=%q; want=%q", got, want)
 	}
+	if diff := cmp.Diff([]string{"6235ce6e-d8e4-4e17-a9cf-e702a816834c"}, cpl.BuildIDs); diff != "" {
+		t.Errorf("cpl.BuildIDs: diff -want +got: %s", diff)
+	}
 	if got, want := cpl.GomaFlags, `GOMA_API_KEY_FILE=/b/build/goma/goma.key
 GOMA_COMPILER_PROXY_DAEMON_MODE=true
 GOMA_COMPILER_PROXY_HTTP_THREADS=3 (auto configured)
@@ -137,6 +149,8 @@ ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 6
 		t.Errorf("cpl.Histogram=%q, want=%q", got, want)
 	}
 
+	const buildID = "6235ce6e-d8e4-4e17-a9cf-e702a816834c"
+
 	wants := map[string]struct {
 		Desc        string
 		CompileMode CompileMode
@@ -149,64 +163,64 @@ ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 6
 		"0": {
 			Desc:        "../../third_party/webrtc/system_wrappers/source/condition_variable_posix.cc gomacc_pid=5838",
 			CompileMode: Compiling,
-			AcceptTime:  timeAt("2014/09/11 17:44:06.493176"),
+			AcceptTime:  timeAt("2014/09/11 17:44:06.493170"),
 			StartTime:   timeAt("2014/09/11 17:44:06.493176"),
 			EndTime:     timeAt("2014/09/11 17:44:13.786922"),
-			NumLogs:     4,
+			NumLogs:     5,
 			Response:    "local finish, no goma",
 		},
 		"1": {
 			Desc:        "../../third_party/webrtc/common_audio/signal_processing/filter_ma_fast_q12.c gomacc_pid=5840",
 			CompileMode: Compiling,
-			AcceptTime:  timeAt("2014/09/11 17:44:06.493988"),
+			AcceptTime:  timeAt("2014/09/11 17:44:06.493980"),
 			StartTime:   timeAt("2014/09/11 17:44:06.493988"),
 			EndTime:     timeAt("2014/09/11 17:44:16.738234"),
-			NumLogs:     5,
+			NumLogs:     6,
 			Response:    "local finish, abort goma",
 		},
 		"2": {
 			Desc:        "../../third_party/lzma_sdk/7zBuf.c gomacc_pid=5842",
 			CompileMode: Compiling,
-			AcceptTime:  timeAt("2014/09/11 17:44:06.494817"),
+			AcceptTime:  timeAt("2014/09/11 17:44:06.494810"),
 			StartTime:   timeAt("2014/09/11 17:44:06.494817"),
 			EndTime:     timeAt("2014/09/11 17:44:16.700889"),
-			NumLogs:     5,
+			NumLogs:     6,
 			Response:    "local finish, abort goma",
 		},
 		"3": {
 			Desc:        "../../third_party/yasm/source/patched-yasm/tools/genmacro/genmacro.c gomacc_pid=5845",
 			CompileMode: Compiling,
-			AcceptTime:  timeAt("2014/09/11 17:44:06.495704"),
+			AcceptTime:  timeAt("2014/09/11 17:44:06.495700"),
 			StartTime:   timeAt("2014/09/11 17:44:06.495704"),
 			EndTime:     timeAt("2014/09/11 17:44:16.667989"),
-			NumLogs:     5,
+			NumLogs:     6,
 			Response:    "local finish, abort goma",
 		},
 		"4": {
 			Desc:        "gen/ui/resources/grit/ui_resources_map.cc gomacc_pid=5848",
 			CompileMode: Compiling,
-			AcceptTime:  timeAt("2014/09/11 17:44:06.496722"),
+			AcceptTime:  timeAt("2014/09/11 17:44:06.496720"),
 			StartTime:   timeAt("2014/09/11 17:44:06.496722"),
 			EndTime:     timeAt("2014/09/11 17:44:13.874645"),
-			NumLogs:     4,
+			NumLogs:     5,
 			Response:    "goma success",
 		},
 		"5": {
 			Desc:        "./dump_syms /search/search.cc gomacc_pid=5850",
 			CompileMode: Linking,
-			AcceptTime:  timeAt("2014/09/11 17:44:06.497638"),
+			AcceptTime:  timeAt("2014/09/11 17:44:06.497630"),
 			StartTime:   timeAt("2014/09/11 17:44:06.497638"),
 			EndTime:     timeAt("2014/09/11 17:44:16.601634"),
-			NumLogs:     5,
+			NumLogs:     6,
 			Response:    "should fallback",
 		},
 		"6": {
 			Desc:        "../../components/search/search_switches.cc gomacc_pid=5852",
 			CompileMode: Compiling,
-			AcceptTime:  timeAt("2014/09/11 17:44:06.498123"),
+			AcceptTime:  timeAt("2014/09/11 17:44:06.498120"),
 			StartTime:   timeAt("2014/09/11 17:44:06.498575"),
 			EndTime:     timeAt("2014/09/11 17:44:16.879138"),
-			NumLogs:     6,
+			NumLogs:     7,
 			Response:    "local finish, abort goma",
 		},
 	}
@@ -215,6 +229,9 @@ ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 6
 		if got == nil {
 			t.Errorf("%s: got=<nil>, want=%v", id, want)
 			continue
+		}
+		if got.BuildID != buildID {
+			t.Errorf("%s: BuildID=%q; want=%q", id, got.BuildID, buildID)
 		}
 		if got.Desc != want.Desc {
 			t.Errorf("%s: Desc=%q; want=%q", id, got.Desc, want.Desc)

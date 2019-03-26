@@ -47,6 +47,9 @@ type TaskLog struct {
 	// ID is task id.
 	ID string
 
+	// BuildID is build id for the task.
+	BuildID string
+
 	// Desc is task description. (e.g. input_filename).
 	Desc string
 
@@ -219,6 +222,10 @@ type CompilerProxyLog struct {
 	// CompilerProxyIDPrefix is compiler_proxy_id prefix.
 	CompilerProxyIDPrefix string
 
+	// BuildIDs is build_id appeared in compiler_proxy log.
+	// on bot, it will be one build id.
+	BuildIDs []string
+
 	// GomaFlags is goma configuration flags.
 	GomaFlags string
 
@@ -304,6 +311,7 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 		parseSpecial(&cpl.Stats, " Dumping stats...", false, true),
 		parseSpecial(&cpl.Histogram, " Dumping histogram...", false, true),
 	}
+	buildids := make(map[string]bool)
 Lines:
 	for gp.Next() {
 		log := gp.Logline()
@@ -319,6 +327,17 @@ Lines:
 		if m != nil {
 			t := cpl.taskLog(m[1], log.Timestamp, log)
 			taskLog := m[2]
+
+			const buildid = "build_id:"
+			if strings.HasPrefix(taskLog, buildid) {
+				bid := strings.TrimPrefix(taskLog, buildid)
+				t.BuildID = bid
+				if buildids[bid] {
+					continue Lines
+				}
+				buildids[bid] = true
+				cpl.BuildIDs = append(cpl.BuildIDs, bid)
+			}
 
 			const start = "Start "
 			if startIdx := strings.Index(taskLog, start); startIdx != -1 {

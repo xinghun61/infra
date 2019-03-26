@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
 	"infra/appengine/chromium_build_stats/compilerproxylog"
 )
 
@@ -31,13 +33,20 @@ I0911 17:43:51.723834  5777 compiler_proxy.cc:1351] setrlimit RLIMIT_NOFILE 4096
 I0911 17:43:52.085327  5777 compiler_proxy.cc:1566] unix domain:/tmp/goma.ipc
 I0911 17:43:52.085346  5777 compiler_proxy.cc:1586] max incoming: 1339 max_nfile=4096 FD_SETSIZE=1024 max_num_sockets=4096 USE_EPOLL=1 threads=12+3
 I0911 17:44:01.012345  577  compile_service.cc:194] compiler_proxy_id_prefix:chrome-bot@chromeperf58:8088/2014-09-11T17:43:51.123456789+00:00/
+I0911 17:44:06.493170  5786 compile_task.cc:923] Task:0 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.493176  5786 compile_task.cc:923] Task:0 Start ../../third_party/webrtc/system_wrappers/source/condition_variable_posix.cc gomacc_pid=5838
 I0911 17:44:06.493830  5798 subprocess_task.cc:244] ../../third_party/llvm-build/Release+Asserts/bin/clang++ started pid=5844 state=RUN
+I0911 17:44:06.493980  5787 compile_task.cc:923] Task:1 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.493988  5787 compile_task.cc:923] Task:1 Start ../../third_party/webrtc/common_audio/signal_processing/filter_ma_fast_q12.c gomacc_pid=5840
+I0911 17:44:06.494810  5788 compile_task.cc:923] Task:2 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.494817  5788 compile_task.cc:923] Task:2 Start ../../third_party/lzma_sdk/7zBuf.c gomacc_pid=5842
+I0911 17:44:06.495700  5790 compile_task.cc:923] Task:3 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.495704  5790 compile_task.cc:923] Task:3 Start ../../third_party/yasm/source/patched-yasm/tools/genmacro/genmacro.c gomacc_pid=5845
+I0911 17:44:06.496720  5792 compile_task.cc:923] Task:4 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.496722  5792 compile_task.cc:923] Task:4 Start gen/ui/resources/grit/ui_resources_map.cc gomacc_pid=5848
+I0911 17:44:06.497630  5794 compile_task.cc:923] Task:5 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.497638  5794 compile_task.cc:923] Task:5 Start linking ./dump_syms /search/search.cc gomacc_pid=5850
+I0911 17:44:06.498120  5795 copmiler_service.cc:467] Task:6 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
 I0911 17:44:06.498123  5795 copmiler_service.cc:467] Task:6 pending
 I0911 17:44:06.498575  5796 compile_task.cc:923] Task:6 Start ../../components/search/search_switches.cc gomacc_pid=5852
 I0911 17:44:07.410532  5798 subprocess_task.cc:255] ../../third_party/llvm-build/Release+Asserts/bin/clang++ terminated pid=5844 status=1
@@ -87,7 +96,10 @@ Frontend / Count
 		t.Fatalf(`Parse("compiler_proxy.INFO")=%v, %v; want=_, <nil>`, cpl, err)
 	}
 	res := httptest.NewRecorder()
-	compilerProxyLogSummary(res, "", cpl)
+	err = compilerProxyLogSummary(res, "", cpl)
+	if err != nil {
+		t.Fatalf(`compilerProxyLogSummary(res, "", cpl)=%v; want <nil>`, err)
+	}
 
 	if got, want := res.Body.String(), `
 <html>
@@ -103,6 +115,7 @@ Frontend / Count
 <tr><th>GomaRevision <td>4a694601289a8f07a6d6439631049e1ad0914dfb@1409795845
 <tr><th>GomaVersion <td>68
 <tr><th>CompilerProxyID prefix<td>chrome-bot@chromeperf58:8088/2014-09-11T17:43:51.123456789&#43;00:00/
+<tr><th>BuildIDs<td>[6235ce6e-d8e4-4e17-a9cf-e702a816834c]
 <tr><th>GomaFlags <td><pre>GOMA_API_KEY_FILE=/b/build/goma/goma.key
 GOMA_COMPILER_PROXY_DAEMON_MODE=true
 GOMA_COMPILER_PROXY_HTTP_THREADS=3 (auto configured)
@@ -126,33 +139,33 @@ GOMA_USE_SSL=true</pre>
  <tr><th>local finish, abort goma<td>4
  <tr><th>local finish, no goma<td>1
  <tr><th colspan=2>duration
- <tr><th>average <td>9.2792145s
- <tr><th>Max     <td>10.381015s
-  <tr><th>98 <td>10.381015s
-  <tr><th>91 <td>10.381015s
-  <tr><th>75 <td>10.244246s
-  <tr><th>50 <td>10.172285s
-  <tr><th>25 <td>7.377923s
-  <tr><th>9 <td>7.293746s
-  <tr><th>2 <td>7.293746s
- <tr><th>Min     <td>7.293746s
+ <tr><th>average <td>9.2792195s
+ <tr><th>Max     <td>10.381018s
+  <tr><th>98 <td>10.381018s
+  <tr><th>91 <td>10.381018s
+  <tr><th>75 <td>10.244254s
+  <tr><th>50 <td>10.172289s
+  <tr><th>25 <td>7.377925s
+  <tr><th>9 <td>7.293752s
+  <tr><th>2 <td>7.293752s
+ <tr><th>Min     <td>7.293752s
  <tr><th colspan=2>log tasks
-  <tr><td>0 Task:6<td>10.381015s
+  <tr><td>0 Task:6<td>10.381018s
    <td>../../components/search/search_switches.cc gomacc_pid=5852
    <td>local finish, abort goma
-  <tr><td>1 Task:1<td>10.244246s
+  <tr><td>1 Task:1<td>10.244254s
    <td>../../third_party/webrtc/common_audio/signal_processing/filter_ma_fast_q12.c gomacc_pid=5840
    <td>local finish, abort goma
-  <tr><td>2 Task:2<td>10.206072s
+  <tr><td>2 Task:2<td>10.206079s
    <td>../../third_party/lzma_sdk/7zBuf.c gomacc_pid=5842
    <td>local finish, abort goma
-  <tr><td>3 Task:3<td>10.172285s
+  <tr><td>3 Task:3<td>10.172289s
    <td>../../third_party/yasm/source/patched-yasm/tools/genmacro/genmacro.c gomacc_pid=5845
    <td>local finish, abort goma
-  <tr><td>4 Task:4<td>7.377923s
+  <tr><td>4 Task:4<td>7.377925s
    <td>gen/ui/resources/grit/ui_resources_map.cc gomacc_pid=5848
    <td>goma success
-  <tr><td>5 Task:0<td>7.293746s
+  <tr><td>5 Task:0<td>7.293752s
    <td>../../third_party/webrtc/system_wrappers/source/condition_variable_posix.cc gomacc_pid=5838
    <td>local finish, no goma
 </table>
@@ -172,18 +185,18 @@ GOMA_USE_SSL=true</pre>
  <tr><th colspan=2>replices
  <tr><th>should fallback<td>1
  <tr><th colspan=2>duration
- <tr><th>average <td>10.103996s
- <tr><th>Max     <td>10.103996s
-  <tr><th>98 <td>10.103996s
-  <tr><th>91 <td>10.103996s
-  <tr><th>75 <td>10.103996s
-  <tr><th>50 <td>10.103996s
-  <tr><th>25 <td>10.103996s
-  <tr><th>9 <td>10.103996s
-  <tr><th>2 <td>10.103996s
- <tr><th>Min     <td>10.103996s
+ <tr><th>average <td>10.104004s
+ <tr><th>Max     <td>10.104004s
+  <tr><th>98 <td>10.104004s
+  <tr><th>91 <td>10.104004s
+  <tr><th>75 <td>10.104004s
+  <tr><th>50 <td>10.104004s
+  <tr><th>25 <td>10.104004s
+  <tr><th>9 <td>10.104004s
+  <tr><th>2 <td>10.104004s
+ <tr><th>Min     <td>10.104004s
  <tr><th colspan=2>log tasks
-  <tr><td>0 Task:5<td>10.103996s
+  <tr><td>0 Task:5<td>10.104004s
    <td>./dump_syms /search/search.cc gomacc_pid=5850
    <td>should fallback
 </table>
@@ -224,6 +237,7 @@ ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 6
 </body>
 </html>
 `; got != want {
-		t.Errorf("compilerProxyLogSummary(_, _, _) writes %s; want %s", got, want)
+		diff := cmp.Diff(strings.Split(want, "\n"), strings.Split(got, "\n"))
+		t.Errorf("compilerProxyLogSummary(_, _, _) writes %s; want %s\ndiff -want +got:\n%s", got, want, diff)
 	}
 }
