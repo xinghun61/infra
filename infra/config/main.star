@@ -15,6 +15,7 @@ Includes CI configs for the following subprojects:
   * Gsubtreed crons.
   * WPT autoroller crons.
   * Chromium tarball publisher.
+  * Chromium LKGR finder cron.
   * https://chromium.googlesource.com/chromium/tools/build
   * https://chromium.googlesource.com/chromium/tools/depot_tools
   * https://chromium.googlesource.com/infra/infra
@@ -151,6 +152,7 @@ exec('//subprojects/depot_tools.star')
 exec('//subprojects/expect_tests.star')
 exec('//subprojects/gsubtreed.star')
 exec('//subprojects/infra.star')
+exec('//subprojects/lkgr.star')
 exec('//subprojects/luci-gae.star')
 exec('//subprojects/luci-go.star')
 exec('//subprojects/luci-py.star')
