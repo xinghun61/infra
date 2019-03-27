@@ -23,7 +23,7 @@ import '../dialogs/mr-related-issues-table.js';
 import '../dialogs/mr-update-issue-hotlists.js';
 
 const APPROVAL_COMMENT_COUNT = 5;
-const DETAIL_COMMENT_COUNT = 50;
+const DETAIL_COMMENT_COUNT = 100;
 
 /**
  * `<mr-issue-page>`
