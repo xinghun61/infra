@@ -97,7 +97,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testNothingIsReturnedWhenNoAnalysisWasRun(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 1
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -123,7 +123,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testNoAnalysisTriggeredOnStaging(self, mock_trigger_analysis, *_):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 500
+    build_number = 2
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -214,7 +214,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testResultIsReturnedWhenNoAnalysisIsCompleted(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 3
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -243,7 +243,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testPreviousAnalysisResultIsReturnedWhileANewAnalysisIsRunning(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 1
+    build_number = 4
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -336,7 +336,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testAnalysisFindingNoSuspectedCLsIsNotReturned(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 6
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -387,7 +387,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testAnalysisFindingSuspectedCLsIsReturned(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 7
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -486,7 +486,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testTryJobResultReturnedForCompileFailure(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 8
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -595,7 +595,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testTryJobIsRunning(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 9
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -685,7 +685,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testTestIsFlaky(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 10
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -791,7 +791,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testTestLevelResultIsReturned(self, mock_fn, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 11
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -1178,7 +1178,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testAnalysisRequestQueuedAsExpected(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 5
+    build_number = 12
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -1345,7 +1345,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testAnalysisIsStillRunning(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 1
+    build_number = 13
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
@@ -1389,7 +1389,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testUserNotAuthorized(self, mocked_func, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 1
+    build_number = 14
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
