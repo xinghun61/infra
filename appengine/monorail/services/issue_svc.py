@@ -1512,8 +1512,13 @@ class IssueService(object):
   def InvalidateIIDs(self, cnxn, iids_to_invalidate):
     """Invalidate the specified issues in the Invalidate table and memcache."""
     issues_to_invalidate = self.GetIssues(cnxn, iids_to_invalidate)
-    self.issue_2lc.InvalidateKeys(cnxn, iids_to_invalidate)
-    self._config_service.InvalidateMemcache(issues_to_invalidate)
+    self.InvalidateIssues(cnxn, issues_to_invalidate)
+
+  def InvalidateIssues(self, cnxn, issues):
+    """Invalidate the specified issues in the Invalidate table and memcache."""
+    iids = [issue.issue_id for issue in issues]
+    self.issue_2lc.InvalidateKeys(cnxn, iids)
+    self._config_service.InvalidateMemcache(issues)
 
   def ApplyIssueComment(
       self, cnxn, services, reporter_id, project_id,
@@ -1969,8 +1974,9 @@ class IssueService(object):
     # Remove the issue id from issue_id_2lc so that it does not stay
     # around in cache and memcache.
     # The Key of IssueIDTwoLevelCache is (project_id, local_id).
-    issue_id_2lc_key = (issues[0].project_id, issues[0].local_id)
-    self.issue_id_2lc.InvalidateKeys(cnxn, [issue_id_2lc_key])
+    self.issue_id_2lc.InvalidateKeys(
+        cnxn, [(issue.project_id, issue.local_id) for issue in issues])
+    self.InvalidateIssues(cnxn, issues)
 
     for issue in issues:
       if issue.issue_id in former_locations:
