@@ -54,6 +54,7 @@ func TestHandleIndex(t *testing.T) {
 	},
 		{
 			name: "Index Success - No user",
+			fail: true,
 			ctx: &router.Context{
 				Context: ctx,
 				Writer:  httptest.NewRecorder(),

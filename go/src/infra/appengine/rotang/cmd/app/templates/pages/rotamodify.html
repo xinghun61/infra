@@ -2,10 +2,11 @@
 <html>
   <head>
     <title>Modify Rotation</title>
+    {{.FeedbackButton}}
   </head>
   <body>
     <script src="/static/dist/bundle.js"></script>
-    <nav-bar page="rotamodify"></nav-bar>
+    <nav-bar page="rotamodify" logoutURL="{{.LogoutURL}}"></nav-bar>
     <h4>Rota Modify</h4>
     <rota-create config="{{.ConfigJSON}}" generators="{{.Generators}}" modifiers={{.Modifiers}}>
     </rota-create>

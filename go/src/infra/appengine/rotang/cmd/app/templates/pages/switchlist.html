@@ -2,10 +2,11 @@
 <html>
 <head>
   <title>Switch Rotation</title>
+  {{.FeedbackButton}}
 </head>
 <body>
 <script src="/static/dist/bundle.js"></script>
-<nav-bar page="migrate"></nav-bar>
+<nav-bar page="migrate" logoutURL="{{.LogoutURL}}"></nav-bar>
 
 {{if not .Rotas}}
 <i>No rotas managed</i>

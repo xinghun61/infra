@@ -2,10 +2,11 @@
 <html>
 <head>
   <title>Test Email</title>
+  {{.FeedbackButton}}
 </head>
 <body>
 <script src="/static/dist/bundle.js"></script>
-<nav-bar page="emailtest"></nav-bar>
+<nav-bar page="emailtest" logoutURL={{.LogoutURL}}></nav-bar>
 
 <h2>Rotations you own or are a member of</h2>
 

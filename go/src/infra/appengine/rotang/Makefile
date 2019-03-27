@@ -21,5 +21,8 @@ devserver-remote: buildjs
 deploy-staging: buildjs
 	gcloud app deploy cmd/app/app_staging.yaml --project google.com:rota-ng-staging
 
+deploy-new-staging: buildjs
+	gcloud app deploy cmd/app/app_staging.yaml --project rota-ng-staging
+
 deploy-prod: buildjs
 	gcloud app deploy cmd/app/app_prod.yaml  --project rota-ng

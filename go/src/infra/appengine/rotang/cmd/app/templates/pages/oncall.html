@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <title>oncall</title>
 <body>
+  {{.FeedbackButton}}
 <script src="/static/dist/bundle.js"></script>
-<nav-bar page="oncall"></nav-bar>
+<nav-bar page="oncall" logoutURL="{{.LogoutURL}}"></nav-bar>
 {{if .Rotas}}
 <fieldset>
   <legend>Oncall</legend>

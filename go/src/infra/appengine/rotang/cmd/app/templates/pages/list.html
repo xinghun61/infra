@@ -2,10 +2,11 @@
 <html>
 <head>
   <title>List rotations</title>
+  {{.FeedbackButton}}
 </head>
 <body>
 <script src="/static/dist/bundle.js"></script>
-<nav-bar page="list"></nav-bar>
+<nav-bar page="list" logoutURL={{.LogoutURL}}></nav-bar>
 
 {{with .Rotas}}
 <h2>Rota table</h2>

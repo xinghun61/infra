@@ -5,6 +5,7 @@ class NavBar extends LitElement {
   static get properties() {
     return {
       page: {},
+      logoutURL: {},
     };
   }
 
@@ -40,10 +41,10 @@ class NavBar extends LitElement {
     return html`<li><a href="/switchlist">Migrate</a></li>`;
   };
 
-  bug() {
-    return html`<li class="bug">
+  logout() {
+    return html`<li class="logout">
         <a style="background-color:#00d3f3"
-          href="${constants.BugList}">File Bug</a>
+          href="${this.logoutURL}">Logout</a>
       </li>`;
   };
 
@@ -79,7 +80,7 @@ class NavBar extends LitElement {
         background-color: #ddd;
       }
 
-      .bug {
+      .logout {
         float: right;
       }
     </style>
@@ -88,7 +89,7 @@ class NavBar extends LitElement {
       ${this.rota()}
       ${this.oncall()}
       ${this.migrate()}
-      ${this.bug()}
+      ${this.logout()}
     </ul>
     `;
   }

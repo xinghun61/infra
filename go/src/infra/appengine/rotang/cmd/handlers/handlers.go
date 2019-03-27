@@ -219,6 +219,7 @@ type State struct {
 	shiftStore     func(context.Context) rotang.ShiftStorer
 	configStore    func(context.Context) rotang.ConfigStorer
 	mailAddress    string
+	authGroup      string
 	nobodyEmail    NobodyEmail
 	mailSender     rotang.MailSender
 	legacyMap      map[string]func(ctx *router.Context, file string) (string, error)
@@ -235,6 +236,7 @@ type Options struct {
 	MailAddress    string
 	NobodyEmail    NobodyEmail
 	BackupCred     func(*router.Context) (*http.Client, error)
+	AuthGroup      string
 
 	MemberStore func(context.Context) rotang.MemberStorer
 	ConfigStore func(context.Context) rotang.ConfigStorer
@@ -276,6 +278,7 @@ func New(opt *Options) (*State, error) {
 		mailAddress:    opt.MailAddress,
 		nobodyEmail:    opt.NobodyEmail,
 		backupCred:     opt.BackupCred,
+		authGroup:      opt.AuthGroup,
 	}
 	h.legacyMap = buildLegacyMap(h)
 	return h, nil

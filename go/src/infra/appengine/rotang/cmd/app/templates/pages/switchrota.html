@@ -1,6 +1,7 @@
 <!doctype html>
 <html>
   <head>
+    {{.FeedbackButton}}
     <title>Switch to RotaNG</title>
     <style>
       .site {
@@ -61,7 +62,7 @@
   </head>
   <body>
     <script src="/static/dist/bundle.js"></script>
-    <nav-bar page="migrate"></nav-bar>
+    <nav-bar page="migrate" logoutURL="{{.LogoutURL}}"></nav-bar>
     <h2> Switch from rotations.py to RotaNG</h2>
       This page describes the steps needed to migrate over from
       the legacy Chrome Sheriff tooling to RotaNG.

@@ -2,10 +2,11 @@
 <html>
   <head>
     <title>Create new configuration</title>
+    {{.FeedbackButton}}
   </head>
   <body>
     <script src="/static/dist/bundle.js"></script>
-    <nav-bar page="createrota"></nav-bar>
+    <nav-bar page="createrota" logoutURL="{{.LogoutURL}}"></nav-bar>
     <h4>Create new rotation</h4>
     <rota-create generators={{.Generators}} modifiers={{.Modifiers}}>
     </rota-create>
