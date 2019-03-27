@@ -7,10 +7,18 @@ package compilerproxylog
 import (
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
+)
+
+var (
+	// <op> http=<code> <info>
+	httpErrorRE = regexp.MustCompile(`^([^ ]*) *http=([0-9]{3}) *(.*)$`)
+	dateLineRE  = regexp.MustCompile(`Date: [^\\]*\\r\\n`)
 )
 
 // CompileMode is mode of compilation.
@@ -42,6 +50,13 @@ func (cm CompileMode) String() string {
 	return fmt.Sprintf("unknown-mode[%d]", int(cm))
 }
 
+// HTTPError is a http error detected by compiler proxy.
+type HTTPError struct {
+	Op   string
+	Code int
+	Resp string
+}
+
 // TaskLog is a Task's log.
 type TaskLog struct {
 	// ID is task id.
@@ -67,6 +82,9 @@ type TaskLog struct {
 
 	// Logs are logs associated with the task.
 	Logs []Logline
+
+	// HTTPErrors are http errors happened in the task.
+	HTTPErrors []HTTPError
 
 	// Response is a response type of the task. (e.g. "goma success").
 	Response string
@@ -241,6 +259,9 @@ type CompilerProxyLog struct {
 	// Histogram is compiler_proxy histogram.
 	Histogram string
 
+	// HTTPErrors is http errors detected in compiler proxy log.
+	HTTPErrors []HTTPError
+
 	// tasks is a map of TaskLogs by task id.
 	tasks map[string]*TaskLog
 }
@@ -312,6 +333,7 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 		parseSpecial(&cpl.Histogram, " Dumping histogram...", false, true),
 	}
 	buildids := make(map[string]bool)
+	httpErrors := make(map[HTTPError]bool)
 Lines:
 	for gp.Next() {
 		log := gp.Logline()
@@ -337,6 +359,7 @@ Lines:
 				}
 				buildids[bid] = true
 				cpl.BuildIDs = append(cpl.BuildIDs, bid)
+				continue Lines
 			}
 
 			const start = "Start "
@@ -350,6 +373,29 @@ Lines:
 			if replyIdx := strings.Index(taskLog, reply); replyIdx != -1 {
 				t.EndTime = log.Timestamp
 				t.Response = taskLog[replyIdx+len(reply):]
+			}
+
+			m := httpErrorRE.FindStringSubmatch(taskLog)
+			if m != nil {
+				op := m[1]
+				code, err := strconv.Atoi(m[2])
+				if err != nil {
+					// [0-9]{3} must be int.
+					return nil, fmt.Errorf("%s: http code %q; %v", t.ID, m[2], err)
+				}
+				resp := dateLineRE.ReplaceAllString(m[3], "")
+				herr := HTTPError{
+					Op:   op,
+					Code: code,
+					Resp: resp,
+				}
+				t.HTTPErrors = append(t.HTTPErrors, herr)
+				if httpErrors[herr] {
+					continue Lines
+				}
+				httpErrors[herr] = true
+				cpl.HTTPErrors = append(cpl.HTTPErrors, herr)
+				continue Lines
 			}
 		}
 	}

@@ -86,6 +86,10 @@ var (
 <h2>Compiler Proxy Histogram</h2>
 <pre>{{.CompilerProxyLog.Histogram}}</pre>
 
+<h2>HTTP Errors</h2>
+{{range .CompilerProxyLog.HTTPErrors}}
+<div>op={{.Op}} code={{.Code}} resp={{.Resp}}</div>
+{{end}}
 </body>
 </html>
 `))

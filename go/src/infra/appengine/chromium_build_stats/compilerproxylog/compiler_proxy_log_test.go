@@ -257,6 +257,50 @@ ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 6
 	}
 }
 
+func TestParseHTTPError(t *testing.T) {
+	logcontent := `Running on machine: gce-trusty-e833d7b0-us-west1-a-n0n5
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+I0325 20:39:59.901118 25832 compile_service.cc:123] Task:861 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
+I0325 20:40:01.027500 25514 compile_task.cc:462] Task:861 Start gen/third_party/blink/renderer/core/css/properties/longhands/text_decoration_color.cc gomacc_pid=20502 build_dir=/b/s/w/ir/cache/builder/src/out/Release
+I0325 20:40:01.031714 25514 compile_task.cc:559] Task:861 GOMA_USE_LOCAL=false
+I0325 20:40:01.031783 25514 compile_task.cc:2696] Task:861 fill compiler info cache_hit=1 updated=0 state=0x7f1cb08ad8c0 in 49.901us
+I0325 20:40:01.095594 25514 compile_task.cc:3169] Task:861 use deps cache. required_files=1198
+I0325 20:40:02.107694 25831 compile_service.cc:123] Task:884 build_id:6235ce6e-d8e4-4e17-a9cf-e702a816834c
+I0325 20:40:02.109047 25514 compile_task.cc:462] Task:884 Start ../../third_party/blink/renderer/core/layout/layout_text_control_multi_line.cc gomacc_pid=20591 build_dir=/b/s/w/ir/cache/builder/src/out/Release
+I0325 20:40:02.109117 25514 compile_task.cc:559] Task:884 GOMA_USE_LOCAL=false
+I0325 20:40:02.109182 25514 compile_task.cc:2696] Task:884 fill compiler info cache_hit=1 updated=0 state=0x7f1cb08ad8c0 in 52.86us
+I0325 20:40:02.122812 25514 compile_task.cc:3169] Task:884 use deps cache. required_files=1406
+W0325 20:42:22.691454 25514 http.cc:1910] Task:861 read  http=502 path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nDate: Tue, 26 Mar 2019 03:42:22 GMT\r\nAlt-Svc: clear\r\n\r\n\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n
+I0325 20:42:22.691567 25514 http.cc:1441] UpdateBackoff error 500ms -> 700ms
+W0325 20:42:22.691599 25514 compile_task.cc:1109] Task:861 rpc err=-1  failed Got HTTP error:502
+W0325 20:42:22.691634 25514 compile_task.cc:4376] Task:861 no retry: exec error=0 retry=0 reason=RPC failed http=502: Got HTTP error:502 http=unhealthy
+I0325 20:42:22.691656 25514 compile_task.cc:1555] Task:861 finished fail in call exec state=CALL_EXEC abort=0 canceled=0
+W0325 20:42:23.513343 25514 http.cc:1910] Task:884 read  http=502 path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nDate: Tue, 26 Mar 2019 03:42:23 GMT\r\nAlt-Svc: clear\r\n\r\n\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n
+I0325 20:42:23.517006 25514 http.cc:1441] UpdateBackoff error 700ms -> 980ms
+W0325 20:42:23.517045 25514 compile_task.cc:1109] Task:884 rpc err=-1  failed Got HTTP error:502
+W0325 20:42:23.517076 25514 compile_task.cc:4376] Task:884 no retry: exec error=0 retry=0 reason=RPC failed http=502: Got HTTP error:502 http=unhealthy
+I0325 20:42:23.517096 25514 compile_task.cc:1555] Task:884 finished fail in call exec state=CALL_EXEC abort=0 canceled=0
+I0325 20:42:41.854074 25514 compile_task.cc:2102] Task:861 ReplyResponse: fail fallback
+I0325 20:42:41.854221 25514 compile_task.cc:2308] Task:861 remove deps cache entry.
+I0325 20:42:41.857728 25514 compile_task.cc:2102] Task:884 ReplyResponse: fail fallback
+I0325 20:42:41.857782 25514 compile_task.cc:2308] Task:884 remove deps cache entry.
+`
+	cpl, err := Parse("compiler_proxy.INFO", strings.NewReader(logcontent))
+	if err != nil {
+		t.Fatalf(`Parse("compiler_proxy.INFO")=%v, %v; want=_, <nil>`, cpl, err)
+	}
+	want := []HTTPError{
+		{
+			Op:   "read",
+			Code: 502,
+			Resp: `path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nAlt-Svc: clear\r\n\r\n\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n`,
+		},
+	}
+	if diff := cmp.Diff(want, cpl.HTTPErrors); diff != "" {
+		t.Errorf("cpl.HTTPErrors; diff -want +got\n%s", diff)
+	}
+}
+
 func TestDurationDistribution(t *testing.T) {
 	st := timeAt("2014/09/11 17:43:51.000000")
 

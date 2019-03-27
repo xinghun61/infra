@@ -50,12 +50,14 @@ I0911 17:44:06.498120  5795 copmiler_service.cc:467] Task:6 build_id:6235ce6e-d8
 I0911 17:44:06.498123  5795 copmiler_service.cc:467] Task:6 pending
 I0911 17:44:06.498575  5796 compile_task.cc:923] Task:6 Start ../../components/search/search_switches.cc gomacc_pid=5852
 I0911 17:44:07.410532  5798 subprocess_task.cc:255] ../../third_party/llvm-build/Release+Asserts/bin/clang++ terminated pid=5844 status=1
+W0911 17:44:07.411134  5798 http.cc:1910] Task:0 read  http=502 path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nDate: Thu, 11 Sep 2014 17:44:07 GMT\r\nAlt-Svc: clear\r\n\r\n\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n
 I0911 17:44:07.411144  5798 subprocess_task.cc:244] Task:0 started pid=5940 state=RUN
 I0911 17:44:12.430022  5792 compile_task.cc:1610] Task:4 output need_rename for local_subproc -1
 I0911 17:44:13.377951  5792 compile_task.cc:1813] Task:4 goma finished, killing subproc pid=-1
 I0911 17:44:13.383539  5798 subprocess_task.cc:255] Task:0 terminated pid=5940 status=0
 I0911 17:44:13.786922  5786 compile_task.cc:1992] Task:0 ReplyResponse: local finish, no goma
 I0911 17:44:13.874645  5792 compile_task.cc:1992] Task:4 ReplyResponse: goma success
+W0911 17:44:14.714953  5798 http.cc:1910] Task:5 read  http=502 path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nDate: Thu, 11 Sep 2014 17:44:14 GMT\r\nAlt-Svc: clear\r\n\r\n\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n
 I0911 17:44:15.714953  5798 subprocess_task.cc:244] Task:5 started pid=6109 state=RUN
 I0911 17:44:16.412282  5794 compile_task.cc:1610] Task:5 output need_rename for local_subproc 6109
 I0911 17:44:16.524380  5798 subprocess_task.cc:255] Task:5 terminated pid=6109 status=0
@@ -233,6 +235,10 @@ ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 6
 [16- 32]: ################1
 [32- 64]:
 [64-128]: ##################################################3</pre>
+
+<h2>HTTP Errors</h2>
+
+<div>op=read code=502 resp=path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nAlt-Svc: clear\r\n\r\n\n&lt;html&gt;&lt;head&gt;\n&lt;meta http-equiv=\&#34;content-type\&#34; content=\&#34;text/html;charset=utf-8\&#34;&gt;\n&lt;title&gt;502 Server Error&lt;/title&gt;\n&lt;/head&gt;\n&lt;body text=#000000 bgcolor=#ffffff&gt;\n&lt;h1&gt;Error: Server Error&lt;/h1&gt;\n&lt;h2&gt;The server encountered a temporary error and could not complete your request.&lt;p&gt;Please try again in 30 seconds.&lt;/h2&gt;\n&lt;h2&gt;&lt;/h2&gt;\n&lt;/body&gt;&lt;/html&gt;\n</div>
 
 </body>
 </html>
