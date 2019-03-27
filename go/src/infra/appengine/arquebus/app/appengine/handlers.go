@@ -23,6 +23,7 @@ import (
 	"go.chromium.org/luci/config/validation"
 	"go.chromium.org/luci/server/router"
 
+	"infra/appengine/arquebus/app/backend"
 	"infra/appengine/arquebus/app/config"
 	"infra/appengine/arquebus/app/frontend"
 )
@@ -40,6 +41,7 @@ func init() {
 	m := standard.Base().Extend(config.Middleware)
 
 	standard.InstallHandlers(r)
+	backend.InstallHandlers(r, m)
 	frontend.InstallHandlers(r, m)
 
 	config.SetupValidation(&validation.Rules)
