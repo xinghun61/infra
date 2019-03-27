@@ -30,6 +30,12 @@
     'rev': 'a88dcaae3132003ae123d39a2cd9924113b8f985',
     'implicit': True,  # Required by expect_tests
   },
+  'attrs': {
+    'version': '18.2.0',
+    'build': '0',
+    'repo': 'external/github.com/python-attrs/attrs',
+    'rev': 'aaeba93b0618b24d6bcb37971445d0dcb5f52910',
+  },
   'avro': {
     'build': '0',
     'gs': 'e1f36a7f8c542cb18df0c1b0970e25a0943a6ffe.tar.gz',
