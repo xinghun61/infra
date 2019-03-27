@@ -51,9 +51,6 @@ ci_builder(name = 'infra-continuous-trusty-64', os = 'Ubuntu-14.04')
 # CI OSX.
 ci_builder(name = 'infra-continuous-mac-10.13-64', os = 'Mac-10.13')
 ci_builder(name = 'infra-continuous-mac-10.12-64', os = 'Mac-10.12')
-ci_builder(name = 'infra-continuous-mac-10.11-64', os = 'Mac-10.11')
-ci_builder(name = 'infra-continuous-mac-10.10-64', os = 'Mac-10.10')
-ci_builder(name = 'infra-continuous-mac-10.9-64', os = 'Mac-10.9')
 
 # CI Win.
 ci_builder(name = 'infra-continuous-win7-64', os = 'Windows')
