@@ -61,6 +61,7 @@ def RunSteps(api):
       '/creds/json/wpt-import.json',
       '--auto-update',
       '--auto-file-bugs',
+      '--verbose',  # TODO(crbug.com/946619): temporary debugging
     ]
 
     try:
