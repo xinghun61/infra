@@ -516,10 +516,9 @@ def GetRemainingPreAnalysisDailyBugUpdatesCount():
                               flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  num_updated_issues_24h = (
-      FlakeIssue.query(
-          FlakeIssue.last_updated_time_by_flake_detection > utc_one_day_ago)
-      .count())
+  num_updated_issues_24h = FlakeIssue.query(
+      FlakeIssue.last_updated_time_by_flake_detection > utc_one_day_ago).count(
+      )
 
   return limit - num_updated_issues_24h
 
@@ -531,10 +530,9 @@ def GetRemainingPostAnalysisDailyBugUpdatesCount():
                               flake_constants.DEFAULT_MAX_BUG_UPDATES_PER_DAY)
 
   utc_one_day_ago = time_util.GetUTCNow() - datetime.timedelta(days=1)
-  num_updated_issues_24h = (
-      FlakeIssue.query(
-          FlakeIssue.last_updated_time_with_analysis_results > utc_one_day_ago)
-      .count())
+  num_updated_issues_24h = FlakeIssue.query(
+      FlakeIssue.last_updated_time_with_analysis_results > utc_one_day_ago
+  ).count()
 
   return limit - num_updated_issues_24h
 
@@ -831,15 +829,23 @@ def _CreateIssuesForFlakes(flake_groups_to_create_issue,
   for flake_group in flake_groups_to_create_issue:
     try:
       if len(flake_group.flakes) == 1:
-        # A single flake in group, uses this flake's info to create the bug.
+        # A single flake in group, uses this flake's info to look for or create
+        # a bug. If num_of_issues_to_create has reached 0, only looks for
+        # existing monorail bug for it.
         issue_generator = FlakeDetectionIssueGenerator(
             flake_group.flakes[0], flake_group.num_occurrences)
         issue_id = _CreateIssueForFlake(
             issue_generator,
             flake_group.flakes[0],
             create_or_update_bug=num_of_issues_to_create > 0)
-      else:
+      elif num_of_issues_to_create > 0:
+        # Multiple flakes in group, only creates a bug when the bug count has
+        # not reached the limit.
         issue_id = _CreateIssueForFlakeGroup(flake_group)
+      else:
+        # Multiple flakes in group, and no more bug is allowed.
+        issue_id = None
+
       if issue_id:
         # A monorail bug has been created or updated.
         num_of_issues_to_create -= 1

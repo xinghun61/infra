@@ -1104,6 +1104,38 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
+  @mock.patch.object(
+      monorail_util,
+      'GetMonorailIssueForIssueId',
+      return_value=Issue({
+          'status': 'Untriaged',
+          'priority': 1,
+          'updated': '2018-12-07T17:52:45',
+          'id': '234567',
+      }))
+  @mock.patch.object(monorail_util, 'CreateBug')
+  def testNotCreateIssueForAGroupIfReachLimit(self, mock_create_bug, *_):
+    flake1 = self._CreateFlake('s1', 'suite1.t1', 'suite1.t1')
+    flake1.tags.append('component::Blink')
+    flake1.put()
+    occurrences1 = [
+        self._CreateFlakeOccurrence(1, 's1', 'suite1.t1', 12345, flake1.key),
+        self._CreateFlakeOccurrence(2, 's1', 'suite1.t1', 12346, flake1.key)
+    ]
+    flake2 = self._CreateFlake('s1', 'suite1.t2', 'suite1.t2')
+    occurrences2 = [
+        self._CreateFlakeOccurrence(1, 's1', 'suite1.t2', 12345, flake2.key),
+        self._CreateFlakeOccurrence(2, 's1', 'suite1.t2', 12346, flake2.key)
+    ]
+    flake_group = flake_issue_util.FlakeGroupByOccurrences(flake1, occurrences1)
+    flake_group.AddFlakeIfBelong(flake2, occurrences2)
+
+    flake_issue_util._CreateIssuesForFlakes([flake_group], 0)
+
+    self.assertFalse(mock_create_bug.called)
+
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime.datetime(2018, 1, 2))
   @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
   def testUpdateIssueForAGroup(self, *_):
     flake_issue = FlakeIssue.Create(monorail_project='chromium', issue_id=56789)

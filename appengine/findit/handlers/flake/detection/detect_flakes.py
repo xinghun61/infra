@@ -42,11 +42,10 @@ class FlakeDetectionAndAutoAction(BaseHandler):
     detect_flake_occurrences.QueryAndStoreFlakes(FlakeType.RETRY_WITH_PATCH)
     detect_flake_occurrences.QueryAndStoreHiddenFlakes()
     flake_tuples_to_report = flake_issue_util.GetFlakesWithEnoughOccurrences()
-    # flake_groups_without_bug, flake_groups_with_bug = (
-    #     flake_issue_util.GetFlakeGroupsForActionsOnBugs(
-    #       flake_tuples_to_report))
-    # flake_issue_util.ReportFlakesToMonorail(flake_groups_without_bug,
-    #                                         flake_groups_with_bug)
+    flake_groups_without_bug, flake_groups_with_bug = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs(flake_tuples_to_report))
+    flake_issue_util.ReportFlakesToMonorail(flake_groups_without_bug,
+                                            flake_groups_with_bug)
 
     # Reporting to Flake Analyzer needs to come after reporting to Monorail
     # because it makes Flake Analyzer's job easier if it can reuse the issues
