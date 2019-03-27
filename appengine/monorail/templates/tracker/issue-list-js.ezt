@@ -96,8 +96,8 @@ runOnLoad(function() {
 });
 </script>
 
-<script type="text/javascript" defer src="/static/third_party/js/keys.js" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/third_party/js/skipper.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/third_party/js/keys.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/third_party/js/skipper.js?version=[app_version]" nonce="[nonce]"></script>
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   _setupKibblesOnListPage(
