@@ -8,19 +8,22 @@ load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
 
 
-# Recipes module => name to use in builders.
-_FRIENDLY_NAME = {
-    'build': 'Build',
-    'depot_tools': 'Depot Tools',
-    'infra': 'Infra',
-    'recipe_engine': 'Recipe Engine',
-    'skia': 'Skia',
-    'skiabuildbot': 'Skia Buildbot',
+# Recipes repo ID => (repo URL, name to use in builders).
+_KNOWN_REPOS = {
+    'build': ('https://chromium.googlesource.com/chromium/tools/build', 'Build'),
+    'depot_tools': ('https://chromium.googlesource.com/chromium/tools/depot_tools', 'Depot Tools'),
+    'infra': ('https://chromium.googlesource.com/infra/infra', 'Infra'),
+    'recipe_engine': ('https://chromium.googlesource.com/infra/luci/recipes-py', 'Recipe Engine'),
+    'skia': ('https://skia.googlesource.com/skia', 'Skia'),
+    'skiabuildbot': ('https://skia.googlesource.com/buildbot', 'Skia Buildbot'),
 }
 
 
+def _repo_url(proj):
+  return _KNOWN_REPOS[proj][0]
+
 def _friendly(proj):
-  return _FRIENDLY_NAME.get(proj, proj)
+  return _KNOWN_REPOS[proj][1]
 
 
 def simulation_tester(
@@ -35,7 +38,11 @@ def simulation_tester(
       name = name,
       bucket = 'ci',
       recipe = infra.recipe('recipe_simulation'),
-      properties = {'project_under_test': project_under_test},
+      # Normally, this builder will be triggered on specific commit in this
+      # git_repo, and hence additional git_repo property is redundant. However,
+      # if one uses LUCI scheduler "Trigger Now" feature, there will be no
+      # associated commit and hence we need git_repo property.
+      properties = {'git_repo': _repo_url(project_under_test)},
       dimensions = {
           'os': 'Ubuntu-14.04',
           'pool': 'luci.flex.ci',
@@ -61,8 +68,10 @@ def roll_trybots(upstream, downstream, cq_group):
         bucket = 'try',
         recipe = infra.recipe('recipe_roll_tryjob'),
         properties = {
-            'upstream_project': upstream,
-            'downstream_project': proj,
+            'upstream_id': upstream,
+            'upstream_url': _repo_url(upstream),
+            'downstream_id': proj,
+            'downstream_url': _repo_url(proj),
         },
         dimensions = {
             'os': 'Ubuntu-14.04',
