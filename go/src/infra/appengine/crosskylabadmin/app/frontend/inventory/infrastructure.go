@@ -18,11 +18,13 @@ package inventory
 
 import (
 	"fmt"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/appengine/crosskylabadmin/app/config"
-	"infra/libs/skylab/inventory"
 	"math/rand"
 	"sort"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
+	"infra/libs/skylab/inventory"
 
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
@@ -99,24 +101,13 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	}
 
 	f := func() error {
-		removed := make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals))
 		if err := s.Refresh(ctx); err != nil {
 			return err
 		}
-
-		hostnameToID := mapHostnameToDUTs(s.Lab.GetDuts())
-		for _, r := range req.Removals {
-			i, err := removeDutFromDrone(ctx, s.Infrastructure, hostnameToID, r)
-			if err != nil {
-				return err
-			}
-			if i == nil {
-				// DUT did not belong to any drone.
-				continue
-			}
-			removed = append(removed, i)
+		removed, err := removeDutsFromDrones(ctx, s, req)
+		if err != nil {
+			return err
 		}
-
 		var url string
 		if len(removed) > 0 {
 			if url, err = s.Commit(ctx, "remove DUTs"); err != nil {
@@ -193,6 +184,25 @@ func pickDroneForDUT(ctx context.Context, infra *inventory.Infrastructure) strin
 		return ""
 	}
 	return ds[rand.Intn(len(ds))].GetHostname()
+}
+
+// removeDutsFromDrones implements removing DUTs from drones on an
+// InventoryStore.  This is called within a load/commit/retry context.
+func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *fleet.RemoveDutsFromDronesRequest) ([]*fleet.RemoveDutsFromDronesResponse_Item, error) {
+	removed := make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals))
+	hostnameToID := mapHostnameToDUTs(s.Lab.GetDuts())
+	for _, r := range req.Removals {
+		i, err := removeDutFromDrone(ctx, s.Infrastructure, hostnameToID, r)
+		if err != nil {
+			return nil, err
+		}
+		if i == nil {
+			// DUT did not belong to any drone.
+			continue
+		}
+		removed = append(removed, i)
+	}
+	return removed, nil
 }
 
 func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]*inventory.DeviceUnderTest, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
