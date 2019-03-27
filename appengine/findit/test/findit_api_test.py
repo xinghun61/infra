@@ -16,6 +16,7 @@ from testing_utils import testing
 from common import exceptions
 from common.waterfall import failure_type
 import endpoint_api
+from gae_libs import appengine_util
 from libs import analysis_status
 from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
@@ -93,7 +94,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
   @mock.patch.object(
       endpoint_api, '_ValidateOauthUser', return_value=('email', False))
-  def disabled_testNothingIsReturnedWhenNoAnalysisWasRun(self, _):
+  def testNothingIsReturnedWhenNoAnalysisWasRun(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -114,6 +115,54 @@ class FinditApiTest(testing.EndpointsTestCase):
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_result, response.json_body.get('results', []))
+
+  @mock.patch.object(
+      endpoint_api, '_ValidateOauthUser', return_value=('email', False))
+  @mock.patch.object(appengine_util, 'IsStaging', return_Value=True)
+  @mock.patch.object(endpoint_api, '_AsyncProcessFailureAnalysisRequests')
+  def testNoAnalysisTriggeredOnStaging(self, mock_trigger_analysis, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 500
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number
+        }]
+    }
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.result = {
+        'failures': [{
+            'step_name':
+                'test',
+            'first_failure':
+                3,
+            'last_pass':
+                1,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'git_hash',
+                'commit_position': 123,
+            }]
+        }]
+    }
+    analysis.put()
+
+    expected_result = []
+
+    self._MockMasterIsSupported(supported=True)
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_result, response.json_body.get('results', []))
+    self.assertFalse(mock_trigger_analysis.called)
 
   @mock.patch.object(
       endpoint_api, '_ValidateOauthUser', return_value=('email', False))

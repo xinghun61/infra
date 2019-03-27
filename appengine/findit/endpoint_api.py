@@ -10,10 +10,8 @@ Current APIs include:
 """
 
 from collections import defaultdict
-from datetime import timedelta
 import json
 import logging
-import pickle
 
 import endpoints
 from google.appengine.api import taskqueue
@@ -28,16 +26,12 @@ from common import exceptions
 from common.waterfall import failure_type
 from gae_libs import appengine_util
 from gae_libs.caches import PickledMemCache
-from gae_libs.http import auth_util
 from libs import analysis_status
 from libs import time_util
 from libs.cache_decorator import Cached
 from model import analysis_approach_type
 from model.base_build_model import BaseBuildModel
-from model.flake.analysis import triggering_sources
-from model.flake.analysis.flake_analysis_request import BuildStep
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
-from model.flake.analysis.flake_swarming_task import FlakeSwarmingTask
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
@@ -47,7 +41,6 @@ from services.apis import AsyncProcessFlakeReport
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
-from waterfall.flake import step_mapper
 
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
 # messages below. This package name will show up as a prefix to the message
@@ -656,6 +649,12 @@ class FindItApi(remote.Service):
 
     logging.info('%d build failure(s), while %d are supported',
                  len(request.builds), len(supported_builds))
+
+    if appengine_util.IsStaging():
+      # Findit staging accepts requests, but not actually run any analyses.
+      logging.info('Got build failure requests on staging. No analysis runs on '
+                   'staging.')
+      return _BuildFailureAnalysisResultCollection(results=[])
     try:
       supported_builds.sort()
       _AsyncProcessFailureAnalysisRequests(supported_builds)

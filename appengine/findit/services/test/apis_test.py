@@ -5,6 +5,7 @@ import mock
 
 from google.appengine.api import taskqueue
 
+from gae_libs import appengine_util
 from model.flake.analysis.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.detection.flake_occurrence import FlakeOccurrence
 from model.flake.flake import Flake
@@ -53,3 +54,9 @@ class ApisTest(WaterfallTestCase):
     analysis_request = FlakeAnalysisRequest.Create('t', False, 12345)
     apis.AsyncProcessFlakeReport(analysis_request, 'foo@fake.com', False)
     self.assertEqual(1, len(self.taskqueue_requests))
+
+  @mock.patch.object(appengine_util, 'IsStaging', return_Value=True)
+  def testAsyncProcessFlakeReportOnStaging(self, _):
+    analysis_request = FlakeAnalysisRequest.Create('t', False, 12345)
+    apis.AsyncProcessFlakeReport(analysis_request, 'foo@fake.com', False)
+    self.assertEqual(0, len(self.taskqueue_requests))

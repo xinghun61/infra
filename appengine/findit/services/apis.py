@@ -44,6 +44,12 @@ def AnalyzeDetectedFlakeOccurrence(flake, flake_occurrence, bug_id):
 
 def AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
   """Pushes a task on the backend to process the flake report."""
+  if appengine_util.IsStaging():
+    # Bails out for staging.
+    logging.info('Got flake_analysis_request for %s on staging. No flake '
+                 'analysis runs on staging.', flake_analysis_request.name)
+    return
+
   target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
   payload = pickle.dumps((flake_analysis_request, user_email, is_admin))
   taskqueue.add(
