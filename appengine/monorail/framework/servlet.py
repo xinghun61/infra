@@ -30,6 +30,7 @@ from third_party import ezt
 from third_party import httpagentparser
 
 from google.appengine.api import app_identity
+from google.appengine.api import modules
 from google.appengine.api import users
 from googleapiclient import discovery
 from oauth2client.client import GoogleCredentials
@@ -636,6 +637,14 @@ class Servlet(webapp2.RequestHandler):
     logout_url = _SafeCreateLogoutURL(mr)
     logout_url_goto_home = users.create_logout_url('/')
 
+    if settings.local_mode:
+      version_base = '%s://%s' % (
+        mr.request.scheme, mr.request.host)
+    else:
+      version_base = '%s://%s-dot-%s' % (
+        mr.request.scheme, modules.get_current_version_name(),
+        app_identity.get_default_version_hostname())
+
     base_data = {
         # EZT does not have constants for True and False, so we pass them in.
         'True': ezt.boolean(True),
@@ -743,6 +752,7 @@ class Servlet(webapp2.RequestHandler):
 
         'is_project_starred': ezt.boolean(is_project_starred),
 
+        'version_base': version_base,
         'app_version': app_version,
         'viewing_user_page': ezt.boolean(False),
 

@@ -443,7 +443,7 @@ runOnLoad(function() {
    }
 });
 </script>
-<script type="module" defer src="/static/js/sitewide/linked-accounts.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="module" defer src="[version_base]/static/js/sitewide/linked-accounts.js" nonce="[nonce]"></script>
 
 
 [include "../framework/master-footer.ezt"]

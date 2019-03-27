@@ -8,28 +8,28 @@
 
 [include "debug.ezt"]
 
-<script type="module" src="/static/dist/ezt-footer-scripts-package.min.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="module" src="[version_base]/static/dist/ezt-footer-scripts-package.min.js" nonce="[nonce]"></script>
 <script type="module" nonce="[nonce]">
 // Load and instantiate pRPC client before any other script.
 window.prpcClient = new AutoRefreshPrpcClient(
   CS_env.token, CS_env.tokenExpiresSec);
 </script>
 <script type="text/javascript"
-  src="/deployed_node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js?version=[app_version]"
+  src="[version_base]/deployed_node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"
   nonce="[nonce]"
 ></script>
 
-<script type="text/javascript" defer src="/static/js/framework/externs.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/env.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/framework-ajax.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/framework-cues.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/framework-display.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/framework-menu.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/framework-myprojects.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/framework-myhotlists.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/framework-stars.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/framework/project-name-check.js?version=[app_version]" nonce="[nonce]"></script>
-<script type="text/javascript" defer src="/static/js/graveyard/xmlhttp.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/externs.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/env.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-ajax.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-cues.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-display.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-menu.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-myprojects.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-myhotlists.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/framework-stars.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/framework/project-name-check.js" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/graveyard/xmlhttp.js" nonce="[nonce]"></script>
 [include "footer-script.ezt"]
 
 

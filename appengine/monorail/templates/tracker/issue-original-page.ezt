@@ -4,7 +4,7 @@
  <title>Issue [projectname]:[local_id] comment #[seq]</title>
  <meta name="ROBOTS" content="NOINDEX">
  <meta name="referrer" content="no-referrer">
- <link type="text/css" rel="stylesheet" href="/static/css/ph_core.css?version=[app_version]">
+ <link type="text/css" rel="stylesheet" href="[version_base]/static/css/ph_core.css">
  </head>
  <body>
   <h3>Original email for issue [projectname]:[local_id] comment #[seq]</h3>

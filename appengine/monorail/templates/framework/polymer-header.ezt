@@ -1,6 +1,6 @@
 [include "master-header-shared.ezt"]
 
-<script src="/static/dist/ezt-footer-scripts-package.min.js?version=[app_version]" nonce="[nonce]"></script>
+<script src="[version_base]/static/dist/ezt-footer-scripts-package.min.js" nonce="[nonce]"></script>
 <script type="module" nonce="[nonce]">
 // Load and instantiate pRPC client before any other script.
 window.prpcClient = new window.AutoRefreshPrpcClient(

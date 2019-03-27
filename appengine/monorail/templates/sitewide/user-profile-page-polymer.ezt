@@ -4,7 +4,7 @@
 [include "../framework/polymer-header.ezt"]
 
 <script
-  src="/static/dist/elements/chdir/mr-profile-page/mr-profile-page.min.js?version=[app_version]"
+  src="[version_base]/static/dist/elements/chdir/mr-profile-page/mr-profile-page.min.js"
   type="module"
   nonce="[nonce]"></script>
 

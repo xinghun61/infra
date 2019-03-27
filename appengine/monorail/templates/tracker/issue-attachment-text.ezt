@@ -5,7 +5,7 @@
 [include "../framework/master-header.ezt" "showtabs"]
 
 <link type="text/css" rel="stylesheet"
-      href="/static/css/prettify.css?version=[app_version]">
+      href="[version_base]/static/css/prettify.css">
 
 <h3 style="margin-bottom: 0">Issue <a href="detail?id=[local_id][#TODO(jrobbins): comment number]">[local_id]</a> attachment: [filename] <small>([filesize])</small>
 </h3>
@@ -32,7 +32,7 @@
 
 
 [if-any should_prettify]
-<script src="/static/js/prettify.js?version=[app_version]" nonce="[nonce]"></script>
+<script src="[version_base]/static/js/prettify.js" nonce="[nonce]"></script>
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   prettyPrint();

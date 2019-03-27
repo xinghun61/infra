@@ -104,5 +104,5 @@ runOnLoad(function(){
 });
 </script>
 
-<script type="text/javascript" defer src="/static/js/tracker/render-hotlist-table.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="[version_base]/static/js/tracker/render-hotlist-table.js" nonce="[nonce]"></script>
 
