@@ -49,7 +49,7 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
       <mr-comment-list
         heading-level="2"
         comments="[[_comments]]"
-        comments-shown-count="5"
+        comments-shown-count="[[commentsShownCount]]"
       >
         <mr-edit-issue
           id="metadataForm"
@@ -76,6 +76,7 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
   static get properties() {
     return {
       comments: Array,
+      commentsShownCount: Number,
       issueId: Number,
       projectName: String,
       _descriptionList: {

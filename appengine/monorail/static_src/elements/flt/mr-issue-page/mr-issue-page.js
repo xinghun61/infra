@@ -22,6 +22,9 @@ import '../dialogs/mr-convert-issue.js';
 import '../dialogs/mr-related-issues-table.js';
 import '../dialogs/mr-update-issue-hotlists.js';
 
+const APPROVAL_COMMENT_COUNT = 5;
+const DETAIL_COMMENT_COUNT = 50;
+
 /**
  * `<mr-issue-page>`
  *
@@ -176,7 +179,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
               user-display-name="[[userDisplayName]]"
             ></mr-issue-header>
             <div class="container-issue-content">
-              <mr-issue-details class="main-item"></mr-issue-details>
+              <mr-issue-details
+                class="main-item"
+                comments-shown-count="[[_commentsShownCount(issue)]]"
+              ></mr-issue-details>
               <mr-launch-overview class="main-item"></mr-launch-overview>
             </div>
           </div>
@@ -264,6 +270,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     }
     title += 'Monorail';
     document.title = title;
+  }
+
+  _commentsShownCount(issue) {
+    return issue.approvalValues ? APPROVAL_COMMENT_COUNT : DETAIL_COMMENT_COUNT;
   }
 
   _projectNameChanged(projectName) {
