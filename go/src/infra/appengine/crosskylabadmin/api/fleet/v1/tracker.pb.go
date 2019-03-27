@@ -12,6 +12,8 @@ import (
 	duration "github.com/golang/protobuf/ptypes/duration"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -590,6 +592,17 @@ type TrackerServer interface {
 	//
 	// SummarizeBots stops at the first error encountered and returns the error.
 	SummarizeBots(context.Context, *SummarizeBotsRequest) (*SummarizeBotsResponse, error)
+}
+
+// UnimplementedTrackerServer can be embedded to have forward compatible implementations.
+type UnimplementedTrackerServer struct {
+}
+
+func (*UnimplementedTrackerServer) RefreshBots(ctx context.Context, req *RefreshBotsRequest) (*RefreshBotsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshBots not implemented")
+}
+func (*UnimplementedTrackerServer) SummarizeBots(ctx context.Context, req *SummarizeBotsRequest) (*SummarizeBotsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SummarizeBots not implemented")
 }
 
 func RegisterTrackerServer(s prpc.Registrar, srv TrackerServer) {

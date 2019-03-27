@@ -391,7 +391,7 @@ message PoolChange {
 }
 
 message RemoveDutsFromDronesRequest {
-  // NEXT TAG: 4
+  // NEXT TAG: 5
   message Item {
     // dut_id is the id of a DUT to be removed.
     //
@@ -407,6 +407,11 @@ message RemoveDutsFromDronesRequest {
     //
     // If unspecified dut will be removed regardless of current drone.
     string drone_hostname = 2;
+
+    // removal_reason is the reason for removal.
+    //
+    // This is a serialized inventory.RemovalReason protobuf.
+    bytes removal_reason = 4;
   }
 
   // removals is the set of Duts to remove.

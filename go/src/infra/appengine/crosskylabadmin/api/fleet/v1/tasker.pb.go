@@ -11,6 +11,8 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -625,6 +627,20 @@ type TaskerServer interface {
 	// error, some tasks may have already been created. It is safe to retry a
 	// partially succeeded rpc call.
 	EnsureBackgroundTasks(context.Context, *EnsureBackgroundTasksRequest) (*TaskerTasksResponse, error)
+}
+
+// UnimplementedTaskerServer can be embedded to have forward compatible implementations.
+type UnimplementedTaskerServer struct {
+}
+
+func (*UnimplementedTaskerServer) TriggerRepairOnIdle(ctx context.Context, req *TriggerRepairOnIdleRequest) (*TaskerTasksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRepairOnIdle not implemented")
+}
+func (*UnimplementedTaskerServer) TriggerRepairOnRepairFailed(ctx context.Context, req *TriggerRepairOnRepairFailedRequest) (*TaskerTasksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method TriggerRepairOnRepairFailed not implemented")
+}
+func (*UnimplementedTaskerServer) EnsureBackgroundTasks(ctx context.Context, req *EnsureBackgroundTasksRequest) (*TaskerTasksResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EnsureBackgroundTasks not implemented")
 }
 
 func RegisterTaskerServer(s prpc.Registrar, srv TaskerServer) {
