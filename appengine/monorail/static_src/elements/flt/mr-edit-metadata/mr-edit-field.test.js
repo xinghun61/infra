@@ -166,15 +166,16 @@ suite('mr-edit-field', () => {
     test('initial value does not change after setValue', () => {
       flush();
       element.initialValues = ['hello', 'world'];
-      element.setValue(['jaunty', 'jackalope']);
+      element.setValue(['jaunty', 'jackalope', 'jumps', 'joyously']);
       assert.deepEqual(element.initialValues, ['hello', 'world']);
     });
 
     test('input updates when setValue is called', () => {
       flush();
       element.initialValues = ['hello', 'world'];
-      element.setValue(['jaunty', 'jackalope']);
-      assert.deepEqual(element.getValues(), ['jaunty', 'jackalope']);
+      element.setValue(['jaunty', 'jackalope', 'jumps', 'joyously']);
+      assert.deepEqual(
+        element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously']);
     });
 
     test('initial value does not change after user input', () => {
@@ -215,6 +216,23 @@ suite('mr-edit-field', () => {
       element.shadowRoot.querySelector('#multi0').value = 'world';
       assert.deepEqual(element.getValuesAdded(), ['world']);
       assert.deepEqual(element.getValuesRemoved(), ['hello']);
+    });
+
+    test('input value has commas', () => {
+      flush();
+      // Simulate user input.
+      const input = element.shadowRoot.querySelector('#multi0');
+      input.value = 'jaunty;jackalope,, jumps joyously!';
+      element._postProcess();
+
+      // Input is split on several input fields.
+      assert.deepEqual(
+        Array.from(element.shadowRoot.querySelectorAll('.multi')).map(
+          (input) => input.value),
+        ['jaunty', 'jackalope', 'jumps', 'joyously!', '']);
+      // values are updated
+      assert.deepEqual(
+        element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously!']);
     });
   });
 });

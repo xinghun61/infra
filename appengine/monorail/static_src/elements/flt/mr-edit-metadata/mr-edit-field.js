@@ -108,6 +108,7 @@ export class MrEditField extends PolymerElement {
                 data-ac-type$="[[_acType]]"
                 autocomplete$="[[_computeDomAutocomplete(_acType)]]"
                 on-keyup="_onChange"
+                on-blur="_postProcess"
               />
             </template>
             <chops-button on-click="_addEntry" class="de-emphasized">
@@ -166,7 +167,7 @@ export class MrEditField extends PolymerElement {
       },
       _acType: {
         type: String,
-        computed: '_computeAcType(acType, type)',
+        computed: '_computeAcType(acType, type, multi)',
       },
       _inputType: {
         type: String,
@@ -208,6 +209,8 @@ export class MrEditField extends PolymerElement {
       v = [v];
     }
     if (this.multi && this._fieldIsBasic) {
+      this._multiInputs = v.concat(['']);
+      flush();
       this.shadowRoot.querySelectorAll('.multi').forEach((input, i) => {
         if (i < v.length) {
           input.value = v[i];
@@ -263,10 +266,7 @@ export class MrEditField extends PolymerElement {
       });
     } else {
       this.shadowRoot.querySelectorAll('.multi').forEach((input) => {
-        const val = input.value.trim();
-        if (val.length) {
-          valueList.push(val);
-        }
+        valueList.push(...input.value.split(/[,;\s+]/).filter(Boolean));
       });
     }
     return valueList;
@@ -313,9 +313,9 @@ export class MrEditField extends PolymerElement {
     return initialValue === optionName;
   }
 
-  _computeAcType(acType, type) {
+  _computeAcType(acType, type, multi) {
     if (this._fieldIsUser(type)) {
-      return 'owner';
+      return multi ? 'member' : 'owner';
     }
     return acType;
   }
@@ -339,6 +339,11 @@ export class MrEditField extends PolymerElement {
   }
 
   _onChange() {
+    this.dispatchEvent(new CustomEvent('change'));
+  }
+
+  _postProcess() {
+    this.setValue(this.getValues());
     this.dispatchEvent(new CustomEvent('change'));
   }
 }

@@ -26,9 +26,9 @@ function TKR_onload() {
       return TKR_projectQueryStore;
     }
     if (input.id.startsWith('cmd')) return TKR_quickEditStore;
-    if (input.id.startsWith('label') || input.dataset.acType === 'label') return TKR_labelStore;
-    if (input.id.startsWith('component')) return TKR_componentListStore;
-    if (input.dataset.acType === 'component') return TKR_componentStore;
+    if (input.id.startsWith('label')) return TKR_labelStore;
+    if (input.dataset.acType === 'label') return TKR_labelMultiStore;
+    if (input.id.startsWith('component') || input.dataset.acType === 'component') return TKR_componentListStore;
     if (input.id.startsWith('status')) return TKR_statusStore;
     if (input.id.startsWith('member') || input.dataset.acType === 'member') return TKR_memberListStore;
 
