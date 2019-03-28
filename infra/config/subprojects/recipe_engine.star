@@ -57,8 +57,9 @@ recipes.simulation_tester(
 recipes.roll_trybots(
     upstream = 'recipe_engine',
     downstream = [
-        'depot_tools',
         'build',
+        'chromiumos',
+        'depot_tools',
         'infra',
         'skia',
         'skiabuildbot',

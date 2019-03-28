@@ -16,6 +16,7 @@ _KNOWN_REPOS = {
     'recipe_engine': ('https://chromium.googlesource.com/infra/luci/recipes-py', 'Recipe Engine'),
     'skia': ('https://skia.googlesource.com/skia', 'Skia'),
     'skiabuildbot': ('https://skia.googlesource.com/buildbot', 'Skia Buildbot'),
+    'chromiumos': ('https://chromium.googlesource.com/chromiumos/infra/recipes', 'ChromiumOS'),
 }
 
 

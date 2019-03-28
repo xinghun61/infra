@@ -53,6 +53,7 @@ recipes.roll_trybots(
     upstream = 'depot_tools',
     downstream = [
         'build',
+        'chromiumos',
         'infra',
         'skia',
         'skiabuildbot',
