@@ -68,7 +68,7 @@ func TestSanitize(t *testing.T) {
 			t.Parallel()
 			dims := copyDims(c.input)
 			var r fakeReporter
-			Sanitize(dims, &r)
+			Sanitize(dims, r.Report)
 			if !reflect.DeepEqual(dims, c.want) {
 				t.Errorf("Sanitize(%#v, r) = %#v; want %#v", c.input, dims, c.want)
 			}

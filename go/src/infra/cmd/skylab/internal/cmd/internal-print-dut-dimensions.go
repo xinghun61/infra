@@ -7,7 +7,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
@@ -76,19 +75,12 @@ func (c *internalPrintDutDimensionsRun) innerRun(a subcommands.Application, args
 		return err
 	}
 	dims := swarming.Convert(d.GetCommon().GetLabels())
-	swarming.Sanitize(dims, logReporter{a.GetErr()})
+	stderr := a.GetErr()
+	swarming.Sanitize(dims, func(e error) { fmt.Fprintf(stderr, "sanitize dimensions: %s\n", err) })
 	enc, err := json.Marshal(dims)
 	if err != nil {
 		return err
 	}
 	a.GetOut().Write(enc)
 	return nil
-}
-
-type logReporter struct {
-	w io.Writer
-}
-
-func (r logReporter) Report(err error) {
-	fmt.Fprintf(r.w, "sanitize dimensions: %s\n", err)
 }

@@ -19,27 +19,28 @@ const (
 
 var keyRegexp = regexp.MustCompile(`^[a-zA-Z_.-]+$`)
 
-// Reporter is used to report errors during Sanitize.
-type Reporter interface {
-	Report(error)
-}
+// ReportFunc is used to report errors.
+type ReportFunc func(error)
 
 // Sanitize sanitizes the Swarming dimensions.  Invalid dimensions are
-// removed or fixed as appropriate.
-func Sanitize(dims Dimensions, r Reporter) {
+// removed or fixed as appropriate.  Errors are reported to the
+// ReportFunc because there can be multiple errors and the point of
+// this function is to avoid hard failures in Swarming, thus the
+// common case is to log the errors somewhere.
+func Sanitize(dims Dimensions, r ReportFunc) {
 	for k := range dims {
 		if k == "" {
-			r.Report(ErrEmptyKey)
+			r(ErrEmptyKey)
 			delete(dims, k)
 			continue
 		}
 		if len(k) > maxKeyLength {
-			r.Report(ErrLongKey{Key: k})
+			r(ErrLongKey{Key: k})
 			delete(dims, k)
 			continue
 		}
 		if !keyRegexp.MatchString(k) {
-			r.Report(ErrKeyChars{Key: k})
+			r(ErrKeyChars{Key: k})
 			delete(dims, k)
 			continue
 		}
@@ -47,22 +48,22 @@ func Sanitize(dims Dimensions, r Reporter) {
 	}
 }
 
-func sanitizeDimensionValues(dims Dimensions, r Reporter, k string) {
+func sanitizeDimensionValues(dims Dimensions, r ReportFunc, k string) {
 	vs := dims[k]
 	for i := 0; i < len(vs); {
 		v := vs[i]
 		if v == "" {
-			r.Report(ErrEmptyValue{Key: k})
+			r(ErrEmptyValue{Key: k})
 			vs = deleteValue(vs, i)
 			continue
 		}
 		if len(v) > maxValueLength {
-			r.Report(ErrLongValue{Key: k, Value: v})
+			r(ErrLongValue{Key: k, Value: v})
 			vs = deleteValue(vs, i)
 			continue
 		}
 		if isDupe(vs, i) {
-			r.Report(ErrRepeatedValue{Key: k, Value: v})
+			r(ErrRepeatedValue{Key: k, Value: v})
 			vs = deleteValue(vs, i)
 			continue
 		}
