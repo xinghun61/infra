@@ -93,11 +93,10 @@ type botInfo struct {
 type botState map[string][]string
 
 func botInfoForDUT(d *inventory.DeviceUnderTest, r swarming.ReportFunc) botInfo {
-	var bi botInfo
-	bi.Dimensions = swarming.Convert(d.GetCommon().GetLabels())
-	swarming.Sanitize(bi.Dimensions, r)
-	bi.State = botStateForDUT(d)
-	return bi
+	return botInfo{
+		Dimensions: botDimensionsForDUT(d, r),
+		State:      botStateForDUT(d),
+	}
 }
 
 func botStateForDUT(d *inventory.DeviceUnderTest) botState {
@@ -107,4 +106,31 @@ func botStateForDUT(d *inventory.DeviceUnderTest) botState {
 		s[k] = append(s[k], v)
 	}
 	return s
+}
+
+func botDimensionsForDUT(d *inventory.DeviceUnderTest, r swarming.ReportFunc) swarming.Dimensions {
+	c := d.GetCommon()
+	dims := swarming.Convert(c.GetLabels())
+	dims["dut_id"] = []string{c.GetId()}
+	dims["dut_name"] = []string{c.GetHostname()}
+	if v := c.GetHwid(); v != "" {
+		dims["hwid"] = []string{v}
+	}
+	if v := c.GetSerialNumber(); v != "" {
+		dims["serial_number"] = []string{v}
+	}
+	if v := c.GetLocation(); v != nil {
+		dims["location"] = []string{formatLocation(v)}
+	}
+	swarming.Sanitize(dims, r)
+	return dims
+}
+
+func formatLocation(loc *inventory.Location) string {
+	return fmt.Sprintf("%s-row%d-rack%d-host%d",
+		loc.GetLab().GetName(),
+		loc.GetRow(),
+		loc.GetRack(),
+		loc.GetHost(),
+	)
 }
