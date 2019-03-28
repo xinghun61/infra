@@ -181,7 +181,11 @@ def main():
     with main_helpers.flock(_USB_BUS_LOCK_FILE):
       android_devices = usb_device.get_android_devices(args.devices)
   except main_helpers.FlockTimeoutError:
-    logging.error('Unable to acquire usb bus lock in time.')
+    logging.error('Unable to acquire USB bus lock in time.')
+    if args.name == 'launch' and main_helpers.get_host_uptime() >= (4 * 60):
+      logging.error(
+          'USB bus possibly hosed. Rebooting machine now that uptime > 4 hrs.')
+      main_helpers.reboot_host()
     return 1
 
   # Limit the isolated cache size of each container to avoid running out of

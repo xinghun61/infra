@@ -110,10 +110,12 @@ class LaunchTests(unittest.TestCase):
   def test_no_devices_with_reboot(self, mock_get_uptime, mock_launch_containers,
                                   mock_reboot):
     # No running containers, and a large host uptime.
+    mock_args = mock.MagicMock()
+    mock_args.canary = False
     mock_get_uptime.return_value = 999
     self.fake_client.get_running_containers.return_value = []
 
-    main.launch(self.fake_client, [], None)
+    main.launch(self.fake_client, [], mock_args)
 
     # A reboot should be called instead of main_helpers.launch_containers().
     self.assertEqual(mock_launch_containers.call_count, 0)
