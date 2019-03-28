@@ -25,7 +25,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/appengine/crosskylabadmin/app/config"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/dronecfg"
 	dsinventory "infra/appengine/crosskylabadmin/app/frontend/internal/datastore/inventory"
 	"infra/libs/skylab/inventory"
@@ -115,14 +114,12 @@ func (is *ServerImpl) UpdateCachedInventory(ctx context.Context, req *fleet.Upda
 }
 
 func dutsInCurrentEnvironment(ctx context.Context, duts []*inventory.DeviceUnderTest) []*inventory.DeviceUnderTest {
-	env := config.Get(ctx).Inventory.Environment
-	filtered := make([]*inventory.DeviceUnderTest, 0, len(duts))
-	for _, d := range duts {
-		if d.GetCommon().GetEnvironment().String() == env {
-			filtered = append(filtered, d)
-		}
-	}
-	return filtered
+	// TODO(crbug.com/947322): Disable this temporarily until it
+	// can be implemented properly.  This updates the cache of
+	// DUTs which can only be queried by hostname or ID, so it is
+	// not problematic to also cache DUTs in the wrong environment
+	// (prod vs dev).
+	return duts
 }
 
 func makeDroneConfigs(inf *inventory.Infrastructure, lab *inventory.Lab) []dronecfg.Entity {
