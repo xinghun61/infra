@@ -1,0 +1,8 @@
+cron:
+- description: Update assigner configs from luci-config
+  url: /internal/cron/update-assigners
+  schedule: every 10 minutes
+
+- description: Schedule Assigner runs
+  url: /internal/cron/schedule-assigners
+  schedule: every 1 minutes

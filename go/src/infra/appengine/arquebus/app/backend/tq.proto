@@ -1,0 +1,38 @@
+// Copyright 2017 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package backend.tq;
+
+option go_package = "backend";
+
+import "infra/appengine/arquebus/app/config/config.proto";
+
+// ScheduleAssignerTask is to schedule a new task for a given assigner.
+//
+// Queue: "schedule-assigners".
+message ScheduleAssignerTask {
+  string assigner_id = 1;
+}
+
+// RunAssignerTask is to trigger an assigner run for a given scheduled
+// task.
+//
+// Queue: "run-assigners".
+message RunAssignerTask {
+  string assigner_id = 1;
+  // the task ID of a scheduled tasks to trigger a run.
+  int64 task_id = 2;
+}

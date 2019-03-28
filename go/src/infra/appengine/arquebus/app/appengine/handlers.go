@@ -25,6 +25,7 @@ import (
 
 	"infra/appengine/arquebus/app/backend"
 	"infra/appengine/arquebus/app/config"
+	"infra/appengine/arquebus/app/cron"
 	"infra/appengine/arquebus/app/frontend"
 )
 
@@ -43,6 +44,7 @@ func init() {
 	standard.InstallHandlers(r)
 	backend.InstallHandlers(r, m)
 	frontend.InstallHandlers(r, m)
+	cron.InstallHandlers(r, m)
 
 	config.SetupValidation(&validation.Rules)
 	http.DefaultServeMux.Handle("/", r)

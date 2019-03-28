@@ -1,0 +1,6 @@
+queue:
+- name: schedule-assigners
+  rate: 20/m
+
+- name: run-assigners
+  rate: 20/m
