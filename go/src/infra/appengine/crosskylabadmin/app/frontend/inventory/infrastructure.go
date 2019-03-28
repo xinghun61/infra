@@ -194,7 +194,7 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 	removed := make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals))
 	dr := newDUTRemover(s)
 	for _, r := range req.Removals {
-		i, err := dr.removeDut(ctx, s.Infrastructure, r)
+		i, err := dr.removeDut(ctx, r)
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +226,7 @@ func newDUTRemover(s *gitstore.InventoryStore) *dutRemover {
 	return &dr
 }
 
-func (dr *dutRemover) removeDut(ctx context.Context, infra *inventory.Infrastructure, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
+func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
 	env := config.Get(ctx).Inventory.Environment
 	id := r.DutId
 	if r.DutHostname != "" {
@@ -240,9 +240,9 @@ func (dr *dutRemover) removeDut(ctx context.Context, infra *inventory.Infrastruc
 	var ok bool
 	var server *inventory.Server
 	if r.DroneHostname == "" {
-		server, ok = findDutServer(infra.GetServers(), id)
+		server, ok = findDutServer(dr.store.Infrastructure.GetServers(), id)
 	} else {
-		server, ok = findNamedServer(infra.GetServers(), id)
+		server, ok = findNamedServer(dr.store.Infrastructure.GetServers(), id)
 	}
 	if !ok {
 		return nil, nil
