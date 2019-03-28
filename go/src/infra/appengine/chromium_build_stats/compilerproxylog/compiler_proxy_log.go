@@ -260,7 +260,8 @@ type CompilerProxyLog struct {
 	Histogram string
 
 	// HTTPErrors is http errors detected in compiler proxy log.
-	HTTPErrors []HTTPError
+	// value is task id.
+	HTTPErrors map[HTTPError][]string
 
 	// tasks is a map of TaskLogs by task id.
 	tasks map[string]*TaskLog
@@ -291,8 +292,9 @@ func parseTaskLine(line string) []string {
 // Parse parses compiler_proxy.
 func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 	cpl := &CompilerProxyLog{
-		Filename: fname,
-		tasks:    make(map[string]*TaskLog),
+		Filename:   fname,
+		HTTPErrors: make(map[HTTPError][]string),
+		tasks:      make(map[string]*TaskLog),
 	}
 	gp, err := NewGlogParser(rd)
 	if err != nil {
@@ -333,7 +335,6 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 		parseSpecial(&cpl.Histogram, " Dumping histogram...", false, true),
 	}
 	buildids := make(map[string]bool)
-	httpErrors := make(map[HTTPError]bool)
 Lines:
 	for gp.Next() {
 		log := gp.Logline()
@@ -390,11 +391,7 @@ Lines:
 					Resp: resp,
 				}
 				t.HTTPErrors = append(t.HTTPErrors, herr)
-				if httpErrors[herr] {
-					continue Lines
-				}
-				httpErrors[herr] = true
-				cpl.HTTPErrors = append(cpl.HTTPErrors, herr)
+				cpl.HTTPErrors[herr] = append(cpl.HTTPErrors[herr], t.ID)
 				continue Lines
 			}
 		}

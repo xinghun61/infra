@@ -289,12 +289,12 @@ I0325 20:42:41.857782 25514 compile_task.cc:2308] Task:884 remove deps cache ent
 	if err != nil {
 		t.Fatalf(`Parse("compiler_proxy.INFO")=%v, %v; want=_, <nil>`, cpl, err)
 	}
-	want := []HTTPError{
+	want := map[HTTPError][]string{
 		{
 			Op:   "read",
 			Code: 502,
 			Resp: `path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nAlt-Svc: clear\r\n\r\n\n<html><head>\n<meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n<title>502 Server Error</title>\n</head>\n<body text=#000000 bgcolor=#ffffff>\n<h1>Error: Server Error</h1>\n<h2>The server encountered a temporary error and could not complete your request.<p>Please try again in 30 seconds.</h2>\n<h2></h2>\n</body></html>\n`,
-		},
+		}: {"861", "884"},
 	}
 	if diff := cmp.Diff(want, cpl.HTTPErrors); diff != "" {
 		t.Errorf("cpl.HTTPErrors; diff -want +got\n%s", diff)

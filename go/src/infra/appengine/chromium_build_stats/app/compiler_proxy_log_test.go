@@ -239,6 +239,8 @@ ThreadpoolHttpServerResponseSize:  Basic stats: count: 4 min: 21 max: 96 mean: 6
 <h2>HTTP Errors</h2>
 
 <div>op=read code=502 resp=path=/cxx-compiler-service/e Details:HTTP/1.1 502 Bad Gateway\r\nContent-Type: text/html; charset=UTF-8\r\nReferrer-Policy: no-referrer\r\nContent-Length: 332\r\nAlt-Svc: clear\r\n\r\n\n&lt;html&gt;&lt;head&gt;\n&lt;meta http-equiv=\&#34;content-type\&#34; content=\&#34;text/html;charset=utf-8\&#34;&gt;\n&lt;title&gt;502 Server Error&lt;/title&gt;\n&lt;/head&gt;\n&lt;body text=#000000 bgcolor=#ffffff&gt;\n&lt;h1&gt;Error: Server Error&lt;/h1&gt;\n&lt;h2&gt;The server encountered a temporary error and could not complete your request.&lt;p&gt;Please try again in 30 seconds.&lt;/h2&gt;\n&lt;h2&gt;&lt;/h2&gt;\n&lt;/body&gt;&lt;/html&gt;\n</div>
+<div>tasks=[0 5]</div>
+<br/>
 
 </body>
 </html>
