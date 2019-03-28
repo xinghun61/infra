@@ -228,6 +228,7 @@ func TestGitCommand(t *testing.T) {
 					Args: []string{"status"},
 					Env: prepareAgentENV(
 						"GIT_HTTP_LOW_SPEED_LIMIT=0",
+						"GIT_HTTP_LOW_SPEED_TIME=10",
 						encodeStateENV(gc.State),
 					),
 					Stdin: stdin,
