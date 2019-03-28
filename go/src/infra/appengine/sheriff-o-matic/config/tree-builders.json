@@ -1,6 +1,22 @@
 {
   "trees": [
     {
+      "tree_name": "chromeos",
+      "tree_builders": [
+        {
+          "project": "chromeos",
+          "bucket": "annealing",
+          "builders": [
+            "Annealing"
+          ]
+        },
+        {
+          "project": "chromeos",
+          "bucket": "postsubmit"
+        }
+      ]
+    },
+    {
       "tree_name": "chromium",
       "tree_builders": [
         {
