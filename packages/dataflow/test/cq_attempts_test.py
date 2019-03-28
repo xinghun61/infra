@@ -131,7 +131,7 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     attempt.click_to_patch_committed_sec = 6.0
     attempt.click_to_result_sec = 9.0
     attempt.committed = True
-    attempt.contributing_bbucket_ids = [2, 3]
+    attempt.contributing_bbucket_ids = [1, 2, 3]
 
     return (events, attempt.as_bigquery_row())
 

@@ -133,11 +133,10 @@ class CombineEventsToAttempt(beam.CombineFn):
         attempt.failure_reason = event.failure_reason
         attempt.max_failure_msec = event.timestamp_millis
         attempt.fail_type = attempt.failure_reason['fail_type']
-      if (event.contributing_buildbucket_ids and
-          (attempt.max_bbucket_ids_msec is None or
-           event.timestamp_millis > attempt.max_bbucket_ids_msec)):
-        attempt.contributing_bbucket_ids = event.contributing_buildbucket_ids
-        attempt.max_bbucket_ids_msec = event.timestamp_millis
+      if event.contributing_buildbucket_ids:
+        attempt_bb_ids = set(attempt.contributing_bbucket_ids or [])
+        attempt_bb_ids.update(event.contributing_buildbucket_ids)
+        attempt.contributing_bbucket_ids = sorted(attempt_bb_ids)
       if event.earliest_equivalent_patchset:
         attempt.earliest_equivalent_patchset = (
             event.earliest_equivalent_patchset)

@@ -95,7 +95,6 @@ class CQAttempt(BigQueryObject):
     self.patch_failures = 0
     self.total_failures = 0
 
-    self.max_bbucket_ids_msec = None
     self.contributing_bbucket_ids = None
     self.earliest_equivalent_patchset = None
 
