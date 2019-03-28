@@ -123,7 +123,6 @@
     "name": "clear old images.delete image img1",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "step returned non-zero exit code: 1",
       "@@@STEP_WARNINGS@@@"
     ]
   },

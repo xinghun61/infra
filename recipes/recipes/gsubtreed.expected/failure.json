@@ -151,7 +151,6 @@
     ],
     "name": "gsubtreed",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_TEXT@</br></br>some/path: 5</br>some: 10@@@",
       "@@@STEP_SUMMARY_TEXT@commits: 15@@@",
       "@@@STEP_FAILURE@@@"

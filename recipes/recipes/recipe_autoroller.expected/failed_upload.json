@@ -401,7 +401,6 @@
     "name": "build.git cl upload failed",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "step returned non-zero exit code: 1",
       "@@@STEP_TEXT@no issue metadata returned@@@",
       "@@@STEP_FAILURE@@@"
     ]

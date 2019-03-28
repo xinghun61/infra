@@ -461,7 +461,6 @@
     ],
     "name": "test (with patch)",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_LOG_LINE@json.output@{}@@@",
       "@@@STEP_LOG_END@json.output@@@",
       "@@@STEP_FAILURE@@@"
@@ -503,7 +502,6 @@
     ],
     "name": "diff (test)",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_FAILURE@@@"
     ]
   },
@@ -586,7 +584,6 @@
     ],
     "name": "result",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_TEXT@Add \"Recipe-Nontrivial-Roll: depot_tools\" footer to the CL to acknowledge the change will require nontrivial roll in 'depot_tools' repo@@@",
       "@@@STEP_FAILURE@@@"
     ]

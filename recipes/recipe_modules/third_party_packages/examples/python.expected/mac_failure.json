@@ -1156,7 +1156,6 @@
     },
     "name": "make",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_FAILURE@@@"
     ]
   },

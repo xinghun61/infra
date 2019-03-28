@@ -165,7 +165,6 @@
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder/infra",
     "name": "calculate webrtc lkgr",
     "~followup_annotations": [
-      "step returned non-zero exit code: 2",
       "@@@STEP_FAILURE@@@"
     ]
   },

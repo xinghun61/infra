@@ -84,7 +84,6 @@
     ],
     "name": "ensure docker installed",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_TEXT@Error: is docker not installed or not in the PATH@@@",
       "@@@STEP_FAILURE@@@"
     ]

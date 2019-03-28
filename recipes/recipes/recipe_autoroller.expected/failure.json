@@ -294,7 +294,6 @@
     ],
     "name": "roll result",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_TEXT@manual intervention needed: automated roll attempt failed@@@",
       "@@@STEP_FAILURE@@@"
     ]

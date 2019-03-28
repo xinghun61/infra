@@ -237,7 +237,6 @@
     ],
     "name": "test (without patch)",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
       "@@@STEP_LOG_LINE@json.output@{}@@@",
       "@@@STEP_LOG_END@json.output@@@",
       "@@@STEP_FAILURE@@@"
