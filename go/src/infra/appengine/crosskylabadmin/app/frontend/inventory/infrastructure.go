@@ -192,9 +192,9 @@ func commitRemoveDuts(ctx context.Context, s *gitstore.InventoryStore, resp *fle
 // InventoryStore.  This is called within a load/commit/retry context.
 func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *fleet.RemoveDutsFromDronesRequest) (*fleet.RemoveDutsFromDronesResponse, error) {
 	removed := make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals))
-	d := newDUTRemover(s)
+	dr := newDUTRemover(s)
 	for _, r := range req.Removals {
-		i, err := removeDutFromDrone(ctx, s.Infrastructure, d, r)
+		i, err := dr.removeDut(ctx, s.Infrastructure, r)
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +226,7 @@ func newDUTRemover(s *gitstore.InventoryStore) *dutRemover {
 	return &dr
 }
 
-func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, dr *dutRemover, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
+func (dr *dutRemover) removeDut(ctx context.Context, infra *inventory.Infrastructure, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
 	env := config.Get(ctx).Inventory.Environment
 	id := r.DutId
 	if r.DutHostname != "" {
