@@ -209,6 +209,30 @@ func TestGitCommand(t *testing.T) {
 					Stdin: stdin,
 				})
 			})
+			Convey(`Won't override environments`, func() {
+				var stdin = []byte("o hai there!")
+
+				in.ReturnCode = 123
+				in.ReadStdin = true
+
+				env.Set("GIT_HTTP_LOW_SPEED_LIMIT", "0")
+				gc.LowSpeedLimit = 1000
+				gc.LowSpeedTime = 10 * time.Second
+				gc.Stdin = bytes.NewReader(stdin)
+
+				rc, err := runAgent(c)
+				So(err, ShouldBeNil)
+				So(rc, ShouldEqual, in.ReturnCode)
+
+				So(out, ShouldResemble, testAgentResponse{
+					Args: []string{"status"},
+					Env: prepareAgentENV(
+						"GIT_HTTP_LOW_SPEED_LIMIT=0",
+						encodeStateENV(gc.State),
+					),
+					Stdin: stdin,
+				})
+			})
 		})
 
 		Convey(`Testing GitCommandRetry.`, func() {

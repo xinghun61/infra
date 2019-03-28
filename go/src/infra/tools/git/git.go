@@ -123,16 +123,20 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 		WorkDir:    gc.WorkDir,
 	}
 
-	if l := gc.LowSpeedLimit; l > 0 {
-		gr.Env.Set("GIT_HTTP_LOW_SPEED_LIMIT", strconv.Itoa(l))
-	}
-	if l := gc.LowSpeedTime; l > 0 {
-		secs := int(l.Seconds())
-		if secs <= 0 {
-			// Handle rounding error.
-			secs = 1
+	// Set the low speed limit if it is not already set.
+	// If an existing speed limit is set in the environment, don't override it.
+	if _, ok := gr.Env.Get("GIT_HTTP_LOW_SPEED_LIMIT"); !ok {
+		if l := gc.LowSpeedLimit; l > 0 {
+			gr.Env.Set("GIT_HTTP_LOW_SPEED_LIMIT", strconv.Itoa(l))
 		}
-		gr.Env.Set("GIT_HTTP_LOW_SPEED_TIME", strconv.Itoa(secs))
+		if l := gc.LowSpeedTime; l > 0 {
+			secs := int(l.Seconds())
+			if secs <= 0 {
+				// Handle rounding error.
+				secs = 1
+			}
+			gr.Env.Set("GIT_HTTP_LOW_SPEED_TIME", strconv.Itoa(secs))
+		}
 	}
 
 	// Determine if we are running a retry-able subcommand.
