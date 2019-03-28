@@ -13,6 +13,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/errors"
 
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/cmd/skylab_swarming_worker/internal/swmbot"
 	"infra/libs/skylab/inventory"
 )
@@ -60,25 +61,22 @@ type UpdateFunc func(dutID string, labels *inventory.SchedulableLabels) error
 // any changes to the info, using a supplied UpdateFunc.  If
 // UpdateFunc is nil, the inventory is not updated.
 func Load(ctx context.Context, b *swmbot.Info, f UpdateFunc) (*Store, error) {
-	ddir, err := inventory.ReadSymlink(b.Inventory.DataDir)
+	c, err := swmbot.InventoryClient(ctx, b)
 	if err != nil {
 		return nil, errors.Annotate(err, "load DUT host info").Err()
 	}
-
-	lab, err := inventory.LoadLab(ddir)
+	req := fleet.GetDutInfoRequest{Id: b.DUTID}
+	resp, err := c.GetDutInfo(ctx, &req)
 	if err != nil {
 		return nil, errors.Annotate(err, "load DUT host info").Err()
 	}
-	for _, d := range lab.GetDuts() {
-		c := d.GetCommon()
-		if c.GetId() != b.DUTID {
-			continue
-		}
-		return &Store{
-			DUT:        d,
-			oldLabels:  proto.Clone(c.GetLabels()).(*inventory.SchedulableLabels),
-			updateFunc: f,
-		}, nil
+	var d inventory.DeviceUnderTest
+	if err := proto.Unmarshal(resp.Spec, &d); err != nil {
+		return nil, errors.Annotate(err, "load DUT host info").Err()
 	}
-	return nil, errors.Reason("load DUT inventory: %s not found", b.DUTID).Err()
+	return &Store{
+		DUT:        &d,
+		oldLabels:  proto.Clone(d.GetCommon().GetLabels()).(*inventory.SchedulableLabels),
+		updateFunc: f,
+	}, nil
 }
