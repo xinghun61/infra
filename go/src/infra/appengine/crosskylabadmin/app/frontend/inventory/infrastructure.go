@@ -94,12 +94,10 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	s, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	f := func() error {
 		if err := s.Refresh(ctx); err != nil {
 			return err
@@ -109,15 +107,11 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		if err != nil {
 			return err
 		}
-		if len(resp.Removed) > 0 {
-			resp.Url, err = s.Commit(ctx, "remove DUTs")
-			if err != nil {
-				return err
-			}
+		if err := commitRemoveDuts(ctx, s, resp); err != nil {
+			return err
 		}
 		return nil
 	}
-
 	err = retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "removeDutsFromDronesNoRetry"))
 	return resp, err
 }
@@ -181,6 +175,17 @@ func pickDroneForDUT(ctx context.Context, infra *inventory.Infrastructure) strin
 		return ""
 	}
 	return ds[rand.Intn(len(ds))].GetHostname()
+}
+
+// commitRemoveDuts commits an in-progress response returned from
+// removeDutsFromDrones.
+func commitRemoveDuts(ctx context.Context, s *gitstore.InventoryStore, resp *fleet.RemoveDutsFromDronesResponse) error {
+	if len(resp.Removed) == 0 {
+		return nil
+	}
+	var err error
+	resp.Url, err = s.Commit(ctx, "remove DUTs")
+	return err
 }
 
 // removeDutsFromDrones implements removing DUTs from drones on an
