@@ -176,17 +176,6 @@ func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*mess
 
 	logging.Infof(c, "%d alerts generated for tree %q", len(alerts), tree)
 
-	// Attach test result histories to test failure alerts.
-	for _, alert := range alerts {
-		if !isTestFailure(alert) {
-			continue
-		}
-		if err := attachTestResults(c, &alert, a.TestResults); err != nil {
-			logging.WithError(err).Errorf(c, "attaching results")
-		}
-	}
-
-	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
 	alertsSummary := &messages.AlertsSummary{
 		Timestamp:         messages.TimeToEpochTime(time.Now()),
 		RevisionSummaries: map[string]messages.RevisionSummary{},
