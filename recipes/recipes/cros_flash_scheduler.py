@@ -340,14 +340,11 @@ def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
 
   # Fail the recipe if any bot wasn't safely flashed.
   unhealthy_bots = [b.id for b in bots_to_flash if b.is_unhealthy]
-  out_of_date_bots = [
-      b.id for b in bots_to_flash if b.os != latest_version_base]
-  if unhealthy_bots or out_of_date_bots:
+  if unhealthy_bots:
     api.python.failing_step(
-        '%d bots failed the flash' % len(unhealthy_bots + out_of_date_bots),
-        'The following bots were not successfully flashed: %s\n'
+        '%d bots dropped offline after the flash' % len(unhealthy_bots),
         'The following bots were flashed but have not come back up: %s' % (
-            out_of_date_bots, unhealthy_bots))
+            unhealthy_bots))
 
   # We did it! Now trigger ourselves again with the same properties to finish
   # flashing the remaining bots. Use this chained triggering instead of a
@@ -493,7 +490,7 @@ def GenTests(api):
     api.post_process(post_process.DropExpectation)
   )
 
-  out_of_date_after_flashing_test = (
+  offline_after_flashing_test = (
     test_props('bot_offline_after_flashing') +
     api.step_data(
         'get all bots',
@@ -506,16 +503,17 @@ def GenTests(api):
         stdout=api.json.output(bb_json_get('1234567890'))) +
     api.step_data(
         'wait for bots to become available again.get status of bot',
-        stdout=api.json.output(bot_json('bot', '11111'))) +
-    api.post_process(post_process.MustRun, '1 bots failed the flash') +
+        stdout=api.json.output(bot_json('bot', '11111', quarantined=True))) +
+    api.post_process(
+        post_process.MustRun, '1 bots dropped offline after the flash') +
     api.post_process(post_process.DropExpectation)
   )
-  # The bot still reports as out-of-date after all 10 queries.
+  # The bot still reports as offline after all 10 queries.
   for i in xrange(2, 11):
-    out_of_date_after_flashing_test += api.step_data(
+    offline_after_flashing_test += api.step_data(
         'wait for bots to become available again.get status of bot (%d)' % i,
-        stdout=api.json.output(bot_json('bot', '11111')))
-  yield out_of_date_after_flashing_test
+        stdout=api.json.output(bot_json('bot', '11111', quarantined=True)))
+  yield offline_after_flashing_test
 
   yield (
     test_props('wrong_lkgm_format', include_lkgm_steps=False) +
