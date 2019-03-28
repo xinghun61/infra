@@ -211,25 +211,30 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 
 type dutRemover struct {
 	store        *gitstore.InventoryStore
-	hostnameToID map[string]*inventory.DeviceUnderTest
+	hostnameToID map[string]string
 }
 
 func newDUTRemover(s *gitstore.InventoryStore) *dutRemover {
-	return &dutRemover{
+	dr := dutRemover{
 		store:        s,
-		hostnameToID: mapHostnameToDUTs(s.Lab.GetDuts()),
+		hostnameToID: make(map[string]string),
 	}
+	for _, d := range s.Lab.GetDuts() {
+		c := d.GetCommon()
+		dr.hostnameToID[c.GetHostname()] = c.GetId()
+	}
+	return &dr
 }
 
-func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, d *dutRemover, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
+func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, dr *dutRemover, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
 	env := config.Get(ctx).Inventory.Environment
 	id := r.DutId
 	if r.DutHostname != "" {
-		d, ok := d.hostnameToID[r.DutHostname]
+		var ok bool
+		id, ok = dr.hostnameToID[r.DutHostname]
 		if !ok {
 			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
 		}
-		id = d.GetCommon().GetId()
 	}
 
 	var ok bool
