@@ -42,6 +42,7 @@ func getApplication() *cli.Application {
 			subcommands.Section("Inventory Operations"),
 			cmd.AssignDuts,
 			cmd.RemoveDuts,
+			cmd.UpdateDut,
 			subcommands.Section("Pool Operations"),
 			cmd.EnsurePoolHealthy,
 			cmd.ResizePool,
