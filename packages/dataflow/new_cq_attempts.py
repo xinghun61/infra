@@ -116,11 +116,8 @@ def main():
 
   results = process_input(cq_events_pcol, bb_entries_pcol)
 
-  # Temporary table for development.
-  # TODO(erikchen): Replace with a prod table. https://crbug.com/937519.
   # pylint: disable=expression-not-assigned
-  results | chops_beam.BQWrite('erikchen-test', 'test_table',
-                               dataset='test_dataset')
+  results | chops_beam.BQWrite('chrome-infra-events', 'new_cq_attempts')
 
   p.run()
 
