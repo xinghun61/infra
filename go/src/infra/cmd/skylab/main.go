@@ -52,6 +52,7 @@ func getApplication() *cli.Application {
 			cmd.RerunTasks,
 			subcommands.Section("Internal use"),
 			cmd.InternalListDroneDuts,
+			cmd.InternalPrintBotInfo,
 			cmd.InternalPrintDutDimensions,
 			cmd.InternalVerifyInventory,
 		},
