@@ -38,7 +38,8 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/buildbucket"
-	"go.chromium.org/luci/buildbucket/proto"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/buildbucket/protoutil"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
@@ -85,7 +86,7 @@ func ParseBuild(msg *bbapi.ApiCommonBuildMessage) (*Build, error) {
 	}
 
 	for _, bss := range tags[bbapi.TagBuildSet] {
-		build.Change, _ = buildbucketpb.ParseBuildSet(bss).(*buildbucketpb.GerritChange)
+		build.Change, _ = protoutil.ParseBuildSet(bss).(*buildbucketpb.GerritChange)
 		if build.Change != nil {
 			break
 		}
@@ -198,7 +199,7 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 	newTags := strpair.Map{}
 	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.ID, 10))
 	newTags.Set(attemptTagKey, "0")
-	newTags.Set(bbapi.TagBuildSet, build.Change.BuildSetString())
+	newTags.Set(bbapi.TagBuildSet, protoutil.GerritBuildSet(build.Change))
 	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            master.LuciBucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
@@ -209,7 +210,7 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 		logging.Infof(
 			c,
 			"scheduling Buildbot build %d on LUCI for builder %q and %q",
-			build.ID, &builder.ID, build.Change.URL())
+			build.ID, &builder.ID, protoutil.GerritChangeURL(build.Change))
 		return h.schedule(c, builder.ID.Builder, newBuild)
 	})
 }
@@ -225,6 +226,8 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 		return nil
 	}
 
+	changeBS := protoutil.GerritBuildSet(build.Change)
+
 	// Before retrying the build, see if there is a newer one already created.
 	// It may happen if a new Buildbot build completed.
 	req := h.Buildbucket.Search()
@@ -233,7 +236,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	req.CreationTsLow(bbapi.FormatTimestamp(build.CreationTime) + 1)
 	req.IncludeExperimental(true)
 	req.Tag(
-		strpair.Format(bbapi.TagBuildSet, build.Change.BuildSetString()),
+		strpair.Format(bbapi.TagBuildSet, changeBS),
 		strpair.Format(bbapi.TagBuilder, build.Builder),
 	)
 	switch newerBuilds, _, err := req.Fetch(1, nil); {
@@ -247,7 +250,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	newTags := strpair.Map{}
 	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.BuildbotBuildID, 10))
 	newTags.Set(attemptTagKey, strconv.Itoa(build.Attempt+1))
-	newTags.Set(bbapi.TagBuildSet, build.Change.BuildSetString())
+	newTags.Set(bbapi.TagBuildSet, changeBS)
 	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            build.Bucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
@@ -339,7 +342,7 @@ func shouldExperiment(change *buildbucketpb.GerritChange, percentage int) bool {
 	case percentage >= 100:
 		return true
 	default:
-		aByte := sha256.Sum256([]byte(change.BuildSetString()))[0]
+		aByte := sha256.Sum256([]byte(protoutil.GerritBuildSet(change)))[0]
 		return int(aByte)*100 <= percentage*255
 	}
 }

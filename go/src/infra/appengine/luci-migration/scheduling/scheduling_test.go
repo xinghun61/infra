@@ -25,7 +25,8 @@ import (
 
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/buildbucket/proto"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/buildbucket/protoutil"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/retry/transient"
@@ -208,7 +209,7 @@ func TestScheduling(t *testing.T) {
 						ClientOperationId: "luci-migration-retry-54",
 						ParametersJson:    actualPutRequests[0].ParametersJson,
 						Tags: []string{
-							strpair.Format(bbapi.TagBuildSet, change.BuildSetString()),
+							strpair.Format(bbapi.TagBuildSet, protoutil.GerritBuildSet(change)),
 							strpair.Format(attemptTagKey, "0"),
 							strpair.Format(buildbotBuildIDTagKey, "54"),
 							"user_agent:luci-migration",
@@ -263,7 +264,7 @@ func TestScheduling(t *testing.T) {
 						ClientOperationId: "luci-migration-retry-54",
 						ParametersJson:    b.ParametersJSON,
 						Tags: []string{
-							strpair.Format(bbapi.TagBuildSet, change.BuildSetString()),
+							strpair.Format(bbapi.TagBuildSet, protoutil.GerritBuildSet(change)),
 							strpair.Format(attemptTagKey, "1"),
 							strpair.Format(buildbotBuildIDTagKey, "53"),
 							"user_agent:luci-migration",

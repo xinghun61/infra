@@ -18,7 +18,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.chromium.org/luci/buildbucket/proto"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/buildbucket/protoutil"
 )
 
 type groupKey struct {
@@ -38,8 +39,12 @@ func (k *groupKey) GerritChange() *buildbucketpb.GerritChange {
 	}
 }
 
+func (k *groupKey) GerritChangeURL() string {
+	return protoutil.GerritChangeURL(k.GerritChange())
+}
+
 func (k *groupKey) String() string {
-	return fmt.Sprintf("%s @ %q", k.GerritChange().BuildSetString(), k.GotRevision)
+	return fmt.Sprintf("%s @ %q", protoutil.GerritBuildSet(k.GerritChange()), k.GotRevision)
 }
 
 // group is two sets of builds, for Buildbot and LUCI, that should have the same

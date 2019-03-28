@@ -24,7 +24,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/buildbucket/proto"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/buildbucket/protoutil"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
@@ -37,7 +38,7 @@ import (
 
 func buildMsg(key groupKey, duration time.Duration, result string) *bbapi.ApiCommonBuildMessage {
 	return &bbapi.ApiCommonBuildMessage{
-		Tags:              []string{strpair.Format(bbapi.TagBuildSet, key.GerritChange().BuildSetString())},
+		Tags:              []string{strpair.Format(bbapi.TagBuildSet, protoutil.GerritBuildSet(key.GerritChange()))},
 		Status:            "COMPLETED",
 		Result:            result,
 		CreatedBy:         "user:someone@example.com",
@@ -88,7 +89,7 @@ func TestAnalyze(t *testing.T) {
 				return
 			}
 
-			cl, ok := buildbucketpb.ParseBuildSet(buildSet).(*buildbucketpb.GerritChange)
+			cl, ok := protoutil.ParseBuildSet(buildSet).(*buildbucketpb.GerritChange)
 			testCtx.So(ok, ShouldBeTrue)
 			testCtx.So(cl.Patchset, ShouldBeBetween, 0, len(buildSets)+1)
 			key := mkKey(cl.Patchset)

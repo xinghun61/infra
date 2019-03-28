@@ -61,7 +61,7 @@ at {{.MostRecentlyCompleted | timeString }}.
   {{range .}}
   <li>
     <div>Build group for
-      <a href="{{.Key.GerritChange.URL}}">{{.Key.GerritChange.URL}}</a>
+      <a href="{{.Key.GerritChangeURL}}">{{.Key.GerritChangeURL}}</a>
       with got_revision="{{.Key.GotRevision}}"
       </a>
     </div>

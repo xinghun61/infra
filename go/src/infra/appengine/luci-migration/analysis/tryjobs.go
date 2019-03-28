@@ -29,7 +29,8 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/buildbucket"
-	"go.chromium.org/luci/buildbucket/proto"
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/buildbucket/protoutil"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/strpair"
@@ -233,7 +234,7 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 		var change *buildbucketpb.GerritChange
 		for _, t := range msg.Tags {
 			if k, v := strpair.Parse(t); k == bbapi.TagBuildSet {
-				if cl, _ := buildbucketpb.ParseBuildSet(v).(*buildbucketpb.GerritChange); cl != nil {
+				if cl, _ := protoutil.ParseBuildSet(v).(*buildbucketpb.GerritChange); cl != nil {
 					if change == nil {
 						change = cl
 					} else {
@@ -375,7 +376,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 		req.Status(bbapi.StatusCompleted)
 		req.Tag(
 			strpair.Format(bbapi.TagBuilder, f.Builder),
-			strpair.Format(bbapi.TagBuildSet, g.Key.GerritChange().BuildSetString()))
+			strpair.Format(bbapi.TagBuildSet, protoutil.GerritBuildSet(g.Key.GerritChange())))
 		req.CreationTsLow(bbapi.FormatTimestamp(f.MinCreationDate))
 		req.IncludeExperimental(true)
 		req.Fields(
