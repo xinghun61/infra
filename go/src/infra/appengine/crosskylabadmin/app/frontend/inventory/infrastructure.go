@@ -104,19 +104,16 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 		if err := s.Refresh(ctx); err != nil {
 			return err
 		}
-		removed, err := removeDutsFromDrones(ctx, s, req)
+		var err error
+		resp, err = removeDutsFromDrones(ctx, s, req)
 		if err != nil {
 			return err
 		}
-		var url string
-		if len(removed) > 0 {
-			if url, err = s.Commit(ctx, "remove DUTs"); err != nil {
+		if len(resp.Removed) > 0 {
+			resp.Url, err = s.Commit(ctx, "remove DUTs")
+			if err != nil {
 				return err
 			}
-		}
-		resp = &fleet.RemoveDutsFromDronesResponse{
-			Removed: removed,
-			Url:     url,
 		}
 		return nil
 	}
@@ -188,7 +185,7 @@ func pickDroneForDUT(ctx context.Context, infra *inventory.Infrastructure) strin
 
 // removeDutsFromDrones implements removing DUTs from drones on an
 // InventoryStore.  This is called within a load/commit/retry context.
-func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *fleet.RemoveDutsFromDronesRequest) ([]*fleet.RemoveDutsFromDronesResponse_Item, error) {
+func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *fleet.RemoveDutsFromDronesRequest) (*fleet.RemoveDutsFromDronesResponse, error) {
 	removed := make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals))
 	hostnameToID := mapHostnameToDUTs(s.Lab.GetDuts())
 	for _, r := range req.Removals {
@@ -202,7 +199,9 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 		}
 		removed = append(removed, i)
 	}
-	return removed, nil
+	return &fleet.RemoveDutsFromDronesResponse{
+		Removed: removed,
+	}, nil
 }
 
 func removeDutFromDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]*inventory.DeviceUnderTest, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
