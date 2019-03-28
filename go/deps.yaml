@@ -504,7 +504,16 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/inconshreveable/mousetrap.git
 - package: github.com/hashicorp/golang-lru
-  repo: https://chromium.googlesource.com/external/github.com/hashicorp/golang-lru.git
   version: master
+  repo: https://chromium.googlesource.com/external/github.com/hashicorp/golang-lru.git
   subpackages:
   - simplelru
+- package: github.com/mgutz/ansi
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
+- package: github.com/mattn/go-colorable
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/mattn/go-colorable.git
+- package: github.com/mattn/go-isatty
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/mattn/go-isatty.git

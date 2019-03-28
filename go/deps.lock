@@ -1,5 +1,5 @@
-hash: b5d19b364f84e3447656a45aef6a736b4f9d3d7829d0bbcc674824f8296959b6
-updated: 2019-03-27T12:47:59.524064207-07:00
+hash: 9583a164e1b40b63a71564f376f9acd6faf06559aac16c861392051b83064818
+updated: 2019-03-27T13:49:24.842426-07:00
 imports:
 - name: cloud.google.com/go
   version: 4b031de94b32c3a6b8cf7d64fd2b377ac5859eef
@@ -261,9 +261,18 @@ imports:
   subpackages:
   - database/mysql
   - source/file
+- name: github.com/mattn/go-colorable
+  version: 9cbef7c35391cca05f15f8181dc0b18bc9736dbb
+  repo: https://chromium.googlesource.com/external/github.com/mattn/go-colorable.git
+- name: github.com/mattn/go-isatty
+  version: c2a7a6ca930a4cd0bc33a3f298eb71960732a3a7
+  repo: https://chromium.googlesource.com/external/github.com/mattn/go-isatty.git
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c182affec369e30f25d3eb8cd8a478dee585ae7d
   repo: https://chromium.googlesource.com/external/github.com/matttproud/golang_protobuf_extensions.git
+- name: github.com/mgutz/ansi
+  version: 9520e82c474b0a04dd04f8a40959027271bab992
+  repo: https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
 - name: github.com/Microsoft/go-winio
   version: 812eb80041a847e7525d41cf28b8e3b7b537ec65
   repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
@@ -384,7 +393,7 @@ imports:
   version: 885f8b82a921bf224e0c78ac3745656b0d46e9c6
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
-  version: f1b4be0c35112d4c666f414c17cb2dee5b2b8e22
+  version: 8bd8e0e4f7fa069e75e354e806b476da40d6686b
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
@@ -434,7 +443,7 @@ imports:
   version: e3703dcdd614d2d7488fff034c75c551ea25da95
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: dbeab5af4b8d3204d444b78cafaba18a9a062a50
+  version: c70d86f8b7cf4b047359c1da990de8d884ddff9a
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
