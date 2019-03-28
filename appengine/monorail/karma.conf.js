@@ -6,7 +6,7 @@
 
 const path = require('path');
 
-process.env.CHROME_BIN = require('puppeteer').executablePath()
+process.env.CHROME_BIN = require('puppeteer').executablePath();
 
 module.exports = function(config) {
   const isDebug = process.argv.some((arg) => arg === '--debug');
