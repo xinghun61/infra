@@ -131,7 +131,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
 
       <div class="labels-container">
         <template is="dom-repeat" items="[[issue.labelRefs]]" as="label">
-          <a href\$="/p/[[projectName]]/issues/list?q=label:[[label.label]]" class="label" data-derived\$="[[label.isDerived]]">[[label.label]]</a>
+          <a href\$="/p/[[issueRef.projectName]]/issues/list?q=label:[[label.label]]" class="label" data-derived\$="[[label.isDerived]]">[[label.label]]</a>
           <br>
         </template>
       </div>
@@ -142,7 +142,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
             <div class="bottom-section-content">
             <template is="dom-repeat" items="[[sortedBlockedOn]]">
               <mr-issue-link
-                project-name="[[projectName]]"
+                project-name="[[issueRef.projectName]]"
                 issue="[[item]]"
               >
               </mr-issue-link>
@@ -165,7 +165,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
           <div class="bottom-section-content">
             <template is="dom-repeat" items="[[blocking]]">
               <mr-issue-link
-                project-name="[[projectName]]"
+                project-name="[[issueRef.projectName]]"
                 issue="[[item]]"
               >
               </mr-issue-link>

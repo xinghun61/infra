@@ -86,7 +86,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
               <template is="dom-repeat" items="[[row.cells]]" as="cell">
                 <td>
                   <template is="dom-if" if="[[_isIssue(cell)]]">
-                    <mr-issue-link project-name="[[projectName]]" issue="[[cell.issue]]"></mr-issue-link>
+                    <mr-issue-link project-name="[[issueRef.projectName]]" issue="[[cell.issue]]"></mr-issue-link>
                   </template>
                   <template is="dom-if" if="[[_isText(cell)]]">
                     [[cell.content]]
