@@ -148,7 +148,7 @@ class RankFlakesTest(WaterfallTestCase):
               'occurrence_count': 0
           },
           {
-              'flake_type': 'cq retry with patch',
+              'flake_type': 'cq step level retry',
               'impacted_cl_count': 0,
               'occurrence_count': 0
           },
@@ -195,7 +195,7 @@ class RankFlakesTest(WaterfallTestCase):
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
-                              ('cq retry with patch', 10),
+                              ('cq step level retry', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
             'filter_names': [
                 tag for tag in SUPPORTED_TAGS
@@ -268,7 +268,7 @@ class RankFlakesTest(WaterfallTestCase):
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
-                              ('cq retry with patch', 10),
+                              ('cq step level retry', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
             'filter_names': [
                 tag for tag in SUPPORTED_TAGS
@@ -314,7 +314,7 @@ class RankFlakesTest(WaterfallTestCase):
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
-                              ('cq retry with patch', 10),
+                              ('cq step level retry', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
             'filter_names': [
                 tag for tag in SUPPORTED_TAGS
@@ -356,7 +356,7 @@ class RankFlakesTest(WaterfallTestCase):
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
-                              ('cq retry with patch', 10),
+                              ('cq step level retry', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
             'filter_names': [
                 tag for tag in SUPPORTED_TAGS
@@ -396,7 +396,7 @@ class RankFlakesTest(WaterfallTestCase):
             'error_message':
                 None,
             'flake_weights': [('cq false rejection', 100),
-                              ('cq retry with patch', 10),
+                              ('cq step level retry', 10),
                               ('cq hidden flake', 1), ('ci failed step', 10)],
             'filter_names': [
                 tag for tag in SUPPORTED_TAGS

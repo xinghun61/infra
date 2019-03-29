@@ -63,7 +63,7 @@ class ComponentReportTest(wf_testcase.WaterfallTestCase):
             'occurrence_count': 0
         },
         {
-            'flake_type': 'cq retry with patch',
+            'flake_type': 'cq step level retry',
             'impacted_cl_count': 0,
             'occurrence_count': 0
         },

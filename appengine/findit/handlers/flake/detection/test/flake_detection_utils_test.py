@@ -183,7 +183,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'occurrence_count': 0
             },
             {
-                'flake_type': 'cq retry with patch',
+                'flake_type': 'cq step level retry',
                 'impacted_cl_count': 0,
                 'occurrence_count': 0
             },
@@ -242,7 +242,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'luci builder 2',
             'occurrences': [
                 {
-                    'flake_type': 'cq retry with patch',
+                    'flake_type': 'cq step level retry',
                     'build_id': '124',
                     'step_ui_name': step_ui_name,
                     'test_name': test_name,
@@ -424,7 +424,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'occurrence_count': 0
             },
             {
-                'flake_type': 'cq retry with patch',
+                'flake_type': 'cq step level retry',
                 'impacted_cl_count': 0,
                 'occurrence_count': 0
             },
@@ -539,7 +539,7 @@ class FlakeDetectionUtilsTest(WaterfallTestCase):
                 'occurrence_count': 0
             },
             {
-                'flake_type': 'cq retry with patch',
+                'flake_type': 'cq step level retry',
                 'impacted_cl_count': 0,
                 'occurrence_count': 0
             },

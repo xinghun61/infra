@@ -153,7 +153,7 @@ class ShowFlakeTest(WaterfallTestCase):
                 'occurrence_count': 0
             },
             {
-                'flake_type': 'cq retry with patch',
+                'flake_type': 'cq step level retry',
                 'impacted_cl_count': 0,
                 'occurrence_count': 0
             },
@@ -211,7 +211,7 @@ class ShowFlakeTest(WaterfallTestCase):
             'show_all_occurrences':
                 '',
             'weights': [('cq false rejection', 100),
-                        ('cq retry with patch', 10), ('cq hidden flake', 1),
+                        ('cq step level retry', 10), ('cq hidden flake', 1),
                         ('ci failed step', 10)]
         },
                    default=str,

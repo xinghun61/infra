@@ -13,10 +13,12 @@ class FlakeType(messages.Enum):
   # services/flake_detection/flaky_tests.cq_false_rejection.sql.
   CQ_FALSE_REJECTION = 1
 
-  # A flaky test that failed in the (with patch) steps, but passed in the
-  # (retry with patch) steps.
+  # A flaky test that failed in the (with patch) steps, but passed in retry
+  # steps such as (retry with patch) or (retry shards with patch).
   # For how this type of flake occurrence is detected, please refer to:
   # services/flake_detection/flaky_tests.retry_with_patch.sql.
+  # this type name remains to be RETRY_WITH_PATCH because it's used in
+  # FlakeOccurrence keys.
   RETRY_WITH_PATCH = 2
 
   # A flaky test that failed some test runs then pass.
@@ -28,14 +30,14 @@ class FlakeType(messages.Enum):
 
 FLAKE_TYPE_DESCRIPTIONS = {
     FlakeType.CQ_FALSE_REJECTION: 'cq false rejection',
-    FlakeType.RETRY_WITH_PATCH: 'cq retry with patch',
+    FlakeType.RETRY_WITH_PATCH: 'cq step level retry',
     FlakeType.CQ_HIDDEN_FLAKE: 'cq hidden flake',
     FlakeType.CI_FAILED_STEP: 'ci failed step',
 }
 
 DESCRIPTION_TO_FLAKE_TYPE = {
     'cq false rejection': FlakeType.CQ_FALSE_REJECTION,
-    'cq retry with patch': FlakeType.RETRY_WITH_PATCH,
+    'cq step level retry': FlakeType.RETRY_WITH_PATCH,
     'cq hidden flake': FlakeType.CQ_HIDDEN_FLAKE,
     'ci failed step': FlakeType.CI_FAILED_STEP
 }

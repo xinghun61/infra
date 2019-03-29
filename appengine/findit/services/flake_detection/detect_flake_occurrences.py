@@ -574,7 +574,7 @@ def _EnqueueDetectFlakeByBuildTasks(build_id, flake_type_desc):
 
 def QueryAndStoreFlakes(flake_type_enum):
   """Runs the query to fetch flake related data and use it to detect flakes
-     for cq false rejections and cq retry with patch."""
+     for cq false rejections and cq step level retries."""
   flake_type_desc = FLAKE_TYPE_DESCRIPTIONS.get(flake_type_enum)
   assert flake_type_enum in [
       FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH

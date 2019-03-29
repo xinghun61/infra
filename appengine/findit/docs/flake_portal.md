@@ -34,8 +34,8 @@ The [Flakes] page ranks on-going flakes from CQ and CI in last 7 days by their
 **Flake types**. Within [Flakes], flake types are defined by the negative impact of a flaky run.
 * **CQ false rejection**, a test failure that causes a retried build or even
 causes a CL to be **incorrectly** rejected by [CQ].
-* **CQ retry with patch**, a test failure that causes an additional 'retry with
-patch' step.
+* **CQ step level retry**, a test failure that causes additional 'retry with
+patch' and/or 'retry shards with patch' steps.
 * **CQ hidden flake**, a passed test that were retried 2+ times by the test-runner.
  The first run and the first retry failed, while a later retry passed. This is
   to filter out noises caused by cpu/gpu/etc resource starvation due to parallel
@@ -115,7 +115,7 @@ Occurrences of the same tests are aggregated and presented in following forms:
 
 ### Bug Filing Criteria
 To avoid noise, a flake bug is filed on Monorail only if all the following requirements are met:
-* At least 3 unreported CQ false rejection or cq retry with patch occurrences impacting different
+* At least 3 unreported CQ false rejection or cq step level retry occurrences impacting different
  CLs within the past 24 hours.
 * Any bug can only be created or updated at most once within any 24 hours window.
 * At most 30 bugs can be created or updated automatically within any 24 hours window.
