@@ -846,7 +846,7 @@ def _CreateIssuesForFlakes(flake_groups_to_create_issue,
         # Multiple flakes in group, and no more bug is allowed.
         issue_id = None
 
-      if issue_id:
+      if issue_id and num_of_issues_to_create > 0:
         # A monorail bug has been created or updated.
         num_of_issues_to_create -= 1
 

@@ -19,52 +19,6 @@ from services.issue_generator import FlakyTestIssueGenerator
 from waterfall.test.wf_testcase import WaterfallTestCase
 
 
-class TestIssueGenerator(FlakyTestIssueGenerator):
-  """A FlakyTestIssueGenerator used for testing."""
-
-  def __init__(self,
-               step_name='step',
-               test_name='suite.test',
-               test_label_name='*/suite.test/*'):
-    super(TestIssueGenerator, self).__init__()
-    self.step_name = step_name
-    self.test_name = test_name
-    self.test_label_name = test_label_name
-
-  def GetStepName(self):
-    return self.step_name
-
-  def GetTestName(self):
-    return self.test_name
-
-  def GetTestLabelName(self):
-    return self.test_label_name
-
-  def GetDescription(self):
-    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
-    if previous_tracking_bug_id:
-      return ('description with previous tracking bug id: %s.' %
-              previous_tracking_bug_id)
-
-    return 'description without previous tracking bug id.'
-
-  def GetComment(self):
-    previous_tracking_bug_id = self.GetPreviousTrackingBugId()
-    if previous_tracking_bug_id:
-      return ('comment with previous tracking bug id: %s.' %
-              previous_tracking_bug_id)
-
-    return 'comment without previous tracking bug id.'
-
-  def ShouldRestoreChromiumSheriffLabel(self):
-    # Sets to False as default value, if need to test this control flow, please
-    # mock this method.
-    return False
-
-  def GetLabels(self):
-    return ['label1', 'Sheriff-Chromium']
-
-
 class FlakeReportUtilTest(WaterfallTestCase):
 
   def _CreateFlake(self,
@@ -288,8 +242,6 @@ class FlakeReportUtilTest(WaterfallTestCase):
   # This test tests that:
   # 1. When a flake has no flake issue attached, it creates a new issue and
   # attach it to the flake.
-  # 2. If there's no more bug can be created nor updated, but an existing bug
-  # is found for a flake, link the bug to the flake without updating it.
   @mock.patch.object(
       flake_issue_util,
       'SearchRecentlyClosedIssueIdForFlakyTest',
@@ -301,7 +253,7 @@ class FlakeReportUtilTest(WaterfallTestCase):
   @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
   @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
   def testCreateIssue(self, mock_issue, mock_create_bug_fn, mock_update_bug_fn,
-                      mock_search_open_bug, *_):
+                      *_):
     mock_issue.return_value = Issue({
         'status': 'Untriaged',
         'priority': 1,
@@ -312,26 +264,13 @@ class FlakeReportUtilTest(WaterfallTestCase):
     flake.tags.append('component::Blink')
     flake.put()
     occurrences = FlakeOccurrence.query(
-        FlakeOccurrence.flake_type.IN([
-            FlakeType.CQ_FALSE_REJECTION, FlakeType.RETRY_WITH_PATCH,
-            FlakeType.CI_FAILED_STEP
-        ])).fetch()
-
-    flake1 = self._CreateFlake('step0', 'test0', 'test_label1')
-    occurrences1 = [
-        self._CreateFlakeOccurrence(111, 'step1', 'test01', 98765, flake1.key),
-        self._CreateFlakeOccurrence(222, 'step2', 'test02', 98764, flake1.key),
-        self._CreateFlakeOccurrence(333, 'step3', 'test03', 98763, flake1.key)
-    ]
-
-    def MockSearchOpenBug(test_name, _monorail_project):
-      return 12345 if test_name == 'test0' else None
-
-    mock_search_open_bug.side_effect = MockSearchOpenBug
+        FlakeOccurrence.flake_type.IN(
+            [FlakeType.CQ_FALSE_REJECTION,
+             FlakeType.RETRY_WITH_PATCH])).fetch()
 
     groups_wo_issue, groups_w_issue = (
-        flake_issue_util.GetFlakeGroupsForActionsOnBugs(
-            [(flake, occurrences, None), (flake1, occurrences1, None)]))
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs([(flake, occurrences,
+                                                          None)]))
     flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
 
     expected_status = 'Untriaged'
@@ -387,10 +326,69 @@ Automatically posted by the findit-for-me app (https://goo.gl/Ne6KtC)."""
         flake_issue.last_updated_time_by_flake_detection)
     self.assertEqual(flake.flake_issue_key, flake_issue.key)
 
+  @mock.patch.object(
+      flake_issue_util,
+      'GetRemainingPreAnalysisDailyBugUpdatesCount',
+      return_value=1)
+  @mock.patch.object(
+      flake_issue_util,
+      'SearchRecentlyClosedIssueIdForFlakyTest',
+      return_value=None)
+  @mock.patch.object(flake_issue_util, 'SearchOpenIssueIdForFlakyTest')
+  @mock.patch.object(monorail_util, 'UpdateIssueWithIssueGenerator')
+  @mock.patch.object(monorail_util, 'CreateBug', return_value=66666)
+  @mock.patch.object(monorail_util, 'GetMonorailIssueForIssueId')
+  def testLinkIssueFromMonorail(self, mock_issue, mock_create_bug_fn,
+                                mock_update_bug_fn, mock_search_open_bug, *_):
+    """ This test tests that:
+      1. If bug can be created or updated, and an existing bug
+        is found for a flake, link the bug to the flake and updating it.
+      2. If no more bug can be created nor updated, but an existing bug
+        is found for a flake, link the bug to the flake without updating it.
+    """
+    mock_issue.return_value = Issue({
+        'status': 'Untriaged',
+        'priority': 1,
+        'updated': '2018-12-07T17:52:45',
+        'id': '666666',
+    })
+    flake = Flake.query().fetch()[0]
+    flake.tags.append('component::Blink')
+    flake.put()
+    occurrences = FlakeOccurrence.query(
+        FlakeOccurrence.flake_type.IN(
+            [FlakeType.CQ_FALSE_REJECTION,
+             FlakeType.RETRY_WITH_PATCH])).fetch()
+
+    flake1 = self._CreateFlake('step0', 'test0', 'test_label1')
+    occurrences1 = [
+        self._CreateFlakeOccurrence(111, 'step1', 'test01', 98765, flake1.key),
+        self._CreateFlakeOccurrence(222, 'step2', 'test02', 98764, flake1.key),
+        self._CreateFlakeOccurrence(333, 'step3', 'test03', 98763, flake1.key)
+    ]
+
+    def MockSearchOpenBug(test_name, _monorail_project):
+      return 12345 if test_name == 'test0' else 66666
+
+    mock_search_open_bug.side_effect = MockSearchOpenBug
+
+    groups_wo_issue, groups_w_issue = (
+        flake_issue_util.GetFlakeGroupsForActionsOnBugs(
+            [(flake, occurrences, None), (flake1, occurrences1, None)]))
+    flake_issue_util.ReportFlakesToMonorail(groups_wo_issue, groups_w_issue)
+
+    self.assertFalse(mock_create_bug_fn.called)
+    self.assertTrue(mock_update_bug_fn.called)
+    flake = Flake.Get('chromium', 'step', 'test')
+    flake_issue = FlakeIssue.Get('chromium', 66666)
+    self.assertIsNone(flake_issue.last_updated_time_by_flake_detection)
+    self.assertEqual(flake.flake_issue_key, flake_issue.key)
+
     flake1 = Flake.Get('chromium', 'step0', 'test0')
     flake_issue1 = FlakeIssue.Get('chromium', 12345)
-    # TODO(crbug.com/935791): fix the mocking, and bug got updated.
-    self.assertIsNotNone(flake_issue1.last_updated_time_by_flake_detection)
+    self.assertEqual(
+        datetime.datetime(2018, 1, 2),
+        flake_issue1.last_updated_time_by_flake_detection)
     self.assertEqual(flake1.flake_issue_key, flake_issue1.key)
 
   # This test tests that when a flake has a flake issue attached and the issue
