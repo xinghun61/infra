@@ -602,32 +602,14 @@ class Servlet(webapp2.RequestHandler):
     if mr.viewed_user_auth.user_view:
       viewed_username = mr.viewed_user_auth.user_view.username
 
-    canned_query_views = []
     issue_entry_url = 'entry'
     config = None
     if mr.project_id and self.services.config:
       with mr.profiler.Phase('getting config'):
         config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-        canned_queries = self.services.features.GetCannedQueriesByProjectID(
-            mr.cnxn, mr.project_id)
       grid_x_attr = (mr.x or config.default_x_attr).lower()
       grid_y_attr = (mr.y or config.default_y_attr).lower()
-      canned_query_views = [
-          savedqueries_helpers.SavedQueryView(sq, idx + 1, None, None)
-          for idx, sq in enumerate(canned_queries)]
       issue_entry_url = _LoginOrIssueEntryURL(mr, config)
-
-    if mr.auth.user_id and self.services.features:
-      with mr.profiler.Phase('getting saved queries'):
-        saved_queries = self.services.features.GetSavedQueriesByUserID(
-            mr.cnxn, mr.me_user_id)
-        saved_query_views = [
-            savedqueries_helpers.SavedQueryView(sq, idx + 1, None, None)
-            for idx, sq in enumerate(saved_queries)
-            if (mr.project_id in sq.executes_in_project_ids or
-                not mr.project_id)]
-    else:
-      saved_query_views = []
 
     viewing_self = mr.auth.user_id == mr.viewed_user_auth.user_id
     offer_saved_queries_subtab = (
@@ -717,8 +699,6 @@ class Servlet(webapp2.RequestHandler):
         'chart_mode': None,
 
         'issue_entry_url': issue_entry_url,
-        'canned_queries': canned_query_views,
-        'saved_queries': saved_query_views,
         'is_cross_project': ezt.boolean(False),
 
         # for project search (some also used in issue search)
