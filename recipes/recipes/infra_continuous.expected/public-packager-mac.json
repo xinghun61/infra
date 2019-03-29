@@ -100,21 +100,6 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "test.py",
-      "test"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go/infra",
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "infra python tests"
-  },
-  {
-    "cmd": [
       "cipd",
       "ensure",
       "-root",

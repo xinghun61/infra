@@ -145,17 +145,14 @@ def RunSteps(api):
 
 
 def build_main(api, checkout, buildername, project_name, repo_url, rev):
-  with api.step.defer_results():
-    with api.context(cwd=api.path['checkout']):
-      # Run Linux tests everywhere, Windows tests only on public CI.
-      if api.platform.is_linux or project_name == 'infra':
-        api.python('infra python tests', 'test.py', ['test'])
+  is_packager = 'packager' in buildername
 
-      # Validate ccompute configs.
-      if api.platform.is_linux and project_name == 'infra_internal':
-        api.python(
-            'ccompute config test',
-            'ccompute/scripts/ccompute_config.py', ['test'])
+  # Do not run python tests on packager builders, since most of them are
+  # irrelevant to the produced packages. Relevant portion of tests will be run
+  # from api.infra_cipd.test() below, when testing packages that pack python
+  # code.
+  if not is_packager:
+    run_python_tests(api, project_name)
 
   # Some third_party go packages on OSX rely on cgo and thus a configured
   # clang toolchain.
@@ -193,11 +190,25 @@ def build_main(api, checkout, buildername, project_name, repo_url, rev):
       with api.infra_cipd.context(api.path['checkout'], goos, goarch):
         api.infra_cipd.build()
         api.infra_cipd.test(skip_if_cross_compiling=True)
-        if 'packager' in buildername:
+        if is_packager:
           if api.runtime.is_experimental:
             api.step('no CIPD package upload in experimental mode', cmd=None)
           else:
             api.infra_cipd.upload(api.infra_cipd.tags(repo_url, rev))
+
+
+def run_python_tests(api, project_name):
+  with api.step.defer_results():
+    with api.context(cwd=api.path['checkout']):
+      # Run Linux tests everywhere, Windows tests only on public CI.
+      if api.platform.is_linux or project_name == 'infra':
+        api.python('infra python tests', 'test.py', ['test'])
+
+      # Validate ccompute configs.
+      if api.platform.is_linux and project_name == 'infra_internal':
+        api.python(
+            'ccompute config test',
+            'ccompute/scripts/ccompute_config.py', ['test'])
 
 
 def GenTests(api):

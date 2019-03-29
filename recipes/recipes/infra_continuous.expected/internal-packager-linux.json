@@ -102,36 +102,6 @@
     "cmd": [
       "python",
       "-u",
-      "test.py",
-      "test"
-    ],
-    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "infra python tests"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "ccompute/scripts/ccompute_config.py",
-      "test"
-    ],
-    "cwd": "[CACHE]/infra_internal_gclient_with_go/infra_internal",
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "ccompute config test"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
       "go",
       "version"
