@@ -71,18 +71,25 @@ CIPD_PACKAGE_BUILDERS = {
   'infra-internal-continuous-mac-10.13-64': ['native'],
 
 
-  # Builders also upload CIPD packages.
+  # Builders that upload CIPD packages.
+  #
+  # In comments is approximate runtime for building and testing packages, per
+  # platform (as of Mar 28 2019). We try to balance xc1 and xc2.
   'infra-packager-linux-64': [
-    'native',
-    'linux-386',
-    'linux-arm',
-    'linux-arm64',
-    'linux-mipsle',
-    'linux-mips64',
-    'linux-mips64le',
-    'linux-ppc64',
-    'linux-ppc64le',
-    'linux-s390x',
+    'native',            # ~ 140 sec
+  ],
+  'infra-packager-linux-xc1': [
+    'linux-386',         # ~90 sec
+    'linux-arm',         # ~90 sec
+    'linux-arm64',       # ~90 sec
+  ],
+  'infra-packager-linux-xc2': [
+    'linux-mips64',      # ~50 sec
+    'linux-mips64le',    # ~50 sec
+    'linux-mipsle',      # ~50 sec
+    'linux-ppc64',       # ~40 sec
+    'linux-ppc64le',     # ~40 sec
+    'linux-s390x',       # ~40 sec
   ],
   'infra-packager-mac-64': ['native'],
   'infra-packager-win-32': ['native'],
