@@ -15,10 +15,10 @@ from model.flake.analysis.master_flake_analysis import MasterFlakeAnalysis
 
 
 class FlakeCulpritTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/flake/flake-culprit', flake_culprit.FlakeCulprit),
-      ], debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/p/chromium/flake-portal/analysis/culprit', flake_culprit.FlakeCulprit),
+  ],
+                                       debug=True)
 
   def testConvertAnalysisToDict(self):
     master_name = 'm'
@@ -64,14 +64,15 @@ class FlakeCulpritTest(testing.AppengineTestCase):
         'test_name': 't1',
         'key': analysis1.key.urlsafe(),
         'confidence_in_culprit': 0.3,
-    }, {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'step_name': 's',
-        'test_name': 't2',
-        'key': analysis2.key.urlsafe(),
-        'confidence_in_culprit': 0.8,
-    }]
+    },
+                       {
+                           'master_name': 'm',
+                           'builder_name': 'b',
+                           'step_name': 's',
+                           'test_name': 't2',
+                           'key': analysis2.key.urlsafe(),
+                           'confidence_in_culprit': 0.8,
+                       }]
 
     self.assertEqual(expected_result,
                      flake_culprit._GetFlakeAnalysesAsDicts(culprit))
@@ -110,7 +111,8 @@ class FlakeCulpritTest(testing.AppengineTestCase):
     }
 
     response = self.test_app.get(
-        '/flake/flake-culprit?key=%s&format=json' % culprit.key.urlsafe())
+        '/p/chromium/flake-portal/analysis/culprit?key=%s&format=json' %
+        culprit.key.urlsafe())
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_result, response.json_body)
 
@@ -123,7 +125,7 @@ class FlakeCulpritTest(testing.AppengineTestCase):
     culprit.cr_notification_time = datetime(2017, 07, 19, 10, 03, 00)
 
     response = self.test_app.get(
-        '/flake/flake-culprit',
+        '/p/chromium/flake-portal/analysis/culprit',
         params={
             'key': culprit.key.urlsafe(),
             'format': 'json',

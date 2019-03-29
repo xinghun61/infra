@@ -44,11 +44,17 @@ _REDIRECTION_MAPPING = {
             '/waterfall/list-flakes':
                 '/p/chromium/flake-portal/analysis',
         }
+    },
+    'analysis.chromium.org': {
+        'url-mappings': {
+            '/p/chromium/flake-portal/analysis/analyze/flake-culprit':
+            '/p/chromium/flake-portal/analysis/culprit',
+        }
     }
 }
 _REDIRECTION_MAPPING['findit-for-me-staging.appspot.com'] = {
-    'url-mappings': _REDIRECTION_MAPPING[
-        'findit-for-me.appspot.com']['url-mappings'],
+    'url-mappings':
+        _REDIRECTION_MAPPING['findit-for-me.appspot.com']['url-mappings'],
 }
 
 
