@@ -284,6 +284,7 @@ UPDATE_BUILD_FIELD_PATHS = {
     'build.summary_markdown',
     'build.steps',
     'build.output.properties',
+    'build.output.gitiles_commit',
 }
 # Set of valid build statuses supported by UpdateBuild RPC.
 UPDATE_BUILD_STATUSES = {
@@ -320,6 +321,10 @@ def validate_update_build_request(req, build_steps=None):
             'status', 'invalid status %s for UpdateBuild',
             common_pb2.Status.Name(req.build.status)
         )
+
+    if 'build.output.gitiles_commit' in update_paths:
+      with _enter('output', 'gitiles_commit'):
+        validate_gitiles_commit(req.build.output.gitiles_commit)
 
     if 'build.summary_markdown' in update_paths:
       with _enter('summary_markdown'):

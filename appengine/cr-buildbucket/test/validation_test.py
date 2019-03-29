@@ -452,9 +452,18 @@ class UpdateBuildRequestTests(BaseTestCase):
     with open(os.path.join(THIS_DIR, 'steps.pb.txt')) as f:
       text_format.Merge(f.read(), build)
     msg = self._mk_req(
-        ['build.status', 'build.steps'],
+        ['build.status', 'build.steps', 'build.output.gitiles_commit'],
         status=common_pb2.SUCCESS,
         steps=build.steps,
+        output=dict(
+            gitiles_commit=dict(
+                host='gerrit.example.com',
+                project='project',
+                ref='refs/heads/master',
+                id='a' * 40,
+                position=1,
+            ),
+        ),
     )
     self.assert_valid(msg)
 
