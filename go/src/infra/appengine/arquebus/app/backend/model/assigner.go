@@ -20,6 +20,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/arquebus/app/config"
@@ -56,8 +57,11 @@ type Assigner struct {
 	// issue update operations.
 	IsDryRun bool
 
-	// Status specifies the status of the assigner. e.g., drained or running
-	Status AssignerStatus
+	// IsDrained specifies if the assigner has been drained.
+	//
+	// If an assigner is drained, no tasks are scheduled and run for
+	// the assigner.
+	IsDrained bool
 
 	// ConfigRevision specifies the revision of a luci config with which
 	// a given assigner entity was last updated.
@@ -85,12 +89,6 @@ func (a *Assigner) updateIfChanged(cfg *config.Assigner, rev string) bool {
 	a.IsDryRun = cfg.DryRun
 	a.ConfigRevision = rev
 
-	// If the Assigner config exists, the status should be either
-	// Running or Drained.
-	if a.Status != AssignerStatus_DRAINED {
-		a.Status = AssignerStatus_RUNNING
-	}
-
 	return true
 }
 
@@ -101,59 +99,61 @@ func (a *Assigner) updateIfChanged(cfg *config.Assigner, rev string) bool {
 // For updated configs, the Assigner entities are updated, based on the updated
 // content.
 func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) error {
-	cfgMap := make(map[string]*config.Assigner, len(cfgs))
-	for _, ac := range cfgs {
-		cfgMap[ac.Id] = ac
-	}
-
 	aes, err := GetAllAssigners(c)
 	if err != nil {
-		return nil
+		return err
 	}
-
-	aesToSave := make([]*Assigner, 0, len(aes)+len(cfgMap))
+	aeMap := make(map[string]*Assigner, len(aes))
 	for _, ae := range aes {
-		if ac, ok := cfgMap[ae.ID]; ok == true {
-			delete(cfgMap, ae.ID)
-
-			// Update only if config has been changed.
-			if ae.updateIfChanged(ac, rev) {
-				aesToSave = append(aesToSave, ae)
-				logging.Debugf(
-					c, "Update Assigner %s (rev %s)",
-					ae.ID, rev,
-				)
-			}
-		} else {
-			// The config for the assigner has been removed.
-			ae.Status = AssignerStatus_REMOVED
-			ae.ConfigRevision = rev
-			aesToSave = append(aesToSave, ae)
-			logging.Infof(
-				c, "Remove Assigner %s (rev %s)", ae.ID, rev,
-			)
-		}
+		aeMap[ae.ID] = ae
 	}
 
-	// Create Assigners for new configs.
-	for _, ac := range cfgMap {
-		// Just to ensure that this wasn't missed by GetAllAssigners()
-		// due to delays in index updates.
-		ae, err := GetAssigner(c, ac.Id)
-		if err != nil {
-			if err != datastore.ErrNoSuchEntity {
+	merr := errors.MultiError(nil)
+	// update or create new ones.
+	for _, cfg := range cfgs {
+		if ae, exist := aeMap[cfg.Id]; exist {
+			delete(aeMap, cfg.Id)
+			// optimization for common case when no updates are
+			// necessary.
+			if !ae.updateIfChanged(cfg, rev) {
+				continue
+			}
+		}
+
+		err := datastore.RunInTransaction(c, func(c context.Context) error {
+			ae := Assigner{ID: cfg.Id}
+			if err := datastore.Get(c, &ae); err != nil &&
+				err != datastore.ErrNoSuchEntity {
+				// likely transient flake
 				return err
 			}
-			ae = &Assigner{ID: ac.Id}
-		}
 
-		if ae.updateIfChanged(ac, rev) {
-			aesToSave = append(aesToSave, ae)
-			logging.Infof(c, "Add Assigner %s (rev %s)", ae.ID, rev)
+			if ae.updateIfChanged(cfg, rev) {
+				logging.Debugf(
+					c, "Update/Insert Assigner %s (rev %s)",
+					cfg.Id, rev,
+				)
+				return datastore.Put(c, &ae)
+			}
+			return nil
+		}, &datastore.TransactionOptions{})
+		if err != nil {
+			merr = append(merr, err)
 		}
 	}
 
-	return datastore.Put(c, aesToSave)
+	// remove ones without configs.
+	for id, ae := range aeMap {
+		logging.Infof(c, "Delete Assigner %s (rev %s)", id, rev)
+		if err := datastore.Delete(c, ae); err != nil {
+			merr = append(merr, err)
+		}
+	}
+
+	if merr != nil {
+		return merr
+	}
+	return nil
 }
 
 // GetAssigner returns the Assigner entity matching with a given id.
@@ -173,22 +173,6 @@ func GetAllAssigners(c context.Context) ([]*Assigner, error) {
 		return nil, err
 	}
 	return aes, nil
-}
-
-// GetLiveAssigners returns all that are not marked as removed.
-func GetLiveAssigners(c context.Context) ([]*Assigner, error) {
-	all, err := GetAllAssigners(c)
-	if err != nil {
-		return nil, err
-	}
-	live := make([]*Assigner, 0, len(all))
-	for _, ae := range all {
-		if ae.Status != AssignerStatus_REMOVED {
-			live = append(live, ae)
-		}
-	}
-
-	return live, nil
 }
 
 // GenAssignerKey generates a datastore key for a given assigner object.

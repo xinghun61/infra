@@ -92,52 +92,14 @@ func TestUpdateAssigners(t *testing.T) {
 			aes := SaveAndGetAll(c, rev1, cfg)
 			So(len(aes), ShouldEqual, 1)
 			So(aes[0].ID, ShouldEqual, id)
-			So(aes[0].Status, ShouldEqual, AssignerStatus_RUNNING)
 
 			// remove
 			aes = SaveAndGetAll(c, rev2)
-			So(aes[0].ID, ShouldEqual, id)
-			So(aes[0].Status, ShouldEqual, AssignerStatus_REMOVED)
+			So(len(aes), ShouldEqual, 0)
 
 			// put it back
 			aes = SaveAndGetAll(c, rev3, cfg)
 			So(aes[0].ID, ShouldEqual, id)
-			So(aes[0].Status, ShouldEqual, AssignerStatus_RUNNING)
-		})
-	})
-}
-
-func TestGetLiveAssigners(t *testing.T) {
-	t.Parallel()
-
-	Convey("GetLiveAssigners", t, func() {
-		c := memory.Use(context.Background())
-		rev1, rev2 := "abc", "def"
-
-		// Ensure empty now.
-		datastore.GetTestable(c).CatchupIndexes()
-		aes, err := GetAllAssigners(c)
-		So(err, ShouldBeNil)
-		So(len(aes), ShouldEqual, 0)
-
-		Convey("Doesn't return assigners marked as removed", func() {
-			// create
-			id := "test-a"
-			cfg := createConfig(id)
-			aes := SaveAndGetAll(c, rev1, cfg)
-			So(len(aes), ShouldEqual, 1)
-			So(aes[0].ID, ShouldEqual, id)
-			So(aes[0].Status, ShouldEqual, AssignerStatus_RUNNING)
-
-			// remove
-			aes = SaveAndGetAll(c, rev2)
-			So(aes[0].ID, ShouldEqual, id)
-			So(aes[0].Status, ShouldEqual, AssignerStatus_REMOVED)
-
-			var err error
-			aes, err = GetLiveAssigners(c)
-			So(err, ShouldBeNil)
-			So(len(aes), ShouldEqual, 0)
 		})
 	})
 }

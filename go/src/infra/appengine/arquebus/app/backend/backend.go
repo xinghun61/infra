@@ -54,11 +54,6 @@ func GetAllAssigners(c context.Context) ([]*model.Assigner, error) {
 	return model.GetAllAssigners(c)
 }
 
-// GetLiveAssigners returns all assigners that are not marked as removed.
-func GetLiveAssigners(c context.Context) ([]*model.Assigner, error) {
-	return model.GetLiveAssigners(c)
-}
-
 // GetAssigner returns the Assigner matching with a given ID.
 func GetAssigner(c context.Context, aid string) (*model.Assigner, error) {
 	return model.GetAssigner(c, aid)
