@@ -4,7 +4,8 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {IronFocusablesHelper} from '@polymer/iron-overlay-behavior/iron-focusables-helper.js';
+import {IronFocusablesHelper} from
+  '@polymer/iron-overlay-behavior/iron-focusables-helper.js';
 import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
 
 const ESC_KEYCODE = 27;
@@ -15,9 +16,9 @@ const TAB_KEYCODE = 9;
  *
  * @customElement
  * @polymer
- * @demo /demo/chops-dialog_demo.html
  */
-export class ChopsDialog extends mixinBehaviors([IronFocusablesHelper], PolymerElement) {
+export class ChopsDialog extends mixinBehaviors(
+  [IronFocusablesHelper], PolymerElement) {
   static get template() {
     return html`
       <style>
@@ -71,7 +72,7 @@ export class ChopsDialog extends mixinBehaviors([IronFocusablesHelper], PolymerE
           @apply --chops-dialog-theme;
         }
       </style>
-      <dialog id="dialog" class="dialog" role="dialog">
+      <dialog class="dialog" role="dialog">
         <div class="dialog-content">
           <slot></slot>
         </div>
@@ -220,13 +221,16 @@ export class ChopsDialog extends mixinBehaviors([IronFocusablesHelper], PolymerE
   }
 
   _openedChanged(opened) {
+    const dialog = this.shadowRoot.querySelector('dialog');
     if (opened) {
       // For accessibility, we want to ensure we remember the element that was
       // focused before this dialog opened.
       this._previousFocusedElement = this._getActiveElement();
 
-      if (this.$.dialog.showModal) {
-        this.$.dialog.showModal();
+      if (dialog.showModal) {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute('open', 'true');
       }
 
       // Focus the first element within the dialog when it's opened.
@@ -237,8 +241,10 @@ export class ChopsDialog extends mixinBehaviors([IronFocusablesHelper], PolymerE
         this._previousFocusedElement.blur();
       }
     } else {
-      if (this.$.dialog.close) {
-        this.$.dialog.close();
+      if (dialog.close) {
+        dialog.close();
+      } else {
+        dialog.setAttribute('open', undefined);
       }
 
       if (this._previousFocusedElement) {
