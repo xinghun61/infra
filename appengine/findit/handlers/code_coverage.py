@@ -546,11 +546,19 @@ class ProcessCodeCoverageData(BaseHandler):
     if not _IsReportSuspicious(report):
       report.visible = True
       report.put()
-      monitoring.code_coverage_full_reports.increment({
-          'host': commit.host,
-          'project': commit.project,
-          'ref': commit.ref or 'refs/heads/master',
-      })
+
+      # TODO(crbug.com/947594): Without this if statement hack, metrics from
+      # multiple builders are mixed together, which results in the issue that
+      # alerts are NOT fired even when a builder is broken because other
+      # builders still generate reports fine.
+      #
+      # Remove this hack once the bug is fixed.
+      if builder == 'linux-code-coverage':
+        monitoring.code_coverage_full_reports.increment({
+            'host': commit.host,
+            'project': commit.project,
+            'ref': commit.ref or 'refs/heads/master',
+        })
 
   def _FetchAndSaveFileIfNecessary(self, report, path, revision):
     """Fetches the file from gitiles and store to cloud storage if not exist.
