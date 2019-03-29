@@ -36,6 +36,7 @@ build.presubmit(
     name = 'Depot Tools Presubmit',
     cq_group = 'depot_tools cq',
     repo_name = 'depot_tools',
+    run_hooks = False,
 )
 
 

@@ -100,6 +100,7 @@ def builder(
       caches = caches,
       build_numbers = build_numbers,
       schedule = schedule,
+      task_template_canary_percentage = 30,
       triggered_by = triggered_by,
   )
 

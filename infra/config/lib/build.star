@@ -30,22 +30,27 @@ def presubmit(
       name,
       cq_group,
       repo_name,  # e.g. 'infra' or 'luci_py', as expected by the recipe
+      run_hooks=True,
 
       os=None,
       experiment_percentage=None
   ):
   """Defines a try builder that runs 'run_presubmit' recipe."""
+  props = {'repo_name': repo_name}
+  if run_hooks:
+    props['runhooks'] = True
   luci.builder(
       name = name,
       bucket = 'try',
       recipe = build.recipe('run_presubmit'),
-      properties = {'repo_name': repo_name, 'runhooks': True},
+      properties = props,
       service_account = infra.SERVICE_ACCOUNT_TRY,
       dimensions = {
           'os': os or 'Ubuntu-14.04',
           'cpu': 'x86-64',
           'pool': 'luci.flex.try',
       },
+      task_template_canary_percentage = 30,
   )
   luci.cq_tryjob_verifier(
       builder = name,

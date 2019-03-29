@@ -76,11 +76,6 @@ luci.project(
             roles = acl.CQ_DRY_RUNNER,
             groups = 'project-infra-tryjob-access',
         ),
-        # Allow luci-migration app to bump next build number.
-        acl.entry(
-            roles = acl.BUILDBUCKET_OWNER,
-            users = 'luci-migration@appspot.gserviceaccount.com',
-        ),
         # Group with bots that have write access to the Logdog prefix.
         acl.entry(
             roles = acl.LOGDOG_WRITER,

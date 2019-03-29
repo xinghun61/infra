@@ -20,4 +20,5 @@ build.presubmit(
     name = 'Expect-Tests Presubmit',
     cq_group = 'expect_tests cq',
     repo_name = 'expect_tests',
+    run_hooks = False,
 )
