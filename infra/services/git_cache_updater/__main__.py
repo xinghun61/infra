@@ -33,7 +33,16 @@ def main(argv):
   # Do more processing here
   LOGGER.info('Git_cache_updater starting.')
 
-  git_cache_updater.run(args.project, args.work_dir)
+  if args.get_repos:
+    for repo in git_cache_updater.get_project_list(args.project):
+      print repo
+    return
+
+  if not (args.project or args.repo):
+    parser.error('One of --project or --repo is required')
+    return 1
+
+  return git_cache_updater.run(args.project, args.repo, args.work_dir)
 
 
 if __name__ == '__main__':

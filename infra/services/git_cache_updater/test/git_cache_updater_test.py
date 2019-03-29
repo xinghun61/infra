@@ -23,7 +23,6 @@ class CacheUpdaterTest(unittest.TestCase):
     git_cache_updater.add_argparse_options(parser)
     args = parser.parse_args(['--project', 'http://asdf.com'])
     self.assertEqual(args.project, 'http://asdf.com')
-    self.assertRaises(SystemExit, parser.parse_args, [])
 
   @mock.patch('requests.get')
   def test_get_proj_list(self, req_get):
@@ -49,7 +48,7 @@ class CacheUpdaterTest(unittest.TestCase):
       with utils.temporary_directory() as tempdir:
         workdir = os.path.join(tempdir, 'workdir')
         with mock.patch.object(subprocess, 'call') as sub_m:
-          git_cache_updater.run('aproj', workdir)
+          git_cache_updater.run('aproj', None, workdir)
           self.assertTrue(os.path.isdir(workdir))
           self.assertEquals(sub_m.call_count, 2)
 
@@ -58,6 +57,6 @@ class CacheUpdaterTest(unittest.TestCase):
         git_cache_updater, 'get_project_list', return_value=['a', 'b']) as _:
       with utils.temporary_directory() as tempdir:
         with mock.patch.object(subprocess, 'call') as sub_m:
-          git_cache_updater.run('aproj', tempdir)
+          git_cache_updater.run('aproj', None, tempdir)
           self.assertEquals(sub_m.call_count, 2)
 
