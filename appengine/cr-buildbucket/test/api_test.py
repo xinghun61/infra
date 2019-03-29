@@ -557,6 +557,7 @@ class BatchTests(BaseTestCase):
   def test_schedule_build_requests(self, add_many_async):
     add_many_async.return_value = future([
         (test_util.build(id=42), None),
+        (test_util.build(id=43), None),
         (None, errors.InvalidInputError('bad')),
         (None, Exception('unexpected')),
         (None, auth.AuthorizationError('bad')),
@@ -571,6 +572,16 @@ class BatchTests(BaseTestCase):
     req = rpc_pb2.BatchRequest(
         requests=[
             dict(schedule_build=dict(builder=linux_builder)),
+            dict(
+                schedule_build=dict(
+                    builder=linux_builder, fields=dict(paths=['tags'])
+                )
+            ),
+            dict(
+                schedule_build=dict(
+                    builder=linux_builder, fields=dict(paths=['wrong-field'])
+                )
+            ),
             dict(schedule_build=dict(builder=win_builder)),
             dict(schedule_build=dict(builder=win_builder)),
             dict(schedule_build=dict(builder=win_builder)),
@@ -593,6 +604,8 @@ class BatchTests(BaseTestCase):
     self.assertEqual(
         codes, [
             prpc.StatusCode.OK.value,
+            prpc.StatusCode.OK.value,
+            prpc.StatusCode.INVALID_ARGUMENT.value,
             prpc.StatusCode.INVALID_ARGUMENT.value,
             prpc.StatusCode.INTERNAL.value,
             prpc.StatusCode.PERMISSION_DENIED.value,
@@ -601,6 +614,8 @@ class BatchTests(BaseTestCase):
         ]
     )
     self.assertEqual(res.responses[0].schedule_build.id, 42)
+    self.assertFalse(len(res.responses[0].schedule_build.tags))
+    self.assertTrue(len(res.responses[1].schedule_build.tags))
 
 
 class BuildPredicateToSearchQueryTests(BaseTestCase):

@@ -392,8 +392,11 @@ def schedule_build_async(req, res, _ctx, mask):
   yield build_to_proto_async(build, res, mask)
 
 
-# A pair of request and response.
+# A tuple of a request and response.
 _ReqRes = collections.namedtuple('_ReqRes', 'request response')
+# A tuple of a request, response and field mask.
+# Used internally by schedule_build_multi.
+_ScheduleItem = collections.namedtuple('_ScheduleItem', 'request response mask')
 
 
 def schedule_build_multi(batch):
@@ -406,30 +409,45 @@ def schedule_build_multi(batch):
       Response objects will be mutated.
   """
   # Validate requests.
-  valid_requests = []
+  valid_items = []
   for rr in batch:
     try:
       validation.validate_schedule_build_request(rr.request)
-      valid_requests.append(rr)
     except validation.Error as ex:
       rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
       rr.response.error.message = ex.message
+      continue
+
+    # Parse the field mask.
+    # Normally it is done by rpc_impl_async.
+    mask = None
+    if rr.request.HasField('fields'):
+      try:
+        mask = protoutil.Mask.from_field_mask(
+            rr.request.fields, build_pb2.Build.DESCRIPTOR
+        )
+      except ValueError as ex:
+        rr.response.error.code = prpc.StatusCode.INVALID_ARGUMENT.value
+        rr.response.error.message = 'invalid fields: %s' % ex.message
+        continue
+
+    valid_items.append(_ScheduleItem(rr.request, rr.response, mask))
 
   # Check permissions.
   def get_bucket_id(req):
     return config.format_bucket_id(req.builder.project, req.builder.bucket)
 
-  bucket_ids = {get_bucket_id(rr.request) for rr in valid_requests}
+  bucket_ids = {get_bucket_id(x.request) for x in valid_items}
   can_add = dict(utils.async_apply(bucket_ids, user.can_add_build_async))
   identity_str = auth.get_current_identity().to_bytes()
   to_schedule = []
-  for rr in valid_requests:
-    bid = get_bucket_id(rr.request)
+  for x in valid_items:
+    bid = get_bucket_id(x.request)
     if can_add[bid]:
-      to_schedule.append(rr)
+      to_schedule.append(x)
     else:
-      rr.response.error.code = prpc.StatusCode.PERMISSION_DENIED.value
-      rr.response.error.message = (
+      x.response.error.code = prpc.StatusCode.PERMISSION_DENIED.value
+      x.response.error.message = (
           '%s cannot schedule builds in bucket %s' % (identity_str, bid)
       )
 
@@ -437,24 +455,27 @@ def schedule_build_multi(batch):
   if not to_schedule:  # pragma: no cover
     return
   build_requests = [
-      creation.BuildRequest(schedule_build_request=rr.request)
-      for rr in to_schedule
+      creation.BuildRequest(schedule_build_request=x.request)
+      for x in to_schedule
   ]
   results = creation.add_many_async(build_requests).get_result()
-  for rr, (build, ex) in zip(to_schedule, results):
+  futs = []
+  for x, (build, ex) in zip(to_schedule, results):
+    res = x.response
+    err = res.error
     if isinstance(ex, errors.Error):
-      rr.response.error.code = ex.code.value
-      rr.response.error.message = ex.message
+      err.code = ex.code.value
+      err.message = ex.message
     elif isinstance(ex, auth.AuthorizationError):
-      rr.response.error.code = prpc.StatusCode.PERMISSION_DENIED.value
-      rr.response.error.message = ex.message
+      err.code = prpc.StatusCode.PERMISSION_DENIED.value
+      err.message = ex.message
     elif ex:
-      rr.response.error.code = prpc.StatusCode.INTERNAL.value
-      rr.response.error.message = ex.message
+      err.code = prpc.StatusCode.INTERNAL.value
+      err.message = ex.message
     else:
-      # Since this is a new build, no other entities need to be loaded
-      # and we use model.Build.proto directly.
-      rr.response.schedule_build.MergeFrom(build.proto)
+      futs.append(build_to_proto_async(build, res.schedule_build, x.mask))
+  for f in futs:
+    f.get_result()
 
 
 @rpc_impl_async('CancelBuild')
