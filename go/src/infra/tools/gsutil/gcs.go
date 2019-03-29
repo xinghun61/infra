@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/storage"
 
@@ -28,7 +29,7 @@ func parseURL(path string) (bucket string, object string, err error) {
 		return
 	}
 	bucket = urlObj.Host
-	object = urlObj.Path
+	object = strings.TrimPrefix(urlObj.Path, "/")
 	return
 }
 
