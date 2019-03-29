@@ -11,14 +11,13 @@ This document contains information on how to use the RotaNG web interface.
   - [Create new rotation](#create-new-rotation)
     - [Copy existing](#copy-existing)
     - [New from scratch](#new-from-scratch)
-    - [Configuration Options](#configuration-options)
     - [From legacy JSON file](#new-from-json)
     - [Update from legacy JSON file](#update-from-legacy-json-file)
+    - [Configuration Options](#configuration-options)
   - [Manage Shifts](#manage-shifts)
     - [History](#history)
     - [Current](#current)
     - [Generate](#generate)
-  - [Shift Modifiers](#shift-modifiers)
 - [Test Email](#test-email)
 - [Developer Information](./DEVINFO.md)
 - [Migrate Information](./SWITCH.md)
@@ -238,24 +237,38 @@ Note: *For the OOO entries to be saved you need to click the `Update` button whe
 
     Number of members to schedule per shift.
 
-  * *Modifiers*
+  * **Modifiers**
 
-    See [Shift Modifiers](#shift-modifiers)
+    Shift Modifiers are applied after the shift Generator is run. If set in the rotation configuration they'll be applied default to
+    all generated shifts.
+
+    They can also be temporarily enabled/disabled when managing shifts from the `Rotations -> Shifts` button.
+
+    Currently two modifiers exists.
+
+    * **WeekendSkip**
+
+      This modifier moves generated shifts away from weekends (Saturday & Sunday).
+
+      For example, a shift scheduled for Friday-Saturday will be split up into two shifts, one for Friday and one for Monday.
+      A shift scheduled for Saturday-Sunday would be moved to Monday-Tuesday.
+
+    * **SplitShift**
+
+      This modifier splits the generated shifts into 1 day shifts.
+
+      For example, a shift scheduled for Monday-Wednesday would be turned into three one day shifts: Monday, Tuesday and Wednesday.
+
+      This lays the groundwork for single day swaps instead of having to swap a full shift.
+      The UI will need to catch up to make this useful.
 
   * **Generator**
 
     What generator to use when scheduling new shifts.
 
-  * **AllDayEvents**
-
-    Enabling this option produces `AllDay` event in Google Calendar instead of the default DateTime events.
-
-    **Note**: This option is only available for 24h shifts.
-
-
     * **Legacy**
 
-     Tries to emulate the legacy scheduler.
+      Tries to emulate the legacy scheduler.
 
     * **Fair**
 
@@ -264,10 +277,18 @@ Note: *For the OOO entries to be saved you need to click the `Update` button whe
     * **TZFair**
 
       Adds one member per TZ to the shift. Among the members of a particular timezone it behaves the same as Fair.
+      Note that this overrides `ShiftMembers`, forcing it to be equal to the number of timezones represented in the shift.
 
     * **Random**
 
       Randomly assigns members to shifts.
+
+  * **AllDayEvents**
+
+    Enabling this option produces `AllDay` event in Google Calendar instead of the default DateTime events.
+
+    **Note**: This option is only available for 24h shifts.
+
 
 
 
@@ -288,34 +309,6 @@ Shows upcoming shifts. As an owner you can modify shifts here. Rules for how man
 Schedules new shifts. Leaving the `StartTime` empty will continue scheduling from last current shift. If `ShiftsToSchedule` is left empty
 the configuration setting will be used.
 
-### Shift Modifiers
-
-Shift Modifiers are applied after the shift Generator is run. If set in the rotation configuration they'll be applied default to
-all generated shifts.
-
-They can also be temporarily enabled/disabled when managing shifts from the `Rotations -> Shifts` button.
-
-Currently two modifiers exists.
-
-#### WeekendSkip
-
-This modifier moves generated shifts away from weekends , Saturday&Sunday.
-
-Eg.
-
-A shift scheduled for Friday - Saturday will be split up into two shifts , one for Friday and one for Monday.
-A shift scheduled for Saturday - Sunday would be moved to Monday - Tuesday.
-
-#### SplitShift
-
-This modifier splits the generated shifts into 1 day shifts.
-
-Eg.
-
-A shift scheduled for Monday - Wednesday would be turned into three one day shifts; Monday, Tuesday and Wednesday.
-
-This lays the groundwork for single day swaps instead of having to swap a full shift.
-The UI will need to catch up to make this useful.
 
 ## Test Email
 
