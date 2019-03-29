@@ -385,7 +385,7 @@ func FileBugHandler(ctx *router.Context) {
 			Cc:          ccList,
 			Summary:     rawJSON.Summary,
 			Description: description,
-			Status:      "Available",
+			Status:      "Untriaged",
 			Labels:      rawJSON.Labels,
 		},
 	}
