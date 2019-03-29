@@ -30,10 +30,9 @@ func TestCommand_Args_default_path(t *testing.T) {
 }
 
 type basicEnv struct {
-	luciProject  string
-	logDogHost   string
-	adminService string
-	logPrefix    string
+	luciProject string
+	logDogHost  string
+	logPrefix   string
 }
 
 func (e basicEnv) LUCIProject() string {
@@ -44,10 +43,6 @@ func (e basicEnv) LogDogHost() string {
 	return e.logDogHost
 }
 
-func (e basicEnv) AdminService() string {
-	return e.adminService
-}
-
 func (e basicEnv) GenerateLogPrefix() string {
 	return e.logPrefix
 }
@@ -56,16 +51,12 @@ func TestEnv(t *testing.T) {
 	t.Parallel()
 	const service = "sirius.appspot.com"
 	e := basicEnv{
-		adminService: service,
-		logDogHost:   "luci-logdog.appspot.com",
-		luciProject:  "chromeos",
-		logPrefix:    "skylab/83e6fa19-2cb0-4cc2-88b6-fb217a6cbb23",
+		logDogHost:  "luci-logdog.appspot.com",
+		luciProject: "chromeos",
+		logPrefix:   "skylab/83e6fa19-2cb0-4cc2-88b6-fb217a6cbb23",
 	}
 	var c Command
 	c.Config(Env(e))
-	if c.AdminService != service {
-		t.Errorf("AdminService = %#v; want %#v", c.AdminService, service)
-	}
 	const wantURL = "logdog://luci-logdog.appspot.com/chromeos/skylab/83e6fa19-2cb0-4cc2-88b6-fb217a6cbb23/+/annotations"
 	if c.LogDogAnnotationURL != wantURL {
 		t.Errorf("LogdogAnnotationURL = %#v; want %#v", c.LogDogAnnotationURL, wantURL)

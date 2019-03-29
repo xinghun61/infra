@@ -46,11 +46,6 @@ func (e EnvWrapper) LogDogHost() string {
 	return e.e.LogDogHost
 }
 
-// AdminService implements worker.Environment.
-func (e EnvWrapper) AdminService() string {
-	return e.e.AdminService
-}
-
 // GenerateLogPrefix implements worker.Environment.
 func (e EnvWrapper) GenerateLogPrefix() string {
 	return "skylab/" + uuid.New().String()

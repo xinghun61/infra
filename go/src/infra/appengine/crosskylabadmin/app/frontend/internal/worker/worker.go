@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"go.chromium.org/gae/service/info"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
@@ -67,7 +66,6 @@ func adminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL string) [
 		skylabSwarmingWorkerPath,
 		"-task-name", fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
 	}
-	s = append(s, "-admin-service", fmt.Sprintf("%s.appspot.com", info.AppID(ctx)))
 	if logdogURL != "" {
 		s = append(s, "-logdog-annotation-url", logdogURL)
 	}

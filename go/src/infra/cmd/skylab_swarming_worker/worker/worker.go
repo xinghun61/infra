@@ -25,12 +25,10 @@ type Command struct {
 	TaskName string
 	// LogDogAnnotationURL can be set automatically with Env.
 	LogDogAnnotationURL string
-	// AdminService can be set automatically with Env.
-	AdminService    string
-	ClientTest      bool
-	ProvisionLabels []string
-	Keyvals         map[string]string
-	TestArgs        string
+	ClientTest          bool
+	ProvisionLabels     []string
+	Keyvals             map[string]string
+	TestArgs            string
 }
 
 // Args returns the arg strings for running the command.
@@ -46,9 +44,6 @@ func (c *Command) Args() []string {
 	}
 	if c.LogDogAnnotationURL != "" {
 		args = append(args, "-logdog-annotation-url", c.LogDogAnnotationURL)
-	}
-	if c.AdminService != "" {
-		args = append(args, "-admin-service", c.AdminService)
 	}
 	if c.ClientTest {
 		args = append(args, "-client-test")
@@ -87,7 +82,6 @@ type Option func(*Command)
 type Environment interface {
 	LUCIProject() string
 	LogDogHost() string
-	AdminService() string
 	GenerateLogPrefix() string
 }
 
@@ -96,7 +90,6 @@ type Environment interface {
 func Env(e Environment) Option {
 	return func(c *Command) {
 		c.LogDogAnnotationURL = GenerateLogDogURL(e)
-		c.AdminService = e.AdminService()
 	}
 }
 
