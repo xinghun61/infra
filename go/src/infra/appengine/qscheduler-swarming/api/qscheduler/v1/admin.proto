@@ -92,6 +92,8 @@ message ModAccountRequest {
   google.protobuf.FloatValue max_charge_seconds = 4;
 
   google.protobuf.Int32Value max_fanout = 5;
+
+  google.protobuf.BoolValue disable_free_tasks = 6;
 }
 
 message ModAccountResponse {}

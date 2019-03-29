@@ -53,10 +53,15 @@ message AccountConfig {
   // use a wider window, whereas very consistent clients will use a narrow one.
   float max_charge_seconds = 2;
 
-  // MaxFanout is the maximum number of concurrent paid jobs that this account
-  // will pay for (0 = no limit).
+  // MaxFanout is the maximum number of concurrent paid jobs for a single
+  // provisionable label that this account will pay for (0 = no limit).
   //
   // Additional jobs beyond this may run if there is idle capacity, but they
-  // will run in the FreeBucket priority level.
+  // will run in the FreeBucket priority level (except if DisableFreeTasks
+  // is true, in which case they will not run).
   int32 max_fanout = 3;
+
+  // If DisableFreeTasks is true, then jobs for this account will not start
+  // running if they would be run at FreeBucket priority.
+  bool disable_free_tasks = 4;
 }
