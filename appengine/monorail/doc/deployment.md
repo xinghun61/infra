@@ -52,7 +52,7 @@ chat](http://chat/room/AAAACV9ZZ8k).
 1. Monitor Viceroy and Error Reporting
     1. Modest latency increases are normal in the first 10-20 minutes
     1. Check [/p/chromium updates page](https://bugs.chromium.org/p/chromium/updates/list).
-    1. [Chromedash](http://go/chromedash), should work after deployment.
+    1. [Chromiumdash](https://chromiumdash.appspot.com/release-manager?platform=Android), should work after deployment.
 1. Announce the Deployment.
     1. Copy changes since last deploy: `git log --oneline .`
 1. Add a new row to the [Monorail Deployment Stats](http://go/monorail-deployment-stats)
