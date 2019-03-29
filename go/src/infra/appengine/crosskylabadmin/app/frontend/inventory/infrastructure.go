@@ -229,10 +229,11 @@ func newDUTRemover(ctx context.Context, s *gitstore.InventoryStore) *dutRemover 
 }
 
 func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
-	id := r.DutId
+	var rr removeRequest
+	rr.dutID = r.DutId
 	if r.DutHostname != "" {
 		var ok bool
-		id, ok = dr.hostnameToID[r.DutHostname]
+		rr.dutID, ok = dr.hostnameToID[r.DutHostname]
 		if !ok {
 			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
 		}
@@ -241,9 +242,9 @@ func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDron
 	var ok bool
 	var server *inventory.Server
 	if r.DroneHostname == "" {
-		server, ok = findDutServer(dr.store.Infrastructure.GetServers(), id)
+		server, ok = findDutServer(dr.store.Infrastructure.GetServers(), rr.dutID)
 	} else {
-		server, ok = findNamedServer(dr.store.Infrastructure.GetServers(), id)
+		server, ok = findNamedServer(dr.store.Infrastructure.GetServers(), rr.dutID)
 	}
 	if !ok {
 		return nil, nil
@@ -251,14 +252,21 @@ func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDron
 	if server.GetEnvironment().String() != dr.env {
 		return nil, nil
 	}
-	if !removeDutFromServer(server, id) {
+	if !removeDutFromServer(server, rr.dutID) {
 		return nil, nil
 	}
 
 	return &fleet.RemoveDutsFromDronesResponse_Item{
-		DutId:         id,
+		DutId:         rr.dutID,
 		DroneHostname: server.GetHostname(),
 	}, nil
+}
+
+// removeRequest is an unpacked fleet.RemoveDutsFromDronesRequest_Item.
+type removeRequest struct {
+	dutID  string
+	drone  string
+	reason *inventory.RemovalReason
 }
 
 // findDutServer finds the server that the given Dut is on, if it exists.
