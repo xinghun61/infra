@@ -113,7 +113,11 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		"skylab-tool:create-suite",
 		"luci_project:"+e.LUCIProject,
 		"build:"+c.image,
-		"suite:"+suiteName)
+		"suite:"+suiteName,
+		"label-board:"+c.board,
+		"label-model:"+c.model,
+		"label-pool:"+c.pool,
+		"priority:"+c.priority)
 
 	s, err := newSwarmingService(ctx, c.authFlags, e)
 	if err != nil {
