@@ -15,6 +15,7 @@ def cron(name, recipe, execution_timeout=None):
       dimensions = {
           'builder': name,
           'os': 'Ubuntu-14.04',
+          'cpu': 'x86-64',
           'pool': 'luci.infra.cron',
       },
       service_account = 'wpt-autoroller@chops-service-accounts.iam.gserviceaccount.com',

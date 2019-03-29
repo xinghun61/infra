@@ -14,6 +14,7 @@ luci.builder(
     dimensions = {
         'builder': 'Chromium Gatekeeper',
         'os': 'Ubuntu-14.04',
+        'cpu': 'x86-64',
         'pool': 'luci.infra.cron',
     },
     schedule = 'with 1m interval',

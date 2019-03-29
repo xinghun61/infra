@@ -82,6 +82,7 @@ luci.builder(
     recipe = infra.recipe('depot_tools_builder'),
     dimensions = {
         'os': 'Ubuntu-14.04',
+        'cpu': 'x86-64',
         'pool': 'luci.flex.ci',
     },
     service_account = 'infra-ci-depot-tools-uploader@chops-service-accounts.iam.gserviceaccount.com',

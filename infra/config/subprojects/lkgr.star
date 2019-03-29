@@ -14,6 +14,7 @@ luci.builder(
     dimensions = {
         'builder': 'chromium-lkgr-finder',
         'os': 'Ubuntu-14.04',
+        'cpu': 'x86-64',
         'pool': 'luci.infra.cron',
     },
     execution_timeout = time.hour,

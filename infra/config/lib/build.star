@@ -43,6 +43,7 @@ def presubmit(
       service_account = infra.SERVICE_ACCOUNT_TRY,
       dimensions = {
           'os': os or 'Ubuntu-14.04',
+          'cpu': 'x86-64',
           'pool': 'luci.flex.try',
       },
   )

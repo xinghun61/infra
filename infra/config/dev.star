@@ -62,7 +62,6 @@ luci.bucket(
 
 luci.builder.defaults.swarming_tags.set(['vpython:native-python-wrapper'])
 luci.builder.defaults.execution_timeout.set(30 * time.minute)
-luci.builder.defaults.dimensions.set({'cpu': 'x86-64'})
 
 
 def ci_builder(

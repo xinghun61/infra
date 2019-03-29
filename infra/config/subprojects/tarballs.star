@@ -16,6 +16,7 @@ def builder(name, recipe, builder_dimension=None, **kwargs):
       dimensions = {
           'pool': 'luci.infra.cron',
           'os': 'Ubuntu-14.04',
+          'cpu': 'x86-64',
           'builder': builder_dimension or name,
       },
       **kwargs

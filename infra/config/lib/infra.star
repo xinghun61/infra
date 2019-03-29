@@ -94,7 +94,7 @@ def builder(
       name = name,
       bucket = bucket,
       recipe = recipe,
-      dimensions = {'os': os, 'cpu': cpu, 'pool': pool},
+      dimensions = {'os': os, 'cpu': cpu or 'x86-64', 'pool': pool},
       service_account = service_account,
       properties = properties,
       caches = caches,

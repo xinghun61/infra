@@ -65,6 +65,7 @@ def builder(
       dimensions = {
           'builder': name,
           'os': os or 'Ubuntu-14.04',
+          'cpu': 'x86-64',
           'pool': 'luci.infra.codesearch',
       },
       caches = caches,

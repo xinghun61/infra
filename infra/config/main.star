@@ -17,6 +17,7 @@ Includes CI configs for the following subprojects:
   * WPT autoroller crons.
   * Chromium tarball publisher.
   * Chromium LKGR finder cron.
+  * CrOS DUT flashing cron job.
   * https://chromium.googlesource.com/chromium/tools/build
   * https://chromium.googlesource.com/chromium/tools/depot_tools
   * https://chromium.googlesource.com/infra/infra
@@ -25,8 +26,6 @@ Includes CI configs for the following subprojects:
   * https://chromium.googlesource.com/infra/luci/luci-py
   * https://chromium.googlesource.com/infra/luci/recipes-py
   * https://chromium.googlesource.com/infra/testing/expect_tests
-
-TODO(vadimsh): Add more.
 """
 
 # Tell lucicfg what files it is allowed to touch.
@@ -103,7 +102,6 @@ luci.cq(status_host = 'chromium-cq-status.appspot.com')
 # Global builder defaults.
 luci.builder.defaults.swarming_tags.set(['vpython:native-python-wrapper'])
 luci.builder.defaults.execution_timeout.set(30 * time.minute)
-luci.builder.defaults.dimensions.set({'cpu': 'x86-64'})
 
 
 # Resources shared by all subprojects.
@@ -137,7 +135,12 @@ luci.bucket(
     acls = [
         acl.entry(
             roles = acl.BUILDBUCKET_TRIGGERER,
-            users = 'luci-scheduler@appspot.gserviceaccount.com',
+            users = [
+                'luci-scheduler@appspot.gserviceaccount.com',
+                # Allow the cros-flash-scheduler to schedule other builders in
+                # the bucket, see //subprojects/cros_flash.star.
+                'cros-flash@chops-service-accounts.iam.gserviceaccount.com',
+            ],
         ),
     ],
 )
@@ -149,6 +152,7 @@ luci.list_view(name = 'cron')
 
 exec('//subprojects/build.star')
 exec('//subprojects/codesearch.star')
+exec('//subprojects/cros_flash.star')
 exec('//subprojects/depot_tools.star')
 exec('//subprojects/expect_tests.star')
 exec('//subprojects/gatekeeper.star')

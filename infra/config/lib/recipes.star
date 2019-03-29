@@ -46,6 +46,7 @@ def simulation_tester(
       properties = {'git_repo': _repo_url(project_under_test)},
       dimensions = {
           'os': 'Ubuntu-14.04',
+          'cpu': 'x86-64',
           'pool': 'luci.flex.ci',
       },
       service_account = infra.SERVICE_ACCOUNT_CI,
@@ -76,6 +77,7 @@ def roll_trybots(upstream, downstream, cq_group):
         },
         dimensions = {
             'os': 'Ubuntu-14.04',
+            'cpu': 'x86-64',
             'pool': 'luci.flex.try',
         },
         service_account = infra.SERVICE_ACCOUNT_TRY,
@@ -95,6 +97,7 @@ def led_recipes_tester(name, cq_group, repo_name):
       properties = {'repo_name': repo_name},
       dimensions = {
           'os': 'Ubuntu-14.04',
+          'cpu': 'x86-64',
           'pool': 'luci.flex.try',
       },
       service_account = 'infra-try-recipes-tester@chops-service-accounts.iam.gserviceaccount.com',
