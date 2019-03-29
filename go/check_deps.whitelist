@@ -32,9 +32,12 @@ gopkg.in/russross/blackfriday.v2
 gopkg.in/yaml.v2
 
 # Other github packages
+github.com/DATA-DOG/go-sqlmock
+github.com/Masterminds/squirrel
+github.com/StackExchange/wmi
+github.com/VividCortex/mysqlerr
 github.com/andygrunwald/go-gerrit
 github.com/aryann/difflib
-github.com/DATA-DOG/go-sqlmock
 github.com/dustin/go-humanize
 github.com/go-sql-driver/mysql
 github.com/google/go-cmp/cmp
@@ -42,16 +45,15 @@ github.com/gorhill/cronexpr
 github.com/julienschmidt/httprouter
 github.com/kr/pretty
 github.com/kylelemons/godebug/pretty
-github.com/Masterminds/squirrel
 github.com/mattes/migrate
+github.com/mattn/go-isatty
+github.com/mgutz/ansi
 github.com/mitchellh/go-homedir
 github.com/op/go-logging
 github.com/pmezard/go-difflib/difflib
 github.com/sergi/go-diff/diffmatchpatch
 github.com/shirou/gopsutil/
 github.com/smartystreets/
-github.com/StackExchange/wmi
-github.com/VividCortex/mysqlerr
 github.com/waigani/diffparser
 github.com/xeipuuv/gojsonschema
 github.com/xtgo/set
