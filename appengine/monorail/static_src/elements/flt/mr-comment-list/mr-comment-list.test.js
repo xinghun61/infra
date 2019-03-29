@@ -113,7 +113,8 @@ suite('mr-comment-list', () => {
 
     flush();
 
-    assert.isNotNull(element.shadowRoot.querySelector('#edit-metadata-slot'));
+    assert.isNull(
+      element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
   });
 
   test('edit-metadata is hidden if user has no addissuecomment', () => {
@@ -121,6 +122,7 @@ suite('mr-comment-list', () => {
 
     flush();
 
-    assert.isNull(element.shadowRoot.querySelector('#edit-metadata-slot'));
+    assert.isNotNull(
+      element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
   });
 });

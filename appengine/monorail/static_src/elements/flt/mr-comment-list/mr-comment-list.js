@@ -40,6 +40,9 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
         button.toggle[hidden] {
           display: none;
         }
+        .edit-slot {
+          margin-top: 3em;
+        }
       </style>
       <button on-click="toggleComments" class="toggle" hidden\$="[[_hideToggle]]">
         [[_computeCommentToggleVerb(_commentsHidden)]]
@@ -56,9 +59,9 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
           quick-mode="[[quickMode]]"
         ></mr-comment>
       </template>
-      <template is="dom-if" if="[[_canAddComment(issuePermissions)]]">
-        <slot id="edit-metadata-slot"></slot>
-      </template>
+      <div class="edit-slot" hidden$="[[!_canAddComment(issuePermissions)]]">
+        <slot></slot>
+      </div>
     `;
   }
 

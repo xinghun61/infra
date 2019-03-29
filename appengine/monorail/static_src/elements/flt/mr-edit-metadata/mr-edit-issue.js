@@ -26,6 +26,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       <style include="mr-shared-styles">
         h2 a {
           text-decoration: none;
+          color: var(--mr-content-heading-color);
         }
       </style>
       <h2 id="makechanges" class="medium-heading">

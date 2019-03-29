@@ -15,6 +15,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
           font-size: 13px;
         };
         --mr-input-grid-gap: 6px;
+        --mr-content-heading-color: hsl(227, 60%, 39%);
       }
       .linkify {
         text-decoration: underline;
@@ -68,7 +69,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         font-weight: normal;
         line-height: 1;
         padding: 0.25em 0;
-        color: hsl(227, 60%, 39%);
+        color: var(--mr-content-heading-color);
         margin: 0;
         margin-top: 0.25em;
         border-bottom: var(--chops-normal-border);
