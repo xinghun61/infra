@@ -32,6 +32,17 @@ func inputProperties(master, builder string) *bbpb.Build_Input {
 	}
 }
 
+func outputProperties(commitPos, rev string) *bbpb.Build_Output {
+	return &bbpb.Build_Output{
+		Properties: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"got_revision_cp": {Kind: &structpb.Value_StringValue{StringValue: commitPos}},
+				"got_revision":    {Kind: &structpb.Value_StringValue{StringValue: rev}},
+			},
+		},
+	}
+}
+
 func TestBuildBucketAlerts(t *testing.T) {
 	Convey("smoke", t, func() {
 		a := New(0, 100)
@@ -179,7 +190,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -193,7 +205,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -207,7 +220,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 			},
 			Err: nil,
@@ -224,7 +238,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 		},
 		)
 		So(err, ShouldBeNil)
-		So(failures, ShouldNotBeEmpty)
+		So(len(failures), ShouldEqual, 1)
 		So(failures[0].StepAtFault, ShouldNotBeNil)
 		So(failures[0].StepAtFault.Step, ShouldNotBeNil)
 		So(failures[0].StepAtFault.Step.Name, ShouldEqual, "step-name")
@@ -233,6 +247,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
 		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 8)
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 9)
+		So(failures[0].Builders[0].FirstFailingRev.Position, ShouldEqual, 2)
+		So(failures[0].Builders[0].LatestPassingRev.Position, ShouldEqual, 1)
 	})
 
 	Convey("multiple failures, single infra step", t, func() {
@@ -251,7 +267,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -265,7 +282,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -279,7 +297,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 			},
 			Err: nil,
@@ -297,7 +316,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 		},
 		)
 		So(err, ShouldBeNil)
-		So(failures, ShouldNotBeEmpty)
+		So(len(failures), ShouldEqual, 1)
 		So(failures[0].StepAtFault, ShouldNotBeNil)
 		So(failures[0].StepAtFault.Step, ShouldNotBeNil)
 		So(failures[0].StepAtFault.Step.Name, ShouldEqual, "step-name")
@@ -306,9 +325,11 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
 		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 8)
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 9)
+		So(failures[0].Builders[0].FirstFailingRev.Position, ShouldEqual, 2)
+		So(failures[0].Builders[0].LatestPassingRev.Position, ShouldEqual, 1)
 	})
 
-	Convey("multiple failures, multiple steps, step skipped in one build", t, func() {
+	Convey("multiple failures, single failing step with others passing, failing step skipped in one build", t, func() {
 		a := New(0, 100)
 		a.BuildBucket = &client.StubBuildBucket{
 			Latest: []*bbpb.Build{
@@ -327,7 +348,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
 					Number: 8,
@@ -341,7 +363,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
 					Number: 7,
@@ -354,7 +377,24 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
+				},
+				// TODO: add a test case where there has never been a passing
+				// run of "step-name". Currently that fails.
+				{
+					Number: 6,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_SUCCESS,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#0}", "deadbeef"),
 				},
 			},
 			Err: nil,
@@ -372,7 +412,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 		},
 		)
 		So(err, ShouldBeNil)
-		So(failures, ShouldNotBeEmpty)
+		So(len(failures), ShouldEqual, 1)
 		So(failures[0].StepAtFault, ShouldNotBeNil)
 		So(failures[0].StepAtFault.Step, ShouldNotBeNil)
 		So(failures[0].StepAtFault.Step.Name, ShouldEqual, "step-name")
@@ -381,6 +421,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
 		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 7)
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 9)
+		So(failures[0].Builders[0].FirstFailingRev.Position, ShouldEqual, 1)
+		So(failures[0].Builders[0].LatestPassingRev.Position, ShouldEqual, 0)
 	})
 
 	Convey("multiple failures, multiple steps", t, func() {
@@ -395,7 +437,6 @@ func TestBuildBucketAlerts(t *testing.T) {
 		a.BuildBucket = &client.StubBuildBucket{
 			Latest: []*bbpb.Build{
 				{
-					// Build numbers on waterfall builders reflect source order.
 					Number: 9,
 					Steps: []*bbpb.Step{
 						{
@@ -414,10 +455,10 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
-					// Build numbers on waterfall builders reflect source order.
 					Number: 8,
 					Steps: []*bbpb.Step{
 						{
@@ -436,10 +477,10 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
-					// Build numbers on waterfall builders reflect source order.
 					Number: 7,
 					Steps: []*bbpb.Step{
 						{
@@ -458,7 +499,30 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
+				},
+				{
+					Number: 6,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-a",
+							Status: bbpb.Status_SUCCESS,
+						},
+						{
+							Name:   "step-b",
+							Status: bbpb.Status_SUCCESS,
+						},
+						{
+							Name:   "step-c",
+							Status: bbpb.Status_SUCCESS,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Output: outputProperties("refs/heads/master@{#0}", "deadbeef"),
 				},
 			},
 			Err: nil,
@@ -488,6 +552,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
 		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 8)
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 9)
+		So(failures[0].Builders[0].FirstFailingRev.Position, ShouldEqual, 2)
+		So(failures[0].Builders[0].LatestPassingRev.Position, ShouldEqual, 1)
 
 		So(failures[1].StepAtFault, ShouldNotBeNil)
 		So(failures[1].StepAtFault.Step, ShouldNotBeNil)
@@ -496,6 +562,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[1].Builders[0].Name, ShouldEqual, "linux-rel")
 		So(failures[1].Builders[0].FirstFailure, ShouldEqual, 7)
 		So(failures[1].Builders[0].LatestFailure, ShouldEqual, 9)
+		So(failures[1].Builders[0].FirstFailingRev.Position, ShouldEqual, 1)
+		So(failures[1].Builders[0].LatestPassingRev.Position, ShouldEqual, 0)
 	})
 
 	Convey("multiple failures, multiple steps, multiple builders", t, func() {
@@ -535,7 +603,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
-					Input: inputProperties("some-master.foo", "a-rel"),
+					Input:  inputProperties("some-master.foo", "a-rel"),
+					Output: outputProperties("refs/heads/master@{#32}", "deadbeef"),
 				},
 				{
 					Number: 5,
@@ -556,7 +625,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
-					Input: inputProperties("some-master.foo", "b-rel"),
+					Input:  inputProperties("some-master.foo", "b-rel"),
+					Output: outputProperties("refs/heads/master@{#31}", "deadbeef"),
 				},
 				{
 					Number: 8,
@@ -577,7 +647,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
-					Input: inputProperties("some-master.foo", "a-rel"),
+					Input:  inputProperties("some-master.foo", "a-rel"),
+					Output: outputProperties("refs/heads/master@{#23}", "deadbeef"),
 				},
 				{
 					Number: 4,
@@ -598,7 +669,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
-					Input: inputProperties("some-master.foo", "b-rel"),
+					Input:  inputProperties("some-master.foo", "b-rel"),
+					Output: outputProperties("refs/heads/master@{#22}", "deadbeef"),
 				},
 				{
 					Number: 7,
@@ -619,7 +691,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
-					Input: inputProperties("some-master.foo", "a-rel"),
+					Input:  inputProperties("some-master.foo", "a-rel"),
+					Output: outputProperties("refs/heads/master@{#12}", "deadbeef"),
 				},
 				{
 					Number: 3,
@@ -640,7 +713,52 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
-					Input: inputProperties("some-master.foo", "b-rel"),
+					Input:  inputProperties("some-master.foo", "b-rel"),
+					Output: outputProperties("refs/heads/master@{#11}", "deadbeef"),
+				},
+				{
+					Number: 6,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-a",
+							Status: bbpb.Status_SUCCESS,
+						},
+						{
+							Name:   "step-b",
+							Status: bbpb.Status_SUCCESS,
+						},
+						{
+							Name:   "step-c",
+							Status: bbpb.Status_SUCCESS,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "a-rel",
+					},
+					Input:  inputProperties("some-master.foo", "a-rel"),
+					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
+				},
+				{
+					Number: 2,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-a",
+							Status: bbpb.Status_SUCCESS,
+						},
+						{
+							Name:   "step-b",
+							Status: bbpb.Status_SUCCESS,
+						},
+						{
+							Name:   "step-c",
+							Status: bbpb.Status_SUCCESS,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "b-rel",
+					},
+					Input:  inputProperties("some-master.foo", "b-rel"),
+					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 			},
 			Err: nil,
@@ -675,17 +793,28 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(alertedBuilders[0].Name, ShouldEqual, "a-rel")
 		So(alertedBuilders[0].FirstFailure, ShouldEqual, 8)
 		So(alertedBuilders[0].LatestFailure, ShouldEqual, 9)
+		So(alertedBuilders[0].FirstFailingRev.Position, ShouldEqual, 23)
+		So(alertedBuilders[0].LatestPassingRev.Position, ShouldEqual, 12)
+
 		So(alertedBuilders[1].Name, ShouldEqual, "b-rel")
 		So(alertedBuilders[1].FirstFailure, ShouldEqual, 4)
 		So(alertedBuilders[1].LatestFailure, ShouldEqual, 5)
+		So(alertedBuilders[1].FirstFailingRev.Position, ShouldEqual, 22)
+		So(alertedBuilders[1].LatestPassingRev.Position, ShouldEqual, 11)
 
 		So(failures[1].StepAtFault, ShouldNotBeNil)
 		So(failures[1].StepAtFault.Step, ShouldNotBeNil)
 		So(failures[1].StepAtFault.Step.Name, ShouldEqual, "step-b")
 		So(len(failures[1].Builders), ShouldEqual, 1)
-		So(failures[1].Builders[0].Name, ShouldEqual, "a-rel")
-		So(failures[1].Builders[0].FirstFailure, ShouldEqual, 7)
-		So(failures[1].Builders[0].LatestFailure, ShouldEqual, 9)
+
+		alertedBuilders = failures[1].Builders
+		sort.Sort(buildersByName(alertedBuilders))
+
+		So(alertedBuilders[0].Name, ShouldEqual, "a-rel")
+		So(alertedBuilders[0].FirstFailure, ShouldEqual, 7)
+		So(alertedBuilders[0].LatestFailure, ShouldEqual, 9)
+		So(alertedBuilders[0].FirstFailingRev.Position, ShouldEqual, 12)
+		So(alertedBuilders[0].LatestPassingRev.Position, ShouldEqual, 2)
 	})
 }
 

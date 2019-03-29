@@ -71,6 +71,7 @@ func (bc *buildbucketClient) LatestBuilds(ctx context.Context, builderIDs []*bbp
 							"builds.*.steps.*.status",
 							"builds.*.builder",
 							"builds.*.number",
+							"builds.*.output",
 							"builds.*.input",
 							"builds.*.start_time",
 						},

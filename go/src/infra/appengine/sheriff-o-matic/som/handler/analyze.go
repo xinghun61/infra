@@ -169,9 +169,13 @@ func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*mess
 	for _, ba := range builderAlerts {
 		title := fmt.Sprintf("Step %q failing on %d builder(s)", ba.StepAtFault.Step.Name, len(ba.Builders))
 		startTime := messages.TimeToEpochTime(time.Now())
+		severity := messages.NewFailure
 		for _, b := range ba.Builders {
 			if b.StartTime > 0 && b.StartTime < startTime {
 				startTime = b.StartTime
+			}
+			if b.LatestFailure-b.FirstFailure != 0 {
+				severity = messages.ReliableFailure
 			}
 		}
 
@@ -180,6 +184,7 @@ func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*mess
 			Title:     title,
 			Extension: ba,
 			StartTime: startTime,
+			Severity:  severity,
 		}
 
 		switch ba.Reason.Kind() {

@@ -411,7 +411,7 @@ func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSum
 		s, ok := a.revisionSummaries[h]
 		a.rslck.Unlock()
 		if !ok {
-			return nil, fmt.Errorf("Unrecognized hash:  %s", h)
+			continue
 		}
 		ret = append(ret, s)
 	}
