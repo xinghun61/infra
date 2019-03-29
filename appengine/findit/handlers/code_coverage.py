@@ -764,6 +764,54 @@ def _GetNameToPathSeparator(path, data_type):
   return path_parts
 
 
+def _SplitLineIntoRegions(line, uncovered_blocks):
+  """Returns a list of regions for a line of code.
+
+  The structure of the output is as follows:
+  [
+    {
+      'covered': True/False # Whether this region is actually covered.
+      'text': string # The source text for this region.
+    }
+  ]
+
+  The regions in the output list are in the order they appear in the line.
+  For example, the following loop reconstructs the entire line:
+
+  text = ''
+  for region in _SplitLineIntoRegions(line, uncovered_blocks):
+    text += region['text']
+  assert text == line
+  """
+  if not uncovered_blocks:
+    return [{'is_covered': True, 'text': line}]
+
+  regions = []
+  region_start = 0
+  for block in uncovered_blocks:
+    # Change from 1-indexing to 0-indexing
+    first = block['first'] - 1
+    last = block['last'] - 1
+    # Generate the covered region that precedes this uncovered region.
+    preceding_text = line[region_start:first]
+    if preceding_text:
+      regions.append({'is_covered': True, 'text': preceding_text})
+    regions.append({
+        'is_covered': False,
+        # `last` is inclusive
+        'text': line[first:last + 1]
+    })
+    region_start = last + 1
+
+  # If there is any text left on the line, it must be covered. If it were
+  # uncovered, it would have been part of the final entry in uncovered_blocks.
+  remaining_text = line[region_start:]
+  if remaining_text:
+    regions.append({'is_covered': True, 'text': remaining_text})
+
+  return regions
+
+
 class ServeCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -963,9 +1011,22 @@ class ServeCodeCoverageData(BaseHandler):
               line_to_data[i + 1]['line'] = unicode(line, 'utf8')
               line_to_data[i + 1]['count'] = -1
 
+            uncovered_blocks = {}
+            if 'uncovered_blocks' in metadata:
+              for line_data in metadata['uncovered_blocks']:
+                uncovered_blocks[line_data['line']] = line_data['ranges']
+
             for line in metadata['lines']:
-              for i in range(line['first'], line['last'] + 1):
-                line_to_data[i]['count'] = line['count']
+              for line_num in range(line['first'], line['last'] + 1):
+                line_to_data[line_num]['count'] = line['count']
+                if line_num in uncovered_blocks:
+                  text = line_to_data[line_num]['line']
+                  regions = _SplitLineIntoRegions(text,
+                                                  uncovered_blocks[line_num])
+                  line_to_data[line_num]['regions'] = regions
+                  line_to_data[line_num]['is_partially_covered'] = True
+                else:
+                  line_to_data[line_num]['is_partially_covered'] = False
 
           line_to_data = list(line_to_data.iteritems())
           line_to_data.sort(key=lambda x: x[0])

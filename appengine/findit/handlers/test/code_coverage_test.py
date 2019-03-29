@@ -178,7 +178,14 @@ def _CreateSampleFileCoverageData():
               'first': 1
           }],
           'total_lines': 2,
-          'timestamp': '140000'
+          'timestamp': '140000',
+          'uncovered_blocks': [{
+              'line': 1,
+              'ranges': [{
+                  'first': 1,
+                  'last': 2
+              }]
+          }]
       })
 
 
@@ -367,15 +374,26 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
 
     file_shard_coverage_data = {
         'files': [{
-            'path': '//dir/test.cc',
-            'revision': 'bbbbb',
+            'path':
+                '//dir/test.cc',
+            'revision':
+                'bbbbb',
             'lines': [{
                 'count': 100,
                 'last': 2,
                 'first': 1
             }],
-            'total_lines': 2,
-            'timestamp': '140000'
+            'total_lines':
+                2,
+            'timestamp':
+                '140000',
+            'uncovered_blocks': [{
+                'line': 1,
+                'ranges': [{
+                    'first': 1,
+                    'last': 2
+                }]
+            }]
         }]
     }
 
@@ -568,3 +586,71 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
                        'refs/heads/master', 'aaaaa', '//dir/test.cc', 'linux')
     response = self.test_app.get(request_url)
     self.assertEqual(200, response.status_int)
+
+
+class SplitLineIntoRegionsTest(WaterfallTestCase):
+
+  def testRejoinSplitRegions(self):
+    line = 'the quick brown fox jumped over the lazy dog'
+    blocks = [{
+        'first': 4,
+        'last': 10,
+    }, {
+        'first': 20,
+        'last': 23,
+    }, {
+        'first': 42,
+        'last': 43,
+    }]
+    regions = code_coverage._SplitLineIntoRegions(line, blocks)
+    reconstructed_line = ''.join(region['text'] for region in regions)
+    self.assertEqual(line, reconstructed_line)
+
+  def testRegionsCorrectlySplit(self):
+    line = 'onetwothreefourfivesixseven'
+    blocks = [{
+        'first': 4,
+        'last': 6,
+    }, {
+        'first': 12,
+        'last': 15,
+    }, {
+        'first': 20,
+        'last': 22,
+    }]
+    regions = code_coverage._SplitLineIntoRegions(line, blocks)
+
+    self.assertEqual('one', regions[0]['text'])
+    self.assertEqual('two', regions[1]['text'])
+    self.assertEqual('three', regions[2]['text'])
+    self.assertEqual('four', regions[3]['text'])
+    self.assertEqual('five', regions[4]['text'])
+    self.assertEqual('six', regions[5]['text'])
+    self.assertEqual('seven', regions[6]['text'])
+
+    # Regions should alternate between covered and uncovered.
+    self.assertTrue(regions[0]['is_covered'])
+    self.assertTrue(regions[2]['is_covered'])
+    self.assertTrue(regions[4]['is_covered'])
+    self.assertTrue(regions[6]['is_covered'])
+    self.assertFalse(regions[1]['is_covered'])
+    self.assertFalse(regions[3]['is_covered'])
+    self.assertFalse(regions[5]['is_covered'])
+
+  def testPrefixUncovered(self):
+    line = 'NOCOVcov'
+    blocks = [{'first': 1, 'last': 5}]
+    regions = code_coverage._SplitLineIntoRegions(line, blocks)
+    self.assertEqual('NOCOV', regions[0]['text'])
+    self.assertEqual('cov', regions[1]['text'])
+    self.assertFalse(regions[0]['is_covered'])
+    self.assertTrue(regions[1]['is_covered'])
+
+  def testSuffixUncovered(self):
+    line = 'covNOCOV'
+    blocks = [{'first': 4, 'last': 8}]
+    regions = code_coverage._SplitLineIntoRegions(line, blocks)
+    self.assertEqual('cov', regions[0]['text'])
+    self.assertEqual('NOCOV', regions[1]['text'])
+    self.assertTrue(regions[0]['is_covered'])
+    self.assertFalse(regions[1]['is_covered'])
