@@ -11,19 +11,22 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"go.chromium.org/luci/buildbucket"
-	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/logdog/common/types"
 	"go.chromium.org/luci/lucictx"
+
+	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	luciproto "go.chromium.org/luci/common/proto"
 
 	. "github.com/smartystreets/goconvey/convey"
 	. "go.chromium.org/luci/common/testing/assertions"
@@ -203,6 +206,88 @@ func TestBuildUpdater(t *testing.T) {
 				close(done)
 				So(<-errC, ShouldBeNil)
 			})
+		})
+
+		Convey("ParseAnnotations", func() {
+			ann := &milo.Step{}
+			err := luciproto.UnmarshalTextML(`
+				substep: <
+					step: <
+						name: "bot_update"
+						status: SUCCESS
+						started: < seconds: 1400000000 >
+						ended: < seconds: 1400001000 >
+						property: <
+							name: "$recipe_engine/buildbucket/output_gitiles_commit"
+							value: <<END
+							{
+								"host": "chrome-internal.googlesource.com",
+								"project": "chromeos/manifest-internal",
+								"ref": "refs/heads/master",
+								"id": "91401dc270212d98734ab894bd90609b882aa458",
+								"position": 2
+							}
+END
+						>
+					>
+				>
+				substep: <
+					step: <
+						name: "compile"
+						status: RUNNING
+						started: < seconds: 1400001000 >
+						property: <
+							name: "foo"
+							value: "\"bar\""
+						>
+					>
+				>
+			`, ann)
+			So(err, ShouldBeNil)
+			So(ann.Substep, ShouldHaveLength, 2)
+
+			expected := &buildbucketpb.UpdateBuildRequest{}
+			err = jsonpb.UnmarshalString(`{
+				"build": {
+					"id": 42,
+					"steps": [
+						{
+							"name": "bot_update",
+							"status": "SUCCESS",
+							"startTime": "2014-05-13T16:53:20.0Z",
+							"endTime": "2014-05-13T17:10:00.0Z"
+
+						},
+						{
+							"name": "compile",
+							"status": "STARTED",
+							"startTime": "2014-05-13T17:10:00.0Z"
+						}
+					],
+					"output": {
+						"properties": {"foo": "bar"},
+						"gitilesCommit": {
+							"host": "chrome-internal.googlesource.com",
+							"project": "chromeos/manifest-internal",
+							"ref": "refs/heads/master",
+							"id": "91401dc270212d98734ab894bd90609b882aa458",
+							"position": 2
+						}
+					}
+				},
+				"updateMask": {
+					"paths": [
+						"build.steps",
+						"build.output.properties",
+						"build.output.gitiles_commit"
+					]
+				}
+			}`, expected)
+			So(err, ShouldBeNil)
+
+			actual, err := bu.ParseAnnotations(ctx, ann)
+			So(err, ShouldBeNil)
+			So(actual, ShouldResembleProto, expected)
 		})
 	})
 

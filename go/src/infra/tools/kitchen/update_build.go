@@ -171,8 +171,9 @@ func (b *buildUpdater) UpdateBuild(ctx context.Context, req *buildbucketpb.Updat
 }
 
 // ParseAnnotations converts an annotation proto to a UpdateBuildRequest that
-// updates steps and output properties.
+// updates steps, output properties and output gitiles commit.
 func (b *buildUpdater) ParseAnnotations(ctx context.Context, ann *milo.Step) (*buildbucketpb.UpdateBuildRequest, error) {
+	updatePaths := []string{"build.steps", "build.output.properties"}
 	steps, err := buildbucket.ConvertBuildSteps(ctx, ann.Substep, b.annAddr)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to parse steps from an annotation proto").Err()
@@ -186,20 +187,33 @@ func (b *buildUpdater) ParseAnnotations(ctx context.Context, ann *milo.Step) (*b
 	delete(props.Fields, "buildbucket")
 	delete(props.Fields, "$recipe_engine/buildbucket")
 
+	// Extract output commit
+	// The other side: https://cs.chromium.org/chromium/infra/recipes-py/recipe_modules/buildbucket/api.py?q=set_output_gitiles_commit
+	var outputCommit *buildbucketpb.GitilesCommit
+	const outputCommitProp = "$recipe_engine/buildbucket/output_gitiles_commit"
+	if f, ok := props.Fields[outputCommitProp]; ok {
+		dict := f.GetStructValue().GetFields()
+		outputCommit = &buildbucketpb.GitilesCommit{
+			Host:     dict["host"].GetStringValue(),
+			Project:  dict["project"].GetStringValue(),
+			Ref:      dict["ref"].GetStringValue(),
+			Id:       dict["id"].GetStringValue(),
+			Position: uint32(dict["position"].GetNumberValue()),
+		}
+		updatePaths = append(updatePaths, "build.output.gitiles_commit")
+		delete(props.Fields, outputCommitProp)
+	}
+
 	return &buildbucketpb.UpdateBuildRequest{
 		Build: &buildbucketpb.Build{
 			Id:    b.buildID,
 			Steps: steps,
 			Output: &buildbucketpb.Build_Output{
-				Properties: props,
+				Properties:    props,
+				GitilesCommit: outputCommit,
 			},
 		},
-		UpdateMask: &field_mask.FieldMask{
-			Paths: []string{
-				"build.steps",
-				"build.output.properties",
-			},
-		},
+		UpdateMask: &field_mask.FieldMask{Paths: updatePaths},
 	}, nil
 }
 
