@@ -14,6 +14,8 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -1313,6 +1315,32 @@ type QSchedulerAdminServer interface {
 	DeleteSchedulerPool(context.Context, *DeleteSchedulerPoolRequest) (*DeleteSchedulerPoolResponse, error)
 }
 
+// UnimplementedQSchedulerAdminServer can be embedded to have forward compatible implementations.
+type UnimplementedQSchedulerAdminServer struct {
+}
+
+func (*UnimplementedQSchedulerAdminServer) CreateSchedulerPool(ctx context.Context, req *CreateSchedulerPoolRequest) (*CreateSchedulerPoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSchedulerPool not implemented")
+}
+func (*UnimplementedQSchedulerAdminServer) CreateAccount(ctx context.Context, req *CreateAccountRequest) (*CreateAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAccount not implemented")
+}
+func (*UnimplementedQSchedulerAdminServer) Wipe(ctx context.Context, req *WipeRequest) (*WipeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Wipe not implemented")
+}
+func (*UnimplementedQSchedulerAdminServer) ModAccount(ctx context.Context, req *ModAccountRequest) (*ModAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ModAccount not implemented")
+}
+func (*UnimplementedQSchedulerAdminServer) ModSchedulerPool(ctx context.Context, req *ModSchedulerPoolRequest) (*ModSchedulerPoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ModSchedulerPool not implemented")
+}
+func (*UnimplementedQSchedulerAdminServer) DeleteAccount(ctx context.Context, req *DeleteAccountRequest) (*DeleteAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAccount not implemented")
+}
+func (*UnimplementedQSchedulerAdminServer) DeleteSchedulerPool(ctx context.Context, req *DeleteSchedulerPoolRequest) (*DeleteSchedulerPoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteSchedulerPool not implemented")
+}
+
 func RegisterQSchedulerAdminServer(s prpc.Registrar, srv QSchedulerAdminServer) {
 	s.RegisterService(&_QSchedulerAdmin_serviceDesc, srv)
 }
@@ -1549,6 +1577,17 @@ type QSchedulerViewServer interface {
 	// InspectPool returns a description of the state of a scheduler, for debugging
 	// or diagnostic purposes.
 	InspectPool(context.Context, *InspectPoolRequest) (*InspectPoolResponse, error)
+}
+
+// UnimplementedQSchedulerViewServer can be embedded to have forward compatible implementations.
+type UnimplementedQSchedulerViewServer struct {
+}
+
+func (*UnimplementedQSchedulerViewServer) ListAccounts(ctx context.Context, req *ListAccountsRequest) (*ListAccountsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAccounts not implemented")
+}
+func (*UnimplementedQSchedulerViewServer) InspectPool(ctx context.Context, req *InspectPoolRequest) (*InspectPoolResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InspectPool not implemented")
 }
 
 func RegisterQSchedulerViewServer(s prpc.Registrar, srv QSchedulerViewServer) {

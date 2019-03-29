@@ -33,7 +33,7 @@ type SchedulerConfig struct {
 	// considered idle, if the scheduler doesn't receive any assignment requests
 	// for it.
 	//
-	// If unspecified or 0, defaults to 300 seconds.
+	// If unspecified, defaults to 300 seconds.
 	BotExpiration        *duration.Duration `protobuf:"bytes,4,opt,name=bot_expiration,json=botExpiration,proto3" json:"bot_expiration,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
