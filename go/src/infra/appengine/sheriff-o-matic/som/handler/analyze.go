@@ -149,12 +149,20 @@ func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*mess
 				Builder: builder,
 			})
 		}
+		// Check for bucket-wide configs.
+		if len(builderCfg.Builders) == 0 {
+			builderIDs = append(builderIDs, &bbpb.BuilderID{
+				Project: builderCfg.Project,
+				Bucket:  builderCfg.Bucket,
+				// Leave Builder unset to query all of them.
+			})
+		}
 	}
 
 	builderAlerts, err := a.BuildBucketAlerts(c, builderIDs)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error creating alerts: %+v", err))
-		return nil, nil
+		return nil, err
 	}
 
 	alerts := []messages.Alert{}
@@ -166,12 +174,22 @@ func generateBuildBucketAlerts(ctx *router.Context, a *analyzer.Analyzer) (*mess
 				startTime = b.StartTime
 			}
 		}
-		alerts = append(alerts, messages.Alert{
+
+		alert := messages.Alert{
+			Key:       fmt.Sprintf("%s.%v", tree, ba.Reason.Signature()),
 			Title:     title,
 			Extension: ba,
 			StartTime: startTime,
-			Type:      messages.AlertBuildFailure,
-		})
+		}
+
+		switch ba.Reason.Kind() {
+		case "test":
+			alert.Type = messages.AlertTestFailure
+		default:
+			alert.Type = messages.AlertBuildFailure
+		}
+
+		alerts = append(alerts, alert)
 	}
 
 	logging.Infof(c, "%d alerts generated for tree %q", len(alerts), tree)
@@ -406,6 +424,7 @@ type groupCounts map[string]map[string]int
 // mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
 // one alert with multiple builders indicated.
 // FIXME: Move the regression range logic into package regrange
+// This logic is for buildbot alerts, not buildbucket alerts.
 func mergeAlertsByReason(ctx *router.Context, alerts []messages.Alert) (groupCounts, error) {
 	c, p := ctx.Context, ctx.Params
 

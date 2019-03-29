@@ -4,30 +4,39 @@ import (
 	"sort"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
-	bbpb "go.chromium.org/luci/buildbucket/proto"
-	"golang.org/x/net/context"
+	"infra/appengine/sheriff-o-matic/som/analyzer/step"
+	"infra/appengine/sheriff-o-matic/som/client"
+
 	"infra/monitoring/messages"
+
+	"github.com/golang/protobuf/ptypes/struct"
+	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/appengine/gaetesting"
+	bbpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/common/logging/gologger"
+	"infra/appengine/test-results/model"
 )
-
-type mockBuildBucket struct {
-	ret []*bbpb.Build
-	err error
-}
-
-func (bb *mockBuildBucket) LatestBuilds(ctx context.Context, builderIDs []*bbpb.BuilderID) ([]*bbpb.Build, error) {
-	return bb.ret, bb.err
-}
 
 var (
 	builderID = &bbpb.BuilderID{Project: "chromium", Bucket: "ci", Builder: "linux-rel"}
 )
 
+func inputProperties(master, builder string) *bbpb.Build_Input {
+	return &bbpb.Build_Input{
+		Properties: &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"mastername":  {Kind: &structpb.Value_StringValue{StringValue: master}},
+				"buildername": {Kind: &structpb.Value_StringValue{StringValue: master}},
+			},
+		},
+	}
+}
+
 func TestBuildBucketAlerts(t *testing.T) {
 	Convey("smoke", t, func() {
 		a := New(0, 100)
-		a.BuildBucket = &mockBuildBucket{
-			ret: []*bbpb.Build{
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
 				{
 					Steps: []*bbpb.Step{
 						{
@@ -37,9 +46,10 @@ func TestBuildBucketAlerts(t *testing.T) {
 					},
 				},
 			},
-			err: nil,
+			Err: nil,
 		}
-		ctx := context.Background()
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
 		alerts, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{
 			{Project: "chromium", Bucket: "ci", Builder: "linux-rel"},
 		},
@@ -50,8 +60,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 
 	Convey("single failure, single step", t, func() {
 		a := New(0, 100)
-		a.BuildBucket = &mockBuildBucket{
-			ret: []*bbpb.Build{
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
 				{
 					Number: 42,
 					Steps: []*bbpb.Step{
@@ -63,11 +73,18 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 			},
-			err: nil,
+			Err: nil,
 		}
-		ctx := context.Background()
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
 		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{builderID})
 		So(err, ShouldBeNil)
 		So(failures, ShouldNotBeEmpty)
@@ -81,10 +98,75 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 42)
 	})
 
+	Convey("single failure, single step, multiple reasons", t, func() {
+		a := New(0, 100)
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
+				{
+					Number: 42,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "webkit_layout_tests",
+							Status: bbpb.Status_FAILURE,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
+				},
+			},
+			Err: nil,
+		}
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		truePtr := true
+		tr := &client.StubTestResults{
+			FullResult: &model.FullResult{
+				Builder:     "linux-rel",
+				BuildNumber: 42,
+				Tests: model.FullTest{
+					"some/test.html": &model.FullTestLeaf{
+						Actual:     []string{"FAIL"},
+						Expected:   []string{"PASS"},
+						Unexpected: &truePtr,
+					},
+					"some-other/test.html": &model.FullTestLeaf{
+						Actual:     []string{"FAIL"},
+						Expected:   []string{"PASS"},
+						Unexpected: &truePtr,
+					},
+				},
+			},
+		}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{builderID})
+		So(err, ShouldBeNil)
+		So(len(failures), ShouldEqual, 1)
+
+		So(failures[0].StepAtFault, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step.Name, ShouldEqual, "webkit_layout_tests")
+		So(failures[0].Reason.Kind(), ShouldEqual, "test")
+		So(failures[0].Reason.Raw.Signature(), ShouldEqual, "some-other/test.html,some/test.html")
+
+		testFailure, ok := failures[0].Reason.Raw.(*step.TestFailure)
+		So(ok, ShouldBeTrue)
+		So(len(testFailure.TestNames), ShouldEqual, 2)
+
+		So(failures[0].Builders, ShouldNotBeEmpty)
+		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
+		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 42)
+		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 42)
+	})
+
 	Convey("multiple failures, single step", t, func() {
 		a := New(0, 100)
-		a.BuildBucket = &mockBuildBucket{
-			ret: []*bbpb.Build{
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
 				{
 					// Build numbers on waterfall builders reflect source order.
 					Number: 9,
@@ -97,6 +179,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -110,6 +193,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -123,11 +207,91 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 			},
-			err: nil,
+			Err: nil,
 		}
-		ctx := context.Background()
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{
+			{Project: "chromium", Bucket: "ci", Builder: "linux-rel"},
+		},
+		)
+		So(err, ShouldBeNil)
+		So(failures, ShouldNotBeEmpty)
+		So(failures[0].StepAtFault, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step.Name, ShouldEqual, "step-name")
+
+		So(failures[0].Builders, ShouldNotBeEmpty)
+		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
+		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 8)
+		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 9)
+	})
+
+	Convey("multiple failures, single infra step", t, func() {
+		a := New(0, 100)
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
+				{
+					// Build numbers on waterfall builders reflect source order.
+					Number: 9,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_INFRA_FAILURE,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
+				},
+				{
+					// Build numbers on waterfall builders reflect source order.
+					Number: 8,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_INFRA_FAILURE,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
+				},
+				{
+					// Build numbers on waterfall builders reflect source order.
+					Number: 7,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_SUCCESS,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
+				},
+			},
+			Err: nil,
+		}
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+
 		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{
 			{Project: "chromium", Bucket: "ci", Builder: "linux-rel"},
 		},
@@ -146,8 +310,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 
 	Convey("multiple failures, multiple steps, step skipped in one build", t, func() {
 		a := New(0, 100)
-		a.BuildBucket = &mockBuildBucket{
-			ret: []*bbpb.Build{
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
 				{
 					Number: 9,
 					Steps: []*bbpb.Step{
@@ -163,6 +327,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 				{
 					Number: 8,
@@ -176,6 +341,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 				{
 					Number: 7,
@@ -188,11 +354,19 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 			},
-			err: nil,
+			Err: nil,
 		}
-		ctx := context.Background()
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+
 		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{
 			{Project: "chromium", Bucket: "ci", Builder: "linux-rel"},
 		},
@@ -218,8 +392,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 		// step-b: F F F
 		// step-c: P F F
 
-		a.BuildBucket = &mockBuildBucket{
-			ret: []*bbpb.Build{
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
 				{
 					// Build numbers on waterfall builders reflect source order.
 					Number: 9,
@@ -240,6 +414,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -261,6 +436,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 				{
 					// Build numbers on waterfall builders reflect source order.
@@ -282,11 +458,19 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
 				},
 			},
-			err: nil,
+			Err: nil,
 		}
-		ctx := context.Background()
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+
 		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{
 			{Project: "chromium", Bucket: "ci", Builder: "linux-rel"},
 		},
@@ -330,8 +514,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 		// step-b: P F F
 		// step-c: P F F
 
-		a.BuildBucket = &mockBuildBucket{
-			ret: []*bbpb.Build{
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
 				{
 					Number: 9,
 					Steps: []*bbpb.Step{
@@ -351,6 +535,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
+					Input: inputProperties("some-master.foo", "a-rel"),
 				},
 				{
 					Number: 5,
@@ -371,6 +556,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
+					Input: inputProperties("some-master.foo", "b-rel"),
 				},
 				{
 					Number: 8,
@@ -391,6 +577,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
+					Input: inputProperties("some-master.foo", "a-rel"),
 				},
 				{
 					Number: 4,
@@ -411,6 +598,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
+					Input: inputProperties("some-master.foo", "b-rel"),
 				},
 				{
 					Number: 7,
@@ -431,6 +619,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
+					Input: inputProperties("some-master.foo", "a-rel"),
 				},
 				{
 					Number: 3,
@@ -451,11 +640,19 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
+					Input: inputProperties("some-master.foo", "b-rel"),
 				},
 			},
-			err: nil,
+			Err: nil,
 		}
-		ctx := context.Background()
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+
 		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{
 			{Project: "chromium", Bucket: "ci", Builder: "a-rel"},
 			{Project: "chromium", Bucket: "ci", Builder: "b-rel"},

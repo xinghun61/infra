@@ -106,7 +106,8 @@ type Analyzer struct {
 	// during replay.
 	Now func() time.Time
 
-	StepAnalyzers step.BuildStepAnalyzers
+	StepAnalyzers            step.BuildStepAnalyzers
+	BuildBucketStepAnalyzers step.BuildBucketStepAnalyzers
 
 	// Mock these out in tests.
 	Milo        client.Milo

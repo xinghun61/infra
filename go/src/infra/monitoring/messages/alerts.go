@@ -181,12 +181,7 @@ func (r *Reason) Signature() string {
 // Kind is the kind of the reason. Useful for categorization.
 func (r *Reason) Kind() string {
 	// FIXME: This is possibly duplicated with AlertType
-	if r == nil {
-		return "nil Reason"
-	}
-	if r.Raw == nil {
-		return "nil Reason.Raw"
-	}
+
 	return r.Raw.Kind()
 }
 

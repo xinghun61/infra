@@ -76,6 +76,7 @@ func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
 	if info.AppID(ctx.Context) == prodAppID {
 		logReader, findIt, miloClient, crBug, _, testResults, bbucket := client.ProdClients(ctx.Context)
 		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(testResults, logReader, findIt)
 		a.CrBug = crBug
 		a.Milo = miloClient
 		a.FindIt = findIt
@@ -84,6 +85,7 @@ func setServiceClients(ctx *router.Context, a *analyzer.Analyzer) {
 	} else {
 		logReader, findIt, miloClient, crBug, _, testResults, bbucket := client.StagingClients(ctx.Context)
 		a.StepAnalyzers = step.DefaultStepAnalyzers(logReader, findIt, testResults)
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(testResults, logReader, findIt)
 		a.CrBug = crBug
 		a.Milo = miloClient
 		a.FindIt = findIt

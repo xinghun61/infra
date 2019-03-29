@@ -3,7 +3,9 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/monitoring/messages"
+	"net/url"
 	"time"
 
 	bbpb "go.chromium.org/luci/buildbucket/proto"
@@ -67,9 +69,19 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 
 	ret := []messages.BuildFailure{}
 
+	// TODO: Replace all *ByStep maps below with *ByReason - in the simplest case, there
+	// will be only one Reason for a single step failure, and the logic will be mostly the
+	// same. But for test failures there may be a really large number of Reasons per step
+	// failure and for those we should do something smarter than one alert per Reason.
+
 	// Build up a list of build ranges per builder for each alertable step.
 	// The AlertedBuilder type represents a build range.
 	alertedBuildersByStep := map[string][]messages.AlertedBuilder{}
+
+	reasonsByStepName := map[string][]messages.ReasonRaw{}
+
+	masterLocationByName := map[string]*messages.MasterLocation{}
+
 	for builderKey, recentBuilds := range buildsByBuilderID {
 		// Assumed: recentBuilds are sorted most recent first.  TODO: Verify this is true.
 		builderID := strToBuilderID(builderKey)
@@ -77,6 +89,7 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 		if latestBuild.Status == bbpb.Status_SUCCESS {
 			continue
 		}
+
 		latestStepFailures := stepSet(alertableStepFailures(latestBuild))
 
 		// buildsByFailingStep contains one key for each failing step in latestBuild.
@@ -88,7 +101,16 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 		// Note that runs of step failures may begin at different times.
 		for _, build := range recentBuilds {
 			allAttemptedSteps := stepSet(build.Steps)
-			stepFailures := stepSet(alertableStepFailures(build))
+			alertableFailures := alertableStepFailures(build)
+			for _, failure := range alertableFailures {
+				// ReasonsForFailure can make blocking network calls. So this should probably
+				// go into a worker pool too, somehow.
+				reasons := a.BuildBucketStepAnalyzers.ReasonsForFailure(ctx, failure, build)
+				reasonsByStepName[failure.Name] = reasons
+			}
+
+			// Make a stringset of the step names.
+			stepFailures := stepSet(alertableFailures)
 			// Now do some set calculations:
 			// - step failures that exist in latestStepFailures but not in stepFailures:
 			//   The previously examined build is where that step failure started. Stop looking
@@ -128,10 +150,18 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 			if _, ok := alertedBuildersByStep[stepName]; !ok {
 				alertedBuildersByStep[stepName] = []messages.AlertedBuilder{}
 			}
+
+			master, _, err := masterAndBuilderFromInputProperties(latestFailure)
+			if err != nil {
+				logging.Errorf(ctx, "couldn't get master name: %v", err)
+				return nil, err
+			}
+			masterLocationByName[master.Name()] = master
 			alertedBuilder := messages.AlertedBuilder{
 				Project: builderID.Project,
 				Bucket:  builderID.Bucket,
 				Name:    builderID.Builder,
+				Master:  master.Name(),
 				URL:     fmt.Sprintf("https://ci.chromium.org/p/%s/builders/%s/%s", builderID.Project, builderID.Bucket, builderID.Builder),
 				// TODO: add more buildbucket specifics to the AlertedBuilder type.
 				FirstFailure:  int64(firstFailure.Number),
@@ -147,14 +177,41 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 	// Now group up the alerted builder ranges into individual alerts, one per step.
 	// Each will contain the list of builder ranges where the step has been failing.
 	for stepName, alertedBuilders := range alertedBuildersByStep {
-		ret = append(ret, messages.BuildFailure{
+		bf := messages.BuildFailure{
 			StepAtFault: &messages.BuildStep{
 				Step: &messages.Step{
 					Name: stepName,
 				},
 			},
 			Builders: alertedBuilders,
-		})
+		}
+
+		someBuilder := alertedBuilders[0]
+		master := masterLocationByName[someBuilder.Master]
+		results, err := a.FindIt.Findit(ctx, master, someBuilder.Name, someBuilder.LatestFailure, []string{stepName})
+		if err != nil {
+			logging.Errorf(ctx, "error getting findit results: %v", err)
+		}
+
+		if len(results) > 0 {
+			buildURL := client.BuildURLDeprecated(master, someBuilder.Name, 0).String()
+			bf.FinditStatus = results[0].TryJobStatus
+			bf.HasFindings = results[0].HasFindings
+			bf.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/failure?url=%s", buildURL)
+		}
+
+		// This assumes there is one set of reasons that applies to all instances
+		// of stepName failures. Obviously this isn't always true, and we should
+		// do more advanced grouping for test failures within a step, once we have
+		// better and more reliable test result data.
+		reasons := reasonsByStepName[stepName]
+
+		// Add tests for same step failing for different reasons.
+		for _, reason := range reasons {
+			bf := bf
+			bf.Reason = &messages.Reason{Raw: reason}
+			ret = append(ret, bf)
+		}
 	}
 
 	return ret, err
@@ -163,9 +220,47 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 func alertableStepFailures(build *bbpb.Build) []*bbpb.Step {
 	ret := []*bbpb.Step{}
 	for _, buildStep := range build.Steps {
-		if buildStep.Status != bbpb.Status_SUCCESS {
+		// "Failure reason" steps always fail *in addition* to the actual failing step,
+		// so just ignore them.
+		if buildStep.Status != bbpb.Status_SUCCESS && buildStep.Name != "Failure reason" {
 			ret = append(ret, buildStep)
 		}
 	}
 	return ret
+}
+
+// This is a utility function to help transition from buildbot to buildbucket.
+// Some APIs we depend on (logReader, testResultsClient) still expect to have
+// masters passed to them. Thankfully, build input properties often include these
+// values so we just try to get them from there.
+func masterAndBuilderFromInputProperties(build *bbpb.Build) (*messages.MasterLocation, string, error) {
+	// Whelp, we need to get some buildbucket data into test-results server, and it
+	// isn't there yet. The current test-results api requires a Master, Builder and
+	// BuildNumber, which aren't native to buildbucket. So we need to pull them from
+	// build properties, where someone(?) has so graciously left them (for now?).
+	if build.Input == nil || build.Input.Properties == nil {
+		return nil, "", fmt.Errorf("build input and/or properties not set")
+	}
+
+	masterField, ok := build.Input.Properties.Fields["mastername"]
+	if !ok {
+		return nil, "", fmt.Errorf("mastername property not present in build input properties")
+	}
+	masterStr := masterField.GetStringValue()
+
+	builderNameField, ok := build.Input.Properties.Fields["buildername"]
+	if !ok {
+		return nil, "", fmt.Errorf("buildername property not present in build input properties")
+	}
+	builderName := builderNameField.GetStringValue()
+
+	masterURL, err := url.Parse("https://ci.chromium.org/buildbot/" + masterStr)
+	if err != nil {
+		return nil, "", err
+	}
+	master := &messages.MasterLocation{
+		URL: *masterURL,
+	}
+
+	return master, builderName, nil
 }

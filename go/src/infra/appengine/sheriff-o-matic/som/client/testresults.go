@@ -35,6 +35,7 @@ func (trc *testResults) TestResults(ctx context.Context, master *messages.Master
 	// Check if the test results server knows about this master builder test tuple
 	masterValues := trc.knownResults[master.Name()]
 	if len(masterValues) == 0 {
+		logging.Debugf(ctx, "%q not present in knownResults", master.Name())
 		return nil, nil
 	}
 
@@ -55,6 +56,7 @@ func (trc *testResults) TestResults(ctx context.Context, master *messages.Master
 	v.Add("testtype", stepName)
 
 	URL := fmt.Sprintf("%s/testfile?%s", trc.Host, v.Encode())
+	logging.Debugf(ctx, "fetching test results from %s", URL)
 	tr := &model.FullResult{}
 
 	if code, err := trc.getJSON(ctx, URL, tr); err != nil {
