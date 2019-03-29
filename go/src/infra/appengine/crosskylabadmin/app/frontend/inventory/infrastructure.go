@@ -254,9 +254,8 @@ func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDron
 	if rr.drone != "" && rr.drone != srv.GetHostname() {
 		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)
 	}
-	if !removeDutFromServer(srv, rr.dutID) {
-		return nil, nil
-	}
+	srv.DutUids = removeSliceString(srv.DutUids, rr.dutID)
+	delete(dr.droneForDUT, rr.dutID)
 	return &fleet.RemoveDutsFromDronesResponse_Item{
 		DutId:         rr.dutID,
 		DroneHostname: srv.GetHostname(),
@@ -341,17 +340,15 @@ func sortDronesByAscendingDUTCount(ds []*inventory.Server) {
 	})
 }
 
-// removeDutFromServer removes the given Dut from the given server, if it exists.
-//
-// Duts should only occur once on a server; this function only removes the first occurrence.
-func removeDutFromServer(server *inventory.Server, dutID string) (ok bool) {
-	for index, dut := range server.DutUids {
-		if dut == dutID {
-			server.DutUids = append(server.DutUids[:index], server.DutUids[index+1:]...)
-			return true
+func removeSliceString(sl []string, s string) []string {
+	for i, v := range sl {
+		if v != s {
+			continue
 		}
+		copy(sl[i:], sl[i+1:])
+		return sl[:len(sl)-1]
 	}
-	return false
+	return sl
 }
 
 func minInt(a, b int) int {

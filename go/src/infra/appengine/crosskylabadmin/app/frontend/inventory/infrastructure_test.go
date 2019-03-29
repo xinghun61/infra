@@ -15,6 +15,7 @@
 package inventory
 
 import (
+	"reflect"
 	"testing"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
@@ -315,4 +316,52 @@ func TestAssignDutsToDrones(t *testing.T) {
 			So(server.DutUids, ShouldContain, newDutID)
 		})
 	})
+}
+
+func TestRemoveSliceString(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name  string
+		input []string
+		rem   string
+		want  []string
+	}{
+		{
+			name:  "from middle",
+			input: []string{"a", "b", "c"},
+			rem:   "b",
+			want:  []string{"a", "c"},
+		},
+		{
+			name:  "from end",
+			input: []string{"a", "b", "c"},
+			rem:   "c",
+			want:  []string{"a", "b"},
+		},
+		{
+			name:  "from beg",
+			input: []string{"a", "b", "c"},
+			rem:   "a",
+			want:  []string{"b", "c"},
+		},
+		{
+			name:  "missing",
+			input: []string{"a", "b", "c"},
+			rem:   "d",
+			want:  []string{"a", "b", "c"},
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			t.Parallel()
+			got := make([]string, len(c.input))
+			copy(got, c.input)
+			got = removeSliceString(got, c.rem)
+			if !reflect.DeepEqual(got, c.want) {
+				t.Errorf("removeSliceString(%#v, %#v) = %#v; want %#v",
+					c.input, c.rem, got, c.want)
+			}
+		})
+	}
 }
