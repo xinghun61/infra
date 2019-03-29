@@ -211,19 +211,30 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 
 type dutRemover struct {
 	store        *gitstore.InventoryStore
-	env          string
 	hostnameToID map[string]string
+	droneForDUT  map[string]*inventory.Server
 }
 
 func newDUTRemover(ctx context.Context, s *gitstore.InventoryStore) *dutRemover {
+	env := config.Get(ctx).Inventory.Environment
 	dr := dutRemover{
 		store:        s,
-		env:          config.Get(ctx).Inventory.Environment,
 		hostnameToID: make(map[string]string),
+		droneForDUT:  make(map[string]*inventory.Server),
 	}
 	for _, d := range s.Lab.GetDuts() {
 		c := d.GetCommon()
 		dr.hostnameToID[c.GetHostname()] = c.GetId()
+	}
+	for _, srv := range s.Infrastructure.GetServers() {
+		if srv.GetEnvironment().String() != env {
+			continue
+		}
+		// TODO(ayatane): We should filter on server role for Skylab
+		// drones, but only Skylab drones have DUTs right now.
+		for _, d := range srv.DutUids {
+			dr.droneForDUT[d] = srv
+		}
 	}
 	return &dr
 }
@@ -233,26 +244,22 @@ func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDron
 	if err != nil {
 		return nil, err
 	}
-	var ok bool
-	var server *inventory.Server
-	if r.DroneHostname == "" {
-		server, ok = findDutServer(dr.store.Infrastructure.GetServers(), rr.dutID)
-	} else {
-		server, ok = findNamedServer(dr.store.Infrastructure.GetServers(), rr.dutID)
-	}
+	srv, ok := dr.droneForDUT[rr.dutID]
 	if !ok {
+		if rr.drone != "" {
+			return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not assigned to a drone", rr.dutID)
+		}
 		return nil, nil
 	}
-	if server.GetEnvironment().String() != dr.env {
+	if rr.drone != "" && rr.drone != srv.GetHostname() {
+		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)
+	}
+	if !removeDutFromServer(srv, rr.dutID) {
 		return nil, nil
 	}
-	if !removeDutFromServer(server, rr.dutID) {
-		return nil, nil
-	}
-
 	return &fleet.RemoveDutsFromDronesResponse_Item{
 		DutId:         rr.dutID,
-		DroneHostname: server.GetHostname(),
+		DroneHostname: srv.GetHostname(),
 	}, nil
 }
 

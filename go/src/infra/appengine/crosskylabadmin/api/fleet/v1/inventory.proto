@@ -405,7 +405,8 @@ message RemoveDutsFromDronesRequest {
 
     // drone_hostname is the drone to remove the dut from.
     //
-    // If unspecified dut will be removed regardless of current drone.
+    // If specified, the DUT must currently be assigned to the
+    // specified drone.
     string drone_hostname = 2;
 
     // removal_reason is the reason for removal.

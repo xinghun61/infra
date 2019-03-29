@@ -1221,7 +1221,8 @@ type RemoveDutsFromDronesRequest_Item struct {
 	DutHostname string `protobuf:"bytes,3,opt,name=dut_hostname,json=dutHostname,proto3" json:"dut_hostname,omitempty"`
 	// drone_hostname is the drone to remove the dut from.
 	//
-	// If unspecified dut will be removed regardless of current drone.
+	// If specified, the DUT must currently be assigned to the
+	// specified drone.
 	DroneHostname string `protobuf:"bytes,2,opt,name=drone_hostname,json=droneHostname,proto3" json:"drone_hostname,omitempty"`
 	// removal_reason is the reason for removal.
 	//
