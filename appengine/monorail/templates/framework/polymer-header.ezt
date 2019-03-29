@@ -14,7 +14,7 @@ window.prpcClient = new window.AutoRefreshPrpcClient(
     padding: 0;
     font-family: 'Roboto', 'Noto', sans-serif;
     line-height: 1.6;
-    font-size: 15px;
+    font-size: 12px;
     min-width: 300px;
   }
 </style>

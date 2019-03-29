@@ -127,6 +127,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           padding: 0.25em 0;
           width: 100%;
           display: flex;
+          flex-direction: row;
           align-items: baseline;
           justify-content: space-between;
           border-bottom: 1px dotted hsl(0, 0%, 83%);
@@ -171,6 +172,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         }
         [role="heading"] {
           display: flex;
+          flex-direction: row;
           justify-content: space-between;
           align-items: flex-end;
         }
@@ -368,7 +370,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     if (approvalDelta.status) {
       approvalDelta.status = TEXT_TO_STATUS_ENUM[approvalDelta.status];
     }
-  
+
     const uploads = await form.getAttachments();
     if (commentContent || Object.keys(approvalDelta).length > 0 ||
         uploads.length > 0) {

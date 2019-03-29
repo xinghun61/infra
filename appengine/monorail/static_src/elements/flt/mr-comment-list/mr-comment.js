@@ -49,9 +49,13 @@ export class MrComment extends ReduxMixin(PolymerElement) {
           padding: 3px 1px 1px 8px;
           width: 100%;
           display: flex;
+          flex-direction: row;
           justify-content: space-between;
           align-items: center;
           box-sizing: border-box;
+        }
+        .comment-header a {
+          display: inline-flex;
         }
         .comment-options {
           float: right;

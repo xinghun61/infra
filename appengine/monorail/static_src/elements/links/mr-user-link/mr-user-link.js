@@ -14,6 +14,11 @@ import {PolymerElement, html} from '@polymer/polymer';
 export class MrUserLink extends PolymerElement {
   static get template() {
     return html`
+      <style>
+        :host {
+          display: inline-block;
+        }
+      </style>
       <template is="dom-if" if="[[userId]]">
         <a id="userLink" href\$="/u/[[userId]]" title\$="[[displayName]]">
           [[displayName]]</a>

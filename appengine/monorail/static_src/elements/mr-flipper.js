@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 export default class MrFlipper extends HTMLElement {
-
   static is() {
     return 'mr-flipper';
   }
@@ -106,23 +105,22 @@ export default class MrFlipper extends HTMLElement {
           display: flex;
           justify-content: center;
           flex-direction: column;
-          // TODO(zhangtiff): Replace this with a global link color variable.
           --mr-flipper-link-color: var(--chops-link-color);
         }
-        a {
+        .row a {
           display: block;
           padding: 0.25em 0;
           color: var(--mr-flipper-link-color);
         }
-        a, div {
+        .row a, .row div {
           flex: 1;
           white-space: nowrap;
           padding: 0 2px;
         }
-        .counts {
+        .row .counts {
           padding: 0 16px;
         }
-        .counts, a.prev-url, a.next-url, a.list-url {
+        .row .counts, .row a.prev-url, .row a.next-url, .row a.list-url {
           /* Initially not shown */
           visibility: hidden;
         }

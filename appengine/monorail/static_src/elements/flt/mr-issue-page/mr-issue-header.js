@@ -45,6 +45,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           padding: 0.25em 8px;
           box-sizing: border-box;
           display: flex;
+          flex-direction: row;
           justify-content: space-between;
           align-items: center;
         }
@@ -96,8 +97,12 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           font-size: 12px;
         }
         .code-font-and-description-edit div {
+          min-width: 70px;
           display: flex;
           justify-content: space-between;
+        }
+        .code-font-and-description-edit a {
+          white-space: nowrap;
         }
         .spam-notice {
           padding: 1px 5px;
@@ -283,7 +288,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
   }
 
   _computeIssueOptions(issuePermissions, isSpam, isRestricted,
-      projectTemplates) {
+    projectTemplates) {
     // We create two edit Arrays for the top and bottom half of the menu,
     // to be separated by a separator in the UI.
     const editOptions = [];

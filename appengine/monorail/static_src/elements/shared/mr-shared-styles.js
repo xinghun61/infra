@@ -26,6 +26,9 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         background: 0;
         cursor: pointer;
       }
+      h1, h2, h3, h4 {
+        background: none;
+      }
       a.button, .button {
         /* Links that look like buttons. */
         display: inline-flex;
