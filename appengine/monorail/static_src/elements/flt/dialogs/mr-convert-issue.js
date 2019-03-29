@@ -95,9 +95,8 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
         observer: '_convertingIssueChanged',
       },
       convertIssueError: Object,
-      issueId: Number,
       issuePermissions: Object,
-      projectName: String,
+      issueRef: Object,
       projectTemplates: Array,
       selectedTemplate: {
         type: String,
@@ -115,9 +114,8 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
     return {
       convertingIssue: state.requests.convertIssue.requesting,
       convertIssueError: state.requests.convertIssue.error,
-      issueId: state.issueId,
+      issueRef: issue.issueRef(state),
       issuePermissions: state.issuePermissions,
-      projectName: state.projectName,
       projectTemplates: project.project(state).templates,
     };
   }
@@ -138,10 +136,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
   save() {
     const commentContent = this.shadowRoot.querySelector('#commentContent');
     this.dispatchAction(issue.convert({
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
+      issueRef: this.issueRef,
       templateName: this.selectedTemplate,
       commentContent: commentContent.value,
       sendEmail: this.sendEmail,

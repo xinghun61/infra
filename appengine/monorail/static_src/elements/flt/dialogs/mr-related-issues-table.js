@@ -136,8 +136,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
         type: Boolean,
         computed: '_canRerankIssues(issuePermissions)',
       },
-      issueId: Number,
-      projectName: String,
+      issueRef: Object,
       issuePermissions: Array,
       sortedBlockedOn: Array,
     };
@@ -145,8 +144,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issueId: state.issueId,
-      projectName: state.projectName,
+      issueRef: issue.issueRef(state),
       issuePermissions: state.issuePermissions,
       sortedBlockedOn: issue.sortedBlockedOn(state),
     };
@@ -227,10 +225,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
 
     const reorderRequest = window.prpcClient.call(
       'monorail.Issues', 'RerankBlockedOnIssues', {
-        issueRef: {
-          projectName: this.projectName,
-          localId: this.issueId,
-        },
+        issueRef: this.issueRef,
         movedRef: {
           projectName: src.projectName,
           localId: src.localId,
@@ -244,10 +239,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
 
     reorderRequest.then((response) => {
       this.dispatchAction(issue.fetch({
-        issueRef: {
-          projectName: this.projectName,
-          localId: this.issueId,
-        },
+        issueRef: this.issueRef,
       }));
     }, (error) => {
       this.reset();

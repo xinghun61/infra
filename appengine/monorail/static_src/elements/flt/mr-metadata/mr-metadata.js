@@ -9,6 +9,7 @@ import '../../chops/chops-timestamp/chops-timestamp.js';
 import '../../links/mr-issue-link/mr-issue-link.js';
 import '../../links/mr-user-link/mr-user-link.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
+import * as issue from '../../redux/issue.js';
 import '../../shared/mr-shared-styles.js';
 import './mr-field-values.js';
 
@@ -130,7 +131,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
           <th>MergedInto:</th>
           <td>
             <mr-issue-link
-              project-name="[[projectName]]"
+              project-name="[[issueRef.projectName]]"
               issue="[[mergedInto]]"
             ></mr-issue-link>
           </td>
@@ -142,7 +143,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
           <th>Components:</th>
           <td>
             <template is="dom-repeat" items="[[components]]">
-              <a href$="/p/[[projectName]]/issues/list?q=component:[[item.path]]"
+              <a href$="/p/[[issueRef.projectName]]/issues/list?q=component:[[item.path]]"
                 title$="[[item.path]] = [[item.docstring]]"
               >
                 [[item.path]]</a><br />
@@ -174,7 +175,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
                 name="[[field.fieldRef.fieldName]]"
                 type="[[field.fieldRef.type]]"
                 values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
-                project-name="[[projectName]]"
+                project-name="[[issueRef.projectName]]"
               ></mr-field-values>
             </td>
           </tr>
@@ -192,7 +193,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
               name="[[field.fieldRef.fieldName]]"
               type="[[field.fieldRef.type]]"
               values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName)]]"
-              project-name="[[projectName]]"
+              project-name="[[issueRef.projectName]]"
             ></mr-field-values>
           </td>
         </tr>
@@ -218,8 +219,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
         type: Boolean,
         value: false,
       },
-      projectName: String,
-      issueId: Number,
+      issueRef: Object,
       role: {
         type: String,
         value: 'table',
@@ -230,12 +230,11 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
   }
 
   static mapStateToProps(state, element) {
-    const superProps = super.mapStateToProps(state, element);
-    return Object.assign(superProps, {
-      projectName: state.projectName,
-      issueId: state.issueId,
+    return {
+      ...super.mapStateToProps(state, element),
+      issueRef: issue.issueRef(state),
       relatedIssues: state.relatedIssues,
-    });
+    };
   }
 
   _fieldIsHidden(fieldValueMap, fieldDef) {

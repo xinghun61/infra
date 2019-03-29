@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import {autolink} from '../../autolink.js';
 import {ReduxMixin} from '../redux/redux-mixin.js';
+import * as issue from '../redux/issue.js';
 import * as user from '../redux/user.js';
 
 /**
@@ -85,7 +86,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       commentReferences: state.commentReferences,
-      projectName: state.projectName,
+      projectName: issue.issueRef(state).projectName,
       prefs: user.user(state).prefs,
     };
   }

@@ -131,7 +131,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
     this.dispatchAction({
       type: actionType.UPDATE_ISSUE_REF,
       projectName: this.projectName,
-      issueId: this.issueId,
+      localId: this.issueId,
     });
     this.dispatchAction({
       type: actionType.FETCH_COMMENTS_SUCCESS,

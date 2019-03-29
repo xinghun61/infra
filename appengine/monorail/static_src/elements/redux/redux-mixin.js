@@ -83,10 +83,10 @@ const updateIssueApproval = (issue, approval) => {
     return item;
   });
   return {...issue, approvalValues: newApprovals};
-}
+};
 
-const issueIdReducer = createReducer(0, {
-  [actionType.UPDATE_ISSUE_REF]: (state, action) => action.issueId || state,
+const localIdReducer = createReducer(0, {
+  [actionType.UPDATE_ISSUE_REF]: (state, action) => action.localId || state,
 });
 
 const projectNameReducer = createReducer('', {
@@ -237,9 +237,10 @@ const reducer = combineReducers({
   project: project.reducer,
   user: user.reducer,
 
-  // TODO(zhangtiff): Combine these into viewedIssueRef for consistency.
-  issueId: issueIdReducer,
-  projectName: projectNameReducer,
+  issueRef: combineReducers({
+    localId: localIdReducer,
+    projectName: projectNameReducer,
+  }),
 
   issue: issueReducer,
   issueLoaded: issueLoadedReducer,

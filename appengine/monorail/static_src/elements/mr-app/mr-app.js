@@ -152,7 +152,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
   _loadApprovalPage(ctx, next) {
     this.dispatchAction({
       type: actionType.UPDATE_ISSUE_REF,
-      issueId: Number.parseInt(ctx.query.id),
+      localId: Number.parseInt(ctx.query.id),
       projectName: ctx.params.project,
     });
 

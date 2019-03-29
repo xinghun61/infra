@@ -158,7 +158,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       </template>
       <template is="dom-if" if="[[_isDeleted(issueLoaded, issue)]]">
         <div class="container-deleted">
-          <p>Issue [[issueId]] has been deleted.</p>
+          <p>Issue [[issueRef.localId]] has been deleted.</p>
           <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
             <chops-button on-click="_undeleteIssue" class="emphasized">
               Undelete Issue
@@ -203,7 +203,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static get properties() {
     return {
       issue: Object,
-      issueId: Number,
+      issueRef: Object,
       issueLoaded: Boolean,
       commentsLoaded: Boolean,
       issueClosed: {
@@ -211,10 +211,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         reflectToAttribute: true,
       },
       issuePermissions: Object,
-      projectName: {
-        type: String,
-        observer: '_projectNameChanged',
-      },
       fetchingIssue: Boolean,
       fetchingProjectConfig: Boolean,
       fetchIssueError: String,
@@ -234,12 +230,11 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issue: state.issue,
-      issueId: state.issueId,
+      issueRef: issue.issueRef(state),
       issueLoaded: state.issueLoaded,
       issueClosed: !issue.isOpen(state),
       issuePermissions: state.issuePermissions,
       commentsLoaded: state.commentsLoaded,
-      projectName: state.projectName,
       fetchingIssue: state.requests.fetchIssue.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
       fetchIssueError: state.requests.fetchIssue.error,
@@ -249,8 +244,9 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   static get observers() {
     return [
-      '_fetchIssue(issueId, projectName)',
-      '_issueChanged(issueId, projectName, issue)',
+      '_fetchIssue(issueRef)',
+      '_issueChanged(issueRef, issue)',
+      '_projectNameChanged(issueRef.projectName)',
     ];
   }
 
@@ -258,15 +254,16 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     this.shadowRoot.querySelector('#' + e.detail.dialogId).open(e);
   }
 
-  _issueChanged(issueId, projectName, issue) {
-    let title = issueId ? `${issueId} - ` : 'Loading issue... - ';
+  _issueChanged(issueRef, issue) {
+    let title =
+      issueRef.localId ? `${issueRef.localId} - ` : 'Loading issue... - ';
     if (issue.isDeleted) {
       title += 'Issue has been deleted - ';
     } else if (issue.summary) {
       title += `${issue.summary} - `;
     }
-    if (projectName) {
-      title += `${projectName} - `;
+    if (issueRef.projectName) {
+      title += `${issueRef.projectName} - `;
     }
     title += 'Monorail';
     document.title = title;
@@ -286,16 +283,13 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     return (!issueLoaded || !commentsLoaded) && !fetchIssueError;
   }
 
-  _fetchIssue(localId, projectName) {
-    if (!localId || !projectName || this.fetchingIssue) return;
+  _fetchIssue(issueRef) {
+    if (!issueRef.localId || !issueRef.projectName || this.fetchingIssue) {
+      return;
+    }
     // Reload the issue data when the id changes.
 
-    this.dispatchAction(issue.fetchIssuePageData({
-      issueRef: {
-        projectName,
-        localId,
-      },
-    }));
+    this.dispatchAction(issue.fetchIssuePageData({issueRef}));
   }
 
   _userDisplayNameChanged(userDisplayName) {
@@ -304,13 +298,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   _undeleteIssue() {
     window.prpcClient.call('monorail.Issues', 'DeleteIssue', {
-      issueRef: {
-        localId: this.issueId,
-        projectName: this.projectName,
-      },
+      issueRef: this.issueRef,
       delete: false,
     }).then(() => {
-      this._fetchIssue(this.issueId, this.projectName);
+      this._fetchIssue(this.issueRef);
     });
   }
 

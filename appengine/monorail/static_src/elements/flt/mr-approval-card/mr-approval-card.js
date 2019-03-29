@@ -262,9 +262,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         type: Object,
         observer: 'reset',
       },
-      issueId: String,
+      issueRef: Object,
       projectConfig: Object,
-      projectName: String,
       class: {
         type: String,
         reflectToAttribute: true,
@@ -340,9 +339,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
       fieldDefsByApprovalName: project.fieldDefsByApprovalName(state),
       user: user.user(state),
       issue: state.issue,
-      issueId: state.issueId,
+      issueRef: issue.issueRef(state),
       projectConfig: project.project(state).config,
-      projectName: state.projectName,
       comments: state.comments,
       updatingApproval: state.requests.updateApproval.requesting,
       updateApprovalError: state.requests.updateApproval.error,
@@ -375,10 +373,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     if (commentContent || Object.keys(approvalDelta).length > 0 ||
         uploads.length > 0) {
       this.dispatchAction(issue.updateApproval({
-        issueRef: {
-          projectName: this.projectName,
-          localId: this.issueId,
-        },
+        issueRef: this.issueRef,
         fieldRef: {
           type: fieldTypes.APPROVAL_TYPE,
           fieldName: this.fieldName,

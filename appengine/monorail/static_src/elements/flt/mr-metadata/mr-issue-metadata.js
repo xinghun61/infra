@@ -237,8 +237,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
   static get properties() {
     return {
       issue: Object,
-      issueId: Number,
-      projectName: String,
+      issueRef: Object,
       projectConfig: String,
       user: Object,
       isStarred: {
@@ -269,9 +268,8 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issue: state.issue,
-      issueId: state.issueId,
+      issueRef: issue.issueRef(state),
       user: user.user(state),
-      projectName: state.projectName,
       projectConfig: project.project(state).config,
       isStarred: state.isStarred,
       fetchingIsStarred: state.requests.fetchIsStarred.requesting,
@@ -291,10 +289,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
     if (!this._canStar) return;
 
     const newIsStarred = !this.isStarred;
-    const issueRef = {
-      projectName: this.projectName,
-      localId: this.issueId,
-    };
+    const issueRef = this.issueRef;
 
     this.dispatchAction(issue.star(issueRef, newIsStarred));
   }

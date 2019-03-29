@@ -7,6 +7,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../shared/mr-shared-styles.js';
@@ -70,8 +71,7 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
-      issueId: Number,
-      projectName: String,
+      issueRef: Object,
       _action: String,
       _targetProjectError: String,
     };
@@ -79,8 +79,7 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issueId: state.issueId,
-      projectName: state.projectName,
+      issueRef: issue.issueRef(state),
     };
   }
 
@@ -102,10 +101,7 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
   save() {
     const method = this._action + 'Issue';
     window.prpcClient.call('monorail.Issues', method, {
-      issueRef: {
-        localId: this.issueId,
-        projectName: this.projectName,
-      },
+      issueRef: this.issueRef,
       targetProjectName: this.$.targetProjectInput.value,
     }).then((response) => {
       const projectName = response.newIssueRef.projectName;

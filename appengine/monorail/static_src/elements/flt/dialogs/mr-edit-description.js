@@ -113,8 +113,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
   static get properties() {
     return {
       comments: Array,
-      issueId: String,
-      projectName: String,
+      issueRef: Object,
       _attachmentError: String,
       _attachments: Array,
       _boldLines: Array,
@@ -129,8 +128,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       comments: state.comments,
-      issueId: state.issueId,
-      projectName: state.projectName,
+      issueRef: issue.issueRef(state),
     };
   }
 
@@ -245,10 +243,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
     const sendEmail = this._sendEmail;
     const keptAttachments = Array.from(this._keptAttachmentIds);
     const message = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
+      issueRef: this.issueRef,
       isDescription: true,
       commentContent,
       keptAttachments,

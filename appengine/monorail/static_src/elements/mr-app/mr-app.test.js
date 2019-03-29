@@ -37,7 +37,7 @@ suite('mr-app', () => {
 
     const approvalElement = element.shadowRoot.querySelector('mr-issue-page');
     assert.isDefined(approvalElement, 'approval element is defined');
-    assert.equal(approvalElement.projectName, 'chromium');
-    assert.equal(approvalElement.issueId, 234);
+    assert.equal(approvalElement.issueRef.projectName, 'chromium');
+    assert.equal(approvalElement.issueRef.localId, 234);
   });
 });

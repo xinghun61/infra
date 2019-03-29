@@ -114,8 +114,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
-      issueId: Number,
-      projectName: String,
+      issueRef: Object,
       issueHotlists: Array,
       userHotlists: Array,
       user: Object,
@@ -125,8 +124,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issueId: state.issueId,
-      projectName: state.projectName,
+      issueRef: issue.issueRef(state),
       issueHotlists: state.issueHotlists,
       user: user.user(state),
       userHotlists: user.user(state).hotlists,
@@ -153,10 +151,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
 
   save() {
     const changes = this.changes;
-    const issueRef = {
-      projectName: this.projectName,
-      localId: this.issueId,
-    };
+    const issueRef = this.issueRef;
 
     const promises = [];
     if (changes.added.length) {

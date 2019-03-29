@@ -93,7 +93,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
                   name="[[field.fieldRef.fieldName]]"
                   type="[[field.fieldRef.type]]"
                   values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
-                  project-name="[[projectName]]"
+                  project-name="[[issueRef.projectName]]"
                 ></mr-field-values>
               </div>
             </template>
@@ -159,8 +159,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         type: Object,
         observer: 'reset',
       },
-      projectName: String,
-      issueId: Number,
+      issueRef: Object,
       phaseName: {
         type: String,
         value: '',
@@ -218,8 +217,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     const superProps = super.mapStateToProps(state, element);
     return Object.assign(superProps, {
       issue: state.issue,
-      issueId: state.issueId,
-      projectName: state.projectName,
+      issueRef: issue.issueRef(state),
       updatingIssue: state.requests.updateIssue.requesting,
       updateIssueError: state.requests.updateIssue.error,
       fieldDefs: project.fieldDefsForPhases(state),
@@ -254,10 +252,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     }
 
     const message = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
+      issueRef: this.issueRef,
       delta: delta,
       sendEmail: form.sendEmail,
       commentContent: form.getCommentContent(),

@@ -22,6 +22,8 @@ const RESTRICT_VIEW_PREFIX = 'restrict-view-';
 const RESTRICT_EDIT_PREFIX = 'restrict-editissue-';
 const RESTRICT_COMMENT_PREFIX = 'restrict-addissuecomment-';
 
+export const issueRef = (state) => state.issueRef;
+
 // TODO(zhangtiff): Eventually Monorail's Redux state will store
 // multiple issues, and this selector will have to find the viewed
 // issue based on a viewed issue ref.

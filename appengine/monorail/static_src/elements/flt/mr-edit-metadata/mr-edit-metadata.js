@@ -17,6 +17,7 @@ import {displayNameToUserRef, labelStringToRef, componentStringToRef,
 import {isEmptyObject} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
+import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import {actionType} from '../../redux/redux-mixin.js';
 import './mr-edit-field.js';
@@ -526,7 +527,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     return Object.assign(superProps, {
       presubmitResponse: state.presubmitResponse,
       projectConfig: project.project(state).config,
-      projectName: state.projectName,
+      projectName: issue.issueRef(state).projectName,
       issuePermissions: state.issuePermissions,
     });
   }

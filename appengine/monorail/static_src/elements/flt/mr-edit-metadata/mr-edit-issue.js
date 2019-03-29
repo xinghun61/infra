@@ -66,8 +66,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
         type: Object,
         observer: 'reset',
       },
-      issueId: Number,
-      projectName: String,
+      issueRef: Object,
       projectConfig: Object,
       updatingIssue: Boolean,
       updateIssueError: Object,
@@ -90,8 +89,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issue: state.issue,
-      issueId: state.issueId,
-      projectName: state.projectName,
+      issueRef: issue.issueRef(state),
       projectConfig: project.project(state).config,
       updatingIssue: state.requests.updateIssue.requesting,
       updateIssueError: state.requests.updateIssue.error,
@@ -107,10 +105,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
   async save() {
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
     const message = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
+      issueRef: this.issueRef,
       delta: form.getDelta(),
       commentContent: form.getCommentContent(),
       sendEmail: form.sendEmail,
@@ -161,10 +156,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
 
   _presubmitIssue(evt) {
     const message = {
-      issueRef: {
-        projectName: this.projectName,
-        localId: this.issueId,
-      },
+      issueRef: this.issueRef,
       issueDelta: evt.detail.delta,
     };
     this.dispatchAction(issue.presubmit(message));

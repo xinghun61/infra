@@ -77,8 +77,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     return {
       comments: Array,
       commentsShownCount: Number,
-      issueId: Number,
-      projectName: String,
       _descriptionList: {
         type: Array,
         computed: '_computeDescriptionList(comments)',
@@ -92,8 +90,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issueId: state.issueId,
-      projectName: state.projectName,
       comments: state.comments,
     };
   }
