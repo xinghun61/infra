@@ -88,22 +88,24 @@ def validate_gerrit_change(change):
     logging.warning('gerrit_change.project is not specified')
 
 
-def validate_gitiles_commit(commit):
+def validate_gitiles_commit(commit, require_ref=True):
   """Validates common_pb2.GitilesCommit."""
   _check_truth(commit, 'host', 'project')
-  if not commit.id and not commit.ref:
-    _err('id or ref is required')
-  if commit.id:
-    with _enter('id'):
-      _validate_hex_sha1(commit.id)
+
+  if require_ref:
+    _check_truth(commit, 'ref')
   if commit.ref:
     if not commit.ref.startswith('refs/'):
       _enter_err('ref', 'must start with "refs/"')
-  if commit.position and not commit.ref:
-    _err('position requires ref')
+  else:
+    if not commit.id:
+      _err('id or ref is required')
+    if commit.position:
+      _enter_err('position', 'requires ref')
 
-  if not commit.ref:
-    logging.warning('gitiles_commit.ref is not specified')
+  if commit.id:
+    with _enter('id'):
+      _validate_hex_sha1(commit.id)
 
 
 def validate_tags(string_pairs, mode):
@@ -509,7 +511,7 @@ def _validate_predicate_output_gitiles_commit(commit):
         'unsupported set of fields %r. Supported field sets: %r', field_set,
         SUPPORTED_PREDICATE_OUTPUT_GITILES_COMMIT_FIELD_SET
     )
-  validate_gitiles_commit(commit)
+  validate_gitiles_commit(commit, require_ref=False)
 
 
 ################################################################################

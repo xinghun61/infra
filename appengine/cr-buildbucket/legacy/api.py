@@ -122,8 +122,8 @@ def parse_v1_tags(v1_tags):
 
     v2_tags.append(common_pb2.StringPair(key=key, value=value))
 
-  if gitiles_commit and gitiles_ref:
-    gitiles_commit.ref = gitiles_ref
+  if gitiles_commit and not gitiles_commit.ref:
+    gitiles_commit.ref = gitiles_ref or 'refs/heads/master'
 
   return v2_tags, gitiles_commit, gerrit_changes
 

@@ -78,7 +78,7 @@ class GitilesCommitTests(BaseTestCase):
 
   def test_host_and_project(self):
     msg = common_pb2.GitilesCommit(host='gerrit.example.com', project='project')
-    self.assert_invalid(msg, 'id or ref is required')
+    self.assert_invalid(msg, 'ref: required')
 
   def test_invalid_ref(self):
     msg = common_pb2.GitilesCommit(
@@ -92,6 +92,7 @@ class GitilesCommitTests(BaseTestCase):
     msg = common_pb2.GitilesCommit(
         host='gerrit.example.com',
         project='project',
+        ref='refs/heads/master',
         id='deadbeef',
     )
     self.assert_invalid(msg, r'id: does not match r"')
@@ -103,7 +104,16 @@ class GitilesCommitTests(BaseTestCase):
         id='a' * 40,
         position=1,
     )
-    self.assert_invalid(msg, r'position requires ref')
+    with self.assertRaisesRegexp(validation.Error, r'position: requires ref'):
+      validation.validate_gitiles_commit(msg, require_ref=False)
+
+  def test_id_or_ref(self):
+    msg = common_pb2.GitilesCommit(
+        host='gerrit.example.com',
+        project='project',
+    )
+    with self.assertRaisesRegexp(validation.Error, r'id or ref is required'):
+      validation.validate_gitiles_commit(msg, require_ref=False)
 
 
 class TagsTests(BaseTestCase):
@@ -343,7 +353,7 @@ class ScheduleBuildRequestTests(BaseTestCase):
             host='gerrit.example.com', project='project'
         ),
     )
-    self.assert_invalid(msg, r'gitiles_commit: id or ref is required')
+    self.assert_invalid(msg, r'gitiles_commit\.ref: required')
 
   def test_gerrit_change(self):
     msg = rpc_pb2.ScheduleBuildRequest(
