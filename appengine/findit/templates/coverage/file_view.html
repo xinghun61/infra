@@ -48,34 +48,26 @@
     .highlight-row:hover {
       background-color: #F0F0F0;
     }
-    .incoverable-code:hover {
-      background-color: #F0F0F0;
-    }
     .covered-code {
-      background-color: #AAF2AA;
-    }
-    .covered-code:hover {
-      background-color: #F0F0F0;
+      background-color: #E3F1F1;
     }
     .uncovered-code {
-      background-color: #EF9B9B;
+      background-color: #F8D2AA;
     }
-    .uncovered-code:hover {
-      background-color: #F0F0F0;
+    .partially-covered-code {
+      background: linear-gradient(to right bottom, #E3F1F1 50%, #F8D2AA 50%);
     }
     .covered-count {
-      color: GREEN;
+      color: BLUE;
       text-align: right;
-    }
-    .covered-count:hover {
-      background-color: #F0F0F0;
     }
     .uncovered-count {
-      color: RED;
+      color: DARKORANGE;
       text-align: right;
     }
-    .uncovered-count:hover {
-      background-color: #F0F0F0;
+    .partial-count {
+      color: FUCHSIA;
+      text-align: right;
     }
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
@@ -87,6 +79,20 @@
     });
   </script>
 </head>
+
+{% macro HumanReadableCount(count) -%}
+  {%- if count >= 1000000000000 -%}
+    {{'{0:.1f}'.format(count/1000000000000.0)}}T
+  {%- elif count >= 1000000000 -%}
+    {{'{0:.1f}'.format(count/1000000000.0)}}G
+  {%- elif count >= 1000000 -%}
+    {{'{0:.1f}'.format(count/1000000.0)}}M
+  {%- elif count >= 1000 -%}
+    {{'{0:.1f}'.format(count/1000.0)}}K
+  {%- else -%}
+    {{count}}
+  {%- endif %}
+{%- endmacro %}
 
 <body>
   <cats-app id="app" components="Tools>CodeCoverage" page-header="Code Coverage: line-by-line coverage (Chrome Browser for {{platform_ui_name}})">
@@ -114,28 +120,36 @@
       <tbody id="report-data-container">
       {% for num, info in data.line_to_data %}
         <tr id="{{num}}" class="highlight-row">
-          <td><a href="#{{num}}"><pre>{{num}}</pre></a></td>
           {% if info.count == 0 %}
-          <td class="uncovered-count"><pre>0</pre></td>
-          <td class="uncovered-code"><pre>{{info.line}}</pre></td>
-          {% elif info.count > 0 %}
-            <td class="covered-count" title="{{info.count}}">
-              {% if info.count >= 1000000000000 %}
-              <pre>{{'{0:.1f}'.format(info.count/1000000000000.0)}}T</pre>
-              {% elif info.count >= 1000000000 %}
-              <pre>{{'{0:.1f}'.format(info.count/1000000000.0)}}G</pre>
-              {% elif info.count >= 1000000 %}
-              <pre>{{'{0:.1f}'.format(info.count/1000000.0)}}M</pre>
-              {% elif info.count >= 1000 %}
-              <pre>{{'{0:.1f}'.format(info.count/1000.0)}}K</pre>
-              {% else %}
-              <pre>{{info.count}}</pre>
-              {% endif %}
+            <td class="uncovered-code" title="Uncovered line"><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td class="uncovered-count"><pre>0</pre></td>
+            <td ><pre class="uncovered-code" title="Uncovered code">{{info.line}}</pre></td>
+          {% elif info.is_partially_covered %}
+            <td class="partially-covered-code" title="Partially covered line"><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td class="partial-count" title="{{info.count}}">
+                <pre>{{HumanReadableCount(info.count)}}</pre>
             </td>
-          <td class="covered-code"><pre>{{info.line}}</pre></td>
+            <td>
+              <pre>
+                {%- for region in info.regions -%}
+                  {%- if region.is_covered -%}
+                    <span>{{region.text}}</span>
+                  {%- else -%}
+                    <span class="uncovered-code" title="Uncovered code">{{region.text}}</span>
+                  {%- endif -%}
+                {%- endfor -%}
+              </pre>
+            </td>
+          {% elif info.count > 0 %}
+            <td class="covered-code" title="Covered line"><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td class="covered-count" title="{{info.count}}">
+              <pre>{{HumanReadableCount(info.count)}}</pre>
+            </td>
+            <td><pre>{{info.line}}</pre></td>
           {% else %}
-          <td></td>
-          <td class="incoverable-code"><pre>{{info.line}}</pre></td>
+            <td><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td><!-- Intentionally empty. Count would go here. --></td>
+            <td><pre>{{info.line}}</pre></td>
           {% endif %}
         </tr>
       {% endfor %}
