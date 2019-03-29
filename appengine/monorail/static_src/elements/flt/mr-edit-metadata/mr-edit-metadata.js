@@ -50,12 +50,13 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           text-align: right;
         }
         :host(.edit-actions-right) .edit-actions chops-checkbox {
-          margin-right: auto;
-          margin-left: 0;
+          text-align: left;
         }
         .edit-actions chops-checkbox {
+          max-width: 200px;
           margin-top: 2px;
-          margin-left: 128px;
+          flex-grow: 2;
+          text-align: right;
         }
         .edit-actions {
           width: 100%;
@@ -494,7 +495,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         type: Object,
         observer: '_onPresubmitResponse',
       },
-      fieldValueMap: Object,  // Set by MetadataMixin.
+      fieldValueMap: Object, // Set by MetadataMixin.
       _hasDerivedValues: Boolean,
       _hasErrorsOrWarnings: Boolean,
       _ownerIcon: String,
@@ -808,7 +809,6 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       this._ownerIcon = 'info';
     }
   }
-
 }
 
 customElements.define(MrEditMetadata.is, MrEditMetadata);
