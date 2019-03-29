@@ -34,6 +34,32 @@ def _normalize_acls(acls):
       del acls[i]
 
 
+def _expand_auto_builder_dimension(b):
+  if (b.auto_builder_dimension == project_config_pb2.YES and
+      not any(d.startswith('builder:') for d in b.dimensions)):
+    b.dimensions.append('builder:%s' % b.name)
+  b.auto_builder_dimension = project_config_pb2.UNSET
+
+
+def _remove_noop_dimensions(b):
+  """Removes dimensions that look like "<key>:", they are noop."""
+  dims = list(b.dimensions)
+  b.ClearField('dimensions')
+  for d in dims:
+    chunks = d.split(':')
+    if len(chunks) != 2 or chunks[1]:
+      b.dimensions.append(d)
+
+
+def _move_swarming_defaults(b, swarming):
+  if not b.swarming_host:
+    b.swarming_host = swarming.hostname
+  if (not b.HasField('task_template_canary_percentage') and
+      swarming.HasField('task_template_canary_percentage')):
+    b.task_template_canary_percentage.value = (
+        swarming.task_template_canary_percentage.value)
+
+
 def flatten(orig):
   pbtext = multiline_proto.parse_multiline(orig)
   project_cfg = project_config_pb2.BuildbucketCfg()
@@ -61,6 +87,13 @@ def flatten(orig):
         defaults.dimensions.append('pool:' + bucket_cfg.name)
       for b in bucket_cfg.swarming.builders:
         flatten_swarmingcfg.flatten_builder(b, defaults, builder_mixins_by_name)
+        _expand_auto_builder_dimension(b)
+        _remove_noop_dimensions(b)
+        _move_swarming_defaults(b, bucket_cfg.swarming)
+        b.dimensions.sort()
+      # These settings have been "expanded" by _move_swarming_defaults.
+      bucket_cfg.swarming.ClearField('hostname')
+      bucket_cfg.swarming.ClearField('task_template_canary_percentage')
       # Sort builders by name
       bucket_cfg.swarming.builders.sort(key=lambda x: x.name)
   # Sort top-level entries by name
