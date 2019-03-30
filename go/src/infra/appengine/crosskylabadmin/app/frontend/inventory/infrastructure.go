@@ -26,6 +26,7 @@ import (
 	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
 	"infra/libs/skylab/inventory"
 
+	"github.com/golang/protobuf/proto"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/grpc/grpcutil"
@@ -273,19 +274,41 @@ func (dr *dutRemover) unpackRequest(r *fleet.RemoveDutsFromDronesRequest_Item) (
 	rr := removeRequest{
 		drone: r.DroneHostname,
 	}
+	if err := dr.unpackRequestDUTID(r, &rr); err != nil {
+		return rr, err
+	}
+	if err := dr.unpackRequestReason(r, &rr); err != nil {
+		return rr, err
+	}
+	return rr, nil
+}
+
+func (dr *dutRemover) unpackRequestDUTID(r *fleet.RemoveDutsFromDronesRequest_Item, rr *removeRequest) error {
 	switch {
 	case r.DutHostname != "":
 		var ok bool
 		rr.dutID, ok = dr.hostnameToID[r.DutHostname]
 		if !ok {
-			return rr, status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
+			return status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
 		}
 	case r.DutId != "":
 		rr.dutID = r.DutId
 	default:
-		return rr, status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
+		return status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
 	}
-	return rr, nil
+	return nil
+}
+
+func (dr *dutRemover) unpackRequestReason(r *fleet.RemoveDutsFromDronesRequest_Item, rr *removeRequest) error {
+	enc := r.GetRemovalReason()
+	if len(enc) == 0 {
+		return nil
+	}
+	rr.reason = new(inventory.RemovalReason)
+	if err := proto.Unmarshal(enc, rr.reason); err != nil {
+		return status.Errorf(codes.InvalidArgument, "invalid RemovalReason")
+	}
+	return nil
 }
 
 // findDutServer finds the server that the given Dut is on, if it exists.
