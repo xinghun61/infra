@@ -234,7 +234,11 @@ class NewBuild(object):
     self.build = None
     self.exception = None
 
-  def finalize(self):
+  @property
+  def final(self):
+    return self.build or self.exception
+
+  def result(self):
     """Returns (build, exception) tuple where one of items is None."""
     if self.exception:
       return None, self.exception
@@ -342,18 +346,18 @@ def add_many_async(build_requests):
     builder = r.schedule_build_request.builder.builder
     bucket_builder_cfgs = builder_cfgs[r.bucket_id]
     builder_cfg = bucket_builder_cfgs.get(builder)
+    nb = NewBuild(r, builder_cfg)
     if bucket_builder_cfgs and not builder_cfg:
-      raise errors.BuilderNotFoundError(
+      nb.exception = errors.BuilderNotFoundError(
           'builder "%s" not found in bucket "%s"' % (builder, r.bucket_id)
       )
-    new_builds.append(NewBuild(r, builder_cfg))
+    new_builds.append(nb)
 
   # Check memcache.
-  yield [nb.check_cache_async() for nb in new_builds]
+  yield [nb.check_cache_async() for nb in new_builds if not nb.final]
 
-  # From this point, consider only cache misses.
   # Create and put builds.
-  to_create = [nb for nb in new_builds if nb.build is None]
+  to_create = [nb for nb in new_builds if not nb.final]
   if to_create:
     build_ids = model.create_build_ids(now, len(to_create))
     for nb, build_id in zip(to_create, build_ids):
@@ -364,7 +368,7 @@ def add_many_async(build_requests):
     yield search.update_tag_indexes_async([nb.build for nb in to_create])
     yield [nb.put_and_cache_async() for nb in to_create]
 
-  raise ndb.Return([nb.finalize() for nb in new_builds])
+  raise ndb.Return([nb.result() for nb in new_builds])
 
 
 @ndb.tasklet

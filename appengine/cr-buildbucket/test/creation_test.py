@@ -143,8 +143,9 @@ class CreationTest(testing.AppengineTestCase):
         bucket='try',
         builder='non-existing',
     )
-    with self.assertRaises(errors.BuilderNotFoundError):
-      self.add(dict(builder=builder_id))
+    req = self.build_request(dict(builder=builder_id))
+    (_, ex), = creation.add_many_async([req]).get_result()
+    self.assertIsInstance(ex, errors.BuilderNotFoundError)
 
   def test_critical(self):
     build = self.add(dict(critical=common_pb2.YES))
