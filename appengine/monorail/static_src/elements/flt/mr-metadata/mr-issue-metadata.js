@@ -34,7 +34,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         }
         h3 {
           display: block;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           margin: 0;
           line-height: 160%;
           width: 40%;
@@ -58,7 +58,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         }
         button.linkify i.material-icons {
           margin-right: 4px;
-          font-size: 20px;
+          font-size: var(--chops-icon-font-size);
         }
         mr-hotlist-link {
           text-overflow: ellipsis;

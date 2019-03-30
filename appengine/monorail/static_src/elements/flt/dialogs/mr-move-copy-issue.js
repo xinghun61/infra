@@ -20,7 +20,7 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
       <style include="mr-shared-styles">
         .target-project-dialog {
           display: block;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
         }
         .error {
           max-width: 100%;

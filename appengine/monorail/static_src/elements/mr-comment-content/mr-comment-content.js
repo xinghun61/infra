@@ -21,6 +21,8 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
       <style>
         :host {
           word-break: break-word;
+          font-size: var(--chops-main-font-size);
+          line-height: 130%;
         }
         .line {
           white-space: pre-wrap;
@@ -34,7 +36,6 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
         }
         span[code-font] {
           font-family: monospace;
-          font-size: 12px;
         }
       </style>
       <span is-deleted\$="[[isDeleted]]" code-font\$="[[_codeFont]]">

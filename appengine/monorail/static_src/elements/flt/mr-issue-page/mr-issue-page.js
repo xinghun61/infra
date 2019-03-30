@@ -35,6 +35,9 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-shared-styles">
+        :host {
+          --mr-issue-page-horizontal-padding: 12px;
+        }
         :host([issue-closed]) .metadata-container {
           background: var(--monorail-metadata-closed-bg);
         }
@@ -46,7 +49,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         }
         .container-issue-content {
           padding: 0;
-          padding-left: 16px;
           overflow: hidden;
           flex-grow: 1;
           display: flex;
@@ -55,6 +57,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           flex-direction: row;
           flex-wrap: nowrap;
           box-sizing: border-box;
+          padding-top: 0.5em;
         }
         .container-outside {
           box-sizing: border-box;
@@ -68,11 +71,12 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           flex-direction: row;
           flex-wrap: no-wrap;
         }
-        .container-deleted {
-          padding: 16px;
+        .container-no-issue {
+          padding: 0.5em 16px;
+          font-size: var(--chops-large-font-size);
         }
         .metadata-container {
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           background: var(--monorail-metadata-open-bg);
           border-right: var(--chops-normal-border);
           border-bottom: var(--chops-normal-border);
@@ -96,7 +100,8 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           flex-grow: 1;
           box-sizing: border-box;
           min-height: 100%;
-          padding-right: 16px;
+          padding-left: var(--mr-issue-page-horizontal-padding);
+          padding-right: var(--mr-issue-page-horizontal-padding);
         }
         mr-issue-metadata {
           position: sticky;
@@ -104,8 +109,8 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         }
         mr-launch-overview {
           border-left: var(--chops-normal-border);
-          padding-left: 16px;
-          padding-right: 16px;
+          padding-left: var(--mr-issue-page-horizontal-padding);
+          padding-right: var(--mr-issue-page-horizontal-padding);
           flex-grow: 0;
           flex-shrink: 0;
           width: 50%;
@@ -115,7 +120,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         @media (max-width: 1024px) {
           .container-issue-content {
             flex-direction: column;
-            padding: 0 16px;
+            padding: 0 var(--mr-issue-page-horizontal-padding);
           }
           mr-issue-details, mr-launch-overview {
             width: 100%;
@@ -150,17 +155,17 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         is="dom-if"
         if="[[_showLoading(issueLoaded, loadingComments, fetchIssueError)]]"
       >
-        <div class="container-outside">
+        <div class="container-no-issue">
           Loading...
         </div>
       </template>
       <template is="dom-if" if="[[fetchIssueError]]">
-        <div class="container-outside">
+        <div class="container-no-issue">
           [[fetchIssueError.description]]
         </div>
       </template>
       <template is="dom-if" if="[[_isDeleted(issueLoaded, issue)]]">
-        <div class="container-deleted">
+        <div class="container-no-issue">
           <p>Issue [[issueRef.localId]] has been deleted.</p>
           <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
             <chops-button on-click="_undeleteIssue" class="emphasized">

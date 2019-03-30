@@ -54,7 +54,7 @@ export class MrEditField extends PolymerElement {
         .multi-grid > chops-button {
           /* Use grid to determine sizing for button, not chops-button styles. */
           margin-left: unset;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           padding: 0;
         }
       </style>

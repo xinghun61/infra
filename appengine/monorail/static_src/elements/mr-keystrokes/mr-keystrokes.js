@@ -36,7 +36,7 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
           padding: 1em;
           width: 90%;
           max-width: 1200px;
-          font-size: 14px;
+          font-size: var(--chops-main-font-size);
         }
         h2 {
           margin-top: 0;
@@ -44,7 +44,7 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
           justify-content: space-between;
           font-weight: normal;
           border-bottom: 2px solid white;
-          font-size: 18px;
+          font-size: var(--chops-large-font-size);
           padding-bottom: 0.5em;
         }
         .close-button {

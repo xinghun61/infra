@@ -8,7 +8,6 @@ import AutoRefreshPrpcClient from '../prpc.js';
 const DEFAULT_NUM_DAYS = 30;
 
 export default class MrChart extends HTMLElement {
-
   static is() {
     return 'mr-chart';
   }
@@ -139,7 +138,7 @@ export default class MrChart extends HTMLElement {
         cannedQuery: cannedQuery,
       };
       const callPromise = this.prpcClient.call('monorail.Issues',
-          'IssueSnapshot', message);
+        'IssueSnapshot', message);
       return callPromise.then((response) => {
         resolve({
           date: timestamp * 1000,
@@ -162,13 +161,13 @@ export default class MrChart extends HTMLElement {
           borderColor: 'rgb(54, 162, 235)',
           data: values,
           fill: false,
-        }]
+        }],
       },
       options: {
         responsive: true,
         title: {
           display: true,
-          text: 'Issues over time'
+          text: 'Issues over time',
         },
         tooltips: {
           mode: 'index',
@@ -176,15 +175,15 @@ export default class MrChart extends HTMLElement {
         },
         hover: {
           mode: 'nearest',
-          intersect: true
+          intersect: true,
         },
         scales: {
           xAxes: [{
             display: true,
             scaleLabel: {
               display: true,
-              labelString: 'Day'
-            }
+              labelString: 'Day',
+            },
           }],
           yAxes: [{
             display: true,
@@ -193,11 +192,11 @@ export default class MrChart extends HTMLElement {
             },
             scaleLabel: {
               display: true,
-              labelString: 'Value'
-            }
-          }]
-        }
-      }
+              labelString: 'Value',
+            },
+          }],
+        },
+      },
     };
   }
 
@@ -322,12 +321,11 @@ export default class MrChart extends HTMLElement {
   }
 
   static makeIndices(timestamps) {
-    const dateFormat = { year: 'numeric', month: 'numeric', day: 'numeric' };
-    return timestamps.map(ts => (
+    const dateFormat = {year: 'numeric', month: 'numeric', day: 'numeric'};
+    return timestamps.map((ts) => (
       (new Date(ts * 1000)).toLocaleDateString('en-US', dateFormat)
     ));
   }
-
 }
 
 customElements.define(MrChart.is(), MrChart);

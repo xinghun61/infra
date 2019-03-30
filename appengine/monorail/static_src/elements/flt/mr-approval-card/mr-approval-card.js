@@ -87,7 +87,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         :host {
           width: 100%;
           background-color: white;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           border-bottom: var(--chops-normal-border);
           box-sizing: border-box;
           display: block;
@@ -146,7 +146,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           margin: 0;
           width: 100%;
           border: 0;
-          font-size: 15px;
+          font-size: var(--chops-large-font-size);
           font-weight: normal;
           box-sizing: border-box;
           display: flex;
@@ -157,7 +157,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           cursor: pointer;
         }
         .status {
-          font-size: 13px;
+          font-size: var(--chops-main-font-size);
           color: var(--approval-accent-color);
           display: inline-flex;
           align-items: center;

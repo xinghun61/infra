@@ -12,7 +12,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
           box-sizing: border-box;
           width: 95%;
           padding: 0.125em 4px;
-          font-size: 13px;
+          font-size: var(--chops-main-font-size);
         };
         --mr-input-grid-gap: 6px;
         --mr-content-heading-color: hsl(227, 60%, 39%);
@@ -43,7 +43,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
       }
       chops-button, a.button, .button {
         box-sizing: border-box;
-        font-size: 13px;
+        font-size: var(--chops-main-font-size);
         background: white;
         border-radius: 6px;
         padding: 0.25em 8px;
@@ -65,7 +65,7 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
        * appropriate heading levels.
        */
       .medium-heading {
-        font-size: 16px;
+        font-size: var(--chops-large-font-size);
         font-weight: normal;
         line-height: 1;
         padding: 0.25em 0;

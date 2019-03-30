@@ -47,7 +47,6 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
           display: block;
         }
         chops-dialog {
-          font-size: 85%;
           --chops-dialog-theme: {
             width: 500px;
             max-width: 100%;
@@ -55,7 +54,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         }
         h2 {
           margin: 0;
-          font-size: 16px;
+          font-size: var(--chops-large-font-size);
           font-weight: normal;
           padding: 0.5em 8px;
           box-sizing: border-box;
@@ -66,11 +65,11 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         }
         h2 em {
           margin-left: 16px;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
         }
         .chip {
           display: inline-block;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           padding: 0.25em 8px;
           margin: 0 2px;
           border-radius: 16px;

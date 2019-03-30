@@ -6,15 +6,3 @@
 window.prpcClient = new window.AutoRefreshPrpcClient(
   CS_env.token, CS_env.tokenExpiresSec);
 </script>
-
-<style>
-  body {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Roboto', 'Noto', sans-serif;
-    line-height: 1.6;
-    font-size: 12px;
-    min-width: 300px;
-  }
-</style>

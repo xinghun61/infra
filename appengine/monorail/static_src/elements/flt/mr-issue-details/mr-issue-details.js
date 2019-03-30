@@ -22,7 +22,7 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     return html`
       <style include="mr-shared-styles">
         :host {
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           background-color: white;
           padding: 0;
           padding-bottom: 1em;
@@ -39,10 +39,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
         }
         mr-description {
           margin-bottom: 1em;
-        }
-        .comments-section{
-          box-sizing: border-box;
-          padding: 0.25em 8px;
         }
       </style>
       <mr-description description-list="[[_descriptionList]]"></mr-description>

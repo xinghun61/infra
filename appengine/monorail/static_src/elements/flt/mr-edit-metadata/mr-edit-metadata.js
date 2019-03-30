@@ -39,7 +39,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       <style include="mr-shared-styles">
         :host {
           display: block;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           --mr-edit-field-styles: {
             box-sizing: border-box;
             width: 95%;
@@ -137,12 +137,12 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           margin-bottom: -8px;
         }
         i.inline-warning {
-          font-size: 20px;
+          font-size: var(--chops-icon-font-size);
           color: #FF6F00;
           vertical-align: bottom;
         }
         i.inline-info {
-          font-size: 20px;
+          font-size: var(--chops-icon-font-size);
           color: gray;
           vertical-align: bottom;
         }

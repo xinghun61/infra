@@ -31,10 +31,10 @@ export class MrDropdown extends PolymerElement {
           visibility: hidden;
         }
         strong {
-          font-size: 14px;
+          font-size: var(--chops-large-font-size);
         }
         i.material-icons {
-          font-size: 20px;
+          font-size: var(--chops-icon-font-size);
           display: inline-block;
           color: var(--chops-primary-icon-color);
           padding: 0 2px;
@@ -60,7 +60,7 @@ export class MrDropdown extends PolymerElement {
           left: 0px;
         }
         .menu {
-          font-size: 16px;
+          font-size: var(--chops-large-font-size);
           position: absolute;
           min-width: 120%;
           top: 90%;

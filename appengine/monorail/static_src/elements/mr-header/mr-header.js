@@ -43,7 +43,7 @@ export class MrHeader extends PolymerElement {
           top: 0;
           position: sticky;
           padding: 0 4px;
-          font-size: 14px;
+          font-size: var(--chops-large-font-size);
         }
         @media (max-width: 840px) {
           :host {
@@ -78,7 +78,7 @@ export class MrHeader extends PolymerElement {
           max-width: 1000px;
         }
         i.material-icons {
-          font-size: 20px;
+          font-size: var(--chops-icon-font-size);
           color: var(--chops-primary-icon-color);
         }
         i.material-icons[hidden] {

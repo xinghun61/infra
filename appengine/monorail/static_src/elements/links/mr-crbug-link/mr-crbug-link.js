@@ -17,7 +17,7 @@ export class MrCrbugLink extends PolymerElement {
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <style>
         a.material-icons {
-          font-size: 20px;
+          font-size: var(--chops-icon-font-size);
           display: inline-block;
           color: var(--chops-primary-icon-color);
           padding: 0 2px;

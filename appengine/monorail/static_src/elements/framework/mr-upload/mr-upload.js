@@ -63,7 +63,7 @@ export class MrUpload extends PolymerElement {
           margin-left: 0;
         }
         label.button i.material-icons {
-          font-size: 16px;
+          font-size: var(--chops-icon-font-size);
         }
         ul {
           display: flex;

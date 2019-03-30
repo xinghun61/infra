@@ -31,7 +31,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
           width: 100%;
           padding: 0.5em 8px;
           text-align: left;
-          font-size: 14px;
+          font-size: var(--chops-main-font-size);
         }
         button.toggle:hover {
           cursor: pointer;

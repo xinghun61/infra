@@ -18,7 +18,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
       <style include="mr-shared-styles">
         :host {
           display: block;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
         }
         table {
           word-wrap: break-word;

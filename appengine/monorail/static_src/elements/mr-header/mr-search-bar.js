@@ -25,7 +25,7 @@ export class MrSearchBar extends PolymerElement {
           --mr-search-bar-border: var(--chops-accessible-border);
           --mr-search-bar-chip-color: var(--chops-gray-200);
           height: 26px;
-          font-size: 14px;
+          font-size: var(--chops-large-font-size);
         }
         input#searchq {
           display: flex;
@@ -81,7 +81,7 @@ export class MrSearchBar extends PolymerElement {
           flex-direction: row;
         }
         i.material-icons {
-          font-size: 20px;
+          font-size: var(--chops-icon-font-size);
           color: var(--chops-primary-icon-color);
         }
         .select-container {

@@ -39,7 +39,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         :host {
           width: 100%;
           margin-top: 0;
-          font-size: 16px;
+          font-size: var(--chops-large-font-size);
           background-color: var(--monorail-metadata-open-bg);
           border-bottom: var(--chops-normal-border);
           padding: 0.25em 8px;
@@ -63,7 +63,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           border-left: var(--chops-normal-border);
           padding-left: 8px;
           margin-left: 4px;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
         }
         mr-dropdown.lock-icon {
           /* Make lock icon line up nicely with other text in spite
@@ -73,7 +73,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         }
         .lock-tooltip {
           width: 200px;
-          font-size: 14px;
+          font-size: var(--chops-large-font-size);
           padding: 0.5em 8px;
         }
         .issue-actions {
@@ -94,7 +94,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
         }
         .code-font-and-description-edit div {
           min-width: 70px;
@@ -105,17 +105,20 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           white-space: nowrap;
         }
         .spam-notice {
-          padding: 1px 5px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1px 6px;
           border-radius: 3px;
-          background: red;
+          background: #F44336;
           color: white;
           font-weight: bold;
-          font-size: 14px;
-          margin-right: 0.5em;
+          font-size: var(--chops-main-font-size);
+          margin-right: 4px;
         }
         .byline {
           display: block;
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           width: 100%;
           line-height: 140%;
           color: var(--chops-text-color);
@@ -161,7 +164,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
             Issue [[issue.localId]]: [[issue.summary]]
           </h1>
           <small class="byline">
-            Created by
+            Reported by
             <mr-user-link
               display-name="[[issue.reporterRef.displayName]]"
               user-id="[[issue.reporterRef.userId]]"

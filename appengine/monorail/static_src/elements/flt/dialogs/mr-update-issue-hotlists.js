@@ -17,7 +17,7 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <style include="mr-shared-styles">
         :host {
-          font-size: 12px;
+          font-size: var(--chops-main-font-size);
           --chops-dialog-theme: {
             max-width: 500px;
           };
