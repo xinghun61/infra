@@ -245,15 +245,9 @@ func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDron
 	if err != nil {
 		return nil, err
 	}
-	srv, ok := dr.droneForDUT[rr.dutID]
-	if !ok {
-		if rr.drone != "" {
-			return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not assigned to a drone", rr.dutID)
-		}
-		return nil, nil
-	}
-	if rr.drone != "" && rr.drone != srv.GetHostname() {
-		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)
+	srv, err := dr.findDroneForRequestDUT(rr)
+	if err != nil || srv == nil {
+		return nil, err
 	}
 	srv.DutUids = removeSliceString(srv.DutUids, rr.dutID)
 	delete(dr.droneForDUT, rr.dutID)
@@ -309,6 +303,25 @@ func (dr *dutRemover) unpackRequestReason(r *fleet.RemoveDutsFromDronesRequest_I
 		return status.Errorf(codes.InvalidArgument, "invalid RemovalReason")
 	}
 	return nil
+}
+
+// findDroneForRequestDUT finds the drone for the DUT in the remove
+// request.  If the request listed the wrong drone, return an error.
+// Note that this function may return a nil server along with a nil
+// error, if the DUT is not found but the request should not consider
+// this an error.
+func (dr *dutRemover) findDroneForRequestDUT(rr removeRequest) (*inventory.Server, error) {
+	srv, ok := dr.droneForDUT[rr.dutID]
+	if !ok {
+		if rr.drone != "" {
+			return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not assigned to a drone", rr.dutID)
+		}
+		return nil, nil
+	}
+	if rr.drone != "" && rr.drone != srv.GetHostname() {
+		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)
+	}
+	return srv, nil
 }
 
 // findDutServer finds the server that the given Dut is on, if it exists.
