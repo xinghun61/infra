@@ -146,7 +146,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
-      <template is="dom-if" if="[[_showLoading(issueLoaded, commentsLoaded, fetchIssueError)]]">
+      <template
+        is="dom-if"
+        if="[[_showLoading(issueLoaded, loadingComments, fetchIssueError)]]"
+      >
         <div class="container-outside">
           Loading...
         </div>
@@ -166,7 +169,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           </template>
         </div>
       </template>
-      <template is="dom-if" if="[[_showIssue(issueLoaded, commentsLoaded, issue)]]">
+      <template
+        is="dom-if"
+        if="[[_showIssue(issueLoaded, loadingComments, issue)]]"
+      >
         <div
           class="container-outside"
           on-open-dialog="_onOpenDialog"
@@ -205,7 +211,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issue: Object,
       issueRef: Object,
       issueLoaded: Boolean,
-      commentsLoaded: Boolean,
+      loadingComments: Boolean,
       issueClosed: {
         type: Boolean,
         reflectToAttribute: true,
@@ -234,7 +240,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issueLoaded: state.issueLoaded,
       issueClosed: !issue.isOpen(state),
       issuePermissions: state.issuePermissions,
-      commentsLoaded: state.commentsLoaded,
+      loadingComments: state.loadingComments,
       fetchingIssue: state.requests.fetchIssue.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
       fetchIssueError: state.requests.fetchIssue.error,
@@ -279,8 +285,8 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     this.dispatchAction(project.fetch(projectName));
   }
 
-  _showLoading(issueLoaded, commentsLoaded, fetchIssueError) {
-    return (!issueLoaded || !commentsLoaded) && !fetchIssueError;
+  _showLoading(issueLoaded, loadingComments, fetchIssueError) {
+    return (!issueLoaded || loadingComments) && !fetchIssueError;
   }
 
   _fetchIssue(issueRef) {
@@ -309,8 +315,8 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     return (issuePermissions || []).includes('deleteissue');
   }
 
-  _showIssue(issueLoaded, commentsLoaded, issue) {
-    return issueLoaded && commentsLoaded && !issue.isDeleted;
+  _showIssue(issueLoaded, loadingComments, issue) {
+    return issueLoaded && !loadingComments && !issue.isDeleted;
   }
 
   _isDeleted(issueLoaded, issue) {
