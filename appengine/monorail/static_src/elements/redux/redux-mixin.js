@@ -105,16 +105,6 @@ const issueReducer = createReducer({}, {
   },
 });
 
-const issueLoadedReducer = createReducer(false, {
-  [actionType.FETCH_ISSUE_SUCCESS]: (_state, _action) => true,
-});
-
-const loadingCommentsReducer = createReducer(false, {
-  [actionType.FETCH_COMMENTS_START]: (_state, _action) => true,
-  [actionType.FETCH_COMMENTS_SUCCESS]: (_state, _action) => false,
-  [actionType.FETCH_COMMENTS_FAILURE]: (_state, _action) => false,
-});
-
 const issueHotlistsReducer = createReducer([], {
   [actionType.FETCH_ISSUE_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
 });
@@ -245,10 +235,8 @@ const reducer = combineReducers({
   }),
 
   issue: issueReducer,
-  issueLoaded: issueLoadedReducer,
   issueHotlists: issueHotlistsReducer,
   comments: commentsReducer,
-  loadingComments: loadingCommentsReducer,
   commentReferences: commentReferencesReducer,
   relatedIssues: relatedIssuesReducer,
   isStarred: isStarredReducer,

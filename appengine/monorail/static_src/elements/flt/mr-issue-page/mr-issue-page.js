@@ -151,10 +151,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
-      <template
-        is="dom-if"
-        if="[[_showLoading(issueLoaded, loadingComments, fetchIssueError)]]"
-      >
+      <template is="dom-if" if="[[_showLoading(issueLoaded, commentsLoaded, fetchIssueError)]]">
         <div class="container-no-issue">
           Loading...
         </div>
@@ -174,10 +171,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           </template>
         </div>
       </template>
-      <template
-        is="dom-if"
-        if="[[_showIssue(issueLoaded, loadingComments, issue)]]"
-      >
+      <template is="dom-if" if="[[_showIssue(issueLoaded, commentsLoaded, issue)]]">
         <div
           class="container-outside"
           on-open-dialog="_onOpenDialog"
@@ -213,28 +207,41 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
+      _user: Object,
+      commentsLoaded: {
+        type: Boolean,
+        value: false,
+      },
+      fetchIssueError: String,
+      fetchingComments: {
+        type: Boolean,
+        observer: '_onFetchingCommentsChange',
+      },
+      fetchingIssue: {
+        type: Boolean,
+        observer: '_onFetchingIssueChange',
+      },
+      fetchingProjectConfig: Boolean,
       issue: Object,
-      issueRef: Object,
-      issueLoaded: Boolean,
-      loadingComments: Boolean,
       issueClosed: {
         type: Boolean,
         reflectToAttribute: true,
       },
+      issueEntryUrl: String,
+      issueLoaded: {
+        type: Boolean,
+        value: false,
+      },
       issuePermissions: Object,
-      fetchingIssue: Boolean,
-      fetchingProjectConfig: Boolean,
-      fetchIssueError: String,
+      issueRef: Object,
       queryParams: {
         type: Object,
         value: () => {},
       },
-      issueEntryUrl: String,
       userDisplayName: {
         type: String,
         observer: '_userDisplayNameChanged',
       },
-      _user: Object,
     };
   }
 
@@ -242,10 +249,9 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     return {
       issue: state.issue,
       issueRef: issue.issueRef(state),
-      issueLoaded: state.issueLoaded,
       issueClosed: !issue.isOpen(state),
       issuePermissions: state.issuePermissions,
-      loadingComments: state.loadingComments,
+      fetchingComments: state.requests.fetchComments.requesting,
       fetchingIssue: state.requests.fetchIssue.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
       fetchIssueError: state.requests.fetchIssue.error,
@@ -290,8 +296,16 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     this.dispatchAction(project.fetch(projectName));
   }
 
-  _showLoading(issueLoaded, loadingComments, fetchIssueError) {
-    return (!issueLoaded || loadingComments) && !fetchIssueError;
+  _onFetchingCommentsChange(fetchingComments) {
+    this.commentsLoaded |= !fetchingComments;
+  }
+
+  _onFetchingIssueChange(fetchingIssue) {
+    this.issueLoaded |= !fetchingIssue;
+  }
+
+  _showLoading(issueLoaded, commentsLoaded, fetchIssueError) {
+    return (!issueLoaded || !commentsLoaded) && !fetchIssueError;
   }
 
   _fetchIssue(issueRef) {
@@ -320,8 +334,8 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     return (issuePermissions || []).includes('deleteissue');
   }
 
-  _showIssue(issueLoaded, loadingComments, issue) {
-    return issueLoaded && !loadingComments && !issue.isDeleted;
+  _showIssue(issueLoaded, commentsLoaded, issue) {
+    return issueLoaded && commentsLoaded && !issue.isDeleted;
   }
 
   _isDeleted(issueLoaded, issue) {
