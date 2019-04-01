@@ -78,6 +78,8 @@ func parseArgs() *args {
 		"Name of the task to run. For autotest, this is the NAME attribute in control file")
 	flag.StringVar(&a.logdogAnnotationURL, "logdog-annotation-url", "",
 		"LogDog annotation URL, like logdog://HOST/PROJECT/PREFIX/+/annotations")
+	flag.StringVar(&a.adminService, "admin-service", "",
+		"Admin service host, e.g. foo.appspot.com")
 	flag.BoolVar(&a.xClientTest, "client-test", false,
 		"This is a client side test")
 	flag.Var(lflag.CommaList(&a.xProvisionLabels), "provision-labels",
@@ -98,6 +100,11 @@ func mainInner(a *args) error {
 	// Set up Go logger for LUCI libraries.
 	ctx = gologger.StdConfig.Use(ctx)
 	b := swmbot.GetInfo()
+	// TODO(ayatane): Support -admin-service flag while it's being
+	// replaced by the ADMIN_SERVICE envvar.
+	if a.adminService != "" {
+		b.AdminService = a.adminService
+	}
 	log.Printf("Swarming bot config: %#v", b)
 	annotWriter, err := openLogDogWriter(ctx, a.logdogAnnotationURL)
 	if err != nil {
