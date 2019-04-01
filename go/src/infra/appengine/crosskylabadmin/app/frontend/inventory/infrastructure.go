@@ -195,7 +195,7 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 	removed := make([]*fleet.RemoveDutsFromDronesResponse_Item, 0, len(req.Removals))
 	dr := newDUTRemover(ctx, s)
 	for _, r := range req.Removals {
-		i, err := dr.removeDut(ctx, r)
+		i, err := dr.removeDUT(ctx, r)
 		if err != nil {
 			return nil, err
 		}
@@ -210,6 +210,8 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 	}, nil
 }
 
+// dutRemover wraps an InventoryStore and implements removing DUTs
+// from drones.  This struct contains various internal lookup caches.
 type dutRemover struct {
 	store        *gitstore.InventoryStore
 	hostnameToID map[string]string
@@ -240,7 +242,8 @@ func newDUTRemover(ctx context.Context, s *gitstore.InventoryStore) *dutRemover 
 	return &dr
 }
 
-func (dr *dutRemover) removeDut(ctx context.Context, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
+// removeDUT removes a DUT per a DUT removal request and returns a response.
+func (dr *dutRemover) removeDUT(ctx context.Context, r *fleet.RemoveDutsFromDronesRequest_Item) (*fleet.RemoveDutsFromDronesResponse_Item, error) {
 	rr, err := dr.unpackRequest(r)
 	if err != nil {
 		return nil, err
