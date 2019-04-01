@@ -128,6 +128,9 @@ func (s *QSchedulerAdminServerImpl) ModAccount(ctx context.Context, r *qschedule
 		if r.MaxFanout != nil {
 			accountConfig.MaxFanout = r.MaxFanout.Value
 		}
+		if r.DisableFreeTasks != nil {
+			accountConfig.DisableFreeTasks = r.DisableFreeTasks.Value
+		}
 		if len(r.ChargeRate) != 0 {
 			accountConfig.ChargeRate = r.ChargeRate
 		}

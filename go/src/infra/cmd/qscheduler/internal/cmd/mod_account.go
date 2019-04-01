@@ -33,6 +33,7 @@ var ModAccount = &subcommands.Command{
 		c.Flags.Var(nullableFloat32Value(&c.chargeTime), "charge-time",
 			"Maximum amount of time (seconds) for which the account can accumulate quota.")
 		c.Flags.Var(nullableInt32Value(&c.fanout), "fanout", "Maximum number of concurrent tasks that account will pay for.")
+		c.Flags.Var(nullableBoolValue(&c.disableFreeTasks), "disable-free-tasks", "Disallow the account from running free tasks.")
 		return c
 	},
 }
@@ -42,9 +43,10 @@ type modAccountRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 
-	chargeRates []string
-	chargeTime  *float32
-	fanout      *int32
+	chargeRates      []string
+	chargeTime       *float32
+	fanout           *int32
+	disableFreeTasks *bool
 }
 
 // validate validates command line arguments.
@@ -94,6 +96,9 @@ func (c *modAccountRun) Run(a subcommands.Application, args []string, env subcom
 	}
 	if c.chargeTime != nil {
 		req.MaxChargeSeconds = &wrappers.FloatValue{Value: *c.chargeTime}
+	}
+	if c.disableFreeTasks != nil {
+		req.DisableFreeTasks = &wrappers.BoolValue{Value: *c.disableFreeTasks}
 	}
 	if len(chargeRateFloats) > 0 {
 		req.ChargeRate = chargeRateFloats

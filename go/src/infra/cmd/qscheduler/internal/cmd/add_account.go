@@ -31,6 +31,7 @@ var AddAccount = &subcommands.Command{
 		c.Flags.Float64Var(&c.chargeTime, "charge-time", 0,
 			"Maximum amount of time (seconds) for which the account can accumulate quota.")
 		c.Flags.IntVar(&c.fanout, "fanout", 0, "Maximum number of concurrent tasks that account will pay for.")
+		c.Flags.BoolVar(&c.disableFreeTasks, "disable-free-tasks", false, "Disallow the account from running free tasks.")
 		return c
 	},
 }
@@ -40,9 +41,10 @@ type addAccountRun struct {
 	authFlags authcli.Flags
 	envFlags  envFlags
 
-	chargeRates []string
-	chargeTime  float64
-	fanout      int
+	chargeRates      []string
+	chargeTime       float64
+	fanout           int
+	disableFreeTasks bool
 }
 
 func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -82,6 +84,7 @@ func (c *addAccountRun) Run(a subcommands.Application, args []string, env subcom
 			ChargeRate:       chargeRateFloats,
 			MaxChargeSeconds: float32(c.chargeTime),
 			MaxFanout:        int32(c.fanout),
+			DisableFreeTasks: c.disableFreeTasks,
 		},
 	}
 
