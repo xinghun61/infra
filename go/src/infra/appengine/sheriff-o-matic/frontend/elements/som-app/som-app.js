@@ -167,7 +167,9 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
 
     // Assume it takes less than 1 millisecond to calculate that.
     if (Date.now() - oldestDate > 1) {
-      let date = moment(oldestDate * 1000).tz('America/Los_Angeles');
+      let date = moment(oldestDate * 1000).tz(
+        Intl.DateTimeFormat().resolvedOptions().timeZone
+      );
       return {
         'time': date.format('M/DD/YYYY, h:mm a z'),
         'relativeTime': date.fromNow()
