@@ -77,7 +77,8 @@ MISSING_TOKEN_HTML = (
     '</body></html>'
     )
 
-# The continue_url domain must match with one of these.
+# The continue_url  must match these.
+ALLOWED_CONTINUE_SCHEMES = ['http', 'https']
 ALLOWED_CONTINUE_DOMAINS = [
   re.compile('^localhost:8080$'),
   re.compile('^code.google.com$'),
@@ -120,8 +121,10 @@ class MainHandler(webapp2.RequestHandler):
       continue_url = 'https://bugs.chromium.org/p/chromium/issues/entry.do'
 
     parsed = urlparse.urlparse(continue_url)
-    continue_is_allowed = any(
+    scheme_is_allowed = parsed.scheme in ALLOWED_CONTINUE_SCHEMES
+    domain_is_allowed = any(
         regex.match(parsed.netloc) for regex in ALLOWED_CONTINUE_DOMAINS)
+    continue_is_allowed = scheme_is_allowed and domain_is_allowed
     if not continue_is_allowed:
       logging.info('Bad continue param: %r', continue_url)
       self.response.out.write(INVALID_CONTINUE_HTML)
