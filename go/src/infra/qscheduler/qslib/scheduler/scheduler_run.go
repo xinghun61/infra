@@ -181,8 +181,7 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events Eve
 		matches := computeWorkerMatch(w, candidates, mf)
 		// select first non-throttled match
 		for _, match := range matches {
-			// Enforce fanout (except for Freebucket).
-			if run.fanout.getRemaining(match.request) <= 0 && priority != FreeBucket {
+			if run.shouldSkip(match.request, priority) {
 				continue
 			}
 
@@ -208,6 +207,21 @@ func (run *schedulerRun) matchIdleBots(priority Priority, mf matcher, events Eve
 
 	}
 	return output
+}
+
+// shouldSkip computes if the given request should be skipped at the given priority.
+func (run *schedulerRun) shouldSkip(request *TaskRequest, priority Priority) bool {
+	// Enforce fanout (except for Freebucket).
+	if priority != FreeBucket {
+		return run.fanout.getRemaining(request) <= 0
+	}
+
+	// Enforce DisableFreeTasks (for FreeBucket).
+	if account, ok := run.scheduler.config.AccountConfigs[string(request.AccountID)]; ok {
+		return account.DisableFreeTasks
+	}
+
+	return false
 }
 
 // reprioritizeRunningTasks changes the priority of running tasks by either

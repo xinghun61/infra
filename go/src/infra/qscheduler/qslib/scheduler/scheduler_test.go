@@ -25,6 +25,8 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"infra/qscheduler/qslib/protos"
+
 	"go.chromium.org/luci/common/data/stringset"
 )
 
@@ -121,6 +123,37 @@ func TestSchedulerPreempt(t *testing.T) {
 				got := s.RunOnce(ctx, NullEventSink)
 				Convey("then nothing happens.", func() {
 					So(got, ShouldBeEmpty)
+				})
+			})
+		})
+	})
+}
+
+// TestDisableFreeTasks tests that the DisableFreeTasks account config behaves
+// as expected.
+func TestDisableFreeTasks(t *testing.T) {
+	Convey("Given a state", t, func() {
+		ctx := context.Background()
+		tm0 := time.Unix(0, 0)
+		s := New(tm0)
+		Convey("with an idle bot, and a task for an account", func() {
+			aid := AccountID("a1")
+			s.AddRequest(ctx, NewTaskRequest("rid", aid, nil, nil, tm0), tm0, nil, NullEventSink)
+			s.MarkIdle(ctx, "worker", nil, tm0, NullEventSink)
+			Convey("when free tasks are enabled", func() {
+				config := &protos.AccountConfig{DisableFreeTasks: false}
+				s.AddAccount(ctx, aid, config, nil)
+				Convey("then when the scheduler runs, the task is assigned.", func() {
+					assignments := s.RunOnce(ctx, NullEventSink)
+					So(assignments, ShouldHaveLength, 1)
+				})
+			})
+			Convey("when free tasks are disabled", func() {
+				config := &protos.AccountConfig{DisableFreeTasks: true}
+				s.AddAccount(ctx, aid, config, nil)
+				Convey("then when the scheduler runs, no task is assigned.", func() {
+					assignments := s.RunOnce(ctx, NullEventSink)
+					So(assignments, ShouldHaveLength, 0)
 				})
 			})
 		})
