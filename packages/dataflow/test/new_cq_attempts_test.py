@@ -105,7 +105,7 @@ class IntegrationTest(unittest.TestCase):
     # There should be exactly 1 CQ attempt, with no fail type.
     def expectation_checker(cq_attempts):
       _beam_equals(len(cq_attempts), 1)
-      _beam_equals(cq_attempts[0]['fail_type'], 'PRESUBMIT_FAILURE')
+      _beam_equals(cq_attempts[0]['fail_type'], 'FAILED_PRESUBMIT_BOT')
 
     util.assert_that(results, expectation_checker)
     self.pipeline.run()

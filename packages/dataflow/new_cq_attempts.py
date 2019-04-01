@@ -46,7 +46,7 @@ def update_with_presubmit_failure(input_tuple):
       elif bb_result['status'] != 'SUCCESS':
         other_failures += 1
     if presubmit_failures >= 1 and other_failures == 0:
-      cq_attempt['fail_type'] = 'PRESUBMIT_FAILURE'
+      cq_attempt['fail_type'] = 'FAILED_PRESUBMIT_BOT'
 
   # Dictionaries are supposed to be returned in a single element list.
   return [cq_attempt]
@@ -57,7 +57,7 @@ def process_input(cq_events_pcol, bb_entries_pcol):
   This function performs two tasks:
     1) Computes CQ attempts from raw CQ events. This includes data sanitization.
     2) If a CQ attempt fails only because of 'chromium_presubmit' builder, sets
-       the failure status to 'PRESUBMIT_FAILURE'.
+       the failure status to 'FAILED_PRESUBMIT_BOT'.
   """
   # Pcol of cq_attempt_as_dict
   sanitized_cq_attempts = (
@@ -92,7 +92,7 @@ def process_input(cq_events_pcol, bb_entries_pcol):
   )
 
   # Uses BuildBucket entries associated with a CQ attempt to potentially change
-  # the failure reason to PRESUBMIT_FAILURE. Creates a Pcol of
+  # the failure reason to FAILED_PRESUBMIT_BOT. Creates a Pcol of
   # cq_attempt_as_dict.
   results = ({
     'cq_attempts' : cq_attempts_with_key,
@@ -117,7 +117,7 @@ def main():
   results = process_input(cq_events_pcol, bb_entries_pcol)
 
   # pylint: disable=expression-not-assigned
-  results | chops_beam.BQWrite('chrome-infra-events', 'new_cq_attempts')
+  results | chops_beam.BQWrite('chrome-infra-events', 'cq_attempts')
 
   p.run()
 
