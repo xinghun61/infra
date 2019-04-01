@@ -85,7 +85,6 @@ func Open(ctx context.Context, b *swmbot.Info, o ...Option) (i *Info, err error)
 	hi := i.makeHostInfo(d)
 	i.addBotInfoToHostInfo(hi, i.BotInfo)
 	i.ResultsDir = i.makeResultsDir(b)
-	log.Printf("Created results directory %s", i.ResultsDir)
 	i.exposeHostInfo(hi, i.ResultsDir, i.DUTName)
 	if i.err != nil {
 		return nil, errors.Annotate(i.err, "open harness").Err()
@@ -155,6 +154,7 @@ func (i *Info) makeResultsDir(b *swmbot.Info) string {
 		i.err = err
 		return ""
 	}
+	log.Printf("Created results directory %s", path)
 	i.closers = append(i.closers, rdc)
 	return path
 }
