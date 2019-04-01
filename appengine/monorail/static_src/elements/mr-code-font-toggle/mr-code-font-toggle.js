@@ -56,8 +56,13 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
     return prefs.get('code_font') === 'true';
   }
 
+  fetchPrefs() {
+    this.dispatchAction(user.fetchPrefs());
+  }
+
   _checkedChangeHandler(e) {
     const checked = e.detail.checked;
+    this.dispatchEvent(new CustomEvent('font-toggle', {detail: {checked}}));
     if (this.userDisplayName) {
       const message = {
         prefs: [{name: 'code_font', value: '' + checked}],
@@ -65,7 +70,7 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
       const setPrefsCall = window.prpcClient.call(
         'monorail.Users', 'SetUserPrefs', message);
       setPrefsCall.then((resp) => {
-        this.dispatchAction(user.fetchPrefs());
+        this.fetchPrefs();
       }).catch((reason) => {
         console.error('SetUserPrefs failed: ' + reason);
       });

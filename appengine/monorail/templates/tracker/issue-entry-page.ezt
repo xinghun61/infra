@@ -7,7 +7,7 @@
 [if-any read_only][include "../framework/read-only-rejection.ezt"]
 [else]
 
-<div style="margin-top: 0; padding: 3px;" class="closed">
+<div id="color_control" style="margin-top: 0; padding: 3px;" class="closed [if-any code_font]codefont[end]">
  <form action="entry.do" method="POST" style="margin: 0; padding: 0" enctype="multipart/form-data" id="create_issue_form">
   <input type="hidden" name="token" value="[form_token]">
   <input type="hidden" name="template_name" value="[template_name]">
@@ -18,10 +18,13 @@
     <table cellspacing="0" cellpadding="3" border="0" class="rowmajor vt" role="presentation">
      [if-any offer_templates]
       <tr><th><label for="template_name">Template:</label></th>
-       <td><select name="template_name" id="template_name" data-project-name="[projectname]" ignore-dirty>
+       <td colspan="2">
+        <select name="template_name" id="template_name" data-project-name="[projectname]" ignore-dirty>
          [for config.template_names]
            <option role="option" value="[format "url"][config.template_names][end]" [is config.template_names template_name]selected=selected[end]>[config.template_names]</option>
-        [end]
+         [end]
+        </select>
+        <span id="mr-code-font-toggle-slot"></span>
        </td>
       </tr>
      [end]
@@ -201,7 +204,7 @@
        </td>
      </tr>
     [end][end][end]
-    
+
     [for issue_phase_names]
       [for fields]
         [is fields.phase_name issue_phase_names]
@@ -425,6 +428,30 @@ setInterval(checksubmit, 700); [# catch changes that were not keystrokes, e.g., 
 $("star").addEventListener("click", function (event) {
     _TKR_toggleStarLocal($("star"), "star_input");
 });
+
+  const mrCodeFontToggle = document.createElement('mr-code-font-toggle');
+  mrCodeFontToggle.title = 'code font';
+  mrCodeFontToggle.style = 'float:right; margin: 3px;';
+  [if-any code_font]
+    mrCodeFontToggle.initialValue = true;
+  [end]
+  [if-any logged_in_user]
+    mrCodeFontToggle.userDisplayName = "[logged_in_user.email]";
+  [end]
+  $('mr-code-font-toggle-slot').appendChild(mrCodeFontToggle);
+  mrCodeFontToggle.fetchPrefs();
+  mrCodeFontToggle.addEventListener('font-toggle', function(e) {
+    const checked = e.detail.checked;
+    const ancestor = $('color_control');
+    if (ancestor) {
+      if (checked) {
+        ancestor.classList.add('codefont');
+      } else {
+        ancestor.classList.remove('codefont');
+      }
+    }
+  });
+
 
 });
 </script>

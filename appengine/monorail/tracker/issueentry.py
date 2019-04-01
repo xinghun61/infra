@@ -78,6 +78,12 @@ class IssueEntry(servlet.Servlet):
         permissions.EDIT_ISSUE_OWNER,
         permissions.EDIT_ISSUE_CC)
 
+
+    with work_env.WorkEnv(mr, self.services) as we:
+      userprefs = we.GetUserPrefs(mr.auth.user_id)
+      code_font = any(pref for pref in userprefs.prefs
+                      if pref.name == 'code_font' and pref.value == 'true')
+
     template = self._GetTemplate(mr.cnxn, config, mr.template_name, is_member)
 
     if template.summary:
@@ -187,6 +193,7 @@ class IssueEntry(servlet.Servlet):
 
         'restrict_to_known': ezt.boolean(restrict_to_known),
         'is_member': ezt.boolean(is_member),
+        'code_font': ezt.boolean(code_font),
         # The following are necessary for displaying phases that come with
         # this template. These are read-only.
         'allow_edit': ezt.boolean(False),
