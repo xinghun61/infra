@@ -32,8 +32,12 @@ If -drone is given, check that the DUTs are currently assigned to that
 drone.  Otherwise, the DUTs are removed from whichever drone they are
 currently assigned to.
 
-Removing DUTs from a drone stops the DUTs from being able to run tasks.
-Setting -delete deletes the DUTs from the inventory entirely.`,
+Removing DUTs from a drone stops the DUTs from being able to run
+tasks.  The DUT can be assigned with assign-duts to run tasks again.
+
+Setting -delete deletes the DUTs from the inventory entirely.  After
+deleting a DUT, it would have to be deployed from scratch to run tasks
+again.`,
 	CommandRun: func() subcommands.CommandRun {
 		c := &removeDutsRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
