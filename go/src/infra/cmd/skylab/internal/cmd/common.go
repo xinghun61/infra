@@ -108,6 +108,12 @@ func newSwarmingService(ctx context.Context, auth authcli.Flags, env site.Enviro
 	return s, nil
 }
 
+type taskInfo struct {
+	Name string `json:"task_name"`
+	ID   string `json:"task_id"`
+	URL  string `json:"task_url"`
+}
+
 func swarmingTaskURL(e site.Environment, taskID string) string {
 	return fmt.Sprintf("%stask?id=%s", e.SwarmingService, taskID)
 }

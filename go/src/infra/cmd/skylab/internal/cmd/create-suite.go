@@ -57,6 +57,7 @@ suite. No retry if it is 0.`)
 specified multiple times.`)
 		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quotascheduler account for test jobs.")
 		c.Flags.BoolVar(&c.orphan, "orphan", false, "Create a suite that doesn't wait for its child tests to finish. Internal or expert use ONLY!")
+		c.Flags.BoolVar(&c.json, "json", false, "Format output as JSON")
 		return c
 	},
 }
@@ -76,6 +77,7 @@ type createSuiteRun struct {
 	keyvals     []string
 	qsAccount   string
 	orphan      bool
+	json        bool
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -124,12 +126,21 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		return errors.Annotate(err, "failed to create Swarming client").Err()
 	}
 
-	taskName := c.image + "-" + suiteName
-	taskID, err := createSuiteTask(ctx, s, taskName, priority, slices, tags)
+	task := taskInfo{
+		Name: c.image + "-" + suiteName,
+	}
+
+	task.ID, err = createSuiteTask(ctx, s, task.Name, priority, slices, tags)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
-	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", swarmingTaskURL(e, taskID))
+
+	task.URL = swarmingTaskURL(e, task.ID)
+	if c.json {
+		return json.NewEncoder(a.GetOut()).Encode(task)
+	}
+
+	fmt.Fprintf(a.GetOut(), "Created Swarming Suite task %s\n", task.URL)
 	return nil
 }
 
