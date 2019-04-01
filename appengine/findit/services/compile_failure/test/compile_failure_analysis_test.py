@@ -25,6 +25,9 @@ from services.test.build_failure_analysis_test import ChangeLogFromDict
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
+# pylint:disable=unused-argument, unused-variable
+# https://crbug.com/947753
+
 _SAMPLE_CHANGE_LOG = {
     'r99_1':
         ChangeLogFromDict({
@@ -262,8 +265,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         CompileFailureInfo.FromSerializable(failure_info), None, None,
         {'compile': {}})
     self.assertEqual({'failures': []}, analysis_result)
-    mock_logging.assert_has_called_with(
-        'No failed compile step when analyzing a compile failure.')
+    # Assertions have never worked properly because we were using mock 1.0.1.
+    # After rolling to mock 2.0.0, which fixes assertions, these assertions now
+    # fail. https://crbug.com/947753.
+    # mock_logging.assert_has_called_with(
+    #     'No failed compile step when analyzing a compile failure.')
 
   @mock.patch.object(logging, 'debug')
   def testAnalyzeCompileFailureNoSignal(self, mock_logging):
@@ -271,8 +277,11 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis_result, _ = compile_failure_analysis.AnalyzeCompileFailure(
         CompileFailureInfo.FromSerializable(failure_info), None, None, {})
     self.assertEqual({'failures': []}, analysis_result)
-    mock_logging.assert_has_called_with(
-        'No failure signals when analyzing a compile failure.')
+    # Assertions have never worked properly because we were using mock 1.0.1.
+    # After rolling to mock 2.0.0, which fixes assertions, these assertions now
+    # fail. https://crbug.com/947753.
+    # mock_logging.assert_has_called_with(
+    #     'No failure signals when analyzing a compile failure.')
 
   @mock.patch.object(
       build_failure_analysis,
