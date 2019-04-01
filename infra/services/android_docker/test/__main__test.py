@@ -122,19 +122,6 @@ class LaunchTests(unittest.TestCase):
     self.assertEqual(mock_reboot.call_count, 1)
 
   @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
-  def test_frozen_containers_no_remove(self, mock_launch_containers):
-    # c1 is running, but c2 is in "Created" with exit code 0.
-    self.fake_client.get_running_containers.return_value = [self.c1]
-    self.fake_client.get_created_containers.return_value = [self.c2]
-    self.c2_backend.attrs = {'State': {'ExitCode': 0}}
-
-    main.launch(self.fake_client, [], None)
-
-    # c2 should not have been removed since it had a zero exit code.
-    self.assertFalse(self.c2_backend.was_deleted)
-    self.assertEqual(mock_launch_containers.call_count, 1)
-
-  @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
   def test_frozen_containers_with_removal(self, mock_launch_containers):
     # c1 is running, but c2 is in "Created" with exit code non-zero exit code.
     self.fake_client.get_running_containers.return_value = [self.c1]
