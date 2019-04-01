@@ -61,6 +61,10 @@ type UpdateFunc func(dutID string, labels *inventory.SchedulableLabels) error
 // any changes to the info, using a supplied UpdateFunc.  If
 // UpdateFunc is nil, the inventory is not updated.
 func Load(ctx context.Context, b *swmbot.Info, f UpdateFunc) (*Store, error) {
+	ctx, err := swmbot.WithSystemAccount(ctx)
+	if err != nil {
+		return nil, errors.Annotate(err, "load DUT host info").Err()
+	}
 	c, err := swmbot.InventoryClient(ctx, b)
 	if err != nil {
 		return nil, errors.Annotate(err, "load DUT host info").Err()

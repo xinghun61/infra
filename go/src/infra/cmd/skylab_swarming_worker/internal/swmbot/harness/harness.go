@@ -187,7 +187,11 @@ func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) 
 		return nil
 	}
 	log.Printf("Calling admin service to update labels")
-	client, err := swmbot.InventoryClient(u.ctx, u.botInfo)
+	ctx, err := swmbot.WithTaskAccount(u.ctx)
+	if err != nil {
+		return errors.Annotate(err, "update inventory labels").Err()
+	}
+	client, err := swmbot.InventoryClient(ctx, u.botInfo)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
@@ -195,7 +199,7 @@ func (u labelUpdater) update(dutID string, labels *inventory.SchedulableLabels) 
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
-	resp, err := client.UpdateDutLabels(u.ctx, req)
+	resp, err := client.UpdateDutLabels(ctx, req)
 	if err != nil {
 		return errors.Annotate(err, "update inventory labels").Err()
 	}
