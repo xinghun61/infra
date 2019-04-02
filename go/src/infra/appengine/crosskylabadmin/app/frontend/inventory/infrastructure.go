@@ -216,6 +216,7 @@ type dutRemover struct {
 	store        *gitstore.InventoryStore
 	hostnameToID map[string]string
 	droneForDUT  map[string]*inventory.Server
+	idToDUT      map[string]*inventory.DeviceUnderTest
 }
 
 func newDUTRemover(ctx context.Context, s *gitstore.InventoryStore) *dutRemover {
@@ -224,10 +225,12 @@ func newDUTRemover(ctx context.Context, s *gitstore.InventoryStore) *dutRemover 
 		store:        s,
 		hostnameToID: make(map[string]string),
 		droneForDUT:  make(map[string]*inventory.Server),
+		idToDUT:      make(map[string]*inventory.DeviceUnderTest),
 	}
 	for _, d := range s.Lab.GetDuts() {
 		c := d.GetCommon()
 		dr.hostnameToID[c.GetHostname()] = c.GetId()
+		dr.idToDUT[c.GetId()] = d
 	}
 	for _, srv := range s.Infrastructure.GetServers() {
 		if srv.GetEnvironment().String() != env {
@@ -254,6 +257,8 @@ func (dr *dutRemover) removeDUT(ctx context.Context, r *fleet.RemoveDutsFromDron
 	}
 	srv.DutUids = removeSliceString(srv.DutUids, rr.dutID)
 	delete(dr.droneForDUT, rr.dutID)
+	d := dr.idToDUT[rr.dutID]
+	d.RemovalReason = rr.reason
 	return &fleet.RemoveDutsFromDronesResponse_Item{
 		DutId:         rr.dutID,
 		DroneHostname: srv.GetHostname(),
