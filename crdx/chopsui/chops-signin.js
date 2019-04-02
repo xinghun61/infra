@@ -35,6 +35,10 @@
 
   function onAuthLoaded() {
     if (!window.gapi || !gapi.auth2) return;
+    if (!document.body) {
+      window.addEventListener('load', onAuthLoaded);
+      return;
+    }
     const auth = gapi.auth2.init({
       client_id: window.AUTH_CLIENT_ID,
       scope: 'email',
@@ -77,7 +81,7 @@
       if (!profile) {
         this.title = 'Signin with Google';
         this.appendChild(this.icon_);
-        this.style.fill = 'red';
+        this.style.fill = 'var(--chops-signin-fill-color, red)';
         return;
       }
       this.title = 'Signout of ' + profile.getEmail();
@@ -87,7 +91,7 @@
         return;
       }
       this.appendChild(this.icon_);
-      this.style.fill = 'green';
+      this.style.fill = 'var(--chops-signout-fill-color, green)';
     }
 
     get icon_() {
@@ -132,9 +136,22 @@
     });
   };
 
+  window.getAuthorizationHeadersSync = function() {
+    if (!window.gapi || !gapi.auth2) return undefined;
+    const auth = gapi.auth2.getAuthInstance();
+    if (!auth) return undefined;
+    const user = auth.currentUser.get();
+    if (!user) return {};
+    const response = user.getAuthResponse();
+    if (!response) return {};
+    return {Authorization: response.token_type + ' ' + response.access_token};
+  };
+
   window.getUserProfileSync = function() {
     if (!window.gapi || !gapi.auth2) return undefined;
-    const user = gapi.auth2.getAuthInstance().currentUser.get();
+    const auth = gapi.auth2.getAuthInstance();
+    if (!auth) return undefined;
+    const user = auth.currentUser.get();
     if (!user.isSignedIn()) return undefined;
     return user.getBasicProfile();
   };

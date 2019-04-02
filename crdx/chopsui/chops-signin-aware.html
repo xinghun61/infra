@@ -36,10 +36,15 @@ class ChopsSigninAware extends Polymer.Element {
     };
   }
 
+  constructor() {
+    super();
+    this.updateProperties_();
+  }
+
   connectedCallback() {
     this.onUserUpdate_ = this.onUserUpdate_.bind(this);
     window.addEventListener('user-update', this.onUserUpdate_);
-    this.updateProperties_();
+    this.onUserUpdate_();
   }
 
   disconnectedCallback() {
@@ -47,19 +52,16 @@ class ChopsSigninAware extends Polymer.Element {
   }
 
   updateProperties_() {
-    const self = this;
-    return window.getAuthorizationHeaders().then(function(headers) {
-      self._setAuthHeaders(headers);
-      self._setProfile(window.getUserProfileSync());
-      self._setSignedIn(!!self.profile);
-    });
+    // Use private setters because these properties are read-only to prevent
+    // clients from accidentally overwriting them.
+    this._setProfile(window.getUserProfileSync());
+    this._setAuthHeaders(window.getAuthorizationHeadersSync());
+    this._setSignedIn(!!this.profile);
   }
 
   onUserUpdate_() {
-    const self = this;
-    return this.updateProperties_().then(function() {
-      self.dispatchEvent(new CustomEvent('user-update'));
-    });
+    this.updateProperties_();
+    this.dispatchEvent(new CustomEvent('user-update'));
   }
 }
 
