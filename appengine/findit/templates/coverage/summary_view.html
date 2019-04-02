@@ -23,6 +23,14 @@
     .high-coverage {
       background-color: #D0FFD0;
     }
+    .legend {
+      font-size: 14px;
+    }
+    .legend .color-sample {
+      padding: 2px 8px;
+      border: 1px solid black;
+      display: inline;
+    }
     tbody tr:hover td, tfoot tr:hover td {
       background-color: #F5F5F5;
       border-color: #E4E4E4 !important;
@@ -93,6 +101,12 @@
         {% endif %}
         <br>
         <br>
+      </div>
+      <div class="legend">
+        Legend:
+        <div class="color-sample high-coverage"> 100% </div>
+        <div class="color-sample medium-coverage"> 80%-99% </div>
+        <div class="color-sample low-coverage"> &lt; 80% </div>
       </div>
       <table>
         <thead>

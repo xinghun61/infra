@@ -48,6 +48,14 @@
     .highlight-row:hover {
       background-color: #F0F0F0;
     }
+    .legend {
+      font-family: monospace;
+    }
+    .legend .color-sample {
+      padding: 2px 10px;
+      border: 1px solid black;
+      display: inline;
+    }
     .covered-code {
       background-color: #E0F2F1;
     }
@@ -100,6 +108,12 @@
     Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>&platform={{platform}}">Component View</a>
     <br>
     <br>
+    </div>
+    <div class="legend">
+      Legend:
+      <div class="color-sample covered-code"> Covered </div>
+      <div class="color-sample uncovered-code"> Not Covered </div>
+      <div class="color-sample incoverable-code"> Not-Compiled/Not-Instrumented </div>
     </div>
     <table>
       <thead>
