@@ -367,6 +367,17 @@ func loadDictionaryFile() map[string][]string {
 		// being an optional reason to disable the word.
 		parts := strings.Split(line, "->")
 		fixes := strings.Split(parts[1], ", ")
+
+		// Remove any instances of the misspelling from the suggested fixes.
+		for i := len(fixes) - 1; i >= 0; i-- {
+			tok := strings.Trim(fixes[i], ",")
+
+			// If the suggestion matches the misspelling, omit it.
+			if tok == parts[0] {
+				fixes = append(fixes[:i], fixes[i+1:]...)
+			}
+		}
+
 		dictMap[strings.ToLower(parts[0])] = fixes
 	}
 	if err := scanner.Err(); err != nil {
