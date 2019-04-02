@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env vpython
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -25,6 +25,8 @@ import socket
 import subprocess
 import sys
 import tempfile
+
+import yaml
 
 
 # Root of infra.git repository.
@@ -604,11 +606,10 @@ def build_go_code(go_workspace, pkg_defs):
         run_go_build(go_workspace, pkg_env, pkg, os.path.join(go_bin, bin_name))
 
 
-def enumerate_packages(py_venv, package_def_dir, package_def_files):
+def enumerate_packages(package_def_dir, package_def_files):
   """Returns a list PackageDef instances for files in build/packages/*.yaml.
 
   Args:
-    py_env: path to python ENV where to look for YAML parser.
     package_def_dir: path to build/packages dir to search for *.yaml.
     package_def_files: optional list of filenames to limit results to.
 
@@ -632,38 +633,16 @@ def enumerate_packages(py_venv, package_def_dir, package_def_files):
   # Load and validate YAMLs.
   pkgs = []
   for p in sorted(paths):
-    pkg = PackageDef(p, read_yaml(py_venv, p))
+    pkg = PackageDef(p, read_yaml(p))
     pkg.validate()
     pkgs.append(pkg)
   return pkgs
 
 
-def read_yaml(py_venv, path):
+def read_yaml(path):
   """Returns content of YAML file as python dict."""
-  # YAML lib is in venv, not activated here. Go through hoops.
-  # TODO(vadimsh): Doesn't work on ARM, since we have no working infra_python
-  # venv there. Replace this hack with vendored pure-python PyYAML.
-  oneliner = (
-      'import json, sys, yaml; '
-      'json.dump(yaml.safe_load(sys.stdin), sys.stdout)')
-  if IS_WINDOWS:
-    python_venv_path = ('Scripts', 'python.exe')
-  else:
-    python_venv_path = ('bin', 'python')
-  executable = os.path.join(py_venv, *python_venv_path)
-  env = os.environ.copy()
-  env.pop('PYTHONPATH', None)
-  proc = subprocess.Popen(
-      [executable, '-c', oneliner],
-      executable=executable,
-      stdin=subprocess.PIPE,
-      stdout=subprocess.PIPE,
-      env=env)
-  with open(path, 'r') as f:
-    out, _ = proc.communicate(f.read())
-  if proc.returncode:
-    raise PackageDefException(path, 'Failed to parse YAML')
-  return json.loads(out)
+  with open(path, 'rb') as f:
+    return yaml.safe_load(f)
 
 
 def get_package_vars():
@@ -968,7 +947,6 @@ def get_build_out_file(package_out_dir, pkg_def):
 
 
 def run(
-    py_venv,
     go_workspace,
     build_callback,
     builder,
@@ -984,7 +962,6 @@ def run(
   """Rebuilds python and Go universes and CIPD packages.
 
   Args:
-    py_venv: path to 'infra/ENV' or 'infra_internal/ENV'.
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
     build_callback: called to build binaries, virtual environment, etc.
     builder: name of CI buildbot builder that invoked the script.
@@ -1025,7 +1002,7 @@ def run(
   # Load all package definitions and pick ones we want to build (based on
   # whether we are cross-compiling or not).
   try:
-    defs = enumerate_packages(py_venv, package_def_dir, package_def_files)
+    defs = enumerate_packages(package_def_dir, package_def_files)
   except PackageDefException as exc:
     print >> sys.stderr, exc
     return 1
@@ -1163,7 +1140,6 @@ def build_infra(pkg_defs):
 def main(
     args,
     build_callback=build_infra,
-    py_venv=os.path.join(ROOT, 'ENV'),
     go_workspace=os.path.join(ROOT, 'go'),
     package_def_dir=os.path.join(ROOT, 'build', 'packages'),
     package_out_dir=os.path.join(ROOT, 'build', 'out')):
@@ -1197,7 +1173,6 @@ def main(
   if not args.build and not args.upload:
     parser.error('--no-rebuild doesn\'t make sense without --upload')
   return run(
-      py_venv,
       go_workspace,
       build_callback,
       args.builder,

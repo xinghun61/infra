@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env vpython
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -41,6 +41,8 @@ import subprocess
 import sys
 import tempfile
 import time
+
+import yaml
 
 
 # Whitelist of packages with executables we want to be available in PATH. Will
@@ -136,32 +138,6 @@ BANNER_END   = '-'*24 + '--------------------------' + '-'*24
 
 class CallFailed(Exception):
   """Raised by 'call' on non-zero exit codes."""
-
-
-def parse_glide_lock(content):
-  """Parses deps.lock YAML file content and returns it as python dict."""
-  # YAML lib is in venv, not activated here. Do some ugly hacks, they at least
-  # don't touch python module import madness. Importing a package from another
-  # venv directly into the process space is non-trivial and dangerous.
-  oneliner = (
-      'import json, sys, yaml; '
-      'out = yaml.safe_load(sys.stdin); '
-      'out["updated"] = str(out["updated"]); ' # not JSON serializable otherwise
-      'json.dump(out, sys.stdout)')
-  if sys.platform == 'win32':
-    python_venv_path = ('Scripts', 'python.exe')
-  else:
-    python_venv_path = ('bin', 'python')
-  executable = os.path.join(REPO_ROOT, 'ENV', *python_venv_path)
-  env = os.environ.copy()
-  env.pop('PYTHONPATH', None)
-  proc = subprocess.Popen(
-      [executable, '-c', oneliner],
-      executable=executable,
-      stdin=subprocess.PIPE,
-      stdout=subprocess.PIPE,
-      env=env)
-  return json.loads(proc.communicate(content)[0])
 
 
 def flatten_deps(deps):
@@ -340,10 +316,10 @@ def unhack_vendor(workspace):
         os.path.join(workspace.vendor_root, 'glide.lock'))
 
     lock_before = read_file(os.path.join(workspace.vendor_root, 'glide.lock'))
-    deps_before = parse_glide_lock(lock_before)
+    deps_before = yaml.safe_load(lock_before)
     yield
     lock_after = read_file(os.path.join(workspace.vendor_root, 'glide.lock'))
-    deps_after = parse_glide_lock(lock_after)
+    deps_after = yaml.safe_load(lock_after)
 
     if compare_deps(deps_before, deps_after):
       print 'Run "deps.py install" to reinstall dependencies when ready.'
@@ -563,7 +539,7 @@ def get_bundle_ver(lock_file_body):
   # There's a "hash" field in glide.lock. It is a trap. It doesn't change when
   # version of the dependencies change. So instead just hash the (sanitized)
   # manifest itself.
-  glide_lock = parse_glide_lock(lock_file_body)
+  glide_lock = yaml.safe_load(lock_file_body)
   glide_lock.pop('hash', None)
   glide_lock.pop('updated', None)
   sha1 = hashlib.sha1(json.dumps(glide_lock, sort_keys=True)).hexdigest()
@@ -721,10 +697,10 @@ def update(workspace):
     obliterate_glide_cache(workspace)
     # For a mysterious reason Glide doesn't update all dependencies on a first
     # try. Run it until it reports there's nothing to update.
-    deps = parse_glide_lock(read_file(lock_path))
+    deps = yaml.safe_load(read_file(lock_path))
     while True:
       call(workspace, 'glide', ['update', '--force'])
-      deps_after = parse_glide_lock(read_file(lock_path))
+      deps_after = yaml.safe_load(read_file(lock_path))
       if deps == deps_after:
         break
       print 'One more time...'

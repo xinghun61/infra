@@ -68,7 +68,7 @@ def CommandInGoEnv(input_api, output_api, name, cmd, kwargs):
   else:
     error_type = output_api.PresubmitPromptWarning
   full_cmd = [
-    input_api.python_executable,
+    'vpython',
     input_api.os_path.join(input_api.change.RepositoryRoot(), 'go', 'env.py'),
   ]
   full_cmd.extend(cmd)
@@ -90,7 +90,7 @@ def GoCheckers(input_api, output_api):
     return []
   stdin = '\n'.join(affected_files)
 
-  tool_names = ["gofmt", "govet", "golint"]
+  tool_names = ['gofmt', 'govet', 'golint']
   ret = []
   for tool_name in tool_names:
     cmd = [
@@ -425,7 +425,7 @@ def NoTypescriptCheck(input_api, output_api):  # pragma: no cover
           'Typescript file disallowed: %s' % f))
   if output:
     output.append(output_api.PresubmitError(
-        'Please contact {dnj,estaab,andybons,seanmccullough,infra-dev}'
+        'Please contact {estaab,seanmccullough,infra-dev}'
         '@chromium.org before adding typescript files. See '
         'http://crbug.com/678673 for details.'))
   return output
@@ -448,7 +448,7 @@ def CommonChecks(input_api, output_api):  # pragma: no cover
       input_api.Command(
         name='bootstrap go env',
         cmd=[
-          input_api.python_executable,
+          'vpython',
           input_api.os_path.join(
             input_api.change.RepositoryRoot(), 'go', 'bootstrap.py')
         ],

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env vpython
 # Copyright 2018 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -10,7 +10,7 @@ import subprocess
 import sys
 import urlparse
 
-import deps
+import yaml
 
 
 # This lists the go packages to scan. Can be any package pattern accepted
@@ -100,7 +100,7 @@ def check_all_googlesource_mirrors():
   ret = []
 
   with open(os.path.join(SCRIPT_DIR, 'deps.lock')) as f:
-    lock_file = deps.parse_glide_lock(f.read())
+    lock_file = yaml.safe_load(f)
 
   bad_urls = {}
   for imp in lock_file['imports']:

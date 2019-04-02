@@ -1,5 +1,5 @@
 @echo off
-:: This script bootstrap the go toolset and modifies an environment 
+:: This script bootstrap the go toolset and modifies an environment
 :: of the calling shell to include correct GOPATH, GOBIN and so.
 ::
 :: Unlike env.py, this script can't be used as a wrapping command,
@@ -9,7 +9,7 @@ SET script_path=%~dp0
 SET temp_script=%script_path%\_setup_env.cmd
 
 :: This spits out a bunch of 'set VAR=VALUE' commands.
-call python %script_path%\env.py > %temp_script%
+call vpython %script_path%\env.py > %temp_script%
 :: This injects them into shell environment.
 call %temp_script%
 
