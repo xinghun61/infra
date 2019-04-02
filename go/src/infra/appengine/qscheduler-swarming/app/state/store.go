@@ -92,7 +92,7 @@ func (s *Store) Save(ctx context.Context, q *types.QScheduler) error {
 		ReconcilerData:  rd,
 	}
 
-	logging.Infof(ctx, "attempting to Put datastore entitiy for pool %s"+
+	logging.Infof(ctx, "attempting to Put datastore entitiy for pool %s "+
 		"with (Scheduler(zip), Reconciler) size of (%d, %d) bytes",
 		entity.QSPoolID, len(entity.SchedulerDataZL), len(entity.ReconcilerData))
 
