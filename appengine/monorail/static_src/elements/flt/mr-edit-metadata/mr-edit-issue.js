@@ -88,7 +88,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issue: state.issue,
+      issue: issue.issue(state),
       issueRef: issue.issueRef(state),
       projectConfig: project.project(state).config,
       updatingIssue: state.requests.updateIssue.requesting,

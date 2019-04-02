@@ -47,7 +47,7 @@ suite('mr-issue-header', () => {
       issue: {summary: 'test'},
     });
 
-    assert.deepEqual(store.getState().issue, {summary: 'test'});
+    assert.deepEqual(issue.issue(store.getState()), {summary: 'test'});
 
     // TODO(zhangtiff): Figure out how to properly test
     // state changes propagating to the element. As is, state

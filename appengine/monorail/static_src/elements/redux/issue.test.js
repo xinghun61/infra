@@ -8,53 +8,47 @@ import {fieldTypes} from '../shared/field-types.js';
 
 suite('issue', () => {
   test('issue', () => {
-    assert.isUndefined(issue.issue({}));
-    assert.deepEqual(issue.issue({issue: {localId: 100}}),
-      {localId: 100});
+    assert.deepEqual(issue.issue(wrapIssue()), {});
+    assert.deepEqual(issue.issue(wrapIssue({localId: 100})), {localId: 100});
   });
 
   test('fieldValues', () => {
-    assert.isUndefined(issue.fieldValues({}));
-    assert.isUndefined(issue.fieldValues({issue: {}}));
-    assert.deepEqual(issue.fieldValues({
-      issue: {fieldValues: [{value: 'v'}]},
-    }), [{value: 'v'}]);
+    assert.isUndefined(issue.fieldValues(wrapIssue()));
+    assert.deepEqual(issue.fieldValues(wrapIssue({
+      fieldValues: [{value: 'v'}],
+    })), [{value: 'v'}]);
   });
 
   test('type', () => {
-    assert.isUndefined(issue.type({}));
-    assert.isUndefined(issue.type({issue: {}}));
-    assert.isUndefined(issue.type({
-      issue: {fieldValues: [{value: 'v'}]},
-    }));
-    assert.deepEqual(issue.type({
-      issue: {fieldValues: [
+    assert.isUndefined(issue.type(wrapIssue()));
+    assert.isUndefined(issue.type(wrapIssue({
+      fieldValues: [{value: 'v'}],
+    })));
+    assert.deepEqual(issue.type(wrapIssue({
+      fieldValues: [
         {fieldRef: {fieldName: 'IgnoreMe'}, value: 'v'},
         {fieldRef: {fieldName: 'Type'}, value: 'Defect'},
-      ]},
-    }), 'Defect');
+      ],
+    })), 'Defect');
   });
 
   test('restrictions', () => {
-    assert.deepEqual(issue.restrictions({}), {});
-    assert.deepEqual(issue.restrictions(
-      {issue: {}}), {});
-    assert.deepEqual(issue.restrictions(
-      {issue: {labelRefs: []}}), {});
+    assert.deepEqual(issue.restrictions(wrapIssue()), {});
+    assert.deepEqual(issue.restrictions(wrapIssue({labelRefs: []})), {});
 
-    assert.deepEqual(issue.restrictions({issue: {labelRefs: [
+    assert.deepEqual(issue.restrictions(wrapIssue({labelRefs: [
       {label: 'IgnoreThis'},
       {label: 'IgnoreThis2'},
-    ]}}), {});
+    ]})), {});
 
-    assert.deepEqual(issue.restrictions({issue: {labelRefs: [
+    assert.deepEqual(issue.restrictions(wrapIssue({labelRefs: [
       {label: 'IgnoreThis'},
       {label: 'IgnoreThis2'},
       {label: 'Restrict-View-Google'},
       {label: 'Restrict-EditIssue-hello'},
       {label: 'Restrict-EditIssue-test'},
       {label: 'Restrict-AddIssueComment-HELLO'},
-    ]}}), {
+    ]})), {
       'view': ['Google'],
       'edit': ['hello', 'test'],
       'comment': ['HELLO'],
@@ -62,43 +56,41 @@ suite('issue', () => {
   });
 
   test('isRestricted', () => {
-    assert.isFalse(issue.isRestricted({}));
-    assert.isFalse(issue.isRestricted({}));
-    assert.isFalse(issue.isRestricted({issue: {}}));
-    assert.isFalse(issue.isRestricted({issue: {labelRefs: []}}));
+    assert.isFalse(issue.isRestricted(wrapIssue()));
+    assert.isFalse(issue.isRestricted(wrapIssue({labelRefs: []})));
 
-    assert.isTrue(issue.isRestricted({issue: {labelRefs: [
+    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
       {label: 'IgnoreThis'},
       {label: 'IgnoreThis2'},
       {label: 'Restrict-View-Google'},
-    ]}}));
+    ]})));
 
-    assert.isFalse(issue.isRestricted({issue: {labelRefs: [
+    assert.isFalse(issue.isRestricted(wrapIssue({labelRefs: [
       {label: 'IgnoreThis'},
       {label: 'IgnoreThis2'},
       {label: 'Restrict-View'},
       {label: 'Restrict'},
       {label: 'RestrictView'},
       {label: 'Restt-View'},
-    ]}}));
+    ]})));
 
-    assert.isTrue(issue.isRestricted({issue: {labelRefs: [
+    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
       {label: 'restrict-view-google'},
-    ]}}));
+    ]})));
 
-    assert.isTrue(issue.isRestricted({issue: {labelRefs: [
+    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
       {label: 'restrict-EditIssue-world'},
-    ]}}));
+    ]})));
 
-    assert.isTrue(issue.isRestricted({issue: {labelRefs: [
+    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
       {label: 'RESTRICT-ADDISSUECOMMENT-everyone'},
-    ]}}));
+    ]})));
   });
 
   test('isOpen', () => {
-    assert.isFalse(issue.isOpen({}));
-    assert.isTrue(issue.isOpen({issue: {statusRef: {meansOpen: true}}}));
-    assert.isFalse(issue.isOpen({issue: {statusRef: {meansOpen: false}}}));
+    assert.isFalse(issue.isOpen(wrapIssue()));
+    assert.isTrue(issue.isOpen(wrapIssue({statusRef: {meansOpen: true}})));
+    assert.isFalse(issue.isOpen(wrapIssue({statusRef: {meansOpen: false}})));
   });
 
   test('blockingIssues', () => {
@@ -110,33 +102,33 @@ suite('issue', () => {
       ['chromium:332',
         {localId: 332, projectName: 'chromium', labelRefs: []}],
     ]);
-    const stateNoReferences = {
-      issue: {
+    const stateNoReferences = {issue: {
+      currentIssue: {
         blockingIssueRefs: [{localId: 1, projectName: 'proj'}],
       },
       relatedIssues: new Map(),
-    };
+    }};
     assert.deepEqual(issue.blockingIssues(stateNoReferences),
       [{localId: 1, projectName: 'proj'}]
     );
 
-    const stateNoIssues = {
-      issue: {
+    const stateNoIssues = {issue: {
+      currentIssue: {
         blockingIssueRefs: [],
       },
       relatedIssues: relatedIssues,
-    };
+    }};
     assert.deepEqual(issue.blockingIssues(stateNoIssues), []);
 
-    const stateIssuesWithReferences = {
-      issue: {
+    const stateIssuesWithReferences = {issue: {
+      currentIssue: {
         blockingIssueRefs: [
           {localId: 1, projectName: 'proj'},
           {localId: 332, projectName: 'chromium'},
         ],
       },
       relatedIssues: relatedIssues,
-    };
+    }};
     assert.deepEqual(issue.blockingIssues(stateIssuesWithReferences),
       [
         {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
@@ -153,33 +145,33 @@ suite('issue', () => {
       ['chromium:332',
         {localId: 332, projectName: 'chromium', labelRefs: []}],
     ]);
-    const stateNoReferences = {
-      issue: {
+    const stateNoReferences = {issue: {
+      currentIssue: {
         blockedOnIssueRefs: [{localId: 1, projectName: 'proj'}],
       },
       relatedIssues: new Map(),
-    };
+    }};
     assert.deepEqual(issue.blockedOnIssues(stateNoReferences),
       [{localId: 1, projectName: 'proj'}]
     );
 
-    const stateNoIssues = {
-      issue: {
+    const stateNoIssues = {issue: {
+      currentIssue: {
         blockedOnIssueRefs: [],
       },
       relatedIssues: relatedIssues,
-    };
+    }};
     assert.deepEqual(issue.blockedOnIssues(stateNoIssues), []);
 
-    const stateIssuesWithReferences = {
-      issue: {
+    const stateIssuesWithReferences = {issue: {
+      currentIssue: {
         blockedOnIssueRefs: [
           {localId: 1, projectName: 'proj'},
           {localId: 332, projectName: 'chromium'},
         ],
       },
       relatedIssues: relatedIssues,
-    };
+    }};
     assert.deepEqual(issue.blockedOnIssues(stateIssuesWithReferences),
       [
         {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]},
@@ -200,34 +192,34 @@ suite('issue', () => {
       ['chromium:332',
         {localId: 332, projectName: 'chromium', statusRef: {meansOpen: true}}],
     ]);
-    const stateNoReferences = {
-      issue: {
+    const stateNoReferences = {issue: {
+      currentIssue: {
         blockedOnIssueRefs: [
           {localId: 3, projectName: 'proj'},
           {localId: 1, projectName: 'proj'},
         ],
       },
       relatedIssues: new Map(),
-    };
+    }};
     assert.deepEqual(issue.sortedBlockedOn(stateNoReferences), [
       {localId: 3, projectName: 'proj'},
       {localId: 1, projectName: 'proj'},
     ]);
-    const stateReferences = {
-      issue: {
+    const stateReferences = {issue: {
+      currentIssue: {
         blockedOnIssueRefs: [
           {localId: 3, projectName: 'proj'},
           {localId: 1, projectName: 'proj'},
         ],
       },
       relatedIssues: relatedIssues,
-    };
+    }};
     assert.deepEqual(issue.sortedBlockedOn(stateReferences), [
       {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}},
       {localId: 3, projectName: 'proj', statusRef: {meansOpen: false}},
     ]);
-    const statePreservesArrayOrder = {
-      issue: {
+    const statePreservesArrayOrder = {issue: {
+      currentIssue: {
         blockedOnIssueRefs: [
           {localId: 5, projectName: 'proj'}, // Closed
           {localId: 1, projectName: 'proj'}, // Open
@@ -237,7 +229,7 @@ suite('issue', () => {
         ],
       },
       relatedIssues: relatedIssues,
-    };
+    }};
     assert.deepEqual(issue.sortedBlockedOn(statePreservesArrayOrder),
       [
         {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}},
@@ -250,34 +242,40 @@ suite('issue', () => {
   });
 
   test('fieldValueMap', () => {
-    assert.deepEqual(issue.fieldValueMap({}), new Map());
-    assert.deepEqual(issue.fieldValueMap({issue: {
+    assert.deepEqual(issue.fieldValueMap(wrapIssue()), new Map());
+    assert.deepEqual(issue.fieldValueMap(wrapIssue({
       fieldValues: [],
-    }}), new Map());
-    assert.deepEqual(issue.fieldValueMap({
-      issue: {fieldValues: [
+    })), new Map());
+    assert.deepEqual(issue.fieldValueMap(wrapIssue({
+      fieldValues: [
         {fieldRef: {fieldName: 'hello'}, value: 'v1'},
         {fieldRef: {fieldName: 'hello'}, value: 'v2'},
         {fieldRef: {fieldName: 'world'}, value: 'v3'},
-      ]},
-    }), new Map([
+      ],
+    })), new Map([
       ['hello', ['v1', 'v2']],
       ['world', ['v3']],
     ]));
   });
 
   test('fieldDefs', () => {
-    assert.deepEqual(issue.fieldDefs({project: {}}), []);
+    assert.deepEqual(issue.fieldDefs({
+      project: {},
+      ...wrapIssue(),
+    }), []);
 
     // Remove approval-related fields, regardless of issue.
-    assert.deepEqual(issue.fieldDefs({project: {config: {
-      fieldDefs: [
-        {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
-        {fieldRef: {fieldName: 'ignoreMe', type: fieldTypes.APPROVAL_TYPE}},
-        {fieldRef: {fieldName: 'LookAway', approvalName: 'ThisIsAnApproval'}},
-        {fieldRef: {fieldName: 'phaseField'}, isPhaseField: true},
-      ],
-    }}}), [
+    assert.deepEqual(issue.fieldDefs({
+      project: {config: {
+        fieldDefs: [
+          {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
+          {fieldRef: {fieldName: 'ignoreMe', type: fieldTypes.APPROVAL_TYPE}},
+          {fieldRef: {fieldName: 'LookAway', approvalName: 'ThisIsAnApproval'}},
+          {fieldRef: {fieldName: 'phaseField'}, isPhaseField: true},
+        ],
+      }},
+      ...wrapIssue(),
+    }), [
       {fieldRef: {fieldName: 'test', type: fieldTypes.INT_TYPE}},
     ]);
 
@@ -293,11 +291,11 @@ suite('issue', () => {
             applicableType: 'Defect'},
         ],
       }},
-      issue: {
+      ...wrapIssue({
         fieldValues: [
           {fieldRef: {fieldName: 'Type'}, value: 'Defect'},
         ],
-      },
+      }),
     }), [
       {fieldRef: {fieldName: 'intyInt', type: fieldTypes.INT_TYPE}},
       {fieldRef: {fieldName: 'enum', type: fieldTypes.ENUM_TYPE}},
@@ -306,3 +304,7 @@ suite('issue', () => {
     ]);
   });
 });
+
+function wrapIssue(currentIssue) {
+  return {issue: {currentIssue: {...currentIssue}}};
+}

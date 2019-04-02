@@ -127,7 +127,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      comments: state.comments,
+      comments: issue.comments(state),
       issueRef: issue.issueRef(state),
     };
   }

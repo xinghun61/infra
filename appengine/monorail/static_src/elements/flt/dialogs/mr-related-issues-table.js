@@ -145,7 +145,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issueRef: issue.issueRef(state),
-      issuePermissions: state.issuePermissions,
+      issuePermissions: issue.issuePermissions(state),
       sortedBlockedOn: issue.sortedBlockedOn(state),
     };
   }

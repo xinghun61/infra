@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import './mr-phase.js';
 
 /**
@@ -70,10 +71,10 @@ export class MrLaunchOverview extends ReduxMixin(PolymerElement) {
   }
 
   static mapStateToProps(state, element) {
-    if (!state.issue) return;
+    if (!issue.issue(state)) return;
     return {
-      approvals: state.issue.approvalValues,
-      phases: state.issue.phases,
+      approvals: issue.issue(state).approvalValues,
+      phases: issue.issue(state).phases,
     };
   }
 

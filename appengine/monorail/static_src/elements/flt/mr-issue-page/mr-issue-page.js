@@ -247,10 +247,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issue: state.issue,
+      issue: issue.issue(state),
       issueRef: issue.issueRef(state),
       issueClosed: !issue.isOpen(state),
-      issuePermissions: state.issuePermissions,
+      issuePermissions: issue.issuePermissions(state),
       fetchingComments: state.requests.fetchComments.requesting,
       fetchingIssue: state.requests.fetchIssue.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),

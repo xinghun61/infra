@@ -86,7 +86,7 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      commentReferences: state.commentReferences,
+      commentReferences: issue.commentReferences(state),
       projectName: issue.issueRef(state).projectName,
       prefs: user.user(state).prefs,
     };

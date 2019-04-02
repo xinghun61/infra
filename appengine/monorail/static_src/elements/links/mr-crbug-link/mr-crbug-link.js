@@ -4,6 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
+import * as issue from '../../redux/issue.js';
 
 /**
  * `<mr-crbug-link>`
@@ -52,7 +53,7 @@ export class MrCrbugLink extends PolymerElement {
 
   static mapStateToProps(state, element) {
     return {
-      issue: state.issue,
+      issue: issue.issue(state),
     };
   }
 

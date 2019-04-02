@@ -8,6 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-button/chops-button.js';
 import './mr-comment.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 import '../../shared/mr-shared-styles.js';
 
 const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
@@ -108,7 +109,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       focusId: state.focusId,
-      issuePermissions: state.issuePermissions,
+      issuePermissions: issue.issuePermissions(state),
     };
   }
 

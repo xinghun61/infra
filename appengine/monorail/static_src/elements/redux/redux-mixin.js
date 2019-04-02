@@ -93,7 +93,7 @@ const projectNameReducer = createReducer('', {
   [actionType.UPDATE_ISSUE_REF]: (state, action) => action.projectName || state,
 });
 
-const issueReducer = createReducer({}, {
+const currentIssueReducer = createReducer({}, {
   [actionType.FETCH_ISSUE_SUCCESS]: (_state, action) => action.issue,
   [actionType.STAR_ISSUE_SUCCESS]: (state, action) => {
     return {...state, starCount: action.starCount};
@@ -234,15 +234,16 @@ const reducer = combineReducers({
     projectName: projectNameReducer,
   }),
 
-  issue: issueReducer,
-  issueHotlists: issueHotlistsReducer,
-  comments: commentsReducer,
-  commentReferences: commentReferencesReducer,
-  relatedIssues: relatedIssuesReducer,
-  isStarred: isStarredReducer,
-  issuePermissions: issuePermissionsReducer,
-
-  presubmitResponse: presubmitResponseReducer,
+  issue: combineReducers({
+    currentIssue: currentIssueReducer,
+    issueHotlists: issueHotlistsReducer,
+    comments: commentsReducer,
+    commentReferences: commentReferencesReducer,
+    relatedIssues: relatedIssuesReducer,
+    isStarred: isStarredReducer,
+    issuePermissions: issuePermissionsReducer,
+    presubmitResponse: presubmitResponseReducer,
+  }),
 
   // Forms to be checked for user changes before leaving the page.
   dirtyForms: dirtyFormsReducer,

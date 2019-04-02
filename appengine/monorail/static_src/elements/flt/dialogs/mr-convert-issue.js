@@ -115,7 +115,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
       convertingIssue: state.requests.convertIssue.requesting,
       convertIssueError: state.requests.convertIssue.error,
       issueRef: issue.issueRef(state),
-      issuePermissions: state.issuePermissions,
+      issuePermissions: issue.issuePermissions(state),
       projectTemplates: project.project(state).templates,
     };
   }

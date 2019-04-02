@@ -267,18 +267,18 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issue: state.issue,
+      issue: issue.issue(state),
       issueRef: issue.issueRef(state),
       user: user.user(state),
       projectConfig: project.project(state).config,
-      isStarred: state.isStarred,
+      isStarred: issue.isStarred(state),
       fetchingIsStarred: state.requests.fetchIsStarred.requesting,
       starringIssue: state.requests.starIssue.requesting,
       blocking: issue.blockingIssues(state),
       sortedBlockedOn: issue.sortedBlockedOn(state),
       mergedInto: issue.mergedInto(state),
-      relatedIssues: state.relatedIssues,
-      issueHotlists: state.issueHotlists,
+      relatedIssues: issue.relatedIssues(state),
+      issueHotlists: issue.issueHotlists(state),
       _components: issue.components(state),
       _fieldDefs: issue.fieldDefs(state),
       _type: issue.type(state),

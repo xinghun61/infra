@@ -215,7 +215,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     const superProps = super.mapStateToProps(state, element);
     return Object.assign(superProps, {
-      issue: state.issue,
+      issue: issue.issue(state),
       issueRef: issue.issueRef(state),
       updatingIssue: state.requests.updateIssue.requesting,
       updateIssueError: state.requests.updateIssue.error,

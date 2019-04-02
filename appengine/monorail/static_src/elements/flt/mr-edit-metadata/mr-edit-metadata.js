@@ -525,10 +525,10 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     const superProps = super.mapStateToProps(state, element);
     return Object.assign(superProps, {
-      presubmitResponse: state.presubmitResponse,
+      presubmitResponse: issue.presubmitResponse(state),
       projectConfig: project.project(state).config,
       projectName: issue.issueRef(state).projectName,
-      issuePermissions: state.issuePermissions,
+      issuePermissions: issue.issuePermissions(state),
     });
   }
 

@@ -233,7 +233,7 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
     return {
       ...super.mapStateToProps(state, element),
       issueRef: issue.issueRef(state),
-      relatedIssues: state.relatedIssues,
+      relatedIssues: issue.relatedIssues(state),
     };
   }
 

@@ -27,7 +27,17 @@ export const issueRef = (state) => state.issueRef;
 // TODO(zhangtiff): Eventually Monorail's Redux state will store
 // multiple issues, and this selector will have to find the viewed
 // issue based on a viewed issue ref.
-export const issue = (state) => state.issue;
+export const issue = (state) => state.issue.currentIssue;
+
+export const comments = (state) => state.issue.comments;
+export const commentsLoaded = (state) => state.issue.commentsLoaded;
+export const commentReferences = (state) => state.issue.commentReferences;
+export const issueHotlists = (state) => state.issue.issueHotlists;
+export const issueLoaded = (state) => state.issue.issueLoaded;
+export const issuePermissions = (state) => state.issue.issuePermissions;
+export const presubmitResponse = (state) => state.issue.presubmitResponse;
+export const relatedIssues = (state) => state.issue.relatedIssues;
+export const isStarred = (state) => state.issue.isStarred;
 
 export const fieldValues = createSelector(
   issue,
@@ -111,8 +121,6 @@ const blockedOnIssueRefs = createSelector(
   issue,
   (issue) => issue && issue.blockedOnIssueRefs || []
 );
-
-export const relatedIssues = (state) => state.relatedIssues;
 
 export const blockingIssues = createSelector(
   blockingIssueRefs, relatedIssues,
