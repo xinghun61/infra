@@ -112,8 +112,8 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      convertingIssue: state.requests.convertIssue.requesting,
-      convertIssueError: state.requests.convertIssue.error,
+      convertingIssue: issue.requests(state).convertIssue.requesting,
+      convertIssueError: issue.requests(state).convertIssue.error,
       issueRef: issue.issueRef(state),
       issuePermissions: issue.issuePermissions(state),
       projectTemplates: project.project(state).templates,

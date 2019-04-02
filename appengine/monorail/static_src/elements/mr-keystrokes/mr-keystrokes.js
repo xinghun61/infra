@@ -213,8 +213,8 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
     return {
       issuePermissions: issue.issuePermissions(state),
       _isStarred: issue.isStarred(state),
-      _fetchingIsStarred: state.requests.fetchIsStarred.requesting,
-      _starringIssue: state.requests.starIssue.requesting,
+      _fetchingIsStarred: issue.requests(state).fetchIsStarred.requesting,
+      _starringIssue: issue.requests(state).starIssue.requesting,
     };
   }
 

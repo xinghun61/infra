@@ -251,10 +251,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issueRef: issue.issueRef(state),
       issueClosed: !issue.isOpen(state),
       issuePermissions: issue.issuePermissions(state),
-      fetchingComments: state.requests.fetchComments.requesting,
-      fetchingIssue: state.requests.fetchIssue.requesting,
+      fetchingComments: issue.requests(state).fetchComments.requesting,
+      fetchingIssue: issue.requests(state).fetchIssue.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
-      fetchIssueError: state.requests.fetchIssue.error,
+      fetchIssueError: issue.requests(state).fetchIssue.error,
       _user: user.user(state),
     };
   }

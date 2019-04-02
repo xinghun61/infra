@@ -5,6 +5,7 @@
 import {assert} from 'chai';
 import {MrIssuePage} from './mr-issue-page.js';
 import {store, actionType} from '../../redux/redux-mixin.js';
+import * as issue from '../../redux/issue.js';
 
 let element;
 
@@ -23,13 +24,13 @@ suite('mr-issue-page', () => {
   });
 
   test('fetching issue makes loading show', () => {
-    assert.isFalse(store.getState().requests.fetchIssue.requesting);
+    assert.isFalse(issue.requests(store.getState()).fetchIssue.requesting);
 
     store.dispatch({
       type: actionType.FETCH_ISSUE_START,
     });
 
-    assert.isTrue(store.getState().requests.fetchIssue.requesting);
+    assert.isTrue(issue.requests(store.getState()).fetchIssue.requesting);
 
     // TODO(zhangtiff): Figure out how to propagate Redux state changes.
     element.fetchingIssue = true;
@@ -42,7 +43,8 @@ suite('mr-issue-page', () => {
       error: 'failed request',
     });
 
-    assert.equal(store.getState().requests.fetchIssue.error, 'failed request');
+    assert.equal(
+      issue.requests(store.getState()).fetchIssue.error, 'failed request');
 
     // TODO(zhangtiff): Figure out how to propagate Redux state changes.
     element.fetchIssueError = element.fetchIssueError;

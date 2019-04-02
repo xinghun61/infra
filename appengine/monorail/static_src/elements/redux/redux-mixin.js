@@ -229,12 +229,12 @@ const reducer = combineReducers({
   project: project.reducer,
   user: user.reducer,
 
-  issueRef: combineReducers({
-    localId: localIdReducer,
-    projectName: projectNameReducer,
-  }),
-
   issue: combineReducers({
+    issueRef: combineReducers({
+      localId: localIdReducer,
+      projectName: projectNameReducer,
+    }),
+
     currentIssue: currentIssueReducer,
     issueHotlists: issueHotlistsReducer,
     comments: commentsReducer,
@@ -243,6 +243,8 @@ const reducer = combineReducers({
     isStarred: isStarredReducer,
     issuePermissions: issuePermissionsReducer,
     presubmitResponse: presubmitResponseReducer,
+
+    requests: requestsReducer,
   }),
 
   // Forms to be checked for user changes before leaving the page.
@@ -250,8 +252,6 @@ const reducer = combineReducers({
 
   // The ID of the element to be focused, as given by the hash part of the URL.
   focusId: focusIdReducer,
-
-  requests: requestsReducer,
 });
 
 function rootReducer(state, action) {

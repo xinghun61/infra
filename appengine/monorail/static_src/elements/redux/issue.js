@@ -22,7 +22,7 @@ const RESTRICT_VIEW_PREFIX = 'restrict-view-';
 const RESTRICT_EDIT_PREFIX = 'restrict-editissue-';
 const RESTRICT_COMMENT_PREFIX = 'restrict-addissuecomment-';
 
-export const issueRef = (state) => state.issueRef;
+export const issueRef = (state) => state.issue.issueRef;
 
 // TODO(zhangtiff): Eventually Monorail's Redux state will store
 // multiple issues, and this selector will have to find the viewed
@@ -38,6 +38,8 @@ export const issuePermissions = (state) => state.issue.issuePermissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
 export const relatedIssues = (state) => state.issue.relatedIssues;
 export const isStarred = (state) => state.issue.isStarred;
+
+export const requests = (state) => state.issue.requests;
 
 export const fieldValues = createSelector(
   issue,
