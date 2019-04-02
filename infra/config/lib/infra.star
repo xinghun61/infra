@@ -116,7 +116,7 @@ def category_from_os(os, short=False):
   """Given e.g. 'Ubuntu-16.10' returns e.g. 'linux|16.10'."""
   # Win7 seems to be special.
   if os == 'Windows':
-    return 'win|7'
+    return 'win' if short else 'win|7'
   os, _, ver = os.partition('-')
   category = _OS_TO_CATEGORY.get(os, os.lower())
   if not short:

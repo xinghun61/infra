@@ -25,7 +25,7 @@ def ci_builder(name, os, cpu=None):
   luci.console_view_entry(
       builder = name,
       console_view = 'infra',
-      category = infra.category_from_os(os),
+      category = infra.category_from_os(os, short=True),
   )
 
 

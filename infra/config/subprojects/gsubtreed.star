@@ -34,7 +34,7 @@ def gsubtreed_cron(
       service_account = service_account,
       # 1 stuck builder shouldn't block others using the same pool of machines.
       execution_timeout = execution_timeout or 10 * time.minute,
-      schedule = 'with 240s interval',
+      schedule = schedule or 'with 240s interval',
   )
   luci.list_view_entry(
       builder = name,
@@ -53,6 +53,8 @@ gsubtreed_cron(
     target_repo = 'https://chromium.googlesource.com/chromium/src',
     # Re-bootstrapping chromium repo takes 1+ hours.
     execution_timeout = 3 * time.hour,
+    # We want to have minimal delay.
+    schedule = 'continuously',
 )
 gsubtreed_cron(
     name = 'gsubtreed-chromiumos-platform2',

@@ -12,7 +12,7 @@ REPO_URL = 'https://chromium.googlesource.com/infra/luci/luci-go'
 
 infra.console_view(
     name = 'luci-go',
-    title = 'infra/infra repository console',
+    title = 'luci-go repository console',
     repo = REPO_URL,
 )
 infra.cq_group(name = 'luci-go cq', repo = REPO_URL)

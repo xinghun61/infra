@@ -35,6 +35,10 @@ luci.builder(
         ),
     ],
 )
+luci.list_view_entry(
+    builder = 'cros-flash-scheduler-kevin',
+    list_view = 'cron',
+)
 
 
 # The builder which runs the cros_flash recipe. All CrOS DUT swarming bots
