@@ -20,7 +20,7 @@ infra.console_view(
 
 luci.cq_group(
     name = 'build cq',
-    watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/.+']),
+    watch = cq.refset(repo = REPO_URL, refs = [r'refs/heads/master']),
     retry_config = cq.RETRY_ALL_FAILURES,
 )
 

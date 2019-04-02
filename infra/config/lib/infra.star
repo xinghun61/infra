@@ -38,7 +38,7 @@ def cq_group(name, repo=None, tree_status_host=None):
       name = name,
       watch = cq.refset(
           repo = repo or infra.REPO_URL,
-          refs = [r'refs/heads/.+'],
+          refs = ['refs/heads/master'],
       ),
       tree_status_host = tree_status_host,
       retry_config = cq.RETRY_NONE,
