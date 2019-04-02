@@ -6,7 +6,7 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrComment} from './mr-comment.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {actionType} from '../../redux/redux-mixin.js';
+import {resetState} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -34,7 +34,7 @@ suite('mr-comment', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction({type: actionType.RESET_STATE});
+    element.dispatchAction(resetState());
 
     window.requestAnimationFrame.restore();
   });

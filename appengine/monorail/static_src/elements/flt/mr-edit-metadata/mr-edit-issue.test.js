@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrEditIssue} from './mr-edit-issue.js';
-import {actionType} from '../../redux/redux-mixin.js';
+import {resetState} from '../../redux/redux-mixin.js';
 import sinon from 'sinon';
 
 let element;
@@ -17,7 +17,7 @@ suite('mr-edit-issue', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction({type: actionType.RESET_STATE});
+    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

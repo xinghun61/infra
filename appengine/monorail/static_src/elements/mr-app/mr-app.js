@@ -8,7 +8,8 @@ import {PolymerElement, html} from '@polymer/polymer';
 import page from 'page';
 import qs from 'qs';
 
-import {ReduxMixin, actionType} from '../redux/redux-mixin.js';
+import {ReduxMixin, clearDirtyForms, setFocusId} from '../redux/redux-mixin.js';
+import * as issue from '../redux/issue.js';
 import {arrayToEnglish} from '../shared/helpers.js';
 import '../flt/mr-issue-page/mr-issue-page.js';
 import '../mr-header/mr-header.js';
@@ -88,10 +89,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     page('*', (ctx, next) => {
       // Navigate to the requested element if a hash is present.
       if (ctx.hash) {
-        this.dispatchAction({
-          type: actionType.SET_FOCUS_ID,
-          focusId: ctx.hash,
-        });
+        this.dispatchAction(setFocusId(ctx.hash));
       }
 
       // We're not really navigating anywhere, so don't do anything.
@@ -107,7 +105,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       // page.
       if (this._confirmDiscard()) {
         // Clear the forms to be checked, since we're navigating away.
-        this.dispatchAction({type: actionType.CLEAR_DIRTY_FORMS});
+        this.dispatchAction(clearDirtyForms());
       } else {
         Object.assign(ctx, this._currentContext);
         // Set ctx.handled to false, so we don't push the state to browser's
@@ -150,11 +148,8 @@ export class MrApp extends ReduxMixin(PolymerElement) {
   }
 
   _loadApprovalPage(ctx, next) {
-    this.dispatchAction({
-      type: actionType.UPDATE_ISSUE_REF,
-      localId: Number.parseInt(ctx.query.id),
-      projectName: ctx.params.project,
-    });
+    this.dispatchAction(issue.setIssueRef(
+      Number.parseInt(ctx.query.id), ctx.params.project));
 
     this.projectName = ctx.params.project;
 

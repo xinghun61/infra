@@ -6,7 +6,7 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {actionType} from '../../redux/redux-mixin.js';
+import {resetState} from '../../redux/redux-mixin.js';
 import {ISSUE_EDIT_PERMISSION} from '../../shared/permissions.js';
 
 
@@ -26,7 +26,7 @@ suite('mr-edit-metadata', () => {
   teardown(() => {
     document.body.removeChild(element);
     element.dispatchAction.restore();
-    element.dispatchAction({type: actionType.RESET_STATE});
+    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrMetadata} from './mr-metadata.js';
-import {actionType} from '../../redux/redux-mixin.js';
+import {resetState} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -19,7 +19,7 @@ suite('mr-metadata', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction({type: actionType.RESET_STATE});
+    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

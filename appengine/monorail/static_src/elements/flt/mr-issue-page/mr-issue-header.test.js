@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
-import {store, actionType} from '../../redux/redux-mixin.js';
+import {store, actionType, resetState} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {ISSUE_EDIT_PERMISSION,
@@ -25,7 +25,7 @@ suite('mr-issue-header', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction({type: actionType.RESET_STATE});
+    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {
@@ -35,10 +35,7 @@ suite('mr-issue-header', () => {
   test('updating issue id changes header', function() {
     assert.equal(issue.issueRef(store.getState()).localId, 0);
 
-    store.dispatch({
-      type: actionType.UPDATE_ISSUE_REF,
-      localId: 1,
-    });
+    store.dispatch(issue.setIssueRef(1));
 
     assert.equal(issue.issueRef(store.getState()).localId, 1);
 

@@ -261,6 +261,16 @@ function rootReducer(state, action) {
   return reducer(state, action);
 }
 
+export const resetState = () => ({type: actionType.RESET_STATE});
+
+export const reportDirtyForm = (name, isDirty) => {
+  return {type: actionType.REPORT_DIRTY_FORM, name, isDirty};
+};
+export const clearDirtyForms = () => ({type: actionType.CLEAR_DIRTY_FORMS});
+export const setFocusId = (focusId) => {
+  return {type: actionType.SET_FOCUS_ID, focusId};
+};
+
 // For debugging with the Redux Devtools extension:
 // https://chrome.google.com/webstore/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd/
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;

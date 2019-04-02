@@ -4,7 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {ReduxMixin, actionType} from './redux/redux-mixin.js';
+import {ReduxMixin, actionType, setFocusId} from './redux/redux-mixin.js';
 import * as issue from './redux/issue.js';
 import * as user from './redux/user.js';
 import AutoRefreshPrpcClient from '../prpc.js';
@@ -90,10 +90,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
   _onLocationChanged() {
     const hash = window.location.hash.substr(1);
     if (hash) {
-      this.dispatchAction({
-        type: actionType.SET_FOCUS_ID,
-        focusId: hash,
-      });
+      this.dispatchAction(setFocusId(hash));
     }
   }
 
@@ -128,11 +125,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
 
     const allComments = [this.descriptionList[0]].concat(this.commentList);
     // mr-comment-content relies on projectName being set on the redux state.
-    this.dispatchAction({
-      type: actionType.UPDATE_ISSUE_REF,
-      projectName: this.projectName,
-      localId: this.issueId,
-    });
+    this.dispatchAction(issue.setIssueRef(this.issueId, this.projectName));
     this.dispatchAction({
       type: actionType.FETCH_COMMENTS_SUCCESS,
       comments: allComments,

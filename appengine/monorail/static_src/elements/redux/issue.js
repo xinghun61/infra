@@ -220,6 +220,10 @@ export const fieldDefs = createSelector(
 );
 
 // Action Creators
+export const setIssueRef = (localId, projectName) => {
+  return {type: actionType.UPDATE_ISSUE_REF, localId, projectName};
+};
+
 export const fetchCommentReferences = (comments, projectName) => {
   return async (dispatch) => {
     dispatch({type: actionType.FETCH_COMMENT_REFERENCES_START});
