@@ -586,3 +586,29 @@ def GetPreferredDomain(domain):
   and monorail-staging.
   """
   return settings.preferred_domains.get(domain, domain)
+
+
+def GetUserAvailability(user, is_group=False):
+  """Return (str, str) that explains why the user might not be available."""
+  if not user.user_id:
+    return None, None
+  if user.banned:
+    return 'Banned', 'banned'
+  if user.vacation_message:
+    return user.vacation_message, 'none'
+  if user.email_bounce_timestamp:
+    return 'Email to this user bounced', 'none'
+  # No availability shown for user groups, or addresses that are
+  # likely to be mailing lists.
+  if is_group or (user.email and '-' in user.email):
+    return None, None
+  if not user.last_visit_timestamp:
+    return 'User never visited', 'never'
+  secs_ago = int(time.time()) - user.last_visit_timestamp
+  last_visit_str = timestr.FormatRelativeDate(
+      user.last_visit_timestamp, days_only=True)
+  if secs_ago > 30 * framework_constants.SECS_PER_DAY:
+    return 'Last visit > 30 days ago', 'none'
+  if secs_ago > 15 * framework_constants.SECS_PER_DAY:
+    return ('Last visit %s' % last_visit_str), 'unsure'
+  return None, None

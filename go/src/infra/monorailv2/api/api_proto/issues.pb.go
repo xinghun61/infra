@@ -11,6 +11,8 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -3354,6 +3356,86 @@ type IssuesServer interface {
 	ListIssuePermissions(context.Context, *ListIssuePermissionsRequest) (*ListIssuePermissionsResponse, error)
 	MoveIssue(context.Context, *MoveIssueRequest) (*MoveIssueResponse, error)
 	CopyIssue(context.Context, *CopyIssueRequest) (*CopyIssueResponse, error)
+}
+
+// UnimplementedIssuesServer can be embedded to have forward compatible implementations.
+type UnimplementedIssuesServer struct {
+}
+
+func (*UnimplementedIssuesServer) CreateIssue(ctx context.Context, req *CreateIssueRequest) (*IssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateIssue not implemented")
+}
+func (*UnimplementedIssuesServer) GetIssue(ctx context.Context, req *GetIssueRequest) (*IssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIssue not implemented")
+}
+func (*UnimplementedIssuesServer) ListIssues(ctx context.Context, req *ListIssuesRequest) (*ListIssuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListIssues not implemented")
+}
+func (*UnimplementedIssuesServer) ListReferencedIssues(ctx context.Context, req *ListReferencedIssuesRequest) (*ListReferencedIssuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListReferencedIssues not implemented")
+}
+func (*UnimplementedIssuesServer) ListApplicableFieldDefs(ctx context.Context, req *ListApplicableFieldDefsRequest) (*ListApplicableFieldDefsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListApplicableFieldDefs not implemented")
+}
+func (*UnimplementedIssuesServer) UpdateIssue(ctx context.Context, req *UpdateIssueRequest) (*IssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateIssue not implemented")
+}
+func (*UnimplementedIssuesServer) StarIssue(ctx context.Context, req *StarIssueRequest) (*StarIssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StarIssue not implemented")
+}
+func (*UnimplementedIssuesServer) IsIssueStarred(ctx context.Context, req *IsIssueStarredRequest) (*IsIssueStarredResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IsIssueStarred not implemented")
+}
+func (*UnimplementedIssuesServer) ListComments(ctx context.Context, req *ListCommentsRequest) (*ListCommentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListComments not implemented")
+}
+func (*UnimplementedIssuesServer) ListActivities(ctx context.Context, req *ListActivitiesRequest) (*ListActivitiesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListActivities not implemented")
+}
+func (*UnimplementedIssuesServer) DeleteComment(ctx context.Context, req *DeleteCommentRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteComment not implemented")
+}
+func (*UnimplementedIssuesServer) BulkUpdateApprovals(ctx context.Context, req *BulkUpdateApprovalsRequest) (*BulkUpdateApprovalsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BulkUpdateApprovals not implemented")
+}
+func (*UnimplementedIssuesServer) UpdateApproval(ctx context.Context, req *UpdateApprovalRequest) (*UpdateApprovalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateApproval not implemented")
+}
+func (*UnimplementedIssuesServer) ConvertIssueApprovalsTemplate(ctx context.Context, req *ConvertIssueApprovalsTemplateRequest) (*ConvertIssueApprovalsTemplateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConvertIssueApprovalsTemplate not implemented")
+}
+func (*UnimplementedIssuesServer) IssueSnapshot(ctx context.Context, req *IssueSnapshotRequest) (*IssueSnapshotResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueSnapshot not implemented")
+}
+func (*UnimplementedIssuesServer) PresubmitIssue(ctx context.Context, req *PresubmitIssueRequest) (*PresubmitIssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PresubmitIssue not implemented")
+}
+func (*UnimplementedIssuesServer) RerankBlockedOnIssues(ctx context.Context, req *RerankBlockedOnIssuesRequest) (*RerankBlockedOnIssuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RerankBlockedOnIssues not implemented")
+}
+func (*UnimplementedIssuesServer) DeleteIssue(ctx context.Context, req *DeleteIssueRequest) (*DeleteIssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteIssue not implemented")
+}
+func (*UnimplementedIssuesServer) DeleteIssueComment(ctx context.Context, req *DeleteIssueCommentRequest) (*DeleteIssueCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteIssueComment not implemented")
+}
+func (*UnimplementedIssuesServer) DeleteAttachment(ctx context.Context, req *DeleteAttachmentRequest) (*DeleteAttachmentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAttachment not implemented")
+}
+func (*UnimplementedIssuesServer) FlagIssues(ctx context.Context, req *FlagIssuesRequest) (*FlagIssuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FlagIssues not implemented")
+}
+func (*UnimplementedIssuesServer) FlagComment(ctx context.Context, req *FlagCommentRequest) (*FlagCommentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FlagComment not implemented")
+}
+func (*UnimplementedIssuesServer) ListIssuePermissions(ctx context.Context, req *ListIssuePermissionsRequest) (*ListIssuePermissionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListIssuePermissions not implemented")
+}
+func (*UnimplementedIssuesServer) MoveIssue(ctx context.Context, req *MoveIssueRequest) (*MoveIssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MoveIssue not implemented")
+}
+func (*UnimplementedIssuesServer) CopyIssue(ctx context.Context, req *CopyIssueRequest) (*CopyIssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CopyIssue not implemented")
 }
 
 func RegisterIssuesServer(s prpc.Registrar, srv IssuesServer) {

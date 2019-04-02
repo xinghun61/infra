@@ -38,6 +38,8 @@ class UsersServicer(monorail_servicer.MonorailServicer):
   def ListReferencedUsers(self, mc, request):
     """Return the list of existing users in a response proto."""
     emails = request.emails
+    if request.user_refs:
+      emails = [user_ref.display_name for user_ref in request.user_refs]
     with work_env.WorkEnv(mc, self.services) as we:
       users = we.ListReferencedUsers(emails)
 

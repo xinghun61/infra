@@ -132,7 +132,26 @@ class UsersServicerTest(unittest.TestCase):
     """We can get all valid users by email addresses."""
     request = users_pb2.ListReferencedUsersRequest(
         # we ignore emails that are empty or belong to non-existent users.
-        emails=['test2@example.com', 'ghost@example.com', ''])
+        user_refs=[
+            common_pb2.UserRef(display_name='test2@example.com'),
+            common_pb2.UserRef(display_name='ghost@example.com'),
+            common_pb2.UserRef(display_name=''),
+            common_pb2.UserRef()])
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    response = self.CallWrapped(
+        self.users_svcr.ListReferencedUsers, mc, request)
+    self.assertEqual(len(response.users), 1)
+    self.assertEqual(response.users[0].user_id, 222L)
+
+  def testListReferencedUsers_Deprecated(self):
+    """We can get all valid users by email addresses."""
+    request = users_pb2.ListReferencedUsersRequest(
+        # we ignore emails that are empty or belong to non-existent users.
+        emails=[
+            'test2@example.com',
+            'ghost@example.com',
+            ''])
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='owner@example.com')
     response = self.CallWrapped(

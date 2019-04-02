@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -205,6 +207,14 @@ func (c *sitewideClient) RefreshToken(ctx context.Context, in *RefreshTokenReque
 // SitewideServer is the server API for Sitewide service.
 type SitewideServer interface {
 	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
+}
+
+// UnimplementedSitewideServer can be embedded to have forward compatible implementations.
+type UnimplementedSitewideServer struct {
+}
+
+func (*UnimplementedSitewideServer) RefreshToken(ctx context.Context, req *RefreshTokenRequest) (*RefreshTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefreshToken not implemented")
 }
 
 func RegisterSitewideServer(s prpc.Registrar, srv SitewideServer) {

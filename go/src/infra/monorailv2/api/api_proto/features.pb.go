@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -1718,6 +1720,53 @@ type FeaturesServer interface {
 	AddIssuesToHotlists(context.Context, *AddIssuesToHotlistsRequest) (*AddIssuesToHotlistsResponse, error)
 	UpdateHotlistIssueNote(context.Context, *UpdateHotlistIssueNoteRequest) (*UpdateHotlistIssueNoteResponse, error)
 	PredictComponent(context.Context, *PredictComponentRequest) (*PredictComponentResponse, error)
+}
+
+// UnimplementedFeaturesServer can be embedded to have forward compatible implementations.
+type UnimplementedFeaturesServer struct {
+}
+
+func (*UnimplementedFeaturesServer) ListHotlistsByUser(ctx context.Context, req *ListHotlistsByUserRequest) (*ListHotlistsByUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListHotlistsByUser not implemented")
+}
+func (*UnimplementedFeaturesServer) ListHotlistsByIssue(ctx context.Context, req *ListHotlistsByIssueRequest) (*ListHotlistsByIssueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListHotlistsByIssue not implemented")
+}
+func (*UnimplementedFeaturesServer) ListRecentlyVisitedHotlists(ctx context.Context, req *ListRecentlyVisitedHotlistsRequest) (*ListRecentlyVisitedHotlistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRecentlyVisitedHotlists not implemented")
+}
+func (*UnimplementedFeaturesServer) ListStarredHotlists(ctx context.Context, req *ListStarredHotlistsRequest) (*ListStarredHotlistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListStarredHotlists not implemented")
+}
+func (*UnimplementedFeaturesServer) GetHotlistStarCount(ctx context.Context, req *GetHotlistStarCountRequest) (*GetHotlistStarCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetHotlistStarCount not implemented")
+}
+func (*UnimplementedFeaturesServer) StarHotlist(ctx context.Context, req *StarHotlistRequest) (*StarHotlistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StarHotlist not implemented")
+}
+func (*UnimplementedFeaturesServer) ListHotlistIssues(ctx context.Context, req *ListHotlistIssuesRequest) (*ListHotlistIssuesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListHotlistIssues not implemented")
+}
+func (*UnimplementedFeaturesServer) DismissCue(ctx context.Context, req *DismissCueRequest) (*DismissCueResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DismissCue not implemented")
+}
+func (*UnimplementedFeaturesServer) CreateHotlist(ctx context.Context, req *CreateHotlistRequest) (*CreateHotlistResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateHotlist not implemented")
+}
+func (*UnimplementedFeaturesServer) CheckHotlistName(ctx context.Context, req *CheckHotlistNameRequest) (*CheckHotlistNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckHotlistName not implemented")
+}
+func (*UnimplementedFeaturesServer) RemoveIssuesFromHotlists(ctx context.Context, req *RemoveIssuesFromHotlistsRequest) (*RemoveIssuesFromHotlistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveIssuesFromHotlists not implemented")
+}
+func (*UnimplementedFeaturesServer) AddIssuesToHotlists(ctx context.Context, req *AddIssuesToHotlistsRequest) (*AddIssuesToHotlistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddIssuesToHotlists not implemented")
+}
+func (*UnimplementedFeaturesServer) UpdateHotlistIssueNote(ctx context.Context, req *UpdateHotlistIssueNoteRequest) (*UpdateHotlistIssueNoteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateHotlistIssueNote not implemented")
+}
+func (*UnimplementedFeaturesServer) PredictComponent(ctx context.Context, req *PredictComponentRequest) (*PredictComponentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PredictComponent not implemented")
 }
 
 func RegisterFeaturesServer(s prpc.Registrar, srv FeaturesServer) {

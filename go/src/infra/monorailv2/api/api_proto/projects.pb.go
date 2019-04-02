@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -1935,6 +1937,59 @@ type ProjectsServer interface {
 	CheckProjectName(context.Context, *CheckProjectNameRequest) (*CheckProjectNameResponse, error)
 	CheckComponentName(context.Context, *CheckComponentNameRequest) (*CheckComponentNameResponse, error)
 	CheckFieldName(context.Context, *CheckFieldNameRequest) (*CheckFieldNameResponse, error)
+}
+
+// UnimplementedProjectsServer can be embedded to have forward compatible implementations.
+type UnimplementedProjectsServer struct {
+}
+
+func (*UnimplementedProjectsServer) ListProjects(ctx context.Context, req *ListProjectsRequest) (*ListProjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjects not implemented")
+}
+func (*UnimplementedProjectsServer) ListProjectTemplates(ctx context.Context, req *ListProjectTemplatesRequest) (*ListProjectTemplatesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectTemplates not implemented")
+}
+func (*UnimplementedProjectsServer) GetConfig(ctx context.Context, req *GetConfigRequest) (*Config, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfig not implemented")
+}
+func (*UnimplementedProjectsServer) GetPresentationConfig(ctx context.Context, req *GetPresentationConfigRequest) (*PresentationConfig, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPresentationConfig not implemented")
+}
+func (*UnimplementedProjectsServer) GetCustomPermissions(ctx context.Context, req *GetCustomPermissionsRequest) (*GetCustomPermissionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCustomPermissions not implemented")
+}
+func (*UnimplementedProjectsServer) GetVisibleMembers(ctx context.Context, req *GetVisibleMembersRequest) (*GetVisibleMembersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetVisibleMembers not implemented")
+}
+func (*UnimplementedProjectsServer) GetLabelOptions(ctx context.Context, req *GetLabelOptionsRequest) (*GetLabelOptionsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLabelOptions not implemented")
+}
+func (*UnimplementedProjectsServer) ListStatuses(ctx context.Context, req *ListStatusesRequest) (*ListStatusesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListStatuses not implemented")
+}
+func (*UnimplementedProjectsServer) ListComponents(ctx context.Context, req *ListComponentsRequest) (*ListComponentsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListComponents not implemented")
+}
+func (*UnimplementedProjectsServer) ListFields(ctx context.Context, req *ListFieldsRequest) (*ListFieldsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListFields not implemented")
+}
+func (*UnimplementedProjectsServer) GetProjectStarCount(ctx context.Context, req *GetProjectStarCountRequest) (*GetProjectStarCountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectStarCount not implemented")
+}
+func (*UnimplementedProjectsServer) StarProject(ctx context.Context, req *StarProjectRequest) (*StarProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StarProject not implemented")
+}
+func (*UnimplementedProjectsServer) GetUserProjects(ctx context.Context, req *GetUserProjectsRequest) (*GetUserProjectsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserProjects not implemented")
+}
+func (*UnimplementedProjectsServer) CheckProjectName(ctx context.Context, req *CheckProjectNameRequest) (*CheckProjectNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckProjectName not implemented")
+}
+func (*UnimplementedProjectsServer) CheckComponentName(ctx context.Context, req *CheckComponentNameRequest) (*CheckComponentNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckComponentName not implemented")
+}
+func (*UnimplementedProjectsServer) CheckFieldName(ctx context.Context, req *CheckFieldNameRequest) (*CheckFieldNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckFieldName not implemented")
 }
 
 func RegisterProjectsServer(s prpc.Registrar, srv ProjectsServer) {

@@ -23,6 +23,7 @@ from api.api_proto import user_objects_pb2
 from framework import exceptions
 from framework import filecontent
 from framework import framework_constants
+from framework import framework_helpers
 from framework import permissions
 from framework import validate
 from services import features_svc
@@ -144,7 +145,8 @@ def ConvertUsers(users):
       user_objects_pb2.User(
           user_id=user.user_id,
           email=user.email,
-          is_site_admin=user.is_site_admin)
+          is_site_admin=user.is_site_admin,
+          availability=framework_helpers.GetUserAvailability(user)[0])
       for user in users]
 
 

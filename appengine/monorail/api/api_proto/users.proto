@@ -28,10 +28,12 @@ service Users {
 }
 
 
-// Next available tag: 3
+// Next available tag: 4
 message ListReferencedUsersRequest {
   RequestTrace trace = 1;
+  // emails is deprecated. Use user_refs instead.
   repeated string emails = 2;
+  repeated UserRef user_refs = 3;
 }
 
 

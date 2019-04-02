@@ -30,6 +30,8 @@ from services import service_manager
 
 class ConverterFunctionsTest(unittest.TestCase):
 
+  NOW = 1234567890
+
   def setUp(self):
     self.users_by_id = {
         111L: testing_helpers.Blank(
@@ -253,18 +255,36 @@ class ConverterFunctionsTest(unittest.TestCase):
            user_id=333L, is_derived=False, display_name='banned@example.com')],
       actual)
 
-  def testConvertUsers(self):
+  @patch('time.time')
+  def testConvertUsers(self, mock_time):
     """We can convert lists of protorpc Users to protoc Users."""
-    user1 = user_pb2.User(user_id=1, email='user1@example.com')
+    mock_time.return_value = self.NOW
+    user1 = user_pb2.User(
+        user_id=1, email='user1@example.com', last_visit_timestamp=self.NOW)
     user2 = user_pb2.User(
-        user_id=2, email='user2@example.com', is_site_admin=True)
-    actual = converters.ConvertUsers([user1, user2])
-    self.assertEqual(len(actual), 2)
+        user_id=2, email='user2@example.com', is_site_admin=True,
+        last_visit_timestamp=self.NOW)
+    user3 = user_pb2.User(user_id=3, email='user3@example.com')
+    user4 = user_pb2.User(
+        user_id=4, email='user4@example.com', last_visit_timestamp=1)
+
+    actual = converters.ConvertUsers([user1, user2, user3, user4])
     self.assertItemsEqual(
         actual,
         [user_objects_pb2.User(user_id=1, email='user1@example.com'),
-         user_objects_pb2.User(user_id=2, email='user2@example.com',
-                        is_site_admin=True)])
+         user_objects_pb2.User(
+            user_id=2,
+            email='user2@example.com',
+            is_site_admin=True),
+         user_objects_pb2.User(
+            user_id=3,
+            email='user3@example.com',
+            availability='User never visited'),
+         user_objects_pb2.User(
+            user_id=4,
+            email='user4@example.com',
+            availability='Last visit > 30 days ago'),
+         ])
 
   def testConvetPrefValues(self):
     """We can convert a list of UserPrefValues from protorpc to protoc."""
