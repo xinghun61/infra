@@ -4,7 +4,6 @@
 
 import {assert, expect} from 'chai';
 import {ChopsTimestamp} from './chops-timestamp.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import sinon from 'sinon';
 
 let element;
@@ -17,8 +16,8 @@ suite('chops-timestamp', () => {
 
     // Set clock to the Epoch.
     clock = sinon.useFakeTimers({
-        now: new Date(0),
-        shouldAdvanceTime: false,
+      now: new Date(0),
+      shouldAdvanceTime: false,
     });
 
     // Explicitly set timezone because we can't depend on

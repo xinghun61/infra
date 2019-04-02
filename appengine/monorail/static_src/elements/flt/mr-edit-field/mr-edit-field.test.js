@@ -11,7 +11,6 @@ import {fieldTypes} from '../../shared/field-types.js';
 let element;
 
 suite('mr-edit-field', () => {
-
   setup(() => {
     element = document.createElement('mr-edit-field');
     document.body.appendChild(element);
@@ -138,11 +137,12 @@ suite('mr-edit-field', () => {
     assert.deepEqual(element.getValues(), ['hello']);
 
     // User checks all boxes.
-    element.shadowRoot.querySelectorAll('.enum-input').forEach(
-      (checkbox) => {
-        checkbox.checked = true;
-      }
-    );
+    element.shadowRoot.querySelector('mr-multi-checkbox').shadowRoot
+      .querySelectorAll('input').forEach(
+        (checkbox) => {
+          checkbox.checked = true;
+        }
+      );
     // User input should not be overridden by the initialValue variable.
     assert.deepEqual(element.getValues(), ['hello', 'world', 'fake']);
     // Initial values should not change based on user input.
@@ -150,89 +150,5 @@ suite('mr-edit-field', () => {
 
     element.initialValues = ['hello', 'world'];
     assert.deepEqual(element.getValues(), ['hello', 'world']);
-  });
-
-  suite('multi input', () => {
-    setup(() => {
-      element.multi = true;
-    });
-
-    test('input updates when initialValues change', () => {
-      flush();
-      element.initialValues = ['hello', 'world'];
-      assert.deepEqual(element.getValues(), ['hello', 'world']);
-    });
-
-    test('initial value does not change after setValue', () => {
-      flush();
-      element.initialValues = ['hello', 'world'];
-      element.setValue(['jaunty', 'jackalope', 'jumps', 'joyously']);
-      assert.deepEqual(element.initialValues, ['hello', 'world']);
-    });
-
-    test('input updates when setValue is called', () => {
-      flush();
-      element.initialValues = ['hello', 'world'];
-      element.setValue(['jaunty', 'jackalope', 'jumps', 'joyously']);
-      assert.deepEqual(
-        element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously']);
-    });
-
-    test('initial value does not change after user input', () => {
-      flush();
-      element.initialValues = ['hello'];
-      // Simulate user input.
-      element.shadowRoot.querySelector('#multi1').value = 'heron';
-      assert.deepEqual(element.initialValues, ['hello']);
-    });
-
-    test('get value after user input', () => {
-      element.initialValues = ['hello'];
-      // Simulate user input.
-      element.shadowRoot.querySelector('#multi1').value = 'heron';
-      assert.deepEqual(element.getValues(), ['hello', 'heron']);
-    });
-
-    test('input value was added', () => {
-      flush();
-      // Simulate user input.
-      element.shadowRoot.querySelector('#multi0').value = 'jackalope';
-      assert.deepEqual(element.getValuesAdded(), ['jackalope']);
-    });
-
-    test('input value was removed', () => {
-      flush();
-      element.initialValues = ['hello'];
-      // Simulate user input.
-      element.shadowRoot.querySelector('#multi0').value = '';
-      assert.deepEqual(element.getValuesRemoved(), ['hello']);
-    });
-
-    test('input value was changed', () => {
-      flush();
-
-      element.initialValues = ['hello'];
-      // Simulate user input.
-      element.shadowRoot.querySelector('#multi0').value = 'world';
-      assert.deepEqual(element.getValuesAdded(), ['world']);
-      assert.deepEqual(element.getValuesRemoved(), ['hello']);
-    });
-
-    test('input value has commas', () => {
-      flush();
-      // Simulate user input.
-      const input = element.shadowRoot.querySelector('#multi0');
-      input.value = 'jaunty;jackalope,, jumps joyously!';
-      element._postProcess();
-
-      // Input is split on several input fields.
-      assert.deepEqual(
-        Array.from(element.shadowRoot.querySelectorAll('.multi')).map(
-          (input) => input.value),
-        ['jaunty', 'jackalope', 'jumps', 'joyously!', '']);
-      // values are updated
-      assert.deepEqual(
-        element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously!']);
-    });
   });
 });

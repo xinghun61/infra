@@ -29,3 +29,7 @@ export function arrayToEnglish(arr) {
 export function isEmptyObject(obj) {
   return Object.keys(obj).length === 0;
 }
+
+export function equalsIgnoreCase(a, b) {
+  return a.toLowerCase() === b.toLowerCase();
+}

@@ -33,6 +33,9 @@ export class MrEditStatus extends PolymerElement {
           grid-gap: var(--mr-input-grid-gap);
           grid-template-columns: auto 1fr;
         }
+        .grid-input[hidden] {
+          display: none;
+        }
         label {
           font-weight: bold;
           word-wrap: break-word;
@@ -71,16 +74,14 @@ export class MrEditStatus extends PolymerElement {
         </template>
       </select>
 
-      <template is="dom-if" if="[[_showMergedInto]]">
-        <div class="grid-input">
-          <label for="mergedIntoInput" id="mergedIntoLabel">Merged into:</label>
-          <mr-edit-field
-            id="mergedIntoInput"
-            initial-values="[[mergedInto]]"
-            on-change="_onChange"
-          ></mr-edit-field>
-        </div>
-      </template>`;
+      <div class="grid-input" hidden$="[[!_showMergedInto]]">
+        <label for="mergedIntoInput" id="mergedIntoLabel">Merged into:</label>
+        <mr-edit-field
+          id="mergedIntoInput"
+          initial-values="[[mergedInto]]"
+          on-change="_onChange"
+        ></mr-edit-field>
+      </div>`;
   }
 
   static get is() {

@@ -11,8 +11,6 @@ import * as project from '../../redux/project.js';
 import './mr-edit-metadata.js';
 import '../../shared/mr-shared-styles.js';
 
-// Match: projectName:localIdFormat
-const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
 
 /**
  * `<mr-edit-issue>`

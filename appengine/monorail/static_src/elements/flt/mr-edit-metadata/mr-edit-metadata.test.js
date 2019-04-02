@@ -187,6 +187,8 @@ suite('mr-edit-metadata', () => {
 
     element.shadowRoot.querySelector('#approversInput').setValue(
       ['chicken@example.com', 'foo@example.com', 'dog@example.com']);
+    flush();
+
     assert.deepEqual(element.getDelta(), {
       approverRefsAdd: [
         {displayName: 'chicken@example.com'},
@@ -209,8 +211,9 @@ suite('mr-edit-metadata', () => {
     flush();
 
     const blockedOnInput = element.shadowRoot.querySelector('#blockedOnInput');
-    const inputs = blockedOnInput.shadowRoot.querySelectorAll('.multi');
-    inputs[1].value = 'v8:5678';
+    blockedOnInput.setValue(['1234', 'v8:5678']);
+
+    flush();
 
     assert.deepEqual(element.getDelta(), {
       blockedOnRefsAdd: [{
@@ -273,6 +276,9 @@ suite('mr-edit-metadata', () => {
 
     element.shadowRoot.querySelector(
       '#enumFieldInput').setValue(['one', 'two']);
+
+    flush();
+
     assert.deepEqual(element.getDelta(), {
       fieldValsAdd: [
         {
@@ -302,16 +308,16 @@ suite('mr-edit-metadata', () => {
     const compInput = element.shadowRoot.querySelector('#componentsInput');
 
     compInput.setValue(['Hello>World']);
+    flush();
+
     assert.deepEqual(element.getDelta(), {
       compRefsAdd: [
         {path: 'Hello>World'},
       ],
     });
 
-    // TODO(zhangtiff): Fix this. This test currently breaks on multiple values
-    // because of a bug in setValue().
-    /*
     compInput.setValue(['Hello>World', 'Test', 'Multi']);
+    flush();
 
     assert.deepEqual(element.getDelta(), {
       compRefsAdd: [
@@ -320,9 +326,9 @@ suite('mr-edit-metadata', () => {
         {path: 'Multi'},
       ],
     });
-    */
 
     compInput.setValue([]);
+    flush();
 
     assert.deepEqual(element.getDelta(), {});
   });
@@ -435,9 +441,7 @@ suite('mr-edit-metadata', () => {
     flush();
 
     const blockingInput = element.shadowRoot.querySelector('#blockingInput');
-    const inputs = blockingInput.shadowRoot.querySelectorAll('.multi');
-    const inputsValues = Array.from(inputs).map((input) => input.value);
 
-    assert.deepEqual(['1234', 'monorail:4567', ''], inputsValues);
+    assert.deepEqual(['1234', 'monorail:4567'], blockingInput.getValues());
   });
 });

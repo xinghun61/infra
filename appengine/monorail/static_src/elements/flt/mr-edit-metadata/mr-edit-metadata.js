@@ -12,6 +12,7 @@ import '../../framework/mr-upload/mr-upload.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../mr-error/mr-error.js';
 import '../../mr-warning/mr-warning.js';
+import {fieldTypes} from '../../shared/field-types.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString} from '../../shared/converters.js';
 import {isEmptyObject} from '../../shared/helpers.js';
@@ -20,8 +21,8 @@ import {MetadataMixin} from '../shared/metadata-mixin.js';
 import {reportDirtyForm} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
-import './mr-edit-field.js';
-import './mr-edit-status.js';
+import '../mr-edit-field/mr-edit-field.js';
+import '../mr-edit-field/mr-edit-status.js';
 import {ISSUE_EDIT_PERMISSION} from '../../shared/permissions.js';
 
 
@@ -197,6 +198,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 id="ownerInput"
                 type="USER_TYPE"
                 initial-values="[[_wrapList(ownerName)]]"
+                ac-type="owner"
                 placeholder="[[_ownerPlaceholder]]"
                 on-change="_onChange"
               ></mr-edit-field>
@@ -204,10 +206,11 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
               <label for="ccInput" on-click="_clickLabelForCustomInput">CC:</label>
               <mr-edit-field
                 id="ccInput"
-                name="cc"
+                name="CC"
                 type="USER_TYPE"
                 initial-values="[[_ccNames]]"
                 derived-values="[[_derivedCCs]]"
+                ac-type="member"
                 on-change="_onChange"
                 multi
               ></mr-edit-field>
@@ -230,6 +233,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 id="approversInput"
                 type="USER_TYPE"
                 initial-values="[[_mapUserRefsToNames(approvers)]]"
+                ac-type="member"
                 name="approver"
                 on-change="_onChange"
                 multi
@@ -256,6 +260,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                       type="[[field.fieldRef.type]]"
                       options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
                       initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+                      ac-type="[[_computeAcType(field.fieldRef.type, field.isMultivalued)]]"
                       multi="[[field.isMultivalued]]"
                       on-change="_onChange"
                     ></mr-edit-field>
@@ -280,17 +285,18 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 type="[[field.fieldRef.type]]"
                 options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
                 initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
+                ac-type="[[_computeAcType(field.fieldRef.type, field.isMultivalued)]]"
                 multi="[[field.isMultivalued]]"
                 on-change="_onChange"
               ></mr-edit-field>
             </template>
 
             <template is="dom-if" if="[[!isApproval]]">
-              <label for="blockedOnInput" on-click="_clickLabelForCustomInput">Blocked on:</label>
+              <label for="blockedOnInput" on-click="_clickLabelForCustomInput">BlockedOn:</label>
               <mr-edit-field
                 id="blockedOnInput"
                 initial-values="[[_mapBlockerRefsToIdStrings(blockedOn, projectName)]]"
-                name="blocked-on"
+                name="blockedOn"
                 on-change="_onChange"
                 multi
               ></mr-edit-field>
@@ -310,7 +316,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 ac-type="label"
                 initial-values="[[labelNames]]"
                 derived-values="[[derivedLabels]]"
-                name="label"
+                name="labels"
                 on-change="_onChange"
                 multi
               ></mr-edit-field>
@@ -373,7 +379,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
               <label
                 for="derived-ccs"
                 class="presubmit-derived-header"
-              >CCs:</label>
+              >CC:</label>
               <div id="derived-ccs">
                 <template
                   is="dom-repeat"
@@ -530,6 +536,14 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       projectName: issue.issueRef(state).projectName,
       issuePermissions: issue.issuePermissions(state),
     });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+
+    if (this._debouncedOnChange) {
+      this._debouncedOnChange.cancel();
+    }
   }
 
   reset() {
@@ -806,6 +820,13 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       this._ownerMessage = response.derivedOwners[0].why;
       this._ownerIcon = 'info';
     }
+  }
+
+  _computeAcType(type, multi) {
+    if (type === fieldTypes.USER_TYPE) {
+      return multi ? 'member' : 'owner';
+    }
+    return '';
   }
 }
 

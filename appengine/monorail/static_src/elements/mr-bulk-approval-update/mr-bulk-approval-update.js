@@ -4,7 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import '../flt/mr-edit-metadata/mr-edit-field.js';
+import '../flt/mr-edit-field/mr-edit-field.js';
 import '../mr-error/mr-error.js';
 
 
@@ -19,7 +19,8 @@ const TEXT_TO_STATUS_ENUM = {
   'NotApproved': 'NOT_APPROVED',
 };
 
-export const NO_UPDATES_MESSAGE = 'User lacks approver perms for approval in all issues.';
+export const NO_UPDATES_MESSAGE =
+  'User lacks approver perms for approval in all issues.';
 export const NO_APPROVALS_MESSAGE = 'These issues don\'t have any approvals.';
 
 export class MrBulkApprovalUpdate extends PolymerElement {
@@ -27,33 +28,33 @@ export class MrBulkApprovalUpdate extends PolymerElement {
     return html`
       <style>
         :host {
-            display: block;
-            margin-top: 30px;
-            position: relative;
+          display: block;
+          margin-top: 30px;
+          position: relative;
         }
         button.clickable-text {
-            background: none;
-            border: 0;
-            color: hsl(0, 0%, 39%);
-            cursor: pointer;
-            text-decoration: underline;
+          background: none;
+          border: 0;
+          color: hsl(0, 0%, 39%);
+          cursor: pointer;
+          text-decoration: underline;
         }
         .hidden {
-            display: none; !important;
+          display: none; !important;
         }
         .message {
-            background-color: beige;
-            width: 500px;
+          background-color: beige;
+          width: 500px;
         }
         .note {
-            color: hsl(0, 0%, 25%);
-            font-size: 0.85em;
-            font-style: italic;
+          color: hsl(0, 0%, 25%);
+          font-size: 0.85em;
+          font-style: italic;
         }
         table {
-            border: 1px dotted black;
-            cellspacing: 0;
-            cellpadding: 3;
+          border: 1px dotted black;
+          cellspacing: 0;
+          cellpadding: 3;
         }
       </style>
       <button class="js-showApprovals clickable-text" on-click="fetchApprovals">Show Approvals</button>
@@ -156,7 +157,7 @@ export class MrBulkApprovalUpdate extends PolymerElement {
           this.errorMessage = NO_APPROVALS_MESSAGE;
         }
         root.querySelector('.js-showApprovals').classList.add('hidden');
-      }, (error) => {responseMessage
+      }, (error) => {
         root.querySelector('.js-showApprovals').classList.add('hidden');
         this.errorMessage = error;
       });
