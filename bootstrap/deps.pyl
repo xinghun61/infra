@@ -13,15 +13,16 @@
     'repo': 'external/bitbucket.org/stoneleaf/aenum',
     'rev': '7b45559677564c3e193c4e8a3ff8511637e15cd0',
   },
+
   'apache_beam': {
     'build': '0',
-    'gs': 'eae09f8bd00264ab297f93c28929fb381daad5d4.zip',
-    'version': '2.0.0',
+    'gs': '45af3ebecd46c068a5ab29016dc89d14a08b645b.zip',
     'only_on': [
-      'linux_x86_64',
       'linux_i686',
-      'macosx_x86_64',
+      'linux_x86_64',
+      'macosx_x86_64'
     ],
+    'version': '2.11.0'
   },
   'argcomplete': {
     'version': '0.8.0',
@@ -38,8 +39,8 @@
   },
   'avro': {
     'build': '0',
-    'gs': 'e1f36a7f8c542cb18df0c1b0970e25a0943a6ffe.tar.gz',
-    'version': '1.8.1',
+    'gs': '681fdbcb58a545575e0eeff3a3d3dabb0e10f803.tar.gz',
+    'version': '1.8.2',
     'implicit': True,  # Required by apache_beam
   },
   'backports.ssl_match_hostname': {
@@ -60,12 +61,25 @@
     'gs': '3efa164096089b0c88652788fada938775229129.tar.gz',
     'version': '2.0.0'
   },
+  'certifi': {
+    'build': '0',
+    'gs': 'f3873edcfc60c52e97e6601b2576ccdac419281a.tar.gz',
+    'version': '2019.3.9',
+    'implicit': True,  # Required by apache_beam
+  },
   'cffi': {
     'version': '1.7.0',
     'build': '0',
     'gs': 'd8033f34e17c0c51bb834b27f6e8c59fc24ae72c.tar.gz',
     'implicit': True,  # Required by cryptography
   },
+  'chardet': {
+    'build': '0',
+    'gs': '4766fb07e700945a7085d073257f1f320d037ce8.tar.gz',
+    'version': '3.0.4',
+    'implicit': True,  # Required by apache_beam
+  },
+
   'coverage': {
     'version': '4.1',
     'build': '0',
@@ -99,8 +113,8 @@
   },
   'dill': {
     'build': '0',
-    'gs': '98ae6835db2bd5f1b7f1bc420275c1e9709f1a64.zip',
-    'version': '0.2.6',
+    'gs': 'd4f76fab3a47d3942348b9d866c3ac1ff80815f1.tar.gz',
+    'version': '0.2.9',
     'implicit': True,  # Required by apache_beam
   },
   'docker': {
@@ -114,10 +128,16 @@
     'version': '0.2.1',
     'implicit': True,  # Required by docker
   },
-  'enum34': {
-    'version': '1.0.4',
+  'docopt': {
     'build': '0',
-    'gs': '10b77f1db47e54abbc4ce6f61df542590b9ad972.tar.gz',
+    'gs': '224a3ec08b56445a1bd1583aad06b00692671e04.tar.gz',
+    'version': '0.6.2',
+    'implicit': True,  # Required by docker
+  },
+  'enum34': {
+    'build': '0',
+    'gs': '1436ec8f017fb7159a1ab8e073587bc5162c6d48.zip',
+    'version': '1.1.6',
     'implicit': True,  # Required by cryptography
   },
   # expect_tests is maintained by Chrome Infra
@@ -127,17 +147,39 @@
     'repo': 'infra/testing/expect_tests',
     'rev': 'c3766acb62c87bf616b40922f5e3c4857533c37f',
   },
+  'fastavro': {
+    'build': '0',
+    'gs': '0abad575cd4bd4638d17d45b630835cd22eefaeb.tar.gz',
+    'only_on': [
+      'linux_x86_64',
+      'macosx_x86_64'
+    ],
+    'version': '0.21.19',
+    'implicit': True,  # Required by apache_beam
+  },
+  "fasteners": {
+    "build": "0",
+    "gs": "077b197429d592bd39f411a7ad24a1a6499c300e.tar.gz",
+    "version": "0.14.1",
+    'implicit': True,  # Required by google_apitools
+  },
   'funcsigs': {
     'build': '0',
     'gs': 'd09f1a17d4b7323f815e27c1baabfa1f4dd2d9fe.tar.gz',
     'version': '1.0.2',
     'implicit': True,  # Required by mock
   },
+  'future': {
+    'build': '0',
+    'gs': '7abd068d09c637f4fa5fb2df3d90cc9607523aee.tar.gz',
+    'version': '0.17.1',
+    'implicit': True,  # Required by apache_beam
+  },
   'futures': {
     'build': '0',
-    'gs': 'e6815bea6a2881218df730347732f67ec5e89108.tar.gz',
-    'version': '3.1.1',
-    'implicit': True,  # Required by grpcio
+    'gs': 'ca2da8b80e81095ded372c0b545ae0fdae6027c4.tar.gz',
+    'version': '3.2.0',
+    'implicit': True,  # Required by apache_beam
   },
   'google_api_core': {
     'build': '0',
@@ -150,10 +192,10 @@
     'repo': 'external/github.com/google/google-api-python-client',
     'rev': 'd83246e69b22f084d1ae92da5897572a4a4eb03d',
   },
-  'google_apitools': {
-    'build': '0',
-    'gs': 'b7c702257231818814b99caab8c70f343c7f08f9.tar.gz',
-    'version': '0.5.10',
+  "google_apitools": {
+    "build": "0",
+    "gs": "a3a2e4cf43853c0ec56979ddc4a4254404852a57.tar.gz",
+    "version": "0.5.27"
   },
   'google_auth': {
     'build': '0',
@@ -187,26 +229,31 @@
   },
   'grpcio': {
     'build': '0',
-    'gs': 'cffa63ea492cd7a8336df0a48a24fd7455a61fae.tar.gz',
-    'version': '1.4.0',
+    'gs': '983938931832781234193373783d41341b8a7714.tar.gz',
     'only_on': [
-      'linux_x86_64',
       'linux_i686',
-      'macosx_x86_64',
+      'linux_x86_64',
+      'macosx_x86_64'
     ],
+    'version': '1.19.0',
+    'implicit': True,  # Required by apache_beam
+  },
+  'hdfs': {
+    'build': '0',
+    'gs': 'e6f6a75ea2ba1e11517a126df81be877185b21c7.tar.gz',
+    'version': '2.2.2',
     'implicit': True,  # Required by apache_beam
   },
   'httplib2': {
-    'version': '0.9',
     'build': '0',
-    'repo': 'external/github.com/jcgregorio/httplib2',
-    'rev': '7d1b88a3cf34774242bf4c0578c09c0092bb05d8',
+    'gs': '45abaec7c9d7e1a37933f4f6bf7b5dabf92efd5e.tar.gz',
+    'version': '0.11.3',
+    'implicit': True,  # Required by apache_beam
   },
   'idna': {
-    'version': '2.1',
     'build': '0',
-    'repo': 'external/github.com/kjd/idna',
-    'rev': 'cb8ae9acf100c9faba02737ac82b31a0152d19e8',
+    'gs': 'c1e59def26dac74a2ec53181032df76d40368657.tar.gz',
+    'version': '2.8',
     'implicit': True,  # Required by cryptography
   },
   'infra_libs': {
@@ -245,28 +292,33 @@
     'gs': '397ed52eb2d8d4b326bc3fa6b38adda5f0b090d3.tar.gz',
     'version': '2.0.0',
   },
+  "monotonic": {
+    "build": "0",
+    "gs": "36011f2413d11adbf512a9b31fce54735c2f5d5f.tar.gz",
+    "version": "1.5",
+    'implicit': True,  # Required by google_apitools
+  },
   'nose': {
     'build': '0',
     'gs': '97f2a04c9d43b29ddf4794a1a1d1ba803f1074c6.tar.gz',
     'version': '1.3.7',
   },
   'numpy': {
-    'version': '1.11.0',
     'build': '0',
-    'gs': 'b6a34c03e3a3cea974e4c0000788d4edc7d43a36.zip',
+    'gs': '66118ac36bc60447d5ac0d0062728efdbe00c0c5.zip',
     'only_on': [
+      'linux_i686',
       'linux_x86_64',
-      'macosx_x86_64',
-      'windows_i686',
-      'windows_x86_64',
+      'macosx_x86_64'
     ],
-    # Required to run/test some appengine apps locally
+    'version': '1.16.2',
+    'implicit': True,  # Required by apache_beam
   },
   'oauth2client': {
-    'version': '1.4.12',
     'build': '0',
-    'repo': 'external/github.com/google/oauth2client',
-    'rev': 'f46290a33418bd18308af27e519db95a51b0136c',
+    'gs': 'bd85a7e6d90b4efb2d651b2971bfdc3d59f34760.tar.gz',
+    'version': '3.0.0',
+    'implicit': True,  # Required by apache_beam
   },
   'parameterized': {
     'build': '0',
@@ -286,23 +338,44 @@
     'rev': '496f40dca9a47c0f1dfe0cd841256485708c8442',
   },
   'protobuf': {
-    'version': '3.6.1',
     'build': '0',
-    'gs': '34e4719103d0979fa157e5d3a7574c7d99df9085.tar.gz',
+    'gs': '9b2bee75409236982ded1d010f495f035e2c18d3.tar.gz',
+    'version': '3.7.1',
+    'implicit': True,  # Required by apache_beam
+  },
+  'pyarrow': {
+    'build': '0',
+    'gs': 'f4260dd95a723d8c6f32e74fba7f432bb27679f8.tar.gz',
+    'only_on': [
+      'linux_x86_64',
+      'macosx_x86_64'
+    ],
+    'version': '0.11.1',
+    'implicit': True,  # Required by apache_beam
   },
   'pyasn1': {
-    'version': '0.1.7',
     'build': '0',
-    'repo': 'external/github.com/etingof/pyasn1',
-    'rev': '4181b2379eeae3d6fd9f4f76d0e6ae3789ed56e7',
-    'implicit': True,  # Required by oauth2client
+    'gs': '5615b3f0e1d2c0d4aa87e318e93665542434dc41.tar.gz',
+    'version': '0.4.5',
+    'implicit': True,  # Required by apache_beam
   },
   'pyasn1_modules': {
-    'version': '0.0.5',
     'build': '0',
-    'repo': 'external/github.com/etingof/pyasn1-modules',
-    'rev': '956fee4f8e5fd3b1c500360dc4aa12dc5a766cb2',
-    'implicit': True,  # Required by oauth2client
+    'gs': '1db76d27cde9cb0fad7201c5a55240244839e60e.tar.gz',
+    'version': '0.2.4',
+    'implicit': True,  # Required by apache_beam
+  },
+  'pydot': {
+    'build': '0',
+    'gs': 'c6d413c5ee80874600765dce51aaee8d2e62d42d.tar.gz',
+    'version': '1.2.4',
+    'implicit': True,  # Required by apache_beam
+  },
+  'pyparsing': {
+    'build': '0',
+    'gs': '616f04f73e8f168140df4d2c349dfae3259bf496.tar.gz',
+    'version': '2.3.1',
+    'implicit': True,  # Required by apache_beam
   },
   'python_dateutil': {
     'version': '1.5',
@@ -323,17 +396,22 @@
     'implicit': True,  # Required by cffi
   },
   'pytz': {
-    'version': '2014.4',
-    'build': '1',
-    'repo': 'external/code.launchpad.net/pytz',
-    'rev': '056207cdda4a8f01f7f0bd924e89d0df434c7547',
+    'build': '0',
+    'gs': '77c1232d69aae2f7725b88c165bd9e0314a5275e.tar.gz',
+    'version': '2018.9',
+    'implicit': True,  # Required by apache_beam
+  },
+  'PyVCF': {
+    'build': '0',
+    'gs': 'af2a897223fa73eed967f7c5f882b5691da24fc3.tar.gz',
+    'version': '0.6.8',
+    'implicit': True,  # Required by apache_beam
   },
   'PyYAML': {
-    'version': '3.11',
     'build': '0',
-    'gs': '1a2d5df8b31124573efb9598ec6d54767f3c4cd4.tar.gz',
-    'build_options': ['--without-libyaml'],
-    # Soft requirement of expect_tests
+    'gs': '22f95fe2f5ef29ab17110f92c7186e2cfde6b419.tar.gz',
+    'version': '3.13',
+    'implicit': True,  # Required by apache_beam
   },
   'requests': {
     'version': '2.5.1',
@@ -342,6 +420,12 @@
     'rev': 'b83131779c701720a9ae9efae78996277d416269',
     # When upgrading, ensure requests_cache is compatible with new version!
   },
+  'requests': {
+    'build': '0',
+    'gs': '970805c2affcc5b237d86e7308dc4310f16d6f79.tar.gz',
+    'version': '2.21.0',
+    'implicit': True,  # Required by apache_beam
+  },
   'requests_cache': {
     'version': '0.4.10',
     'build': '0',
@@ -349,11 +433,10 @@
     'rev': '630198cdc4386478ab8eba18beed94c1847f1087',
   },
   'rsa': {
-    'version': '3.1.4',
     'build': '0',
-    'repo': 'external/github.com/sybrenstuvel/python-rsa',
-    'rev': '75117e4a1fad188da8599ff18939d1484cc53335',
-    'implicit': True,  # Required by oauth2client
+    'gs': '8a68dcee7bd2a7727c253b9ed2820cd1b5b9241a.tar.gz',
+    'version': '4.0',
+    'implicit': True,  # Required by apache_beam
   },
   'setuptools': {
     'build': '0',
@@ -369,11 +452,11 @@
   },
   'six': {
     'build': '0',
-    'gs': '30d480d2e352e8e4c2aae042cf1bf33368ff0920.tar.gz',
-    'version': '1.10.0',
+    'gs': '1957b44942be21822414f4dde936e6c40b687565.tar.gz',
+    'version': '1.12.0',
     'implicit': True,  # Required by python_dateutil, webtest, uritemplate, google_api_core.
   },
-  # Uploaded by running "./ingest_pypi_wheels.py scipy 0.18.1"
+  # Uploaded by running './ingest_pypi_wheels.py scipy 0.18.1'
   'scipy': {
     'version': '0.18.1',
     'build': '0',
@@ -389,6 +472,12 @@
     'repo': 'infra/testing/testing_support',
     'rev': '11e0d2b530cc7ea119c318b795e121511c3867f4',
   },
+  'typing': {
+    'build': '0',
+    'gs': '8414f7e523f1f286f72392e9f8929d346df6f6a2.tar.gz',
+    'version': '3.6.6',
+    'implicit': True,  # Required by python_dateutil, webtest, uritemplate, google_api_core.
+  },
   'tzlocal': {
     'version': '1.2',
     'build': '0',
@@ -403,8 +492,9 @@
   },
   'urllib3': {
     'build': '0',
-    'gs': '02c623c3bdceda4ef5bffdafdda472d2d9e34ef1.tar.gz',
-    'version': '1.22'
+    'gs': '2d5593e48a650e4ba05358c7d2de865684001948.tar.gz',
+    'version': '1.24.1',
+    'implicit': True,  # Required by google_api_python_client
   },
   'waitress': {
     'version': '0.8.10dev',

@@ -20,7 +20,10 @@ WHEELS_BUCKET = 'gs://chrome-python-wheelhouse/wheels'
 
 # Python versions + ABIs + Platforms we recognize => deps.py platform tag.
 PLATFORMS = {
+  ('cp27', 'cp27m', 'macosx_10_6_intel'): 'macosx_x86_64',
   ('cp27', 'cp27m', 'macosx_10_9_intel'): 'macosx_x86_64',
+  ('cp27', 'cp27m', 'macosx_10_9_x86_64'): 'macosx_x86_64',
+  ('cp27', 'cp27m', 'macosx_10_13_x86_64'): 'macosx_x86_64',
   ('cp27', 'cp27mu', 'manylinux1_i686'): 'linux_i686',
   ('cp27', 'cp27mu', 'manylinux1_x86_64'): 'linux_x86_64',
   ('cp27', 'none', 'win32'): 'windows_i686',
