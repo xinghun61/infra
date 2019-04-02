@@ -68,11 +68,11 @@ deploy-findit-prod: test
 	@echo
 	@echo "Please force a re-run of a recent build failure on dashboard: "\
 	"https://$(LOCAL_VERSION)-dot-frontend-"\
-	"dot-$(APPID).appspot.com/waterfall/list-analyses"
+	"dot-$(APPID).appspot.com/waterfall/list-failures"
 	@echo "Choose a first failure to make sure a new try job is triggered."
 	@echo "Please also force a re-run of a recent flake analysis on dashboard: "\
 	"https://$(LOCAL_VERSION)-dot-frontend-"\
-	"dot-$(APPID).appspot.com/waterfall/list-flakes"
+	"dot-$(APPID).appspot.com/p/chromium/flake-portal/analysis"
 	@echo "Ensure that the analyses are run in the new versions and give " \
 	      "correct results, " \
 	      "and then set the new version as default for these modules " \
