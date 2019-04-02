@@ -79,7 +79,8 @@ def RunSteps(api):
     # Ensure go is bootstrapped as a separate step.
     co.ensure_go_env()
 
-    # Note: go/env.py knows how to expand 'python' into sys.executable.
+    # Note: go/env.py knows how to expand 'python' into sys.executable (perhaps
+    # 'vpython').
     co.go_env_step(
         'python', str(co.path.join(patch_root, 'go', 'test.py')),
         name='go tests')
@@ -96,10 +97,12 @@ def RunSteps(api):
       with api.infra_system.system_env():
         api.python(
             'cipd - build packages',
-            co.path.join(patch_root, 'build', 'build.py'))
+            co.path.join(patch_root, 'build', 'build.py'),
+            venv=True)
         api.python(
             'cipd - test packages integrity',
-            co.path.join(patch_root, 'build', 'test_packages.py'))
+            co.path.join(patch_root, 'build', 'test_packages.py'),
+            venv=True)
     else:
       api.step('skipping slow cipd packaging tests', cmd=None)
 

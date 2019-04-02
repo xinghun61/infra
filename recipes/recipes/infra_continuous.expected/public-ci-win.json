@@ -115,7 +115,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]\\infra_gclient_with_go\\infra\\go\\env.py",
       "go",
@@ -132,7 +132,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]\\infra_gclient_with_go\\infra\\go\\env.py",
       "python",
@@ -147,7 +147,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]\\infra_gclient_with_go\\infra\\build\\build.py",
       "--builder",
@@ -162,7 +162,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]\\infra_gclient_with_go\\infra\\build\\test_packages.py"
     ],

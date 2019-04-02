@@ -182,12 +182,14 @@ def build_main(api, checkout, buildername, project_name, repo_url, rev):
             'python',  # env.py knows how to expand 'python' into sys.executable
             api.path['checkout'].join('go', 'deps.py'),
             'bundle',
-          ])
+          ],
+          venv=True)
 
     api.python(
         'infra go tests',
         api.path['checkout'].join('go', 'env.py'),
-        ['python', api.path['checkout'].join('go', 'test.py')])
+        ['python', api.path['checkout'].join('go', 'test.py')],
+        venv=True)
 
     for plat in CIPD_PACKAGE_BUILDERS.get(buildername, []):
       if plat == 'native':

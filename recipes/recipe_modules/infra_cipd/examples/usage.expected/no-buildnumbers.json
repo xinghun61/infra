@@ -1,7 +1,7 @@
 [
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[BUILDER_CACHE]/assume/infra/build/build.py",
       "--builder",
@@ -11,7 +11,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[BUILDER_CACHE]/assume/infra/build/test_packages.py"
     ],

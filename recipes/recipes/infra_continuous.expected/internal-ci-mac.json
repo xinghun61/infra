@@ -166,7 +166,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
       "go",
@@ -183,7 +183,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
       "python",

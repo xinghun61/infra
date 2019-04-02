@@ -66,7 +66,8 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     return self.m.python(
         'cipd - build packages',
         self._ctx_path_to_repo.join('build', 'build.py'),
-        ['--builder', self.m.buildbucket.builder_name])
+        ['--builder', self.m.buildbucket.builder_name],
+        venv=True)
 
   def test(self, skip_if_cross_compiling=False):
     """Tests previously built packages integrity."""
@@ -74,7 +75,8 @@ class InfraCIPDApi(recipe_api.RecipeApi):
       return None
     return self.m.python(
         'cipd - test packages integrity',
-        self._ctx_path_to_repo.join('build', 'test_packages.py'))
+        self._ctx_path_to_repo.join('build', 'test_packages.py'),
+        venv=True)
 
   def upload(self, tags, step_test_data=None):
     """Uploads previously built packages."""
@@ -92,7 +94,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
           self._ctx_path_to_repo.join('build', 'build.py'),
           args,
           step_test_data=step_test_data or self.test_api.example_upload,
-      )
+          venv=True)
     finally:
       step_result = self.m.step.active_result
       output = step_result.json.output or {}

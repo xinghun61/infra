@@ -100,7 +100,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
       "go",
@@ -117,7 +117,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/go/env.py",
       "python",
@@ -132,7 +132,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--builder",
@@ -147,7 +147,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/test_packages.py"
     ],
@@ -160,7 +160,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--no-rebuild",
@@ -199,7 +199,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--builder",
@@ -218,7 +218,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--no-rebuild",
@@ -261,7 +261,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--builder",
@@ -280,7 +280,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[CACHE]/infra_internal_gclient_with_go/infra_internal/build/build.py",
       "--no-rebuild",

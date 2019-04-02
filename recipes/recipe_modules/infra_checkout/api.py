@@ -97,7 +97,7 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
         with self.m.context(cwd=path):
           where = 'infra_internal' if internal else 'infra'
           return self.m.python(name, path.join(where, 'go', 'env.py'),
-                               args, **kwargs)
+                               args, venv=True, **kwargs)
 
       @staticmethod
       def run_presubmit_in_go_env():
