@@ -204,6 +204,9 @@ func updateDutLabels(ctx context.Context, s *gitstore.InventoryStore, req update
 		return nil, errors.Reason("updateDutLabels: no DUT found").Err()
 	}
 	c := dut.GetCommon()
+	// Repair should not change pool labels.
+	req.labels.CriticalPools = c.Labels.CriticalPools
+	req.labels.SelfServePools = c.Labels.SelfServePools
 	c.Labels = req.labels
 	url, err := s.Commit(ctx, fmt.Sprintf("Update DUT labels for %s", req.reason))
 	if gitstore.IsEmptyErr(err) {
