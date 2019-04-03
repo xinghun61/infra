@@ -135,6 +135,8 @@ message DeployDutRequest {
   //
   // Automated repair is always attempted at the end of deployment actions.
   DutDeploymentActions actions = 2;
+
+  DutDeploymentOptions options = 3;
 }
 
 message DeployDutResponse {
@@ -167,6 +169,8 @@ message RedeployDutRequest {
   bytes new_specs = 2;
 
   DutDeploymentActions actions = 3;
+
+  DutDeploymentOptions options = 4;
 }
 
 message RedeployDutResponse {
@@ -224,6 +228,11 @@ message DutDeploymentActions {
 
   // Install ChromeOS test image from the image staged on USB.
   bool install_test_image = 3;
+}
+
+message DutDeploymentOptions {
+  // Assign a valid servo port if none is provided in the included device specs.
+  bool assign_servo_port_if_missing = 1;
 }
 
 message EnsurePoolHealthyRequest {
