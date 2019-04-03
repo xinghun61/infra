@@ -256,7 +256,7 @@ func setNextSafe(c context.Context, builder *storage.Builder) error {
 	}
 	client.BasePath = fmt.Sprintf("https://%s/_ah/api/swarmbucket/v1/", cfg.BuildbucketHostname)
 	nextNum := int64(buildbotNum) + 10
-	req := swarmbucket.SwarmingSwarmbucketApiSetNextBuildNumberRequest{
+	req := swarmbucket.LegacySwarmbucketApiSetNextBuildNumberRequest{
 		Bucket:     master.GetLuciBucket(),
 		Builder:    builder.ID.Builder,
 		NextNumber: nextNum,

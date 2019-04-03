@@ -114,8 +114,8 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 		canaryPref = "CANARY"
 	}
 
-	args := &swarmbucket.SwarmingSwarmbucketApiGetTaskDefinitionRequestMessage{
-		BuildRequest: &swarmbucket.ApiPutRequestMessage{
+	args := &swarmbucket.LegacySwarmbucketApiGetTaskDefinitionRequestMessage{
+		BuildRequest: &swarmbucket.LegacyApiPutRequestMessage{
 			CanaryPreference: canaryPref,
 			Bucket:           bucket,
 			ParametersJson:   string(data),
