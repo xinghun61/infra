@@ -72,26 +72,69 @@ class MetricStoreTestBase(object):
 
   def test_sets_start_time(self):
     self.metric._start_time = None
-    self.mock_time.return_value = 1234
+    fields1 = tuple('value')
+    start_time1 = 1234
+    self.mock_time.return_value = start_time1
+    self.store.set('foo', fields1, None, 42)
 
-    self.store.set('foo', ('value',), None, 42)
-    self.store.set('foo', ('value2',), None, 43)
-
-    all_metrics = list(self.store.get_all())
-    self.assertEqual(1, len(all_metrics))
-    self.assertEqual('foo', all_metrics[0][1].name)
-    self.assertEqual(1234, all_metrics[0][2])
-
-  def test_uses_start_time_from_metric(self):
-    self.metric._start_time = 5678
-
-    self.store.set('foo', ('value',), None, 42)
-    self.store.set('foo', ('value2',), None, 43)
+    fields2 = tuple('value2')
+    start_time2 = 4321
+    self.mock_time.return_value = start_time2
+    self.store.set('foo', fields2, None, 43)
 
     all_metrics = list(self.store.get_all())
     self.assertEqual(1, len(all_metrics))
     self.assertEqual('foo', all_metrics[0][1].name)
-    self.assertEqual(5678, all_metrics[0][2])
+
+    # the timestamps of both should be the same as their own.
+    self.assertEqual(start_time1, all_metrics[0][2][fields1])
+    self.assertEqual(start_time2, all_metrics[0][2][fields2])
+
+  def test_start_time_remains_same(self):
+    """Tests if the start_time of a stream remains the same after set()."""
+    self.metric._start_time = None
+    fields = tuple('value')
+    initial_start_time = 7777
+
+    for i in range(10):
+      self.mock_time.return_value = initial_start_time + i
+      self.store.set('foo', fields, None, 42 + i)
+      all_metrics = list(self.store.get_all())
+
+      self.assertEqual(1, len(all_metrics))
+      self.assertEqual('foo', all_metrics[0][1].name)
+
+      # the start_time should stay the same.
+      self.assertEqual(initial_start_time, all_metrics[0][2][fields])
+
+  def test_reset_resets_start_time(self):
+    """Tests if the start_time of a stream remains the same after set()."""
+    self.metric._start_time = None
+    fields = tuple('value')
+    initial_start_time = 7777
+    reset_time = 8888
+    value_set_time_after_reset = 9999
+
+    # metrics were reported for the first time.
+    self.mock_time.return_value = initial_start_time
+    self.store.set('foo', fields, None, 42)
+    all_metrics = list(self.store.get_all())
+    self.assertEqual(1, len(all_metrics))
+    self.assertEqual('foo', all_metrics[0][1].name)
+    self.assertEqual(initial_start_time, all_metrics[0][2][fields])
+
+    # metrics were reset.
+    self.mock_time.return_value = reset_time
+    self.store.reset_for_unittest()
+    self.assertIsNone(self.store.get('foo', fields, None))
+
+    # metrics were reported again.
+    self.mock_time.return_value = value_set_time_after_reset
+    self.store.set('foo', fields, None, 42)
+    all_metrics = list(self.store.get_all())
+    self.assertEqual(1, len(all_metrics))
+    self.assertEqual('foo', all_metrics[0][1].name)
+    self.assertEqual(value_set_time_after_reset, all_metrics[0][2][fields])
 
   def test_get(self):
     fields1 = ('value',)
