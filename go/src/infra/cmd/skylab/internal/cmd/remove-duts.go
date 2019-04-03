@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -88,17 +89,10 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 		Options: site.DefaultPRPCOptions,
 	})
 
-	var modified bool
-	req := removeRequest(c.server, c.Flags.Args())
-	removalResp, err := ic.RemoveDutsFromDrones(ctx, &req)
+	modified, err := c.removeDUTs(ctx, ic, a.GetOut())
 	if err != nil {
 		return err
 	}
-	if removalResp.Url != "" {
-		modified = true
-		_ = printRemovals(a.GetOut(), removalResp)
-	}
-
 	if c.delete {
 		deletionResp, err := ic.DeleteDuts(ctx, &fleet.DeleteDutsRequest{Hostnames: c.Flags.Args()})
 		if err != nil {
@@ -114,8 +108,20 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 		fmt.Fprintln(a.GetOut(), "No DUTs modified")
 		return nil
 	}
-
 	return nil
+}
+
+func (c *removeDutsRun) removeDUTs(ctx context.Context, ic fleet.InventoryClient, stdout io.Writer) (modified bool, err error) {
+	req := removeRequest(c.server, c.Flags.Args())
+	resp, err := ic.RemoveDutsFromDrones(ctx, &req)
+	if err != nil {
+		return false, err
+	}
+	if resp.Url == "" {
+		return false, nil
+	}
+	_ = printRemovals(stdout, resp)
+	return true, nil
 }
 
 // removeRequest builds a RPC remove request.
