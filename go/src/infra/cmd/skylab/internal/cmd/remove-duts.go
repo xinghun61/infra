@@ -88,27 +88,29 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 		Options: site.DefaultPRPCOptions,
 	})
 
+	var modified bool
 	req := removeRequest(c.server, c.Flags.Args())
 	removalResp, err := ic.RemoveDutsFromDrones(ctx, &req)
 	if err != nil {
 		return err
 	}
 	if removalResp.Url != "" {
+		modified = true
 		_ = printRemovals(a.GetOut(), removalResp)
 	}
 
-	deletionResp := &fleet.DeleteDutsResponse{}
 	if c.delete {
-		deletionResp, err = ic.DeleteDuts(ctx, &fleet.DeleteDutsRequest{Hostnames: c.Flags.Args()})
+		deletionResp, err := ic.DeleteDuts(ctx, &fleet.DeleteDutsRequest{Hostnames: c.Flags.Args()})
 		if err != nil {
 			return err
 		}
-	}
-	if deletionResp.ChangeUrl != "" {
-		_ = printDeletions(a.GetOut(), deletionResp)
+		if deletionResp.ChangeUrl != "" {
+			modified = true
+			_ = printDeletions(a.GetOut(), deletionResp)
+		}
 	}
 
-	if removalResp.Url == "" && deletionResp.ChangeUrl == "" {
+	if !modified {
 		fmt.Fprintln(a.GetOut(), "No DUTs modified")
 		return nil
 	}
