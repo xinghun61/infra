@@ -42,7 +42,7 @@ def presubmit(
   luci.builder(
       name = name,
       bucket = 'try',
-      recipe = build.recipe('run_presubmit'),
+      executable = build.recipe('run_presubmit'),
       properties = props,
       service_account = infra.SERVICE_ACCOUNT_TRY,
       dimensions = {

@@ -17,7 +17,7 @@ def gsubtreed_cron(
   luci.builder(
       name = name,
       bucket = 'cron',
-      recipe = infra.recipe('gsubtreed'),
+      executable = infra.recipe('gsubtreed'),
       properties = {
           # Don't loop, run just once. For lesser used gsubtreeds, rate of
           # commit is low. This also allows for more efficient machine sharing.

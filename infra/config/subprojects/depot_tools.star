@@ -80,7 +80,7 @@ luci.cq_tryjob_verifier(
 luci.builder(
     name = 'depot_tools zip uploader',
     bucket = 'ci',
-    recipe = infra.recipe('depot_tools_builder'),
+    executable = infra.recipe('depot_tools_builder'),
     dimensions = {
         'os': 'Ubuntu-14.04',
         'cpu': 'x86-64',

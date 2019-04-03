@@ -17,7 +17,7 @@ def ci_builder(name, os, cpu=None):
   infra.builder(
       name = name,
       bucket = 'ci',
-      recipe = infra.recipe('infra_continuous'),
+      executable = infra.recipe('infra_continuous'),
       os = os,
       cpu = cpu,
       triggered_by = [infra.poller()],
@@ -33,7 +33,7 @@ def try_builder(name, os, recipe=None):
   infra.builder(
       name = name,
       bucket = 'try',
-      recipe = infra.recipe(recipe or 'infra_repo_trybot'),
+      executable = infra.recipe(recipe or 'infra_repo_trybot'),
       os = os,
   )
   luci.cq_tryjob_verifier(

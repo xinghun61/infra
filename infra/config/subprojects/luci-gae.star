@@ -22,7 +22,7 @@ def ci_builder(name, os):
   infra.builder(
       name = name,
       bucket = 'ci',
-      recipe = infra.recipe('luci_gae'),
+      executable = infra.recipe('luci_gae'),
       os = os,
       triggered_by = [
           luci.gitiles_poller(
@@ -43,7 +43,7 @@ def try_builder(name, os, presubmit=False):
   infra.builder(
       name = name,
       bucket = 'try',
-      recipe = infra.recipe('luci_gae'),
+      executable = infra.recipe('luci_gae'),
       os = os,
   )
   luci.cq_tryjob_verifier(

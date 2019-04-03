@@ -12,7 +12,7 @@ load('//lib/infra.star', 'infra')
 luci.builder(
     name = 'cros-flash-scheduler-kevin',
     bucket = 'cron',
-    recipe = infra.recipe('cros_flash_scheduler'),
+    executable = infra.recipe('cros_flash_scheduler'),
     service_account = 'cros-flash@chops-service-accounts.iam.gserviceaccount.com',
     dimensions = {
         'builder': 'cros-flash-scheduler-kevin',
@@ -54,7 +54,7 @@ luci.builder(
     # properties. This runs as a recipe because the flashing makes use of local
     # checkouts and caches. Consequently, this builder exists to trigger the
     # recipes via buildbucket.
-    recipe = infra.recipe('cros_flash'),
+    executable = infra.recipe('cros_flash'),
     dimensions = {
         'os': 'ChromeOS',
         'pool': 'chrome-cros-dut',

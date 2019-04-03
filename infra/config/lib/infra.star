@@ -51,7 +51,7 @@ def builder(
       # Basic required stuff.
       name,
       bucket,
-      recipe,
+      executable,
 
       # Dimensions.
       os,
@@ -93,7 +93,7 @@ def builder(
   luci.builder(
       name = name,
       bucket = bucket,
-      recipe = recipe,
+      executable = executable,
       dimensions = {'os': os, 'cpu': cpu or 'x86-64', 'pool': pool},
       service_account = service_account,
       properties = properties,

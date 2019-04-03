@@ -9,7 +9,7 @@ load('//lib/infra.star', 'infra')
 luci.builder(
     name = 'chromium-lkgr-finder',
     bucket = 'cron',
-    recipe = infra.recipe('lkgr_finder'),
+    executable = infra.recipe('lkgr_finder'),
     service_account = 'chromium-lkgr-finder-builder@chops-service-accounts.iam.gserviceaccount.com',
     dimensions = {
         'builder': 'chromium-lkgr-finder',

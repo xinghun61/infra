@@ -36,7 +36,7 @@ def chromium_src_poller():
 
 def builder(
       name,
-      recipe,
+      executable,
 
       # Builder props.
       os=None,
@@ -60,7 +60,7 @@ def builder(
   luci.builder(
       name = name,
       bucket = 'codesearch',
-      recipe = recipe,
+      executable = executable,
       properties = properties,
       dimensions = {
           'builder': name,
@@ -87,7 +87,7 @@ def builder(
 def chromium_genfiles(short_name, name, os=None):
   builder(
       name = name,
-      recipe = build.recipe('chromium_codesearch'),
+      executable = build.recipe('chromium_codesearch'),
       os = os,
       caches = [swarming.cache(
           path = 'generated',
@@ -113,7 +113,7 @@ def sync_submodules(
     properties['extra_submodules'] = extra_submodules
   builder(
       name = name,
-      recipe = infra.recipe('sync_submodules'),
+      executable = infra.recipe('sync_submodules'),
       properties = properties,
       category = 'submodules',
       short_name = short_name,
@@ -131,7 +131,7 @@ def update_submodules_mirror(
   builder(
       name = name,
       execution_timeout = time.hour,
-      recipe = infra.recipe('update_submodules_mirror'),
+      executable = infra.recipe('update_submodules_mirror'),
       properties = {
           'source_repo': source_repo,
           'target_repo': target_repo,
@@ -146,7 +146,7 @@ def update_submodules_mirror(
 # Runs every two hours (at predictable times).
 builder(
     name = 'codesearch-gen-chromium-initiator',
-    recipe = build.recipe('chromium_codesearch_initiator'),
+    executable = build.recipe('chromium_codesearch_initiator'),
     category = 'gen|init',
     schedule = '0 */2 * * *',
 )

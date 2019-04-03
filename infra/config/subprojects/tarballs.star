@@ -11,7 +11,7 @@ def builder(name, recipe, builder_dimension=None, **kwargs):
   luci.builder(
       name = name,
       bucket = 'cron',
-      recipe = infra.recipe(recipe),
+      executable = infra.recipe(recipe),
       service_account = 'chromium-tarball-builder@chops-service-accounts.iam.gserviceaccount.com',
       dimensions = {
           'pool': 'luci.infra.cron',

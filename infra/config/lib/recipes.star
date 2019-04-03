@@ -38,7 +38,7 @@ def simulation_tester(
   luci.builder(
       name = name,
       bucket = 'ci',
-      recipe = infra.recipe('recipe_simulation'),
+      executable = infra.recipe('recipe_simulation'),
       # Normally, this builder will be triggered on specific commit in this
       # git_repo, and hence additional git_repo property is redundant. However,
       # if one uses LUCI scheduler "Trigger Now" feature, there will be no
@@ -68,7 +68,7 @@ def roll_trybots(upstream, downstream, cq_group):
     luci.builder(
         name = name,
         bucket = 'try',
-        recipe = infra.recipe('recipe_roll_tryjob'),
+        executable = infra.recipe('recipe_roll_tryjob'),
         properties = {
             'upstream_id': upstream,
             'upstream_url': _repo_url(upstream),
@@ -93,7 +93,7 @@ def led_recipes_tester(name, cq_group, repo_name):
   luci.builder(
       name = name,
       bucket = 'try',
-      recipe = build.recipe('led_recipes_tester'),
+      executable = build.recipe('led_recipes_tester'),
       properties = {'repo_name': repo_name},
       dimensions = {
           'os': 'Ubuntu-14.04',

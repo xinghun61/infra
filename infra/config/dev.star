@@ -73,7 +73,7 @@ def ci_builder(
   infra.builder(
       name = name,
       bucket = 'ci',
-      recipe = infra.recipe(recipe),
+      executable = infra.recipe(recipe),
       os = os,
       cpu = 'x86-64',
       pool = 'Chrome',  # no point in creating a dedicated pool on -dev

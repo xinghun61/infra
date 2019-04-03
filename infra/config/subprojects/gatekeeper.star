@@ -9,7 +9,7 @@ load('//lib/build.star', 'build')
 luci.builder(
     name = 'Chromium Gatekeeper',
     bucket = 'cron',
-    recipe = build.recipe('gatekeeper'),
+    executable = build.recipe('gatekeeper'),
     service_account = 'gatekeeper-builder@chops-service-accounts.iam.gserviceaccount.com',
     dimensions = {
         'builder': 'Chromium Gatekeeper',

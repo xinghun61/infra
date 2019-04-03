@@ -11,7 +11,7 @@ def cron(name, recipe, execution_timeout=None):
   luci.builder(
       name = name,
       bucket = 'cron',
-      recipe = infra.recipe(recipe),
+      executable = infra.recipe(recipe),
       dimensions = {
           'builder': name,
           'os': 'Ubuntu-14.04',
