@@ -44,7 +44,7 @@ e.g., reef-canary/R73-11580.0.0.`)
 		// format (e.g. DUT_POOL_BVT) or in a human readable format, e.g. bvt. Provide a
 		// list of common choices.
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
-		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "Task runtime timeout.")
+		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 30, "Task runtime timeout.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
 		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval",
 			`Autotest keyval for test.  May be specified multiple times.`)
