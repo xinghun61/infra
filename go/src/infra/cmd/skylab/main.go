@@ -54,7 +54,6 @@ func getApplication() *cli.Application {
 			subcommands.Section("Internal use"),
 			cmd.InternalListDroneDuts,
 			cmd.InternalPrintBotInfo,
-			cmd.InternalPrintDutDimensions,
 			cmd.InternalVerifyInventory,
 		},
 	}
