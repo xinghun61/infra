@@ -83,6 +83,7 @@ flake_detection_frontend_web_pages_handler_mappings = [
     ('/p/chromium/flake-portal/report', flake_report.FlakeReport),
     ('/p/chromium/flake-portal/report/component',
      component_report.ComponentReport),
+    (r'/.*', url_redirect.URLRedirect),
 ]
 flake_detection_frontend_web_application = webapp2.WSGIApplication(
     flake_detection_frontend_web_pages_handler_mappings, debug=False)
