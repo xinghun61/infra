@@ -69,6 +69,7 @@ type args struct {
 	xKeyvals            map[string]string
 	xProvisionLabels    []string
 	xTestArgs           string
+	deployActions       string
 }
 
 func parseArgs() *args {
@@ -88,6 +89,8 @@ func parseArgs() *args {
 		"JSON string of job keyvals")
 	flag.StringVar(&a.xTestArgs, "test-args", "",
 		"Test args (meaning depends on test)")
+	flag.StringVar(&a.deployActions, "actions", "",
+		"Actions to execute for a deploytask")
 	flag.Parse()
 
 	return a
@@ -161,6 +164,10 @@ func runLuciferTask(i *harness.Info, a *args, logdogOutput io.Writer, ta lucifer
 		if err := runAdminTask(i, n, logdogOutput, ta); err != nil {
 			return errors.Wrap(err, "run admin task")
 		}
+	} else if isDeployTask(a.taskName) {
+		if err := runDeployTask(i, a.deployActions, logdogOutput, ta); err != nil {
+			return errors.Wrap(err, "run deploy task")
+		}
 	} else {
 		if err := runTest(i, a, logdogOutput, ta); err != nil {
 			return errors.Wrap(err, "run test")
@@ -177,6 +184,11 @@ func getAdminTask(name string) (task string, ok bool) {
 		return strings.TrimPrefix(name, "admin_"), true
 	}
 	return "", false
+}
+
+// isDeployTask determines if the given task name corresponds to a deploy task.
+func isDeployTask(name string) bool {
+	return name == "deploy"
 }
 
 // runTest runs a test.
@@ -272,6 +284,25 @@ func runAdminTask(i *harness.Info, name string, logdogOutput io.Writer, ta lucif
 	defer f.Close()
 	if _, err := runLuciferCommand(i, logdogOutput, cmd); err != nil {
 		return errors.Wrap(err, "run lucifer failed")
+	}
+	return nil
+}
+
+// runDeployTask runs a deploy task using lucifer.
+//
+// actions is a possibly empty comma separated list of deploy actions to run
+func runDeployTask(i *harness.Info, actions string, logdogOutput io.Writer, ta lucifer.TaskArgs) error {
+	r := lucifer.DeployTaskArgs{
+		TaskArgs: ta,
+		Host:     i.DUTName,
+		Actions:  actions,
+	}
+
+	cmd := lucifer.DeployTaskCommand(i.LuciferConfig(), r)
+	f := event.ForwardAbortSignal(r.AbortSock)
+	defer f.Close()
+	if _, err := runLuciferCommand(i, logdogOutput, cmd); err != nil {
+		return errors.Wrap(err, "run deploy task")
 	}
 	return nil
 }

@@ -125,6 +125,34 @@ func AdminTaskCommand(c Config, a AdminTaskArgs) *exec.Cmd {
 	return cmd
 }
 
+// DeployTaskArgs contains the arguments for creating a lucifer deploytask
+// command.
+type DeployTaskArgs struct {
+	TaskArgs
+	Host    string
+	Actions string
+}
+
+// DeployTaskCommand creates an exec.Cmd for running a lucifer deploytask.
+func DeployTaskCommand(c Config, a DeployTaskArgs) *exec.Cmd {
+	p := filepath.Join(c.BinDir, "lucifer")
+	args := make([]string, 0, 6)
+	args = append(args, "deploytask")
+	args = append(args, "-autotestdir", c.AutotestPath)
+	args = appendCommonArgs(args, a.TaskArgs)
+
+	args = append(args, "-host", a.Host)
+	if a.Actions != "" {
+		args = append(args, "-actions", a.Actions)
+	}
+	if a.GCPProject != "" {
+		args = append(args, "-gcp-project", a.GCPProject)
+	}
+
+	cmd := exec.Command(p, args...)
+	return cmd
+}
+
 func appendCommonArgs(args []string, a TaskArgs) []string {
 	args = append(args, "-abortsock", a.AbortSock)
 	args = append(args, "-gcp-project", a.GCPProject)
