@@ -78,8 +78,7 @@
         <div style="padding:2px 4px">
           Reported by
           <mr-user-link
-            display-name="[reporter_name]"
-            user-id="[reporter_user_id]"
+            user-ref="{&quot;displayName&quot;: &quot;[reporter_name]&quot;, &quot;userId&quot;: &quot;[reporter_user_id]&quot;}"
           ></mr-user-link>
           on
           <chops-timestamp

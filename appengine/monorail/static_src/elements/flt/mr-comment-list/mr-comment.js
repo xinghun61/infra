@@ -89,10 +89,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
 
           <template is="dom-if" if="[[!_hideDeletedComment]]">
             by
-            <mr-user-link
-              display-name="[[comment.commenter.displayName]]"
-              user-id="[[comment.commenter.userId]]"
-            ></mr-user-link>
+            <mr-user-link user-ref="[[comment.commenter]]"></mr-user-link>
             <template is="dom-if" if="[[!quickMode]]">
               on
               <chops-timestamp

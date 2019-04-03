@@ -165,10 +165,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           </h1>
           <small class="byline">
             Reported by
-            <mr-user-link
-              display-name="[[issue.reporterRef.displayName]]"
-              user-id="[[issue.reporterRef.userId]]"
-            ></mr-user-link>
+            <mr-user-link user-ref="[[issue.reporterRef]]"></mr-user-link>
             on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
           </small>
         </div>

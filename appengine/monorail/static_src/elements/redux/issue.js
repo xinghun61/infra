@@ -37,6 +37,7 @@ export const issueLoaded = (state) => state.issue.issueLoaded;
 export const issuePermissions = (state) => state.issue.issuePermissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
 export const relatedIssues = (state) => state.issue.relatedIssues;
+export const referencedUsers = (state) => state.issue.referencedUsers;
 export const isStarred = (state) => state.issue.isStarred;
 
 export const requests = (state) => state.issue.requests;
@@ -249,6 +250,41 @@ export const fetchCommentReferences = (comments, projectName) => {
   };
 };
 
+export const fetchReferencedUsers = (issue) => async (dispatch) => {
+  if (!issue) return;
+  dispatch({type: actionType.FETCH_REFERENCED_USERS_START});
+
+  const userRefs = [...(issue.ccRefs || [])];
+  if (issue.ownerRef) {
+    userRefs.push(issue.ownerRef);
+  }
+  (issue.approvalValues || []).forEach((approval) => {
+    userRefs.push(...(approval.approverRefs || []));
+    if (approval.setterRef) {
+      userRefs.push(approval.setterRef);
+    }
+  });
+
+  try {
+    const resp = await window.prpcClient.call(
+      'monorail.Users', 'ListReferencedUsers', {userRefs});
+
+    const referencedUsers = new Map();
+    (resp.users || []).forEach((user) => {
+      referencedUsers.set(user.email, user);
+    });
+    dispatch({
+      type: actionType.FETCH_REFERENCED_USERS_SUCCESS,
+      referencedUsers,
+    });
+  } catch (error) {
+    dispatch({
+      type: actionType.FETCH_REFERENCED_USERS_FAILURE,
+      error,
+    });
+  }
+};
+
 // TODO(zhangtiff): Figure out if we can reduce request/response sizes by
 // diffing issues to fetch against issues we already know about to avoid
 // fetching duplicate info.
@@ -317,6 +353,7 @@ export const fetch = (message) => async (dispatch) => {
     if (!resp.issue.isDeleted) {
       dispatch(fetchRelatedIssues(resp.issue));
       dispatch(fetchHotlists(message.issueRef));
+      dispatch(fetchReferencedUsers(resp.issue));
     }
   } catch (error) {
     dispatch({
@@ -493,6 +530,7 @@ export const update = (message) => async (dispatch) => {
     };
     dispatch(fetchComments(fetchCommentsMessage));
     dispatch(fetchRelatedIssues(resp.issue));
+    dispatch(fetchReferencedUsers(resp.issue));
   } catch (error) {
     dispatch({
       type: actionType.UPDATE_ISSUE_FAILURE,

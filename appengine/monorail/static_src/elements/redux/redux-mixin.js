@@ -50,6 +50,13 @@ export const actionType = {
   FETCH_COMMENT_REFERENCES_SUCCESS: 'FETCH_COMMENT_REFERENCES_SUCCESS',
   FETCH_COMMENT_REFERENCES_FAILURE: 'FETCH_COMMENT_REFERENCES_FAILURE',
 
+  FETCH_REFERENCED_USERS_START:
+    'FETCH_REFERENCED_USERS_START',
+  FETCH_REFERENCED_USERS_SUCCESS:
+    'FETCH_REFERENCED_USERS_SUCCESS',
+  FETCH_REFERENCED_USERS_FAILURE:
+    'FETCH_REFERENCED_USERS_FAILURE',
+
   FETCH_RELATED_ISSUES_START:
     'FETCH_RELATED_ISSUES_START',
   FETCH_RELATED_ISSUES_SUCCESS:
@@ -123,6 +130,12 @@ const commentReferencesReducer = createReducer(new Map(), {
 const relatedIssuesReducer = createReducer(new Map(), {
   [actionType.FETCH_RELATED_ISSUES_SUCCESS]: (_state, action) => {
     return action.relatedIssues;
+  },
+});
+
+const referencedUsersReducer = createReducer(new Map(), {
+  [actionType.FETCH_REFERENCED_USERS_SUCCESS]: (_state, action) => {
+    return action.referencedUsers;
   },
 });
 
@@ -201,6 +214,10 @@ const requestsReducer = combineReducers({
     actionType.FETCH_RELATED_ISSUES_START,
     actionType.FETCH_RELATED_ISSUES_SUCCESS,
     actionType.FETCH_RELATED_ISSUES_FAILURE),
+  fetchReferencedUsers: createRequestReducer(
+    actionType.FETCH_REFERENCED_USERS_START,
+    actionType.FETCH_REFERENCED_USERS_SUCCESS,
+    actionType.FETCH_REFERENCED_USERS_FAILURE),
   // Request for getting whether an issue is starred.
   fetchIsStarred: createRequestReducer(
     actionType.FETCH_IS_STARRED_START,
@@ -240,6 +257,7 @@ const reducer = combineReducers({
     comments: commentsReducer,
     commentReferences: commentReferencesReducer,
     relatedIssues: relatedIssuesReducer,
+    referencedUsers: referencedUsersReducer,
     isStarred: isStarredReducer,
     issuePermissions: issuePermissionsReducer,
     presubmitResponse: presubmitResponseReducer,

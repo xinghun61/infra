@@ -112,11 +112,11 @@ function LookupReferencedIssues(issueRefs, componentName) {
 
 function LookupReferencedUsers(emails, componentName) {
   return new Promise((resolve, reject) => {
-    const message = {
-      emails: emails,
-    };
+    const userRefs = emails.map((displayName) => {
+      return {displayName};
+    });
     const listReferencedUsers = window.prpcClient.call(
-      'monorail.Users', 'ListReferencedUsers', message);
+      'monorail.Users', 'ListReferencedUsers', {userRefs});
     return listReferencedUsers.then((response) => {
       resolve({'componentName': componentName, 'existingRefs': response});
     });

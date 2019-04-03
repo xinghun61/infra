@@ -68,9 +68,10 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
           <td>
             <template is="dom-repeat" items="[[approvers]]">
               <mr-user-link
-                display-name="[[item.displayName]]"
-                user-id="[[item.userId]]"
-              ></mr-user-link><br />
+                user-ref="[[item]]"
+                show-availability-icon
+              ></mr-user-link>
+              <br />
             </template>
           </td>
         </tr>
@@ -79,8 +80,8 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
         <th>Setter:</th>
         <td>
           <mr-user-link
-            display-name="[[setter.displayName]]"
-            user-id="[[setter.userId]]"
+            user-ref="[[setter]]"
+            show-availability-icon
           ></mr-user-link>
         </td>
       </template>
@@ -90,8 +91,9 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
           <th>Owner:</th>
           <td>
             <mr-user-link
-              display-name="[[owner.displayName]]"
-              user-id="[[owner.userId]]"
+              user-ref="[[owner]]"
+              show-availability-icon
+              show-availability-text
             ></mr-user-link>
           </td>
         </tr>
@@ -103,9 +105,10 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
           <td>
             <template is="dom-repeat" items="[[cc]]">
               <mr-user-link
-                display-name="[[item.displayName]]"
-                user-id="[[item.userId]]"
-              ></mr-user-link><br />
+                user-ref="[[item]]"
+                show-availability-icon
+              ></mr-user-link>
+              <br />
             </template>
           </td>
         </tr>
