@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 'use strict';
+
 // When crbug links don't specify a project, the default project is Chromium.
 const CRBUG_DEFAULT_PROJECT = 'chromium';
 const CRBUG_LINK_RE = /(\b(https?:\/\/)?crbug\.com\/)((\b[-a-z0-9]+)(\/))?(\d+)\b(\#c[0-9]+)?/gi;
@@ -13,12 +14,12 @@ const PROJECT_LOCALID_RE = /((\b(issue|bug)[ \t]*(:|=)?[ \t]*)?((\b[-a-z0-9]+)[:
 const PROJECT_LOCALID_RE_PROJECT_GROUP = 6;
 const PROJECT_LOCALID_RE_ID_GROUP = 8;
 const IMPLIED_EMAIL_RE = /\b[a-z]((-|\.)?[a-z0-9])+@[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b/gi;
-// TODO(zhangtiff): Add (?<![-/._]) back to the beginning of the 3 Regexes below
+// TODO(zhangtiff): Replace (^|[^-/._]) with (?<![-/._]) on the 3 Regexes below
 // once Firefox supports lookaheads.
-const SHORT_LINK_RE = /\b(https?:\/\/|ftp:\/\/|mailto:)?(go|g|shortn|who|teams)\/([^\s<]+)/gi;
-const NUMERIC_SHORT_LINK_RE = /\b(https?:\/\/|ftp:\/\/)?(b|t|o|omg|cl|cr)\/([0-9]+)/gi;
-const IMPLIED_LINK_RE = /\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b(\/[^\s<]*)?/gi;
-const IS_LINK_RE = /\b(https?:\/\/|ftp:\/\/|mailto:)([^\s<]+)/gi;
+const SHORT_LINK_RE = /(^|[^-\/._])\b(https?:\/\/|ftp:\/\/|mailto:)?(go|g|shortn|who|teams)\/([^\s<]+)/gi;
+const NUMERIC_SHORT_LINK_RE = /(^|[^-\/._])\b(https?:\/\/|ftp:\/\/)?(b|t|o|omg|cl|cr)\/([0-9]+)/gi;
+const IMPLIED_LINK_RE = /(^|[^-\/._])\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b(\/[^\s<]*)?/gi;
+const IS_LINK_RE = /()\b(https?:\/\/|ftp:\/\/|mailto:)([^\s<]+)/gi;
 const GIT_HASH_RE = /\b(r(evision\s+#?)?)?([a-f0-9]{40})\b/gi;
 const SVN_REF_RE = /\b(r(evision\s+#?)?)([0-9]{4,7})\b/gi;
 // The revNum is in the same position for the above two Regexes. The
@@ -76,11 +77,8 @@ Components.set(
     extractRefs: (match, _currentProjectName) => {
       return [match[0]];
     },
-    // These Regexes are evaluated in the order listed. It's important
-    // to make sure the implied link Regex runs after the link Regex here,
-    // for example, to prevent crbug.com/monorail/4557
-    refRegs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IS_LINK_RE,
-      IMPLIED_LINK_RE],
+    refRegs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE,
+      IS_LINK_RE],
     replacer: ReplaceLinkRef,
   }
 );
@@ -175,7 +173,8 @@ function ReplaceIssueRef(stringMatch, projectName, localId, components) {
 function ReplaceCrbugIssueRef(match, components, _currentProjectName) {
   components = components || {};
   // When crbug links don't specify a project, the default project is Chromium.
-  const projectName = match[CRBUG_LINK_RE_PROJECT_GROUP] || CRBUG_DEFAULT_PROJECT;
+  const projectName =
+    match[CRBUG_LINK_RE_PROJECT_GROUP] || CRBUG_DEFAULT_PROJECT;
   const localId = match[CRBUG_LINK_RE_ID_GROUP];
   return [ReplaceIssueRef(match[0], projectName, localId, components)];
 }
@@ -207,8 +206,7 @@ function ReplaceTrackerIssueRef(match, components, currentProjectName) {
 
 function ReplaceUserRef(match, components, _currentProjectName) {
   components = components || {};
-  let href;
-  let textRun = {content: match[0], tag: 'a'};
+  const textRun = {content: match[0], tag: 'a'};
   if (components.users && components.users.length) {
     const existingUser = components.users.find((user) => {
       return user.email.toLowerCase() === match[0].toLowerCase();
@@ -223,8 +221,13 @@ function ReplaceUserRef(match, components, _currentProjectName) {
 }
 
 function ReplaceLinkRef(match, _componets, _currentProjectName) {
+  const textRuns = [];
   let content = match[0];
   let trailing = '';
+  if (match[1]) {
+    textRuns.push({content: match[1]});
+    content = content.slice(match[1].length);
+  }
   LINK_TRAILING_CHARS.forEach(([begin, end]) => {
     if (content.endsWith(end)) {
       if (!begin || !content.slice(0, -end.length).includes(begin)) {
@@ -248,7 +251,7 @@ function ReplaceLinkRef(match, _componets, _currentProjectName) {
     }
     GOOG_SHORT_LINK_RE.lastIndex = 0;
   }
-  let textRuns = [{content: content, tag: 'a', href: href}];
+  textRuns.push({content: content, tag: 'a', href: href});
   if (trailing.length) {
     textRuns.push({content: trailing});
   }

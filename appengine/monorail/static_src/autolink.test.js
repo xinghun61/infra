@@ -2,12 +2,11 @@ import {assert} from 'chai';
 import {autolink} from './autolink.js';
 
 const components = autolink.Components;
-const createIssueRefRun = autolink.createIssueRefRun;
 const markupAutolinks = autolink.markupAutolinks;
 
 suite('autolink', () => {
   suite('crbug component functions', () => {
-    const {lookup, extractRefs, refRegs, replacer} = components.get('01-tracker-crbug');
+    const {extractRefs, refRegs, replacer} = components.get('01-tracker-crbug');
 
     test('Extract crbug project and local ids', () => {
       const match = refRegs[0].exec('https://crbug.com/monorail/1234');
@@ -41,14 +40,14 @@ suite('autolink', () => {
         ]};
       const actualRun = replacer(match, components);
       assert.deepEqual(
-          actualRun,
-          [{
-            tag: 'a',
-            css: 'strike-through',
-            href: '/p/monorail/issues/detail?id=1234',
-            title: 'Issue summary',
-            content: str,
-          }]
+        actualRun,
+        [{
+          tag: 'a',
+          css: 'strike-through',
+          href: '/p/monorail/issues/detail?id=1234',
+          title: 'Issue summary',
+          content: str,
+        }]
       );
     });
 
@@ -64,14 +63,14 @@ suite('autolink', () => {
       };
       const actualRun = replacer(match, components);
       assert.deepEqual(
-          actualRun,
-          [{
-            tag: 'a',
-            href: '/p/chromium/issues/detail?id=1234',
-            css: '',
-            title: 'Issue 1234',
-            content: str,
-          }]
+        actualRun,
+        [{
+          tag: 'a',
+          href: '/p/chromium/issues/detail?id=1234',
+          css: '',
+          title: 'Issue 1234',
+          content: str,
+        }]
       );
     });
 
@@ -81,10 +80,10 @@ suite('autolink', () => {
       refRegs[0].lastIndex = 0;
       const components = {
         openRefs: [{localId: 1234}, {projectName: 'chromium'}],
-        closedRefs: [{localId: 1234}, {projectName: 'chromium'}]
+        closedRefs: [{localId: 1234}, {projectName: 'chromium'}],
       };
       const actualRun = replacer(match, components);
-      assert.deepEqual(actualRun, [{content:str}]);
+      assert.deepEqual(actualRun, [{content: str}]);
     });
 
     test('Replace crbug passed project name is ignored', () => {
@@ -99,14 +98,14 @@ suite('autolink', () => {
       };
       const actualRun = replacer(match, components, 'foo');
       assert.deepEqual(
-          actualRun,
-          [{
-            tag: 'a',
-            href: '/p/chromium/issues/detail?id=1234',
-            css: '',
-            title: 'Issue 1234',
-            content: str,
-          }]
+        actualRun,
+        [{
+          tag: 'a',
+          href: '/p/chromium/issues/detail?id=1234',
+          css: '',
+          title: 'Issue 1234',
+          content: str,
+        }]
       );
     });
 
@@ -130,20 +129,21 @@ suite('autolink', () => {
         ]};
       const actualRun = replacer(match, components);
       assert.deepEqual(
-          actualRun,
-          [{
-            tag: 'a',
-            css: 'strike-through',
-            href: '/p/monorail/issues/detail?id=1234',
-            title: '',
-            content: str,
-          }]
+        actualRun,
+        [{
+          tag: 'a',
+          css: 'strike-through',
+          href: '/p/monorail/issues/detail?id=1234',
+          title: '',
+          content: str,
+        }]
       );
     });
   });
 
   suite('regular tracker component functions', () => {
-    const {lookup, extractRefs, refRegs, replacer} = components.get('02-tracker-regular');
+    const {extractRefs, refRegs, replacer} =
+      components.get('02-tracker-regular');
     const str = 'bugs=123, monorail:234 or #345 and PROJ:#456';
     const match = refRegs[0].exec(str);
     refRegs[0].lastIndex = 0;
@@ -151,11 +151,11 @@ suite('autolink', () => {
     test('Extract tracker projects and local ids', () => {
       const actualRefs = extractRefs(match, 'foo-project');
       assert.deepEqual(
-          actualRefs,
-          [{projectName: 'foo-project', localId: '123'},
-           {projectName: 'monorail', localId: '234'},
-           {projectName: 'monorail', localId: '345'},
-           {projectName: 'PROJ', localId: '456'}]);
+        actualRefs,
+        [{projectName: 'foo-project', localId: '123'},
+          {projectName: 'monorail', localId: '234'},
+          {projectName: 'monorail', localId: '345'},
+          {projectName: 'PROJ', localId: '456'}]);
     });
 
     test('Replace tracker refs.', () => {
@@ -166,33 +166,33 @@ suite('autolink', () => {
         ],
         closedRefs: [
           {summary: 'ry', projectName: 'proj', localId: 456},
-        ]
+        ],
       };
       const actualTextRuns = replacer(match, components, 'chromium');
       assert.deepEqual(
-          actualTextRuns,
-          [
-            {content: 'bugs='},
-            {
-              tag: 'a',
-              href: '/p/chromium/issues/detail?id=123',
-              css: '',
-              title: 'ma',
-              content: '123',
-            },
-            {content: ', '},
-            {content: 'monorail:234'},
-            {content: ' or '},
-            {content: '#345'},
-            {content: ' and '},
-            {
-              tag: 'a',
-              href: '/p/PROJ/issues/detail?id=456',
-              css: 'strike-through',
-              title: 'ry',
-              content: 'PROJ:#456',
-            },
-          ]
+        actualTextRuns,
+        [
+          {content: 'bugs='},
+          {
+            tag: 'a',
+            href: '/p/chromium/issues/detail?id=123',
+            css: '',
+            title: 'ma',
+            content: '123',
+          },
+          {content: ', '},
+          {content: 'monorail:234'},
+          {content: ' or '},
+          {content: '#345'},
+          {content: ' and '},
+          {
+            tag: 'a',
+            href: '/p/PROJ/issues/detail?id=456',
+            css: 'strike-through',
+            title: 'ry',
+            content: 'PROJ:#456',
+          },
+        ]
       );
     });
 
@@ -203,39 +203,39 @@ suite('autolink', () => {
         ],
         closedRefs: [
           {projectName: 'LeMuR', localId: 123},
-        ]
+        ],
       };
       const actualTextRuns = replacer(match, components, 'lEmUr');
       assert.deepEqual(
-          actualTextRuns,
-          [
-            {content: 'bugs='},
-            {
-              tag: 'a',
-              href: '/p/lEmUr/issues/detail?id=123',
-              css: 'strike-through',
-              title: '',
-              content: '123',
-            },
-            {content: ', '},
-            {
-              tag: 'a',
-              href: '/p/monorail/issues/detail?id=234',
-              css: '',
-              title: '',
-              content: 'monorail:234'
-            },
-            {content: ' or '},
-            {content: '#345'},
-            {content: ' and '},
-            {content: 'PROJ:#456'},
-          ],
+        actualTextRuns,
+        [
+          {content: 'bugs='},
+          {
+            tag: 'a',
+            href: '/p/lEmUr/issues/detail?id=123',
+            css: 'strike-through',
+            title: '',
+            content: '123',
+          },
+          {content: ', '},
+          {
+            tag: 'a',
+            href: '/p/monorail/issues/detail?id=234',
+            css: '',
+            title: '',
+            content: 'monorail:234',
+          },
+          {content: ' or '},
+          {content: '#345'},
+          {content: ' and '},
+          {content: 'PROJ:#456'},
+        ],
       );
     });
   });
 
   suite('user email component functions', () => {
-    const {lookup, extractRefs, refRegs, replacer} = components.get('03-user-emails');
+    const {extractRefs, refRegs, replacer} = components.get('03-user-emails');
     const str = 'We should ask User1@gmail.com to confirm.';
     const match = refRegs[0].exec(str);
     refRegs[0].lastIndex = 0;
@@ -250,53 +250,56 @@ suite('autolink', () => {
         users: [{email: 'user2@gmail.com'}, {email: 'user1@gmail.com'}]};
       const actualTextRun = replacer(match, components);
       assert.deepEqual(
-          actualTextRun,
-          [{tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}]
+        actualTextRun,
+        [{tag: 'a', href: '/u/User1@gmail.com', content: 'User1@gmail.com'}]
       );
     });
 
     test('Replace non-existent user.', () => {
       const actualTextRun = replacer(match, {});
       assert.deepEqual(
-          actualTextRun,
-          [{
-            tag: 'a',
-            href: 'mailto:User1@gmail.com',
-            content: 'User1@gmail.com',
-          }]
+        actualTextRun,
+        [{
+          tag: 'a',
+          href: 'mailto:User1@gmail.com',
+          content: 'User1@gmail.com',
+        }]
       );
     });
   });
 
   suite('url component functions.', () => {
-    const {lookup, extracRefs, refRegs, replacer} = components.get('04-urls');
+    const {refRegs, replacer} = components.get('04-urls');
 
     test('test short link regex string', () => {
       const shortLinkRE = refRegs[0];
-      const str = 'go/shortlinks ./_go/shortlinks bo/short bo/1234  https://who/shortlinks go/hey/?wct=(go)';
+      const str =
+        'go/shortlinks ./_go/shortlinks bo/short bo/1234  ' +
+        'https://who/shortlinks go/hey/?wct=(go)';
       let match;
       let actualMatches = [];
       while ((match = shortLinkRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-          actualMatches, ['go/shortlinks', 'https://who/shortlinks', 'go/hey/?wct=(go)']);
+        actualMatches,
+        ['go/shortlinks', ' https://who/shortlinks', ' go/hey/?wct=(go)']
+      );
     });
 
     test('test numeric short link regex string', () => {
       const shortNumLinkRE = refRegs[1];
-      const str = 'go/nono omg/ohno omg/123 .cl/123 b/1234'
+      const str = 'go/nono omg/ohno omg/123 .cl/123 b/1234';
       let match;
       let actualMatches = [];
       while ((match = shortNumLinkRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
-      assert.deepEqual(
-          actualMatches, ['omg/123', 'cl/123', 'b/1234']);
+      assert.deepEqual(actualMatches, [' omg/123', ' b/1234']);
     });
 
     test('test implied link regex string', () => {
-      const impliedLinkRE = refRegs[3];
+      const impliedLinkRE = refRegs[2];
       const str = 'incomplete.com .help.com hey.net/other="(blah)"';
       let match;
       let actualMatches = [];
@@ -304,47 +307,69 @@ suite('autolink', () => {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-          actualMatches, ['incomplete.com', 'help.com', 'hey.net/other="(blah)"']);
+        actualMatches, ['incomplete.com', ' hey.net/other="(blah)"']);
     });
 
     test('test full link regex string', () => {
-      const isLinkRE = refRegs[2];
-      const str = 'https://www.go.com nospacehttps://www.blah.com http://website.net/other="(}])"><)'
+      const isLinkRE = refRegs[3];
+      const str =
+        'https://www.go.com ' +
+        'nospacehttps://www.blah.com http://website.net/other="(}])"><)';
       let match;
       let actualMatches = [];
       while ((match = isLinkRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-          actualMatches, ['https://www.go.com', 'http://website.net/other="(}])">']);
+        actualMatches,
+        ['https://www.go.com', 'http://website.net/other="(}])">']);
     });
 
     test('Replace URL plain text', () => {
-      const match = refRegs[3].exec('link here: (website.net/other="here").');
-      refRegs[3].lastIndex = 0;
+      const match = refRegs[2].exec('link here: (website.net/other="here").');
+      refRegs[2].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-          actualTextRuns,
-          [{tag: 'a',
+        actualTextRuns,
+        [{content: '('},
+          {tag: 'a',
             href: 'https://website.net/other="here"',
             content: 'website.net/other="here"',
-           },
-           {content: ').'}]
+          },
+          {content: ').'}]
       );
     });
 
     test('Replace URL existing http', () => {
-      const match = refRegs[2].exec('link here: (https://website.net/other="here").');
-      refRegs[2].lastIndex = 0;
+      const match = refRegs[3].exec('link here: (https://website.net/other="here").');
+      refRegs[3].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-          actualTextRuns,
-          [{tag: 'a',
-            href: 'https://website.net/other="here"',
-            content: 'https://website.net/other="here"',
-           },
-           {content: ').'}]
+        actualTextRuns,
+        [{tag: 'a',
+          href: 'https://website.net/other="here"',
+          content: 'https://website.net/other="here"',
+        },
+        {content: ').'}]
       );
+    });
+
+    test('Replace URL with short-link as substring', () => {
+      const match = refRegs[3].exec('https://website.net/who/me/yes/you');
+      refRegs[3].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+
+      assert.deepEqual(
+        actualTextRuns,
+        [{tag: 'a',
+          href: 'https://website.net/who/me/yes/you',
+          content: 'https://website.net/who/me/yes/you',
+        }]
+      );
+
+      // Short link re doesn't match.
+      refRegs[0].lastIndex = 0;
+      assert.isNull(refRegs[0].exec('https://website.net/who/me/yes/you'));
     });
 
     test('Replace short-link plain text', () => {
@@ -352,12 +377,27 @@ suite('autolink', () => {
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-          actualTextRuns,
-          [{tag: 'a',
+        actualTextRuns,
+        [{content: '('},
+          {tag: 'a',
             href: 'http://who/me',
             content: 'who/me',
-           },
-           {content: ').'}]
+          },
+          {content: ').'}]
+      );
+    });
+
+    test('Replace short-link plain text initial characters', () => {
+      const match = refRegs[0].exec('link here: who/me');
+      refRegs[0].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+      assert.deepEqual(
+        actualTextRuns,
+        [{content: ' '},
+          {tag: 'a',
+            href: 'http://who/me',
+            content: 'who/me',
+          }]
       );
     });
 
@@ -366,18 +406,19 @@ suite('autolink', () => {
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
-          actualTextRuns,
-          [{tag: 'a',
+        actualTextRuns,
+        [{content: '('},
+          {tag: 'a',
             href: 'http://who/me',
             content: 'http://who/me',
-           },
-           {content: ').'}]
+          },
+          {content: ').'}]
       );
     });
   });
 
   suite('versioncontrol component functions.', () => {
-    const {lookup, extracRefs, refRegs, replacer} = components.get('06-versioncontrol');
+    const {refRegs, replacer} = components.get('06-versioncontrol');
 
     test('test git hash regex', () => {
       const gitHashRE = refRegs[0];
@@ -387,16 +428,16 @@ suite('autolink', () => {
           '63b72a71d5fbce6739c51c3846dd94bd62b91091 ' +
           'Revision63b72a71d5fbce6739c51c3846dd94bd62b91091';
       let match;
-      let actualMatches = [];
+      const actualMatches = [];
       while ((match = gitHashRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-          actualMatches, [
-            'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
-            'Revision 63b72a71d5fbce6739c51c3846dd94bd62b91091',
-            '63b72a71d5fbce6739c51c3846dd94bd62b91091',
-          ]);
+        actualMatches, [
+          'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          'Revision 63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          '63b72a71d5fbce6739c51c3846dd94bd62b91091',
+        ]);
     });
 
     test('test svn regex', () => {
@@ -407,29 +448,29 @@ suite('autolink', () => {
           'r12345678' +
           '1234';
       let match;
-      let actualMatches = [];
+      const actualMatches = [];
       while ((match = svnRE.exec(str)) !== null) {
         actualMatches.push(match[0]);
       }
       assert.deepEqual(
-          actualMatches, [
-            'r1234',
-            'Revision 123456',
-          ]);
+        actualMatches, [
+          'r1234',
+          'Revision 123456',
+        ]);
     });
 
     test('replace revision refs plain text', () => {
-        const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
+      const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
       const match = refRegs[0].exec(str);
       const actualTextRuns = replacer(match);
       refRegs[0].lastIndex = 0;
       assert.deepEqual(
-          actualTextRuns,
-          [{
-            content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
-            tag: 'a',
-            href: 'https://crrev.com/63b72a71d5fbce6739c51c3846dd94bd62b91091',
-          }]);
+        actualTextRuns,
+        [{
+          content: 'r63b72a71d5fbce6739c51c3846dd94bd62b91091',
+          tag: 'a',
+          href: 'https://crrev.com/63b72a71d5fbce6739c51c3846dd94bd62b91091',
+        }]);
     });
   });
 
@@ -438,14 +479,14 @@ suite('autolink', () => {
     const componentRefs = new Map();
     componentRefs.set('01-tracker-crbug', {
       openRefs: [],
-      closedRefs: [{projectName: 'chromium', localId: 99}]
+      closedRefs: [{projectName: 'chromium', localId: 99}],
     });
     componentRefs.set('02-tracker-regular', {
       openRefs: [{summary: 'monorail', projectName: 'monorail', localId: 123}],
-      closedRefs: [{projectName: 'chromium', localId: 456}]
+      closedRefs: [{projectName: 'chromium', localId: 456}],
     });
     componentRefs.set('03-user-emails', {
-      users: [{email: 'user2@example.com'}]
+      users: [{email: 'user2@example.com'}],
     });
 
     test('empty string does not cause error', () => {
@@ -457,26 +498,26 @@ suite('autolink', () => {
       const plainString = 'test <b>autolinking go/testlink</b> is not nested';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-          actualTextRuns, [
-            {content: 'test '},
-            {content: 'autolinking go/testlink', tag: 'b'},
-            {content: ' is not nested'},
-          ]);
+        actualTextRuns, [
+          {content: 'test '},
+          {content: 'autolinking go/testlink', tag: 'b'},
+          {content: ' is not nested'},
+        ]);
     });
 
     test('URLs are autolinked', () => {
       const plainString = 'this http string contains http://google.com for you';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-          actualTextRuns, [
-            {content: 'this http string contains '},
-            {content: 'http://google.com', tag: 'a', href: 'http://google.com'},
-            {content: ' for you'},
-          ]);
+        actualTextRuns, [
+          {content: 'this http string contains '},
+          {content: 'http://google.com', tag: 'a', href: 'http://google.com'},
+          {content: ' for you'},
+        ]);
     });
 
     test('different component types are correctly linked', () => {
-      const plainString = 'test (User2@example.com and crbug.com/99) get linked';
+      const plainString = 'test (User2@example.com and crbug.com/99) get link';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
         actualTextRuns,
@@ -500,15 +541,18 @@ suite('autolink', () => {
             css: 'strike-through',
           },
           {
-            content: ') get linked',
+            content: ') get link',
           },
         ]
       );
     });
 
     test('Only existing issues get linked', () => {
-      const plainString = 'only existing bugs = 456, monorail:123, 234 and chromium:345 get linked';
-      const actualTextRuns = markupAutolinks(plainString, componentRefs, 'chromium');
+      const plainString =
+        'only existing bugs = 456, monorail:123, 234 and chromium:345 get ' +
+        'linked';
+      const actualTextRuns = markupAutolinks(
+        plainString, componentRefs, 'chromium');
       assert.deepEqual(
         actualTextRuns,
         [
@@ -558,28 +602,32 @@ suite('autolink', () => {
     });
 
     test('multilined bolds are not bolded', () => {
-      const plainString = '<b>no multiline bolding \nnot allowed go/survey is still linked</b>';
+      const plainString =
+        '<b>no multiline bolding \n' +
+        'not allowed go/survey is still linked</b>';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
-          actualTextRuns, [
-            {content: '<b>no multiline bolding '},
-            {tag: 'br'},
-            {content: 'not allowed '},
-            {content: 'go/survey', tag: 'a', href: 'http://go/survey'},
-            {content: ' is still linked</b>'},
-          ]);
+        actualTextRuns, [
+          {content: '<b>no multiline bolding '},
+          {tag: 'br'},
+          {content: 'not allowed'},
+          {content: ' '},
+          {content: 'go/survey', tag: 'a', href: 'http://go/survey'},
+          {content: ' is still linked</b>'},
+        ]);
 
-      const plainString2 = '<b>no multiline bold \rwith carriage \r\nreturns</b>';
+      const plainString2 =
+        '<b>no multiline bold \rwith carriage \r\nreturns</b>';
       const actualTextRuns2 = markupAutolinks(plainString2, componentRefs);
 
       assert.deepEqual(
-          actualTextRuns2, [
-            {content: '<b>no multiline bold '},
-            {tag: 'br'},
-            {content: 'with carriage '},
-            {tag: 'br'},
-            {content: 'returns</b>'},
-          ]);
+        actualTextRuns2, [
+          {content: '<b>no multiline bold '},
+          {tag: 'br'},
+          {content: 'with carriage '},
+          {tag: 'br'},
+          {content: 'returns</b>'},
+        ]);
     });
   });
 });
