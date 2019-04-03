@@ -88,13 +88,8 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 		Options: site.DefaultPRPCOptions,
 	})
 
-	req := &fleet.RemoveDutsFromDronesRequest{
-		Removals: make([]*fleet.RemoveDutsFromDronesRequest_Item, c.Flags.NArg()),
-	}
-	for i, dut := range c.Flags.Args() {
-		req.Removals[i] = &fleet.RemoveDutsFromDronesRequest_Item{DutHostname: dut, DroneHostname: c.server}
-	}
-	removalResp, err := ic.RemoveDutsFromDrones(ctx, req)
+	req := removeRequest(c.server, c.Flags.Args())
+	removalResp, err := ic.RemoveDutsFromDrones(ctx, &req)
 	if err != nil {
 		return err
 	}
@@ -119,6 +114,17 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	return nil
+}
+
+// removeRequest builds a RPC remove request.
+func removeRequest(server string, hostnames []string) fleet.RemoveDutsFromDronesRequest {
+	req := fleet.RemoveDutsFromDronesRequest{
+		Removals: make([]*fleet.RemoveDutsFromDronesRequest_Item, len(hostnames)),
+	}
+	for i, hn := range hostnames {
+		req.Removals[i] = &fleet.RemoveDutsFromDronesRequest_Item{DutHostname: hn, DroneHostname: server}
+	}
+	return req
 }
 
 // printRemovals prints a table of DUT removals from drones.
