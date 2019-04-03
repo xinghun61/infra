@@ -230,17 +230,21 @@ func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swarm
 func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs) (string, error) {
 	var respURL string
 	f := func() error {
+		// Clone device specs before modifications so that changes don't leak
+		// across retries.
+		d := proto.Clone(nd).(*inventory.CommonDeviceSpecs)
+
 		if err := s.Refresh(ctx); err != nil {
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 
-		hostname := nd.GetHostname()
+		hostname := d.GetHostname()
 		m := mapHostnameToDUTs(s.Lab.Duts)
 		if _, ok := m[hostname]; ok {
 			return errors.Reason("dut with hostname %s already exists", hostname).Err()
 		}
 
-		id := addDUTToStore(s, nd)
+		id := addDUTToStore(s, d)
 		if _, err := assignDutToDrone(ctx, s.Infrastructure, m, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
@@ -318,16 +322,20 @@ func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swa
 }
 
 // updateDUTSpecs updates the DUT specs for an existing DUT in the inventory.
-func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, oldSpecs, newSpecs *inventory.CommonDeviceSpecs) (string, error) {
+func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, od, nd *inventory.CommonDeviceSpecs) (string, error) {
 	var respURL string
 	f := func() error {
+		// Clone device specs before modifications so that changes don't leak
+		// across retries.
+		d := proto.Clone(nd).(*inventory.CommonDeviceSpecs)
+
 		if err := s.Refresh(ctx); err != nil {
 			return errors.Annotate(err, "add new dut to inventory").Err()
 		}
 
-		dut, exists := getDUTByID(s.Lab, oldSpecs.GetId())
+		dut, exists := getDUTByID(s.Lab, od.GetId())
 		if !exists {
-			return status.Errorf(codes.NotFound, "no DUT with ID %s", oldSpecs.GetId())
+			return status.Errorf(codes.NotFound, "no DUT with ID %s", od.GetId())
 		}
 		// TODO(crbug/929776) DUTs under deployment are not marked specially in the
 		// inventory yet. This causes two problems:
@@ -335,15 +343,16 @@ func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, oldSpecs, n
 		//   before the deploy task we create.
 		// - If the deploy task fails, the DUT will still enter the fleet, but may
 		//   not be ready for use.
-		if !proto.Equal(dut.GetCommon(), oldSpecs) {
+		if !proto.Equal(dut.GetCommon(), od) {
 			return errors.Reason("DUT specs update conflict").Err()
 		}
-		dut.Common = newSpecs
+		dut.Common = d
 
-		url, err := s.Commit(ctx, fmt.Sprintf("Update DUT %s", oldSpecs.GetId()))
+		url, err := s.Commit(ctx, fmt.Sprintf("Update DUT %s", od.GetId()))
 		if err != nil {
 			return errors.Annotate(err, "update DUT specs").Err()
 		}
+
 		respURL = url
 		return nil
 	}
