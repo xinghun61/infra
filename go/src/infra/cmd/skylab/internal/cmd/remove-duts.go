@@ -70,13 +70,9 @@ func (c *removeDutsRun) Run(a subcommands.Application, args []string, env subcom
 }
 
 func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env subcommands.Env) error {
-	if c.Flags.NArg() == 0 {
-		return errors.New("must specify at least 1 DUT")
+	if err := c.validateArgs(); err != nil {
+		return err
 	}
-	if c.reason == "" {
-		return errors.New("-reason is required")
-	}
-
 	ctx := cli.GetContext(a, c, env)
 	hc, err := httpClient(ctx, &c.authFlags)
 	if err != nil {
@@ -102,6 +98,16 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 	if !modified {
 		fmt.Fprintln(a.GetOut(), "No DUTs modified")
 		return nil
+	}
+	return nil
+}
+
+func (c *removeDutsRun) validateArgs() error {
+	if c.Flags.NArg() == 0 {
+		return errors.New("must specify at least 1 DUT")
+	}
+	if c.reason == "" {
+		return errors.New("-reason is required")
 	}
 	return nil
 }
