@@ -132,7 +132,7 @@ func TestDeployDut(t *testing.T) {
 			deploymentID := resp.DeploymentId
 			So(deploymentID, ShouldNotEqual, "")
 
-			lab, err := getLabFromChange(tf.FakeGerrit)
+			lab, err := getLabFromLastChange(tf.FakeGerrit)
 			So(err, ShouldBeNil)
 			So(lab.Duts, ShouldHaveLength, 1)
 			dut := lab.Duts[0]
@@ -141,7 +141,7 @@ func TestDeployDut(t *testing.T) {
 			So(common.GetId(), ShouldNotEqual, specs.GetId())
 			So(common.GetHostname(), ShouldEqual, specs.GetHostname())
 
-			infra, err := getInfrastructureFromChange(tf.FakeGerrit)
+			infra, err := getInfrastructureFromLastChange(tf.FakeGerrit)
 			So(err, ShouldBeNil)
 			So(infra.Servers, ShouldHaveLength, 1)
 			server := infra.Servers[0]
@@ -294,7 +294,7 @@ func TestRedeployDut(t *testing.T) {
 			deploymentID := resp.GetDeploymentId()
 			So(deploymentID, ShouldNotEqual, "")
 
-			lab, err := getLabFromChange(tf.FakeGerrit)
+			lab, err := getLabFromLastChange(tf.FakeGerrit)
 			So(err, ShouldBeNil)
 			So(lab.Duts, ShouldHaveLength, 1)
 			dut := lab.Duts[0]
@@ -318,15 +318,14 @@ func TestRedeployDut(t *testing.T) {
 	})
 }
 
-// getLabFromChange gets the inventory.Lab committed to fakes.GerritClient
-//
-// This function assumes that only one change was committed.
-func getLabFromChange(fg *fakes.GerritClient) (*inventory.Lab, error) {
-	if len(fg.Changes) != 1 {
-		return nil, errors.Reason("want 1 gerrit change, found %d", len(fg.Changes)).Err()
+// getLabFromLastChange gets the latest inventory.Lab committed to
+// fakes.GerritClient
+func getLabFromLastChange(fg *fakes.GerritClient) (*inventory.Lab, error) {
+	if len(fg.Changes) == 0 {
+		return nil, errors.Reason("found no gerrit changes").Err()
 	}
 
-	change := fg.Changes[0]
+	change := fg.Changes[len(fg.Changes)-1]
 	f, ok := change.Files["data/skylab/lab.textpb"]
 	if !ok {
 		return nil, errors.Reason("No modification to Lab in gerrit change").Err()
@@ -336,16 +335,14 @@ func getLabFromChange(fg *fakes.GerritClient) (*inventory.Lab, error) {
 	return &lab, err
 }
 
-// getInfrastructureFromChange gets the inventory.Infrastructure committed to
-// fakes.GerritClient
-//
-// This function assumes that only one change was committed.
-func getInfrastructureFromChange(fg *fakes.GerritClient) (*inventory.Infrastructure, error) {
-	if len(fg.Changes) != 1 {
-		return nil, errors.Reason("want 1 gerrit change, found %d", len(fg.Changes)).Err()
+// getInfrastructureFromLastChange gets the latest inventory.Infrastructure
+// committed to fakes.GerritClient
+func getInfrastructureFromLastChange(fg *fakes.GerritClient) (*inventory.Infrastructure, error) {
+	if len(fg.Changes) == 0 {
+		return nil, errors.Reason("found no gerrit changes").Err()
 	}
 
-	change := fg.Changes[0]
+	change := fg.Changes[len(fg.Changes)-1]
 	f, ok := change.Files["data/skylab/server_db.textpb"]
 	if !ok {
 		return nil, errors.Reason("No modification to Infrastructure in gerrit change").Err()
