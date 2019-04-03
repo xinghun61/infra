@@ -126,8 +126,7 @@ def get_signed_jwt_assertion_credentials(credentials_filename,
     service_accounts_creds_root=service_accounts_creds_root)
 
   return (oauth2client.service_account.ServiceAccountCredentials.
-      _from_p12_keyfile_contents(key['client_email'], key['private_key'],
-                                 scopes=scope))
+      from_json_keyfile_dict(keyfile_dict=key, scopes=scope))
 
 
 def get_authenticated_http(credentials_filename,
