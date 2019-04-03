@@ -24,6 +24,8 @@ import (
 	"infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/worker"
 	"infra/libs/skylab/inventory"
+	"sort"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
@@ -67,7 +69,7 @@ func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest
 	if err != nil {
 		return nil, err
 	}
-	ds := deployDUT(ctx, s, sc, attemptID, specs)
+	ds := deployDUT(ctx, s, sc, attemptID, specs, req.GetOptions())
 	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
 	return &fleet.DeployDutResponse{DeploymentId: attemptID}, nil
 }
@@ -110,7 +112,7 @@ func (is *ServerImpl) RedeployDut(ctx context.Context, req *fleet.RedeployDutReq
 	if err != nil {
 		return nil, err
 	}
-	ds := redeployDUT(ctx, s, sc, attemptID, oldSpecs, newSpecs)
+	ds := redeployDUT(ctx, s, sc, attemptID, oldSpecs, newSpecs, req.GetOptions())
 	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
 	return &fleet.RedeployDutResponse{DeploymentId: attemptID}, nil
 }
@@ -209,10 +211,10 @@ func initializeDeployAttempt(ctx context.Context) (string, error) {
 // deployDUT kicks off a new DUT deployment.
 //
 // Errors are communicated via returned deploy.Status
-func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nd *inventory.CommonDeviceSpecs) *deploy.Status {
+func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nd *inventory.CommonDeviceSpecs, o *fleet.DutDeploymentOptions) *deploy.Status {
 	var err error
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
-	ds.ChangeURL, err = addDUTToFleet(ctx, s, nd)
+	ds.ChangeURL, err = addDUTToFleet(ctx, s, nd, o.GetAssignServoPortIfMissing())
 	if err != nil {
 		failDeployStatus(ds, "failed to add dut to fleet")
 		return ds
@@ -227,7 +229,7 @@ func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swarm
 
 // addDUTToFleet adds a new DUT with given specs to the inventory and assigns
 // it to a drone.
-func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs) (string, error) {
+func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs, pickServoPort bool) (string, error) {
 	var respURL string
 	f := func() error {
 		// Clone device specs before modifications so that changes don't leak
@@ -242,6 +244,12 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 		m := mapHostnameToDUTs(s.Lab.Duts)
 		if _, ok := m[hostname]; ok {
 			return errors.Reason("dut with hostname %s already exists", hostname).Err()
+		}
+
+		if pickServoPort && !hasServoPortAttribute(d) {
+			if err := assignNewServoPort(s.Lab.Duts, d); err != nil {
+				return errors.Annotate(err, "add dut to fleet").Err()
+			}
 		}
 
 		id := addDUTToStore(s, d)
@@ -260,6 +268,72 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 
 	err := retry.Retry(ctx, transientErrorRetries(), f, retry.LogCallback(ctx, "addDUTToFleet"))
 	return respURL, err
+}
+
+const (
+	servoHostAttributeKey = "servo_host"
+	servoPortAttributeKey = "servo_port"
+)
+
+// assignNewServoPort adds a valid servo port attribute to d
+//
+// This function returns an error if d does not have the servo host attribute.
+// The assigned servo port value is unique among all the duts with the same
+// servo host attribute.
+func assignNewServoPort(duts []*inventory.DeviceUnderTest, d *inventory.CommonDeviceSpecs) error {
+	servoHost, found := getAttributeByKey(d, servoHostAttributeKey)
+	if !found {
+		return errors.Reason("no servo_host attribute in specs").Err()
+	}
+
+	used := usedServoPorts(duts, servoHost)
+	p, err := findFreePort(used)
+	if err != nil {
+		return err
+	}
+	k := servoPortAttributeKey
+	v := strconv.Itoa(p)
+	d.Attributes = append(d.Attributes, &inventory.KeyValue{Key: &k, Value: &v})
+	return nil
+}
+
+// usedServoPorts finds the servo ports used by duts with the given servo host
+// attribute.
+func usedServoPorts(duts []*inventory.DeviceUnderTest, servoHost string) []int {
+	used := []int{}
+	for _, d := range duts {
+		c := d.GetCommon()
+		if sh, found := getAttributeByKey(c, servoHostAttributeKey); found && sh == servoHost {
+			if p, found := getAttributeByKey(c, servoPortAttributeKey); found {
+				ip, err := strconv.ParseInt(p, 10, 32)
+				if err != nil {
+					// This is not the right place to enforce servo_port correctness for other DUTs.
+					// All we care about is that the port we pick will not conflict with
+					// this corrupted entry.
+					continue
+				}
+				used = append(used, int(ip))
+			}
+		}
+	}
+	return used
+}
+
+// findFreePort finds a valid port that is not in use.
+//
+// This function returns an error if no free port is found.
+// This function modifies the slice of ports provided.
+func findFreePort(used []int) (int, error) {
+	sort.Sort(sort.Reverse(sort.IntSlice(used)))
+	// This range is consistent with the range of ports generated by servod:
+	// https://chromium.googlesource.com/chromiumos/third_party/hdctools/+/cf5f8027b9d3015db75df4853e37ea7a2f1ac538/servo/servod.py#36
+	for p := 9999; p > 9900; p-- {
+		if len(used) == 0 || p != used[0] {
+			return p, nil
+		}
+		used = used[1:]
+	}
+	return -1, errors.Reason("no free valid ports").Err()
 }
 
 // addDUTToStore adds a new DUT with the given specs to the store.
@@ -301,12 +375,12 @@ func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, 
 // redeployDUT kicks off a redeployment of an existing DUT.
 //
 // Errors are communicated via returned deploy.Status
-func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, oldSpecs, newSpecs *inventory.CommonDeviceSpecs) *deploy.Status {
+func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, oldSpecs, newSpecs *inventory.CommonDeviceSpecs, o *fleet.DutDeploymentOptions) *deploy.Status {
 	var err error
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
 
 	if !proto.Equal(oldSpecs, newSpecs) {
-		ds.ChangeURL, err = updateDUTSpecs(ctx, s, oldSpecs, newSpecs)
+		ds.ChangeURL, err = updateDUTSpecs(ctx, s, oldSpecs, newSpecs, o.GetAssignServoPortIfMissing())
 		if err != nil {
 			failDeployStatus(ds, "failed to update DUT specs")
 			return ds
@@ -322,7 +396,7 @@ func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swa
 }
 
 // updateDUTSpecs updates the DUT specs for an existing DUT in the inventory.
-func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, od, nd *inventory.CommonDeviceSpecs) (string, error) {
+func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, od, nd *inventory.CommonDeviceSpecs, pickServoPort bool) (string, error) {
 	var respURL string
 	f := func() error {
 		// Clone device specs before modifications so that changes don't leak
@@ -331,6 +405,12 @@ func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, od, nd *inv
 
 		if err := s.Refresh(ctx); err != nil {
 			return errors.Annotate(err, "add new dut to inventory").Err()
+		}
+
+		if pickServoPort && !hasServoPortAttribute(d) {
+			if err := assignNewServoPort(s.Lab.Duts, d); err != nil {
+				return errors.Annotate(err, "add dut to fleet").Err()
+			}
 		}
 
 		dut, exists := getDUTByID(s.Lab, od.GetId())
@@ -437,4 +517,20 @@ func parseDUTSpecs(specs []byte) (*inventory.CommonDeviceSpecs, error) {
 		return nil, errors.Annotate(err, "parse DUT specs").Tag(grpcutil.InvalidArgumentTag).Err()
 	}
 	return &parsed, nil
+}
+
+func hasServoPortAttribute(d *inventory.CommonDeviceSpecs) bool {
+	_, found := getAttributeByKey(d, servoPortAttributeKey)
+	return found
+}
+
+// getAttributeByKey by returns the value for the attribute with the given key,
+// and whether the key was found.
+func getAttributeByKey(d *inventory.CommonDeviceSpecs, key string) (string, bool) {
+	for _, a := range d.Attributes {
+		if *a.Key == key {
+			return *a.Value, true
+		}
+	}
+	return "", false
 }

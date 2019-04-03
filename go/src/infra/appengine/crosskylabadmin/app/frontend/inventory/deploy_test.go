@@ -184,7 +184,123 @@ func TestDeployDut(t *testing.T) {
 				So(resp.Status, ShouldEqual, fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED)
 			})
 		})
+
+		Convey("DeployDut assigns servo_port if requested via option", func() {
+			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+			tf.MockSwarming.EXPECT().GetTaskResult(gomock.Any(), gomock.Any()).AnyTimes().Return(&swarming.SwarmingRpcsTaskResult{
+				State: "RUNNING",
+			}, nil)
+
+			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
+				NewSpecs: marshalOrPanic(&inventory.CommonDeviceSpecs{
+					Id:       stringPtr("This ID is ignored"),
+					Hostname: stringPtr("first-dut"),
+					Attributes: []*inventory.KeyValue{
+						{Key: stringPtr("servo_host"), Value: stringPtr("my-special-labstation")},
+					},
+				}),
+				Options: &fleet.DutDeploymentOptions{
+					AssignServoPortIfMissing: true,
+				},
+			})
+			So(err, ShouldBeNil)
+			_, err = tf.Inventory.GetDeploymentStatus(tf.C, &fleet.GetDeploymentStatusRequest{DeploymentId: resp.DeploymentId})
+			So(err, ShouldBeNil)
+
+			lab, err := getLabFromLastChange(tf.FakeGerrit)
+			So(err, ShouldBeNil)
+			So(lab.Duts, ShouldHaveLength, 1)
+			dut := lab.Duts[0]
+			common := dut.GetCommon()
+			So(common.GetHostname(), ShouldEqual, "first-dut")
+			firstPort, found := getAttributeByKey(common, servoPortAttributeKey)
+			So(found, ShouldEqual, true)
+			// Currently, these test hard-codes the expectation that the first assigned port is 9999.
+			// It is very difficult to setup expectations for subsequent
+			// DeployDut() calls, so we can not truly validate that the
+			// auto-generated ports are arbitrary, but different.
+			// See also TestDeployMultipleDuts.
+			So(firstPort, ShouldEqual, "9999")
+		})
 	})
+}
+
+func TestDeployMultipleDuts(t *testing.T) {
+	// This test is separate because lack of a proper fake gitstore.GitStore makes writing this test a lot harder.
+	// Once a fake gitstore implementation is available, this can be merged with TestDeployDut
+	Convey("With one DUT and one drone in the inventory", t, func() {
+		tf, validate := newTestFixture(t)
+		defer validate()
+
+		lab, err := inventory.WriteLabToString(&inventory.Lab{
+			Duts: []*inventory.DeviceUnderTest{
+				{
+					Common: &inventory.CommonDeviceSpecs{
+						Hostname: stringPtr("host1"),
+						Id:       stringPtr("host1-id"),
+						Attributes: []*inventory.KeyValue{
+							{Key: stringPtr("servo_host"), Value: stringPtr("my-special-labstation")},
+							// Currently, these test hard-codes the expectation that the first assigned port is 9999.
+							// It is very difficult to setup expectations for subsequent
+							// DeployDut() calls, so we can not truly validate that the
+							// auto-generated ports are arbitrary, but different.
+							//
+							// Together with TestDeploy, this ensures that the first port
+							// assigned is 9999, and the next port assigned is different.
+							{Key: stringPtr("servo_port"), Value: stringPtr("9999")},
+						},
+					},
+				},
+			},
+		})
+		So(err, ShouldBeNil)
+
+		err = tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
+			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
+				{
+					hostname:    "fake-drone.google.com",
+					environment: inventory.Environment_ENVIRONMENT_STAGING,
+				},
+			}),
+			Lab: []byte(lab),
+		})
+		So(err, ShouldBeNil)
+
+		Convey("DeployDut assigns non-conflicting servo_port if requested via option", func() {
+			tf.MockSwarming.EXPECT().CreateTask(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+			tf.MockSwarming.EXPECT().GetTaskResult(gomock.Any(), gomock.Any()).AnyTimes().Return(&swarming.SwarmingRpcsTaskResult{
+				State: "RUNNING",
+			}, nil)
+
+			resp, err := tf.Inventory.DeployDut(tf.C, &fleet.DeployDutRequest{
+				NewSpecs: marshalOrPanic(&inventory.CommonDeviceSpecs{
+					Id:       stringPtr("This ID is ignored"),
+					Hostname: stringPtr("new-dut"),
+					Attributes: []*inventory.KeyValue{
+						{Key: stringPtr("servo_host"), Value: stringPtr("my-special-labstation")},
+					},
+				}),
+				Options: &fleet.DutDeploymentOptions{
+					AssignServoPortIfMissing: true,
+				},
+			})
+			So(err, ShouldBeNil)
+			_, err = tf.Inventory.GetDeploymentStatus(tf.C, &fleet.GetDeploymentStatusRequest{DeploymentId: resp.DeploymentId})
+			So(err, ShouldBeNil)
+
+			lab, err := getLabFromLastChange(tf.FakeGerrit)
+			So(err, ShouldBeNil)
+			So(lab.Duts, ShouldHaveLength, 2)
+
+			duts := mapHostnameToDUTs(lab.Duts)
+			So(duts, ShouldContainKey, "new-dut")
+			dut := duts["new-dut"]
+			firstPort, found := getAttributeByKey(dut.GetCommon(), servoPortAttributeKey)
+			So(found, ShouldEqual, true)
+			So(firstPort, ShouldNotEqual, "9999")
+		})
+	})
+
 }
 
 func TestRedeployDut(t *testing.T) {
