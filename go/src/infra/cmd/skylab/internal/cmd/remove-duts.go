@@ -88,22 +88,17 @@ func (c *removeDutsRun) innerRun(a subcommands.Application, args []string, env s
 		Host:    e.AdminService,
 		Options: site.DefaultPRPCOptions,
 	})
-
 	modified, err := c.removeDUTs(ctx, ic, a.GetOut())
 	if err != nil {
 		return err
 	}
 	if c.delete {
-		deletionResp, err := ic.DeleteDuts(ctx, &fleet.DeleteDutsRequest{Hostnames: c.Flags.Args()})
+		mod, err := c.deleteDUTs(ctx, ic, a.GetOut())
 		if err != nil {
 			return err
 		}
-		if deletionResp.ChangeUrl != "" {
-			modified = true
-			_ = printDeletions(a.GetOut(), deletionResp)
-		}
+		modified = modified || mod
 	}
-
 	if !modified {
 		fmt.Fprintln(a.GetOut(), "No DUTs modified")
 		return nil
@@ -133,6 +128,18 @@ func removeRequest(server string, hostnames []string) fleet.RemoveDutsFromDrones
 		req.Removals[i] = &fleet.RemoveDutsFromDronesRequest_Item{DutHostname: hn, DroneHostname: server}
 	}
 	return req
+}
+
+func (c *removeDutsRun) deleteDUTs(ctx context.Context, ic fleet.InventoryClient, stdout io.Writer) (modified bool, err error) {
+	resp, err := ic.DeleteDuts(ctx, &fleet.DeleteDutsRequest{Hostnames: c.Flags.Args()})
+	if err != nil {
+		return false, err
+	}
+	if resp.ChangeUrl == "" {
+		return false, nil
+	}
+	_ = printDeletions(stdout, resp)
+	return true, nil
 }
 
 // printRemovals prints a table of DUT removals from drones.
