@@ -108,7 +108,7 @@ func (s *BasicQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.Ge
 
 	var requestIDs []string
 
-	// TODO(akeshet): Select the N% most stale items, rather than 1% of tasks
+	// TODO(akeshet): Select the N% most stale items, rather than 5% of tasks
 	// with uniform randomness.
 	for rid := range sp.Scheduler.GetWaitingRequests() {
 		if rand.Int31n(100) == 0 {
@@ -117,7 +117,7 @@ func (s *BasicQSchedulerServer) GetCallbacks(ctx context.Context, r *swarming.Ge
 	}
 	for _, w := range sp.Scheduler.GetWorkers() {
 		if !w.IsIdle() {
-			if rand.Int31n(100) == 0 {
+			if rand.Int31n(100) <= 4 {
 				requestIDs = append(requestIDs, string(w.RunningRequest().ID))
 			}
 		}
