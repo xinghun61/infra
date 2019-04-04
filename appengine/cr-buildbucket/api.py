@@ -206,6 +206,10 @@ def build_predicate_to_search_query(predicate):
     q.build_low = predicate.build.start_build_id or None
     q.build_high = predicate.build.end_build_id or None
 
+  # Filter by canary.
+  if predicate.canary != common_pb2.UNSET:
+    q.canary = predicate.canary == common_pb2.YES
+
   return q
 
 

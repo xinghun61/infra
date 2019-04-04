@@ -660,3 +660,13 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
     q = api.build_predicate_to_search_query(predicate)
     self.assertEqual(q.build_low, 100)
     self.assertEqual(q.build_high, 90)
+
+  def test_canary(self):
+    predicate = rpc_pb2.BuildPredicate(canary=common_pb2.YES)
+    q = api.build_predicate_to_search_query(predicate)
+    self.assertEqual(q.canary, True)
+
+  def test_non_canary(self):
+    predicate = rpc_pb2.BuildPredicate(canary=common_pb2.NO)
+    q = api.build_predicate_to_search_query(predicate)
+    self.assertEqual(q.canary, False)

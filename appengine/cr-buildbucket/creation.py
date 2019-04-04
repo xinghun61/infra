@@ -289,6 +289,9 @@ class NewBuild(object):
     b.infra_bytes = bp.infra.SerializeToString()
     bp.ClearField('infra')
 
+    # Guarantee canary is not None.
+    b.canary = b.canary or False
+
     @ndb.transactional_tasklet
     def txn_async():
       if (yield b.key.get_async()):  # pragma: no cover
