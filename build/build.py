@@ -289,14 +289,39 @@ def get_env_dot_py():
 
 
 def run_python(script, args):
-  """Invokes a python script.
+  """Invokes a python script via the root python interpreter.
+
+  Escapes virtualenv if finds itself running with VIRTUAL_ENV env var set.
 
   Raises:
+    BuildException if couldn't find a proper python binary.
     subprocess.CalledProcessError on non zero exit code.
   """
+  environ = os.environ.copy()
+  python_exe = sys.executable
+
+  venv = environ.pop('VIRTUAL_ENV')
+  if venv:
+    path = environ['PATH'].split(os.pathsep)
+    path = [p for p in path if not p.startswith(venv+os.sep)]
+    environ['PATH'] = os.pathsep.join(path)
+    # Popen doesn't use new env['PATH'] to search for binaries. Do it ourselves.
+    for p in path:
+      candidate = os.path.join(p, 'python'+EXE_SUFFIX)
+      if os.path.exists(candidate):
+        python_exe = candidate
+        break
+    else:
+      raise BuildException(
+          'Could\'n find python%s in %s' % (EXE_SUFFIX, environ['PATH']))
+
   print 'Running %s %s' % (script, ' '.join(args))
+  print '  via %s' % python_exe
+  print '  in  %s' % os.getcwd()
   subprocess.check_call(
-      args=['python', '-u', script] + list(args), executable=sys.executable)
+      args=['python', '-u', script] + list(args),
+      executable=python_exe,
+      env=environ)
 
 
 def run_cipd(cipd_exe, cmd, args):
