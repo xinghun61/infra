@@ -16,6 +16,7 @@ package inventory
 
 import (
 	"fmt"
+
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
@@ -241,8 +242,12 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 		}
 
 		hostname := d.GetHostname()
-		m := mapHostnameToDUTs(s.Lab.Duts)
-		if _, ok := m[hostname]; ok {
+		hostnameToID := make(map[string]string)
+		for _, d := range s.Lab.GetDuts() {
+			c := d.GetCommon()
+			hostnameToID[c.GetHostname()] = c.GetId()
+		}
+		if _, ok := hostnameToID[hostname]; ok {
 			return errors.Reason("dut with hostname %s already exists", hostname).Err()
 		}
 
@@ -253,7 +258,7 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 		}
 
 		id := addDUTToStore(s, d)
-		if _, err := assignDutToDrone(ctx, s.Infrastructure, m, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
+		if _, err := assignDutToDrone(ctx, s.Infrastructure, hostnameToID, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 

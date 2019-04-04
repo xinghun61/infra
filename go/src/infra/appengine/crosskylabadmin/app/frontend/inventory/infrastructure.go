@@ -62,7 +62,11 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 			return err
 		}
 
-		hostnameToID := mapHostnameToDUTs(s.Lab.GetDuts())
+		hostnameToID := make(map[string]string)
+		for _, d := range s.Lab.GetDuts() {
+			c := d.GetCommon()
+			hostnameToID[c.GetHostname()] = c.GetId()
+		}
 		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
 		for _, a := range req.Assignments {
 			i, err := assignDutToDrone(ctx, s.Infrastructure, hostnameToID, a)
@@ -117,15 +121,15 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	return resp, err
 }
 
-func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]*inventory.DeviceUnderTest, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
+func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]string, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
 	env := config.Get(ctx).Inventory.Environment
 	id := a.DutId
 	if a.DutHostname != "" {
-		d, ok := hostnameToID[a.DutHostname]
+		var ok bool
+		id, ok = hostnameToID[a.DutHostname]
 		if !ok {
 			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", a.DutHostname)
 		}
-		id = d.GetCommon().GetId()
 	}
 
 	dh := a.GetDroneHostname()
