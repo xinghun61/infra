@@ -15,7 +15,7 @@ import time
 import urllib
 
 import httplib2
-import oauth2client.service_account
+import oauth2client.client
 
 from googleapiclient import errors
 from infra_libs.ts_mon.common import http_metrics
@@ -125,8 +125,8 @@ def get_signed_jwt_assertion_credentials(credentials_filename,
     credentials_filename,
     service_accounts_creds_root=service_accounts_creds_root)
 
-  return (oauth2client.service_account.ServiceAccountCredentials.
-      from_json_keyfile_dict(keyfile_dict=key, scopes=scope))
+  return oauth2client.client.SignedJwtAssertionCredentials(
+    key['client_email'], key['private_key'], scope)
 
 
 def get_authenticated_http(credentials_filename,

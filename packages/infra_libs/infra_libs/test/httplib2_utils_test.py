@@ -17,7 +17,7 @@ from infra_libs import ts_mon
 
 import httplib2
 import mock
-import oauth2client.service_account
+import oauth2client.client
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
@@ -78,28 +78,28 @@ class GetSignedJwtAssertionCredentialsTest(unittest.TestCase):
     creds = infra_libs.get_signed_jwt_assertion_credentials(
       'valid_creds.json',
       service_accounts_creds_root=DATA_DIR)
-    self.assertIsInstance(
-        creds, oauth2client.service_account.ServiceAccountCredentials)
+    self.assertIsInstance(creds,
+                          oauth2client.client.SignedJwtAssertionCredentials)
     # A default scope must be provided, we don't care which one
-    self.assertTrue(creds._scopes)
+    self.assertTrue(creds.scope)
 
   def test_valid_credentials_with_scope_as_string(self):
     creds = infra_libs.get_signed_jwt_assertion_credentials(
       'valid_creds.json',
       scope='repo',
       service_accounts_creds_root=DATA_DIR)
-    self.assertIsInstance(
-        creds, oauth2client.service_account.ServiceAccountCredentials)
-    self.assertIn('repo', creds._scopes)
+    self.assertIsInstance(creds,
+                          oauth2client.client.SignedJwtAssertionCredentials)
+    self.assertIn('repo', creds.scope)
 
   def test_valid_credentials_with_scope_as_list(self):
     creds = infra_libs.get_signed_jwt_assertion_credentials(
       'valid_creds.json',
       scope=['gist'],
       service_accounts_creds_root=DATA_DIR)
-    self.assertIsInstance(
-        creds, oauth2client.service_account.ServiceAccountCredentials)
-    self.assertIn('gist', creds._scopes)
+    self.assertIsInstance(creds,
+                          oauth2client.client.SignedJwtAssertionCredentials)
+    self.assertIn('gist', creds.scope)
 
   # Only test one malformed case and rely on LoadJsonCredentialsTest
   # for the other cases.
