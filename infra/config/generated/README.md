@@ -1,6 +1,6 @@
 ## Configuration files generated from main.star and dev.star by lucicfg tool
 
-**Note**: This directory is currently totally ignored. All source of truth is
-in handcrafted `config/*.cfg` files.
+**All files here are auto-generated. All manual changes are discarded.**
 
-Follow https://crbug.com/938766 for updates.
+Instead modify `*.star` files in the parent directory and regenerate files here
+by executing `./main.star` or `./dev.star`.

@@ -5,10 +5,8 @@
 
 """LUCI project configuration for the production instance of LUCI.
 
-WORK IN PROGRESS:
-  * Doesn't affect anything.
-  * If you just want to change a config, this is not the right place yet. Modify
-    some of `*.cfg` files directly.
+After modifying this file execute it ('./main.star') to regenerate the configs.
+This is also enforced by PRESUBMIT.py script.
 
 Includes CI configs for the following subprojects:
   * Codesearch.

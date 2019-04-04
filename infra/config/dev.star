@@ -3,7 +3,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""LUCI project configuration for the development instance of LUCI."""
+"""LUCI project configuration for the development instance of LUCI.
+
+After modifying this file execute it ('./dev.star') to regenerate the configs.
+This is also enforced by PRESUBMIT.py script.
+"""
 
 load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
@@ -14,9 +18,19 @@ lucicfg.config(
     tracked_files = [
         'cr-buildbucket-dev.cfg',
         'luci-logdog-dev.cfg',
+        'luci-notify-dev.cfg',
+        'luci-notify-dev/email-templates/*',
         'luci-scheduler-dev.cfg',
+        'tricium-dev.cfg',
     ],
     fail_on_warnings = True,
+)
+
+
+# Just copy tricium-dev.cfg as is to the outputs.
+lucicfg.emit(
+    dest = 'tricium-dev.cfg',
+    data = io.read_file('tricium-dev.cfg'),
 )
 
 
@@ -25,6 +39,7 @@ luci.project(
 
     buildbucket = 'cr-buildbucket-dev.appspot.com',
     logdog = 'luci-logdog-dev.appspot.com',
+    notify = 'luci-notify-dev.appspot.com',
     scheduler = 'luci-scheduler-dev.appspot.com',
     swarming = 'chromium-swarm-dev.appspot.com',
 
@@ -147,4 +162,37 @@ adhoc_builder(
         'inherit_luci_context': True,
     },
     triggered_by = [infra.poller()],
+)
+
+
+luci.notifier(
+    name = 'nodir-spam',
+    on_success = True,
+    on_failure = True,
+    notify_emails = ['nodir+spam@google.com'],
+    template = 'test',
+    notified_by = ['infra-continuous-trusty-64']
+)
+
+luci.notifier_template(
+    name = 'test',
+    body = """{{.Build.Builder.IDString}} notification
+
+<a href="{{.Build.ViewUrl}}">Build {{.Build.Number}}</a>
+has completed.
+
+{{template "steps" .}}
+"""
+)
+
+luci.notifier_template(
+    name = 'steps',
+    body = """Renders steps.
+
+<ol>
+{{range $s := .Steps}}
+  <li>{{$s.Name}}</li>
+{{end}}
+</ol>
+"""
 )
