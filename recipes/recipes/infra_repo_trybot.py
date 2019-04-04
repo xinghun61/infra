@@ -16,6 +16,7 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
+  'recipe_engine/runtime',
   'recipe_engine/step',
 ]
 
@@ -112,105 +113,58 @@ def GenTests(api):
     return api.step_data(
         'get change list', api.raw_io.stream_output('\n'.join(files)))
 
+  def test(name, internal=False, buildername='generic tester'):
+    return (
+      api.test(name)
+      + api.runtime(is_luci=True, is_experimental=True)
+      + api.buildbucket.try_build(
+        project='infra-internal' if internal else 'infra',
+        builder=buildername,
+        git_repo=(
+          'https://chrome-internal.googlesource.com/infra/infra_internal'
+          if internal else
+          'https://chromium.googlesorce.com/infra/infra'
+        )
+      )
+    )
+
   yield (
-    api.test('basic') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
+    test('basic') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
   )
 
   yield (
-    api.test('only_go') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
+    test('basic_internal', internal=True) +
+    diff('infra/stuff.py', 'go/src/infra/stuff.go')
+  )
+
+  yield (
+    test('only_go') +
     diff('go/src/infra/stuff.go')
   )
 
   yield (
-    api.test('only_go_osx') +
+    test('only_go_osx') +
     api.platform('mac', 64) +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.mac',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
     diff('go/src/infra/stuff.go')
   )
 
   yield (
-    api.test('only_js') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
+    test('only_js') +
     diff('appengine/foo/static/stuff.js')
   )
 
   yield (
-    api.test('only_python') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
-    diff('infra/stuff.py')
-  )
-
-  yield (
-    api.test('infra_internal') +
-    api.properties.tryserver(
-        gerrit_project='infra/infra_internal',
-        gerrit_url='https://chrome-internal-review.googlesource.com',
-        mastername='internal.infra.try',
-        buildername='infra_tester') +
-    diff('infra/stuff.py', 'go/src/infra/stuff.go')
-  )
-
-  yield (
-    api.test('infra_internal_with_cq') +
-    api.properties.tryserver(
-        gerrit_project='infra/infra_internal',
-        gerrit_url='https://chrome-internal-review.googlesource.com',
-        mastername='internal.infra.try',
-        buildername='infra_tester') +
+    test('infra_internal_with_cq', internal=True) +
     diff('infra_internal/services/cq/cq.py')
   )
 
   yield (
-    api.test('rietveld_tests') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
+    test('rietveld_tests') +
     diff('appengine/chromium_rietveld/codereview/views.py')
   )
 
   yield (
-    api.test('rietveld_tests_on_win') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
-    diff('appengine/chromium_rietveld/codereview/views.py') +
-    api.platform.name('win')
-  )
-
-  yield (
-    api.test('only_DEPS') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
-    diff('DEPS')
-  )
-
-  yield (
-    api.test('only_cipd_build') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        gerrit_project='infra/infra') +
+    test('only_cipd_build') +
     diff('build/build.py')
   )

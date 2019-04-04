@@ -21,13 +21,13 @@
       "RECIPE_REPO[depot_tools]/gerrit_client.py",
       "changes",
       "--host",
-      "https://chromium-review.googlesource.com",
+      "https://chromium.googlesorce.com",
       "--json_file",
       "/path/to/tmp/json",
       "--limit",
       "1",
       "-p",
-      "change=456789",
+      "change=123456",
       "-o",
       "ALL_REVISIONS",
       "-o",
@@ -45,8 +45,8 @@
       "@@@STEP_LOG_LINE@json.output@    \"branch\": \"master\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"revisions\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"184ebe53805e102605d11f6b143486d15c23a09c\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"_number\": \"12\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"refs/changes/89/456789/12\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"_number\": \"7\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"refs/changes/56/123456/7\"@@@",
       "@@@STEP_LOG_LINE@json.output@      }@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
@@ -72,12 +72,12 @@
       "--output_json",
       "/path/to/tmp/json",
       "--patch_ref",
-      "https://chromium.googlesource.com/infra/infra@refs/changes/89/456789/12",
+      "https://chromium.googlesorce.com/infra/infra@refs/changes/56/123456/7",
       "--revision",
       "infra@HEAD"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_prefixes": {
+    "env_suffixes": {
       "PATH": [
         "RECIPE_REPO[depot_tools]"
       ]
