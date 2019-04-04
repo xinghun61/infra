@@ -5,6 +5,7 @@
 
 """LUCI project configuration for the development instance of LUCI."""
 
+load('//lib/build.star', 'build')
 load('//lib/infra.star', 'infra')
 
 
@@ -68,7 +69,6 @@ def ci_builder(
       name,
       os,
       recipe='infra_continuous',
-      manual=False,
   ):
   infra.builder(
       name = name,
@@ -78,38 +78,73 @@ def ci_builder(
       cpu = 'x86-64',
       pool = 'Chrome',  # no point in creating a dedicated pool on -dev
       service_account = 'adhoc-testing@luci-token-server-dev.iam.gserviceaccount.com',
-      schedule = 'triggered' if manual else None,
-      triggered_by = [] if manual else [infra.poller()],
+      triggered_by = [infra.poller()],
   )
 
 
-# Triggered on commits.
 ci_builder(name = 'infra-continuous-trusty-64', os = 'Ubuntu-14.04')
 ci_builder(name = 'infra-continuous-win-64', os = 'Windows-7-SP1')
 ci_builder(name = 'infra-continuous-win10-64', os = 'Windows-10')
 
-# Triggered manually via Scheduler UI.
-ci_builder(
+
+def adhoc_builder(
+      name,
+      os,
+      executable,
+      extra_dims=None,
+      properties=None,
+      schedule=None,
+      triggered_by=None,
+  ):
+  dims = {'os': os, 'cpu': 'x86-64', 'pool': 'Chrome'}
+  if extra_dims:
+    dims.update(**extra_dims)
+  luci.builder(
+      name = name,
+      bucket = 'ci',
+      executable = executable,
+      dimensions = dims,
+      properties = properties,
+      service_account = 'adhoc-testing@luci-token-server-dev.iam.gserviceaccount.com',
+      build_numbers = True,
+      schedule = schedule,
+      triggered_by = triggered_by,
+  )
+
+
+adhoc_builder(
     name = 'goma-hello-world-trusty-64',
     os = 'Ubuntu-14.04',
-    recipe = 'goma_hello_world',
-    manual = True,
+    executable = infra.recipe('goma_hello_world'),
+    schedule = 'with 10m interval',
 )
-ci_builder(
+adhoc_builder(
     name = 'gerrit-hello-world-trusty-64',
     os = 'Ubuntu-14.04',
-    recipe = 'gerrit_hello_world',
-    manual = True,
+    executable = infra.recipe('gerrit_hello_world'),
+    schedule = 'triggered',  # triggered manually via Scheduler UI
 )
-ci_builder(
+adhoc_builder(
     name = 'gsutil-hello-world-trusty-64',
     os = 'Ubuntu-14.04',
-    recipe = 'gsutil_hello_world',
-    manual = True,
+    executable = infra.recipe('gsutil_hello_world'),
+    schedule = 'triggered',  # triggered manually via Scheduler UI
 )
-ci_builder(
+adhoc_builder(
     name = 'gsutil-hello-world-win10-64',
     os = 'Windows-10',
-    recipe = 'gsutil_hello_world',
-    manual = True,
+    executable = infra.recipe('gsutil_hello_world'),
+    schedule = 'triggered',  # triggered manually via Scheduler UI
+)
+adhoc_builder(
+    name = 'infra-continuous-pack-apps',
+    os = 'Ubuntu',
+    executable = build.recipe('run_docker'),
+    extra_dims = {'docker_installed': 'true'},
+    properties = {
+        'cmd_args': ['apack', 'pack', 'source/infra/appengine/cr-buildbucket/default.apack'],
+        'image': 'infra_dev_env',
+        'inherit_luci_context': True,
+    },
+    triggered_by = [infra.poller()],
 )
