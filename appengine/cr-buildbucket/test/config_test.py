@@ -19,7 +19,7 @@ from components.config import validation_context
 from testing_utils import testing
 import mock
 
-from proto.config import project_config_pb2
+from proto import project_config_pb2
 from test import test_util
 import config
 import errors

@@ -19,7 +19,7 @@ from components import auth
 from components import utils
 
 from protorpc import messages
-from proto.config import project_config_pb2
+from proto import project_config_pb2
 import config
 import errors
 

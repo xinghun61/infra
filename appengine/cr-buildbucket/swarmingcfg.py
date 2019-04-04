@@ -11,7 +11,7 @@ import re
 
 from components.config import validation
 
-from proto.config import project_config_pb2
+from proto import project_config_pb2
 import flatten_swarmingcfg
 import errors
 

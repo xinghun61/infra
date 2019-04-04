@@ -52,13 +52,13 @@ def find_files(path, suffix=''):
   return [f for f in os.listdir(path) if f.endswith(suffix)]
 
 
-def compile_protos(src_dir, dest_dir):
+def main():
   tmpd = tempfile.mkdtemp(suffix='buildbucket-proto')
 
-  proto_files = find_files(src_dir, suffix='.proto')
+  proto_files = find_files(BUILDBUCKET_PROTO_DIR, suffix='.proto')
   # Copy modified .proto files into temp dir.
   for f in proto_files:
-    modify_proto(os.path.join(src_dir, f), os.path.join(tmpd, f))
+    modify_proto(os.path.join(BUILDBUCKET_PROTO_DIR, f), os.path.join(tmpd, f))
 
   # Compile them.
   args = [
@@ -74,32 +74,14 @@ def compile_protos(src_dir, dest_dir):
   subprocess.check_call(args, cwd=tmpd)
   pb2_files = find_files(tmpd, suffix='_pb2.py')
 
-  # YAPF them.
-  # TODO(nodir): remove this when
-  # https://github.com/google/yapf/issues/357 is fixed.
-  shutil.copyfile(
-      os.path.join(THIS_DIR, '..', '.style.yapf'),
-      os.path.join(tmpd, '.style.yapf')
-  )
-  args = ['yapf', '-i'] + pb2_files
-  subprocess.check_call(args, cwd=tmpd)
-
   # Remove all _pb2.py and .pyc from the dest dir
-  for fname in os.listdir(dest_dir):
+  for fname in os.listdir(THIS_DIR):
     if fname.endswith(('_pb2.py', '.pyc')):
-      os.remove(os.path.join(dest_dir, fname))
+      os.remove(os.path.join(THIS_DIR, fname))
 
   # Copy _pb2.py files to dest dir.
   for f in pb2_files:
-    shutil.copyfile(os.path.join(tmpd, f), os.path.join(dest_dir, f))
-
-
-def main():
-  compile_protos(BUILDBUCKET_PROTO_DIR, THIS_DIR)
-  compile_protos(
-      os.path.join(BUILDBUCKET_PROTO_DIR, 'config'),
-      os.path.join(THIS_DIR, 'config')
-  )
+    shutil.copyfile(os.path.join(tmpd, f), os.path.join(THIS_DIR, f))
 
 
 if __name__ == '__main__':

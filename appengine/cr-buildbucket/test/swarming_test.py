@@ -30,8 +30,8 @@ from legacy import api_common
 from proto import build_pb2
 from proto import common_pb2
 from proto import launcher_pb2
-from proto.config import project_config_pb2
-from proto.config import service_config_pb2
+from proto import project_config_pb2
+from proto import service_config_pb2
 from test import test_util
 from test.test_util import future, future_exception
 import bbutil

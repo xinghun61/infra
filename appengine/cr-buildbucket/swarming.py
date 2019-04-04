@@ -53,7 +53,7 @@ import webapp2
 from legacy import api_common
 from proto import common_pb2
 from proto import launcher_pb2
-from proto.config import project_config_pb2
+from proto import project_config_pb2
 import bbutil
 import buildtags
 import config

@@ -2,7 +2,7 @@
 # source: rpc.proto
 
 import sys
-_b = sys.version_info[0] < 3 and (lambda x: x) or (lambda x: x.encode('latin1'))
+_b=sys.version_info[0]<3 and (lambda x:x) or (lambda x:x.encode('latin1'))
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
 from google.protobuf import reflection as _reflection
@@ -10,6 +10,7 @@ from google.protobuf import symbol_database as _symbol_database
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
+
 
 from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
@@ -19,1420 +20,786 @@ import common_pb2 as common__pb2
 import build_pb2 as build__pb2
 import notification_pb2 as notification__pb2
 
+
 DESCRIPTOR = _descriptor.FileDescriptor(
-    name='rpc.proto',
-    package='buildbucket.v2',
-    syntax='proto3',
-    serialized_options=_b(
-        'Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'
-    ),
-    serialized_pb=_b(
-        '\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x17google/rpc/status.proto\x1a\x0c\x63ommon.proto\x1a\x0b\x62uild.proto\x1a\x12notification.proto\"\x8b\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x9b\x01\n\x13SearchBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12\x11\n\tpage_size\x18\x65 \x01(\x05\x12\x12\n\npage_token\x18\x66 \x01(\t\"V\n\x14SearchBuildsResponse\x12%\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x15.buildbucket.v2.Build\x12\x17\n\x0fnext_page_token\x18\x64 \x01(\t\"\xcd\x02\n\x0c\x42\x61tchRequest\x12\x36\n\x08requests\x18\x01 \x03(\x0b\x32$.buildbucket.v2.BatchRequest.Request\x1a\x84\x02\n\x07Request\x12\x34\n\tget_build\x18\x01 \x01(\x0b\x32\x1f.buildbucket.v2.GetBuildRequestH\x00\x12<\n\rsearch_builds\x18\x02 \x01(\x0b\x32#.buildbucket.v2.SearchBuildsRequestH\x00\x12>\n\x0eschedule_build\x18\x03 \x01(\x0b\x32$.buildbucket.v2.ScheduleBuildRequestH\x00\x12:\n\x0c\x63\x61ncel_build\x18\x04 \x01(\x0b\x32\".buildbucket.v2.CancelBuildRequestH\x00\x42\t\n\x07request\"\xd3\x02\n\rBatchResponse\x12\x39\n\tresponses\x18\x01 \x03(\x0b\x32&.buildbucket.v2.BatchResponse.Response\x1a\x86\x02\n\x08Response\x12*\n\tget_build\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12=\n\rsearch_builds\x18\x02 \x01(\x0b\x32$.buildbucket.v2.SearchBuildsResponseH\x00\x12/\n\x0eschedule_build\x18\x03 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12-\n\x0c\x63\x61ncel_build\x18\x04 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12#\n\x05\x65rror\x18\x64 \x01(\x0b\x32\x12.google.rpc.StatusH\x00\x42\n\n\x08response\"\x97\x01\n\x12UpdateBuildRequest\x12$\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.Build\x12/\n\x0bupdate_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\xe2\x04\n\x14ScheduleBuildRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\x19\n\x11template_build_id\x18\x02 \x01(\x03\x12*\n\x07\x62uilder\x18\x03 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\'\n\x06\x63\x61nary\x18\x04 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12-\n\x0c\x65xperimental\x18\x05 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12+\n\nproperties\x18\x06 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x35\n\x0egitiles_commit\x18\x07 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x34\n\x0egerrit_changes\x18\x08 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12(\n\x04tags\x18\t \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12\x36\n\ndimensions\x18\n \x03(\x0b\x32\".buildbucket.v2.RequestedDimension\x12\x10\n\x08priority\x18\x0b \x01(\x05\x12\x32\n\x06notify\x18\x0c \x01(\x0b\x32\".buildbucket.v2.NotificationConfig\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12)\n\x08\x63ritical\x18\r \x01(\x0e\x32\x17.buildbucket.v2.Trinary\"f\n\x12\x43\x61ncelBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x18\n\x10summary_markdown\x18\x02 \x01(\t\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"b\n\x13\x43\x61ncelBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12\x18\n\x10summary_markdown\x18\x02 \x01(\t\"\xb8\x03\n\x0e\x42uildPredicate\x12*\n\x07\x62uilder\x18\x01 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12&\n\x06status\x18\x02 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12<\n\x15output_gitiles_commit\x18\x04 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x12\n\ncreated_by\x18\x05 \x01(\t\x12(\n\x04tags\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12.\n\x0b\x63reate_time\x18\x07 \x01(\x0b\x32\x19.buildbucket.v2.TimeRange\x12\x1c\n\x14include_experimental\x18\x08 \x01(\x08\x12)\n\x05\x62uild\x18\t \x01(\x0b\x32\x1a.buildbucket.v2.BuildRange\x12\'\n\x06\x63\x61nary\x18\n \x01(\x0e\x32\x17.buildbucket.v2.Trinary\":\n\nBuildRange\x12\x16\n\x0estart_build_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x65nd_build_id\x18\x02 \x01(\x03\x32\xaa\x04\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12[\n\x0cSearchBuilds\x12#.buildbucket.v2.SearchBuildsRequest\x1a$.buildbucket.v2.SearchBuildsResponse\"\x00\x12J\n\x0bUpdateBuild\x12\".buildbucket.v2.UpdateBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12N\n\rScheduleBuild\x12$.buildbucket.v2.ScheduleBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12J\n\x0b\x43\x61ncelBuild\x12\".buildbucket.v2.CancelBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12M\n\x0c\x43\x61ncelBuilds\x12#.buildbucket.v2.CancelBuildsRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x46\n\x05\x42\x61tch\x12\x1c.buildbucket.v2.BatchRequest\x1a\x1d.buildbucket.v2.BatchResponse\"\x00\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3'
-    ),
-    dependencies=[
-        google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,
-        google_dot_protobuf_dot_field__mask__pb2.DESCRIPTOR,
-        google_dot_protobuf_dot_struct__pb2.DESCRIPTOR,
-        google_dot_rpc_dot_status__pb2.DESCRIPTOR,
-        common__pb2.DESCRIPTOR,
-        build__pb2.DESCRIPTOR,
-        notification__pb2.DESCRIPTOR,
-    ]
-)
+  name='rpc.proto',
+  package='buildbucket.v2',
+  syntax='proto3',
+  serialized_options=_b('Z4go.chromium.org/luci/buildbucket/proto;buildbucketpb'),
+  serialized_pb=_b('\n\trpc.proto\x12\x0e\x62uildbucket.v2\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1cgoogle/protobuf/struct.proto\x1a\x17google/rpc/status.proto\x1a\x0c\x63ommon.proto\x1a\x0b\x62uild.proto\x1a\x12notification.proto\"\x8b\x01\n\x0fGetBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12*\n\x07\x62uilder\x18\x02 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\x14\n\x0c\x62uild_number\x18\x03 \x01(\x05\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\x9b\x01\n\x13SearchBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12\x11\n\tpage_size\x18\x65 \x01(\x05\x12\x12\n\npage_token\x18\x66 \x01(\t\"V\n\x14SearchBuildsResponse\x12%\n\x06\x62uilds\x18\x01 \x03(\x0b\x32\x15.buildbucket.v2.Build\x12\x17\n\x0fnext_page_token\x18\x64 \x01(\t\"\xcd\x02\n\x0c\x42\x61tchRequest\x12\x36\n\x08requests\x18\x01 \x03(\x0b\x32$.buildbucket.v2.BatchRequest.Request\x1a\x84\x02\n\x07Request\x12\x34\n\tget_build\x18\x01 \x01(\x0b\x32\x1f.buildbucket.v2.GetBuildRequestH\x00\x12<\n\rsearch_builds\x18\x02 \x01(\x0b\x32#.buildbucket.v2.SearchBuildsRequestH\x00\x12>\n\x0eschedule_build\x18\x03 \x01(\x0b\x32$.buildbucket.v2.ScheduleBuildRequestH\x00\x12:\n\x0c\x63\x61ncel_build\x18\x04 \x01(\x0b\x32\".buildbucket.v2.CancelBuildRequestH\x00\x42\t\n\x07request\"\xd3\x02\n\rBatchResponse\x12\x39\n\tresponses\x18\x01 \x03(\x0b\x32&.buildbucket.v2.BatchResponse.Response\x1a\x86\x02\n\x08Response\x12*\n\tget_build\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12=\n\rsearch_builds\x18\x02 \x01(\x0b\x32$.buildbucket.v2.SearchBuildsResponseH\x00\x12/\n\x0eschedule_build\x18\x03 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12-\n\x0c\x63\x61ncel_build\x18\x04 \x01(\x0b\x32\x15.buildbucket.v2.BuildH\x00\x12#\n\x05\x65rror\x18\x64 \x01(\x0b\x32\x12.google.rpc.StatusH\x00\x42\n\n\x08response\"\x97\x01\n\x12UpdateBuildRequest\x12$\n\x05\x62uild\x18\x01 \x01(\x0b\x32\x15.buildbucket.v2.Build\x12/\n\x0bupdate_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"\xe2\x04\n\x14ScheduleBuildRequest\x12\x12\n\nrequest_id\x18\x01 \x01(\t\x12\x19\n\x11template_build_id\x18\x02 \x01(\x03\x12*\n\x07\x62uilder\x18\x03 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12\'\n\x06\x63\x61nary\x18\x04 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12-\n\x0c\x65xperimental\x18\x05 \x01(\x0e\x32\x17.buildbucket.v2.Trinary\x12+\n\nproperties\x18\x06 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x35\n\x0egitiles_commit\x18\x07 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x34\n\x0egerrit_changes\x18\x08 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12(\n\x04tags\x18\t \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12\x36\n\ndimensions\x18\n \x03(\x0b\x32\".buildbucket.v2.RequestedDimension\x12\x10\n\x08priority\x18\x0b \x01(\x05\x12\x32\n\x06notify\x18\x0c \x01(\x0b\x32\".buildbucket.v2.NotificationConfig\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\x12)\n\x08\x63ritical\x18\r \x01(\x0e\x32\x17.buildbucket.v2.Trinary\"f\n\x12\x43\x61ncelBuildRequest\x12\n\n\x02id\x18\x01 \x01(\x03\x12\x18\n\x10summary_markdown\x18\x02 \x01(\t\x12*\n\x06\x66ields\x18\x64 \x01(\x0b\x32\x1a.google.protobuf.FieldMask\"b\n\x13\x43\x61ncelBuildsRequest\x12\x31\n\tpredicate\x18\x01 \x01(\x0b\x32\x1e.buildbucket.v2.BuildPredicate\x12\x18\n\x10summary_markdown\x18\x02 \x01(\t\"\xb8\x03\n\x0e\x42uildPredicate\x12*\n\x07\x62uilder\x18\x01 \x01(\x0b\x32\x19.buildbucket.v2.BuilderID\x12&\n\x06status\x18\x02 \x01(\x0e\x32\x16.buildbucket.v2.Status\x12\x34\n\x0egerrit_changes\x18\x03 \x03(\x0b\x32\x1c.buildbucket.v2.GerritChange\x12<\n\x15output_gitiles_commit\x18\x04 \x01(\x0b\x32\x1d.buildbucket.v2.GitilesCommit\x12\x12\n\ncreated_by\x18\x05 \x01(\t\x12(\n\x04tags\x18\x06 \x03(\x0b\x32\x1a.buildbucket.v2.StringPair\x12.\n\x0b\x63reate_time\x18\x07 \x01(\x0b\x32\x19.buildbucket.v2.TimeRange\x12\x1c\n\x14include_experimental\x18\x08 \x01(\x08\x12)\n\x05\x62uild\x18\t \x01(\x0b\x32\x1a.buildbucket.v2.BuildRange\x12\'\n\x06\x63\x61nary\x18\n \x01(\x0e\x32\x17.buildbucket.v2.Trinary\":\n\nBuildRange\x12\x16\n\x0estart_build_id\x18\x01 \x01(\x03\x12\x14\n\x0c\x65nd_build_id\x18\x02 \x01(\x03\x32\xaa\x04\n\x06\x42uilds\x12\x44\n\x08GetBuild\x12\x1f.buildbucket.v2.GetBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12[\n\x0cSearchBuilds\x12#.buildbucket.v2.SearchBuildsRequest\x1a$.buildbucket.v2.SearchBuildsResponse\"\x00\x12J\n\x0bUpdateBuild\x12\".buildbucket.v2.UpdateBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12N\n\rScheduleBuild\x12$.buildbucket.v2.ScheduleBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12J\n\x0b\x43\x61ncelBuild\x12\".buildbucket.v2.CancelBuildRequest\x1a\x15.buildbucket.v2.Build\"\x00\x12M\n\x0c\x43\x61ncelBuilds\x12#.buildbucket.v2.CancelBuildsRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x46\n\x05\x42\x61tch\x12\x1c.buildbucket.v2.BatchRequest\x1a\x1d.buildbucket.v2.BatchResponse\"\x00\x42\x36Z4go.chromium.org/luci/buildbucket/proto;buildbucketpbb\x06proto3')
+  ,
+  dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,google_dot_protobuf_dot_field__mask__pb2.DESCRIPTOR,google_dot_protobuf_dot_struct__pb2.DESCRIPTOR,google_dot_rpc_dot_status__pb2.DESCRIPTOR,common__pb2.DESCRIPTOR,build__pb2.DESCRIPTOR,notification__pb2.DESCRIPTOR,])
+
+
+
 
 _GETBUILDREQUEST = _descriptor.Descriptor(
-    name='GetBuildRequest',
-    full_name='buildbucket.v2.GetBuildRequest',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='id',
-            full_name='buildbucket.v2.GetBuildRequest.id',
-            index=0,
-            number=1,
-            type=3,
-            cpp_type=2,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='builder',
-            full_name='buildbucket.v2.GetBuildRequest.builder',
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='build_number',
-            full_name='buildbucket.v2.GetBuildRequest.build_number',
-            index=2,
-            number=3,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='fields',
-            full_name='buildbucket.v2.GetBuildRequest.fields',
-            index=3,
-            number=100,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=195,
-    serialized_end=334,
+  name='GetBuildRequest',
+  full_name='buildbucket.v2.GetBuildRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='id', full_name='buildbucket.v2.GetBuildRequest.id', index=0,
+      number=1, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='builder', full_name='buildbucket.v2.GetBuildRequest.builder', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='build_number', full_name='buildbucket.v2.GetBuildRequest.build_number', index=2,
+      number=3, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='fields', full_name='buildbucket.v2.GetBuildRequest.fields', index=3,
+      number=100, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=195,
+  serialized_end=334,
 )
+
 
 _SEARCHBUILDSREQUEST = _descriptor.Descriptor(
-    name='SearchBuildsRequest',
-    full_name='buildbucket.v2.SearchBuildsRequest',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='predicate',
-            full_name='buildbucket.v2.SearchBuildsRequest.predicate',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='fields',
-            full_name='buildbucket.v2.SearchBuildsRequest.fields',
-            index=1,
-            number=100,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='page_size',
-            full_name='buildbucket.v2.SearchBuildsRequest.page_size',
-            index=2,
-            number=101,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='page_token',
-            full_name='buildbucket.v2.SearchBuildsRequest.page_token',
-            index=3,
-            number=102,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=337,
-    serialized_end=492,
+  name='SearchBuildsRequest',
+  full_name='buildbucket.v2.SearchBuildsRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='predicate', full_name='buildbucket.v2.SearchBuildsRequest.predicate', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='fields', full_name='buildbucket.v2.SearchBuildsRequest.fields', index=1,
+      number=100, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='page_size', full_name='buildbucket.v2.SearchBuildsRequest.page_size', index=2,
+      number=101, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='page_token', full_name='buildbucket.v2.SearchBuildsRequest.page_token', index=3,
+      number=102, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=337,
+  serialized_end=492,
 )
+
 
 _SEARCHBUILDSRESPONSE = _descriptor.Descriptor(
-    name='SearchBuildsResponse',
-    full_name='buildbucket.v2.SearchBuildsResponse',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='builds',
-            full_name='buildbucket.v2.SearchBuildsResponse.builds',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='next_page_token',
-            full_name='buildbucket.v2.SearchBuildsResponse.next_page_token',
-            index=1,
-            number=100,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=494,
-    serialized_end=580,
+  name='SearchBuildsResponse',
+  full_name='buildbucket.v2.SearchBuildsResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='builds', full_name='buildbucket.v2.SearchBuildsResponse.builds', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='next_page_token', full_name='buildbucket.v2.SearchBuildsResponse.next_page_token', index=1,
+      number=100, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=494,
+  serialized_end=580,
 )
 
+
 _BATCHREQUEST_REQUEST = _descriptor.Descriptor(
-    name='Request',
-    full_name='buildbucket.v2.BatchRequest.Request',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='get_build',
-            full_name='buildbucket.v2.BatchRequest.Request.get_build',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='search_builds',
-            full_name='buildbucket.v2.BatchRequest.Request.search_builds',
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='schedule_build',
-            full_name='buildbucket.v2.BatchRequest.Request.schedule_build',
-            index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='cancel_build',
-            full_name='buildbucket.v2.BatchRequest.Request.cancel_build',
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[
-        _descriptor.OneofDescriptor(
-            name='request',
-            full_name='buildbucket.v2.BatchRequest.Request.request',
-            index=0,
-            containing_type=None,
-            fields=[]
-        ),
-    ],
-    serialized_start=656,
-    serialized_end=916,
+  name='Request',
+  full_name='buildbucket.v2.BatchRequest.Request',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='get_build', full_name='buildbucket.v2.BatchRequest.Request.get_build', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='search_builds', full_name='buildbucket.v2.BatchRequest.Request.search_builds', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='schedule_build', full_name='buildbucket.v2.BatchRequest.Request.schedule_build', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='cancel_build', full_name='buildbucket.v2.BatchRequest.Request.cancel_build', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='request', full_name='buildbucket.v2.BatchRequest.Request.request',
+      index=0, containing_type=None, fields=[]),
+  ],
+  serialized_start=656,
+  serialized_end=916,
 )
 
 _BATCHREQUEST = _descriptor.Descriptor(
-    name='BatchRequest',
-    full_name='buildbucket.v2.BatchRequest',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='requests',
-            full_name='buildbucket.v2.BatchRequest.requests',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[
-        _BATCHREQUEST_REQUEST,
-    ],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=583,
-    serialized_end=916,
+  name='BatchRequest',
+  full_name='buildbucket.v2.BatchRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='requests', full_name='buildbucket.v2.BatchRequest.requests', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_BATCHREQUEST_REQUEST, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=583,
+  serialized_end=916,
 )
 
+
 _BATCHRESPONSE_RESPONSE = _descriptor.Descriptor(
-    name='Response',
-    full_name='buildbucket.v2.BatchResponse.Response',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='get_build',
-            full_name='buildbucket.v2.BatchResponse.Response.get_build',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='search_builds',
-            full_name='buildbucket.v2.BatchResponse.Response.search_builds',
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='schedule_build',
-            full_name='buildbucket.v2.BatchResponse.Response.schedule_build',
-            index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='cancel_build',
-            full_name='buildbucket.v2.BatchResponse.Response.cancel_build',
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='error',
-            full_name='buildbucket.v2.BatchResponse.Response.error',
-            index=4,
-            number=100,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[
-        _descriptor.OneofDescriptor(
-            name='response',
-            full_name='buildbucket.v2.BatchResponse.Response.response',
-            index=0,
-            containing_type=None,
-            fields=[]
-        ),
-    ],
-    serialized_start=996,
-    serialized_end=1258,
+  name='Response',
+  full_name='buildbucket.v2.BatchResponse.Response',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='get_build', full_name='buildbucket.v2.BatchResponse.Response.get_build', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='search_builds', full_name='buildbucket.v2.BatchResponse.Response.search_builds', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='schedule_build', full_name='buildbucket.v2.BatchResponse.Response.schedule_build', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='cancel_build', full_name='buildbucket.v2.BatchResponse.Response.cancel_build', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='error', full_name='buildbucket.v2.BatchResponse.Response.error', index=4,
+      number=100, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='response', full_name='buildbucket.v2.BatchResponse.Response.response',
+      index=0, containing_type=None, fields=[]),
+  ],
+  serialized_start=996,
+  serialized_end=1258,
 )
 
 _BATCHRESPONSE = _descriptor.Descriptor(
-    name='BatchResponse',
-    full_name='buildbucket.v2.BatchResponse',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='responses',
-            full_name='buildbucket.v2.BatchResponse.responses',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[
-        _BATCHRESPONSE_RESPONSE,
-    ],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=919,
-    serialized_end=1258,
+  name='BatchResponse',
+  full_name='buildbucket.v2.BatchResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='responses', full_name='buildbucket.v2.BatchResponse.responses', index=0,
+      number=1, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[_BATCHRESPONSE_RESPONSE, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=919,
+  serialized_end=1258,
 )
+
 
 _UPDATEBUILDREQUEST = _descriptor.Descriptor(
-    name='UpdateBuildRequest',
-    full_name='buildbucket.v2.UpdateBuildRequest',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='build',
-            full_name='buildbucket.v2.UpdateBuildRequest.build',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='update_mask',
-            full_name='buildbucket.v2.UpdateBuildRequest.update_mask',
-            index=1,
-            number=2,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='fields',
-            full_name='buildbucket.v2.UpdateBuildRequest.fields',
-            index=2,
-            number=100,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1261,
-    serialized_end=1412,
+  name='UpdateBuildRequest',
+  full_name='buildbucket.v2.UpdateBuildRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='build', full_name='buildbucket.v2.UpdateBuildRequest.build', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='update_mask', full_name='buildbucket.v2.UpdateBuildRequest.update_mask', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='fields', full_name='buildbucket.v2.UpdateBuildRequest.fields', index=2,
+      number=100, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1261,
+  serialized_end=1412,
 )
+
 
 _SCHEDULEBUILDREQUEST = _descriptor.Descriptor(
-    name='ScheduleBuildRequest',
-    full_name='buildbucket.v2.ScheduleBuildRequest',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='request_id',
-            full_name='buildbucket.v2.ScheduleBuildRequest.request_id',
-            index=0,
-            number=1,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='template_build_id',
-            full_name='buildbucket.v2.ScheduleBuildRequest.template_build_id',
-            index=1,
-            number=2,
-            type=3,
-            cpp_type=2,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='builder',
-            full_name='buildbucket.v2.ScheduleBuildRequest.builder',
-            index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='canary',
-            full_name='buildbucket.v2.ScheduleBuildRequest.canary',
-            index=3,
-            number=4,
-            type=14,
-            cpp_type=8,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='experimental',
-            full_name='buildbucket.v2.ScheduleBuildRequest.experimental',
-            index=4,
-            number=5,
-            type=14,
-            cpp_type=8,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='properties',
-            full_name='buildbucket.v2.ScheduleBuildRequest.properties',
-            index=5,
-            number=6,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='gitiles_commit',
-            full_name='buildbucket.v2.ScheduleBuildRequest.gitiles_commit',
-            index=6,
-            number=7,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='gerrit_changes',
-            full_name='buildbucket.v2.ScheduleBuildRequest.gerrit_changes',
-            index=7,
-            number=8,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='tags',
-            full_name='buildbucket.v2.ScheduleBuildRequest.tags',
-            index=8,
-            number=9,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='dimensions',
-            full_name='buildbucket.v2.ScheduleBuildRequest.dimensions',
-            index=9,
-            number=10,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='priority',
-            full_name='buildbucket.v2.ScheduleBuildRequest.priority',
-            index=10,
-            number=11,
-            type=5,
-            cpp_type=1,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='notify',
-            full_name='buildbucket.v2.ScheduleBuildRequest.notify',
-            index=11,
-            number=12,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='fields',
-            full_name='buildbucket.v2.ScheduleBuildRequest.fields',
-            index=12,
-            number=100,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='critical',
-            full_name='buildbucket.v2.ScheduleBuildRequest.critical',
-            index=13,
-            number=13,
-            type=14,
-            cpp_type=8,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=1415,
-    serialized_end=2025,
+  name='ScheduleBuildRequest',
+  full_name='buildbucket.v2.ScheduleBuildRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='request_id', full_name='buildbucket.v2.ScheduleBuildRequest.request_id', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='template_build_id', full_name='buildbucket.v2.ScheduleBuildRequest.template_build_id', index=1,
+      number=2, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='builder', full_name='buildbucket.v2.ScheduleBuildRequest.builder', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='canary', full_name='buildbucket.v2.ScheduleBuildRequest.canary', index=3,
+      number=4, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='experimental', full_name='buildbucket.v2.ScheduleBuildRequest.experimental', index=4,
+      number=5, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='properties', full_name='buildbucket.v2.ScheduleBuildRequest.properties', index=5,
+      number=6, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='gitiles_commit', full_name='buildbucket.v2.ScheduleBuildRequest.gitiles_commit', index=6,
+      number=7, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='gerrit_changes', full_name='buildbucket.v2.ScheduleBuildRequest.gerrit_changes', index=7,
+      number=8, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='tags', full_name='buildbucket.v2.ScheduleBuildRequest.tags', index=8,
+      number=9, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='dimensions', full_name='buildbucket.v2.ScheduleBuildRequest.dimensions', index=9,
+      number=10, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='priority', full_name='buildbucket.v2.ScheduleBuildRequest.priority', index=10,
+      number=11, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='notify', full_name='buildbucket.v2.ScheduleBuildRequest.notify', index=11,
+      number=12, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='fields', full_name='buildbucket.v2.ScheduleBuildRequest.fields', index=12,
+      number=100, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='critical', full_name='buildbucket.v2.ScheduleBuildRequest.critical', index=13,
+      number=13, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1415,
+  serialized_end=2025,
 )
+
 
 _CANCELBUILDREQUEST = _descriptor.Descriptor(
-    name='CancelBuildRequest',
-    full_name='buildbucket.v2.CancelBuildRequest',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='id',
-            full_name='buildbucket.v2.CancelBuildRequest.id',
-            index=0,
-            number=1,
-            type=3,
-            cpp_type=2,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='summary_markdown',
-            full_name='buildbucket.v2.CancelBuildRequest.summary_markdown',
-            index=1,
-            number=2,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='fields',
-            full_name='buildbucket.v2.CancelBuildRequest.fields',
-            index=2,
-            number=100,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2027,
-    serialized_end=2129,
+  name='CancelBuildRequest',
+  full_name='buildbucket.v2.CancelBuildRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='id', full_name='buildbucket.v2.CancelBuildRequest.id', index=0,
+      number=1, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='summary_markdown', full_name='buildbucket.v2.CancelBuildRequest.summary_markdown', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='fields', full_name='buildbucket.v2.CancelBuildRequest.fields', index=2,
+      number=100, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2027,
+  serialized_end=2129,
 )
+
 
 _CANCELBUILDSREQUEST = _descriptor.Descriptor(
-    name='CancelBuildsRequest',
-    full_name='buildbucket.v2.CancelBuildsRequest',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='predicate',
-            full_name='buildbucket.v2.CancelBuildsRequest.predicate',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='summary_markdown',
-            full_name='buildbucket.v2.CancelBuildsRequest.summary_markdown',
-            index=1,
-            number=2,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2131,
-    serialized_end=2229,
+  name='CancelBuildsRequest',
+  full_name='buildbucket.v2.CancelBuildsRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='predicate', full_name='buildbucket.v2.CancelBuildsRequest.predicate', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='summary_markdown', full_name='buildbucket.v2.CancelBuildsRequest.summary_markdown', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2131,
+  serialized_end=2229,
 )
+
 
 _BUILDPREDICATE = _descriptor.Descriptor(
-    name='BuildPredicate',
-    full_name='buildbucket.v2.BuildPredicate',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='builder',
-            full_name='buildbucket.v2.BuildPredicate.builder',
-            index=0,
-            number=1,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='status',
-            full_name='buildbucket.v2.BuildPredicate.status',
-            index=1,
-            number=2,
-            type=14,
-            cpp_type=8,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='gerrit_changes',
-            full_name='buildbucket.v2.BuildPredicate.gerrit_changes',
-            index=2,
-            number=3,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='output_gitiles_commit',
-            full_name='buildbucket.v2.BuildPredicate.output_gitiles_commit',
-            index=3,
-            number=4,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='created_by',
-            full_name='buildbucket.v2.BuildPredicate.created_by',
-            index=4,
-            number=5,
-            type=9,
-            cpp_type=9,
-            label=1,
-            has_default_value=False,
-            default_value=_b("").decode('utf-8'),
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='tags',
-            full_name='buildbucket.v2.BuildPredicate.tags',
-            index=5,
-            number=6,
-            type=11,
-            cpp_type=10,
-            label=3,
-            has_default_value=False,
-            default_value=[],
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='create_time',
-            full_name='buildbucket.v2.BuildPredicate.create_time',
-            index=6,
-            number=7,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='include_experimental',
-            full_name='buildbucket.v2.BuildPredicate.include_experimental',
-            index=7,
-            number=8,
-            type=8,
-            cpp_type=7,
-            label=1,
-            has_default_value=False,
-            default_value=False,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='build',
-            full_name='buildbucket.v2.BuildPredicate.build',
-            index=8,
-            number=9,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='canary',
-            full_name='buildbucket.v2.BuildPredicate.canary',
-            index=9,
-            number=10,
-            type=14,
-            cpp_type=8,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2232,
-    serialized_end=2672,
+  name='BuildPredicate',
+  full_name='buildbucket.v2.BuildPredicate',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='builder', full_name='buildbucket.v2.BuildPredicate.builder', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='status', full_name='buildbucket.v2.BuildPredicate.status', index=1,
+      number=2, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='gerrit_changes', full_name='buildbucket.v2.BuildPredicate.gerrit_changes', index=2,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='output_gitiles_commit', full_name='buildbucket.v2.BuildPredicate.output_gitiles_commit', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='created_by', full_name='buildbucket.v2.BuildPredicate.created_by', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='tags', full_name='buildbucket.v2.BuildPredicate.tags', index=5,
+      number=6, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='create_time', full_name='buildbucket.v2.BuildPredicate.create_time', index=6,
+      number=7, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='include_experimental', full_name='buildbucket.v2.BuildPredicate.include_experimental', index=7,
+      number=8, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='build', full_name='buildbucket.v2.BuildPredicate.build', index=8,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='canary', full_name='buildbucket.v2.BuildPredicate.canary', index=9,
+      number=10, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2232,
+  serialized_end=2672,
 )
 
+
 _BUILDRANGE = _descriptor.Descriptor(
-    name='BuildRange',
-    full_name='buildbucket.v2.BuildRange',
-    filename=None,
-    file=DESCRIPTOR,
-    containing_type=None,
-    fields=[
-        _descriptor.FieldDescriptor(
-            name='start_build_id',
-            full_name='buildbucket.v2.BuildRange.start_build_id',
-            index=0,
-            number=1,
-            type=3,
-            cpp_type=2,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-        _descriptor.FieldDescriptor(
-            name='end_build_id',
-            full_name='buildbucket.v2.BuildRange.end_build_id',
-            index=1,
-            number=2,
-            type=3,
-            cpp_type=2,
-            label=1,
-            has_default_value=False,
-            default_value=0,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR
-        ),
-    ],
-    extensions=[],
-    nested_types=[],
-    enum_types=[],
-    serialized_options=None,
-    is_extendable=False,
-    syntax='proto3',
-    extension_ranges=[],
-    oneofs=[],
-    serialized_start=2674,
-    serialized_end=2732,
+  name='BuildRange',
+  full_name='buildbucket.v2.BuildRange',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='start_build_id', full_name='buildbucket.v2.BuildRange.start_build_id', index=0,
+      number=1, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='end_build_id', full_name='buildbucket.v2.BuildRange.end_build_id', index=1,
+      number=2, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2674,
+  serialized_end=2732,
 )
 
 _GETBUILDREQUEST.fields_by_name['builder'].message_type = build__pb2._BUILDERID
-_GETBUILDREQUEST.fields_by_name[
-    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+_GETBUILDREQUEST.fields_by_name['fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _SEARCHBUILDSREQUEST.fields_by_name['predicate'].message_type = _BUILDPREDICATE
-_SEARCHBUILDSREQUEST.fields_by_name[
-    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+_SEARCHBUILDSREQUEST.fields_by_name['fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _SEARCHBUILDSRESPONSE.fields_by_name['builds'].message_type = build__pb2._BUILD
-_BATCHREQUEST_REQUEST.fields_by_name['get_build'
-                                    ].message_type = _GETBUILDREQUEST
-_BATCHREQUEST_REQUEST.fields_by_name['search_builds'
-                                    ].message_type = _SEARCHBUILDSREQUEST
-_BATCHREQUEST_REQUEST.fields_by_name['schedule_build'
-                                    ].message_type = _SCHEDULEBUILDREQUEST
-_BATCHREQUEST_REQUEST.fields_by_name['cancel_build'
-                                    ].message_type = _CANCELBUILDREQUEST
+_BATCHREQUEST_REQUEST.fields_by_name['get_build'].message_type = _GETBUILDREQUEST
+_BATCHREQUEST_REQUEST.fields_by_name['search_builds'].message_type = _SEARCHBUILDSREQUEST
+_BATCHREQUEST_REQUEST.fields_by_name['schedule_build'].message_type = _SCHEDULEBUILDREQUEST
+_BATCHREQUEST_REQUEST.fields_by_name['cancel_build'].message_type = _CANCELBUILDREQUEST
 _BATCHREQUEST_REQUEST.containing_type = _BATCHREQUEST
 _BATCHREQUEST_REQUEST.oneofs_by_name['request'].fields.append(
-    _BATCHREQUEST_REQUEST.fields_by_name['get_build']
-)
-_BATCHREQUEST_REQUEST.fields_by_name[
-    'get_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name[
-        'request']
+  _BATCHREQUEST_REQUEST.fields_by_name['get_build'])
+_BATCHREQUEST_REQUEST.fields_by_name['get_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name['request']
 _BATCHREQUEST_REQUEST.oneofs_by_name['request'].fields.append(
-    _BATCHREQUEST_REQUEST.fields_by_name['search_builds']
-)
-_BATCHREQUEST_REQUEST.fields_by_name[
-    'search_builds'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name[
-        'request']
+  _BATCHREQUEST_REQUEST.fields_by_name['search_builds'])
+_BATCHREQUEST_REQUEST.fields_by_name['search_builds'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name['request']
 _BATCHREQUEST_REQUEST.oneofs_by_name['request'].fields.append(
-    _BATCHREQUEST_REQUEST.fields_by_name['schedule_build']
-)
-_BATCHREQUEST_REQUEST.fields_by_name[
-    'schedule_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name[
-        'request']
+  _BATCHREQUEST_REQUEST.fields_by_name['schedule_build'])
+_BATCHREQUEST_REQUEST.fields_by_name['schedule_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name['request']
 _BATCHREQUEST_REQUEST.oneofs_by_name['request'].fields.append(
-    _BATCHREQUEST_REQUEST.fields_by_name['cancel_build']
-)
-_BATCHREQUEST_REQUEST.fields_by_name[
-    'cancel_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name[
-        'request']
+  _BATCHREQUEST_REQUEST.fields_by_name['cancel_build'])
+_BATCHREQUEST_REQUEST.fields_by_name['cancel_build'].containing_oneof = _BATCHREQUEST_REQUEST.oneofs_by_name['request']
 _BATCHREQUEST.fields_by_name['requests'].message_type = _BATCHREQUEST_REQUEST
-_BATCHRESPONSE_RESPONSE.fields_by_name['get_build'
-                                      ].message_type = build__pb2._BUILD
-_BATCHRESPONSE_RESPONSE.fields_by_name['search_builds'
-                                      ].message_type = _SEARCHBUILDSRESPONSE
-_BATCHRESPONSE_RESPONSE.fields_by_name['schedule_build'
-                                      ].message_type = build__pb2._BUILD
-_BATCHRESPONSE_RESPONSE.fields_by_name['cancel_build'
-                                      ].message_type = build__pb2._BUILD
-_BATCHRESPONSE_RESPONSE.fields_by_name[
-    'error'].message_type = google_dot_rpc_dot_status__pb2._STATUS
+_BATCHRESPONSE_RESPONSE.fields_by_name['get_build'].message_type = build__pb2._BUILD
+_BATCHRESPONSE_RESPONSE.fields_by_name['search_builds'].message_type = _SEARCHBUILDSRESPONSE
+_BATCHRESPONSE_RESPONSE.fields_by_name['schedule_build'].message_type = build__pb2._BUILD
+_BATCHRESPONSE_RESPONSE.fields_by_name['cancel_build'].message_type = build__pb2._BUILD
+_BATCHRESPONSE_RESPONSE.fields_by_name['error'].message_type = google_dot_rpc_dot_status__pb2._STATUS
 _BATCHRESPONSE_RESPONSE.containing_type = _BATCHRESPONSE
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
-    _BATCHRESPONSE_RESPONSE.fields_by_name['get_build']
-)
-_BATCHRESPONSE_RESPONSE.fields_by_name[
-    'get_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
-        'response']
+  _BATCHRESPONSE_RESPONSE.fields_by_name['get_build'])
+_BATCHRESPONSE_RESPONSE.fields_by_name['get_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
-    _BATCHRESPONSE_RESPONSE.fields_by_name['search_builds']
-)
-_BATCHRESPONSE_RESPONSE.fields_by_name[
-    'search_builds'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
-        'response']
+  _BATCHRESPONSE_RESPONSE.fields_by_name['search_builds'])
+_BATCHRESPONSE_RESPONSE.fields_by_name['search_builds'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
-    _BATCHRESPONSE_RESPONSE.fields_by_name['schedule_build']
-)
-_BATCHRESPONSE_RESPONSE.fields_by_name[
-    'schedule_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
-        'response']
+  _BATCHRESPONSE_RESPONSE.fields_by_name['schedule_build'])
+_BATCHRESPONSE_RESPONSE.fields_by_name['schedule_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
-    _BATCHRESPONSE_RESPONSE.fields_by_name['cancel_build']
-)
-_BATCHRESPONSE_RESPONSE.fields_by_name[
-    'cancel_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
-        'response']
+  _BATCHRESPONSE_RESPONSE.fields_by_name['cancel_build'])
+_BATCHRESPONSE_RESPONSE.fields_by_name['cancel_build'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
 _BATCHRESPONSE_RESPONSE.oneofs_by_name['response'].fields.append(
-    _BATCHRESPONSE_RESPONSE.fields_by_name['error']
-)
-_BATCHRESPONSE_RESPONSE.fields_by_name[
-    'error'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name[
-        'response']
-_BATCHRESPONSE.fields_by_name['responses'
-                             ].message_type = _BATCHRESPONSE_RESPONSE
+  _BATCHRESPONSE_RESPONSE.fields_by_name['error'])
+_BATCHRESPONSE_RESPONSE.fields_by_name['error'].containing_oneof = _BATCHRESPONSE_RESPONSE.oneofs_by_name['response']
+_BATCHRESPONSE.fields_by_name['responses'].message_type = _BATCHRESPONSE_RESPONSE
 _UPDATEBUILDREQUEST.fields_by_name['build'].message_type = build__pb2._BUILD
-_UPDATEBUILDREQUEST.fields_by_name[
-    'update_mask'
-].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
-_UPDATEBUILDREQUEST.fields_by_name[
-    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
-_SCHEDULEBUILDREQUEST.fields_by_name['builder'
-                                    ].message_type = build__pb2._BUILDERID
+_UPDATEBUILDREQUEST.fields_by_name['update_mask'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+_UPDATEBUILDREQUEST.fields_by_name['fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+_SCHEDULEBUILDREQUEST.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _SCHEDULEBUILDREQUEST.fields_by_name['canary'].enum_type = common__pb2._TRINARY
-_SCHEDULEBUILDREQUEST.fields_by_name['experimental'
-                                    ].enum_type = common__pb2._TRINARY
-_SCHEDULEBUILDREQUEST.fields_by_name[
-    'properties'].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
-_SCHEDULEBUILDREQUEST.fields_by_name['gitiles_commit'
-                                    ].message_type = common__pb2._GITILESCOMMIT
-_SCHEDULEBUILDREQUEST.fields_by_name['gerrit_changes'
-                                    ].message_type = common__pb2._GERRITCHANGE
-_SCHEDULEBUILDREQUEST.fields_by_name['tags'
-                                    ].message_type = common__pb2._STRINGPAIR
-_SCHEDULEBUILDREQUEST.fields_by_name[
-    'dimensions'].message_type = common__pb2._REQUESTEDDIMENSION
-_SCHEDULEBUILDREQUEST.fields_by_name[
-    'notify'].message_type = notification__pb2._NOTIFICATIONCONFIG
-_SCHEDULEBUILDREQUEST.fields_by_name[
-    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
-_SCHEDULEBUILDREQUEST.fields_by_name['critical'
-                                    ].enum_type = common__pb2._TRINARY
-_CANCELBUILDREQUEST.fields_by_name[
-    'fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+_SCHEDULEBUILDREQUEST.fields_by_name['experimental'].enum_type = common__pb2._TRINARY
+_SCHEDULEBUILDREQUEST.fields_by_name['properties'].message_type = google_dot_protobuf_dot_struct__pb2._STRUCT
+_SCHEDULEBUILDREQUEST.fields_by_name['gitiles_commit'].message_type = common__pb2._GITILESCOMMIT
+_SCHEDULEBUILDREQUEST.fields_by_name['gerrit_changes'].message_type = common__pb2._GERRITCHANGE
+_SCHEDULEBUILDREQUEST.fields_by_name['tags'].message_type = common__pb2._STRINGPAIR
+_SCHEDULEBUILDREQUEST.fields_by_name['dimensions'].message_type = common__pb2._REQUESTEDDIMENSION
+_SCHEDULEBUILDREQUEST.fields_by_name['notify'].message_type = notification__pb2._NOTIFICATIONCONFIG
+_SCHEDULEBUILDREQUEST.fields_by_name['fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
+_SCHEDULEBUILDREQUEST.fields_by_name['critical'].enum_type = common__pb2._TRINARY
+_CANCELBUILDREQUEST.fields_by_name['fields'].message_type = google_dot_protobuf_dot_field__mask__pb2._FIELDMASK
 _CANCELBUILDSREQUEST.fields_by_name['predicate'].message_type = _BUILDPREDICATE
 _BUILDPREDICATE.fields_by_name['builder'].message_type = build__pb2._BUILDERID
 _BUILDPREDICATE.fields_by_name['status'].enum_type = common__pb2._STATUS
-_BUILDPREDICATE.fields_by_name['gerrit_changes'
-                              ].message_type = common__pb2._GERRITCHANGE
-_BUILDPREDICATE.fields_by_name['output_gitiles_commit'
-                              ].message_type = common__pb2._GITILESCOMMIT
+_BUILDPREDICATE.fields_by_name['gerrit_changes'].message_type = common__pb2._GERRITCHANGE
+_BUILDPREDICATE.fields_by_name['output_gitiles_commit'].message_type = common__pb2._GITILESCOMMIT
 _BUILDPREDICATE.fields_by_name['tags'].message_type = common__pb2._STRINGPAIR
-_BUILDPREDICATE.fields_by_name['create_time'
-                              ].message_type = common__pb2._TIMERANGE
+_BUILDPREDICATE.fields_by_name['create_time'].message_type = common__pb2._TIMERANGE
 _BUILDPREDICATE.fields_by_name['build'].message_type = _BUILDRANGE
 _BUILDPREDICATE.fields_by_name['canary'].enum_type = common__pb2._TRINARY
 DESCRIPTOR.message_types_by_name['GetBuildRequest'] = _GETBUILDREQUEST
@@ -1448,223 +815,175 @@ DESCRIPTOR.message_types_by_name['BuildPredicate'] = _BUILDPREDICATE
 DESCRIPTOR.message_types_by_name['BuildRange'] = _BUILDRANGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-GetBuildRequest = _reflection.GeneratedProtocolMessageType(
-    'GetBuildRequest',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_GETBUILDREQUEST,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.GetBuildRequest)
-    )
-)
+GetBuildRequest = _reflection.GeneratedProtocolMessageType('GetBuildRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETBUILDREQUEST,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.GetBuildRequest)
+  ))
 _sym_db.RegisterMessage(GetBuildRequest)
 
-SearchBuildsRequest = _reflection.GeneratedProtocolMessageType(
-    'SearchBuildsRequest',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_SEARCHBUILDSREQUEST,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.SearchBuildsRequest)
-    )
-)
+SearchBuildsRequest = _reflection.GeneratedProtocolMessageType('SearchBuildsRequest', (_message.Message,), dict(
+  DESCRIPTOR = _SEARCHBUILDSREQUEST,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.SearchBuildsRequest)
+  ))
 _sym_db.RegisterMessage(SearchBuildsRequest)
 
-SearchBuildsResponse = _reflection.GeneratedProtocolMessageType(
-    'SearchBuildsResponse',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_SEARCHBUILDSRESPONSE,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.SearchBuildsResponse)
-    )
-)
+SearchBuildsResponse = _reflection.GeneratedProtocolMessageType('SearchBuildsResponse', (_message.Message,), dict(
+  DESCRIPTOR = _SEARCHBUILDSRESPONSE,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.SearchBuildsResponse)
+  ))
 _sym_db.RegisterMessage(SearchBuildsResponse)
 
-BatchRequest = _reflection.GeneratedProtocolMessageType(
-    'BatchRequest',
-    (_message.Message,),
-    dict(
-        Request=_reflection.GeneratedProtocolMessageType(
-            'Request',
-            (_message.Message,),
-            dict(
-                DESCRIPTOR=_BATCHREQUEST_REQUEST,
-                __module__='rpc_pb2'
-                # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchRequest.Request)
-            )
-        ),
-        DESCRIPTOR=_BATCHREQUEST,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchRequest)
-    )
-)
+BatchRequest = _reflection.GeneratedProtocolMessageType('BatchRequest', (_message.Message,), dict(
+
+  Request = _reflection.GeneratedProtocolMessageType('Request', (_message.Message,), dict(
+    DESCRIPTOR = _BATCHREQUEST_REQUEST,
+    __module__ = 'rpc_pb2'
+    # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchRequest.Request)
+    ))
+  ,
+  DESCRIPTOR = _BATCHREQUEST,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchRequest)
+  ))
 _sym_db.RegisterMessage(BatchRequest)
 _sym_db.RegisterMessage(BatchRequest.Request)
 
-BatchResponse = _reflection.GeneratedProtocolMessageType(
-    'BatchResponse',
-    (_message.Message,),
-    dict(
-        Response=_reflection.GeneratedProtocolMessageType(
-            'Response',
-            (_message.Message,),
-            dict(
-                DESCRIPTOR=_BATCHRESPONSE_RESPONSE,
-                __module__='rpc_pb2'
-                # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchResponse.Response)
-            )
-        ),
-        DESCRIPTOR=_BATCHRESPONSE,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchResponse)
-    )
-)
+BatchResponse = _reflection.GeneratedProtocolMessageType('BatchResponse', (_message.Message,), dict(
+
+  Response = _reflection.GeneratedProtocolMessageType('Response', (_message.Message,), dict(
+    DESCRIPTOR = _BATCHRESPONSE_RESPONSE,
+    __module__ = 'rpc_pb2'
+    # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchResponse.Response)
+    ))
+  ,
+  DESCRIPTOR = _BATCHRESPONSE,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.BatchResponse)
+  ))
 _sym_db.RegisterMessage(BatchResponse)
 _sym_db.RegisterMessage(BatchResponse.Response)
 
-UpdateBuildRequest = _reflection.GeneratedProtocolMessageType(
-    'UpdateBuildRequest',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_UPDATEBUILDREQUEST,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.UpdateBuildRequest)
-    )
-)
+UpdateBuildRequest = _reflection.GeneratedProtocolMessageType('UpdateBuildRequest', (_message.Message,), dict(
+  DESCRIPTOR = _UPDATEBUILDREQUEST,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.UpdateBuildRequest)
+  ))
 _sym_db.RegisterMessage(UpdateBuildRequest)
 
-ScheduleBuildRequest = _reflection.GeneratedProtocolMessageType(
-    'ScheduleBuildRequest',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_SCHEDULEBUILDREQUEST,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.ScheduleBuildRequest)
-    )
-)
+ScheduleBuildRequest = _reflection.GeneratedProtocolMessageType('ScheduleBuildRequest', (_message.Message,), dict(
+  DESCRIPTOR = _SCHEDULEBUILDREQUEST,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.ScheduleBuildRequest)
+  ))
 _sym_db.RegisterMessage(ScheduleBuildRequest)
 
-CancelBuildRequest = _reflection.GeneratedProtocolMessageType(
-    'CancelBuildRequest',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_CANCELBUILDREQUEST,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.CancelBuildRequest)
-    )
-)
+CancelBuildRequest = _reflection.GeneratedProtocolMessageType('CancelBuildRequest', (_message.Message,), dict(
+  DESCRIPTOR = _CANCELBUILDREQUEST,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.CancelBuildRequest)
+  ))
 _sym_db.RegisterMessage(CancelBuildRequest)
 
-CancelBuildsRequest = _reflection.GeneratedProtocolMessageType(
-    'CancelBuildsRequest',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_CANCELBUILDSREQUEST,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.CancelBuildsRequest)
-    )
-)
+CancelBuildsRequest = _reflection.GeneratedProtocolMessageType('CancelBuildsRequest', (_message.Message,), dict(
+  DESCRIPTOR = _CANCELBUILDSREQUEST,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.CancelBuildsRequest)
+  ))
 _sym_db.RegisterMessage(CancelBuildsRequest)
 
-BuildPredicate = _reflection.GeneratedProtocolMessageType(
-    'BuildPredicate',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_BUILDPREDICATE,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.BuildPredicate)
-    )
-)
+BuildPredicate = _reflection.GeneratedProtocolMessageType('BuildPredicate', (_message.Message,), dict(
+  DESCRIPTOR = _BUILDPREDICATE,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.BuildPredicate)
+  ))
 _sym_db.RegisterMessage(BuildPredicate)
 
-BuildRange = _reflection.GeneratedProtocolMessageType(
-    'BuildRange',
-    (_message.Message,),
-    dict(
-        DESCRIPTOR=_BUILDRANGE,
-        __module__='rpc_pb2'
-        # @@protoc_insertion_point(class_scope:buildbucket.v2.BuildRange)
-    )
-)
+BuildRange = _reflection.GeneratedProtocolMessageType('BuildRange', (_message.Message,), dict(
+  DESCRIPTOR = _BUILDRANGE,
+  __module__ = 'rpc_pb2'
+  # @@protoc_insertion_point(class_scope:buildbucket.v2.BuildRange)
+  ))
 _sym_db.RegisterMessage(BuildRange)
+
 
 DESCRIPTOR._options = None
 
 _BUILDS = _descriptor.ServiceDescriptor(
-    name='Builds',
-    full_name='buildbucket.v2.Builds',
-    file=DESCRIPTOR,
+  name='Builds',
+  full_name='buildbucket.v2.Builds',
+  file=DESCRIPTOR,
+  index=0,
+  serialized_options=None,
+  serialized_start=2735,
+  serialized_end=3289,
+  methods=[
+  _descriptor.MethodDescriptor(
+    name='GetBuild',
+    full_name='buildbucket.v2.Builds.GetBuild',
     index=0,
+    containing_service=None,
+    input_type=_GETBUILDREQUEST,
+    output_type=build__pb2._BUILD,
     serialized_options=None,
-    serialized_start=2735,
-    serialized_end=3289,
-    methods=[
-        _descriptor.MethodDescriptor(
-            name='GetBuild',
-            full_name='buildbucket.v2.Builds.GetBuild',
-            index=0,
-            containing_service=None,
-            input_type=_GETBUILDREQUEST,
-            output_type=build__pb2._BUILD,
-            serialized_options=None,
-        ),
-        _descriptor.MethodDescriptor(
-            name='SearchBuilds',
-            full_name='buildbucket.v2.Builds.SearchBuilds',
-            index=1,
-            containing_service=None,
-            input_type=_SEARCHBUILDSREQUEST,
-            output_type=_SEARCHBUILDSRESPONSE,
-            serialized_options=None,
-        ),
-        _descriptor.MethodDescriptor(
-            name='UpdateBuild',
-            full_name='buildbucket.v2.Builds.UpdateBuild',
-            index=2,
-            containing_service=None,
-            input_type=_UPDATEBUILDREQUEST,
-            output_type=build__pb2._BUILD,
-            serialized_options=None,
-        ),
-        _descriptor.MethodDescriptor(
-            name='ScheduleBuild',
-            full_name='buildbucket.v2.Builds.ScheduleBuild',
-            index=3,
-            containing_service=None,
-            input_type=_SCHEDULEBUILDREQUEST,
-            output_type=build__pb2._BUILD,
-            serialized_options=None,
-        ),
-        _descriptor.MethodDescriptor(
-            name='CancelBuild',
-            full_name='buildbucket.v2.Builds.CancelBuild',
-            index=4,
-            containing_service=None,
-            input_type=_CANCELBUILDREQUEST,
-            output_type=build__pb2._BUILD,
-            serialized_options=None,
-        ),
-        _descriptor.MethodDescriptor(
-            name='CancelBuilds',
-            full_name='buildbucket.v2.Builds.CancelBuilds',
-            index=5,
-            containing_service=None,
-            input_type=_CANCELBUILDSREQUEST,
-            output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
-            serialized_options=None,
-        ),
-        _descriptor.MethodDescriptor(
-            name='Batch',
-            full_name='buildbucket.v2.Builds.Batch',
-            index=6,
-            containing_service=None,
-            input_type=_BATCHREQUEST,
-            output_type=_BATCHRESPONSE,
-            serialized_options=None,
-        ),
-    ]
-)
+  ),
+  _descriptor.MethodDescriptor(
+    name='SearchBuilds',
+    full_name='buildbucket.v2.Builds.SearchBuilds',
+    index=1,
+    containing_service=None,
+    input_type=_SEARCHBUILDSREQUEST,
+    output_type=_SEARCHBUILDSRESPONSE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='UpdateBuild',
+    full_name='buildbucket.v2.Builds.UpdateBuild',
+    index=2,
+    containing_service=None,
+    input_type=_UPDATEBUILDREQUEST,
+    output_type=build__pb2._BUILD,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='ScheduleBuild',
+    full_name='buildbucket.v2.Builds.ScheduleBuild',
+    index=3,
+    containing_service=None,
+    input_type=_SCHEDULEBUILDREQUEST,
+    output_type=build__pb2._BUILD,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='CancelBuild',
+    full_name='buildbucket.v2.Builds.CancelBuild',
+    index=4,
+    containing_service=None,
+    input_type=_CANCELBUILDREQUEST,
+    output_type=build__pb2._BUILD,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='CancelBuilds',
+    full_name='buildbucket.v2.Builds.CancelBuilds',
+    index=5,
+    containing_service=None,
+    input_type=_CANCELBUILDSREQUEST,
+    output_type=google_dot_protobuf_dot_empty__pb2._EMPTY,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='Batch',
+    full_name='buildbucket.v2.Builds.Batch',
+    index=6,
+    containing_service=None,
+    input_type=_BATCHREQUEST,
+    output_type=_BATCHRESPONSE,
+    serialized_options=None,
+  ),
+])
 _sym_db.RegisterServiceDescriptor(_BUILDS)
 
 DESCRIPTOR.services_by_name['Builds'] = _BUILDS
