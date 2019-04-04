@@ -305,8 +305,6 @@
        <a id="addacomment" href="#" style="white-space:nowrap">Add a comment below</a>
       [end]
      [end]
-    [else]
-      <div style="white-space:nowrap"><a href="[login_url]">Sign in</a> to add a comment</div>
     [end]
  [end][# not read_only]
 [end]

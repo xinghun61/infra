@@ -112,20 +112,6 @@
 
 </div>
 
-[if-any read_only][else]
-  [if-any logged_in_user][else]
-    <span class="indicator">&#9658;</span>
-    <h2 class="not_styled_as_heading">
-      <a href="[login_url]">
-        Sign in
-      </a>
-      to add a comment
-    </h2>
-  [end]
-[end]
-
-<br>
-
 [if-any issue.multiple_blocked_on]
   [include "issue-rank-table.ezt"]
 [end]
