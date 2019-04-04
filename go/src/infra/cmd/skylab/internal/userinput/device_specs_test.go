@@ -15,12 +15,8 @@ import (
 )
 
 func TestGetDeviceSpecs(t *testing.T) {
-	r := &regexpEditor{
-		re:   regexp.MustCompile(`some\-hostname`),
-		repl: []byte("this-other-hostname"),
-	}
 	s := &deviceSpecsGetter{
-		inputFunc: r.ReplaceAll,
+		inputFunc: newRegexpReplacer(regexp.MustCompile(`some\-hostname`), "this-other-hostname"),
 	}
 
 	initial := &inventory.CommonDeviceSpecs{
@@ -39,6 +35,13 @@ func TestGetDeviceSpecs(t *testing.T) {
 	if !proto.Equal(want, got) {
 		t.Errorf("incorrect response from GetDeviceSpecs, -want, +got:\n%s", pretty.Compare(want, got))
 	}
+}
+
+// newRegexpReplacer returns an inputFunc that replaces text matching re with
+// repl.
+func newRegexpReplacer(re *regexp.Regexp, repl string) inputFunc {
+	r := regexpEditor{re: re, repl: []byte(repl)}
+	return r.ReplaceAll
 }
 
 // regexpEditor has a method to replace occurrences of re with repl in given
