@@ -57,7 +57,6 @@ def try_builder(name, os, presubmit=False):
 ci_builder(name = 'luci-go-continuous-xenial-64', os = 'Ubuntu-16.04')
 ci_builder(name = 'luci-go-continuous-trusty-64', os = 'Ubuntu-14.04')
 ci_builder(name = 'luci-go-continuous-mac-10.13-64', os = 'Mac-10.13')
-ci_builder(name = 'luci-go-continuous-mac-10.9-64', os = 'Mac-10.9')
 ci_builder(name = 'luci-go-continuous-win7-64', os = 'Windows')
 ci_builder(name = 'luci-go-continuous-win10-64', os = 'Windows-10')
 
