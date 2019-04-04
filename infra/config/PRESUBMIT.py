@@ -11,11 +11,8 @@ def CheckChangeOnUpload(input_api, output_api):
   for path in LUCICFG_ENTRY_SCRIPTS:
     tests += input_api.canned_checks.CheckLucicfgGenOutput(
         input_api, output_api, path)
-  res = input_api.RunTests(tests)
-  res += input_api.canned_checks.CheckChangedLUCIConfigs(input_api, output_api)
-  return res
+  return input_api.RunTests(tests)
 
 
 def CheckChangeOnCommit(input_api, output_api):
   return CheckChangeOnUpload(input_api, output_api)
-
