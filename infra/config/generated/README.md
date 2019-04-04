@@ -2,5 +2,5 @@
 
 **All files here are auto-generated. All manual changes are discarded.**
 
-Instead modify `*.star` files in the parent directory and regenerate files here
-by executing `./main.star` or `./dev.star`.
+Instead modify `*.star` files in the parent directory (see also `subprojects`
+directory) and regenerate files here by executing `./main.star` or `./dev.star`.
