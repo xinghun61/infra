@@ -65,11 +65,13 @@ else:
 
 def main():
   parser = argparse.ArgumentParser()
+  # TODO(vadimsh): Remove these options. They were used by luci_deploy tool
+  # which is long gone.
   parser.add_argument('--preserve-gopath', action='store_true',
       help='Preserve the existing GOPATH, appending to it instead of '
            'overwriting it.')
   parser.add_argument('--toolset-root', action='store', metavar='PATH',
-      help='Use this path for the toolset root instead of deafult.')
+      help='Use this path for the toolset root instead of default.')
   parser.add_argument('--deps-only', action='store_true',
       help='If True, only download and install dependencies in "deps" files.')
 
@@ -85,6 +87,19 @@ def main():
     for key, value in sorted(new.iteritems()):
       if old.get(key) != value:
         emit_env_var(key, value)
+    # VIRTUAL_ENV is added by the vpython wrapper. It usually *does not* exist
+    # in os.environ of the outer shell that executes eval `./env.py`. Since we
+    # are about to replace the native python in PATH with virtualenv's one, we
+    # must also make sure the new environment has VIRTUAL_ENV set. Otherwise
+    # some virtualenv-aware tools (like gcloud) get confused.
+    #
+    # Note that once env.py finishes execution, nothing is holding a lock on
+    # vpython virtualenv directory, and it may eventually be garbage collected
+    # (while the user is still inside a shell that references it). We assume it
+    # is rare, and the users can manually recover (by reexecuting env.py). This
+    # won't be happening on bots, since they don't use eval `./env.py`.
+    if 'VIRTUAL_ENV' in old:
+      emit_env_var('VIRTUAL_ENV', old['VIRTUAL_ENV'])
   else:
     exe = extras[0]
     if exe == 'python':
