@@ -633,7 +633,6 @@ class Servlet(webapp2.RequestHandler):
         'False': ezt.boolean(False),
 
         'local_mode': ezt.boolean(settings.local_mode),
-        'script_prefix_dir': settings.script_prefix_dir,
 
         'site_name': settings.site_name,
         'show_search_metadata': ezt.boolean(False),
