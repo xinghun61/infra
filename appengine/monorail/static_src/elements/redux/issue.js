@@ -12,27 +12,27 @@ import {createReducer, createRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
 
 // Actions
-const UPDATE_ISSUE_REF = 'UPDATE_ISSUE_REF';
+const SET_ISSUE_REF = 'SET_ISSUE_REF';
 
-export const FETCH_ISSUE_START = 'FETCH_ISSUE_START';
-export const FETCH_ISSUE_SUCCESS = 'FETCH_ISSUE_SUCCESS';
-export const FETCH_ISSUE_FAILURE = 'FETCH_ISSUE_FAILURE';
+export const FETCH_START = 'FETCH_START';
+export const FETCH_SUCCESS = 'FETCH_SUCCESS';
+export const FETCH_FAILURE = 'FETCH_FAILURE';
 
-const FETCH_ISSUE_HOTLISTS_START = 'FETCH_ISSUE_HOTLISTS_START';
-const FETCH_ISSUE_HOTLISTS_SUCCESS = 'FETCH_ISSUE_HOTLISTS_SUCCESS';
-const FETCH_ISSUE_HOTLISTS_FAILURE = 'FETCH_ISSUE_HOTLISTS_FAILURE';
+const FETCH_HOTLISTS_START = 'FETCH_HOTLISTS_START';
+const FETCH_HOTLISTS_SUCCESS = 'FETCH_HOTLISTS_SUCCESS';
+const FETCH_HOTLISTS_FAILURE = 'FETCH_HOTLISTS_FAILURE';
 
-const FETCH_ISSUE_PERMISSIONS_START = 'FETCH_ISSUE_PERMISSIONS_START';
-const FETCH_ISSUE_PERMISSIONS_SUCCESS = 'FETCH_ISSUE_PERMISSIONS_SUCCESS';
-const FETCH_ISSUE_PERMISSIONS_FAILURE = 'FETCH_ISSUE_PERMISSIONS_FAILURE';
+const FETCH_PERMISSIONS_START = 'FETCH_PERMISSIONS_START';
+const FETCH_PERMISSIONS_SUCCESS = 'FETCH_PERMISSIONS_SUCCESS';
+const FETCH_PERMISSIONS_FAILURE = 'FETCH_PERMISSIONS_FAILURE';
 
-const STAR_ISSUE_START = 'STAR_ISSUE_START';
-const STAR_ISSUE_SUCCESS = 'STAR_ISSUE_SUCCESS';
-const STAR_ISSUE_FAILURE = 'STAR_ISSUE_FAILURE';
+const STAR_START = 'STAR_START';
+const STAR_SUCCESS = 'STAR_SUCCESS';
+const STAR_FAILURE = 'STAR_FAILURE';
 
-const PRESUBMIT_ISSUE_START = 'PRESUBMIT_ISSUE_START';
-const PRESUBMIT_ISSUE_SUCCESS = 'PRESUBMIT_ISSUE_SUCCESS';
-const PRESUBMIT_ISSUE_FAILURE = 'PRESUBMIT_ISSUE_FAILURE';
+const PRESUBMIT_START = 'PRESUBMIT_START';
+const PRESUBMIT_SUCCESS = 'PRESUBMIT_SUCCESS';
+const PRESUBMIT_FAILURE = 'PRESUBMIT_FAILURE';
 
 const FETCH_IS_STARRED_START = 'FETCH_IS_STARRED_START';
 const FETCH_IS_STARRED_SUCCESS = 'FETCH_IS_STARRED_SUCCESS';
@@ -54,13 +54,13 @@ const FETCH_RELATED_ISSUES_START = 'FETCH_RELATED_ISSUES_START';
 const FETCH_RELATED_ISSUES_SUCCESS = 'FETCH_RELATED_ISSUES_SUCCESS';
 const FETCH_RELATED_ISSUES_FAILURE = 'FETCH_RELATED_ISSUES_FAILURE';
 
-const CONVERT_ISSUE_START = 'CONVERT_ISSUE_START';
-const CONVERT_ISSUE_SUCCESS = 'CONVERT_ISSUE_SUCCESS';
-const CONVERT_ISSUE_FAILURE = 'CONVERT_ISSUE_FAILURE';
+const CONVERT_START = 'CONVERT_START';
+const CONVERT_SUCCESS = 'CONVERT_SUCCESS';
+const CONVERT_FAILURE = 'CONVERT_FAILURE';
 
-const UPDATE_ISSUE_START = 'UPDATE_ISSUE_START';
-const UPDATE_ISSUE_SUCCESS = 'UPDATE_ISSUE_SUCCESS';
-const UPDATE_ISSUE_FAILURE = 'UPDATE_ISSUE_FAILURE';
+const UPDATE_START = 'UPDATE_START';
+const UPDATE_SUCCESS = 'UPDATE_SUCCESS';
+const UPDATE_FAILURE = 'UPDATE_FAILURE';
 
 const UPDATE_APPROVAL_START = 'UPDATE_APPROVAL_START';
 const UPDATE_APPROVAL_SUCCESS = 'UPDATE_APPROVAL_SUCCESS';
@@ -75,34 +75,34 @@ const UPDATE_APPROVAL_FAILURE = 'UPDATE_APPROVAL_FAILURE';
 
   currentIssue: Object,
 
-  issueHotlists: Array,
+  hotlists: Array,
   comments: Array,
   commentReferences: Map,
   relatedIssues: Map,
   referencedUsers: Array,
   isStarred: Boolean,
-  issuePermissions: Array,
+  permissions: Array,
   presubmitResponse: Object,
 
   requests: {
-    fetchIssue: Object,
-    fetchIssueHotlists: Object,
-    fetchIssuePermissions: Object,
-    starIssue: Object,
-    presubmitIssue: Object,
+    fetch: Object,
+    fetchHotlists: Object,
+    fetchPermissions: Object,
+    star: Object,
+    presubmit: Object,
     fetchComments: Object,
     fetchCommentReferences: Object,
     fetchRelatedIssues: Object,
     fetchIsStarred: Object,
-    convertIssue: Object,
-    updateIssue: Object,
+    convert: Object,
+    update: Object,
     updateApproval: Object,
   },
 }
 */
 
 // Helpers for the reducers.
-const updateIssueApproval = (issue, approval) => {
+const updateApprovalValues = (issue, approval) => {
   if (!issue.approvalValues) return issue;
   const newApprovals = issue.approvalValues.map((item, i) => {
     if (item.fieldRef.fieldName === approval.fieldRef.fieldName) {
@@ -117,27 +117,27 @@ const updateIssueApproval = (issue, approval) => {
 
 // Reducers
 const localIdReducer = createReducer(0, {
-  [UPDATE_ISSUE_REF]: (state, action) => action.localId || state,
+  [SET_ISSUE_REF]: (state, action) => action.localId || state,
 });
 
 const projectNameReducer = createReducer('', {
-  [UPDATE_ISSUE_REF]: (state, action) => action.projectName || state,
+  [SET_ISSUE_REF]: (state, action) => action.projectName || state,
 });
 
 const currentIssueReducer = createReducer({}, {
-  [FETCH_ISSUE_SUCCESS]: (_state, action) => action.issue,
-  [STAR_ISSUE_SUCCESS]: (state, action) => {
+  [FETCH_SUCCESS]: (_state, action) => action.issue,
+  [STAR_SUCCESS]: (state, action) => {
     return {...state, starCount: action.starCount};
   },
-  [CONVERT_ISSUE_SUCCESS]: (_state, action) => action.issue,
-  [UPDATE_ISSUE_SUCCESS]: (_state, action) => action.issue,
+  [CONVERT_SUCCESS]: (_state, action) => action.issue,
+  [UPDATE_SUCCESS]: (_state, action) => action.issue,
   [UPDATE_APPROVAL_SUCCESS]: (state, action) => {
-    return updateIssueApproval(state, action.approval);
+    return updateApprovalValues(state, action.approval);
   },
 });
 
-const issueHotlistsReducer = createReducer([], {
-  [FETCH_ISSUE_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
+const hotlistsReducer = createReducer([], {
+  [FETCH_HOTLISTS_SUCCESS]: (_, action) => action.hotlists,
 });
 
 const commentsReducer = createReducer([], {
@@ -160,54 +160,33 @@ const referencedUsersReducer = createReducer(new Map(), {
 });
 
 const isStarredReducer = createReducer(false, {
-  [STAR_ISSUE_SUCCESS]: (state, _action) => !state,
+  [STAR_SUCCESS]: (state, _action) => !state,
   [FETCH_IS_STARRED_SUCCESS]: (_state, action) => !!action.isStarred,
 });
 
 const presubmitResponseReducer = createReducer({}, {
-  [PRESUBMIT_ISSUE_SUCCESS]: (state, action) => {
-    return action.presubmitResponse;
-  },
+  [PRESUBMIT_SUCCESS]: (_state, action) => action.presubmitResponse,
 });
 
-const issuePermissionsReducer = createReducer([], {
-  [FETCH_ISSUE_PERMISSIONS_SUCCESS]: (_state, action) => {
-    return action.permissions;
-  },
+const permissionsReducer = createReducer([], {
+  [FETCH_PERMISSIONS_SUCCESS]: (_state, action) => action.permissions,
 });
 
 const requestsReducer = combineReducers({
-  // Request for getting an issue.
-  fetchIssue: createRequestReducer(
-    FETCH_ISSUE_START,
-    FETCH_ISSUE_SUCCESS,
-    FETCH_ISSUE_FAILURE),
-  // Request for getting an issue's hotlists.
-  fetchIssueHotlists: createRequestReducer(
-    FETCH_ISSUE_HOTLISTS_START,
-    FETCH_ISSUE_HOTLISTS_SUCCESS,
-    FETCH_ISSUE_HOTLISTS_FAILURE),
-  // Request for getting issue permissions.
-  fetchIssuePermissions: createRequestReducer(
-    FETCH_ISSUE_PERMISSIONS_START,
-    FETCH_ISSUE_PERMISSIONS_SUCCESS,
-    FETCH_ISSUE_PERMISSIONS_FAILURE),
-  // Request for starring an issue.
-  starIssue: createRequestReducer(
-    STAR_ISSUE_START,
-    STAR_ISSUE_SUCCESS,
-    STAR_ISSUE_FAILURE),
-  // Request for checking an issue before submitting.
-  presubmitIssue: createRequestReducer(
-    PRESUBMIT_ISSUE_START,
-    PRESUBMIT_ISSUE_SUCCESS,
-    PRESUBMIT_ISSUE_FAILURE),
-  // Request for getting comments for an issue.
+  fetch: createRequestReducer(
+    FETCH_START, FETCH_SUCCESS, FETCH_FAILURE),
+  fetchHotlists: createRequestReducer(
+    FETCH_HOTLISTS_START, FETCH_HOTLISTS_SUCCESS, FETCH_HOTLISTS_FAILURE),
+  fetchPermissions: createRequestReducer(
+    FETCH_PERMISSIONS_START,
+    FETCH_PERMISSIONS_SUCCESS,
+    FETCH_PERMISSIONS_FAILURE),
+  star: createRequestReducer(
+    STAR_START, STAR_SUCCESS, STAR_FAILURE),
+  presubmit: createRequestReducer(
+    PRESUBMIT_START, PRESUBMIT_SUCCESS, PRESUBMIT_FAILURE),
   fetchComments: createRequestReducer(
-    FETCH_COMMENTS_START,
-    FETCH_COMMENTS_SUCCESS,
-    FETCH_COMMENTS_FAILURE),
-  // Request for getting references in comment data for an issue.
+    FETCH_COMMENTS_START, FETCH_COMMENTS_SUCCESS, FETCH_COMMENTS_FAILURE),
   fetchCommentReferences: createRequestReducer(
     FETCH_COMMENT_REFERENCES_START,
     FETCH_COMMENT_REFERENCES_SUCCESS,
@@ -220,28 +199,16 @@ const requestsReducer = combineReducers({
     FETCH_REFERENCED_USERS_START,
     FETCH_REFERENCED_USERS_SUCCESS,
     FETCH_REFERENCED_USERS_FAILURE),
-  // Request for getting whether an issue is starred.
   fetchIsStarred: createRequestReducer(
-    FETCH_IS_STARRED_START,
-    FETCH_IS_STARRED_SUCCESS,
-    FETCH_IS_STARRED_FAILURE),
-  // Request for converting an issue.
-  convertIssue: createRequestReducer(
-    CONVERT_ISSUE_START,
-    CONVERT_ISSUE_SUCCESS,
-    CONVERT_ISSUE_FAILURE),
-  // Request for updating an issue.
-  updateIssue: createRequestReducer(
-    UPDATE_ISSUE_START,
-    UPDATE_ISSUE_SUCCESS,
-    UPDATE_ISSUE_FAILURE),
-  // Request for updating an approval.
+    FETCH_IS_STARRED_START, FETCH_IS_STARRED_SUCCESS, FETCH_IS_STARRED_FAILURE),
+  convert: createRequestReducer(
+    CONVERT_START, CONVERT_SUCCESS, CONVERT_FAILURE),
+  update: createRequestReducer(
+    UPDATE_START, UPDATE_SUCCESS, UPDATE_FAILURE),
   // Assumption: It's okay to prevent the user from sending multiple
   // approval update requests at once, even for different approvals.
   updateApproval: createRequestReducer(
-    UPDATE_APPROVAL_START,
-    UPDATE_APPROVAL_SUCCESS,
-    UPDATE_APPROVAL_FAILURE),
+    UPDATE_APPROVAL_START, UPDATE_APPROVAL_SUCCESS, UPDATE_APPROVAL_FAILURE),
 });
 
 export const reducer = combineReducers({
@@ -252,13 +219,13 @@ export const reducer = combineReducers({
 
   currentIssue: currentIssueReducer,
 
-  issueHotlists: issueHotlistsReducer,
+  hotlists: hotlistsReducer,
   comments: commentsReducer,
   commentReferences: commentReferencesReducer,
   relatedIssues: relatedIssuesReducer,
   referencedUsers: referencedUsersReducer,
   isStarred: isStarredReducer,
-  issuePermissions: issuePermissionsReducer,
+  permissions: permissionsReducer,
   presubmitResponse: presubmitResponseReducer,
 
   requests: requestsReducer,
@@ -279,9 +246,9 @@ export const issue = (state) => state.issue.currentIssue;
 export const comments = (state) => state.issue.comments;
 export const commentsLoaded = (state) => state.issue.commentsLoaded;
 export const commentReferences = (state) => state.issue.commentReferences;
-export const issueHotlists = (state) => state.issue.issueHotlists;
+export const hotlists = (state) => state.issue.hotlists;
 export const issueLoaded = (state) => state.issue.issueLoaded;
-export const issuePermissions = (state) => state.issue.issuePermissions;
+export const permissions = (state) => state.issue.permissions;
 export const presubmitResponse = (state) => state.issue.presubmitResponse;
 export const relatedIssues = (state) => state.issue.relatedIssues;
 export const referencedUsers = (state) => state.issue.referencedUsers;
@@ -359,18 +326,13 @@ export const isRestricted = createSelector(
 
 export const isOpen = createSelector(
   issue,
-  (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false
-);
+  (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false);
 
 const blockingIssueRefs = createSelector(
-  issue,
-  (issue) => issue && issue.blockingIssueRefs || []
-);
+  issue, (issue) => issue && issue.blockingIssueRefs || []);
 
 const blockedOnIssueRefs = createSelector(
-  issue,
-  (issue) => issue && issue.blockedOnIssueRefs || []
-);
+  issue, (issue) => issue && issue.blockedOnIssueRefs || []);
 
 export const blockingIssues = createSelector(
   blockingIssueRefs, relatedIssues,
@@ -471,7 +433,7 @@ export const fieldDefs = createSelector(
 
 // Action Creators
 export const setIssueRef = (localId, projectName) => {
-  return {type: UPDATE_ISSUE_REF, localId, projectName};
+  return {type: SET_ISSUE_REF, localId, projectName};
 };
 
 export const fetchCommentReferences = (comments, projectName) => {
@@ -489,10 +451,7 @@ export const fetchCommentReferences = (comments, projectName) => {
         commentReferences: commentRefs,
       });
     } catch (error) {
-      dispatch({
-        type: FETCH_COMMENT_REFERENCES_FAILURE,
-        error,
-      });
+      dispatch({type: FETCH_COMMENT_REFERENCES_FAILURE, error});
     }
   };
 };
@@ -520,15 +479,9 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
     (resp.users || []).forEach((user) => {
       referencedUsers.set(user.email, user);
     });
-    dispatch({
-      type: FETCH_REFERENCED_USERS_SUCCESS,
-      referencedUsers,
-    });
+    dispatch({type: FETCH_REFERENCED_USERS_SUCCESS, referencedUsers});
   } catch (error) {
-    dispatch({
-      type: FETCH_REFERENCED_USERS_FAILURE,
-      error,
-    });
+    dispatch({type: FETCH_REFERENCED_USERS_FAILURE, error});
   }
 };
 
@@ -569,10 +522,7 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
       relatedIssues: relatedIssues,
     });
   } catch (error) {
-    dispatch({
-      type: FETCH_RELATED_ISSUES_FAILURE,
-      error,
-    });
+    dispatch({type: FETCH_RELATED_ISSUES_FAILURE, error});
   };
 };
 
@@ -584,17 +534,14 @@ export const fetchIssuePageData = (message) => async (dispatch) => {
 };
 
 export const fetch = (message) => async (dispatch) => {
-  dispatch({type: FETCH_ISSUE_START});
+  dispatch({type: FETCH_START});
 
   try {
     const resp = await window.prpcClient.call(
       'monorail.Issues', 'GetIssue', message
     );
 
-    dispatch({
-      type: FETCH_ISSUE_SUCCESS,
-      issue: resp.issue,
-    });
+    dispatch({type: FETCH_SUCCESS, issue: resp.issue});
 
     dispatch(fetchPermissions(message));
     if (!resp.issue.isDeleted) {
@@ -603,15 +550,12 @@ export const fetch = (message) => async (dispatch) => {
       dispatch(fetchReferencedUsers(resp.issue));
     }
   } catch (error) {
-    dispatch({
-      type: FETCH_ISSUE_FAILURE,
-      error,
-    });
+    dispatch({type: FETCH_FAILURE, error});
   }
 };
 
 export const fetchHotlists = (issue) => async (dispatch) => {
-  dispatch({type: FETCH_ISSUE_HOTLISTS_START});
+  dispatch({type: FETCH_HOTLISTS_START});
 
   try {
     const resp = await window.prpcClient.call(
@@ -621,35 +565,23 @@ export const fetchHotlists = (issue) => async (dispatch) => {
     hotlists.sort((hotlistA, hotlistB) => {
       return hotlistA.name.localeCompare(hotlistB.name);
     });
-    dispatch({
-      type: FETCH_ISSUE_HOTLISTS_SUCCESS,
-      hotlists,
-    });
+    dispatch({type: FETCH_HOTLISTS_SUCCESS, hotlists});
   } catch (error) {
-    dispatch({
-      type: FETCH_ISSUE_HOTLISTS_FAILURE,
-      error,
-    });
+    dispatch({type: FETCH_HOTLISTS_FAILURE, error});
   };
 };
 
 export const fetchPermissions = (message) => async (dispatch) => {
-  dispatch({type: FETCH_ISSUE_PERMISSIONS_START});
+  dispatch({type: FETCH_PERMISSIONS_START});
 
   try {
     const resp = await window.prpcClient.call(
       'monorail.Issues', 'ListIssuePermissions', message
     );
 
-    dispatch({
-      type: FETCH_ISSUE_PERMISSIONS_SUCCESS,
-      permissions: resp.permissions,
-    });
+    dispatch({type: FETCH_PERMISSIONS_SUCCESS, permissions: resp.permissions});
   } catch (error) {
-    dispatch({
-      type: FETCH_ISSUE_PERMISSIONS_FAILURE,
-      error,
-    });
+    dispatch({type: FETCH_PERMISSIONS_FAILURE, error});
   };
 };
 
@@ -661,17 +593,11 @@ export const fetchComments = (message) => async (dispatch) => {
       'monorail.Issues', 'ListComments', message
     );
 
-    dispatch({
-      type: FETCH_COMMENTS_SUCCESS,
-      comments: resp.comments,
-    });
+    dispatch({type: FETCH_COMMENTS_SUCCESS, comments: resp.comments});
     dispatch(fetchCommentReferences(
       resp.comments, message.issueRef.projectName));
   } catch (error) {
-    dispatch({
-      type: FETCH_COMMENTS_FAILURE,
-      error,
-    });
+    dispatch({type: FETCH_COMMENTS_FAILURE, error});
   };
 };
 
@@ -683,20 +609,14 @@ export const fetchIsStarred = (message) => async (dispatch) => {
       'monorail.Issues', 'IsIssueStarred', message
     );
 
-    dispatch({
-      type: FETCH_IS_STARRED_SUCCESS,
-      isStarred: resp.isStarred,
-    });
+    dispatch({type: FETCH_IS_STARRED_SUCCESS, isStarred: resp.isStarred});
   } catch (error) {
-    dispatch({
-      type: FETCH_IS_STARRED_FAILURE,
-      error,
-    });
+    dispatch({type: FETCH_IS_STARRED_FAILURE, error});
   };
 };
 
 export const star = (issueRef, starred) => async (dispatch) => {
-  dispatch({type: STAR_ISSUE_START});
+  dispatch({type: STAR_START});
 
   const message = {issueRef, starred};
 
@@ -706,34 +626,25 @@ export const star = (issueRef, starred) => async (dispatch) => {
     );
 
     dispatch({
-      type: STAR_ISSUE_SUCCESS,
+      type: STAR_SUCCESS,
       starCount: resp.starCount,
       isStarred: starred,
     });
   } catch (error) {
-    dispatch({
-      type: STAR_ISSUE_FAILURE,
-      error,
-    });
+    dispatch({type: STAR_FAILURE, error});
   }
 };
 
 export const presubmit = (message) => async (dispatch) => {
-  dispatch({type: PRESUBMIT_ISSUE_START});
+  dispatch({type: PRESUBMIT_START});
 
   try {
     const resp = await window.prpcClient.call(
       'monorail.Issues', 'PresubmitIssue', message);
 
-    dispatch({
-      type: PRESUBMIT_ISSUE_SUCCESS,
-      presubmitResponse: resp,
-    });
+    dispatch({type: PRESUBMIT_SUCCESS, presubmitResponse: resp});
   } catch (error) {
-    dispatch({
-      type: PRESUBMIT_ISSUE_FAILURE,
-      error: error,
-    });
+    dispatch({type: PRESUBMIT_FAILURE, error: error});
   }
 };
 
@@ -744,67 +655,43 @@ export const updateApproval = (message) => async (dispatch) => {
     const resp = await window.prpcClient.call(
       'monorail.Issues', 'UpdateApproval', message);
 
-    dispatch({
-      type: UPDATE_APPROVAL_SUCCESS,
-      approval: resp.approval,
-    });
-    const baseMessage = {
-      issueRef: message.issueRef,
-    };
+    dispatch({type: UPDATE_APPROVAL_SUCCESS, approval: resp.approval});
+    const baseMessage = {issueRef: message.issueRef};
     dispatch(fetch(baseMessage));
     dispatch(fetchComments(baseMessage));
   } catch (error) {
-    dispatch({
-      type: UPDATE_APPROVAL_FAILURE,
-      error: error,
-    });
+    dispatch({type: UPDATE_APPROVAL_FAILURE, error: error});
   };
 };
 
 export const update = (message) => async (dispatch) => {
-  dispatch({type: UPDATE_ISSUE_START});
+  dispatch({type: UPDATE_START});
 
   try {
     const resp = await window.prpcClient.call(
       'monorail.Issues', 'UpdateIssue', message);
 
-    dispatch({
-      type: UPDATE_ISSUE_SUCCESS,
-      issue: resp.issue,
-    });
-    const fetchCommentsMessage = {
-      issueRef: message.issueRef,
-    };
+    dispatch({type: UPDATE_SUCCESS, issue: resp.issue});
+    const fetchCommentsMessage = {issueRef: message.issueRef};
     dispatch(fetchComments(fetchCommentsMessage));
     dispatch(fetchRelatedIssues(resp.issue));
     dispatch(fetchReferencedUsers(resp.issue));
   } catch (error) {
-    dispatch({
-      type: UPDATE_ISSUE_FAILURE,
-      error: error,
-    });
+    dispatch({type: UPDATE_FAILURE, error: error});
   };
 };
 
 export const convert = (message) => async (dispatch) => {
-  dispatch({type: CONVERT_ISSUE_START});
+  dispatch({type: CONVERT_START});
 
   try {
     const resp = await window.prpcClient.call(
       'monorail.Issues', 'ConvertIssueApprovalsTemplate', message);
 
-    dispatch({
-      type: CONVERT_ISSUE_SUCCESS,
-      issue: resp.issue,
-    });
-    const fetchCommentsMessage = {
-      issueRef: message.issueRef,
-    };
+    dispatch({type: CONVERT_SUCCESS, issue: resp.issue});
+    const fetchCommentsMessage = {issueRef: message.issueRef};
     dispatch(fetchComments(fetchCommentsMessage));
   } catch (error) {
-    dispatch({
-      type: CONVERT_ISSUE_FAILURE,
-      error: error,
-    });
+    dispatch({type: CONVERT_FAILURE, error: error});
   };
 };

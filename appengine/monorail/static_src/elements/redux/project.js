@@ -20,9 +20,8 @@ const FETCH_TEMPLATES_FAILURE = 'project/FETCH_TEMPLATES_FAILURE';
   config: Object,
   templates: Array,
   requests: {
-    fetch: Object,
-    fetchHotlists: Object,
-    fetchPrefs: Object,
+    fetchConfig: Object,
+    fetchTemplates: Object,
   },
 }
 */

@@ -217,8 +217,8 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     return Object.assign(superProps, {
       issue: issue.issue(state),
       issueRef: issue.issueRef(state),
-      updatingIssue: issue.requests(state).updateIssue.requesting,
-      updateIssueError: issue.requests(state).updateIssue.error,
+      updatingIssue: issue.requests(state).update.requesting,
+      updateIssueError: issue.requests(state).update.error,
       fieldDefs: project.fieldDefsForPhases(state),
     });
   }

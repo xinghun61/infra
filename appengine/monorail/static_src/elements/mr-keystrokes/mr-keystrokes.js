@@ -211,10 +211,10 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      issuePermissions: issue.issuePermissions(state),
+      issuePermissions: issue.permissions(state),
       _isStarred: issue.isStarred(state),
       _fetchingIsStarred: issue.requests(state).fetchIsStarred.requesting,
-      _starringIssue: issue.requests(state).starIssue.requesting,
+      _starringIssue: issue.requests(state).star.requesting,
     };
   }
 

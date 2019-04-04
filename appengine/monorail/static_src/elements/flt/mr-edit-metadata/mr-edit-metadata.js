@@ -534,7 +534,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       presubmitResponse: issue.presubmitResponse(state),
       projectConfig: project.project(state).config,
       projectName: issue.issueRef(state).projectName,
-      issuePermissions: issue.issuePermissions(state),
+      issuePermissions: issue.permissions(state),
     });
   }
 

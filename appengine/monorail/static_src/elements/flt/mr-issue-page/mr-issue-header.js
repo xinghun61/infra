@@ -252,7 +252,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       issue: issue.issue(state),
-      issuePermissions: issue.issuePermissions(state),
+      issuePermissions: issue.permissions(state),
       issueClosed: !issue.isOpen(state),
       restrictions: issue.restrictions(state),
       isRestricted: issue.isRestricted(state),

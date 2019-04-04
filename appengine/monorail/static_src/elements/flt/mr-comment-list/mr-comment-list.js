@@ -109,7 +109,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       focusId: state.focusId,
-      issuePermissions: issue.issuePermissions(state),
+      issuePermissions: issue.permissions(state),
     };
   }
 

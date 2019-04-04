@@ -24,13 +24,11 @@ suite('mr-issue-page', () => {
   });
 
   test('fetching issue makes loading show', () => {
-    assert.isFalse(issue.requests(store.getState()).fetchIssue.requesting);
+    assert.isFalse(issue.requests(store.getState()).fetch.requesting);
 
-    store.dispatch({
-      type: issue.FETCH_ISSUE_START,
-    });
+    store.dispatch({type: issue.FETCH_START});
 
-    assert.isTrue(issue.requests(store.getState()).fetchIssue.requesting);
+    assert.isTrue(issue.requests(store.getState()).fetch.requesting);
 
     // TODO(zhangtiff): Figure out how to propagate Redux state changes.
     element.fetchingIssue = true;
@@ -38,13 +36,10 @@ suite('mr-issue-page', () => {
   });
 
   test('dispatching failure makes error show', () => {
-    store.dispatch({
-      type: issue.FETCH_ISSUE_FAILURE,
-      error: 'failed request',
-    });
+    store.dispatch({type: issue.FETCH_FAILURE, error: 'failed request'});
 
     assert.equal(
-      issue.requests(store.getState()).fetchIssue.error, 'failed request');
+      issue.requests(store.getState()).fetch.error, 'failed request');
 
     // TODO(zhangtiff): Figure out how to propagate Redux state changes.
     element.fetchIssueError = element.fetchIssueError;
