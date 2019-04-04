@@ -30,6 +30,7 @@ type Command struct {
 	ProvisionLabels     []string
 	Keyvals             map[string]string
 	TestArgs            string
+	Actions             string
 }
 
 // Args returns the arg strings for running the command.
@@ -65,6 +66,9 @@ func (c *Command) Args() []string {
 	}
 	if c.TestArgs != "" {
 		args = append(args, "-test-args", c.TestArgs)
+	}
+	if c.Actions != "" {
+		args = append(args, "-actions", c.Actions)
 	}
 	return args
 }
