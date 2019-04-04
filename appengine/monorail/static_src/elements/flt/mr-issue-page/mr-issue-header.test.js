@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
-import {store, actionType, resetState} from '../../redux/redux-mixin.js';
+import {store, resetState} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {ISSUE_EDIT_PERMISSION,
@@ -40,7 +40,7 @@ suite('mr-issue-header', () => {
     assert.equal(issue.issueRef(store.getState()).localId, 1);
 
     store.dispatch({
-      type: actionType.FETCH_ISSUE_SUCCESS,
+      type: issue.FETCH_ISSUE_SUCCESS,
       issue: {summary: 'test'},
     });
 

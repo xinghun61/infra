@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrIssuePage} from './mr-issue-page.js';
-import {store, actionType} from '../../redux/redux-mixin.js';
+import {store} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 
 let element;
@@ -27,7 +27,7 @@ suite('mr-issue-page', () => {
     assert.isFalse(issue.requests(store.getState()).fetchIssue.requesting);
 
     store.dispatch({
-      type: actionType.FETCH_ISSUE_START,
+      type: issue.FETCH_ISSUE_START,
     });
 
     assert.isTrue(issue.requests(store.getState()).fetchIssue.requesting);
@@ -39,7 +39,7 @@ suite('mr-issue-page', () => {
 
   test('dispatching failure makes error show', () => {
     store.dispatch({
-      type: actionType.FETCH_ISSUE_FAILURE,
+      type: issue.FETCH_ISSUE_FAILURE,
       error: 'failed request',
     });
 
