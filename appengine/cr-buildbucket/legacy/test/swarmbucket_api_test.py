@@ -121,8 +121,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     self.task_template = {
         'name':
             'bb-${build_id}-${project}-${builder}',
-        'priority':
-            '100',
         'task_slices': [{
             'expiration_secs': '3600',
             'properties': props_def,
@@ -296,7 +294,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                                 'name': 'presubmit',
                                 'cipdPackage': 'infra/recipe_bundle',
                             },
-                            'swarming': {'hostname': 'swarming.example.com'},
+                            'swarming': {
+                                'hostname': 'swarming.example.com',
+                                'priority': 30,
+                            },
                         },
                         'createdBy': 'anonymous:anonymous',
                         'input': {},
@@ -364,7 +365,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
             u'recipe_package:infra/recipe_bundle',
         ],
         u'priority':
-            u'100',
+            u'30',
         u'pool_task_template':
             u'CANARY_NEVER',
         u'task_slices': [{

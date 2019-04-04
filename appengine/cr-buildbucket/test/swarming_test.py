@@ -475,7 +475,8 @@ class TaskDefTest(BaseTest):
                     'swarming': {
                         'hostname': 'swarming.example.com',
                         'taskId': 'deadbeef',
-                        'taskServiceAccount': 'robot@example.com'
+                        'taskServiceAccount': 'robot@example.com',
+                        'priority': 108,
                     },
                 },
                 'createdBy': 'anonymous:anonymous',

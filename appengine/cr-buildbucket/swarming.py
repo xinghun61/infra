@@ -80,6 +80,8 @@ _PARAM_CHANGES = 'changes'
 # If it is, the template must be reverted to a stable version ASAP.
 _DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
 
+DEFAULT_TASK_PRIORITY = 30
+
 # This is the path, relative to the swarming run dir, to the directory that
 # contains the mounted swarming named caches. It will be prepended to paths of
 # caches defined in swarmbucket configs.
@@ -507,7 +509,7 @@ def _create_task_def_async(builder_cfg, build, fake_build):
       'pool_task_template', 'CANARY_PREFER' if build.canary else 'CANARY_NEVER'
   )
 
-  task['priority'] = _calc_priority(build, builder_cfg, task.get('priority'))
+  task['priority'] = str(build.proto.infra.swarming.priority)
 
   if builder_cfg.service_account:  # pragma: no branch
     # Don't pass it if not defined, for backward compatibility.
@@ -623,15 +625,14 @@ def _setup_recipes(build, builder_cfg, params):
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params
 
 
-def _calc_priority(build, builder_cfg, priority):
+def _default_priority(builder_cfg, experimental):
   """Calculates the Swarming task request priority to use."""
-  priority = int(priority or 0)
+  priority = DEFAULT_TASK_PRIORITY
   if builder_cfg.priority > 0:  # pragma: no branch
     priority = builder_cfg.priority
-  if build.experimental:
+  if experimental:
     priority = min(255, priority * 2)
-  # Swarming accepts priority as a string
-  return str(priority)
+  return priority
 
 
 def _calc_tags(
@@ -837,15 +838,21 @@ def prepare_task_def_async(build, builder_cfg, fake_build=False):
 
   settings = yield _get_settings_async()
 
+  bp = build.proto
+
   build.url = _generate_build_url(settings.milo_hostname, build)
-  build.proto.infra.swarming.task_service_account = builder_cfg.service_account
+  sw = bp.infra.swarming
+  sw.task_service_account = builder_cfg.service_account
+  sw.priority = sw.priority or _default_priority(
+      builder_cfg, bp.input.experimental
+  )
 
   if build.experimental is None:
     build.experimental = (builder_cfg.experimental == project_config_pb2.YES)
     is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build)
     if is_prod is not None:
       build.experimental = not is_prod
-  build.proto.input.experimental = build.experimental
+  bp.input.experimental = build.experimental
 
   task_def = yield _create_task_def_async(builder_cfg, build, fake_build)
 
@@ -853,9 +860,9 @@ def prepare_task_def_async(build, builder_cfg, fake_build=False):
     key, value = buildtags.parse(t)
     if key == 'log_location':
       host, project, prefix, _ = logdog.parse_url(value)
-      build.proto.infra.logdog.hostname = host
-      build.proto.infra.logdog.project = project
-      build.proto.infra.logdog.prefix = prefix
+      bp.infra.logdog.hostname = host
+      bp.infra.logdog.project = project
+      bp.infra.logdog.prefix = prefix
       break
 
   raise ndb.Return(task_def)
