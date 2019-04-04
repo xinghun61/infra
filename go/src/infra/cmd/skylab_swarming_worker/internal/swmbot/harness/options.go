@@ -16,3 +16,13 @@ func UpdateInventory(name string) Option {
 		i.labelUpdater.updateLabels = true
 	}
 }
+
+// WaitForFreshInventory is an Option that enables waiting for fresh inventory
+// when opening the harness.
+//
+// Inventory information is considered fresh if it was updated from the source
+// of truth after the execution of this worker began. By default, cached
+// inventory information may be used, without any freshness guarantee.
+func WaitForFreshInventory(i *Info) {
+	i.fetchFreshDUTInfo = true
+}

@@ -36,7 +36,8 @@ type Info struct {
 	DUTName    string
 	BotInfo    *swmbot.LocalState
 
-	labelUpdater labelUpdater
+	fetchFreshDUTInfo bool
+	labelUpdater      labelUpdater
 
 	// err tracks errors during setup to simplify error handling
 	// logic.
@@ -118,13 +119,17 @@ func (i *Info) loadDUTInfo(ctx context.Context, b *swmbot.Info) *inventory.Devic
 	if i.err != nil {
 		return nil
 	}
-	dis, err := dutinfo.Load(ctx, b, i.labelUpdater.update)
-	if err != nil {
-		i.err = err
+	var s *dutinfo.Store
+	if i.fetchFreshDUTInfo {
+		s, i.err = dutinfo.LoadFresh(ctx, b, i.fetchFreshDUTInfo, i.labelUpdater.update)
+	} else {
+		s, i.err = dutinfo.LoadCached(ctx, b, i.fetchFreshDUTInfo, i.labelUpdater.update)
+	}
+	if i.err != nil {
 		return nil
 	}
-	i.closers = append(i.closers, dis)
-	return dis.DUT
+	i.closers = append(i.closers, s)
+	return s.DUT
 }
 
 func (i *Info) makeHostInfo(d *inventory.DeviceUnderTest) *hostinfo.HostInfo {

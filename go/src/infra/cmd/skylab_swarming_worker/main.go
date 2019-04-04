@@ -65,6 +65,7 @@ type args struct {
 	taskName            string
 	logdogAnnotationURL string
 	adminService        string
+	forceFreshInventory bool
 	xClientTest         bool
 	xKeyvals            map[string]string
 	xProvisionLabels    []string
@@ -79,6 +80,10 @@ func parseArgs() *args {
 		"Name of the task to run. For autotest, this is the NAME attribute in control file")
 	flag.StringVar(&a.logdogAnnotationURL, "logdog-annotation-url", "",
 		"LogDog annotation URL, like logdog://HOST/PROJECT/PREFIX/+/annotations")
+	flag.StringVar(&a.adminService, "admin-service", "",
+		"Admin service host, e.g. foo.appspot.com")
+	flag.BoolVar(&a.forceFreshInventory, "force-fresh", false,
+		"Use fresh inventory information. This flag can increase task runtime.")
 	flag.BoolVar(&a.xClientTest, "client-test", false,
 		"This is a client side test")
 	flag.Var(lflag.CommaList(&a.xProvisionLabels), "provision-labels",
@@ -107,11 +112,7 @@ func mainInner(a *args) error {
 		return err
 	}
 	defer annotWriter.Close()
-	var ho []harness.Option
-	if updatesInventory(a.taskName) {
-		ho = append(ho, harness.UpdateInventory("repair"))
-	}
-	i, err := harness.Open(ctx, b, ho...)
+	i, err := harness.Open(ctx, b, harnessOptions(a)...)
 	if err != nil {
 		return err
 	}
@@ -144,6 +145,17 @@ func mainInner(a *args) error {
 		return err
 	}
 	return nil
+}
+
+func harnessOptions(a *args) []harness.Option {
+	var ho []harness.Option
+	if updatesInventory(a.taskName) {
+		ho = append(ho, harness.UpdateInventory("repair"))
+	}
+	if a.forceFreshInventory {
+		ho = append(ho, harness.WaitForFreshInventory)
+	}
+	return ho
 }
 
 // updatesInventory returns true if the task should update the inventory

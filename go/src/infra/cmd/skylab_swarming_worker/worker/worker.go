@@ -25,6 +25,7 @@ type Command struct {
 	TaskName string
 	// LogDogAnnotationURL can be set automatically with Env.
 	LogDogAnnotationURL string
+	ForceFresh          bool
 	ClientTest          bool
 	ProvisionLabels     []string
 	Keyvals             map[string]string
@@ -44,6 +45,9 @@ func (c *Command) Args() []string {
 	}
 	if c.LogDogAnnotationURL != "" {
 		args = append(args, "-logdog-annotation-url", c.LogDogAnnotationURL)
+	}
+	if c.ForceFresh {
+		args = append(args, "-force-fresh")
 	}
 	if c.ClientTest {
 		args = append(args, "-client-test")
