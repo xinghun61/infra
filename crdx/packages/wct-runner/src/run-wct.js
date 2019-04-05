@@ -61,14 +61,13 @@ async function main() {
       body.push(chunk);
     }).on('end', () => {
       body = Buffer.concat(body).toString();
-      const parsedResult = JSON.parse(body);
-      const msg = (`[${parsedResult.state}] ` +
-                   `File: ${parsedResult.file} ` +
-                   `Suite: ${parsedResult.suite} ` +
-                   `Test: ${parsedResult.test}`);
+      const {state, file, suite, test, err} = JSON.parse(body);
+      const msg = `[${state}] File: ${file} Suite: ${suite} Test: ${test}`;
+
       if (parsedResult.state !== 'passed') {
         failures++;
         console.error(msg);
+        console.error(err);
       } else {
         passes++;
         console.log(msg);
@@ -188,43 +187,42 @@ function loaderPage(testFiles) {
       // current lack of event listening hooks for things like "test finished"
       // and "suite finished". They exist in order to report test results back
       // to the go app that spawned the chromedriver that runs these tests.
-      let end = function() {
+      let end = async function() {
         let passes = WCT._reporter.stats.passes;
         let failures = WCT._reporter.stats.failures;
-        fetch('/done', {
-            method: 'POST',
-            body: JSON.stringify({
-                'passes': passes,
-                'failures': failures,
-                // TODO(seanmccullough): Report timeouts, other exceptions?
-            }),
-        }).then(function(resp) {
+        try {
+          const resp = await fetch('/done', {
+              method: 'POST',
+              body: JSON.stringify({
+                  'passes': passes,
+                  'failures': failures,
+                  // TODO(seanmccullough): Report timeouts, other exceptions?
+              }),
+          });
           window.console.log('done response', resp);
-        }).catch(function(exp) {
+        } catch (exp) {
           window.console.log('done exception', exp);
-        });
+        }
       };
 
-      let testEnd = function() {
-        let file = WCT._reporter.currentRunner.currentRunner.suite.parent.title;
-        let suite = WCT._reporter.currentRunner.currentRunner.suite.title;
-        let test = WCT._reporter.currentRunner.currentRunner.test.title;
-        let state = WCT._reporter.currentRunner.currentRunner.test.state;
+      let testEnd = async function() {
+        const runner = WCT._reporter.currentRunner.currentRunner;
+        let file = runner.suite.parent.title;
+        let suite = runner.suite.title;
+        let test = runner.test.title;
+        let state = runner.test.state;
+        let err = (runner.test.err) ? runner.test.err.stack : undefined;
+        // TODO(seanmccullough): Indicate if dom=shadow for this run.
 
-        fetch('/result', {
-            method: 'POST',
-            body: JSON.stringify({
-                'file': file,
-                'suite': suite,
-                'test': test,
-                'state': state,
-                // TODO(seanmccullough): Indicate if dom=shadow for this run.
-            }),
-        }).then(function(resp) {
+        try {
+          const resp = await fetch('/result', {
+              method: 'POST',
+              body: JSON.stringify({file, suite, test, state, err}),
+          });
           window.console.log('result response', resp);
-        }).catch(function(exp) {
+        } catch (exp) {
           window.console.log('result exception', exp);
-        });
+        }
       };
 
       document.addEventListener('DOMContentLoaded', function() {
