@@ -16,6 +16,7 @@ platforms:
   - windows-amd64
 go_packages:
   - go.chromium.org/luci/buildbucket/cmd/bb
+install_mode: copy
 root: ../../go/bin
 data:
   - file: bb${exe_suffix}
