@@ -169,7 +169,7 @@ func getSwarmingResultsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 	for i, ID := range IDs {
 		r, err := s.Task.Result(ID).Context(ctx).Do()
 		if err != nil {
-			return nil, errors.Annotate(err, fmt.Sprintf("rerun task %s", ID)).Err()
+			return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for task %s", ID)).Err()
 		}
 		results[i] = r
 	}
@@ -181,7 +181,7 @@ func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []
 	defer cf()
 	results, err := s.Tasks.List().Tags(tags...).Context(ctx).Do()
 	if err != nil {
-		return nil, errors.Annotate(err, fmt.Sprint("rerun tags ", tags)).Err()
+		return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for tags %s", tags)).Err()
 	}
 	var filteredTasks []*swarming.SwarmingRpcsTaskResult
 	if !includePassed {

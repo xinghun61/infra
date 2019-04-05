@@ -55,6 +55,7 @@ func getApplication() *cli.Application {
 			cmd.InternalListDroneDuts,
 			cmd.InternalPrintBotInfo,
 			cmd.InternalVerifyInventory,
+			cmd.WaitSuite,
 		},
 	}
 }
