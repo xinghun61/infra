@@ -87,11 +87,22 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
           <div class="comment-attachment-header">
             <div class="filesize">[[_bytesOrKbOrMb(attachment.size)]]</div>
             <template is="dom-if" if="[[!attachment.isDeleted]]">
-              <div class="attachment-view">
-                <a href="[[attachment.viewUrl]]" target="_blank">View</a>
+              <div class="attachment-view" hidden$="[[!attachment.viewUrl]]">
+                <a
+                  id="view-link"
+                  href="[[attachment.viewUrl]]"
+                  target="_blank"
+                >View</a>
               </div>
-              <div class="attachment-download">
-                <a href="[[attachment.downloadUrl]]" target="_blank">Download</a>
+              <div
+                class="attachment-download"
+                hidden$="[[!attachment.downloadUrl]]"
+              >
+                <a
+                  id="download-link"
+                  href="[[attachment.downloadUrl]]"
+                  target="_blank"
+                >Download</a>
               </div>
             </template>
           </div>

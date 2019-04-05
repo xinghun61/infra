@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {assert} from 'chai';
+import {assert, expect} from 'chai';
 import {MrAttachment} from './mr-attachment.js';
 import sinon from 'sinon';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
@@ -130,5 +130,43 @@ suite('mr-comment-content', () => {
       },
     ]);
     assert.isTrue(window.prpcClient.call.calledOnce);
+  });
+
+  test('view link is not displayed if not given', () => {
+    element.attachment = {};
+    flush();
+    const viewLink = element.shadowRoot.querySelector('#view-link');
+    assert.isNotNull(viewLink);
+    expect(viewLink).be.hidden;
+  });
+
+  test('view link is displayed if given', () => {
+    element.attachment = {
+      viewUrl: 'http://example.com/attachment.foo',
+    };
+    flush();
+    const viewLink = element.shadowRoot.querySelector('#view-link');
+    assert.isNotNull(viewLink);
+    expect(viewLink).be.visible;
+    assert.equal(viewLink.href, 'http://example.com/attachment.foo');
+  });
+
+  test('download link is not displayed if not given', () => {
+    element.attachment = {};
+    flush();
+    const downloadLink = element.shadowRoot.querySelector('#download-link');
+    assert.isNotNull(downloadLink);
+    expect(downloadLink).be.hidden;
+  });
+
+  test('download link is displayed if given', () => {
+    element.attachment = {
+      downloadUrl: 'http://example.com/attachment.foo',
+    };
+    flush();
+    const downloadLink = element.shadowRoot.querySelector('#download-link');
+    assert.isNotNull(downloadLink);
+    expect(downloadLink).be.visible;
+    assert.equal(downloadLink.href, 'http://example.com/attachment.foo');
   });
 });
