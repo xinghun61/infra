@@ -47,8 +47,8 @@ cron:
     min_backoff_seconds: 2.5
     max_doublings: 5
 
-- description: Update Chromium OS alerts
-  url: /_cron/analyze/chromiumos
+- description: Update ChromeOS Alerts
+  url: /_cron/analyze/chromeos?use=buildbucket
   schedule: every 5 minutes
   target: analyzer
   retry_parameters:
