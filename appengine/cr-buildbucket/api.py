@@ -336,9 +336,6 @@ def update_build_async(req, _res, ctx, _mask):
 
     futures = []
 
-    if 'build.steps' in update_paths:
-      futures.append(build_steps.put_async())
-
     if 'build.output.properties' in update_paths:
       futures.append(
           model.BuildOutputProperties(
@@ -365,6 +362,17 @@ def update_build_async(req, _res, ctx, _mask):
         if not build.proto.HasField('end_time'):  # pragma: no branch
           build.proto.end_time.FromDatetime(now)
         futures.append(events.on_build_completing_async(build))
+
+    if 'build.steps' in update_paths:
+      # TODO(crbug.com/936892): reject requests with a terminal build status
+      # and incomplete steps, when
+      # https://chromium-review.googlesource.com/c/infra/infra/+/1553291
+      # is deployed.
+      futures.append(build_steps.put_async())
+    elif build.is_ended:
+      futures.append(
+          model.BuildSteps.cancel_incomplete_steps_async(req.build.id)
+      )
 
     # TODO(crbug.com/936892): check has steps => status is not SCHEDULED.
 

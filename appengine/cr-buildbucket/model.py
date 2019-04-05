@@ -491,6 +491,28 @@ class BuildSteps(BuildDetailEntity):
     build_proto.ClearField('steps')
     build_proto.MergeFromString(container_bytes)
 
+  @classmethod
+  @ndb.tasklet
+  def cancel_incomplete_steps_async(cls, build_id):
+    """Marks incomplete steps as canceled in the Datastore, if any."""
+    assert ndb.in_transaction()
+    entity = yield cls.key_for(ndb.Key(Build, build_id)).get_async()
+    if not entity:
+      return
+
+    container = build_pb2.Build()
+    entity.read_steps(container)
+
+    changed = False
+    for s in container.steps:
+      if not is_terminal_status(s.status):
+        s.status = common_pb2.CANCELED
+        changed = True
+
+    if changed:  # pragma: no branch
+      entity.write_steps(container)
+      yield entity.put_async()
+
 
 # Tuple of classes representing entity kinds that living under Build entity.
 # Such entities must be deleted if Build entity is deleted.

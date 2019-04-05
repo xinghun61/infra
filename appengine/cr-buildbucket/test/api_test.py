@@ -303,6 +303,13 @@ class UpdateBuildTests(BaseTestCase):
   @mock.patch('events.on_build_completing_async', autospec=True)
   @mock.patch('events.on_build_completed', autospec=True)
   def test_failed(self, on_build_completed, on_build_completing_async):
+    steps = model.BuildSteps.make(
+        build_pb2.Build(
+            id=123,
+            steps=[dict(name='step', status=common_pb2.SCHEDULED)],
+        )
+    )
+    steps.put()
     on_build_completing_async.return_value = future(None)
     build = test_util.build(id=123)
     build.put()
@@ -323,6 +330,11 @@ class UpdateBuildTests(BaseTestCase):
     self.assertEqual(build.proto.end_time.ToDatetime(), self.now)
     on_build_completing_async.assert_called_once_with(build)
     on_build_completed.assert_called_once_with(build)
+
+    steps = steps.key.get()
+    step_container = build_pb2.Build()
+    steps.read_steps(step_container)
+    self.assertEqual(step_container.steps[0].status, common_pb2.CANCELED)
 
   def test_empty_summary(self):
     build = test_util.build(

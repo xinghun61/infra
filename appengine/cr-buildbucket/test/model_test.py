@@ -6,6 +6,8 @@ import datetime
 import unittest
 import mock
 
+from google.appengine.ext import ndb
+
 from testing_utils import testing
 from test import test_util
 
@@ -219,3 +221,30 @@ class BuildStepsTest(testing.AppengineTestCase):
     actual = build_pb2.Build()
     entity.read_steps(actual)
     self.assertEqual(actual, container)
+
+  @ndb.transactional
+  def cancel_incomplete_steps(self, build_id):
+    model.BuildSteps.cancel_incomplete_steps_async(build_id).get_result()
+
+  def test_cancel_incomplete(self):
+    steps = model.BuildSteps.make(
+        build_pb2.Build(
+            id=123,
+            steps=[
+                dict(name='a', status=common_pb2.SUCCESS),
+                dict(name='b', status=common_pb2.SCHEDULED),
+            ],
+        )
+    )
+    steps.put()
+
+    self.cancel_incomplete_steps(123)
+
+    steps = steps.key.get()
+    step_container = build_pb2.Build()
+    steps.read_steps(step_container)
+    self.assertEqual(step_container.steps[0].status, common_pb2.SUCCESS)
+    self.assertEqual(step_container.steps[1].status, common_pb2.CANCELED)
+
+  def test_cancel_incomplete_no_entity(self):
+    self.cancel_incomplete_steps(123)
