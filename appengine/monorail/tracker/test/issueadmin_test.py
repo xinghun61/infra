@@ -314,7 +314,7 @@ class AdminViewsTest(TestBase):
     self.mox.VerifyAll()
 
     self.assertItemsEqual(
-        ['canned_queries', 'admin_tab_mode', 'config', 'issue_notify',
+        ['admin_tab_mode', 'config', 'issue_notify',
          'new_query_indexes', 'max_queries'],
         page_data.keys())
     config_view = page_data['config']

@@ -387,12 +387,8 @@ class AdminViews(IssueAdminBase):
     with mr.profiler.Phase('getting canned queries'):
       canned_queries = self.services.features.GetCannedQueriesByProjectID(
           mr.cnxn, mr.project_id)
-      canned_query_views = [
-          savedqueries_helpers.SavedQueryView(sq, idx + 1, None, None)
-          for idx, sq in enumerate(canned_queries)]
 
     page_data.update({
-        'canned_queries': canned_query_views,
         'new_query_indexes': range(
             len(canned_queries) + 1, savedqueries_helpers.MAX_QUERIES + 1),
         'issue_notify': mr.project.issue_notify_address,
