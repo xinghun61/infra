@@ -22,6 +22,7 @@ import (
 	"github.com/maruel/subcommands"
 
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
+	"go.chromium.org/luci/buildbucket/protoutil"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
@@ -432,6 +433,13 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		req, err := c.bu.ParseAnnotations(ctx, result.Annotations)
 		if err != nil {
 			return fail(errors.Annotate(err, "failed to parse final annotations").Err())
+		}
+
+		// Mark incomplete steps as canceled.
+		for _, s := range req.Build.Steps {
+			if !protoutil.IsEnded(s.Status) {
+				s.Status = buildbucketpb.Status_CANCELED
+			}
 		}
 
 		// If the build failed, update the build status.
