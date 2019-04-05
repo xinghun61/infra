@@ -89,18 +89,18 @@ class _PerformAutoActionsPipeline(GeneratorPipeline):
     build_key = BaseBuildModel.CreateBuildKey(analysis.original_master_name,
                                               analysis.original_builder_name,
                                               analysis.original_build_number)
+    with pipeline.InOrder():
+      # Revert culprit if applicable.
+      yield CreateAndSubmitRevertPipeline(
+          self.CreateInputObjectInstance(
+              CreateAndSubmitRevertInput,
+              analysis_urlsafe_key=analysis.key.urlsafe(),
+              build_key=build_key))
 
-    # Revert culprit if applicable.
-    yield CreateAndSubmitRevertPipeline(
-        self.CreateInputObjectInstance(
-            CreateAndSubmitRevertInput,
-            analysis_urlsafe_key=analysis.key.urlsafe(),
-            build_key=build_key))
-
-    # Update culprit code review.
-    yield NotifyCulpritPipeline(
-        self.CreateInputObjectInstance(
-            NotifyCulpritInput, analysis_urlsafe_key=analysis_urlsafe_key))
+      # Update culprit code review.
+      yield NotifyCulpritPipeline(
+          self.CreateInputObjectInstance(
+              NotifyCulpritInput, analysis_urlsafe_key=analysis_urlsafe_key))
 
 
 class AnalyzeFlakeInput(StructuredObject):
