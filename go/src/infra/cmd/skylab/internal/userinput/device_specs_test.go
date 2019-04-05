@@ -37,6 +37,36 @@ func TestGetDeviceSpecs(t *testing.T) {
 	}
 }
 
+func TestCommentLines(t *testing.T) {
+	text := `# first line is already a comment
+second line will be commented.
+    third line has spaces at the start.
+		fourth has tabs.`
+	want := `# first line is already a comment
+# second line will be commented.
+#     third line has spaces at the start.
+# 		fourth has tabs.`
+	got := commentLines(text)
+	if want != got {
+		t.Errorf("Incorrect output from commentLines(), -want, +got:\n%s",
+			pretty.Compare(strings.Split(want, "\n"), strings.Split(got, "\n")))
+	}
+}
+
+func TestDropCommentLines(t *testing.T) {
+	text := `# first line is a comment, will be dropped.
+second line will survive.
+  # third line has comment after spaces, will be dropped.
+	# fourth line has comment after tabs, will be dropped.
+#fifth line has no space before comment, will be dropped.`
+	want := "second line will survive."
+	got := dropCommentLines(text)
+	if want != got {
+		t.Errorf("Incorrect output from dropCommentLines(), -want, +got:\n%s",
+			pretty.Compare(strings.Split(want, "\n"), strings.Split(got, "\n")))
+	}
+}
+
 // newRegexpReplacer returns an inputFunc that replaces text matching re with
 // repl.
 func newRegexpReplacer(re *regexp.Regexp, repl string) inputFunc {
@@ -75,36 +105,6 @@ text with some-hostname in the middle`))
 text with this-other-hostname in the middle`
 	if want != got {
 		t.Errorf("Incorrect output from regexpEditor.InteractiveInput(), -want, +got:\n%s",
-			pretty.Compare(strings.Split(want, "\n"), strings.Split(got, "\n")))
-	}
-}
-
-func TestCommentLines(t *testing.T) {
-	text := `# first line is already a comment
-second line will be commented.
-    third line has spaces at the start.
-		fourth has tabs.`
-	want := `# first line is already a comment
-# second line will be commented.
-#     third line has spaces at the start.
-# 		fourth has tabs.`
-	got := commentLines(text)
-	if want != got {
-		t.Errorf("Incorrect output from commentLines(), -want, +got:\n%s",
-			pretty.Compare(strings.Split(want, "\n"), strings.Split(got, "\n")))
-	}
-}
-
-func TestDropCommentLines(t *testing.T) {
-	text := `# first line is a comment, will be dropped.
-second line will survive.
-  # third line has comment after spaces, will be dropped.
-	# fourth line has comment after tabs, will be dropped.
-#fifth line has no space before comment, will be dropped.`
-	want := "second line will survive."
-	got := dropCommentLines(text)
-	if want != got {
-		t.Errorf("Incorrect output from dropCommentLines(), -want, +got:\n%s",
 			pretty.Compare(strings.Split(want, "\n"), strings.Split(got, "\n")))
 	}
 }
