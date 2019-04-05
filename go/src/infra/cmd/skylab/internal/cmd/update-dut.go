@@ -54,8 +54,8 @@ The protobuf definition of inventory.DeviceUnderTest is part of
 https://chromium.googlesource.com/infra/infra/+/refs/heads/master/go/src/infra/libs/skylab/inventory/device.proto`)
 		c.Flags.BoolVar(&c.tail, "tail", false, "Wait for the deployment task to complete.")
 
-		c.Flags.BoolVar(&c.installOS, "install-os", false, "(not implemented yet) Force DUT OS re-install.")
-		c.Flags.BoolVar(&c.installFirmware, "install-firmware", false, "(not implemented yet) Force DUT firmware re-install.")
+		c.Flags.BoolVar(&c.installOS, "install-os", false, "Force DUT OS re-install.")
+		c.Flags.BoolVar(&c.installFirmware, "install-firmware", false, "Force DUT firmware re-install.")
 		c.Flags.BoolVar(&c.skipImageDownload, "skip-image-download", false, `Some DUT preparation steps require downloading OS image onto an external drive
 connected to the DUT. This flag disables the download, instead using whatever
 image is already downloaded onto the external drive.`)
@@ -111,7 +111,7 @@ func (c *updateDutRun) innerRun(a subcommands.Application, args []string, env su
 		return err
 	}
 
-	deploymentID, err := triggerRedeploy(ctx, ic, oldSpecs, newSpecs)
+	deploymentID, err := c.triggerRedeploy(ctx, ic, oldSpecs, newSpecs)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func parseSpecsFile(specsFile string) (*inventory.CommonDeviceSpecs, error) {
 // triggerRedeploy kicks off a RedeployDut attempt via crosskylabadmin.
 //
 // This function returns the deployment task ID for the attempt.
-func triggerRedeploy(ctx context.Context, ic fleet.InventoryClient, old, updated *inventory.CommonDeviceSpecs) (string, error) {
+func (c *updateDutRun) triggerRedeploy(ctx context.Context, ic fleet.InventoryClient, old, updated *inventory.CommonDeviceSpecs) (string, error) {
 	serializedOld, err := proto.Marshal(old)
 	if err != nil {
 		return "", errors.Annotate(err, "trigger redeploy").Err()
@@ -196,11 +196,20 @@ func triggerRedeploy(ctx context.Context, ic fleet.InventoryClient, old, updated
 	resp, err := ic.RedeployDut(ctx, &fleet.RedeployDutRequest{
 		OldSpecs: serializedOld,
 		NewSpecs: serializedUpdated,
+		Actions: &fleet.DutDeploymentActions{
+			StageImageToUsb:  c.stageImageToUsb(),
+			InstallFirmware:  c.installFirmware,
+			InstallTestImage: c.installOS,
+		},
 	})
 	if err != nil {
 		return "", errors.Annotate(err, "trigger redeploy").Err()
 	}
 	return resp.GetDeploymentId(), nil
+}
+
+func (c *updateDutRun) stageImageToUsb() bool {
+	return (c.installFirmware || c.installOS) && !c.skipImageDownload
 }
 
 // getOldDeviceSpecs gets the current device specs for hostname from
