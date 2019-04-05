@@ -61,6 +61,27 @@ func AdminTaskForType(ctx context.Context, ttype fleet.TaskType) Task {
 	return t
 }
 
+// DeployTaskWithActions returns the information required to create a Skylab
+// task for `lucifer deploytask`.
+//
+// actions may be empty to run the default deploytask with no actions.
+func DeployTaskWithActions(ctx context.Context, actions string) Task {
+	cmd := worker.Command{
+		TaskName:   "deploy",
+		ForceFresh: true,
+		Actions:    actions,
+	}
+	cmd.Config(worker.Env(wrapped(config.Get(ctx))))
+	t := Task{
+		Name: "deploy",
+		Cmd:  cmd.Args(),
+	}
+	if cmd.LogDogAnnotationURL != "" {
+		t.Tags = []string{fmt.Sprintf("log_location:%s", cmd.LogDogAnnotationURL)}
+	}
+	return t
+}
+
 const (
 	luciProject = "chromeos"
 )

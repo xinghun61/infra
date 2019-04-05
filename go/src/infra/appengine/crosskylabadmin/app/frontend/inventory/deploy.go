@@ -363,9 +363,8 @@ func addDUTToStore(s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs) 
 func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, dutID string) (string, error) {
 	taskCfg := config.Get(ctx).GetEndpoint().GetDeployDut()
 	tags := swarming.AddCommonTags(ctx, fmt.Sprintf("deploy_task:%s", dutID))
-	// TODO(crbug/912977) This should actually be a admin_deploy task that runs
-	// additional DUT preparation steps before running repair.
-	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)
+	// TODO(crbug/912977) Support non-trivial actions.
+	at := worker.DeployTaskWithActions(ctx, "")
 	tags = append(tags, at.Tags...)
 	return sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  at.Cmd,
