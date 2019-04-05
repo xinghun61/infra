@@ -30,7 +30,11 @@ def RunSteps(api):
   co.gclient_runhooks()
 
   files = co.get_changed_files()
-  is_deps_roll = 'DEPS' in files
+  is_deps_roll = bool(files.intersection([
+      'DEPS',
+      api.path.join('bootstrap', 'deps.pyl'),
+      api.path.join('go', 'deps.lock')
+  ]))
 
   with api.step.defer_results():
     with api.context(cwd=co.path.join(patch_root)):
