@@ -213,4 +213,7 @@ message InspectPoolResponse {
 
     // Deprecated old field.
     reserved 8;
+
+    // AccountConfigs is a description of the account configs.
+    map<string, protos.AccountConfig> account_configs = 9;
 }
