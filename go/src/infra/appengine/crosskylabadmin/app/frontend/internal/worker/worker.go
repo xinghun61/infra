@@ -33,23 +33,20 @@ const (
 	skylabSwarmingWorkerPath = infraToolsDir + "/skylab_swarming_worker"
 )
 
-// AdminTask contains the information required to create a Swarming task for an
-// admin task.
-type AdminTask struct {
+// Task contains the information required to create a Skylab swarming task.
+type Task struct {
 	// The Swarming command to execute.
 	Cmd []string
-
 	// Tags to append to the swarming task.
 	Tags []string
-
 	// Name to use for the swarming task.
 	Name string
 }
 
 // AdminTaskForType returns the information required to create a Skylab task
 // for an admin task type.
-func AdminTaskForType(ctx context.Context, ttype fleet.TaskType) AdminTask {
-	at := AdminTask{
+func AdminTaskForType(ctx context.Context, ttype fleet.TaskType) Task {
+	at := Task{
 		Name: taskName[ttype],
 	}
 	cfg := config.Get(ctx)
