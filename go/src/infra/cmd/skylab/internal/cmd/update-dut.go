@@ -158,6 +158,8 @@ func (c *updateDutRun) tailDeployment(ctx context.Context, w io.Writer, ic fleet
 	return nil
 }
 
+const helpText = "Remove the 'servo_port' attribute to auto-generate a valid servo_port."
+
 // getSpecs parses the CommonDeviceSpecs from specsFile, or from the user.
 //
 // If specsFile is provided, it is parsed.
@@ -166,7 +168,7 @@ func getSpecs(specsFile string, oldSpecs *inventory.CommonDeviceSpecs) (*invento
 	if specsFile != "" {
 		return parseSpecsFile(specsFile)
 	}
-	return userinput.GetDeviceSpecs(oldSpecs, "")
+	return userinput.GetDeviceSpecs(oldSpecs, helpText)
 }
 
 // parseSpecsFile parses device specs from the user provided file.
@@ -200,6 +202,9 @@ func (c *updateDutRun) triggerRedeploy(ctx context.Context, ic fleet.InventoryCl
 			StageImageToUsb:  c.stageImageToUsb(),
 			InstallFirmware:  c.installFirmware,
 			InstallTestImage: c.installOS,
+		},
+		Options: &fleet.DutDeploymentOptions{
+			AssignServoPortIfMissing: true,
 		},
 	})
 	if err != nil {
