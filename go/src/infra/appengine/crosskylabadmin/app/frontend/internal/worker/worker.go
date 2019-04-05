@@ -23,6 +23,7 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/cmd/skylab_swarming_worker/worker"
 )
 
 const (
@@ -46,48 +47,49 @@ type Task struct {
 // AdminTaskForType returns the information required to create a Skylab task
 // for an admin task type.
 func AdminTaskForType(ctx context.Context, ttype fleet.TaskType) Task {
-	at := Task{
+	cmd := worker.Command{
+		TaskName: fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
+	}
+	cmd.Config(worker.Env(wrapped(config.Get(ctx))))
+	t := Task{
 		Name: taskName[ttype],
+		Cmd:  cmd.Args(),
 	}
-	cfg := config.Get(ctx)
-	logdogURL := generateLogDogURL(cfg)
-	if logdogURL != "" {
-		at.Tags = []string{fmt.Sprintf("log_location:%s", logdogURL)}
+	if cmd.LogDogAnnotationURL != "" {
+		t.Tags = []string{fmt.Sprintf("log_location:%s", cmd.LogDogAnnotationURL)}
 	}
-	at.Cmd = adminTaskCmd(ctx, ttype, logdogURL)
-	return at
+	return t
 }
 
-func adminTaskCmd(ctx context.Context, ttype fleet.TaskType, logdogURL string) []string {
-	s := []string{
-		skylabSwarmingWorkerPath,
-		"-task-name", fmt.Sprintf("admin_%s", strings.ToLower(ttype.String())),
-	}
-	if logdogURL != "" {
-		s = append(s, "-logdog-annotation-url", logdogURL)
-	}
-	return s
+const (
+	luciProject = "chromeos"
+)
+
+type environment struct {
+	*config.Config
+}
+
+func wrapped(c *config.Config) *environment {
+	return &environment{c}
+}
+
+// LUCIProject implements worker.Environment interface.
+func (e *environment) LUCIProject() string {
+	return luciProject
+}
+
+// LogDogHost implements worker.Environment interface.
+func (e *environment) LogDogHost() string {
+	return e.Tasker.LogdogHost
+}
+
+// GenerateLogPrefix implements worker.Environment interface.
+func (e *environment) GenerateLogPrefix() string {
+	return uuid.New().String()
 }
 
 var taskName = map[fleet.TaskType]string{
 	fleet.TaskType_Cleanup: "AdminCleanup",
 	fleet.TaskType_Repair:  "AdminRepair",
 	fleet.TaskType_Reset:   "AdminReset",
-}
-
-// generateLogDogURL generates a LogDog annotation URL for the LogDog server
-// corresponding to the configured Swarming server.
-//
-// If the LogDog server can't be determined, an empty string is returned.
-func generateLogDogURL(cfg *config.Config) string {
-	if cfg.Tasker.LogdogHost != "" {
-		return logdogAnnotationURL(cfg.Tasker.LogdogHost, uuid.New().String())
-	}
-	return ""
-}
-
-// logdogAnnotationURL generates a LogDog annotation URL for the LogDog server.
-func logdogAnnotationURL(server, id string) string {
-	return fmt.Sprintf("logdog://%s/chromeos/skylab/%s/+/annotations",
-		server, id)
 }
