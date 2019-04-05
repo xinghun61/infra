@@ -16,6 +16,7 @@ package inventory
 
 import (
 	"fmt"
+	"strings"
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
@@ -70,7 +71,7 @@ func (is *ServerImpl) DeployDut(ctx context.Context, req *fleet.DeployDutRequest
 	if err != nil {
 		return nil, err
 	}
-	ds := deployDUT(ctx, s, sc, attemptID, specs, req.GetOptions())
+	ds := deployDUT(ctx, s, sc, attemptID, specs, req.GetActions(), req.GetOptions())
 	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
 	return &fleet.DeployDutResponse{DeploymentId: attemptID}, nil
 }
@@ -113,7 +114,7 @@ func (is *ServerImpl) RedeployDut(ctx context.Context, req *fleet.RedeployDutReq
 	if err != nil {
 		return nil, err
 	}
-	ds := redeployDUT(ctx, s, sc, attemptID, oldSpecs, newSpecs, req.GetOptions())
+	ds := redeployDUT(ctx, s, sc, attemptID, oldSpecs, newSpecs, req.GetActions(), req.GetOptions())
 	updateDeployStatusIgnoringErrors(ctx, attemptID, ds)
 	return &fleet.RedeployDutResponse{DeploymentId: attemptID}, nil
 }
@@ -212,7 +213,7 @@ func initializeDeployAttempt(ctx context.Context) (string, error) {
 // deployDUT kicks off a new DUT deployment.
 //
 // Errors are communicated via returned deploy.Status
-func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nd *inventory.CommonDeviceSpecs, o *fleet.DutDeploymentOptions) *deploy.Status {
+func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, nd *inventory.CommonDeviceSpecs, a *fleet.DutDeploymentActions, o *fleet.DutDeploymentOptions) *deploy.Status {
 	var err error
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
 	ds.ChangeURL, err = addDUTToFleet(ctx, s, nd, o.GetAssignServoPortIfMissing())
@@ -220,7 +221,7 @@ func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swarm
 		failDeployStatus(ds, "failed to add dut to fleet")
 		return ds
 	}
-	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, nd.GetId())
+	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, nd.GetId(), a)
 	if err != nil {
 		failDeployStatus(ds, "failed to create deploy task")
 		return ds
@@ -360,11 +361,10 @@ func addDUTToStore(s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs) 
 }
 
 // scheduleDUTPreparationTask schedules a Skylab DUT preparation task.
-func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, dutID string) (string, error) {
+func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, dutID string, a *fleet.DutDeploymentActions) (string, error) {
 	taskCfg := config.Get(ctx).GetEndpoint().GetDeployDut()
 	tags := swarming.AddCommonTags(ctx, fmt.Sprintf("deploy_task:%s", dutID))
-	// TODO(crbug/912977) Support non-trivial actions.
-	at := worker.DeployTaskWithActions(ctx, "")
+	at := worker.DeployTaskWithActions(ctx, deployActionArgs(a))
 	tags = append(tags, at.Tags...)
 	return sc.CreateTask(ctx, at.Name, swarming.SetCommonTaskArgs(ctx, &clients.SwarmingCreateTaskArgs{
 		Cmd:                  at.Cmd,
@@ -379,7 +379,7 @@ func scheduleDUTPreparationTask(ctx context.Context, sc clients.SwarmingClient, 
 // redeployDUT kicks off a redeployment of an existing DUT.
 //
 // Errors are communicated via returned deploy.Status
-func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, oldSpecs, newSpecs *inventory.CommonDeviceSpecs, o *fleet.DutDeploymentOptions) *deploy.Status {
+func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.SwarmingClient, attemptID string, oldSpecs, newSpecs *inventory.CommonDeviceSpecs, a *fleet.DutDeploymentActions, o *fleet.DutDeploymentOptions) *deploy.Status {
 	var err error
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
 
@@ -391,7 +391,7 @@ func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swa
 		}
 	}
 
-	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, oldSpecs.GetId())
+	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, oldSpecs.GetId(), a)
 	if err != nil {
 		failDeployStatus(ds, "failed to create deploy task")
 		return ds
@@ -537,4 +537,18 @@ func getAttributeByKey(d *inventory.CommonDeviceSpecs, key string) (string, bool
 		}
 	}
 	return "", false
+}
+
+func deployActionArgs(a *fleet.DutDeploymentActions) string {
+	s := make([]string, 0, 3)
+	if a.GetStageImageToUsb() {
+		s = append(s, "stage-usb")
+	}
+	if a.GetInstallFirmware() {
+		s = append(s, "install-firmware")
+	}
+	if a.GetInstallTestImage() {
+		s = append(s, "install-test-image")
+	}
+	return strings.Join(s, ",")
 }

@@ -135,9 +135,6 @@ func (r *DeployDutRequest) Validate() error {
 	if r.NewSpecs == nil {
 		return status.Errorf(codes.InvalidArgument, "new_specs must be set")
 	}
-	if r.Actions != nil {
-		return r.Actions.Validate()
-	}
 	return nil
 }
 
@@ -148,23 +145,6 @@ func (r *RedeployDutRequest) Validate() error {
 	}
 	if r.NewSpecs == nil {
 		return status.Errorf(codes.InvalidArgument, "new_specs must be set")
-	}
-	if r.Actions != nil {
-		return r.Actions.Validate()
-	}
-	return nil
-}
-
-// Validate returns an error if a is invalid.
-func (a *DutDeploymentActions) Validate() error {
-	if a.StageImageToUsb {
-		return status.Errorf(codes.Unimplemented, "action stage_image_to_usb not yet implemented")
-	}
-	if a.InstallFirmware {
-		return status.Errorf(codes.Unimplemented, "action install_firmware not yet implemented")
-	}
-	if a.InstallTestImage {
-		return status.Errorf(codes.Unimplemented, "action install_test_image not yet implemented")
 	}
 	return nil
 }
