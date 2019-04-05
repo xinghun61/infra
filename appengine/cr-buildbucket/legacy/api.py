@@ -170,6 +170,10 @@ def put_request_message_to_build_request(put_request):
     sbr.gitiles_commit.CopyFrom(gitiles_commit)
   sbr.gerrit_changes.extend(gerrit_changes)
 
+  legacy_revision = parameters.get('changes', {}).get('revision')
+  if legacy_revision and not gitiles_commit:  # pragma: no cover
+    logging.warning('legacy revision without buildset')
+
   # Populate Gerrit project from patch_project property.
   # V2 API users will have to provide this.
   patch_project = props.get('patch_project')
