@@ -23,7 +23,10 @@ import (
 // This function returns upon successful parsing of the user input, or upon
 // user initiated abort.
 func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string) (*inventory.CommonDeviceSpecs, error) {
-	s := deviceSpecsGetter{inputFunc: textEditorInput}
+	s := deviceSpecsGetter{
+		inputFunc:  textEditorInput,
+		promptFunc: func(string) bool { return false },
+	}
 	return s.Get(initial, helpText)
 }
 
@@ -33,10 +36,13 @@ func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string) (*inv
 // user-modified text.
 type inputFunc func([]byte) ([]byte, error)
 
+type promptFunc func(string) bool
+
 // deviceSpecsGetter provides methods to obtain user input via an interactive
 // user session.
 type deviceSpecsGetter struct {
-	inputFunc inputFunc
+	inputFunc  inputFunc
+	promptFunc promptFunc
 }
 
 func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText string) (*inventory.CommonDeviceSpecs, error) {
@@ -45,11 +51,20 @@ func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText s
 		return nil, errors.Annotate(err, "get device specs").Err()
 	}
 
-	i, err := s.inputFunc([]byte(t))
-	if err != nil {
-		return nil, errors.Annotate(err, "get device specs").Err()
+	for {
+		i, err := s.inputFunc([]byte(t))
+		if err != nil {
+			return nil, errors.Annotate(err, "get device specs").Err()
+		}
+		d, err := parseUserInput(string(i))
+		if err != nil {
+			if !s.promptFunc(err.Error()) {
+				return nil, err
+			}
+			continue
+		}
+		return d, nil
 	}
-	return parseUserInput(string(i))
 }
 
 // initialText returns the text to provide for user input.

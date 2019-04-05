@@ -37,6 +37,55 @@ func TestGetDeviceSpecs(t *testing.T) {
 	}
 }
 
+func TestGetDeviceSpecsAbortOnError(t *testing.T) {
+	p := promptHandler{response: false}
+	s := deviceSpecsGetter{
+		inputFunc:  newRegexpReplacer(regexp.MustCompile(`hostname`), "not_a_field"),
+		promptFunc: p.Handle,
+	}
+	initial := inventory.CommonDeviceSpecs{
+		Id:       stringPtr("myid"),
+		Hostname: stringPtr("myhost"),
+	}
+	_, err := s.Get(&initial, "")
+	if err == nil {
+		t.Errorf("Get() succeeded with incorrect input")
+	}
+	if !p.Called {
+		t.Errorf("user not prompted for retry on input error")
+	}
+}
+
+func TestGetDeviceSpecsIterateOnError(t *testing.T) {
+	p := promptHandler{response: true}
+	s := deviceSpecsGetter{
+		inputFunc: chainedInputFuncs([]inputFunc{
+			newRegexpReplacer(regexp.MustCompile(`hostname`), "not_a_field"),
+			newRegexpReplacer(regexp.MustCompile(`myhost`), "yourhost"),
+		}),
+		promptFunc: p.Handle,
+	}
+	initial := inventory.CommonDeviceSpecs{
+		Id:       stringPtr("myid"),
+		Hostname: stringPtr("myhost"),
+	}
+
+	got, err := s.Get(&initial, "")
+	if err != nil {
+		t.Errorf("error in GetDeviceSpecs(): %s", err)
+	}
+	if !p.Called {
+		t.Errorf("user not prompted for retry on input error")
+	}
+	want := &inventory.CommonDeviceSpecs{
+		Id:       stringPtr("myid"),
+		Hostname: stringPtr("yourhost"),
+	}
+	if !proto.Equal(want, got) {
+		t.Errorf("incorrect response from GetDeviceSpecs, -want, +got:\n%s", pretty.Compare(want, got))
+	}
+}
+
 func TestCommentLines(t *testing.T) {
 	text := `# first line is already a comment
 second line will be commented.
@@ -74,6 +123,14 @@ func newRegexpReplacer(re *regexp.Regexp, repl string) inputFunc {
 	return r.ReplaceAll
 }
 
+func chainedInputFuncs(is []inputFunc) inputFunc {
+	return func(t []byte) ([]byte, error) {
+		i := is[0]
+		is = is[1:]
+		return i(t)
+	}
+}
+
 // regexpEditor has a method to replace occurrences of re with repl in given
 // text.
 type regexpEditor struct {
@@ -107,6 +164,20 @@ text with this-other-hostname in the middle`
 		t.Errorf("Incorrect output from regexpEditor.InteractiveInput(), -want, +got:\n%s",
 			pretty.Compare(strings.Split(want, "\n"), strings.Split(got, "\n")))
 	}
+}
+
+// promptHandler responds to user prompts using a canned response.
+type promptHandler struct {
+	// Canned response for prompts.
+	response bool
+	// Will be set by Handle()
+	Called bool
+}
+
+// Handle implements promptFunc.
+func (p *promptHandler) Handle(q string) bool {
+	p.Called = true
+	return p.response
 }
 
 func stringPtr(s string) *string {
