@@ -151,18 +151,18 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
-      <template is="dom-if" if="[[_showLoading(issueLoaded, commentsLoaded, fetchIssueError)]]">
-        <div class="container-no-issue">
+      <template is="dom-if" if="[[_showLoading]]">
+        <div class="container-no-issue" id="loading">
           Loading...
         </div>
       </template>
-      <template is="dom-if" if="[[fetchIssueError]]">
-        <div class="container-no-issue">
+      <template is="dom-if" if="[[_showFetchError]]">
+        <div class="container-no-issue" id="fetch-error">
           [[fetchIssueError.description]]
         </div>
       </template>
-      <template is="dom-if" if="[[_isDeleted(issueLoaded, issue)]]">
-        <div class="container-no-issue">
+      <template is="dom-if" if="[[_showDeleted]]">
+        <div class="container-no-issue" id="deleted">
           <p>Issue [[issueRef.localId]] has been deleted.</p>
           <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
             <chops-button on-click="_undeleteIssue" class="emphasized">
@@ -171,10 +171,11 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           </template>
         </div>
       </template>
-      <template is="dom-if" if="[[_showIssue(issueLoaded, commentsLoaded, issue)]]">
+      <template is="dom-if" if="[[_showIssue]]">
         <div
           class="container-outside"
           on-open-dialog="_onOpenDialog"
+          id="issue"
         >
           <aside class="metadata-container">
             <mr-issue-metadata></mr-issue-metadata>
@@ -207,68 +208,95 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
-      _user: Object,
-      commentsLoaded: {
-        type: Boolean,
-        value: false,
+      issueEntryUrl: String,
+      queryParams: {
+        type: Object,
+        value: () => {},
       },
+      userDisplayName: String,
+      // Redux state.
       fetchIssueError: String,
-      fetchingComments: {
-        type: Boolean,
-        observer: '_onFetchingCommentsChange',
-      },
-      fetchingIssue: {
-        type: Boolean,
-        observer: '_onFetchingIssueChange',
-      },
+      fetchingComments: Boolean,
+      fetchingIssue: Boolean,
       fetchingProjectConfig: Boolean,
       issue: Object,
       issueClosed: {
         type: Boolean,
         reflectToAttribute: true,
       },
-      issueEntryUrl: String,
-      issueLoaded: {
+      issuePermissions: Object,
+      issueRef: Object,
+      // Internal properties.
+      _commentsLoaded: {
         type: Boolean,
         value: false,
       },
-      issuePermissions: Object,
-      issueRef: Object,
-      queryParams: {
-        type: Object,
-        value: () => {},
+      _hasFetched: {
+        type: Boolean,
+        value: false,
       },
-      userDisplayName: {
-        type: String,
-        observer: '_userDisplayNameChanged',
+      _issueLoaded: {
+        type: Boolean,
+        value: false,
+      },
+      _showDeleted: Boolean,
+      _showFetchError: Boolean,
+      _showIssue: Boolean,
+      _showLoading: {
+        type: Boolean,
+        value: true,
       },
     };
   }
 
   static mapStateToProps(state, element) {
     return {
-      issue: issue.issue(state),
-      issueRef: issue.issueRef(state),
-      issueClosed: !issue.isOpen(state),
-      issuePermissions: issue.permissions(state),
+      fetchIssueError: issue.requests(state).fetch.error,
       fetchingComments: issue.requests(state).fetchComments.requesting,
       fetchingIssue: issue.requests(state).fetch.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
-      fetchIssueError: issue.requests(state).fetch.error,
-      _user: user.user(state),
+      issue: issue.issue(state),
+      issueClosed: !issue.isOpen(state),
+      issuePermissions: issue.permissions(state),
+      issueRef: issue.issueRef(state),
     };
   }
 
   static get observers() {
     return [
-      '_fetchIssue(issueRef)',
+      '_fetchChanged(fetchingIssue, fetchingComments, fetchIssueError, issue)',
       '_issueChanged(issueRef, issue)',
+      '_issueRefChanged(issueRef)',
       '_projectNameChanged(issueRef.projectName)',
+      '_userDisplayNameChanged(userDisplayName)',
     ];
   }
 
-  _onOpenDialog(e) {
-    this.shadowRoot.querySelector('#' + e.detail.dialogId).open(e);
+  _fetchChanged(fetchingIssue, fetchingComments, fetchIssueError, issue) {
+    if (fetchingIssue || fetchingComments) {
+      this._hasFetched = true;
+    }
+    if (this._hasFetched && !fetchingIssue) {
+      this._issueLoaded = true;
+    }
+    if (this._hasFetched && !fetchingComments) {
+      this._commentsLoaded = true;
+    }
+
+    this._showLoading = false;
+    this._showFetchError = false;
+    this._showDeleted = false;
+    this._showIssue = false;
+
+    if (!this._issueLoaded || !this._commentsLoaded) {
+      this._showLoading = true;
+    } else if (fetchIssueError) {
+      this._showFetchError = true;
+    } else if (issue && issue.isDeleted) {
+      this._showDeleted = true;
+    } else {
+      this._showIssue = true;
+    }
   }
 
   _issueChanged(issueRef, issue) {
@@ -286,39 +314,30 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     document.title = title;
   }
 
-  _commentsShownCount(issue) {
-    return issue.approvalValues ? APPROVAL_COMMENT_COUNT : DETAIL_COMMENT_COUNT;
+  _issueRefChanged(issueRef) {
+    if (issueRef.localId && issueRef.projectName && !this.fetchingIssue) {
+      // Reload the issue data when the id changes.
+      this.dispatchAction(issue.fetchIssuePageData({issueRef}));
+    }
   }
 
   _projectNameChanged(projectName) {
-    if (!projectName || this.fetchingProjectConfig) return;
-    // Reload project config and templates when the project name changes.
-    this.dispatchAction(project.fetch(projectName));
-  }
-
-  _onFetchingCommentsChange(fetchingComments) {
-    this.commentsLoaded |= !fetchingComments;
-  }
-
-  _onFetchingIssueChange(fetchingIssue) {
-    this.issueLoaded |= !fetchingIssue;
-  }
-
-  _showLoading(issueLoaded, commentsLoaded, fetchIssueError) {
-    return (!issueLoaded || !commentsLoaded) && !fetchIssueError;
-  }
-
-  _fetchIssue(issueRef) {
-    if (!issueRef.localId || !issueRef.projectName || this.fetchingIssue) {
-      return;
+    if (projectName && !this.fetchingProjectConfig) {
+      // Reload project config and templates when the project name changes.
+      this.dispatchAction(project.fetch(projectName));
     }
-    // Reload the issue data when the id changes.
-
-    this.dispatchAction(issue.fetchIssuePageData({issueRef}));
   }
 
   _userDisplayNameChanged(userDisplayName) {
     this.dispatchAction(user.fetch(userDisplayName));
+  }
+
+  _onOpenDialog(e) {
+    this.shadowRoot.querySelector('#' + e.detail.dialogId).open(e);
+  }
+
+  _commentsShownCount(issue) {
+    return issue.approvalValues ? APPROVAL_COMMENT_COUNT : DETAIL_COMMENT_COUNT;
   }
 
   _undeleteIssue() {
@@ -332,14 +351,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   _showUndelete(issuePermissions) {
     return (issuePermissions || []).includes('deleteissue');
-  }
-
-  _showIssue(issueLoaded, commentsLoaded, issue) {
-    return issueLoaded && commentsLoaded && !issue.isDeleted;
-  }
-
-  _isDeleted(issueLoaded, issue) {
-    return issueLoaded && issue.isDeleted;
   }
 }
 

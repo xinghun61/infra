@@ -2,16 +2,28 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {assert} from 'chai';
 import {MrIssuePage} from './mr-issue-page.js';
-import {store} from '../../redux/redux-mixin.js';
-import * as issue from '../../redux/issue.js';
 
 let element;
+let loadingElement;
+let fetchErrorElement;
+let deletedElement;
+let issueElement;
+
+function populateElementReferences() {
+  flush();
+  loadingElement = element.shadowRoot.querySelector('#loading');
+  fetchErrorElement = element.shadowRoot.querySelector('#fetch-error');
+  deletedElement = element.shadowRoot.querySelector('#deleted');
+  issueElement = element.shadowRoot.querySelector('#issue');
+}
 
 suite('mr-issue-page', () => {
   setup(() => {
     element = document.createElement('mr-issue-page');
+    element.mapStateToProps = () => {};
     document.body.appendChild(element);
   });
 
@@ -23,26 +35,72 @@ suite('mr-issue-page', () => {
     assert.instanceOf(element, MrIssuePage);
   });
 
-  test('fetching issue makes loading show', () => {
-    assert.isFalse(issue.requests(store.getState()).fetch.requesting);
+  test('nothing has happened yet', () => {
+    populateElementReferences();
 
-    store.dispatch({type: issue.FETCH_START});
-
-    assert.isTrue(issue.requests(store.getState()).fetch.requesting);
-
-    // TODO(zhangtiff): Figure out how to propagate Redux state changes.
-    element.fetchingIssue = true;
-    assert.isTrue(element.fetchingIssue);
+    assert.isNotNull(loadingElement);
+    assert.isNull(fetchErrorElement);
+    assert.isNull(deletedElement);
+    assert.isNull(issueElement);
   });
 
-  test('dispatching failure makes error show', () => {
-    store.dispatch({type: issue.FETCH_FAILURE, error: 'failed request'});
+  test('issue not loaded yet', () => {
+    element.fetchingIssue = true;
+    populateElementReferences();
 
-    assert.equal(
-      issue.requests(store.getState()).fetch.error, 'failed request');
+    assert.isNotNull(loadingElement);
+    assert.isNull(fetchErrorElement);
+    assert.isNull(deletedElement);
+    assert.isNull(issueElement);
+  });
 
-    // TODO(zhangtiff): Figure out how to propagate Redux state changes.
-    element.fetchIssueError = element.fetchIssueError;
-    assert.equal(element.fetchIssueError, element.fetchIssueError);
+  test('comments not loaded yet', () => {
+    element.fetchingIssue = false;
+    element.fetchingComments = true;
+    populateElementReferences();
+
+    assert.isNotNull(loadingElement);
+    assert.isNull(fetchErrorElement);
+    assert.isNull(deletedElement);
+    assert.isNull(issueElement);
+  });
+
+  test('fetch error', () => {
+    element._hasFetched = true;
+    element.fetchingComments = false;
+    element.fetchingIssue = false;
+    element.fetchIssueError = 'error';
+    populateElementReferences();
+
+    assert.isNull(loadingElement);
+    assert.isNotNull(fetchErrorElement);
+    assert.isNull(deletedElement);
+    assert.isNull(issueElement);
+  });
+
+  test('deleted issue', () => {
+    element._hasFetched = true;
+    element.fetchingComments = false;
+    element.fetchingIssue = false;
+    element.issue = {isDeleted: true};
+    populateElementReferences();
+
+    assert.isNull(loadingElement);
+    assert.isNull(fetchErrorElement);
+    assert.isNotNull(deletedElement);
+    assert.isNull(issueElement);
+  });
+
+  test('normal issue', () => {
+    element._hasFetched = true;
+    element.fetchingComments = false;
+    element.fetchingIssue = false;
+    element.issue = {};
+    populateElementReferences();
+
+    assert.isNull(loadingElement);
+    assert.isNull(fetchErrorElement);
+    assert.isNull(deletedElement);
+    assert.isNotNull(issueElement);
   });
 });
