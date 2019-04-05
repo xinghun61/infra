@@ -27,7 +27,7 @@
       "--limit",
       "1",
       "-p",
-      "change=607472",
+      "change=123456",
       "-o",
       "ALL_REVISIONS",
       "-o",
@@ -45,8 +45,8 @@
       "@@@STEP_LOG_LINE@json.output@    \"branch\": \"master\", @@@",
       "@@@STEP_LOG_LINE@json.output@    \"revisions\": {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"184ebe53805e102605d11f6b143486d15c23a09c\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"_number\": \"2\", @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"refs/changes/72/607472/2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"_number\": \"7\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"refs/changes/56/123456/7\"@@@",
       "@@@STEP_LOG_LINE@json.output@      }@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
@@ -72,7 +72,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--patch_ref",
-      "https://chromium.googlesource.com/infra@refs/changes/72/607472/2",
+      "https://chromium.googlesource.com/infra/infra@refs/changes/56/123456/7",
       "--revision",
       "infra@HEAD"
     ],
@@ -140,73 +140,21 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "RECIPE_REPO[depot_tools]/gclient.py",
-      "runhooks"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_suffixes": {
-      "PATH": [
-        "RECIPE_REPO[depot_tools]"
-      ]
-    },
-    "name": "gclient runhooks"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "go",
-      "version"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "infra_step": true,
-    "name": "init infra go env"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "echo",
-      "$GOPATH"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "name": "echo"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "go",
-      "test",
-      "infra/..."
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "name": "go test"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "test.py",
-      "test",
-      "infra"
+      "git",
+      "diff",
+      "--name-only",
+      "HEAD",
+      "HEAD~"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go/infra",
-    "name": "python tests"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "\n        import sys, os\n        print '\n'.join(os.listdir('./'))\n    "
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "name": "dirs"
+    "infra_step": true,
+    "name": "get change list",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@change list@file_0@@@",
+      "@@@STEP_LOG_LINE@change list@file_1@@@",
+      "@@@STEP_LOG_END@change list@@@"
+    ]
   },
   {
     "cmd": [
@@ -221,9 +169,9 @@
       "--verbose",
       "--verbose",
       "--issue",
-      "607472",
+      "123456",
       "--patchset",
-      "2",
+      "7",
       "--gerrit_url",
       "https://chromium-review.googlesource.com",
       "--gerrit_fetch",

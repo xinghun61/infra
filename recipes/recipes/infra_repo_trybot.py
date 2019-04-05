@@ -3,9 +3,6 @@
 # found in the LICENSE file.
 
 DEPS = [
-  'depot_tools/bot_update',
-  'depot_tools/gclient',
-  'depot_tools/git',
   'depot_tools/osx_sdk',
   'infra_checkout',
   'infra_system',
@@ -13,7 +10,6 @@ DEPS = [
   'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
-  'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/runtime',
@@ -33,15 +29,7 @@ def RunSteps(api):
   co.commit_change()
   co.gclient_runhooks()
 
-  # Grab a list of changed files.
-  with api.context(cwd=co.path.join(patch_root)):
-    result = api.git(
-        'diff', '--name-only', 'HEAD', 'HEAD~',
-        name='get change list',
-        stdout=api.raw_io.output())
-  files = result.stdout.splitlines()
-  result.presentation.logs['change list'] = files
-
+  files = co.get_changed_files()
   is_deps_roll = 'DEPS' in files
 
   with api.step.defer_results():

@@ -21,7 +21,7 @@
       "RECIPE_REPO[depot_tools]/gerrit_client.py",
       "changes",
       "--host",
-      "https://chromium.googlesorce.com",
+      "https://chromium-review.googlesource.com",
       "--json_file",
       "/path/to/tmp/json",
       "--limit",
@@ -72,7 +72,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--patch_ref",
-      "https://chromium.googlesorce.com/infra/infra@refs/changes/56/123456/7",
+      "https://chromium.googlesource.com/infra/infra@refs/changes/56/123456/7",
       "--revision",
       "infra@HEAD"
     ],
@@ -140,21 +140,6 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "RECIPE_REPO[depot_tools]/gclient.py",
-      "runhooks"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "env_suffixes": {
-      "PATH": [
-        "RECIPE_REPO[depot_tools]"
-      ]
-    },
-    "name": "gclient runhooks"
-  },
-  {
-    "cmd": [
       "git",
       "diff",
       "--name-only",
@@ -166,66 +151,18 @@
     "name": "get change list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@change list@go/src/infra/stuff.go@@@",
-      "@@@STEP_LOG_LINE@change list@infra/stuff.py@@@",
-      "@@@STEP_LOG_END@change list@@@"
+      "@@@STEP_LOG_LINE@change list is too long@1@@@",
+      "@@@STEP_LOG_LINE@change list is too long@0@@@",
+      "@@@STEP_LOG_LINE@change list is too long@0@@@",
+      "@@@STEP_LOG_LINE@change list is too long@0@@@",
+      "@@@STEP_LOG_LINE@change list is too long@ @@@",
+      "@@@STEP_LOG_LINE@change list is too long@f@@@",
+      "@@@STEP_LOG_LINE@change list is too long@i@@@",
+      "@@@STEP_LOG_LINE@change list is too long@l@@@",
+      "@@@STEP_LOG_LINE@change list is too long@e@@@",
+      "@@@STEP_LOG_LINE@change list is too long@s@@@",
+      "@@@STEP_LOG_END@change list is too long@@@"
     ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "test.py",
-      "test"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go/infra",
-    "name": "python tests"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/recipes/recipes.py",
-      "test",
-      "run"
-    ],
-    "name": "recipe test"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/recipes/recipes.py",
-      "lint"
-    ],
-    "name": "recipe lint"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "go",
-      "version"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "infra_step": true,
-    "name": "init infra go env"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
-      "python",
-      "[CACHE]/infra_gclient_with_go/infra/go/test.py"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "name": "go tests"
-  },
-  {
-    "cmd": [],
-    "name": "skipping slow cipd packaging tests"
   },
   {
     "jsonResult": null,

@@ -82,22 +82,6 @@
   },
   {
     "cmd": [
-      "git",
-      "-c",
-      "user.email=commit-bot@chromium.org",
-      "-c",
-      "user.name=The Commit Bot",
-      "commit",
-      "-a",
-      "-m",
-      "Committed patch"
-    ],
-    "cwd": "[CACHE]/infra_gclient_with_go/infra",
-    "infra_step": true,
-    "name": "commit git patch"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "RECIPE_REPO[depot_tools]/gclient.py",

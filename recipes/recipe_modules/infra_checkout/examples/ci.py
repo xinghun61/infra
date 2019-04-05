@@ -3,11 +3,9 @@
 # found in the LICENSE file.
 
 DEPS = [
-    'depot_tools/tryserver',
     'infra_checkout',
     'recipe_engine/buildbucket',
     'recipe_engine/context',
-    'recipe_engine/json',
     'recipe_engine/platform',
     'recipe_engine/python',
     'recipe_engine/runtime',
@@ -17,7 +15,6 @@ DEPS = [
 def RunSteps(api):
   co = api.infra_checkout.checkout(gclient_config_name='infra',
                                    patch_root='infra')
-  co.commit_change()
   co.gclient_runhooks()
   co.ensure_go_env()
   _ = co.bot_update_step  # coverage...
@@ -32,10 +29,6 @@ def RunSteps(api):
         print '\n'.join(os.listdir('./'))
     ''')
 
-  if 'presubmit' in api.buildbucket.builder_name.lower():
-    with api.tryserver.set_failure_hash():
-      co.run_presubmit_in_go_env()
-
 
 def GenTests(api):
   for plat in ('linux', 'mac', 'win'):
@@ -49,12 +42,3 @@ def GenTests(api):
             git_repo='https://chromium.googlesource.com/infra/infra',
         )
     )
-
-  yield (
-      api.test('presubmit') +
-      api.platform('linux', 64) +
-      api.runtime(is_luci=True, is_experimental=False) +
-      api.buildbucket.try_build(
-          'infra', 'try', 'presubmit', change_number=607472, patch_set=2) +
-      api.step_data('presubmit', api.json.output([[]]))
-  )

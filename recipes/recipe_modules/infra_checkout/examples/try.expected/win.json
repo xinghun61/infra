@@ -18,6 +18,46 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_REPO[depot_tools]\\gerrit_client.py",
+      "changes",
+      "--host",
+      "https://chromium-review.googlesource.com",
+      "--json_file",
+      "/path/to/tmp/json",
+      "--limit",
+      "1",
+      "-p",
+      "change=123456",
+      "-o",
+      "ALL_REVISIONS",
+      "-o",
+      "DOWNLOAD_COMMANDS"
+    ],
+    "cwd": "[CACHE]\\infra_gclient_with_go",
+    "env": {
+      "PATH": "<PATH>;RECIPE_REPO[depot_tools]"
+    },
+    "infra_step": true,
+    "name": "gerrit fetch current CL info",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@[@@@",
+      "@@@STEP_LOG_LINE@json.output@  {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"branch\": \"master\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"184ebe53805e102605d11f6b143486d15c23a09c\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"_number\": \"7\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"refs/changes/56/123456/7\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@]@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[depot_tools::bot_update]\\resources\\bot_update.py",
       "--spec-path",
       "cache_dir = '[CACHE]\\\\git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
@@ -31,8 +71,10 @@
       "[CLEANUP]\\bot_update",
       "--output_json",
       "/path/to/tmp/json",
+      "--patch_ref",
+      "https://chromium.googlesource.com/infra/infra@refs/changes/56/123456/7",
       "--revision",
-      "infra@2d72510e447ab60a9728aeea2362d8be2cbd7789"
+      "infra@HEAD"
     ],
     "cwd": "[CACHE]\\infra_gclient_with_go",
     "env_suffixes": {
@@ -47,7 +89,7 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra\": \"2d72510e447ab60a9728aeea2362d8be2cbd7789\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra\": \"HEAD\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra\": {@@@",
@@ -98,62 +140,21 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "RECIPE_REPO[depot_tools]\\gclient.py",
-      "runhooks"
-    ],
-    "cwd": "[CACHE]\\infra_gclient_with_go",
-    "env_suffixes": {
-      "PATH": [
-        "RECIPE_REPO[depot_tools]"
-      ]
-    },
-    "name": "gclient runhooks"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]\\infra_gclient_with_go\\infra\\go\\env.py",
-      "go",
-      "version"
-    ],
-    "cwd": "[CACHE]\\infra_gclient_with_go",
-    "infra_step": true,
-    "name": "init infra go env"
-  },
-  {
-    "cmd": [
-      "vpython",
-      "-u",
-      "[CACHE]\\infra_gclient_with_go\\infra\\go\\env.py",
-      "go",
-      "test",
-      "infra/..."
-    ],
-    "cwd": "[CACHE]\\infra_gclient_with_go",
-    "name": "go test"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "test.py",
-      "test",
-      "infra"
+      "git",
+      "diff",
+      "--name-only",
+      "HEAD",
+      "HEAD~"
     ],
     "cwd": "[CACHE]\\infra_gclient_with_go\\infra",
-    "name": "python tests"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "\n        import sys, os\n        print '\n'.join(os.listdir('./'))\n    "
-    ],
-    "cwd": "[CACHE]\\infra_gclient_with_go",
-    "name": "dirs"
+    "infra_step": true,
+    "name": "get change list",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@change list@file_0@@@",
+      "@@@STEP_LOG_LINE@change list@file_1@@@",
+      "@@@STEP_LOG_END@change list@@@"
+    ]
   },
   {
     "jsonResult": null,

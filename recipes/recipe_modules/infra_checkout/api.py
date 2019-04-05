@@ -80,6 +80,23 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
               name='commit git patch')
 
       @staticmethod
+      def get_changed_files():
+        assert patch_root
+        # Grab a list of changed files.
+        with self.m.context(cwd=path.join(patch_root)):
+          result = self.m.git(
+              'diff', '--name-only', 'HEAD', 'HEAD~',
+              name='get change list',
+              stdout=self.m.raw_io.output())
+        files = result.stdout.splitlines()
+        if len(files) < 50:
+          result.presentation.logs['change list'] = sorted(files)
+        else:
+          result.presentation.logs['change list is too long'] = (
+              '%d files' % len(files))
+        return set(files)
+
+      @staticmethod
       def gclient_runhooks():
         with self.m.context(cwd=path):
           self.m.gclient.runhooks()
