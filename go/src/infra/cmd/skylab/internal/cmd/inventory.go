@@ -6,6 +6,9 @@ package cmd
 
 import (
 	"fmt"
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/inventory"
 	"io"
 	"sort"
 	"strings"
@@ -16,15 +19,11 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/flag"
 	"go.chromium.org/luci/grpc/prpc"
-
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/cmd/skylab/internal/site"
-	"infra/libs/skylab/inventory"
 )
 
 // Inventory subcommand: Print host inventory.
 var Inventory = &subcommands.Command{
-	UsageLine: "inventory [-dev] [-labs N]",
+	UsageLine: "inventory [-dev] [-show-pools] [-labs N]",
 	ShortDesc: "print DUT inventory",
 	LongDesc: `Print a summary of the DUT inventory.
 
@@ -34,6 +33,7 @@ This is the equivalent of the inventory email in Autotest.
 		c := &inventoryRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		c.Flags.BoolVar(&c.showPools, "show-pools", false, "Show count of managed pools within each model.")
 		c.Flags.Var(flag.CommaList(&c.labs), "labs",
 			`Restrict results to specific labs.  This should be a number, and
 multiple labs can be specified separated with commas.  For example,
@@ -46,6 +46,7 @@ type inventoryRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 	envFlags  envFlags
+	showPools bool
 	labs      []string
 }
 
@@ -74,6 +75,11 @@ func (c *inventoryRun) innerRun(a subcommands.Application, args []string, env su
 		return err
 	}
 	bs := res.GetBots()
+	if c.showPools {
+		r := compileInventoryReportByDutPool(filterBots(bs, c.labs))
+		_ = printInventoryByDutPool(a.GetOut(), r)
+		return nil
+	}
 	r := compileInventoryReport(filterBots(bs, c.labs))
 	_ = printInventory(a.GetOut(), r)
 	return nil
@@ -172,6 +178,52 @@ func (m inventoryMap) slice() []*inventoryCount {
 	return s
 }
 
+type poolStateCount struct {
+	ready int
+	total int
+}
+
+// modelPools contains the count of DUT state for managed pool.
+type modelPools struct {
+	name  string
+	pools map[inventory.SchedulableLabels_DUTPool]poolStateCount
+}
+
+// modelPoolsMap maps model name and modelPools
+type modelPoolsMap struct {
+	m map[string]*modelPools
+}
+
+func newModelPoolsMap() modelPoolsMap {
+	return modelPoolsMap{
+		m: make(map[string]*modelPools),
+	}
+}
+
+// Get is a mutation of inventoryMap's get method, allocating a new
+// modelPools if necessary.
+func (m modelPoolsMap) get(key string) *modelPools {
+	if mp := m.m[key]; mp != nil {
+		return mp
+	}
+	mp := &modelPools{
+		name:  key,
+		pools: make(map[inventory.SchedulableLabels_DUTPool]poolStateCount),
+	}
+	m.m[key] = mp
+	return mp
+}
+
+// Slice sorts the slice by the alphabetical order of model name.
+func (m modelPoolsMap) slice() []*modelPools {
+	s := make([]*modelPools, 0, len(m.m))
+	for _, mp := range m.m {
+		s = append(s, mp)
+	}
+	sort.Slice(s, func(i, j int) bool { return s[i].name < s[j].name })
+	return s
+}
+
 func compileInventoryReport(bs []*fleet.BotSummary) *inventoryReport {
 	labCounts := newInventoryMap()
 	modelCounts := newInventoryMap()
@@ -186,6 +238,16 @@ func compileInventoryReport(bs []*fleet.BotSummary) *inventoryReport {
 		labs:   labCounts.slice(),
 		models: modelCounts.slice(),
 	}
+}
+
+func compileInventoryReportByDutPool(bs []*fleet.BotSummary) []*modelPools {
+	modelCountsByPool := newModelPoolsMap()
+	for _, b := range bs {
+		d := b.GetDimensions()
+		mcbp := modelCountsByPool.get(d.GetModel())
+		addDutStateCount(mcbp, b)
+	}
+	return modelCountsByPool.slice()
 }
 
 func botLocation(b *fleet.BotSummary) string {
@@ -204,6 +266,23 @@ func addBotCount(ic *inventoryCount, b *fleet.BotSummary) {
 	}
 	if isSuites(b) {
 		ic.spare++
+	}
+}
+
+func addDutStateCount(mp *modelPools, b *fleet.BotSummary) {
+	pools := b.GetDimensions().GetPools()
+	for _, p := range pools {
+		i, ok := inventory.SchedulableLabels_DUTPool_value[p]
+		if !ok {
+			continue
+		}
+		dutPoolVal := inventory.SchedulableLabels_DUTPool(i)
+		psc := mp.pools[dutPoolVal]
+		psc.total++
+		if b.GetDutState() == fleet.DutState_Ready {
+			psc.ready++
+		}
+		mp.pools[dutPoolVal] = psc
 	}
 }
 
@@ -235,6 +314,44 @@ func printInventory(w io.Writer, r *inventoryReport) error {
 	for _, i := range r.models {
 		fmt.Fprintf(tw, "%s\t%d\t%d\t%d\t%d\t%d\t\n",
 			i.name, i.available(), i.good, i.bad, i.spare, i.total())
+	}
+	return tw.Flush()
+}
+
+// getNonEmptyPools filters out those DUT pools whose output is zeros crossing
+// all rows.
+func getNonEmptyPools(mps []*modelPools) []inventory.SchedulableLabels_DUTPool {
+	pool := make(map[inventory.SchedulableLabels_DUTPool]bool)
+	new := []inventory.SchedulableLabels_DUTPool{}
+	for _, mp := range mps {
+		for p := range mp.pools {
+			if pool[p] {
+				continue
+			}
+			pool[p] = true
+			new = append(new, p)
+		}
+	}
+	sort.Slice(new, func(i, j int) bool { return new[i] < new[j] })
+	return new
+}
+
+func printInventoryByDutPool(w io.Writer, m []*modelPools) error {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "DUT Pool Count by model")
+	fmt.Fprintln(tw, "===============================================================================")
+	fmt.Fprintf(tw, "Model\t")
+	pools := getNonEmptyPools(m)
+	for _, p := range pools {
+		fmt.Fprintf(tw, "%s\t", p)
+	}
+	fmt.Fprintf(tw, "\n")
+	for _, i := range m {
+		fmt.Fprintf(tw, "%s\t", i.name)
+		for _, p := range pools {
+			fmt.Fprintf(tw, "%d/%d\t", i.pools[p].ready, i.pools[p].total)
+		}
+		fmt.Fprintln(tw)
 	}
 	return tw.Flush()
 }
