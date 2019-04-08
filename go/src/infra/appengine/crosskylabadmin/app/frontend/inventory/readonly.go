@@ -89,6 +89,14 @@ func (is *ServerImpl) GetDroneConfig(ctx context.Context, req *fleet.GetDroneCon
 	return resp, nil
 }
 
+// ListRemovedDuts implements the method from fleet.InventoryServer interface.
+func (is *ServerImpl) ListRemovedDuts(ctx context.Context, req *fleet.ListRemovedDutsRequest) (resp *fleet.ListRemovedDutsResponse, err error) {
+	defer func() {
+		err = grpcutil.GRPCifyAndLogErr(ctx, err)
+	}()
+	return nil, status.Errorf(codes.Unimplemented, "not implemented yet")
+}
+
 // UpdateCachedInventory implements the method from fleet.InventoryServer interface.
 func (is *ServerImpl) UpdateCachedInventory(ctx context.Context, req *fleet.UpdateCachedInventoryRequest) (resp *fleet.UpdateCachedInventoryResponse, err error) {
 	defer func() {

@@ -101,6 +101,9 @@ service Inventory {
   // This RPC returns possibly cached data.
   rpc GetDroneConfig(GetDroneConfigRequest) returns (GetDroneConfigResponse);
 
+  // ListRemovedDuts lists removed DUTs (DUTs not assigned to any drone).
+  rpc ListRemovedDuts(ListRemovedDutsRequest) returns (ListRemovedDutsResponse);
+
   // ///////////////////////////////////////////////////////////////////////////
   // RPCs used internally by the infrastructure. Not for end-user tools.
 
@@ -541,6 +544,28 @@ message GetDroneConfigResponse {
     string hostname = 2;
   }
   // duts assigned to the drone.
+  repeated Dut duts = 1;
+}
+
+message ListRemovedDutsRequest {}
+
+message ListRemovedDutsResponse {
+  message Dut {
+    // id of the DUT.
+    string id = 1;
+    // hostname of the DUT.
+    string hostname = 2;
+    // bug is a link to a bug explaining why the DUT is removed.
+    string bug = 3;
+    // comment is a short comment explaining why the DUT is removed.
+    string comment = 4;
+    // expire_time indicates when the removal bug should be revisited
+    // so the DUT is not forgotten.
+    google.protobuf.Timestamp expire_time = 5;
+    // model of the DUT.
+    string model = 6;
+  }
+  // duts that are removed.
   repeated Dut duts = 1;
 }
 

@@ -227,6 +227,23 @@ func (s *DecoratedInventory) GetDroneConfig(c context.Context, req *GetDroneConf
 	return
 }
 
+func (s *DecoratedInventory) ListRemovedDuts(c context.Context, req *ListRemovedDutsRequest) (rsp *ListRemovedDutsResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "ListRemovedDuts", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.ListRemovedDuts(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "ListRemovedDuts", rsp, err)
+	}
+	return
+}
+
 func (s *DecoratedInventory) UpdateDutLabels(c context.Context, req *UpdateDutLabelsRequest) (rsp *UpdateDutLabelsResponse, err error) {
 	if s.Prelude != nil {
 		var newCtx context.Context
