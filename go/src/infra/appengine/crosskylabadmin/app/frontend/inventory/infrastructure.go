@@ -62,14 +62,10 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 			return err
 		}
 
-		hostnameToID := make(map[string]string)
-		for _, d := range s.Lab.GetDuts() {
-			c := d.GetCommon()
-			hostnameToID[c.GetHostname()] = c.GetId()
-		}
+		da := newDUTAssigner(ctx, s)
 		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
 		for _, a := range req.Assignments {
-			i, err := assignDutToDrone(ctx, s.Infrastructure, hostnameToID, a)
+			i, err := da.assignDUT(ctx, a)
 			if err != nil {
 				return err
 			}
@@ -121,12 +117,36 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	return resp, err
 }
 
-func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, hostnameToID map[string]string, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
+// dutAssigner wraps an InventoryStore and implements assigning DUTs
+// to drones.  This struct contains various internal lookup caches.
+type dutAssigner struct {
+	store        *gitstore.InventoryStore
+	hostnameToID map[string]string
+}
+
+func newDUTAssigner(ctx context.Context, s *gitstore.InventoryStore) *dutAssigner {
+	dr := dutAssigner{
+		store:        s,
+		hostnameToID: make(map[string]string),
+	}
+	for _, d := range s.Lab.GetDuts() {
+		c := d.GetCommon()
+		dr.hostnameToID[c.GetHostname()] = c.GetId()
+	}
+	return &dr
+}
+
+func (da *dutAssigner) dutHostnameExists(hostname string) bool {
+	_, ok := da.hostnameToID[hostname]
+	return ok
+}
+
+func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
 	env := config.Get(ctx).Inventory.Environment
 	id := a.DutId
 	if a.DutHostname != "" {
 		var ok bool
-		id, ok = hostnameToID[a.DutHostname]
+		id, ok = da.hostnameToID[a.DutHostname]
 		if !ok {
 			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", a.DutHostname)
 		}
@@ -134,11 +154,11 @@ func assignDutToDrone(ctx context.Context, infra *inventory.Infrastructure, host
 
 	dh := a.GetDroneHostname()
 	if dh == "" {
-		dh = pickDroneForDUT(ctx, infra)
+		dh = pickDroneForDUT(ctx, da.store.Infrastructure)
 		logging.Debugf(ctx, "Picked drone %s for DUT %s", dh, a.DutId)
 	}
 
-	servers := infra.GetServers()
+	servers := da.store.Infrastructure.GetServers()
 	if server, ok := findDutServer(servers, id); ok {
 		return nil, status.Errorf(
 			codes.InvalidArgument,

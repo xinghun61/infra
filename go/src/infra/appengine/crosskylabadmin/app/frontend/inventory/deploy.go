@@ -242,13 +242,9 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 
+		da := newDUTAssigner(ctx, s)
 		hostname := d.GetHostname()
-		hostnameToID := make(map[string]string)
-		for _, d := range s.Lab.GetDuts() {
-			c := d.GetCommon()
-			hostnameToID[c.GetHostname()] = c.GetId()
-		}
-		if _, ok := hostnameToID[hostname]; ok {
+		if da.dutHostnameExists(hostname) {
 			return errors.Reason("dut with hostname %s already exists", hostname).Err()
 		}
 
@@ -259,7 +255,7 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 		}
 
 		id := addDUTToStore(s, d)
-		if _, err := assignDutToDrone(ctx, s.Infrastructure, hostnameToID, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
+		if _, err := da.assignDUT(ctx, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}
 
