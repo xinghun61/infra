@@ -169,28 +169,23 @@ func (da *dutAssigner) dutHostnameExists(hostname string) bool {
 }
 
 func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDronesRequest_Item) (*fleet.AssignDutsToDronesResponse_Item, error) {
-	env := config.Get(ctx).Inventory.Environment
-	id := a.DutId
-	if a.DutHostname != "" {
-		var ok bool
-		id, ok = da.hostnameToID[a.DutHostname]
-		if !ok {
-			return nil, status.Errorf(codes.NotFound, "unknown DUT hostname %s", a.DutHostname)
-		}
+	ar, err := da.unpackRequest(a)
+	if err != nil {
+		return nil, err
 	}
-
-	dh := a.GetDroneHostname()
+	env := config.Get(ctx).Inventory.Environment
+	dh := ar.drone
 	if dh == "" {
 		dh = pickDroneForDUT(ctx, da.store.Infrastructure)
 		logging.Debugf(ctx, "Picked drone %s for DUT %s", dh, a.DutId)
 	}
 
 	servers := da.store.Infrastructure.GetServers()
-	if server, ok := findDutServer(servers, id); ok {
+	if server, ok := findDutServer(servers, ar.dutID); ok {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"dut %s is already assigned to drone %s in environment %s",
-			id, server.GetHostname(), server.GetEnvironment(),
+			ar.dutID, server.GetHostname(), server.GetEnvironment(),
 		)
 	}
 
@@ -205,12 +200,44 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 			dh, server.GetEnvironment().String(), env,
 		)
 	}
-	server.DutUids = append(server.DutUids, id)
+	server.DutUids = append(server.DutUids, ar.dutID)
 
 	return &fleet.AssignDutsToDronesResponse_Item{
 		DroneHostname: dh,
-		DutId:         id,
+		DutId:         ar.dutID,
 	}, nil
+}
+
+// assignRequest is an unpacked fleet.AssignDutsToDronesRequest_Item.
+type assignRequest struct {
+	dutID string
+	drone string
+}
+
+func (da *dutAssigner) unpackRequest(r *fleet.AssignDutsToDronesRequest_Item) (assignRequest, error) {
+	rr := assignRequest{
+		drone: r.DroneHostname,
+	}
+	if err := da.unpackRequestDUTID(r, &rr); err != nil {
+		return rr, err
+	}
+	return rr, nil
+}
+
+func (da *dutAssigner) unpackRequestDUTID(r *fleet.AssignDutsToDronesRequest_Item, rr *assignRequest) error {
+	switch {
+	case r.DutHostname != "":
+		var ok bool
+		rr.dutID, ok = da.hostnameToID[r.DutHostname]
+		if !ok {
+			return status.Errorf(codes.NotFound, "unknown DUT hostname %s", r.DutHostname)
+		}
+	case r.DutId != "":
+		rr.dutID = r.DutId
+	default:
+		return status.Errorf(codes.InvalidArgument, "must supply one of DUT hostname or ID")
+	}
+	return nil
 }
 
 // pickDroneForDUT returns hostname of a drone to use for the DUT with the given ID.
