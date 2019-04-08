@@ -19,13 +19,15 @@ import (
 // This function provides the user with initial specs, some help text and an
 // example of a complete device spec.  User's updated specs are parsed and any
 // errors are reported back to the user, allowing the user to fix the errors.
+// promptFunc is used to prompt the user on parsing errors, to give them a
+// choice to continue or abort the input session.
 //
 // This function returns upon successful parsing of the user input, or upon
 // user initiated abort.
-func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string) (*inventory.CommonDeviceSpecs, error) {
+func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string, promptFunc PromptFunc) (*inventory.CommonDeviceSpecs, error) {
 	s := deviceSpecsGetter{
 		inputFunc:  textEditorInput,
-		promptFunc: func(string) bool { return false },
+		promptFunc: promptFunc,
 	}
 	return s.Get(initial, helpText)
 }
@@ -36,13 +38,17 @@ func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string) (*inv
 // user-modified text.
 type inputFunc func([]byte) ([]byte, error)
 
-type promptFunc func(string) bool
+// PromptFunc obtains consent from the user for the given request string.
+//
+// This function is used to provide the user some context through the provided
+// string and then obtain a yes/no answer from the user.
+type PromptFunc func(string) bool
 
 // deviceSpecsGetter provides methods to obtain user input via an interactive
 // user session.
 type deviceSpecsGetter struct {
 	inputFunc  inputFunc
-	promptFunc promptFunc
+	promptFunc PromptFunc
 }
 
 func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText string) (*inventory.CommonDeviceSpecs, error) {

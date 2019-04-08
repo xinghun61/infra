@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -106,7 +107,7 @@ func (c *updateDutRun) innerRun(a subcommands.Application, args []string, env su
 	if err != nil {
 		return err
 	}
-	newSpecs, err := getSpecs(c.newSpecsFile, oldSpecs)
+	newSpecs, err := c.getNewSpecs(a, oldSpecs)
 	if err != nil {
 		return err
 	}
@@ -162,13 +163,13 @@ const helpText = "Remove the 'servo_port' attribute to auto-generate a valid ser
 
 // getSpecs parses the CommonDeviceSpecs from specsFile, or from the user.
 //
-// If specsFile is provided, it is parsed.
-// If specsFile is "", getSpecs obtains the specs interactively from the user.
-func getSpecs(specsFile string, oldSpecs *inventory.CommonDeviceSpecs) (*inventory.CommonDeviceSpecs, error) {
-	if specsFile != "" {
-		return parseSpecsFile(specsFile)
+// If c.newSpecsFile is provided, it is parsed.
+// If c.newSpecsFile is "", getNewSpecs obtains the specs interactively from the user.
+func (c *updateDutRun) getNewSpecs(a subcommands.Application, oldSpecs *inventory.CommonDeviceSpecs) (*inventory.CommonDeviceSpecs, error) {
+	if c.newSpecsFile != "" {
+		return parseSpecsFile(c.newSpecsFile)
 	}
-	return userinput.GetDeviceSpecs(oldSpecs, helpText)
+	return userinput.GetDeviceSpecs(oldSpecs, helpText, userinput.CLIPrompt(a.GetOut(), os.Stdin, true))
 }
 
 // parseSpecsFile parses device specs from the user provided file.
