@@ -170,12 +170,12 @@ def put_request_message_to_build_request(put_request):
     sbr.gitiles_commit.CopyFrom(gitiles_commit)
   sbr.gerrit_changes.extend(gerrit_changes)
 
-  changes = parameters.get('changes')
-  if (isinstance(changes, list) and changes and
-      not gitiles_commit):  # pragma: no cover
-    legacy_revision = changes[0].get('revision')
-    if legacy_revision:
-      logging.warning('legacy revision without buildset')
+  if sbr.builder.bucket.startswith('master.'):  # pragma: no cover
+    changes = parameters.get('changes')
+    if isinstance(changes, list) and changes and not gitiles_commit:
+      legacy_revision = changes[0].get('revision')
+      if legacy_revision:
+        logging.warning('legacy revision without buildset')
 
   # Populate Gerrit project from patch_project property.
   # V2 API users will have to provide this.
