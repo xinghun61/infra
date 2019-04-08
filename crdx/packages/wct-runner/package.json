@@ -1,6 +1,6 @@
 {
   "name": "@chopsui/wct-runner",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A WCT runner for chops frontend apps.",
   "bin": {
     "run-wct": "src/run-wct.js"
