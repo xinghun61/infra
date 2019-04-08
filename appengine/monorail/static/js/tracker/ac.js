@@ -228,12 +228,7 @@ function ac_fnchain_(a, b) {
 function ac_keyevent_(event) {
   event = event || window.event;
 
-  let source = event.target || event.srcElement;
-  if (source.shadowRoot) {
-    // Find the element within the shadowDOM.
-		const path = event.path || event.composedPath();
-	  source = path[0];
-  }
+  let source = getTargetFromEvent(event);
   if (('INPUT' == source.tagName && source.type.match(/^text|email$/i))
        || 'TEXTAREA' == source.tagName) {
     let code = GetKeyCode(event);
@@ -322,17 +317,8 @@ function ac_keyevent_(event) {
   return true;
 }
 
-/** on blur handler. Since webkit gives spurious onblur events,
- *  so ignore all onblur and use a document-wide onclick instead. */
+/** Autocomplete onblur handler. */
 function _ac_ob(event) {
-  // WebKit browsers: we use a document-wide on-click rather than blur events.
-  if (!BR_hasExcessBlurEvents()) {
-    _ac_real_onblur(event);
-  }
-}
-
-/** Original autocomplete onblur handler. */
-function _ac_real_onblur(event) {
   if (ac_focusedInput) {
     ac_focusedInput.onblur = ac_oldBlurHandler;
   }
@@ -343,28 +329,6 @@ function _ac_real_onblur(event) {
   ac_suppressCompletions = false;
   ac_updateCompletionList(false);
 }
-
-/** This is a document-wide onclick handler that is only registered
- *  when using webkit browsers. It calls the real onblur handler
- *  when the user clicks away from a text field (or in many other
- *  situations where the user clicks, but that is OK). */
-function _ac_fake_onblur(e) {
-  let targ;
-  if (!e) var e = window.event;
-  if (e.target) targ = e.target;
-  else if (e.srcElement) targ = e.srcElement;
-  if (targ.nodeType == 3) { // Safari
-    targ = targ.parentNode;
-  }
-
-  // If the user clicked anywhere other than one of the
-  // form elements that can have its own autocomplete,
-  // then close any open autocomplete menu.
-  if ('INPUT' != targ.nodeName) {
-    _ac_real_onblur(e);
-  }
-}
-
 
 /** @constructor */
 function _AC_Store() {
@@ -383,7 +347,7 @@ _AC_Store.prototype.oncomplete = function(completed, keycode, element, text) {
   // the same side-effect as typing.  E.g., exposing the next row of input
   // fields.
   element.dispatchEvent(new Event('keyup'));
-  _ac_real_onblur();
+  _ac_ob();
 };
 /** substitutes a completion for a completable in a text input's value. */
 _AC_Store.prototype.substitute =
@@ -461,18 +425,18 @@ _AC_SimpleStore.prototype.completable =
     for (let i = 0; i < caret; ++i) {
       let ch = inputValue.charAt(i);
       switch (state) {
-      case 0:
-        if ('"' == ch) {
-          state = 1;
-        } else if (',' == ch || ' ' == ch) {
-          start = i + 1;
-        }
-        break;
-      case 1:
-        if ('"' == ch) {
-          state = 0;
-        }
-        break;
+        case 0:
+          if ('"' == ch) {
+            state = 1;
+          } else if (',' == ch || ' ' == ch) {
+            start = i + 1;
+          }
+          break;
+        case 1:
+          if ('"' == ch) {
+            state = 0;
+          }
+          break;
       }
     }
     while (start < caret &&
@@ -633,14 +597,14 @@ var ac_suppressCompletions = false;
  * Used to generate ac_completions.
  * @private
  */
-var ac_lastCompletable = null;
+let ac_lastCompletable = null;
 /** an array of _AC_Completions.  @private */
 var ac_completions = null;
 /** -1 or in [0, _AC_Completions.length).  @private */
 var ac_selected = -1;
 
 /** Maxium number of options dislpayed in menu. @private */
-var ac_max_options = 100;
+let ac_max_options = 100;
 
 /**
  * handles all the key strokes, updating the completion list, tracking selected
@@ -668,41 +632,41 @@ function ac_handleKey_(code, isDown, isShiftKey) {
     }
   } else {
     switch (code) {
-    case ESC_KEYCODE: // escape
+      case ESC_KEYCODE: // escape
       // JER?? ac_suppressCompletions = true;
-      ac_selected = -1;
-      show = false;
-      break;
-    case UP_KEYCODE: // up
-      if (isDown) {
+        ac_selected = -1;
+        show = false;
+        break;
+      case UP_KEYCODE: // up
+        if (isDown) {
         // firefox fires arrow events on both down and press, but IE only fires
         // then on press.
-        ac_selected = Math.max(numCompletions >= 0 ? 0 : -1, ac_selected - 1);
-      }
-      break;
-    case DOWN_KEYCODE: // down
-      if (isDown) {
-        ac_selected = Math.min(
-          ac_max_options - 1, Math.min(numCompletions - 1, ac_selected + 1));
-      }
-      break;
+          ac_selected = Math.max(numCompletions >= 0 ? 0 : -1, ac_selected - 1);
+        }
+        break;
+      case DOWN_KEYCODE: // down
+        if (isDown) {
+          ac_selected = Math.min(
+            ac_max_options - 1, Math.min(numCompletions - 1, ac_selected + 1));
+        }
+        break;
     }
 
     if (isDown) {
       switch (code) {
-      case ESC_KEYCODE:
-      case ENTER_KEYCODE:
-      case UP_KEYCODE:
-      case DOWN_KEYCODE:
-      case RIGHT_KEYCODE:
-      case LEFT_KEYCODE:
-      case TAB_KEYCODE:
-      case SHIFT_KEYCODE:
-      case BACKSPACE_KEYCODE:
-      case DELETE_KEYCODE:
-        break;
-      default: // User typed some new characters.
-        ac_everTyped = true;
+        case ESC_KEYCODE:
+        case ENTER_KEYCODE:
+        case UP_KEYCODE:
+        case DOWN_KEYCODE:
+        case RIGHT_KEYCODE:
+        case LEFT_KEYCODE:
+        case TAB_KEYCODE:
+        case SHIFT_KEYCODE:
+        case BACKSPACE_KEYCODE:
+        case DELETE_KEYCODE:
+          break;
+        default: // User typed some new characters.
+          ac_everTyped = true;
       }
     }
   }
@@ -1012,10 +976,12 @@ function ac_getCaretPosition_(textField) {
  */
 const AC_COMMA_KEYCODE = ','.charCodeAt(0);
 
-function BR_hasExcessBlurEvents() {
-  return navigator.userAgent.toLowerCase().indexOf('webkit') != -1;
-}
-
-function BR_hasUnreliableMouseDown() {
-  return navigator.userAgent.toLowerCase().indexOf('webkit') != -1;
+function getTargetFromEvent(event) {
+  let targ = event.target || event.srcElement;
+  if (targ.shadowRoot) {
+    // Find the element within the shadowDOM.
+    const path = event.path || event.composedPath();
+    targ = path[0];
+  }
+  return targ;
 }

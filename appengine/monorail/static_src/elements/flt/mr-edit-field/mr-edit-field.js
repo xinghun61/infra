@@ -91,6 +91,7 @@ export class MrEditField extends PolymerElement {
         autocomplete$="[[_domAutocomplete]]"
         placeholder$="[[placeholder]]"
         on-keyup="_onChange"
+        on-focus="_runLegacyAcFocus"
       />
     `;
   }
@@ -275,6 +276,14 @@ export class MrEditField extends PolymerElement {
 
   _getSingleValue(arr) {
     return arr.length ? arr[0] : '';
+  }
+
+  // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.
+  // See: http://crbug.com/monorail/5301
+  _runLegacyAcFocus(e) {
+    if (window._ac_onfocus) {
+      _ac_onfocus(e);
+    }
   }
 }
 

@@ -145,7 +145,7 @@ _currentFormValues = TKR_currentFormValues;
 _acof = _ac_onfocus;
 _acmo = _ac_mouseover;
 _acse = _ac_select;
-_acrob = _ac_real_onblur;
+_acrob = _ac_ob;
 
 // Variables that are given values in the HTML file.
 _allColumnNames = [];
@@ -154,13 +154,6 @@ _go = TKR_go;
 _getColspec = TKR_getColspecElement;
 _getSearchColspec = TKR_getSearchColspecElement;
 
-function closeAutocompleteAndIssuePreview(e) {
-  _ac_fake_onblur(e);
-}
-
-if (BR_hasExcessBlurEvents()) {
-  document.addEventListener('click', closeAutocompleteAndIssuePreview, false);
-}
 // Make the document actually listen for click events, otherwise the
 // event handlers above would never get called.
 if (document.captureEvents) document.captureEvents(Event.CLICK);

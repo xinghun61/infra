@@ -65,6 +65,7 @@ export class MrMultiInput extends PolymerElement {
           autocomplete$="[[autocomplete]]"
           on-keyup="_onKeyup"
           on-blur="_onBlur"
+          on-focus="_runLegacyAcFocus"
         />
       </template>
       <chops-button on-click="_addEntry" class="de-emphasized">
@@ -175,6 +176,14 @@ export class MrMultiInput extends PolymerElement {
         input.value = '';
       }
     });
+  }
+
+  // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.
+  // See: http://crbug.com/monorail/5301
+  _runLegacyAcFocus(e) {
+    if (window._ac_onfocus) {
+      _ac_onfocus(e);
+    }
   }
 }
 
