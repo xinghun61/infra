@@ -52,17 +52,21 @@ type deviceSpecsGetter struct {
 }
 
 func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText string) (*inventory.CommonDeviceSpecs, error) {
-	t, err := initialText(initial, helpText)
+	ui, err := serialize(initial)
 	if err != nil {
 		return nil, errors.Annotate(err, "get device specs").Err()
 	}
-
+	t, err := fullText(ui, helpText)
+	if err != nil {
+		return nil, errors.Annotate(err, "get device specs").Err()
+	}
 	for {
 		i, err := s.inputFunc([]byte(t))
 		if err != nil {
 			return nil, errors.Annotate(err, "get device specs").Err()
 		}
-		d, err := parseUserInput(string(i))
+		t = string(i)
+		d, err := parseUserInput(t)
 		if err != nil {
 			if !s.promptFunc(err.Error()) {
 				return nil, err
@@ -73,12 +77,8 @@ func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText s
 	}
 }
 
-// initialText returns the text to provide for user input.
-func initialText(dut *inventory.CommonDeviceSpecs, helptext string) (string, error) {
-	t, err := serialize(dut)
-	if err != nil {
-		return "", errors.Annotate(err, "intitial text").Err()
-	}
+// fullText returns the text to provide for user input.
+func fullText(userText string, helptext string) (string, error) {
 	e, err := getExample()
 	if err != nil {
 		return "", errors.Annotate(err, "initial text").Err()
@@ -88,7 +88,7 @@ func initialText(dut *inventory.CommonDeviceSpecs, helptext string) (string, err
 	if helptext != "" {
 		parts = append(parts, commentLines(helptext))
 	}
-	parts = append(parts, t)
+	parts = append(parts, userText)
 	parts = append(parts, commentLines(e))
 	return strings.Join(parts, "\n\n"), nil
 }

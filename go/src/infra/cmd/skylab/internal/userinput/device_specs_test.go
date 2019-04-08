@@ -62,6 +62,8 @@ func TestGetDeviceSpecsIterateOnError(t *testing.T) {
 		inputFunc: chainedInputFuncs([]inputFunc{
 			newRegexpReplacer(regexp.MustCompile(`hostname`), "not_a_field"),
 			newRegexpReplacer(regexp.MustCompile(`myhost`), "yourhost"),
+			// Fix the error introduced earlier so that proto is valid again.
+			newRegexpReplacer(regexp.MustCompile(`not_a_field`), "hostname"),
 		}),
 		promptFunc: p.Handle,
 	}
