@@ -117,23 +117,50 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 	return resp, err
 }
 
-// dutAssigner wraps an InventoryStore and implements assigning DUTs
-// to drones.  This struct contains various internal lookup caches.
-type dutAssigner struct {
+// invCache wraps an InventoryStore and keeps various lookup caches.
+type invCache struct {
 	store        *gitstore.InventoryStore
 	hostnameToID map[string]string
+	droneForDUT  map[string]*inventory.Server
+	idToDUT      map[string]*inventory.DeviceUnderTest
 }
 
-func newDUTAssigner(ctx context.Context, s *gitstore.InventoryStore) *dutAssigner {
-	dr := dutAssigner{
+func newInvCache(ctx context.Context, s *gitstore.InventoryStore) *invCache {
+	env := config.Get(ctx).Inventory.Environment
+	ic := invCache{
 		store:        s,
 		hostnameToID: make(map[string]string),
+		droneForDUT:  make(map[string]*inventory.Server),
+		idToDUT:      make(map[string]*inventory.DeviceUnderTest),
 	}
 	for _, d := range s.Lab.GetDuts() {
 		c := d.GetCommon()
-		dr.hostnameToID[c.GetHostname()] = c.GetId()
+		ic.hostnameToID[c.GetHostname()] = c.GetId()
+		ic.idToDUT[c.GetId()] = d
 	}
-	return &dr
+	for _, srv := range s.Infrastructure.GetServers() {
+		if srv.GetEnvironment().String() != env {
+			continue
+		}
+		// TODO(ayatane): We should filter on server role for Skylab
+		// drones, but only Skylab drones have DUTs right now.
+		for _, d := range srv.DutUids {
+			ic.droneForDUT[d] = srv
+		}
+	}
+	return &ic
+}
+
+// dutAssigner wraps an InventoryStore and implements assigning DUTs
+// to drones.  This struct contains various internal lookup caches.
+type dutAssigner struct {
+	*invCache
+}
+
+func newDUTAssigner(ctx context.Context, s *gitstore.InventoryStore) *dutAssigner {
+	return &dutAssigner{
+		invCache: newInvCache(ctx, s),
+	}
 }
 
 func (da *dutAssigner) dutHostnameExists(hostname string) bool {
@@ -237,36 +264,13 @@ func removeDutsFromDrones(ctx context.Context, s *gitstore.InventoryStore, req *
 // dutRemover wraps an InventoryStore and implements removing DUTs
 // from drones.  This struct contains various internal lookup caches.
 type dutRemover struct {
-	store        *gitstore.InventoryStore
-	hostnameToID map[string]string
-	droneForDUT  map[string]*inventory.Server
-	idToDUT      map[string]*inventory.DeviceUnderTest
+	*invCache
 }
 
 func newDUTRemover(ctx context.Context, s *gitstore.InventoryStore) *dutRemover {
-	env := config.Get(ctx).Inventory.Environment
-	dr := dutRemover{
-		store:        s,
-		hostnameToID: make(map[string]string),
-		droneForDUT:  make(map[string]*inventory.Server),
-		idToDUT:      make(map[string]*inventory.DeviceUnderTest),
+	return &dutRemover{
+		invCache: newInvCache(ctx, s),
 	}
-	for _, d := range s.Lab.GetDuts() {
-		c := d.GetCommon()
-		dr.hostnameToID[c.GetHostname()] = c.GetId()
-		dr.idToDUT[c.GetId()] = d
-	}
-	for _, srv := range s.Infrastructure.GetServers() {
-		if srv.GetEnvironment().String() != env {
-			continue
-		}
-		// TODO(ayatane): We should filter on server role for Skylab
-		// drones, but only Skylab drones have DUTs right now.
-		for _, d := range srv.DutUids {
-			dr.droneForDUT[d] = srv
-		}
-	}
-	return &dr
 }
 
 // removeDUT removes a DUT per a DUT removal request and returns a response.
