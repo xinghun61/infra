@@ -134,7 +134,7 @@ func PrintError(w io.Writer, err error) {
 	if u, ok := err.(UserErrorReporter); ok {
 		u.ReportUserError(w)
 	} else {
-		fmt.Fprintf(w, "%s\n", err)
+		fmt.Fprintf(w, "%s: %s\n", progName, err)
 	}
 }
 
@@ -153,7 +153,7 @@ type usageError struct {
 }
 
 func (e *usageError) ReportUserError(w io.Writer) {
-	fmt.Fprintf(w, "%s\n", e.error)
+	fmt.Fprintf(w, "%s\n\nUsage:\n\n", e.error)
 	e.flags.Usage()
 }
 
