@@ -161,7 +161,7 @@ func tailDeployment(ctx context.Context, w io.Writer, ic fleet.InventoryClient, 
 
 const updateDUTHelpText = "Remove the 'servo_port' attribute to auto-generate a valid servo_port."
 
-// getSpecs parses the CommonDeviceSpecs from specsFile, or from the user.
+// getNewSpecs parses the CommonDeviceSpecs from specsFile, or from the user.
 //
 // If c.newSpecsFile is provided, it is parsed.
 // If c.newSpecsFile is "", getNewSpecs obtains the specs interactively from the user.
