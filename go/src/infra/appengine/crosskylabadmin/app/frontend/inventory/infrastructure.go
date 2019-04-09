@@ -47,21 +47,17 @@ func (is *ServerImpl) AssignDutsToDrones(ctx context.Context, req *fleet.AssignD
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-
 	if err := req.Validate(); err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, err.Error())
 	}
-
 	s, err := is.newStore(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	f := func() error {
 		if err := s.Refresh(ctx); err != nil {
 			return err
 		}
-
 		da := newDUTAssigner(ctx, s)
 		assigned := make([]*fleet.AssignDutsToDronesResponse_Item, 0, len(req.Assignments))
 		for _, a := range req.Assignments {
@@ -185,13 +181,10 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 	if err != nil {
 		return nil, err
 	}
-
-	env := config.Get(ctx).Inventory.Environment
 	if ar.drone == "" {
 		ar.drone = pickDroneForDUT(ctx, da.store.Infrastructure)
 		logging.Debugf(ctx, "Picked drone %s for DUT %s", ar.drone, a.DutId)
 	}
-
 	if _, ok := da.idToDUT[ar.dutID]; !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", ar.dutID))
 	}
@@ -208,6 +201,7 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 	if !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", ar.drone))
 	}
+	env := config.Get(ctx).Inventory.Environment
 	if server.GetEnvironment().String() != env {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
