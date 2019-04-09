@@ -30,7 +30,6 @@ service Users {
 
 // Next available tag: 4
 message ListReferencedUsersRequest {
-  RequestTrace trace = 1;
   // emails is deprecated. Use user_refs instead.
   repeated string emails = 2;
   repeated UserRef user_refs = 3;
@@ -44,14 +43,12 @@ message ListReferencedUsersResponse {
 
 // Next available tag: 3
 message GetUserRequest {
-  RequestTrace trace = 1;
   UserRef user_ref = 2;
 }
 
 
 // Next available tag: 3
 message GetMembershipsRequest {
-  RequestTrace trace = 1;
   UserRef user_ref = 2;
 }
 
@@ -64,7 +61,6 @@ message GetMembershipsResponse {
 
 // Next available tag: 3
 message GetSavedQueriesRequest {
-  RequestTrace trace = 1;
   UserRef user_ref = 2;
 }
 
@@ -77,7 +73,6 @@ message GetSavedQueriesResponse {
 
 // Next available tag: 4
 message GetUserCommitsRequest {
-  RequestTrace trace = 1;
   string email = 2;
   fixed32 from_timestamp = 3;
   fixed32 until_timestamp = 4;
@@ -91,7 +86,6 @@ message GetUserCommitsResponse {
 
 // Next available tag: 3
 message GetUserStarCountRequest {
-  RequestTrace trace = 1;
   UserRef user_ref = 2;
 }
 
@@ -104,7 +98,6 @@ message GetUserStarCountResponse {
 
 // Next available tag: 4
 message StarUserRequest {
-  RequestTrace trace = 1;
   UserRef user_ref = 2;
   bool starred = 3;
 }
@@ -118,7 +111,6 @@ message StarUserResponse {
 
 // Next available tag: 3
 message SetExpandPermsPreferenceRequest {
-  RequestTrace trace = 1;
   bool expand_perms = 2;
 }
 
@@ -130,7 +122,6 @@ message SetExpandPermsPreferenceResponse {
 
 // Next available tag: 3
 message GetUserPrefsRequest {
-  RequestTrace trace = 1;
   // Site admins may get prefs for specific users.  Otherwise, it gets
   // prefs for the signed-in user.
   UserRef user_ref = 2;
@@ -145,7 +136,6 @@ message GetUserPrefsResponse {
 
 // Next available tag: 5
 message SetUserPrefsRequest {
-  RequestTrace trace = 1;
   // Site admins may set prefs for specific users.  Otherwise, it sets
   // prefs for the signed-in user.
   UserRef user_ref = 2;
@@ -161,7 +151,6 @@ message SetUserPrefsResponse {
 
 // Next available tag: 3
 message InviteLinkedParentRequest {
-  RequestTrace trace = 1;
   string email = 2;
 }
 
@@ -173,7 +162,6 @@ message InviteLinkedParentResponse {
 
 // Next available tag: 3
 message AcceptLinkedChildRequest {
-  RequestTrace trace = 1;
   string email = 2;
 }
 
@@ -185,7 +173,6 @@ message AcceptLinkedChildResponse {
 
 // Next available tag: 4
 message UnlinkAccountsRequest {
-  RequestTrace trace = 1;
   UserRef parent = 2;
   UserRef child = 3;
 }

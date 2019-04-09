@@ -48,7 +48,6 @@ message ListProjectsResponse {
 
 // Next available tag: 3
 message ListProjectTemplatesRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
@@ -61,20 +60,17 @@ message ListProjectTemplatesResponse {
 
 // Next available tag: 3
 message GetConfigRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
 // Next available tag: 3
 message GetPresentationConfigRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
 
 // Next available tag: 3
 message GetCustomPermissionsRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
@@ -87,7 +83,6 @@ message GetCustomPermissionsResponse {
 
 // Next available tag: 3
 message GetVisibleMembersRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
@@ -101,7 +96,6 @@ message GetVisibleMembersResponse {
 
 // Next available tag: 3
 message GetLabelOptionsRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
@@ -115,7 +109,6 @@ message GetLabelOptionsResponse {
 
 // Next available tag: 3
 message ListStatusesRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
@@ -130,7 +123,6 @@ message ListStatusesResponse {
 
 // Next available tag: 4
 message ListComponentsRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
   bool include_admin_info = 3;
 }
@@ -144,7 +136,6 @@ message ListComponentsResponse {
 
 // Next available tag: 5
 message ListFieldsRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
   bool include_admin_info = 3;
   bool include_user_choices = 4;
@@ -159,7 +150,6 @@ message ListFieldsResponse {
 
 // Next available tag: 3
 message GetProjectStarCountRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
@@ -172,7 +162,6 @@ message GetProjectStarCountResponse {
 
 // Next available tag: 3
 message StarProjectRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
   bool starred = 3;
 }
@@ -186,7 +175,6 @@ message StarProjectResponse {
 
 // Next available tag: 2
 message GetUserProjectsRequest {
-  RequestTrace trace = 1;
 }
 
 
@@ -201,7 +189,6 @@ message GetUserProjectsResponse {
 
 // Next available tag: 3
 message CheckProjectNameRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
 }
 
@@ -214,7 +201,6 @@ message CheckProjectNameResponse {
 
 // Next available tag: 5
 message CheckComponentNameRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
   string parent_path = 3;
   string component_name = 4;
@@ -229,7 +215,6 @@ message CheckComponentNameResponse {
 
 // Next available tag: 4
 message CheckFieldNameRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
   string field_name = 3;
 }

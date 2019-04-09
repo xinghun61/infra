@@ -23,7 +23,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/issues.proto\x12\x08monorail\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1a\x61pi/api_proto/common.proto\x1a!api/api_proto/issue_objects.proto\x1a#api/api_proto/project_objects.proto\"q\n\x12\x43reateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x1e\n\x05issue\x18\x03 \x01(\x0b\x32\x0f.monorail.Issue\"_\n\x0fGetIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"/\n\rIssueResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"\xca\x01\n\x11ListIssuesRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\r\n\x05query\x18\x02 \x01(\t\x12\x14\n\x0c\x63\x61nned_query\x18\x03 \x01(\r\x12\x15\n\rproject_names\x18\x04 \x03(\t\x12(\n\npagination\x18\x05 \x01(\x0b\x32\x14.monorail.Pagination\x12\x15\n\rgroup_by_spec\x18\x06 \x01(\t\x12\x11\n\tsort_spec\x18\x07 \x01(\t\"L\n\x12ListIssuesResponse\x12\x1f\n\x06issues\x18\x01 \x03(\x0b\x32\x0f.monorail.Issue\x12\x15\n\rtotal_results\x18\x02 \x01(\r\"l\n\x1bListReferencedIssuesRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\"h\n\x1cListReferencedIssuesResponse\x12\"\n\topen_refs\x18\x01 \x03(\x0b\x32\x0f.monorail.Issue\x12$\n\x0b\x63losed_refs\x18\x02 \x03(\x0b\x32\x0f.monorail.Issue\"o\n\x1eListApplicableFieldDefsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\"I\n\x1fListApplicableFieldDefsResponse\x12&\n\nfield_defs\x18\x01 \x03(\x0b\x32\x12.monorail.FieldDef\"\x93\x02\n\x12UpdateIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x12\n\nsend_email\x18\x03 \x01(\x08\x12#\n\x05\x64\x65lta\x18\x04 \x01(\x0b\x32\x14.monorail.IssueDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x16\n\x0eis_description\x18\x06 \x01(\x08\x12+\n\x07uploads\x18\x07 \x03(\x0b\x32\x1a.monorail.AttachmentUpload\x12\x18\n\x10kept_attachments\x18\x08 \x03(\x03\"q\n\x10StarIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"\'\n\x11StarIssueResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\"e\n\x15IsIssueStarredRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\",\n\x16IsIssueStarredResponse\x12\x12\n\nis_starred\x18\x01 \x01(\x08\"c\n\x13ListCommentsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\";\n\x14ListCommentsResponse\x12#\n\x08\x63omments\x18\x01 \x03(\x0b\x32\x11.monorail.Comment\"\x82\x01\n\x15ListActivitiesRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12\x0e\n\x06\x62\x65\x66ore\x18\x03 \x01(\x07\x12\r\n\x05\x61\x66ter\x18\x04 \x01(\x07\"n\n\x16ListActivitiesResponse\x12#\n\x08\x63omments\x18\x01 \x03(\x0b\x32\x11.monorail.Comment\x12/\n\x0fissue_summaries\x18\x02 \x03(\x0b\x32\x16.monorail.IssueSummary\"\x8a\x01\n\x14\x44\x65leteCommentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\x03\x12\x0e\n\x06\x64\x65lete\x18\x04 \x01(\x08\"\xf0\x01\n\x1a\x42ulkUpdateApprovalsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\x12%\n\tfield_ref\x18\x03 \x01(\x0b\x32\x12.monorail.FieldRef\x12/\n\x0e\x61pproval_delta\x18\x04 \x01(\x0b\x32\x17.monorail.ApprovalDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x12\n\nsend_email\x18\x06 \x01(\x08\"E\n\x1b\x42ulkUpdateApprovalsResponse\x12&\n\nissue_refs\x18\x01 \x03(\x0b\x32\x12.monorail.IssueRef\"\xc9\x02\n\x15UpdateApprovalRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12%\n\tfield_ref\x18\x03 \x01(\x0b\x32\x12.monorail.FieldRef\x12/\n\x0e\x61pproval_delta\x18\x04 \x01(\x0b\x32\x17.monorail.ApprovalDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x12\n\nsend_email\x18\x06 \x01(\x08\x12\x16\n\x0eis_description\x18\x07 \x01(\x08\x12+\n\x07uploads\x18\x08 \x03(\x0b\x32\x1a.monorail.AttachmentUpload\x12\x18\n\x10kept_attachments\x18\t \x03(\x03\">\n\x16UpdateApprovalResponse\x12$\n\x08\x61pproval\x18\x01 \x01(\x0b\x32\x12.monorail.Approval\"\xb8\x01\n$ConvertIssueApprovalsTemplateRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x15\n\rtemplate_name\x18\x03 \x01(\t\x12\x17\n\x0f\x63omment_content\x18\x04 \x01(\t\x12\x12\n\nsend_email\x18\x05 \x01(\x08\"G\n%ConvertIssueApprovalsTemplateResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"\xb3\x01\n\x14IssueSnapshotRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12\x11\n\ttimestamp\x18\x02 \x01(\x05\x12\r\n\x05query\x18\x03 \x01(\t\x12\x14\n\x0c\x63\x61nned_query\x18\x04 \x01(\x05\x12\x10\n\x08group_by\x18\x05 \x01(\t\x12\x14\n\x0clabel_prefix\x18\x06 \x01(\t\x12\x14\n\x0cproject_name\x18\x07 \x01(\t\"6\n\x12IssueSnapshotCount\x12\x11\n\tdimension\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\"\x86\x01\n\x15IssueSnapshotResponse\x12\x34\n\x0esnapshot_count\x18\x01 \x03(\x0b\x32\x1c.monorail.IssueSnapshotCount\x12\x19\n\x11unsupported_field\x18\x02 \x03(\t\x12\x1c\n\x14search_limit_reached\x18\x03 \x01(\x08\"\x90\x01\n\x15PresubmitIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12)\n\x0bissue_delta\x18\x03 \x01(\x0b\x32\x14.monorail.IssueDelta\"\xb0\x02\n\x16PresubmitIssueResponse\x12\x1a\n\x12owner_availability\x18\x01 \x01(\t\x12 \n\x18owner_availability_state\x18\x02 \x01(\t\x12-\n\x0e\x64\x65rived_labels\x18\x03 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12-\n\x0e\x64\x65rived_owners\x18\x04 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12*\n\x0b\x64\x65rived_ccs\x18\x05 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12\'\n\x08warnings\x18\x06 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12%\n\x06\x65rrors\x18\x07 \x03(\x0b\x32\x15.monorail.ValueAndWhy\"\xd0\x01\n\x1cRerankBlockedOnIssuesRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12%\n\tmoved_ref\x18\x03 \x01(\x0b\x32\x12.monorail.IssueRef\x12&\n\ntarget_ref\x18\x04 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x13\n\x0bsplit_above\x18\x05 \x01(\x08\"R\n\x1dRerankBlockedOnIssuesResponse\x12\x31\n\x15\x62locked_on_issue_refs\x18\x01 \x03(\x0b\x32\x12.monorail.IssueRef\"r\n\x12\x44\x65leteIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x0e\n\x06\x64\x65lete\x18\x03 \x01(\x08\"\x15\n\x13\x44\x65leteIssueResponse\"\x8f\x01\n\x19\x44\x65leteIssueCommentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x0e\n\x06\x64\x65lete\x18\x04 \x01(\x08\"\x1c\n\x1a\x44\x65leteIssueCommentResponse\"\xa4\x01\n\x17\x44\x65leteAttachmentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x15\n\rattachment_id\x18\x04 \x01(\r\x12\x0e\n\x06\x64\x65lete\x18\x05 \x01(\x08\"\x1a\n\x18\x44\x65leteAttachmentResponse\"p\n\x11\x46lagIssuesRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\x12\x0c\n\x04\x66lag\x18\x03 \x01(\x08\"\x14\n\x12\x46lagIssuesResponse\"\x86\x01\n\x12\x46lagCommentRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x0c\n\x04\x66lag\x18\x04 \x01(\x08\"\x15\n\x13\x46lagCommentResponse\"k\n\x1bListIssuePermissionsRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"3\n\x1cListIssuePermissionsResponse\x12\x13\n\x0bpermissions\x18\x01 \x03(\t\"}\n\x10MoveIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x1b\n\x13target_project_name\x18\x03 \x01(\t\">\n\x11MoveIssueResponse\x12)\n\rnew_issue_ref\x18\x01 \x01(\x0b\x32\x12.monorail.IssueRef\"}\n\x10\x43opyIssueRequest\x12%\n\x05trace\x18\x01 \x01(\x0b\x32\x16.monorail.RequestTrace\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x1b\n\x13target_project_name\x18\x03 \x01(\t\">\n\x11\x43opyIssueResponse\x12)\n\rnew_issue_ref\x18\x01 \x01(\x0b\x32\x12.monorail.IssueRef2\x8b\x11\n\x06Issues\x12\x46\n\x0b\x43reateIssue\x12\x1c.monorail.CreateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12@\n\x08GetIssue\x12\x19.monorail.GetIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12I\n\nListIssues\x12\x1b.monorail.ListIssuesRequest\x1a\x1c.monorail.ListIssuesResponse\"\x00\x12g\n\x14ListReferencedIssues\x12%.monorail.ListReferencedIssuesRequest\x1a&.monorail.ListReferencedIssuesResponse\"\x00\x12p\n\x17ListApplicableFieldDefs\x12(.monorail.ListApplicableFieldDefsRequest\x1a).monorail.ListApplicableFieldDefsResponse\"\x00\x12\x46\n\x0bUpdateIssue\x12\x1c.monorail.UpdateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12\x46\n\tStarIssue\x12\x1a.monorail.StarIssueRequest\x1a\x1b.monorail.StarIssueResponse\"\x00\x12U\n\x0eIsIssueStarred\x12\x1f.monorail.IsIssueStarredRequest\x1a .monorail.IsIssueStarredResponse\"\x00\x12O\n\x0cListComments\x12\x1d.monorail.ListCommentsRequest\x1a\x1e.monorail.ListCommentsResponse\"\x00\x12U\n\x0eListActivities\x12\x1f.monorail.ListActivitiesRequest\x1a .monorail.ListActivitiesResponse\"\x00\x12I\n\rDeleteComment\x12\x1e.monorail.DeleteCommentRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x64\n\x13\x42ulkUpdateApprovals\x12$.monorail.BulkUpdateApprovalsRequest\x1a%.monorail.BulkUpdateApprovalsResponse\"\x00\x12U\n\x0eUpdateApproval\x12\x1f.monorail.UpdateApprovalRequest\x1a .monorail.UpdateApprovalResponse\"\x00\x12\x82\x01\n\x1d\x43onvertIssueApprovalsTemplate\x12..monorail.ConvertIssueApprovalsTemplateRequest\x1a/.monorail.ConvertIssueApprovalsTemplateResponse\"\x00\x12R\n\rIssueSnapshot\x12\x1e.monorail.IssueSnapshotRequest\x1a\x1f.monorail.IssueSnapshotResponse\"\x00\x12U\n\x0ePresubmitIssue\x12\x1f.monorail.PresubmitIssueRequest\x1a .monorail.PresubmitIssueResponse\"\x00\x12j\n\x15RerankBlockedOnIssues\x12&.monorail.RerankBlockedOnIssuesRequest\x1a\'.monorail.RerankBlockedOnIssuesResponse\"\x00\x12L\n\x0b\x44\x65leteIssue\x12\x1c.monorail.DeleteIssueRequest\x1a\x1d.monorail.DeleteIssueResponse\"\x00\x12\x61\n\x12\x44\x65leteIssueComment\x12#.monorail.DeleteIssueCommentRequest\x1a$.monorail.DeleteIssueCommentResponse\"\x00\x12[\n\x10\x44\x65leteAttachment\x12!.monorail.DeleteAttachmentRequest\x1a\".monorail.DeleteAttachmentResponse\"\x00\x12I\n\nFlagIssues\x12\x1b.monorail.FlagIssuesRequest\x1a\x1c.monorail.FlagIssuesResponse\"\x00\x12L\n\x0b\x46lagComment\x12\x1c.monorail.FlagCommentRequest\x1a\x1d.monorail.FlagCommentResponse\"\x00\x12g\n\x14ListIssuePermissions\x12%.monorail.ListIssuePermissionsRequest\x1a&.monorail.ListIssuePermissionsResponse\"\x00\x12\x46\n\tMoveIssue\x12\x1a.monorail.MoveIssueRequest\x1a\x1b.monorail.MoveIssueResponse\"\x00\x12\x46\n\tCopyIssue\x12\x1a.monorail.CopyIssueRequest\x1a\x1b.monorail.CopyIssueResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/issues.proto\x12\x08monorail\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1a\x61pi/api_proto/common.proto\x1a!api/api_proto/issue_objects.proto\x1a#api/api_proto/project_objects.proto\"J\n\x12\x43reateIssueRequest\x12\x14\n\x0cproject_name\x18\x02 \x01(\t\x12\x1e\n\x05issue\x18\x03 \x01(\x0b\x32\x0f.monorail.Issue\"8\n\x0fGetIssueRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"/\n\rIssueResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"\xa3\x01\n\x11ListIssuesRequest\x12\r\n\x05query\x18\x02 \x01(\t\x12\x14\n\x0c\x63\x61nned_query\x18\x03 \x01(\r\x12\x15\n\rproject_names\x18\x04 \x03(\t\x12(\n\npagination\x18\x05 \x01(\x0b\x32\x14.monorail.Pagination\x12\x15\n\rgroup_by_spec\x18\x06 \x01(\t\x12\x11\n\tsort_spec\x18\x07 \x01(\t\"L\n\x12ListIssuesResponse\x12\x1f\n\x06issues\x18\x01 \x03(\x0b\x32\x0f.monorail.Issue\x12\x15\n\rtotal_results\x18\x02 \x01(\r\"E\n\x1bListReferencedIssuesRequest\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\"h\n\x1cListReferencedIssuesResponse\x12\"\n\topen_refs\x18\x01 \x03(\x0b\x32\x0f.monorail.Issue\x12$\n\x0b\x63losed_refs\x18\x02 \x03(\x0b\x32\x0f.monorail.Issue\"H\n\x1eListApplicableFieldDefsRequest\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\"I\n\x1fListApplicableFieldDefsResponse\x12&\n\nfield_defs\x18\x01 \x03(\x0b\x32\x12.monorail.FieldDef\"\xec\x01\n\x12UpdateIssueRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x12\n\nsend_email\x18\x03 \x01(\x08\x12#\n\x05\x64\x65lta\x18\x04 \x01(\x0b\x32\x14.monorail.IssueDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x16\n\x0eis_description\x18\x06 \x01(\x08\x12+\n\x07uploads\x18\x07 \x03(\x0b\x32\x1a.monorail.AttachmentUpload\x12\x18\n\x10kept_attachments\x18\x08 \x03(\x03\"J\n\x10StarIssueRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x0f\n\x07starred\x18\x03 \x01(\x08\"\'\n\x11StarIssueResponse\x12\x12\n\nstar_count\x18\x01 \x01(\r\">\n\x15IsIssueStarredRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\",\n\x16IsIssueStarredResponse\x12\x12\n\nis_starred\x18\x01 \x01(\x08\"<\n\x13ListCommentsRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\";\n\x14ListCommentsResponse\x12#\n\x08\x63omments\x18\x01 \x03(\x0b\x32\x11.monorail.Comment\"[\n\x15ListActivitiesRequest\x12#\n\x08user_ref\x18\x02 \x01(\x0b\x32\x11.monorail.UserRef\x12\x0e\n\x06\x62\x65\x66ore\x18\x03 \x01(\x07\x12\r\n\x05\x61\x66ter\x18\x04 \x01(\x07\"n\n\x16ListActivitiesResponse\x12#\n\x08\x63omments\x18\x01 \x03(\x0b\x32\x11.monorail.Comment\x12/\n\x0fissue_summaries\x18\x02 \x03(\x0b\x32\x16.monorail.IssueSummary\"c\n\x14\x44\x65leteCommentRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\x03\x12\x0e\n\x06\x64\x65lete\x18\x04 \x01(\x08\"\xc9\x01\n\x1a\x42ulkUpdateApprovalsRequest\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\x12%\n\tfield_ref\x18\x03 \x01(\x0b\x32\x12.monorail.FieldRef\x12/\n\x0e\x61pproval_delta\x18\x04 \x01(\x0b\x32\x17.monorail.ApprovalDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x12\n\nsend_email\x18\x06 \x01(\x08\"E\n\x1b\x42ulkUpdateApprovalsResponse\x12&\n\nissue_refs\x18\x01 \x03(\x0b\x32\x12.monorail.IssueRef\"\xa2\x02\n\x15UpdateApprovalRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12%\n\tfield_ref\x18\x03 \x01(\x0b\x32\x12.monorail.FieldRef\x12/\n\x0e\x61pproval_delta\x18\x04 \x01(\x0b\x32\x17.monorail.ApprovalDelta\x12\x17\n\x0f\x63omment_content\x18\x05 \x01(\t\x12\x12\n\nsend_email\x18\x06 \x01(\x08\x12\x16\n\x0eis_description\x18\x07 \x01(\x08\x12+\n\x07uploads\x18\x08 \x03(\x0b\x32\x1a.monorail.AttachmentUpload\x12\x18\n\x10kept_attachments\x18\t \x03(\x03\">\n\x16UpdateApprovalResponse\x12$\n\x08\x61pproval\x18\x01 \x01(\x0b\x32\x12.monorail.Approval\"\x91\x01\n$ConvertIssueApprovalsTemplateRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x15\n\rtemplate_name\x18\x03 \x01(\t\x12\x17\n\x0f\x63omment_content\x18\x04 \x01(\t\x12\x12\n\nsend_email\x18\x05 \x01(\x08\"G\n%ConvertIssueApprovalsTemplateResponse\x12\x1e\n\x05issue\x18\x01 \x01(\x0b\x32\x0f.monorail.Issue\"\x8c\x01\n\x14IssueSnapshotRequest\x12\x11\n\ttimestamp\x18\x02 \x01(\x05\x12\r\n\x05query\x18\x03 \x01(\t\x12\x14\n\x0c\x63\x61nned_query\x18\x04 \x01(\x05\x12\x10\n\x08group_by\x18\x05 \x01(\t\x12\x14\n\x0clabel_prefix\x18\x06 \x01(\t\x12\x14\n\x0cproject_name\x18\x07 \x01(\t\"6\n\x12IssueSnapshotCount\x12\x11\n\tdimension\x18\x01 \x01(\t\x12\r\n\x05\x63ount\x18\x02 \x01(\x05\"\x86\x01\n\x15IssueSnapshotResponse\x12\x34\n\x0esnapshot_count\x18\x01 \x03(\x0b\x32\x1c.monorail.IssueSnapshotCount\x12\x19\n\x11unsupported_field\x18\x02 \x03(\t\x12\x1c\n\x14search_limit_reached\x18\x03 \x01(\x08\"i\n\x15PresubmitIssueRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12)\n\x0bissue_delta\x18\x03 \x01(\x0b\x32\x14.monorail.IssueDelta\"\xb0\x02\n\x16PresubmitIssueResponse\x12\x1a\n\x12owner_availability\x18\x01 \x01(\t\x12 \n\x18owner_availability_state\x18\x02 \x01(\t\x12-\n\x0e\x64\x65rived_labels\x18\x03 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12-\n\x0e\x64\x65rived_owners\x18\x04 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12*\n\x0b\x64\x65rived_ccs\x18\x05 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12\'\n\x08warnings\x18\x06 \x03(\x0b\x32\x15.monorail.ValueAndWhy\x12%\n\x06\x65rrors\x18\x07 \x03(\x0b\x32\x15.monorail.ValueAndWhy\"\xa9\x01\n\x1cRerankBlockedOnIssuesRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12%\n\tmoved_ref\x18\x03 \x01(\x0b\x32\x12.monorail.IssueRef\x12&\n\ntarget_ref\x18\x04 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x13\n\x0bsplit_above\x18\x05 \x01(\x08\"R\n\x1dRerankBlockedOnIssuesResponse\x12\x31\n\x15\x62locked_on_issue_refs\x18\x01 \x03(\x0b\x32\x12.monorail.IssueRef\"K\n\x12\x44\x65leteIssueRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x0e\n\x06\x64\x65lete\x18\x03 \x01(\x08\"\x15\n\x13\x44\x65leteIssueResponse\"h\n\x19\x44\x65leteIssueCommentRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x0e\n\x06\x64\x65lete\x18\x04 \x01(\x08\"\x1c\n\x1a\x44\x65leteIssueCommentResponse\"}\n\x17\x44\x65leteAttachmentRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x15\n\rattachment_id\x18\x04 \x01(\r\x12\x0e\n\x06\x64\x65lete\x18\x05 \x01(\x08\"\x1a\n\x18\x44\x65leteAttachmentResponse\"I\n\x11\x46lagIssuesRequest\x12&\n\nissue_refs\x18\x02 \x03(\x0b\x32\x12.monorail.IssueRef\x12\x0c\n\x04\x66lag\x18\x03 \x01(\x08\"\x14\n\x12\x46lagIssuesResponse\"_\n\x12\x46lagCommentRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x14\n\x0csequence_num\x18\x03 \x01(\r\x12\x0c\n\x04\x66lag\x18\x04 \x01(\x08\"\x15\n\x13\x46lagCommentResponse\"D\n\x1bListIssuePermissionsRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\"3\n\x1cListIssuePermissionsResponse\x12\x13\n\x0bpermissions\x18\x01 \x03(\t\"V\n\x10MoveIssueRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x1b\n\x13target_project_name\x18\x03 \x01(\t\">\n\x11MoveIssueResponse\x12)\n\rnew_issue_ref\x18\x01 \x01(\x0b\x32\x12.monorail.IssueRef\"V\n\x10\x43opyIssueRequest\x12%\n\tissue_ref\x18\x02 \x01(\x0b\x32\x12.monorail.IssueRef\x12\x1b\n\x13target_project_name\x18\x03 \x01(\t\">\n\x11\x43opyIssueResponse\x12)\n\rnew_issue_ref\x18\x01 \x01(\x0b\x32\x12.monorail.IssueRef2\x8b\x11\n\x06Issues\x12\x46\n\x0b\x43reateIssue\x12\x1c.monorail.CreateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12@\n\x08GetIssue\x12\x19.monorail.GetIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12I\n\nListIssues\x12\x1b.monorail.ListIssuesRequest\x1a\x1c.monorail.ListIssuesResponse\"\x00\x12g\n\x14ListReferencedIssues\x12%.monorail.ListReferencedIssuesRequest\x1a&.monorail.ListReferencedIssuesResponse\"\x00\x12p\n\x17ListApplicableFieldDefs\x12(.monorail.ListApplicableFieldDefsRequest\x1a).monorail.ListApplicableFieldDefsResponse\"\x00\x12\x46\n\x0bUpdateIssue\x12\x1c.monorail.UpdateIssueRequest\x1a\x17.monorail.IssueResponse\"\x00\x12\x46\n\tStarIssue\x12\x1a.monorail.StarIssueRequest\x1a\x1b.monorail.StarIssueResponse\"\x00\x12U\n\x0eIsIssueStarred\x12\x1f.monorail.IsIssueStarredRequest\x1a .monorail.IsIssueStarredResponse\"\x00\x12O\n\x0cListComments\x12\x1d.monorail.ListCommentsRequest\x1a\x1e.monorail.ListCommentsResponse\"\x00\x12U\n\x0eListActivities\x12\x1f.monorail.ListActivitiesRequest\x1a .monorail.ListActivitiesResponse\"\x00\x12I\n\rDeleteComment\x12\x1e.monorail.DeleteCommentRequest\x1a\x16.google.protobuf.Empty\"\x00\x12\x64\n\x13\x42ulkUpdateApprovals\x12$.monorail.BulkUpdateApprovalsRequest\x1a%.monorail.BulkUpdateApprovalsResponse\"\x00\x12U\n\x0eUpdateApproval\x12\x1f.monorail.UpdateApprovalRequest\x1a .monorail.UpdateApprovalResponse\"\x00\x12\x82\x01\n\x1d\x43onvertIssueApprovalsTemplate\x12..monorail.ConvertIssueApprovalsTemplateRequest\x1a/.monorail.ConvertIssueApprovalsTemplateResponse\"\x00\x12R\n\rIssueSnapshot\x12\x1e.monorail.IssueSnapshotRequest\x1a\x1f.monorail.IssueSnapshotResponse\"\x00\x12U\n\x0ePresubmitIssue\x12\x1f.monorail.PresubmitIssueRequest\x1a .monorail.PresubmitIssueResponse\"\x00\x12j\n\x15RerankBlockedOnIssues\x12&.monorail.RerankBlockedOnIssuesRequest\x1a\'.monorail.RerankBlockedOnIssuesResponse\"\x00\x12L\n\x0b\x44\x65leteIssue\x12\x1c.monorail.DeleteIssueRequest\x1a\x1d.monorail.DeleteIssueResponse\"\x00\x12\x61\n\x12\x44\x65leteIssueComment\x12#.monorail.DeleteIssueCommentRequest\x1a$.monorail.DeleteIssueCommentResponse\"\x00\x12[\n\x10\x44\x65leteAttachment\x12!.monorail.DeleteAttachmentRequest\x1a\".monorail.DeleteAttachmentResponse\"\x00\x12I\n\nFlagIssues\x12\x1b.monorail.FlagIssuesRequest\x1a\x1c.monorail.FlagIssuesResponse\"\x00\x12L\n\x0b\x46lagComment\x12\x1c.monorail.FlagCommentRequest\x1a\x1d.monorail.FlagCommentResponse\"\x00\x12g\n\x14ListIssuePermissions\x12%.monorail.ListIssuePermissionsRequest\x1a&.monorail.ListIssuePermissionsResponse\"\x00\x12\x46\n\tMoveIssue\x12\x1a.monorail.MoveIssueRequest\x1a\x1b.monorail.MoveIssueResponse\"\x00\x12\x46\n\tCopyIssue\x12\x1a.monorail.CopyIssueRequest\x1a\x1b.monorail.CopyIssueResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[google_dot_protobuf_dot_empty__pb2.DESCRIPTOR,api_dot_api__proto_dot_common__pb2.DESCRIPTOR,api_dot_api__proto_dot_issue__objects__pb2.DESCRIPTOR,api_dot_api__proto_dot_project__objects__pb2.DESCRIPTOR,])
 
@@ -38,21 +38,14 @@ _CREATEISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.CreateIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='project_name', full_name='monorail.CreateIssueRequest.project_name', index=1,
+      name='project_name', full_name='monorail.CreateIssueRequest.project_name', index=0,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='issue', full_name='monorail.CreateIssueRequest.issue', index=2,
+      name='issue', full_name='monorail.CreateIssueRequest.issue', index=1,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -71,7 +64,7 @@ _CREATEISSUEREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=169,
-  serialized_end=282,
+  serialized_end=243,
 )
 
 
@@ -83,14 +76,7 @@ _GETISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.GetIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.GetIssueRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.GetIssueRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -108,8 +94,8 @@ _GETISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=284,
-  serialized_end=379,
+  serialized_start=245,
+  serialized_end=301,
 )
 
 
@@ -139,8 +125,8 @@ _ISSUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=381,
-  serialized_end=428,
+  serialized_start=303,
+  serialized_end=350,
 )
 
 
@@ -152,49 +138,42 @@ _LISTISSUESREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.ListIssuesRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='query', full_name='monorail.ListIssuesRequest.query', index=1,
+      name='query', full_name='monorail.ListIssuesRequest.query', index=0,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='canned_query', full_name='monorail.ListIssuesRequest.canned_query', index=2,
+      name='canned_query', full_name='monorail.ListIssuesRequest.canned_query', index=1,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='project_names', full_name='monorail.ListIssuesRequest.project_names', index=3,
+      name='project_names', full_name='monorail.ListIssuesRequest.project_names', index=2,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='pagination', full_name='monorail.ListIssuesRequest.pagination', index=4,
+      name='pagination', full_name='monorail.ListIssuesRequest.pagination', index=3,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='group_by_spec', full_name='monorail.ListIssuesRequest.group_by_spec', index=5,
+      name='group_by_spec', full_name='monorail.ListIssuesRequest.group_by_spec', index=4,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sort_spec', full_name='monorail.ListIssuesRequest.sort_spec', index=6,
+      name='sort_spec', full_name='monorail.ListIssuesRequest.sort_spec', index=5,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -212,8 +191,8 @@ _LISTISSUESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=431,
-  serialized_end=633,
+  serialized_start=353,
+  serialized_end=516,
 )
 
 
@@ -250,8 +229,8 @@ _LISTISSUESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=635,
-  serialized_end=711,
+  serialized_start=518,
+  serialized_end=594,
 )
 
 
@@ -263,14 +242,7 @@ _LISTREFERENCEDISSUESREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.ListReferencedIssuesRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_refs', full_name='monorail.ListReferencedIssuesRequest.issue_refs', index=1,
+      name='issue_refs', full_name='monorail.ListReferencedIssuesRequest.issue_refs', index=0,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -288,8 +260,8 @@ _LISTREFERENCEDISSUESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=713,
-  serialized_end=821,
+  serialized_start=596,
+  serialized_end=665,
 )
 
 
@@ -326,8 +298,8 @@ _LISTREFERENCEDISSUESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=823,
-  serialized_end=927,
+  serialized_start=667,
+  serialized_end=771,
 )
 
 
@@ -339,14 +311,7 @@ _LISTAPPLICABLEFIELDDEFSREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.ListApplicableFieldDefsRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_refs', full_name='monorail.ListApplicableFieldDefsRequest.issue_refs', index=1,
+      name='issue_refs', full_name='monorail.ListApplicableFieldDefsRequest.issue_refs', index=0,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -364,8 +329,8 @@ _LISTAPPLICABLEFIELDDEFSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=929,
-  serialized_end=1040,
+  serialized_start=773,
+  serialized_end=845,
 )
 
 
@@ -395,8 +360,8 @@ _LISTAPPLICABLEFIELDDEFSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1042,
-  serialized_end=1115,
+  serialized_start=847,
+  serialized_end=920,
 )
 
 
@@ -408,56 +373,49 @@ _UPDATEISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.UpdateIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.UpdateIssueRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.UpdateIssueRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='send_email', full_name='monorail.UpdateIssueRequest.send_email', index=2,
+      name='send_email', full_name='monorail.UpdateIssueRequest.send_email', index=1,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='delta', full_name='monorail.UpdateIssueRequest.delta', index=3,
+      name='delta', full_name='monorail.UpdateIssueRequest.delta', index=2,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='comment_content', full_name='monorail.UpdateIssueRequest.comment_content', index=4,
+      name='comment_content', full_name='monorail.UpdateIssueRequest.comment_content', index=3,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='is_description', full_name='monorail.UpdateIssueRequest.is_description', index=5,
+      name='is_description', full_name='monorail.UpdateIssueRequest.is_description', index=4,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='uploads', full_name='monorail.UpdateIssueRequest.uploads', index=6,
+      name='uploads', full_name='monorail.UpdateIssueRequest.uploads', index=5,
       number=7, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='kept_attachments', full_name='monorail.UpdateIssueRequest.kept_attachments', index=7,
+      name='kept_attachments', full_name='monorail.UpdateIssueRequest.kept_attachments', index=6,
       number=8, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -475,8 +433,8 @@ _UPDATEISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1118,
-  serialized_end=1393,
+  serialized_start=923,
+  serialized_end=1159,
 )
 
 
@@ -488,21 +446,14 @@ _STARISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.StarIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.StarIssueRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.StarIssueRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='starred', full_name='monorail.StarIssueRequest.starred', index=2,
+      name='starred', full_name='monorail.StarIssueRequest.starred', index=1,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -520,8 +471,8 @@ _STARISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1395,
-  serialized_end=1508,
+  serialized_start=1161,
+  serialized_end=1235,
 )
 
 
@@ -551,8 +502,8 @@ _STARISSUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1510,
-  serialized_end=1549,
+  serialized_start=1237,
+  serialized_end=1276,
 )
 
 
@@ -564,14 +515,7 @@ _ISISSUESTARREDREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.IsIssueStarredRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.IsIssueStarredRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.IsIssueStarredRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -589,8 +533,8 @@ _ISISSUESTARREDREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1551,
-  serialized_end=1652,
+  serialized_start=1278,
+  serialized_end=1340,
 )
 
 
@@ -620,8 +564,8 @@ _ISISSUESTARREDRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1654,
-  serialized_end=1698,
+  serialized_start=1342,
+  serialized_end=1386,
 )
 
 
@@ -633,14 +577,7 @@ _LISTCOMMENTSREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.ListCommentsRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.ListCommentsRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.ListCommentsRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -658,8 +595,8 @@ _LISTCOMMENTSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1700,
-  serialized_end=1799,
+  serialized_start=1388,
+  serialized_end=1448,
 )
 
 
@@ -689,8 +626,8 @@ _LISTCOMMENTSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1801,
-  serialized_end=1860,
+  serialized_start=1450,
+  serialized_end=1509,
 )
 
 
@@ -702,28 +639,21 @@ _LISTACTIVITIESREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.ListActivitiesRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='user_ref', full_name='monorail.ListActivitiesRequest.user_ref', index=1,
+      name='user_ref', full_name='monorail.ListActivitiesRequest.user_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='before', full_name='monorail.ListActivitiesRequest.before', index=2,
+      name='before', full_name='monorail.ListActivitiesRequest.before', index=1,
       number=3, type=7, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='after', full_name='monorail.ListActivitiesRequest.after', index=3,
+      name='after', full_name='monorail.ListActivitiesRequest.after', index=2,
       number=4, type=7, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -741,8 +671,8 @@ _LISTACTIVITIESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1863,
-  serialized_end=1993,
+  serialized_start=1511,
+  serialized_end=1602,
 )
 
 
@@ -779,8 +709,8 @@ _LISTACTIVITIESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1995,
-  serialized_end=2105,
+  serialized_start=1604,
+  serialized_end=1714,
 )
 
 
@@ -792,28 +722,21 @@ _DELETECOMMENTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.DeleteCommentRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.DeleteCommentRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.DeleteCommentRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sequence_num', full_name='monorail.DeleteCommentRequest.sequence_num', index=2,
+      name='sequence_num', full_name='monorail.DeleteCommentRequest.sequence_num', index=1,
       number=3, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='delete', full_name='monorail.DeleteCommentRequest.delete', index=3,
+      name='delete', full_name='monorail.DeleteCommentRequest.delete', index=2,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -831,8 +754,8 @@ _DELETECOMMENTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2108,
-  serialized_end=2246,
+  serialized_start=1716,
+  serialized_end=1815,
 )
 
 
@@ -844,42 +767,35 @@ _BULKUPDATEAPPROVALSREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.BulkUpdateApprovalsRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_refs', full_name='monorail.BulkUpdateApprovalsRequest.issue_refs', index=1,
+      name='issue_refs', full_name='monorail.BulkUpdateApprovalsRequest.issue_refs', index=0,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='field_ref', full_name='monorail.BulkUpdateApprovalsRequest.field_ref', index=2,
+      name='field_ref', full_name='monorail.BulkUpdateApprovalsRequest.field_ref', index=1,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='approval_delta', full_name='monorail.BulkUpdateApprovalsRequest.approval_delta', index=3,
+      name='approval_delta', full_name='monorail.BulkUpdateApprovalsRequest.approval_delta', index=2,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='comment_content', full_name='monorail.BulkUpdateApprovalsRequest.comment_content', index=4,
+      name='comment_content', full_name='monorail.BulkUpdateApprovalsRequest.comment_content', index=3,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='send_email', full_name='monorail.BulkUpdateApprovalsRequest.send_email', index=5,
+      name='send_email', full_name='monorail.BulkUpdateApprovalsRequest.send_email', index=4,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -897,8 +813,8 @@ _BULKUPDATEAPPROVALSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2249,
-  serialized_end=2489,
+  serialized_start=1818,
+  serialized_end=2019,
 )
 
 
@@ -928,8 +844,8 @@ _BULKUPDATEAPPROVALSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2491,
-  serialized_end=2560,
+  serialized_start=2021,
+  serialized_end=2090,
 )
 
 
@@ -941,63 +857,56 @@ _UPDATEAPPROVALREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.UpdateApprovalRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.UpdateApprovalRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.UpdateApprovalRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='field_ref', full_name='monorail.UpdateApprovalRequest.field_ref', index=2,
+      name='field_ref', full_name='monorail.UpdateApprovalRequest.field_ref', index=1,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='approval_delta', full_name='monorail.UpdateApprovalRequest.approval_delta', index=3,
+      name='approval_delta', full_name='monorail.UpdateApprovalRequest.approval_delta', index=2,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='comment_content', full_name='monorail.UpdateApprovalRequest.comment_content', index=4,
+      name='comment_content', full_name='monorail.UpdateApprovalRequest.comment_content', index=3,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='send_email', full_name='monorail.UpdateApprovalRequest.send_email', index=5,
+      name='send_email', full_name='monorail.UpdateApprovalRequest.send_email', index=4,
       number=6, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='is_description', full_name='monorail.UpdateApprovalRequest.is_description', index=6,
+      name='is_description', full_name='monorail.UpdateApprovalRequest.is_description', index=5,
       number=7, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='uploads', full_name='monorail.UpdateApprovalRequest.uploads', index=7,
+      name='uploads', full_name='monorail.UpdateApprovalRequest.uploads', index=6,
       number=8, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='kept_attachments', full_name='monorail.UpdateApprovalRequest.kept_attachments', index=8,
+      name='kept_attachments', full_name='monorail.UpdateApprovalRequest.kept_attachments', index=7,
       number=9, type=3, cpp_type=2, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -1015,8 +924,8 @@ _UPDATEAPPROVALREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2563,
-  serialized_end=2892,
+  serialized_start=2093,
+  serialized_end=2383,
 )
 
 
@@ -1046,8 +955,8 @@ _UPDATEAPPROVALRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2894,
-  serialized_end=2956,
+  serialized_start=2385,
+  serialized_end=2447,
 )
 
 
@@ -1059,35 +968,28 @@ _CONVERTISSUEAPPROVALSTEMPLATEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.ConvertIssueApprovalsTemplateRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.ConvertIssueApprovalsTemplateRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.ConvertIssueApprovalsTemplateRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='template_name', full_name='monorail.ConvertIssueApprovalsTemplateRequest.template_name', index=2,
+      name='template_name', full_name='monorail.ConvertIssueApprovalsTemplateRequest.template_name', index=1,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='comment_content', full_name='monorail.ConvertIssueApprovalsTemplateRequest.comment_content', index=3,
+      name='comment_content', full_name='monorail.ConvertIssueApprovalsTemplateRequest.comment_content', index=2,
       number=4, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='send_email', full_name='monorail.ConvertIssueApprovalsTemplateRequest.send_email', index=4,
+      name='send_email', full_name='monorail.ConvertIssueApprovalsTemplateRequest.send_email', index=3,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1105,8 +1007,8 @@ _CONVERTISSUEAPPROVALSTEMPLATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2959,
-  serialized_end=3143,
+  serialized_start=2450,
+  serialized_end=2595,
 )
 
 
@@ -1136,8 +1038,8 @@ _CONVERTISSUEAPPROVALSTEMPLATERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3145,
-  serialized_end=3216,
+  serialized_start=2597,
+  serialized_end=2668,
 )
 
 
@@ -1149,49 +1051,42 @@ _ISSUESNAPSHOTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.IssueSnapshotRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='timestamp', full_name='monorail.IssueSnapshotRequest.timestamp', index=1,
+      name='timestamp', full_name='monorail.IssueSnapshotRequest.timestamp', index=0,
       number=2, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='query', full_name='monorail.IssueSnapshotRequest.query', index=2,
+      name='query', full_name='monorail.IssueSnapshotRequest.query', index=1,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='canned_query', full_name='monorail.IssueSnapshotRequest.canned_query', index=3,
+      name='canned_query', full_name='monorail.IssueSnapshotRequest.canned_query', index=2,
       number=4, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='group_by', full_name='monorail.IssueSnapshotRequest.group_by', index=4,
+      name='group_by', full_name='monorail.IssueSnapshotRequest.group_by', index=3,
       number=5, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='label_prefix', full_name='monorail.IssueSnapshotRequest.label_prefix', index=5,
+      name='label_prefix', full_name='monorail.IssueSnapshotRequest.label_prefix', index=4,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='project_name', full_name='monorail.IssueSnapshotRequest.project_name', index=6,
+      name='project_name', full_name='monorail.IssueSnapshotRequest.project_name', index=5,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1209,8 +1104,8 @@ _ISSUESNAPSHOTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3219,
-  serialized_end=3398,
+  serialized_start=2671,
+  serialized_end=2811,
 )
 
 
@@ -1247,8 +1142,8 @@ _ISSUESNAPSHOTCOUNT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3400,
-  serialized_end=3454,
+  serialized_start=2813,
+  serialized_end=2867,
 )
 
 
@@ -1292,8 +1187,8 @@ _ISSUESNAPSHOTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3457,
-  serialized_end=3591,
+  serialized_start=2870,
+  serialized_end=3004,
 )
 
 
@@ -1305,21 +1200,14 @@ _PRESUBMITISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.PresubmitIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.PresubmitIssueRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.PresubmitIssueRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='issue_delta', full_name='monorail.PresubmitIssueRequest.issue_delta', index=2,
+      name='issue_delta', full_name='monorail.PresubmitIssueRequest.issue_delta', index=1,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1337,8 +1225,8 @@ _PRESUBMITISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3594,
-  serialized_end=3738,
+  serialized_start=3006,
+  serialized_end=3111,
 )
 
 
@@ -1410,8 +1298,8 @@ _PRESUBMITISSUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3741,
-  serialized_end=4045,
+  serialized_start=3114,
+  serialized_end=3418,
 )
 
 
@@ -1423,35 +1311,28 @@ _RERANKBLOCKEDONISSUESREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.RerankBlockedOnIssuesRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.RerankBlockedOnIssuesRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.RerankBlockedOnIssuesRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='moved_ref', full_name='monorail.RerankBlockedOnIssuesRequest.moved_ref', index=2,
+      name='moved_ref', full_name='monorail.RerankBlockedOnIssuesRequest.moved_ref', index=1,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='target_ref', full_name='monorail.RerankBlockedOnIssuesRequest.target_ref', index=3,
+      name='target_ref', full_name='monorail.RerankBlockedOnIssuesRequest.target_ref', index=2,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='split_above', full_name='monorail.RerankBlockedOnIssuesRequest.split_above', index=4,
+      name='split_above', full_name='monorail.RerankBlockedOnIssuesRequest.split_above', index=3,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1469,8 +1350,8 @@ _RERANKBLOCKEDONISSUESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4048,
-  serialized_end=4256,
+  serialized_start=3421,
+  serialized_end=3590,
 )
 
 
@@ -1500,8 +1381,8 @@ _RERANKBLOCKEDONISSUESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4258,
-  serialized_end=4340,
+  serialized_start=3592,
+  serialized_end=3674,
 )
 
 
@@ -1513,21 +1394,14 @@ _DELETEISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.DeleteIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.DeleteIssueRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.DeleteIssueRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='delete', full_name='monorail.DeleteIssueRequest.delete', index=2,
+      name='delete', full_name='monorail.DeleteIssueRequest.delete', index=1,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1545,8 +1419,8 @@ _DELETEISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4342,
-  serialized_end=4456,
+  serialized_start=3676,
+  serialized_end=3751,
 )
 
 
@@ -1569,8 +1443,8 @@ _DELETEISSUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4458,
-  serialized_end=4479,
+  serialized_start=3753,
+  serialized_end=3774,
 )
 
 
@@ -1582,28 +1456,21 @@ _DELETEISSUECOMMENTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.DeleteIssueCommentRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.DeleteIssueCommentRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.DeleteIssueCommentRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sequence_num', full_name='monorail.DeleteIssueCommentRequest.sequence_num', index=2,
+      name='sequence_num', full_name='monorail.DeleteIssueCommentRequest.sequence_num', index=1,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='delete', full_name='monorail.DeleteIssueCommentRequest.delete', index=3,
+      name='delete', full_name='monorail.DeleteIssueCommentRequest.delete', index=2,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1621,8 +1488,8 @@ _DELETEISSUECOMMENTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4482,
-  serialized_end=4625,
+  serialized_start=3776,
+  serialized_end=3880,
 )
 
 
@@ -1645,8 +1512,8 @@ _DELETEISSUECOMMENTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4627,
-  serialized_end=4655,
+  serialized_start=3882,
+  serialized_end=3910,
 )
 
 
@@ -1658,35 +1525,28 @@ _DELETEATTACHMENTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.DeleteAttachmentRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.DeleteAttachmentRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.DeleteAttachmentRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sequence_num', full_name='monorail.DeleteAttachmentRequest.sequence_num', index=2,
+      name='sequence_num', full_name='monorail.DeleteAttachmentRequest.sequence_num', index=1,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='attachment_id', full_name='monorail.DeleteAttachmentRequest.attachment_id', index=3,
+      name='attachment_id', full_name='monorail.DeleteAttachmentRequest.attachment_id', index=2,
       number=4, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='delete', full_name='monorail.DeleteAttachmentRequest.delete', index=4,
+      name='delete', full_name='monorail.DeleteAttachmentRequest.delete', index=3,
       number=5, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1704,8 +1564,8 @@ _DELETEATTACHMENTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4658,
-  serialized_end=4822,
+  serialized_start=3912,
+  serialized_end=4037,
 )
 
 
@@ -1728,8 +1588,8 @@ _DELETEATTACHMENTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4824,
-  serialized_end=4850,
+  serialized_start=4039,
+  serialized_end=4065,
 )
 
 
@@ -1741,21 +1601,14 @@ _FLAGISSUESREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.FlagIssuesRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_refs', full_name='monorail.FlagIssuesRequest.issue_refs', index=1,
+      name='issue_refs', full_name='monorail.FlagIssuesRequest.issue_refs', index=0,
       number=2, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='flag', full_name='monorail.FlagIssuesRequest.flag', index=2,
+      name='flag', full_name='monorail.FlagIssuesRequest.flag', index=1,
       number=3, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1773,8 +1626,8 @@ _FLAGISSUESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4852,
-  serialized_end=4964,
+  serialized_start=4067,
+  serialized_end=4140,
 )
 
 
@@ -1797,8 +1650,8 @@ _FLAGISSUESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4966,
-  serialized_end=4986,
+  serialized_start=4142,
+  serialized_end=4162,
 )
 
 
@@ -1810,28 +1663,21 @@ _FLAGCOMMENTREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.FlagCommentRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.FlagCommentRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.FlagCommentRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='sequence_num', full_name='monorail.FlagCommentRequest.sequence_num', index=2,
+      name='sequence_num', full_name='monorail.FlagCommentRequest.sequence_num', index=1,
       number=3, type=13, cpp_type=3, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='flag', full_name='monorail.FlagCommentRequest.flag', index=3,
+      name='flag', full_name='monorail.FlagCommentRequest.flag', index=2,
       number=4, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
@@ -1849,8 +1695,8 @@ _FLAGCOMMENTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4989,
-  serialized_end=5123,
+  serialized_start=4164,
+  serialized_end=4259,
 )
 
 
@@ -1873,8 +1719,8 @@ _FLAGCOMMENTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5125,
-  serialized_end=5146,
+  serialized_start=4261,
+  serialized_end=4282,
 )
 
 
@@ -1886,14 +1732,7 @@ _LISTISSUEPERMISSIONSREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.ListIssuePermissionsRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.ListIssuePermissionsRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.ListIssuePermissionsRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -1911,8 +1750,8 @@ _LISTISSUEPERMISSIONSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5148,
-  serialized_end=5255,
+  serialized_start=4284,
+  serialized_end=4352,
 )
 
 
@@ -1942,8 +1781,8 @@ _LISTISSUEPERMISSIONSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5257,
-  serialized_end=5308,
+  serialized_start=4354,
+  serialized_end=4405,
 )
 
 
@@ -1955,21 +1794,14 @@ _MOVEISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.MoveIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.MoveIssueRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.MoveIssueRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='target_project_name', full_name='monorail.MoveIssueRequest.target_project_name', index=2,
+      name='target_project_name', full_name='monorail.MoveIssueRequest.target_project_name', index=1,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -1987,8 +1819,8 @@ _MOVEISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5310,
-  serialized_end=5435,
+  serialized_start=4407,
+  serialized_end=4493,
 )
 
 
@@ -2018,8 +1850,8 @@ _MOVEISSUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5437,
-  serialized_end=5499,
+  serialized_start=4495,
+  serialized_end=4557,
 )
 
 
@@ -2031,21 +1863,14 @@ _COPYISSUEREQUEST = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='trace', full_name='monorail.CopyIssueRequest.trace', index=0,
-      number=1, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='issue_ref', full_name='monorail.CopyIssueRequest.issue_ref', index=1,
+      name='issue_ref', full_name='monorail.CopyIssueRequest.issue_ref', index=0,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='target_project_name', full_name='monorail.CopyIssueRequest.target_project_name', index=2,
+      name='target_project_name', full_name='monorail.CopyIssueRequest.target_project_name', index=1,
       number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
@@ -2063,8 +1888,8 @@ _COPYISSUEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5501,
-  serialized_end=5626,
+  serialized_start=4559,
+  serialized_end=4645,
 )
 
 
@@ -2094,59 +1919,43 @@ _COPYISSUERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5628,
-  serialized_end=5690,
+  serialized_start=4647,
+  serialized_end=4709,
 )
 
-_CREATEISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _CREATEISSUEREQUEST.fields_by_name['issue'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
-_GETISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _GETISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _ISSUERESPONSE.fields_by_name['issue'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
-_LISTISSUESREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTISSUESREQUEST.fields_by_name['pagination'].message_type = api_dot_api__proto_dot_common__pb2._PAGINATION
 _LISTISSUESRESPONSE.fields_by_name['issues'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
-_LISTREFERENCEDISSUESREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTREFERENCEDISSUESREQUEST.fields_by_name['issue_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _LISTREFERENCEDISSUESRESPONSE.fields_by_name['open_refs'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
 _LISTREFERENCEDISSUESRESPONSE.fields_by_name['closed_refs'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
-_LISTAPPLICABLEFIELDDEFSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTAPPLICABLEFIELDDEFSREQUEST.fields_by_name['issue_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _LISTAPPLICABLEFIELDDEFSRESPONSE.fields_by_name['field_defs'].message_type = api_dot_api__proto_dot_project__objects__pb2._FIELDDEF
-_UPDATEISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _UPDATEISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _UPDATEISSUEREQUEST.fields_by_name['delta'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUEDELTA
 _UPDATEISSUEREQUEST.fields_by_name['uploads'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ATTACHMENTUPLOAD
-_STARISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _STARISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_ISISSUESTARREDREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _ISISSUESTARREDREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_LISTCOMMENTSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTCOMMENTSREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _LISTCOMMENTSRESPONSE.fields_by_name['comments'].message_type = api_dot_api__proto_dot_issue__objects__pb2._COMMENT
-_LISTACTIVITIESREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTACTIVITIESREQUEST.fields_by_name['user_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 _LISTACTIVITIESRESPONSE.fields_by_name['comments'].message_type = api_dot_api__proto_dot_issue__objects__pb2._COMMENT
 _LISTACTIVITIESRESPONSE.fields_by_name['issue_summaries'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUESUMMARY
-_DELETECOMMENTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _DELETECOMMENTREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_BULKUPDATEAPPROVALSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _BULKUPDATEAPPROVALSREQUEST.fields_by_name['issue_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _BULKUPDATEAPPROVALSREQUEST.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF
 _BULKUPDATEAPPROVALSREQUEST.fields_by_name['approval_delta'].message_type = api_dot_api__proto_dot_issue__objects__pb2._APPROVALDELTA
 _BULKUPDATEAPPROVALSRESPONSE.fields_by_name['issue_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_UPDATEAPPROVALREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _UPDATEAPPROVALREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _UPDATEAPPROVALREQUEST.fields_by_name['field_ref'].message_type = api_dot_api__proto_dot_common__pb2._FIELDREF
 _UPDATEAPPROVALREQUEST.fields_by_name['approval_delta'].message_type = api_dot_api__proto_dot_issue__objects__pb2._APPROVALDELTA
 _UPDATEAPPROVALREQUEST.fields_by_name['uploads'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ATTACHMENTUPLOAD
 _UPDATEAPPROVALRESPONSE.fields_by_name['approval'].message_type = api_dot_api__proto_dot_issue__objects__pb2._APPROVAL
-_CONVERTISSUEAPPROVALSTEMPLATEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _CONVERTISSUEAPPROVALSTEMPLATEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _CONVERTISSUEAPPROVALSTEMPLATERESPONSE.fields_by_name['issue'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUE
-_ISSUESNAPSHOTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _ISSUESNAPSHOTRESPONSE.fields_by_name['snapshot_count'].message_type = _ISSUESNAPSHOTCOUNT
-_PRESUBMITISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _PRESUBMITISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _PRESUBMITISSUEREQUEST.fields_by_name['issue_delta'].message_type = api_dot_api__proto_dot_issue__objects__pb2._ISSUEDELTA
 _PRESUBMITISSUERESPONSE.fields_by_name['derived_labels'].message_type = api_dot_api__proto_dot_common__pb2._VALUEANDWHY
@@ -2154,27 +1963,18 @@ _PRESUBMITISSUERESPONSE.fields_by_name['derived_owners'].message_type = api_dot_
 _PRESUBMITISSUERESPONSE.fields_by_name['derived_ccs'].message_type = api_dot_api__proto_dot_common__pb2._VALUEANDWHY
 _PRESUBMITISSUERESPONSE.fields_by_name['warnings'].message_type = api_dot_api__proto_dot_common__pb2._VALUEANDWHY
 _PRESUBMITISSUERESPONSE.fields_by_name['errors'].message_type = api_dot_api__proto_dot_common__pb2._VALUEANDWHY
-_RERANKBLOCKEDONISSUESREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _RERANKBLOCKEDONISSUESREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _RERANKBLOCKEDONISSUESREQUEST.fields_by_name['moved_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _RERANKBLOCKEDONISSUESREQUEST.fields_by_name['target_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _RERANKBLOCKEDONISSUESRESPONSE.fields_by_name['blocked_on_issue_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_DELETEISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _DELETEISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_DELETEISSUECOMMENTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _DELETEISSUECOMMENTREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_DELETEATTACHMENTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _DELETEATTACHMENTREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_FLAGISSUESREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _FLAGISSUESREQUEST.fields_by_name['issue_refs'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_FLAGCOMMENTREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _FLAGCOMMENTREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_LISTISSUEPERMISSIONSREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _LISTISSUEPERMISSIONSREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_MOVEISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _MOVEISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _MOVEISSUERESPONSE.fields_by_name['new_issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
-_COPYISSUEREQUEST.fields_by_name['trace'].message_type = api_dot_api__proto_dot_common__pb2._REQUESTTRACE
 _COPYISSUEREQUEST.fields_by_name['issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 _COPYISSUERESPONSE.fields_by_name['new_issue_ref'].message_type = api_dot_api__proto_dot_common__pb2._ISSUEREF
 DESCRIPTOR.message_types_by_name['CreateIssueRequest'] = _CREATEISSUEREQUEST
@@ -2571,8 +2371,8 @@ _ISSUES = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=5693,
-  serialized_end=7880,
+  serialized_start=4712,
+  serialized_end=6899,
   methods=[
   _descriptor.MethodDescriptor(
     name='CreateIssue',

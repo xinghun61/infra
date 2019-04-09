@@ -7,8 +7,6 @@ syntax = "proto3";
 
 package monorail;
 
-import "api/api_proto/common.proto";
-
 service Sitewide {
   rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse) {}
 }
@@ -16,7 +14,6 @@ service Sitewide {
 
 // Next available tag: 4
 message RefreshTokenRequest {
-  RequestTrace trace = 1;
   string token = 2;
   string token_path = 3;
 }

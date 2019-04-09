@@ -47,7 +47,6 @@ service Issues {
 
 // Next available tag: 4
 message CreateIssueRequest {
-  RequestTrace trace = 1;
   string project_name = 2;
   Issue issue = 3;
 }
@@ -55,7 +54,6 @@ message CreateIssueRequest {
 
 // Next available tag: 3
 message GetIssueRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
 }
 
@@ -68,7 +66,6 @@ message IssueResponse {
 
 // Next available tag: 8
 message ListIssuesRequest {
-  RequestTrace trace = 1;
   string query = 2;
   uint32 canned_query = 3;
   repeated string project_names = 4;
@@ -87,7 +84,6 @@ message ListIssuesResponse {
 
 // Next available tag: 3
 message ListReferencedIssuesRequest {
-  RequestTrace trace = 1;
   repeated IssueRef issue_refs = 2;
 }
 
@@ -103,7 +99,6 @@ message ListReferencedIssuesResponse {
 
 // Next available tag: 3
 message ListApplicableFieldDefsRequest {
-  RequestTrace trace = 1;
   repeated IssueRef issue_refs = 2;
 }
 
@@ -116,7 +111,6 @@ message ListApplicableFieldDefsResponse {
 
 // Next available tag: 9
 message UpdateIssueRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   bool send_email = 3;
   IssueDelta delta = 4;
@@ -129,7 +123,6 @@ message UpdateIssueRequest {
 
 // Next available tag: 4
 message StarIssueRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   bool starred = 3;  // True to add a star, False to remove one.
 }
@@ -143,7 +136,6 @@ message StarIssueResponse {
 
 // Next available tag: 3
 message IsIssueStarredRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
 }
 
@@ -156,7 +148,6 @@ message IsIssueStarredResponse {
 
 // Next available tag: 3
 message ListCommentsRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
 }
 
@@ -174,7 +165,6 @@ message ListCommentsResponse {
 // Next available tag: 5
 message ListActivitiesRequest {
   // TODO(tyreej) description
-  RequestTrace trace = 1;
   UserRef user_ref = 2;
   fixed32 before = 3;
   fixed32 after = 4;
@@ -191,7 +181,6 @@ message ListActivitiesResponse {
 
 // Next available tag: 5
 message DeleteCommentRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   int64 sequence_num = 3;
   bool delete = 4;  // True to delete, False to undelete.
@@ -203,7 +192,6 @@ message DeleteCommentRequest {
 // TODO: For now, block bulk attaching uploads and survey editing.
 // Next available tag: 7
 message BulkUpdateApprovalsRequest {
-  RequestTrace trace = 1;
   repeated IssueRef issue_refs = 2;
   FieldRef field_ref = 3;
   ApprovalDelta approval_delta = 4;
@@ -220,7 +208,6 @@ message BulkUpdateApprovalsResponse {
 
 // Next available tag: 10
 message UpdateApprovalRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   FieldRef field_ref = 3;
   ApprovalDelta approval_delta = 4;
@@ -241,7 +228,6 @@ message UpdateApprovalResponse {
 
 // Next available tag: 6
 message ConvertIssueApprovalsTemplateRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   string template_name = 3;
   string comment_content = 4;
@@ -257,7 +243,6 @@ message ConvertIssueApprovalsTemplateResponse {
 
 // Next available tag: 8
 message IssueSnapshotRequest {
-  RequestTrace trace = 1;
   int32 timestamp = 2;
   string query = 3;
   int32 canned_query = 4;
@@ -284,7 +269,6 @@ message IssueSnapshotResponse {
 
 // Next available tag: 4
 message PresubmitIssueRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   IssueDelta issue_delta = 3;
 }
@@ -304,7 +288,6 @@ message PresubmitIssueResponse {
 
 // Next available tag: 6
 message RerankBlockedOnIssuesRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   IssueRef moved_ref = 3;
   IssueRef target_ref = 4;
@@ -320,7 +303,6 @@ message RerankBlockedOnIssuesResponse {
 
 // Next available tag: 4
 message DeleteIssueRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   bool delete = 3;
 }
@@ -333,7 +315,6 @@ message DeleteIssueResponse {
 
 // Next available tag: 5
 message DeleteIssueCommentRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   uint32 sequence_num = 3;
   bool delete = 4;
@@ -347,7 +328,6 @@ message DeleteIssueCommentResponse {
 
 // Next available tag: 6
 message DeleteAttachmentRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   uint32 sequence_num = 3;
   uint32 attachment_id = 4;
@@ -362,7 +342,6 @@ message DeleteAttachmentResponse {
 
 // Next available tag: 4
 message FlagIssuesRequest {
-  RequestTrace trace = 1;
   repeated IssueRef issue_refs = 2;
   bool flag = 3;
 }
@@ -375,7 +354,6 @@ message FlagIssuesResponse {
 
 // Next available tag: 5
 message FlagCommentRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   uint32 sequence_num = 3;
   bool flag = 4;
@@ -389,7 +367,6 @@ message FlagCommentResponse {
 
 // Next available tag: 3
 message ListIssuePermissionsRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
 }
 
@@ -402,7 +379,6 @@ message ListIssuePermissionsResponse {
 
 // Next available tag: 4
 message MoveIssueRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   string target_project_name = 3;
 }
@@ -416,7 +392,6 @@ message MoveIssueResponse {
 
 // Next available tag: 4
 message CopyIssueRequest {
-  RequestTrace trace = 1;
   IssueRef issue_ref = 2;
   string target_project_name = 3;
 }
