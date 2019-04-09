@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -37,7 +38,13 @@ func openLogDogWriter(ctx context.Context, annotationURL string) (writeCloser, e
 	if err != nil {
 		return writeCloser{}, errors.Annotate(err, "open LogDog writer for %s", annotationURL).Err()
 	}
-	return writeCloser{c: lc, w: lc.Stdout()}, nil
+	w := lc.Stdout()
+	fmt.Fprintf(w, `NOTE: This is the root LogDog stream.
+This is used primarily for LogDog annotations.
+You most likely want to ignore everything in this log,
+and check the other logs instead.
+`)
+	return writeCloser{c: lc, w: w}, nil
 }
 
 type writeCloser struct {
