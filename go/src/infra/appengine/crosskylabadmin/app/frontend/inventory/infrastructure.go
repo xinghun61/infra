@@ -174,10 +174,9 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 		return nil, err
 	}
 	env := config.Get(ctx).Inventory.Environment
-	dh := ar.drone
-	if dh == "" {
-		dh = pickDroneForDUT(ctx, da.store.Infrastructure)
-		logging.Debugf(ctx, "Picked drone %s for DUT %s", dh, a.DutId)
+	if ar.drone == "" {
+		ar.drone = pickDroneForDUT(ctx, da.store.Infrastructure)
+		logging.Debugf(ctx, "Picked drone %s for DUT %s", ar.drone, a.DutId)
 	}
 
 	servers := da.store.Infrastructure.GetServers()
@@ -189,21 +188,21 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 		)
 	}
 
-	server, ok := findNamedServer(servers, dh)
+	server, ok := findNamedServer(servers, ar.drone)
 	if !ok {
-		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", dh))
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", ar.drone))
 	}
 	if server.GetEnvironment().String() != env {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
 			"drone %s is in environment %s instead of %s",
-			dh, server.GetEnvironment().String(), env,
+			ar.drone, server.GetEnvironment().String(), env,
 		)
 	}
 	server.DutUids = append(server.DutUids, ar.dutID)
 
 	return &fleet.AssignDutsToDronesResponse_Item{
-		DroneHostname: dh,
+		DroneHostname: ar.drone,
 		DutId:         ar.dutID,
 	}, nil
 }
