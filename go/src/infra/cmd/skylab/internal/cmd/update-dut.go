@@ -127,7 +127,7 @@ func (c *updateDutRun) innerRun(a subcommands.Application, args []string, env su
 	}
 
 	if c.tail {
-		return c.tailDeployment(ctx, a.GetOut(), ic, deploymentID, ds)
+		return tailDeployment(ctx, a.GetOut(), ic, deploymentID, ds)
 	}
 	return nil
 }
@@ -136,7 +136,7 @@ const deployStatusCheckDelay = 30 * time.Second
 
 // tailDeployment tails an ongoing deployment, reporting status updates to the
 // user.
-func (c *updateDutRun) tailDeployment(ctx context.Context, w io.Writer, ic fleet.InventoryClient, deploymentID string, ds *fleet.GetDeploymentStatusResponse) error {
+func tailDeployment(ctx context.Context, w io.Writer, ic fleet.InventoryClient, deploymentID string, ds *fleet.GetDeploymentStatusResponse) error {
 	for !isStatusFinal(ds.GetStatus()) {
 		fmt.Fprintln(w, "")
 		fmt.Fprintf(w, "Checking again in %s...\n", deployStatusCheckDelay)
