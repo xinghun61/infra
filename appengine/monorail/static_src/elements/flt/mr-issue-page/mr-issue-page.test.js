@@ -103,4 +103,19 @@ suite('mr-issue-page', () => {
     assert.isNull(deletedElement);
     assert.isNotNull(issueElement);
   });
+
+  test('code font pref toggles attribute', () => {
+    assert.isFalse(element.codeFont);
+    assert.isFalse(element.hasAttribute('code-font'));
+
+    element.prefs = new Map([['code_font', 'true']]);
+
+    assert.isTrue(element.codeFont);
+    assert.isTrue(element.hasAttribute('code-font'));
+
+    element.prefs = new Map([['code_font', 'false']]);
+
+    assert.isFalse(element.codeFont);
+    assert.isFalse(element.hasAttribute('code-font'));
+  });
 });

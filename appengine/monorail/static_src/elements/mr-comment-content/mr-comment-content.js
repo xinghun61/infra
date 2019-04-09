@@ -23,6 +23,11 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
           word-break: break-word;
           font-size: var(--chops-main-font-size);
           line-height: 130%;
+          font-family: var(--mr-toggled-font-family);
+        }
+        :host[is-deleted] {
+          color: #888;
+          font-style: italic;
         }
         .line {
           white-space: pre-wrap;
@@ -30,32 +35,23 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
         .strike-through {
           text-decoration: line-through;
         }
-        span[is-deleted] {
-          color: #888;
-          font-style: italic;
-        }
-        span[code-font] {
-          font-family: monospace;
-        }
       </style>
-      <span is-deleted\$="[[isDeleted]]" code-font\$="[[_codeFont]]">
-        <template is="dom-repeat" items="[[_textRuns]]" as="run"
-          ><b
-             class="line"
-             hidden\$="[[!_isTagEqual(run.tag, 'b')]]"
-           >[[run.content]]</b
-          ><br hidden\$="[[!_isTagEqual(run.tag, 'br')]]"
-          ><a
-             class="line"
-             hidden\$="[[!_isTagEqual(run.tag, 'a')]]"
-             target="_blank"
-             href\$="[[run.href]]"
-             class\$="[[run.css]]"
-             title\$="[[run.title]]"
-           >[[run.content]]</a
-          ><span class="line" hidden\$="[[run.tag]]">[[run.content]]</span
-        ></template>
-      </span>
+      <template is="dom-repeat" items="[[_textRuns]]" as="run"
+        ><b
+            class="line"
+            hidden\$="[[!_isTagEqual(run.tag, 'b')]]"
+          >[[run.content]]</b
+        ><br hidden\$="[[!_isTagEqual(run.tag, 'br')]]"
+        ><a
+            class="line"
+            hidden\$="[[!_isTagEqual(run.tag, 'a')]]"
+            target="_blank"
+            href\$="[[run.href]]"
+            class\$="[[run.css]]"
+            title\$="[[run.title]]"
+          >[[run.content]]</a
+        ><span class="line" hidden\$="[[run.tag]]">[[run.content]]</span
+      ></template>
     `;
   }
 
@@ -70,16 +66,14 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
         type: Object,
         value: () => new Map(),
       },
-      isDeleted: Boolean,
-      prefs: Object,
+      isDeleted: {
+        type: Boolean,
+        reflectToAttribute: true,
+      },
       projectName: String,
       _textRuns: {
         type: Array,
-        computed: '_computeTextRuns(isDeleted, content, commentReferences, projectName)',
-      },
-      _codeFont: {
-        type: Boolean,
-        computed: '_computeCodeFont(prefs)',
+        computed: '_computeTextRuns(content, commentReferences, projectName)',
       },
     };
   }
@@ -88,7 +82,6 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
     return {
       commentReferences: issue.commentReferences(state),
       projectName: issue.issueRef(state).projectName,
-      prefs: user.user(state).prefs,
     };
   }
 
@@ -96,14 +89,9 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
     return tag == str;
   }
 
-  _computeTextRuns(isDeleted, content, commentReferences, projectName) {
+  _computeTextRuns(content, commentReferences, projectName) {
     return autolink.markupAutolinks(
       content, commentReferences, projectName);
-  }
-
-  _computeCodeFont(prefs) {
-    if (!prefs) return false;
-    return prefs.get('code_font') === 'true';
   }
 }
 customElements.define(MrCommentContent.is, MrCommentContent);

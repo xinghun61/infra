@@ -37,9 +37,13 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       <style include="mr-shared-styles">
         :host {
           --mr-issue-page-horizontal-padding: 12px;
+          --mr-toggled-font-family: inherit;
         }
         :host([issue-closed]) .metadata-container {
           background: var(--monorail-metadata-closed-bg);
+        }
+        :host([code-font]) {
+          --mr-toggled-font-family: Monospace;
         }
         .container-issue {
           width: 100%;
@@ -226,6 +230,12 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       },
       issuePermissions: Object,
       issueRef: Object,
+      prefs: Object,
+      codeFont: {
+        type: Boolean,
+        computed: '_computeCodeFont(prefs)',
+        reflectToAttribute: true,
+      },
       // Internal properties.
       _commentsLoaded: {
         type: Boolean,
@@ -259,6 +269,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       issueClosed: !issue.isOpen(state),
       issuePermissions: issue.permissions(state),
       issueRef: issue.issueRef(state),
+      prefs: user.user(state).prefs,
     };
   }
 
@@ -351,6 +362,11 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   _showUndelete(issuePermissions) {
     return (issuePermissions || []).includes('deleteissue');
+  }
+
+  _computeCodeFont(prefs) {
+    if (!prefs) return false;
+    return prefs.get('code_font') === 'true';
   }
 }
 

@@ -34,6 +34,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
           };
         }
         textarea {
+          font-family: var(--mr-toggled-font-family);
           min-height: 300px;
           max-height: 500px;
           border: var(--chops-accessible-border);

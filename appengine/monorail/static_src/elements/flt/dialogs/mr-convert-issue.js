@@ -37,6 +37,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
           font-size: var(--chops-main-font-size);
         }
         textarea {
+          font-family: var(--mr-toggled-font-family);
           min-height: 80px;
           border: var(--chops-accessible-border);
           padding: 0.5em 4px;

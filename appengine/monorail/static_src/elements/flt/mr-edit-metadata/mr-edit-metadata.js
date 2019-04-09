@@ -83,6 +83,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           margin-bottom: 0.25em;
         }
         textarea {
+          font-family: var(--mr-toggled-font-family);
           width: 100%;
           margin: 0.25em 0;
           box-sizing: border-box;
