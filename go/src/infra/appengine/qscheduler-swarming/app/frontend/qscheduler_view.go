@@ -97,14 +97,15 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 	})
 
 	resp = &qscheduler.InspectPoolResponse{
-		NumWaitingTasks: int32(len(waiting)),
-		NumIdleBots:     int32(len(idle)),
-		NumRunningTasks: int32(len(running)),
-		RunningTasks:    running,
-		WaitingTasks:    waiting,
-		IdleBots:        idle,
-		AccountBalances: responseBalance,
-		AccountConfigs:  sp.Scheduler.Config().AccountConfigs,
+		NumWaitingTasks:   int32(len(waiting)),
+		NumIdleBots:       int32(len(idle)),
+		NumRunningTasks:   int32(len(running)),
+		RunningTasks:      running,
+		WaitingTasks:      waiting,
+		IdleBots:          idle,
+		AccountBalances:   responseBalance,
+		AccountConfigs:    sp.Scheduler.Config().AccountConfigs,
+		DisablePreemption: sp.Scheduler.Config().DisablePreemption,
 	}
 
 	return resp, nil
