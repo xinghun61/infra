@@ -39,7 +39,7 @@ suite('mr-user-link', () => {
     assert.instanceOf(element, MrUserLink);
   });
 
-  test('no link when no userId', () => {
+  test('no link when no userId and displayName is null value', () => {
     element.userRef = {displayName: '----'};
 
     flush();
@@ -50,6 +50,21 @@ suite('mr-user-link', () => {
 
     assert.isNull(availabilityIcon);
     assert.isNull(userLink);
+    assert.isNull(availabilityText);
+  });
+
+  test('link when displayName', () => {
+    element.userRef = {displayName: 'test@example.com'};
+
+    flush();
+    getElements();
+
+    assert.isNotNull(userLink);
+    assert.equal(userLink.textContent.trim(), 'test@example.com');
+    assert.isTrue(userLink.href.endsWith('/u/test@example.com'));
+
+    assert.isNull(availabilityIcon);
+    assert.isNull(userText);
     assert.isNull(availabilityText);
   });
 

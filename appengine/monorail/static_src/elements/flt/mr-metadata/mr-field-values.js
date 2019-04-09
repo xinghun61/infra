@@ -7,6 +7,8 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../links/mr-user-link/mr-user-link.js';
 import {fieldTypes} from '../../shared/field-types.js';
+import {displayNameToUserRef} from '../../shared/converters.js';
+
 /**
  * `<mr-field-values>`
  *
@@ -19,20 +21,20 @@ export class MrFieldValues extends PolymerElement {
     return html`
       <template is="dom-if" if="[[_fieldIsUrl(type)]]">
         <template is="dom-repeat" items="[[values]]" as="value">
-          <a href\$="[[value]]">[[value]]</a>
+          <a href$="[[value]]">[[value]]</a>
         </template>
       </template>
 
       <template is="dom-if" if="[[_fieldIsUser(type)]]">
         <template is="dom-repeat" items="[[values]]" as="value">
-          <mr-user-link user-id="[[value]]" display-name="[[value]]"></mr-user-link>
+          <mr-user-link user-ref="[[_displayNameToUserRef(value)]]"></mr-user-link>
         </template>
       </template>
 
       <template is="dom-if" if="[[_fieldIsRemainingTypes(type)]]">
         <template is="dom-repeat" items="[[values]]" as="value">
-          <a href\$="/p/[[projectName]]/issues/list?q=[[name]]=&quot;[[value]]&quot;">
-            [[value]]</a><span hidden\$="[[_isLastItem(values.length, index)]]">,</span>
+          <a href$="/p/[[projectName]]/issues/list?q=[[name]]=&quot;[[value]]&quot;">
+            [[value]]</a><span hidden$="[[_isLastItem(values.length, index)]]">,</span>
         </template>
       </template>
 
@@ -89,6 +91,11 @@ export class MrFieldValues extends PolymerElement {
 
   _isLastItem(l, i) {
     return i >= l - 1;
+  }
+
+  // TODO(zhangtiff): Remove in lit-element.
+  _displayNameToUserRef(name) {
+    return displayNameToUserRef(name);
   }
 }
 

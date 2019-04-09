@@ -8,6 +8,9 @@ import {PolymerElement, html} from '@polymer/polymer';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 
+
+const NULL_DISPLAY_NAME_VALUES = ['----', 'a deleted user'];
+
 /**
  * `<mr-user-link>`
  *
@@ -42,12 +45,12 @@ export class MrUserLink extends ReduxMixin(PolymerElement) {
           title="[[_availability]]"
         >schedule</i>
       </template>
-      <template is="dom-if" if="[[_userId]]">
-        <a id="userLink" href\$="/u/[[_userId]]" title\$="[[_email]]">
-          [[_email]]</a>
+      <template is="dom-if" if="[[_userLink]]">
+        <a id="userLink" href$="[[_userLink]]" title$="[[userRef.displayName]]">
+          [[userRef.displayName]]</a>
       </template>
-      <template is="dom-if" if="[[!_userId]]">
-        <span id="userText">[[_email]]</span>
+      <template is="dom-if" if="[[!_userLink]]">
+        <span id="userText">[[userRef.displayName]]</span>
       </template>
       <template is="dom-if" if="[[_and(showAvailabilityText, _availability)]]">
         <br />
@@ -70,8 +73,10 @@ export class MrUserLink extends ReduxMixin(PolymerElement) {
       showAvailabilityIcon: Boolean,
       showAvailabilityText: Boolean,
       _availability: String,
-      _email: String,
-      _userId: String,
+      _userLink: {
+        type: String,
+        computed: '_computeUserLink(userRef)',
+      },
     };
   }
 
@@ -87,14 +92,18 @@ export class MrUserLink extends ReduxMixin(PolymerElement) {
     };
   }
 
-  _computeProperties(userRef, referencedUsers, showAvailability) {
+  _computeProperties(userRef, referencedUsers) {
     if (!userRef) return {};
-    this._email = userRef.displayName;
-    this._userId = userRef.userId || null;
     if (referencedUsers) {
       const user = referencedUsers.get(userRef.displayName) || {};
       this._availability = user.availability;
     }
+  }
+
+  _computeUserLink(userRef) {
+    if (!userRef || !Object.keys(userRef).length ||
+      NULL_DISPLAY_NAME_VALUES.includes(userRef.displayName)) return '';
+    return `/u/${userRef.userId ? userRef.userId : userRef.displayName}`;
   }
 
   _and(a, b) {
