@@ -180,7 +180,6 @@ func TestAssignDutsToDrones(t *testing.T) {
 			So(resp, ShouldBeNil)
 			So(err, ShouldNotBeNil)
 			So(err.Error(), ShouldContainSubstring, "already assigned")
-			So(err.Error(), ShouldContainSubstring, inventory.Environment_ENVIRONMENT_STAGING.String())
 		})
 
 		Convey("AssignDutsToDrones with an already assigned dut in other environment should return an appropriate error.", func() {
@@ -192,8 +191,7 @@ func TestAssignDutsToDrones(t *testing.T) {
 			resp, err := tf.Inventory.AssignDutsToDrones(tf.C, req)
 			So(resp, ShouldBeNil)
 			So(err, ShouldNotBeNil)
-			So(err.Error(), ShouldContainSubstring, "already assigned")
-			So(err.Error(), ShouldContainSubstring, inventory.Environment_ENVIRONMENT_PROD.String())
+			So(err.Error(), ShouldContainSubstring, "does not exist")
 		})
 
 		Convey("AssignDutsToDrones with a nonexistant drone should return an appropriate error.", func() {

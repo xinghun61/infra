@@ -18,6 +18,9 @@ import (
 	"fmt"
 	"strings"
 
+	"sort"
+	"strconv"
+
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/clients"
 	"infra/appengine/crosskylabadmin/app/config"
@@ -26,8 +29,6 @@ import (
 	"infra/appengine/crosskylabadmin/app/frontend/internal/swarming"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/worker"
 	"infra/libs/skylab/inventory"
-	"sort"
-	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/google/uuid"
@@ -255,6 +256,8 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 		}
 
 		id := addDUTToStore(s, d)
+		// TODO(ayatane): Implement this better than just regenerating the cache.
+		da = newDUTAssigner(ctx, s)
 		if _, err := da.assignDUT(ctx, &fleet.AssignDutsToDronesRequest_Item{DutId: id}); err != nil {
 			return errors.Annotate(err, "add dut to fleet").Err()
 		}

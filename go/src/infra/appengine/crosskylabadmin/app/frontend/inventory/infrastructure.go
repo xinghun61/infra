@@ -185,21 +185,25 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 	if err != nil {
 		return nil, err
 	}
+
 	env := config.Get(ctx).Inventory.Environment
 	if ar.drone == "" {
 		ar.drone = pickDroneForDUT(ctx, da.store.Infrastructure)
 		logging.Debugf(ctx, "Picked drone %s for DUT %s", ar.drone, a.DutId)
 	}
 
-	servers := da.store.Infrastructure.GetServers()
-	if server, ok := findDutServer(servers, ar.dutID); ok {
+	if _, ok := da.idToDUT[ar.dutID]; !ok {
+		return nil, status.Error(codes.NotFound, fmt.Sprintf("DUT %s does not exist", ar.dutID))
+	}
+	if server, ok := da.droneForDUT[ar.dutID]; ok {
 		return nil, status.Errorf(
 			codes.InvalidArgument,
-			"dut %s is already assigned to drone %s in environment %s",
-			ar.dutID, server.GetHostname(), server.GetEnvironment(),
+			"dut %s is already assigned to drone %s",
+			ar.dutID, server.GetHostname(),
 		)
 	}
 
+	servers := da.store.Infrastructure.GetServers()
 	server, ok := findNamedServer(servers, ar.drone)
 	if !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", ar.drone))
@@ -396,21 +400,6 @@ func (dr *dutRemover) findDroneForRequestDUT(rr removeRequest) (*inventory.Serve
 		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)
 	}
 	return srv, nil
-}
-
-// findDutServer finds the server that the given Dut is on, if it exists.
-//
-// Duts should only be assigned to a single server; this function only returns the first server
-// occurrence.
-func findDutServer(servers []*inventory.Server, dutID string) (server *inventory.Server, ok bool) {
-	for _, server := range servers {
-		for _, dut := range server.DutUids {
-			if dut == dutID {
-				return server, true
-			}
-		}
-	}
-	return nil, false
 }
 
 // findNamedServer finds the server with the given hostname.
