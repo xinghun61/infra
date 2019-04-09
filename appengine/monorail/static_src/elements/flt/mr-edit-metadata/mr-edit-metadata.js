@@ -18,9 +18,9 @@ import {displayNameToUserRef, labelStringToRef, componentStringToRef,
 import {isEmptyObject} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
-import {reportDirtyForm} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
+import * as ui from '../../redux/ui.js';
 import '../mr-edit-field/mr-edit-field.js';
 import '../mr-edit-field/mr-edit-status.js';
 import {ISSUE_EDIT_PERMISSION} from '../../shared/permissions.js';
@@ -692,7 +692,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       () => {
         const delta = this.getDelta();
         const commentContent = this.getCommentContent();
-        this.dispatchAction(reportDirtyForm(
+        this.dispatchAction(ui.reportDirtyForm(
           this.formName, !isEmptyObject(delta) || Boolean(commentContent)));
         this.dispatchEvent(new CustomEvent('change', {detail: {delta}}));
       });

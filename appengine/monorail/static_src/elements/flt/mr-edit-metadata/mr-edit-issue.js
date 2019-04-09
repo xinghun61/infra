@@ -8,6 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
+import * as ui from '../../redux/ui.js';
 import './mr-edit-metadata.js';
 import '../../shared/mr-shared-styles.js';
 
@@ -91,7 +92,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       projectConfig: project.project(state).config,
       updatingIssue: issue.requests(state).update.requesting,
       updateIssueError: issue.requests(state).update.error,
-      focusId: state.focusId,
+      focusId: ui.focusId(state),
       _fieldDefs: issue.fieldDefs(state),
     };
   }

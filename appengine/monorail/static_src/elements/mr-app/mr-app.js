@@ -8,8 +8,9 @@ import {PolymerElement, html} from '@polymer/polymer';
 import page from 'page';
 import qs from 'qs';
 
-import {ReduxMixin, clearDirtyForms, setFocusId} from '../redux/redux-mixin.js';
+import {ReduxMixin} from '../redux/redux-mixin.js';
 import * as issue from '../redux/issue.js';
+import * as ui from '../redux/ui.js';
 import {arrayToEnglish} from '../shared/helpers.js';
 import '../flt/mr-issue-page/mr-issue-page.js';
 import '../mr-header/mr-header.js';
@@ -75,8 +76,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
   static mapStateToProps(state, element) {
     return {
-      dirtyForms: state.dirtyForms,
-      prevContext: state.prevContext,
+      dirtyForms: ui.dirtyForms(state),
     };
   }
 
@@ -89,7 +89,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     page('*', (ctx, next) => {
       // Navigate to the requested element if a hash is present.
       if (ctx.hash) {
-        this.dispatchAction(setFocusId(ctx.hash));
+        this.dispatchAction(ui.setFocusId(ctx.hash));
       }
 
       // We're not really navigating anywhere, so don't do anything.
@@ -105,7 +105,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       // page.
       if (this._confirmDiscard()) {
         // Clear the forms to be checked, since we're navigating away.
-        this.dispatchAction(clearDirtyForms());
+        this.dispatchAction(ui.clearDirtyForms());
       } else {
         Object.assign(ctx, this._currentContext);
         // Set ctx.handled to false, so we don't push the state to browser's

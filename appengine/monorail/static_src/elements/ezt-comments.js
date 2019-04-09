@@ -4,8 +4,9 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {ReduxMixin, setFocusId} from './redux/redux-mixin.js';
+import {ReduxMixin} from './redux/redux-mixin.js';
 import * as issue from './redux/issue.js';
+import * as ui from './redux/ui.js';
 import * as user from './redux/user.js';
 import AutoRefreshPrpcClient from '../prpc.js';
 import './flt/mr-comment-list/mr-comment-list.js';
@@ -90,7 +91,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
   _onLocationChanged() {
     const hash = window.location.hash.substr(1);
     if (hash) {
-      this.dispatchAction(setFocusId(hash));
+      this.dispatchAction(ui.setFocusId(hash));
     }
   }
 
