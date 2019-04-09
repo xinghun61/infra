@@ -13,6 +13,7 @@ string and redirects the user to the issue list servlet.
 import logging
 import re
 
+from features import savedqueries_helpers
 from framework import framework_helpers
 from framework import permissions
 from framework import servlet
@@ -42,12 +43,32 @@ class IssueAdvancedSearch(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-
     # TODO(jrobbins): Allow deep-linking into this page.
+    canned_query_views = []
+    if mr.project_id:
+      with mr.profiler.Phase('getting canned queries'):
+        canned_queries = self.services.features.GetCannedQueriesByProjectID(
+            mr.cnxn, mr.project_id)
+      canned_query_views = [
+          savedqueries_helpers.SavedQueryView(sq, idx + 1, None, None)
+          for idx, sq in enumerate(canned_queries)]
+
+    saved_query_views = []
+    if mr.auth.user_id and self.services.features:
+      with mr.profiler.Phase('getting saved queries'):
+        saved_queries = self.services.features.GetSavedQueriesByUserID(
+            mr.cnxn, mr.me_user_id)
+        saved_query_views = [
+            savedqueries_helpers.SavedQueryView(sq, idx + 1, None, None)
+            for idx, sq in enumerate(saved_queries)
+            if (mr.project_id in sq.executes_in_project_ids or
+                not mr.project_id)]
 
     return {
         'issue_tab_mode': 'issueAdvSearch',
         'page_perms': self.MakePagePerms(mr, None, permissions.CREATE_ISSUE),
+        'canned_queries': canned_query_views,
+        'saved_queries': saved_query_views,
         }
 
   def ProcessFormData(self, mr, post_data):

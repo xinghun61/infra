@@ -17,6 +17,7 @@ class IssueAdvSearchTest(unittest.TestCase):
   def setUp(self):
     self.services = service_manager.Services(
         config=fake.ConfigService(),
+        features=fake.FeaturesService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
         project=fake.ProjectService())
