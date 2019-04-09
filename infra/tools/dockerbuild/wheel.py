@@ -421,6 +421,7 @@ SPECS.update({s.spec.tag: s for s in assert_sorted('Universal',
   Universal('webencodings', '0.5.1'),
   Universal('yapf', '0.22.0'),
   Universal('yapf', '0.24.0'),
+  Universal('yapf', '0.27.0'),
 )})
 
 

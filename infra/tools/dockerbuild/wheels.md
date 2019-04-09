@@ -1199,12 +1199,12 @@ wheel: <
 
 ## **infra_libs**
 
-### 2.0.6
+### 2.0.7
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/infra_libs-py2"
-  version: "version:2.0.6"
+  version: "version:2.0.7"
 >
 ```
 
@@ -2705,6 +2705,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/yapf-py2_py3"
   version: "version:0.24.0"
+>
+```
+
+
+* *universal*
+
+### 0.27.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/yapf-py2_py3"
+  version: "version:0.27.0"
 >
 ```
 
