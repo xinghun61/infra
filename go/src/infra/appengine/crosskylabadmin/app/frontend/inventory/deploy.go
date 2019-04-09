@@ -147,11 +147,14 @@ func (is *ServerImpl) GetDeploymentStatus(ctx context.Context, req *fleet.GetDep
 		}
 	}
 
-	return &fleet.GetDeploymentStatusResponse{
+	resp = &fleet.GetDeploymentStatusResponse{
 		Status:    ds.Status,
 		ChangeUrl: ds.ChangeURL,
-		TaskUrl:   swarming.URLForTask(ctx, ds.TaskID),
-	}, nil
+	}
+	if ds.TaskID != "" {
+		resp.TaskUrl = swarming.URLForTask(ctx, ds.TaskID)
+	}
+	return resp, nil
 }
 
 // DeleteDuts implements the method from fleet.InventoryServer interface.
