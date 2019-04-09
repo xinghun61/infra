@@ -115,19 +115,21 @@ func (is *ServerImpl) RemoveDutsFromDrones(ctx context.Context, req *fleet.Remov
 
 // invCache wraps an InventoryStore and keeps various lookup caches.
 type invCache struct {
-	store        *gitstore.InventoryStore
-	hostnameToID map[string]string
-	droneForDUT  map[string]*inventory.Server
-	idToDUT      map[string]*inventory.DeviceUnderTest
+	store           *gitstore.InventoryStore
+	hostnameToID    map[string]string
+	droneForDUT     map[string]*inventory.Server
+	idToDUT         map[string]*inventory.DeviceUnderTest
+	hostnameToDrone map[string]*inventory.Server
 }
 
 func newInvCache(ctx context.Context, s *gitstore.InventoryStore) *invCache {
 	env := config.Get(ctx).Inventory.Environment
 	ic := invCache{
-		store:        s,
-		hostnameToID: make(map[string]string),
-		droneForDUT:  make(map[string]*inventory.Server),
-		idToDUT:      make(map[string]*inventory.DeviceUnderTest),
+		store:           s,
+		hostnameToID:    make(map[string]string),
+		droneForDUT:     make(map[string]*inventory.Server),
+		idToDUT:         make(map[string]*inventory.DeviceUnderTest),
+		hostnameToDrone: make(map[string]*inventory.Server),
 	}
 	for _, d := range s.Lab.GetDuts() {
 		c := d.GetCommon()
@@ -144,6 +146,7 @@ func newInvCache(ctx context.Context, s *gitstore.InventoryStore) *invCache {
 			}
 			continue
 		}
+		ic.hostnameToDrone[srv.GetHostname()] = srv
 		for _, d := range srv.DutUids {
 			ic.droneForDUT[d] = srv
 		}
@@ -197,18 +200,9 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 		)
 	}
 
-	servers := da.store.Infrastructure.GetServers()
-	server, ok := findNamedServer(servers, ar.drone)
+	server, ok := da.hostnameToDrone[ar.drone]
 	if !ok {
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", ar.drone))
-	}
-	env := config.Get(ctx).Inventory.Environment
-	if server.GetEnvironment().String() != env {
-		return nil, status.Errorf(
-			codes.InvalidArgument,
-			"drone %s is in environment %s instead of %s",
-			ar.drone, server.GetEnvironment().String(), env,
-		)
 	}
 	server.DutUids = append(server.DutUids, ar.dutID)
 
@@ -395,18 +389,6 @@ func (dr *dutRemover) findDroneForRequestDUT(rr removeRequest) (*inventory.Serve
 		return nil, status.Errorf(codes.FailedPrecondition, "DUT %s is not on drone %s", rr.dutID, rr.drone)
 	}
 	return srv, nil
-}
-
-// findNamedServer finds the server with the given hostname.
-//
-// Servers should each have unique hostnames; this function only returns the first matching occurrence.
-func findNamedServer(servers []*inventory.Server, hostname string) (server *inventory.Server, ok bool) {
-	for _, server := range servers {
-		if hostname == server.GetHostname() {
-			return server, true
-		}
-	}
-	return nil, false
 }
 
 // filterSkylabDronesInEnvironment returns drones in the current environment
