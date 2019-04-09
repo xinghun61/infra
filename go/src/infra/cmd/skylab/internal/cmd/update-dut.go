@@ -159,7 +159,7 @@ func (c *updateDutRun) tailDeployment(ctx context.Context, w io.Writer, ic fleet
 	return nil
 }
 
-const helpText = "Remove the 'servo_port' attribute to auto-generate a valid servo_port."
+const updateDUTHelpText = "Remove the 'servo_port' attribute to auto-generate a valid servo_port."
 
 // getSpecs parses the CommonDeviceSpecs from specsFile, or from the user.
 //
@@ -169,7 +169,7 @@ func (c *updateDutRun) getNewSpecs(a subcommands.Application, oldSpecs *inventor
 	if c.newSpecsFile != "" {
 		return parseSpecsFile(c.newSpecsFile)
 	}
-	return userinput.GetDeviceSpecs(oldSpecs, helpText, userinput.CLIPrompt(a.GetOut(), os.Stdin, true))
+	return userinput.GetDeviceSpecs(oldSpecs, updateDUTHelpText, userinput.CLIPrompt(a.GetOut(), os.Stdin, true))
 }
 
 // parseSpecsFile parses device specs from the user provided file.
