@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth"
@@ -21,6 +22,7 @@ import (
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 
+	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -74,6 +76,18 @@ func (f envFlags) Env() site.Environment {
 		return site.Dev
 	}
 	return site.Prod
+}
+
+type removalReason struct {
+	bug     string
+	comment string
+	expire  time.Time
+}
+
+func (rr *removalReason) Register(f *flag.FlagSet) {
+	f.StringVar(&rr.bug, "bug", "", "Bug link for why DUT is being removed.  Required.")
+	f.StringVar(&rr.comment, "comment", "", "Short comment about why DUT is being removed.")
+	f.Var(flagx.RelativeTime{T: &rr.expire}, "expires-in", "Expire removal reason in `days`.")
 }
 
 // httpClient returns an HTTP client with authentication set up.
