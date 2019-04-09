@@ -64,7 +64,7 @@ async function main() {
       const {state, file, suite, test, err} = JSON.parse(body);
       const msg = `[${state}] File: ${file} Suite: ${suite} Test: ${test}`;
 
-      if (parsedResult.state !== 'passed') {
+      if (state !== 'passed') {
         failures++;
         console.error(msg);
         console.error(err);
