@@ -219,12 +219,12 @@ func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swarm
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
 	ds.ChangeURL, err = addDUTToFleet(ctx, s, nd, o.GetAssignServoPortIfMissing())
 	if err != nil {
-		failDeployStatus(ds, "failed to add dut to fleet")
+		failDeployStatus(ctx, ds, "failed to add dut to fleet")
 		return ds
 	}
 	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, nd.GetId(), a)
 	if err != nil {
-		failDeployStatus(ds, "failed to create deploy task")
+		failDeployStatus(ctx, ds, "failed to create deploy task")
 		return ds
 	}
 	return ds
@@ -385,14 +385,14 @@ func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swa
 	if !proto.Equal(oldSpecs, newSpecs) {
 		ds.ChangeURL, err = updateDUTSpecs(ctx, s, oldSpecs, newSpecs, o.GetAssignServoPortIfMissing())
 		if err != nil {
-			failDeployStatus(ds, "failed to update DUT specs")
+			failDeployStatus(ctx, ds, "failed to update DUT specs")
 			return ds
 		}
 	}
 
 	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, oldSpecs.GetId(), a)
 	if err != nil {
-		failDeployStatus(ds, "failed to create deploy task")
+		failDeployStatus(ctx, ds, "failed to create deploy task")
 		return ds
 	}
 	return ds
@@ -447,7 +447,7 @@ func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, od, nd *inv
 // Swarming.
 func refreshDeployStatus(ctx context.Context, sc clients.SwarmingClient, ds *deploy.Status) error {
 	if ds.TaskID == "" {
-		failDeployStatus(ds, "unknown deploy task ID")
+		failDeployStatus(ctx, ds, "unknown deploy task ID")
 		return nil
 	}
 
@@ -467,17 +467,18 @@ func refreshDeployStatus(ctx context.Context, sc clients.SwarmingClient, ds *dep
 	case "PENDING", "RUNNING":
 		ds.Status = fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS
 	default:
-		failDeployStatus(ds, "deploy Skylab task failed")
+		failDeployStatus(ctx, ds, "deploy Skylab task failed")
 	}
 	return nil
 }
 
 // failDeployStatus updates ds to correspond to a failed deploy with the given
 // reason.
-func failDeployStatus(ds *deploy.Status, reason string) {
+func failDeployStatus(ctx context.Context, ds *deploy.Status, reason string) {
 	ds.IsFinal = true
 	ds.Status = fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED
 	ds.Reason = reason
+	logging.Errorf(ctx, "Failed deploy: %#v", ds)
 }
 
 func updateDeployStatusIgnoringErrors(ctx context.Context, attemptID string, ds *deploy.Status) {
