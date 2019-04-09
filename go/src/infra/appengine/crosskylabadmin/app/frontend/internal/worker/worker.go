@@ -26,14 +26,6 @@ import (
 	"infra/cmd/skylab_swarming_worker/worker"
 )
 
-const (
-	// infraToolsDir is the well known path to infra tools deployed on the drone.
-	infraToolsDir = "/opt/infra-tools"
-	// skylabSwarmingWorkerPath is the path to the binary on the drone that is
-	// the entry point of all tasks.
-	skylabSwarmingWorkerPath = infraToolsDir + "/skylab_swarming_worker"
-)
-
 // Task contains the information required to create a Skylab swarming task.
 type Task struct {
 	// The Swarming command to execute.
