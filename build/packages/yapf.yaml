@@ -1,0 +1,15 @@
+package: infra/tools/yapf
+description: YAPF tool
+
+# Platform agnostic really, but need to pick one platform to build on.
+platforms:
+  - linux-amd64
+
+root: ../..
+
+data:
+  - version_file: .versions/yapf.cipd_version
+
+copies:
+  - src: infra/tools/yapf/__main__.py
+    dst: yapf
