@@ -205,6 +205,8 @@ func (da *dutAssigner) assignDUT(ctx context.Context, a *fleet.AssignDutsToDrone
 		return nil, status.Error(codes.NotFound, fmt.Sprintf("drone %s does not exist", ar.drone))
 	}
 	server.DutUids = append(server.DutUids, ar.dutID)
+	dut := da.idToDUT[ar.dutID]
+	dut.RemovalReason = nil
 
 	return &fleet.AssignDutsToDronesResponse_Item{
 		DroneHostname: ar.drone,
