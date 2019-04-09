@@ -149,6 +149,8 @@ func cacheRefreshRetryFactory() retry.Iterator {
 			Delay: 10 * time.Second,
 			// Leave a little headroom for the last retry at 5m10s.
 			MaxTotal: 5*time.Minute + 20*time.Second,
+			// We enforce limit via MaxTotal
+			Retries: -1,
 		},
 		MaxDelay: 1 * time.Minute,
 	}
