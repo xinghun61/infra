@@ -1,0 +1,85 @@
+// Copyright 2019 The LUCI Authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package model
+
+import (
+	"context"
+	"time"
+
+	"github.com/golang/protobuf/ptypes/duration"
+	"github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/gae/service/datastore"
+	"infra/appengine/arquebus/app/config"
+)
+
+// updateAndGetAllAssigners stores Assigners entities based on given configs,
+// and returns all the Assigner entities stored in datastore.
+func updateAndGetAllAssigners(c context.Context, rev string, cfgs ...*config.Assigner) []*Assigner {
+	err := UpdateAssigners(c, cfgs, rev)
+	convey.So(err, convey.ShouldBeNil)
+	datastore.GetTestable(c).CatchupIndexes()
+	assigners, err := GetAllAssigners(c)
+	convey.So(err, convey.ShouldBeNil)
+
+	return assigners
+}
+
+// createConfig creates a sample, valid Assigner config to be used in tests.
+func createConfig(id string) *config.Assigner {
+	// A sample valid assigner config
+	return &config.Assigner{
+		Id:        id,
+		Owners:    []string{"foo@google.com"},
+		Rotations: []string{"oncall1@google.com"},
+		Interval:  &duration.Duration{Seconds: 60},
+		IssueQuery: &config.IssueQuery{
+			Q:            "-has:owner Ops-Alerts=test",
+			ProjectNames: []string{"chromium"},
+		},
+	}
+}
+
+func createTasks(c context.Context, assigner *Assigner, status TaskStatus, startTimes ...time.Time) []*Task {
+	var tasks []*Task
+	for _, s := range startTimes {
+		tasks = append(tasks, &Task{
+			AssignerKey:   genAssignerKey(c, assigner),
+			Status:        status,
+			ExpectedStart: s,
+		})
+	}
+	convey.So(datastore.Put(c, tasks), convey.ShouldBeNil)
+	datastore.GetTestable(c).CatchupIndexes()
+	return tasks
+}
+
+func setupTaskIndexes(c context.Context) {
+	datastore.GetTestable(c).AddIndexes(&datastore.IndexDefinition{
+		Kind:     "Task",
+		Ancestor: true,
+		SortBy: []datastore.IndexColumn{
+			{Property: "WasNoopSuccess"},
+			{Property: "ExpectedStart", Descending: true},
+		},
+	})
+
+	datastore.GetTestable(c).AddIndexes(&datastore.IndexDefinition{
+		Kind:     "Task",
+		Ancestor: true,
+		SortBy: []datastore.IndexColumn{
+			{Property: "ExpectedStart", Descending: true},
+		},
+	})
+}

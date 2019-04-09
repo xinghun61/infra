@@ -38,4 +38,5 @@ test: gen
 gen:
 	cproto app/config
 	cproto app/backend
+	cproto app/backend/model
 	go generate ./...

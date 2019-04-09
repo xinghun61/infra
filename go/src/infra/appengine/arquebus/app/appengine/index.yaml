@@ -1,0 +1,14 @@
+indexes:
+- kind: Task
+  ancestor: yes
+  properties:
+  - name: WasNoopSuccess
+  - name: ExpectedStart
+    direction: desc
+
+indexes:
+- kind: Task
+  ancestor: yes
+  properties:
+  - name: ExpectedStart
+    direction: desc

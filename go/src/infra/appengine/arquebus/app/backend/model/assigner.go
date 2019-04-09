@@ -175,7 +175,7 @@ func GetAllAssigners(c context.Context) ([]*Assigner, error) {
 	return aes, nil
 }
 
-// GenAssignerKey generates a datastore key for a given assigner object.
-func GenAssignerKey(c context.Context, ae *Assigner) *datastore.Key {
+// genAssignerKey generates a datastore key for a given assigner object.
+func genAssignerKey(c context.Context, ae *Assigner) *datastore.Key {
 	return datastore.KeyForObj(c, ae)
 }

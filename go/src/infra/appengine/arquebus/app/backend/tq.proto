@@ -18,8 +18,6 @@ package backend.tq;
 
 option go_package = "backend";
 
-import "infra/appengine/arquebus/app/config/config.proto";
-
 // ScheduleAssignerTask is to schedule a new task for a given assigner.
 //
 // Queue: "schedule-assigners".

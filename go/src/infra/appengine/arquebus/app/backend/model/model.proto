@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package backend.model;
+
+option go_package = "model";
+
+// TaskStatus represents the status of an Assigner task.
+enum TaskStatus {
+  // TaskStatusScheduled means that the task has been scheduled, but
+  // has not yet started.
+  Scheduled = 0;
+  // Running means that the task is running.
+  Running = 1;
+  // Succeeded means that the task completed successfully.
+  Succeeded = 2;
+  // Failed means that the task failed.
+  Failed = 3;
+  // Cancelled means that the task was cancelled before starting.
+  Cancelled = 4;
+  // Aborted means that the task started, but was aborted manually or
+  // due to hard deadline.
+  Aborted = 5;
+}
