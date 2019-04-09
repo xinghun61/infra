@@ -140,6 +140,9 @@ func newInvCache(ctx context.Context, s *gitstore.InventoryStore) *invCache {
 	}
 	for _, srv := range s.Infrastructure.GetServers() {
 		if srv.GetEnvironment().String() != env {
+			for _, d := range srv.DutUids {
+				ic.purgeDUT(d)
+			}
 			continue
 		}
 		// TODO(ayatane): We should filter on server role for Skylab
@@ -149,6 +152,15 @@ func newInvCache(ctx context.Context, s *gitstore.InventoryStore) *invCache {
 		}
 	}
 	return &ic
+}
+
+// purgeDUT purges the existence of the DUT from the inventory cache.
+func (ic *invCache) purgeDUT(dutID string) {
+	if d, ok := ic.idToDUT[dutID]; ok {
+		delete(ic.hostnameToID, d.GetCommon().GetHostname())
+	}
+	delete(ic.droneForDUT, dutID)
+	delete(ic.idToDUT, dutID)
 }
 
 // dutAssigner wraps an InventoryStore and implements assigning DUTs
