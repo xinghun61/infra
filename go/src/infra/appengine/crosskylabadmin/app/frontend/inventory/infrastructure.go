@@ -135,14 +135,15 @@ func newInvCache(ctx context.Context, s *gitstore.InventoryStore) *invCache {
 		ic.idToDUT[c.GetId()] = d
 	}
 	for _, srv := range s.Infrastructure.GetServers() {
+		if !isDrone(srv) {
+			continue
+		}
 		if srv.GetEnvironment().String() != env {
 			for _, d := range srv.DutUids {
 				ic.purgeDUT(d)
 			}
 			continue
 		}
-		// TODO(ayatane): We should filter on server role for Skylab
-		// drones, but only Skylab drones have DUTs right now.
 		for _, d := range srv.DutUids {
 			ic.droneForDUT[d] = srv
 		}
