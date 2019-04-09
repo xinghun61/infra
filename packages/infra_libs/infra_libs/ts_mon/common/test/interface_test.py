@@ -461,9 +461,8 @@ class GenerateNewProtoTest(unittest.TestCase):
         service_name='service', job_name='job', region='region',
         hostname='hostname', task_num=0)
 
-    self.time_fn = mock.create_autospec(time.time, spec_set=True)
     interface.state.store = metric_store.InProcessMetricStore(
-        interface.state, self.time_fn)
+        interface.state, time.time)
 
   def test_grouping(self):
     counter0 = metrics.CounterMetric('counter0', 'desc0',
@@ -543,6 +542,25 @@ class GenerateNewProtoTest(unittest.TestCase):
 
     self.assertEqual('c', data_set.data[0].field[2].name)
     self.assertEqual('test', data_set.data[0].field[2].string_value)
+
+  def test_generate_proto_with_dangerously_set_start_time(self):
+    counter0 = metrics.CounterMetric('counter0', 'desc0',
+        [metrics.IntegerField('test')])
+    interface.register(counter0)
+    counter0.increment_by(3, {'test': 123})
+    counter0.increment_by(3, {'test': 456})
+
+    counter0.dangerously_set_start_time(1000)
+    proto = list(interface._generate_proto())[0]
+    data_set = proto.metrics_collection[0].metrics_data_set[0]
+    for d in data_set.data:
+      self.assertEqual(1000, d.start_timestamp.seconds)
+
+    counter0.dangerously_set_start_time(2000)
+    proto = list(interface._generate_proto())[0]
+    data_set = proto.metrics_collection[0].metrics_data_set[0]
+    for d in data_set.data:
+      self.assertEqual(2000, d.start_timestamp.seconds)
 
 
 class GlobalCallbacksTest(unittest.TestCase):
