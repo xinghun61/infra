@@ -756,6 +756,20 @@ wheel: <
 
 * *universal*
 
+## **google-api-python-client**
+
+### 1.6.2
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/google-api-python-client-py2_py3"
+  version: "version:1.6.2"
+>
+```
+
+
+* *universal*
+
 ## **google-auth**
 
 ### 1.2.1
@@ -1036,20 +1050,6 @@ wheel: <
 
 * *universal*
 
-## **google_api_python_client**
-
-### 1.6.2
-
-```protobuf
-wheel: <
-  name: "infra/python/wheels/google_api_python_client-py2_py3"
-  version: "version:1.6.2"
->
-```
-
-
-* *universal*
-
 ## **google_compute_engine**
 
 ### 2.6.2
@@ -1199,12 +1199,12 @@ wheel: <
 
 ## **infra_libs**
 
-### 2.0.1
+### 2.0.6
 
 ```protobuf
 wheel: <
   name: "infra/python/wheels/infra_libs-py2"
-  version: "version:2.0.1"
+  version: "version:2.0.6"
 >
 ```
 
