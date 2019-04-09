@@ -236,7 +236,7 @@ func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID s
 	newURL := worker.GenerateLogDogURL(siteEnv.Wrapped())
 	for _, s := range original.TaskSlices {
 		cmd := s.Properties.Command
-		if cmd[0] != "/opt/infra-tools/skylab_swarming_worker" {
+		if cmd[0] != worker.DefaultPath {
 			return nil, fmt.Errorf("task was not a Skylab task")
 		}
 
