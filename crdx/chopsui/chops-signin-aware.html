@@ -42,13 +42,20 @@ class ChopsSigninAware extends Polymer.Element {
   }
 
   connectedCallback() {
+    // removeEventListener requires exactly the same function object that was
+    // passed to addEventListener, so bind the listener methods.
     this.onUserUpdate_ = this.onUserUpdate_.bind(this);
+    this.onHeadersReloaded_ = this.onHeadersReloaded_.bind(this);
     window.addEventListener('user-update', this.onUserUpdate_);
+    window.addEventListener(
+        'authorization-headers-reloaded', this.onHeadersReloaded_);
     this.onUserUpdate_();
   }
 
   disconnectedCallback() {
     window.removeEventListener('user-update', this.onUserUpdate_);
+    window.removeEventListener(
+        'authorization-headers-reloaded', this.onHeadersReloaded_);
   }
 
   updateProperties_() {
@@ -57,6 +64,10 @@ class ChopsSigninAware extends Polymer.Element {
     this._setProfile(window.getUserProfileSync());
     this._setAuthHeaders(window.getAuthorizationHeadersSync());
     this._setSignedIn(!!this.profile);
+  }
+
+  onHeadersReloaded_(event) {
+    this.updateProperties_();
   }
 
   onUserUpdate_() {
