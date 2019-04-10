@@ -17,7 +17,10 @@
 package inventory
 
 import (
+	"time"
+
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -26,7 +29,9 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/dronecfg"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/freeduts"
 	dsinventory "infra/appengine/crosskylabadmin/app/frontend/internal/datastore/inventory"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/gitstore"
 	"infra/libs/skylab/inventory"
 )
 
@@ -118,6 +123,9 @@ func (is *ServerImpl) UpdateCachedInventory(ctx context.Context, req *fleet.Upda
 	if err := dronecfg.Update(ctx, es); err != nil {
 		return nil, err
 	}
+	if err := updateFreeDUTs(ctx, store); err != nil {
+		return nil, err
+	}
 	return &fleet.UpdateCachedInventoryResponse{}, nil
 }
 
@@ -168,4 +176,65 @@ func isDrone(s *inventory.Server) bool {
 		}
 	}
 	return false
+}
+
+func updateFreeDUTs(ctx context.Context, s *gitstore.InventoryStore) error {
+	ic := newInvCache(ctx, s)
+	// We will likely never have more than 10% of our fleet free.
+	free := make([]freeduts.DUT, 0, len(ic.idToDUT)/10)
+	for dutID, d := range ic.idToDUT {
+		if _, ok := ic.droneForDUT[dutID]; ok {
+			continue
+		}
+		free = append(free, freeDUTInfo(d))
+	}
+	stale, err := getStaleFreeDUTs(ctx, free)
+	if err != nil {
+		return errors.Annotate(err, "update free duts").Err()
+	}
+	if err := freeduts.Remove(ctx, stale); err != nil {
+		return errors.Annotate(err, "update free duts").Err()
+	}
+	if err := freeduts.Add(ctx, free); err != nil {
+		return errors.Annotate(err, "update free duts").Err()
+	}
+	return nil
+}
+
+// getStaleFreeDUTs returns the free DUTs in datastore that are no longer
+// free, given the currently free DUTs passed as an argument.
+func getStaleFreeDUTs(ctx context.Context, free []freeduts.DUT) ([]freeduts.DUT, error) {
+	freeMap := make(map[string]bool, len(free))
+	for _, d := range free {
+		freeMap[d.ID] = true
+	}
+	all, err := freeduts.GetAll(ctx)
+	if err != nil {
+		return nil, errors.Annotate(err, "get stale free duts").Err()
+	}
+	stale := make([]freeduts.DUT, 0, len(all))
+	for _, d := range all {
+		if _, ok := freeMap[d.ID]; !ok {
+			stale = append(stale, d)
+		}
+	}
+	return stale, nil
+}
+
+// freeDUTInfo returns the free DUT info to store for a DUT.
+func freeDUTInfo(d *inventory.DeviceUnderTest) freeduts.DUT {
+	c := d.GetCommon()
+	rr := d.GetRemovalReason()
+	var t time.Time
+	if ts := rr.GetExpireTime(); ts != nil {
+		t = time.Unix(ts.GetSeconds(), int64(ts.GetNanos())).UTC()
+	}
+	return freeduts.DUT{
+		ID:         c.GetId(),
+		Hostname:   c.GetHostname(),
+		Bug:        rr.GetBug(),
+		Comment:    rr.GetComment(),
+		ExpireTime: t,
+		Model:      c.GetLabels().GetModel(),
+	}
 }
