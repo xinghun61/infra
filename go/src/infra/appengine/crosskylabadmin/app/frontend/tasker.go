@@ -96,7 +96,7 @@ func triggerRepairOnIdleForBot(ctx context.Context, sc clients.SwarmingClient, r
 	}
 
 	if idle != nil && idle.Seconds < req.IdleDuration.Seconds {
-		return repairTasksWithIDs(ctx, bse.DutID, []string{}), nil
+		return &fleet.TaskerBotTasks{DutId: bse.DutID}, nil
 	}
 
 	at := worker.AdminTaskForType(ctx, fleet.TaskType_Repair)

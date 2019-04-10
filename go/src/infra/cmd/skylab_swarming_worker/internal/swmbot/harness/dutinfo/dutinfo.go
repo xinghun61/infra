@@ -137,7 +137,7 @@ func getUncached(ctx context.Context, c fleet.InventoryClient, req *fleet.GetDut
 	}
 
 	if err := retry.Retry(ctx, cacheRefreshRetryFactory, f, retry.LogCallback(ctx, "dutinfo.getCached")); err != nil {
-		return nil, errors.Annotate(err, "get cached").Err()
+		return nil, errors.Annotate(err, "get uncached").Err()
 	}
 	return resp, nil
 }
