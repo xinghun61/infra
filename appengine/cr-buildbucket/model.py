@@ -493,8 +493,9 @@ class BuildSteps(BuildDetailEntity):
 
   @classmethod
   @ndb.tasklet
-  def cancel_incomplete_steps_async(cls, build_id):
+  def cancel_incomplete_steps_async(cls, build_id, end_ts):
     """Marks incomplete steps as canceled in the Datastore, if any."""
+    assert end_ts.seconds
     assert ndb.in_transaction()
     entity = yield cls.key_for(ndb.Key(Build, build_id)).get_async()
     if not entity:
@@ -507,6 +508,12 @@ class BuildSteps(BuildDetailEntity):
     for s in container.steps:
       if not is_terminal_status(s.status):
         s.status = common_pb2.CANCELED
+        s.end_time.CopyFrom(end_ts)
+        if s.summary_markdown:  # pragma: no branch
+          s.summary_markdown += '\n'
+        s.summary_markdown += (
+            'step was canceled because it did not end before build ended'
+        )
         changed = True
 
     if changed:  # pragma: no branch

@@ -535,6 +535,9 @@ def cancel_async(build_id, summary_markdown='', result_details=None):
         build.put_async(),
         events.on_build_completing_async(build),
         _put_output_properties_async(build.key, result_details),
+        model.BuildSteps.cancel_incomplete_steps_async(
+            build.key.id(), build.proto.end_time
+        )
     ]
 
     sw = build.parse_infra().swarming

@@ -1179,7 +1179,11 @@ def _sync_build_async(build_id, task_result):
     if build.proto.status == common_pb2.STARTED:
       futures.append(events.on_build_starting_async(build))
     elif build.is_ended:  # pragma: no branch
-      futures.append(model.BuildSteps.cancel_incomplete_steps_async(build_id))
+      futures.append(
+          model.BuildSteps.cancel_incomplete_steps_async(
+              build_id, build.proto.end_time
+          )
+      )
       futures.append(events.on_build_completing_async(build))
 
     yield futures

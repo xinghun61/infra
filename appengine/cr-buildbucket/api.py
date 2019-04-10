@@ -371,7 +371,9 @@ def update_build_async(req, _res, ctx, _mask):
       futures.append(build_steps.put_async())
     elif build.is_ended:
       futures.append(
-          model.BuildSteps.cancel_incomplete_steps_async(req.build.id)
+          model.BuildSteps.cancel_incomplete_steps_async(
+              req.build.id, build.proto.end_time
+          )
       )
 
     # TODO(crbug.com/936892): check has steps => status is not SCHEDULED.

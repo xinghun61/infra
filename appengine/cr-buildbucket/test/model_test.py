@@ -7,6 +7,7 @@ import unittest
 import mock
 
 from google.appengine.ext import ndb
+from google.protobuf import timestamp_pb2
 
 from testing_utils import testing
 from test import test_util
@@ -223,28 +224,46 @@ class BuildStepsTest(testing.AppengineTestCase):
     self.assertEqual(actual, container)
 
   @ndb.transactional
-  def cancel_incomplete_steps(self, build_id):
-    model.BuildSteps.cancel_incomplete_steps_async(build_id).get_result()
+  def cancel_incomplete_steps(self, build_id, end_ts):
+    model.BuildSteps.cancel_incomplete_steps_async(
+        build_id,
+        end_ts,
+    ).get_result()
 
   def test_cancel_incomplete(self):
     steps = model.BuildSteps.make(
         build_pb2.Build(
             id=123,
             steps=[
-                dict(name='a', status=common_pb2.SUCCESS),
-                dict(name='b', status=common_pb2.SCHEDULED),
+                dict(
+                    name='a',
+                    status=common_pb2.SUCCESS,
+                ),
+                dict(
+                    name='b',
+                    status=common_pb2.STARTED,
+                    summary_markdown='running',
+                    start_time=dict(seconds=123),
+                ),
             ],
         )
     )
     steps.put()
 
-    self.cancel_incomplete_steps(123)
+    end_ts = timestamp_pb2.Timestamp(seconds=12345)
+    self.cancel_incomplete_steps(123, end_ts)
 
     steps = steps.key.get()
     step_container = build_pb2.Build()
     steps.read_steps(step_container)
     self.assertEqual(step_container.steps[0].status, common_pb2.SUCCESS)
     self.assertEqual(step_container.steps[1].status, common_pb2.CANCELED)
+    self.assertEqual(step_container.steps[1].end_time, end_ts)
+    self.assertEqual(
+        step_container.steps[1].summary_markdown,
+        'running\nstep was canceled because it did not end before build ended'
+    )
 
   def test_cancel_incomplete_no_entity(self):
-    self.cancel_incomplete_steps(123)
+    end_ts = timestamp_pb2.Timestamp(seconds=12345)
+    self.cancel_incomplete_steps(123, end_ts)
