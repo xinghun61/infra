@@ -46,7 +46,6 @@ github.com/julienschmidt/httprouter
 github.com/kr/pretty
 github.com/kylelemons/godebug/pretty
 github.com/mattes/migrate
-github.com/mattn/go-isatty
 github.com/mgutz/ansi
 github.com/mitchellh/go-homedir
 github.com/op/go-logging
