@@ -13,6 +13,15 @@ project_id: <id>
 // Choose a short nice project name for humans
 project_name: <name>
 
+// Choose a project service account name for the project
+// Options:
+// 1. (Preferred) Choose an account to be created under LUCI maintenance,
+// example: ${PROJECT_ID}-scoped@luci-project-accounts.iam.gserviceaccount.com
+// 2. Provide a service account identity from any project in GCP,
+// In this case, add an IAM ACL to grant role "Service Account Token Creator"
+// to LUCI token server (luci-token-server@appspot.gserviceaccount.com).
+project_identity: <name>
+
 // Is this project public? E.g. the project id / name are not confidential,
 // build logs are not confidential, etc.
 public: <true or false>
