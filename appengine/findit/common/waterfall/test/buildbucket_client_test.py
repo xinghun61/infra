@@ -3,10 +3,13 @@
 # found in the LICENSE file.
 
 import collections
+from datetime import datetime
 import json
 import mock
 
 from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
+from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 from testing_utils import testing
 
 from gae_libs.http import http_client_appengine
@@ -324,3 +327,38 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     build = buildbucket_client.GetV2BuildByBuilderAndBuildNumber(
         'chromium', 'try', 'win10_chromium_x64_rel_ng', 123)
     self.assertIsNone(build)
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testSearchV2BuildsOnBuilder(self, mock_post):
+    builder = BuilderID(project='chromium', bucket='try', builder='linux-rel')
+
+    mock_build = Build(number=100)
+    mock_response = SearchBuildsResponse(
+        next_page_token='next_page_token', builds=[mock_build])
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_response.SerializeToString()
+    mock_post.return_value = (200, binary_data, mock_headers)
+
+    res = buildbucket_client.SearchV2BuildsOnBuilder(builder)
+
+    self.assertEqual('next_page_token', res.next_page_token)
+    self.assertEqual(1, len(res.builds))
+    self.assertEqual(100, res.builds[0].number)
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testSearchV2BuildsOnBuilderWithTimeRange(self, mock_post):
+    builder = BuilderID(project='chromium', bucket='try', builder='linux-rel')
+
+    mock_build = Build(number=100)
+    mock_response = SearchBuildsResponse(
+        next_page_token='next_page_token', builds=[mock_build])
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_response.SerializeToString()
+    mock_post.return_value = (200, binary_data, mock_headers)
+
+    res = buildbucket_client.SearchV2BuildsOnBuilder(
+        builder, create_time_range=(0, datetime(2019, 4, 9, 3, 33)))
+
+    self.assertEqual('next_page_token', res.next_page_token)
+    self.assertEqual(1, len(res.builds))
+    self.assertEqual(100, res.builds[0].number)

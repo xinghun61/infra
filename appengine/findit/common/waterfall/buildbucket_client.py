@@ -10,7 +10,11 @@ import urllib
 
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
+from buildbucket_proto import common_pb2
+from buildbucket_proto.rpc_pb2 import BuildPredicate
 from buildbucket_proto.rpc_pb2 import GetBuildRequest
+from buildbucket_proto.rpc_pb2 import SearchBuildsRequest
+from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 from common.findit_http_client import FinditHttpClient
 from libs.math.integers import constrain
 
@@ -28,6 +32,9 @@ _BUILDBUCKET_SEARCH_ENDPOINT = (
         hostname=_BUILDBUCKET_HOST))
 _BUILDBUCKET_V2_GET_BUILD_ENDPOINT = (
     'https://{hostname}/prpc/buildbucket.v2.Builds/GetBuild'.format(
+        hostname=_BUILDBUCKET_HOST))
+_BUILDBUCKET_V2_SEARCH_BUILDS_ENDPOINT = (
+    'https://{hostname}/prpc/buildbucket.v2.Builds/SearchBuilds'.format(
         hostname=_BUILDBUCKET_HOST))
 
 
@@ -350,5 +357,54 @@ def GetV2BuildByBuilderAndBuildNumber(project,
     result.ParseFromString(content)
     return result
   logging.warning('Unexpected prpc code: %s',
+                  response_headers.get('X-Prpc-Grpc-Code'))
+  return None
+
+
+def SearchV2BuildsOnBuilder(builder,
+                            status=common_pb2.ENDED_MASK,
+                            create_time_range=None,
+                            page_size=20,
+                            fields=None):
+  """Searches builds on a builder.
+
+  Args:
+    builder (build_pb2.BuilderID): Id of the builder, with project, bucket and
+      builder_name.
+    status (common_pb2.Status): Status of searched builds, like
+      common_pb2.FAILURE. common_pb2.ENDED_MASK can be used when search for all
+      completed builds regardless of status.
+    create_time_range (tuple): A pair of datetimes for the range of the build
+      create_time. Both ends are optional. The format is like:
+      (
+         # Left bound of the range, inclusive.
+         datetime(2019, 4, 8),
+         # Right bound of the range, exclusive.
+        datetime(2019, 4, 9)
+      )
+    page_size (int): Number of builds returned in one request.
+    fields (google.protobuf.FieldMask): Mask for the paths to get, as not all
+        fields are populated by default.
+  """
+  predicate = BuildPredicate(builder=builder, status=status)
+  if create_time_range:
+    if create_time_range[0]:  # pragma: no cover.
+      # Left bound specified.
+      predicate.create_time.start_time.FromDatetime(create_time_range[0])
+    if create_time_range[1]:
+      # Right bound specified.
+      predicate.create_time.end_time.FromDatetime(create_time_range[1])
+  request = SearchBuildsRequest(
+      predicate=predicate, page_size=page_size, fields=fields)
+
+  status_code, content, response_headers = FinditHttpClient().Post(
+      _BUILDBUCKET_V2_SEARCH_BUILDS_ENDPOINT,
+      request.SerializeToString(),
+      headers={'Content-Type': 'application/prpc; encoding=binary'})
+  if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
+    result = SearchBuildsResponse()
+    result.ParseFromString(content)
+    return result
+  logging.warning('Unexpected status_code: %d and prpc code: %s', status_code,
                   response_headers.get('X-Prpc-Grpc-Code'))
   return None
