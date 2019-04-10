@@ -57,6 +57,8 @@ handlers:
   static_dir: static/js
   mime_type: application/javascript
   secure: always
+  http_headers:
+    Access-Control-Allow-Origin: '*'
 
 - url: /static
   static_dir: static
