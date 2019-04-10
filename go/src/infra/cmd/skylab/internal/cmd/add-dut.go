@@ -26,7 +26,7 @@ import (
 
 // AddDut subcommand: add a new DUT to inventory and prepare it for tasks.
 var AddDut = &subcommands.Command{
-	UsageLine: "add-dut [-specs-file SPECS_PATH] [-skip-install-os] [-skip-install-firmware] [-skip-image-download] [-tail]",
+	UsageLine: "add-dut [FLAGS...]",
 	ShortDesc: "Add a new DUT",
 	LongDesc: `Add and a new DUT to the inventory and prepare it for tasks.
 

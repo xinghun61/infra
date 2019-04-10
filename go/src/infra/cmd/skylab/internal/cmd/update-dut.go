@@ -30,7 +30,7 @@ import (
 
 // UpdateDut subcommand: update and redeploy an existing DUT.
 var UpdateDut = &subcommands.Command{
-	UsageLine: "update-dut [-new-specs-file SPECS_PATH] [-install-os] [-install-firmware] [-skip-image-download] [-tail] HOSTNAME",
+	UsageLine: "update-dut [FLAGS...] HOSTNAME",
 	ShortDesc: "update an existing DUT",
 	LongDesc: `Update existing DUT's inventory information.
 
