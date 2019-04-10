@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import argparse
 import contextlib
 import json
 import logging
@@ -11,6 +12,8 @@ import subprocess
 import sys
 import threading
 import time
+
+import crontab
 
 from infra.libs.service_utils import daemon
 from infra.services.swarm_docker import containers
@@ -29,13 +32,16 @@ BOT_SHUTDOWN_FILE = '/b/shutdown.stamp'
 # run time.
 _REBOOT_GRACE_PERIOD_MIN = 240
 
+# Minimum time a host must be up before it can be restarted again.
+_MIN_HOST_UPTIME = 60
+
 # Defined in
 # https://chromium.googlesource.com/infra/infra/+/master/build/packages/swarm_docker.yaml
 _CIPD_VERSION_FILE = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', '..', 'CIPD_VERSION.json'))
 
 
-def get_cipd_version():
+def get_cipd_version():  # pragma: no cover
   if not os.path.exists(_CIPD_VERSION_FILE):
     logging.warning('Unable to find cipd version file %s', _CIPD_VERSION_FILE)
     return None
@@ -48,14 +54,14 @@ def get_cipd_version():
     return None
 
 
-def get_host_uptime():
+def get_host_uptime():  # pragma: no cover
   """Returns host uptime in minutes."""
   with open('/proc/uptime') as f:
     uptime = float(f.readline().split()[0])
   return uptime / 60
 
 
-def update_docker(canary, version='18.06.3~ce~3-0~ubuntu'):
+def update_docker(canary, version='18.06.3~ce~3-0~ubuntu'):  # pragma: no cover
   """Update the docker package prior to reboot.
 
   This will automatically keep the docker package up to date and running prior
@@ -91,7 +97,7 @@ def update_docker(canary, version='18.06.3~ce~3-0~ubuntu'):
   return True
 
 
-def reboot_host(canary=False, skip_update=False):
+def reboot_host(canary=False, skip_update=False):  # pragma: no cover
   if not skip_update and not update_docker(canary):
     logging.warning('Not rebooting, something went wrong.')
     return
@@ -130,6 +136,49 @@ def flock(lock_file, retries=20, sleep_duration=3):  # pragma: no cover
         time.sleep(sleep_duration)
 
 
+def reboot_gracefully(args, running_containers):
+  """Reboot the host and attempt to gracefully stop running containers.
+
+  Returns:
+    True if reboot has been started.
+  """
+  host_uptime = get_host_uptime()
+  time_since_scheduled_reboot = 0
+  if args.reboot_schedule:
+    # Crontab.previous is the time of the previously scheduled cron run.
+    time_since_last_cron = (
+        -args.reboot_schedule.previous(default_utc=True) / 60.0)
+    if host_uptime > _MIN_HOST_UPTIME and host_uptime > time_since_last_cron:
+      time_since_scheduled_reboot = time_since_last_cron
+      logging.debug(
+          'Host has been scheduled to reboot for %.2f minutes' %
+          time_since_last_cron)
+  elif host_uptime > args.max_host_uptime:
+    time_since_scheduled_reboot = host_uptime - args.max_host_uptime
+    logging.debug('Host uptime over max uptime (%d > %d)',
+                  host_uptime, args.max_host_uptime)
+  if time_since_scheduled_reboot:
+    if running_containers:
+      if time_since_scheduled_reboot > _REBOOT_GRACE_PERIOD_MIN:
+        logging.warning(
+            'Drain exceeds grace period of %d min. Rebooting host now '
+            'despite %d running containers.', _REBOOT_GRACE_PERIOD_MIN,
+            len(running_containers))
+        reboot_host(args.canary)
+        return True
+      else:
+        logging.debug(
+            'Still %d containers running. Shutting them down first.',
+            len(running_containers))
+        for c in running_containers:
+          c.kill_swarming_bot()
+    else:
+      logging.debug('No running containers. Rebooting host now.')
+      reboot_host(args.canary)
+      return True
+  return False
+
+
 def launch_containers(
     docker_client, container_descriptors, args):  # pragma: no cover
   draining_host = os.path.exists(BOT_SHUTDOWN_FILE)
@@ -148,123 +197,107 @@ def launch_containers(
         [cd.shutdown_file for cd in draining_container_descriptors])
 
   running_containers = docker_client.get_running_containers()
-  # Reboot the host if needed. Will attempt to kill all running containers
-  # gracefully before triggering reboot.
-  host_uptime = get_host_uptime()
-  if host_uptime > args.max_host_uptime and not draining_host:
-    logging.debug('Host uptime over max uptime (%d > %d)',
-                  host_uptime, args.max_host_uptime)
-    if len(running_containers) > 0:
-      if host_uptime - args.max_host_uptime > _REBOOT_GRACE_PERIOD_MIN:
-        logging.warning(
-            'Host uptime exceeds grace period of %d min. Rebooting host now '
-            'despite %d running containers.', _REBOOT_GRACE_PERIOD_MIN,
-            len(running_containers))
-        reboot_host(args.canary)
-      else:
-        logging.debug(
-            'Still %d containers running. Shutting them down first.',
-            len(running_containers))
-        for c in running_containers:
-          c.kill_swarming_bot()
-    else:
-      logging.debug('No running containers. Rebooting host now.')
-      reboot_host(args.canary)
-  else:  # Host uptime < max host uptime.
-    # Fetch the image from the registry if it's not present locally.
-    image_url = (_REGISTRY_URL + '/' + args.registry_project + '/' +
-        args.image_name)
-    if not docker_client.has_image(image_url):
-      logging.debug('Local image missing. Fetching %s ...', image_url)
-      docker_client.login(_REGISTRY_URL, args.credentials_file)
-      docker_client.pull(image_url)
-      logging.debug('Image %s fetched.', image_url)
+  if not draining_host and reboot_gracefully(args, running_containers):
+    return
 
-    # Cleanup old containers that were stopped from a previous run.
-    # TODO(bpastene): Maybe enable auto cleanup with the -rm option?
-    docker_client.delete_stopped_containers()
+  # Fetch the image from the registry if it's not present locally.
+  image_url = (_REGISTRY_URL + '/' + args.registry_project + '/' +
+      args.image_name)
+  if not docker_client.has_image(image_url):
+    logging.debug('Local image missing. Fetching %s ...', image_url)
+    docker_client.login(_REGISTRY_URL, args.credentials_file)
+    docker_client.pull(image_url)
+    logging.debug('Image %s fetched.', image_url)
 
-    # Send SIGTERM to bots in containers that have been running for too long, or
-    # all of them regardless of uptime if draining. For Android containers (see
-    # infra.services.android_swarm package), some containers may go missing due
-    # to associated devices missing, so we need to examine *all* containers here
-    # instead of doing that inside the per-container flock below.
-    current_cipd_version = get_cipd_version()
-    if draining_host:
-      for c in running_containers:
+  # Cleanup old containers that were stopped from a previous run.
+  # TODO(bpastene): Maybe enable auto cleanup with the -rm option?
+  docker_client.delete_stopped_containers()
+
+  # Send SIGTERM to bots in containers that have been running for too long, or
+  # all of them regardless of uptime if draining. For Android containers (see
+  # infra.services.android_swarm package), some containers may go missing due
+  # to associated devices missing, so we need to examine *all* containers here
+  # instead of doing that inside the per-container flock below.
+  current_cipd_version = get_cipd_version()
+  if draining_host:
+    for c in running_containers:
+      c.kill_swarming_bot()
+  else:
+    for cd in draining_container_descriptors:
+      c = docker_client.get_container(cd)
+      if c is not None:
         c.kill_swarming_bot()
-    else:
-      for cd in draining_container_descriptors:
-        c = docker_client.get_container(cd)
-        if c is not None:
+    docker_client.stop_old_containers(
+        running_containers, args.max_container_uptime)
+
+    # Also stop any outdated container.
+    if current_cipd_version is not None:
+      for c in running_containers:
+        if c.labels.get('cipd_version') != current_cipd_version:
+          logging.debug(
+              'Container %s is out of date. Shutting it down.', c.name)
           c.kill_swarming_bot()
-      docker_client.stop_old_containers(
-          running_containers, args.max_container_uptime)
 
-      # Also stop any outdated container.
-      if current_cipd_version is not None:
-        for c in running_containers:
-          if c.labels.get('cipd_version') != current_cipd_version:
-            logging.debug(
-                'Container %s is out of date. Shutting it down.', c.name)
-            c.kill_swarming_bot()
+  # Make sure all requested containers are running.
+  if not draining_host:
+    def _create_container(container_desc):
+      try:
+        with flock(container_desc.lock_file):
+          c = docker_client.get_container(container_desc)
+          if c is None:
+            labels = {}
+            # Attach current cipd version to container's metadata so it can
+            # be restarted if version changes.
+            if current_cipd_version is not None:
+              labels['cipd_version'] = current_cipd_version
+            docker_client.create_container(
+                container_desc, image_url, args.swarming_server, labels)
+          elif c.state == 'paused':
+            # Occasionally a container gets stuck in the paused state. Since
+            # the logic here is thread safe, this shouldn't happen, so
+            # explicitly unpause them before continuing.
+            # TODO(bpastene): Find out how/why.
+            logging.warning('Unpausing container %s.', c.name)
+            c.unpause()
+          else:
+            logging.debug('Nothing to do for container %s.', c.name)
+      except FlockTimeoutError:
+        logging.error(
+            'Timed out while waiting for lock on container %s.',
+            container_desc.name)
 
-    # Make sure all requested containers are running.
-    if not draining_host:
-      def _create_container(container_desc):
-        try:
-          with flock(container_desc.lock_file):
-            c = docker_client.get_container(container_desc)
-            if c is None:
-              labels = {}
-              # Attach current cipd version to container's metadata so it can
-              # be restarted if version changes.
-              if current_cipd_version is not None:
-                labels['cipd_version'] = current_cipd_version
-              docker_client.create_container(
-                  container_desc, image_url, args.swarming_server, labels)
-            elif c.state == 'paused':
-              # Occasionally a container gets stuck in the paused state. Since
-              # the logic here is thread safe, this shouldn't happen, so
-              # explicitly unpause them before continuing.
-              # TODO(bpastene): Find out how/why.
-              logging.warning('Unpausing container %s.', c.name)
-              c.unpause()
-            else:
-              logging.debug('Nothing to do for container %s.', c.name)
-        except FlockTimeoutError:
-          logging.error(
-              'Timed out while waiting for lock on container %s.',
-              container_desc.name)
-
-      threads = []
-      docker_client.set_num_configured_containers(len(container_descriptors))
-      for cd in container_descriptors:
-        # TODO(sergiyb): Remove should_create_container logic from this generic
-        # container management loop and move it outside of the launch_container
-        # function as it's specific to Android devices only and thus should only
-        # be in the android_docker package.
-        if (cd.should_create_container() and
-            cd not in draining_container_descriptors):
-          # Split this into threads so a blocking container doesn't block the
-          # others (and also for speed!)
-          t = threading.Thread(target=_create_container, args=(cd,))
-          threads.append(t)
-          t.start()
-      for t in threads:
-        t.join()
+    threads = []
+    docker_client.set_num_configured_containers(len(container_descriptors))
+    for cd in container_descriptors:
+      # TODO(sergiyb): Remove should_create_container logic from this generic
+      # container management loop and move it outside of the launch_container
+      # function as it's specific to Android devices only and thus should only
+      # be in the android_docker package.
+      if (cd.should_create_container() and
+          cd not in draining_container_descriptors):
+        # Split this into threads so a blocking container doesn't block the
+        # others (and also for speed!)
+        t = threading.Thread(target=_create_container, args=(cd,))
+        threads.append(t)
+        t.start()
+    for t in threads:
+      t.join()
 
 
-def add_launch_arguments(parser):
+def add_launch_arguments(parser):  # pragma: no cover
+  def max_uptime(value):
+    value = int(value)
+    if value < _MIN_HOST_UPTIME:
+      raise argparse.ArgumentTypeError(
+          '--max-host-time must be > %d' % _MIN_HOST_UPTIME)
+    return value
+
   parser.add_argument(
       '-c', '--canary', action='store_true', default=False,
       help='Run this as a canary bot.')
   parser.add_argument(
       '--max-container-uptime', type=int, default=60 * 4,
       help='Max uptime of a container, in minutes.')
-  parser.add_argument(
-      '--max-host-uptime', type=int, default=60 * 24,
-      help='Max uptime of the host, in minutes.')
   parser.add_argument(
       '--image-name', default='swarm_docker:latest',
       help='Name of docker image to launch from.')
@@ -281,8 +314,17 @@ def add_launch_arguments(parser):
       help='Path to service account json file used to access the gcloud '
            'container registry.')
 
+  reboot_group = parser.add_mutually_exclusive_group()
+  reboot_group.add_argument(
+      '--max-host-uptime', type=max_uptime, default=60 * 24,
+      help='Max uptime of the host, in minutes.')
+  reboot_group.add_argument(
+      '--reboot-schedule', type=crontab.CronTab,
+      help='Cron-like schedule for host reboots (in UTC timezone). Format: '
+           'https://github.com/josiahcarlson/parse-crontab.')
 
-def configure_logging(log_filename, log_prefix, verbose):
+
+def configure_logging(log_filename, log_prefix, verbose):  # pragma: no cover
   logger = logging.getLogger()
   logger.setLevel(logging.DEBUG if verbose else logging.WARNING)
   log_fmt = logging.Formatter(
@@ -304,7 +346,7 @@ def configure_logging(log_filename, log_prefix, verbose):
   urllib3_logger.setLevel(logging.WARNING)
 
 
-def main_wrapper(main_func):
+def main_wrapper(main_func):  # pragma: no cover
   if sys.platform != 'linux2':
     print 'Only supported on linux.'
     sys.exit(1)

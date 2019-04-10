@@ -84,6 +84,12 @@
     ],
     'implicit': True,  # Required by apache_beam
   },
+  'crontab': {
+    'version': '0.22.0',
+    'build': '0',
+    'repo': 'external/github.com/josiahcarlson/parse-crontab',
+    'rev': '65c85e8d7b4a708da0d1b07d49e8c84c09086876',
+  },
   'cryptography': {
     'version': '1.4',
     'build': '0',
