@@ -27,11 +27,6 @@ _REGISTRY_URL = 'gcr.io'
 # container's shutdown file as returned by its descriptor class.
 BOT_SHUTDOWN_FILE = '/b/shutdown.stamp'
 
-# Time to wait for swarming bots to gracefully shutdown before triggering a
-# host reboot. It should be at least as long as the longest expected task
-# run time.
-_REBOOT_GRACE_PERIOD_MIN = 240
-
 # Minimum time a host must be up before it can be restarted again.
 _MIN_HOST_UPTIME = 60
 
@@ -159,10 +154,10 @@ def reboot_gracefully(args, running_containers):
                   host_uptime, args.max_host_uptime)
   if time_since_scheduled_reboot:
     if running_containers:
-      if time_since_scheduled_reboot > _REBOOT_GRACE_PERIOD_MIN:
+      if time_since_scheduled_reboot > args.reboot_grace_period:
         logging.warning(
             'Drain exceeds grace period of %d min. Rebooting host now '
-            'despite %d running containers.', _REBOOT_GRACE_PERIOD_MIN,
+            'despite %d running containers.', args.reboot_grace_period,
             len(running_containers))
         reboot_host(args.canary)
         return True
@@ -298,6 +293,11 @@ def add_launch_arguments(parser):  # pragma: no cover
   parser.add_argument(
       '--max-container-uptime', type=int, default=60 * 4,
       help='Max uptime of a container, in minutes.')
+  parser.add_argument(
+      '--reboot-grace-period', type=int, default=60 * 4,
+      help='How long to wait (in minutes) for swarming bots to gracefully '
+           'shutdown before triggering a host reboot. Should be at least as '
+           'long as the longest expected task run time. Defaults to 4 hours.')
   parser.add_argument(
       '--image-name', default='swarm_docker:latest',
       help='Name of docker image to launch from.')
