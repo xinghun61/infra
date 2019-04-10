@@ -184,20 +184,20 @@ update_submodules_mirror(
     name = 'codesearch-update-submodules-mirror-src',
     short_name = 'src',
     source_repo = 'https://chromium.googlesource.com/chromium/src',
-    target_repo = 'https://chromium.googlesource.com/experimental/codesearch/grimoire/chromium/src',
+    target_repo = 'https://chromium.googlesource.com/codesearch/chromium/src',
     triggered_by = chromium_src_poller(),
 )
 update_submodules_mirror(
     name = 'codesearch-update-submodules-mirror-infra',
     short_name = 'infra',
     source_repo = 'https://chromium.googlesource.com/infra/infra',
-    target_repo = 'https://chromium.googlesource.com/experimental/codesearch/grimoire/infra/infra',
+    target_repo = 'https://chromium.googlesource.com/codesearch/infra/infra',
     triggered_by = infra.poller(),
 )
 update_submodules_mirror(
     name = 'codesearch-update-submodules-mirror-build',
     short_name = 'build',
     source_repo = 'https://chromium.googlesource.com/chromium/tools/build',
-    target_repo = 'https://chromium.googlesource.com/experimental/codesearch/grimoire/chromium/tools/build',
+    target_repo = 'https://chromium.googlesource.com/codesearch/chromium/tools/build',
     triggered_by = build.poller(),
 )
