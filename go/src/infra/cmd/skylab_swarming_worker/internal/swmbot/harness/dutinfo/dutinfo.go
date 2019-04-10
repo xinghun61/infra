@@ -127,7 +127,7 @@ func getUncached(ctx context.Context, c fleet.InventoryClient, req *fleet.GetDut
 		if err != nil {
 			return err
 		}
-		if err := ensureResponseUpdatedSince(resp, start); err != nil {
+		if err := ensureResponseUpdatedSince(iresp, start); err != nil {
 			return err
 		}
 
