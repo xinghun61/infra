@@ -19,11 +19,13 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/maruel/subcommands"
 
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/buildbucket/protoutil"
 	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/milo"
@@ -436,9 +438,18 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		}
 
 		// Mark incomplete steps as canceled.
+		endTime, err := ptypes.TimestampProto(clock.Now(ctx))
+		if err != nil {
+			return fail(err)
+		}
 		for _, s := range req.Build.Steps {
 			if !protoutil.IsEnded(s.Status) {
 				s.Status = buildbucketpb.Status_CANCELED
+				if s.SummaryMarkdown != "" {
+					s.SummaryMarkdown += "\n"
+				}
+				s.SummaryMarkdown += "step was canceled because it did not end before build ended"
+				s.EndTime = endTime
 			}
 		}
 
