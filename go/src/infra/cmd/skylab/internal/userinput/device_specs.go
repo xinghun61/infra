@@ -26,7 +26,9 @@ import (
 // user initiated abort.
 func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string, promptFunc PromptFunc) (*inventory.CommonDeviceSpecs, error) {
 	s := deviceSpecsGetter{
-		inputFunc:  textEditorInput,
+		inputFunc: func(initial []byte) ([]byte, error) {
+			return textEditorInput(initial, "dutspecs.*.js")
+		},
 		promptFunc: promptFunc,
 	}
 	return s.Get(initial, helpText)

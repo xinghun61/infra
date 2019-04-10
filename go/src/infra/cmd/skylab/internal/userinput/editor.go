@@ -18,8 +18,10 @@ import (
 // - The user may edit and save this text. Eventually the user quits the
 //   EDITOR.
 // - The resulting text is returned.
-func textEditorInput(initial []byte) ([]byte, error) {
-	p, err := writeTempFile(initial)
+//
+// name is the basename of the temporary file created.
+func textEditorInput(initial []byte, name string) ([]byte, error) {
+	p, err := writeTempFile(initial, name)
 	if err != nil {
 		return nil, errors.Annotate(err, "text editor").Err()
 	}
@@ -36,8 +38,8 @@ func textEditorInput(initial []byte) ([]byte, error) {
 // the path to the new file.
 //
 // On successful return, caller is responsible for deleting the created temporary file.
-func writeTempFile(data []byte) (string, error) {
-	f, err := ioutil.TempFile("", "editor")
+func writeTempFile(data []byte, name string) (string, error) {
+	f, err := ioutil.TempFile("", name)
 	if err != nil {
 		return "", errors.Annotate(err, "write temp file").Err()
 	}
