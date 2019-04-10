@@ -7,6 +7,7 @@ Allow: /hosting
 Allow: /p/*/adminIntro
 # Query strings are hard. We only allow ?id=N, no other parameters.
 Allow: /p/*/issues/detail?id=*
+Allow: /p/*/issues/detail_ezt?id=*
 Disallow: /p/*/issues/detail?id=*&*
 Disallow: /p/*/issues/detail?*&id=*
 # 10 second crawl delay for bots that honor it.

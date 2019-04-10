@@ -734,6 +734,7 @@ class Servlet(webapp2.RequestHandler):
         'version_base': version_base,
         'app_version': app_version,
         'viewing_user_page': ezt.boolean(False),
+        'other_ui_path': None,
 
         'is_member': ezt.boolean(False),
         }

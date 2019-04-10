@@ -31,4 +31,5 @@ class IssueApproval(servlet.Servlet):
     """
     return {
        'local_id': mr.local_id,
+       'other_ui_path': 'issues/detail_ezt',
         }

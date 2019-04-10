@@ -431,6 +431,10 @@ class IssueDetail(issuepeek.IssuePeek):
 
         'is_member': ezt.boolean(is_member),
         'code_font': ezt.boolean(code_font),
+
+        # TODO(zhangtiff): Change this to /issues/detail when the pages merge.
+        'other_ui_path': 'issues/approval',
+        'local_id': issue_view.local_id,
     }
 
   def GatherHelpData(self, mr, page_data):

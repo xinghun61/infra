@@ -1,4 +1,4 @@
-[define title]Approval Issue [local_id][end]
+[define title]Issue [local_id][end]
 [include "../framework/polymer-header.ezt"]
 
 <script src="[version_base]/static/dist/elements/mr-app/mr-app.min.js" nonce="[nonce]" type="module"></script>
