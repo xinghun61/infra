@@ -123,13 +123,16 @@ func getUncached(ctx context.Context, c fleet.InventoryClient, req *fleet.GetDut
 	var resp *fleet.GetDutInfoResponse
 	start := time.Now().UTC()
 	f := func() error {
-		resp, err := getCached(ctx, c, req)
+		iresp, err := getCached(ctx, c, req)
 		if err != nil {
 			return err
 		}
 		if err := ensureResponseUpdatedSince(resp, start); err != nil {
 			return err
 		}
+
+		// Only update captured variables on success.
+		resp = iresp
 		return nil
 	}
 
