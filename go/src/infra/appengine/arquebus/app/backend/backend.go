@@ -19,6 +19,7 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
+	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/server/router"
 
@@ -59,8 +60,8 @@ func GetAssigner(c context.Context, aid string) (*model.Assigner, error) {
 	return model.GetAssigner(c, aid)
 }
 
-// UpdateAssigners updates all the Assigner entities, based on the configs, and
-// remove the assigners of which configs no longer exist.
+// UpdateAssigners updates all the Assigner entities, based on the configs,
+// and remove the assigners of which configs no longer exist.
 func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) error {
 	// TODO(crbug/849469): validate the input configs. It's possible that
 	// an existing, valid config becomes invalid due to application code
@@ -72,12 +73,34 @@ func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) err
 //
 // TaskQueue handlers
 
+// scheduleAssignerTaskHandler ensures that a given assigner has at least
+// one task scheduled.
 func scheduleAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
-	// TODO(crbug/849469): implement this
-	return nil
+	msg := tqTask.(*ScheduleAssignerTask)
+	return datastore.RunInTransaction(c, func(c context.Context) error {
+		tasks, err := model.EnsureScheduledTasks(c, msg.AssignerId)
+		if err != nil {
+			return err
+		}
+		return scheduleRuns(c, msg.AssignerId, tasks)
+	}, &datastore.TransactionOptions{})
 }
 
 func runAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
 	// TODO(crbug/849469): implement this
 	return nil
+}
+
+func scheduleRuns(c context.Context, assignerID string, tasks []*model.Task) error {
+	tqTasks := make([]*tq.Task, len(tasks))
+	for _, task := range tasks {
+		tqTasks = append(tqTasks, &tq.Task{
+			Payload: &RunAssignerTask{
+				AssignerId: assignerID,
+				TaskId:     task.ID,
+			},
+			ETA: task.ExpectedStart,
+		})
+	}
+	return Dispatcher().AddTask(c, tqTasks...)
 }

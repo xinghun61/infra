@@ -5,4 +5,6 @@ cron:
 
 - description: Schedule Assigner runs
   url: /internal/cron/schedule-assigners
+  # If the schedule of this cron changes, please also update
+  # backend.model.assigner.go:scheduleAssignerCronInterval
   schedule: every 1 minutes

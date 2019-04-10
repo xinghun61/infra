@@ -20,10 +20,16 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/arquebus/app/config"
+)
+
+const (
+	// The interval of schedule-assigners cron job.
+	scheduleAssignerCronInterval = time.Second * 60
 )
 
 // Assigner is a job object that periodically runs to perform issue update
@@ -63,6 +69,10 @@ type Assigner struct {
 	// the assigner.
 	IsDrained bool
 
+	// LatestSchedule is the latest timestamp that the Assigner has been
+	// scheduled for.
+	LatestSchedule time.Time `gae:",noindex"`
+
 	// ConfigRevision specifies the revision of a luci config with which
 	// a given assigner entity was last updated.
 	//
@@ -92,48 +102,49 @@ func (a *Assigner) updateIfChanged(cfg *config.Assigner, rev string) bool {
 	return true
 }
 
-// UpdateAssigners update all the Assigner entities, on presumed valid configs.
+// UpdateAssigners update all the Assigner entities, on presumed valid
+// configs.
 //
 // For removed configs, the Assigner entities are marked as removed.
 // For new configs, new Assigner entities are created.
-// For updated configs, the Assigner entities are updated, based on the updated
-// content.
+// For updated configs, the Assigner entities are updated,
+// based on the updated content.
 func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) error {
-	aes, err := GetAllAssigners(c)
+	assigners, err := GetAllAssigners(c)
 	if err != nil {
 		return err
 	}
-	aeMap := make(map[string]*Assigner, len(aes))
-	for _, ae := range aes {
-		aeMap[ae.ID] = ae
+	aeMap := make(map[string]*Assigner, len(assigners))
+	for _, assigner := range assigners {
+		aeMap[assigner.ID] = assigner
 	}
 
 	merr := errors.MultiError(nil)
 	// update or create new ones.
 	for _, cfg := range cfgs {
-		if ae, exist := aeMap[cfg.Id]; exist {
+		if assigner, exist := aeMap[cfg.Id]; exist {
 			delete(aeMap, cfg.Id)
 			// optimization for common case when no updates are
 			// necessary.
-			if !ae.updateIfChanged(cfg, rev) {
+			if !assigner.updateIfChanged(cfg, rev) {
 				continue
 			}
 		}
 
 		err := datastore.RunInTransaction(c, func(c context.Context) error {
-			ae := Assigner{ID: cfg.Id}
-			if err := datastore.Get(c, &ae); err != nil &&
+			assigner := Assigner{ID: cfg.Id}
+			if err := datastore.Get(c, &assigner); err != nil &&
 				err != datastore.ErrNoSuchEntity {
 				// likely transient flake
 				return err
 			}
 
-			if ae.updateIfChanged(cfg, rev) {
+			if assigner.updateIfChanged(cfg, rev) {
 				logging.Debugf(
 					c, "Update/Insert Assigner %s (rev %s)",
 					cfg.Id, rev,
 				)
-				return datastore.Put(c, &ae)
+				return datastore.Put(c, &assigner)
 			}
 			return nil
 		}, &datastore.TransactionOptions{})
@@ -143,9 +154,9 @@ func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) err
 	}
 
 	// remove ones without configs.
-	for id, ae := range aeMap {
+	for id, assigner := range aeMap {
 		logging.Infof(c, "Delete Assigner %s (rev %s)", id, rev)
-		if err := datastore.Delete(c, ae); err != nil {
+		if err := datastore.Delete(c, assigner); err != nil {
 			merr = append(merr, err)
 		}
 	}
@@ -157,25 +168,85 @@ func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) err
 }
 
 // GetAssigner returns the Assigner entity matching with a given id.
-func GetAssigner(c context.Context, aid string) (*Assigner, error) {
-	ae := &Assigner{ID: aid}
-	if err := datastore.Get(c, ae); err != nil {
+func GetAssigner(c context.Context, assignerID string) (*Assigner, error) {
+	assigner := &Assigner{ID: assignerID}
+	if err := datastore.Get(c, assigner); err != nil {
 		return nil, err
 	}
-	return ae, nil
+	return assigner, nil
 }
 
 // GetAllAssigners returns all the assigner entities.
 func GetAllAssigners(c context.Context) ([]*Assigner, error) {
-	var aes []*Assigner
+	var assigners []*Assigner
 	q := datastore.NewQuery("Assigner")
-	if err := datastore.GetAll(c, q, &aes); err != nil {
+	if err := datastore.GetAll(c, q, &assigners); err != nil {
 		return nil, err
 	}
-	return aes, nil
+	return assigners, nil
 }
 
 // genAssignerKey generates a datastore key for a given assigner object.
-func genAssignerKey(c context.Context, ae *Assigner) *datastore.Key {
-	return datastore.KeyForObj(c, ae)
+func genAssignerKey(c context.Context, assigner *Assigner) *datastore.Key {
+	return datastore.KeyForObj(c, assigner)
+}
+
+// EnsureScheduledTasks ensures that the Assigner has at least one Scheduled
+// Task for upcoming runs.
+//
+// This function must be invoked within a transaction.
+func EnsureScheduledTasks(c context.Context, assignerID string) ([]*Task, error) {
+	if datastore.CurrentTransaction(c) == nil {
+		panic("EnsureScheduledTasks was invoked out of a transaction.")
+	}
+
+	assigner, err := GetAssigner(c, assignerID)
+	if err != nil {
+		return nil, err
+	}
+	now := clock.Now(c).UTC()
+	if assigner.IsDrained || assigner.LatestSchedule.After(now) {
+		// no further schedules need to be created.
+		return nil, nil
+	}
+
+	var tasks []*Task
+	nextETA, scheduleUpTo := findNextETA(now, assigner)
+	for ; !nextETA.After(scheduleUpTo); nextETA = nextETA.Add(assigner.Interval) {
+		assigner.LatestSchedule = nextETA
+		tasks = append(tasks, &Task{
+			AssignerKey:   genAssignerKey(c, assigner),
+			ExpectedStart: nextETA,
+			Status:        TaskStatus_Scheduled,
+		})
+	}
+
+	if err := datastore.Put(c, assigner); err != nil {
+		return nil, err
+	}
+	if err := datastore.Put(c, tasks); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func findNextETA(now time.Time, assigner *Assigner) (nextETA time.Time, scheduleUpTo time.Time) {
+	nextETA = assigner.LatestSchedule.Add(assigner.Interval)
+	if nextETA.Before(now) {
+		// Perhaps, the assigner was drained in the past.
+		//
+		// Note that nextETA should be in the future. Otherwise, the task will
+		// likely be stale and cancelled when it is handed to the Task executor.
+		nextETA = now.Add(assigner.Interval)
+	}
+
+	scheduleUpTo = now.Add(scheduleAssignerCronInterval)
+	if nextETA.After(scheduleUpTo) {
+		// It means that assigner.Interval is longer than the cron interval.
+		// To ensure that there is at least one Task scheduled always,
+		// set the cut-off time with the nextETA.
+		scheduleUpTo = nextETA
+	}
+
+	return nextETA, scheduleUpTo
 }
