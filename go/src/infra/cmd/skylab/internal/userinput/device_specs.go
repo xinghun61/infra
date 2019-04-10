@@ -160,9 +160,9 @@ func isCommented(line string) bool {
 	return commentDetectionPattern.FindString(line) != ""
 }
 
-const commentPrefix = "# "
+const commentPrefix = "// "
 
-var commentDetectionPattern = regexp.MustCompile(`^(\s)*#`)
+var commentDetectionPattern = regexp.MustCompile(`^(\s)*//`)
 
 const header = `
 This is a template for adding / updating common device specs.

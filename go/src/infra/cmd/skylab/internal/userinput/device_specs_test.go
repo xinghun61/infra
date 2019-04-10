@@ -89,14 +89,14 @@ func TestGetDeviceSpecsIterateOnError(t *testing.T) {
 }
 
 func TestCommentLines(t *testing.T) {
-	text := `# first line is already a comment
+	text := `// first line is already a comment
 second line will be commented.
     third line has spaces at the start.
 		fourth has tabs.`
-	want := `# first line is already a comment
-# second line will be commented.
-#     third line has spaces at the start.
-# 		fourth has tabs.`
+	want := `// first line is already a comment
+// second line will be commented.
+//     third line has spaces at the start.
+// 		fourth has tabs.`
 	got := commentLines(text)
 	if want != got {
 		t.Errorf("Incorrect output from commentLines(), -want, +got:\n%s",
@@ -105,11 +105,11 @@ second line will be commented.
 }
 
 func TestDropCommentLines(t *testing.T) {
-	text := `# first line is a comment, will be dropped.
+	text := `// first line is a comment, will be dropped.
 second line will survive.
-  # third line has comment after spaces, will be dropped.
-	# fourth line has comment after tabs, will be dropped.
-#fifth line has no space before comment, will be dropped.`
+  // third line has comment after spaces, will be dropped.
+	// fourth line has comment after tabs, will be dropped.
+//fifth line has no space before comment, will be dropped.`
 	want := "second line will survive."
 	got := dropCommentLines(text)
 	if want != got {
