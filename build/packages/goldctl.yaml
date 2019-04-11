@@ -1,6 +1,5 @@
 package: skia/tools/goldctl/${platform}
 description: client binary for Skia's Gold tool.
-disabled: true  # TODO(kjlubick): Undisable when rolling deps.lock
 platforms:
   - linux-386
   - linux-amd64
