@@ -791,7 +791,12 @@ def _SplitLineIntoRegions(line, uncovered_blocks):
   for block in uncovered_blocks:
     # Change from 1-indexing to 0-indexing
     first = block['first'] - 1
-    last = block['last'] - 1
+    last = block['last']
+    if last < 0:
+      last = len(line)
+    else:
+      last -= 1
+
     # Generate the covered region that precedes this uncovered region.
     preceding_text = line[region_start:first]
     if preceding_text:
