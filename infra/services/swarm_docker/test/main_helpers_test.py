@@ -39,24 +39,28 @@ class TestMainHelpers(unittest.TestCase):
 
   @mock.patch(MAIN_HELPERS + 'get_host_uptime', return_value=70)
   @mock.patch(MAIN_HELPERS + 'reboot_host')
-  def testRebootOnMaxHostUptime(self, _reboot_host, _get_host_uptime):
+  def testRebootOnMaxHostUptime(self, reboot_host, _get_host_uptime):
     self.args.max_host_uptime = 60
     self.assertTrue(main_helpers.reboot_gracefully(self.args, []))
+    reboot_host.assert_called()
 
   @mock.patch(MAIN_HELPERS + 'get_host_uptime', return_value=70)
   @mock.patch(MAIN_HELPERS + 'reboot_host')
-  def testNoRebootWithContainers(self, _reboot_host, _get_host_uptime):
+  def testNoRebootWithContainers(self, reboot_host, _get_host_uptime):
     self.args.max_host_uptime = 60
-    self.assertFalse(main_helpers.reboot_gracefully(self.args, [mock.Mock()]))
+    self.assertTrue(main_helpers.reboot_gracefully(self.args, [mock.Mock()]))
+    reboot_host.assert_not_called()
 
   @mock.patch(MAIN_HELPERS + 'get_host_uptime', return_value=310)
   @mock.patch(MAIN_HELPERS + 'reboot_host')
-  def testForceRebootAfterGracePeriod(self, _reboot_host, _get_host_uptime):
+  def testForceRebootAfterGracePeriod(self, reboot_host, _get_host_uptime):
     self.args.max_host_uptime = 60
     self.assertTrue(main_helpers.reboot_gracefully(self.args, [mock.Mock()]))
+    reboot_host.assert_called()
 
   @mock.patch(MAIN_HELPERS + 'get_host_uptime', return_value=50)
   @mock.patch(MAIN_HELPERS + 'reboot_host')
-  def testNoRebootBeforeMaxUptime(self, _reboot_host, _get_host_uptime):
+  def testNoRebootBeforeMaxUptime(self, reboot_host, _get_host_uptime):
     self.args.max_host_uptime = 60
     self.assertFalse(main_helpers.reboot_gracefully(self.args, [mock.Mock()]))
+    reboot_host.assert_not_called()

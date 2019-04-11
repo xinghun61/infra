@@ -135,7 +135,8 @@ def reboot_gracefully(args, running_containers):
   """Reboot the host and attempt to gracefully stop running containers.
 
   Returns:
-    True if reboot has been started.
+    True if reboot sequence has been started. Callers should not spawn new
+    containers. Actual reboot may not be triggered due to running tasks.
   """
   host_uptime = get_host_uptime()
   time_since_scheduled_reboot = 0
@@ -152,26 +153,26 @@ def reboot_gracefully(args, running_containers):
     time_since_scheduled_reboot = host_uptime - args.max_host_uptime
     logging.debug('Host uptime over max uptime (%d > %d)',
                   host_uptime, args.max_host_uptime)
-  if time_since_scheduled_reboot:
-    if running_containers:
-      if time_since_scheduled_reboot > args.reboot_grace_period:
-        logging.warning(
-            'Drain exceeds grace period of %d min. Rebooting host now '
-            'despite %d running containers.', args.reboot_grace_period,
-            len(running_containers))
-        reboot_host(args.canary)
-        return True
-      else:
-        logging.debug(
-            'Still %d containers running. Shutting them down first.',
-            len(running_containers))
-        for c in running_containers:
-          c.kill_swarming_bot()
-    else:
-      logging.debug('No running containers. Rebooting host now.')
+  if not time_since_scheduled_reboot:
+    return False
+
+  if running_containers:
+    if time_since_scheduled_reboot > args.reboot_grace_period:
+      logging.warning(
+          'Drain exceeds grace period of %d min. Rebooting host now '
+          'despite %d running containers.', args.reboot_grace_period,
+          len(running_containers))
       reboot_host(args.canary)
-      return True
-  return False
+    else:
+      logging.debug(
+          'Still %d containers running. Shutting them down first.',
+          len(running_containers))
+      for c in running_containers:
+        c.kill_swarming_bot()
+  else:
+    logging.debug('No running containers. Rebooting host now.')
+    reboot_host(args.canary)
+  return True
 
 
 def launch_containers(
