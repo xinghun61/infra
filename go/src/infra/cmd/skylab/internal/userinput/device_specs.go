@@ -13,7 +13,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
-// GetDeviceSpecs interactively obtains inventory.CommonDeviceSpecs from the
+// GetDeviceSpecs interactively obtains inventory.DeviceUnderTest from the
 // user.
 //
 // This function provides the user with initial specs, some help text and an
@@ -29,7 +29,7 @@ import (
 //
 // This function returns upon successful parsing of the user input, or upon
 // user initiated abort.
-func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string, promptFunc PromptFunc, validateFunc SpecsValidationFunc) (*inventory.CommonDeviceSpecs, error) {
+func GetDeviceSpecs(initial *inventory.DeviceUnderTest, helpText string, promptFunc PromptFunc, validateFunc SpecsValidationFunc) (*inventory.DeviceUnderTest, error) {
 	s := deviceSpecsGetter{
 		inputFunc: func(initial []byte) ([]byte, error) {
 			return textEditorInput(initial, "dutspecs.*.js")
@@ -55,7 +55,7 @@ type PromptFunc func(string) bool
 // SpecsValidationFunc checks provided device specs for error.
 //
 // This function returns nil if provided specs are valid.
-type SpecsValidationFunc func(*inventory.CommonDeviceSpecs) error
+type SpecsValidationFunc func(*inventory.DeviceUnderTest) error
 
 // deviceSpecsGetter provides methods to obtain user input via an interactive
 // user session.
@@ -65,7 +65,7 @@ type deviceSpecsGetter struct {
 	validateFunc SpecsValidationFunc
 }
 
-func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText string) (*inventory.CommonDeviceSpecs, error) {
+func (s *deviceSpecsGetter) Get(initial *inventory.DeviceUnderTest, helpText string) (*inventory.DeviceUnderTest, error) {
 	ui, err := serialize(initial)
 	if err != nil {
 		return nil, errors.Annotate(err, "get device specs").Err()
@@ -91,7 +91,7 @@ func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText s
 	}
 }
 
-func (s *deviceSpecsGetter) parseAndValidate(t string) (*inventory.CommonDeviceSpecs, error) {
+func (s *deviceSpecsGetter) parseAndValidate(t string) (*inventory.DeviceUnderTest, error) {
 	d, err := parseUserInput(t)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func fullText(userText string, helptext string) (string, error) {
 }
 
 // parseUserInput parses the text obtained from the user.
-func parseUserInput(text string) (*inventory.CommonDeviceSpecs, error) {
+func parseUserInput(text string) (*inventory.DeviceUnderTest, error) {
 	text = dropCommentLines(text)
 	dut, err := deserialize(text)
 	if err != nil {
@@ -140,7 +140,7 @@ func getExample() (string, error) {
 	return t, nil
 }
 
-func serialize(dut *inventory.CommonDeviceSpecs) (string, error) {
+func serialize(dut *inventory.DeviceUnderTest) (string, error) {
 	m := jsonpb.Marshaler{
 		EnumsAsInts: false,
 		Indent:      "  ",
@@ -150,8 +150,8 @@ func serialize(dut *inventory.CommonDeviceSpecs) (string, error) {
 	return w.String(), err
 }
 
-func deserialize(text string) (*inventory.CommonDeviceSpecs, error) {
-	var dut inventory.CommonDeviceSpecs
+func deserialize(text string) (*inventory.DeviceUnderTest, error) {
+	var dut inventory.DeviceUnderTest
 	err := jsonpb.Unmarshal(strings.NewReader(text), &dut)
 	return &dut, err
 }
@@ -199,97 +199,99 @@ The actual values included are examples only and may not be sensible defaults
 for your device.`
 
 const example = `{
-	"attributes": [
-		{
-			"key": "HWID",
-			"value": "BLAZE E2A-E3G-B5D-A37"
-		},
-		{
-			"key": "powerunit_hostname",
-			"value": "chromeos4-row7_8-rack7-rpm2"
-		},
-		{
-			"key": "powerunit_outlet",
-			"value": ".A11"
-		},
-		{
-			"key": "serial_number",
-			"value": "5CD45009QJ"
-		},
-		{
-			"key": "stashed_labels",
-			"value": "board_freq_mem:nyan_blaze_2.1GHz_4GB,sku:blaze_cpu_nyan_4Gb"
-		}
-	],
-	"environment": "ENVIRONMENT_STAGING",
-	"hostname": "chromeos4-row7-rack7-host11",
-	"id": "140e9f86-ffef-49ea-bb07-40494e0b0481",
-	"labels": {
-		"arc": false,
-		"board": "nyan_blaze",
-		"capabilities": {
-			"atrus": false,
-			"bluetooth": true,
-			"carrier": "CARRIER_INVALID",
-			"detachablebase": false,
-			"flashrom": false,
-			"gpuFamily": "tegra",
-			"graphics": "gles",
-			"hotwording": false,
-			"internalDisplay": true,
-			"lucidsleep": false,
-			"modem": "",
-			"power": "battery",
-			"storage": "mmc",
-			"telephony": "",
-			"webcam": true,
-			"touchpad": true,
-			"videoAcceleration": [
-				"VIDEO_ACCELERATION_H264",
-				"VIDEO_ACCELERATION_ENC_H264",
-				"VIDEO_ACCELERATION_VP8",
-				"VIDEO_ACCELERATION_ENC_VP8"
-			]
-		},
-		"cr50Phase": "CR50_PHASE_INVALID",
-		"criticalPools": [
-			"DUT_POOL_SUITES",
-			"DUT_POOL_SUITES"
+	"common": {
+		"attributes": [
+			{
+				"key": "HWID",
+				"value": "BLAZE E2A-E3G-B5D-A37"
+			},
+			{
+				"key": "powerunit_hostname",
+				"value": "chromeos4-row7_8-rack7-rpm2"
+			},
+			{
+				"key": "powerunit_outlet",
+				"value": ".A11"
+			},
+			{
+				"key": "serial_number",
+				"value": "5CD45009QJ"
+			},
+			{
+				"key": "stashed_labels",
+				"value": "board_freq_mem:nyan_blaze_2.1GHz_4GB,sku:blaze_cpu_nyan_4Gb"
+			}
 		],
-		"ctsAbi": [
-			"CTS_ABI_ARM"
-		],
-		"ecType": "EC_TYPE_CHROME_OS",
-		"model": "nyan_blaze",
-		"osType": "OS_TYPE_CROS",
-		"peripherals": {
-			"audioBoard": false,
-			"audioBox": false,
-			"audioLoopbackDongle": true,
-			"chameleon": false,
-			"chameleonType": "CHAMELEON_TYPE_INVALID",
-			"conductive": false,
-			"huddly": false,
-			"mimo": false,
-			"servo": true,
-			"stylus": false,
-			"wificell": false
+		"environment": "ENVIRONMENT_STAGING",
+		"hostname": "chromeos4-row7-rack7-host11",
+		"id": "140e9f86-ffef-49ea-bb07-40494e0b0481",
+		"labels": {
+			"arc": false,
+			"board": "nyan_blaze",
+			"capabilities": {
+				"atrus": false,
+				"bluetooth": true,
+				"carrier": "CARRIER_INVALID",
+				"detachablebase": false,
+				"flashrom": false,
+				"gpuFamily": "tegra",
+				"graphics": "gles",
+				"hotwording": false,
+				"internalDisplay": true,
+				"lucidsleep": false,
+				"modem": "",
+				"power": "battery",
+				"storage": "mmc",
+				"telephony": "",
+				"webcam": true,
+				"touchpad": true,
+				"videoAcceleration": [
+					"VIDEO_ACCELERATION_H264",
+					"VIDEO_ACCELERATION_ENC_H264",
+					"VIDEO_ACCELERATION_VP8",
+					"VIDEO_ACCELERATION_ENC_VP8"
+				]
+			},
+			"cr50Phase": "CR50_PHASE_INVALID",
+			"criticalPools": [
+				"DUT_POOL_SUITES",
+				"DUT_POOL_SUITES"
+			],
+			"ctsAbi": [
+				"CTS_ABI_ARM"
+			],
+			"ecType": "EC_TYPE_CHROME_OS",
+			"model": "nyan_blaze",
+			"osType": "OS_TYPE_CROS",
+			"peripherals": {
+				"audioBoard": false,
+				"audioBox": false,
+				"audioLoopbackDongle": true,
+				"chameleon": false,
+				"chameleonType": "CHAMELEON_TYPE_INVALID",
+				"conductive": false,
+				"huddly": false,
+				"mimo": false,
+				"servo": true,
+				"stylus": false,
+				"wificell": false
+			},
+			"phase": "PHASE_MP",
+			"platform": "nyan_blaze",
+			"referenceDesign": "",
+			"testCoverageHints": {
+				"chaosDut": false,
+				"chromesign": false,
+				"hangoutApp": false,
+				"meetApp": false,
+				"recoveryTest": false,
+				"testAudiojack": false,
+				"testHdmiaudio": false,
+				"testUsbaudio": false,
+				"testUsbprinting": false,
+				"usbDetect": false
+			}
 		},
-		"phase": "PHASE_MP",
-		"platform": "nyan_blaze",
-		"referenceDesign": "",
-		"testCoverageHints": {
-			"chaosDut": false,
-			"chromesign": false,
-			"hangoutApp": false,
-			"meetApp": false,
-			"recoveryTest": false,
-			"testAudiojack": false,
-			"testHdmiaudio": false,
-			"testUsbaudio": false,
-			"testUsbprinting": false,
-			"usbDetect": false
-		}
-	},
-	"serialNumber": "5CD45009QJ"
+		"serialNumber": "5CD45009QJ"
+	}
 }`

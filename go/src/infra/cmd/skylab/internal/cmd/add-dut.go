@@ -104,9 +104,7 @@ func (c *addDutRun) innerRun(a subcommands.Application, args []string, env subco
 	if err != nil {
 		return err
 	}
-	// TODO(crbug/950553) Will be ignored by crosskylabadmin, but must be included.
-	v := "IGNORED"
-	specs.Id = &v
+	setIgnoredID(specs)
 
 	deploymentID, err := c.triggerDeploy(ctx, ic, specs)
 	if err != nil {
@@ -134,32 +132,34 @@ const (
 	an attribute.`
 
 	addDUTInitialSpecs = `{
-	"attributes": [
-		{
-			"key": servo_host",
-			"value": "[PLACEHOLDER] Unqualified hostname of the servohost",
-		},
-	],
-	"environment": "ENVIRONMENT_PROD",
-	"hostname": "[PLACEHOLDER] Required: unqualified hostname of the host",
-	"id": "[IGNORED]. ID is auto-generated. This field will be ignored (crbug.com/950553)",
-	"labels": {
-		"board": "[PLACEHOLDER] board of the DUT (roughly identifies the portage overlay the OS images come from)",
-		"criticalPools": [
-		  "DUT_POOL_SUITES",
+	"common": {
+		"attributes": [
+			{
+				"key": "servo_host",
+				"value": "[PLACEHOLDER] Unqualified hostname of the servohost"
+			}
 		],
-		"model": "[PLACEHOLDER] model of the DUT (roughly identifies the DUT hardware variant)",
-	},
-	"serialNumber": "[PLACEHOLDER] DUT serial number",
+		"environment": "ENVIRONMENT_PROD",
+		"hostname": "[PLACEHOLDER] Required: unqualified hostname of the host",
+		"id": "[IGNORED]. Do not edit (crbug.com/950553). ID is auto-generated.",
+		"labels": {
+			"board": "[PLACEHOLDER] board of the DUT (roughly identifies the portage overlay the OS images come from)",
+			"criticalPools": [
+				"DUT_POOL_SUITES"
+			],
+			"model": "[PLACEHOLDER] model of the DUT (roughly identifies the DUT hardware variant)"
+		},
+		"serialNumber": "[PLACEHOLDER] DUT serial number"
+  }
 }`
 	placeholderTag = "[PLACEHOLDER]"
 )
 
-// getSpecs parses the CommonDeviceSpecs from specsFile, or from the user.
+// getSpecs parses the DeviceUnderTest from specsFile, or from the user.
 //
 // If c.specsFile is provided, it is parsed.
 // If c.specsFile is "", getSpecs() obtains the specs interactively from the user.
-func (c *addDutRun) getSpecs(a subcommands.Application) (*inventory.CommonDeviceSpecs, error) {
+func (c *addDutRun) getSpecs(a subcommands.Application) (*inventory.DeviceUnderTest, error) {
 	if c.newSpecsFile != "" {
 		return parseSpecsFile(c.newSpecsFile)
 	}
@@ -174,8 +174,8 @@ func (c *addDutRun) getSpecs(a subcommands.Application) (*inventory.CommonDevice
 // triggerDeploy kicks off a DeployDut attempt via crosskylabadmin.
 //
 // This function returns the deployment task ID for the attempt.
-func (c *addDutRun) triggerDeploy(ctx context.Context, ic fleet.InventoryClient, specs *inventory.CommonDeviceSpecs) (string, error) {
-	serialized, err := proto.Marshal(specs)
+func (c *addDutRun) triggerDeploy(ctx context.Context, ic fleet.InventoryClient, specs *inventory.DeviceUnderTest) (string, error) {
+	serialized, err := proto.Marshal(specs.GetCommon())
 	if err != nil {
 		return "", errors.Annotate(err, "trigger deploy").Err()
 	}
@@ -204,20 +204,29 @@ func (c *addDutRun) stageImageToUsb() bool {
 	return !c.skipImageDownload
 }
 
-func ensureNoPlaceholderValues(specs *inventory.CommonDeviceSpecs) error {
+func ensureNoPlaceholderValues(specs *inventory.DeviceUnderTest) error {
 	if strings.Contains(proto.MarshalTextString(specs), placeholderTag) {
 		return errors.Reason(fmt.Sprintf("%s values not updated", placeholderTag)).Err()
 	}
 	return nil
 }
 
-// mustParseSpec parses the given JSON-encoded inventory.CommonDeviceSpec
+func setIgnoredID(specs *inventory.DeviceUnderTest) {
+	// TODO(crbug/950553) Will be ignored by crosskylabadmin, but must be included.
+	v := "IGNORED"
+	if specs.Common == nil {
+		specs.Common = &inventory.CommonDeviceSpecs{}
+	}
+	specs.Common.Id = &v
+}
+
+// mustParseSpec parses the given JSON-encoded inventory.DeviceUnderTest
 //
 // This function panic()s on errors.
-func mustParseSpec(text string) *inventory.CommonDeviceSpecs {
-	var spec inventory.CommonDeviceSpecs
+func mustParseSpec(text string) *inventory.DeviceUnderTest {
+	var spec inventory.DeviceUnderTest
 	if err := jsonpb.Unmarshal(strings.NewReader(text), &spec); err != nil {
-		panic("internal error - failed to parse spec")
+		panic(fmt.Sprintf("internal error - failed to parse spec: %s", err))
 	}
 	return &spec
 }

@@ -161,11 +161,11 @@ func tailDeployment(ctx context.Context, w io.Writer, ic fleet.InventoryClient, 
 
 const updateDUTHelpText = "Remove the 'servo_port' attribute to auto-generate a valid servo_port."
 
-// getNewSpecs parses the CommonDeviceSpecs from specsFile, or from the user.
+// getNewSpecs parses the DeviceUnderTest from specsFile, or from the user.
 //
 // If c.newSpecsFile is provided, it is parsed.
 // If c.newSpecsFile is "", getNewSpecs obtains the specs interactively from the user.
-func (c *updateDutRun) getNewSpecs(a subcommands.Application, oldSpecs *inventory.CommonDeviceSpecs) (*inventory.CommonDeviceSpecs, error) {
+func (c *updateDutRun) getNewSpecs(a subcommands.Application, oldSpecs *inventory.DeviceUnderTest) (*inventory.DeviceUnderTest, error) {
 	if c.newSpecsFile != "" {
 		return parseSpecsFile(c.newSpecsFile)
 	}
@@ -173,12 +173,12 @@ func (c *updateDutRun) getNewSpecs(a subcommands.Application, oldSpecs *inventor
 }
 
 // parseSpecsFile parses device specs from the user provided file.
-func parseSpecsFile(specsFile string) (*inventory.CommonDeviceSpecs, error) {
+func parseSpecsFile(specsFile string) (*inventory.DeviceUnderTest, error) {
 	text, err := ioutil.ReadFile(specsFile)
 	if err != nil {
 		return nil, errors.Annotate(err, "parse specs file").Err()
 	}
-	var specs inventory.CommonDeviceSpecs
+	var specs inventory.DeviceUnderTest
 	err = jsonpb.Unmarshal(strings.NewReader(string(text)), &specs)
 	return &specs, err
 }
@@ -186,12 +186,12 @@ func parseSpecsFile(specsFile string) (*inventory.CommonDeviceSpecs, error) {
 // triggerRedeploy kicks off a RedeployDut attempt via crosskylabadmin.
 //
 // This function returns the deployment task ID for the attempt.
-func (c *updateDutRun) triggerRedeploy(ctx context.Context, ic fleet.InventoryClient, old, updated *inventory.CommonDeviceSpecs) (string, error) {
-	serializedOld, err := proto.Marshal(old)
+func (c *updateDutRun) triggerRedeploy(ctx context.Context, ic fleet.InventoryClient, old, updated *inventory.DeviceUnderTest) (string, error) {
+	serializedOld, err := proto.Marshal(old.GetCommon())
 	if err != nil {
 		return "", errors.Annotate(err, "trigger redeploy").Err()
 	}
-	serializedUpdated, err := proto.Marshal(updated)
+	serializedUpdated, err := proto.Marshal(updated.GetCommon())
 	if err != nil {
 		return "", errors.Annotate(err, "trigger redeploy").Err()
 	}
@@ -220,12 +220,12 @@ func (c *updateDutRun) stageImageToUsb() bool {
 
 // getOldDeviceSpecs gets the current device specs for hostname from
 // crosskylabadmin.
-func getOldDeviceSpecs(ctx context.Context, ic fleet.InventoryClient, hostname string) (*inventory.CommonDeviceSpecs, error) {
+func getOldDeviceSpecs(ctx context.Context, ic fleet.InventoryClient, hostname string) (*inventory.DeviceUnderTest, error) {
 	oldDut, err := getDutInfo(ctx, ic, hostname)
 	if err != nil {
 		return nil, errors.Annotate(err, "get old specs").Err()
 	}
-	return oldDut.GetCommon(), nil
+	return oldDut, nil
 }
 
 func printDeploymentStatus(w io.Writer, deploymentID string, ds *fleet.GetDeploymentStatusResponse) (err error) {

@@ -20,20 +20,24 @@ func TestGetDeviceSpecs(t *testing.T) {
 		inputFunc: newRegexpReplacer(regexp.MustCompile(`some\-hostname`), "this-other-hostname"),
 	}
 
-	initial := &inventory.CommonDeviceSpecs{
-		Id:       stringPtr("some-id"),
-		Hostname: stringPtr("some-hostname"),
+	initial := inventory.DeviceUnderTest{
+		Common: &inventory.CommonDeviceSpecs{
+			Id:       stringPtr("some-id"),
+			Hostname: stringPtr("some-hostname"),
+		},
 	}
-	got, err := s.Get(initial, "")
+	got, err := s.Get(&initial, "")
 	if err != nil {
 		t.Errorf("error in GetDeviceSpecs(): %s", err)
 	}
 
-	want := &inventory.CommonDeviceSpecs{
-		Id:       stringPtr("some-id"),
-		Hostname: stringPtr("this-other-hostname"),
+	want := inventory.DeviceUnderTest{
+		Common: &inventory.CommonDeviceSpecs{
+			Id:       stringPtr("some-id"),
+			Hostname: stringPtr("this-other-hostname"),
+		},
 	}
-	if !proto.Equal(want, got) {
+	if !proto.Equal(&want, got) {
 		t.Errorf("incorrect response from GetDeviceSpecs, -want, +got:\n%s", pretty.Compare(want, got))
 	}
 }
@@ -44,9 +48,11 @@ func TestGetDeviceSpecsAbortOnError(t *testing.T) {
 		inputFunc:  newRegexpReplacer(regexp.MustCompile(`hostname`), "not_a_field"),
 		promptFunc: p.Handle,
 	}
-	initial := inventory.CommonDeviceSpecs{
-		Id:       stringPtr("myid"),
-		Hostname: stringPtr("myhost"),
+	initial := inventory.DeviceUnderTest{
+		Common: &inventory.CommonDeviceSpecs{
+			Id:       stringPtr("myid"),
+			Hostname: stringPtr("myhost"),
+		},
 	}
 	_, err := s.Get(&initial, "")
 	if err == nil {
@@ -62,11 +68,13 @@ func TestGetDeviceSpecsSpecsValidation(t *testing.T) {
 	s := deviceSpecsGetter{
 		inputFunc:    func(b []byte) ([]byte, error) { return b, nil },
 		promptFunc:   p.Handle,
-		validateFunc: func(*inventory.CommonDeviceSpecs) error { return errors.Reason("invalid").Err() },
+		validateFunc: func(*inventory.DeviceUnderTest) error { return errors.Reason("invalid").Err() },
 	}
-	initial := inventory.CommonDeviceSpecs{
-		Id:       stringPtr("myid"),
-		Hostname: stringPtr("myhost"),
+	initial := inventory.DeviceUnderTest{
+		Common: &inventory.CommonDeviceSpecs{
+			Id:       stringPtr("myid"),
+			Hostname: stringPtr("myhost"),
+		},
 	}
 	_, err := s.Get(&initial, "")
 	if err == nil {
@@ -88,9 +96,11 @@ func TestGetDeviceSpecsIterateOnError(t *testing.T) {
 		}),
 		promptFunc: p.Handle,
 	}
-	initial := inventory.CommonDeviceSpecs{
-		Id:       stringPtr("myid"),
-		Hostname: stringPtr("myhost"),
+	initial := inventory.DeviceUnderTest{
+		Common: &inventory.CommonDeviceSpecs{
+			Id:       stringPtr("myid"),
+			Hostname: stringPtr("myhost"),
+		},
 	}
 
 	got, err := s.Get(&initial, "")
@@ -100,11 +110,13 @@ func TestGetDeviceSpecsIterateOnError(t *testing.T) {
 	if !p.Called {
 		t.Errorf("user not prompted for retry on input error")
 	}
-	want := &inventory.CommonDeviceSpecs{
-		Id:       stringPtr("myid"),
-		Hostname: stringPtr("yourhost"),
+	want := inventory.DeviceUnderTest{
+		Common: &inventory.CommonDeviceSpecs{
+			Id:       stringPtr("myid"),
+			Hostname: stringPtr("yourhost"),
+		},
 	}
-	if !proto.Equal(want, got) {
+	if !proto.Equal(&want, got) {
 		t.Errorf("incorrect response from GetDeviceSpecs, -want, +got:\n%s", pretty.Compare(want, got))
 	}
 }
