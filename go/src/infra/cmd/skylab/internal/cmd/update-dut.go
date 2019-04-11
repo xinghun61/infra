@@ -169,7 +169,7 @@ func (c *updateDutRun) getNewSpecs(a subcommands.Application, oldSpecs *inventor
 	if c.newSpecsFile != "" {
 		return parseSpecsFile(c.newSpecsFile)
 	}
-	return userinput.GetDeviceSpecs(oldSpecs, updateDUTHelpText, userinput.CLIPrompt(a.GetOut(), os.Stdin, true))
+	return userinput.GetDeviceSpecs(oldSpecs, updateDUTHelpText, userinput.CLIPrompt(a.GetOut(), os.Stdin, true), nil)
 }
 
 // parseSpecsFile parses device specs from the user provided file.

@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/kylelemons/godebug/pretty"
+	"go.chromium.org/luci/common/errors"
 )
 
 func TestGetDeviceSpecs(t *testing.T) {
@@ -53,6 +54,26 @@ func TestGetDeviceSpecsAbortOnError(t *testing.T) {
 	}
 	if !p.Called {
 		t.Errorf("user not prompted for retry on input error")
+	}
+}
+
+func TestGetDeviceSpecsSpecsValidation(t *testing.T) {
+	p := promptHandler{response: false}
+	s := deviceSpecsGetter{
+		inputFunc:    func(b []byte) ([]byte, error) { return b, nil },
+		promptFunc:   p.Handle,
+		validateFunc: func(*inventory.CommonDeviceSpecs) error { return errors.Reason("invalid").Err() },
+	}
+	initial := inventory.CommonDeviceSpecs{
+		Id:       stringPtr("myid"),
+		Hostname: stringPtr("myhost"),
+	}
+	_, err := s.Get(&initial, "")
+	if err == nil {
+		t.Errorf("Get() succeeded despite validation error")
+	}
+	if !p.Called {
+		t.Errorf("user not prompted for retry on validation error")
 	}
 }
 

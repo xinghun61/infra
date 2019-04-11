@@ -164,13 +164,9 @@ func (c *addDutRun) getSpecs(a subcommands.Application) (*inventory.CommonDevice
 		return parseSpecsFile(c.newSpecsFile)
 	}
 	template := mustParseSpec(addDUTInitialSpecs)
-	specs, err := userinput.GetDeviceSpecs(template, addDUTHelpText, userinput.CLIPrompt(a.GetOut(), os.Stdin, true))
+	specs, err := userinput.GetDeviceSpecs(template, addDUTHelpText, userinput.CLIPrompt(a.GetOut(), os.Stdin, true), ensureNoPlaceholderValues)
 	if err != nil {
 		return nil, err
-	}
-	// TODO(pprabhu): Push this check inside userinput.GetDeviceSpecs so that users can iterate on the input.
-	if hasPlaceholderValues(specs) {
-		return nil, errors.Reason(fmt.Sprintf("%s values not updated", placeholderTag)).Err()
 	}
 	return specs, nil
 }
@@ -208,8 +204,11 @@ func (c *addDutRun) stageImageToUsb() bool {
 	return !c.skipImageDownload
 }
 
-func hasPlaceholderValues(specs *inventory.CommonDeviceSpecs) bool {
-	return strings.Contains(proto.MarshalTextString(specs), placeholderTag)
+func ensureNoPlaceholderValues(specs *inventory.CommonDeviceSpecs) error {
+	if strings.Contains(proto.MarshalTextString(specs), placeholderTag) {
+		return errors.Reason(fmt.Sprintf("%s values not updated", placeholderTag)).Err()
+	}
+	return nil
 }
 
 // mustParseSpec parses the given JSON-encoded inventory.CommonDeviceSpec

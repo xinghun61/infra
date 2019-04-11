@@ -22,14 +22,20 @@ import (
 // promptFunc is used to prompt the user on parsing errors, to give them a
 // choice to continue or abort the input session.
 //
+// Callers may pass a non-nil validateFunc to validate the user's updated
+// specs. validateFunc is called within the userinput iteration loop described
+// above, and errors are reported back to error in the same way as parsing
+// errors.
+//
 // This function returns upon successful parsing of the user input, or upon
 // user initiated abort.
-func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string, promptFunc PromptFunc) (*inventory.CommonDeviceSpecs, error) {
+func GetDeviceSpecs(initial *inventory.CommonDeviceSpecs, helpText string, promptFunc PromptFunc, validateFunc SpecsValidationFunc) (*inventory.CommonDeviceSpecs, error) {
 	s := deviceSpecsGetter{
 		inputFunc: func(initial []byte) ([]byte, error) {
 			return textEditorInput(initial, "dutspecs.*.js")
 		},
-		promptFunc: promptFunc,
+		promptFunc:   promptFunc,
+		validateFunc: validateFunc,
 	}
 	return s.Get(initial, helpText)
 }
@@ -46,11 +52,17 @@ type inputFunc func([]byte) ([]byte, error)
 // string and then obtain a yes/no answer from the user.
 type PromptFunc func(string) bool
 
+// SpecsValidationFunc checks provided device specs for error.
+//
+// This function returns nil if provided specs are valid.
+type SpecsValidationFunc func(*inventory.CommonDeviceSpecs) error
+
 // deviceSpecsGetter provides methods to obtain user input via an interactive
 // user session.
 type deviceSpecsGetter struct {
-	inputFunc  inputFunc
-	promptFunc PromptFunc
+	inputFunc    inputFunc
+	promptFunc   PromptFunc
+	validateFunc SpecsValidationFunc
 }
 
 func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText string) (*inventory.CommonDeviceSpecs, error) {
@@ -68,7 +80,7 @@ func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText s
 			return nil, errors.Annotate(err, "get device specs").Err()
 		}
 		t = string(i)
-		d, err := parseUserInput(t)
+		d, err := s.parseAndValidate(t)
 		if err != nil {
 			if !s.promptFunc(err.Error()) {
 				return nil, err
@@ -77,6 +89,17 @@ func (s *deviceSpecsGetter) Get(initial *inventory.CommonDeviceSpecs, helpText s
 		}
 		return d, nil
 	}
+}
+
+func (s *deviceSpecsGetter) parseAndValidate(t string) (*inventory.CommonDeviceSpecs, error) {
+	d, err := parseUserInput(t)
+	if err != nil {
+		return nil, err
+	}
+	if s.validateFunc != nil {
+		err = s.validateFunc(d)
+	}
+	return d, err
 }
 
 // fullText returns the text to provide for user input.
