@@ -87,6 +87,11 @@ class PackageDef(collections.namedtuple(
     return os.path.splitext(os.path.basename(self.path))[0]
 
   @property
+  def disabled(self):
+    """Returns True if the package should be excluded from the build."""
+    return self.pkg_def.get('disabled', False)
+
+  @property
   def uses_python_env(self):
     """Returns True if 'uses_python_env' in the YAML file is set."""
     return bool(self.pkg_def.get('uses_python_env'))
@@ -119,7 +124,7 @@ class PackageDef(collections.namedtuple(
             self.path,
             'Only "CGO_ENABLED" is supported in "go_build_environ" currently')
 
-  def should_build(self, builder):
+  def should_visit(self, builder):
     """Returns True if package should be built in the current environment.
 
     Takes into account 'builders' and 'platforms' properties of the package
@@ -570,6 +575,9 @@ def build_go_code(go_workspace, pkg_defs):
   # environment. Until then, group 'go build' calls by the environment, to
   # avoid rebuilding common packages all the time.
 
+  # Exclude all disabled packages.
+  pkg_defs = [p for p in pkg_defs if not p.disabled]
+
   # Whatever GOOS, GOARCH, etc were passed from outside. They are set when
   # cross-compiling.
   default_environ = GoEnviron.from_environ()
@@ -643,11 +651,8 @@ def enumerate_packages(package_def_dir, package_def_files):
   """
   paths = []
   if not package_def_files:
-    # All existing non-disabled packages by default.
-    paths = [
-      p for p in glob.glob(os.path.join(package_def_dir, '*.yaml'))
-      if not p.endswith('disabled.yaml')
-    ]
+    # All existing packages by default.
+    paths = glob.glob(os.path.join(package_def_dir, '*.yaml'))
   else:
     # Otherwise pick only the ones in 'package_def_files' list.
     for name in package_def_files:
@@ -1031,7 +1036,7 @@ def run(
   except PackageDefException as exc:
     print >> sys.stderr, exc
     return 1
-  packages_to_build = [p for p in defs if p.should_build(builder)]
+  packages_to_visit = [p for p in defs if p.should_visit(builder)]
 
   print_title('Overview')
   if upload:
@@ -1041,9 +1046,9 @@ def run(
     print 'Package definition files to process on %s:' % builder
   else:
     print 'Package definition files to process:'
-  for pkg_def in packages_to_build:
+  for pkg_def in packages_to_visit:
     print '  %s' % pkg_def.name
-  if not packages_to_build:
+  if not packages_to_visit:
     print '  <none>'
   print
   print 'Variables to pass to CIPD:'
@@ -1055,7 +1060,7 @@ def run(
     print 'Tags to attach to uploaded packages:'
     for tag in sorted(tags):
       print '  %s' % tag
-  if not packages_to_build:
+  if not packages_to_visit:
     print
     print 'Nothing to do.'
     return 0
@@ -1067,7 +1072,7 @@ def run(
     if not os.path.exists(package_out_dir):
       os.makedirs(package_out_dir)
     cleaned = False
-    for pkg_def in packages_to_build:
+    for pkg_def in packages_to_visit:
       out_file = get_build_out_file(package_out_dir, pkg_def)
       if os.path.exists(out_file):
         print 'Removing stale %s' % os.path.basename(out_file)
@@ -1094,12 +1099,15 @@ def run(
 
   # Build the world.
   if build:
-    build_callback(packages_to_build)
+    build_callback(packages_to_visit)
 
   # Package it.
   failed = []
   succeeded = []
-  for pkg_def in packages_to_build:
+  for pkg_def in packages_to_visit:
+    if pkg_def.disabled:
+      print_title('Skipping building disabled %s' % pkg_def.name)
+      continue
     out_file = get_build_out_file(package_out_dir, pkg_def)
     try:
       info = None

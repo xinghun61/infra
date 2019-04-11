@@ -26,6 +26,9 @@ package: infra/example/package/${platform}
 # Human readable description of the package.
 description: Example package
 
+# Set to true to exclude the package from the build.
+disabled: false
+
 # Optional filter with a list of CIPD platform suffixes for which to build this
 # package. If not specified, will be built only for the host platform. Note that
 # this is a filter: whenever build.py script is invoked with some GOOS and
