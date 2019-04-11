@@ -3,9 +3,13 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {standardTime, standardTimeShort,
+import {FORMATTER, SHORT_FORMATTER, standardTime, standardTimeShort,
   relativeTime} from './chops-timestamp-helpers.js';
 import sinon from 'sinon';
+
+// The formatted date strings differ based on time zone and browser, so we can't
+// use static strings for testing. We can't stub out the format method because
+// it's native code and can't be modified. So just use the FORMATTER object.
 
 let clock;
 
@@ -23,19 +27,18 @@ suite('chops-timestamp-helpers', () => {
   });
 
   test('standardTime', () => {
-    assert.equal(standardTime(new Date(), 'en-US', 'UTC'),
-      `Thu, Jan 1, 1970, 12:00 AM UTC (just now)`);
+    let date = new Date();
+    assert.equal(standardTime(date), `${FORMATTER.format(date)} (just now)`);
 
-    assert.equal(standardTime(new Date(1548808276 * 1000), 'en-US', 'UTC'),
-      `Wed, Jan 30, 2019, 12:31 AM UTC`);
+    date = new Date(1548808276 * 1000);
+    assert.equal(standardTime(date), FORMATTER.format(date));
   });
 
   test('standardTimeShort', () => {
-    assert.equal(standardTimeShort(new Date(),
-      'en-US', 'UTC'), `just now`);
+    assert.equal(standardTimeShort(new Date()), `just now`);
 
-    assert.equal(standardTimeShort(new Date(1548808276 * 1000),
-      'en-US', 'UTC'), `Jan 30, 2019`);
+    const date = new Date(1548808276 * 1000);
+    assert.equal(standardTimeShort(date), SHORT_FORMATTER.format(date));
   });
 
   test('relativeTime future', () => {

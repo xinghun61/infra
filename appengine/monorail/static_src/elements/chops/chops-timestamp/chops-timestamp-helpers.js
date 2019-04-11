@@ -2,39 +2,45 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-export const DEFAULT_DATE_LOCALE = 'en-US';
+const DEFAULT_DATE_LOCALE = 'en-US';
 
-export function standardTime(date, locale, timezone) {
+// Creating the datetime formatter costs ~1.5 ms, so when formatting
+// multiple timestamps, it's more performant to reuse the formatter object.
+// Export FORMATTER and SHORT_FORMATTER for testing. The return value differs
+// based on time zone and browser, so we can't use static strings for testing.
+// We can't stub out the method because it's native code and can't be modified.
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DateTimeFormat/format#Avoid_comparing_formatted_date_values_to_static_values
+export const FORMATTER = new Intl.DateTimeFormat(DEFAULT_DATE_LOCALE, {
+  weekday: 'short',
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZoneName: 'short',
+});
+
+export const SHORT_FORMATTER = new Intl.DateTimeFormat(DEFAULT_DATE_LOCALE, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+
+export function standardTime(date) {
   if (!date) return;
-  locale = locale || DEFAULT_DATE_LOCALE;
-  const absoluteTime = date.toLocaleString(locale, {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZoneName: 'short',
-    timeZone: timezone,
-  });
+  const absoluteTime = FORMATTER.format(date);
   const timeAgo = relativeTime(date);
   const timeAgoBit = timeAgo ? ` (${timeAgo})` : '';
   return `${absoluteTime}${timeAgoBit}`;
 }
 
-export function standardTimeShort(date, locale, timezone) {
+export function standardTimeShort(date) {
   if (!date) return;
-  locale = locale || DEFAULT_DATE_LOCALE;
   // For a "short" timestamp, display relative time or a short absolute time
   // if it's been a long time.
   const timeAgo = relativeTime(date);
   if (timeAgo) return timeAgo;
-  return date.toLocaleString(locale, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    timeZone: timezone,
-  });
+  return SHORT_FORMATTER.format(date);
 }
 
 export function relativeTime(date) {

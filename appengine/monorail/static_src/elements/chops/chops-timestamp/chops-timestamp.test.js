@@ -4,7 +4,12 @@
 
 import {assert, expect} from 'chai';
 import {ChopsTimestamp} from './chops-timestamp.js';
+import {FORMATTER, SHORT_FORMATTER} from './chops-timestamp-helpers.js';
 import sinon from 'sinon';
+
+// The formatted date strings differ based on time zone and browser, so we can't
+// use static strings for testing. We can't stub out the format method because
+// it's native code and can't be modified. So just use the FORMATTER object.
 
 let element;
 let clock;
@@ -35,17 +40,19 @@ suite('chops-timestamp', () => {
   });
 
   test('changing timestamp changes date', () => {
-    element.timestamp = '1548808276';
+    const timestamp = 1548808276;
+    element.timestamp = String(timestamp);
 
     assert.include(element.shadowRoot.textContent,
-      `Wed, Jan 30, 2019, 12:31 AM UTC`);
+      FORMATTER.format(new Date(timestamp * 1000)));
   });
 
   test('parses ISO dates', () => {
-    element.timestamp = '2016-11-11';
+    const timestamp = '2016-11-11';
+    element.timestamp = timestamp;
 
     assert.include(element.shadowRoot.textContent,
-      `Fri, Nov 11, 2016, 12:00 AM UTC`);
+      FORMATTER.format(new Date(timestamp)));
   });
 
   test('invalid timestamp format', () => {
@@ -66,9 +73,10 @@ suite('chops-timestamp', () => {
     assert.include(element.shadowRoot.textContent,
       `a minute from now`);
 
-    element.timestamp = '1548808276';
+    const timestamp = 1548808276;
+    element.timestamp = String(timestamp);
 
     assert.include(element.shadowRoot.textContent,
-      `Jan 30, 2019`);
+      SHORT_FORMATTER.format(timestamp * 1000));
   });
 });

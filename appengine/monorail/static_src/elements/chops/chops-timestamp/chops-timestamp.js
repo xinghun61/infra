@@ -5,8 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {standardTime, standardTimeShort,
-  DEFAULT_DATE_LOCALE} from './chops-timestamp-helpers';
+import {standardTime, standardTimeShort} from './chops-timestamp-helpers';
 
 /**
  * `<chops-timestamp>`
@@ -42,19 +41,9 @@ export class ChopsTimestamp extends PolymerElement {
       title: {
         type: String,
         reflectToAttribute: true,
-        computed: '_renderFullTime(date, locale, timezone)',
+        computed: '_renderFullTime(date)',
       },
-      /** The locale this timestamp should be displayed in. */
-      locale: {
-        type: String,
-        value: DEFAULT_DATE_LOCALE,
-      },
-      /** A string for the timezone displayed. Defaults to user's
-       *  local timezone. Note: Not all browsers support timezones
-       *  beyond UTC.
-       */
-      timezone: String,
-      /** The moment object, which is stored in UTC, to be processed. */
+      /** The Date object, which is stored in UTC, to be processed. */
       _date: {
         type: Object,
         computed: '_computeDate(timestamp)',
@@ -62,7 +51,7 @@ export class ChopsTimestamp extends PolymerElement {
       /** The displayed time. */
       _displayedTime: {
         type: String,
-        computed: '_computeDisplayedTime(_date, short, locale, timezone)',
+        computed: '_computeDisplayedTime(_date, short)',
       },
     };
   }
@@ -87,18 +76,18 @@ export class ChopsTimestamp extends PolymerElement {
     return new Date(unixTimeMs);
   }
 
-  _computeDisplayedTime(date, short, locale, timezone) {
+  _computeDisplayedTime(date, short) {
     // TODO(zhangtiff): Add logic to dynamically re-compute relative time
     //   based on set intervals.
     if (!date) return;
     if (short) {
-      return standardTimeShort(date, locale, timezone);
+      return standardTimeShort(date);
     }
-    return standardTime(date, locale, timezone);
+    return standardTime(date);
   }
 
-  _renderFullTime(date, locale, timezone) {
-    return standardTime(date, locale, timezone);
+  _renderFullTime(date) {
+    return standardTime(date);
   }
 }
 customElements.define(ChopsTimestamp.is, ChopsTimestamp);
