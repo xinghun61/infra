@@ -22,6 +22,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"github.com/maruel/subcommands"
 
+	"go.chromium.org/luci/auth/authctx"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/buildbucket/protoutil"
 	"go.chromium.org/luci/common/cli"
@@ -45,6 +46,7 @@ import (
 	"go.chromium.org/luci/logdog/common/types"
 	"go.chromium.org/luci/lucictx"
 
+	"infra/libs/infraenv"
 	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/cookflags"
 	"infra/tools/kitchen/third_party/recipe_engine"
@@ -85,8 +87,8 @@ type cookRun struct {
 	engine       recipeEngine
 	kitchenProps *kitchenProperties
 
-	systemAuth   *AuthContext // used by kitchen itself for logdog, bigquery, git
-	recipeAuth   *AuthContext // used by the recipe
+	systemAuth   *authctx.Context // used by kitchen itself
+	recipeAuth   *authctx.Context // used by the recipe
 	buildSecrets *buildbucketpb.BuildSecrets
 
 	bu *buildUpdater
@@ -538,66 +540,90 @@ func (c *cookRun) reportProperties(ctx context.Context, realm string, props inte
 
 // setupAuth prepares systemAuth and recipeAuth contexts based on incoming
 // environment and command line flags.
+//
+// Such contexts can be used by Kitchen itself or by subprocesses launched by
+// Kitchen.
+//
+// There are two such contexts: a system context and a recipe context.
+//
+// The system auth context is used for running logdog and updating Buildbucket
+// build state. On Swarming all these actions will use bot-associated account
+// (specified in Swarming bot config), whose logical name (usually "system") is
+// provided via "-luci-system-account" command-line flag.
+//
+// The recipe auth context is used for actually running the recipe. It is the
+// context the kitchen starts with by default. On Swarming this will be the
+// context associated with service account specified in the Swarming task
+// definition.
 func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth, enableDevShell, enableDockerAuth, enableFirebaseAuth bool) error {
+	// Construct authentication option with the set of scopes to be used through
+	// out Kitchen. This is superset of all scopes we might need. It is more
+	// efficient to create a single token with all the scopes than make a bunch of
+	// smaller-scoped tokens. We trust Google APIs enough to send widely-scoped
+	// tokens to them.
+	//
+	// Note that kitchen subprocesses (git, recipes engine, etc) are still free to
+	// request whatever scopes they need (though LUCI_CONTEXT protocol). The
+	// scopes here are only for parts of Kitchen (LogDog client, BigQuery export,
+	// Devshell proxy, etc).
+	//
+	// See https://developers.google.com/identity/protocols/googlescopes for list of
+	// available scopes.
+	authOpts := infraenv.DefaultAuthOptions()
+	authOpts.Scopes = []string{
+		"https://www.googleapis.com/auth/cloud-platform",
+		"https://www.googleapis.com/auth/userinfo.email",
+	}
+	if enableFirebaseAuth {
+		authOpts.Scopes = append(authOpts.Scopes, "https://www.googleapis.com/auth/firebase")
+	}
+
 	// If we are given -luci-system-account flag, use the corresponding logical
 	// account if it's in the LUCI_CONTEXT (fail if not).
 	//
 	// Otherwise, we run Kitchen with whatever is default account now (don't
 	// switch to a system one). Happens when running Kitchen manually locally. It
 	// picks up the developer account.
-	systemAuth := &AuthContext{
+	systemCtx := ctx
+	if c.SystemAccount != "" {
+		var err error
+		systemCtx, err = lucictx.SwitchLocalAccount(ctx, c.SystemAccount)
+		if err != nil {
+			return errors.Annotate(err, "failed to prepare system auth context").Err()
+		}
+	}
+	systemAuth := &authctx.Context{
 		ID:                 "system",
+		Options:            authOpts,
 		EnableGitAuth:      enableGitAuth,
 		EnableDevShell:     enableDevShell,
 		EnableDockerAuth:   enableDockerAuth,
 		EnableFirebaseAuth: enableFirebaseAuth,
 		KnownGerritHosts:   c.KnownGerritHost,
 	}
-	switch {
-	case c.SystemAccount != "":
-		la := lucictx.GetLocalAuth(ctx)
-		if la == nil {
-			return errors.New("can't use -luci-system-account, no local_auth in LUCI_CONTEXT")
-		}
-		for _, acc := range la.Accounts {
-			if acc.ID == c.SystemAccount {
-				la.DefaultAccountID = c.SystemAccount // use it by default
-				systemAuth.LocalAuth = la
-				break
-			}
-		}
-		if systemAuth.LocalAuth == nil {
-			return errors.Reason("can't change system account, no such logical account %q in LUCI_CONTEXT", c.SystemAccount).Err()
-		}
-	default:
-		systemAuth.LocalAuth = lucictx.GetLocalAuth(ctx)
+	if _, err := systemAuth.Launch(systemCtx, c.TempDir); err != nil {
+		return errors.Annotate(err, "failed to start system auth context").Err()
 	}
 
 	// Recipes always use the account that is set as default when kitchen starts
-	// (it is a task-associated account on Swarming). So just grab the current
-	// LUCI_CONTEXT["local_auth"] and retain it for recipes.
-	recipeAuth := &AuthContext{
+	// (it is a task-associated account on Swarming). So don't switch accounts.
+	recipeAuth := &authctx.Context{
 		ID:                 "task",
-		LocalAuth:          lucictx.GetLocalAuth(ctx),
+		Options:            authOpts,
 		EnableGitAuth:      enableGitAuth,
 		EnableDevShell:     enableDevShell,
 		EnableDockerAuth:   enableDockerAuth,
 		EnableFirebaseAuth: enableFirebaseAuth,
 		KnownGerritHosts:   c.KnownGerritHost,
 	}
-
-	// Launching the auth context may create files or start background goroutines.
-	if err := systemAuth.Launch(ctx, c.TempDir); err != nil {
-		return errors.Annotate(err, "failed to start system auth context").Err()
-	}
-	if err := recipeAuth.Launch(ctx, c.TempDir); err != nil {
+	if _, err := recipeAuth.Launch(ctx, c.TempDir); err != nil {
 		systemAuth.Close() // best effort cleanup
 		return errors.Annotate(err, "failed to start recipe auth context").Err()
 	}
 
 	// Log the actual service account emails corresponding to each context.
-	systemAuth.ReportServiceAccount()
-	recipeAuth.ReportServiceAccount()
+	systemAuth.Report()
+	recipeAuth.Report()
 	c.systemAuth = systemAuth
 	c.recipeAuth = recipeAuth
 
