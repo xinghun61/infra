@@ -7,6 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-button/chops-button.js';
 import './mr-issue-header.js';
+import './mr-restriction-indicator';
 import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
@@ -38,9 +39,10 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         :host {
           --mr-issue-page-horizontal-padding: 12px;
           --mr-toggled-font-family: inherit;
+          --monorail-metadata-toggled-bg: var(--monorail-metadata-open-bg);
         }
-        :host([issue-closed]) .metadata-container {
-          background: var(--monorail-metadata-closed-bg);
+        :host([issue-closed]) {
+          --monorail-metadata-toggled-bg: var(--monorail-metadata-closed-bg);
         }
         :host([code-font]) {
           --mr-toggled-font-family: Monospace;
@@ -81,7 +83,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         }
         .metadata-container {
           font-size: var(--chops-main-font-size);
-          background: var(--monorail-metadata-open-bg);
+          background: var(--monorail-metadata-toggled-bg);
           border-right: var(--chops-normal-border);
           border-bottom: var(--chops-normal-border);
           width: 16%;
@@ -91,7 +93,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           box-sizing: border-box;
           z-index: 100;
         }
-        mr-issue-header {
+        .issue-header-container {
           z-index: 10;
           position: sticky;
           top: var(--monorail-header-height);
@@ -185,9 +187,12 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
             <mr-issue-metadata></mr-issue-metadata>
           </aside>
           <div class="container-issue">
-            <mr-issue-header
-              user-display-name="[[userDisplayName]]"
-            ></mr-issue-header>
+            <div class="issue-header-container">
+              <mr-issue-header
+                user-display-name="[[userDisplayName]]"
+              ></mr-issue-header>
+              <mr-restriction-indicator></mr-restriction-indicator>
+            </div>
             <div class="container-issue-content">
               <mr-issue-details
                 class="main-item"

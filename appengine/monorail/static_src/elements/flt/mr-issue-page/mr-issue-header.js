@@ -11,7 +11,6 @@ import '../../chops/chops-timestamp/chops-timestamp.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
-import {arrayToEnglish} from '../../shared/helpers.js';
 import '../../links/mr-user-link/mr-user-link.js';
 import '../../links/mr-crbug-link/mr-crbug-link.js';
 import '../../mr-code-font-toggle/mr-code-font-toggle.js';
@@ -40,7 +39,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           width: 100%;
           margin-top: 0;
           font-size: var(--chops-large-font-size);
-          background-color: var(--monorail-metadata-open-bg);
+          background-color: var(--monorail-metadata-toggled-bg);
           border-bottom: var(--chops-normal-border);
           padding: 0.25em 8px;
           box-sizing: border-box;
@@ -48,9 +47,6 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           flex-direction: row;
           justify-content: space-between;
           align-items: center;
-        }
-        :host([issue-closed]) {
-          background-color: var(--monorail-metadata-closed-bg);
         }
         h1 {
           font-size: 100%;
@@ -64,17 +60,6 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           padding-left: 8px;
           margin-left: 4px;
           font-size: var(--chops-main-font-size);
-        }
-        mr-dropdown.lock-icon {
-          /* Make lock icon line up nicely with other text in spite
-           * of having padding.
-           */
-          margin-left: -8px;
-        }
-        .lock-tooltip {
-          width: 200px;
-          font-size: var(--chops-large-font-size);
-          padding: 0.5em 8px;
         }
         .issue-actions {
           min-width: fit-content;
@@ -145,17 +130,6 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
         }
       </style>
       <div class="main-text-outer">
-        <mr-dropdown
-          class="lock-icon"
-          menu-alignment="left"
-          icon="lock"
-          title\$="[[_restrictionText]]"
-          hidden\$="[[!isRestricted]]"
-        >
-          <div class="lock-tooltip">
-            [[_restrictionText]]
-          </div>
-        </mr-dropdown>
         <div class="main-text">
           <h1>
             <template is="dom-if" if="[[issue.isSpam]]">
@@ -197,52 +171,17 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
 
   static get properties() {
     return {
-      created: {
-        type: Object,
-        value: () => {
-          return new Date();
-        },
-      },
       userDisplayName: String,
       issue: {
         type: Object,
         value: () => {},
       },
       issuePermissions: Object,
-      issueClosed: {
-        type: Boolean,
-        reflectToAttribute: true,
-      },
       projectTemplates: Array,
-      restrictions: Object,
-      isRestricted: {
-        type: Boolean,
-        value: false,
-      },
-      _restrictionText: {
-        type: String,
-        computed: '_computeRestrictionText(restrictions)',
-      },
       _issueOptions: {
         type: Array,
         computed: `_computeIssueOptions(issuePermissions, issue.isSpam,
           isRestricted, projectTemplates)`,
-      },
-      _flipperCount: {
-        type: Number,
-        value: 20,
-      },
-      _flipperIndex: {
-        type: Number,
-        computed: '_computeFlipperIndex(issue.localId, _flipperCount)',
-      },
-      _nextId: {
-        type: Number,
-        computed: '_computeNextId(issue.localId)',
-      },
-      _prevId: {
-        type: Number,
-        computed: '_computePrevId(issue.localId)',
       },
       _action: String,
       _targetProjectError: String,
@@ -253,38 +192,8 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
     return {
       issue: issue.issue(state),
       issuePermissions: issue.permissions(state),
-      issueClosed: !issue.isOpen(state),
-      restrictions: issue.restrictions(state),
-      isRestricted: issue.isRestricted(state),
       projectTemplates: project.project(state).templates,
     };
-  }
-
-  _computeRestrictionText(restrictions) {
-    if (!restrictions) return;
-    if ('view' in restrictions && restrictions['view'].length) {
-      return `Only users with ${arrayToEnglish(restrictions['view'])
-      } permission can see this issue.`;
-    } else if ('edit' in restrictions && restrictions['edit'].length) {
-      return `Only users with ${arrayToEnglish(restrictions['edit'])
-      } permission may make changes.`;
-    } else if ('comment' in restrictions && restrictions['comment'].length) {
-      return `Only users with ${arrayToEnglish(restrictions['comment'])
-      } permission may comment.`;
-    }
-    return '';
-  }
-
-  _computeFlipperIndex(i, count) {
-    return i % count + 1;
-  }
-
-  _computeNextId(id) {
-    return id + 1;
-  }
-
-  _computePrevId(id) {
-    return id - 1;
   }
 
   _computeIssueOptions(issuePermissions, isSpam, isRestricted,
@@ -395,7 +304,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
     }));
   }
 
-  _openConvertIssue(action) {
+  _openConvertIssue() {
     this.dispatchEvent(new CustomEvent('open-dialog', {
       bubbles: true,
       composed: true,
