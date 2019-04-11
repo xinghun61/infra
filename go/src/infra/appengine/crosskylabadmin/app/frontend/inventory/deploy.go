@@ -235,6 +235,10 @@ func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swarm
 
 // addDUTToFleet adds a new DUT with given specs to the inventory and assigns
 // it to a drone.
+//
+// This function returns the URL for the inventory update change.
+// This function updates nd.Id to a ID unique in the inventory.
+// TODO(pprabhu) Updating an arbitrary function argument is yucky. FixMe.
 func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventory.CommonDeviceSpecs, pickServoPort bool) (string, error) {
 	var respURL string
 	f := func() error {
@@ -271,6 +275,7 @@ func addDUTToFleet(ctx context.Context, s *gitstore.InventoryStore, nd *inventor
 		}
 
 		respURL = url
+		nd.Id = &id
 		return nil
 	}
 
