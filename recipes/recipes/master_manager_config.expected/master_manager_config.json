@@ -84,14 +84,6 @@
     ]
   },
   {
-    "cmd": [],
-    "cwd": "[CACHE]/infra_internal_gclient_with_go",
-    "name": "set_output_gitiles_commit",
-    "~followup_annotations": [
-      "@@@SET_BUILD_PROPERTY@$recipe_engine/buildbucket/output_gitiles_commit@{\"host\": \"chromium.googlesource.com\", \"id\": \"2a89adc98c19d731c34ddd19679bdd72cc4a2831\", \"position\": 265993, \"project\": \"infra\", \"ref\": \"refs/heads/master\"}@@@"
-    ]
-  },
-  {
     "cmd": [
       "python",
       "-u",

@@ -4,8 +4,6 @@
 
 from recipe_engine import recipe_api
 
-from PB.go.chromium.org.luci.buildbucket.proto import common as common_pb2
-
 class InfraCheckoutApi(recipe_api.RecipeApi):
   """Stateless API for using public infra gclient checkout."""
 
@@ -56,16 +54,6 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
       self.m.gclient.set_config(gclient_config_name)
       bot_update_step = self.m.bot_update.ensure_checkout(
           patch_root=patch_root, **kwargs)
-
-      ref, pos = self.m.commit_position.parse(
-          self.m.bot_update.last_returned_properties['got_revision_cp'])
-      self.m.buildbucket.set_output_gitiles_commit(common_pb2.GitilesCommit(
-          host='chromium.googlesource.com',
-          project='infra',
-          ref=ref,
-          id=self.m.bot_update.last_returned_properties['got_revision'],
-          position=pos,
-      ))
 
     class Checkout(object):
       @property

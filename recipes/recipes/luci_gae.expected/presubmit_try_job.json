@@ -129,14 +129,6 @@
     ]
   },
   {
-    "cmd": [],
-    "cwd": "[CACHE]/infra_gclient_with_go",
-    "name": "set_output_gitiles_commit",
-    "~followup_annotations": [
-      "@@@SET_BUILD_PROPERTY@$recipe_engine/buildbucket/output_gitiles_commit@{\"host\": \"chromium.googlesource.com\", \"id\": \"0af4f7a7096d34672a3d020e29d0335f47b1b242\", \"position\": 226343, \"project\": \"infra\", \"ref\": \"refs/heads/master\"}@@@"
-    ]
-  },
-  {
     "cmd": [
       "git",
       "-c",
