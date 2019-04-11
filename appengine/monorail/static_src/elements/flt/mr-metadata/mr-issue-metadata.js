@@ -159,7 +159,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         </div>
       </template>
 
-      <template is="dom-if" if="[[blocking]]">
+      <template is="dom-if" if="[[blocking.length]]">
         <div class="bottom-section-cell">
           <h3>Blocking:</h3>
           <div class="bottom-section-content">
