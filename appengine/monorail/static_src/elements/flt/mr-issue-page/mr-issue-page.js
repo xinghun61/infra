@@ -225,7 +225,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       userDisplayName: String,
       // Redux state.
       fetchIssueError: String,
-      fetchingComments: Boolean,
       fetchingIssue: Boolean,
       fetchingProjectConfig: Boolean,
       issue: Object,
@@ -242,10 +241,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         reflectToAttribute: true,
       },
       // Internal properties.
-      _commentsLoaded: {
-        type: Boolean,
-        value: false,
-      },
       _hasFetched: {
         type: Boolean,
         value: false,
@@ -267,7 +262,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static mapStateToProps(state, element) {
     return {
       fetchIssueError: issue.requests(state).fetch.error,
-      fetchingComments: issue.requests(state).fetchComments.requesting,
       fetchingIssue: issue.requests(state).fetch.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
       issue: issue.issue(state),
@@ -280,7 +274,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   static get observers() {
     return [
-      '_fetchChanged(fetchingIssue, fetchingComments, fetchIssueError, issue)',
+      '_fetchChanged(fetchingIssue, fetchIssueError, issue)',
       '_issueChanged(issueRef, issue)',
       '_issueRefChanged(issueRef)',
       '_projectNameChanged(issueRef.projectName)',
@@ -288,15 +282,12 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     ];
   }
 
-  _fetchChanged(fetchingIssue, fetchingComments, fetchIssueError, issue) {
-    if (fetchingIssue || fetchingComments) {
+  _fetchChanged(fetchingIssue, fetchIssueError, issue) {
+    if (fetchingIssue) {
       this._hasFetched = true;
     }
     if (this._hasFetched && !fetchingIssue) {
       this._issueLoaded = true;
-    }
-    if (this._hasFetched && !fetchingComments) {
-      this._commentsLoaded = true;
     }
 
     this._showLoading = false;
@@ -304,7 +295,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     this._showDeleted = false;
     this._showIssue = false;
 
-    if (!this._issueLoaded || !this._commentsLoaded) {
+    if (!this._issueLoaded) {
       this._showLoading = true;
     } else if (fetchIssueError) {
       this._showFetchError = true;
