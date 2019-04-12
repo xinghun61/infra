@@ -152,7 +152,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
             min-height: 0;
             border: 0;
           }
-          mr-issue-metadata, mr-issue-header {
+          mr-issue-metadata, .issue-header-container {
             position: static;
           }
         }
