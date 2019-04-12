@@ -35,3 +35,7 @@ func loadAllLabsData(root string) (*allLabs, error) {
 func writeSkylabLabData(root string, lab *allLabs) error {
 	return inventory.WriteLab(lab.Skylab, filepath.Join(root, "data", "skylab"))
 }
+
+func writeAutotestProdLabData(root string, lab *allLabs) error {
+	return inventory.WriteLab(lab.AutotestProd, filepath.Join(root, "data", "prod"))
+}
