@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/deprecated"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
@@ -174,7 +175,7 @@ func (b *buildUpdater) UpdateBuild(ctx context.Context, req *buildbucketpb.Updat
 // updates steps, output properties and output gitiles commit.
 func (b *buildUpdater) ParseAnnotations(ctx context.Context, ann *milo.Step) (*buildbucketpb.UpdateBuildRequest, error) {
 	updatePaths := []string{"build.steps", "build.output.properties"}
-	steps, err := buildbucket.ConvertBuildSteps(ctx, ann.Substep, b.annAddr)
+	steps, err := deprecated.ConvertBuildSteps(ctx, ann.Substep, b.annAddr)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to parse steps from an annotation proto").Err()
 	}

@@ -37,7 +37,7 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/memcache"
-	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/deprecated"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/buildbucket/protoutil"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
@@ -93,7 +93,7 @@ func ParseBuild(msg *bbapi.ApiCommonBuildMessage) (*Build, error) {
 	}
 
 	var err error
-	if build.Status, err = buildbucket.StatusToV2(msg); err != nil {
+	if build.Status, err = deprecated.StatusToV2(msg); err != nil {
 		return nil, errors.Annotate(err, "failed to parse build status").Err()
 	}
 

@@ -28,7 +28,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/buildbucket/deprecated"
 	buildbucketpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/buildbucket/protoutil"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
@@ -413,7 +413,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 				CompletionTime: bbapi.ParseTimestamp(msg.CompletedTs),
 				URL:            msg.Url,
 			}
-			if b.Status, *err = buildbucket.StatusToV2(msg); *err != nil {
+			if b.Status, *err = deprecated.StatusToV2(msg); *err != nil {
 				return
 			}
 			if msg.StartedTs != 0 && !b.CompletionTime.IsZero() {
