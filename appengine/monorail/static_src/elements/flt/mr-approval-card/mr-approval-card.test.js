@@ -141,4 +141,58 @@ suite('mr-approval-card', () => {
     assert.equal(element._availableStatuses[3].status, 'NeedInfo');
     assert.equal(element._availableStatuses[4].status, 'Approved');
   });
+
+  test('expands to show focused comment', () => {
+    element.focusId = 'c4';
+    element.fieldName = 'field';
+    element.comments = [
+      {
+        sequenceNum: 1,
+        approvalRef: {fieldName: 'other-field'},
+      },
+      {
+        sequenceNum: 2,
+        approvalRef: {fieldName: 'field'},
+      },
+      {
+        sequenceNum: 3,
+      },
+      {
+        sequenceNum: 4,
+        approvalRef: {fieldName: 'field'},
+      },
+    ];
+
+    flush();
+
+    assert.isTrue(element.opened);
+    assert.equal(element._focusedComment, 0);
+  });
+
+  test('does not expands to show focused comment on other elements', () => {
+    element.focusId = 'c3';
+    element.fieldName = 'field';
+    element.comments = [
+      {
+        sequenceNum: 1,
+        approvalRef: {fieldName: 'other-field'},
+      },
+      {
+        sequenceNum: 2,
+        approvalRef: {fieldName: 'field'},
+      },
+      {
+        sequenceNum: 3,
+      },
+      {
+        sequenceNum: 4,
+        approvalRef: {fieldName: 'field'},
+      },
+    ];
+
+    flush();
+
+    assert.isFalse(element.opened);
+    assert.equal(element._focusedComment, -1);
+  });
 });

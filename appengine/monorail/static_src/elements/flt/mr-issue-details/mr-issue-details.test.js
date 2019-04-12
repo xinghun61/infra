@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {assert} from 'chai';
 import {MrIssueDetails} from './mr-issue-details.js';
 import sinon from 'sinon';
@@ -32,5 +33,33 @@ suite('mr-issue-details', () => {
 
   test('initializes', () => {
     assert.instanceOf(element, MrIssueDetails);
+  });
+
+  test('computes focusedComment index', () => {
+    element.focusId = 'c3';
+    element.comments = [
+      {}, // description.
+      {sequenceNum: 1},
+      {sequenceNum: 2, approvalRef: {}},
+      {sequenceNum: 3},
+    ];
+
+    flush();
+
+    assert.equal(element._focusedComment, 1);
+  });
+
+  test('focusedComment index is -1 for comments on other elements', () => {
+    element.focusId = 'c2';
+    element.comments = [
+      {}, // description.
+      {sequenceNum: 1},
+      {sequenceNum: 2, approvalRef: {}},
+      {sequenceNum: 3},
+    ];
+
+    flush();
+
+    assert.equal(element._focusedComment, -1);
   });
 });

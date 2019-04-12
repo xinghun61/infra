@@ -11,6 +11,7 @@ import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
+import * as ui from '../../redux/ui.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import '../../mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
@@ -217,6 +218,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         ></mr-description>
         <mr-comment-list
           heading-level=4
+          focus-id="[[focusId]]"
+          focused-comment="[[_focusedComment]]"
           comments="[[_comments]]"
         >
           <h4 id$="[[_editId]]" class="medium-heading">
@@ -257,6 +260,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
           '_computeApprovalFieldDefs(fieldDefsByApprovalName, fieldName)',
       },
       fieldDefsByApprovalName: Object,
+      focusId: String,
       user: Object,
       issue: {
         type: Object,
@@ -331,12 +335,17 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         type: String,
         computed: '_computeStatusIcon(class)',
       },
+      _focusedComment: {
+        type: Number,
+        computed: '_computeFocusedComment(_comments, focusId)',
+      },
     };
   }
 
   static mapStateToProps(state, element) {
     return {
       fieldDefsByApprovalName: project.fieldDefsByApprovalName(state),
+      focusId: ui.focusId(state),
       user: user.user(state),
       issue: issue.issue(state),
       issueRef: issue.issueRef(state),
@@ -345,13 +354,6 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
       updatingApproval: issue.requests(state).updateApproval.requesting,
       updateApprovalError: issue.requests(state).updateApproval.error,
     };
-  }
-
-  ready() {
-    super.ready();
-    this.addEventListener('expand-parent', (evt) => {
-      this.openCard(evt);
-    });
   }
 
   reset(issue) {
@@ -505,6 +507,19 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
         fieldName: this.fieldName,
       },
     }));
+  }
+
+  _computeFocusedComment(comments, focusId) {
+    const index = (comments || []).findIndex((comment) => {
+      const commentId = 'c' + comment.sequenceNum;
+      if (commentId === focusId) {
+        return true;
+      }
+    });
+    if (index !== -1) {
+      this.opened = true;
+    }
+    return index;
   }
 }
 

@@ -188,7 +188,6 @@ export class MrComment extends ReduxMixin(PolymerElement) {
         type: String,
         reflectToAttribute: true,
         computed: '_computeIsHighlighted(id, focusId)',
-        observer: '_onHighlight',
       },
       _isExpandedIfDeleted: {
         type: Boolean,
@@ -208,32 +207,17 @@ export class MrComment extends ReduxMixin(PolymerElement) {
 
   _computeIsHighlighted(id, focusId) {
     if (!id || !focusId) return;
-    return id === focusId;
+    if (id === focusId) {
+      window.requestAnimationFrame(() => {
+        this.scrollIntoView();
+      });
+      return true;
+    }
+    return false;
   }
 
   _computeHideDeletedComment(isExpandedIfDeleted, comment) {
     return Boolean(comment.isDeleted && !isExpandedIfDeleted);
-  }
-
-  _onHighlight(highlighted) {
-    if (highlighted) {
-      // TODO(zhangtiff): Revisit this logic once we've upgraded to LitElement
-      // and have more lifecycle functions to work with.
-      window.requestAnimationFrame(() => {
-        this.dispatchEvent(new CustomEvent('expand-parent', {
-          bubbles: true,
-          composed: true,
-          detail: {
-            // TODO(zhangtiff): See if we can somehow redesign this logic to
-            // not require redundant scrollIntoViews.
-            callback: () => {
-              this.scrollIntoView();
-            },
-          },
-        }));
-        this.scrollIntoView();
-      });
-    }
   }
 
   _deleteComment(comment) {
@@ -353,4 +337,5 @@ export class MrComment extends ReduxMixin(PolymerElement) {
     });
   }
 }
+
 customElements.define(MrComment.is, MrComment);

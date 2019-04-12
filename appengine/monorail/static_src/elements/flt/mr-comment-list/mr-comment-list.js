@@ -9,7 +9,6 @@ import '../../chops/chops-button/chops-button.js';
 import './mr-comment.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
-import * as ui from '../../redux/ui.js';
 import '../../shared/mr-shared-styles.js';
 
 const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
@@ -47,7 +46,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
         }
       </style>
       <button on-click="toggleComments" class="toggle" hidden\$="[[_hideToggle]]">
-        [[_computeCommentToggleVerb(_commentsHidden)]]
+        [[_computeCommentToggleVerb(_hideComments)]]
         [[_commentsHiddenCount]]
         older
         [[_pluralize(_commentsHiddenCount, 'comment')]]
@@ -56,7 +55,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
         <mr-comment
           focus-id="[[focusId]]"
           comment="[[comment]]"
-          hidden\$="[[_computeCommentHidden(_commentsHidden, _commentsHiddenCount, index)]]"
+          hidden\$="[[_computeCommentHidden(_hideComments, _commentsHiddenCount, index)]]"
           heading-level="[[headingLevel]]"
           quick-mode="[[quickMode]]"
         ></mr-comment>
@@ -87,11 +86,12 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
       },
       issuePermissions: Object,
       focusId: String,
+      focusedComment: Number,
       quickMode: {
         type: Boolean,
         value: false,
       },
-      _commentsHidden: {
+      _hideComments: {
         type: Boolean,
         value: true,
       },
@@ -107,43 +107,29 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
     };
   }
 
+  static get observers() {
+    return [
+      '_onFocusedComment(' +
+        'focusedComment, _hideComments, _commentsHiddenCount)',
+    ];
+  }
+
   static mapStateToProps(state, element) {
     return {
-      focusId: ui.focusId(state),
       issuePermissions: issue.permissions(state),
     };
   }
 
-  ready() {
-    super.ready();
-    this.addEventListener('expand-parent', (evt) => {
-      // Only uncollapse comments if the comment firing the event is
-      // collapsed.
-      const path = evt.path || evt.composedPath();
-      if (path[0].hidden) {
-        this.showComments(evt);
-      }
-    });
-  }
-
   toggleComments() {
-    this._commentsHidden = !this._commentsHidden;
-  }
-
-  showComments(evt) {
-    this._commentsHidden = false;
-
-    if (evt && evt.detail && evt.detail.callback) {
-      evt.detail.callback();
-    }
+    this._hideComments = !this._hideComments;
   }
 
   _canAddComment(issuePermissions) {
     return (issuePermissions || []).includes(ADD_ISSUE_COMMENT_PERMISSION);
   }
 
-  _computeCommentHidden(commentsHidden, commentsHiddenCount, index) {
-    return commentsHidden && index < commentsHiddenCount;
+  _computeCommentHidden(hideComments, commentsHiddenCount, index) {
+    return hideComments && index < commentsHiddenCount;
   }
 
   _computeCommentsHiddenCount(shownCount, numComments) {
@@ -154,13 +140,20 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
     return hiddenCount <= 0;
   }
 
-  _computeCommentToggleVerb(commentsHidden) {
-    return commentsHidden ? 'Show' : 'Hide';
+  _computeCommentToggleVerb(hideComments) {
+    return hideComments ? 'Show' : 'Hide';
   }
 
   _pluralize(count, baseWord, pluralWord) {
     pluralWord = pluralWord || `${baseWord}s`;
     return count == 1 ? baseWord : pluralWord;
+  }
+
+  _onFocusedComment(index, hideComments, commentsHiddenCount) {
+    if (index === null || index === -1 || !hideComments) return;
+    if (this._computeCommentHidden(hideComments, commentsHiddenCount, index)) {
+      this._hideComments = false;
+    }
   }
 }
 customElements.define(MrCommentList.is, MrCommentList);

@@ -78,14 +78,14 @@ suite('mr-comment-list', () => {
     flush();
 
     const commentElement = element.shadowRoot.querySelector('#c3');
-    sinon.stub(element, 'showComments');
     sinon.stub(commentElement, 'scrollIntoView');
 
     element.focusId = 'c3';
+    element.focusedComment = 2;
 
     flush();
 
-    assert.isFalse(element.showComments.called);
+    assert.isTrue(element._hideComments);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
 
     commentElement.scrollIntoView.restore();
@@ -95,14 +95,14 @@ suite('mr-comment-list', () => {
     flush();
 
     const commentElement = element.shadowRoot.querySelector('#c1');
-    sinon.stub(element, 'showComments');
     sinon.stub(commentElement, 'scrollIntoView');
 
     element.focusId = 'c1';
+    element.focusedComment = 0;
 
     flush();
 
-    assert.isTrue(element.showComments.called);
+    assert.isFalse(element._hideComments);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
 
     commentElement.scrollIntoView.restore();
