@@ -7,6 +7,15 @@ Monorail API v1 aims to provide nearly identical interface to Google Code issue 
 * [Design doc](https://docs.google.com/document/d/1UIyWru7L-hJamgZb9JGYxkX6aF_w23TD0m3YoQub2PE)
 
 
+Rate limiting:
+
+* We count requests for each signed in account.
+* The rate limit is currently 450 requests per minute.  We can adjust that per-account if needed.
+* We enforce the limit in a five-minute window, so 2250 requests are allowed within any given 5 minutes.
+* Individual requests that take more than 5s count as 2 requests.  This could happen for complex issue searches, especially free text and negated free text terms.
+* If the client exceeds the rate limit, it will get response code 400, in which case it should wait and try again.
+* These parameters are defined in settings.py and framework/ratelimiter.py.
+
 
 This API provides the following methods to read/write user/issue/comment objects in Monorail:
 
