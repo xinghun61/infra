@@ -9,7 +9,7 @@ const CRBUG_DEFAULT_PROJECT = 'chromium';
 const CRBUG_LINK_RE = /(\b(https?:\/\/)?crbug\.com\/)((\b[-a-z0-9]+)(\/))?(\d+)\b(\#c[0-9]+)?/gi;
 const CRBUG_LINK_RE_PROJECT_GROUP = 4;
 const CRBUG_LINK_RE_ID_GROUP = 6;
-const ISSUE_TRACKER_RE = /(\b(issues?|bugs?)[ \t]*(:|=)?)([ \t]*((\b[-a-z0-9]+)[:\#])?(\#?)(\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
+const ISSUE_TRACKER_RE = /(\b(issues?|bugs?)[ \t]*(:|=|\b))([ \t]*((\b[-a-z0-9]+)[:\#])?(\#?)(\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
 const PROJECT_LOCALID_RE = /((\b(issue|bug)[ \t]*(:|=)?[ \t]*)?((\b[-a-z0-9]+)[:\#])?(\#?)(\d+))/gi;
 const PROJECT_LOCALID_RE_PROJECT_GROUP = 6;
 const PROJECT_LOCALID_RE_ID_GROUP = 8;
@@ -51,16 +51,7 @@ Components.set(
   }
 );
 Components.set(
-  '02-tracker-regular',
-  {
-    lookup: LookupReferencedIssues,
-    extractRefs: ExtractTrackerProjectAndIssueIds,
-    refRegs: [ISSUE_TRACKER_RE],
-    replacer: ReplaceTrackerIssueRef,
-  }
-);
-Components.set(
-  '03-user-emails',
+  '02-user-emails',
   {
     lookup: LookupReferencedUsers,
     extractRefs: (match, _currentProjectName) => {
@@ -71,7 +62,7 @@ Components.set(
   }
 );
 Components.set(
-  '04-urls',
+  '03-urls',
   {
     lookup: null,
     extractRefs: (match, _currentProjectName) => {
@@ -80,6 +71,15 @@ Components.set(
     refRegs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE,
       IS_LINK_RE],
     replacer: ReplaceLinkRef,
+  }
+);
+Components.set(
+  '04-tracker-regular',
+  {
+    lookup: LookupReferencedIssues,
+    extractRefs: ExtractTrackerProjectAndIssueIds,
+    refRegs: [ISSUE_TRACKER_RE],
+    replacer: ReplaceTrackerIssueRef,
   }
 );
 Components.set(

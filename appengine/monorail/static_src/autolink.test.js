@@ -143,7 +143,7 @@ suite('autolink', () => {
 
   suite('regular tracker component functions', () => {
     const {extractRefs, refRegs, replacer} =
-      components.get('02-tracker-regular');
+      components.get('04-tracker-regular');
     const str = 'bugs=123, monorail:234 or #345 and PROJ:#456';
     const match = refRegs[0].exec(str);
     refRegs[0].lastIndex = 0;
@@ -235,7 +235,7 @@ suite('autolink', () => {
   });
 
   suite('user email component functions', () => {
-    const {extractRefs, refRegs, replacer} = components.get('03-user-emails');
+    const {extractRefs, refRegs, replacer} = components.get('02-user-emails');
     const str = 'We should ask User1@gmail.com to confirm.';
     const match = refRegs[0].exec(str);
     refRegs[0].lastIndex = 0;
@@ -269,7 +269,7 @@ suite('autolink', () => {
   });
 
   suite('url component functions.', () => {
-    const {refRegs, replacer} = components.get('04-urls');
+    const {refRegs, replacer} = components.get('03-urls');
 
     test('test short link regex string', () => {
       const shortLinkRE = refRegs[0];
@@ -481,11 +481,11 @@ suite('autolink', () => {
       openRefs: [],
       closedRefs: [{projectName: 'chromium', localId: 99}],
     });
-    componentRefs.set('02-tracker-regular', {
+    componentRefs.set('04-tracker-regular', {
       openRefs: [{summary: 'monorail', projectName: 'monorail', localId: 123}],
       closedRefs: [{projectName: 'chromium', localId: 456}],
     });
-    componentRefs.set('03-user-emails', {
+    componentRefs.set('02-user-emails', {
       users: [{email: 'user2@example.com'}],
     });
 
@@ -545,6 +545,29 @@ suite('autolink', () => {
           },
         ]
       );
+    });
+
+    test('Invalid issue refs do not get linked', () => {
+      const plainString =
+        'bug123, bug 123a, bug-123 and https://bug:123.example.com ' +
+        'do not get linked.';
+      const actualTextRuns= markupAutolinks(
+        plainString, componentRefs, 'chromium');
+      assert.deepEqual(
+        actualTextRuns,
+        [
+          {
+            content: 'bug123, bug 123a, bug-123 and ',
+          },
+          {
+            content: 'https://bug:123.example.com',
+            tag: 'a',
+            href: 'https://bug:123.example.com',
+          },
+          {
+            content: ' do not get linked.',
+          },
+        ]);
     });
 
     test('Only existing issues get linked', () => {
