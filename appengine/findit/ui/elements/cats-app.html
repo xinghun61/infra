@@ -148,7 +148,7 @@
           <paper-tabs no-bar>
             <paper-tab><a href="/waterfall/trooper">Trooper</a></paper-tab>
             <template is="dom-if" if="[[userInfo.is_admin]]">
-              <paper-tab>|<a href="/waterfall/list-failures">Failures</a></paper-tab>
+              <paper-tab>|<a href="/waterfall/list-failures?days=1">Failures</a></paper-tab>
               <paper-tab><a href="/waterfall/try-job-dashboard">Jobs</a></paper-tab>
               <paper-tab><a href="/waterfall/pipeline-errors-dashboard">PipelineErrors</a></paper-tab>
               <paper-tab><a href="/waterfall/auto-revert-metrics">RevertMetric</a></paper-tab>
