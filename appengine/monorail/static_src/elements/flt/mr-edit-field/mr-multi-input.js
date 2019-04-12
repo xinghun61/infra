@@ -7,8 +7,6 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../chops/chops-button/chops-button.js';
 import '../../shared/mr-shared-styles.js';
 import {fieldTypes} from '../../shared/field-types.js';
-import {flush} from '@polymer/polymer/lib/utils/flush';
-
 
 const DELIMITER_REGEX = /[,;\s+]/;
 
@@ -113,7 +111,7 @@ export class MrMultiInput extends PolymerElement {
   }
 
   reset() {
-    this._setValuesForInputs(this.initialValues);
+    this._setValuesForInputs(this.initialValues, true);
   }
 
   getValues() {
@@ -162,13 +160,9 @@ export class MrMultiInput extends PolymerElement {
     this._setValuesForInputs(this.getValues());
   }
 
-  _setValuesForInputs(values) {
-    if (values.length >= this._multiInputs.length) {
-      // Add new input boxes if there aren't enough.
-      this._multiInputs = values.concat(['']);
-      flush();
-    }
-
+  _setValuesForInputs(values, hardReset) {
+    // Note: Not all vvalues may be applied to inputs here, but that's okay
+    // because extra values will be created as new inputs.
     this.shadowRoot.querySelectorAll('input').forEach((input, i) => {
       if (i < values.length) {
         input.value = values[i];
@@ -176,6 +170,12 @@ export class MrMultiInput extends PolymerElement {
         input.value = '';
       }
     });
+
+    // hardReset is used to optionally delete excess empty inputs.
+    if (hardReset || values.length >= this._multiInputs.length) {
+      // Add new input boxes if there aren't enough.
+      this._multiInputs = values.concat(['']);
+    }
   }
 
   // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.
