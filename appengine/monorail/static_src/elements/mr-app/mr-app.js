@@ -61,10 +61,10 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       userDisplayName: String,
       queryParams: Object,
       dirtyForms: Array,
-      _boundLoadApprovalPage: {
+      _boundLoadIssuePage: {
         type: Function,
         value: function() {
-          return this._loadApprovalPage.bind(this);
+          return this._loadIssuePage.bind(this);
         },
       },
       _currentContext: {
@@ -124,7 +124,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
       next();
     });
-    page('/p/:project/issues/approval', this._boundLoadApprovalPage);
+    page('/p/:project/issues/detail', this._boundLoadIssuePage);
     page();
   }
 
@@ -147,7 +147,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     }
   }
 
-  _loadApprovalPage(ctx, next) {
+  _loadIssuePage(ctx, next) {
     this.dispatchAction(issue.setIssueRef(
       Number.parseInt(ctx.query.id), ctx.params.project));
 

@@ -763,8 +763,7 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     autolinker = autolink.Autolink()
 
     approval_url = framework_helpers.IssueCommentURL(
-        hostport, project, issue.local_id, is_approval=True,
-        seq_num=comment.sequence)
+        hostport, project, issue.local_id, seq_num=comment.sequence)
 
     comment_view = tracker_views.IssueCommentView(
         project.project_name, comment, users_by_id, autolinker, {}, mr, issue)

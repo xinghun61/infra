@@ -50,14 +50,4 @@ suite('mr-crbug-link', () => {
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.include(link.href.trim(), '/p/test/issues/detail?id=11');
   });
-
-  test('redirects to approval page for approval issues', () => {
-    element.issue = {
-      projectName: 'test',
-      localId: 11,
-      approvalValues: [],
-    };
-    const link = element.shadowRoot.querySelector('#bugLink');
-    assert.include(link.href.trim(), '/p/test/issues/approval?id=11');
-  });
 });

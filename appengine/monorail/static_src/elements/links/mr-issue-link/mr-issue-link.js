@@ -61,8 +61,7 @@ export class MrIssueLink extends PolymerElement {
   }
 
   _computeIssueUrl(issue) {
-    const issueType = issue.approvalValues ? 'approval' : 'detail';
-    return `/p/${issue.projectName}/issues/${issueType}?id=${issue.localId}`;
+    return `/p/${issue.projectName}/issues/detail?id=${issue.localId}`;
   }
 
   _computeLinkText(projectName, issue, text) {

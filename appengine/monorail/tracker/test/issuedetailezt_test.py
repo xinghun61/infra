@@ -3,7 +3,7 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-"""Unittests for monorail.tracker.issuedetail."""
+"""Unittests for monorail.tracker.issuedetailezt."""
 
 import logging
 import mock
@@ -33,7 +33,7 @@ from services import issue_svc
 from services import tracker_fulltext
 from testing import fake
 from testing import testing_helpers
-from tracker import issuedetail
+from tracker import issuedetailezt
 from tracker import tracker_constants
 from tracker import tracker_helpers
 
@@ -58,32 +58,32 @@ class IssueDetailTest(unittest.TestCase):
 
   def testChooseNextPage(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/detail?id=123&q=term')
+        path='/p/proj/issues/detail_ezt?id=123&q=term')
     mr.col_spec = ''
     config = tracker_pb2.ProjectIssueConfig()
     issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L)
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, None,
         user_pb2.IssueUpdateNav.UP_TO_LIST, '124')
     self.assertTrue(url.startswith(
         'http://127.0.0.1/p/proj/issues/list?cursor=proj%3A123&q=term'))
     self.assertTrue(url.endswith('&updated=123'))
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, None,
         user_pb2.IssueUpdateNav.STAY_SAME_ISSUE, '124')
-    self.assertEqual('http://127.0.0.1/p/proj/issues/detail?id=123&q=term',
+    self.assertEqual('http://127.0.0.1/p/proj/issues/detail_ezt?id=123&q=term',
                      url)
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, None,
         user_pb2.IssueUpdateNav.NEXT_IN_LIST, '124')
-    self.assertEqual('http://127.0.0.1/p/proj/issues/detail?id=124&q=term',
+    self.assertEqual('http://127.0.0.1/p/proj/issues/detail_ezt?id=124&q=term',
                      url)
 
     # If this is the last in the list, the next_id from the form will be ''.
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, None,
         user_pb2.IssueUpdateNav.NEXT_IN_LIST, '')
     self.assertTrue(url.startswith(
@@ -92,7 +92,7 @@ class IssueDetailTest(unittest.TestCase):
 
   def testChooseNextPage_ForMoveRequest(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/detail?id=123&q=term')
+        path='/p/proj/issues/detail_ezt?id=123&q=term')
     mr.col_spec = ''
     config = tracker_pb2.ProjectIssueConfig()
     issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L)
@@ -101,7 +101,7 @@ class IssueDetailTest(unittest.TestCase):
     moved_to_project_name_and_local_id = (moved_to_project_name,
                                           moved_to_project_local_id)
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, moved_to_project_name_and_local_id, None,
         user_pb2.IssueUpdateNav.UP_TO_LIST, '124')
     self.assertTrue(url.startswith(
@@ -109,23 +109,23 @@ class IssueDetailTest(unittest.TestCase):
         str(moved_to_project_local_id) + '&moved_to_project=' +
         moved_to_project_name + '&q=term'))
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, moved_to_project_name_and_local_id, None,
         user_pb2.IssueUpdateNav.STAY_SAME_ISSUE, '124')
     self.assertEqual(
-        'http://127.0.0.1/p/%s/issues/detail?id=123&q=term' % (
+        'http://127.0.0.1/p/%s/issues/detail_ezt?id=123&q=term' % (
             moved_to_project_name),
         url)
     mr.project_name = 'proj'  # reset project name back.
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, moved_to_project_name_and_local_id, None,
         user_pb2.IssueUpdateNav.NEXT_IN_LIST, '124')
-    self.assertEqual('http://127.0.0.1/p/proj/issues/detail?id=124&q=term',
+    self.assertEqual('http://127.0.0.1/p/proj/issues/detail_ezt?id=124&q=term',
                      url)
 
     # If this is the last in the list, the next_id from the form will be ''.
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, moved_to_project_name_and_local_id, None,
         user_pb2.IssueUpdateNav.NEXT_IN_LIST, '')
     self.assertTrue(url.startswith(
@@ -135,7 +135,7 @@ class IssueDetailTest(unittest.TestCase):
 
   def testChooseNextPage_ForCopyRequest(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/detail?id=123&q=term')
+        path='/p/proj/issues/detail_ezt?id=123&q=term')
     mr.col_spec = ''
     config = tracker_pb2.ProjectIssueConfig()
     issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L)
@@ -144,7 +144,7 @@ class IssueDetailTest(unittest.TestCase):
     copied_to_project_name_and_local_id = (copied_to_project_name,
                                            copied_to_project_local_id)
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, copied_to_project_name_and_local_id,
         user_pb2.IssueUpdateNav.UP_TO_LIST, '124')
     self.assertTrue(url.startswith(
@@ -153,20 +153,21 @@ class IssueDetailTest(unittest.TestCase):
         '&copied_to_project=' + copied_to_project_name +
         '&cursor=proj%3A123&q=term'))
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, copied_to_project_name_and_local_id,
         user_pb2.IssueUpdateNav.STAY_SAME_ISSUE, '124')
-    self.assertEqual('http://127.0.0.1/p/proj/issues/detail?id=123&q=term', url)
+    self.assertEqual('http://127.0.0.1/p/proj/issues/detail_ezt?id=123&q=term',
+                     url)
     mr.project_name = 'proj'  # reset project name back.
 
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, copied_to_project_name_and_local_id,
         user_pb2.IssueUpdateNav.NEXT_IN_LIST, '124')
-    self.assertEqual('http://127.0.0.1/p/proj/issues/detail?id=124&q=term',
+    self.assertEqual('http://127.0.0.1/p/proj/issues/detail_ezt?id=124&q=term',
                      url)
 
     # If this is the last in the list, the next_id from the form will be ''.
-    url = issuedetail._ChooseNextPage(
+    url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, copied_to_project_name_and_local_id,
         user_pb2.IssueUpdateNav.NEXT_IN_LIST, '')
     self.assertTrue(url.startswith(
@@ -176,7 +177,8 @@ class IssueDetailTest(unittest.TestCase):
         '&cursor=proj%3A123&q=term'))
 
   def testGatherHelpData_Anon(self):
-    servlet = issuedetail.IssueDetail('req', 'res', services=self.services)
+    servlet = issuedetailezt.IssueDetailEzt(
+        'req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest()
     mr.auth.user_id = 0
 
@@ -186,7 +188,8 @@ class IssueDetailTest(unittest.TestCase):
     self.assertEqual(None, help_data['cue'])
 
   def testGatherHelpData_SignedIn(self):
-    servlet = issuedetail.IssueDetail('req', 'res', services=self.services)
+    servlet = issuedetailezt.IssueDetailEzt(
+        'req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest()
     mr.auth.user_id = 111L
 
@@ -257,20 +260,20 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         user=fake.UserService())
     self.project = self.services.project.TestAddProject(
       'proj', project_id=987, committer_ids=[111L])
-    self.servlet = issuedetail.IssueDetail(
+    self.servlet = issuedetailezt.IssueDetailEzt(
         'req', 'res', services=self.services)
     self.mox = mox.Mox()
     self.services.user.TestAddUser('owner@example.com', 111L)
     self.issue = fake.MakeTestIssue(
         self.project.project_id, 1, 'sum', 'New', 111L, project_name='proj')
 
-    self.original_GetAdjacentIssue = issuedetail.GetAdjacentIssue
-    issuedetail.GetAdjacentIssue = mock.Mock()
+    self.original_GetAdjacentIssue = issuedetailezt.GetAdjacentIssue
+    issuedetailezt.GetAdjacentIssue = mock.Mock()
 
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
-    issuedetail.GetAdjacentIssue = self.original_GetAdjacentIssue
+    issuedetailezt.GetAdjacentIssue = self.original_GetAdjacentIssue
 
   def testGatherPageData_ApprovalRedirect(self):
     self.servlet.redirect = mock.Mock()
@@ -293,27 +296,27 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     page_perms = testing_helpers.Blank(
         EditIssueSummary=False, EditIssueStatus=False, EditIssueOwner=False,
         EditIssueCc=False)  # no perms are needed.
-    self.assertTrue(issuedetail._FieldEditPermitted(
+    self.assertTrue(issuedetailezt._FieldEditPermitted(
         [], '', '', '', '', 0, [], page_perms))
 
   def testFieldEditPermitted_AllNeededPerms(self):
     page_perms = testing_helpers.Blank(
         EditIssueSummary=True, EditIssueStatus=True, EditIssueOwner=True,
         EditIssueCc=True)
-    self.assertTrue(issuedetail._FieldEditPermitted(
+    self.assertTrue(issuedetailezt._FieldEditPermitted(
         [], '', '', 'new sum', 'new status', 111L, [222L], page_perms))
 
   def testFieldEditPermitted_MissingPerms(self):
     page_perms = testing_helpers.Blank(
         EditIssueSummary=False, EditIssueStatus=False, EditIssueOwner=False,
         EditIssueCc=False)  # no perms.
-    self.assertFalse(issuedetail._FieldEditPermitted(
+    self.assertFalse(issuedetailezt._FieldEditPermitted(
         [], '', '', 'new sum', '', 0, [], page_perms))
-    self.assertFalse(issuedetail._FieldEditPermitted(
+    self.assertFalse(issuedetailezt._FieldEditPermitted(
         [], '', '', '', 'new status', 0, [], page_perms))
-    self.assertFalse(issuedetail._FieldEditPermitted(
+    self.assertFalse(issuedetailezt._FieldEditPermitted(
         [], '', '', '', '', 111L, [], page_perms))
-    self.assertFalse(issuedetail._FieldEditPermitted(
+    self.assertFalse(issuedetailezt._FieldEditPermitted(
         [], '', '', '', '', 0, [222L], page_perms))
 
   def testFieldEditPermitted_NeededPermsNotOffered(self):
@@ -321,11 +324,11 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     page_perms = testing_helpers.Blank(
         EditIssueSummary=True, EditIssueStatus=True, EditIssueOwner=True,
         EditIssueCc=True)
-    self.assertFalse(issuedetail._FieldEditPermitted(
+    self.assertFalse(issuedetailezt._FieldEditPermitted(
         ['NewLabel'], '', '', '', '', 0, [], page_perms))
-    self.assertFalse(issuedetail._FieldEditPermitted(
+    self.assertFalse(issuedetailezt._FieldEditPermitted(
         [], 'new blocked on', '', '', '', 0, [], page_perms))
-    self.assertFalse(issuedetail._FieldEditPermitted(
+    self.assertFalse(issuedetailezt._FieldEditPermitted(
         [], '', 'new blocking', '', '', 0, [], page_perms))
 
   def testValidateOwner_ChangedToValidOwner(self):
@@ -442,7 +445,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': non_member_user_id},
-        path='/p/proj/issues/detail.do?id=%d' % local_id_2,
+        path='/p/proj/issues/detail_ezt.do?id=%d' % local_id_2,
         project=self.project, method='POST',
         perms=permissions.USER_PERMISSIONSET)
     mr.project_name = self.project.project_name
@@ -455,14 +458,14 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     redirect_url = self.servlet.ProcessFormData(mr, post_data)
     self.mox.VerifyAll()
     self.assertTrue(redirect_url.startswith(
-        'http://127.0.0.1/p/proj/issues/detail?id=%d' % local_id_2))
+        'http://127.0.0.1/p/proj/issues/detail_ezt?id=%d' % local_id_2))
 
     # BUT, issue should not have been edited because user lacked permission.
     updated_issue_2 = self.services.issue.GetIssueByLocalID(
         self.cnxn, self.project.project_id, local_id_2)
     self.assertEqual(local_id_1, updated_issue_2.merged_into)
 
-    self.assertIs(issuedetail.GetAdjacentIssue.called, True)
+    self.assertIs(issuedetailezt.GetAdjacentIssue.called, True)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
@@ -493,7 +496,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
 
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': non_member_user_id},
-        path='/p/proj/issues/detail.do?id=%d' % local_id_2,
+        path='/p/proj/issues/detail_ezt.do?id=%d' % local_id_2,
         project=self.project, method='POST',
         # The user has suddenly become a member.
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
@@ -507,10 +510,10 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     redirect_url = self.servlet.ProcessFormData(mr, post_data)
     self.mox.VerifyAll()
 
-    self.assertIs(issuedetail.GetAdjacentIssue.called, True)
+    self.assertIs(issuedetailezt.GetAdjacentIssue.called, True)
 
     self.assertTrue(redirect_url.startswith(
-        'http://127.0.0.1/p/proj/issues/detail?id=%d' % local_id_2))
+        'http://127.0.0.1/p/proj/issues/detail_ezt?id=%d' % local_id_2))
 
     # BUT, issue should not have been edited because editing fields were not
     # offered when the form was generated.
@@ -555,7 +558,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     member_user_id = 111L
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': member_user_id},
-        path='/p/proj/issues/detail.do?id=%d' % local_id_2,
+        path='/p/proj/issues/detail_ezt.do?id=%d' % local_id_2,
         project=self.project, method='POST',
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
     mr.project_name = self.project.project_name
@@ -580,7 +583,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         self.cnxn, issue_1.issue_id)
     self.assertEqual(2, len(comments_1))
 
-    self.assertIs(issuedetail.GetAdjacentIssue.called, True)
+    self.assertIs(issuedetailezt.GetAdjacentIssue.called, True)
 
     # TODO(jrobbins): add more unit tests for other aspects of ProcessForm.
 
@@ -588,7 +591,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
   def testHandleCopyOrMove_Copy_SameProject(self, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
-        path='/p/proj/issues/detail.do?id=1',
+        path='/p/proj/issues/detail_ezt.do?id=1',
         project=self.project, method='POST',
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
     mr.project_name = self.project.project_name
@@ -608,7 +611,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
   def testHandleCopyOrMove_Copy_DifferentProject(self, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
-        path='/p/proj/issues/detail.do?id=1',
+        path='/p/proj/issues/detail_ezt.do?id=1',
         project=self.project, method='POST',
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
     mr.project_name = self.project.project_name
@@ -633,7 +636,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
       self, _mock_unindexissues, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': 222L},
-        path='/p/proj/issues/detail.do?id=1',
+        path='/p/proj/issues/detail_ezt.do?id=1',
         project=self.project, method='POST',
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
     mr.project_name = self.project.project_name
@@ -700,7 +703,7 @@ class ModuleFunctionsTest(unittest.TestCase):
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([], [h1_view], []),
-        issuedetail._GetBinnedHotlistViews([h1_view], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([h1_view], involved_users=[111L]))
 
   def test_GetBinnedHotlistViews_SignedInUserHasAHotlist(self):
     """user ul1 owns h2 and is logged in; h2 should go into the "user" bin"""
@@ -712,7 +715,7 @@ class ModuleFunctionsTest(unittest.TestCase):
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([h2_view], [], []),
-        issuedetail._GetBinnedHotlistViews([h2_view], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([h2_view], involved_users=[111L]))
 
   def test_GetBinnedHotlistViews_OtherUserHasAHotlist(self):
     """user uo1 owns h3; uo1 is an "other"; h3 should go into the "user" bin"""
@@ -724,13 +727,13 @@ class ModuleFunctionsTest(unittest.TestCase):
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([], [], [h3_view]),
-        issuedetail._GetBinnedHotlistViews([h3_view], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([h3_view], involved_users=[111L]))
 
   def test_GetBinnedHotlistViews_Empty(self):
     """When no hotlist views are passed in, all bins should be empty"""
     self.assertEqual(
         ([], [], []),
-        issuedetail._GetBinnedHotlistViews([], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([], involved_users=[111L]))
 
   def test_GetBinnedHotlistViews_Multiple(self):
     """Should correctly bin each hotlist view when passed in multiple views"""
@@ -751,7 +754,7 @@ class ModuleFunctionsTest(unittest.TestCase):
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([h2_view], [h1_view], [h3_view]),
-        issuedetail._GetBinnedHotlistViews([h1_view, h2_view, h3_view],
+        issuedetailezt._GetBinnedHotlistViews([h1_view, h2_view, h3_view],
                                            involved_users=[111L]))
 
 
@@ -786,7 +789,7 @@ class GetAdjacentIssueTest(unittest.TestCase):
       we.FindIssuePositionInSearch = mock.Mock(
           return_value=[78901, 1, 78903, 3])
 
-      actual_issue = issuedetail.GetAdjacentIssue(we, cur_issue)
+      actual_issue = issuedetailezt.GetAdjacentIssue(we, cur_issue)
       self.assertEqual(prev_issue, actual_issue)
       we.FindIssuePositionInSearch.assert_called_once_with(cur_issue)
 
@@ -802,7 +805,7 @@ class GetAdjacentIssueTest(unittest.TestCase):
       we.FindIssuePositionInSearch = mock.Mock(
           return_value=[78901, 1, 78903, 3])
 
-      actual_issue = issuedetail.GetAdjacentIssue(
+      actual_issue = issuedetailezt.GetAdjacentIssue(
           we, cur_issue, next_issue=True)
       self.assertEqual(next_issue, actual_issue)
       we.FindIssuePositionInSearch.assert_called_once_with(cur_issue)
@@ -818,7 +821,7 @@ class GetAdjacentIssueTest(unittest.TestCase):
           return_value=[78901, 1, 78903, 3])
 
       with self.assertRaises(exceptions.NoSuchIssueException):
-        issuedetail.GetAdjacentIssue(we, cur_issue, next_issue=True)
+        issuedetailezt.GetAdjacentIssue(we, cur_issue, next_issue=True)
       we.FindIssuePositionInSearch.assert_called_once_with(cur_issue)
 
 
@@ -833,11 +836,11 @@ class FlipperRedirectTest(unittest.TestCase):
         project=fake.ProjectService())
     self.project = self.services.project.TestAddProject(
       'proj', project_id=987, committer_ids=[111L])
-    self.next_servlet = issuedetail.FlipperNext(
+    self.next_servlet = issuedetailezt.FlipperNext(
         'req', 'res', services=self.services)
-    self.prev_servlet = issuedetail.FlipperPrev(
+    self.prev_servlet = issuedetailezt.FlipperPrev(
         'req', 'res', services=self.services)
-    self.list_servlet = issuedetail.FlipperList(
+    self.list_servlet = issuedetailezt.FlipperList(
         'req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest(project=self.project)
     mr.local_id = 123
@@ -861,7 +864,7 @@ class FlipperRedirectTest(unittest.TestCase):
     self.prev_servlet.redirect = mock.Mock()
     self.list_servlet.redirect = mock.Mock()
 
-  @mock.patch('tracker.issuedetail.GetAdjacentIssue')
+  @mock.patch('tracker.issuedetailezt.GetAdjacentIssue')
   def testFlipperNext(self, patchGetAdjacentIssue):
     patchGetAdjacentIssue.return_value = self.fake_issue_2
     self.next_servlet.mr.GetIntParam = mock.Mock(return_value=None)
@@ -872,7 +875,7 @@ class FlipperRedirectTest(unittest.TestCase):
     self.next_servlet.redirect.assert_called_once_with(
       '/p/rutabaga/issues/detail?id=456')
 
-  @mock.patch('tracker.issuedetail.GetAdjacentIssue')
+  @mock.patch('tracker.issuedetailezt.GetAdjacentIssue')
   def testFlipperNext_Hotlist(self, patchGetAdjacentIssue):
     patchGetAdjacentIssue.return_value = self.fake_issue_3
     self.next_servlet.mr.GetIntParam = mock.Mock(return_value=123)
@@ -883,7 +886,7 @@ class FlipperRedirectTest(unittest.TestCase):
     self.next_servlet.redirect.assert_called_once_with(
       '/p/potato/issues/detail?id=789')
 
-  @mock.patch('tracker.issuedetail.GetAdjacentIssue')
+  @mock.patch('tracker.issuedetailezt.GetAdjacentIssue')
   def testFlipperPrev(self, patchGetAdjacentIssue):
     patchGetAdjacentIssue.return_value = self.fake_issue_2
     self.next_servlet.mr.GetIntParam = mock.Mock(return_value=None)
@@ -894,7 +897,7 @@ class FlipperRedirectTest(unittest.TestCase):
     self.prev_servlet.redirect.assert_called_once_with(
       '/p/rutabaga/issues/detail?id=456')
 
-  @mock.patch('tracker.issuedetail.GetAdjacentIssue')
+  @mock.patch('tracker.issuedetailezt.GetAdjacentIssue')
   def testFlipperPrev_Hotlist(self, patchGetAdjacentIssue):
     patchGetAdjacentIssue.return_value = self.fake_issue_3
     self.prev_servlet.mr.GetIntParam = mock.Mock(return_value=123)
@@ -905,7 +908,7 @@ class FlipperRedirectTest(unittest.TestCase):
     self.prev_servlet.redirect.assert_called_once_with(
       '/p/potato/issues/detail?id=789')
 
-  @mock.patch('tracker.issuedetail._ComputeBackToListURL')
+  @mock.patch('tracker.issuedetailezt._ComputeBackToListURL')
   def testFlipperList(self, patch_ComputeBackToListURL):
     patch_ComputeBackToListURL.return_value = '/p/test/issues/list'
     self.list_servlet.mr.GetIntParam = mock.Mock(return_value=None)
@@ -917,7 +920,7 @@ class FlipperRedirectTest(unittest.TestCase):
     self.list_servlet.redirect.assert_called_once_with(
       '/p/test/issues/list')
 
-  @mock.patch('tracker.issuedetail._ComputeBackToListURL')
+  @mock.patch('tracker.issuedetailezt._ComputeBackToListURL')
   def testFlipperList_Hotlist(self, patch_ComputeBackToListURL):
     patch_ComputeBackToListURL.return_value = '/p/test/issues/list'
     self.list_servlet.mr.GetIntParam = mock.Mock(return_value=123)
@@ -963,7 +966,7 @@ class ShouldShowFlipperTest(unittest.TestCase):
           'summary_%d' % idx, 'status', 111L, [], [], [], [], 111L,
           'description_%d' % idx)
 
-    self.assertEqual(expected, issuedetail._ShouldShowFlipper(mr, services))
+    self.assertEqual(expected, issuedetailezt._ShouldShowFlipper(mr, services))
 
   def testShouldShowFlipper_RegularSizedProject(self):
     # If the user is looking for a specific issue, no flipper.

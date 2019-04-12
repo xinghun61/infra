@@ -472,11 +472,9 @@ def GetHostPort():
 
 
 def IssueCommentURL(
-    hostport, project, local_id, seq_num=None, is_approval=False):
+    hostport, project, local_id, seq_num=None):
   """Return a URL pointing directly to the specified comment."""
   servlet_name = urls.ISSUE_DETAIL
-  if is_approval:
-    servlet_name = urls.ISSUE_APPROVAL
   detail_url = FormatAbsoluteURLForDomain(
       hostport, project.project_name, servlet_name, id=local_id)
   if seq_num:

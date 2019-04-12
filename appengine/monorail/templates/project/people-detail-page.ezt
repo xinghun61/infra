@@ -3,7 +3,7 @@
 
 <a href="list">&lsaquo; Back to people list</a>
 
-<form action="detail.do" method="POST" id="peopledetail">
+<form action="detail_ezt.do" method="POST" id="peopledetail">
 <input type="hidden" name="token" value="[form_token]">
 <input type="hidden" name="u" value="[member.user.user_id]">
 <table cellspacing="8" class="rowmajor vt">

@@ -26,15 +26,15 @@ suite('mr-issue-link', () => {
   test('strikethrough when closed', () => {
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.isFalse(
-        window.getComputedStyle(link).getPropertyValue(
-          'text-decoration').includes('line-through'));
+      window.getComputedStyle(link).getPropertyValue(
+        'text-decoration').includes('line-through'));
     element.issue = {statusRef: {meansOpen: false}};
 
     flush();
 
     assert.isTrue(
-        window.getComputedStyle(link).getPropertyValue(
-          'text-decoration').includes('line-through'));
+      window.getComputedStyle(link).getPropertyValue(
+        'text-decoration').includes('line-through'));
   });
 
   test('shows projectName only when different from global', () => {
@@ -56,22 +56,12 @@ suite('mr-issue-link', () => {
     assert.equal(link.textContent.trim(), 'Issue test:11');
   });
 
-  test('does not redirects to approval page for regular issues', () => {
+  test('shows links for issues', () => {
     element.issue = {
       projectName: 'test',
       localId: 11,
     };
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.include(link.href.trim(), '/p/test/issues/detail?id=11');
-  });
-
-  test('redirects to approval page for approval issues', () => {
-    element.issue = {
-      projectName: 'test',
-      localId: 11,
-      approvalValues: [],
-    };
-    const link = element.shadowRoot.querySelector('#bugLink');
-    assert.include(link.href.trim(), '/p/test/issues/approval?id=11');
   });
 });

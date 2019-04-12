@@ -29,15 +29,15 @@ suite('mr-app', () => {
     assert.instanceOf(element, MrApp);
   });
 
-  test('_loadApprovalPage loads approval page', () => {
-    element._loadApprovalPage({
+  test('_loadIssuePage loads issue page', () => {
+    element._loadIssuePage({
       query: {id: '234'},
       params: {project: 'chromium'},
     });
 
-    const approvalElement = element.shadowRoot.querySelector('mr-issue-page');
-    assert.isDefined(approvalElement, 'approval element is defined');
-    assert.equal(approvalElement.issueRef.projectName, 'chromium');
-    assert.equal(approvalElement.issueRef.localId, 234);
+    const issuePage = element.shadowRoot.querySelector('mr-issue-page');
+    assert.isDefined(issuePage, 'issue page is defined');
+    assert.equal(issuePage.issueRef.projectName, 'chromium');
+    assert.equal(issuePage.issueRef.localId, 234);
   });
 });

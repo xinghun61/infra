@@ -18,7 +18,7 @@ t0: on page load for /issues/new:
   let l = new Clientlogger('issues');
   l.logStart('new-issue', 'user-time');
 
-t1: on submit for /issues/new (POST /issues/detail.do):
+t1: on submit for /issues/new (POST /issues/detail_ezt.do):
 
   l.logStart('new-issue', 'server-time');
 

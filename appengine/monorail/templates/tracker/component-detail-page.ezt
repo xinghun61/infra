@@ -15,7 +15,7 @@
 [end]
 
 <br/>
-<form action="detail.do" method="POST">
+<form action="detail_ezt.do" method="POST">
 <input type="hidden" name="token" value="[form_token]">
 <input type="hidden" name="component" value="[component_def.path]">
 <table cellspacing="8" class="rowmajor vt">

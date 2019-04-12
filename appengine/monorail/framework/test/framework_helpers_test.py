@@ -281,11 +281,6 @@ class UrlFormattingTest(unittest.TestCase):
         hostport, proj, 2)
     self.assertEqual(actual_url, url)
 
-    url = 'https://port.someplex.com/p/proj/issues/approval?id=2'
-    actual_url = framework_helpers.IssueCommentURL(
-        hostport, proj, 2, is_approval=True)
-    self.assertEqual(actual_url, url)
-
     url = 'https://port.someplex.com/p/proj/issues/detail?id=2#c2'
     actual_url = framework_helpers.IssueCommentURL(
         hostport, proj, 2, seq_num=2)

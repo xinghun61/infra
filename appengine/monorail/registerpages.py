@@ -75,13 +75,13 @@ from tracker import componentcreate
 from tracker import componentdetail
 from tracker import fieldcreate
 from tracker import fielddetail
-from tracker import issueapproval
 from tracker import issueadmin
 from tracker import issueadvsearch
 from tracker import issueattachment
 from tracker import issueattachmenttext
 from tracker import issuebulkedit
 from tracker import issuedetail
+from tracker import issuedetailezt
 from tracker import issueentry
 from tracker import issueentryafterlogin
 from tracker import issueexport
@@ -218,16 +218,16 @@ class ServletRegistry(object):
         })
 
     self._SetupProjectServlets({
-        urls.ISSUE_APPROVAL: issueapproval.IssueApproval,
+        urls.ISSUE_APPROVAL: issuedetail.IssueDetailRedirect,
         urls.ISSUE_LIST: issuelist.IssueList,
         urls.ISSUE_LIST_CSV: issuelistcsv.IssueListCsv,
         urls.ISSUE_REINDEX: issuereindex.IssueReindex,
         urls.ISSUE_DETAIL: issuedetail.IssueDetail,
-        urls.ISSUE_DETAIL_LEGACY: issuedetail.IssueDetail,
-        urls.ISSUE_DETAIL_FLIPPER_NEXT: issuedetail.FlipperNext,
-        urls.ISSUE_DETAIL_FLIPPER_PREV: issuedetail.FlipperPrev,
-        urls.ISSUE_DETAIL_FLIPPER_LIST: issuedetail.FlipperList,
-        urls.ISSUE_DETAIL_FLIPPER_INDEX: issuedetail.FlipperIndex,
+        urls.ISSUE_DETAIL_LEGACY: issuedetailezt.IssueDetailEzt,
+        urls.ISSUE_DETAIL_FLIPPER_NEXT: issuedetailezt.FlipperNext,
+        urls.ISSUE_DETAIL_FLIPPER_PREV: issuedetailezt.FlipperPrev,
+        urls.ISSUE_DETAIL_FLIPPER_LIST: issuedetailezt.FlipperList,
+        urls.ISSUE_DETAIL_FLIPPER_INDEX: issuedetailezt.FlipperIndex,
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
         urls.ISSUE_ENTRY_AFTER_LOGIN: issueentryafterlogin.IssueEntryAfterLogin,
         urls.ISSUE_TIPS: issuetips.IssueSearchTips,

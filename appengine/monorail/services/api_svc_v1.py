@@ -50,7 +50,7 @@ from services import service_manager
 from services import tracker_fulltext
 from sitewide import sitewide_helpers
 from tracker import field_helpers
-from tracker import issuedetail
+from tracker import issuedetailezt
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
@@ -402,7 +402,7 @@ class MonorailApi(remote.Service):
             (request.projectId, request.issueId))
       if request.updates.moveToProject:
         move_to = request.updates.moveToProject.lower()
-        move_to_project = issuedetail.CheckMoveIssueRequest(
+        move_to_project = issuedetailezt.CheckMoveIssueRequest(
             self._services, mar, issue, True, move_to, mar.errors)
         if mar.errors.AnyErrors():
           raise endpoints.BadRequestException(mar.errors.move_to)

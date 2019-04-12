@@ -92,8 +92,8 @@ class ServletTest(unittest.TestCase):
       '/something/edit.do',
       self.page_class._FormHandlerURL('/something/edit.do'))
     self.assertEqual(
-      '/something/detail.do',
-      self.page_class._FormHandlerURL('/something/detail'))
+      '/something/detail_ezt.do',
+      self.page_class._FormHandlerURL('/something/detail_ezt'))
 
   def testProcessForm_NoToken(self):
     user_id = 111L

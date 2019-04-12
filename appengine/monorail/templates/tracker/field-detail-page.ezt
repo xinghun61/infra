@@ -7,7 +7,7 @@
 
 <h4>Custom field</h4>
 
-<form action="detail.do" method="POST">
+<form action="detail_ezt.do" method="POST">
 <input type="hidden" name="token" value="[form_token]">
 <input type="hidden" name="field" value="[field_def.field_name]">
 

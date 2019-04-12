@@ -19,7 +19,7 @@
    [end][end][end]
 
   <div>
-   <form action="detail.do" id="issue_update_form"
+   <form action="detail_ezt.do" id="issue_update_form"
          method="POST" enctype="multipart/form-data">
    [include "issue-hidden-fields.ezt"]
    [if-any page_perms.EditIssue][else]

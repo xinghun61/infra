@@ -149,9 +149,9 @@ blacklist:
   - subnet: 156.38.148.90
     description: someone crawling us 2018-11-27
   - subnet: 31.192.108.122
-    description: someone repeatedly posting to detail.do 2018-12-05
+    description: someone repeatedly posting to detail_ezt.do 2018-12-05
   - subnet: 173.239.232.128
-    description: someone repeatedly posting to template/detail.do 2019-01-13
+    description: someone repeatedly posting to template/detail_ezt.do 2019-01-13
   - subnet: 191.180.60.133
     description: someone making lots of requests with bad XSRF token
   - subnet: 2001:41d0:a:200f::1
