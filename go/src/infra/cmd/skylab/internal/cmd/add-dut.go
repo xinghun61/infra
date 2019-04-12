@@ -137,6 +137,10 @@ const (
 			{
 				"key": "servo_host",
 				"value": "[PLACEHOLDER] Unqualified hostname of the servohost"
+			},
+			{
+				"key": "servo_serial",
+				"value": "[PLACEHOLDER] serial number of servo"
 			}
 		],
 		"environment": "ENVIRONMENT_PROD",
@@ -148,8 +152,7 @@ const (
 				"DUT_POOL_SUITES"
 			],
 			"model": "[PLACEHOLDER] model of the DUT (roughly identifies the DUT hardware variant)"
-		},
-		"serialNumber": "[PLACEHOLDER] DUT serial number"
+		}
   }
 }`
 	placeholderTag = "[PLACEHOLDER]"
