@@ -22,6 +22,8 @@ const IMPLIED_LINK_RE = /(^|[^-\/._])\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu
 const IS_LINK_RE = /()\b(https?:\/\/|ftp:\/\/|mailto:)([^\s<]+)/gi;
 const GIT_HASH_RE = /\b(r(evision\s+#?)?)?([a-f0-9]{40})\b/gi;
 const SVN_REF_RE = /\b(r(evision\s+#?)?)([0-9]{4,7})\b/gi;
+const NEW_LINE_REGEX = /^(\r\n?|\n)$/;
+const NEW_LINE_OR_BOLD_REGEX = /(<b>[^<\n]+<\/b>)|(\r\n?|\n)/;
 // The revNum is in the same position for the above two Regexes. The
 // extraction function uses this similar format to allow switching out
 // Regexes easily, so be careful about changing GIT_HASH_RE and SVN_HASH_RE.
@@ -300,10 +302,10 @@ function getReferencedArtifacts(comments, currentProjectName) {
 
 function markupAutolinks(plainString, componentRefs, currentProjectName) {
   plainString = plainString || '';
-  const chunks = plainString.trim().split(/(<b>[^<\n]+<\/b>)|(\r\n?|\n)/);
+  const chunks = plainString.trim().split(NEW_LINE_OR_BOLD_REGEX);
   let textRuns = [];
   chunks.filter(Boolean).forEach((chunk) => {
-    if (chunk.match(/^(\r\n?|\n)$/)) {
+    if (chunk.match(NEW_LINE_REGEX)) {
       textRuns.push({tag: 'br'});
     } else if (chunk.startsWith('<b>') && chunk.endsWith('</b>')) {
       textRuns.push({content: chunk.slice(3, -4), tag: 'b'});
@@ -316,7 +318,7 @@ function markupAutolinks(plainString, componentRefs, currentProjectName) {
 
 function autolinkChunk(chunk, componentRefs, currentProjectName) {
   let textRuns = [{content: chunk}];
-  Components.forEach(({lookup, extractRefs, refRegs, replacer}, componentName) => {
+  Components.forEach(({refRegs, replacer}, componentName) => {
     refRegs.forEach((re) => {
       textRuns = applyLinks(textRuns, replacer, re,
         componentRefs.get(componentName), currentProjectName);
