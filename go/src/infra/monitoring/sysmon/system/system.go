@@ -24,6 +24,8 @@ import (
 	"go.chromium.org/luci/common/tsmon/metric"
 	"go.chromium.org/luci/common/tsmon/types"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var (
@@ -210,6 +212,9 @@ func updateCPUMetrics(c context.Context) error {
 	cpuTimes, err := cpu.Times(false)
 	if err != nil {
 		return err
+	}
+	if len(cpuTimes) < 1 {
+		return status.Errorf(codes.OutOfRange, "cpu.Times(fales) returned no entries")
 	}
 	user := cpuTimes[0].User - lastCPUTimes.User
 	system := cpuTimes[0].System - lastCPUTimes.System
