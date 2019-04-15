@@ -25,7 +25,7 @@ class TestMainHelpers(unittest.TestCase):
   @mock.patch(MAIN_HELPERS + 'reboot_host')
   def testRebootOnSchedule(self, reboot_host, _get_host_uptime):
     self.args.reboot_schedule = mock.Mock(spec=crontab.CronTab)
-    self.args.reboot_schedule.previous.return_value = -120  # 2 minutes ago
+    self.args.reboot_schedule.next.return_value = 3000  # 50 minutes
     self.assertTrue(main_helpers.reboot_gracefully(self.args, []))
     reboot_host.assert_called()
 
@@ -33,7 +33,7 @@ class TestMainHelpers(unittest.TestCase):
   @mock.patch(MAIN_HELPERS + 'reboot_host')
   def testNoRebootOnSchedule(self, reboot_host, _get_host_uptime):
     self.args.reboot_schedule = mock.Mock(spec=crontab.CronTab)
-    self.args.reboot_schedule.previous.return_value = -7200  # 2 hours ago
+    self.args.reboot_schedule.next.return_value = 7200  # 2 hours
     self.assertFalse(main_helpers.reboot_gracefully(self.args, []))
     reboot_host.assert_not_called()
 
@@ -64,3 +64,11 @@ class TestMainHelpers(unittest.TestCase):
     self.args.max_host_uptime = 60
     self.assertFalse(main_helpers.reboot_gracefully(self.args, [mock.Mock()]))
     reboot_host.assert_not_called()
+
+  @mock.patch(MAIN_HELPERS + 'get_host_uptime', return_value=180)  # 3 hours
+  @mock.patch(MAIN_HELPERS + 'reboot_host')
+  def testGracePeriodLargerThanCronFreq(self, reboot_host, _get_host_uptime):
+    self.args.reboot_schedule = crontab.CronTab('0 * * * *')  # every hour
+    self.args.reboot_grace_period = 120  # 2 hours
+    self.assertTrue(main_helpers.reboot_gracefully(self.args, [mock.Mock()]))
+    reboot_host.assert_called()

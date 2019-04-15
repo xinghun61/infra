@@ -4,6 +4,7 @@
 
 import argparse
 import contextlib
+import datetime
 import json
 import logging
 import logging.handlers
@@ -138,26 +139,28 @@ def reboot_gracefully(args, running_containers):
     True if reboot sequence has been started. Callers should not spawn new
     containers. Actual reboot may not be triggered due to running tasks.
   """
-  host_uptime = get_host_uptime()
-  time_since_scheduled_reboot = 0
+  mins_since_reboot = get_host_uptime()
+  mins_since_scheduled_reboot = 0
   if args.reboot_schedule:
-    # Crontab.previous is the time of the previously scheduled cron run.
-    time_since_last_cron = (
-        -args.reboot_schedule.previous(default_utc=True) / 60.0)
-    if host_uptime > _MIN_HOST_UPTIME and host_uptime > time_since_last_cron:
-      time_since_scheduled_reboot = time_since_last_cron
+    # Find next scheduled reboot time coming after machine was rebooted last.
+    now = datetime.datetime.utcnow()
+    last_reboot = now - datetime.timedelta(minutes=mins_since_reboot)
+    next_reboot = last_reboot + datetime.timedelta(
+        seconds=args.reboot_schedule.next(now=last_reboot, default_utc=True))
+    if next_reboot < now and mins_since_reboot > _MIN_HOST_UPTIME:
+      mins_since_scheduled_reboot = (now - next_reboot).total_seconds() / 60.0
       logging.debug(
           'Host has been scheduled to reboot for %.2f minutes' %
-          time_since_last_cron)
-  elif host_uptime > args.max_host_uptime:
-    time_since_scheduled_reboot = host_uptime - args.max_host_uptime
+          mins_since_scheduled_reboot)
+  elif mins_since_reboot > args.max_host_uptime:
+    mins_since_scheduled_reboot = mins_since_reboot - args.max_host_uptime
     logging.debug('Host uptime over max uptime (%d > %d)',
-                  host_uptime, args.max_host_uptime)
-  if not time_since_scheduled_reboot:
+                  mins_since_reboot, args.max_host_uptime)
+  if not mins_since_scheduled_reboot:
     return False
 
   if running_containers:
-    if time_since_scheduled_reboot > args.reboot_grace_period:
+    if mins_since_scheduled_reboot > args.reboot_grace_period:
       logging.warning(
           'Drain exceeds grace period of %d min. Rebooting host now '
           'despite %d running containers.', args.reboot_grace_period,
