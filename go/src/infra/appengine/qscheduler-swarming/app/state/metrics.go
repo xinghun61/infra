@@ -71,6 +71,17 @@ var (
 		field.String("account_id"),
 	)
 
+	counterAccountSpend = metric.NewCounter(
+		"qscheduler/state/event/account_spend",
+		"A task completed for this account, with given cost.",
+		&types.MetricMetadata{
+			Units: types.Seconds,
+		},
+		field.String("scheduler_id"),
+		field.String("account_id"),
+		field.Int("priority"),
+	)
+
 	// TODO(akeshet): Deprecate and delete this metric in favor of
 	// qscheduler/state/task_state which already incorporates it.
 	gaugeQueueSize = metric.NewInt(
@@ -167,6 +178,11 @@ func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 		case metrics.TaskEvent_SWARMING_COMPLETED:
 			details := event.GetCompletedDetails()
 			counterCompleted.Add(ctx, 1, event.SchedulerId, event.AccountId, details.Reason.String())
+			// At the time a task is completed, all of its spend is nonrefundable
+			// and committed, so this is the right time to count its spend.
+			// Note that this does not include spend from tasks that get preempted.
+			// That is intentional; those tasks have all of their spend refunded.
+			flushAccountSpendToTsMon(ctx, event)
 		case metrics.TaskEvent_SWARMING_ENQUEUED:
 			counterEnqueued.Add(ctx, 1, event.SchedulerId, event.AccountId)
 		case metrics.TaskEvent_QSCHEDULER_ASSIGNED:
@@ -179,6 +195,21 @@ func (e *metricsBuffer) flushToTsMon(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+// flushAccountSpendToTsMon flushes account spend metric to ts_mon.
+//
+// event must be a TaskEvent_SWARMING_COMPLETED event.
+func flushAccountSpendToTsMon(ctx context.Context, event *metrics.TaskEvent) {
+	if event.EventType != metrics.TaskEvent_SWARMING_COMPLETED {
+		panic("flushAccountSpendToTsMon received incorrect event type")
+	}
+	if !event.AccountValid {
+		return
+	}
+	for priority, spend := range event.Cost {
+		counterAccountSpend.Add(ctx, int64(spend), event.SchedulerId, event.AccountId, priority)
+	}
 }
 
 // AddEvent implements scheduler.EventSink.
