@@ -1267,6 +1267,20 @@ wheel: <
 
 * *universal*
 
+## **jsonlines**
+
+### 1.2.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/jsonlines-py2_py3"
+  version: "version:1.2.0"
+>
+```
+
+
+* *universal*
+
 ## **lazy-object-proxy**
 
 ### 1.3.1
