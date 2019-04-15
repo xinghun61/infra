@@ -120,6 +120,7 @@ CREATE TABLE ActionLimit (
 ) ENGINE=INNODB;
 
 
+-- TODO(jrobbins): Phase out this table and move data to UserPrefs.
 CREATE TABLE DismissedCues (
   user_id INT UNSIGNED NOT NULL,
   cue VARCHAR(40),  -- names of the cue cards that the user has dismissed.

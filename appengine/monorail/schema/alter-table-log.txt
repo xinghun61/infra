@@ -1644,3 +1644,11 @@ CREATE TABLE UserPrefs (
 
   UNIQUE KEY (user_id, name)
 ) ENGINE=INNODB;
+
+================================================================
+2019-04-10: Set UserPrefs that indicate that privacy click-through was seen.
+This is part of phasing out DismissedCues.
+
+INSERT IGNORE INTO UserPrefs (user_id, name, value)
+SELECT user_id, cue, 'true'
+FROM DismissedCues;
