@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {createMixin} from 'polymer-redux';
+import {connect} from 'pwa-helpers/connect-mixin.js';
 import {applyMiddleware, combineReducers, compose, createStore} from 'redux';
 import thunk from 'redux-thunk';
 import * as issue from './issue.js';
@@ -54,3 +55,5 @@ export const store = createStore(rootReducer, composeEnhancers(
 ));
 
 export const ReduxMixin = createMixin(store);
+
+export const connectStore = connect(store);
