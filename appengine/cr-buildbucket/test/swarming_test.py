@@ -860,9 +860,9 @@ class CreateTaskTest(BaseTest):
     swarming._create_swarming_task(1, self.task_def)
     cancel_task.assert_called_with('swarming.example.com', 'new task')
 
-  def test_http_401(self):
+  def test_http_400(self):
     net.json_request_async.return_value = future_exception(
-        net.AuthError('forbidden', 401, None)
+        net.Error('HTTP 401', 400, 'invalid request')
     )
 
     swarming._create_swarming_task(1, self.task_def)
@@ -871,12 +871,12 @@ class CreateTaskTest(BaseTest):
     self.assertEqual(build.status, common_pb2.INFRA_FAILURE)
     self.assertEqual(
         build.proto.summary_markdown,
-        r'Swarming responded with HTTP 401: `forbidden`'
+        r'Swarming task creation API responded with HTTP 400: `invalid request`'
     )
 
   def test_http_500(self):
     net.json_request_async.return_value = future_exception(
-        net.Error('internal', 500, None)
+        net.Error('internal', 500, 'Internal server error')
     )
 
     with self.assertRaises(net.Error):

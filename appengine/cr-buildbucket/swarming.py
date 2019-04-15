@@ -887,16 +887,6 @@ def create_sync_task_async(build, builder_cfg):  # pragma: no cover
   })
 
 
-def _insert_secrets(task_def, build_id, task_key):
-  """Inserts a build token into task_def."""
-  secrets = launcher_pb2.BuildSecrets(
-      build_token=tokens.generate_build_token(build_id, task_key),
-  )
-  secret_bytes_b64 = base64.b64encode(secrets.SerializeToString())
-  for ts in task_def[u'task_slices']:
-    ts[u'properties'][u'secret_bytes'] = secret_bytes_b64
-
-
 def _create_swarming_task(build_id, task_def):
   build = model.Build.get_by_id(build_id)
   if not build:  # pragma: no cover
@@ -909,7 +899,14 @@ def _create_swarming_task(build_id, task_def):
     return
 
   task_key = str(uuid.uuid4())
-  _insert_secrets(task_def, build_id, task_key)
+
+  # Insert secret bytes.
+  secrets = launcher_pb2.BuildSecrets(
+      build_token=tokens.generate_build_token(build_id, task_key),
+  )
+  secret_bytes_b64 = base64.b64encode(secrets.SerializeToString())
+  for ts in task_def[u'task_slices']:
+    ts[u'properties'][u'secret_bytes'] = secret_bytes_b64
 
   new_task_id = None
   try:
@@ -935,12 +932,27 @@ def _create_swarming_task(build_id, task_def):
     if err.status_code >= 500 or err.status_code is None:
       raise
 
+    # Dump the task definition to the log.
+    # Pop secret bytes.
+    for ts in task_def[u'task_slices']:
+      ts[u'properties'].pop(u'secret_bytes')
+    logging.error(
+        (
+            'Swarming responded with HTTP %d. '
+            'Ending the build with INFRA_FAILURE.\n'
+            'Task def: %s\n'
+            'Response: %s'
+        ),
+        err.status_code,
+        task_def,
+        err.response,
+    )
     _end_build(
         build_id,
         common_pb2.INFRA_FAILURE,
         (
-            'Swarming responded with HTTP %d: `%s`' %
-            (err.status_code, err.message.replace('`', '"'))
+            'Swarming task creation API responded with HTTP %d: `%s`' %
+            (err.status_code, err.response.replace('`', '"'))
         ),
         end_time=utils.utcnow(),
     )
