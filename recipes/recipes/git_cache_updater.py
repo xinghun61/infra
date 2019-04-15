@@ -4,16 +4,26 @@
 
 """Updates the Git Cache zip files."""
 
+from recipe_engine import recipe_api
+
 DEPS = [
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/json',
-  'recipe_engine/url',
   'recipe_engine/path',
+  'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/runtime',
+  'recipe_engine/url',
 ]
+
+
+PROPERTIES = {
+  'bucket': recipe_api.Property(
+      default=None, help='override GS bucket to upload cached git repos to'),
+}
 
 
 BUILDER_MAPPING = {
@@ -27,7 +37,7 @@ chromium/src
 foo/bar"""
 
 
-def RunSteps(api):
+def RunSteps(api, bucket):
   project = BUILDER_MAPPING[api.buildbucket.builder_name]
   project_list_url = '%s?format=TEXT' % project
 
@@ -40,6 +50,9 @@ def RunSteps(api):
     'GIT_HTTP_LOW_SPEED_LIMIT': '0',
     'GIT_HTTP_LOW_SPEED_TIME': '0',
   }
+  if api.runtime.is_experimental:
+    assert bucket, 'bucket property is required in experimental mode'
+    env['OVERRIDE_BOOTSTRAP_BUCKET'] = bucket
 
   # Turn off the low speed limit, since checkout will be long.
   with api.context(env=env):
@@ -63,8 +76,13 @@ def RunSteps(api):
 
 
 def GenTests(api):
-  for buildername in BUILDER_MAPPING.keys():
-    yield (
-        api.test(buildername) +
-        api.buildbucket.try_build(builder=buildername)
-    )
+  yield (
+      api.test('git-cache-chromium') +
+      api.buildbucket.try_build(builder='git-cache-chromium')
+  )
+  yield (
+      api.test('git-cache-chromium-led-triggered') +
+      api.runtime(is_luci=True, is_experimental=True) +
+      api.properties(bucket='experimental-gs-bucket') +
+      api.buildbucket.try_build(builder='git-cache-chromium')
+  )
