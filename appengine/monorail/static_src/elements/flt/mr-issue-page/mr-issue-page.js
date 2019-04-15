@@ -157,17 +157,17 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
-      <template is="dom-if" if="[[_showLoading]]">
+      <template is="dom-if" if="[[_showLoading(fetchingIssue, issue)]]">
         <div class="container-no-issue" id="loading">
           Loading...
         </div>
       </template>
-      <template is="dom-if" if="[[_showFetchError]]">
+      <template is="dom-if" if="[[fetchIssueError]]">
         <div class="container-no-issue" id="fetch-error">
           [[fetchIssueError.description]]
         </div>
       </template>
-      <template is="dom-if" if="[[_showDeleted]]">
+      <template is="dom-if" if="[[_issueIsDeleted(issue)]]">
         <div class="container-no-issue" id="deleted">
           <p>Issue [[issueRef.localId]] has been deleted.</p>
           <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
@@ -177,7 +177,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           </template>
         </div>
       </template>
-      <template is="dom-if" if="[[_showIssue]]">
+      <template is="dom-if" if="[[!_issueIsEmpty(issue)]]">
         <div
           class="container-outside"
           on-open-dialog="_onOpenDialog"
@@ -240,22 +240,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         computed: '_computeCodeFont(prefs)',
         reflectToAttribute: true,
       },
-      // Internal properties.
-      _hasFetched: {
-        type: Boolean,
-        value: false,
-      },
-      _issueLoaded: {
-        type: Boolean,
-        value: false,
-      },
-      _showDeleted: Boolean,
-      _showFetchError: Boolean,
-      _showIssue: Boolean,
-      _showLoading: {
-        type: Boolean,
-        value: true,
-      },
     };
   }
 
@@ -280,30 +264,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
       '_projectNameChanged(issueRef.projectName)',
       '_userDisplayNameChanged(userDisplayName)',
     ];
-  }
-
-  _fetchChanged(fetchingIssue, fetchIssueError, issue) {
-    if (fetchingIssue) {
-      this._hasFetched = true;
-    }
-    if (this._hasFetched && !fetchingIssue) {
-      this._issueLoaded = true;
-    }
-
-    this._showLoading = false;
-    this._showFetchError = false;
-    this._showDeleted = false;
-    this._showIssue = false;
-
-    if (!this._issueLoaded) {
-      this._showLoading = true;
-    } else if (fetchIssueError) {
-      this._showFetchError = true;
-    } else if (issue && issue.isDeleted) {
-      this._showDeleted = true;
-    } else {
-      this._showIssue = true;
-    }
   }
 
   _issueChanged(issueRef, issue) {
@@ -363,6 +323,19 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   _computeCodeFont(prefs) {
     if (!prefs) return false;
     return prefs.get('code_font') === 'true';
+  }
+
+  _issueIsEmpty(issue) {
+    return !issue || !issue.localId;
+  }
+
+  _issueIsDeleted(issue) {
+    return issue && issue.isDeleted;
+  }
+
+
+  _showLoading(fetchingIssue, issue) {
+    return fetchingIssue && this._issueIsEmpty(issue);
   }
 }
 

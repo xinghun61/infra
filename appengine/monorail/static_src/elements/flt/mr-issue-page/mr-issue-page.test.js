@@ -35,17 +35,9 @@ suite('mr-issue-page', () => {
     assert.instanceOf(element, MrIssuePage);
   });
 
-  test('nothing has happened yet', () => {
-    populateElementReferences();
-
-    assert.isNotNull(loadingElement);
-    assert.isNull(fetchErrorElement);
-    assert.isNull(deletedElement);
-    assert.isNull(issueElement);
-  });
-
   test('issue not loaded yet', () => {
     element.fetchingIssue = true;
+
     populateElementReferences();
 
     assert.isNotNull(loadingElement);
@@ -54,20 +46,19 @@ suite('mr-issue-page', () => {
     assert.isNull(issueElement);
   });
 
-  test('comments not loaded yet', () => {
-    element.fetchingIssue = false;
-    element.fetchingComments = true;
+  test('no loading on future issue fetches', () => {
+    element.issue = {localId: 222};
+    element.fetchingIssue = true;
+
     populateElementReferences();
 
-    assert.isNotNull(loadingElement);
+    assert.isNull(loadingElement);
     assert.isNull(fetchErrorElement);
     assert.isNull(deletedElement);
-    assert.isNull(issueElement);
+    assert.isNotNull(issueElement);
   });
 
   test('fetch error', () => {
-    element._hasFetched = true;
-    element.fetchingComments = false;
     element.fetchingIssue = false;
     element.fetchIssueError = 'error';
     populateElementReferences();
@@ -79,8 +70,6 @@ suite('mr-issue-page', () => {
   });
 
   test('deleted issue', () => {
-    element._hasFetched = true;
-    element.fetchingComments = false;
     element.fetchingIssue = false;
     element.issue = {isDeleted: true};
     populateElementReferences();
@@ -92,10 +81,8 @@ suite('mr-issue-page', () => {
   });
 
   test('normal issue', () => {
-    element._hasFetched = true;
-    element.fetchingComments = false;
     element.fetchingIssue = false;
-    element.issue = {};
+    element.issue = {localId: 111};
     populateElementReferences();
 
     assert.isNull(loadingElement);
