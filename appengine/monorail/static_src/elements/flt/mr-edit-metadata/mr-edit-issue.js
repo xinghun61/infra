@@ -36,7 +36,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
         owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
         cc="[[issue.ccRefs]]"
         status="[[issue.statusRef.status]]"
-        statuses="[[projectConfig.statusDefs]]"
+        statuses="[[_computeStatuses(projectConfig.statusDefs, issue.statusRef)]]"
         summary="[[issue.summary]]"
         components="[[issue.componentRefs]]"
         field-defs="[[_fieldDefs]]"
@@ -159,6 +159,13 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       issueDelta: evt.detail.delta,
     };
     this.dispatchAction(issue.presubmit(message));
+  }
+
+  _computeStatuses(statusDefsArg, currentStatusRef) {
+    const statusDefs = statusDefsArg || [];
+    if (!currentStatusRef || statusDefs.find(
+      (status) => status.status === currentStatusRef.status)) return statusDefs;
+    return [currentStatusRef, ...statusDefs];
   }
 }
 

@@ -34,4 +34,38 @@ suite('mr-edit-issue', () => {
 
     header.scrollIntoView.restore();
   });
+
+  test('shows current status even if not defined for project', () => {
+    const editMetadata = element.shadowRoot.querySelector('mr-edit-metadata');
+    assert.deepEqual(editMetadata.statuses, []);
+
+    element.projectConfig = {statusDefs: [
+      {status: 'hello'},
+      {status: 'world'},
+    ]};
+
+    assert.deepEqual(editMetadata.statuses, [
+      {status: 'hello'},
+      {status: 'world'},
+    ]);
+
+    element.issue = {
+      statusRef: {status: 'hello'},
+    };
+
+    assert.deepEqual(editMetadata.statuses, [
+      {status: 'hello'},
+      {status: 'world'},
+    ]);
+
+    element.issue = {
+      statusRef: {status: 'weirdStatus'},
+    };
+
+    assert.deepEqual(editMetadata.statuses, [
+      {status: 'weirdStatus'},
+      {status: 'hello'},
+      {status: 'world'},
+    ]);
+  });
 });
