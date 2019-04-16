@@ -211,7 +211,10 @@ def _ParseCIBuildLongUrl(url):
     return None
 
   project, bucket_name, builder_name, build_number = match.groups()
+  # If the bucket_name is in the format of 'luci.chromium.ci', only uses 'ci'.
+  bucket_name = bucket_name.split('.')[-1]
   builder_name = urllib.unquote(builder_name)
+
   master_name = _GetBuildbotMasterName(project, bucket_name, builder_name,
                                        int(build_number))
   if not master_name:

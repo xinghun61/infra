@@ -135,7 +135,7 @@ class BuildBotTest(unittest.TestCase):
       'GetV2BuildByBuilderAndBuildNumber',
       return_value=None)
   def testParseCIBuildLongUrlNoBuilds(self, _):
-    url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
+    url = ('https://ci.chromium.org/p/chromium/builders/ci'
            '/Linux%20Tests%20SANDBOX/3932')
     self.assertIsNone(buildbot.ParseBuildUrl(url))
 
