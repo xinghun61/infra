@@ -15,7 +15,7 @@ import '../../mr-warning/mr-warning.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString} from '../../shared/converters.js';
-import {isEmptyObject} from '../../shared/helpers.js';
+import {isEmptyObject, equalsIgnoreCase} from '../../shared/helpers.js';
 import '../../shared/mr-shared-styles.js';
 import {MetadataMixin} from '../shared/metadata-mixin.js';
 import * as issue from '../../redux/issue.js';
@@ -259,7 +259,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                       id$="[[_idForField(field.fieldRef.fieldName)]]"
                       name="[[field.fieldRef.fieldName]]"
                       type="[[field.fieldRef.type]]"
-                      options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
+                      options="[[_optionsForField(optionsPerEnumField, fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
                       initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
                       ac-type="[[_computeAcType(field.fieldRef.type, field.isMultivalued)]]"
                       multi="[[field.isMultivalued]]"
@@ -284,7 +284,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
                 id$="[[_idForField(field.fieldRef.fieldName)]]"
                 name="[[field.fieldRef.fieldName]]"
                 type="[[field.fieldRef.type]]"
-                options="[[_optionsForField(projectConfig.labelDefs, field.fieldRef.fieldName)]]"
+                options="[[_optionsForField(optionsPerEnumField, fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
                 initial-values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
                 ac-type="[[_computeAcType(field.fieldRef.type, field.isMultivalued)]]"
                 multi="[[field.isMultivalued]]"
@@ -504,6 +504,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         observer: '_onPresubmitResponse',
       },
       fieldValueMap: Object, // Set by MetadataMixin.
+      optionsPerEnumField: Object,
       _hasDerivedValues: Boolean,
       _hasErrorsOrWarnings: Boolean,
       _ownerIcon: String,
@@ -536,6 +537,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       projectConfig: project.project(state).config,
       projectName: issue.issueRef(state).projectName,
       issuePermissions: issue.permissions(state),
+      optionsPerEnumField: project.optionsPerEnumField(state),
     });
   }
 
@@ -771,21 +773,19 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     return components.map((c) => c.path);
   }
 
-  _optionsForField(labelDefs, fieldName) {
-    const options = [];
-    labelDefs = labelDefs || [];
-
-    // TODO(zhangtiff): Find a way to avoid traversing through every label on
-    // every enum field.
-    for (const label of labelDefs) {
-      const labelName = label.label;
-      if (labelName.toLowerCase().startsWith(fieldName.toLowerCase())) {
-        const opt = Object.assign({}, label, {
-          optionName: labelName.substring(fieldName.length + 1),
-        });
-        options.push(opt);
+  _optionsForField(optionsPerEnumField, fieldValueMap, fieldName, phaseName) {
+    if (!optionsPerEnumField || !fieldName) return [];
+    const key = fieldName.toLowerCase();
+    if (!optionsPerEnumField.has(key)) return [];
+    const options = [...optionsPerEnumField.get(key)];
+    const values = this._valuesForField(fieldValueMap, fieldName, phaseName);
+    values.forEach((v) => {
+      const optionExists = options.find(
+        (opt) => equalsIgnoreCase(opt.optionName, v));
+      if (!optionExists) {
+        options.push({optionName: v});
       }
-    }
+    });
     return options;
   }
 

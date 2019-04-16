@@ -5,6 +5,9 @@
 import {combineReducers} from 'redux';
 import {createSelector} from 'reselect';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
+import {fieldTypes} from '../shared/field-types.js';
+import {hasPrefix, removePrefix} from '../shared/helpers.js';
+import {fieldNameToLabelPrefix} from '../shared/converters.js';
 
 // Actions
 const FETCH_CONFIG_START = 'project/FETCH_CONFIG_START';
@@ -70,7 +73,44 @@ export const componentsMap = createSelector(
 );
 
 export const fieldDefs = createSelector(
-  config, (config) => config && config.fieldDefs);
+  config, (config) => ((config && config.fieldDefs) || [])
+);
+
+export const labelDefs = createSelector(
+  config, (config) => ((config && config.labelDefs) || [])
+);
+
+export const enumFieldDefs = createSelector(
+  fieldDefs,
+  (fieldDefs) => {
+    return fieldDefs.filter(
+      (fd) => fd.fieldRef.type === fieldTypes.ENUM_TYPE);
+  }
+);
+
+export const optionsPerEnumField = createSelector(
+  enumFieldDefs,
+  labelDefs,
+  (fieldDefs, labelDefs) => {
+    const map = new Map(fieldDefs.map(
+      (fd) => [fd.fieldRef.fieldName.toLowerCase(), []]));
+    labelDefs.forEach((ld) => {
+      const labelName = ld.label;
+
+      const fd = fieldDefs.find((fd) => hasPrefix(
+        labelName, fieldNameToLabelPrefix(fd.fieldRef.fieldName)));
+      if (fd) {
+        const key = fd.fieldRef.fieldName.toLowerCase();
+        map.get(key).push({
+          ...ld,
+          optionName: removePrefix(labelName,
+            fieldNameToLabelPrefix(fd.fieldRef.fieldName)),
+        });
+      }
+    });
+    return map;
+  }
+);
 
 export const fieldDefsForPhases = createSelector(
   fieldDefs,

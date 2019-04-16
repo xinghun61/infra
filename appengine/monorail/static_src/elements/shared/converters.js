@@ -13,6 +13,10 @@ export function labelStringToRef(label) {
   return {label};
 }
 
+export function fieldNameToLabelPrefix(fieldName) {
+  return `${fieldName.toLowerCase()}-`;
+}
+
 export function componentStringToRef(path) {
   return {path};
 }

@@ -4,7 +4,8 @@
 
 import {assert} from 'chai';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
-  issueStringToRef, issueRefToString} from './converters.js';
+  issueStringToRef, issueRefToString, fieldNameToLabelPrefix,
+} from './converters.js';
 
 suite('displayNameToUserRef', () => {
   test('converts displayName', () => {
@@ -15,6 +16,14 @@ suite('displayNameToUserRef', () => {
 suite('labelStringToRef', () => {
   test('converts label', () => {
     assert.deepEqual(labelStringToRef('foo'), {label: 'foo'});
+  });
+});
+
+suite('fieldNameToLabelPrefix', () => {
+  test('converts fieldName', () => {
+    assert.deepEqual(fieldNameToLabelPrefix('test'), 'test-');
+    assert.deepEqual(fieldNameToLabelPrefix('test-hello'), 'test-hello-');
+    assert.deepEqual(fieldNameToLabelPrefix('WHATEVER'), 'whatever-');
   });
 });
 

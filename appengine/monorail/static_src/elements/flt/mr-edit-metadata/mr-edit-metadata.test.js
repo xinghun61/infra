@@ -247,26 +247,19 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('_optionsForField computes options for fieldDef', () => {
-    const labels = [
-      {
-        label: 'enumField-one',
-      },
-      {
-        label: 'enumField-two',
-      },
-    ];
-
-    assert.deepEqual(element._optionsForField(labels, 'enumField'), [
-      {
-        label: 'enumField-one',
-        optionName: 'one',
-      },
-      {
-        label: 'enumField-two',
-        optionName: 'two',
-      },
+  test('_optionsForField computes options', () => {
+    const optionsPerEnumField = new Map([
+      ['enumfield', [{optionName: 'one'}, {optionName: 'two'}]],
     ]);
+    assert.deepEqual(
+      element._optionsForField(optionsPerEnumField, new Map(), 'enumField'), [
+        {
+          optionName: 'one',
+        },
+        {
+          optionName: 'two',
+        },
+      ]);
   });
 
   test('changing enum fields produces delta', () => {
@@ -280,17 +273,10 @@ suite('mr-edit-metadata', () => {
         isMultivalued: true,
       },
     ];
-    element.projectConfig = {
-      labelDefs: [
-        {
-          label: 'enumField-one',
-        },
-        {
-          label: 'enumField-two',
-          optionName: 'two',
-        },
-      ],
-    };
+
+    element.optionsPerEnumField = new Map([
+      ['enumfield', [{optionName: 'one'}, {optionName: 'two'}]],
+    ]);
 
     flush();
 

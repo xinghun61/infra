@@ -15,6 +15,11 @@ export function arrayDifference(listA, listB, equals) {
   });
 }
 
+// Check if a string has a prefix, ignoring case.
+export function hasPrefix(str, prefix) {
+  return str.toLowerCase().startsWith(prefix.toLowerCase());
+}
+
 export function removePrefix(str, prefix) {
   return str.substr(prefix.length);
 }

@@ -8,11 +8,45 @@ import {fieldTypes} from '../shared/field-types.js';
 
 suite('project', () => {
   test('fieldDefs', () => {
-    assert.isUndefined(project.fieldDefs({project: {}}));
-    assert.isUndefined(project.fieldDefs({project: {config: {}}}));
+    assert.deepEqual(project.fieldDefs({project: {}}), []);
+    assert.deepEqual(project.fieldDefs({project: {config: {}}}), []);
     assert.deepEqual(project.fieldDefs({
-      project: {config: {fieldDefs: [{fieldName: 'test'}]}},
-    }), [{fieldName: 'test'}]);
+      project: {config: {fieldDefs: [{fieldRef: {fieldName: 'test'}}]}},
+    }), [{fieldRef: {fieldName: 'test'}}]);
+  });
+
+  test('enumFieldDefs', () => {
+    assert.deepEqual(project.enumFieldDefs({project: {}}), []);
+    assert.deepEqual(project.enumFieldDefs({project: {config: {}}}), []);
+    assert.deepEqual(project.enumFieldDefs({
+      project: {config: {fieldDefs: [
+        {fieldRef: {fieldName: 'test'}},
+        {fieldRef: {fieldName: 'enum', type: fieldTypes.ENUM_TYPE}},
+        {fieldRef: {fieldName: 'ignore', type: fieldTypes.DATE_TYPE}},
+      ]}},
+    }), [{fieldRef: {fieldName: 'enum', type: fieldTypes.ENUM_TYPE}}]);
+  });
+
+  test('optionsPerEnumField', () => {
+    assert.deepEqual(project.optionsPerEnumField({project: {}}), new Map());
+    assert.deepEqual(project.optionsPerEnumField({
+      project: {config: {
+        fieldDefs: [
+          {fieldRef: {fieldName: 'ignore', type: fieldTypes.DATE_TYPE}},
+          {fieldRef: {fieldName: 'eNum', type: fieldTypes.ENUM_TYPE}},
+        ],
+        labelDefs: [
+          {label: 'enum-one'},
+          {label: 'ENUM-tWo'},
+          {label: 'not-enum-three'},
+        ],
+      }},
+    }), new Map([
+      ['enum', [
+        {label: 'enum-one', optionName: 'one'},
+        {label: 'ENUM-tWo', optionName: 'tWo'},
+      ]],
+    ]));
   });
 
   test('fieldDefsByApprovalName', () => {
