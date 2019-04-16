@@ -23,6 +23,9 @@ export class EztComments extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <style>
+        :host([code-font]) {
+          --mr-toggled-font-family: monospace;
+        }
         mr-description {
           display: block;
           padding: 8px 12px;
@@ -62,6 +65,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
       },
       issueId: Number,
       projectName: String,
+      prefs: Object,
       quickMode: {
         type: Boolean,
         value: true,
@@ -69,12 +73,18 @@ export class EztComments extends ReduxMixin(PolymerElement) {
       commentList: Array,
       descriptionList: Array,
       userDisplayName: String,
+      codeFont: {
+        type: Boolean,
+        computed: '_computeCodeFont(prefs)',
+        reflectToAttribute: true,
+      },
     };
   }
 
   static mapStateToProps(state, element) {
     return {
       comments: issue.comments(state),
+      prefs: user.user(state).prefs,
     };
   }
 
@@ -86,6 +96,11 @@ export class EztComments extends ReduxMixin(PolymerElement) {
 
   openEditDescriptionDialog(e) {
     this.shadowRoot.querySelector('#edit-description').open(e);
+  }
+
+  _computeCodeFont(prefs) {
+    if (!prefs) return false;
+    return prefs.get('code_font') === 'true';
   }
 
   _onLocationChanged() {
