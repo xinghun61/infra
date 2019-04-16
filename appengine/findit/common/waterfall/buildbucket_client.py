@@ -13,6 +13,7 @@ from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto import common_pb2
 from buildbucket_proto.rpc_pb2 import BuildPredicate
 from buildbucket_proto.rpc_pb2 import GetBuildRequest
+from buildbucket_proto.rpc_pb2 import ScheduleBuildRequest
 from buildbucket_proto.rpc_pb2 import SearchBuildsRequest
 from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 from common.findit_http_client import FinditHttpClient
@@ -35,6 +36,9 @@ _BUILDBUCKET_V2_GET_BUILD_ENDPOINT = (
         hostname=_BUILDBUCKET_HOST))
 _BUILDBUCKET_V2_SEARCH_BUILDS_ENDPOINT = (
     'https://{hostname}/prpc/buildbucket.v2.Builds/SearchBuilds'.format(
+        hostname=_BUILDBUCKET_HOST))
+_BUILDBUCKET_V2_SCHEDULE_BUILD_ENDPOINT = (
+    'https://{hostname}/prpc/buildbucket.v2.Builds/ScheduleBuild'.format(
         hostname=_BUILDBUCKET_HOST))
 
 
@@ -405,6 +409,58 @@ def SearchV2BuildsOnBuilder(builder,
     result = SearchBuildsResponse()
     result.ParseFromString(content)
     return result
+  logging.warning('Unexpected status_code: %d and prpc code: %s', status_code,
+                  response_headers.get('X-Prpc-Grpc-Code'))
+  return None
+
+
+def TriggerV2Build(builder,
+                   gitiles_commit,
+                   properties,
+                   tags=None,
+                   dimensions=None):
+  """Triggers a build using buildbucket v2 API.
+
+  Args:
+    builder (build_pb2.BuilderID): Information about the builder the
+      build runs on.
+    gitiles_commit (common_pb2.GitilesCommit): Input commit the build runs.
+    properties (dict): Input properties of the build.
+    tags (list of dict): Tags for the build. In the format:
+      [
+        {
+          'key': 'tag-key',
+          'value': 'tag-value'
+        },
+        ...
+      ]
+    dimensions (list of dict): configured dimensions of the build. Format:
+      [
+        {
+          'key': 'dimension-key',
+          'value': 'dimension-value'
+        },
+        ...
+      ]
+
+  """
+  request = ScheduleBuildRequest(
+      builder=builder,
+      gitiles_commit=gitiles_commit,
+      tags=tags or [],
+      dimensions=dimensions or [])
+  request.properties.update(properties)
+
+  status_code, content, response_headers = FinditHttpClient().Post(
+      _BUILDBUCKET_V2_SCHEDULE_BUILD_ENDPOINT,
+      request.SerializeToString(),
+      headers={'Content-Type': 'application/prpc; encoding=binary'})
+
+  if status_code == 200 and response_headers.get('X-Prpc-Grpc-Code') == GRPC_OK:
+    result = Build()
+    result.ParseFromString(content)
+    return result
+
   logging.warning('Unexpected status_code: %d and prpc code: %s', status_code,
                   response_headers.get('X-Prpc-Grpc-Code'))
   return None

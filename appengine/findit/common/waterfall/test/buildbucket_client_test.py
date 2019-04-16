@@ -9,6 +9,7 @@ import mock
 
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
+from buildbucket_proto.common_pb2 import GitilesCommit
 from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 from testing_utils import testing
 
@@ -362,3 +363,55 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('next_page_token', res.next_page_token)
     self.assertEqual(1, len(res.builds))
     self.assertEqual(100, res.builds[0].number)
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testTriggerV2Build(self, mock_post):
+    mock_build = Build()
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_build.SerializeToString()
+    mock_post.return_value = (200, binary_data, mock_headers)
+
+    builder = BuilderID(project='chromium', bucket='try', builder='linux-rel')
+    gitiles_commit = GitilesCommit(
+        project='gitiles/project',
+        host='gitiles.host.com',
+        ref='refs/heads/master',
+        id='git_hash')
+    properties = {
+        'property1': 'property1',
+        'property2': ['property2'],
+        'property3': {
+            'property3-key': 'property3-value'
+        }
+    }
+
+    build = buildbucket_client.TriggerV2Build(builder, gitiles_commit,
+                                              properties)
+    self.assertIsNotNone(build)
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testTriggerV2BuildFailed(self, mock_post):
+    mock_build = Build()
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_build.SerializeToString()
+    mock_post.return_value = (403, binary_data, mock_headers)
+
+    builder = BuilderID(project='chromium', bucket='try', builder='linux-rel')
+    gitiles_commit = GitilesCommit(
+        project='gitiles/project',
+        host='gitiles.host.com',
+        ref='refs/heads/master',
+        id='git_hash')
+    properties = {
+        'property1': 'property1',
+        'property2': ['property2'],
+        'property3': {
+            'property3-key': 'property3-value'
+        }
+    }
+    tags = [{'key': 'tag-key', 'value': 'tag-value'}]
+    dimensions = [{'key': 'gpu', 'value': 'NVidia'}]
+
+    build = buildbucket_client.TriggerV2Build(
+        builder, gitiles_commit, properties, tags=tags, dimensions=dimensions)
+    self.assertIsNone(build)
