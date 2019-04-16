@@ -27,6 +27,7 @@ import (
 
 	"infra/qscheduler/qslib/reconciler"
 	"infra/qscheduler/qslib/scheduler"
+	"infra/qscheduler/qslib/tutils"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -159,6 +160,10 @@ func (s *QSchedulerAdminServerImpl) ModSchedulerPool(ctx context.Context, r *qsc
 		if r.DisablePreemption != nil {
 			config.DisablePreemption = r.DisablePreemption.Value
 		}
+		if r.BotExpirationSeconds != nil {
+			config.BotExpiration = tutils.DurationProto(time.Duration(r.BotExpirationSeconds.Value) * time.Second)
+		}
+
 		return store.Save(ctx, sp)
 	}
 

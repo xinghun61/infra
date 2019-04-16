@@ -102,6 +102,8 @@ message ModSchedulerPoolRequest {
   string pool_id = 1;
 
   google.protobuf.BoolValue disable_preemption = 2;
+
+  google.protobuf.Int32Value bot_expiration_seconds = 3;
 }
 
 message ModSchedulerPoolResponse {}
