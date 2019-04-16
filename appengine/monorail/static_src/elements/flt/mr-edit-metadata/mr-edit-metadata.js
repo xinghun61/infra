@@ -545,6 +545,8 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     if (this._debouncedOnChange) {
       this._debouncedOnChange.cancel();
     }
+
+    this.dispatchAction(ui.reportDirtyForm(this.formName, false));
   }
 
   reset() {
@@ -690,6 +692,8 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       this._debouncedOnChange,
       timeOut.after(400),
       () => {
+        // Don't run this functionality if the element has disconnected.
+        if (!this.isConnected) return;
         const delta = this.getDelta();
         const commentContent = this.getCommentContent();
         this.dispatchAction(ui.reportDirtyForm(

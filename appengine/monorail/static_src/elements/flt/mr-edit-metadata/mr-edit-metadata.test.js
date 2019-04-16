@@ -33,6 +33,26 @@ suite('mr-edit-metadata', () => {
     assert.instanceOf(element, MrEditMetadata);
   });
 
+  test('disconnecting element reports form is not dirty', () => {
+    element.formName = 'test';
+
+    assert.isFalse(element.dispatchAction.calledOnce);
+
+    document.body.removeChild(element);
+
+    assert.isTrue(element.dispatchAction.calledOnce);
+    sinon.assert.calledWith(
+      element.dispatchAction,
+      {
+        type: 'REPORT_DIRTY_FORM',
+        name: 'test',
+        isDirty: false,
+      }
+    );
+
+    document.body.appendChild(element);
+  });
+
   test('delta empty when no changes', () => {
     assert.deepEqual(element.getDelta(), {});
   });
