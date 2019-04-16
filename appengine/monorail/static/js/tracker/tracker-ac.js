@@ -14,48 +14,48 @@
 /**
  * This is an autocomplete store that holds the hotlists of the current user.
  */
-var TKR_hotlistsStore;
+let TKR_hotlistsStore;
 
 /**
  * This is an autocomplete store that holds well-known issue label
  * values for the current project.
  */
-var TKR_labelStore;
+let TKR_labelStore;
 
 /**
  * Like TKR_labelStore but adds a trailing comma instead of replacing.
  */
-var TKR_labelMultiStore;
+let TKR_labelMultiStore;
 
 /**
  * This is an autocomplete store that holds issue components.
  */
-var TKR_componentStore;
+let TKR_componentStore;
 
 /**
  * Like TKR_componentStore but adds a trailing comma instead of replacing.
  */
-var TKR_componentListStore;
+let TKR_componentListStore;
 
 /**
  * This is an autocomplete store that holds many different kinds of
  * items that can be shown in the artifact search autocomplete.
  */
-var TKR_searchStore;
+let TKR_searchStore;
 
 /**
  * This is similar to TKR_searchStore, but does not include any suggestions
  * to use the "me" keyword. Using "me" is not a good idea for project canned
  * queries and filter rules.
  */
-var TKR_projectQueryStore;
+let TKR_projectQueryStore;
 
 /**
  * This is an autocomplete store that holds items for the quick edit
  * autocomplete.
  */
 // TODO(jrobbins): add options for fields and components.
-var TKR_quickEditStore;
+let TKR_quickEditStore;
 
 /**
  * This is a list of label prefixes that each issue should only use once.
@@ -63,20 +63,20 @@ var TKR_quickEditStore;
  * the user from using multiple such labels, we just warn the user before
  * he/she submits.
  */
-var TKR_exclPrefixes = [];
+let TKR_exclPrefixes = [];
 
 /**
  * This is an autocomplete store that holds custom permission names that
  * have already been used in this project.
  */
-var TKR_customPermissionsStore;
+let TKR_customPermissionsStore;
 
 
 /**
  * This is an autocomplete store that holds well-known issue status
  * values for the current project.
  */
-var TKR_statusStore;
+let TKR_statusStore;
 
 
 /**
@@ -85,14 +85,14 @@ var TKR_statusStore;
  * the cc-list of an issue, where many user names can entered with
  * commas between them.
  */
-var TKR_memberListStore;
+let TKR_memberListStore;
 
 
 /**
  * This is an autocomplete store that holds the projects that the current
  * user is contributor/member/owner of.
  */
-var TKR_projectStore;
+let TKR_projectStore;
 
 /**
  * This is an autocomplete store that holds the usernames of possible
@@ -101,19 +101,19 @@ var TKR_projectStore;
  * of this autocompete store is different because the issue owner text
  * field can only accept one value.
  */
-var TKR_ownerStore;
+let TKR_ownerStore;
 
 
 /**
  * This is an autocomplete store that holds any list of string for choices.
  */
-var TKR_autoCompleteStore;
+let TKR_autoCompleteStore;
 
 
 /**
  * An array of autocomplete stores used for user-type custom fields.
  */
-var TKR_userAutocompleteStores = [];
+let TKR_userAutocompleteStores = [];
 
 
 /**
@@ -121,7 +121,7 @@ var TKR_userAutocompleteStores = [];
  * a warning or an error.  Normally, it is False.
  */
 // TODO(jrobbins): split this into one option for statuses and one for labels.
-var TKR_restrict_to_known;
+let TKR_restrict_to_known;
 
 /**
  * This substitute function should be used for multi-valued autocomplete fields
@@ -131,13 +131,25 @@ var TKR_restrict_to_known;
  */
 function TKR_acSubstituteWithComma(inputValue, caret, completable, completion) {
   let nextTerm = caret;
-  while (inputValue.charAt(nextTerm) != ' ' && nextTerm < inputValue.length) {
+
+  // Subtract one in case the cursor is at the end of the input, before a comma.
+  let prevTerm = caret - 1;
+  while (nextTerm < inputValue.length - 1 && inputValue.charAt(nextTerm) !== ',') {
     nextTerm++;
   }
-  while (inputValue.charAt(nextTerm) == ' ' && nextTerm < inputValue.length) {
-    nextTerm++;
+  // Set this at the position after the found comma.
+  nextTerm++;
+
+  while (prevTerm > 0 && ![',', ' '].includes(inputValue.charAt(prevTerm))) {
+    prevTerm--;
   }
-  return inputValue.substring(0, caret - completable.length) +
+  if (prevTerm > 0) {
+    // Set this boundary after the found space/comma if it's not the beginning
+    // of the field.
+    prevTerm++;
+  }
+
+  return inputValue.substring(0, prevTerm) +
          completion.value + ', ' + inputValue.substring(nextTerm);
 }
 
@@ -210,7 +222,7 @@ function TKR_setUpHotlistsStore(hotlists) {
  * definition has the name of the status value, and a docstring that
  * describes its meaning.
  */
-var TKR_statusWords = [];
+let TKR_statusWords = [];
 
 
 /**
@@ -748,7 +760,7 @@ function TKR_setUpComponentStore(componentDefs) {
  * definition has the name of the label, and a docstring that
  * describes its meaning.
  */
-var TKR_labelWords = [];
+let TKR_labelWords = [];
 
 
 /**
@@ -942,7 +954,7 @@ function TKR_setUpAutoCompleteStore(choices) {
 /**
  * XMLHTTP object used to fetch autocomplete options from the server.
  */
-var TKR_optionsXmlHttp = undefined;
+let TKR_optionsXmlHttp = undefined;
 
 /**
  * Contact the server to fetch the set of autocomplete options for the
