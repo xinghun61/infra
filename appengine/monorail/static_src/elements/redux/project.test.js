@@ -15,6 +15,24 @@ suite('project', () => {
     }), [{fieldRef: {fieldName: 'test'}}]);
   });
 
+  test('labelDefMap', () => {
+    assert.deepEqual(project.labelDefMap({project: {}}), new Map());
+    assert.deepEqual(project.labelDefMap({project: {config: {}}}), new Map());
+    assert.deepEqual(project.labelDefMap({
+      project: {config: {
+        labelDefs: [
+          {label: 'One'},
+          {label: 'tWo'},
+          {label: 'hello-world', docstring: 'hmmm'},
+        ],
+      }},
+    }), new Map([
+      ['one', {label: 'One'}],
+      ['two', {label: 'tWo'}],
+      ['hello-world', {label: 'hello-world', docstring: 'hmmm'}],
+    ]));
+  });
+
   test('enumFieldDefs', () => {
     assert.deepEqual(project.enumFieldDefs({project: {}}), []);
     assert.deepEqual(project.enumFieldDefs({project: {config: {}}}), []);

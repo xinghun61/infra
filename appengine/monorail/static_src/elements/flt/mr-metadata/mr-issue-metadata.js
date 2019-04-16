@@ -130,7 +130,12 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
 
       <div class="labels-container">
         <template is="dom-repeat" items="[[issue.labelRefs]]" as="label">
-          <a href\$="/p/[[issueRef.projectName]]/issues/list?q=label:[[label.label]]" class="label" data-derived\$="[[label.isDerived]]">[[label.label]]</a>
+          <a
+            title$="[[_computeLabelTitle(labelDefMap, label)]]"
+            href$="/p/[[issueRef.projectName]]/issues/list?q=label:[[label.label]]"
+            class="label"
+            data-derived$="[[label.isDerived]]"
+          >[[label.label]]</a>
           <br>
         </template>
       </div>
@@ -254,6 +259,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
         computed: `_splitIssueHotlistsByRole(issueHotlists,
           user.userId, issue.ownerRef, issue.ccRefs)`,
       },
+      labelDefMap: Object,
       _components: Array,
       _fieldDefs: Array,
       _canStar: {
@@ -278,6 +284,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       mergedInto: issue.mergedInto(state),
       relatedIssues: issue.relatedIssues(state),
       issueHotlists: issue.hotlists(state),
+      labelDefMap: project.labelDefMap(state),
       _components: issue.components(state),
       _fieldDefs: issue.fieldDefs(state),
       _type: issue.type(state),
@@ -350,6 +357,16 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
   // TODO(zhangtiff): Remove when upgrading to lit-element.
   _renderCount(count) {
     return count ? count : 0;
+  }
+
+  _computeLabelTitle(labelDefMap, label) {
+    if (!label) return '';
+    let docstring = '';
+    const key = label.label.toLowerCase();
+    if (labelDefMap && labelDefMap.has(key)) {
+      docstring = labelDefMap.get(key).docstring;
+    }
+    return `${label.label}${docstring ? ' = ' + docstring : ''}`;
   }
 }
 

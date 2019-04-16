@@ -80,6 +80,18 @@ export const labelDefs = createSelector(
   config, (config) => ((config && config.labelDefs) || [])
 );
 
+// labelDefs stored in an easily findable format with label names as keys.
+export const labelDefMap = createSelector(
+  labelDefs, (labelDefs) => {
+    const map = new Map();
+    labelDefs.forEach((ld) => {
+      map.set(ld.label.toLowerCase(), ld);
+    });
+    return map;
+  }
+);
+
+
 export const enumFieldDefs = createSelector(
   fieldDefs,
   (fieldDefs) => {
