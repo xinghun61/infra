@@ -32,6 +32,26 @@ message IssueQuery {
   repeated string project_names = 2;
 }
 
+// UserSource represents a single source to find a valid Monorail user to whom
+// Arquebus will assign or cc issues found.
+message UserSource {
+  oneof from {
+    // TODO(crbug/849469) - document available query params for rotation and
+    // add a link here.
+
+    // rotation refers to a rotatation in RotaNG, and written in the following
+    // format.
+    // : rotation_name?position={primary,secondary}
+    //
+    // position is a required parameter and the value can be either primary
+    // or secondary.
+    string rotation = 1; // e.g., my-rotation?position=primary
+
+    // user refers to the email address of a Monorail user account.
+    string email = 2; // e.g., user@chromium.org
+  }
+}
+
 // Assigner contains specifications for an Assigner job.
 message Assigner {
   // The unique ID of the Assigner.
@@ -52,17 +72,17 @@ message Assigner {
   // IssueQuery describes the search criteria to look for issues to assign.
   IssueQuery issue_query = 4;
 
-  // The name of a rotation to assign open issues to.
-  //
-  // All the values should be the name of a rotation in RotaNG. If multiple
-  // rotations are specified, Assigner iterates the rotations in the order
-  // until it finds a currently available trooper/oncaller, and then assigns
-  // open issues to the trooper/oncaller.
-  repeated string rotations = 5;
+  // If multiple values are specified in assignees, Arquebus iterates the list
+  // in the order until it finds a currently available assignee. Note that
+  // Monorail users are always assumed to be available.
+  repeated UserSource assignees = 6;
+  // If multiple values are specified in ccs, all the available roations and
+  // users are added to the CC of searched issues.
+  repeated UserSource ccs = 7;
 
   // If DryRun is set, Assigner doesn't update the found issues.
-  bool dry_run = 6;
+  bool dry_run = 8;
 
   // The description shown on UI.
-  string description = 7;
+  string description = 9;
 }

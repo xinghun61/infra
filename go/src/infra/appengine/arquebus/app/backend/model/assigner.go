@@ -18,7 +18,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
+
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
@@ -52,10 +54,11 @@ type Assigner struct {
 	// assigner.
 	Interval time.Duration `gae:",noindex"`
 
-	// Rotations specify a list of rotation names to find assignees.
-	//
-	// The rotation names must be a valid rotation name in RotaNG.
-	Rotations []string `gae:",noindex"`
+	// AssigneesRaw is a blob with serialized config.UserSource.
+	AssigneesRaw [][]byte `gae:",noindex"`
+
+	// CCsRaw is a blob with serialized config.UserSource.
+	CCsRaw [][]byte `gae:",noindex"`
 
 	Description string `gae:",noindex"`
 
@@ -84,7 +87,7 @@ type Assigner struct {
 // updateIfChanged updates the Assigner entity, based on the valid config.
 //
 // This Returns whether the content has been updated.
-func (a *Assigner) updateIfChanged(cfg *config.Assigner, rev string) bool {
+func (a *Assigner) updateIfChanged(c context.Context, cfg *config.Assigner, rev string) bool {
 	// skip updating if the revision is the same.
 	if a.ConfigRevision == rev {
 		return false
@@ -92,14 +95,44 @@ func (a *Assigner) updateIfChanged(cfg *config.Assigner, rev string) bool {
 
 	a.Owners = cfg.Owners
 	a.IssueQuery = *cfg.IssueQuery
-	interval, _ := ptypes.Duration(cfg.Interval)
-	a.Interval = interval
-	a.Rotations = cfg.Rotations
 	a.Description = cfg.Description
 	a.IsDryRun = cfg.DryRun
 	a.ConfigRevision = rev
 
+	interval, _ := ptypes.Duration(cfg.Interval)
+	a.Interval = interval
+	a.AssigneesRaw = make([][]byte, len(cfg.Assignees))
+	for i, assignee := range cfg.Assignees {
+		a.AssigneesRaw[i], _ = proto.Marshal(assignee)
+	}
+	a.CCsRaw = make([][]byte, len(cfg.Ccs))
+	for i, cc := range cfg.Ccs {
+		a.CCsRaw[i], _ = proto.Marshal(cc)
+	}
+
 	return true
+}
+
+// Assignees returns a list of UserSource to look for issue assignees from.
+func (a *Assigner) Assignees() ([]*config.UserSource, error) {
+	results := make([]*config.UserSource, len(a.AssigneesRaw))
+	for i, raw := range a.AssigneesRaw {
+		if err := proto.Unmarshal(raw, results[i]); err != nil {
+			return nil, err
+		}
+	}
+	return results, nil
+}
+
+// CCs returns a list of UserSource to look for whom to cc issues from.
+func (a *Assigner) CCs() ([]*config.UserSource, error) {
+	results := make([]*config.UserSource, len(a.CCsRaw))
+	for i, raw := range a.CCsRaw {
+		if err := proto.Unmarshal(raw, results[i]); err != nil {
+			return nil, err
+		}
+	}
+	return results, nil
 }
 
 // UpdateAssigners update all the Assigner entities, on presumed valid
@@ -126,7 +159,7 @@ func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) err
 			delete(aeMap, cfg.Id)
 			// optimization for common case when no updates are
 			// necessary.
-			if !assigner.updateIfChanged(cfg, rev) {
+			if !assigner.updateIfChanged(c, cfg, rev) {
 				continue
 			}
 		}
@@ -139,7 +172,7 @@ func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) err
 				return err
 			}
 
-			if assigner.updateIfChanged(cfg, rev) {
+			if assigner.updateIfChanged(c, cfg, rev) {
 				logging.Debugf(
 					c, "Update/Insert Assigner %s (rev %s)",
 					cfg.Id, rev,

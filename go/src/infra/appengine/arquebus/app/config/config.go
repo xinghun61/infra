@@ -17,13 +17,7 @@ package config
 
 import (
 	"net/http"
-	"net/mail"
-	"regexp"
-	"time"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
-	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/config"
 	"go.chromium.org/luci/config/server/cfgclient"
@@ -37,8 +31,6 @@ import (
 
 const (
 	configFile = "config.cfg"
-	// The regex rule that all assigner IDs must conform to.
-	assignerIDRegex = `^([a-z0-9]+-?)*[a-z0-9]$`
 )
 
 // unique type to prevent assignment.
@@ -97,74 +89,6 @@ func GetConfigRevision(c context.Context) string {
 // luci-config.
 func SetupValidation(rules *validation.RuleSet) {
 	rules.Add("services/${appid}", configFile, validateConfig)
-}
-
-func validateConfig(c *validation.Context, configSet, path string, content []byte) error {
-	cfg := &Config{}
-	if err := proto.UnmarshalText(string(content), cfg); err != nil {
-		c.Errorf("not a valid Config proto message: %s", err)
-		return nil
-	}
-	// check duplicate IDs.
-	seen := stringset.New(len(cfg.Assigners))
-	for i, a := range cfg.Assigners {
-		c.Enter("assigner #%d:%s", i+1, a.Id)
-		if !seen.Add(a.Id) {
-			c.Errorf("duplicate id")
-		}
-		validateAssigner(c, a)
-		c.Exit()
-	}
-	return nil
-}
-
-func validateAssigner(c *validation.Context, a *Assigner) {
-	// to make URLs short and simple when they are made with assigner ids.
-	re := regexp.MustCompile(assignerIDRegex)
-	if !re.MatchString(a.Id) {
-		c.Errorf(
-			"invalid id; only lowercase alphabet letters and " +
-				"numbers are allowed. A hyphen may be placed " +
-				"between letters and numbers",
-		)
-	}
-
-	// owners should be all valid email addresses.
-	for _, owner := range a.Owners {
-		c.Enter("owner %q", owner)
-		if _, err := mail.ParseAddress(owner); err != nil {
-			c.Errorf("invalid email address: %s", err)
-		}
-		c.Exit()
-	}
-
-	if a.Interval == nil {
-		c.Errorf("missing interval")
-	} else {
-		d, err := ptypes.Duration(a.Interval)
-		if err != nil {
-			c.Errorf("invalid interval: %s", err)
-		} else if d < time.Minute {
-			c.Errorf("interval should be at least one minute")
-		}
-	}
-
-	if a.IssueQuery == nil {
-		c.Errorf("missing issue_query")
-	} else {
-		c.Enter("issue_query")
-		if a.IssueQuery.Q == "" {
-			c.Errorf("missing q")
-		}
-		if len(a.IssueQuery.ProjectNames) == 0 {
-			c.Errorf("missing project_names")
-		}
-		c.Exit()
-	}
-
-	if len(a.Rotations) == 0 {
-		c.Errorf("missing rotations")
-	}
 }
 
 // IsEqual returns whether the IssueQuery objects are equal.

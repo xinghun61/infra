@@ -40,10 +40,12 @@ func updateAndGetAllAssigners(c context.Context, rev string, cfgs ...*config.Ass
 func createConfig(id string) *config.Assigner {
 	// A sample valid assigner config
 	return &config.Assigner{
-		Id:        id,
-		Owners:    []string{"foo@google.com"},
-		Rotations: []string{"oncall1@google.com"},
-		Interval:  &duration.Duration{Seconds: 60},
+		Id:     id,
+		Owners: []string{"foo@google.com"},
+		Assignees: []*config.UserSource{
+			{From: &config.UserSource_Email{Email: "oncall1@google.com"}},
+		},
+		Interval: &duration.Duration{Seconds: 60},
 		IssueQuery: &config.IssueQuery{
 			Q:            "-has:owner Ops-Alerts=test",
 			ProjectNames: []string{"chromium"},
