@@ -258,7 +258,6 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
 
   static get observers() {
     return [
-      '_fetchChanged(fetchingIssue, fetchIssueError, issue)',
       '_issueChanged(issueRef, issue)',
       '_issueRefChanged(issueRef)',
       '_projectNameChanged(issueRef.projectName)',
