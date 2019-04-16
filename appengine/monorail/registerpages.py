@@ -222,8 +222,6 @@ class ServletRegistry(object):
         urls.ISSUE_LIST: issuelist.IssueList,
         urls.ISSUE_LIST_CSV: issuelistcsv.IssueListCsv,
         urls.ISSUE_REINDEX: issuereindex.IssueReindex,
-        urls.ISSUE_DETAIL: issuedetail.IssueDetail,
-        urls.ISSUE_DETAIL_LEGACY: issuedetailezt.IssueDetailEzt,
         urls.ISSUE_DETAIL_FLIPPER_NEXT: issuedetailezt.FlipperNext,
         urls.ISSUE_DETAIL_FLIPPER_PREV: issuedetailezt.FlipperPrev,
         urls.ISSUE_DETAIL_FLIPPER_LIST: issuedetailezt.FlipperList,
@@ -255,6 +253,19 @@ class ServletRegistry(object):
         urls.ISSUE_IMPORT: issueimport.IssueImport,
         urls.SPAM_MODERATION_QUEUE: spam.ModerationQueue,
         })
+
+    # GETs for /issues/detail are now handled by the polymer page.
+    # Whereas GETs and POSTs to /issues/detail.do and /issues/detail_ezt.*
+    # are handled by the EZT servlet.
+    base = '/p/<project_name:%s>' % self._PROJECT_NAME_REGEX
+    self._AddRoute(base + urls.ISSUE_DETAIL,
+                   issuedetail.IssueDetail, 'GET')
+    self._AddRoute(base + urls.ISSUE_DETAIL + '.do',
+                   issuedetailezt.IssueDetailEzt, 'POST')
+    self._AddRoute(base + urls.ISSUE_DETAIL_LEGACY,
+                   issuedetailezt.IssueDetailEzt, 'GET')
+    self._AddRoute(base + urls.ISSUE_DETAIL_LEGACY + '.do',
+                   issuedetailezt.IssueDetailEzt, 'POST')
 
     self._SetupUserServlets({
         urls.SAVED_QUERIES: savedqueries.SavedQueries,
