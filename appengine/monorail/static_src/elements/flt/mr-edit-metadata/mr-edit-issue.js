@@ -63,7 +63,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     return {
       issue: {
         type: Object,
-        observer: 'reset',
+        observer: '_resetConditionally',
       },
       issueRef: Object,
       projectConfig: Object,
@@ -73,6 +73,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
         type: String,
         observer: '_focusIdChanged',
       },
+      _resetOnChange: Boolean,
       _labelNames: {
         type: Array,
         computed: '_computeLabelNames(issue.labelRefs)',
@@ -102,6 +103,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
   }
 
   async save() {
+    this._resetOnChange = true;
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
     const message = {
       issueRef: this.issueRef,
@@ -128,6 +130,13 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
 
     const editForm = this.shadowRoot.querySelector('mr-edit-metadata');
     editForm.focus();
+  }
+
+  _resetConditionally() {
+    if (this._resetOnChange) {
+      this._resetOnChange = false;
+      this.reset();
+    }
   }
 
   _focusIdChanged(focusId) {
