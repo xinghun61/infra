@@ -30,12 +30,6 @@ class UserTest(testing.AppengineTestCase):
         autospec=True,
         side_effect=lambda: self.current_identity
     )
-    self.peer_identity = self.current_identity
-    self.patch(
-        'components.auth.get_peer_identity',
-        autospec=True,
-        side_effect=lambda: self.peer_identity
-    )
     user.clear_request_cache()
 
     self.patch('components.auth.is_admin', autospec=True, return_value=False)
@@ -195,26 +189,6 @@ class UserTest(testing.AppengineTestCase):
     self.assertFalse(self.can(user.Action.SET_NEXT_NUMBER))
 
     self.assertFalse(user.can_add_build_async('project/bucket').get_result())
-
-  def test_can_project_fallback(self):
-    self.current_identity = auth.Identity.from_bytes('project:proj')
-
-    good_peer = auth.Identity.from_bytes('user:good@example.com')
-    bad_peer = auth.Identity.from_bytes('user:bad@example.com')
-
-    def get_role(_, ident):
-      return future(Acl.READER if ident == good_peer else None)
-
-    self.patch(
-        'user.get_role_async',
-        autospec=True,
-        side_effect=get_role,
-    )
-
-    self.peer_identity = good_peer
-    self.assertTrue(self.can(user.Action.VIEW_BUILD))
-    self.peer_identity = bad_peer
-    self.assertFalse(self.can(user.Action.VIEW_BUILD))
 
   def test_can_no_roles(self):
     self.mock_role(None)

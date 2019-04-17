@@ -150,19 +150,18 @@ def can_update_build_async():  # pragma: no cover
 ## Implementation.
 
 
-def get_role_async(bucket_id, identity=None):
-  """Returns the most permissive role of the given user in |bucket_id|.
+def get_role_async(bucket_id):
+  """Returns the most permissive role of the current user in |bucket_id|.
 
   The most permissive role is the role that allows most actions, e.g. WRITER
   is more permissive than READER.
 
-  Returns None if there's no such bucket or the given identity has no roles in
+  Returns None if there's no such bucket or the current identity has no roles in
   it at all.
   """
   config.validate_bucket_id(bucket_id)
 
-  identity = identity or auth.get_current_identity()
-  assert isinstance(identity, auth.Identity), identity
+  identity = auth.get_current_identity()
   identity_str = identity.to_bytes()
 
   @ndb.tasklet
@@ -187,10 +186,6 @@ def get_role_async(bucket_id, identity=None):
     if identity.is_project:
       project_id, _ = config.parse_bucket_id(bucket_id)
       if project_id == identity.name:
-        logging.debug(
-            'crbug.com/938083: access to %s is authorized via X-Luci-Project',
-            bucket_id
-        )
         raise ndb.Return(project_config_pb2.Acl.WRITER)
 
     # Roles are just numbers. The higher the number, the more permissions
@@ -213,26 +208,8 @@ def get_role_async(bucket_id, identity=None):
 def can_async(bucket_id, action):
   config.validate_bucket_id(bucket_id)
   assert isinstance(action, Action)
-  min_role = ACTION_TO_MIN_ROLE[action]
-
-  identity = auth.get_current_identity()
-  role = yield get_role_async(bucket_id, identity)
-  if role is not None and role >= min_role:
-    raise ndb.Return(True)
-
-  # TODO(crbug.com/938083): Temporary fallback to checking that the immediate
-  # peer (e.g. LUCI Scheduler own account) has the role, to avoid breaking
-  # everything during the migration period.
-  if identity.is_project:
-    role = yield get_role_async(bucket_id, auth.get_peer_identity())
-    if role is not None and role >= min_role:
-      logging.warning(
-          'crbug.com/938083: %s should have role %d in %s' %
-          (identity.to_bytes(), role, bucket_id)
-      )
-      raise ndb.Return(True)
-
-  raise ndb.Return(False)
+  role = yield get_role_async(bucket_id)
+  raise ndb.Return(role is not None and role >= ACTION_TO_MIN_ROLE[action])
 
 
 def get_accessible_buckets_async():
