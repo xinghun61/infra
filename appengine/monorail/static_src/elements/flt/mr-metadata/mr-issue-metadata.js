@@ -366,7 +366,8 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
     if (labelDefMap && labelDefMap.has(key)) {
       docstring = labelDefMap.get(key).docstring;
     }
-    return `${label.label}${docstring ? ' = ' + docstring : ''}`;
+    return (label.isDerived ? 'Derived: ' : '') + label.label
+      + (docstring ? ` = ${docstring}` : '');
   }
 }
 

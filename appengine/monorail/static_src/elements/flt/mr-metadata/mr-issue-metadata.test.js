@@ -45,7 +45,7 @@ suite('mr-issue-metadata', () => {
     assert.isUndefined(labels[0].dataset.derived);
 
     assert.equal(labels[1].textContent.trim(), 'hello-world');
-    assert.equal(labels[1].getAttribute('title'), 'hello-world');
+    assert.equal(labels[1].getAttribute('title'), 'Derived: hello-world');
     assert.isDefined(labels[1].dataset.derived);
   });
 });
