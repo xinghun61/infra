@@ -9,6 +9,7 @@ import Mousetrap from 'mousetrap';
 
 import {ReduxMixin} from '../redux/redux-mixin.js';
 import * as issue from '../redux/issue.js';
+import '../chops/chops-dialog/chops-dialog.js';
 
 
 /**
@@ -21,23 +22,6 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
   static get template() {
     return html`
       <style>
-        dialog {
-          contain: layout;
-          z-index: 200;
-          position: fixed;
-          top: 5%;
-          left: 4%;
-          right: 4%;
-          max-height: 90%;
-          border: 0;
-          background: hsla(0, 0%, 0%, 0.85);
-          text-shadow: #000 1px 1px 7px;
-          color: white;
-          padding: 1em;
-          width: 90%;
-          max-width: 1200px;
-          font-size: var(--chops-main-font-size);
-        }
         h2 {
           margin-top: 0;
           display: flex;
@@ -50,7 +34,6 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
         .close-button {
           border: 0;
           background: 0;
-          color: yellow;
           text-decoration: underline;
           cursor: pointer;
         }
@@ -65,25 +48,28 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
         .keyboard-help-section {
           width: 32%;
           display: grid;
-          grid-template-columns: 30% 70%;
+          grid-template-columns: 40% 60%;
           padding-bottom: 1em;
           grid-gap: 4px;
           min-width: 300px;
         }
         .help-title {
-          color: yellow;
           font-weight: bold;
         }
         .key-shortcut {
           text-align: right;
           padding-right: 8px;
           font-weight: bold;
+          margin: 2px;
         }
-        .key-name {
-          color: #8d0;
+        kbd {
+          background: var(--chops-gray-200);
+          padding: 2px 8px;
+          border-radius: 2px;
+          min-width: 28px;
         }
       </style>
-      <dialog open\$="[[opened]]">
+      <chops-dialog opened\$="[[opened]]">
         <h2>
           Issue tracker keyboard shortcuts
           <button class="close-button" on-click="closeDialog">
@@ -104,7 +90,7 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
                       is="dom-repeat"
                       items="[[keyDoc.keys]]"
                       as="key">
-                      <span class="key-name">[[key]]</span>
+                      <kbd>[[key]]</kbd>
                       <span
                         class="key-separator"
                         hidden\$="[[_isLastItem(keyDoc.keys.length, index)]]"
@@ -120,7 +106,7 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
           Note: Only signed in users can star issues or add comments, and
           only project members can select issues for bulk edits.
         </p>
-      </dialog>
+      </chops-dialog>
     `;
   }
 
@@ -141,7 +127,7 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
                 tip: 'up/down in the list',
               },
               {
-                keys: ['o', '<Enter>'],
+                keys: ['o', 'Enter'],
                 tip: 'open the current issue',
               },
               {
