@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock"
 )
 
 type logEntry struct {
@@ -62,9 +63,9 @@ type Task struct {
 }
 
 // WriteLog appends a new line with the message into the Task entity.
-func (task *Task) WriteLog(format string, args ...interface{}) {
+func (task *Task) WriteLog(c context.Context, format string, args ...interface{}) {
 	task.Logs = append(task.Logs, logEntry{
-		Timestamp: time.Now(),
+		Timestamp: clock.Now(c).UTC(),
 		Message:   fmt.Sprintf(format, args...),
 	})
 }

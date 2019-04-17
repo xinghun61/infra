@@ -93,14 +93,14 @@ func runAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
 
 func scheduleRuns(c context.Context, assignerID string, tasks []*model.Task) error {
 	tqTasks := make([]*tq.Task, len(tasks))
-	for _, task := range tasks {
-		tqTasks = append(tqTasks, &tq.Task{
+	for i, task := range tasks {
+		tqTasks[i] = &tq.Task{
 			Payload: &RunAssignerTask{
 				AssignerId: assignerID,
 				TaskId:     task.ID,
 			},
 			ETA: task.ExpectedStart,
-		})
+		}
 	}
 	return Dispatcher().AddTask(c, tqTasks...)
 }

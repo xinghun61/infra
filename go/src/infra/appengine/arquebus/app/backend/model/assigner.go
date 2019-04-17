@@ -247,11 +247,14 @@ func EnsureScheduledTasks(c context.Context, assignerID string) ([]*Task, error)
 	nextETA, scheduleUpTo := findNextETA(now, assigner)
 	for ; !nextETA.After(scheduleUpTo); nextETA = nextETA.Add(assigner.Interval) {
 		assigner.LatestSchedule = nextETA
-		tasks = append(tasks, &Task{
+		newTask := &Task{
 			AssignerKey:   genAssignerKey(c, assigner),
 			ExpectedStart: nextETA,
 			Status:        TaskStatus_Scheduled,
-		})
+		}
+		// Just to show a log entry for a newly created task in UI.
+		newTask.WriteLog(c, "Task created for assigner %s", assignerID)
+		tasks = append(tasks, newTask)
 	}
 
 	if err := datastore.Put(c, assigner); err != nil {
