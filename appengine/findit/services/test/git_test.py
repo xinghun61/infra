@@ -6,6 +6,7 @@ from datetime import datetime
 from datetime import timedelta
 import mock
 
+from findit_v2.services.context import Context
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.gitiles_repository import GitilesRepository
 from libs.gitiles.change_log import ChangeLog
@@ -387,3 +388,14 @@ class GitTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         'rev_98',
         git.GetRevisionForCommitPositionByAnotherCommit('rev_100', 100, 98))
+
+  def testGetRepoUrlFromContext(self):
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_host='gitiles.host.com',
+        gitiles_project='project/name',
+        gitiles_ref='ref/heads/master',
+        gitiles_id='git_sha')
+
+    self.assertEqual('https://gitiles.host.com/project/name.git',
+                     git.GetRepoUrlFromContext(context))

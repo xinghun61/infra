@@ -108,9 +108,11 @@ def GetCodeReviewInfoForACommit(revision, repo_url=CHROMIUM_GIT_REPOSITORY_URL):
   }
 
 
-def GetCommitPositionFromRevision(revision):
+def GetCommitPositionFromRevision(revision,
+                                  repo_url=CHROMIUM_GIT_REPOSITORY_URL):
   """Returns the corresponding commit position given a git revision."""
-  return GetCommitsInfo([revision]).get(revision, {}).get('commit_position')
+  return GetCommitsInfo([revision], repo_url).get(revision,
+                                                  {}).get('commit_position')
 
 
 def GetCommitsBetweenRevisionsInOrder(start_revision,
@@ -260,3 +262,16 @@ def GetRevisionForCommitPositionByAnotherCommit(
                                             requested_commit_position, repo_url)
 
   return revisions.get(requested_commit_position)
+
+
+def GetRepoUrlFromContext(context):
+  """Constructs repo url using context.
+
+  Args:
+    context (findit_v2.services.context.Context): Scope of the analysis.
+
+  Returns:
+    (str): repo url.
+  """
+  return 'https://{host}/{project}.git'.format(
+      host=context.gitiles_host, project=context.gitiles_project)

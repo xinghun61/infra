@@ -10,6 +10,7 @@ builds. And also to differentiate from the data models in v1.
 from google.appengine.ext import ndb
 
 from findit_v2.model.gitiles_commit import GitlesCommit
+from services import git
 
 
 def ParseBuilderId(builder_id):
@@ -35,6 +36,37 @@ def ParseBuilderId(builder_id):
       'bucket': parts[1],
       'builder': parts[2],
   }
+
+
+def SaveFailedBuild(context, build, build_failure_type):
+  """Saves the failed build.
+
+  Args:
+    context (findit_v2.services.context.Context): Scope of the analysis.
+    build (buildbucket build.proto): ALL info about the build.
+    build_failure_type (str): Type of failures in build.
+  """
+  repo_url = git.GetRepoUrlFromContext(context)
+
+  build_entity = LuciFailedBuild.Create(
+      luci_project=build.builder.project,
+      luci_bucket=build.builder.bucket,
+      luci_builder=build.builder.builder,
+      build_id=build.id,
+      legacy_build_number=build.number,
+      gitiles_host=context.gitiles_host,
+      gitiles_project=context.gitiles_project,
+      gitiles_ref=context.gitiles_ref,
+      gitiles_id=context.gitiles_id,
+      commit_position=git.GetCommitPositionFromRevision(
+          context.gitiles_id, repo_url=repo_url),
+      status=build.status,
+      create_time=build.create_time.ToDatetime(),
+      start_time=build.start_time.ToDatetime(),
+      end_time=build.end_time.ToDatetime(),
+      build_failure_type=build_failure_type)
+  build_entity.put()
+  return build_entity
 
 
 class LuciBuild(ndb.Model):

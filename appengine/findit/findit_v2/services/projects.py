@@ -37,3 +37,8 @@ GERRIT_PROJECTS = {
         'project-api': ChromeOSProjectAPI(),
     }
 }
+
+
+def GetProjectAPI(project):
+  """Gets the project API for the project."""
+  return GERRIT_PROJECTS.get(project)['project-api']

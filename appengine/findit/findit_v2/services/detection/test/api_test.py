@@ -21,6 +21,9 @@ class DummyProjectAPI(ProjectAPI):
       return StepTypeEnum.COMPILE
     return StepTypeEnum.INFRA
 
+  def GetCompileFailures(self, *_):
+    pass
+
 
 _MOCKED_GERRIT_PROJECTS = {'project': {'project-api': DummyProjectAPI(),}}
 
@@ -29,7 +32,8 @@ class APITest(unittest.TestCase):
 
   @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
               _MOCKED_GERRIT_PROJECTS)
-  @mock.patch('findit_v2.services.detection.api._AnalyzeCompileFailure')
+  @mock.patch('findit_v2.services.analysis.compile_failure.compile_api.'
+              'AnalyzeCompileFailure')
   def testNoValidFailure(self, mocked_AnalyzeCompileFailure, *_):
     build = Build()
     step = build.steps.add()
@@ -46,7 +50,8 @@ class APITest(unittest.TestCase):
 
   @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
               _MOCKED_GERRIT_PROJECTS)
-  @mock.patch('findit_v2.services.detection.api._AnalyzeCompileFailure')
+  @mock.patch('findit_v2.services.analysis.compile_failure.compile_api.'
+              'AnalyzeCompileFailure')
   def testTestFailure(self, mocked_AnalyzeCompileFailure, *_):
     build = Build()
     step = build.steps.add()
@@ -63,7 +68,8 @@ class APITest(unittest.TestCase):
 
   @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
               _MOCKED_GERRIT_PROJECTS)
-  @mock.patch('findit_v2.services.detection.api._AnalyzeCompileFailure')
+  @mock.patch('findit_v2.services.analysis.compile_failure.compile_api.'
+              'AnalyzeCompileFailure')
   def testCompileFailure(self, mocked_AnalyzeCompileFailure, *_):
     build = Build()
     step = build.steps.add()

@@ -3,13 +3,20 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 
+from buildbucket_proto import common_pb2
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
 from google.appengine.ext import ndb
 
+from findit_v2.model import luci_build
 from findit_v2.model.luci_build import ParseBuilderId
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.model.luci_build import LuciRerunBuild
+from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
+from services import git
 from waterfall.test import wf_testcase
 
 
@@ -93,3 +100,24 @@ class LuciFailedBuildTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(expected_res, ParseBuilderId('chromium/ci/Linux Builder'))
+
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
+  def testSaveFailedBuild(self, _):
+    builder = BuilderID(project='chromium', bucket='try', builder='linux-rel')
+    build = Build(
+        id=87654321, builder=builder, number=123, status=common_pb2.FAILURE)
+    build.create_time.FromDatetime(datetime(2019, 4, 9))
+    build.start_time.FromDatetime(datetime(2019, 4, 9, 0, 1))
+    build.end_time.FromDatetime(datetime(2019, 4, 9, 1))
+
+    context = Context(
+        luci_project_name='project',
+        gitiles_host='gitiles.host.com',
+        gitiles_project='project/name',
+        gitiles_ref='ref/heads/master',
+        gitiles_id='git_sha')
+
+    build_entity = luci_build.SaveFailedBuild(context, build,
+                                              StepTypeEnum.COMPILE)
+
+    self.assertIsNotNone(build_entity)

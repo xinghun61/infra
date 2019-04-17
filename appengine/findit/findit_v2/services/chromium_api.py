@@ -23,3 +23,38 @@ class ChromiumProjectAPI(ProjectAPI):
         return StepTypeEnum.TEST
 
     return StepTypeEnum.INFRA
+
+  def GetCompileFailures(self, build, compile_steps):  # pragma: no cover.
+    """Returns the detailed compile failures from a failed build.
+
+    Args:
+      build (buildbucket build.proto): ALL info about the build.
+      compile_steps (buildbucket step.proto): The failed compile steps.
+
+    Returns:
+      (dict): Information about detailed compile failures.
+      {
+        'build_packages': {
+          'failures': {
+            'pkg': {
+              'rule': 'emerge',
+              'output_targets': ['pkg'],
+              'first_failed_build': {
+                'id': 8765432109,
+                'number': 123,
+                'commit_id': 654321
+              },
+              'last_passed_build': None
+            },
+            ...
+          },
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None
+        },
+      }
+    """
+    raise NotImplementedError

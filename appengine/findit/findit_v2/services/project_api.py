@@ -16,3 +16,38 @@ class ProjectAPI(object):  # pragma: no cover.
       findit_v2.services.failure_type.StepTypeEnum
     """
     raise NotImplementedError
+
+  def GetCompileFailures(self, build, compile_steps):
+    """Returns the detailed compile failures from a failed build.
+
+    Args:
+      build (buildbucket build.proto): ALL info about the build.
+      compile_steps (buildbucket step.proto): The failed compile steps.
+
+    Returns:
+      (dict): Information about detailed compile_failures.
+      {
+        'build_packages': {
+          'failures': {
+            'pkg': {
+              'rule': 'emerge',
+              'output_targets': ['pkg'],
+              'first_failed_build': {
+                'id': 8765432109,
+                'number': 123,
+                'commit_id': 654321
+              },
+              'last_passed_build': None
+            },
+            ...
+          },
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 654321
+          },
+          'last_passed_build': None
+        },
+      }
+    """
+    raise NotImplementedError

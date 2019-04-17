@@ -7,6 +7,7 @@ import logging
 from buildbucket_proto import common_pb2
 
 from findit_v2.services import projects
+from findit_v2.services.analysis.compile_failure import compile_api
 from findit_v2.services.failure_type import StepTypeEnum
 
 
@@ -24,8 +25,9 @@ def OnBuildFailure(context, build):
   logging.info('Failed build is: %r', build.id)
 
   failed_steps = []
-  project_api = projects.GERRIT_PROJECTS[context
-                                         .luci_project_name]['project-api']
+  project_api = projects.GetProjectAPI(context.luci_project_name)
+  assert project_api, 'Unsupported project {}'.format(context.luci_project_name)
+
   for step in build.steps:
     if step.status != common_pb2.FAILURE:
       continue
@@ -39,21 +41,8 @@ def OnBuildFailure(context, build):
       fs[0] for fs in failed_steps if fs[1] == StepTypeEnum.COMPILE
   ]
   if compile_steps:
-    _AnalyzeCompileFailure(context, build, compile_steps)
+    compile_api.AnalyzeCompileFailure(context, build, compile_steps)
     return True
 
   logging.info('Unsupported failure types: %r', [fs[1] for fs in failed_steps])
   return False
-
-
-def _AnalyzeCompileFailure(context, build, compile_steps):
-  """Analyzes the compile failure.
-
-  Args:
-    context (findit_v2.services.context.Context): Scope of the analysis.
-    build (buildbucket build.proto): ALL info about the build.
-    compile_steps (buildbucket step.proto): The failed compile steps.
-  """
-  #pylint: disable=unused-argument
-  # TODO(chanli): hook up regression detection and analysis.
-  pass
