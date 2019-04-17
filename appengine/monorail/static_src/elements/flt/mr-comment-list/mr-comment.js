@@ -210,6 +210,9 @@ export class MrComment extends ReduxMixin(PolymerElement) {
     if (id === focusId) {
       window.requestAnimationFrame(() => {
         this.scrollIntoView();
+        // TODO(ehmaldonado): Figure out a way to get the height from the issue
+        // header, and scroll by that amount.
+        window.scrollBy(0, -150);
       });
       return true;
     }
