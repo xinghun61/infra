@@ -323,7 +323,7 @@ func TestTestStepFailureAlerts(t *testing.T) {
 								Name: "something_tests on windows_7 on Intel GPU",
 								Logs: [][]interface{}{
 									{
-										"swarming.summary",
+										"chromium_swarming.summary",
 										"foo",
 									},
 								},
@@ -602,7 +602,7 @@ func TestGetTestSuite(t *testing.T) {
 			}
 			s.Step.Logs = [][]interface{}{
 				{
-					"swarming.summary",
+					"chromium_swarming.summary",
 					"foo",
 				},
 			}

@@ -250,7 +250,7 @@ func GetTestSuite(bs *messages.BuildStep) string {
 		found := false
 		// If a step has a swarming.summary log, then we assume it's a test
 		for _, b := range bs.Step.Logs {
-			if len(b) > 1 && b[0] == "swarming.summary" {
+			if len(b) > 1 && b[0] == "chromium_swarming.summary" {
 				found = true
 				break
 			}
