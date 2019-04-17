@@ -173,7 +173,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
         <div class="container-no-issue" id="deleted">
           <p>Issue [[issueRef.localId]] has been deleted.</p>
           <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
-            <chops-button on-click="_undeleteIssue" class="emphasized">
+            <chops-button on-click="_undeleteIssue" class="undelete emphasized">
               Undelete Issue
             </chops-button>
           </template>
@@ -261,7 +261,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   static get observers() {
     return [
       '_issueChanged(issueRef, issue)',
-      '_issueRefChanged(issueRef)',
+      '_fetchIssue(issueRef)',
       '_projectNameChanged(issueRef.projectName)',
       '_userDisplayNameChanged(userDisplayName)',
     ];
@@ -282,7 +282,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     document.title = title;
   }
 
-  _issueRefChanged(issueRef) {
+  _fetchIssue(issueRef) {
     if (issueRef.localId && issueRef.projectName && !this.fetchingIssue) {
       // Reload the issue data when the id changes.
       this.dispatchAction(issue.fetchIssuePageData({issueRef}));

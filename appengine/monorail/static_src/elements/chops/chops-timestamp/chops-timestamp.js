@@ -57,6 +57,8 @@ export class ChopsTimestamp extends PolymerElement {
   }
 
   _computeDate(timestamp) {
+    if (!timestamp) return;
+
     let unixTimeMs = 0;
     // Make sure to do Date.parse before Number.parseInt because parseInt
     // will parse numbers within a string.

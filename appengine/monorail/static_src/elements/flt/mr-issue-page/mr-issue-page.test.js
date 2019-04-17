@@ -4,13 +4,17 @@
 
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {assert} from 'chai';
+import sinon from 'sinon';
 import {MrIssuePage} from './mr-issue-page.js';
+import * as issue from '../../redux/issue.js';
 
 let element;
 let loadingElement;
 let fetchErrorElement;
 let deletedElement;
 let issueElement;
+
+let prpcStub;
 
 function populateElementReferences() {
   flush();
@@ -25,10 +29,14 @@ suite('mr-issue-page', () => {
     element = document.createElement('mr-issue-page');
     element.mapStateToProps = () => {};
     document.body.appendChild(element);
+
+    prpcStub = sinon.stub(window.prpcClient, 'call');
   });
 
   teardown(() => {
     document.body.removeChild(element);
+
+    prpcStub.restore();
   });
 
   test('initializes', () => {
@@ -104,5 +112,76 @@ suite('mr-issue-page', () => {
 
     assert.isFalse(element.codeFont);
     assert.isFalse(element.hasAttribute('code-font'));
+  });
+
+  test('undeleting issue only shown if you have permissions', async () => {
+    element.issue = {isDeleted: true};
+
+    populateElementReferences();
+
+    assert.isNotNull(deletedElement);
+
+    let button = element.shadowRoot.querySelector('.undelete');
+    assert.isNull(button);
+
+    element.issuePermissions = ['deleteissue'];
+    flush();
+
+    button = element.shadowRoot.querySelector('.undelete');
+    assert.isNotNull(button);
+  });
+
+  test('undeleting issue updates page with issue', async () => {
+    const issueRef = {localId: 111, projectName: 'test'};
+    const deletedIssuePromise = Promise.resolve({
+      issue: {isDeleted: true},
+    });
+    const issuePromise = Promise.resolve({
+      issue: {localId: 111, projectName: 'test'},
+    });
+    const deletePromise = Promise.resolve({});
+    sinon.spy(element, '_undeleteIssue');
+
+    prpcStub.withArgs('monorail.Issues', 'GetIssue', {issueRef})
+      .onFirstCall().returns(deletedIssuePromise)
+      .onSecondCall().returns(issuePromise);
+    prpcStub.withArgs('monorail.Issues', 'DeleteIssue',
+      {delete: false, issueRef}).returns(deletePromise);
+
+    element.dispatchAction(
+      issue.setIssueRef(issueRef.localId, issueRef.projectName));
+
+    await deletedIssuePromise;
+
+    populateElementReferences();
+
+    assert.deepEqual(element.issue, {isDeleted: true});
+    assert.isNull(issueElement);
+    assert.isNotNull(deletedElement);
+
+    // Make undelete button visible. This must be after deletedIssuePromise
+    // resolves since issuePermissions are cleared by Redux after that promise.
+    element.issuePermissions = ['deleteissue'];
+    flush();
+
+    const button = element.shadowRoot.querySelector('.undelete');
+    button.click();
+
+    sinon.assert.calledWith(prpcStub, 'monorail.Issues', 'GetIssue',
+      {issueRef});
+    sinon.assert.calledWith(prpcStub, 'monorail.Issues', 'DeleteIssue',
+      {delete: false, issueRef});
+
+    await deletePromise;
+    await issuePromise;
+
+    assert.isTrue(element._undeleteIssue.calledOnce);
+
+    assert.deepEqual(element.issue, {localId: 111, projectName: 'test'});
+
+    populateElementReferences();
+    assert.isNotNull(issueElement);
+
+    element._undeleteIssue.restore();
   });
 });
