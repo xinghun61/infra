@@ -9,6 +9,7 @@ import '../../chops/chops-button/chops-button.js';
 import './mr-comment.js';
 import {ReduxMixin} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
+import * as ui from '../../redux/ui.js';
 import '../../shared/mr-shared-styles.js';
 
 const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
@@ -86,7 +87,6 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
       },
       issuePermissions: Object,
       focusId: String,
-      focusedComment: Number,
       quickMode: {
         type: Boolean,
         value: false,
@@ -109,13 +109,14 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
 
   static get observers() {
     return [
-      '_onFocusedComment(' +
-        'focusedComment, _hideComments, _commentsHiddenCount)',
+      '_onFocusId(' +
+        'focusId, comments, _hideComments, _commentsHiddenCount)',
     ];
   }
 
   static mapStateToProps(state, element) {
     return {
+      focusId: ui.focusId(state),
       issuePermissions: issue.permissions(state),
     };
   }
@@ -149,10 +150,15 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
     return count == 1 ? baseWord : pluralWord;
   }
 
-  _onFocusedComment(index, hideComments, commentsHiddenCount) {
-    if (index === null || index === -1 || !hideComments) return;
-    if (this._computeCommentHidden(hideComments, commentsHiddenCount, index)) {
-      this._hideComments = false;
+  _onFocusId(focusId, comments, hideComments, commentsHiddenCount) {
+    if (!comments || !focusId || !hideComments) return;
+    for (let i = 0; i < comments.length; ++i) {
+      const commentId = 'c' + comments[i].sequenceNum;
+      if (commentId === focusId &&
+          this._computeCommentHidden(hideComments, commentsHiddenCount, i)) {
+        this._hideComments = false;
+        break;
+      }
     }
   }
 }

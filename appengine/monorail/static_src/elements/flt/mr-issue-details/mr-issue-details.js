@@ -48,7 +48,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
         heading-level="2"
         comments="[[_comments]]"
         comments-shown-count="[[commentsShownCount]]"
-        focus-id="[[focusId]]"
         focused-comment="[[_focusedComment]]"
       >
         <mr-edit-issue
@@ -77,7 +76,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     return {
       comments: Array,
       commentsShownCount: Number,
-      focusId: String,
       _descriptionList: {
         type: Array,
         computed: '_computeDescriptionList(comments)',
@@ -86,17 +84,12 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
         type: Array,
         computed: '_filterComments(comments)',
       },
-      _focusedComment: {
-        type: Number,
-        computed: '_computeFocusedComment(_comments, focusId)',
-      },
     };
   }
 
   static mapStateToProps(state, element) {
     return {
       comments: issue.comments(state),
-      focusId: ui.focusId(state),
     };
   }
 
@@ -113,16 +106,6 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
       }
       return comment.descriptionNum || !comment.sequenceNum;
     });
-  }
-
-  _computeFocusedComment(comments, focusId) {
-    const index = (comments || []).findIndex((comment) => {
-      const commentId = 'c' + comment.sequenceNum;
-      if (commentId === focusId) {
-        return true;
-      }
-    });
-    return index;
   }
 }
 customElements.define(MrIssueDetails.is, MrIssueDetails);

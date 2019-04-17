@@ -166,7 +166,6 @@ suite('mr-approval-card', () => {
     flush();
 
     assert.isTrue(element.opened);
-    assert.equal(element._focusedComment, 0);
   });
 
   test('does not expands to show focused comment on other elements', () => {
@@ -193,6 +192,5 @@ suite('mr-approval-card', () => {
     flush();
 
     assert.isFalse(element.opened);
-    assert.equal(element._focusedComment, -1);
   });
 });

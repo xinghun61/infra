@@ -81,7 +81,6 @@ suite('mr-comment-list', () => {
     sinon.stub(commentElement, 'scrollIntoView');
 
     element.focusId = 'c3';
-    element.focusedComment = 2;
 
     flush();
 
@@ -98,12 +97,27 @@ suite('mr-comment-list', () => {
     sinon.stub(commentElement, 'scrollIntoView');
 
     element.focusId = 'c1';
-    element.focusedComment = 0;
 
     flush();
 
     assert.isFalse(element._hideComments);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
+
+    commentElement.scrollIntoView.restore();
+  });
+
+  test('doesnt scroll to unknown comment', () => {
+    flush();
+
+    const commentElement = element.shadowRoot.querySelector('#c1');
+    sinon.stub(commentElement, 'scrollIntoView');
+
+    element.focusId = 'c100';
+
+    flush();
+
+    assert.isTrue(element._hideComments);
+    assert.isFalse(commentElement.scrollIntoView.calledOnce);
 
     commentElement.scrollIntoView.restore();
   });
