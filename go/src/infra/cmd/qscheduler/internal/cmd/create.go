@@ -6,7 +6,9 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
@@ -26,6 +28,7 @@ var Create = &subcommands.Command{
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.BoolVar(&c.allowPreemption, "allow-preemption", true, "Allow preemption.")
+		c.Flags.Var(nullableInt32Value(&c.botExpiry), "bot-expiry-seconds", "Number of seconds after which idle bots expire.")
 
 		return c
 	},
@@ -37,6 +40,7 @@ type createRun struct {
 	envFlags  envFlags
 
 	allowPreemption bool
+	botExpiry       *int32
 }
 
 func (c *createRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -65,6 +69,9 @@ func (c *createRun) Run(a subcommands.Application, args []string, env subcommand
 	req := &qscheduler.CreateSchedulerPoolRequest{
 		PoolId: poolID,
 		Config: &protos.SchedulerConfig{DisablePreemption: !c.allowPreemption},
+	}
+	if c.botExpiry != nil {
+		req.Config.BotExpiration = ptypes.DurationProto(time.Duration(*c.botExpiry) * time.Second)
 	}
 
 	_, err = adminService.CreateSchedulerPool(ctx, req)

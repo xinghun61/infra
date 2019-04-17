@@ -27,6 +27,8 @@ var Mod = &subcommands.Command{
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 		c.Flags.Var(nullableBoolValue(&c.allowPreemption), "allow-preemption", "Allow preemption.")
+		c.Flags.Var(nullableInt32Value(&c.botExpiry), "bot-expiry-seconds", "Number of seconds after which idle bots expire.")
+
 		return c
 	},
 }
@@ -37,6 +39,7 @@ type modRun struct {
 	envFlags  envFlags
 
 	allowPreemption *bool
+	botExpiry       *int32
 }
 
 // validate validates command line arguments.
@@ -75,6 +78,9 @@ func (c *modRun) Run(a subcommands.Application, args []string, env subcommands.E
 
 	if c.allowPreemption != nil {
 		req.DisablePreemption = &wrappers.BoolValue{Value: !*c.allowPreemption}
+	}
+	if c.botExpiry != nil {
+		req.BotExpirationSeconds = &wrappers.Int32Value{Value: *c.botExpiry}
 	}
 
 	_, err = adminService.ModSchedulerPool(ctx, req)
