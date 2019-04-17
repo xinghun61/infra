@@ -6,7 +6,6 @@ indexes:
   - name: ExpectedStart
     direction: desc
 
-indexes:
 - kind: Task
   ancestor: yes
   properties:
