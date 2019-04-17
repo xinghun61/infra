@@ -160,3 +160,5 @@ blacklist:
     description: someone crawling p/oss-fuzz/issues
   - subnet: 51.15.72.250
     description: someone polling certain /p/chromium/issues
+  - subnet: 23.82.136.166
+    description: someone crawling gerrit and webrtc issues with a browser
