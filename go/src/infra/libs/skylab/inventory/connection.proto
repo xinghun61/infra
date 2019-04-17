@@ -14,12 +14,13 @@ option go_package = "inventory";
 
 import "device.proto";
 
-// NEXT TAG: 4
+// NEXT TAG: 6
 message ServoHostConnection {
   required string servo_host_id = 1;
   required string dut_id = 2;
   required int32 servo_port = 3;
   optional string servo_serial = 4;
+  optional string servo_type = 5;
 }
 
 // NEXT TAG: 3
