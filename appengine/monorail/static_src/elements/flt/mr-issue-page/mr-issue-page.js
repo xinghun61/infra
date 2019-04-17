@@ -22,6 +22,7 @@ import '../dialogs/mr-move-copy-issue.js';
 import '../dialogs/mr-convert-issue.js';
 import '../dialogs/mr-related-issues-table.js';
 import '../dialogs/mr-update-issue-hotlists.js';
+import '../../mr-cues/mr-cues.js';
 
 const APPROVAL_COMMENT_COUNT = 5;
 const DETAIL_COMMENT_COUNT = 100;
@@ -157,6 +158,7 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           }
         }
       </style>
+      <mr-cues id="cues" user-display-name="[[userDisplayName]]"></mr-cues>
       <template is="dom-if" if="[[_showLoading(fetchingIssue, issue)]]">
         <div class="container-no-issue" id="loading">
           Loading...

@@ -35,7 +35,13 @@ const FETCH_PREFS_FAILURE = 'user/FETCH_PREFS_FAILURE';
 */
 
 // Reducers
-const USER_DEFAULT = {groups: [], hotlists: [], prefs: new Map()};
+const USER_DEFAULT = {
+  groups: [],
+  hotlists: [],
+  prefs: new Map(),
+  prefsLoaded: false,
+};
+
 const currentUserReducer = createReducer(USER_DEFAULT, {
   [FETCH_SUCCESS]: (_user, action) => {
     return {
@@ -49,7 +55,11 @@ const currentUserReducer = createReducer(USER_DEFAULT, {
     return {...user, hotlists: action.hotlists};
   },
   [FETCH_PREFS_SUCCESS]: (user, action) => {
-    return {...user, prefs: action.prefs};
+    return {
+      ...user,
+      prefs: action.prefs,
+      prefsLoaded: true,
+    };
   },
 });
 

@@ -72,7 +72,7 @@ export class ChopsDialog extends mixinBehaviors(
           @apply --chops-dialog-theme;
         }
       </style>
-      <dialog class="dialog" role="dialog">
+      <dialog class="dialog" role="dialog" on-cancel="handleCancel" >
         <div class="dialog-content">
           <slot></slot>
         </div>
@@ -118,6 +118,14 @@ export class ChopsDialog extends mixinBehaviors(
         type: Array,
         value: [ESC_KEYCODE],
       },
+      /**
+       * When True, force the user to interact with the dialog rather than
+       * just dismissing it.
+       */
+      forced: {
+        type: Boolean,
+        value: false,
+      },
       _boundKeydownHandler: Object,
       _previousFocusedElement: Object,
     };
@@ -129,7 +137,7 @@ export class ChopsDialog extends mixinBehaviors(
     this._boundKeydownHandler = this._keydownHandler.bind(this);
 
     this.addEventListener('click', (evt) => {
-      if (!this.opened || !this.closeOnOutsideClick) return;
+      if (!this.opened || !this.closeOnOutsideClick || this.forced) return;
 
       const hasDialog = evt.composedPath().find(
         (node) => {
@@ -158,7 +166,7 @@ export class ChopsDialog extends mixinBehaviors(
     let keyCode = event.keyCode;
 
     // Handle closing hot keys.
-    if (this.exitKeys.includes(keyCode)) {
+    if (this.exitKeys.includes(keyCode) && !this.forced) {
       this.close();
     }
 
@@ -206,6 +214,12 @@ export class ChopsDialog extends mixinBehaviors(
 
   toggle() {
     this.opened = !this.opened;
+  }
+
+  handleCancel(evt) {
+    if (this.forced) {
+      evt.preventDefault();
+    }
   }
 
   _getActiveElement() {
