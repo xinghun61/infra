@@ -21,13 +21,13 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
     return html`
       <style include="mr-shared-styles">
         .attachment-view {
-          margin-left: .7em;
+          margin-left: 8px;
         }
         .attachment-download {
-          margin-left: .7em
+          margin-left: 8px
         }
         .attachment-delete {
-          float: right;
+          margin-left: 8px
         }
         .attachment-delete-button {
           color: var(--chops-button-color);
@@ -47,10 +47,17 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
           flex-wrap: nowrap;
         }
         .filename {
-          margin-left: .7em;
+          margin-left: 8px;
+          display: flex;
+          justify-contents: space-between;
+          align-items: center;
+        }
+        .filename-deleted {
+          margin-right: 4px;
         }
         .filesize {
-          margin-left: .7em;
+          margin-left: 8px;
+          white-space: nowrap;
         }
         .preview {
           border: 2px solid #c3d9ff;
@@ -62,26 +69,26 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
         }
       </style>
       <div class="comment-attachment">
-        <template is="dom-if" if="[[canDelete]]">
-          <div class="attachment-delete">
-            <chops-button
-              class="attachment-delete-button"
-              on-click="_deleteAttachment"
-            >
-              <template is="dom-if" if="[[attachment.isDeleted]]">
-                Undelete
-              </template>
-              <template is="dom-if" if="[[!attachment.isDeleted]]">
-                Delete
-              </template>
-            </chops-button>
-          </div>
-        </template>
         <div class="filename">
           <template is="dom-if" if="[[attachment.isDeleted]]">
-            [Deleted]
+            <div class="filename-deleted">[Deleted]</div>
           </template>
           <b>[[attachment.filename]]</b>
+          <template is="dom-if" if="[[canDelete]]">
+            <div class="attachment-delete">
+              <chops-button
+                class="attachment-delete-button"
+                on-click="_deleteAttachment"
+              >
+                <template is="dom-if" if="[[attachment.isDeleted]]">
+                  Undelete
+                </template>
+                <template is="dom-if" if="[[!attachment.isDeleted]]">
+                  Delete
+                </template>
+              </chops-button>
+            </div>
+          </template>
         </div>
         <template is="dom-if" if="[[!attachment.isDeleted]]">
           <div class="comment-attachment-header">
