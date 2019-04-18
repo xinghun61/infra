@@ -95,11 +95,9 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 	// idle. This should be done if either:
 	//  - The reconciler doesn't have anything queued for that worker.
 	//  - The reconciler has a task queued for that worker, but it is inconsistent
-	//    with the scheduler's opinion. This means we've received some previous
-	//    notify call with an unexpected worker for a given request. We defer
-	//    to the scheduler's state, which has its own NotifyRequest logic that
-	//    correctly handles this and accounts for out-of-order updates and other
-	//    subtleties.
+	//    with the scheduler's opinion. We defer to the scheduler's state, which
+	//    has its own NotifyRequest logic that correctly handles this and accounts
+	//    for out-of-order updates and other subtleties.
 	for _, w := range workers {
 		wid := w.ID
 		q, ok := state.proto.WorkerQueues[string(wid)]

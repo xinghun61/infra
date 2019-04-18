@@ -22,24 +22,20 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-// WorkerQueue represents the queue of qscheduler operations that are pending
-// for a given worker.
+// WorkerQueue represents a task request that is pending assignment to a given
+// worker and optionally the expected task on the worker to preempt.
 //
-// At present, the queue of operations for a worker can be at most 2 elements
-// in length, and consist of either:
-// - An Abort Job operation followed by an Assign Job operation.
-// - An Assign Job operation.
-//
-// Therefore, instead of representing this as a list of operations, it is
-// convenient to flatten this queue into a single object.
+// Note: the name WorkerQueue is a legacy name, which is why it isn't a great
+// match for what it represents.
 type WorkerQueue struct {
-	// EnqueueTime is the time at which these operations were enqueued.
+	// EnqueueTime is the time at which the pending assignment was created
+	// by the scheduler.
 	EnqueueTime *timestamp.Timestamp `protobuf:"bytes,1,opt,name=enqueue_time,json=enqueueTime,proto3" json:"enqueue_time,omitempty"`
-	// TaskToAssign is the task request that should be assigned to this worker.
+	// TaskToAssign is the id of the task that should be assigned to this worker.
 	TaskToAssign string `protobuf:"bytes,2,opt,name=task_to_assign,json=taskToAssign,proto3" json:"task_to_assign,omitempty"`
-	// TaskToAbort indicates the task request id that should be aborted on this worker.
+	// TaskToAbort is the id of the task that should be aborted on this worker.
 	//
-	// Empty string "" indicates that there is nothing to abort.
+	// An empty string indicates that there is no task to abort.
 	TaskToAbort          string   `protobuf:"bytes,3,opt,name=task_to_abort,json=taskToAbort,proto3" json:"task_to_abort,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -92,14 +88,18 @@ func (m *WorkerQueue) GetTaskToAbort() string {
 	return ""
 }
 
-// ReconcilerState represents a reconciler, which includes its configuration and the
-// pending operations that are in-flight and have not been ACK'ed yet.
+// ReconcilerState represents a reconciler. It holds tasks that are pending
+// assignment to workers and tasks that have errored out.
 type Reconciler struct {
-	// WorkerQueues is a map from worker id to the pending operations for that worker.
+	// WorkerQueues holds pending assignments for workers.
+	//
+	// An assignment remains pending until a notification from Swarming
+	// acknowledges that it has taken place.
 	WorkerQueues map[string]*WorkerQueue `protobuf:"bytes,1,rep,name=worker_queues,json=workerQueues,proto3" json:"worker_queues,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// TaskErrors is a map from task ids that had an error to the error description.
-	// These tasks will be returned from GetCancellations, until they are ack'ed as
-	// aborted.
+	//
+	// Task errors remain pending until a notification from Swarming acknowledges
+	// that the task is no longer pending.
 	TaskErrors           map[string]string `protobuf:"bytes,2,rep,name=task_errors,json=taskErrors,proto3" json:"task_errors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`

@@ -16,37 +16,37 @@ package protos;
 
 import "google/protobuf/timestamp.proto";
 
-// WorkerQueue represents the queue of qscheduler operations that are pending
-// for a given worker.
+// WorkerQueue represents a task request that is pending assignment to a given
+// worker and optionally the expected task on the worker to preempt.
 //
-// At present, the queue of operations for a worker can be at most 2 elements
-// in length, and consist of either:
-// - An Abort Job operation followed by an Assign Job operation.
-// - An Assign Job operation.
-//
-// Therefore, instead of representing this as a list of operations, it is
-// convenient to flatten this queue into a single object.
+// Note: the name WorkerQueue is a legacy name, which is why it isn't a great
+// match for what it represents.
 message WorkerQueue {
-	// EnqueueTime is the time at which these operations were enqueued.
+	// EnqueueTime is the time at which the pending assignment was created
+	// by the scheduler.
 	google.protobuf.Timestamp enqueue_time = 1;
 
-	// TaskToAssign is the task request that should be assigned to this worker.
+	// TaskToAssign is the id of the task that should be assigned to this worker.
 	string task_to_assign = 2;
 
-	// TaskToAbort indicates the task request id that should be aborted on this worker.
+	// TaskToAbort is the id of the task that should be aborted on this worker.
 	//
-	// Empty string "" indicates that there is nothing to abort.
+	// An empty string indicates that there is no task to abort.
 	string task_to_abort = 3;
 }
 
-// ReconcilerState represents a reconciler, which includes its configuration and the
-// pending operations that are in-flight and have not been ACK'ed yet.
+// ReconcilerState represents a reconciler. It holds tasks that are pending
+// assignment to workers and tasks that have errored out.
 message Reconciler {
-	// WorkerQueues is a map from worker id to the pending operations for that worker.
+	// WorkerQueues holds pending assignments for workers.
+	//
+	// An assignment remains pending until a notification from Swarming
+	// acknowledges that it has taken place.
 	map<string, WorkerQueue> worker_queues = 1;
 
 	// TaskErrors is a map from task ids that had an error to the error description.
-	// These tasks will be returned from GetCancellations, until they are ack'ed as
-	// aborted.
+	//
+	// Task errors remain pending until a notification from Swarming acknowledges
+	// that the task is no longer pending.
 	map<string, string> task_errors = 2;
 }
