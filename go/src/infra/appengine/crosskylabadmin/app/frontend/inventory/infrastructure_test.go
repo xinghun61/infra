@@ -32,13 +32,15 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 		defer validate()
 
 		dutID := "dut_id"
+		dutHostname := "dut_hostname"
 		serverID := "server_id"
 		wrongEnvDutID := "wrong_env_dut"
+		wrongEnvDutHostname := "wrong_env_dut_hostname"
 		wrongEnvServer := "wrong_env_server"
 		err := tf.FakeGitiles.SetInventory(config.Get(tf.C).Inventory, fakes.InventoryData{
 			Lab: inventoryBytesFromDUTs([]testInventoryDut{
-				{dutID, dutID, "link", "DUT_POOL_SUITES"},
-				{wrongEnvDutID, wrongEnvDutID, "link", "DUT_POOL_SUITES"},
+				{dutID, dutHostname, "link", "DUT_POOL_SUITES"},
+				{wrongEnvDutID, wrongEnvDutHostname, "link", "DUT_POOL_SUITES"},
 			}),
 			Infrastructure: inventoryBytesFromServers([]testInventoryServer{
 				{
@@ -88,7 +90,7 @@ func TestRemoveDutsFromDrones(t *testing.T) {
 
 		Convey("RemoveDutsFromdrone for the staging dut by name removes it from drone.", func() {
 			req := &fleet.RemoveDutsFromDronesRequest{
-				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutHostname: dutID}},
+				Removals: []*fleet.RemoveDutsFromDronesRequest_Item{{DutHostname: dutHostname}},
 			}
 			resp, err := tf.Inventory.RemoveDutsFromDrones(tf.C, req)
 			So(err, ShouldBeNil)
