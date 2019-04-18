@@ -20,11 +20,15 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/freeduts"
 	"infra/libs/skylab/inventory"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/timestamp"
+	"github.com/kylelemons/godebug/pretty"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/common/retry"
@@ -32,6 +36,66 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+func TestListRemovedDuts(t *testing.T) {
+	t.Parallel()
+	t.Run("no duts added", func(t *testing.T) {
+		t.Parallel()
+		ctx := gaetesting.TestingContextWithAppID("some-app")
+		var is ServerImpl
+		resp, err := is.ListRemovedDuts(ctx, &fleet.ListRemovedDutsRequest{})
+		if err != nil {
+			t.Fatalf("ListRemovedDuts returned error: %s", err)
+		}
+		if len(resp.Duts) != 0 {
+			t.Errorf("Got %#v; expected empty slice", resp.Duts)
+		}
+	})
+	t.Run("duts added", func(t *testing.T) {
+		t.Parallel()
+
+		// Set up fake datastore.
+		ctx := gaetesting.TestingContextWithAppID("some-app")
+		expireTime := time.Date(2001, 2, 3, 4, 5, 6, 7, time.UTC)
+		freeduts.Add(ctx, []freeduts.DUT{
+			{
+				ID:         "c7b2ae28-d597-4316-be5f-7df23c762c1e",
+				Hostname:   "firo.example.com",
+				Bug:        "crbug.com/1234",
+				Comment:    "removed for testing",
+				ExpireTime: expireTime,
+				Model:      "firorial",
+			},
+		})
+		datastore.Raw(ctx).GetTestable().CatchupIndexes()
+
+		// Test RPC.
+		var is ServerImpl
+		resp, err := is.ListRemovedDuts(ctx, &fleet.ListRemovedDutsRequest{})
+		if err != nil {
+			t.Fatalf("ListRemovedDuts returned error: %s", err)
+		}
+		want := fleet.ListRemovedDutsResponse{
+			Duts: []*fleet.ListRemovedDutsResponse_Dut{
+				{
+					Id:       "c7b2ae28-d597-4316-be5f-7df23c762c1e",
+					Hostname: "firo.example.com",
+					Bug:      "crbug.com/1234",
+					Comment:  "removed for testing",
+					ExpireTime: &timestamp.Timestamp{
+						Seconds: expireTime.Unix(),
+						// datastore only has second resolution.
+						Nanos: 0,
+					},
+					Model: "firorial",
+				},
+			},
+		}
+		if diff := pretty.Compare(want, resp); diff != "" {
+			t.Errorf("Unexpected response -want +got, %s", diff)
+		}
+	})
+}
 
 func TestGetDutInfoWithConsistentDatastore(t *testing.T) {
 	Convey("On happy path and a single DUT in the inventory", t, func() {

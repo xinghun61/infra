@@ -19,6 +19,7 @@ package inventory
 import (
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/proto/google"
@@ -99,7 +100,26 @@ func (is *ServerImpl) ListRemovedDuts(ctx context.Context, req *fleet.ListRemove
 	defer func() {
 		err = grpcutil.GRPCifyAndLogErr(ctx, err)
 	}()
-	return nil, status.Errorf(codes.Unimplemented, "not implemented yet")
+	duts, err := freeduts.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp = &fleet.ListRemovedDutsResponse{}
+	for _, d := range duts {
+		t, err := ptypes.TimestampProto(d.ExpireTime)
+		if err != nil {
+			return nil, err
+		}
+		resp.Duts = append(resp.Duts, &fleet.ListRemovedDutsResponse_Dut{
+			Id:         d.ID,
+			Hostname:   d.Hostname,
+			Bug:        d.Bug,
+			Comment:    d.Comment,
+			ExpireTime: t,
+			Model:      d.Model,
+		})
+	}
+	return resp, nil
 }
 
 // UpdateCachedInventory implements the method from fleet.InventoryServer interface.
