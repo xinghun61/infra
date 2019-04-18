@@ -53,13 +53,14 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
         [[_pluralize(_commentsHiddenCount, 'comment')]]
       </button>
       <template is="dom-repeat" items="[[comments]]" as="comment">
-        <mr-comment
-          focus-id="[[focusId]]"
-          comment="[[comment]]"
-          hidden\$="[[_computeCommentHidden(_hideComments, _commentsHiddenCount, index)]]"
-          heading-level="[[headingLevel]]"
-          quick-mode="[[quickMode]]"
-        ></mr-comment>
+        <template is="dom-if" if="[[_computeShowComment(_hideComments, _commentsHiddenCount, index)]]">
+          <mr-comment
+            focus-id="[[focusId]]"
+            comment="[[comment]]"
+            heading-level="[[headingLevel]]"
+            quick-mode="[[quickMode]]"
+          ></mr-comment>
+        </template>
       </template>
       <div class="edit-slot" hidden$="[[!_canAddComment(issuePermissions)]]">
         <slot></slot>
@@ -129,8 +130,8 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
     return (issuePermissions || []).includes(ADD_ISSUE_COMMENT_PERMISSION);
   }
 
-  _computeCommentHidden(hideComments, commentsHiddenCount, index) {
-    return hideComments && index < commentsHiddenCount;
+  _computeShowComment(hideComments, commentsHiddenCount, index) {
+    return !hideComments || index >= commentsHiddenCount;
   }
 
   _computeCommentsHiddenCount(shownCount, numComments) {
@@ -155,7 +156,7 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
     for (let i = 0; i < comments.length; ++i) {
       const commentId = 'c' + comments[i].sequenceNum;
       if (commentId === focusId &&
-          this._computeCommentHidden(hideComments, commentsHiddenCount, i)) {
+          !this._computeShowComment(hideComments, commentsHiddenCount, i)) {
         this._hideComments = false;
         break;
       }
