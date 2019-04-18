@@ -60,6 +60,9 @@ $_documentContainer.innerHTML = `<dom-module id="mr-shared-styles">
         color: var(--chops-primary-button-color);
         text-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.25);
       }
+      textarea {
+        font-size: var(--chops-main-font-size);
+      }
       /* Note: decoupling heading levels from styles is useful for
        * accessibility because styles will not always line up with semantically
        * appropriate heading levels.

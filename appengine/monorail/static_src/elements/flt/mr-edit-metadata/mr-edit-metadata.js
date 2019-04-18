@@ -45,6 +45,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
             box-sizing: border-box;
             width: 95%;
             padding: 0.25em 4px;
+            font-size: var(--chops-main-font-size);
           }
         }
         :host(.edit-actions-right) .edit-actions {
