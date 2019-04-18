@@ -12,7 +12,7 @@
 [if-any new_template_form]
   <form action="create.do" method="POST">
 [else]
-  <form action="detail_ezt.do" method="POST">
+  <form action="detail.do" method="POST">
 [end]
 <input type="hidden" name="token" value="[form_token]">
 <input type="hidden" name="template" value="[template_name]">
