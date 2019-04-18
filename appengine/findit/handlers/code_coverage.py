@@ -81,6 +81,11 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
         'builder': 'linux-chromeos-code-coverage',
         'ui_name': 'ChromeOS on Linux',
     },
+    'oobe-code-mauve': {
+        'bucket': 'ci',
+        'builder': 'linux-chromeos-oobe-code-coverage',
+        'ui_name': 'ChromeOS on Linux for OOBE (Custom for Code Mauve)',
+    },
 }
 
 
@@ -614,6 +619,7 @@ class ProcessCodeCoverageData(BaseHandler):
         build.builder.bucket not in ('coverage', 'ci', 'try') or
         build.builder.builder not in ('chromeos-vm-code-coverage',
                                       'linux-chromeos-code-coverage',
+                                      'linux-chromeos-oobe-code-coverage',
                                       'linux-code-coverage',
                                       'linux-coverage-rel')):
       return
