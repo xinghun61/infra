@@ -1152,7 +1152,8 @@ class WorkEnv(object):
     try:
       self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
     except permissions.PermissionException as e:
-      if delta == tracker_pb2.IssueDelta():  # No issue changes.
+      # No issue changes and we're not editing the issue description.
+      if delta == tracker_pb2.IssueDelta() and not is_description:
         self._AssertPermInIssue(issue, permissions.ADD_ISSUE_COMMENT)
       else:  # TODO(jrobbins): Add EditIssueCc, EditIssueSummary, etc.
         raise e

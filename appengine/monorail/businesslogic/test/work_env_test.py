@@ -1469,6 +1469,59 @@ class WorkEnvTest(unittest.TestCase):
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_EditDescription(self, fake_pasicn):
+    """We can edit an issue description."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta()
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, 'New description', is_description=True)
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertTrue(comment_pb.is_description)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
+        old_owner_id=111L, comment_id=comment_pb.id)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_NotAllowedToEditDescription(self, fake_pasicn):
+    """We cannot edit an issue description without EditIssue permission."""
+    self.SignIn(222L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta()
+
+    with self.assertRaises(permissions.PermissionException):
+      with self.work_env as we:
+        we.UpdateIssue(issue, delta, 'New description', is_description=True)
+
+    fake_pasicn.assert_not_called()
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_AddComment(self, fake_pasicn):
+    """We can add a comment."""
+    self.SignIn(222L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta()
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, 'New description')
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertFalse(comment_pb.is_description)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 222L, send_email=True,
+        old_owner_id=111L, comment_id=comment_pb.id)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_MergeInto(self, _fake_pasicn):
     self.SignIn()
     issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
@@ -1556,26 +1609,6 @@ class WorkEnvTest(unittest.TestCase):
     comment_pb = comments[-1]
     self.assertEqual(1, len(comment_pb.attachments))
     self.assertEqual('hello.txt', comment_pb.attachments[0].filename)
-
-  @mock.patch(
-      'features.send_notifications.PrepareAndSendIssueChangeNotification')
-  def testUpdateIssue_Description(self, fake_pasicn):
-    """We can update an issue's description."""
-    self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
-    self.services.issue.TestAddIssue(issue)
-    delta = tracker_pb2.IssueDelta()
-
-    with self.work_env as we:
-      we.UpdateIssue(issue, delta, 'Description2', is_description=True)
-
-    self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
-    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
-    comment_pb = comments[-1]
-    self.assertTrue(comment_pb.is_description)
-    fake_pasicn.assert_called_with(
-        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
-        old_owner_id=111L, comment_id=comment_pb.id)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
