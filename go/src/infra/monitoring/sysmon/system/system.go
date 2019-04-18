@@ -140,6 +140,9 @@ var (
 	osArch = metric.NewString("proc/os/arch",
 		"OS architecture on this machine",
 		nil)
+	osKernelVersion = metric.NewString("proc/os/kernel_version",
+		"Kernel version on the machine",
+		nil)
 
 	lastCPUTimes cpu.TimesStat
 )
@@ -354,9 +357,15 @@ func updateOSInfoMetrics(c context.Context) error {
 		// Carry on since we still have a useful platform metric to report.
 	}
 
+	kernelVersion, err := host.KernelVersionWithContext(c)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to get kernel version information")
+	}
+
 	osName.Set(c, platform, "")
 	osVersion.Set(c, version, "")
 	osArch.Set(c, runtime.GOARCH)
+	osKernelVersion.Set(c, kernelVersion)
 	return err
 }
 

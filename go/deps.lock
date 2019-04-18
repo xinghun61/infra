@@ -1,8 +1,8 @@
-hash: aceff4f851a570e3b5f4755204bb97489df19917af901fe51191a11e01d5d18a
-updated: 2019-04-16T16:42:48.70228314-04:00
+hash: a5fd72ae8ff92d91a6cd198949570feb02cfa1610ee5573bfb9f47a37e51272c
+updated: 2019-04-18T10:23:11.758044042-07:00
 imports:
 - name: cloud.google.com/go
-  version: 430062523376d2a92d4a5cb6db8027245cf01460
+  version: dd6ac3c5d7099e5e461957b7e2dab0830330fbdc
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -25,7 +25,7 @@ imports:
   version: f9ffefc3facfbe0caee3fea233cbb6e8208f4541
   repo: https://chromium.googlesource.com/external/github.com/asaskevich/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: bf5a338fa83adcc4d2af94535ee7137679ed365e
+  version: b75b128df9f8734f891139bc1378b5cd44d1cb0d
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -47,7 +47,7 @@ imports:
   subpackages:
   - '...'
 - name: github.com/chromedp/chromedp
-  version: 71ae9f7bbcd7c1aa9fe2cd6ecfc8218f93da5931
+  version: f606ca9e73822457f634cd5468d09896dffa4ab9
   repo: https://chromium.googlesource.com/external/github.com/chromedp/chromedp.git
 - name: github.com/chzyer/readline
   version: 2972be24d48e78746da79ba8e24e8b488c9880de
@@ -311,7 +311,7 @@ imports:
   subpackages:
   - diffmatchpatch
 - name: github.com/shirou/gopsutil
-  version: 114c78c777eb86b58e40910cbd3fc451829c366d
+  version: 2cbc9195c892b304060269ef280375236d2fcac9
   repo: https://chromium.googlesource.com/external/github.com/shirou/gopsutil.git
 - name: github.com/shirou/w32
   version: bb4de0191aa41b5507caa14b0650cdbddcd9280b
@@ -366,7 +366,7 @@ imports:
   version: bd5ef7bd5415a7ac448318e64f11a24cd21e594b
   repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonreference.git
 - name: github.com/xeipuuv/gojsonschema
-  version: 6c00ba4a53168cfe40032d89407a5835d7d9efab
+  version: 6b940e3ae769b991236921508565ab80d55b324f
   repo: https://chromium.googlesource.com/external/github.com/xeipuuv/gojsonschema.git
 - name: github.com/xtgo/set
   version: 708d80f4a27458f99f8ca12bd0e638c6ee65627f
@@ -393,17 +393,17 @@ imports:
   version: fab11d534b66b3f2f3f26e951003174e36605de8
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
-  version: 070eb7bb4110b8e6bc0515ce8b9fb9748804d708
+  version: b5f252a0a7dd67fe7cd7499e2d4cbab1287f0d52
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
 - name: golang.org/x/crypto
-  version: 88737f569e3a9c7ab309cdc09a07fe7fc87233c3
+  version: df01cb2cc480549d72034218dd98bf97671450ac
   repo: https://go.googlesource.com/crypto.git
   subpackages:
   - ssh/terminal
 - name: golang.org/x/image
-  version: 3fc05d484e9f77dd51816890e05f2602e4ca4d65
+  version: 4e30a6eb7d9a7fbd8f97e1d47806f810d86cfc6e
   repo: https://chromium.googlesource.com/external/github.com/golang/image.git
   subpackages:
   - bmp
@@ -443,7 +443,7 @@ imports:
   version: f4905fbd45b6790792202848439271c74074bbfd
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 76038274be7a01841c956b392153ceea3758f3ab
+  version: 6732636ccdfd99c4301d1d1ac2307f091331f767
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -456,7 +456,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 9e7f2a839bfefc34110ebbc321850d5a7ad1ebd4
+  version: 33b7e862cd15f81bfba1c95a4931360da0fece8c
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -485,13 +485,13 @@ imports:
   - urlfetch
   - user
 - name: google.golang.org/genproto
-  version: d1146b9035b912113a38af3b138eb2af567b2c67
+  version: e7d98fc518a78c9f8b5ee77be7b0b317475d89e1
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
   subpackages:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 5b263177f251e299a28f4728483976864a08e509
+  version: d7af56a5e494ceb44a0749ca576c83cfd3a42bd2
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
