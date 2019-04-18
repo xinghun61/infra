@@ -686,6 +686,20 @@ wheel: <
 
 * *universal*
 
+## **fasteners**
+
+### 0.14.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/fasteners-py2_py3"
+  version: "version:0.14.1"
+>
+```
+
+
+* *universal*
+
 ## **funcsigs**
 
 ### 1.0.2
@@ -764,6 +778,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/google-api-python-client-py2_py3"
   version: "version:1.6.2"
+>
+```
+
+
+* *universal*
+
+## **google-apitools**
+
+### 0.5.27
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/google-apitools-py2_py3"
+  version: "version:0.5.27"
 >
 ```
 
@@ -1346,6 +1374,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/mock-py2_py3"
   version: "version:2.0.0"
+>
+```
+
+
+* *universal*
+
+## **monotonic**
+
+### 1.5
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/monotonic-py2_py3"
+  version: "version:1.5"
 >
 ```
 
@@ -2545,6 +2587,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/six-py2_py3"
   version: "version:1.11.0"
+>
+```
+
+
+* *universal*
+
+### 1.12.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/six-py2_py3"
+  version: "version:1.12.0"
 >
 ```
 
