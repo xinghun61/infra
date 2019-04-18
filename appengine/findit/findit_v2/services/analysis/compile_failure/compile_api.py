@@ -16,6 +16,10 @@ def AnalyzeCompileFailure(context, build, compile_steps):
     build (buildbucket build.proto): ALL info about the build.
     compile_steps (buildbucket step.proto): The failed compile steps.
   """
+  if context.luci_project_name in projects.LUCI_PROJECTS:  # pragma: no cover.
+    logging.error('Findit v2 is not ready yet')
+    return
+
   if context.luci_project_name == 'chromium':
     logging.warning('Findit does not support chromium project in v2.')
     return

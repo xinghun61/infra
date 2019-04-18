@@ -7,7 +7,6 @@ import logging
 from buildbucket_proto import common_pb2
 
 from findit_v2.services import projects
-from findit_v2.services.analysis.compile_failure import compile_api
 from findit_v2.services.failure_type import StepTypeEnum
 
 
@@ -41,7 +40,11 @@ def OnBuildFailure(context, build):
       fs[0] for fs in failed_steps if fs[1] == StepTypeEnum.COMPILE
   ]
   if compile_steps:
-    compile_api.AnalyzeCompileFailure(context, build, compile_steps)
+    # Findit v2 is not ready yet. Logs the failure but not start an analysis.
+    # TODO(crbug.com/938143): Revert change
+    # https://chromium-review.googlesource.com/c/infra/infra/+/1572449
+    # when Findit v2 for ChromeOS compile failure analysis is ready.
+    logging.info('Compile failure found in build %d.', build.id)
     return True
 
   logging.info('Unsupported failure types: %r', [fs[1] for fs in failed_steps])

@@ -82,4 +82,6 @@ class APITest(unittest.TestCase):
         gitiles_ref='ref/heads/master',
         gitiles_id='git_sha')
     self.assertTrue(api.OnBuildFailure(context, build))
-    self.assertTrue(mocked_AnalyzeCompileFailure.called)
+    # For now AnalyzeCompileFailure will not be called since Findit v2 is not
+    # ready.
+    self.assertFalse(mocked_AnalyzeCompileFailure.called)
