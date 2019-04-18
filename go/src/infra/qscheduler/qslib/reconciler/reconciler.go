@@ -39,6 +39,7 @@ import (
 	"infra/qscheduler/qslib/tutils"
 
 	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/logging"
 )
 
 // New returns a new initialized State instance.
@@ -115,13 +116,15 @@ func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t t
 		if a.TaskToAbort != "" && a.Type != scheduler.AssignmentPreemptWorker {
 			panic(fmt.Sprintf("Received a non-preempt assignment specifing a task to abort %s.", a.TaskToAbort))
 		}
-		// TODO(akeshet): Log if there was a previous WorkerQueue that we are
-		// overwriting.
-		state.proto.WorkerQueues[string(a.WorkerID)] = &protos.WorkerQueue{
+		new := &protos.WorkerQueue{
 			EnqueueTime:  tutils.TimestampProto(a.Time),
 			TaskToAssign: string(a.RequestID),
 			TaskToAbort:  string(a.TaskToAbort),
 		}
+		if q, ok := state.proto.WorkerQueues[string(a.WorkerID)]; ok {
+			logging.Debugf(ctx, "Clobbering previous WorkerQueue %+v for worker %s with new WorkerQueue %+v", q, a.WorkerID, new)
+		}
+		state.proto.WorkerQueues[string(a.WorkerID)] = new
 	}
 
 	// Yield from worker queues.
@@ -208,8 +211,9 @@ func (state *State) NotifyTaskRunning(ctx context.Context, s *scheduler.Schedule
 	if q, ok := state.proto.WorkerQueues[string(wid)]; ok {
 		if !update.Time.Before(tutils.Timestamp(q.EnqueueTime)) {
 			delete(state.proto.WorkerQueues, string(wid))
-			// TODO(akeshet): Log or handle "unexpected request on worker" here.
+			logging.Debugf(ctx, "Reconciler: unexpected request %s on worker %s, clobbering WorkerQueue.", rid, wid)
 		} else {
+			logging.Debugf(ctx, "Reconciler: ignoring non-forward RUNNING notification with request %s on worker %s.", rid, wid)
 			// TODO(akeshet): Consider whether we should delete from workerqueue
 			// here for non-forward updates that are still a (wid, rid) match
 			// for the expected assignment.
