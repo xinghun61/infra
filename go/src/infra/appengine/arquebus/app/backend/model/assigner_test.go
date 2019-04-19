@@ -10,17 +10,17 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"go.chromium.org/gae/impl/memory"
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
+	"infra/appengine/arquebus/app/util"
 )
 
 func TestUpdateAssigners(t *testing.T) {
 	t.Parallel()
 
 	Convey("UpdateAssigners", t, func() {
-		c := memory.Use(context.Background())
+		c := util.CreateTestContext()
 		rev1, rev2, rev3 := "abc", "def", "ghi"
 
 		// Ensure empty now.
@@ -86,11 +86,10 @@ func TestEnsureScheduledTasks(t *testing.T) {
 	var err error
 
 	Convey("EnsureScheduledTasks", t, func() {
-		c := memory.Use(context.Background())
+		c := util.CreateTestContext()
 		cl := testclock.New(time.Unix(testclock.TestTimeUTC.Unix(), 0).UTC())
 		c = clock.Set(c, cl)
 
-		setupTaskIndexes(c)
 		assigner := updateAndGetAllAssigners(c, "rev1", createConfig("a"))[0]
 		So(assigner.IsDrained, ShouldEqual, false)
 

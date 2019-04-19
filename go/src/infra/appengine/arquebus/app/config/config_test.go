@@ -14,26 +14,20 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 	. "go.chromium.org/luci/common/testing/assertions"
 	"go.chromium.org/luci/config/validation"
+
+	"infra/appengine/arquebus/app/util"
 )
 
 func createConfig(id string) *Config {
 	// returns an assigner with a given ID and all required fields.
-	assigner := &Assigner{
-		Id: id,
-		Assignees: []*UserSource{
-			{From: &UserSource_Rotation{Rotation: "rotation?position=primary"}},
-		},
-		Interval: &duration.Duration{Seconds: 60},
-		IssueQuery: &IssueQuery{
-			Q:            "test search query",
-			ProjectNames: []string{"project1", "project2"},
-		},
-	}
+	var cfg Assigner
+	So(proto.UnmarshalText(util.SampleValidAssignerCfg, &cfg), ShouldBeNil)
+	cfg.Id = id
 
 	return &Config{
 		AccessGroup:      "trooper",
 		MonorailHostname: "example.com",
-		Assigners:        []*Assigner{assigner},
+		Assigners:        []*Assigner{&cfg},
 	}
 }
 

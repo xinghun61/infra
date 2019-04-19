@@ -18,39 +18,33 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/smartystreets/goconvey/convey"
+	"github.com/golang/protobuf/proto"
+	. "github.com/smartystreets/goconvey/convey"
+
 	"go.chromium.org/gae/service/datastore"
+
 	"infra/appengine/arquebus/app/config"
+	"infra/appengine/arquebus/app/util"
 )
 
 // updateAndGetAllAssigners stores Assigners entities based on given configs,
 // and returns all the Assigner entities stored in datastore.
 func updateAndGetAllAssigners(c context.Context, rev string, cfgs ...*config.Assigner) []*Assigner {
 	err := UpdateAssigners(c, cfgs, rev)
-	convey.So(err, convey.ShouldBeNil)
+	So(err, ShouldBeNil)
 	datastore.GetTestable(c).CatchupIndexes()
 	assigners, err := GetAllAssigners(c)
-	convey.So(err, convey.ShouldBeNil)
+	So(err, ShouldBeNil)
 
 	return assigners
 }
 
 // createConfig creates a sample, valid Assigner config to be used in tests.
 func createConfig(id string) *config.Assigner {
-	// A sample valid assigner config
-	return &config.Assigner{
-		Id:     id,
-		Owners: []string{"foo@google.com"},
-		Assignees: []*config.UserSource{
-			{From: &config.UserSource_Email{Email: "oncall1@google.com"}},
-		},
-		Interval: &duration.Duration{Seconds: 60},
-		IssueQuery: &config.IssueQuery{
-			Q:            "-has:owner Ops-Alerts=test",
-			ProjectNames: []string{"chromium"},
-		},
-	}
+	var cfg config.Assigner
+	So(proto.UnmarshalText(util.SampleValidAssignerCfg, &cfg), ShouldBeNil)
+	cfg.Id = id
+	return &cfg
 }
 
 func createTasks(c context.Context, assigner *Assigner, status TaskStatus, startTimes ...time.Time) []*Task {
@@ -62,26 +56,7 @@ func createTasks(c context.Context, assigner *Assigner, status TaskStatus, start
 			ExpectedStart: s,
 		})
 	}
-	convey.So(datastore.Put(c, tasks), convey.ShouldBeNil)
+	So(datastore.Put(c, tasks), ShouldBeNil)
 	datastore.GetTestable(c).CatchupIndexes()
 	return tasks
-}
-
-func setupTaskIndexes(c context.Context) {
-	datastore.GetTestable(c).AddIndexes(&datastore.IndexDefinition{
-		Kind:     "Task",
-		Ancestor: true,
-		SortBy: []datastore.IndexColumn{
-			{Property: "WasNoopSuccess"},
-			{Property: "ExpectedStart", Descending: true},
-		},
-	})
-
-	datastore.GetTestable(c).AddIndexes(&datastore.IndexDefinition{
-		Kind:     "Task",
-		Ancestor: true,
-		SortBy: []datastore.IndexColumn{
-			{Property: "ExpectedStart", Descending: true},
-		},
-	})
 }

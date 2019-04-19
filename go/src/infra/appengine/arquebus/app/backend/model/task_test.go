@@ -5,14 +5,14 @@
 package model
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock/testclock"
+
+	"infra/appengine/arquebus/app/util"
 )
 
 func TestGetTasks(t *testing.T) {
@@ -20,8 +20,7 @@ func TestGetTasks(t *testing.T) {
 	now := testclock.TestTimeUTC
 
 	Convey("GetTasks", t, func() {
-		c := memory.Use(context.Background())
-		setupTaskIndexes(c)
+		c := util.CreateTestContext()
 
 		// create sample tasks.
 		assigner := updateAndGetAllAssigners(c, "rev-1", createConfig("a"))[0]

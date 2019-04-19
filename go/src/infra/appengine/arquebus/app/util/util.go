@@ -15,6 +15,33 @@
 // Package util implements helper functions that are used in other packages.
 package util
 
+import (
+	"context"
+
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/taskqueue"
+)
+
+var (
+	// SampleValidAssignerCfg is a sample assigner config to be used in
+	// unit tests.
+	SampleValidAssignerCfg = `
+		id: "test-assigner"
+		owners: "foo@google.com"
+		interval: <
+			seconds: 60
+		>
+		issue_query: <
+			q: "-has:owner Ops-Alerts=test"
+			project_names: "chromium"
+		>
+		assignees: <
+			email: "oncall1@google.com"
+		>
+	`
+)
+
 // EqualSortedLists returns true if lists contain the same sequence of
 // strings.
 func EqualSortedLists(a, b []string) bool {
@@ -27,4 +54,36 @@ func EqualSortedLists(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// SetupTaskIndexes adds indexes for Task entities to be used by unit tests.
+func SetupTaskIndexes(c context.Context) {
+	datastore.GetTestable(c).AddIndexes(&datastore.IndexDefinition{
+		Kind:     "Task",
+		Ancestor: true,
+		SortBy: []datastore.IndexColumn{
+			{Property: "WasNoopSuccess"},
+			{Property: "ExpectedStart", Descending: true},
+		},
+	})
+
+	datastore.GetTestable(c).AddIndexes(&datastore.IndexDefinition{
+		Kind:     "Task",
+		Ancestor: true,
+		SortBy: []datastore.IndexColumn{
+			{Property: "ExpectedStart", Descending: true},
+		},
+	})
+}
+
+// CreateTestContext creates a test context to be used in unit tests.
+func CreateTestContext() context.Context {
+	c := memory.Use(context.Background())
+	SetupTaskIndexes(c)
+
+	tq := taskqueue.GetTestable(c)
+	tq.CreateQueue("schedule-assigners")
+	tq.CreateQueue("run-assigners")
+
+	return c
 }
