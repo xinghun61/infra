@@ -152,7 +152,9 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
               user-display-name="[[userDisplayName]]"
             ></mr-code-font-toggle>
           </div>
-          <a on-click="_openEditDescription">Edit description</a>
+          <template is="dom-if" if="[[canEditIssue]]">
+            <a on-click="_openEditDescription">Edit description</a>
+          </template>
         </div>
         <template is="dom-if" if="[[_issueOptions.length]]">
           <mr-dropdown
@@ -178,6 +180,10 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       },
       issuePermissions: Object,
       projectTemplates: Array,
+      _canEditIssue: {
+        type: Boolean,
+        computed: '_computeCanEditIssue(issuePermissions)',
+      },
       _issueOptions: {
         type: Array,
         computed: `_computeIssueOptions(issuePermissions, issue.isSpam,
@@ -194,6 +200,10 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
       issuePermissions: issue.permissions(state),
       projectTemplates: project.project(state).templates,
     };
+  }
+
+  _computeCanEditIssue(issuePermissions) {
+    return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION);
   }
 
   _computeIssueOptions(issuePermissions, isSpam, isRestricted,

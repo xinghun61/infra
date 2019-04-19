@@ -236,7 +236,7 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
   }
 
   cancel() {
-    this.$.dialog.close();
+    this.shadowRoot.querySelector('#dialog').close();
   }
 
   async save() {
