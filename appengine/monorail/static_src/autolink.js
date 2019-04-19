@@ -39,7 +39,7 @@ const LINK_TRAILING_CHARS = [
   ['\'', '\''],
   ['"', '"'],
 ];
-const GOOG_SHORT_LINK_RE = /^(go|g|shortn|who|teams)\/.*/gi;
+const GOOG_SHORT_LINK_RE = /^(b|t|o|omg|cl|cr|go|g|shortn|who|teams)\/.*/gi;
 
 const Components = new Map();
 Components.set(

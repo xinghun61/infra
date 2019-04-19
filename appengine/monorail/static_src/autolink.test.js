@@ -415,6 +415,39 @@ suite('autolink', () => {
           {content: ').'}]
       );
     });
+
+    test('Replace URL short link', () => {
+      ['go', 'g', 'shortn', 'who', 'teams'].forEach((prefix) => {
+        const match = refRegs[0].exec(`link here: (${prefix}/abcd).`);
+        refRegs[0].lastIndex = 0;
+        const actualTextRuns = replacer(match);
+        assert.deepEqual(
+          actualTextRuns,
+          [{content: '('},
+            {tag: 'a',
+              href: `http://${prefix}/abcd`,
+              content: `${prefix}/abcd`,
+            },
+            {content: ').'}]
+        );
+      });
+    });
+
+    test('Replace URL numeric short link', () => {
+      ['b', 't', 'o', 'omg', 'cl', 'cr'].forEach((prefix) => {
+        const match = refRegs[1].exec(`link here: (${prefix}/1234).`);
+        refRegs[1].lastIndex = 0;
+        const actualTextRuns = replacer(match);
+        assert.deepEqual(
+          actualTextRuns,
+          [{content: '('},
+            {tag: 'a',
+              href: `http://${prefix}/1234`,
+              content: `${prefix}/1234`,
+            }]
+        );
+      });
+    });
   });
 
   suite('versioncontrol component functions.', () => {
