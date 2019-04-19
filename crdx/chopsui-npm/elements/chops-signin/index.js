@@ -150,6 +150,9 @@ export function getUserProfileAsync() {
   return authInitializedPromise.then(getUserProfileSync);
 };
 
+const RELOAD_EARLY_MS = 60e3;
+let reloadTimerId;
+
 export function getAuthorizationHeaders() {
   return getAuthInstanceAsync()
     .then(function(auth) {
@@ -160,18 +163,31 @@ export function getAuthorizationHeaders() {
         // The user is not signed in.
         return undefined;
       }
-      if (response.expires_at < new Date()) {
-        // The token has expired, so reload it.
+      if (response.expires_at - RELOAD_EARLY_MS < new Date()) {
+        // The token has expired or is about to expire, so reload it.
         return user.reloadAuthResponse();
       }
       return response;
     })
     .then(function(response) {
       if (!response) return {};
+      if (!reloadTimerId) {
+        // Automatically reload when the token is about to expire.
+        const delayMs = response.expires_at - RELOAD_EARLY_MS + 1 - new Date();
+        reloadTimerId = window.setTimeout(reloadAuthorizationHeaders, delayMs);
+      }
       return {
         Authorization: response.token_type + ' ' + response.access_token,
       };
     });
+};
+
+export function reloadAuthorizationHeaders() {
+  reloadTimerId = undefined;
+  getAuthorizationHeaders().then(function(headers) {
+    window.dispatchEvent(new CustomEvent(
+      'authorization-headers-reloaded', {detail: {headers}}));
+  });
 };
 
 let resolveAuthInitializedPromise;
@@ -212,6 +228,8 @@ export function init(clientId) {
     });
     auth.currentUser.listen(function(user) {
       window.dispatchEvent(new CustomEvent('user-update', {detail: {user}}));
+      // Start the cycle of setting the reload timer.
+      getAuthorizationHeaders();
     });
     auth.then(
       function onFulfilled() {
