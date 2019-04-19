@@ -21,6 +21,7 @@ import (
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
+	"google.golang.org/api/googleapi"
 
 	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
@@ -218,4 +219,52 @@ func sortedPriorityKeys() []string {
 		k = append(k, p.name)
 	}
 	return k
+}
+
+var retryableCodes = map[int]bool{
+	http.StatusInternalServerError: true, // 500
+	http.StatusBadGateway:          true, // 502
+	http.StatusServiceUnavailable:  true, // 503
+	http.StatusGatewayTimeout:      true, // 504
+	http.StatusInsufficientStorage: true, // 507
+}
+
+// withGoogleAPIRetries calls a function, retrying calls that return
+// a retryable googleapi.Error error code.
+//
+// The function is retried up to maxAttempts times, or until the supplied
+// context expires.
+//
+// If any attempt returns a non-retryable error or a non-googleapi error,
+// then that error is returned.
+//
+// If the final attempt returns an error, then that error is returned.
+//
+// TODO(akeshet): Don't roll our own retry function if we can avoid it. Or, if
+// we really must roll our own, add exponential backoff to it.
+func withGoogleAPIRetries(ctx context.Context, maxAttempts int, f func() error) error {
+	if maxAttempts < 1 {
+		panic("maxAttempts must be >1")
+	}
+	var err error
+	for i := 0; i < maxAttempts; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		err = f()
+		if err == nil {
+			return nil
+		}
+		apiErr, ok := err.(*googleapi.Error)
+		if !ok {
+			return err
+		}
+		if retryableCodes[apiErr.Code] {
+			return err
+		}
+	}
+	return err
 }
