@@ -80,10 +80,10 @@ MISSING_TOKEN_HTML = (
 # The continue_url  must match these.
 ALLOWED_CONTINUE_SCHEMES = ['http', 'https']
 ALLOWED_CONTINUE_DOMAINS = [
-  re.compile('^localhost:8080$'),
-  re.compile('^code.google.com$'),
-  re.compile('^bugs(-staging|-dev)?.chromium.org$'),
-  re.compile('^([-a-z0-9.]+-dot-)?monorail-(prod|staging|dev).appspot.com$'),
+  re.compile(r'^localhost:8080$'),
+  re.compile(r'^code\.google\.com$'),
+  re.compile(r'^bugs(-staging|-dev)?\.chromium\.org$'),
+  re.compile(r'^([-a-z0-9.]+-dot-)?monorail-(prod|staging|dev)\.appspot\.com$'),
   ]
 
 INVALID_CONTINUE_HTML = (
