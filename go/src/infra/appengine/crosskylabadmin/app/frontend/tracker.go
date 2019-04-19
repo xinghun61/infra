@@ -22,6 +22,7 @@ import (
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/grpc/grpcutil"
 	"golang.org/x/net/context"
@@ -74,10 +75,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 		utilization.ReportMetrics(ctx, bots)
 	}
 
-	bsm, err := botInfoToSummary(bots)
-	if err != nil {
-		return nil, errors.Annotate(err, "failed to extract bot summary from bot info").Err()
-	}
+	bsm := botInfoToSummary(ctx, bots)
 	if err := addTaskInfoToSummaries(ctx, sc, bsm); err != nil {
 		return nil, errors.Annotate(err, "failed to set idle time for bots").Err()
 	}
@@ -200,16 +198,17 @@ var healthyDutStates = map[fleet.DutState]bool{
 //
 // This function returns a map from the bot ID to fleet.BotSummary object for
 // it.
-func botInfoToSummary(bots []*swarming.SwarmingRpcsBotInfo) (map[string]*fleet.BotSummary, error) {
+func botInfoToSummary(ctx context.Context, bots []*swarming.SwarmingRpcsBotInfo) map[string]*fleet.BotSummary {
 	bsm := make(map[string]*fleet.BotSummary, len(bots))
 	for _, bi := range bots {
 		bs, err := singleBotInfoToSummary(bi)
 		if err != nil {
-			return bsm, errors.Annotate(err, "failed to make summary for bot %q", bi.BotId).Err()
+			logging.Errorf(ctx, "failed to make summary for bot %s: %s", bi.BotId, err)
+			continue
 		}
 		bsm[bi.BotId] = bs
 	}
-	return bsm, nil
+	return bsm
 }
 
 // singleBotInfoToSummary returns a BotSummary for the bot.
