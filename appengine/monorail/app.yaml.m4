@@ -9,7 +9,7 @@ runtime: python27
 api_version: 1
 threadsafe: no
 
-default_expiration: "3600d"
+default_expiration: "10d"
 
 ifdef(`PROD', `
 instance_class: F4
