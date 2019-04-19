@@ -142,7 +142,7 @@ export class MrSearchBar extends PolymerElement {
       <form action\$="/p/[[projectName]]/issues/list" method="GET">
         <div class="select-container">
           <i class="material-icons">arrow_drop_down</i>
-          <select id="can" name="can" on-change="_redirectOnSelect">
+          <select id="can" name="can" on-change="_redirectOnSelect" aria-label="Search scope">
             <optgroup label="Search within">
               <option value="1" selected\$="[[_isSelected(defaultCan, 1)]]">All issues</option>
               <option value="2" selected\$="[[_isSelected(defaultCan, 2)]]">Open issues</option>
@@ -190,6 +190,7 @@ export class MrSearchBar extends PolymerElement {
           placeholder\$="Search [[projectName]] issues..."
           value\$="[[initialValue]]"
           autocomplete="off"
+          aria-label="Search box"
         />
         <template is="dom-repeat" items="[[keptQueryParams]]" as="param">
           <template is="dom-if" if="[[_getParam(queryParams, param)]]">

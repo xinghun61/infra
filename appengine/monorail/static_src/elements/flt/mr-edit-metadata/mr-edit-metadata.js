@@ -158,6 +158,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
           id="commentText"
           placeholder="Add a comment"
           on-keyup="_onChange"
+          aria-label="Comment"
         ></textarea>
         <mr-upload
           hidden$="[[disableAttachments]]"
@@ -198,6 +199,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
               </label>
               <mr-edit-field
                 id="ownerInput"
+                name="Owner"
                 type="USER_TYPE"
                 initial-values="[[_wrapList(ownerName)]]"
                 ac-type="owner"

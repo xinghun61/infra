@@ -54,6 +54,7 @@ export class MrEditField extends PolymerElement {
         hidden$="[[!_inputIsWidget(_widgetType, 'SELECT_INPUT')]]"
         id="editSelect"
         on-change="_onChange"
+        aria-label$="[[name]]"
       >
         <option value="">----</option>
         <template is="dom-repeat" items="[[options]]" as="option">
@@ -92,6 +93,7 @@ export class MrEditField extends PolymerElement {
         placeholder$="[[placeholder]]"
         on-keyup="_onChange"
         on-focus="_runLegacyAcFocus"
+        aria-label$="[[name]]"
       />
     `;
   }

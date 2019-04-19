@@ -116,7 +116,7 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
           <template is="dom-if" if="[[attachment.thumbnailUrl]]">
             <a href="[[attachment.viewUrl]]" target="_blank">
               <img
-                class="preview"
+                class="preview" alt="attachment preview"
                 src\$="[[attachment.thumbnailUrl]]"
               >
             </a>

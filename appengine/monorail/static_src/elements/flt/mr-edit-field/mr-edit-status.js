@@ -42,7 +42,7 @@ export class MrEditStatus extends PolymerElement {
           text-align: left;
         }
       </style>
-      <select id="statusInput" on-change="_statusInputChanged">
+      <select id="statusInput" on-change="_statusInputChanged" aria-label="Status">
         <template is="dom-repeat" items="[[_statusesGrouped]]" as="group">
           <optgroup label$="[[group.name]]" hidden$="[[!group.name]]">
             <template is="dom-repeat" items="[[group.statuses]]">
