@@ -1448,15 +1448,15 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateIssue_Normal(self, fake_pasicn):
     """We can update an issue."""
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 0L)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta(
-        owner_id=222L, summary='New summary', cc_ids_add=[333L])
+        owner_id=111L, summary='New summary', cc_ids_add=[333L])
 
     with self.work_env as we:
       we.UpdateIssue(issue, delta, 'Getting started')
 
-    self.assertEqual(222L, issue.owner_id)
+    self.assertEqual(111L, issue.owner_id)
     self.assertEqual('New summary', issue.summary)
     self.assertEqual([333L], issue.cc_ids)
     self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
@@ -1465,7 +1465,7 @@ class WorkEnvTest(unittest.TestCase):
     self.assertFalse(comment_pb.is_description)
     fake_pasicn.assert_called_with(
         issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
-        old_owner_id=111L, comment_id=comment_pb.id)
+        old_owner_id=0L, comment_id=comment_pb.id)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
@@ -1520,6 +1520,28 @@ class WorkEnvTest(unittest.TestCase):
         issue.issue_id, 'testing-app.appspot.com', 222L, send_email=True,
         old_owner_id=111L, comment_id=comment_pb.id)
 
+  def testUpdateIssue_BadOwner(self):
+    """We reject new issue owners that don't pass validation."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.services.issue.TestAddIssue(issue)
+
+    # No such user ID.
+    delta = tracker_pb2.IssueDelta(owner_id=555L)
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException) as cm:
+        we.UpdateIssue(issue, delta, '')
+    self.assertEqual('Issue owner user ID not found',
+                     cm.exception.message)
+
+    # Not a member
+    delta = tracker_pb2.IssueDelta(owner_id=222L)
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException) as cm:
+        we.UpdateIssue(issue, delta, '')
+    self.assertEqual('Issue owner must be a project member',
+                     cm.exception.message)
+
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_MergeInto(self, _fake_pasicn):
@@ -1552,16 +1574,16 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateIssue_Attachments(self, fake_pasicn):
     """We can attach files as we make a change."""
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 0L)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta(
-        owner_id=222L, summary='New summary', cc_ids_add=[333L])
+        owner_id=111L, summary='New summary', cc_ids_add=[333L])
 
     attachments = []
     with self.work_env as we:
       we.UpdateIssue(issue, delta, 'Getting started', attachments=attachments)
 
-    self.assertEqual(222L, issue.owner_id)
+    self.assertEqual(111L, issue.owner_id)
     self.assertEqual('New summary', issue.summary)
     self.assertEqual([333L], issue.cc_ids)
     self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
@@ -1571,7 +1593,7 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([], comment_pb.attachments)
     fake_pasicn.assert_called_with(
         issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
-        old_owner_id=111L, comment_id=comment_pb.id)
+        old_owner_id=0L, comment_id=comment_pb.id)
 
     attachments = [
         ('README.md', 'readme content', 'text/plain'),

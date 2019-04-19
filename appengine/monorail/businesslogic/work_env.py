@@ -1170,6 +1170,14 @@ class WorkEnv(object):
             self.mc.cnxn, issue.project_id,
             attachment_bytes_used=new_bytes_used)
 
+    with self.mc.profiler.Phase('Validating the issue change'):
+      # If the owner changed, it must be a project member.
+      if (delta.owner_id is not None and delta.owner_id != issue.owner_id):
+        parsed_owner_valid, msg = tracker_helpers.IsValidIssueOwner(
+          self.mc.cnxn, project, delta.owner_id, self.services)
+        if not parsed_owner_valid:
+          raise exceptions.InputException(msg)
+
     if kept_attachments:
       with self.mc.profiler.Phase('Filtering kept attachments'):
         kept_attachments = tracker_helpers.FilterKeptAttachments(
