@@ -172,13 +172,8 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	var resp *swarming.SwarmingRpcsTaskRequestMetadata
-	createTask := func() error {
-		var err error
-		resp, err = s.Tasks.New(req).Context(ctx).Do()
-		return err
-	}
-	if err = withGoogleAPIRetries(ctx, 5, createTask); err != nil {
+	resp, err := swarmingCreateTaskWithRetries(ctx, s, req)
+	if err != nil {
 		return errors.Annotate(err, "create test").Err()
 	}
 

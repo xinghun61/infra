@@ -124,7 +124,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 	defer cf()
 	originalToRerunID := make(map[string]string)
 	for id, r := range newRequests {
-		resp, err := s.Tasks.New(r).Context(ctx).Do()
+		resp, err := swarmingCreateTaskWithRetries(ctx, s, r)
 		if err != nil {
 			return errors.Annotate(err, fmt.Sprintf("rerun task %s", id)).Err()
 		}

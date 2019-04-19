@@ -268,3 +268,18 @@ func withGoogleAPIRetries(ctx context.Context, maxAttempts int, f func() error) 
 	}
 	return err
 }
+
+// swarmingCreateTaskWithRetries calls swarming's NewTaskRequest rpc, retrying
+// transient errors.
+func swarmingCreateTaskWithRetries(ctx context.Context, s *swarming.Service, req *swarming.SwarmingRpcsNewTaskRequest) (*swarming.SwarmingRpcsTaskRequestMetadata, error) {
+	var resp *swarming.SwarmingRpcsTaskRequestMetadata
+	createTask := func() error {
+		var err error
+		resp, err = s.Tasks.New(req).Context(ctx).Do()
+		return err
+	}
+	if err := withGoogleAPIRetries(ctx, 5, createTask); err != nil {
+		return nil, err
+	}
+	return resp, nil
+}

@@ -95,7 +95,7 @@ func createRepairTask(ctx context.Context, s *swarming.Service, e site.Environme
 	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	resp, err := s.Tasks.New(r).Context(ctx).Do()
+	resp, err := swarmingCreateTaskWithRetries(ctx, s, r)
 	if err != nil {
 		return "", errors.Annotate(err, "failed to create task").Err()
 	}

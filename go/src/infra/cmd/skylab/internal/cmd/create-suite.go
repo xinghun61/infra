@@ -228,7 +228,7 @@ func createSuiteTask(ctx context.Context, s *swarming.Service, taskName string, 
 	}
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	resp, err := s.Tasks.New(req).Context(ctx).Do()
+	resp, err := swarmingCreateTaskWithRetries(ctx, s, req)
 	if err != nil {
 		return "", errors.Annotate(err, "create suite").Err()
 	}
