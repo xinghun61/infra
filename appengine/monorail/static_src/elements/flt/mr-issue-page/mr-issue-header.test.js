@@ -4,7 +4,7 @@
 
 import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
-import {store, resetState} from '../../redux/redux-mixin.js';
+import {store} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {ISSUE_EDIT_PERMISSION,
@@ -25,7 +25,6 @@ suite('mr-issue-header', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

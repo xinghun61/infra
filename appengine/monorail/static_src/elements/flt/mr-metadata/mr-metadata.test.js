@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrMetadata} from './mr-metadata.js';
-import {resetState} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -19,7 +18,6 @@ suite('mr-metadata', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

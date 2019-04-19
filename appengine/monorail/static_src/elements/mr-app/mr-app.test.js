@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrApp} from './mr-app.js';
-import {resetState} from '../redux/redux-mixin.js';
 
 
 let element;
@@ -22,7 +21,6 @@ suite('mr-app', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

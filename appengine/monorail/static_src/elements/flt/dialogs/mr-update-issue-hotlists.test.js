@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrUpdateIssueHotlists} from './mr-update-issue-hotlists.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {resetState} from '../../redux/redux-mixin.js';
 
 let element;
 let form;
@@ -20,7 +19,6 @@ suite('mr-update-issue-hotlists', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrPhase} from './mr-phase.js';
-import {resetState} from '../../redux/redux-mixin.js';
 
 
 let element;
@@ -17,7 +16,6 @@ suite('mr-phase', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

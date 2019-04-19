@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrCodeFontToggle} from './mr-code-font-toggle.js';
-import {resetState} from '../redux/redux-mixin.js';
 
 let element;
 
@@ -24,7 +23,6 @@ suite('mr-code-font-toggle', () => {
   teardown(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

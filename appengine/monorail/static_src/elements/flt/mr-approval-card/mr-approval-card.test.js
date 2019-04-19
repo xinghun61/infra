@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrApprovalCard} from './mr-approval-card.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {resetState} from '../../redux/redux-mixin.js';
 
 let element;
 
@@ -17,7 +16,6 @@ suite('mr-approval-card', () => {
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

@@ -6,7 +6,6 @@ import {assert, expect} from 'chai';
 import {MrAttachment} from './mr-attachment.js';
 import sinon from 'sinon';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {resetState} from '../redux/redux-mixin.js';
 
 
 let element;
@@ -23,7 +22,6 @@ suite('mr-comment-content', () => {
   teardown(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {

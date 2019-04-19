@@ -6,7 +6,6 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {assert} from 'chai';
 import {MrIssueDetails} from './mr-issue-details.js';
 import sinon from 'sinon';
-import {resetState} from '../../redux/redux-mixin.js';
 import * as issue from '../../redux/issue.js';
 
 
@@ -28,7 +27,6 @@ suite('mr-issue-details', () => {
   teardown(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
-    element.dispatchAction(resetState());
   });
 
   test('initializes', () => {
