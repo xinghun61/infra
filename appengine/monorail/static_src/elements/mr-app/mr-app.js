@@ -12,7 +12,6 @@ import {ReduxMixin} from '../redux/redux-mixin.js';
 import * as issue from '../redux/issue.js';
 import * as ui from '../redux/ui.js';
 import {arrayToEnglish} from '../shared/helpers.js';
-import '../flt/mr-issue-page/mr-issue-page.js';
 import '../mr-header/mr-header.js';
 import '../mr-keystrokes/mr-keystrokes.js';
 
@@ -61,12 +60,6 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       userDisplayName: String,
       queryParams: Object,
       dirtyForms: Array,
-      _boundLoadIssuePage: {
-        type: Function,
-        value: function() {
-          return this._loadIssuePage.bind(this);
-        },
-      },
       _currentContext: {
         type: Object,
         value: {},
@@ -124,7 +117,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
 
       next();
     });
-    page('/p/:project/issues/detail', this._boundLoadIssuePage);
+    page('/p/:project/issues/detail', this._loadIssuePage.bind(this));
     page();
   }
 
@@ -147,12 +140,13 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     }
   }
 
-  _loadIssuePage(ctx, next) {
+  async _loadIssuePage(ctx, next) {
     this.dispatchAction(issue.setIssueRef(
       Number.parseInt(ctx.query.id), ctx.params.project));
 
     this.projectName = ctx.params.project;
 
+    await import(/* webpackChunkName: "mr-issue-page" */ '../flt/mr-issue-page/mr-issue-page.js');
     // TODO(zhangtiff): Make sure the properties passed in to the loaded
     // component can still dynamically change.
     this.loadWebComponent('mr-issue-page', {

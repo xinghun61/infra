@@ -1,7 +1,7 @@
 [define title]Issue [local_id][end]
 [include "../framework/polymer-header.ezt"]
 
-<script src="[version_base]/static/dist/elements/mr-app/mr-app.min.js" nonce="[nonce]" type="module"></script>
+<script src="[version_base]/static/dist/mr-app.min.js" nonce="[nonce]" type="module"></script>
 
 <mr-app [if-any logged_in_user]
   user-display-name="[logged_in_user.email]"[end]

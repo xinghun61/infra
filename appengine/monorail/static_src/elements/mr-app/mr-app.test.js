@@ -29,8 +29,8 @@ suite('mr-app', () => {
     assert.instanceOf(element, MrApp);
   });
 
-  test('_loadIssuePage loads issue page', () => {
-    element._loadIssuePage({
+  test('_loadIssuePage loads issue page', async () => {
+    await element._loadIssuePage({
       query: {id: '234'},
       params: {project: 'chromium'},
     });
