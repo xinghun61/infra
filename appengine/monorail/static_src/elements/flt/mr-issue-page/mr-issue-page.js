@@ -164,51 +164,63 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
           Loading...
         </div>
       </template>
-      <template is="dom-if" if="[[fetchIssueError]]">
-        <div class="container-no-issue" id="fetch-error">
-          [[fetchIssueError.description]]
-        </div>
-      </template>
-      <template is="dom-if" if="[[_issueIsDeleted(issue)]]">
-        <div class="container-no-issue" id="deleted">
-          <p>Issue [[issueRef.localId]] has been deleted.</p>
-          <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
-            <chops-button on-click="_undeleteIssue" class="undelete emphasized">
-              Undelete Issue
-            </chops-button>
-          </template>
-        </div>
-      </template>
-      <template is="dom-if" if="[[!_issueIsEmpty(issue)]]">
-        <div
-          class="container-outside"
-          on-open-dialog="_onOpenDialog"
-          id="issue"
-        >
-          <aside class="metadata-container">
-            <mr-issue-metadata></mr-issue-metadata>
-          </aside>
-          <div class="container-issue">
-            <div class="issue-header-container">
-              <mr-issue-header
-                user-display-name="[[userDisplayName]]"
-              ></mr-issue-header>
-              <mr-restriction-indicator></mr-restriction-indicator>
-            </div>
-            <div class="container-issue-content">
-              <mr-issue-details
-                class="main-item"
-                comments-shown-count="[[_commentsShownCount(issue)]]"
-              ></mr-issue-details>
-              <mr-launch-overview class="main-item"></mr-launch-overview>
+      <template is="dom-if" if="[[!_showLoading(fetchingIssue, issue)]]">
+        <template is="dom-if" if="[[fetchIssueError]]">
+          <div class="container-no-issue" id="fetch-error">
+            [[fetchIssueError.description]]
+          </div>
+        </template>
+        <template is="dom-if" if="[[_issueIsDeleted(issue)]]">
+          <div class="container-no-issue" id="deleted">
+            <p>Issue [[issueRef.localId]] has been deleted.</p>
+            <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
+              <chops-button on-click="_undeleteIssue" class="undelete emphasized">
+                Undelete Issue
+              </chops-button>
+            </template>
+          </div>
+        </template>
+        <template is="dom-if" if="[[_issueIsMoved(issue.movedToRef)]]">
+          <div class="container-no-issue" id="moved">
+            <h2>Issue has moved.</h2>
+            <p>
+              This issue was moved to [[issue.movedToRef.projectName]].
+              <a class="new-location" href$="/p/[[issue.movedToRef.projectName]]/issues/detail?id=[[issue.movedToRef.localId]]">
+                Go to issue</a>.
+            </p>
+          </div>
+        </template>
+        <template is="dom-if" if="[[!_issueIsEmpty(issue)]]">
+          <div
+            class="container-outside"
+            on-open-dialog="_onOpenDialog"
+            id="issue"
+          >
+            <aside class="metadata-container">
+              <mr-issue-metadata></mr-issue-metadata>
+            </aside>
+            <div class="container-issue">
+              <div class="issue-header-container">
+                <mr-issue-header
+                  user-display-name="[[userDisplayName]]"
+                ></mr-issue-header>
+                <mr-restriction-indicator></mr-restriction-indicator>
+              </div>
+              <div class="container-issue-content">
+                <mr-issue-details
+                  class="main-item"
+                  comments-shown-count="[[_commentsShownCount(issue)]]"
+                ></mr-issue-details>
+                <mr-launch-overview class="main-item"></mr-launch-overview>
+              </div>
             </div>
           </div>
-        </div>
-        <mr-edit-description id="edit-description"></mr-edit-description>
-        <mr-move-copy-issue id="move-copy-issue"></mr-move-copy-issue>
-        <mr-convert-issue id="convert-issue"></mr-convert-issue>
-        <mr-related-issues-table id="reorder-related-issues"></mr-related-issues-table>
-        <mr-update-issue-hotlists id="update-issue-hotlists"></mr-update-issue-hotlists>
+          <mr-edit-description id="edit-description"></mr-edit-description>
+          <mr-move-copy-issue id="move-copy-issue"></mr-move-copy-issue>
+          <mr-convert-issue id="convert-issue"></mr-convert-issue>
+          <mr-related-issues-table id="reorder-related-issues"></mr-related-issues-table>
+          <mr-update-issue-hotlists id="update-issue-hotlists"></mr-update-issue-hotlists>
+        </template>
       </template>
     `;
   }
@@ -334,6 +346,9 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     return issue && issue.isDeleted;
   }
 
+  _issueIsMoved(ref) {
+    return ref && ref.projectName && ref.localId;
+  }
 
   _showLoading(fetchingIssue, issue) {
     return fetchingIssue && this._issueIsEmpty(issue);

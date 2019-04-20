@@ -12,6 +12,7 @@ let element;
 let loadingElement;
 let fetchErrorElement;
 let deletedElement;
+let movedElement;
 let issueElement;
 
 let prpcStub;
@@ -21,6 +22,7 @@ function populateElementReferences() {
   loadingElement = element.shadowRoot.querySelector('#loading');
   fetchErrorElement = element.shadowRoot.querySelector('#fetch-error');
   deletedElement = element.shadowRoot.querySelector('#deleted');
+  movedElement = element.shadowRoot.querySelector('#moved');
   issueElement = element.shadowRoot.querySelector('#issue');
 }
 
@@ -183,5 +185,19 @@ suite('mr-issue-page', () => {
     assert.isNotNull(issueElement);
 
     element._undeleteIssue.restore();
+  });
+
+  test('issue has moved', () => {
+    element.fetchingIssue = false;
+    element.issue = {movedToRef: {projectName: 'hello', localId: 10}};
+
+    populateElementReferences();
+
+    assert.isNull(issueElement);
+    assert.isNull(deletedElement);
+    assert.isNotNull(movedElement);
+
+    const link = movedElement.querySelector('.new-location');
+    assert.equal(link.getAttribute('href'), '/p/hello/issues/detail?id=10');
   });
 });

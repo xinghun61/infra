@@ -540,14 +540,19 @@ export const fetch = (message) => async (dispatch) => {
     const resp = await window.prpcClient.call(
       'monorail.Issues', 'GetIssue', message
     );
+    const movedToRef = resp.movedToRef;
+    const issue = {...resp.issue};
+    if (movedToRef) {
+      issue.movedToRef = movedToRef;
+    }
 
-    dispatch({type: FETCH_SUCCESS, issue: resp.issue});
+    dispatch({type: FETCH_SUCCESS, issue});
 
     dispatch(fetchPermissions(message));
-    if (!resp.issue.isDeleted) {
-      dispatch(fetchRelatedIssues(resp.issue));
-      dispatch(fetchHotlists(message.issueRef));
-      dispatch(fetchReferencedUsers(resp.issue));
+    if (!issue.isDeleted && !movedToRef) {
+      dispatch(fetchRelatedIssues(issue));
+      dispatch(fetchHotlists(issueRef));
+      dispatch(fetchReferencedUsers(issue));
     }
   } catch (error) {
     dispatch({type: FETCH_FAILURE, error});

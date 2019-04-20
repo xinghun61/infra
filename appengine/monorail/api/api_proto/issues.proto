@@ -58,9 +58,10 @@ message GetIssueRequest {
 }
 
 
-// Next available tag: 2
+// Next available tag: 3
 message IssueResponse {
   Issue issue = 1;
+  IssueRef moved_to_ref = 2;
 }
 
 

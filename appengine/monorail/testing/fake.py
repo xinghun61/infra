@@ -1251,6 +1251,9 @@ class IssueService(object):
     # Set of issue IDs for issues that have been moved by calling MoveIssue().
     self.moved_back_iids = set()
 
+    # Dict of issue IDs mapped to other issue IDs to represent moved issues.
+    self.moved_issues = {}
+
     # Test-only indication that the indexer would have been called
     # by the real DITPersist.
     self.indexer_called = False
@@ -1334,6 +1337,11 @@ class IssueService(object):
       comment.user_id = issue.reporter_id
     comment.sequence = 0
     self.TestAddComment(comment, issue.local_id)
+
+  def TestAddMovedIssueRef(self, source_project_id, source_local_id,
+      target_project_id, target_local_id):
+    self.moved_issues[(source_project_id, source_local_id)] = (
+        target_project_id, target_local_id)
 
   def TestAddComment(self, comment, local_id):
     pid = comment.project_id
@@ -1446,6 +1454,13 @@ class IssueService(object):
       return self.issues_by_iid[issue_id]
     else:
       raise exceptions.NoSuchIssueException()
+
+  def GetCurrentLocationOfMovedIssue(self, cnxn, project_id, local_id):
+    key = (project_id, local_id)
+    if key in self.moved_issues:
+      ref = self.moved_issues[key]
+      return ref[0], ref[1]
+    return None, None
 
   def GetPreviousLocations(self, cnxn, issue):
     return []

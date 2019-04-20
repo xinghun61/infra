@@ -178,6 +178,28 @@ class IssuesServicerTest(unittest.TestCase):
     self.assertEqual('proj', actual.blocked_on_issue_refs[0].project_name)
     self.assertEqual(2, actual.blocked_on_issue_refs[0].local_id)
 
+  def testGetIssue_Moved(self):
+    """We can get a moved issue."""
+    self.services.project.TestAddProject(
+        'other', project_id=987, owner_ids=[111L], contrib_ids=[111L])
+    issue = fake.MakeTestIssue(987, 200, 'sum', 'New', 111L, issue_id=1010)
+    self.services.issue.TestAddIssue(issue)
+    self.services.issue.TestAddMovedIssueRef(789, 404, 987, 200)
+
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='owner@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+
+    request = issues_pb2.GetIssueRequest()
+    request.issue_ref.project_name = 'proj'
+    request.issue_ref.local_id = 404
+
+    response = self.CallWrapped(self.issues_svcr.GetIssue, mc, request)
+
+    ref = response.moved_to_ref
+    self.assertEqual(200, ref.local_id)
+    self.assertEqual('other', ref.project_name)
+
   def testListIssues(self):
     """We can get a list of issues from a search."""
     mc = monorailcontext.MonorailContext(
