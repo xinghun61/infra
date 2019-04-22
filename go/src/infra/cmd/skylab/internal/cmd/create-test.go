@@ -44,6 +44,9 @@ e.g., reef-canary/R73-11580.0.0.`)
 		// format (e.g. DUT_POOL_BVT) or in a human readable format, e.g. bvt. Provide a
 		// list of common choices.
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run test on.")
+		c.Flags.IntVar(&c.priority, "priority", defaultTaskPriority,
+			`Specify the priority of the test.  A high value means this test
+will be executed in a low priority. If the tasks runs in a quotascheduler controlled pool, this value will be ignored.`)
 		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 30, "Task runtime timeout.")
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Swarming tag for test; may be specified multiple times.")
 		c.Flags.Var(flag.StringSlice(&c.keyvals), "keyval",
@@ -67,6 +70,7 @@ type createTestRun struct {
 	board           string
 	model           string
 	pool            string
+	priority        int
 	timeoutMins     int
 	tags            []string
 	keyvals         []string
@@ -93,6 +97,9 @@ func (c *createTestRun) validateArgs() error {
 		return NewUsageError(c.Flags, "missing -image")
 	}
 
+	if c.priority < 50 || c.priority > 255 {
+		return NewUsageError(c.Flags, "priority should in [50,255]")
+	}
 	return nil
 }
 
@@ -161,7 +168,7 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 		Name:       taskName,
 		Tags:       tags,
 		TaskSlices: slices,
-		Priority:   int64(defaultTaskPriority),
+		Priority:   int64(c.priority),
 	}
 
 	ctx := cli.GetContext(a, c, env)
