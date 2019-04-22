@@ -867,7 +867,7 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
 &mdash; **def [RunInfraInternalWCT](/recipes/recipes/infra_wct_tester.py#45)(api, env):**
 
-&mdash; **def [RunInfraWCT](/recipes/recipes/infra_wct_tester.py#54)(api, env):**
+&mdash; **def [RunInfraWCT](/recipes/recipes/infra_wct_tester.py#55)(api, env):**
 
 &mdash; **def [RunSteps](/recipes/recipes/infra_wct_tester.py#18)(api):**
 ### *recipes* / [lkgr\_finder](/recipes/recipes/lkgr_finder.py)

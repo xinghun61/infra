@@ -160,6 +160,18 @@
   {
     "cmd": [
       "npx",
+      "bower",
+      "install"
+    ],
+    "cwd": "[START_DIR]/infra_internal/appengine/chromiumdash",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "chromiumdash bower install"
+  },
+  {
+    "cmd": [
+      "npx",
       "run-wct",
       "--dep",
       "third_party"

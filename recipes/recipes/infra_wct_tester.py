@@ -46,6 +46,7 @@ def RunInfraInternalWCT(api, env):
   cwd = api.path['checkout'].join('appengine', 'chromiumdash')
   with api.context(env=env, cwd=cwd):
     api.step('chromiumdash npm install', ['npm', 'install'])
+    api.step('chromiumdash bower install', ['npx', 'bower', 'install'])
     api.step(
         'chromiumdash run-wct', ['npx', 'run-wct', '--dep', 'third_party'])
     api.step(
