@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/maruel/subcommands"
@@ -19,7 +18,6 @@ import (
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/flag"
 
-	"infra/cmd/skylab/internal/flagx"
 	"infra/cmd/skylab/internal/site"
 )
 
@@ -41,10 +39,9 @@ This command does not wait for the task to start running.`,
 		c.Flags.StringVar(&c.model, "model", "", "Model to run suite on.")
 		c.Flags.StringVar(&c.pool, "pool", "", "Device pool to run suite on.")
 		c.Flags.StringVar(&c.image, "image", "", "Fully specified image name to run suite against, e.g. reef-canary/R73-11580.0.0")
-		c.Flags.Var(flagx.NewChoice(&c.priority, sortedPriorityKeys()...), "priority",
+		c.Flags.IntVar(&c.priority, "priority", defaultTaskPriority,
 			`Specify the priority of the suite.  A high value means this suite
-will be executed in a low priority.  It should one of:
-`+strings.Join(sortedPriorityKeys(), ", "))
+will be executed in a low priority.`)
 		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20,
 			`Time (counting from when the task starts) after which task will be
 killed if it hasn't completed.`)
@@ -70,7 +67,7 @@ type createSuiteRun struct {
 	model       string
 	pool        string
 	image       string
-	priority    string
+	priority    int
 	timeoutMins int
 	maxRetries  int
 	tags        []string
@@ -98,15 +95,11 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 	suiteName := c.Flags.Arg(0)
 
 	dimensions := []string{"pool:ChromeOSSkylab-suite"}
-	if c.priority == "" {
-		c.priority = defaultTaskPriorityKey
-	}
-	priority := taskPriorityMap[c.priority]
 	keyvals, err := toKeyvalMap(c.keyvals)
 	if err != nil {
 		return err
 	}
-	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, c.qsAccount, priority, c.timeoutMins, c.maxRetries, dimensions, keyvals, c.orphan)
+	slices, err := getSuiteSlices(c.board, c.model, c.pool, c.image, suiteName, c.qsAccount, c.priority, c.timeoutMins, c.maxRetries, dimensions, keyvals, c.orphan)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -119,7 +112,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		"label-board:"+c.board,
 		"label-model:"+c.model,
 		"label-pool:"+c.pool,
-		"priority:"+c.priority)
+		"priority:"+strconv.Itoa(c.priority))
 
 	s, err := newSwarmingService(ctx, c.authFlags, e)
 	if err != nil {
@@ -130,7 +123,7 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 		Name: c.image + "-" + suiteName,
 	}
 
-	task.ID, err = createSuiteTask(ctx, s, task.Name, priority, slices, tags)
+	task.ID, err = createSuiteTask(ctx, s, task.Name, c.priority, slices, tags)
 	if err != nil {
 		return errors.Annotate(err, "create suite").Err()
 	}
@@ -159,6 +152,10 @@ func (c *createSuiteRun) validateArgs() error {
 
 	if c.image == "" {
 		return NewUsageError(c.Flags, "missing -image")
+	}
+
+	if c.priority < 50 || c.priority > 255 {
+		return NewUsageError(c.Flags, "priority should in [50,255]")
 	}
 
 	return nil

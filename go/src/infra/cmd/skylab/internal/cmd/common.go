@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"sort"
 	"time"
 
 	"github.com/maruel/subcommands"
@@ -29,24 +28,7 @@ import (
 
 const progName = "skylab"
 
-type taskPriority struct {
-	name  string
-	level int
-}
-
-var taskPriorityMap = map[string]int{
-	"Weekly":    230,
-	"CTS":       215,
-	"Daily":     200,
-	"PostBuild": 170,
-	"Default":   140,
-	"Build":     110,
-	"PFQ":       80,
-	"CQ":        50,
-	"Super":     49,
-}
-var defaultTaskPriorityKey = "Default"
-var defaultTaskPriority = taskPriorityMap[defaultTaskPriorityKey]
+var defaultTaskPriority = 140
 
 type commonFlags struct {
 	debug bool
@@ -198,27 +180,6 @@ func toKeyvalMap(keyvals []string) (map[string]string, error) {
 		m[k] = v
 	}
 	return m, nil
-}
-
-func sortedPriorities() []taskPriority {
-	s := make([]taskPriority, 0, len(taskPriorityMap))
-	for k, v := range taskPriorityMap {
-		s = append(s, taskPriority{k, v})
-	}
-
-	sort.Slice(s, func(i, j int) bool {
-		return s[i].level < s[j].level
-	})
-	return s
-}
-
-func sortedPriorityKeys() []string {
-	sp := sortedPriorities()
-	k := make([]string, 0, len(sp))
-	for _, p := range sp {
-		k = append(k, p.name)
-	}
-	return k
 }
 
 var retryableCodes = map[int]bool{
