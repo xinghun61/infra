@@ -152,7 +152,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
               user-display-name="[[userDisplayName]]"
             ></mr-code-font-toggle>
           </div>
-          <template is="dom-if" if="[[canEditIssue]]">
+          <template is="dom-if" if="[[_canEditIssue]]">
             <a on-click="_openEditDescription">Edit description</a>
           </template>
         </div>

@@ -93,6 +93,22 @@ suite('mr-issue-header', () => {
     assert.isDefined(findOptionWithText(element._issueOptions,
       'Convert issue template'));
   });
+
+  test('shows edit description link', () => {
+    element.issuePermissions = [ISSUE_EDIT_PERMISSION];
+
+    flush();
+
+    assert.isNotNull(element.shadowRoot.querySelector('a'));
+  });
+
+  test('no edit description link without edit issue permission', () => {
+    element.issuePermissions = [];
+
+    flush();
+
+    assert.isNull(element.shadowRoot.querySelector('a'));
+  });
 });
 
 function findOptionWithText(issueOptions, text) {
