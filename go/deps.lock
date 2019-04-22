@@ -1,5 +1,5 @@
-hash: a5fd72ae8ff92d91a6cd198949570feb02cfa1610ee5573bfb9f47a37e51272c
-updated: 2019-04-18T10:23:11.758044042-07:00
+hash: 39d887375c2ff41e7aad7dd702d0c7427d482c265643252db736b27029f796cb
+updated: 2019-04-19T09:37:01.681116847-04:00
 imports:
 - name: cloud.google.com/go
   version: dd6ac3c5d7099e5e461957b7e2dab0830330fbdc
@@ -25,7 +25,7 @@ imports:
   version: f9ffefc3facfbe0caee3fea233cbb6e8208f4541
   repo: https://chromium.googlesource.com/external/github.com/asaskevich/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: b75b128df9f8734f891139bc1378b5cd44d1cb0d
+  version: d5aa5a300d818462021dbd08510f640533d0ea46
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -385,7 +385,7 @@ imports:
   subpackages:
   - plugin/grpc
 - name: go.skia.org/infra
-  version: ebff9ab65168770ab1479829b4c250040d807b5a
+  version: d923263df8be64e132a48de2c0ef062fb578d97f
   repo: https://skia.googlesource.com/buildbot.git
   subpackages:
   - gold-client/cmd/goldctl
@@ -393,7 +393,7 @@ imports:
   version: fab11d534b66b3f2f3f26e951003174e36605de8
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
-  version: b5f252a0a7dd67fe7cd7499e2d4cbab1287f0d52
+  version: 4e29d67b835299804ecb68652195941e0f6db10f
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
@@ -417,7 +417,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 1da14a5a36f220ea3f03470682b737b1dfd5de22
+  version: 1f3472d942ba824034fb77cab6a6cfc1bc8a2c3c
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -443,7 +443,7 @@ imports:
   version: f4905fbd45b6790792202848439271c74074bbfd
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 6732636ccdfd99c4301d1d1ac2307f091331f767
+  version: 4796d4bd3df0a291c397154cd7d68f1290cf7deb
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
