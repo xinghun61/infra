@@ -31,27 +31,56 @@ type Priority = scheduler.Priority
 
 var FreeBucket = scheduler.FreeBucket
 
-// TestMatchWithIdleWorkers tests that the scheduler correctly matches
-// requests with idle workers, if they are available.
-func TestMatchWithIdleWorkers(t *testing.T) {
+// TestMatchAndUnassign tests that the scheduler correctly matches
+// requests with idle workers, if they are available, and that the
+// Unassign call reverses this assignment.
+func TestMatchAndUnassign(t *testing.T) {
 	Convey("Given 2 tasks and 2 idle workers", t, func() {
 		ctx := context.Background()
 		tm := time.Unix(0, 0)
 		s := scheduler.New(tm)
-		s.MarkIdle(ctx, "w0", stringset.New(0), tm, scheduler.NullEventSink)
-		s.MarkIdle(ctx, "w1", stringset.NewFromSlice("label1"), tm, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest("t1", "a1", stringset.NewFromSlice("label1"), nil, tm), tm, nil, scheduler.NullEventSink)
-		s.AddRequest(ctx, scheduler.NewTaskRequest("t2", "a1", stringset.NewFromSlice("label2"), nil, tm), tm, nil, scheduler.NullEventSink)
+		w1 := scheduler.WorkerID("w1")
+		w2 := scheduler.WorkerID("w2")
+		r1 := scheduler.RequestID("r1")
+		r2 := scheduler.RequestID("r2")
+		s.MarkIdle(ctx, w1, stringset.New(0), tm, scheduler.NullEventSink)
+		s.MarkIdle(ctx, w2, stringset.NewFromSlice("label1"), tm, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r1, "a1", stringset.NewFromSlice("label1"), nil, tm), tm, nil, scheduler.NullEventSink)
+		s.AddRequest(ctx, scheduler.NewTaskRequest(r2, "a1", stringset.NewFromSlice("label2"), nil, tm), tm, nil, scheduler.NullEventSink)
 		c := scheduler.NewAccountConfig(0, 0, nil)
 		s.AddAccount(ctx, "a1", c, []float32{2, 0, 0})
 		Convey("when scheduling jobs", func() {
 			muts := s.RunOnce(ctx, scheduler.NullEventSink)
 			Convey("then both jobs should be matched, with provisionable label used as tie-breaker", func() {
 				expects := []*scheduler.Assignment{
-					{Type: scheduler.AssignmentIdleWorker, Priority: 0, RequestID: "t1", WorkerID: "w1", Time: tm},
-					{Type: scheduler.AssignmentIdleWorker, Priority: 0, RequestID: "t2", WorkerID: "w0", Time: tm},
+					{Type: scheduler.AssignmentIdleWorker, Priority: 0, RequestID: r1, WorkerID: w2, Time: tm},
+					{Type: scheduler.AssignmentIdleWorker, Priority: 0, RequestID: r2, WorkerID: w1, Time: tm},
 				}
 				So(muts, ShouldResemble, expects)
+				So(s.IsAssigned(r1, w2), ShouldBeTrue)
+				So(s.IsAssigned(r2, w1), ShouldBeTrue)
+				So(s.IsAssigned(r1, w1), ShouldBeFalse)
+				So(s.IsAssigned(r2, w2), ShouldBeFalse)
+			})
+			Convey("then scheduling jobs again results in no new assignments.", func() {
+				muts := s.RunOnce(ctx, scheduler.NullEventSink)
+				So(muts, ShouldBeEmpty)
+			})
+			Convey("when jobs are unassigned", func() {
+				err := s.Unassign(ctx, r1, w2, tm, scheduler.NullEventSink)
+				So(err, ShouldBeNil)
+				err = s.Unassign(ctx, r2, w1, tm, scheduler.NullEventSink)
+				So(err, ShouldBeNil)
+				Convey("then they are no longer assigned.", func() {
+					So(s.IsAssigned(r1, w2), ShouldBeFalse)
+					So(s.IsAssigned(r2, w1), ShouldBeFalse)
+				})
+				Convey("then they can be matched again when scheduling jobs.", func() {
+					s.MarkIdle(ctx, w1, stringset.New(0), tm, scheduler.NullEventSink)
+					s.MarkIdle(ctx, w2, stringset.NewFromSlice("label1"), tm, scheduler.NullEventSink)
+					muts := s.RunOnce(ctx, scheduler.NullEventSink)
+					So(muts, ShouldHaveLength, 2)
+				})
 			})
 		})
 	})

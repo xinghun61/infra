@@ -26,11 +26,13 @@ package scheduler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"go.chromium.org/luci/common/data/stringset"
 
 	"infra/qscheduler/qslib/protos"
+	"infra/qscheduler/qslib/protos/metrics"
 	"infra/qscheduler/qslib/tutils"
 )
 
@@ -240,6 +242,25 @@ func (s *Scheduler) NotifyTaskRunning(ctx context.Context, requestID RequestID, 
 // Supplied requestID must not be "".
 func (s *Scheduler) NotifyTaskAbsent(ctx context.Context, requestID RequestID, t time.Time, e EventSink) {
 	s.state.notifyTaskAbsent(ctx, requestID, t, e)
+}
+
+// Unassign moves a request that was previously assigned to a worker back to the queue.
+//
+// This is intended for internal use by reconciler, to heal scheduler state in cases
+// where a worker was assigned a task but never successfully reaped it.
+func (s *Scheduler) Unassign(ctx context.Context, requestID RequestID, workerID WorkerID, t time.Time, e EventSink) error {
+	if !s.IsAssigned(requestID, workerID) {
+		return fmt.Errorf("unassign: request %s not on worker %s", requestID, workerID)
+	}
+
+	worker := s.state.workers[workerID]
+	request := worker.runningTask.request
+	e.AddEvent(eventUnassigned(request, worker, s.state, t, &metrics.TaskEvent_UnassignedDetails{}))
+	// TODO(akeshet): Consider whether cost spent on this unassigned request
+	// should be refunded to account.
+	s.state.deleteWorker(workerID)
+	s.state.queuedRequests[request.ID] = request
+	return nil
 }
 
 // RunOnce performs a single round of the quota scheduler algorithm
