@@ -357,6 +357,13 @@ spam_whitelisted_suffixes = (
   '@webrtc.org',
 )
 
+# These users default to getting a UX that is more similar to
+# corporate systems that they are familiar with.
+corp_mode_user_groups = [
+  'chromeos-all@google.com',
+  'create-team@google.com',
+  ]
+
 # These email suffixes are allowed to create new alert bugs via email.
 alert_whitelisted_suffixes = (
   '@google.com',

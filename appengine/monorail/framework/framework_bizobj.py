@@ -79,7 +79,6 @@ def IsPriviledgedDomainUser(email):
   return False
 
 
-
 # String translation table to catch a common typos in label names.
 _CANONICALIZATION_TRANSLATION_TABLE = {
     ord(delete_u_char): None
@@ -214,3 +213,13 @@ def ValidatePref(name, value):
   if not USER_PREF_DEFS[name].match(value):
     return 'Invalid pref value %r for %r' % (value, name)
   return None
+
+
+def IsCorpUser(cnxn, services, user_id):
+  """Return true if user should get a UX similar to corp systems."""
+  user_group_ids = services.usergroup.LookupMemberships(cnxn, user_id)
+  corp_mode_groups_dict = services.user.LookupUserIDs(
+      cnxn, settings.corp_mode_user_groups, autocreate=True)
+  corp_mode_group_ids = set(corp_mode_groups_dict.values())
+  corp_mode = any(gid in corp_mode_group_ids for gid in user_group_ids)
+  return corp_mode

@@ -6,11 +6,15 @@
 """Tests for monorail.framework.framework_bizobj."""
 
 import unittest
+import mock
 
+import settings
 from framework import framework_bizobj
 from framework import framework_constants
 from proto import project_pb2
 from proto import tracker_pb2
+from services import service_manager
+from testing import fake
 from tracker import tracker_bizobj
 
 
@@ -338,3 +342,34 @@ class ValidatePrefTest(unittest.TestCase):
 
     msg = framework_bizobj.ValidatePref('code_font', 'sometimes')
     self.assertIn('Invalid', msg)
+
+
+class IsCorpUserTest(unittest.TestCase):
+
+  def setUp(self):
+    self.cnxn = fake.MonorailConnection()
+    self.services = service_manager.Services(
+        user=fake.UserService(),
+        usergroup=fake.UserGroupService())
+    self.services.user.TestAddUser('corp_user@example.com', 111L)
+    self.services.user.TestAddUser('corp_group@example.com', 888L)
+    self.services.usergroup.TestAddGroupSettings(888L, 'corp_group@example.com')
+
+  @mock.patch('settings.corp_mode_user_groups', [])
+  def testNoCorpGroups(self):
+    """We handle the case where no corp user groups are defined."""
+    self.assertFalse(
+        framework_bizobj.IsCorpUser(self.cnxn, self.services, 111L))
+
+  @mock.patch('settings.corp_mode_user_groups', ['corp_group@example.com'])
+  def testNonCorpUser(self):
+    """We detect when a user is not part of a corp user group."""
+    self.assertFalse(
+        framework_bizobj.IsCorpUser(self.cnxn, self.services, 111L))
+
+  @mock.patch('settings.corp_mode_user_groups', ['corp_group@example.com'])
+  def testCorpUser(self):
+    """We detect when a user is a member of such a group."""
+    self.services.usergroup.TestAddMembers(888L, [111L, 222L])
+    self.assertTrue(
+        framework_bizobj.IsCorpUser(self.cnxn, self.services, 111L))

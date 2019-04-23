@@ -2465,6 +2465,51 @@ class WorkEnvTest(unittest.TestCase):
       with self.assertRaises(permissions.PermissionException):
         we.GetUserPrefs(111L)
 
+  def _SetUpCorpUsers(self, user_ids):
+    self.services.user.TestAddUser('corp_group@example.com', 888L)
+    self.services.usergroup.TestAddGroupSettings(
+        888, 'corp_group@example.com')
+    self.services.usergroup.TestAddMembers(888L, user_ids)
+
+  # TODO(jrobbins): Update this with user group prefs when implemented.
+  @mock.patch('settings.corp_mode_user_groups', ['corp_group@example.com'])
+  def testGetUserPrefs_Mine_Corp(self):
+    """User who belongs to corp-mode user group gets those prefs."""
+    self._SetUpCorpUsers([111L, 222L])
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='code_font', value='true')])
+    self.SignIn()
+    with self.work_env as we:
+      userprefs = we.GetUserPrefs(111L)
+
+    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(3, len(userprefs.prefs))
+    self.assertEqual('code_font', userprefs.prefs[0].name)
+    self.assertEqual('true', userprefs.prefs[0].value)
+    self.assertEqual('restrict_new_issues', userprefs.prefs[1].name)
+    self.assertEqual('true', userprefs.prefs[1].value)
+    self.assertEqual('public_issue_notice', userprefs.prefs[2].name)
+    self.assertEqual('true', userprefs.prefs[2].value)
+
+  @mock.patch('settings.corp_mode_user_groups', ['corp_group@example.com'])
+  def testGetUserPrefs_Mine_OptedOut(self):
+    """If a corp user has opted out, use that pref value."""
+    self._SetUpCorpUsers([111L, 222L])
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111L,
+        [user_pb2.UserPrefValue(name='restrict_new_issues', value='false')])
+    self.SignIn()
+    with self.work_env as we:
+      userprefs = we.GetUserPrefs(111L)
+
+    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(2, len(userprefs.prefs))
+    self.assertEqual('restrict_new_issues', userprefs.prefs[0].name)
+    self.assertEqual('false', userprefs.prefs[0].value)
+    self.assertEqual('public_issue_notice', userprefs.prefs[1].name)
+    self.assertEqual('true', userprefs.prefs[1].value)
+
   def testSetUserPrefs_Anon(self):
     """Anon cannot set prefs."""
     with self.work_env as we:

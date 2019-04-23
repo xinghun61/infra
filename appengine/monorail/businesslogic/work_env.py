@@ -1620,7 +1620,21 @@ class WorkEnv(object):
             'Only site admins may see other users\' preferences')
     with self.mc.profiler.Phase('Getting prefs for %s' % user_id):
       userprefs = self.services.user.GetUserPrefs(self.mc.cnxn, user_id)
-      return userprefs
+
+    # Hard-coded user prefs for at-risk users that should use "corp mode".
+    # TODO(jrobbins): Remove this when user group preferences are implemented.
+    if framework_bizobj.IsCorpUser(self.mc.cnxn, self.services, user_id):
+      # Copy so that cached version is not modified.
+      userprefs = user_pb2.UserPrefs(user_id=user_id, prefs=userprefs.prefs)
+      pref_names = {pref.name for pref in userprefs.prefs}
+      if 'restrict_new_issues' not in pref_names:
+        userprefs.prefs.append(user_pb2.UserPrefValue(
+            name='restrict_new_issues', value='true'))
+      if 'public_issue_notice' not in pref_names:
+        userprefs.prefs.append(user_pb2.UserPrefValue(
+            name='public_issue_notice', value='true'))
+
+    return userprefs
 
   def SetUserPrefs(self, user_id, prefs):
     """Set zero or more UserPrefValue for the specified user."""
