@@ -241,6 +241,32 @@ suite('issue', () => {
     );
   });
 
+  test('mergedInto', () => {
+    assert.deepEqual(issue.mergedInto(wrapIssue()), {});
+    assert.deepEqual(issue.mergedInto(wrapIssue({
+      mergedIntoIssueRef: {localId: 22, projectName: 'proj'},
+    })), {
+      localId: 22,
+      projectName: 'proj',
+    });
+
+    const merged = issue.mergedInto({
+      issue: {
+        currentIssue: {
+          mergedIntoIssueRef: {localId: 22, projectName: 'proj'},
+        },
+        relatedIssues: new Map([
+          ['proj:22', {localId: 22, projectName: 'proj', summary: 'test'}],
+        ]),
+      },
+    });
+    assert.deepEqual(merged, {
+      localId: 22,
+      projectName: 'proj',
+      summary: 'test',
+    });
+  });
+
   test('fieldValueMap', () => {
     assert.deepEqual(issue.fieldValueMap(wrapIssue()), new Map());
     assert.deepEqual(issue.fieldValueMap(wrapIssue({

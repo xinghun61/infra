@@ -358,8 +358,14 @@ export const blockedOnIssues = createSelector(
 
 export const mergedInto = createSelector(
   issue, relatedIssues,
-  (issue, relatedIssues) => issue && issue.mergedIntoRef
-    && relatedIssues.get(issueRefToString(issue.mergedIntoRef))
+  (issue, relatedIssues) => {
+    if (!issue || !issue.mergedIntoIssueRef) return {};
+    const key = issueRefToString(issue.mergedIntoIssueRef);
+    if (relatedIssues && relatedIssues.has(key)) {
+      return relatedIssues.get(key);
+    }
+    return issue.mergedIntoIssueRef;
+  }
 );
 
 export const sortedBlockedOn = createSelector(
