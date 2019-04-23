@@ -123,3 +123,11 @@ func eventCompleted(request *TaskRequest, w *Worker, s *state, t time.Time, deta
 	e.Details = &metrics.TaskEvent_CompletedDetails_{CompletedDetails: details}
 	return e
 }
+
+func eventUnassigned(request *TaskRequest, w *Worker, s *state, t time.Time, details *metrics.TaskEvent_UnassignedDetails) *metrics.TaskEvent {
+	e := eventCommon(request, w, s, t)
+	e.EventType = metrics.TaskEvent_QSCHEDULER_UNASSIGNED
+	e.Category = metrics.TaskEvent_CATEGORY_QSCHEDULER
+	e.Details = &metrics.TaskEvent_UnassignedDetails_{UnassignedDetails: details}
+	return e
+}

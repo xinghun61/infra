@@ -53,6 +53,10 @@ message TaskEvent {
     // Task (which was previously assigned to a bot) changed its running
     // priority.
     QSCHEDULER_REPRIORITIZED = 0x203;
+
+    // Task (which was previously assigned to a bot) was unassigned and moved
+    // back to the queue.
+    QSCHEDULER_UNASSIGNED = 0x204;
   }
 
   // EventType is the type of event that occurred.
@@ -201,12 +205,17 @@ message TaskEvent {
     string other_bot = 3;
   }
 
+  // UnassignedDetails represents event details that are specific to the
+  // UNASSIGNED event type.
+  message UnassignedDetails {}
+
   oneof details {
     EnqueuedDetails enqueued_details = 100;
     AssignedDetails assigned_details = 101;
     PreemptedDetails preempted_details = 102;
     ReprioritizedDetails reprioritized_details = 103;
     CompletedDetails completed_details = 104;
+    UnassignedDetails unassigned_details = 105;
   }
 }
 
