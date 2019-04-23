@@ -30,7 +30,6 @@
     "@chopsui/prpc-client": "0.0.2",
     "@chopsui/tsmon-client": "0.0.1",
     "@polymer/font-roboto": "^3.0.0",
-    "@polymer/iron-collapse": "^3.0.0",
     "@polymer/iron-overlay-behavior": "^3.0.0",
     "@polymer/paper-tooltip": "^3.0.1",
     "@polymer/polymer": "^3.0.0",

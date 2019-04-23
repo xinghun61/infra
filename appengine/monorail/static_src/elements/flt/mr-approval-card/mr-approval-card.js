@@ -6,7 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
-import '@polymer/iron-collapse/iron-collapse.js';
+import '../../chops/chops-collapse/chops-collapse.js';
 import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
@@ -186,7 +186,7 @@ export class MrApprovalCard extends connectStore(PolymerElement) {
           [[_status]]
         </span>
       </button>
-      <iron-collapse class="card-content" id="cardCollapse" opened="[[opened]]" no-animation>
+      <chops-collapse class="card-content" opened$="[[opened]]">
         <div class="approver-notice">
           <template is="dom-if" if="[[_isApprover]]">
             You are an approver for this bit.
@@ -237,7 +237,7 @@ export class MrApprovalCard extends connectStore(PolymerElement) {
             on-discard="reset"
           ></mr-edit-metadata>
         </mr-comment-list>
-      </iron-collapse>
+      </chops-collapse>
     `;
   }
 
