@@ -769,7 +769,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
 
   _mapUserRefsToNames(users) {
     if (!users) return [];
-    return users.map((u) => (u.displayName));
+    return users.filter((u) => u.userId).map((u) => (u.displayName));
   }
 
   _mapComponentRefsToNames(components) {

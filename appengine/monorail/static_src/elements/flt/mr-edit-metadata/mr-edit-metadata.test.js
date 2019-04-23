@@ -196,9 +196,9 @@ suite('mr-edit-metadata', () => {
     element.isApproval = true;
     element.hasApproverPrivileges = true;
     element.approvers = [
-      {displayName: 'foo@example.com'},
-      {displayName: 'bar@example.com'},
-      {displayName: 'baz@example.com'},
+      {displayName: 'foo@example.com', userId: '1'},
+      {displayName: 'bar@example.com', userId: '2'},
+      {displayName: 'baz@example.com', userId: '3'},
     ];
 
     flush();
@@ -447,5 +447,22 @@ suite('mr-edit-metadata', () => {
     const blockingInput = element.shadowRoot.querySelector('#blockingInput');
 
     assert.deepEqual(['1234', 'monorail:4567'], blockingInput.getValues());
+  });
+
+  test('filter out deleted users', () => {
+    element.cc = [
+      {displayName: 'test@example.com', userId: '1234'},
+      {displayName: 'a deleted user'},
+      {displayName: 'someone@example.com', userId: '5678'},
+    ];
+
+    flush();
+
+    const actualValues =
+      element.shadowRoot.querySelector('#ccInput').getValues();
+    assert.deepEqual(actualValues, [
+      'test@example.com',
+      'someone@example.com',
+    ]);
   });
 });

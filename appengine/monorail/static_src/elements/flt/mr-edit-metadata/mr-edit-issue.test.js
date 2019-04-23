@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
+import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {MrEditIssue} from './mr-edit-issue.js';
 import sinon from 'sinon';
 
@@ -65,5 +66,18 @@ suite('mr-edit-issue', () => {
       {status: 'hello'},
       {status: 'world'},
     ]);
+  });
+
+  test('Filter out empty or deleted user owners', () => {
+    assert.equal(element._ownerDisplayName({displayName: '----'}), '');
+    assert.equal(
+      element._ownerDisplayName({displayName: 'a deleted user'}),
+      '');
+    assert.equal(
+      element._ownerDisplayName({
+        displayName: 'test@example.com',
+        userId: '1234',
+      }),
+      'test@example.com');
   });
 });

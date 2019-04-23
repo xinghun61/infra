@@ -33,7 +33,7 @@ export class MrEditIssue extends connectStore(PolymerElement) {
       </h2>
       <mr-edit-metadata
         form-name="Issue Edit"
-        owner-name="[[_omitEmptyDisplayName(issue.ownerRef.displayName)]]"
+        owner-name="[[_ownerDisplayName(issue.ownerRef)]]"
         cc="[[issue.ccRefs]]"
         status="[[issue.statusRef.status]]"
         statuses="[[_computeStatuses(projectConfig.statusDefs, issue.statusRef)]]"
@@ -158,8 +158,8 @@ export class MrEditIssue extends connectStore(PolymerElement) {
     return labels.filter((l) => l.isDerived).map((l) => l.label);
   }
 
-  _omitEmptyDisplayName(displayName) {
-    return displayName === '----' ? '' : displayName;
+  _ownerDisplayName(ownerRef) {
+    return (ownerRef && ownerRef.userId) ? ownerRef.displayName : '';
   }
 
   _presubmitIssue(evt) {
