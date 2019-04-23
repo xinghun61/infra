@@ -17,7 +17,7 @@ const (
 	maxValueLength = 256
 )
 
-var keyRegexp = regexp.MustCompile(`^[a-zA-Z_.-]+$`)
+var keyRegexp = regexp.MustCompile(`^[a-zA-Z_.-][0-9a-zA-Z\-\_\.]*$`)
 
 // ReportFunc is used to report errors.
 type ReportFunc func(error)

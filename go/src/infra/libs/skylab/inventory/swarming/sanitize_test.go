@@ -61,6 +61,17 @@ func TestSanitize(t *testing.T) {
 			want:  Dimensions{"uss": {"essex", "yorktown"}},
 			errs:  []error{ErrRepeatedValue{Key: "uss", Value: "essex"}},
 		},
+		{
+			name:  "key with digit as first character",
+			input: Dimensions{"123key": {"essex"}},
+			want:  Dimensions{},
+			errs:  []error{ErrKeyChars{Key: "123key"}},
+		},
+		{
+			name:  "key with digit after first character",
+			input: Dimensions{"key123": {"essex"}},
+			want:  Dimensions{"key123": {"essex"}},
+		},
 	}
 	for _, c := range cases {
 		c := c
