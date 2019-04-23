@@ -20,6 +20,7 @@ import (
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
+	"golang.org/x/net/context"
 
 	dashpb "infra/appengine/dashboard/api/dashboard"
 )
@@ -34,6 +35,14 @@ var templateBundle = &templates.Bundle{
 			return date.Format("1-2-2006")
 		},
 	},
+}
+
+func newRPCServer() *prpc.Server {
+	return &prpc.Server{
+		AccessControl: func(c context.Context, origin string) bool {
+			return true
+		},
+	}
 }
 
 func pageBase() router.MiddlewareChain {
@@ -58,9 +67,9 @@ func init() {
 	r.GET("/old", pageBase(), oldDashboard)
 	http.DefaultServeMux.Handle("/old", r)
 
-	var api prpc.Server
-	dashpb.RegisterChopsServiceStatusServer(&api, &dashboardService{})
-	discovery.Enable(&api)
+	api := newRPCServer()
+	dashpb.RegisterChopsServiceStatusServer(api, &dashboardService{})
+	discovery.Enable(api)
 	api.InstallHandlers(r, standard.Base())
 }
 
