@@ -2,9 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import textwrap
+
 from google.appengine.ext import ndb
 
 from model.base_suspected_cl import BaseSuspectedCL
+from waterfall import buildbot
 
 
 class FlakeCulprit(BaseSuspectedCL):
@@ -28,3 +31,32 @@ class FlakeCulprit(BaseSuspectedCL):
                                                commit_position)
     instance.url = url
     return instance
+
+  def GetCulpritLink(self):
+    return ('https://analysis.chromium.org/p/chromium/flake-portal/analysis/'
+            'culprit?key=%s' % self.key.urlsafe())
+
+  def GenerateRevertReason(self,
+                           build_id,
+                           commit_position,
+                           revision,
+                           sample_step_name=None):
+    # pylint: disable=unused-argument
+    analysis = ndb.Key(urlsafe=self.flake_analysis_urlsafe_keys[-1]).get()
+    assert analysis
+
+    sample_build = build_id.split('/')
+    sample_build_url = buildbot.CreateBuildUrl(*sample_build)
+    return textwrap.dedent("""
+        Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
+        culprit for flakes in the build cycles as shown on:
+        https://analysis.chromium.org/p/chromium/flake-portal/analysis/culprit?key=%s\n
+        Sample Failed Build: %s\n
+        Sample Failed Step: %s\n
+        Sample Flaky Test: %s""") % (
+        commit_position or revision,
+        self.key.urlsafe(),
+        sample_build_url,
+        analysis.original_step_name,
+        analysis.original_test_name,
+    )

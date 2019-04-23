@@ -28,7 +28,6 @@ from model import entity_util
 from model.base_suspected_cl import RevertCL
 from model.flake.analysis.flake_culprit import FlakeCulprit
 from services import constants as services_constants
-from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
@@ -47,20 +46,23 @@ def _GetCodeReview(code_review_data):
       code_review_data['review_server_host'])
 
 
-def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
-                  submitted):
+def _AddReviewers(revision, culprit, codereview, revert_change_id, submitted):
   """Adds sheriffs to reviewers and sends messages.
 
   Based on the status of the revert - submitted or not, sends different messages
   to reviewers.
 
   Args:
-    culprit_key (str): url-safe key for the culprit.
+    culprit (FlakeCulprit or WfSuspectedCL): the culprit entity.
     revert_change_id (str): Id of the revert change.
     submitted (bool): If the revert is submitted or not.
   """
-  culprit_link = (
-      'https://analysis.chromium.org/waterfall/culprit?key=%s' % culprit_key)
+  culprit_link = culprit.GetCulpritLink()
+  if not culprit_link:  # pragma: no cover.
+    logging.error('Failed to get culprit link for culprit %s',
+                  culprit.key.urlsafe() if culprit else '')
+    return
+
   false_positive_bug_query = urllib.urlencode({
       'status': 'Available',
       'labels': 'Test-Findit-Wrong',
@@ -128,41 +130,6 @@ def _IsOwnerFindit(owner_email):
 
 def _IsCulpritARevert(cl_info):
   return bool(cl_info.revert_of)
-
-
-def _GenerateRevertReasonForFailure(build_id, commit_position, revision,
-                                    culprit, sample_step_name):
-  sample_build = build_id.split('/')
-  sample_build_url = buildbot.CreateBuildUrl(*sample_build)
-  return textwrap.dedent("""
-      Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
-      culprit for failures in the build cycles as shown on:
-      https://analysis.chromium.org/waterfall/culprit?key=%s\n
-      Sample Failed Build: %s\n
-      Sample Failed Step: %s""") % (commit_position or revision,
-                                    culprit.key.urlsafe(), sample_build_url,
-                                    sample_step_name)
-
-
-def _GenerateRevertReasonForFlake(build_id, commit_position, revision, culprit):
-  analysis = ndb.Key(urlsafe=culprit.flake_analysis_urlsafe_keys[-1]).get()
-  assert analysis
-
-  sample_build = build_id.split('/')
-  sample_build_url = buildbot.CreateBuildUrl(*sample_build)
-  return textwrap.dedent("""
-      Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
-      culprit for flakes in the build cycles as shown on:
-      https://analysis.chromium.org/p/chromium/flake-portal/analysis/culprit?key=%s\n
-      Sample Failed Build: %s\n
-      Sample Failed Step: %s\n
-      Sample Flaky Test: %s""") % (
-      commit_position or revision,
-      culprit.key.urlsafe(),
-      sample_build_url,
-      analysis.original_step_name,
-      analysis.original_test_name,
-  )
 
 
 def _GetBugIdForCulprit(culprit):
@@ -248,13 +215,12 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name,
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.
   if not revert_change_id:
-    if isinstance(culprit, FlakeCulprit):
-      revert_reason = _GenerateRevertReasonForFlake(
-          build_id, culprit_commit_position, revision, culprit)
-    else:
-      revert_reason = _GenerateRevertReasonForFailure(
-          build_id, culprit_commit_position, revision, culprit,
-          sample_step_name)
+    revert_reason = culprit.GenerateRevertReason(
+        build_id, culprit_commit_position, revision, sample_step_name)
+    if not revert_reason:  # pragma: no cover.
+      logging.error('Failed to get the reason for revert culprit %s',
+                    culprit.key.urlsafe() if culprit else '')
+      return services_constants.ERROR, None, None
     bug_id = _GetBugIdForCulprit(culprit)
     revert_change_id = codereview.CreateRevert(
         revert_reason,
@@ -281,8 +247,8 @@ def RevertCulprit(urlsafe_key, build_id, build_failure_type, sample_step_name,
       if build_failure_type == failure_type.COMPILE else
       action_settings.get('auto_commit_revert_test'))
   if not can_commit_revert:
-    success = _AddReviewers(revision, culprit.key.urlsafe(), codereview,
-                            revert_change_id, False)
+    success = _AddReviewers(revision, culprit, codereview, revert_change_id,
+                            False)
     if not success:  # pragma: no cover
       logging.error('Failed to add reviewers for revert of'
                     ' culprit %s/%s' % (repo_name, revision))
@@ -324,11 +290,9 @@ def CommitRevert(parameters, codereview_info):
   committed = codereview.SubmitRevert(revert_change_id)
 
   if committed:
-    _AddReviewers(revision, culprit.key.urlsafe(), codereview, revert_change_id,
-                  True)
+    _AddReviewers(revision, culprit, codereview, revert_change_id, True)
   else:
-    _AddReviewers(revision, culprit.key.urlsafe(), codereview, revert_change_id,
-                  False)
+    _AddReviewers(revision, culprit, codereview, revert_change_id, False)
   return services_constants.COMMITTED if committed else services_constants.ERROR
 
 

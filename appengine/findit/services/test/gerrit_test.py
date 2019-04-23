@@ -32,9 +32,9 @@ from waterfall.test import wf_testcase
 
 _CODEREVIEW = Gerrit('chromium-review.googlesource.com')
 
-
 # pylint:disable=unused-argument, unused-variable
 # https://crbug.com/947753
+
 
 class GerritTest(wf_testcase.WaterfallTestCase):
 
@@ -161,7 +161,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'CreateRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testRevertCLSucceedFlake(self, mock_fn, mock_gerrit, *_):
+  def testRevertCLSucceedFlake(self, mock_fn, mock_gerrit, mock_add, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
@@ -212,6 +212,44 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         buildbot.CreateBuildUrl('m', 'b', '1'), sample_failed_step, test_name)
     mock_gerrit.assert_called_once_with(
         reason, self.review_change_id, '20001', bug_id=1)
+
+    culprit_link = ('https://analysis.chromium.org/p/chromium/flake-portal/'
+                    'analysis/culprit?key=%s' % (culprit.key.urlsafe()))
+    false_positive_bug_query = urllib.urlencode({
+        'status': 'Available',
+        'labels': 'Test-Findit-Wrong',
+        'components': 'Tools>Test>FindIt',
+        'summary': 'Wrongly blame %s' % revision,
+        'comment': 'Detail is %s' % culprit_link
+    })
+    false_positive_bug_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+            false_positive_bug_query)
+
+    auto_revert_bug_query = urllib.urlencode({
+        'status': 'Available',
+        'components': 'Tools>Test>FindIt>Autorevert',
+        'summary': 'Auto Revert failed on %s' % revision,
+        'comment': 'Detail is %s' % culprit_link
+    })
+    auto_revert_bug_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+            auto_revert_bug_query)
+    message = textwrap.dedent("""
+        Sheriffs, CL owner or CL reviewers:
+        Please submit this revert if it is correct.
+        If it is a false positive, please abandon and report it
+        at %s.
+        If failed to submit the revert, please abandon it and report the failure
+        at %s.
+
+        For more information about Findit auto-revert: %s.
+
+        Sheriffs, it'll be much appreciated if you could take several minutes
+        to fill out this survey: %s.""") % (
+        false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK,
+        gerrit._SURVEY_LINK)
+    mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')

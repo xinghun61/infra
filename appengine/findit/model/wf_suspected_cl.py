@@ -2,10 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import textwrap
+
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import BaseSuspectedCL
+from waterfall import buildbot
 
 
 class WfSuspectedCL(BaseSuspectedCL):
@@ -83,3 +86,23 @@ class WfSuspectedCL(BaseSuspectedCL):
     build_key = BaseBuildModel.CreateBuildKey(master_name, builder_name,
                                               build_number)
     return self.builds.get(build_key)
+
+  def GetCulpritLink(self):
+    return ('https://analysis.chromium.org/waterfall/culprit?key=%s' %
+            self.key.urlsafe())
+
+  def GenerateRevertReason(self,
+                           build_id,
+                           commit_position,
+                           revision,
+                           sample_step_name=None):
+    sample_build = build_id.split('/')
+    sample_build_url = buildbot.CreateBuildUrl(*sample_build)
+    return textwrap.dedent("""
+          Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
+          culprit for failures in the build cycles as shown on:
+          https://analysis.chromium.org/waterfall/culprit?key=%s\n
+          Sample Failed Build: %s\n
+          Sample Failed Step: %s""") % (commit_position or revision,
+                                        self.key.urlsafe(), sample_build_url,
+                                        sample_step_name)

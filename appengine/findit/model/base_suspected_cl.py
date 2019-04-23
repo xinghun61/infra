@@ -130,3 +130,13 @@ class BaseSuspectedCL(ndb.Model):
     result_dict['project_name'] = self.repo_name
     result_dict['key'] = self.key.urlsafe()
     return result_dict
+
+  def GetCulpritLink(self):  # pragma: no cover.
+    raise NotImplementedError()
+
+  def GenerateRevertReason(self,
+                           build_id,
+                           commit_position,
+                           revision,
+                           sample_step_name=None):  # pragma: no cover.
+    raise NotImplementedError()

@@ -39,3 +39,15 @@ class WfCulprit(BaseSuspectedCL):
     instance.commit_position = commit_position
     instance.builds = []
     return instance
+
+  def GetCulpritLink(self):  # pragma: no cover.
+    # pylint: disable=unused-argument
+    return ''
+
+  def GenerateRevertReason(self,
+                           build_id,
+                           commit_position,
+                           revision,
+                           sample_step_name=None):  # pragma: no cover.
+    # pylint: disable=unused-argument
+    return ''
