@@ -6,13 +6,13 @@ import page from 'page';
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import '../../chops/chops-button/chops-button.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../shared/mr-shared-styles.js';
 
-export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
+export class MrMoveCopyIssue extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -77,10 +77,10 @@ export class MrMoveCopyIssue extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       issueRef: issue.issueRef(state),
-    };
+    });
   }
 
   open(e) {

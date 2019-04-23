@@ -27,7 +27,6 @@ function getElements() {
 suite('mr-user-link', () => {
   setup(() => {
     element = document.createElement('mr-user-link');
-    element.mapStateToProps = () => {};
     document.body.appendChild(element);
   });
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 
 // TODO(zhangtiff): Remove this hardcoded data once backend custom
@@ -24,7 +24,7 @@ export const HARDCODED_FIELD_GROUPS = [
 ];
 
 export const MetadataMixin = (superClass) => {
-  return class extends ReduxMixin(superClass) {
+  return class extends connectStore(superClass) {
     static get properties() {
       return {
         issueType: String,
@@ -54,11 +54,11 @@ export const MetadataMixin = (superClass) => {
       };
     }
 
-    static mapStateToProps(state, element) {
-      return {
+    stateChanged(state) {
+      this.setProperties({
         fieldValueMap: issue.fieldValueMap(state),
         issueType: issue.type(state),
-      };
+      });
     }
 
     _valuesForField(fieldValueMap, fieldName, phaseName) {
@@ -68,7 +68,7 @@ export const MetadataMixin = (superClass) => {
     }
 
     _makeFieldValueMapKey(fieldName, phaseName) {
-      let key = [fieldName];
+      const key = [fieldName];
       if (phaseName) {
         key.push(phaseName);
       }
@@ -94,9 +94,9 @@ export const MetadataMixin = (superClass) => {
 
     _computeFieldDefsWithGroups(fieldDefs, fieldGroups) {
       if (!fieldDefs) return [];
-      let groups = [];
+      const groups = [];
       fieldGroups.forEach((group) => {
-        let groupFields = [];
+        const groupFields = [];
         group.fieldNames.forEach((name) => {
           const fd = fieldDefs.find(
             (fd) => (fd.fieldRef.fieldName == name));

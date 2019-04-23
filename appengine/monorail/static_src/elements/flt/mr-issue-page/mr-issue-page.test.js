@@ -6,6 +6,7 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrIssuePage} from './mr-issue-page.js';
+import {store} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 
 let element;
@@ -29,7 +30,6 @@ function populateElementReferences() {
 suite('mr-issue-page', () => {
   setup(() => {
     element = document.createElement('mr-issue-page');
-    element.mapStateToProps = () => {};
     document.body.appendChild(element);
 
     prpcStub = sinon.stub(window.prpcClient, 'call');
@@ -150,7 +150,7 @@ suite('mr-issue-page', () => {
     prpcStub.withArgs('monorail.Issues', 'DeleteIssue',
       {delete: false, issueRef}).returns(deletePromise);
 
-    element.dispatchAction(
+    store.dispatch(
       issue.setIssueRef(issueRef.localId, issueRef.projectName));
 
     await deletedIssuePromise;

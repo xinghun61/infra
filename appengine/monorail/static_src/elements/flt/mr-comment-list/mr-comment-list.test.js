@@ -57,9 +57,6 @@ suite('mr-comment-list', () => {
     ];
 
     sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
-
-    // Disable Redux state mapping for testing.
-    MrCommentList.mapStateToProps = () => {};
   });
 
   teardown(() => {

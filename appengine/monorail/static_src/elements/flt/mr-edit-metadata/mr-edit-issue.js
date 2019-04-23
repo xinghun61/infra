@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as ui from '../../redux/ui.js';
@@ -19,7 +19,7 @@ import '../../shared/mr-shared-styles.js';
  * Issue editing form.
  *
  */
-export class MrEditIssue extends ReduxMixin(PolymerElement) {
+export class MrEditIssue extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-shared-styles">
@@ -86,8 +86,8 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       issue: issue.issue(state),
       issueRef: issue.issueRef(state),
       projectConfig: project.project(state).config,
@@ -95,7 +95,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       updateIssueError: issue.requests(state).update.error,
       focusId: ui.focusId(state),
       _fieldDefs: issue.fieldDefs(state),
-    };
+    });
   }
 
   reset() {
@@ -120,7 +120,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
     }
 
     if (message.commentContent || message.delta || message.uploads) {
-      this.dispatchAction(issue.update(message));
+      store.dispatch(issue.update(message));
     }
   }
 
@@ -167,7 +167,7 @@ export class MrEditIssue extends ReduxMixin(PolymerElement) {
       issueRef: this.issueRef,
       issueDelta: evt.detail.delta,
     };
-    this.dispatchAction(issue.presubmit(message));
+    store.dispatch(issue.presubmit(message));
   }
 
   _computeStatuses(statusDefsArg, currentStatusRef) {

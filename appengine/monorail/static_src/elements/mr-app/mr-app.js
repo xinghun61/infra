@@ -8,7 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import page from 'page';
 import qs from 'qs';
 
-import {ReduxMixin} from '../redux/redux-mixin.js';
+import {store, connectStore} from '../redux/base.js';
 import * as issue from '../redux/issue.js';
 import * as ui from '../redux/ui.js';
 import {arrayToEnglish} from '../shared/helpers.js';
@@ -21,7 +21,7 @@ import '../mr-keystrokes/mr-keystrokes.js';
  * The container component for all pages under the Monorail Polymer SPA.
  *
  */
-export class MrApp extends ReduxMixin(PolymerElement) {
+export class MrApp extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <script>
@@ -67,10 +67,8 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
-      dirtyForms: ui.dirtyForms(state),
-    };
+  stateChanged(state) {
+    this.dirtyForms = ui.dirtyForms(state);
   }
 
   connectedCallback() {
@@ -82,7 +80,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
     page('*', (ctx, next) => {
       // Navigate to the requested element if a hash is present.
       if (ctx.hash) {
-        this.dispatchAction(ui.setFocusId(ctx.hash));
+        store.dispatch(ui.setFocusId(ctx.hash));
       }
 
       // We're not really navigating anywhere, so don't do anything.
@@ -98,7 +96,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
       // page.
       if (this._confirmDiscard()) {
         // Clear the forms to be checked, since we're navigating away.
-        this.dispatchAction(ui.clearDirtyForms());
+        store.dispatch(ui.clearDirtyForms());
       } else {
         Object.assign(ctx, this._currentContext);
         // Set ctx.handled to false, so we don't push the state to browser's
@@ -141,7 +139,7 @@ export class MrApp extends ReduxMixin(PolymerElement) {
   }
 
   async _loadIssuePage(ctx, next) {
-    this.dispatchAction(issue.setIssueRef(
+    store.dispatch(issue.setIssueRef(
       Number.parseInt(ctx.query.id), ctx.params.project));
 
     this.projectName = ctx.params.project;

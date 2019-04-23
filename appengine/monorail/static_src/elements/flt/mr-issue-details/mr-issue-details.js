@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as ui from '../../redux/ui.js';
 import '../../mr-comment-content/mr-description.js';
@@ -19,7 +19,7 @@ import '../../shared/mr-shared-styles.js';
  * This is the main details section for a given issue.
  *
  */
-export class MrIssueDetails extends ReduxMixin(PolymerElement) {
+export class MrIssueDetails extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-shared-styles">
@@ -87,10 +87,8 @@ export class MrIssueDetails extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
-      comments: issue.comments(state),
-    };
+  stateChanged(state) {
+    this.comments = issue.comments(state);
   }
 
   _filterComments(comments) {

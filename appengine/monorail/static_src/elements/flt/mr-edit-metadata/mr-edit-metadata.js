@@ -12,6 +12,7 @@ import '../../framework/mr-upload/mr-upload.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../mr-error/mr-error.js';
 import '../../mr-warning/mr-warning.js';
+import {store} from '../../redux/base.js';
 import {fieldTypes} from '../../shared/field-types.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString} from '../../shared/converters.js';
@@ -533,9 +534,9 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    const superProps = super.mapStateToProps(state, element);
-    return Object.assign(superProps, {
+  stateChanged(state) {
+    super.stateChanged(state);
+    this.setProperties({
       presubmitResponse: issue.presubmitResponse(state),
       projectConfig: project.project(state).config,
       projectName: issue.issueRef(state).projectName,
@@ -551,7 +552,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
       this._debouncedOnChange.cancel();
     }
 
-    this.dispatchAction(ui.reportDirtyForm(this.formName, false));
+    store.dispatch(ui.reportDirtyForm(this.formName, false));
   }
 
   reset() {
@@ -701,7 +702,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         if (!this.isConnected) return;
         const delta = this.getDelta();
         const commentContent = this.getCommentContent();
-        this.dispatchAction(ui.reportDirtyForm(
+        store.dispatch(ui.reportDirtyForm(
           this.formName, !isEmptyObject(delta) || Boolean(commentContent)));
         this.dispatchEvent(new CustomEvent('change', {detail: {delta}}));
       });

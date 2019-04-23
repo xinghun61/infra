@@ -43,7 +43,6 @@
     "mousetrap": "^1.6.3",
     "noclosure-resin-bridge": "^1.0.0",
     "page": "^1.11.3",
-    "polymer-redux": "^2.0.0-beta.2",
     "polymer-resin": "^2.0.0",
     "pwa-helpers": "^0.9.0",
     "qs": "^6.6.0",

@@ -8,7 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../framework/mr-upload/mr-upload.js';
 import '../../mr-error/mr-error.js';
 import {fieldTypes} from '../../shared/field-types.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import '../../chops/chops-checkbox/chops-checkbox.js';
 import '../../chops/chops-dialog/chops-dialog.js';
@@ -21,7 +21,7 @@ import '../../shared/mr-shared-styles.js';
  * A dialog to edit descriptions.
  *
  */
-export class MrEditDescription extends ReduxMixin(PolymerElement) {
+export class MrEditDescription extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -126,11 +126,11 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       comments: issue.comments(state),
       issueRef: issue.issueRef(state),
-    };
+    });
   }
 
   _keptAttachmentIdsChanged(e) {
@@ -259,14 +259,14 @@ export class MrEditDescription extends ReduxMixin(PolymerElement) {
       }
 
       if (!this._fieldName) {
-        this.dispatchAction(issue.update(message));
+        store.dispatch(issue.update(message));
       } else {
         // This is editing an approval if there is no field name.
         message.fieldRef = {
           type: fieldTypes.APPROVAL_TYPE,
           fieldName: this._fieldName,
         };
-        this.dispatchAction(issue.updateApproval(message));
+        store.dispatch(issue.updateApproval(message));
       }
       this.$.dialog.close();
     } catch (e) {

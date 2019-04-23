@@ -9,7 +9,6 @@ import {MrCodeFontToggle} from './mr-code-font-toggle.js';
 let element;
 
 suite('mr-code-font-toggle', () => {
-
   setup(() => {
     element = document.createElement('mr-code-font-toggle');
     document.body.appendChild(element);
@@ -17,7 +16,6 @@ suite('mr-code-font-toggle', () => {
       call: () => Promise.resolve({}),
     };
     sinon.spy(window.prpcClient, 'call');
-    MrCodeFontToggle.mapStateToProps = () => {};
   });
 
   teardown(() => {
@@ -34,7 +32,7 @@ suite('mr-code-font-toggle', () => {
     const chopsToggle = element.shadowRoot.querySelector('chops-toggle');
     const label = chopsToggle.shadowRoot.querySelector('label');
 
-    label.click();  // Toggle it on.
+    label.click(); // Toggle it on.
     assert.deepEqual(window.prpcClient.call.getCall(0).args, [
       'monorail.Users',
       'SetUserPrefs',
@@ -43,7 +41,7 @@ suite('mr-code-font-toggle', () => {
     assert.isTrue(window.prpcClient.call.calledOnce);
 
     element.prefs = new Map([['code_font', 'true']]);
-    label.click();  // Toggle it off.
+    label.click(); // Toggle it off.
     assert.deepEqual(window.prpcClient.call.getCall(1).args, [
       'monorail.Users',
       'SetUserPrefs',

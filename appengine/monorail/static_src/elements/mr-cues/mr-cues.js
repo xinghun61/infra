@@ -4,7 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {ReduxMixin} from '../redux/redux-mixin.js';
+import {connectStore} from '../redux/base.js';
 import * as user from '../redux/user.js';
 import '../chops/chops-button/chops-button.js';
 import '../chops/chops-dialog/chops-dialog.js';
@@ -18,7 +18,7 @@ import '../shared/mr-shared-styles.js';
  * viewed and the user's preferences.
  *
  */
-export class MrCues extends ReduxMixin(PolymerElement) {
+export class MrCues extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -88,11 +88,11 @@ export class MrCues extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       prefs: user.user(state).prefs,
       prefsLoaded: user.user(state).prefsLoaded,
-    };
+    });
   }
 
   static get observers() {

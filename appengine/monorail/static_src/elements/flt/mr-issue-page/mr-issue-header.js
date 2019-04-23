@@ -8,7 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import '../../mr-flipper.js';
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../chops/chops-timestamp/chops-timestamp.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import '../../links/mr-user-link/mr-user-link.js';
@@ -31,7 +31,7 @@ Are you sure you want to delete this issue?`;
  * The header for a given launch issue.
  *
  */
-export class MrIssueHeader extends ReduxMixin(PolymerElement) {
+export class MrIssueHeader extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style>
@@ -194,12 +194,12 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       issue: issue.issue(state),
       issuePermissions: issue.permissions(state),
       projectTemplates: project.project(state).templates,
-    };
+    });
   }
 
   _computeCanEditIssue(issuePermissions) {
@@ -267,7 +267,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
           localId: this.issue.localId,
         },
       };
-      this.dispatchAction(issue.fetch(message));
+      store.dispatch(issue.fetch(message));
     });
   }
 
@@ -287,7 +287,7 @@ export class MrIssueHeader extends ReduxMixin(PolymerElement) {
             localId: this.issue.localId,
           },
         };
-        this.dispatchAction(issue.fetch(message));
+        store.dispatch(issue.fetch(message));
       });
     }
   }

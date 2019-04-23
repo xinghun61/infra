@@ -7,6 +7,7 @@ import sinon from 'sinon';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {ISSUE_EDIT_PERMISSION} from '../../shared/permissions.js';
+import {store} from '../../redux/base.js';
 
 
 let element;
@@ -14,17 +15,16 @@ let element;
 suite('mr-edit-metadata', () => {
   setup(() => {
     element = document.createElement('mr-edit-metadata');
-    element.issuePermissions = ['editissue'];
     document.body.appendChild(element);
 
-    // Disable Redux state mapping for testing.
-    MrEditMetadata.mapStateToProps = () => {};
-    sinon.stub(element, 'dispatchAction');
+    sinon.stub(store, 'dispatch');
+
+    element.issuePermissions = [ISSUE_EDIT_PERMISSION];
   });
 
   teardown(() => {
     document.body.removeChild(element);
-    element.dispatchAction.restore();
+    store.dispatch.restore();
   });
 
   test('initializes', () => {
@@ -34,13 +34,13 @@ suite('mr-edit-metadata', () => {
   test('disconnecting element reports form is not dirty', () => {
     element.formName = 'test';
 
-    assert.isFalse(element.dispatchAction.calledOnce);
+    assert.isFalse(store.dispatch.calledOnce);
 
     document.body.removeChild(element);
 
-    assert.isTrue(element.dispatchAction.calledOnce);
+    assert.isTrue(store.dispatch.calledOnce);
     sinon.assert.calledWith(
-      element.dispatchAction,
+      store.dispatch,
       {
         type: 'REPORT_DIRTY_FORM',
         name: 'test',

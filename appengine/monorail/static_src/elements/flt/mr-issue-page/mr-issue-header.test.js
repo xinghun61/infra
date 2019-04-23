@@ -4,23 +4,18 @@
 
 import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
-import {store} from '../../redux/redux-mixin.js';
+import {store} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {ISSUE_EDIT_PERMISSION,
   ISSUE_FLAGSPAM_PERMISSION} from '../../shared/permissions.js';
 
 let element;
-let lockIcon;
-let lockTooltip;
 
 suite('mr-issue-header', () => {
   setup(() => {
     element = document.createElement('mr-issue-header');
     document.body.appendChild(element);
-
-    lockIcon = element.shadowRoot.querySelector('.lock-icon');
-    lockTooltip = element.shadowRoot.querySelector('.lock-tooltip');
   });
 
   teardown(() => {

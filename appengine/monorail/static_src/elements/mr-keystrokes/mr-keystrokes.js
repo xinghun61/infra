@@ -7,7 +7,7 @@ import page from 'page';
 import qs from 'qs';
 import Mousetrap from 'mousetrap';
 
-import {ReduxMixin} from '../redux/redux-mixin.js';
+import {store, connectStore} from '../redux/base.js';
 import * as issue from '../redux/issue.js';
 import '../chops/chops-dialog/chops-dialog.js';
 
@@ -18,7 +18,7 @@ import '../chops/chops-dialog/chops-dialog.js';
  * Adds keybindings for Monorail, including a dialog for showing keystrokes.
  *
  */
-export class MrKeystrokes extends ReduxMixin(PolymerElement) {
+export class MrKeystrokes extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style>
@@ -195,13 +195,13 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       issuePermissions: issue.permissions(state),
       _isStarred: issue.isStarred(state),
       _fetchingIsStarred: issue.requests(state).fetchIsStarred.requesting,
       _starringIssue: issue.requests(state).star.requesting,
-    };
+    });
   }
 
   static get observers() {
@@ -318,7 +318,7 @@ export class MrKeystrokes extends ReduxMixin(PolymerElement) {
             localId: this.issueId,
           };
 
-          this.dispatchAction(issue.star(issueRef, newIsStarred));
+          store.dispatch(issue.star(issueRef, newIsStarred));
         }
       });
     }

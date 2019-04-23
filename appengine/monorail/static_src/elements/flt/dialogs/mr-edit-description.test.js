@@ -61,9 +61,6 @@ suite('mr-edit-descriptions', () => {
     };
     sinon.spy(window.prpcClient, 'call');
     sinon.spy(issue.update);
-
-    // Disable Redux state mapping for testing.
-    MrEditDescription.mapStateToProps = () => {};
   });
 
   teardown(() => {

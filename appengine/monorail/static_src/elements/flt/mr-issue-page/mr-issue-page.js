@@ -11,7 +11,7 @@ import './mr-restriction-indicator';
 import '../mr-issue-details/mr-issue-details.js';
 import '../mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
@@ -33,7 +33,7 @@ const DETAIL_COMMENT_COUNT = 100;
  * The main entry point for a Monorail issue detail page.
  *
  */
-export class MrIssuePage extends ReduxMixin(PolymerElement) {
+export class MrIssuePage extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-shared-styles">
@@ -257,17 +257,17 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
+      issue: issue.issue(state),
+      issueRef: issue.issueRef(state),
       fetchIssueError: issue.requests(state).fetch.error,
       fetchingIssue: issue.requests(state).fetch.requesting,
       fetchingProjectConfig: project.fetchingConfig(state),
-      issue: issue.issue(state),
       issueClosed: !issue.isOpen(state),
       issuePermissions: issue.permissions(state),
-      issueRef: issue.issueRef(state),
       prefs: user.user(state).prefs,
-    };
+    });
   }
 
   static get observers() {
@@ -280,11 +280,12 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   }
 
   _issueChanged(issueRef, issue) {
+    if (!issueRef) return;
     let title =
       issueRef.localId ? `${issueRef.localId} - ` : 'Loading issue... - ';
-    if (issue.isDeleted) {
+    if (issue && issue.isDeleted) {
       title += 'Issue has been deleted - ';
-    } else if (issue.summary) {
+    } else if (issue && issue.summary) {
       title += `${issue.summary} - `;
     }
     if (issueRef.projectName) {
@@ -297,19 +298,19 @@ export class MrIssuePage extends ReduxMixin(PolymerElement) {
   _fetchIssue(issueRef) {
     if (issueRef.localId && issueRef.projectName && !this.fetchingIssue) {
       // Reload the issue data when the id changes.
-      this.dispatchAction(issue.fetchIssuePageData({issueRef}));
+      store.dispatch(issue.fetchIssuePageData({issueRef}));
     }
   }
 
   _projectNameChanged(projectName) {
     if (projectName && !this.fetchingProjectConfig) {
       // Reload project config and templates when the project name changes.
-      this.dispatchAction(project.fetch(projectName));
+      store.dispatch(project.fetch(projectName));
     }
   }
 
   _userDisplayNameChanged(userDisplayName) {
-    this.dispatchAction(user.fetch(userDisplayName));
+    store.dispatch(user.fetch(userDisplayName));
   }
 
   _onOpenDialog(e) {

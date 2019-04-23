@@ -11,10 +11,10 @@
  */
 
 /** @type {Menu} */
-var myprojects;
+let myprojects;
 
 (function() {
-  let target = document.getElementById('projects-dropdown');
+  const target = document.getElementById('projects-dropdown');
 
   if (!target) {
     return;

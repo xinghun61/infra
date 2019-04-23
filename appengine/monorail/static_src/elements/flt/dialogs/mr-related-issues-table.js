@@ -7,11 +7,11 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
 import '../../links/mr-issue-link/mr-issue-link.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import '../../shared/mr-shared-styles.js';
 
-export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
+export class MrRelatedIssuesTable extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -142,12 +142,12 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       issueRef: issue.issueRef(state),
       issuePermissions: issue.permissions(state),
       sortedBlockedOn: issue.sortedBlockedOn(state),
-    };
+    });
   }
 
   open() {
@@ -238,7 +238,7 @@ export class MrRelatedIssuesTable extends ReduxMixin(PolymerElement) {
       });
 
     reorderRequest.then((response) => {
-      this.dispatchAction(issue.fetch({
+      store.dispatch(issue.fetch({
         issueRef: this.issueRef,
       }));
     }, (error) => {

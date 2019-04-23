@@ -7,7 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
 import '@polymer/iron-collapse/iron-collapse.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
@@ -79,7 +79,7 @@ const CLASS_ICON_MAP = {
  * This element shows a card for a single approval.
  *
  */
-export class MrApprovalCard extends ReduxMixin(PolymerElement) {
+export class MrApprovalCard extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -342,8 +342,8 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     ];
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       fieldDefsByApprovalName: project.fieldDefsByApprovalName(state),
       focusId: ui.focusId(state),
       user: user.user(state),
@@ -353,10 +353,10 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
       comments: issue.comments(state),
       updatingApproval: issue.requests(state).updateApproval.requesting,
       updateApprovalError: issue.requests(state).updateApproval.error,
-    };
+    });
   }
 
-  reset(issue) {
+  reset() {
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
     if (!form) return;
     form.reset();
@@ -374,7 +374,7 @@ export class MrApprovalCard extends ReduxMixin(PolymerElement) {
     const uploads = await form.getAttachments();
     if (commentContent || Object.keys(approvalDelta).length > 0 ||
         uploads.length > 0) {
-      this.dispatchAction(issue.updateApproval({
+      store.dispatch(issue.updateApproval({
         issueRef: this.issueRef,
         fieldRef: {
           type: fieldTypes.APPROVAL_TYPE,

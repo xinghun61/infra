@@ -4,7 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 
 import '../../chops/chops-button/chops-button.js';
@@ -29,7 +29,7 @@ const ISSUE_REF_FIELD_NAMES = [
  * A component for an individual comment.
  *
  */
-export class MrComment extends ReduxMixin(PolymerElement) {
+export class MrComment extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style>
@@ -233,7 +233,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
       sequenceNum: comment.sequenceNum,
       delete: comment.isDeleted === undefined,
     }).then((resp) => {
-      this.dispatchAction(issue.fetchComments({issueRef}));
+      store.dispatch(issue.fetchComments({issueRef}));
     });
   }
 
@@ -247,7 +247,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
       sequenceNum: comment.sequenceNum,
       flag: comment.isSpam === undefined,
     }).then((resp) => {
-      this.dispatchAction(issue.fetchComments({issueRef}));
+      store.dispatch(issue.fetchComments({issueRef}));
     });
   }
 
@@ -334,7 +334,7 @@ export class MrComment extends ReduxMixin(PolymerElement) {
       });
 
     promise.then(() => {
-      this.dispatchAction(issue.fetchComments({issueRef}));
+      store.dispatch(issue.fetchComments({issueRef}));
     }, (error) => {
       console.log('Failed to (un)delete attachment', error);
     });

@@ -232,12 +232,13 @@ export class MrMetadata extends MetadataMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
-      ...super.mapStateToProps(state, element),
+  stateChanged(state) {
+    super.stateChanged(state);
+
+    this.setProperties({
       issueRef: issue.issueRef(state),
       relatedIssues: issue.relatedIssues(state),
-    };
+    });
   }
 
   _fieldIsHidden(fieldValueMap, fieldDef) {

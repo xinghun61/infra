@@ -230,7 +230,7 @@ export class MrHeader extends PolymerElement {
     if (!userProjects) {
       return [{text: 'Sign in to see your projects', url: loginUrl}];
     }
-    let items = [];
+    const items = [];
     const starredProjects = userProjects.starredProjects || [];
     const projects = (userProjects.ownerOf || [])
       .concat(userProjects.memberOf || [])
@@ -271,7 +271,7 @@ export class MrHeader extends PolymerElement {
   }
 
   _computeProjectSettingsItems(projectName, canAdministerProject) {
-    let items = [
+    const items = [
       {text: 'People', url: `/p/${projectName}/people/list`},
       {text: 'Development Process', url: `/p/${projectName}/adminIntro`},
       {text: 'History', url: `/p/${projectName}/updates/list`},

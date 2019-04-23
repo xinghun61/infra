@@ -19,9 +19,6 @@ suite('mr-issue-details', () => {
     sinon.stub(window.prpcClient, 'call').callsFake(
       () => Promise.resolve({}));
     sinon.spy(issue.update);
-
-    // Disable Redux state mapping for testing.
-    MrIssueDetails.mapStateToProps = () => {};
   });
 
   teardown(() => {

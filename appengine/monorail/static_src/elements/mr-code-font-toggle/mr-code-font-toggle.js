@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../redux/redux-mixin.js';
+import {store, connectStore} from '../redux/base.js';
 import * as user from '../redux/user.js';
 import '../chops/chops-toggle/chops-toggle.js';
 
@@ -16,7 +16,7 @@ import '../chops/chops-toggle/chops-toggle.js';
  * causes issue description and comment text to switch to monospace
  * font and the setting is saved in the user's preferences.
  */
-export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
+export class MrCodeFontToggle extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <chops-toggle
@@ -45,10 +45,8 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
-      prefs: user.user(state).prefs,
-    };
+  stateChanged(state) {
+    this.prefs = user.user(state).prefs;
   }
 
   _computeCodeFont(prefs, initialValue) {
@@ -57,7 +55,7 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
   }
 
   fetchPrefs() {
-    this.dispatchAction(user.fetchPrefs());
+    store.dispatch(user.fetchPrefs());
   }
 
   _checkedChangeHandler(e) {
@@ -77,7 +75,7 @@ export class MrCodeFontToggle extends ReduxMixin(PolymerElement) {
     } else {
       const newPrefs = new Map(this.prefs);
       newPrefs.set('code_font', '' + checked);
-      this.dispatchAction(user.setPrefs(newPrefs));
+      store.dispatch(user.setPrefs(newPrefs));
     }
   }
 }

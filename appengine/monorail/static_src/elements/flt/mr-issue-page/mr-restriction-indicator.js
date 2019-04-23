@@ -4,7 +4,7 @@
 
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import {arrayToEnglish} from '../../shared/helpers.js';
 
@@ -15,7 +15,7 @@ import {arrayToEnglish} from '../../shared/helpers.js';
  * Display for showing whether an issue is restricted.
  *
  */
-export class MrRestrictionIndicator extends ReduxMixin(PolymerElement) {
+export class MrRestrictionIndicator extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -78,11 +78,11 @@ export class MrRestrictionIndicator extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       restrictions: issue.restrictions(state),
       isRestricted: issue.isRestricted(state),
-    };
+    });
   }
 
   _computeHidden(isRestricted) {

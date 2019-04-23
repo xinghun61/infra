@@ -26,14 +26,13 @@ suite('mr-cues', () => {
     assert.instanceOf(element, MrCues);
   });
 
-  test('map state', () => {
+  test('stateChanged', () => {
     const state = {user: {currentUser:
       {prefs: new Map(), prefsLoaded: false}}};
-    assert.deepEqual(
-      {prefs: new Map(), prefsLoaded: false},
-      MrCues.mapStateToProps(state, element));
+    element.stateChanged(state);
+    assert.deepEqual(element.prefs, new Map());
+    assert.isFalse(element.prefsLoaded);
   });
-
 
   test('anon does not see privacy dialog', () => {
     assert.isFalse(element._computeShowPrivacyDialog(
@@ -72,5 +71,4 @@ suite('mr-cues', () => {
     element._showPrivacyDialogChanged(false);
     assert.isTrue(HTMLDialogElement.prototype.close.calledOnce);
   });
-
 });

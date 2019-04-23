@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import {autolink} from '../../autolink.js';
-import {ReduxMixin} from '../redux/redux-mixin.js';
+import {connectStore} from '../redux/base.js';
 import * as issue from '../redux/issue.js';
 import * as user from '../redux/user.js';
 
@@ -15,7 +15,7 @@ import * as user from '../redux/user.js';
  * Displays text for a comment.
  *
  */
-export class MrCommentContent extends ReduxMixin(PolymerElement) {
+export class MrCommentContent extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style>
@@ -78,11 +78,11 @@ export class MrCommentContent extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       commentReferences: issue.commentReferences(state),
       projectName: issue.issueRef(state).projectName,
-    };
+    });
   }
 
   _isTagEqual(tag, str) {

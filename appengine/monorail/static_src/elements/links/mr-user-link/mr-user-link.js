@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 
 
@@ -17,7 +17,7 @@ const NULL_DISPLAY_NAME_VALUES = ['----', 'a deleted user'];
  * Displays a link to a user profile.
  *
  */
-export class MrUserLink extends ReduxMixin(PolymerElement) {
+export class MrUserLink extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
@@ -86,10 +86,8 @@ export class MrUserLink extends ReduxMixin(PolymerElement) {
     ];
   }
 
-  static mapStateToProps(state, element) {
-    return {
-      referencedUsers: issue.referencedUsers(state),
-    };
+  stateChanged(state) {
+    this.referencedUsers = issue.referencedUsers(state);
   }
 
   _computeProperties(userRef, referencedUsers) {

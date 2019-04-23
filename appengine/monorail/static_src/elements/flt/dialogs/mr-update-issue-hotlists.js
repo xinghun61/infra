@@ -6,12 +6,12 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as user from '../../redux/user.js';
 import '../../shared/mr-shared-styles.js';
 
-export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
+export class MrUpdateIssueHotlists extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -122,13 +122,13 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       issueRef: issue.issueRef(state),
       issueHotlists: issue.hotlists(state),
       user: user.user(state),
       userHotlists: user.user(state).hotlists,
-    };
+    });
   }
 
   open() {
@@ -152,6 +152,8 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
   save() {
     const changes = this.changes;
     const issueRef = this.issueRef;
+
+    if (!issueRef || !changes) return;
 
     const promises = [];
     if (changes.added.length) {
@@ -181,8 +183,8 @@ export class MrUpdateIssueHotlists extends ReduxMixin(PolymerElement) {
     }
 
     Promise.all(promises).then((results) => {
-      this.dispatchAction(issue.fetchHotlists(issueRef));
-      this.dispatchAction(user.fetchHotlists(this.user.email));
+      store.dispatch(issue.fetchHotlists(issueRef));
+      store.dispatch(user.fetchHotlists(this.user.email));
       this.close();
     }, (error) => {
       this.error = error.description;

@@ -4,7 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {ReduxMixin} from './redux/redux-mixin.js';
+import {store, connectStore} from './redux/base.js';
 import * as issue from './redux/issue.js';
 import * as ui from './redux/ui.js';
 import * as user from './redux/user.js';
@@ -19,7 +19,7 @@ import './flt/dialogs/mr-edit-description.js';
  * Displays comments on the EZT page.
  *
  */
-export class EztComments extends ReduxMixin(PolymerElement) {
+export class EztComments extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style>
@@ -81,11 +81,11 @@ export class EztComments extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       comments: issue.comments(state),
       prefs: user.user(state).prefs,
-    };
+    });
   }
 
   connectedCallback() {
@@ -106,7 +106,7 @@ export class EztComments extends ReduxMixin(PolymerElement) {
   _onLocationChanged() {
     const hash = window.location.hash.substr(1);
     if (hash) {
-      this.dispatchAction(ui.setFocusId(hash));
+      store.dispatch(ui.setFocusId(hash));
     }
   }
 
@@ -141,13 +141,13 @@ export class EztComments extends ReduxMixin(PolymerElement) {
 
     const allComments = [this.descriptionList[0]].concat(this.commentList);
     // mr-comment-content relies on projectName being set on the redux state.
-    this.dispatchAction(issue.setIssueRef(this.issueId, this.projectName));
-    this.dispatchAction({
+    store.dispatch(issue.setIssueRef(this.issueId, this.projectName));
+    store.dispatch({
       type: issue.FETCH_COMMENTS_SUCCESS,
       comments: allComments,
     });
-    this.dispatchAction(user.fetchPrefs());
-    this.dispatchAction(issue.fetchCommentReferences(
+    store.dispatch(user.fetchPrefs());
+    store.dispatch(issue.fetchCommentReferences(
       allComments, this.projectName));
   }
 }

@@ -7,7 +7,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-button/chops-button.js';
 import './mr-comment.js';
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as ui from '../../redux/ui.js';
 import '../../shared/mr-shared-styles.js';
@@ -20,7 +20,7 @@ const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
  * Display a list of Monorail comments.
  *
  */
-export class MrCommentList extends ReduxMixin(PolymerElement) {
+export class MrCommentList extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-shared-styles">
@@ -115,11 +115,11 @@ export class MrCommentList extends ReduxMixin(PolymerElement) {
     ];
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       focusId: ui.focusId(state),
       issuePermissions: issue.permissions(state),
-    };
+    });
   }
 
   toggleComments() {

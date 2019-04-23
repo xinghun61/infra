@@ -6,7 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../chops/chops-button/chops-button.js';
-import {ReduxMixin} from '../redux/redux-mixin.js';
+import {store, connectStore} from '../redux/base.js';
 import * as issue from '../redux/issue.js';
 import '../shared/mr-shared-styles.js';
 
@@ -16,7 +16,7 @@ import '../shared/mr-shared-styles.js';
  * Display attachments for Monorail comments.
  *
  */
-export class MrAttachment extends ReduxMixin(PolymerElement) {
+export class MrAttachment extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <style include="mr-shared-styles">
@@ -156,15 +156,15 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
 
   _bytesOrKbOrMb(numBytes) {
     if (numBytes < 1024) {
-      return `${numBytes} bytes`;  // e.g., 128 bytes
+      return `${numBytes} bytes`; // e.g., 128 bytes
     } else if (numBytes < 99 * 1024) {
-      return `${(numBytes / 1024).toFixed(1)} KB`;  // e.g. 23.4 KB
+      return `${(numBytes / 1024).toFixed(1)} KB`; // e.g. 23.4 KB
     } else if (numBytes < 1024 * 1024) {
-      return `${(numBytes / 1024).toFixed(0)} KB`;  // e.g., 219 KB
+      return `${(numBytes / 1024).toFixed(0)} KB`; // e.g., 219 KB
     } else if (numBytes < 99 * 1024 * 1024) {
-      return `${(numBytes / 1024 / 1024).toFixed(1)} MB`;  // e.g., 21.9 MB
+      return `${(numBytes / 1024 / 1024).toFixed(1)} MB`; // e.g., 21.9 MB
     } else {
-      return `${(numBytes / 1024 / 1024).toFixed(0)} MB`;  // e.g., 100 MB
+      return `${(numBytes / 1024 / 1024).toFixed(0)} MB`; // e.g., 100 MB
     }
   }
 
@@ -184,7 +184,7 @@ export class MrAttachment extends ReduxMixin(PolymerElement) {
       });
 
     promise.then(() => {
-      this.dispatchAction(issue.fetchComments({issueRef}));
+      store.dispatch(issue.fetchComments({issueRef}));
     }, (error) => {
       console.log('Failed to (un)delete attachment', error);
     });

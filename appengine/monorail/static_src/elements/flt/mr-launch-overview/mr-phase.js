@@ -6,6 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
 import '../../chops/chops-dialog/chops-dialog.js';
+import {store} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import '../mr-approval-card/mr-approval-card.js';
@@ -212,9 +213,9 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    const superProps = super.mapStateToProps(state, element);
-    return Object.assign(superProps, {
+  stateChanged(state) {
+    super.stateChanged(state);
+    this.setProperties({
       issue: issue.issue(state),
       issueRef: issue.issueRef(state),
       updatingIssue: issue.requests(state).update.requesting,
@@ -258,7 +259,7 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     };
 
     if (message.commentContent || message.delta) {
-      this.dispatchAction(issue.update(message));
+      store.dispatch(issue.update(message));
     }
   }
 

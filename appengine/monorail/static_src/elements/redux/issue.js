@@ -548,7 +548,6 @@ export const fetch = (message) => async (dispatch) => {
 
     dispatch({type: FETCH_SUCCESS, issue});
 
-    dispatch(fetchPermissions(message));
     if (!issue.isDeleted && !movedToRef) {
       dispatch(fetchRelatedIssues(issue));
       dispatch(fetchHotlists(message.issueRef));

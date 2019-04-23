@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import * as user from '../../redux/user.js';
@@ -20,7 +20,7 @@ import './mr-metadata.js';
  * The metadata view for a single issue. Contains information such as the owner.
  *
  */
-export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
+export class MrIssueMetadata extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -270,8 +270,8 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       issue: issue.issue(state),
       issueRef: issue.issueRef(state),
       user: user.user(state),
@@ -288,7 +288,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
       _components: issue.components(state),
       _fieldDefs: issue.fieldDefs(state),
       _type: issue.type(state),
-    };
+    });
   }
 
   toggleStar() {
@@ -297,7 +297,7 @@ export class MrIssueMetadata extends ReduxMixin(PolymerElement) {
     const newIsStarred = !this.isStarred;
     const issueRef = this.issueRef;
 
-    this.dispatchAction(issue.star(issueRef, newIsStarred));
+    store.dispatch(issue.star(issueRef, newIsStarred));
   }
 
   openUpdateHotlists() {

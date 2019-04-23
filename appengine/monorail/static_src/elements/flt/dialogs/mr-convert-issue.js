@@ -5,7 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import {ReduxMixin} from '../../redux/redux-mixin.js';
+import {store, connectStore} from '../../redux/base.js';
 import * as issue from '../../redux/issue.js';
 import * as project from '../../redux/project.js';
 import '../../chops/chops-button/chops-button.js';
@@ -22,7 +22,7 @@ import '../../shared/mr-shared-styles.js';
  * a chosen project template.
  *
  */
-export class MrConvertIssue extends ReduxMixin(PolymerElement) {
+export class MrConvertIssue extends connectStore(PolymerElement) {
   static get template() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -111,14 +111,14 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
+  stateChanged(state) {
+    this.setProperties({
       convertingIssue: issue.requests(state).convert.requesting,
       convertIssueError: issue.requests(state).convert.error,
       issueRef: issue.issueRef(state),
       issuePermissions: issue.permissions(state),
       projectTemplates: project.project(state).templates,
-    };
+    });
   }
 
   open() {
@@ -136,7 +136,7 @@ export class MrConvertIssue extends ReduxMixin(PolymerElement) {
 
   save() {
     const commentContent = this.shadowRoot.querySelector('#commentContent');
-    this.dispatchAction(issue.convert({
+    store.dispatch(issue.convert({
       issueRef: this.issueRef,
       templateName: this.selectedTemplate,
       commentContent: commentContent.value,

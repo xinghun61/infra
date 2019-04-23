@@ -51,10 +51,8 @@ export class MrCrbugLink extends PolymerElement {
     };
   }
 
-  static mapStateToProps(state, element) {
-    return {
-      issue: issue.issue(state),
-    };
+  stateChanged(state) {
+    this.issue = issue.issue(state);
   }
 
   _getHost() {
