@@ -7,7 +7,7 @@
 import '@chopsui/tsmon-client/tsmon-client.js';
 
 const TSMonClient = window.chops.tsmon.TSMonClient;
-import AutoRefreshPrpcClient from '../prpc.js';
+import AutoRefreshPrpcClient from 'prpc.js';
 
 const TS_MON_JS_PATH = '/_/jstsmon.do';
 const TS_MON_CLIENT_GLOBAL_NAME = '__tsMonClient';
@@ -63,7 +63,7 @@ export default class MonorailTSMon extends TSMonClient {
           'Latency between page load and autocomplete options loading.',
           null, standardFields,
         ),
-      }
+      },
     ];
 
     this.pageLoadMetric = this.cumulativeDistribution(
@@ -97,7 +97,7 @@ export default class MonorailTSMon extends TSMonClient {
       ['host_name', window.CS_env.app_version],
       ['document_visible', MonorailTSMon.isPageVisible()],
     ]);
-    for (let metric of this._userTimingMetrics) {
+    for (const metric of this._userTimingMetrics) {
       if (category === metric.category
           && eventName === metric.eventName
           && eventLabel === metric.eventLabel) {

@@ -8,12 +8,12 @@ import {PolymerElement, html} from '@polymer/polymer';
 import page from 'page';
 import qs from 'qs';
 
-import {store, connectStore} from '../redux/base.js';
-import * as issue from '../redux/issue.js';
-import * as ui from '../redux/ui.js';
-import {arrayToEnglish} from '../shared/helpers.js';
-import '../mr-header/mr-header.js';
-import '../mr-keystrokes/mr-keystrokes.js';
+import {store, connectStore} from 'elements/reducers/base.js';
+import * as issue from 'elements/reducers/issue.js';
+import * as ui from 'elements/reducers/ui.js';
+import {arrayToEnglish} from 'elements/shared/helpers.js';
+import 'elements/framework/mr-header/mr-header.js';
+import 'elements/framework/mr-keystrokes/mr-keystrokes.js';
 
 /**
  * `<mr-app>`
@@ -144,7 +144,7 @@ export class MrApp extends connectStore(PolymerElement) {
 
     this.projectName = ctx.params.project;
 
-    await import(/* webpackChunkName: "mr-issue-page" */ '../flt/mr-issue-page/mr-issue-page.js');
+    await import(/* webpackChunkName: "mr-issue-page" */ '../issue-detail/mr-issue-page/mr-issue-page.js');
     // TODO(zhangtiff): Make sure the properties passed in to the loaded
     // component can still dynamically change.
     this.loadWebComponent('mr-issue-page', {

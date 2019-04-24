@@ -6,7 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
 
-import '../../mr-header/mr-header.js';
+import 'elements/framework/mr-header/mr-header.js';
 import '../mr-activity-table/mr-activity-table.js';
 import '../mr-comment-table/mr-comment-table.js';
 import '../mr-commit-table/mr-commit-table.js';
@@ -181,7 +181,7 @@ export class MrProfilePage extends PolymerElement {
     const n = d.getTime();
     let currentTime = n / 1000;
     currentTime = Math.ceil(currentTime);
-    let fromTime = currentTime - 31536000;
+    const fromTime = currentTime - 31536000;
 
     const commitMessage = {
       email: this.viewedUser,

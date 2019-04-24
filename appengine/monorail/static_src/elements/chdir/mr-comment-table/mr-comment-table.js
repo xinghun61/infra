@@ -5,6 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+
 /**
  * `<mr-comment-table>`
  *
@@ -124,7 +125,7 @@ export class MrCommentTable extends PolymerElement {
     if (selectedDate == undefined) {
       return comments;
     } else {
-      let computedComments = [];
+      const computedComments = [];
       if (comments == undefined) {
         return computedComments;
       }

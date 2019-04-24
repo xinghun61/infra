@@ -4,7 +4,7 @@
 
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '../../shared/mr-shared-styles.js';
+import 'elements/shared/mr-shared-styles.js';
 
 /**
  * `<mr-upload>`

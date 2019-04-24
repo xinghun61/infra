@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import AutoRefreshPrpcClient from './prpc.js';
+import AutoRefreshPrpcClient from 'prpc.js';
 
 export const prpcClient = new AutoRefreshPrpcClient(
   window.CS_env ? window.CS_env.token : '',

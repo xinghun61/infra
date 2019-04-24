@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 import '@polymer/polymer/polymer-legacy.js';
-import '../../chops/chops-timestamp/chops-timestamp.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+import 'elements/chops/chops-timestamp/chops-timestamp.js';
 
 /**
  * `<mr-commit-table>`
@@ -121,7 +121,7 @@ export class MrCommitTable extends PolymerElement {
     if (selectedDate == undefined) {
       return commits;
     } else {
-      let computedCommits = [];
+      const computedCommits = [];
       if (commits == undefined) {
         return computedCommits;
       }
@@ -152,11 +152,11 @@ export class MrCommitTable extends PolymerElement {
   }
 
   _truncateRepo(repo) {
-    let url = repo.substring(8, repo.length - 1);
-    let myProject = url.substring(0, url.indexOf('.'));
+    const url = repo.substring(8, repo.length - 1);
+    const myProject = url.substring(0, url.indexOf('.'));
 
-    let myDirectory = url.substring(url.indexOf('/') + 1, url.length);
-    let myRepo = myProject + ' ' + myDirectory;
+    const myDirectory = url.substring(url.indexOf('/') + 1, url.length);
+    const myRepo = myProject + ' ' + myDirectory;
     return myRepo;
   }
 

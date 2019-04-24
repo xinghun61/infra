@@ -2,5 +2,5 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-const testsContext = require.context('../../static_src', true, /\.test\.js$/);
+const testsContext = require.context('../', true, /\.test\.js$/);
 testsContext.keys().forEach(testsContext);

@@ -4,8 +4,8 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import '@polymer/paper-tooltip/paper-tooltip.js';
-import { html } from '@polymer/polymer/lib/utils/html-tag.js';
-import { PolymerElement } from '@polymer/polymer/polymer-element.js';
+import {html} from '@polymer/polymer/lib/utils/html-tag.js';
+import {PolymerElement} from '@polymer/polymer/polymer-element.js';
 
 export class MrDayIcon extends PolymerElement {
   static get template() {

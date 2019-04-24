@@ -144,7 +144,7 @@ export class ChopsButton extends PolymerElement {
 
   _keypressHandler(event) {
     if (!this.focused) return;
-    let keyCode = event.keyCode;
+    const keyCode = event.keyCode;
     if (this.inputKeys.includes(keyCode)) {
       this.click();
 

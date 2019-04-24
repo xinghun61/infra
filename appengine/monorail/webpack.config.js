@@ -12,13 +12,14 @@ const config = {
   entry: {
     'mr-app': './static_src/elements/mr-app/mr-app.js',
     'mr-profile-page': './static_src/elements/chdir/mr-profile-page/mr-profile-page.js',
-    'ezt-element-package': './static_src/ezt-element-package.js',
-    'ezt-footer-scripts-package': './static_src/ezt-footer-scripts-package.js',
+    'ezt-element-package': './static_src/elements/ezt/ezt-element-package.js',
+    'ezt-footer-scripts-package': './static_src/elements/ezt/ezt-footer-scripts-package.js',
   },
   devtool: 'eval-source-map',
   plugins: [],
   resolve: {
     extensions: ['.js'],
+    modules: ['node_modules', 'static_src'],
   },
   output: {
     filename: '[name].min.js',

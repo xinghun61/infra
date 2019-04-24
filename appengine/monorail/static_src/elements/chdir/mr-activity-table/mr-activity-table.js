@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import './mr-day-icon.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+import './mr-day-icon.js';
 
 export class MrActivityTable extends PolymerElement {
   static get template() {
@@ -94,8 +94,8 @@ export class MrActivityTable extends PolymerElement {
       months: {
         type: Array,
         value: () => {
-          let monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-          let now = new Date();
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+          const now = new Date();
           return [monthNames[now.getMonth()],
             monthNames[now.getMonth() - 1],
             monthNames[now.getMonth() - 2]];
@@ -121,9 +121,9 @@ export class MrActivityTable extends PolymerElement {
   }
 
   _computeWeekdayStart() {
-    let startDate = new Date(this.activityArray[0].date * 1000);
-    let startWeekdayNum = startDate.getDay()-1;
-    let emptyDays = [];
+    const startDate = new Date(this.activityArray[0].date * 1000);
+    const startWeekdayNum = startDate.getDay()-1;
+    const emptyDays = [];
     for (let i = 0; i < startWeekdayNum; i++) {
       emptyDays.push(' ');
     }
@@ -131,13 +131,13 @@ export class MrActivityTable extends PolymerElement {
   }
 
   _getTodayUnixTime() {
-    let now = new Date();
-    let today = new Date(Date.UTC(
+    const now = new Date();
+    const today = new Date(Date.UTC(
       now.getUTCFullYear(),
       now.getUTCMonth(),
       now.getUTCDate(),
       24, 0, 0));
-    let todayEndTime = today.getTime() / 1000;
+    const todayEndTime = today.getTime() / 1000;
     return todayEndTime;
   }
 
@@ -148,9 +148,9 @@ export class MrActivityTable extends PolymerElement {
     commits = commits || [];
     comments = comments || [];
 
-    let activityArray = [];
+    const activityArray = [];
     for (let i = 0; i < 93; i++) {
-      let arrayDate = (todayUnixEndTime - ((i) * 86400));
+      const arrayDate = (todayUnixEndTime - ((i) * 86400));
       activityArray.push({
         commits: 0,
         comments: 0,
@@ -160,7 +160,7 @@ export class MrActivityTable extends PolymerElement {
     }
 
     for (let i = 0; i < commits.length; i++) {
-      let day = Math.floor((todayUnixEndTime - commits[i].commitTime) / 86400);
+      const day = Math.floor((todayUnixEndTime - commits[i].commitTime) / 86400);
       if (day > 92) {
         break;
       }
@@ -169,7 +169,7 @@ export class MrActivityTable extends PolymerElement {
     }
 
     for (let i = 0; i < comments.length; i++) {
-      let day = Math.floor((todayUnixEndTime - comments[i].timestamp) / 86400);
+      const day = Math.floor((todayUnixEndTime - comments[i].timestamp) / 86400);
       if (day > 92) {
         break;
       }
