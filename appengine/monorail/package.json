@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "directories": {},
   "devDependencies": {
+    "axe-core": "^3.2.2",
     "chai": "^3.5.0",
     "eslint": "^5.16.0",
     "eslint-config-google": "^0.12.0",

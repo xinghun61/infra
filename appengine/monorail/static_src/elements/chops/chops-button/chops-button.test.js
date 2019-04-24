@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {ChopsButton} from './chops-button.js';
+import {auditA11y} from '../../shared/test-helpers';
 
 let element;
 
@@ -19,6 +20,12 @@ suite('chops-button', () => {
 
   test('initializes', () => {
     assert.instanceOf(element, ChopsButton);
+  });
+
+  test('initial a11y', async () => {
+    const text = document.createTextNode('button text');
+    element.appendChild(text);
+    await auditA11y(element);
   });
 
   test('chops-button can be disabled', () => {
