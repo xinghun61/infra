@@ -40,10 +40,6 @@ export class ChopsCollapse extends LitElement {
     `;
   }
 
-  static get is() {
-    return 'chops-collapse';
-  }
-
   constructor() {
     super();
 
@@ -58,4 +54,4 @@ export class ChopsCollapse extends LitElement {
     super.update(changedProperties);
   }
 }
-customElements.define(ChopsCollapse.is, ChopsCollapse);
+customElements.define('chops-collapse', ChopsCollapse);
