@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'chart.js/dist/Chart.min.js';
 import AutoRefreshPrpcClient from '../prpc.js';
 
 const DEFAULT_NUM_DAYS = 30;
@@ -12,7 +11,7 @@ export default class MrChart extends HTMLElement {
     return 'mr-chart';
   }
 
-  connectedCallback() {
+  async connectedCallback() {
     this._animationFrameRequested = false;
 
     this.projectName = this.getAttribute('project-name');
@@ -21,6 +20,8 @@ export default class MrChart extends HTMLElement {
     }
     this.values = [];
     this.indices = [];
+
+    await import(/* webpackChunkName: "chartjs" */ 'chart.js/dist/Chart.min.js');
 
     // Set up DOM and initialize chart onto canvas.
     const shadowRoot = this.attachShadow({mode: 'open'});
@@ -31,6 +32,8 @@ export default class MrChart extends HTMLElement {
     this.endDateInput = shadowRoot.getElementById('end-date');
     this.unsupportedFieldsEl = shadowRoot.getElementById('unsupported-fields');
     this.searchLimitEl = shadowRoot.getElementById('search-limit-message');
+
+    this.dispatchEvent(new Event('chartLoaded'));
 
     // Set up pRPC client.
     this.prpcClient = new AutoRefreshPrpcClient(

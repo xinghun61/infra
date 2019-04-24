@@ -6,7 +6,9 @@ import AutoRefreshPrpcClient from '../prpc.js';
 
 // TODO(jeffcarp): Export prefix from prpc-client and use that.
 const xssiPrefix = ')]}\'';
-let element, dataLoadedPromise;
+let element;
+let chartLoadedPromise;
+let dataLoadedPromise;
 
 const setupElement = () => {
   if (element && document.body.contains(element)) {
@@ -16,6 +18,9 @@ const setupElement = () => {
   }
   const el = document.createElement('mr-chart');
   el.setAttribute('project-name', 'rutabaga');
+  chartLoadedPromise = new Promise((resolve) => {
+    el.addEventListener('chartLoaded', resolve);
+  });
   dataLoadedPromise = new Promise((resolve) => {
     el.addEventListener('allDataLoaded', resolve);
   });
@@ -86,7 +91,7 @@ suite('mr-chart', () => {
         return originalMakeTimestamps(endDate, 6);
       });
       sinon.stub(MrChart, 'getEndDate').callsFake(() => {
-        return new Date(Date.UTC(2018, 10, 3, 23, 59, 59))
+        return new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
       });
 
       // Re-instantiate element after stubs.
@@ -101,7 +106,7 @@ suite('mr-chart', () => {
 
     test('makes a series of XHR calls', async () => {
       await dataLoadedPromise;
-      assert.deepEqual(element.values, [8, 8, 8, 8, 8 ,8]);
+      assert.deepEqual(element.values, [8, 8, 8, 8, 8, 8]);
     });
 
     test('sets indices and correctly re-orders values', async () => {
@@ -111,9 +116,8 @@ suite('mr-chart', () => {
         [1540857599, 0], [1540943999, 1], [1541030399, 2], [1541116799, 3],
         [1541203199, 4], [1541289599, 5],
       ]);
-      sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(async (ts) => ({
-        issues: timestampMap.get(ts),
-      }));
+      sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(
+        async (ts) => ({issues: timestampMap.get(ts)}));
 
       const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
       await element._fetchData(endDate);
@@ -160,7 +164,9 @@ suite('mr-chart', () => {
   });
 
   suite('end date change detection', () => {
-    setup(() => {
+    setup(async () => {
+      await chartLoadedPromise;
+
       sinon.spy(window.history, 'pushState');
       sinon.spy(element, '_fetchData');
     });
@@ -186,6 +192,10 @@ suite('mr-chart', () => {
   });
 
   suite('progress bar', () => {
+    setup(async () => {
+      await chartLoadedPromise;
+    });
+
     test('visible based on loading progress', async () => {
       assert.equal(element.progressBar.style.visibility, 'visible');
       assert.equal(element.progressBar.value, 0.05);
@@ -199,7 +209,7 @@ suite('mr-chart', () => {
       assert.isFalse(element.endDateInput.disabled);
 
       const endDate2 = new Date(Date.UTC(2018, 5, 3, 23, 59, 59));
-      const fetchDataPromise = element._fetchData(endDate);
+      const fetchDataPromise = element._fetchData(endDate2);
 
       // Values are reset on second call.
       assert.equal(element.progressBar.style.visibility, 'visible');
@@ -216,7 +226,6 @@ suite('mr-chart', () => {
 
 
   suite('static methods', () => {
-
     suite('sortInBisectOrder', () => {
       test('orders first, last, median recursively', () => {
         assert.deepEqual(MrChart.sortInBisectOrder([]), []);
