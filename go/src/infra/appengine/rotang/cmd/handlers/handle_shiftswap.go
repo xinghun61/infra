@@ -5,6 +5,7 @@ import (
 	"infra/appengine/rotang"
 	"net/http"
 
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"google.golang.org/grpc/codes"
@@ -100,6 +101,9 @@ func (h *State) shiftChanges(ctx *router.Context, cfg *rotang.Configuration, ss 
 				if err == nil {
 					s.EvtID = us.EvtID
 				}
+			}
+			if s.EvtID == "" {
+				logging.Warningf(ctx.Context, "shiftChanges: No EvtID recieved for shift: %v", s)
 			}
 			if err := shiftStore.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
 				return err

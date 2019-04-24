@@ -89,6 +89,9 @@ func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t
 	shiftStore := h.shiftStore(ctx.Context)
 	for _, s := range resShifts {
 		s.Comment = genComment
+		if s.EvtID == "" {
+			logging.Warningf(ctx.Context, "scheduleShifts: No EvtID recieved for shift: %v", s)
+		}
 		if err := shiftStore.UpdateShift(ctx.Context, cfg.Config.Name, &s); err != nil {
 			return err
 		}
