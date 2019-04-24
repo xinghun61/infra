@@ -108,7 +108,6 @@ def adhoc_builder(
       executable,
       extra_dims=None,
       properties=None,
-      service_account='adhoc-testing@luci-token-server-dev.iam.gserviceaccount.com',
       schedule=None,
       triggered_by=None,
   ):
@@ -121,7 +120,7 @@ def adhoc_builder(
       executable = executable,
       dimensions = dims,
       properties = properties,
-      service_account = service_account,
+      service_account = 'adhoc-testing@luci-token-server-dev.iam.gserviceaccount.com',
       build_numbers = True,
       schedule = schedule,
       triggered_by = triggered_by,
@@ -132,10 +131,6 @@ adhoc_builder(
     name = 'goma-hello-world-trusty-64',
     os = 'Ubuntu-14.04',
     executable = infra.recipe('goma_hello_world'),
-    service_account = None,
-    properties = {
-        '$kitchen': {'devshell': False, 'git_auth': False},
-    },
     schedule = 'with 10m interval',
 )
 adhoc_builder(
