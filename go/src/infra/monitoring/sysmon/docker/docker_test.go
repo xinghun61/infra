@@ -61,7 +61,8 @@ func TestMetrics(t *testing.T) {
 	}
 
 	Convey("Test All Metrics", t, func() {
-		err := updateContainerMetrics(c, container, containerInfo, containerStatsJSON)
+		err := updateContainerMetrics(c, container, containerInfo,
+			containerStatsJSON)
 		So(err, ShouldBeNil)
 
 		So(statusMetric.Get(c, "container_name", "hostname123"), ShouldEqual, "running")
@@ -78,14 +79,16 @@ func TestMetrics(t *testing.T) {
 		readCloser := noOpCloser{reader}
 		containerStatsJSON.Body = readCloser
 
-		err := updateContainerMetrics(c, container, containerInfo, containerStatsJSON)
+		err := updateContainerMetrics(c, container, containerInfo,
+			containerStatsJSON)
 		So(err, ShouldNotBeNil)
 	})
 
 	Convey("Test Broken Time Format", t, func() {
 		containerState = dockerTypes.ContainerState{StartedAt: "omg this isn't a timestamp"}
 
-		err := updateContainerMetrics(c, container, containerInfo, containerStatsJSON)
+		err := updateContainerMetrics(c, container, containerInfo,
+			containerStatsJSON)
 		So(err, ShouldNotBeNil)
 	})
 }

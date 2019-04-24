@@ -53,6 +53,9 @@ var (
 		"Total bytes of network egress for the container.",
 		&tsmonTypes.MetricMetadata{Units: tsmonTypes.Bytes},
 		field.String("name"))
+	engVerMetric = metric.NewString("dev/container/engine/version",
+		"Docker engine version",
+		nil)
 
 	allMetrics = []tsmonTypes.Metric{
 		statusMetric,
@@ -61,6 +64,7 @@ var (
 		memTotalMetric,
 		netDownMetric,
 		netUpMetric,
+		engVerMetric,
 	}
 )
 
@@ -144,6 +148,12 @@ func update(ctx context.Context) error {
 		// the docker engine installed and running.
 		return nil
 	}
+
+	version, err := dockerClient.ServerVersion(ctx)
+	if err != nil {
+		return err
+	}
+	engVerMetric.Set(ctx, version.Version)
 
 	containers, err := dockerClient.ContainerList(ctx, dockerTypes.ContainerListOptions{All: true})
 	if err != nil {
