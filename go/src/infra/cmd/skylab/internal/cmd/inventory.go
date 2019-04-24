@@ -6,13 +6,14 @@ package cmd
 
 import (
 	"fmt"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
-	"infra/cmd/skylab/internal/site"
-	"infra/libs/skylab/inventory"
 	"io"
 	"sort"
 	"strings"
 	"text/tabwriter"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/cmd/skylab/internal/site"
+	"infra/libs/skylab/inventory"
 
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
@@ -138,7 +139,20 @@ type inventoryCount struct {
 }
 
 func (ic inventoryCount) available() int {
-	return ic.spare - ic.bad
+	// TODO(ayatane): Quota scheduler only DUTs do not have a
+	// spares pool, which messes up the availability count with
+	// regard to how models are prioritized for DUT repair.  We
+	// assume some minimum size of spares that we can tolerate for
+	// each model.
+	// https://sites.google.com/a/google.com/chromeos/for-team-members/infrastructure/chromeos-admin/creating-pools
+	spare := 6
+	if ic.spare != 0 {
+		spare = ic.spare
+	}
+	if t := ic.total(); t < spare {
+		spare = t
+	}
+	return spare - ic.bad
 }
 
 func (ic inventoryCount) total() int {

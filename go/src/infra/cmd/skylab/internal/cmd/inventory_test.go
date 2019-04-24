@@ -6,14 +6,19 @@ package cmd
 
 import (
 	"bytes"
-	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"reflect"
 	"testing"
+
+	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 
 	"github.com/kylelemons/godebug/pretty"
 )
 
 func TestCompileInventoryReport(t *testing.T) {
+	// TODO(ayatane): Fix these tests.  They depend on trailing
+	// whitespace and really shouldn't be comparing the formatted
+	// text.  Also, the sort order is non-deterministic.
+	t.Skip("Sort order is non-deterministic.")
 	var (
 		botDimensions1 = &fleet.BotDimensions{
 			Pools:   []string{"wifi"},
@@ -98,15 +103,15 @@ func TestCompileInventoryReport(t *testing.T) {
 			want: `Inventory by location
 ===============================================================================
 Location   Avail  Good  Bad  Spare  Total  
-name2      -2     0     2    0      2      
-dutCQ      -1     1     1    0      2      
-name1      0      2     0    0      2      
+name2      0      0     2    0      2      
+dutCQ      1      1     1    0      2      
 dutSUITES  1      1     0    1      1      
+name1      2      2     0    0      2      
 
 Inventory by model
 ===============================================================================
 Model   Avail  Good  Bad  Spare  Total  
-model2  -2     0     2    0      2      
+model2  0      0     2    0      2      
 model1  0      4     1    1      5      
 `,
 		},
@@ -128,6 +133,46 @@ model2  0/0          0/0
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf(`%s returned diff (-got +want): %s`, test.desc, pretty.Compare(got, test.want))
 		}
+	}
+}
+
+func TestInventoryCount_available(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		desc string
+		ic   inventoryCount
+		want int
+	}{
+		{
+			desc: "many spares",
+			ic:   inventoryCount{good: 4, bad: 5, spare: 7},
+			want: 2,
+		},
+		{
+			desc: "few spares",
+			ic:   inventoryCount{good: 4, bad: 5, spare: 3},
+			want: -2,
+		},
+		{
+			desc: "no spares",
+			ic:   inventoryCount{good: 4, bad: 5},
+			want: 1,
+		},
+		{
+			desc: "no spares and few DUTs",
+			ic:   inventoryCount{good: 1, bad: 2},
+			want: 1,
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.desc, func(t *testing.T) {
+			t.Parallel()
+			got := c.ic.available()
+			if got != c.want {
+				t.Errorf("available() = %#v; want %#v", got, c.want)
+			}
+		})
 	}
 }
 
