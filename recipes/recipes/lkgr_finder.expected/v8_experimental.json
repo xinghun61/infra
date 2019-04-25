@@ -269,7 +269,6 @@
   },
   {
     "cmd": [],
-    "cwd": "[CACHE]/builder/workdir",
     "name": "fake lkgr push"
   },
   {

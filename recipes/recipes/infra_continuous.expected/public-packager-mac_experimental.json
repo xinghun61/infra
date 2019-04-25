@@ -226,11 +226,6 @@
   },
   {
     "cmd": [],
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
     "name": "no CIPD package upload in experimental mode"
   },
   {
