@@ -91,14 +91,6 @@ def add_device(docker_client, device, args):  # pylint: disable=unused-argument
 
 
 def launch(docker_client, android_devices, args):
-  # During system upgrades, some containers can crash during the "Created"
-  # state. Remove any of these if they appear stuck.
-  for c in docker_client.get_created_containers():
-    logging.error(
-        'Container %s appears stuck at "Created" with exit code %s. '
-        'Removing it.', c.name, str(c.exit_code))
-    # stop() doesn't appear to do anything, so go straight to removing() it.
-    c.remove(force=True)
   # If no devices were detected, there's a chance that the usb hubs on the host
   # are wedged. This can be fixed via a host reboot, so trigger one when this
   # occurs. But to avoid reboot-loops on machines that don't physically have

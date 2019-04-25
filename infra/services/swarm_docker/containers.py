@@ -175,6 +175,9 @@ class DockerClient(object):
   def get_created_containers(self):
     return self._get_containers_by_status('created')
 
+  def get_exited_containers(self):
+    return self._get_containers_by_status('exited')
+
   def get_paused_containers(self):
     return self._get_containers_by_status('paused')
 
@@ -205,9 +208,21 @@ class DockerClient(object):
       raise FrozenEngineError()
 
   def delete_stopped_containers(self):
-    for container in self._client.containers.list(filters={'status':'exited'}):
-      logging.debug('Found stopped container %s. Removing it.', container.name)
-      container.remove()
+    for c in self.get_exited_containers():
+      logging.debug('Found stopped container %s. Removing it.', c.name)
+      c.remove()
+
+    # Occasionally containers will fail to enter the "run" state after
+    # they have been "created". This will remove any containers in this
+    # state. See the issue below for more details:
+    # https://github.com/moby/moby/issues/8294
+    for c in self.get_created_containers():
+      logging.error(
+          'Container %s failed to enter a running state and is currently '
+          'stopped in a "Created" state with exit code %s. Removing it.',
+          c.name, str(c.exit_code))
+      # It's already stopped, so removal is the only option to fix this.
+      c.remove(force=True)
 
   def _get_volumes(self, container_workdir):
     volumes = _DOCKER_VOLUMES.copy()

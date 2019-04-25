@@ -120,16 +120,3 @@ class LaunchTests(unittest.TestCase):
     # A reboot should be called instead of main_helpers.launch_containers().
     self.assertEqual(mock_launch_containers.call_count, 0)
     self.assertEqual(mock_reboot.call_count, 1)
-
-  @mock.patch('infra.services.swarm_docker.main_helpers.launch_containers')
-  def test_frozen_containers_with_removal(self, mock_launch_containers):
-    # c1 is running, but c2 is in "Created" with exit code non-zero exit code.
-    self.fake_client.get_running_containers.return_value = [self.c1]
-    self.fake_client.get_created_containers.return_value = [self.c2]
-    self.c2_backend.attrs = {'State': {'ExitCode': 127}}
-
-    main.launch(self.fake_client, [], None)
-
-    # c2 should have been removed since it had non-zero exit code.
-    self.assertTrue(self.c2_backend.was_deleted)
-    self.assertEqual(mock_launch_containers.call_count, 1)

@@ -302,6 +302,10 @@ class TestDockerClient(unittest.TestCase):
   def test_delete_stopped_containers(self, mock_from_env):
     mock_from_env.return_value = self.fake_client
 
+    created_c = FakeContainerBackend('11')
+    created_c.attrs['State'] = {'Status': 'created'}
+    self.fake_client.containers._list.append(created_c)
+
     containers.DockerClient().delete_stopped_containers()
     self.assertTrue(
         all(c.was_deleted for c in self.fake_client.containers.list()))
