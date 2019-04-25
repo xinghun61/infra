@@ -22,25 +22,40 @@ suite('mr-restriction-indicator', () => {
     assert.instanceOf(element, MrRestrictionIndicator);
   });
 
-  test('shows restricted notice only when restricted', () => {
+  test('shows element only when restricted or showNotice', () => {
     assert.isTrue(element.hasAttribute('hidden'));
 
-    element.isRestricted = true;
-
+    element.restrictions = {view: ['Google']};
     flush();
-
     assert.isFalse(element.hasAttribute('hidden'));
 
-    element.isRestricted = false;
-
+    element.restrictions = {};
     flush();
-
     assert.isTrue(element.hasAttribute('hidden'));
+
+    element.prefs = new Map([['public_issue_notice', 'true']]);
+    flush();
+    assert.isFalse(element.hasAttribute('hidden'));
+
+    element.prefs = new Map([['public_issue_notice', 'false']]);
+    flush();
+    assert.isTrue(element.hasAttribute('hidden'));
+
+    element.prefs = new Map([]);
+    flush();
+    assert.isTrue(element.hasAttribute('hidden'));
+
+    // It is possible to have an edit or comment restriction on
+    // a public issue when the user is opted in to public issue notices.
+    // In that case, the lock icon is shown, plus a warning icon and the
+    // public issue notice.
+    element.restrictions = new Map([['edit', ['Google']]]);
+    element.prefs = new Map([['public_issue_notice', 'true']]);
+    flush();
+    assert.isFalse(element.hasAttribute('hidden'));
   });
 
   test('displays view restrictions', () => {
-    element.isRestricted = true;
-
     element.restrictions = {
       view: ['Google', 'hello'],
       edit: ['Editor', 'world'],
@@ -55,8 +70,6 @@ suite('mr-restriction-indicator', () => {
   });
 
   test('displays edit restrictions', () => {
-    element.isRestricted = true;
-
     element.restrictions = {
       view: [],
       edit: ['Editor', 'world'],
@@ -71,8 +84,6 @@ suite('mr-restriction-indicator', () => {
   });
 
   test('displays comment restrictions', () => {
-    element.isRestricted = true;
-
     element.restrictions = {
       view: [],
       edit: [],
@@ -85,4 +96,20 @@ suite('mr-restriction-indicator', () => {
 
     assert.include(element.shadowRoot.textContent, restrictString);
   });
+
+  test('displays public issue notice, if the user has that pref', () => {
+    element.restrictions = {};
+
+    element.prefs = new Map();
+    assert.equal(element._restrictionText, '');
+    assert.include(element.shadowRoot.textContent, '');
+
+    element.prefs = new Map([['public_issue_notice', 'true']]);
+    const noticeString =
+      'Public issue: Please do not post confidential information.';
+    assert.equal(element._noticeText, noticeString);
+
+    assert.include(element.shadowRoot.textContent, noticeString);
+  });
+
 });

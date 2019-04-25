@@ -6,6 +6,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
+import * as user from 'elements/reducers/user.js';
 import {arrayToEnglish} from 'elements/shared/helpers.js';
 
 
@@ -34,6 +35,14 @@ export class MrRestrictionIndicator extends connectStore(PolymerElement) {
           justify-content: flex-start;
           align-items: center;
         }
+        :host([show-notice]) {
+          background-color: var(--chops-red-700);
+          color: white;
+          font-weight: bold;
+        }
+        :host([show-notice]) i {
+          color: white;
+        }
         :host([hidden]) {
           display: none;
         }
@@ -44,14 +53,30 @@ export class MrRestrictionIndicator extends connectStore(PolymerElement) {
         .lock-icon {
           margin-right: 4px;
         }
+        i.warning-icon {
+          margin-right: 4px;
+        }
+        i[hidden] {
+          display: none;
+        }
       </style>
       <i
         class="lock-icon material-icons"
         icon="lock"
+        hidden$="[[!_restrictionText]]"
+        title$="[[_restrictionText]]"
       >
         lock
       </i>
-      [[_restrictionText]]
+      <i
+        class="warning-icon material-icons"
+        icon="warning"
+        hidden$="[[!showNotice]]"
+        title$="[[_noticeText]]"
+    >
+        warning
+      </i>
+      [[_combinedText]]
     `;
   }
 
@@ -61,19 +86,29 @@ export class MrRestrictionIndicator extends connectStore(PolymerElement) {
 
   static get properties() {
     return {
-      hidden: {
-        type: Boolean,
-        reflectToAttribute: true,
-        computed: '_computeHidden(isRestricted)',
-      },
       restrictions: Object,
-      isRestricted: {
-        type: Boolean,
-        value: false,
-      },
+      prefs: Object,
       _restrictionText: {
         type: String,
         computed: '_computeRestrictionText(restrictions)',
+      },
+      _noticeText: {
+        type: String,
+        computed: '_computeNoticeText(restrictions, prefs)',
+      },
+      showNotice: {
+        type: String,
+        reflectToAttribute: true,
+        computed: '_computeShowNotice(_noticeText)',
+      },
+      _combinedText: {
+        type: String,
+        computed: '_computeCombinedText(_restrictionText, _noticeText)',
+      },
+      hidden: {
+        type: Boolean,
+        reflectToAttribute: true,
+        computed: '_computeHidden(_combinedText)',
       },
     };
   }
@@ -81,12 +116,31 @@ export class MrRestrictionIndicator extends connectStore(PolymerElement) {
   stateChanged(state) {
     this.setProperties({
       restrictions: issue.restrictions(state),
-      isRestricted: issue.isRestricted(state),
+      prefs: user.user(state).prefs,
     });
   }
 
-  _computeHidden(isRestricted) {
-    return !isRestricted;
+  _computeNoticeText(restrictions, prefs) {
+    if (!prefs) return '';
+    if (!restrictions) return '';
+    if ('view' in restrictions && restrictions['view'].length) return '';
+    if (prefs.get('public_issue_notice') === 'true') {
+      return 'Public issue: Please do not post confidential information.';
+    }
+    return '';
+  }
+
+  _computeShowNotice(_noticeText) {
+    return _noticeText != '';
+  }
+
+  _computeCombinedText(_restrictionText, _noticeText) {
+    if (_noticeText) return _noticeText;
+    return _restrictionText;
+  }
+
+  _computeHidden(_combinedText) {
+    return !_combinedText;
   }
 
   _computeRestrictionText(restrictions) {

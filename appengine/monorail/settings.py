@@ -362,6 +362,7 @@ spam_whitelisted_suffixes = (
 corp_mode_user_groups = [
   'chromeos-all@google.com',
   'create-team@google.com',
+  'test-corp-mode@google.com',
   ]
 
 # These email suffixes are allowed to create new alert bugs via email.

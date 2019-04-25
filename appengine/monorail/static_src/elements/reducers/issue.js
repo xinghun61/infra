@@ -314,16 +314,6 @@ export const restrictions = createSelector(
   }
 );
 
-export const isRestricted = createSelector(
-  restrictions,
-  (restrictions) => {
-    if (!restrictions) return false;
-    return ('view' in restrictions && !!restrictions['view'].length) ||
-      ('edit' in restrictions && !!restrictions['edit'].length) ||
-      ('comment' in restrictions && !!restrictions['comment'].length);
-  }
-);
-
 export const isOpen = createSelector(
   issue,
   (issue) => issue && issue.statusRef && issue.statusRef.meansOpen || false);

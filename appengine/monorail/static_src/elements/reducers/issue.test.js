@@ -55,38 +55,6 @@ suite('issue', () => {
     });
   });
 
-  test('isRestricted', () => {
-    assert.isFalse(issue.isRestricted(wrapIssue()));
-    assert.isFalse(issue.isRestricted(wrapIssue({labelRefs: []})));
-
-    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
-      {label: 'IgnoreThis'},
-      {label: 'IgnoreThis2'},
-      {label: 'Restrict-View-Google'},
-    ]})));
-
-    assert.isFalse(issue.isRestricted(wrapIssue({labelRefs: [
-      {label: 'IgnoreThis'},
-      {label: 'IgnoreThis2'},
-      {label: 'Restrict-View'},
-      {label: 'Restrict'},
-      {label: 'RestrictView'},
-      {label: 'Restt-View'},
-    ]})));
-
-    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
-      {label: 'restrict-view-google'},
-    ]})));
-
-    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
-      {label: 'restrict-EditIssue-world'},
-    ]})));
-
-    assert.isTrue(issue.isRestricted(wrapIssue({labelRefs: [
-      {label: 'RESTRICT-ADDISSUECOMMENT-everyone'},
-    ]})));
-  });
-
   test('isOpen', () => {
     assert.isFalse(issue.isOpen(wrapIssue()));
     assert.isTrue(issue.isOpen(wrapIssue({statusRef: {meansOpen: true}})));
