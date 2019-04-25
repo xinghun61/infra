@@ -20,7 +20,7 @@ BACKEND_MODULES?= besearch latency-insensitive
 
 BRANCH_NAME := $(shell git rev-parse --abbrev-ref HEAD)
 
-PY_DIRS = api,features,framework,project,proto,search,services,sitewide,testing,tracker
+PY_DIRS = api,businesslogic,features,framework,project,proto,search,services,sitewide,testing,tracker
 
 default: help
 
@@ -102,6 +102,9 @@ karma: node_deps
 
 pylint:
 	pylint -f parseable *py {$(PY_DIRS)}{/,/test/}*py
+
+py3lint:
+	pylint --py3k *py {$(PY_DIRS)}{/,/test/}*py
 
 config_prod:
 	m4 -DPROD < app.yaml.m4 > app.yaml
