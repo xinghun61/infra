@@ -4,12 +4,8 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {IronFocusablesHelper} from
-  '@polymer/iron-overlay-behavior/iron-focusables-helper.js';
-import {mixinBehaviors} from '@polymer/polymer/lib/legacy/class.js';
 
 const ESC_KEYCODE = 27;
-const TAB_KEYCODE = 9;
 
 /**
  * `<chops-dialog>` displays a modal/dialog overlay.
@@ -17,8 +13,7 @@ const TAB_KEYCODE = 9;
  * @customElement
  * @polymer
  */
-export class ChopsDialog extends mixinBehaviors(
-  [IronFocusablesHelper], PolymerElement) {
+export class ChopsDialog extends PolymerElement {
   static get template() {
     return html`
       <style>
@@ -163,36 +158,11 @@ export class ChopsDialog extends mixinBehaviors(
 
   _keydownHandler(event) {
     if (!this.opened) return;
-    let keyCode = event.keyCode;
+    const keyCode = event.keyCode;
 
     // Handle closing hot keys.
     if (this.exitKeys.includes(keyCode) && !this.forced) {
       this.close();
-    }
-
-    // For accessibility, prevent tabbing outside of the dialog.
-    // Key code 9 is tab.
-    if (keyCode === TAB_KEYCODE) {
-      const tabbables = this.getTabbableNodes(this);
-      const active = this._getActiveElement();
-
-      if (!tabbables || !tabbables.length) {
-        event.preventDefault();
-      }
-
-      if (event.shiftKey) {
-        // backwards tab.
-        if (active === tabbables[0]) {
-          event.preventDefault();
-          tabbables[tabbables.length - 1].focus();
-        }
-      } else {
-        // forward tab.
-        if (active === tabbables[tabbables.length - 1]) {
-          event.preventDefault();
-          tabbables[0].focus();
-        }
-      }
     }
   }
 
@@ -246,12 +216,7 @@ export class ChopsDialog extends mixinBehaviors(
       } else {
         dialog.setAttribute('open', 'true');
       }
-
-      // Focus the first element within the dialog when it's opened.
-      const tabbables = this.getTabbableNodes(this);
-      if (tabbables && tabbables.length) {
-        tabbables[0].focus();
-      } else if (this._previousFocusedElement) {
+      if (this._previousFocusedElement) {
         this._previousFocusedElement.blur();
       }
     } else {
