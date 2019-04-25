@@ -9,6 +9,7 @@ STAGING_APPID := "findit-for-me-staging"
 # Should come with infra repository, if this step fails run
 # ...$ gclient sync
 PROTOC := "../../cipd/protoc"
+PROTO_PATH ?= "model/proto/"
 FINDIT_MODULES := default frontend waterfall-backend flake-detection-backend auto-action-backend findit-backend
 CODE_COVERAGE_MODULES := code-coverage-frontend code-coverage-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
@@ -130,9 +131,9 @@ endif
 	git cl format --full --python
 
 proto:
-	@$(PROTOC) --proto_path=model/proto/ \
-		--python_out=model/proto/gen \
-		model/proto/*.proto
+	@$(PROTOC) --proto_path=$(PROTO_PATH) \
+		--python_out=$(PROTO_PATH)gen \
+		$(PROTO_PATH)*.proto
 
 
 

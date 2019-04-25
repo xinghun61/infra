@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package findit.compile_failure;
+
+
+// Represents the compile failures in a specific build.
+message BuildCompileFailureOutput {
+  // A build edge represents one of the build commands to build a
+  // binary/object file/generated file/etc. For examples,
+  // * compiling source.cc to an object file is a build edge:
+  //   gomacc clang++ ... -I../lib/inclide -c source.cc -o source.o
+  // * generating a header file from a checked-in source file:
+  //   python ... --input flag.mojo --output flag.h
+  // * For CrOS, because >800 software packages are in every build,
+  //   this edge is the package and its immediate dependencies.
+  message BuildEdge {
+    // The checked-in source files in the code base that the build edge takes
+    // as inputs. For the above example, it is source.cc and all the included
+    // header files or the source files (e.g. flag.mojo) that generate the
+    // included header files.
+    //
+    // This field is optional. If available, it is used by the heuristic
+    // analysis to identify suspicious commits that change the dependent files.
+    //
+    // Note:
+    // * If the build edge is to link object files into an executable binary,
+    //   a shared lib, etc, it is better to not calculate the dependencies,
+    //   because it is too huge to be useful.
+    // * This is most useful for cxx/cc build edges that compile a single source
+    //   file into an object file.
+    // * Each element is a file path, and the file path is relative to the
+    //   checkout directory of the root repository. For example, if the checkout
+    //   of chromium/src is /path/chromium/src and one dependency file is
+    //   /path/chromium/src/third_party/blink/source.cc, then the file path
+    //   should be third_party/blink/source.cc
+    repeated string dependencies = 1;
+
+    // The stdout/stderr of the build edge.
+    //
+    // This field is optional. If available, file paths are extracted from the
+    // error output using regex, and those files are used by the heuristic
+    // analysis to identify suspicious commits that change those files.
+    //
+    // The best usage of this field is to capture ONLY the error log of the
+    // build edge which usually contains the critical file paths like the source
+    // file being compiled into an object file.
+    //
+    // Capturing the entire stdout/stderr of the build edge might not be useful,
+    // because if too many unrelated file paths are extracted, they can
+    // introduce false positives in suspicious commits.
+    //
+    // If `dependencies` above is available, this field is ignored.
+    string output = 2;
+
+    // Represent the list of targets the build edge will produce if it succeeds.
+    //
+    // This field is required. It is used to rerun the failed build edge to
+    // reproduce the failure for culprit finding.
+    //
+    // The more fine-grained output targets are available, the more efficient
+    // that rerun can do. For examples:
+    // * To build chrome.exe, //base/base64.cc has to be compiled into
+    //   obj/base/base64.obj first. If base64.cc failed to compile, it is better
+    //   to specify 'obj/base/base64.obj' here instead of 'chrome.exe'.
+    // * For CrOS, this can be the package name 'chromeos-base/chromeos-chrome'
+    //   that can be interpreted by a chromeos build to rerun the failed build
+    //   edge.
+    //   Later on, it can be 'chromeos.chrome:obj/base/base64.obj' if chromeos
+    //   build can support this.
+    repeated string output_targets = 3;
+
+    // The build rule for the build edge, e.g. CXX for compiling a source file.
+    //
+    // This field is optional. This is used for monitoring purpose to understand
+    // which types of build edges fail more often.
+    string rule = 4;
+  }
+
+  // Represent all the failed build edges.
+  repeated BuildEdge failures = 1;
+}
