@@ -38,6 +38,7 @@ from framework import trimvisitedpages
 from framework import framework_bizobj
 from framework import reap
 from framework import registerpages_helpers
+from framework import robots
 from framework import ts_mon_js
 from framework import urls
 from framework import warmup
@@ -302,6 +303,8 @@ class ServletRegistry(object):
   def _RegisterFrameworkHandlers(self):
     """Register page and form handlers for framework functionality."""
     self._SetupServlets({
+        urls.ROBOTS: robots.Robots,
+
         urls.CSP_REPORT: csp_report.CSPReportPage,
 
         # These are only shown to users if specific conditions are met.
