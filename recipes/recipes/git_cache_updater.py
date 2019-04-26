@@ -8,14 +8,13 @@ from recipe_engine import recipe_api
 
 DEPS = [
   'depot_tools/depot_tools',
-  'depot_tools/gclient',
   'recipe_engine/buildbucket',
   'recipe_engine/context',
-  'recipe_engine/json',
+  'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/properties',
-  'recipe_engine/python',
   'recipe_engine/runtime',
+  'recipe_engine/step',
   'recipe_engine/url',
 ]
 
@@ -58,15 +57,15 @@ def RunSteps(api, bucket, repo_urls):
     repo_urls = list_host_repos(
         api, BUILDER_MAPPING[api.buildbucket.builder_name])
 
-  api.gclient.set_config('infra')
-  api.gclient.c.solutions[0].revision = 'origin/master'
-  api.gclient.checkout()
-  api.gclient.runhooks()
+  work_dir = api.path['cache'].join('builder', 'w')
+  api.file.ensure_directory('ensure work_dir', work_dir)
 
-  # Turn off the low speed limit, since checkout will be long.
   env = {
+    # Turn off the low speed limit, since checkout will be long.
     'GIT_HTTP_LOW_SPEED_LIMIT': '0',
     'GIT_HTTP_LOW_SPEED_TIME': '0',
+    # Ensure git-number tool can be used.
+    'CHROME_HEADLESS': '1',
   }
   if api.runtime.is_experimental:
     assert bucket, 'bucket property is required in experimental mode'
@@ -76,16 +75,17 @@ def RunSteps(api, bucket, repo_urls):
     # Run the updater script.
     with api.depot_tools.on_path():
       for url in repo_urls:
-        api.python(
-            'Updating %s' % url,
-            api.path['start_dir'].join('infra', 'run.py'),
-            [
-              'infra.services.git_cache_updater',
-              '--repo', url,
-            '--work-dir', api.path['start_dir'].join('cache_dir')
-          ],
-          # It's fine for this to fail, just move on to the next one.
-          ok_ret='any')
+        api.step(
+            name='Updating %s' % url,
+            cmd=[
+              'git_cache.py', 'update-bootstrap', url,
+              '--cache-dir', work_dir,
+              '--prune',
+              '--reset-fetch-config',
+              '--verbose',
+            ],
+            # It's fine for this to fail, just move on to the next one.
+            ok_ret='any')
 
 
 def GenTests(api):
