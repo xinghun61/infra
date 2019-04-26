@@ -787,7 +787,9 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
 Updates the Git Cache zip files.
 
-&mdash; **def [RunSteps](/recipes/recipes/git_cache_updater.py#40)(api, bucket):**
+&mdash; **def [RunSteps](/recipes/recipes/git_cache_updater.py#56)(api, bucket, repo_urls):**
+
+&mdash; **def [list\_host\_repos](/recipes/recipes/git_cache_updater.py#47)(api, host_url):**
 ### *recipes* / [goma\_hello\_world](/recipes/recipes/goma_hello_world.py)
 
 [DEPS](/recipes/recipes/goma_hello_world.py#12): [build/goma][build/recipe_modules/goma], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
