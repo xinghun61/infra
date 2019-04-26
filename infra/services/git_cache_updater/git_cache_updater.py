@@ -49,6 +49,7 @@ def update_bootstrap(repo, workdir):
     [sys.executable, GIT_CACHE_PY,
      'update-bootstrap',
      '--cache-dir', workdir,
+     '--no_bootstrap',
      repo],
     env=env)
 
