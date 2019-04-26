@@ -80,26 +80,16 @@ func Open(ctx context.Context, b *swmbot.Info, o ...Option) (i *Info, err error)
 	for _, o := range o {
 		o(i)
 	}
-	i.DUTName = i.getDUTName(b)
 	i.BotInfo = i.loadBotInfo(b)
 	d := i.loadDUTInfo(ctx, b)
 	hi := i.makeHostInfo(d)
 	i.addBotInfoToHostInfo(hi, i.BotInfo)
 	i.ResultsDir = i.makeResultsDir(b)
-	i.exposeHostInfo(hi, i.ResultsDir, i.DUTName)
+	i.exposeHostInfo(hi, i.ResultsDir, d.GetCommon().GetHostname())
 	if i.err != nil {
 		return nil, errors.Annotate(i.err, "open harness").Err()
 	}
 	return i, nil
-}
-
-func (i *Info) getDUTName(b *swmbot.Info) string {
-	if i.err != nil {
-		return ""
-	}
-	dutName, err := dutinfo.LoadDUTName(b)
-	i.err = err
-	return dutName
 }
 
 func (i *Info) loadBotInfo(b *swmbot.Info) *swmbot.LocalState {
