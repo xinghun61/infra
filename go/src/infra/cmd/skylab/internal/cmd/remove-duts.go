@@ -112,6 +112,9 @@ func (c *removeDutsRun) validateArgs() error {
 	if c.removalReason.bug == "" && !c.delete {
 		errs = append(errs, "-bug is required when not deleting")
 	}
+	if !validBug(c.removalReason.bug) {
+		errs = append(errs, "-bug must match crbug.com/NNNN or b/NNNN")
+	}
 	// Limit to roughly one line, like a commit message first line.
 	if len(c.removalReason.comment) > 80 {
 		errs = append(errs, "-reason is too long (use the bug for details)")
@@ -120,6 +123,17 @@ func (c *removeDutsRun) validateArgs() error {
 		return NewUsageError(c.Flags, strings.Join(errs, ", "))
 	}
 	return nil
+}
+
+// validBug returns true if the given bug string is acceptably formatted.
+func validBug(bug string) bool {
+	if strings.HasPrefix(bug, "b/") {
+		return true
+	}
+	if strings.HasPrefix(bug, "crbug.com/") {
+		return true
+	}
+	return false
 }
 
 func (c *removeDutsRun) removeDUTs(ctx context.Context, ic fleet.InventoryClient, stdout io.Writer) (modified bool, err error) {
