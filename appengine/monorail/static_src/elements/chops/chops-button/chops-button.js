@@ -4,9 +4,6 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {Debouncer} from '@polymer/polymer/lib/utils/debounce.js';
-import {timeOut} from '@polymer/polymer/lib/utils/async.js';
-
 
 /**
  * `<chops-button>` displays a styled button component with a few niceties.
@@ -42,10 +39,10 @@ export class ChopsButton extends PolymerElement {
         :host(:hover) {
           filter: brightness(95%);
         }
-        :host(:active), :host(.active) {
+        :host(:active) {
           filter: brightness(115%);
         }
-        :host([raised]:active), :host([raised].active) {
+        :host([raised]:active) {
           box-shadow: 0px 1px 8px -1px hsla(0, 0%, 0%, 0.5);
         }
         :host([disabled]),
@@ -121,7 +118,6 @@ export class ChopsButton extends PolymerElement {
           return this._focusBlurHandler.bind(this);
         },
       },
-      _debouncedRemoveActive: Object,
     };
   }
 
@@ -147,16 +143,6 @@ export class ChopsButton extends PolymerElement {
     const keyCode = event.keyCode;
     if (this.inputKeys.includes(keyCode)) {
       this.click();
-
-      // Trigger the animation for a button click.
-      this.classList.add('active');
-      this._debouncedRemoveActive = Debouncer.debounce(
-        this._debouncedRemoveActive,
-        timeOut.after(400),
-        () => {
-          this.classList.remove('active');
-        }
-      );
     }
   }
 

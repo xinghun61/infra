@@ -4,8 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import {Debouncer} from '@polymer/polymer/lib/utils/debounce.js';
-import {timeOut} from '@polymer/polymer/lib/utils/async.js';
+import debounce from 'debounce';
 
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/framework/mr-upload/mr-upload.js';
@@ -26,6 +25,8 @@ import '../mr-edit-field/mr-edit-field.js';
 import '../mr-edit-field/mr-edit-status.js';
 import {ISSUE_EDIT_PERMISSION} from 'elements/shared/permissions.js';
 
+
+const DEBOUNCED_PRESUBMIT_TIME_OUT = 400;
 
 /**
  * `<mr-edit-metadata>`
@@ -549,7 +550,7 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
     super.disconnectedCallback();
 
     if (this._debouncedOnChange) {
-      this._debouncedOnChange.cancel();
+      this._debouncedOnChange.clear();
     }
 
     store.dispatch(ui.reportDirtyForm(this.formName, false));
@@ -694,10 +695,8 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
   }
 
   _onChange() {
-    this._debouncedOnChange = Debouncer.debounce(
-      this._debouncedOnChange,
-      timeOut.after(400),
-      () => {
+    if (!this._debouncedOnChange) {
+      this._debouncedOnChange = debounce(() => {
         // Don't run this functionality if the element has disconnected.
         if (!this.isConnected) return;
         const delta = this.getDelta();
@@ -705,7 +704,9 @@ export class MrEditMetadata extends MetadataMixin(PolymerElement) {
         store.dispatch(ui.reportDirtyForm(
           this.formName, !isEmptyObject(delta) || Boolean(commentContent)));
         this.dispatchEvent(new CustomEvent('change', {detail: {delta}}));
-      });
+      }, DEBOUNCED_PRESUBMIT_TIME_OUT);
+    }
+    this._debouncedOnChange();
   }
 
   _addListChangesToDelta(delta, inputId, addedKey, removedKey, mapFn) {
