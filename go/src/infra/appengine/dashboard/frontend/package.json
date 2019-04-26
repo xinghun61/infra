@@ -1,0 +1,42 @@
+{
+  "name": "chopsdash",
+  "version": "1.0.0",
+  "devDependencies": {
+    "axe-core": "^3.2.2",
+    "chai": "^3.5.0",
+    "eslint": "^5.16.0",
+    "eslint-config-google": "^0.12.0",
+    "istanbul-instrumenter-loader": "^3.0.1",
+    "karma": "^4.0.0",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-coverage": "^1.1.2",
+    "karma-mocha": "^1.3.0",
+    "karma-sinon": "^1.0.5",
+    "karma-sourcemap-loader": "^0.3.7",
+    "karma-webpack": "^3.0.5",
+    "mocha": "^5.2.0",
+    "path": "^0.12.7",
+    "puppeteer": "^1.10.0",
+    "sinon": "^7.2.3",
+    "webpack": "^4.30.0",
+    "webpack-bundle-analyzer": "^3.3.0",
+    "webpack-cli": "^3.3.0"
+  },
+  "scripts": {},
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@chopsui/chops-login": "0.1.3",
+    "moment-timezone": "^0.5.25",
+    "moment": "^2.24.0",
+    "@polymer/iron-icon": "^3.0.1",
+    "@polymer/iron-icons": "^3.0.1",
+    "@polymer/iron-flex-layout": "^3.0.1",
+    "@polymer/iron-ajax": "^3.0.1",
+    "@polymer/app-layout": "^3.0.2",
+    "@polymer/paper-icon-button": "^3.0.2",
+    "@polymer/paper-tooltip": "^3.0.1",
+    "@polymer/polymer": "^3.0.0",
+    "@webcomponents/webcomponentsjs": "^2.2.7"
+  }
+}

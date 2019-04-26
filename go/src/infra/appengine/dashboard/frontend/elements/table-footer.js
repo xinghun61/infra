@@ -1,8 +1,63 @@
-'use strict'
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+import '@polymer/polymer/polymer-legacy.js';
+import '@polymer/paper-icon-button/paper-icon-button.js';
+import '@polymer/iron-icons/iron-icons.js';
+import {html} from '@polymer/polymer/lib/utils/html-tag.js';
+import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+
 
 const WEEK_SPAN = 7;
 
-class TableFooter extends Polymer.Element {
+/**
+ * `<table-footer>`
+ *
+ * Holds the controls for scrolling through weeks of the status table.
+ */
+class TableFooter extends PolymerElement {
+  static get template() {
+    return html`
+      <style>
+        .foot {
+          border-color: rgba(0, 0, 0, .7);
+          border-top: 1px solid;
+          color: rgba(0, 0, 0, .7);
+          font-size: .75em;
+          font-weight: normal;
+          height: 55px;
+          padding: 0 14px 0 0;
+        }
+
+        .foot paper-icon-button {
+          height: 24px;
+          margin-left: 24px;
+          padding: 0;
+          width: 24px;
+        }
+        .hidden,
+        .not-shown {
+          display: none;
+        }
+        .not-hidden,
+        .shown {
+          display: inline-block;
+        }
+      </style>
+      <div>
+        <paper-icon-button class$="[[prevButtonClass]]"
+            icon="chevron-left" on-tap="_goToPrevPage"></paper-icon-button>
+        <paper-icon-button class$="not-[[prevButtonClass]]"
+            icon="chevron-left" disabled on-tap="_goToPrevPage"></paper-icon-button>
+        <paper-icon-button class$="[[nextButtonClass]]"
+            icon="chevron-right" on-tap="_goToNextPage"></paper-icon-button>
+        <paper-icon-button class$="not-[[nextButtonClass]]"
+            icon="chevron-right" disabled on-tap="_goToNextPage"></paper-icon-button>
+      </div>
+    `;
+  }
+
   static get is() { return 'table-footer'; }
 
   ready() {

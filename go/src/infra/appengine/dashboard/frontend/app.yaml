@@ -10,10 +10,26 @@ handlers:
   static_dir: elements
   secure: always
 
-- url: /bower_components
-  static_dir: bower_components
+- url: /deployed_node_modules
+  static_dir: deployed_node_modules
   secure: always
+  mime_type: application/javascript
+
+- url: /static/dist
+  static_dir: static/dist
+  mime_type: application/javascript
+  secure: always
+  http_headers:
+    Access-Control-Allow-Origin: '*'
 
 - url: /.*
   script: _go_app
   secure: always
+
+skip_files:
+  - ^(.*/)?#.*#$
+  - ^(.*/)?.*~$
+  - ^(.*/)?.*\.py[co]$
+  - ^(.*/)?.*/RCS/.*$
+  - ^(.*/)?\..*$
+  - node_modules/
