@@ -26,11 +26,6 @@ const config = {
     path: path.resolve(__dirname, 'static/dist'),
     publicPath: '/static/dist/',
   },
-  optimization: {
-    splitChunks: {
-      chunks: 'all',
-    },
-  },
 };
 
 module.exports = (env, argv) => {

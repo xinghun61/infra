@@ -10,8 +10,6 @@
   src="[version_base]/deployed_node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"
   nonce="[nonce]"
 ></script>
-<script src="[version_base]/static/dist/vendors~ezt-element-package~mr-app~mr-profile-page.min.js" nonce="[nonce]"></script>
-<script src="[version_base]/static/dist/vendors~ezt-element-package~mr-app.min.js" nonce="[nonce]"></script>
 <script src="[version_base]/static/dist/ezt-element-package.min.js" nonce="[nonce]"></script>
 
 <body class="[main_tab_mode] [if-any perms.EditIssue]perms_EditIssue[end]">

@@ -1,8 +1,6 @@
 [define title]Issue [local_id][end]
 [include "../framework/polymer-header.ezt"]
 
-<script src="[version_base]/static/dist/vendors~ezt-element-package~mr-app~mr-profile-page.min.js" nonce="[nonce]" type="module"></script>
-<script src="[version_base]/static/dist/vendors~ezt-element-package~mr-app.min.js" nonce="[nonce]" type="module"></script>
 <script src="[version_base]/static/dist/mr-app.min.js" nonce="[nonce]" type="module"></script>
 
 <mr-app [if-any logged_in_user]
