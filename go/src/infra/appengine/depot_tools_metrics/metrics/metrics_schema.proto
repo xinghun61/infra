@@ -32,4 +32,5 @@ message MetricsSchema {
   repeated HttpRequest http_requests = 11;
   optional string git_version = 12;
   repeated SubCommandExecution sub_commands = 13;
+  optional int64 metrics_version = 14;
 }

@@ -1,6 +1,11 @@
 {
   "type": "object",
   "properties": {
+    "metrics_version": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
     "timestamp": {
       "type": "integer",
       "minimum": 0
@@ -34,7 +39,8 @@
       "$ref": "#/definitions/known_archs"
     },
     "depot_tools_age": {
-      "type": "number"
+      "type": "integer",
+      "minimum": 0
     },
     "python_version": {
       "type": "string",
@@ -90,10 +96,13 @@
             }
           },
           "status": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599
           },
           "response_time": {
-            "type": "number"
+            "type": "number",
+            "minimum": 0
           }
         },
         "additionalProperties": false
