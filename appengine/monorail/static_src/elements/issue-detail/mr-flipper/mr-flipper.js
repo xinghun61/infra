@@ -2,46 +2,44 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-export default class MrFlipper extends HTMLElement {
-  static is() {
-    return 'mr-flipper';
+import {LitElement, html, css} from 'lit-element';
+
+export default class MrFlipper extends LitElement {
+  static get properties() {
+    return {
+      currentIndex: Number,
+      totalCount: Number,
+      prevUrl: String,
+      nextUrl: String,
+      listUrl: String,
+      query: String,
+    };
   }
 
-  connectedCallback() {
-    this.current = null;
+  constructor() {
+    super();
+    this.currentIndex = null;
     this.totalCount = null;
     this.prevUrl = null;
     this.nextUrl = null;
     this.listUrl = null;
-    this.showCounts = false;
+  }
 
-    // Set up DOM.
-    const shadowRoot = this.attachShadow({mode: 'open'});
-    shadowRoot.appendChild(this._template().content.cloneNode(true));
+  connectedCallback() {
+    super.connectedCallback();
 
-    // References to DOM nodes for convenience.
-    this.countsEl = shadowRoot.querySelector('div.counts');
-    this.currentIndexEl = shadowRoot.querySelector('span.current-index');
-    this.totalCountEl = shadowRoot.querySelector('span.total-count');
-    this.prevUrlEl = shadowRoot.querySelector('a.prev-url');
-    this.nextUrlEl = shadowRoot.querySelector('a.next-url');
-    this.listUrlEl = shadowRoot.querySelector('a.list-url');
-
-    if (location.search) {
-      this.listUrlEl.style.visibility = 'visible';
-      this.listUrlEl.href = `detail/list${location.search}`;
-    }
-
-    this.fetchFlipperData();
+    // TODO(zhangtiff): Tie this value to frontend routing.
+    this.query = location.search;
+    this.fetchFlipperData(this.query);
   }
 
   // Eventually this should be replaced with pRPC.
-  fetchFlipperData() {
+  fetchFlipperData(query) {
     const options = {
       credentials: 'include',
       method: 'GET',
     };
-    fetch(`detail/flipper${location.search}`, options).then(
+    fetch(`detail/flipper${query}`, options).then(
       (response) => response.text()
     ).then(
       (responseBody) => {
@@ -53,111 +51,82 @@ export default class MrFlipper extends HTMLElement {
           console.error(`Error parsing JSON response for flipper: ${e}`);
           return;
         }
-
-        this._updateTemplate(responseData);
+        this._populateResponseData(responseData);
       }
     );
   }
 
-  _updateTemplate(data) {
-    const curIndex = data.cur_index + 1;
-    if (curIndex && data.total_count) {
-      this.countsEl.style.visibility = 'visible';
-    } else {
-      // Hide, no updates needed.
-      this.countsEl.style.visibility = 'hidden';
-      return;
-    }
-
-    // Add one to index since we display cardinal number in UI.
-    this.currentIndexEl.innerText = curIndex;
-    this.totalCountEl.innerText = data.total_count;
-
-    if (data.prev_url) {
-      this.prevUrlEl.style.visibility = 'visible';
-      this.prevUrlEl.href = data.prev_url;
-    } else {
-      this.prevUrlEl.style.visibility = 'hidden';
-    }
-
-    if (data.next_url) {
-      this.nextUrlEl.style.visibility = 'visible';
-      this.nextUrlEl.href = data.next_url;
-    } else {
-      this.nextUrlEl.style.visibility = 'hidden';
-    }
-
-    if (data.list_url) {
-      this.listUrlEl.style.visibility = 'visible';
-      this.listUrlEl.href = data.list_url;
-    } else {
-      this.listUrlEl.style.visibility = 'hidden';
-    }
+  _populateResponseData(data) {
+    this.totalCount = data.total_count;
+    this.currentIndex = data.cur_index;
+    this.prevUrl = data.prev_url;
+    this.nextUrl = data.next_url;
+    this.listUrl = data.list_url;
   }
 
-  _template() {
-    const tmpl = document.createElement('template');
-    // Warning: do not interpolate any variables into the below string.
-    // Also don't use innerHTML anywhere other than in this specific scenario.
-    tmpl.innerHTML = `
-      <style>
+  static get styles() {
+    return css`
+      :host {
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        --mr-flipper-link-color: var(--chops-link-color);
+      }
+      /* Use visibility instead of display:hidden for hiding in order to
+       * avoid popping when elements are made visible. */
+      .row a[hidden], .counts[hidden] {
+        visibility: hidden;
+      }
+      .counts[hidden] {
+        display: block;
+      }
+      .row a {
+        display: block;
+        padding: 0.25em 0;
+        color: var(--mr-flipper-link-color);
+      }
+      .row a, .row div {
+        flex: 1;
+        white-space: nowrap;
+        padding: 0 2px;
+      }
+      .row .counts {
+        padding: 0 16px;
+      }
+      .row {
+        display: flex;
+        align-items: baseline;
+        text-align: center;
+        flex-direction: row;
+      }
+      @media (max-width: 960px) {
         :host {
-          display: flex;
-          justify-content: center;
-          flex-direction: column;
-          --mr-flipper-link-color: var(--chops-link-color);
+          display: inline-block;
         }
-        .row a {
-          display: block;
-          padding: 0.25em 0;
-          color: var(--mr-flipper-link-color);
-        }
-        .row a, .row div {
-          flex: 1;
-          white-space: nowrap;
-          padding: 0 2px;
-        }
-        .row .counts {
-          padding: 0 16px;
-        }
-        .row .counts, .row a.prev-url, .row a.next-url, .row a.list-url {
-          /* Initially not shown */
-          visibility: hidden;
-        }
-        .row {
-          display: flex;
-          align-items: baseline;
-          text-align: center;
-          flex-direction: row;
-        }
-        @media (max-width: 960px) {
-          :host {
-            display: inline-block;
-          }
-        }
-      </style>
+      }
+    `;
+  }
 
+  render() {
+    return html`
       <div class="row">
-        <a href="" title="Prev" class="prev-url">
+        <a href="${this.prevUrl}" ?hidden="${!this.prevUrl}" title="Prev" class="prev-url">
           &lsaquo; Prev
         </a>
-        <div class="counts">
-          <span class="current-index">&nbsp;</span>
-          <span>of</span>
-          <span class="total-count">&nbsp;</span>
+        <div class="counts" ?hidden=${!this.totalCount}>
+          ${this.currentIndex + 1} of ${this.totalCount}
         </div>
-        <a href="" title="Next" class="next-url">
+        <a href="${this.nextUrl}" ?hidden="${!this.nextUrl}" title="Next" class="next-url">
           Next &rsaquo;
         </a>
       </div>
       <div class="row">
-        <a href="" title="Back to list" class="list-url">
+        <a href="${this.listUrl}" ?hidden="${!this.listUrl}" title="Back to list" class="list-url">
           Back to list
         </a>
       </div>
     `;
-    return tmpl;
   }
 }
 
-window.customElements.define(MrFlipper.is(), MrFlipper);
+window.customElements.define('mr-flipper', MrFlipper);

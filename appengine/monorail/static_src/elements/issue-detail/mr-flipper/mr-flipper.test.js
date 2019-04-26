@@ -36,23 +36,26 @@ suite('mr-flipper', () => {
     assert.instanceOf(element, MrFlipper);
   });
 
-  test('renders links', () => {
-    const prevUrlEl = element.shadowRoot.querySelector('a.prev-url');
-    const nextUrlEl = element.shadowRoot.querySelector('a.next-url');
-    const listUrlEl = element.shadowRoot.querySelector('a.list-url');
-    const countsEl = element.shadowRoot.querySelector('div.counts');
-
+  test('renders links', async () => {
     // Test DOM after properties are updated.
-    element._updateTemplate({
+    element._populateResponseData({
       cur_index: 4,
       total_count: 13,
       prev_url: 'http://prevurl/',
       next_url: 'http://nexturl/',
       list_url: 'http://listurl/',
     });
-    assert.include(countsEl.innerText, '5 of 13');
+
+    await element.updateComplete;
+
+    const prevUrlEl = element.shadowRoot.querySelector('a.prev-url');
+    const nextUrlEl = element.shadowRoot.querySelector('a.next-url');
+    const listUrlEl = element.shadowRoot.querySelector('a.list-url');
+    const countsEl = element.shadowRoot.querySelector('div.counts');
+
     assert.equal(prevUrlEl.href, 'http://prevurl/');
     assert.equal(nextUrlEl.href, 'http://nexturl/');
     assert.equal(listUrlEl.href, 'http://listurl/');
+    assert.include(countsEl.innerText, '5 of 13');
   });
 });
