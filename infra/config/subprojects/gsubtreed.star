@@ -25,10 +25,9 @@ def gsubtreed_cron(
           'target_repo': target_repo,
       },
       dimensions = {
-          # Share machines with other gsubtreed- builders.
-          'builder': 'gsubtreed-shared',
           'os': 'Ubuntu-14.04',
           'cpu': 'x86-64',
+          'cores': '2',
           'pool': 'luci.infra.cron',
       },
       service_account = service_account,

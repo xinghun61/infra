@@ -7,7 +7,7 @@
 load('//lib/infra.star', 'infra')
 
 
-def builder(name, recipe, builder_dimension=None, **kwargs):
+def builder(name, recipe, builder_dimension=None, cores=8, **kwargs):
   luci.builder(
       name = name,
       bucket = 'cron',
@@ -17,7 +17,7 @@ def builder(name, recipe, builder_dimension=None, **kwargs):
           'pool': 'luci.infra.cron',
           'os': 'Ubuntu-14.04',
           'cpu': 'x86-64',
-          'builder': builder_dimension or name,
+          'cores': str(cores),
       },
       **kwargs
   )
@@ -51,4 +51,5 @@ builder(
     execution_timeout = 3 * time.hour,
     # Each trigger from 'publish_tarball' should result in a build.
     triggering_policy = scheduler.greedy_batching(max_batch_size=1),
+    cores=32,
 )
