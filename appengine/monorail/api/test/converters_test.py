@@ -889,6 +889,60 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected_2, actual[2])
     self.assertEqual(expected_3, actual[3])
 
+  def testConvertCommentList_DontUseDeletedOrSpamDescriptions(self):
+    """When converting comments, deleted or spam are not descriptions."""
+    now = 1234567890
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
+    comment_0 = tracker_pb2.IssueComment(
+        id=100, project_id=789, user_id=111, timestamp=now,
+        content='a description', sequence=0, is_description=True)
+    comment_1 = tracker_pb2.IssueComment(
+        id=101, project_id=789, user_id=222, timestamp=now,
+        content='a spam description', sequence=1, is_description=True,
+        is_spam=True)
+    comment_2 = tracker_pb2.IssueComment(
+        id=102, project_id=789, user_id=222, timestamp=now,
+        content='a deleted description', sequence=2, is_description=True,
+        deleted_by=111)
+    comment_3 = tracker_pb2.IssueComment(
+        id=103, project_id=789, user_id=111, timestamp=now,
+        content='another good desc', sequence=3, is_description=True)
+    comment_4 = tracker_pb2.IssueComment(
+        id=104, project_id=789, user_id=333, timestamp=now,
+        content='desc from banned', sequence=4, is_description=True)
+
+    actual = converters.ConvertCommentList(
+        issue, [comment_0, comment_1, comment_2, comment_3, comment_4],
+        self.config, self.users_by_id, {}, 222,
+        permissions.PermissionSet([permissions.DELETE_OWN]))
+
+    expected_0 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111, display_name='one@example.com'),
+        timestamp=now, content='a description', is_spam=False,
+        description_num=1)
+    expected_1 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=1, is_deleted=True,
+        timestamp=now, is_spam=True, can_delete=False)
+    expected_2 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=2, is_deleted=True,
+        timestamp=now)
+    expected_3 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=3, is_deleted=False,
+        commenter=common_pb2.UserRef(
+            user_id=111, display_name='one@example.com'),
+        timestamp=now, content='another good desc', is_spam=False,
+        description_num=2)
+    expected_4 = issue_objects_pb2.Comment(
+        project_name='proj', local_id=1, sequence_num=4, is_deleted=True,
+        timestamp=now, is_spam=False)
+    self.assertEqual(expected_0, actual[0])
+    self.assertEqual(expected_1, actual[1])
+    self.assertEqual(expected_2, actual[2])
+    self.assertEqual(expected_3, actual[3])
+    self.assertEqual(expected_4, actual[4])
+
   def testIngestUserRef(self):
     """We can look up a single user ID for a protoc UserRef."""
     self.services.user.TestAddUser('user1@example.com', 111L)

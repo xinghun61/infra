@@ -435,7 +435,8 @@ def ConvertCommentList(
   """Convert a list of protorpc IssueComments to protoc Comments."""
   description_nums = {}
   for comment in comments:
-    if comment.is_description:
+    if (comment.is_description and not users_by_id[comment.user_id].banned and
+        not comment.deleted_by and not comment.is_spam):
       description_nums[comment.id] = len(description_nums) + 1
 
   result = [
