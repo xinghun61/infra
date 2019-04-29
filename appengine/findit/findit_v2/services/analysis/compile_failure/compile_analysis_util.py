@@ -11,10 +11,12 @@ from google.protobuf.field_mask_pb2 import FieldMask
 
 from common.waterfall import buildbucket_client
 from findit_v2.model.compile_failure import CompileFailure
+from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model import luci_build
 from findit_v2.services import projects
-from findit_v2.services.analysis import analysis_constants
+from findit_v2.services import constants
 from findit_v2.services.failure_type import StepTypeEnum
+from services import git
 
 
 def SaveCompileFailures(context, build, detailed_compile_failures):
@@ -33,7 +35,7 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
-                'commit_id': 654321
+                'commit_id': 'git_sha'
               },
               'last_passed_build': None
             },
@@ -42,7 +44,7 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
           'first_failed_build': {
             'id': 8765432109,
             'number': 123,
-            'commit_id': 654321
+            'commit_id': 'git_sha'
           },
           'last_passed_build': None
         },
@@ -155,7 +157,7 @@ def DetectFirstFailures(context, build, detailed_compile_failures):
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
-                'commit_id': 654321
+                'commit_id': 'git_sha'
               },
               'last_passed_build': None
             },
@@ -164,15 +166,13 @@ def DetectFirstFailures(context, build, detailed_compile_failures):
           'first_failed_build': {
             'id': 8765432109,
             'number': 123,
-            'commit_id': 654321
+            'commit_id': 'git_sha'
           },
           'last_passed_build': None
         },
       }
   """
-
   luci_project = context.luci_project_name
-
   project_api = projects.GetProjectAPI(luci_project)
   assert project_api, 'Unsupported project {}'.format(luci_project)
 
@@ -183,7 +183,7 @@ def DetectFirstFailures(context, build, detailed_compile_failures):
   search_builds_response = buildbucket_client.SearchV2BuildsOnBuilder(
       build.builder,
       create_time_range=(None, build.create_time),
-      page_size=analysis_constants.MAX_BUILDS_TO_CHECK)
+      page_size=constants.MAX_BUILDS_TO_CHECK)
   previous_builds = search_builds_response.builds
 
   need_go_back = False
@@ -226,7 +226,7 @@ def DetectFirstFailures(context, build, detailed_compile_failures):
         need_go_back = True
         continue
 
-      step_last_pass_found = True
+      step_last_passed_found = True
       failures = step_info['failures']
       for targets_str, failure in failures.iteritems():
         if failure['last_passed_build']:
@@ -238,13 +238,242 @@ def DetectFirstFailures(context, build, detailed_compile_failures):
           failure['first_failed_build'] = prev_build_info
           step_info['first_failed_build'] = prev_build_info
           need_go_back = True
-          step_last_pass_found = False
+          step_last_passed_found = False
         else:
           # The failure didn't happen in the previous build, first failure found
           failure['last_passed_build'] = prev_build_info
 
-      if step_last_pass_found:
+      if step_last_passed_found:
         step_info['last_passed_build'] = prev_build_info
 
     if not need_go_back:
       return
+
+
+def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
+  """Gets failures that happened the first time in the current build.
+
+  Failures without last_passed_build will not be included even if they failed
+  the first time in current build (they have statuses other than SUCCESS or
+  FAILURE in all previous builds), because Findit cannot decide the left bound
+  of the regression range.
+
+  If first failures have different last_passed_build, use the earliest one.
+
+  Args:
+    context (findit_v2.services.context.Context): Scope of the analysis.
+    build (buildbucket build.proto): ALL info about the build.
+    detailed_compile_failures (dict): A dict of detailed compile failures.
+      {
+        'build_packages': {
+          'failures': {
+            'pkg': {
+              'rule': 'emerge',
+              'output_targets': ['pkg'],
+              'first_failed_build': {
+                'id': 8765432109,
+                'number': 123,
+                'commit_id': 654321
+              },
+              'last_passed_build': None
+            },
+            ...
+          },
+          'first_failed_build': {
+            'id': 8765432109,
+            'number': 123,
+            'commit_id': 'git_sha'
+          },
+          'last_passed_build': None
+        },
+      }
+  Returns:
+    dict: A dict for failures that happened the first time in current build.
+    {
+      'failures': {
+        'compile': {
+          'output_targets': ['target4', 'target1', 'target2'],
+          'last_passed_build': {
+            'id': 8765432109,
+            'number': 122,
+            'commit_id': 'git_sha1'
+          },
+        },
+      },
+      'last_passed_build': {
+        # In this build all the failures that happened in the build being
+        # analyzed passed.
+        'id': 8765432109,
+        'number': 122,
+        'commit_id': 'git_sha1'
+      }
+    }
+  """
+
+  def GetLastPassedBuildToUse(original_build, new_build):
+    if (not original_build or original_build['number'] > new_build['number']):
+      return new_build
+    return original_build
+
+  luci_project = context.luci_project_name
+  project_api = projects.GERRIT_PROJECTS[luci_project]['project-api']
+  assert project_api, 'Unsupported project {}'.format(luci_project)
+
+  first_failures_in_current_build = {'failures': {}, 'last_passed_build': None}
+  for step_ui_name, step_info in detailed_compile_failures.iteritems():
+    if not step_info[
+        'failures'] and step_info['first_failed_build']['id'] != build.id:
+      # Only step level information and the step started to fail in previous
+      # builds.
+      continue
+
+    if step_info['first_failed_build']['id'] == build.id and step_info[
+        'last_passed_build']:
+      # All failures in this step are first failures and last pass was found.
+      first_failures_in_current_build['failures'][step_ui_name] = {
+          'output_targets': [],
+          'last_passed_build': step_info['last_passed_build'],
+      }
+      for failure in step_info['failures'].itervalues():
+        first_failures_in_current_build['failures'][step_ui_name][
+            'output_targets'].extend(failure['output_targets'])
+
+      first_failures_in_current_build['last_passed_build'] = (
+          GetLastPassedBuildToUse(
+              first_failures_in_current_build['last_passed_build'],
+              step_info['last_passed_build']))
+      continue
+
+    first_failures_in_step = {
+        'output_targets': [],
+        'last_passed_build': step_info['last_passed_build'],
+    }
+    for failure in step_info['failures'].itervalues():
+      if failure['first_failed_build']['id'] == build.id and failure[
+          'last_passed_build']:
+        first_failures_in_step['output_targets'].extend(
+            failure['output_targets'])
+        first_failures_in_step['last_passed_build'] = (
+            GetLastPassedBuildToUse(first_failures_in_step['last_passed_build'],
+                                    failure['last_passed_build']))
+    if first_failures_in_step['output_targets']:
+      # Some failures are first time failures in current build.
+      first_failures_in_current_build['failures'][
+          step_ui_name] = first_failures_in_step
+
+      first_failures_in_current_build['last_passed_build'] = (
+          GetLastPassedBuildToUse(
+              first_failures_in_current_build['last_passed_build'],
+              first_failures_in_step['last_passed_build']))
+
+  return first_failures_in_current_build
+
+
+def _GetCompileFailureKeys(build, first_failures_in_current_build):
+  """Gets keys to the compile failures that failed the first time in the build.
+
+  Args:
+    build (buildbucket build.proto): ALL info about the build.
+    first_failures_in_current_build (dict): A dict for failures that happened
+      the first time in current build.
+      {
+      'failures': {
+        'compile': {
+          'output_targets': ['target4', 'target1', 'target2'],
+          'last_passed_build': {
+            'id': 8765432109,
+            'number': 122,
+            'commit_id': 'git_sha1'
+          },
+        },
+      },
+      'last_passed_build': {
+        'id': 8765432109,
+        'number': 122,
+        'commit_id': 'git_sha1'
+      }
+    }
+  """
+  build_entity = luci_build.LuciFailedBuild.get_by_id(build.id)
+  assert build_entity, 'No LuciFailedBuild entity for build {}'.format(build.id)
+
+  compile_failure_entities = CompileFailure.query(
+      ancestor=build_entity.key).fetch()
+  assert compile_failure_entities, (
+      'No compile failure saved in datastore for build {}'.format(build.id))
+
+  first_failures = {
+      s: failure['output_targets']
+      for s, failure in first_failures_in_current_build['failures'].iteritems()
+  }
+  compile_failure_keys = []
+  for compile_failure_entity in compile_failure_entities:
+    if not first_failures.get(compile_failure_entity.step_ui_name):
+      continue
+
+    if not set(compile_failure_entity.output_targets).issubset(
+        set(first_failures[compile_failure_entity.step_ui_name])):
+      continue
+    compile_failure_keys.append(compile_failure_entity.key)
+  return compile_failure_keys
+
+
+def SaveCompileAnalysis(context, build, first_failures_in_current_build):
+  """Creates and saves CompileFailureAnalysis entity for the build being
+    analyzed if there are first failures in the build.
+
+  Args:
+    context (findit_v2.services.context.Context): Scope of the analysis.
+    build (buildbucket build.proto): ALL info about the build.
+    first_failures_in_current_build (dict): A dict for failures that happened
+      the first time in current build.
+      {
+        'failures': {
+          'compile': {
+            'output_targets': ['target4', 'target1', 'target2'],
+            'last_passed_build': {
+              'id': 8765432109,
+              'number': 122,
+              'commit_id': 'git_sha1'
+            },
+          },
+        },
+        'last_passed_build': {
+          'id': 8765432109,
+          'number': 122,
+          'commit_id': 'git_sha1'
+        }
+      }
+  """
+  luci_project = context.luci_project_name
+  project_api = projects.GERRIT_PROJECTS[luci_project]['project-api']
+  assert project_api, 'Unsupported project {}'.format(luci_project)
+
+  rerun_builder_id = project_api.GetRerunBuilderId(build)
+
+  # Gets keys to the compile failures that failed the first time in the build.
+  # They will be the failures to analyze in the analysis.
+  compile_failure_keys = _GetCompileFailureKeys(
+      build, first_failures_in_current_build)
+  last_passed_gitiles_id = first_failures_in_current_build['last_passed_build'][
+      'commit_id']
+  repo_url = git.GetRepoUrlFromContext(context)
+
+  analysis = CompileFailureAnalysis.Create(
+      luci_project=luci_project,
+      luci_bucket=build.builder.bucket,
+      luci_builder=build.builder.builder,
+      build_id=build.id,
+      gitiles_host=context.gitiles_host,
+      gitiles_project=context.gitiles_project,
+      gitiles_ref=context.gitiles_ref,
+      last_passed_gitiles_id=last_passed_gitiles_id,
+      last_passed_cp=git.GetCommitPositionFromRevision(last_passed_gitiles_id,
+                                                       repo_url),
+      first_failed_gitiles_id=context.gitiles_id,
+      first_failed_cp=git.GetCommitPositionFromRevision(context.gitiles_id,
+                                                        repo_url),
+      rerun_builder_id=rerun_builder_id,
+      compile_failure_keys=compile_failure_keys)
+  analysis.Save()
+  return analysis

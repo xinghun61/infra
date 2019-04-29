@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from findit_v2.model.gitiles_commit import GitlesCommit
+from findit_v2.model.gitiles_commit import GitilesCommit
 
 
 class BaseFailureGroup(ndb.Model):
@@ -27,29 +27,30 @@ class BaseFailureGroup(ndb.Model):
   bucket_id = ndb.StringProperty(required=True)
 
   # Regression range of the failures in the first build.
-  last_pass_commit = ndb.StructuredProperty(GitlesCommit, indexed=False)
-  first_failed_commit = ndb.StructuredProperty(GitlesCommit, indexed=False)
+  last_passed_commit = ndb.StructuredProperty(GitilesCommit, indexed=False)
+  first_failed_commit = ndb.StructuredProperty(GitilesCommit, indexed=False)
 
   # Time when the group is created.
   create_time = ndb.DateTimeProperty(required=True, auto_now_add=True)
 
   @classmethod
   def Create(cls, luci_project, luci_bucket, build_id, gitiles_host,
-             gitiles_project, gitiles_ref, last_pass_gitiles_id, last_pass_cp,
-             first_failed_gitiles_id, first_failed_cp):  # pragma: no cover.
+             gitiles_project, gitiles_ref, last_passed_gitiles_id,
+             last_passed_cp, first_failed_gitiles_id,
+             first_failed_cp):  # pragma: no cover.
     """Creates an entity for a failure group.
 
     Args:
       build_id (str): Id of the first build when creating the group.
     """
-    last_pass_commit = GitlesCommit(
+    last_passed_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
-        gitiles_id=last_pass_gitiles_id,
-        commit_position=last_pass_cp)
+        gitiles_id=last_passed_gitiles_id,
+        commit_position=last_passed_cp)
 
-    first_failed_commit = GitlesCommit(
+    first_failed_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
@@ -59,6 +60,6 @@ class BaseFailureGroup(ndb.Model):
     return cls(
         luci_project=luci_project,
         bucket_id='{}/{}'.format(luci_project, luci_bucket),
-        last_pass_commit=last_pass_commit,
+        last_passed_commit=last_passed_commit,
         first_failed_commit=first_failed_commit,
         id=build_id)

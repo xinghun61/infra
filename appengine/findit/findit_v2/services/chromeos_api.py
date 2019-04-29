@@ -96,3 +96,23 @@ class ChromeOSProjectAPI(ProjectAPI):
       failures_dict[targets_str]['last_passed_build'] = None
 
     return detailed_compile_failures
+
+  def GetRerunBuilderId(self, build):
+    """Gets builder id to run the rerun builds.
+
+    Args:
+      build (buildbucket build.proto): ALL info about the build.
+
+    Returns:
+      (str): Builder id in the format luci_project/luci_bucket/luci_builder
+    """
+    rerun_builder = json_format.MessageToDict(
+        build.output.properties).get('BISECT_BUILDER')
+
+    assert rerun_builder, 'Failed to find rerun builder for build {}'.format(
+        build.id)
+
+    return '{project}/{bucket}/{builder}'.format(
+        project=build.builder.project,
+        bucket=build.builder.bucket,
+        builder=rerun_builder)

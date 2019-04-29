@@ -7,7 +7,7 @@ from google.appengine.ext import ndb
 from findit_v2.model.atomic_failure import AtomicFailure
 from findit_v2.model.base_failure_analysis import BaseFailureAnalysis
 from findit_v2.model.failure_group import BaseFailureGroup
-from findit_v2.model.gitiles_commit import GitlesCommit
+from findit_v2.model.gitiles_commit import GitilesCommit
 from gae_libs.model.versioned_model import VersionedModel
 
 
@@ -71,15 +71,16 @@ class CompileFailureGroup(BaseFailureGroup):
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
   def Create(cls, luci_project, luci_bucket, build_id, gitiles_host,
-             gitiles_project, gitiles_ref, last_pass_gitiles_id, last_pass_cp,
-             first_failed_gitiles_id, first_failed_cp, compile_failure_keys):
+             gitiles_project, gitiles_ref, last_passed_gitiles_id,
+             last_passed_cp, first_failed_gitiles_id, first_failed_cp,
+             compile_failure_keys):
     assert compile_failure_keys, (
         'no failed_targets when creating CompileFailureGroup for {}'.format(
             build_id))
 
     instance = super(CompileFailureGroup, cls).Create(
         luci_project, luci_bucket, build_id, gitiles_host, gitiles_project,
-        gitiles_ref, last_pass_gitiles_id, last_pass_cp,
+        gitiles_ref, last_passed_gitiles_id, last_passed_cp,
         first_failed_gitiles_id, first_failed_cp)
 
     instance.compile_failure_keys = compile_failure_keys
@@ -101,19 +102,19 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
   def Create(cls, luci_project, luci_bucket, luci_builder, build_id,
-             gitiles_host, gitiles_project, gitiles_ref, last_pass_gitiles_id,
-             last_pass_cp, first_failed_gitiles_id, first_failed_cp,
+             gitiles_host, gitiles_project, gitiles_ref, last_passed_gitiles_id,
+             last_passed_cp, first_failed_gitiles_id, first_failed_cp,
              rerun_builder_id, compile_failure_keys):
     instance = super(CompileFailureAnalysis, cls).Create(build_id)
 
-    last_pass_commit = GitlesCommit(
+    last_passed_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
-        gitiles_id=last_pass_gitiles_id,
-        commit_position=last_pass_cp)
+        gitiles_id=last_passed_gitiles_id,
+        commit_position=last_passed_cp)
 
-    first_failed_commit = GitlesCommit(
+    first_failed_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
@@ -125,7 +126,7 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
     instance.builder_id = '{}/{}/{}'.format(luci_project, luci_bucket,
                                             luci_builder)
     instance.build_id = build_id
-    instance.last_pass_commit = last_pass_commit
+    instance.last_passed_commit = last_passed_commit
     instance.first_failed_commit = first_failed_commit
     instance.rerun_builder_id = rerun_builder_id
     instance.compile_failure_keys = compile_failure_keys

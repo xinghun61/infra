@@ -5,7 +5,7 @@
 
 from google.appengine.ext import ndb
 
-from findit_v2.model.gitiles_commit import GitlesCommit
+from findit_v2.model.gitiles_commit import GitilesCommit
 from libs import analysis_status
 
 
@@ -35,8 +35,8 @@ class BaseFailureAnalysis(ndb.Model):
   rerun_builder_id = ndb.StringProperty(required=True, indexed=False)
 
   # Regression range for the analysis to analyze.
-  last_pass_commit = ndb.StructuredProperty(GitlesCommit, indexed=False)
-  first_failed_commit = ndb.StructuredProperty(GitlesCommit, indexed=False)
+  last_passed_commit = ndb.StructuredProperty(GitilesCommit, indexed=False)
+  first_failed_commit = ndb.StructuredProperty(GitilesCommit, indexed=False)
 
   # Time when the analysis is created.
   create_time = ndb.DateTimeProperty(indexed=False, auto_now_add=True)

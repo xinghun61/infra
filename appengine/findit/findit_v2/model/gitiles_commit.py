@@ -5,7 +5,7 @@
 from google.appengine.ext import ndb
 
 
-class GitlesCommit(ndb.Model):
+class GitilesCommit(ndb.Model):
   """A class for a gitiles commit."""
 
   # Gitiles hostname, e.g. 'chromium.googlesource.com'.
@@ -27,7 +27,7 @@ class GitlesCommit(ndb.Model):
   commit_position = ndb.IntegerProperty(required=True)
 
 
-class Culprit(GitlesCommit):
+class Culprit(GitilesCommit):
   """Base class for a suspected or culprit commit."""
   # Urlsafe_keys to atom failures this culprit is responsible for.
   # Uses urlsafe_keys so that it can accept both compile and test failures.
@@ -47,11 +47,7 @@ class Culprit(GitlesCommit):
              gitiles_id,
              commit_position,
              failure_urlsafe_keys=None):
-    """Creates an entity for a failure group.
-
-    Args:
-      build_id (str): Id of the first build when creating the group.
-    """
+    """Creates an entity for a culprit."""
     return cls(
         key=cls._CreateKey(gitiles_host, gitiles_project, gitiles_ref,
                            gitiles_id),

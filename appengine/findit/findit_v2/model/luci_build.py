@@ -9,7 +9,7 @@ builds. And also to differentiate from the data models in v1.
 
 from google.appengine.ext import ndb
 
-from findit_v2.model.gitiles_commit import GitlesCommit
+from findit_v2.model.gitiles_commit import GitilesCommit
 from services import git
 
 
@@ -98,7 +98,7 @@ class LuciBuild(ndb.Model):
 
   # Gitles commit the build runs on.
   # Can identify a build using both builder_id and gitiles_commit in the future.
-  gitiles_commit = ndb.StructuredProperty(GitlesCommit, required=True)
+  gitiles_commit = ndb.StructuredProperty(GitilesCommit, required=True)
 
   # Time when the build is created.
   create_time = ndb.DateTimeProperty(indexed=False)
@@ -115,7 +115,7 @@ class LuciBuild(ndb.Model):
   def Create(cls, luci_project, luci_bucket, luci_builder, build_id,
              legacy_build_number, gitiles_host, gitiles_project, gitiles_ref,
              gitiles_id, commit_position, status, create_time):
-    gitiles_commit = GitlesCommit(
+    gitiles_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,

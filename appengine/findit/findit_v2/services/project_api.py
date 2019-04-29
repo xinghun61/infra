@@ -51,3 +51,14 @@ class ProjectAPI(object):  # pragma: no cover.
       }
     """
     raise NotImplementedError
+
+  def GetRerunBuilderId(self, build):
+    """Gets builder id to run the rerun builds.
+
+    Args:
+      build (buildbucket build.proto): ALL info about the build.
+
+    Returns:
+      (str): Builder id in the format luci_project/luci_bucket/luci_builder
+    """
+    raise NotImplementedError

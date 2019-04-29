@@ -21,7 +21,10 @@ class DummyProjectAPI(ProjectAPI):
       return StepTypeEnum.COMPILE
     return StepTypeEnum.INFRA
 
-  def GetCompileFailures(self, *_):
+  def GetCompileFailures(self, *_):  # pragma: no cover.
+    pass
+
+  def GetRerunBuilderId(self, _):  # pragma: no cover.
     pass
 
 

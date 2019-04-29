@@ -37,3 +37,14 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   # TODO(crbug.com/949836): Look for existing failure groups.
   compile_analysis_util.SaveCompileFailures(context, build,
                                             detailed_compile_failures)
+
+  first_failures_in_current_build = (
+      compile_analysis_util.GetFirstFailuresInCurrentBuild(
+          context, build, detailed_compile_failures))
+
+  if not first_failures_in_current_build['failures']:
+    # No first time failures in current build. No need for a new analysis.
+    return
+
+  compile_analysis_util.SaveCompileAnalysis(context, build,
+                                            first_failures_in_current_build)

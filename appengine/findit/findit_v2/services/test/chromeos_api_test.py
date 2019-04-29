@@ -5,6 +5,7 @@
 import unittest
 
 from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.step_pb2 import Step
 
 from findit_v2.services.chromeos_api import ChromeOSProjectAPI
@@ -97,3 +98,12 @@ class ChromeOSProjectAPITest(unittest.TestCase):
 
     self.assertEqual(expected_failures,
                      ChromeOSProjectAPI().GetCompileFailures(build, [step]))
+
+  def testGetRerunBuilderId(self):
+    builder = BuilderID(
+        project='chromeos', bucket='postsubmit', builder='builder-postsubmit')
+    build = Build(builder=builder)
+    build.output.properties['BISECT_BUILDER'] = 'builder-bisect'
+
+    self.assertEqual('chromeos/postsubmit/builder-bisect',
+                     ChromeOSProjectAPI().GetRerunBuilderId(build))
