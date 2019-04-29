@@ -1,3 +1,34 @@
+# Release Notes sheriff-o-matic 2019-04-18
+
+- 8 commits, 6 bugs affected since 8bf4780 ()
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - agable@chromium.org
+
+## Changes in this release
+
+- [[som] fix chromium.perf test step analyzer](https://chromium-review.googlesource.com/c/infra/infra/+/1572084) (seanmccullough@chromium.org)
+- [[som] Switch chromeos analyzer to use buildbucket](https://chromium-review.googlesource.com/c/infra/infra/+/1552319) (seanmccullough@chromium.org)
+- [[som] Display update timestamp in local timezone](https://chromium-review.googlesource.com/c/infra/infra/+/1546819) (agable@chromium.org)
+- [[som] bbucket analyzer: fix revision ranges, parallelize some rpcs](https://chromium-review.googlesource.com/c/infra/infra/+/1546271) (seanmccullough@chromium.org)
+- [[som] Update analyzer's new buildbot logic to understand test results.](https://chromium-review.googlesource.com/c/infra/infra/+/1497546) (seanmccullough@chromium.org)
+- [[som] File bugs with status:Untriaged](https://chromium-review.googlesource.com/c/infra/infra/+/1518444) (agable@chromium.org)
+- [[som] stop trying to attach test result histories to test failure alerts](https://chromium-review.googlesource.com/c/infra/infra/+/1544129) (seanmccullough@chromium.org)
+- [[som] tree config for cros](https://chromium-review.googlesource.com/c/infra/infra/+/1542208) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- agable@chromium.org:
+  -  [https://crbug.com/928545](https://crbug.com/928545)
+  -  [https://crbug.com/943439](https://crbug.com/943439)
+  
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/903410](https://crbug.com/903410)
+  -  [https://crbug.com/929476](https://crbug.com/929476)
+  -  [https://crbug.com/943118](https://crbug.com/943118)
+  -  [https://crbug.com/944724](https://crbug.com/944724)
+
+
 # Release Notes sheriff-o-matic 2019-02-25
 
 - 3 commits, 2 bugs affected since b489690 ()
