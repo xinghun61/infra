@@ -24,7 +24,7 @@ test: build
 	cd frontend && make wct
 
 relnotes:
-	go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic . ../../monitoring/analyzer ../../monitoring/client ../../monitoring/messages
+	go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic -extra-paths .,../../monitoring/analyzer,../../monitoring/client,../../monitoring/messages
 
 # This is only used for testing on the continuous build system.
 bower_cipd: deps
