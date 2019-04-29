@@ -19,3 +19,12 @@ serve: clean_deps deps
 
 deploy: clean_deps deps build_js
 	gae.py upload -A chopsdash
+
+node_deps:
+	npm install
+
+karma: node_deps
+	npx karma start --debug --coverage
+
+
+

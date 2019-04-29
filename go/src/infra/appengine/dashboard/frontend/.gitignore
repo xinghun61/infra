@@ -1,3 +1,5 @@
+.coverage
+coverage
 static/dist
 node_modules
 deployed_node_modules
