@@ -61,7 +61,7 @@ ci_builder(name = 'infra-continuous-win10-64', os = 'Windows-10')
 try_builder(name = 'Infra Linux Trusty 64 Tester', os = 'Ubuntu-14.04')
 try_builder(name = 'Infra Mac Tester', os = 'Mac-10.13')
 try_builder(name = 'Infra Win Tester', os = 'Windows')
-try_builder(name = 'Infra WCT Tester', os = 'Ubuntu-14.04', recipe = 'infra_wct_tester')
+try_builder(name = 'Infra Frontend Tester', os = 'Ubuntu-14.04', recipe = 'infra_frontend_tester')
 
 # Presubmit trybot.
 build.presubmit(name = 'Infra Presubmit', cq_group = 'infra cq', repo_name = 'infra')

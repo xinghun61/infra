@@ -38,11 +38,11 @@ def RunSteps(api):
       'PATH': api.path.pathsep.join([str(node_path), '%(PATH)s'])
   }
   if internal:
-    RunInfraInternalWCT(api, env)
+    RunInfraInternalFrontendTests(api, env)
   else:
-    RunInfraWCT(api, env)
+    RunInfraFrontendTests(api, env)
 
-def RunInfraInternalWCT(api, env):
+def RunInfraInternalFrontendTests(api, env):
   cwd = api.path['checkout'].join('appengine', 'chromiumdash')
   with api.context(env=env, cwd=cwd):
     api.step('chromiumdash npm install', ['npm', 'install'])
@@ -52,7 +52,7 @@ def RunInfraInternalWCT(api, env):
     api.step(
         'chromiumdash generate js coverage report', ['npx', 'nyc', 'report'])
 
-def RunInfraWCT(api, env):
+def RunInfraFrontendTests(api, env):
   cwd = api.path['checkout'].join('appengine', 'findit')
   with api.context(env=env, cwd=cwd):
     api.step('findit npm install', ['npm', 'install'])

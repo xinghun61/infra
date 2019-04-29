@@ -34,9 +34,9 @@
   * [infra_checkout:examples/try](#recipes-infra_checkout_examples_try)
   * [infra_cipd:examples/usage](#recipes-infra_cipd_examples_usage)
   * [infra_continuous](#recipes-infra_continuous)
+  * [infra_frontend_tester](#recipes-infra_frontend_tester)
   * [infra_repo_trybot](#recipes-infra_repo_trybot)
   * [infra_system:examples/full](#recipes-infra_system_examples_full)
-  * [infra_wct_tester](#recipes-infra_wct_tester)
   * [lkgr_finder](#recipes-lkgr_finder)
   * [luci_gae](#recipes-luci_gae)
   * [luci_go](#recipes-luci_go)
@@ -847,6 +847,15 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 &mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#154)(api, checkout, buildername, project_name, repo_url, rev):**
 
 &mdash; **def [run\_python\_tests](/recipes/recipes/infra_continuous.py#209)(api, project_name):**
+### *recipes* / [infra\_frontend\_tester](/recipes/recipes/infra_frontend_tester.py)
+
+[DEPS](/recipes/recipes/infra_frontend_tester.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunInfraFrontendTests](/recipes/recipes/infra_frontend_tester.py#55)(api, env):**
+
+&mdash; **def [RunInfraInternalFrontendTests](/recipes/recipes/infra_frontend_tester.py#45)(api, env):**
+
+&mdash; **def [RunSteps](/recipes/recipes/infra_frontend_tester.py#18)(api):**
 ### *recipes* / [infra\_repo\_trybot](/recipes/recipes/infra_repo_trybot.py)
 
 [DEPS](/recipes/recipes/infra_repo_trybot.py#5): [depot\_tools/osx\_sdk][depot_tools/recipe_modules/osx_sdk], [infra\_checkout](#recipe_modules-infra_checkout), [infra\_system](#recipe_modules-infra_system), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -857,15 +866,6 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 [DEPS](/recipes/recipe_modules/infra_system/examples/full.py#5): [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipe_modules/infra_system/examples/full.py#13)(api):**
-### *recipes* / [infra\_wct\_tester](/recipes/recipes/infra_wct_tester.py)
-
-[DEPS](/recipes/recipes/infra_wct_tester.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
-
-&mdash; **def [RunInfraInternalWCT](/recipes/recipes/infra_wct_tester.py#45)(api, env):**
-
-&mdash; **def [RunInfraWCT](/recipes/recipes/infra_wct_tester.py#55)(api, env):**
-
-&mdash; **def [RunSteps](/recipes/recipes/infra_wct_tester.py#18)(api):**
 ### *recipes* / [lkgr\_finder](/recipes/recipes/lkgr_finder.py)
 
 [DEPS](/recipes/recipes/lkgr_finder.py#10): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]
