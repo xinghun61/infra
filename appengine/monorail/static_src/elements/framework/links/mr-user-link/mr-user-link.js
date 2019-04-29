@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
@@ -17,95 +16,100 @@ const NULL_DISPLAY_NAME_VALUES = ['----', 'a deleted user'];
  * Displays a link to a user profile.
  *
  */
-export class MrUserLink extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet">
-      <style>
-        :host {
-          display: inline-block;
-          white-space: nowrap;
-        }
-        i.inline-icon {
-          font-size: var(--chops-icon-font-size);
-          color: #B71C1C;
-          vertical-align: bottom;
-          cursor: pointer;
-        }
-        .availability-notice {
-          color: #B71C1C;
-          font-weight: bold;
-        }
-      </style>
-      <template is="dom-if" if="[[_and(showAvailabilityIcon, _availability)]]">
-        <i
-          id="availabilityIcon"
-          class="material-icons inline-icon"
-          title="[[_availability]]"
-        >schedule</i>
-      </template>
-      <template is="dom-if" if="[[_userLink]]">
-        <a id="userLink" href$="[[_userLink]]" title$="[[userRef.displayName]]">
-          [[userRef.displayName]]</a>
-      </template>
-      <template is="dom-if" if="[[!_userLink]]">
-        <span id="userText">[[userRef.displayName]]</span>
-      </template>
-      <template is="dom-if" if="[[_and(showAvailabilityText, _availability)]]">
-        <br />
-        <span
-          id="availabilityText"
-          class="availability-notice"
-          title="[[_availability]]"
-        >[[_availability]]</span>
-      </template>
+export class MrUserLink extends connectStore(LitElement) {
+  static get styles() {
+    return css`
+      :host {
+        display: inline-block;
+        white-space: nowrap;
+      }
+      i.inline-icon {
+        font-size: var(--chops-icon-font-size);
+        color: #B71C1C;
+        vertical-align: bottom;
+        cursor: pointer;
+      }
+      i.material-icons[hidden] {
+        display: none;
+      }
+      .availability-notice {
+        color: #B71C1C;
+        font-weight: bold;
+      }
     `;
-  }
-  static get is() {
-    return 'mr-user-link';
   }
 
   static get properties() {
     return {
-      userRef: Object,
-      referencedUsers: Object,
-      showAvailabilityIcon: Boolean,
-      showAvailabilityText: Boolean,
-      _availability: String,
-      _userLink: {
-        type: String,
-        computed: '_computeUserLink(userRef)',
+      referencedUsers: {
+        type: Object,
+      },
+      showAvailabilityIcon: {
+        type: Boolean,
+      },
+      showAvailabilityText: {
+        type: Boolean,
+      },
+      userRef: {
+        type: Object,
+        attribute: 'userref',
       },
     };
   }
 
-  static get observers() {
-    return [
-      '_computeProperties(userRef, referencedUsers)',
-    ];
+  constructor() {
+    super();
+    this.userRef = {};
+    this.referencedUsers = new Map();
+    this.showAvailabilityIcon = false;
+    this.showAvailabilityText = false;
   }
 
   stateChanged(state) {
     this.referencedUsers = issue.referencedUsers(state);
   }
 
-  _computeProperties(userRef, referencedUsers) {
-    if (!userRef) return {};
-    if (referencedUsers) {
-      const user = referencedUsers.get(userRef.displayName) || {};
-      this._availability = user.availability;
-    }
+  render() {
+    const availability = this._getAvailability();
+    const userLink = this._getUserLink();
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      <i
+        id="availability-icon"
+        class="material-icons inline-icon"
+        title="${availability}"
+        ?hidden="${!(this.showAvailabilityIcon && availability)}"
+      >schedule</i>
+      <a
+        id="user-link"
+        href="${userLink}"
+        title="${this.userRef.displayName}"
+        ?hidden="${!userLink}"
+      >${this.userRef.displayName}</a>
+      <span
+        id="user-text"
+        ?hidden="${userLink}"
+      >${this.userRef.displayName}</span>
+      <div
+        id="availability-text"
+        class="availability-notice"
+        title="${availability}"
+        ?hidden="${!(this.showAvailabilityText && availability)}"
+      >${availability}</div>
+    `;
   }
 
-  _computeUserLink(userRef) {
-    if (!userRef || !Object.keys(userRef).length ||
-      NULL_DISPLAY_NAME_VALUES.includes(userRef.displayName)) return '';
-    return `/u/${userRef.userId ? userRef.userId : userRef.displayName}`;
+  _getAvailability() {
+    if (!this.userRef || !this.referencedUsers) return '';
+    const user = this.referencedUsers.get(this.userRef.displayName) || {};
+    return user.availability;
   }
 
-  _and(a, b) {
-    return a && b;
+  _getUserLink() {
+    if (!this.userRef || !this.userRef.displayName ||
+        NULL_DISPLAY_NAME_VALUES.includes(this.userRef.displayName)) return '';
+    return `/u/${this.userRef.userId || this.userRef.displayName}`;
   }
 }
-customElements.define(MrUserLink.is, MrUserLink);
+customElements.define('mr-user-link', MrUserLink);

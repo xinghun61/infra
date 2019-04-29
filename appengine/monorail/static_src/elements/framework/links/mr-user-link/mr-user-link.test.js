@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrUserLink} from './mr-user-link.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 
 let element;
@@ -15,13 +14,13 @@ let availabilityText;
 
 function getElements() {
   availabilityIcon = element.shadowRoot.querySelector(
-    '#availabilityIcon');
+    '#availability-icon');
   userLink = element.shadowRoot.querySelector(
-    '#userLink');
+    '#user-link');
   userText = element.shadowRoot.querySelector(
-    '#userText');
+    '#user-text');
   availabilityText = element.shadowRoot.querySelector(
-    '#availabilityText');
+    '#availability-text');
 }
 
 suite('mr-user-link', () => {
@@ -38,97 +37,97 @@ suite('mr-user-link', () => {
     assert.instanceOf(element, MrUserLink);
   });
 
-  test('no link when no userId and displayName is null value', () => {
+  test('no link when no userId and displayName is null value', async () => {
     element.userRef = {displayName: '----'};
 
-    flush();
+    await element.updateComplete;
     getElements();
 
-    assert.isNotNull(userText);
+    assert.isFalse(userText.hidden);
     assert.equal(userText.textContent, '----');
 
-    assert.isNull(availabilityIcon);
-    assert.isNull(userLink);
-    assert.isNull(availabilityText);
+    assert.isTrue(availabilityIcon.hidden);
+    assert.isTrue(userLink.hidden);
+    assert.isTrue(availabilityText.hidden);
   });
 
-  test('link when displayName', () => {
+  test('link when displayName', async () => {
     element.userRef = {displayName: 'test@example.com'};
 
-    flush();
+    await element.updateComplete;
     getElements();
 
-    assert.isNotNull(userLink);
+    assert.isFalse(userLink.hidden);
     assert.equal(userLink.textContent.trim(), 'test@example.com');
     assert.isTrue(userLink.href.endsWith('/u/test@example.com'));
 
-    assert.isNull(availabilityIcon);
-    assert.isNull(userText);
-    assert.isNull(availabilityText);
+    assert.isTrue(availabilityIcon.hidden);
+    assert.isTrue(userText.hidden);
+    assert.isTrue(availabilityText.hidden);
   });
 
-  test('link when userId', () => {
+  test('link when userId', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
 
-    flush();
+    await element.updateComplete;
     getElements();
 
-    assert.isNotNull(userLink);
+    assert.isFalse(userLink.hidden);
     assert.equal(userLink.textContent.trim(), 'test@example.com');
     assert.isTrue(userLink.href.endsWith('/u/1234'));
 
-    assert.isNull(availabilityIcon);
-    assert.isNull(userText);
-    assert.isNull(availabilityText);
+    assert.isTrue(availabilityIcon.hidden);
+    assert.isTrue(userText.hidden);
+    assert.isTrue(availabilityText.hidden);
   });
 
-  test('show availability', () => {
+  test('show availability', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
       [['test@example.com', {availability: 'foo'}]]);
     element.showAvailabilityIcon = true;
 
-    flush();
+    await element.updateComplete;
     getElements();
 
-    assert.isNotNull(availabilityIcon);
+    assert.isFalse(availabilityIcon.hidden);
     assert.equal(availabilityIcon.title, 'foo');
 
-    assert.isNotNull(userLink);
-    assert.isNull(userText);
-    assert.isNull(availabilityText);
+    assert.isFalse(userLink.hidden);
+    assert.isTrue(userText.hidden);
+    assert.isTrue(availabilityText.hidden);
   });
 
-  test('dont show availability', () => {
+  test('dont show availability', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
       [['test@example.com', {availability: 'foo'}]]);
 
-    flush();
+    await element.updateComplete;
     getElements();
 
-    assert.isNull(availabilityIcon);
+    assert.isTrue(availabilityIcon.hidden);
 
-    assert.isNotNull(userLink);
-    assert.isNull(userText);
-    assert.isNull(availabilityText);
+    assert.isFalse(userLink.hidden);
+    assert.isTrue(userText.hidden);
+    assert.isTrue(availabilityText.hidden);
   });
 
-  test('show availability text', () => {
+  test('show availability text', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
       [['test@example.com', {availability: 'foo'}]]);
     element.showAvailabilityText = true;
 
-    flush();
+    await element.updateComplete;
     getElements();
 
-    assert.isNotNull(availabilityText);
+    assert.isFalse(availabilityText.hidden);
     assert.equal(availabilityText.title, 'foo');
     assert.equal(availabilityText.textContent, 'foo');
 
-    assert.isNull(availabilityIcon);
-    assert.isNotNull(userLink);
-    assert.isNull(userText);
+    assert.isTrue(availabilityIcon.hidden);
+    assert.isFalse(userLink.hidden);
+    assert.isTrue(userText.hidden);
   });
 });

@@ -33,13 +33,15 @@ suite('mr-field-values', () => {
     assert.equal('----', element.shadowRoot.textContent.trim());
   });
 
-  test('renders user links when type is user', () => {
+  test('renders user links when type is user', async () => {
     element.type = fieldTypes.USER_TYPE;
     element.values = ['test@example.com', 'hello@world.com'];
 
     flush();
 
     const links = element.shadowRoot.querySelectorAll('mr-user-link');
+
+    await links.updateComplete;
 
     assert.equal(2, links.length);
     assert.include(links[0].shadowRoot.textContent, 'test@example.com');
