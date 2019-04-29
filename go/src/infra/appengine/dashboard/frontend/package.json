@@ -22,7 +22,9 @@
     "webpack-bundle-analyzer": "^3.3.0",
     "webpack-cli": "^3.3.0"
   },
-  "scripts": {},
+  "scripts": {
+    "test": "karma start --coverage --no-colors"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {

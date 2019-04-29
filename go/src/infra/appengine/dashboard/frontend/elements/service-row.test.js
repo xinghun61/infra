@@ -8,12 +8,13 @@ import sinon from 'sinon';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
-let lastDate = new Date(1498114800000); // 22/06/2017 PTZ
+let lastDate;
 
 suite('service-row', function() {
   setup(() => {
     element = document.createElement('service-row');
     document.body.appendChild(element);
+    lastDate = new Date(1498114800000); // 22/06/2017 PTZ
 
     for (let i = 6; i >= 0; i--) {
       let date = new Date(lastDate);

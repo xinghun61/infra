@@ -72,6 +72,10 @@ def RunInfraFrontendTests(api, env):
   RunFrontendTests(api, env, cwd, 'monorail')
 
   cwd = api.path['checkout'].join('go', 'src', 'infra', 'appengine',
+                                  'dashboard', 'frontend')
+  RunFrontendTests(api, env, cwd, 'chopsdash')
+
+  cwd = api.path['checkout'].join('go', 'src', 'infra', 'appengine',
       'sheriff-o-matic', 'frontend')
   with api.context(env=env, cwd=cwd):
     api.step('sheriff-o-matic npm install', ['npm', 'install'])

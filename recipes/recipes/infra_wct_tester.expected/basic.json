@@ -262,6 +262,29 @@
       "npm",
       "install"
     ],
+    "cwd": "[START_DIR]/infra/go/src/infra/appengine/dashboard/frontend",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "chopsdash npm install"
+  },
+  {
+    "cmd": [
+      "npx",
+      "karma",
+      "start",
+    ],
+    "cwd": "[START_DIR]/infra/go/src/infra/appengine/dashboard/frontend",
+    "env": {
+      "PATH": "[START_DIR]/packages/bin:<PATH>"
+    },
+    "name": "chopsdash npx karma start"
+  },
+  {
+    "cmd": [
+      "npm",
+      "install"
+    ],
     "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
