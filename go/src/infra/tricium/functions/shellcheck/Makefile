@@ -14,7 +14,7 @@ test: bin
 	go test .
 
 testrun: shellcheck_tricium bin
-	./shellcheck_tricium -input=testdata -output=testout
+	./shellcheck_tricium -input=testdata -output=testout -path_filters="*.sh"
 
 clean:
 	rm -rf shellcheck-*.xz shellcheck_tricium bin testout

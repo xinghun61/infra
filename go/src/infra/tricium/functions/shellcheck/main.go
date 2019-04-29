@@ -107,7 +107,7 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 			// shellcheck uses 1-based columns and inclusive end positions;
 			// Tricium needs 0-based columns and exclusive end positions.
 			StartLine: warn.Line,
-			EndLine:   warn.EndLine + 1,
+			EndLine:   warn.EndLine,
 			StartChar: warn.Column - 1,
 			EndChar:   warn.EndColumn,
 		})
