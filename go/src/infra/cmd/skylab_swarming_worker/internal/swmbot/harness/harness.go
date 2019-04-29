@@ -82,10 +82,11 @@ func Open(ctx context.Context, b *swmbot.Info, o ...Option) (i *Info, err error)
 	}
 	i.BotInfo = i.loadBotInfo(b)
 	d := i.loadDUTInfo(ctx, b)
+	i.DUTName = d.GetCommon().GetHostname()
 	hi := i.makeHostInfo(d)
 	i.addBotInfoToHostInfo(hi, i.BotInfo)
 	i.ResultsDir = i.makeResultsDir(b)
-	i.exposeHostInfo(hi, i.ResultsDir, d.GetCommon().GetHostname())
+	i.exposeHostInfo(hi, i.ResultsDir, i.DUTName)
 	if i.err != nil {
 		return nil, errors.Annotate(i.err, "open harness").Err()
 	}
