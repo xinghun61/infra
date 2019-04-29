@@ -131,8 +131,12 @@ export class MrDropdown extends PolymerElement {
 
   static get properties() {
     return {
-      text: String,
-      items: Array,
+      text: {
+        type: String,
+      },
+      items: {
+        type: Array,
+      },
       icon: {
         type: String,
         value: 'arrow_drop_down',

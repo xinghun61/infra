@@ -95,10 +95,18 @@ export class MrConvertIssue extends connectStore(PolymerElement) {
         type: Boolean,
         observer: '_convertingIssueChanged',
       },
-      convertIssueError: Object,
-      issuePermissions: Object,
-      issueRef: Object,
-      projectTemplates: Array,
+      convertIssueError: {
+        type: Object,
+      },
+      issuePermissions: {
+        type: Object,
+      },
+      issueRef: {
+        type: Object,
+      },
+      projectTemplates: {
+        type: Array,
+      },
       selectedTemplate: {
         type: String,
         // value needs to be set for save button to be disabled the first time.

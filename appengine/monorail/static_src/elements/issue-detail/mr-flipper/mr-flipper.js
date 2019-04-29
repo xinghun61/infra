@@ -7,12 +7,24 @@ import {LitElement, html, css} from 'lit-element';
 export default class MrFlipper extends LitElement {
   static get properties() {
     return {
-      currentIndex: Number,
-      totalCount: Number,
-      prevUrl: String,
-      nextUrl: String,
-      listUrl: String,
-      query: String,
+      currentIndex: {
+        type: Number,
+      },
+      totalCount: {
+        type: Number,
+      },
+      prevUrl: {
+        type: String,
+      },
+      nextUrl: {
+        type: String,
+      },
+      listUrl: {
+        type: String,
+      },
+      query: {
+        type: String,
+      },
     };
   }
 

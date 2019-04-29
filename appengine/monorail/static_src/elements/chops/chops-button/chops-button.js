@@ -75,7 +75,9 @@ export class ChopsButton extends LitElement {
        * onclick event for chops-button. The value is an Array of
        * JavaScript key input codes, defaulting to space and enter keys.
        */
-      inputKeys: Array,
+      inputKeys: {
+        type: Array,
+      },
       /**
        * If true, the element currently has focus. Changed through focus
        * and blur event listeners.
@@ -101,8 +103,12 @@ export class ChopsButton extends LitElement {
         type: Number,
         reflect: true,
       },
-      _boundKeypressHandler: Object,
-      _boundFocusBlurHandler: Object,
+      _boundKeypressHandler: {
+        type: Object,
+      },
+      _boundFocusBlurHandler: {
+        type: Object,
+      },
     };
   }
 
