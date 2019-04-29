@@ -20,7 +20,6 @@ type Info struct {
 	AdminService    string
 	AutotestPath    string
 	DUTID           string
-	Inventory       Inventory
 	LuciferBinDir   string
 	SwarmingService string
 	Task            Task
@@ -33,8 +32,6 @@ type Info struct {
 //
 //   ADMIN_SERVICE: Admin service host, e.g. foo.appspot.com.
 //   AUTOTEST_DIR: Path to the autotest checkout on server.
-//   INVENTORY_TOOLS_DIR: Path to the skylab inventory tools intallation.
-//   INVENTORY_DATA_DIR: Path to the skylab_inventory data checkout.
 //   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
 //   SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
 //   SWARMING_SERVICE: Swarming service host, e.g. https://foo.appspot.com.
@@ -44,26 +41,15 @@ type Info struct {
 //   SWARMING_TASK_ID: task id of the swarming task being serviced.
 func GetInfo() *Info {
 	return &Info{
-		AdminService: os.Getenv("ADMIN_SERVICE"),
-		AutotestPath: os.Getenv("AUTOTEST_DIR"),
-		DUTID:        os.Getenv("SKYLAB_DUT_ID"),
-		Inventory: Inventory{
-			DataDir:  os.Getenv("INVENTORY_DATA_DIR"),
-			ToolsDir: os.Getenv("INVENTORY_TOOLS_DIR"),
-		},
+		AdminService:    os.Getenv("ADMIN_SERVICE"),
+		AutotestPath:    os.Getenv("AUTOTEST_DIR"),
+		DUTID:           os.Getenv("SKYLAB_DUT_ID"),
 		LuciferBinDir:   os.Getenv("LUCIFER_TOOLS_DIR"),
 		SwarmingService: os.Getenv("SWARMING_SERVICE"),
 		Task: Task{
 			RunID: os.Getenv("SWARMING_TASK_ID"),
 		},
 	}
-}
-
-// Inventory describes where to find the tools and data for inventory
-// information.
-type Inventory struct {
-	ToolsDir string
-	DataDir  string
 }
 
 // Task describes the bot's current task.

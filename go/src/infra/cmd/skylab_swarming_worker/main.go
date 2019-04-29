@@ -17,8 +17,6 @@
 //
 //   ADMIN_SERVICE: Admin service host, e.g. foo.appspot.com.
 //   AUTOTEST_DIR: Path to the autotest checkout on server.
-//   INVENTORY_TOOLS_DIR: Path to the skylab inventory tools intallation.
-//   INVENTORY_DATA_DIR: Path to the skylab_inventory data checkout.
 //   LUCIFER_TOOLS_DIR: Path to the lucifer installation.
 //   SKYLAB_DUT_ID: skylab_inventory id of the DUT that belongs to this bot.
 //
