@@ -257,6 +257,12 @@ func (ejd *EditJobDefinition) Experimental(trueOrFalse string) {
 		return
 	}
 	ejd.tweakUserland(func(u *Userland) error {
+		// If this task doesn't actually have a recipe associated with it, bail out.
+		// This can happen if you use `led` on a non-recipe task.
+		if u.RecipeName == "" {
+			return nil
+		}
+
 		key := "$recipe_engine/runtime"
 		current, ok := u.RecipeProperties[key].(map[string]interface{})
 		if !ok {
