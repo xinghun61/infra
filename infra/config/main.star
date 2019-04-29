@@ -103,15 +103,7 @@ luci.builder.defaults.execution_timeout.set(30 * time.minute)
 # Resources shared by all subprojects.
 
 
-luci.bucket(
-    name = 'ci',
-    acls = [
-        acl.entry(
-            roles = acl.BUILDBUCKET_TRIGGERER,
-            users = 'luci-scheduler@appspot.gserviceaccount.com',
-        ),
-    ],
-)
+luci.bucket(name = 'ci')
 
 luci.bucket(
     name = 'try',
@@ -132,7 +124,6 @@ luci.bucket(
         acl.entry(
             roles = acl.BUILDBUCKET_TRIGGERER,
             users = [
-                'luci-scheduler@appspot.gserviceaccount.com',
                 # Allow the cros-flash-scheduler to schedule other builders in
                 # the bucket, see //subprojects/cros_flash.star.
                 'cros-flash@chops-service-accounts.iam.gserviceaccount.com',

@@ -66,15 +66,7 @@ luci.project(
 
 luci.logdog(gs_bucket = 'chromium-luci-logdog')
 
-luci.bucket(
-    name = 'ci',
-    acls = [
-        acl.entry(
-            roles = acl.BUILDBUCKET_TRIGGERER,
-            users = 'luci-scheduler-dev@appspot.gserviceaccount.com',
-        ),
-    ],
-)
+luci.bucket(name = 'ci')
 
 luci.builder.defaults.swarming_tags.set(['vpython:native-python-wrapper'])
 luci.builder.defaults.execution_timeout.set(30 * time.minute)
