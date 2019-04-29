@@ -247,15 +247,15 @@
   },
   {
     "cmd": [
-      "npx",
-      "karma",
-      "start"
+      "npm",
+      "run",
+      "test"
     ],
     "cwd": "[START_DIR]/infra/appengine/monorail",
     "env": {
       "PATH": "[START_DIR]/packages/bin:<PATH>"
     },
-    "name": "monorail karma start"
+    "name": "monorail test"
   },
   {
     "cmd": [

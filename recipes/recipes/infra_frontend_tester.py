@@ -69,9 +69,7 @@ def RunInfraFrontendTests(api, env):
     api.step('chopsui generate js coverage report', ['npx', 'nyc', 'report'])
 
   cwd = api.path['checkout'].join('appengine', 'monorail')
-  with api.context(env=env, cwd=cwd):
-    api.step('monorail npm install', ['npm', 'install'])
-    api.step('monorail karma start', ['npx', 'karma', 'start'])
+  RunFrontendTests(api, env, cwd, 'monorail')
 
   cwd = api.path['checkout'].join('go', 'src', 'infra', 'appengine',
       'sheriff-o-matic', 'frontend')
@@ -81,6 +79,12 @@ def RunInfraFrontendTests(api, env):
     api.step('sheriff-o-matic run-wct', ['npx', 'run-wct'])
     api.step('sheriff-o-matic generate js coverage report',
         ['npx', 'nyc', 'report'])
+
+
+def RunFrontendTests(api, env, cwd, app_name):
+  with api.context(env=env, cwd=cwd):
+    api.step(('%s npm install' % app_name), ['npm', 'install'])
+    api.step(('%s test' % app_name), ['npm', 'run', 'test'])
 
 
 def GenTests(api):
