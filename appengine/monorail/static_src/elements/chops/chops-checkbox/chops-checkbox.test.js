@@ -9,7 +9,6 @@ import {ChopsCheckbox} from './chops-checkbox.js';
 let element;
 
 suite('chops-checkbox', () => {
-
   setup(() => {
     element = document.createElement('chops-checkbox');
     document.body.appendChild(element);
@@ -23,10 +22,12 @@ suite('chops-checkbox', () => {
     assert.instanceOf(element, ChopsCheckbox);
   });
 
-  test('clicking checkbox dispatches checked-change event', () => {
+  test('clicking checkbox dispatches checked-change event', async () => {
     element.checked = false;
     sinon.stub(window, 'CustomEvent');
     sinon.stub(element, 'dispatchEvent');
+
+    await element.updateComplete;
 
     element.shadowRoot.querySelector('#checkbox').click();
 

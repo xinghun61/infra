@@ -55,11 +55,13 @@ suite('mr-edit-metadata', () => {
     assert.deepEqual(element.getDelta(), {});
   });
 
-  test('toggling checkbox toggles sendEmail', () => {
+  test('toggling checkbox toggles sendEmail', async () => {
     element.sendEmail = false;
 
     flush();
     const checkbox = element.shadowRoot.querySelector('#sendEmail');
+
+    await checkbox.updateComplete;
 
     checkbox.click();
     assert.equal(checkbox.checked, true);

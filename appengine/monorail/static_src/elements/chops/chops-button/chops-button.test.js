@@ -28,10 +28,11 @@ suite('chops-button', () => {
     await auditA11y(element);
   });
 
-  test('chops-button can be disabled', () => {
+  test('chops-button can be disabled', async () => {
     assert.isFalse(element.hasAttribute('disabled'));
 
     element.disabled = true;
+    await element.updateComplete;
 
     assert.isTrue(element.hasAttribute('disabled'));
   });

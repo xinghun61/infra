@@ -88,10 +88,12 @@ suite('mr-edit-descriptions', () => {
     assert.equal(element._displayedTitle, 'foo Survey');
   });
 
-  test('toggle sendEmail', () => {
+  test('toggle sendEmail', async () => {
     element.reset();
     flush();
     const sendEmail = element.shadowRoot.querySelector('#sendEmail');
+
+    await sendEmail.updateComplete;
 
     sendEmail.click();
     assert.equal(element._sendEmail, false);
