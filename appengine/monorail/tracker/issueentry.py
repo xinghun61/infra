@@ -33,6 +33,7 @@ from proto import tracker_pb2
 
 PLACEHOLDER_SUMMARY = 'Enter one-line summary'
 PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full']
+CORP_RESTRICTION_LABEL = 'Restrict-View-Google'
 
 
 class IssueEntry(servlet.Servlet):
@@ -142,6 +143,15 @@ class IssueEntry(servlet.Servlet):
     labels = [lab for lab in link_or_template_labels
               if not tracker_bizobj.LabelIsMaskedByField(
                   lab, enum_field_name_set)]
+
+    # Corp-mode users automatically add R-V-G.
+    with work_env.WorkEnv(mr, self.services) as we:
+      userprefs = we.GetUserPrefs(mr.auth.user_id)
+      corp_mode = any(up.name == 'restrict_new_issues' and up.value == 'true'
+                      for up in userprefs.prefs)
+      if corp_mode:
+        if not any(lab.lower().startswith('restrict-view-') for lab in labels):
+          labels.append(CORP_RESTRICTION_LABEL)
 
     field_user_views = tracker_views.MakeFieldUserViews(
         mr.cnxn, template, self.services.user)

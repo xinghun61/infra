@@ -26,6 +26,7 @@ from testing import testing_helpers
 from tracker import issueentry
 from tracker import tracker_bizobj
 from proto import tracker_pb2
+from proto import user_pb2
 
 
 class IssueEntryTest(unittest.TestCase):
@@ -44,6 +45,7 @@ class IssueEntryTest(unittest.TestCase):
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
         template=Mock(spec=template_svc.TemplateService),
         features=fake.FeaturesService())
@@ -408,6 +410,25 @@ class IssueEntryTest(unittest.TestCase):
     self.assertTrue(self.services.template.GetTemplateById.called)
     self.assertFalse(self.services.template.GetProjectTemplates.called)
     self.assertEqual(page_data['config'].template_view.label0, 'yo')
+
+  def testGatherPageData_RestrictNewIssues(self):
+    """Users with this pref set default to reporting issues with R-V-G."""
+    self.mox.ReplayAll()
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    self.services.user.GetUser = Mock(return_value=user)
+    self.services.template.GetTemplateById = Mock(return_value=self.template)
+
+    mr.auth.user_id = 100
+    page_data = self.servlet.GatherPageData(mr)
+    self.assertNotIn('Restrict-View-Google', page_data['labels'])
+
+    pref = user_pb2.UserPrefValue(name='restrict_new_issues', value='true')
+    self.services.user.SetUserPrefs(self.cnxn, 100, [pref])
+    page_data = self.servlet.GatherPageData(mr)
+    self.assertIn('Restrict-View-Google', page_data['labels'])
 
   def testProcessFormData_RedirectToEnteredIssue(self):
     mr = testing_helpers.MakeMonorailRequest(
