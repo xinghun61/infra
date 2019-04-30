@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
@@ -11,7 +10,7 @@ import * as project from 'elements/reducers/project.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import 'elements/framework/mr-error/mr-error.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 // TODO(zhangtiff): Make dialog components subclass chops-dialog instead of
 // using slots/containment once we switch to LitElement.
@@ -22,11 +21,11 @@ import 'elements/shared/mr-shared-styles.js';
  * a chosen project template.
  *
  */
-export class MrConvertIssue extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrConvertIssue extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         label {
           font-weight: bold;
           text-align: right;
@@ -47,36 +46,41 @@ export class MrConvertIssue extends connectStore(PolymerElement) {
           margin: 0.5em 0;
           text-align: right;
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <chops-dialog>
         <h3 class="medium-heading">Convert issue to new template structure</h3>
         <form id="convertIssueForm">
           <div class="input-grid">
             <label for="templateInput">Pick a template: </label>
-            <select id="templateInput" on-change="_templateInputChanged">
+            <select id="templateInput" @change=${this._templateInputChanged}>
               <option value="">--Please choose a project template--</option>
-              <template is="dom-repeat" items="[[projectTemplates]]" as="projTempl">
-                <option value="[[projTempl.templateName]]">
-                  [[projTempl.templateName]]
-                </option>
-              </template>
+              ${this.projectTemplates.map((projTempl) => html`
+                <option value=${projTempl.templateName}>
+                  ${projTempl.templateName}
+                </option>`)}
             </select>
             <label for="commentContent">Comment: </label>
             <textarea id="commentContent" placeholder="Add a comment"></textarea>
             <span></span>
             <chops-checkbox
-              on-checked-change="_sendEmailChecked"
-              checked="[[sendEmail]]"
+              @checked-change=${this._sendEmailChecked}
+              checked=${this.sendEmail}
             >Send email</chops-checkbox>
           </div>
-          <mr-error hidden\$=[[!convertIssueError]]>
-            [[convertIssueError.description]]
+          <mr-error ?hidden=${!this.convertIssueError}>
+            ${this.convertIssueError && this.convertIssueError.description}
           </mr-error>
           <div class="edit-actions">
-            <chops-button on-click="close" class="de-emphasized discard-button">
+            <chops-button @click=${this.close} class="de-emphasized discard-button">
               Discard
             </chops-button>
-            <chops-button on-click="save" class="emphasized" disabled\$="[[!selectedTemplate]]">
+            <chops-button @click=${this.save} class="emphasized" ?disabled=${!this.selectedTemplate}>
               Convert issue
             </chops-button>
           </div>
@@ -85,15 +89,10 @@ export class MrConvertIssue extends connectStore(PolymerElement) {
     `;
   }
 
-  static get is() {
-    return 'mr-convert-issue';
-  }
-
   static get properties() {
     return {
       convertingIssue: {
         type: Boolean,
-        observer: '_convertingIssueChanged',
       },
       convertIssueError: {
         type: Object,
@@ -109,33 +108,44 @@ export class MrConvertIssue extends connectStore(PolymerElement) {
       },
       selectedTemplate: {
         type: String,
-        // value needs to be set for save button to be disabled the first time.
-        value: '',
       },
       sendEmail: {
         type: Boolean,
-        value: true,
       },
     };
   }
 
   stateChanged(state) {
-    this.setProperties({
-      convertingIssue: issue.requests(state).convert.requesting,
-      convertIssueError: issue.requests(state).convert.error,
-      issueRef: issue.issueRef(state),
-      issuePermissions: issue.permissions(state),
-      projectTemplates: project.project(state).templates,
-    });
+    this.convertingIssue = issue.requests(state).convert.requesting;
+    this.convertIssueError = issue.requests(state).convert.error;
+    this.issueRef = issue.issueRef(state);
+    this.issuePermissions = issue.permissions(state);
+    this.projectTemplates = project.project(state).templates;
+  }
+
+  constructor() {
+    super();
+    this.selectedTemplate = '';
+    this.sendEmail = true;
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('convertingIssue')) {
+      if (!this.convertingIssue && !this.convertIssueError) {
+        this.close();
+      }
+    }
   }
 
   open() {
     this.reset();
-    this.shadowRoot.querySelector('chops-dialog').open();
+    const dialog = this.shadowRoot.querySelector('chops-dialog');
+    dialog.open();
   }
 
   close() {
-    this.shadowRoot.querySelector('chops-dialog').close();
+    const dialog = this.shadowRoot.querySelector('chops-dialog');
+    dialog.close();
   }
 
   reset() {
@@ -152,12 +162,6 @@ export class MrConvertIssue extends connectStore(PolymerElement) {
     }));
   }
 
-  _convertingIssueChanged(isConversionInFlight) {
-    if (!isConversionInFlight && !this.convertIssueError) {
-      this.close();
-    }
-  }
-
   _sendEmailChecked(evt) {
     this.sendEmail = evt.detail.checked;
   }
@@ -168,4 +172,4 @@ export class MrConvertIssue extends connectStore(PolymerElement) {
   }
 }
 
-customElements.define(MrConvertIssue.is, MrConvertIssue);
+customElements.define('mr-convert-issue', MrConvertIssue);

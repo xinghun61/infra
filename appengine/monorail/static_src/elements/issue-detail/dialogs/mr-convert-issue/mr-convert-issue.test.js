@@ -4,17 +4,13 @@
 
 import {assert} from 'chai';
 import {MrConvertIssue} from './mr-convert-issue.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
-let form;
 
 suite('mr-convert-issue', () => {
   setup(() => {
     element = document.createElement('mr-convert-issue');
     document.body.appendChild(element);
-
-    form = element.shadowRoot.querySelector('#convertIssueForm');
   });
 
   teardown(() => {
@@ -25,8 +21,10 @@ suite('mr-convert-issue', () => {
     assert.instanceOf(element, MrConvertIssue);
   });
 
-  test('no template chosen', () => {
-    let buttons = element.shadowRoot.querySelectorAll('chops-button');
+  test('no template chosen', async () => {
+    await element.updateComplete;
+
+    const buttons = element.shadowRoot.querySelectorAll('chops-button');
     assert.isTrue(buttons[buttons.length - 1].disabled);
   });
 });
