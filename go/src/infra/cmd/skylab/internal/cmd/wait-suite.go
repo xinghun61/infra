@@ -97,7 +97,8 @@ func waitSuite(ctx context.Context, suiteWaitErr chan error, taskID string, s *s
 	// Returning after either a success or a maximum attempt count of errors happen or a timeout is reached.
 	defer close(suiteWaitErr)
 	repeatedErr := 0
-	sleepInterval := time.Duration(5 * time.Minute)
+	sleepInterval := time.Duration(15 * time.Second)
+	maxServiceDowntime := time.Duration(15 * time.Minute)
 	for {
 		results, err := getSwarmingResultsForIds(ctx, []string{taskID}, s)
 		if err != nil {
@@ -107,8 +108,7 @@ func waitSuite(ctx context.Context, suiteWaitErr chan error, taskID string, s *s
 			}
 			fmt.Fprintln(w, err)
 			repeatedErr++
-			// Service is not responding for at least 3 * 5 minutes.
-			if repeatedErr >= 3 {
+			if repeatedErr >= int(maxServiceDowntime/sleepInterval) {
 				suiteWaitErr <- err
 				return
 			}
