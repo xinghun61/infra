@@ -41,10 +41,8 @@ def gsubtreed_cron(
   )
 
 
-# TODO(vadimsh): All these different service accounts are not necessary as long
-# as all builders run on the same pool of machines. We can have single gsubtreed
-# account instead.
-
+# TODO(agable): Update the rest of these builders to use the
+# gsubtreed@chops-service-accounts.iam.gserviceaccount.com account.
 
 gsubtreed_cron(
     name = 'gsubtreed-chromium',
@@ -69,6 +67,11 @@ gsubtreed_cron(
     name = 'gsubtreed-llvm-clang',
     service_account = 'gsubtreed-llvm-clang@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/external/github.com/llvm-mirror/clang',
+)
+gsubtreed_cron(
+    name = 'gsubtreed-selenium',
+    service_account = 'gsubtreed@chops-service-accounts.iam.gserviceaccount.com',
+    target_repo = 'https://chromium.googlesource.com/external/github.com/SeleniumHQ/selenium',
 )
 gsubtreed_cron(
     name = 'gsubtreed-infra',
