@@ -34,13 +34,13 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def setUp(self):
     self.users_by_id = {
-        111L: testing_helpers.Blank(
+        111: testing_helpers.Blank(
             display_name='one@example.com', email='one@example.com',
             banned=False),
-        222L: testing_helpers.Blank(
+        222: testing_helpers.Blank(
             display_name='two@example.com', email='two@example.com',
             banned=False),
-        333L: testing_helpers.Blank(
+        333: testing_helpers.Blank(
             display_name='ban...@example.com', email='banned@example.com',
             banned=True),
         }
@@ -84,12 +84,12 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_type=tracker_pb2.FieldTypes.ENUM_TYPE,
         applicable_type='', approval_id=self.fd_3.field_id)
 
-    self.services.user.TestAddUser('owner@example.com', 111L)
-    self.services.user.TestAddUser('editor@example.com', 222L)
+    self.services.user.TestAddUser('owner@example.com', 111)
+    self.services.user.TestAddUser('editor@example.com', 222)
     self.issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj')
+        789, 1, 'sum', 'New', 111, project_name='proj')
     self.issue_2 = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, project_name='proj')
+        789, 2, 'sum', 'New', 111, project_name='proj')
     self.services.issue.TestAddIssue(self.issue_1)
     self.services.issue.TestAddIssue(self.issue_2)
 
@@ -110,18 +110,18 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
         applicable_type='Launch'))
     self.config.approval_defs.append(tracker_pb2.ApprovalDef(
-        approval_id=11, approver_ids=[111L], survey='survey 1'))
+        approval_id=11, approver_ids=[111], survey='survey 1'))
     self.config.approval_defs.append(tracker_pb2.ApprovalDef(
-        approval_id=12, approver_ids=[111L], survey='survey 2'))
+        approval_id=12, approver_ids=[111], survey='survey 2'))
     av_11 = tracker_pb2.ApprovalValue(
         approval_id=11, status=tracker_pb2.ApprovalStatus.NEED_INFO,
-        setter_id=111L, set_on=now, approver_ids=[111L, 222L],
+        setter_id=111, set_on=now, approver_ids=[111, 222],
         phase_id=21)
     # Note: no approval def, no phase, so it won't be returned.
     # TODO(ehmaldonado): Figure out support for "foreign" fields.
     av_12 = tracker_pb2.ApprovalValue(
         approval_id=12, status=tracker_pb2.ApprovalStatus.NOT_SET,
-        setter_id=111L, set_on=now, approver_ids=[111L])
+        setter_id=111, set_on=now, approver_ids=[111])
     phase_21 = tracker_pb2.Phase(phase_id=21, name='Stable', rank=1)
     actual = converters.ConvertApprovalValues(
         [av_11, av_12], [phase_21], self.users_by_id, self.config)
@@ -132,13 +132,13 @@ class ConverterFunctionsTest(unittest.TestCase):
             field_name='Accessibility',
             type=common_pb2.APPROVAL_TYPE),
         approver_refs=[
-            common_pb2.UserRef(user_id=111L, display_name='one@example.com'),
-            common_pb2.UserRef(user_id=222L, display_name='two@example.com'),
+            common_pb2.UserRef(user_id=111, display_name='one@example.com'),
+            common_pb2.UserRef(user_id=222, display_name='two@example.com'),
             ],
         status=issue_objects_pb2.NEED_INFO,
         set_on=now,
         setter_ref=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         phase_ref=issue_objects_pb2.PhaseRef(phase_name='Stable'))
 
     self.assertEqual([expected_av_1], actual)
@@ -148,9 +148,9 @@ class ConverterFunctionsTest(unittest.TestCase):
     approval_value = tracker_pb2.ApprovalValue(
         approval_id=3,
         status=tracker_pb2.ApprovalStatus.NEED_INFO,
-        setter_id=222L,
+        setter_id=222,
         set_on=2345,
-        approver_ids=[111L],
+        approver_ids=[111],
         phase_id=1
     )
 
@@ -166,12 +166,12 @@ class ConverterFunctionsTest(unittest.TestCase):
             field_name='LegalApproval',
             type=common_pb2.APPROVAL_TYPE),
         approver_refs=[common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com', is_derived=False)
+            user_id=111, display_name='one@example.com', is_derived=False)
           ],
         status=5,
         set_on=2345,
         setter_ref=common_pb2.UserRef(
-            user_id=222L, display_name='two@example.com', is_derived=False
+            user_id=222, display_name='two@example.com', is_derived=False
         ),
         phase_ref=issue_objects_pb2.PhaseRef(phase_name='Canary')
     )
@@ -182,9 +182,9 @@ class ConverterFunctionsTest(unittest.TestCase):
     approval_value = tracker_pb2.ApprovalValue(
         approval_id=3,
         status=tracker_pb2.ApprovalStatus.NEED_INFO,
-        setter_id=222L,
+        setter_id=222,
         set_on=2345,
-        approver_ids=[111L],
+        approver_ids=[111],
         phase_id=1
     )
     phase = tracker_pb2.Phase(phase_id=1, name='Canary')
@@ -211,15 +211,15 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(expected, actual)
 
     # Explicitly specified user
-    actual = converters.ConvertUserRef(111L, None, self.users_by_id)
+    actual = converters.ConvertUserRef(111, None, self.users_by_id)
     expected = common_pb2.UserRef(
-        user_id=111L, is_derived=False, display_name='one@example.com')
+        user_id=111, is_derived=False, display_name='one@example.com')
     self.assertEqual(expected, actual)
 
     # Derived user
-    actual = converters.ConvertUserRef(None, 111L, self.users_by_id)
+    actual = converters.ConvertUserRef(None, 111, self.users_by_id)
     expected = common_pb2.UserRef(
-        user_id=111L, is_derived=True, display_name='one@example.com')
+        user_id=111, is_derived=True, display_name='one@example.com')
     self.assertEqual(expected, actual)
 
   def testConvertUserRefs(self):
@@ -232,27 +232,27 @@ class ConverterFunctionsTest(unittest.TestCase):
 
     # A mix of explicit and derived users
     actual = converters.ConvertUserRefs(
-        [111L], [222L], self.users_by_id, False)
+        [111], [222], self.users_by_id, False)
     expected = [
       common_pb2.UserRef(
-          user_id=111L, is_derived=False, display_name='one@example.com'),
+          user_id=111, is_derived=False, display_name='one@example.com'),
       common_pb2.UserRef(
-          user_id=222L, is_derived=True, display_name='two@example.com'),
+          user_id=222, is_derived=True, display_name='two@example.com'),
       ]
     self.assertEqual(expected, actual)
 
     # Use display name
-    actual = converters.ConvertUserRefs([333L], [], self.users_by_id, False)
+    actual = converters.ConvertUserRefs([333], [], self.users_by_id, False)
     self.assertEqual(
       [common_pb2.UserRef(
-           user_id=333L, is_derived=False, display_name='ban...@example.com')],
+           user_id=333, is_derived=False, display_name='ban...@example.com')],
       actual)
 
     # Use email
-    actual = converters.ConvertUserRefs([333L], [], self.users_by_id, True)
+    actual = converters.ConvertUserRefs([333], [], self.users_by_id, True)
     self.assertEqual(
       [common_pb2.UserRef(
-           user_id=333L, is_derived=False, display_name='banned@example.com')],
+           user_id=333, is_derived=False, display_name='banned@example.com')],
       actual)
 
   @patch('time.time')
@@ -477,10 +477,10 @@ class ConverterFunctionsTest(unittest.TestCase):
       tracker_pb2.ComponentDef(component_id=2, path='DB'),
       ]
     issue = fake.MakeTestIssue(
-      789, 3, 'sum', 'New', 111L, labels=['Hot'],
-      derived_labels=['Scalability'], star_count=12, reporter_id=222L,
+      789, 3, 'sum', 'New', 111, labels=['Hot'],
+      derived_labels=['Scalability'], star_count=12, reporter_id=222,
       opened_timestamp=now, component_ids=[1], project_name='proj',
-      cc_ids=[111L], derived_cc_ids=[222L])
+      cc_ids=[111], derived_cc_ids=[222])
     issue.phases = [
         tracker_pb2.Phase(phase_id=1, name='Dev', rank=1),
         tracker_pb2.Phase(phase_id=2, name='Beta', rank=2),
@@ -500,16 +500,16 @@ class ConverterFunctionsTest(unittest.TestCase):
             is_derived=False,
             means_open=True),
         owner_ref=common_pb2.UserRef(
-            user_id=111L,
+            user_id=111,
             display_name='one@example.com',
             is_derived=False),
         cc_refs=[
             common_pb2.UserRef(
-                user_id=111L,
+                user_id=111,
                 display_name='one@example.com',
                 is_derived=False),
             common_pb2.UserRef(
-                user_id=222L,
+                user_id=222,
                 display_name='two@example.com',
                 is_derived=True)],
         label_refs=[
@@ -518,7 +518,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         component_refs=[common_pb2.ComponentRef(path='UI', is_derived=False)],
         is_deleted=False,
         reporter_ref=common_pb2.UserRef(
-            user_id=222L, display_name='two@example.com', is_derived=False),
+            user_id=222, display_name='two@example.com', is_derived=False),
         opened_timestamp=now,
         star_count=12,
         is_spam=False,
@@ -554,7 +554,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('old', actual.old_value)
 
     amend = tracker_pb2.Amendment(
-        field=tracker_pb2.FieldID.OWNER, added_user_ids=[111L])
+        field=tracker_pb2.FieldID.OWNER, added_user_ids=[111])
     actual = converters.ConvertAmendment(amend, self.users_by_id)
     self.assertEqual('Owner', actual.field_name)
     self.assertEqual('one@example.com', actual.new_or_delta_value)
@@ -562,7 +562,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
     amend = tracker_pb2.Amendment(
         field=tracker_pb2.FieldID.CC,
-        added_user_ids=[111L], removed_user_ids=[222L])
+        added_user_ids=[111], removed_user_ids=[222])
     actual = converters.ConvertAmendment(amend, self.users_by_id)
     self.assertEqual('Cc', actual.field_name)
     self.assertEqual(
@@ -597,65 +597,65 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertComment_Normal(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12)
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', is_spam=False)
     self.assertEqual(expected, actual)
 
   def testConvertComment_CanReportComment(self):
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12)
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([permissions.FLAG_SPAM]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', can_flag=True)
     self.assertEqual(expected, actual)
 
   def testConvertComment_CanUnReportComment(self):
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12)
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [111L], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [111], {}, 111,
         permissions.PermissionSet([permissions.FLAG_SPAM]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', is_spam=True, is_deleted=True,
         can_flag=True)
     self.assertEqual(expected, actual)
 
   def testConvertComment_CantUnFlagCommentWithoutVerdictSpam(self):
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12, is_spam=True)
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [111L], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [111], {}, 111,
         permissions.PermissionSet([permissions.FLAG_SPAM]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12,
@@ -664,35 +664,35 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testConvertComment_CanFlagSpamComment(self):
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12)
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([permissions.VERDICT_SPAM]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', can_flag=True)
     self.assertEqual(expected, actual)
 
   def testConvertComment_CanUnFlagSpamComment(self):
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12, is_spam=True)
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [222L], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [222], {}, 111,
         permissions.PermissionSet([permissions.VERDICT_SPAM]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', is_spam=True, is_deleted=True,
         can_flag=True)
     self.assertEqual(expected, actual)
@@ -700,29 +700,29 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertComment_DeletedComment(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
-        content='a comment', sequence=12, deleted_by=111L)
+        id=101, project_id=789, user_id=111, timestamp=now,
+        content='a comment', sequence=12, deleted_by=111)
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([permissions.DELETE_OWN]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', can_delete=True)
     self.assertEqual(expected, actual)
 
   def testConvertComment_DeletedCommentCantView(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
-        content='a comment', sequence=12, deleted_by=111L)
+        id=101, project_id=789, user_id=111, timestamp=now,
+        content='a comment', sequence=12, deleted_by=111)
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
@@ -732,12 +732,12 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertComment_CommentByBannedUser(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=333L, timestamp=now,
+        id=101, project_id=789, user_id=333, timestamp=now,
         content='a comment', sequence=12)
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=True,
@@ -747,17 +747,17 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertComment_Description(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12, is_description=True)
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {101: 1}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {101: 1}, 111,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', is_spam=False, description_num=1)
     self.assertEqual(expected, actual)
     comment.is_description = False
@@ -765,9 +765,9 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertComment_Approval(self):
     """We can convert a protorpc IssueComment to a protoc Comment."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12, approval_id=11)
     # Comment on an approval.
     self.config.field_defs.append(tracker_pb2.FieldDef(
@@ -775,15 +775,15 @@ class ConverterFunctionsTest(unittest.TestCase):
         field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE,
         applicable_type='Launch'))
     self.config.approval_defs.append(tracker_pb2.ApprovalDef(
-        approval_id=11, approver_ids=[111L], survey='survey 1'))
+        approval_id=11, approver_ids=[111], survey='survey 1'))
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', is_spam=False,
         approval_ref=common_pb2.FieldRef(field_name='Accessibility'))
     self.assertEqual(expected, actual)
@@ -791,89 +791,89 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertComment_ViewOwnInboundMessage(self):
     """Users can view their own inbound messages."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12, inbound_message='inbound message')
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 111L,
+        issue, comment, self.config, self.users_by_id, [], {}, 111,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', inbound_message='inbound message')
     self.assertEqual(expected, actual)
 
   def testConvertComment_ViewInboundMessageWithPermission(self):
     """Users can view their own inbound messages."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12, inbound_message='inbound message')
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 222L,
+        issue, comment, self.config, self.users_by_id, [], {}, 222,
         permissions.PermissionSet([permissions.VIEW_INBOUND_MESSAGES]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment', inbound_message='inbound message')
     self.assertEqual(expected, actual)
 
   def testConvertComment_NotAllowedToViewInboundMessage(self):
     """Users can view their own inbound messages."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=111L, timestamp=now,
+        id=101, project_id=789, user_id=111, timestamp=now,
         content='a comment', sequence=12, inbound_message='inbound message')
 
     actual = converters.ConvertComment(
-        issue, comment, self.config, self.users_by_id, [], {}, 222L,
+        issue, comment, self.config, self.users_by_id, [], {}, 222,
         permissions.PermissionSet([]))
     expected = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=12, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a comment')
     self.assertEqual(expected, actual)
 
   def testConvertCommentList(self):
     """We can convert a list of comments."""
     now = 1234567890
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj')
     comment_0 = tracker_pb2.IssueComment(
-        id=100, project_id=789, user_id=111L, timestamp=now,
+        id=100, project_id=789, user_id=111, timestamp=now,
         content='a description', sequence=0, is_description=True)
     comment_1 = tracker_pb2.IssueComment(
-        id=101, project_id=789, user_id=222L, timestamp=now,
+        id=101, project_id=789, user_id=222, timestamp=now,
         content='a comment', sequence=1)
     comment_2 = tracker_pb2.IssueComment(
-        id=102, project_id=789, user_id=222L, timestamp=now,
-        content='deleted comment', sequence=2, deleted_by=111L)
+        id=102, project_id=789, user_id=222, timestamp=now,
+        content='deleted comment', sequence=2, deleted_by=111)
     comment_3 = tracker_pb2.IssueComment(
-        id=103, project_id=789, user_id=111L, timestamp=now,
+        id=103, project_id=789, user_id=111, timestamp=now,
         content='another desc', sequence=3, is_description=True)
 
     actual = converters.ConvertCommentList(
         issue, [comment_0, comment_1, comment_2, comment_3], self.config,
-        self.users_by_id, {}, 222L,
+        self.users_by_id, {}, 222,
         permissions.PermissionSet([permissions.DELETE_OWN]))
 
     expected_0 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='a description', is_spam=False,
         description_num=1)
     expected_1 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=1, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=222L, display_name='two@example.com'),
+            user_id=222, display_name='two@example.com'),
         timestamp=now, content='a comment', is_spam=False, can_delete=True)
     expected_2 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=2, is_deleted=True,
@@ -881,7 +881,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     expected_3 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=3, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='one@example.com'),
+            user_id=111, display_name='one@example.com'),
         timestamp=now, content='another desc', is_spam=False,
         description_num=2)
     self.assertEqual(expected_0, actual[0])
@@ -945,10 +945,10 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestUserRef(self):
     """We can look up a single user ID for a protoc UserRef."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     ref = common_pb2.UserRef(display_name='user1@example.com')
     actual = converters.IngestUserRef(self.cnxn, ref, self.services.user)
-    self.assertEqual(111L, actual)
+    self.assertEqual(111, actual)
 
   def testIngestUserRef_NoSuchUser(self):
     """We reject a malformed UserRef.display_name."""
@@ -964,23 +964,23 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestUserRefs_ByExistingID(self):
     """Users can be specified by user_id."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
-    ref = common_pb2.UserRef(user_id=111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
+    ref = common_pb2.UserRef(user_id=111)
     actual = converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
-    self.assertEqual([111L], actual)
+    self.assertEqual([111], actual)
 
   def testIngestUserRefs_ByNonExistingID(self):
     """We reject references to non-existing user IDs."""
-    ref = common_pb2.UserRef(user_id=999L)
+    ref = common_pb2.UserRef(user_id=999)
     with self.assertRaises(exceptions.NoSuchUserException):
       converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
 
   def testIngestUserRefs_ByExistingEmail(self):
     """Existing users can be specified by email address."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     ref = common_pb2.UserRef(display_name='user1@example.com')
     actual = converters.IngestUserRefs(self.cnxn, [ref], self.services.user)
-    self.assertEqual([111L], actual)
+    self.assertEqual([111], actual)
 
   def testIngestUserRefs_ByNonExistingEmail(self):
     """New users can be specified by email address."""
@@ -998,29 +998,29 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestUserRefs_ByMalformedEmail(self):
     """We ignore malformed user emails."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
-    self.services.user.TestAddUser('user3@example.com', 333L)
+    self.services.user.TestAddUser('user1@example.com', 111)
+    self.services.user.TestAddUser('user3@example.com', 333)
     refs = [
         common_pb2.UserRef(user_id=0),
         common_pb2.UserRef(display_name='not-a-valid-email'),
-        common_pb2.UserRef(user_id=333L),
+        common_pb2.UserRef(user_id=333),
         common_pb2.UserRef(display_name='user1@example.com')
         ]
     actual = converters.IngestUserRefs(
         self.cnxn, refs, self.services.user, autocreate=True)
-    self.assertEqual(actual, [0, 333L, 111L])
+    self.assertEqual(actual, [0, 333, 111])
 
   def testIngestUserRefs_MixOfIDAndEmail(self):
     """Requests can specify some users by ID and others by email."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
-    self.services.user.TestAddUser('user2@example.com', 222L)
-    self.services.user.TestAddUser('user3@example.com', 333L)
+    self.services.user.TestAddUser('user1@example.com', 111)
+    self.services.user.TestAddUser('user2@example.com', 222)
+    self.services.user.TestAddUser('user3@example.com', 333)
     ref1 = common_pb2.UserRef(display_name='user1@example.com')
     ref2 = common_pb2.UserRef(display_name='user2@example.com')
-    ref3 = common_pb2.UserRef(user_id=333L)
+    ref3 = common_pb2.UserRef(user_id=333)
     actual = converters.IngestUserRefs(
         self.cnxn, [ref1, ref2, ref3], self.services.user)
-    self.assertEqual([111L, 222L, 333L], actual)
+    self.assertEqual([111, 222, 333], actual)
 
   def testIngestPrefValues(self):
     """We can convert a list of UserPrefValues from protoc to protorpc."""
@@ -1059,23 +1059,23 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestIssueDelta_BuiltInFields(self):
     """We can create a protorpc IssueDelta from a protoc IssueDelta."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
-    self.services.user.TestAddUser('user2@example.com', 222L)
-    self.services.user.TestAddUser('user3@example.com', 333L)
+    self.services.user.TestAddUser('user1@example.com', 111)
+    self.services.user.TestAddUser('user2@example.com', 222)
+    self.services.user.TestAddUser('user3@example.com', 333)
     self.config.component_defs = [
       tracker_pb2.ComponentDef(component_id=1, path='UI')]
     delta = issue_objects_pb2.IssueDelta(
         status=wrappers_pb2.StringValue(value='Fixed'),
-        owner_ref=common_pb2.UserRef(user_id=222L),
+        owner_ref=common_pb2.UserRef(user_id=222),
         summary=wrappers_pb2.StringValue(value='New summary'),
-        cc_refs_add=[common_pb2.UserRef(user_id=333L)],
+        cc_refs_add=[common_pb2.UserRef(user_id=333)],
         comp_refs_add=[common_pb2.ComponentRef(path='UI')],
         label_refs_add=[common_pb2.LabelRef(label='Hot')])
     actual = converters.IngestIssueDelta(
         self.cnxn, self.services, delta, self.config, [])
     expected = tracker_pb2.IssueDelta(
-        status='Fixed', owner_id=222L, summary='New summary',
-        cc_ids_add=[333L], comp_ids_add=[1],
+        status='Fixed', owner_id=222, summary='New summary',
+        cc_ids_add=[333], comp_ids_add=[1],
         labels_add=['Hot'])
     self.assertEqual(expected, actual)
 
@@ -1192,7 +1192,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestIssueDelta_RelatedIssues(self):
     """We can create a protorpc IssueDelta that references related issues."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111)
     self.services.issue.TestAddIssue(issue)
     delta = issue_objects_pb2.IssueDelta(
         blocked_on_refs_add=[common_pb2.IssueRef(
@@ -1250,16 +1250,16 @@ class ConverterFunctionsTest(unittest.TestCase):
           issue_objects_pb2.AttachmentUpload(filename='content is mssing')])
 
   def testIngestApprovalDelta(self):
-    self.services.user.TestAddUser('user1@example.com', 111L)
-    self.services.user.TestAddUser('user2@example.com', 222L)
+    self.services.user.TestAddUser('user1@example.com', 111)
+    self.services.user.TestAddUser('user2@example.com', 222)
 
     self.config.field_defs = [
         self.fd_1, self.fd_2, self.fd_3, self.fd_4, self.fd_7]
 
     approval_delta = issue_objects_pb2.ApprovalDelta(
         status=issue_objects_pb2.APPROVED,
-        approver_refs_add=[common_pb2.UserRef(user_id=111L)],
-        approver_refs_remove=[common_pb2.UserRef(user_id=222L)],
+        approver_refs_add=[common_pb2.UserRef(user_id=111)],
+        approver_refs_remove=[common_pb2.UserRef(user_id=222)],
         field_vals_add=[
             issue_objects_pb2.FieldValue(
                 value='string', field_ref=common_pb2.FieldRef(
@@ -1279,12 +1279,12 @@ class ConverterFunctionsTest(unittest.TestCase):
         fields_clear=[common_pb2.FieldRef(field_name='FirstField')])
 
     actual = converters.IngestApprovalDelta(
-        self.cnxn, self.services.user, approval_delta, 333L, self.config)
+        self.cnxn, self.services.user, approval_delta, 333, self.config)
     self.assertEqual(
         actual.status, tracker_pb2.ApprovalStatus.APPROVED,)
-    self.assertEqual(actual.setter_id, 333L)
-    self.assertEqual(actual.approver_ids_add, [111L])
-    self.assertEqual(actual.approver_ids_remove, [222L])
+    self.assertEqual(actual.setter_id, 333)
+    self.assertEqual(actual.approver_ids_add, [111])
+    self.assertEqual(actual.approver_ids_remove, [222])
     self.assertEqual(actual.subfield_vals_add, [tracker_pb2.FieldValue(
         str_value='string', field_id=1, derived=False)])
     self.assertEqual(actual.subfield_vals_remove, [tracker_pb2.FieldValue(
@@ -1296,7 +1296,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     # test a NOT_SET status is registered as None.
     approval_delta.status = issue_objects_pb2.NOT_SET
     actual = converters.IngestApprovalDelta(
-        self.cnxn, self.services.user, approval_delta, 333L, self.config)
+        self.cnxn, self.services.user, approval_delta, 333, self.config)
     self.assertIsNone(actual.status)
 
   def testIngestApprovalStatus(self):
@@ -1307,7 +1307,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(actual, tracker_pb2.ApprovalStatus.NOT_APPROVED)
 
   def testIngestFieldValues(self):
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_6]
     phases = [
         tracker_pb2.Phase(phase_id=3, name="Dev"),
@@ -1343,7 +1343,7 @@ class ConverterFunctionsTest(unittest.TestCase):
             tracker_pb2.FieldValue(
                 str_value='string', field_id=1, derived=False),
             tracker_pb2.FieldValue(int_value=34, field_id=2, derived=False),
-            tracker_pb2.FieldValue(user_id=111L, field_id=4, derived=False),
+            tracker_pb2.FieldValue(user_id=111, field_id=4, derived=False),
             tracker_pb2.FieldValue(
                 int_value=2, field_id=6, phase_id=1, derived=False)
         ]
@@ -1351,7 +1351,7 @@ class ConverterFunctionsTest(unittest.TestCase):
 
   def testIngestFieldValues_EmptyUser(self):
     """We ignore empty user email strings."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_6]
     field_values = [
         issue_objects_pb2.FieldValue(
@@ -1366,7 +1366,7 @@ class ConverterFunctionsTest(unittest.TestCase):
         self.cnxn, self.services.user, field_values, self.config, [])
     self.assertEqual(
         actual,
-        [tracker_pb2.FieldValue(user_id=111L, field_id=4, derived=False)])
+        [tracker_pb2.FieldValue(user_id=111, field_id=4, derived=False)])
 
   def testIngestFieldValues_InvalidUser(self):
     """We reject invalid user email strings."""
@@ -1429,12 +1429,12 @@ class ConverterFunctionsTest(unittest.TestCase):
 
 
   def testIngestHotlistRef(self):
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     hotlist = self.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[222L])
+        owner_ids=[111], editor_ids=[222])
 
-    owner_ref = common_pb2.UserRef(user_id=111L)
+    owner_ref = common_pb2.UserRef(user_id=111)
     hotlist_ref = common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref)
 
     actual_hotlist_id = converters.IngestHotlistRef(
@@ -1442,10 +1442,10 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(actual_hotlist_id, hotlist.hotlist_id)
 
   def testIngestHotlistRef_HotlistID(self):
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     hotlist = self.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[222L])
+        owner_ids=[111], editor_ids=[222])
 
     hotlist_ref = common_pb2.HotlistRef(hotlist_id=hotlist.hotlist_id)
 
@@ -1460,32 +1460,32 @@ class ConverterFunctionsTest(unittest.TestCase):
           self.cnxn, self.services.user, self.services.features, hotlist_ref)
 
   def testIngestHotlistRef_InconsistentRequest(self):
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     hotlist1 = self.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[222L])
+        owner_ids=[111], editor_ids=[222])
     self.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[222L])
+        owner_ids=[111], editor_ids=[222])
 
     hotlist_ref = common_pb2.HotlistRef(
         hotlist_id=hotlist1.hotlist_id,
         name='Fake-Hotlist-2',
-        owner=common_pb2.UserRef(user_id=111L))
+        owner=common_pb2.UserRef(user_id=111))
     with self.assertRaises(features_svc.NoSuchHotlistException):
       converters.IngestHotlistRef(
           self.cnxn, self.services.user, self.services.features, hotlist_ref)
 
   def testIngestHotlistRef_NonExistentHotlistID(self):
-    hotlist_ref = common_pb2.HotlistRef(hotlist_id=1234L)
+    hotlist_ref = common_pb2.HotlistRef(hotlist_id=1234)
     with self.assertRaises(features_svc.NoSuchHotlistException):
       converters.IngestHotlistRef(
           self.cnxn, self.services.user, self.services.features, hotlist_ref)
 
   def testIngestHotlistRef_NoSuchHotlist(self):
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
 
-    owner_ref = common_pb2.UserRef(user_id=111L)
+    owner_ref = common_pb2.UserRef(user_id=111)
     hotlist_ref = common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref)
 
     with self.assertRaises(features_svc.NoSuchHotlistException):
@@ -1493,15 +1493,15 @@ class ConverterFunctionsTest(unittest.TestCase):
           self.cnxn, self.services.user, self.services.features, hotlist_ref)
 
   def testIngestHotlistRefs(self):
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     hotlist_1 = self.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[222L])
+        owner_ids=[111], editor_ids=[222])
     hotlist_2 = self.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[222L])
+        owner_ids=[111], editor_ids=[222])
 
-    owner_ref = common_pb2.UserRef(user_id=111L)
+    owner_ref = common_pb2.UserRef(user_id=111)
     hotlist_refs = [
         common_pb2.HotlistRef(name='Fake-Hotlist', owner=owner_ref),
         common_pb2.HotlistRef(hotlist_id=hotlist_2.hotlist_id)]
@@ -1568,34 +1568,34 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We can convert a minimal component definition to protoc."""
     now = 1234567890
     component_def = tracker_pb2.ComponentDef(
-        path='Frontend', docstring='doc', created=now, creator_id=111L,
-        modified=now + 1, modifier_id=111L)
+        path='Frontend', docstring='doc', created=now, creator_id=111,
+        modified=now + 1, modifier_id=111)
     actual = converters.ConvertComponentDef(
         component_def, self.users_by_id, {}, True)
     self.assertEqual('Frontend', actual.path)
     self.assertEqual('doc', actual.docstring)
     self.assertFalse(actual.deprecated)
     self.assertEqual(now, actual.created)
-    self.assertEqual(111L, actual.creator_ref.user_id)
+    self.assertEqual(111, actual.creator_ref.user_id)
     self.assertEqual(now + 1, actual.modified)
-    self.assertEqual(111L, actual.modifier_ref.user_id)
+    self.assertEqual(111, actual.modifier_ref.user_id)
     self.assertEqual('one@example.com', actual.creator_ref.display_name)
 
   def testConvertComponentDef_Normal(self):
     """We can convert a component def that has CC'd users and adds labels."""
     labels_by_id = {1: 'Security', 2: 'Usability'}
     component_def = tracker_pb2.ComponentDef(
-        path='Frontend', admin_ids=[111L], cc_ids=[222L], label_ids=[1, 2],
+        path='Frontend', admin_ids=[111], cc_ids=[222], label_ids=[1, 2],
         docstring='doc')
     actual = converters.ConvertComponentDef(
         component_def, self.users_by_id, labels_by_id, True)
     self.assertEqual('Frontend', actual.path)
     self.assertEqual('doc', actual.docstring)
     self.assertEqual(1, len(actual.admin_refs))
-    self.assertEqual(111L, actual.admin_refs[0].user_id)
+    self.assertEqual(111, actual.admin_refs[0].user_id)
     self.assertEqual(1, len(actual.cc_refs))
     self.assertFalse(actual.deprecated)
-    self.assertEqual(222L, actual.cc_refs[0].user_id)
+    self.assertEqual(222, actual.cc_refs[0].user_id)
     self.assertEqual(2, len(actual.label_refs))
     self.assertEqual('Security', actual.label_refs[0].label)
     self.assertEqual('Usability', actual.label_refs[1].label)
@@ -1630,7 +1630,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     field_def = tracker_pb2.FieldDef(
         field_name='DesignDocs', field_type=tracker_pb2.FieldTypes.URL_TYPE,
         applicable_type='Enhancement', is_required=True, is_niche=True,
-        is_multivalued=True, docstring='doc', admin_ids=[111L],
+        is_multivalued=True, docstring='doc', admin_ids=[111],
         is_phase_field=True)
     actual = converters.ConvertFieldDef(
         field_def, [], self.users_by_id, self.config, True)
@@ -1640,7 +1640,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('Enhancement', actual.applicable_type)
     self.assertEqual('doc', actual.docstring)
     self.assertEqual(1, len(actual.admin_refs))
-    self.assertEqual(111L, actual.admin_refs[0].user_id)
+    self.assertEqual(111, actual.admin_refs[0].user_id)
     self.assertTrue(actual.is_required)
     self.assertTrue(actual.is_niche)
     self.assertTrue(actual.is_multivalued)
@@ -1676,10 +1676,10 @@ class ConverterFunctionsTest(unittest.TestCase):
     field_def = tracker_pb2.FieldDef(
         field_name='PM', field_type=tracker_pb2.FieldTypes.USER_TYPE)
     actual = converters.ConvertFieldDef(
-        field_def, [111L, 333L], self.users_by_id, self.config, False)
+        field_def, [111, 333], self.users_by_id, self.config, False)
     self.assertEqual('PM', actual.field_ref.field_name)
     self.assertEqual(
-        [111L, 333L],
+        [111, 333],
         [user_ref.user_id for user_ref in actual.user_choices])
     self.assertEqual(
         ['one@example.com', 'banned@example.com'],
@@ -1708,13 +1708,13 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual('', actual.survey)
 
     approval_def = tracker_pb2.ApprovalDef(
-        approval_id=3, approver_ids=[111L], survey='What?')
+        approval_id=3, approver_ids=[111], survey='What?')
     actual = converters.ConvertApprovalDef(
         approval_def, self.users_by_id, self.config, True)
     self.assertEqual('LegalApproval', actual.field_ref.field_name)
     self.assertEqual(common_pb2.APPROVAL_TYPE, actual.field_ref.type)
     self.assertEqual(1, len(actual.approver_refs))
-    self.assertEqual(111L, actual.approver_refs[0].user_id)
+    self.assertEqual(111, actual.approver_refs[0].user_id)
     self.assertEqual('What?', actual.survey)
 
     # Without include_admin_info, some fields are not set.
@@ -1750,7 +1750,7 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.config.component_defs = [
       tracker_pb2.ComponentDef(component_id=1, path='UI', label_ids=[2])]
     self.config.approval_defs.append(tracker_pb2.ApprovalDef(
-        approval_id=3, approver_ids=[111L], survey='What?'))
+        approval_id=3, approver_ids=[111], survey='What?'))
     self.config.restrict_to_known = True
     self.config.statuses_offer_merge = ['Duplicate', 'New']
     actual = converters.ConvertConfig(
@@ -1801,12 +1801,12 @@ class ConverterFunctionsTest(unittest.TestCase):
   def testConvertHotlist(self):
     """We can convert a hotlist to protoc."""
     hotlist = testing_helpers.Blank(
-        owner_ids=[111L],
+        owner_ids=[111],
         name='Fake-Hotlist',
         summary='A fake hotlist.',
         description='Detailed description of the fake hotlist.')
     actual = converters.ConvertHotlist(hotlist, self.users_by_id)
-    self.assertEqual(111L, actual.owner_ref.user_id)
+    self.assertEqual(111, actual.owner_ref.user_id)
     self.assertEqual('one@example.com', actual.owner_ref.display_name)
     self.assertEqual('Fake-Hotlist', actual.name)
     self.assertEqual('A fake hotlist.', actual.summary)
@@ -1817,10 +1817,10 @@ class ConverterFunctionsTest(unittest.TestCase):
     """We can convert a HotlistItem to protoc."""
     hotlist = self.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
     self.services.features.UpdateHotlistItems(
         self.cnxn, hotlist.hotlist_id, [],
-        [(self.issue_1.issue_id, 222L, 12345, 'Note')])
+        [(self.issue_1.issue_id, 222, 12345, 'Note')])
     issues_by_id = {self.issue_1.issue_id: self.issue_1}
     related_refs = {}
     configs = {'proj': self.config}
@@ -1835,7 +1835,7 @@ class ConverterFunctionsTest(unittest.TestCase):
             issue=expected_issue,
             rank=10,
             adder_ref=common_pb2.UserRef(
-                user_id=222L,
+                user_id=222,
                 display_name='two@example.com'),
             added_timestamp=12345,
             note='Note'),

@@ -21,17 +21,17 @@ EMPTY_SEARCH_RESULTS = []
 
 SEARCH_RESULTS_WITH_LABELS = [
     fake.MakeTestIssue(
-        789, 1, 'sum 1', 'New', 111L, labels='Priority-High Mstone-1',
+        789, 1, 'sum 1', 'New', 111, labels='Priority-High Mstone-1',
         merged_into=200001, star_count=1),
     fake.MakeTestIssue(
-        789, 2, 'sum 2', 'New', 111L, labels='Priority-High Mstone-1',
+        789, 2, 'sum 2', 'New', 111, labels='Priority-High Mstone-1',
         merged_into=1, star_count=1),
     fake.MakeTestIssue(
-        789, 3, 'sum 3', 'New', 111L, labels='Priority-Low Mstone-1.1',
+        789, 3, 'sum 3', 'New', 111, labels='Priority-Low Mstone-1.1',
         merged_into=1, star_count=1),
     # 'Visibility-Super-High' tests that only first dash counts
     fake.MakeTestIssue(
-        789, 4, 'sum 4', 'New', 111L, labels='Visibility-Super-High',
+        789, 4, 'sum 4', 'New', 111, labels='Visibility-Super-High',
         star_count=1),
     ]
 
@@ -80,10 +80,10 @@ class TableCellTest(unittest.TestCase):
         tracker_pb2.Phase(phase_id=24, name='summer')]
     self.issue.approval_values = [
         tracker_pb2.ApprovalValue(
-            approval_id=3, approver_ids=[111L, 222L, 333L])]
+            approval_id=3, approver_ids=[111, 222, 333])]
     self.users_by_id = {
-        111L: framework_views.StuffUserView(111, 'foo@example.com', False),
-        222L: framework_views.StuffUserView(222, 'foo2@example.com', True),
+        111: framework_views.StuffUserView(111, 'foo@example.com', False),
+        222: framework_views.StuffUserView(222, 'foo2@example.com', True),
     }
 
     self.summary_table_cell_kws = {
@@ -280,7 +280,7 @@ class TableViewHelpersTest(unittest.TestCase):
   def testComputeUnshownColumns_FieldDefs(self):
     search_results = [
         fake.MakeTestIssue(
-            789, 1, 'sum 1', 'New', 111L,
+            789, 1, 'sum 1', 'New', 111,
             field_values=[
                 tracker_bizobj.MakeFieldValue(
                     5, 74, None, None, None, None, False, phase_id=4),
@@ -290,7 +290,7 @@ class TableViewHelpersTest(unittest.TestCase):
                 tracker_pb2.Phase(phase_id=4, name='goats'),
                 tracker_pb2.Phase(phase_id=5, name='sheep')]),
         fake.MakeTestIssue(
-            789, 2, 'sum 2', 'New', 111L,
+            789, 2, 'sum 2', 'New', 111,
             field_values=[
                 tracker_bizobj.MakeFieldValue(
                     5, 74, None, None, None, None, False, phase_id=3),
@@ -357,7 +357,7 @@ class TableViewHelpersTest(unittest.TestCase):
   def testExtractUniqueValues_ExplicitResults(self):
     cols = ['priority', 'owner', 'status', 'stars', 'mstone', 'foo']
     users_by_id = {
-        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
+        111: framework_views.StuffUserView(111, 'foo@example.com', True),
         }
     column_values = table_view_helpers.ExtractUniqueValues(
         cols, SEARCH_RESULTS_WITH_LABELS, users_by_id, self.config, {})
@@ -388,10 +388,10 @@ class TableViewHelpersTest(unittest.TestCase):
   def testExtractUniqueValues_CombinedColumns(self):
     cols = ['priority/pri', 'owner', 'status', 'stars', 'mstone/milestone']
     users_by_id = {
-        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
+        111: framework_views.StuffUserView(111, 'foo@example.com', True),
         }
     issue = fake.MakeTestIssue(
-        789, 5, 'sum 5', 'New', 111L, merged_into=200001,
+        789, 5, 'sum 5', 'New', 111, merged_into=200001,
         labels='Priority-High Pri-0 Milestone-1.0 mstone-1',
         star_count=15)
 
@@ -418,20 +418,20 @@ class TableViewHelpersTest(unittest.TestCase):
   def testExtractUniqueValues_DerivedValues(self):
     cols = ['priority', 'milestone', 'owner', 'status']
     users_by_id = {
-        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
-        222L: framework_views.StuffUserView(222, 'bar@example.com', True),
-        333L: framework_views.StuffUserView(333, 'lol@example.com', True),
+        111: framework_views.StuffUserView(111, 'foo@example.com', True),
+        222: framework_views.StuffUserView(222, 'bar@example.com', True),
+        333: framework_views.StuffUserView(333, 'lol@example.com', True),
         }
     search_results = [
         fake.MakeTestIssue(
-            789, 1, 'sum 1', '', 111L, labels='Priority-High Milestone-1.0',
+            789, 1, 'sum 1', '', 111, labels='Priority-High Milestone-1.0',
             derived_labels='Milestone-2.0 Foo', derived_status='Started'),
         fake.MakeTestIssue(
-            789, 2, 'sum 2', 'New', 111L, labels='Priority-High Milestone-1.0',
-            derived_owner_id=333L),  # Not seen because of owner_id
+            789, 2, 'sum 2', 'New', 111, labels='Priority-High Milestone-1.0',
+            derived_owner_id=333),  # Not seen because of owner_id
         fake.MakeTestIssue(
             789, 3, 'sum 3', 'New', 0, labels='Priority-Low Milestone-1.1',
-            derived_owner_id=222L),
+            derived_owner_id=222),
         ]
 
     column_values = table_view_helpers.ExtractUniqueValues(
@@ -489,7 +489,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
   def testMakeTableData_Normal(self):
     art = fake.MakeTestIssue(
-        789, 1, 'sum 1', 'New', 111L, labels='Type-Defect Priority-Medium')
+        789, 1, 'sum 1', 'New', 111, labels='Type-Defect Priority-Medium')
     visible_results = [art]
     lower_columns = ['type', 'priority', 'summary', 'stars']
     cell_factories = {
@@ -507,7 +507,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
   def testMakeTableData_Groups(self):
     art = fake.MakeTestIssue(
-        789, 1, 'sum 1', 'New', 111L, labels='Type-Defect Priority-Medium')
+        789, 1, 'sum 1', 'New', 111, labels='Type-Defect Priority-Medium')
     visible_results = [art]
     lower_columns = ['type', 'priority', 'summary', 'stars']
     lower_group_by = ['priority']
@@ -526,7 +526,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
   def testMakeRowData(self):
     art = fake.MakeTestIssue(
-        789, 1, 'sum 1', 'New', 111L, labels='Type-Defect Priority-Medium',
+        789, 1, 'sum 1', 'New', 111, labels='Type-Defect Priority-Medium',
         star_count=1)
     columns = ['type', 'priority', 'summary', 'stars']
 

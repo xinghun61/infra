@@ -37,18 +37,18 @@ class HotlistIssuesCsvTest(unittest.TestCase):
         features=fake.FeaturesService())
     self.servlet = hotlistissuescsv.HotlistIssuesCsv(
         'req', webapp2.Response(), services=self.services)
-    self.user1 = self.services.user.TestAddUser('testuser@gmail.com', 111L)
-    self.user2 = self.services.user.TestAddUser('testuser2@gmail.com', 222L)
+    self.user1 = self.services.user.TestAddUser('testuser@gmail.com', 111)
+    self.user2 = self.services.user.TestAddUser('testuser2@gmail.com', 222)
     self.services.project.TestAddProject('project-name', project_id=001)
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111L, project_name='project-name')
+        001, 1, 'issue_summary', 'New', 111, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue1)
     self.issues = [self.issue1]
     self.hotlist_item_fields = [
-        (issue.issue_id, rank, 111L, 1205079300, '') for
+        (issue.issue_id, rank, 111, 1205079300, '') for
         rank, issue in enumerate(self.issues)]
     self.hotlist = self.services.features.TestAddHotlist(
-        'MyHotlist', hotlist_id=123, owner_ids=[222L], editor_ids=[111L],
+        'MyHotlist', hotlist_id=123, owner_ids=[222], editor_ids=[111],
         hotlist_item_fields=self.hotlist_item_fields)
     self._MakeMR('/u/222/hotlists/MyHotlist')
     sorting.InitializeArtValues(self.services)

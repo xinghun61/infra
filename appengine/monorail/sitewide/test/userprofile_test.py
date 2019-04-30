@@ -20,9 +20,9 @@ from testing import testing_helpers
 
 from google.appengine.ext import testbed
 
-REGULAR_USER_ID = 111L
-ADMIN_USER_ID = 222L
-OTHER_USER_ID = 333L
+REGULAR_USER_ID = 111
+ADMIN_USER_ID = 222
+OTHER_USER_ID = 333
 STATES = {
     'live': project_pb2.ProjectState.LIVE,
     'archived': project_pb2.ProjectState.ARCHIVED,
@@ -120,7 +120,7 @@ class UserProfileTest(unittest.TestCase):
     self.assertFalse(page_data['owner_of_archived_projects'])
     self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
     self.mock_guspd.assert_called_once_with(
-        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
+        111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_RegularUserViewingOwnProjects(self):
     """A user can see all their own projects: live or archived."""
@@ -139,7 +139,7 @@ class UserProfileTest(unittest.TestCase):
         page_data['owner_of_archived_projects'],
         'regular-owner-archived')
     self.mock_guspd.assert_called_once_with(
-        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
+        111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_RegularUserViewingStarredUsers(self):
     """A user can see display names of other users that they starred."""
@@ -156,7 +156,7 @@ class UserProfileTest(unittest.TestCase):
     self.assertEquals('333@gmail.com', starred_users[0].email)
     self.assertEquals('["3...@gmail.com"]', page_data['starred_users_json'])
     self.mock_guspd.assert_called_once_with(
-        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
+        111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_AdminViewingOtherUserAddress(self):
     """Site admins always see full email addresses of other users."""
@@ -168,7 +168,7 @@ class UserProfileTest(unittest.TestCase):
 
     self.assertEquals('other@xyz.com', page_data['viewed_user_display_name'])
     self.mock_guspd.assert_called_once_with(
-        222L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
+        222, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_RegularUserViewingOtherUserAddressUnobscured(self):
     """Email should be revealed to others depending on obscure_email."""
@@ -181,7 +181,7 @@ class UserProfileTest(unittest.TestCase):
 
     self.assertEquals('other@xyz.com', page_data['viewed_user_display_name'])
     self.mock_guspd.assert_called_once_with(
-        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
+        111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_RegularUserViewingOtherUserAddressObscured(self):
     """Email should be revealed to others depending on obscure_email."""
@@ -194,7 +194,7 @@ class UserProfileTest(unittest.TestCase):
 
     self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
     self.mock_guspd.assert_called_once_with(
-        111L, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
+        111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb)
 
   def testGatherPageData_NoLinkedAccounts(self):
     """An account with no linked accounts should not show anything linked."""

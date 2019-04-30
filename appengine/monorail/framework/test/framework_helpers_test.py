@@ -70,54 +70,54 @@ class HelperFunctionsTest(unittest.TestCase):
 
   def testGetRoleName(self):
     proj = project_pb2.Project()
-    proj.owner_ids.append(111L)
-    proj.committer_ids.append(222L)
-    proj.contributor_ids.append(333L)
+    proj.owner_ids.append(111)
+    proj.committer_ids.append(222)
+    proj.contributor_ids.append(333)
 
     self.assertEquals(None, framework_helpers.GetRoleName(set(), proj))
 
     self.assertEquals(
-        'Owner', framework_helpers.GetRoleName({111L}, proj))
+        'Owner', framework_helpers.GetRoleName({111}, proj))
     self.assertEquals(
-        'Committer', framework_helpers.GetRoleName({222L}, proj))
+        'Committer', framework_helpers.GetRoleName({222}, proj))
     self.assertEquals(
-        'Contributor', framework_helpers.GetRoleName({333L}, proj))
+        'Contributor', framework_helpers.GetRoleName({333}, proj))
 
     self.assertEquals(
         'Owner',
-        framework_helpers.GetRoleName({111L, 222L, 999L}, proj))
+        framework_helpers.GetRoleName({111, 222, 999}, proj))
     self.assertEquals(
         'Committer',
-        framework_helpers.GetRoleName({222L, 333L, 999L}, proj))
+        framework_helpers.GetRoleName({222, 333, 999}, proj))
     self.assertEquals(
         'Contributor',
-        framework_helpers.GetRoleName({333L, 999L}, proj))
+        framework_helpers.GetRoleName({333, 999}, proj))
 
   def testGetHotlistRoleName(self):
     hotlist = features_pb2.Hotlist()
-    hotlist.owner_ids.append(111L)
-    hotlist.editor_ids.append(222L)
-    hotlist.follower_ids.append(333L)
+    hotlist.owner_ids.append(111)
+    hotlist.editor_ids.append(222)
+    hotlist.follower_ids.append(333)
 
     self.assertEquals(None, framework_helpers.GetHotlistRoleName(
         set(), hotlist))
 
     self.assertEquals(
-        'Owner', framework_helpers.GetHotlistRoleName({111L}, hotlist))
+        'Owner', framework_helpers.GetHotlistRoleName({111}, hotlist))
     self.assertEquals(
-        'Editor', framework_helpers.GetHotlistRoleName({222L}, hotlist))
+        'Editor', framework_helpers.GetHotlistRoleName({222}, hotlist))
     self.assertEquals(
-        'Follower', framework_helpers.GetHotlistRoleName({333L}, hotlist))
+        'Follower', framework_helpers.GetHotlistRoleName({333}, hotlist))
 
     self.assertEquals(
         'Owner',
-        framework_helpers.GetHotlistRoleName({111L, 222L, 999L}, hotlist))
+        framework_helpers.GetHotlistRoleName({111, 222, 999}, hotlist))
     self.assertEquals(
         'Editor',
-        framework_helpers.GetHotlistRoleName({222L, 333L, 999L}, hotlist))
+        framework_helpers.GetHotlistRoleName({222, 333, 999}, hotlist))
     self.assertEquals(
         'Follower',
-        framework_helpers.GetHotlistRoleName({333L, 999L}, hotlist))
+        framework_helpers.GetHotlistRoleName({333, 999}, hotlist))
 
 
 class UrlFormattingTest(unittest.TestCase):

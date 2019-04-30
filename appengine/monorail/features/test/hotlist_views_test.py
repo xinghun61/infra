@@ -41,15 +41,15 @@ class HotlistViewTest(unittest.TestCase):
   def setUp(self):
     self.services = service_manager.Services(user=fake.UserService(),
     usergroup=fake.UserGroupService())
-    self.user1 = self.services.user.TestAddUser('user1', 111L)
+    self.user1 = self.services.user.TestAddUser('user1', 111)
     self.user1.obscure_email = True
     self.user1_view = framework_views.UserView(self.user1)
-    self.user2 = self.services.user.TestAddUser('user2', 222L)
+    self.user2 = self.services.user.TestAddUser('user2', 222)
     self.user2.obscure_email = False
     self.user2_view = framework_views.UserView(self.user2)
-    self.user3 = self.services.user.TestAddUser('user3', 333L)
+    self.user3 = self.services.user.TestAddUser('user3', 333)
     self.user3_view = framework_views.UserView(self.user3)
-    self.user4 = self.services.user.TestAddUser('user4', 444L, banned=True)
+    self.user4 = self.services.user.TestAddUser('user4', 444, banned=True)
     self.user4_view = framework_views.UserView(self.user4)
 
     self.user_auth = authdata.AuthData.FromEmail(

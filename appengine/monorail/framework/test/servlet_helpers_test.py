@@ -46,7 +46,7 @@ class AssertBasePermissionTest(unittest.TestCase):
     # No exceptions should be raised.
     servlet_helpers.AssertBasePermission(mr)
 
-    mr.auth.user_id = 123L
+    mr.auth.user_id = 123
     # No exceptions should be raised.
     servlet_helpers.AssertBasePermission(mr)
     servlet_helpers.AssertBasePermissionForUser(
@@ -115,7 +115,7 @@ class ComputeIssueEntryURLTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/detail?id=123&q=term',
         project=self.project)
-    mr.auth.user_id = 111L
+    mr.auth.user_id = 111
     self.config.custom_issue_entry_url = FORM_URL
 
     url = servlet_helpers.ComputeIssueEntryURL(mr, self.config)
@@ -129,7 +129,7 @@ class IssueListURLTest(unittest.TestCase):
   def setUp(self):
     self.project = project_pb2.Project()
     self.project.project_name = 'proj'
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     self.config = tracker_pb2.ProjectIssueConfig()
     self.testbed = testbed.Testbed()
     self.testbed.activate()
@@ -158,7 +158,7 @@ class IssueListURLTest(unittest.TestCase):
   def testIssueListURL_Customized_Member(self):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues', project=self.project,
-        user_info={'effective_ids': {111L}})
+        user_info={'effective_ids': {111}})
     self.config.member_default_query = 'owner:me'
 
     url = servlet_helpers.IssueListURL(mr, self.config)
@@ -167,7 +167,7 @@ class IssueListURLTest(unittest.TestCase):
   def testIssueListURL_Customized_RetainQS(self):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues', project=self.project,
-        user_info={'effective_ids': {111L}})
+        user_info={'effective_ids': {111}})
     self.config.member_default_query = 'owner:me'
 
     url = servlet_helpers.IssueListURL(mr, self.config, query_string='')

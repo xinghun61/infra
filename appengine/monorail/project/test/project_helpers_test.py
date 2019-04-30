@@ -22,22 +22,22 @@ class HelpersUnitTest(unittest.TestCase):
     self.services = service_manager.Services(
         project=fake.ProjectService(),
         user=fake.UserService())
-    self.services.user.TestAddUser('a@example.com', 111L)
-    self.services.user.TestAddUser('b@example.com', 222L)
-    self.services.user.TestAddUser('c@example.com', 333L)
+    self.services.user.TestAddUser('a@example.com', 111)
+    self.services.user.TestAddUser('b@example.com', 222)
+    self.services.user.TestAddUser('c@example.com', 333)
     self.users_by_id = framework_views.MakeAllUserViews(
-        'cnxn', self.services.user, [111L, 222L, 333L])
-    self.effective_ids_by_user = {user: set() for user in {111L, 222L, 333L}}
+        'cnxn', self.services.user, [111, 222, 333])
+    self.effective_ids_by_user = {user: set() for user in {111, 222, 333}}
 
   def testBuildProjectMembers(self):
     project = project_pb2.MakeProject(
-        'proj', owner_ids=[111L], committer_ids=[222L],
-        contributor_ids=[333L])
+        'proj', owner_ids=[111], committer_ids=[222],
+        contributor_ids=[333])
     page_data = project_helpers.BuildProjectMembers(
         self.cnxn, project, self.services.user)
-    self.assertEqual(111L, page_data['owners'][0].user_id)
-    self.assertEqual(222L, page_data['committers'][0].user_id)
-    self.assertEqual(333L, page_data['contributors'][0].user_id)
+    self.assertEqual(111, page_data['owners'][0].user_id)
+    self.assertEqual(222, page_data['committers'][0].user_id)
+    self.assertEqual(333, page_data['contributors'][0].user_id)
     self.assertEqual(3, len(page_data['all_members']))
 
   def testParseUsernames(self):
@@ -54,7 +54,7 @@ class HelpersUnitTest(unittest.TestCase):
     # Parsing valid user names.
     id_set = project_helpers.ParseUsernames(
         self.cnxn, self.services.user, 'a@example.com, c@example.com')
-    self.assertEqual({111L, 333L}, id_set)
+    self.assertEqual({111, 333}, id_set)
 
   def testParseProjectAccess_NotOffered(self):
     project = project_pb2.MakeProject('proj')
@@ -75,44 +75,44 @@ class HelpersUnitTest(unittest.TestCase):
     self.assertEqual(None, access)
 
   def testUsersWithPermsInProject_StandardPermission(self):
-    project = project_pb2.MakeProject('proj', committer_ids=[111L])
+    project = project_pb2.MakeProject('proj', committer_ids=[111])
     perms_needed = {permissions.VIEW, permissions.EDIT_ISSUE}
     actual = project_helpers.UsersWithPermsInProject(
         project, perms_needed, self.users_by_id, self.effective_ids_by_user)
     self.assertEqual(
-        {permissions.VIEW: {111L, 222L, 333L},
-         permissions.EDIT_ISSUE: {111L}},
+        {permissions.VIEW: {111, 222, 333},
+         permissions.EDIT_ISSUE: {111}},
         actual)
 
   def testUsersWithPermsInProject_IndirectPermission(self):
     perms_needed = {permissions.EDIT_ISSUE}
-    # User 111L has the EDIT_ISSUE permission.
-    project = project_pb2.MakeProject('proj', committer_ids=[111L])
-    # User 222L has the EDIT_ISSUE permission, because 111L is included in its
+    # User 111 has the EDIT_ISSUE permission.
+    project = project_pb2.MakeProject('proj', committer_ids=[111])
+    # User 222 has the EDIT_ISSUE permission, because 111 is included in its
     # effective IDs.
-    self.effective_ids_by_user[222L] = {111L}
-    # User 333L doesn't have the EDIT_ISSUE permission, since only direct
+    self.effective_ids_by_user[222] = {111}
+    # User 333 doesn't have the EDIT_ISSUE permission, since only direct
     # effective IDs are taken into account.
-    self.effective_ids_by_user[333L] = {222L}
+    self.effective_ids_by_user[333] = {222}
     actual = project_helpers.UsersWithPermsInProject(
         project, perms_needed, self.users_by_id, self.effective_ids_by_user)
     self.assertEqual(
-        {permissions.EDIT_ISSUE: {111L, 222L}},
+        {permissions.EDIT_ISSUE: {111, 222}},
         actual)
 
   def testUsersWithPermsInProject_CustomPermission(self):
     project = project_pb2.MakeProject('proj')
     project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=111L,
+            member_id=111,
             perms=['FooPerm', 'BarPerm']),
         project_pb2.Project.ExtraPerms(
-            member_id=222L,
+            member_id=222,
             perms=['BarPerm'])]
     perms_needed = {'FooPerm', 'BarPerm'}
     actual = project_helpers.UsersWithPermsInProject(
         project, perms_needed, self.users_by_id, self.effective_ids_by_user)
     self.assertEqual(
-        {'FooPerm': {111L},
-         'BarPerm': {111L, 222L}},
+        {'FooPerm': {111},
+         'BarPerm': {111, 222}},
         actual)

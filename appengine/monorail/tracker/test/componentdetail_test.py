@@ -43,12 +43,12 @@ class ComponentDetailTest(unittest.TestCase):
         'fake cnxn', self.project.project_id)
     self.services.config.StoreConfig('fake cnxn', self.config)
     self.cd = tracker_bizobj.MakeComponentDef(
-        1, self.project.project_id, 'BackEnd', 'doc', False, [], [111L], 100000,
-        122L, 10000000, 133L)
+        1, self.project.project_id, 'BackEnd', 'doc', False, [], [111], 100000,
+        122, 10000000, 133)
     self.config.component_defs = [self.cd]
-    self.services.user.TestAddUser('a@example.com', 111L)
-    self.services.user.TestAddUser('b@example.com', 122L)
-    self.services.user.TestAddUser('c@example.com', 133L)
+    self.services.user.TestAddUser('a@example.com', 111)
+    self.services.user.TestAddUser('b@example.com', 122)
+    self.services.user.TestAddUser('c@example.com', 133)
     self.mr.component_path = 'BackEnd'
 
     self.mox = mox.Mox()
@@ -133,7 +133,7 @@ class ComponentDetailTest(unittest.TestCase):
     self.assertEqual('Apr 1970', page_data['modified'])
 
   def testGatherPageData_VisibleCreatorForSelf(self):
-    self.mr.auth.user_id = 122L
+    self.mr.auth.user_id = 122
     page_data = self.servlet.GatherPageData(self.mr)
 
     self.assertEqual('b@example.com', page_data['creator'].display_name)
@@ -145,9 +145,9 @@ class ComponentDetailTest(unittest.TestCase):
     self.assertEqual('Apr 1970', page_data['modified'])
 
   def testGatherPageData_VisibleCreatorModifierForUnobscuredEmail(self):
-    creator = self.services.user.GetUser(self.mr.cnxn, 122L)
+    creator = self.services.user.GetUser(self.mr.cnxn, 122)
     creator.obscure_email = False
-    modifier = self.services.user.GetUser(self.mr.cnxn, 133L)
+    modifier = self.services.user.GetUser(self.mr.cnxn, 133)
     modifier.obscure_email = False
     page_data = self.servlet.GatherPageData(self.mr)
 
@@ -160,8 +160,8 @@ class ComponentDetailTest(unittest.TestCase):
 
   def testGatherPageData_WithSubComponents(self):
     subcd = tracker_bizobj.MakeComponentDef(
-        2, self.project.project_id, 'BackEnd>Worker', 'doc', False, [], [111L],
-        0, 122L)
+        2, self.project.project_id, 'BackEnd>Worker', 'doc', False, [], [111],
+        0, 122)
     self.config.component_defs.append(subcd)
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertFalse(page_data['allow_delete'])
@@ -198,8 +198,8 @@ class ComponentDetailTest(unittest.TestCase):
 
   def testProcessFormData_Delete_WithSubComponent(self):
     subcd = tracker_bizobj.MakeComponentDef(
-        2, self.project.project_id, 'BackEnd>Worker', 'doc', False, [], [111L],
-        0, 122L)
+        2, self.project.project_id, 'BackEnd>Worker', 'doc', False, [], [111],
+        0, 122)
     self.config.component_defs.append(subcd)
 
     post_data = fake.PostData(
@@ -232,8 +232,8 @@ class ComponentDetailTest(unittest.TestCase):
         'This is where the magic happens',
         cd.docstring)
     self.assertEqual(True, cd.deprecated)
-    self.assertEqual([111L], cd.admin_ids)
-    self.assertEqual([111L], cd.cc_ids)
+    self.assertEqual([111], cd.admin_ids)
+    self.assertEqual([111], cd.cc_ids)
 
   def testProcessDeleteComponent(self):
     self.servlet._ProcessDeleteComponent(self.mr, self.cd)
@@ -261,22 +261,22 @@ class ComponentDetailTest(unittest.TestCase):
         'This is where the magic happens',
         cd.docstring)
     self.assertEqual(True, cd.deprecated)
-    self.assertEqual([111L], cd.admin_ids)
-    self.assertEqual([111L], cd.cc_ids)
+    self.assertEqual([111], cd.admin_ids)
+    self.assertEqual([111], cd.cc_ids)
     # Assert that creator and created were not updated.
-    self.assertEqual(122L, cd.creator_id)
+    self.assertEqual(122, cd.creator_id)
     self.assertEqual(100000, cd.created)
     # Assert that modifier and modified were updated.
-    self.assertEqual(122L, cd.modifier_id)
+    self.assertEqual(122, cd.modifier_id)
     self.assertTrue(cd.modified > 10000000)
 
   def testProcessEditComponent_RenameWithSubComponents(self):
     subcd_1 = tracker_bizobj.MakeComponentDef(
-        2, self.project.project_id, 'BackEnd>Worker1', 'doc', False, [], [111L],
-        0, 125L, 3, 126L)
+        2, self.project.project_id, 'BackEnd>Worker1', 'doc', False, [], [111],
+        0, 125, 3, 126)
     subcd_2 = tracker_bizobj.MakeComponentDef(
-        3, self.project.project_id, 'BackEnd>Worker2', 'doc', False, [], [111L],
-        0, 125L, 4, 127L)
+        3, self.project.project_id, 'BackEnd>Worker2', 'doc', False, [], [111],
+        0, 125, 4, 127)
     self.config.component_defs.extend([subcd_1, subcd_2])
 
     self.mox.StubOutWithMock(filterrules_helpers, 'RecomputeAllDerivedFields')
@@ -302,15 +302,15 @@ class ComponentDetailTest(unittest.TestCase):
     subcd_1 = tracker_bizobj.FindComponentDef('BackEnds>Worker1', config)
     self.assertEqual('BackEnds>Worker1', subcd_1.path)
     # Assert that creator and modifier have not changed for subcd_1.
-    self.assertEqual(125L, subcd_1.creator_id)
+    self.assertEqual(125, subcd_1.creator_id)
     self.assertEqual(0, subcd_1.created)
-    self.assertEqual(126L, subcd_1.modifier_id)
+    self.assertEqual(126, subcd_1.modifier_id)
     self.assertEqual(3, subcd_1.modified)
 
     subcd_2 = tracker_bizobj.FindComponentDef('BackEnds>Worker2', config)
     self.assertEqual('BackEnds>Worker2', subcd_2.path)
     # Assert that creator and modifier have not changed for subcd_2.
-    self.assertEqual(125L, subcd_2.creator_id)
+    self.assertEqual(125, subcd_2.creator_id)
     self.assertEqual(0, subcd_2.created)
-    self.assertEqual(127L, subcd_2.modifier_id)
+    self.assertEqual(127, subcd_2.modifier_id)
     self.assertEqual(4, subcd_2.modified)

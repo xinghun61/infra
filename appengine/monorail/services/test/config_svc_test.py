@@ -787,7 +787,7 @@ class ConfigServiceTest(unittest.TestCase):
 
   def testUpdateApprovals(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    approver_rows = [(123, 111L, 789), (123, 222L, 789)]
+    approver_rows = [(123, 111, 789), (123, 222, 789)]
     survey_row = (123, 'Q1\nQ2', 789)
     first_approval = tracker_bizobj.MakeFieldDef(
         123, 789, 'FirstApproval', tracker_pb2.FieldTypes.APPROVAL_TYPE,
@@ -795,7 +795,7 @@ class ConfigServiceTest(unittest.TestCase):
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'the first one', False)
     config.field_defs = [first_approval]
     config.approval_defs = [tracker_pb2.ApprovalDef(
-        approval_id=123, approver_ids=[111L, 222L], survey='Q1\nQ2')]
+        approval_id=123, approver_ids=[111, 222], survey='Q1\nQ2')]
     self.SetUpUpdateApprovals_Default(123, approver_rows, survey_row)
 
     self.mox.ReplayAll()
@@ -1041,8 +1041,8 @@ class ConfigServiceTest(unittest.TestCase):
     templates = [
         tracker_bizobj.ConvertDictToTemplate(t)
         for t in tracker_constants.DEFAULT_TEMPLATES]
-    templates[0].owner_id = 111L
-    templates[0].admin_ids = [111L, 222L]
-    config.field_defs = [tracker_pb2.FieldDef(admin_ids=[333L])]
+    templates[0].owner_id = 111
+    templates[0].admin_ids = [111, 222]
+    config.field_defs = [tracker_pb2.FieldDef(admin_ids=[333])]
     actual = self.config_service.UsersInvolvedInConfig(config, templates)
-    self.assertEqual({111L, 222L, 333L}, actual)
+    self.assertEqual({111, 222, 333}, actual)

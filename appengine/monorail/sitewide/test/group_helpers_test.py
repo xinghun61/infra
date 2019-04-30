@@ -27,8 +27,8 @@ class GroupHelpersTest(unittest.TestCase):
 
   def testGroupMemberView(self):
     user = user_pb2.MakeUser(1L, email='test@example.com')
-    gmv = group_helpers.GroupMemberView(user, 888L, 'member')
-    self.assertEqual(888L, gmv.group_id)
+    gmv = group_helpers.GroupMemberView(user, 888, 'member')
+    self.assertEqual(888, gmv.group_id)
     self.assertEqual('member', gmv.role)
 
   def testBuildUserGroupVisibilityOptions(self):

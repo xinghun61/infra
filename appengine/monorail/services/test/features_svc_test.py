@@ -58,24 +58,24 @@ class HotlistTwoLevelCacheTest(unittest.TestCase):
 
     ts = 20021111111111
     issue_rows = [
-        (123, 567, 10, 111L, ts, ''), (123, 678, 9, 111L, ts, ''),
-        (234, 567, 0, 111L, ts, '')]
+        (123, 567, 10, 111, ts, ''), (123, 678, 9, 111, ts, ''),
+        (234, 567, 0, 111, ts, '')]
     role_rows = [
-        (123, 111L, 'owner'), (123, 444L, 'owner'),
-        (123, 222L, 'editor'),
-        (123, 333L, 'follower'),
-        (234, 111L, 'owner')]
+        (123, 111, 'owner'), (123, 444, 'owner'),
+        (123, 222, 'editor'),
+        (123, 333, 'follower'),
+        (234, 111, 'owner')]
     hotlist_dict = self.features_service.hotlist_2lc._DeserializeHotlists(
         hotlist_rows, issue_rows, role_rows)
 
     self.assertItemsEqual([123, 234], hotlist_dict.keys())
     self.assertEqual(123, hotlist_dict[123].hotlist_id)
     self.assertEqual('hot1', hotlist_dict[123].name)
-    self.assertItemsEqual([111L, 444L], hotlist_dict[123].owner_ids)
-    self.assertItemsEqual([222L], hotlist_dict[123].editor_ids)
-    self.assertItemsEqual([333L], hotlist_dict[123].follower_ids)
+    self.assertItemsEqual([111, 444], hotlist_dict[123].owner_ids)
+    self.assertItemsEqual([222], hotlist_dict[123].editor_ids)
+    self.assertItemsEqual([333], hotlist_dict[123].follower_ids)
     self.assertEqual(234, hotlist_dict[234].hotlist_id)
-    self.assertItemsEqual([111L], hotlist_dict[234].owner_ids)
+    self.assertItemsEqual([111], hotlist_dict[234].owner_ids)
 
 
 class FeaturesServiceTest(unittest.TestCase):
@@ -530,15 +530,15 @@ class FeaturesServiceTest(unittest.TestCase):
   def SetUpLookupUserHotlists(self):
     self.features_service.hotlist2user_tbl.Select(
         self.cnxn, cols=['user_id', 'hotlist_id'],
-        user_id=[111L], left_joins=[('Hotlist ON hotlist_id = id', [])],
-        where=[('Hotlist.is_deleted = %s', [False])]).AndReturn([(111L, 123)])
+        user_id=[111], left_joins=[('Hotlist ON hotlist_id = id', [])],
+        where=[('Hotlist.is_deleted = %s', [False])]).AndReturn([(111, 123)])
 
   def testLookupUserHotlists(self):
     self.SetUpLookupUserHotlists()
     self.mox.ReplayAll()
     ret = self.features_service.LookupUserHotlists(
-        self.cnxn, [111L])
-    self.assertEqual(ret, {111L: [123]})
+        self.cnxn, [111])
+    self.assertEqual(ret, {111: [123]})
     self.mox.VerifyAll()
 
   def SetUpLookupIssueHotlists(self):
@@ -590,11 +590,11 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def SetUpUpdateHotlistItemsFields(self, hotlist_id, issue_ids):
     hotlist_rows = [(hotlist_id, 'hotlist', '', '', True, '')]
-    insert_rows = [(345, 11, 112, 333L, 2002, ''),
-                   (345, 33, 332, 333L, 2002, ''),
-                   (345, 55, 552, 333L, 2002, '')]
-    issue_rows = [(345, 11, 1, 333L, 2002, ''), (345, 33, 3, 333L, 2002, ''),
-             (345, 55, 3, 333L, 2002, '')]
+    insert_rows = [(345, 11, 112, 333, 2002, ''),
+                   (345, 33, 332, 333, 2002, ''),
+                   (345, 55, 552, 333, 2002, '')]
+    issue_rows = [(345, 11, 1, 333, 2002, ''), (345, 33, 3, 333, 2002, ''),
+             (345, 55, 3, 333, 2002, '')]
     self.SetUpGetHotlists(
         hotlist_id, hotlist_rows=hotlist_rows, issue_rows=issue_rows)
     self.features_service.hotlist2issue_tbl.Delete(
@@ -606,8 +606,8 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def testUpdateHotlistItemsFields_Ranks(self):
     hotlist_item_fields = [
-        (11, 1, 333L, 2002, ''), (33, 3, 333L, 2002, ''),
-        (55, 3, 333L, 2002, '')]
+        (11, 1, 333, 2002, ''), (33, 3, 333, 2002, ''),
+        (55, 3, 333, 2002, '')]
     hotlist = fake.Hotlist(hotlist_name='hotlist', hotlist_id=345,
                            hotlist_item_fields=hotlist_item_fields)
     self.features_service.hotlist_2lc.CacheItem(345, hotlist)
@@ -651,7 +651,7 @@ class FeaturesServiceTest(unittest.TestCase):
     self.SetUpLookupUserHotlists()
     self.SetUpGetHotlists(123)
     self.mox.ReplayAll()
-    hotlists = self.features_service.GetHotlistsByUserID(self.cnxn, 111L)
+    hotlists = self.features_service.GetHotlistsByUserID(self.cnxn, 111)
     self.assertEqual(len(hotlists), 1)
     self.assertEqual(hotlists[0].hotlist_id, 123)
     self.mox.VerifyAll()
@@ -692,10 +692,10 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def testUpdateHotlistRoles(self):
     self.SetUpGetHotlists(456)
-    self.SetUpUpdateHotlistRoles(456, [111L, 222L], [333L], [])
+    self.SetUpUpdateHotlistRoles(456, [111, 222], [333], [])
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistRoles(
-        self.cnxn, 456, [111L, 222L], [333L], [])
+        self.cnxn, 456, [111, 222], [333], [])
     self.mox.VerifyAll()
 
   def SetUpUpdateHotlistItems(self, cnxn, hotlist_id, remove, added_tuples):
@@ -715,9 +715,9 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def testAddIssuesToHotlists(self):
     added_tuples = [
-            (111L, None, None, ''),
-            (222L, None, None, ''),
-            (333L, None, None, '')]
+            (111, None, None, ''),
+            (222, None, None, ''),
+            (333, None, None, '')]
     issues = [
       tracker_pb2.Issue(issue_id=issue_id)
       for issue_id, _, _, _ in added_tuples
@@ -731,7 +731,7 @@ class FeaturesServiceTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(self.issue_service, 'GetIssues')
     self.issue_service.GetIssues(self.cnxn,
-        [111L, 222L, 333L]).AndReturn(issues)
+        [111, 222, 333]).AndReturn(issues)
     self.chart_service.StoreIssueSnapshots(self.cnxn, issues,
         commit=False)
     self.mox.ReplayAll()
@@ -742,27 +742,27 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def testRemoveIssuesFromHotlists(self):
     issue_rows = [
-      (456, 555L, 1L, None, None, ''),
-      (456, 666L, 11L, None, None, ''),
+      (456, 555, 1L, None, None, ''),
+      (456, 666, 11L, None, None, ''),
     ]
     issues = [tracker_pb2.Issue(issue_id=issue_rows[0][1])]
     self.SetUpGetHotlists(456, issue_rows=issue_rows)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 456, [555L], [])
+        self. cnxn, 456, [555], [])
     issue_rows = [
-      (789, 555L, 1L, None, None, ''),
-      (789, 666L, 11L, None, None, ''),
+      (789, 555, 1L, None, None, ''),
+      (789, 666, 11L, None, None, ''),
     ]
     self.SetUpGetHotlists(789, issue_rows=issue_rows)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 789, [555L], [])
+        self. cnxn, 789, [555], [])
     self.mox.StubOutWithMock(self.issue_service, 'GetIssues')
     self.issue_service.GetIssues(self.cnxn,
-        [555L]).AndReturn(issues)
+        [555]).AndReturn(issues)
     self.chart_service.StoreIssueSnapshots(self.cnxn, issues, commit=False)
     self.mox.ReplayAll()
     self.features_service.RemoveIssuesFromHotlists(
-        self.cnxn, [456, 789], [555L], self.issue_service, self.chart_service,
+        self.cnxn, [456, 789], [555], self.issue_service, self.chart_service,
         commit=False)
     self.mox.VerifyAll()
 
@@ -770,22 +770,22 @@ class FeaturesServiceTest(unittest.TestCase):
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [], [
-            (111L, None, None, ''),
-            (222L, None, None, ''),
-            (333L, None, None, '')])
+            (111, None, None, ''),
+            (222, None, None, ''),
+            (333, None, None, '')])
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistItems(
         self.cnxn, 456, [],
-        [(111L, None, None, ''),
-         (222L, None, None, ''),
-         (333L, None, None, '')], commit=False)
+        [(111, None, None, ''),
+         (222, None, None, ''),
+         (333, None, None, '')], commit=False)
     self.mox.VerifyAll()
 
   def SetUpDeleteHotlist(self, cnxn, hotlist_id):
     hotlist_rows = [(hotlist_id, 'hotlist', 'test hotlist',
         'test list', False, '')]
     self.SetUpGetHotlists(678, hotlist_rows=hotlist_rows,
-        role_rows=[(hotlist_id, 111L, 'owner', )])
+        role_rows=[(hotlist_id, 111, 'owner', )])
     self.features_service.hotlist2issue_tbl.Select(self.cnxn,
         cols=['Issue.project_id'], hotlist_id=hotlist_id, distinct=True,
         left_joins=[('Issue ON issue_id = id', [])]).AndReturn([(1,)])

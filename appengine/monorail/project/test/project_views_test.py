@@ -67,43 +67,43 @@ class ProjectViewTest(unittest.TestCase):
 class MemberViewTest(unittest.TestCase):
 
   def setUp(self):
-    self.alice_view = framework_views.StuffUserView(111L, 'alice', True)
-    self.bob_view = framework_views.StuffUserView(222L, 'bob', True)
-    self.carol_view = framework_views.StuffUserView(333L, 'carol', True)
+    self.alice_view = framework_views.StuffUserView(111, 'alice', True)
+    self.bob_view = framework_views.StuffUserView(222, 'bob', True)
+    self.carol_view = framework_views.StuffUserView(333, 'carol', True)
 
     self.project = project_pb2.Project()
     self.project.project_name = 'proj'
-    self.project.owner_ids.append(111L)
-    self.project.committer_ids.append(222L)
-    self.project.contributor_ids.append(333L)
+    self.project.owner_ids.append(111)
+    self.project.committer_ids.append(222)
+    self.project.contributor_ids.append(333)
 
   def testViewingSelf(self):
     member_view = project_views.MemberView(
-        0, 111L, self.alice_view, self.project, None)
+        0, 111, self.alice_view, self.project, None)
     self.assertFalse(member_view.viewing_self)
     member_view = project_views.MemberView(
-        222L, 111L, self.alice_view, self.project, None)
+        222, 111, self.alice_view, self.project, None)
     self.assertFalse(member_view.viewing_self)
 
     member_view = project_views.MemberView(
-        111L, 111L, self.alice_view, self.project, None)
+        111, 111, self.alice_view, self.project, None)
     self.assertTrue(member_view.viewing_self)
 
   def testRoles(self):
     member_view = project_views.MemberView(
-        0, 111L, self.alice_view, self.project, None)
+        0, 111, self.alice_view, self.project, None)
     self.assertEqual('Owner', member_view.role)
     self.assertEqual('/p/proj/people/detail?u=111',
                      member_view.detail_url)
 
     member_view = project_views.MemberView(
-        0, 222L, self.bob_view, self.project, None)
+        0, 222, self.bob_view, self.project, None)
     self.assertEqual('Committer', member_view.role)
     self.assertEqual('/p/proj/people/detail?u=222',
                      member_view.detail_url)
 
     member_view = project_views.MemberView(
-        0, 333L, self.carol_view, self.project, None)
+        0, 333, self.carol_view, self.project, None)
     self.assertEqual('Contributor', member_view.role)
     self.assertEqual('/p/proj/people/detail?u=333',
                      member_view.detail_url)

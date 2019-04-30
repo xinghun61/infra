@@ -38,18 +38,18 @@ class TemplateDetailTest(unittest.TestCase):
     self.servlet = templatedetail.TemplateDetail('req', 'res',
                                                services=self.services)
 
-    self.services.user.TestAddUser('gatsby@example.com', 111L)
-    self.services.user.TestAddUser('sport@example.com', 222L)
-    self.services.user.TestAddUser('gatsby@example.com', 111L)
-    self.services.user.TestAddUser('daisy@example.com', 333L)
+    self.services.user.TestAddUser('gatsby@example.com', 111)
+    self.services.user.TestAddUser('sport@example.com', 222)
+    self.services.user.TestAddUser('gatsby@example.com', 111)
+    self.services.user.TestAddUser('daisy@example.com', 333)
 
     self.project = self.services.project.TestAddProject('proj')
     self.services.project.TestAddProjectMembers(
-        [333L], self.project, 'CONTRIBUTOR_ROLE')
+        [333], self.project, 'CONTRIBUTOR_ROLE')
 
     self.template = self.test_template = tracker_bizobj.MakeIssueTemplate(
-        'TestTemplate', 'sum', 'New', 111L, 'content', ['label1', 'label2'],
-        [], [222L], [], summary_must_be_edited=True,
+        'TestTemplate', 'sum', 'New', 111, 'content', ['label1', 'label2'],
+        [], [222], [], summary_must_be_edited=True,
         owner_defaults_to_member=True, component_required=False,
         members_only=False)
     self.template.template_id = 12345
@@ -96,7 +96,7 @@ class TemplateDetailTest(unittest.TestCase):
     self.ad_4 = tracker_pb2.ApprovalDef(approval_id=4)
 
     self.cd_1 = tracker_bizobj.MakeComponentDef(
-        1, 789, 'BackEnd', 'doc', False, [111L], [], 100000, 222L)
+        1, 789, 'BackEnd', 'doc', False, [111], [], 100000, 222)
     self.template.component_ids.append(1)
 
     self.canary_phase = tracker_pb2.Phase(
@@ -129,10 +129,10 @@ class TemplateDetailTest(unittest.TestCase):
     self.mox.ResetAll()
 
   def testAssertBasePermission_Anyone(self):
-    self.mr.auth.effective_ids = {222L}
+    self.mr.auth.effective_ids = {222}
     self.servlet.AssertBasePermission(self.mr)
 
-    self.mr.auth.effective_ids = {333L}
+    self.mr.auth.effective_ids = {333}
     self.servlet.AssertBasePermission(self.mr)
 
     self.mr.perms = permissions.OWNER_ACTIVE_PERMISSIONSET
@@ -143,13 +143,13 @@ class TemplateDetailTest(unittest.TestCase):
 
   def testAssertBasePermision_MembersOnly(self):
     self.template.members_only = True
-    self.mr.auth.effective_ids = {222L}
+    self.mr.auth.effective_ids = {222}
     self.servlet.AssertBasePermission(self.mr)
 
-    self.mr.auth.effective_ids = {333L}
+    self.mr.auth.effective_ids = {333}
     self.servlet.AssertBasePermission(self.mr)
 
-    self.mr.auth.effective_ids = {444L}
+    self.mr.auth.effective_ids = {444}
     self.assertRaises(
         permissions.PermissionException,
         self.servlet.AssertBasePermission, self.mr)
@@ -282,7 +282,7 @@ class TemplateDetailTest(unittest.TestCase):
         labels=['label-One', 'label-Two'], owner_defaults_to_member=True,
         admin_ids=[], content='HEY WHY', component_ids=[1],
         summary_must_be_edited=False, summary='TLDR', members_only=True,
-        owner_id=333L)
+        owner_id=333)
 
   def testProcessFormData_AcceptPhases(self):
     post_data = fake.PostData(
@@ -327,7 +327,7 @@ class TemplateDetailTest(unittest.TestCase):
         labels=['label-One', 'label-Two'], owner_defaults_to_member=True,
         admin_ids=[], content='HEY WHY', component_ids=[1],
         summary_must_be_edited=False, summary='TLDR', members_only=True,
-        owner_id=333L)
+        owner_id=333)
 
   def testProcessFormData_Delete(self):
     post_data = fake.PostData(

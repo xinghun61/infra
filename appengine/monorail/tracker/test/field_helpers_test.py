@@ -242,21 +242,21 @@ class FieldHelpersTest(unittest.TestCase):
           tracker_pb2.NotifyTriggers.NEVER, 'no_action',
           'Approval for UX review', False))
     existing_approvaldef = tracker_pb2.ApprovalDef(
-        approval_id=123, approver_ids=[101L, 102L], survey='')
+        approval_id=123, approver_ids=[101, 102], survey='')
     self.config.approval_defs = [existing_approvaldef]
     revised_approvals = field_helpers.ReviseApprovals(
-        124, [103L], '', self.config)
+        124, [103], '', self.config)
     self.assertEqual(len(revised_approvals), 2)
     self.assertEqual(revised_approvals,
-                     [(123, [101L, 102L], ''), (124, [103L], '')])
+                     [(123, [101, 102], ''), (124, [103], '')])
 
   def testReviseApprovals_Existing(self):
     existing_approvaldef = tracker_pb2.ApprovalDef(
-        approval_id=123, approver_ids=[101L, 102L], survey='')
+        approval_id=123, approver_ids=[101, 102], survey='')
     self.config.approval_defs = [existing_approvaldef]
     revised_approvals = field_helpers.ReviseApprovals(
-        123, [103L], '', self.config)
-    self.assertEqual(revised_approvals, [(123, [103L], '')])
+        123, [103], '', self.config)
+    self.assertEqual(revised_approvals, [(123, [103], '')])
 
   def testParseOneFieldValue_IntType(self):
     fd = tracker_bizobj.MakeFieldDef(
@@ -279,7 +279,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual(fv.str_value, '8675309')
 
   def testParseOneFieldValue_UserType(self):
-    self.services.user.TestAddUser('user@example.com', 111L)
+    self.services.user.TestAddUser('user@example.com', 111)
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'Foo', tracker_pb2.FieldTypes.USER_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
@@ -440,23 +440,23 @@ class FieldHelpersTest(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
 
-    self.services.user.TestAddUser('owner@example.com', 111L)
-    self.mr.project.owner_ids.extend([111L])
+    self.services.user.TestAddUser('owner@example.com', 111)
+    self.mr.project.owner_ids.extend([111])
     owner = tracker_bizobj.MakeFieldValue(
-        fd.field_id, None, None, 111L, None, None, False)
+        fd.field_id, None, None, 111, None, None, False)
 
-    self.services.user.TestAddUser('committer@example.com', 222L)
-    self.mr.project.committer_ids.extend([222L])
+    self.services.user.TestAddUser('committer@example.com', 222)
+    self.mr.project.committer_ids.extend([222])
     self.mr.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=222L,
+            member_id=222,
             perms=['FooPerm'])]
     committer = tracker_bizobj.MakeFieldValue(
-        fd.field_id, None, None, 222L, None, None, False)
+        fd.field_id, None, None, 222, None, None, False)
 
-    self.services.user.TestAddUser('user@example.com', 333L)
+    self.services.user.TestAddUser('user@example.com', 333)
     user = tracker_bizobj.MakeFieldValue(
-        fd.field_id, None, None, 333L, None, None, False)
+        fd.field_id, None, None, 333, None, None, False)
 
     # Normal
     for fv in (owner, committer, user):

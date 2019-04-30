@@ -70,17 +70,17 @@ class IssueEntryTest(unittest.TestCase):
     #     H2: owned by U2, can be edited by U1 (private)
     #     H2: owned by U3, can be edited by U1 and U2 (public)
     self.cnxn = fake.MonorailConnection()
-    self.U1 = self.services.user.TestAddUser('U1', 111L)
-    self.U2 = self.services.user.TestAddUser('U2', 222L)
-    self.U3 = self.services.user.TestAddUser('U3', 333L)
+    self.U1 = self.services.user.TestAddUser('U1', 111)
+    self.U2 = self.services.user.TestAddUser('U2', 222)
+    self.U3 = self.services.user.TestAddUser('U3', 333)
 
     self.H1 = self.services.features.TestAddHotlist(
-        name='H1', summary='', owner_ids=[111L], is_private=True)
+        name='H1', summary='', owner_ids=[111], is_private=True)
     self.H2 = self.services.features.TestAddHotlist(
-        name='H2', summary='', owner_ids=[222L], editor_ids=[111L],
+        name='H2', summary='', owner_ids=[222], editor_ids=[111],
         is_private=True)
     self.H2_U3 = self.services.features.TestAddHotlist(
-        name='H2', summary='', owner_ids=[333L], editor_ids=[111L, 222L],
+        name='H2', summary='', owner_ids=[333], editor_ids=[111, 222],
         is_private=False)
 
     self.mox = mox.Mox()
@@ -502,7 +502,7 @@ class IssueEntryTest(unittest.TestCase):
 
   def testProcessFormData_RejectNonexistentHotlist(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/entry', user_info={'user_id': 111L})
+        path='/p/proj/issues/entry', user_info={'user_id': 111})
     entered_hotlists = 'H3'
     post_data = fake.PostData(hotlists=[entered_hotlists],
         template_name=['rutabaga'])
@@ -521,7 +521,7 @@ class IssueEntryTest(unittest.TestCase):
 
   def testProcessFormData_RejectNonexistentHotlistOwner(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/entry', user_info={'user_id': 111L})
+        path='/p/proj/issues/entry', user_info={'user_id': 111})
     entered_hotlists = 'abc:H1'
     post_data = fake.PostData(hotlists=[entered_hotlists],
                               template_name=['rutabaga'])
@@ -540,7 +540,7 @@ class IssueEntryTest(unittest.TestCase):
 
   def testProcessFormData_RejectInvalidHotlistName(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/issues/entry', user_info={'user_id': 111L})
+        path='/p/proj/issues/entry', user_info={'user_id': 111})
     entered_hotlists = 'U1:H2'
     post_data = fake.PostData(hotlists=[entered_hotlists],
                               template_name=['rutabaga'])
@@ -583,14 +583,14 @@ class IssueEntryTest(unittest.TestCase):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     config.approval_defs = [
         tracker_pb2.ApprovalDef(
-            approval_id=23, approver_ids=[222L], survey='Question?'),
+            approval_id=23, approver_ids=[222], survey='Question?'),
         tracker_pb2.ApprovalDef(
-            approval_id=24, approver_ids=[111L], survey='Question?')]
+            approval_id=24, approver_ids=[111], survey='Question?')]
     approval_values = [tracker_pb2.ApprovalValue(
          approval_id=24, phase_id=1,
          status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)]
     issueentry._AttachDefaultApprovers(config, approval_values)
-    self.assertEqual(approval_values[0].approver_ids, [111L])
+    self.assertEqual(approval_values[0].approver_ids, [111])
 
   # TODO(aneeshm): add a test for the ambiguous hotlist name case; it works
   # correctly when tested locally, but for some reason doesn't in the test

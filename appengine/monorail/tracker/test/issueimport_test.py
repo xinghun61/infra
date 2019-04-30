@@ -33,7 +33,7 @@ class IssueExportTest(unittest.TestCase):
 
   def testParseComment(self):
     """Test a Comment JSON is correctly parsed."""
-    users_id_dict = {'adam@test.com': 111L}
+    users_id_dict = {'adam@test.com': 111}
     json = {
         'timestamp': 123,
         'commenter': 'adam@test.com',
@@ -46,7 +46,7 @@ class IssueExportTest(unittest.TestCase):
         12, users_id_dict, json, self.event_log)
     self.assertEqual(
         comment, tracker_pb2.IssueComment(
-            project_id=12, timestamp=123, user_id=111L,
+            project_id=12, timestamp=123, user_id=111,
             content='so basically, what I was thinkig of'))
 
     json_desc = {
@@ -61,6 +61,6 @@ class IssueExportTest(unittest.TestCase):
         12, users_id_dict, json_desc, self.event_log)
     self.assertEqual(
         desc_comment, tracker_pb2.IssueComment(
-            project_id=12, timestamp=223, user_id=111L,
+            project_id=12, timestamp=223, user_id=111,
             content='I cant believe youve done this',
             is_description=True))

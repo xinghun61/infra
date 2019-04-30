@@ -23,14 +23,14 @@ class PeopleListTest(unittest.TestCase):
         project=fake.ProjectService(),
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
-    services.user.TestAddUser('jrobbins@gmail.com', 111L)
-    services.user.TestAddUser('jrobbins@jrobbins.org', 222L)
-    services.user.TestAddUser('jrobbins@chromium.org', 333L)
-    services.user.TestAddUser('imso31337@gmail.com', 999L)
+    services.user.TestAddUser('jrobbins@gmail.com', 111)
+    services.user.TestAddUser('jrobbins@jrobbins.org', 222)
+    services.user.TestAddUser('jrobbins@chromium.org', 333)
+    services.user.TestAddUser('imso31337@gmail.com', 999)
     self.project = services.project.TestAddProject('proj')
-    self.project.owner_ids.extend([111L])
-    self.project.committer_ids.extend([222L])
-    self.project.contributor_ids.extend([333L])
+    self.project.owner_ids.extend([111])
+    self.project.committer_ids.extend([222])
+    self.project.contributor_ids.extend([333])
     self.servlet = peoplelist.PeopleList('req', 'res', services=services)
 
   def VerifyAccess(self, exception_expected):

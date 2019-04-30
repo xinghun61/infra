@@ -43,33 +43,33 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         hotlist_star=fake.HotlistStarService())
     self.servlet = hotlistissues.HotlistIssues(
         'req', 'res', services=self.services)
-    self.user1 = self.services.user.TestAddUser('testuser@gmail.com', 111L)
-    self.user2 = self.services.user.TestAddUser('testuser2@gmail.com', 222L, )
+    self.user1 = self.services.user.TestAddUser('testuser@gmail.com', 111)
+    self.user2 = self.services.user.TestAddUser('testuser2@gmail.com', 222, )
     self.services.project.TestAddProject('project-name', project_id=001)
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111L, project_name='project-name')
+        001, 1, 'issue_summary', 'New', 111, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue1)
     self.issue2 = fake.MakeTestIssue(
-        001, 2, 'issue_summary2', 'New', 111L, project_name='project-name')
+        001, 2, 'issue_summary2', 'New', 111, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue2)
     self.issue3 = fake.MakeTestIssue(
-        001, 3, 'issue_summary3', 'New', 222L, project_name='project-name')
+        001, 3, 'issue_summary3', 'New', 222, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue3)
     self.issues = [self.issue1, self.issue2, self.issue3]
     self.hotlist_item_fields = [
-        (issue.issue_id, rank, 111L, 1205079300, '') for
+        (issue.issue_id, rank, 111, 1205079300, '') for
         rank, issue in enumerate(self.issues)]
     self.test_hotlist = self.services.features.TestAddHotlist(
-        'hotlist', hotlist_id=123, owner_ids=[222L], editor_ids=[111L],
+        'hotlist', hotlist_id=123, owner_ids=[222], editor_ids=[111],
         hotlist_item_fields=self.hotlist_item_fields)
     self.hotlistissues = self.test_hotlist.items
     self.mr = testing_helpers.MakeMonorailRequest(hotlist=self.test_hotlist,
                                                   path='/u/222/hotlists/123',
                                                   services = self.services)
     self.mr.hotlist_id = self.test_hotlist.hotlist_id
-    self.mr.auth.user_id = 111L
-    self.mr.auth.effective_ids = {111L}
-    self.mr.viewed_user_auth.user_id = 111L
+    self.mr.auth.user_id = 111
+    self.mr.auth.effective_ids = {111}
+    self.mr.viewed_user_auth.user_id = 111
     sorting.InitializeArtValues(self.services)
 
     self.mox = mox.Mox()
@@ -80,12 +80,12 @@ class HotlistIssuesUnitTest(unittest.TestCase):
 
   def testAssertBasePermissions(self):
     private_hotlist = self.services.features.TestAddHotlist(
-        'privateHotlist', hotlist_id=321, owner_ids=[222L],
+        'privateHotlist', hotlist_id=321, owner_ids=[222],
         hotlist_item_fields=self.hotlist_item_fields, is_private=True)
     # non-members cannot view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=private_hotlist)
-    mr.auth.effective_ids = {333L}
+    mr.auth.effective_ids = {333}
     mr.hotlist_id = private_hotlist.hotlist_id
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
@@ -93,28 +93,28 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     # members can view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=private_hotlist)
-    mr.auth.effective_ids = {222L, 444L}
+    mr.auth.effective_ids = {222, 444}
     mr.hotlist_id = private_hotlist.hotlist_id
     self.servlet.AssertBasePermission(mr)
 
     # non-members can view public hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.test_hotlist)
-    mr.auth.effective_ids = {333L, 444L}
+    mr.auth.effective_ids = {333, 444}
     mr.hotlist_id = self.test_hotlist.hotlist_id
     self.servlet.AssertBasePermission(mr)
 
     # members can view public hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.test_hotlist)
-    mr.auth.effective_ids = {111L, 333L}
+    mr.auth.effective_ids = {111, 333}
     mr.hotlist_id = self.test_hotlist.hotlist_id
     self.servlet.AssertBasePermission(mr)
 
   def testGatherPageData(self):
     self.mr.mode = 'list'
-    self.mr.auth.effective_ids = {111L}
-    self.mr.auth.user_id = 111L
+    self.mr.auth.effective_ids = {111}
+    self.mr.auth.user_id = 111
     self.mr.sort_spec = 'rank stars'
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(ezt.boolean(False), page_data['owner_permissions'])
@@ -132,7 +132,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     time.time().MultipleTimes().AndReturn(now)
     self.mox.ReplayAll()
 
-    self.mr.auth.user_id = 222L
+    self.mr.auth.user_id = 222
     self.mr.col_spec = 'Stars Projects Rank'
     table_view_data = self.servlet.GetTableViewData(self.mr)
     self.assertEqual(table_view_data['edit_hotlist_token'], xsrf.GenerateToken(
@@ -172,10 +172,10 @@ class HotlistIssuesUnitTest(unittest.TestCase):
 
   def testProcessFormData_NormalEditIssues(self):
     issue4 = fake.MakeTestIssue(
-        001, 4, 'issue_summary4', 'New', 222L, project_name='project-name')
+        001, 4, 'issue_summary4', 'New', 222, project_name='project-name')
     self.services.issue.TestAddIssue(issue4)
     issue5 = fake.MakeTestIssue(
-        001, 5, 'issue_summary5', 'New', 222L, project_name='project-name')
+        001, 5, 'issue_summary5', 'New', 222, project_name='project-name')
     self.services.issue.TestAddIssue(issue5)
 
     post_data = fake.PostData(remove=['false'],

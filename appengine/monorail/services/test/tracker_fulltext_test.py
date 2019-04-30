@@ -30,22 +30,22 @@ class TrackerFulltextTest(unittest.TestCase):
     self.docs = None
     self.cnxn = 'fake connection'
     self.user_service = fake.UserService()
-    self.user_service.TestAddUser('test@example.com', 111L)
+    self.user_service.TestAddUser('test@example.com', 111)
     self.issue_service = fake.IssueService()
     self.config_service = fake.ConfigService()
 
     self.issue = fake.MakeTestIssue(
-        123, 1, 'test summary', 'New', 111L)
+        123, 1, 'test summary', 'New', 111)
     self.issue_service.TestAddIssue(self.issue)
     self.comment = tracker_pb2.IssueComment(
-        project_id=789, issue_id=self.issue.issue_id, user_id=111L,
+        project_id=789, issue_id=self.issue.issue_id, user_id=111,
         content='comment content',
         attachments=[
             tracker_pb2.Attachment(filename='hello.c'),
             tracker_pb2.Attachment(filename='hello.h')])
     self.issue_service.TestAddComment(self.comment, 1)
     self.users_by_id = framework_views.MakeAllUserViews(
-        self.cnxn, self.user_service, [111L])
+        self.cnxn, self.user_service, [111])
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -98,7 +98,7 @@ class TrackerFulltextTest(unittest.TestCase):
     self.SetUpCreateIssueSearchDocuments()
     self.mox.ReplayAll()
     config_dict = {123: tracker_bizobj.MakeDefaultProjectIssueConfig(123)}
-    self.comment.deleted_by = 111L
+    self.comment.deleted_by = 111
     tracker_fulltext._CreateIssueSearchDocuments(
         [self.issue], {self.issue.issue_id: [self.comment]}, self.users_by_id,
         config_dict)

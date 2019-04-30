@@ -56,16 +56,16 @@ class IssuesServicerTest(unittest.TestCase):
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=789, owner_ids=[111L], contrib_ids=[222L, 333L])
-    self.user_1 = self.services.user.TestAddUser('owner@example.com', 111L)
-    self.user_2 = self.services.user.TestAddUser('approver2@example.com', 222L)
-    self.user_3 = self.services.user.TestAddUser('approver3@example.com', 333L)
-    self.user_4 = self.services.user.TestAddUser('nonmember@example.com', 444L)
+        'proj', project_id=789, owner_ids=[111], contrib_ids=[222, 333])
+    self.user_1 = self.services.user.TestAddUser('owner@example.com', 111)
+    self.user_2 = self.services.user.TestAddUser('approver2@example.com', 222)
+    self.user_3 = self.services.user.TestAddUser('approver3@example.com', 333)
+    self.user_4 = self.services.user.TestAddUser('nonmember@example.com', 444)
     self.issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj',
+        789, 1, 'sum', 'New', 111, project_name='proj',
         opened_timestamp=self.NOW, issue_id=1001)
     self.issue_2 = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, project_name='proj', issue_id=1002)
+        789, 2, 'sum', 'New', 111, project_name='proj', issue_id=1002)
     self.issue_1.blocked_on_iids.append(self.issue_2.issue_id)
     self.issue_1.blocked_on_ranks.append(sys.maxint)
     self.services.issue.TestAddIssue(self.issue_1)
@@ -74,7 +74,7 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(server.StatusCode.OK)
-    self.auth = authdata.AuthData(user_id=333L, email='approver3@example.com')
+    self.auth = authdata.AuthData(user_id=333, email='approver3@example.com')
 
     self.fd_1 = tracker_pb2.FieldDef(
         field_name='FirstField', field_id=1,
@@ -206,7 +206,7 @@ class IssuesServicerTest(unittest.TestCase):
         self.services, cnxn=self.cnxn, requester='approver3@example.com',
         auth=self.auth)
     users_by_id = framework_views.MakeAllUserViews(
-        mc.cnxn, self.services.user, [111L])
+        mc.cnxn, self.services.user, [111])
     config = self.services.config.GetProjectConfig(self.cnxn, 789)
 
     patcher = patch(
@@ -238,9 +238,9 @@ class IssuesServicerTest(unittest.TestCase):
   def testListReferencedIssues(self):
     """We can get the referenced issues that exist."""
     self.services.project.TestAddProject(
-        'other-proj', project_id=788, owner_ids=[111L])
+        'other-proj', project_id=788, owner_ids=[111])
     other_issue = fake.MakeTestIssue(
-        788, 1, 'sum', 'Fixed', 111L, project_name='other-proj', issue_id=78801)
+        788, 1, 'sum', 'Fixed', 111, project_name='other-proj', issue_id=78801)
     self.services.issue.TestAddIssue(other_issue)
     # We ignore project_names or local_ids that don't exist in our DB.
     request = issues_pb2.ListReferencedIssuesRequest(
@@ -267,10 +267,10 @@ class IssuesServicerTest(unittest.TestCase):
             status_ref=common_pb2.StatusRef(
                 status='Fixed'),
             owner_ref=common_pb2.UserRef(
-                user_id=111L,
+                user_id=111,
                 display_name='owner@example.com'),
             reporter_ref=common_pb2.UserRef(
-                user_id=111L,
+                user_id=111,
                 display_name='owner@example.com')),
         response.closed_refs[0])
     self.assertEqual(
@@ -282,13 +282,13 @@ class IssuesServicerTest(unittest.TestCase):
                 status='New',
                 means_open=True),
             owner_ref=common_pb2.UserRef(
-                user_id=111L,
+                user_id=111,
                 display_name='owner@example.com'),
             blocked_on_issue_refs=[common_pb2.IssueRef(
                 project_name='proj',
                 local_id=2)],
             reporter_ref=common_pb2.UserRef(
-                user_id=111L,
+                user_id=111,
                 display_name='owner@example.com'),
             opened_timestamp=1234567890),
         response.open_refs[0])
@@ -623,14 +623,14 @@ class IssuesServicerTest(unittest.TestCase):
     # If we star it, we get response True.
     self.services.issue_star.SetStar(
         self.cnxn, self.services, 'fake config', self.issue_1.issue_id,
-        333L, True)
+        333, True)
     response = self.CallWrapped(self.issues_svcr.IsIssueStarred, mc, request)
     self.assertTrue(response.is_starred)
 
   def testListComments_Normal(self):
     """We can get comments on an issue."""
     comment = tracker_pb2.IssueComment(
-        user_id=111L, timestamp=self.NOW, content='second',
+        user_id=111, timestamp=self.NOW, content='second',
         project_id=789, issue_id=self.issue_1.issue_id, sequence=1)
     self.services.issue.TestAddComment(comment, self.issue_1.local_id)
     request = issues_pb2.ListCommentsRequest()
@@ -647,20 +647,20 @@ class IssuesServicerTest(unittest.TestCase):
     expected_0 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=0, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='owner@example.com'),
+            user_id=111, display_name='owner@example.com'),
         timestamp=self.NOW, content='sum', is_spam=False,
         description_num=1, can_delete=True, can_flag=True)
     expected_1 = issue_objects_pb2.Comment(
         project_name='proj', local_id=1, sequence_num=1, is_deleted=False,
         commenter=common_pb2.UserRef(
-            user_id=111L, display_name='owner@example.com'),
+            user_id=111, display_name='owner@example.com'),
         timestamp=self.NOW, content='second', can_delete=True, can_flag=True)
     self.assertEqual(expected_0, actual_0)
     self.assertEqual(expected_1, actual_1)
 
   def testListActivities_Normal(self):
     """We can get issue activity."""
-    self.services.user.TestAddUser('user@example.com', 444L)
+    self.services.user.TestAddUser('user@example.com', 444)
 
     config = tracker_pb2.ProjectIssueConfig(
         project_id=789,
@@ -668,32 +668,32 @@ class IssuesServicerTest(unittest.TestCase):
     self.services.config.StoreConfig(self.cnxn, config)
 
     comment = tracker_pb2.IssueComment(
-        user_id=444L, timestamp=self.NOW, content='c1',
+        user_id=444, timestamp=self.NOW, content='c1',
         project_id=789, issue_id=self.issue_1.issue_id, sequence=1)
     self.services.issue.TestAddComment(comment, self.issue_1.local_id)
 
     self.services.project.TestAddProject(
-        'proj2', project_id=790, owner_ids=[111L], contrib_ids=[222L, 333L])
+        'proj2', project_id=790, owner_ids=[111], contrib_ids=[222, 333])
     issue_2 = fake.MakeTestIssue(
-        790, 1, 'sum', 'New', 444L, project_name='proj2',
+        790, 1, 'sum', 'New', 444, project_name='proj2',
         opened_timestamp=self.NOW, issue_id=2001)
     comment_2 = tracker_pb2.IssueComment(
-        user_id=444L, timestamp=self.NOW, content='c2',
+        user_id=444, timestamp=self.NOW, content='c2',
         project_id=790, issue_id=issue_2.issue_id, sequence=1)
     self.services.issue.TestAddComment(comment_2, issue_2.local_id)
     self.services.issue.TestAddIssue(issue_2)
 
     issue_3 = fake.MakeTestIssue(
-        790, 2, 'sum', 'New', 111L, project_name='proj2',
+        790, 2, 'sum', 'New', 111, project_name='proj2',
         opened_timestamp=self.NOW, issue_id=2002, labels=['Restrict-View-Foo'])
     comment_3 = tracker_pb2.IssueComment(
-        user_id=444L, timestamp=self.NOW, content='c3',
+        user_id=444, timestamp=self.NOW, content='c3',
         project_id=790, issue_id=issue_3.issue_id, sequence=1)
     self.services.issue.TestAddComment(comment_3, issue_3.local_id)
     self.services.issue.TestAddIssue(issue_3)
 
     request = issues_pb2.ListActivitiesRequest()
-    request.user_ref.user_id = 444L
+    request.user_ref.user_id = 444
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='user@example.com')
     mc.LookupLoggedInUserPerms(self.project)
@@ -705,7 +705,7 @@ class IssuesServicerTest(unittest.TestCase):
             project_name='proj',
             local_id=1,
             commenter=common_pb2.UserRef(
-                user_id=444L, display_name='user@example.com'),
+                user_id=444, display_name='user@example.com'),
             timestamp=self.NOW,
             content='c1',
             sequence_num=1,
@@ -715,7 +715,7 @@ class IssuesServicerTest(unittest.TestCase):
             project_name='proj2',
             local_id=1,
             commenter=common_pb2.UserRef(
-                user_id=444L, display_name='user@example.com'),
+                user_id=444, display_name='user@example.com'),
             timestamp=self.NOW,
             content='sum',
             description_num=1,
@@ -725,7 +725,7 @@ class IssuesServicerTest(unittest.TestCase):
             project_name='proj2',
             local_id=1,
             commenter=common_pb2.UserRef(
-                user_id=444L, display_name='user@example.com'),
+                user_id=444, display_name='user@example.com'),
             timestamp=self.NOW,
             content='c2',
             sequence_num=1,
@@ -748,12 +748,12 @@ class IssuesServicerTest(unittest.TestCase):
             key=lambda issue: (issue.project_name, issue.local_id)))
 
   def testListActivities_Amendment(self):
-    self.services.user.TestAddUser('user@example.com', 444L)
+    self.services.user.TestAddUser('user@example.com', 444)
 
     comment = tracker_pb2.IssueComment(
-        user_id=444L,
+        user_id=444,
         timestamp=self.NOW,
-        amendments=[tracker_bizobj.MakeOwnerAmendment(111L, 222L)],
+        amendments=[tracker_bizobj.MakeOwnerAmendment(111, 222)],
         project_id=789,
         issue_id=self.issue_1.issue_id,
         content='',
@@ -761,7 +761,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.services.issue.TestAddComment(comment, self.issue_1.local_id)
 
     request = issues_pb2.ListActivitiesRequest()
-    request.user_ref.user_id = 444L
+    request.user_ref.user_id = 444
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='user@example.com')
     mc.LookupLoggedInUserPerms(self.project)
@@ -772,7 +772,7 @@ class IssuesServicerTest(unittest.TestCase):
             project_name='proj',
             local_id=1,
             commenter=common_pb2.UserRef(
-                user_id=444L, display_name='user@example.com'),
+                user_id=444, display_name='user@example.com'),
             timestamp=self.NOW,
             content='',
             sequence_num=1,
@@ -815,7 +815,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.services.issue.TestAddComment(comment_1, 1)
     comment_2 = tracker_pb2.IssueComment(
         project_id=789, issue_id=self.issue_1.issue_id, content='two',
-        user_id=222L)
+        user_id=222)
     self.services.issue.TestAddComment(comment_2, 1)
 
     # Delete a comment.
@@ -828,7 +828,7 @@ class IssuesServicerTest(unittest.TestCase):
     response = self.CallWrapped(self.issues_svcr.DeleteComment, mc, request)
 
     self.assertTrue(isinstance(response, empty_pb2.Empty))
-    self.assertEqual(111L, comment_2.deleted_by)
+    self.assertEqual(111, comment_2.deleted_by)
 
     # Undelete a comment.
     request.delete=False
@@ -843,7 +843,7 @@ class IssuesServicerTest(unittest.TestCase):
     """An unauthorized user cannot delete a comment."""
     comment_1 = tracker_pb2.IssueComment(
         project_id=789, issue_id=self.issue_1.issue_id, content='one',
-        user_id=222L)
+        user_id=222)
     self.services.issue.TestAddComment(comment_1, 1)
 
     request = issues_pb2.DeleteCommentRequest(
@@ -991,7 +991,7 @@ class IssuesServicerTest(unittest.TestCase):
 
     approval_delta = tracker_pb2.ApprovalDelta(
         status=tracker_pb2.ApprovalStatus.APPROVED,
-        setter_id=444L, set_on=12345)
+        setter_id=444, set_on=12345)
     mockBulkUpdateIssueApprovals.assert_called_once_with(
         [1001, 1002], 3, self.project, approval_delta,
         'new bulk comment', send_email=False)
@@ -1031,7 +1031,7 @@ class IssuesServicerTest(unittest.TestCase):
     av_3 = tracker_pb2.ApprovalValue(
             approval_id=3,
             status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW,
-            approver_ids=[333L]
+            approver_ids=[333]
     )
     self.issue_1.approval_values = [av_3]
 
@@ -1046,7 +1046,7 @@ class IssuesServicerTest(unittest.TestCase):
     approval_delta = issue_objects_pb2.ApprovalDelta(
         status=issue_objects_pb2.REVIEW_REQUESTED,
         approver_refs_add=[
-          common_pb2.UserRef(user_id=222L, display_name='approver2@example.com')
+          common_pb2.UserRef(user_id=222, display_name='approver2@example.com')
           ],
         field_vals_add=[
           issue_objects_pb2.FieldValue(
@@ -1076,8 +1076,8 @@ class IssuesServicerTest(unittest.TestCase):
         tracker_pb2.ApprovalValue(
             approval_id=3,
             status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
-            setter_id=333L,
-            approver_ids=[333L, 222L]),
+            setter_id=333,
+            approver_ids=[333, 222]),
         'comment_pb']
 
     actual = self.CallWrapped(self.issues_svcr.UpdateApproval, mc, request)
@@ -1225,12 +1225,12 @@ class IssuesServicerTest(unittest.TestCase):
             local_id=1,
             summary='sum',
             owner_ref=common_pb2.UserRef(
-                user_id=111L, display_name='owner@example.com'),
+                user_id=111, display_name='owner@example.com'),
             status_ref=common_pb2.StatusRef(status='New', means_open=True),
             blocked_on_issue_refs=[
                 common_pb2.IssueRef(project_name='proj', local_id=2)],
             reporter_ref=common_pb2.UserRef(
-                user_id=111L, display_name='owner@example.com'),
+                user_id=111, display_name='owner@example.com'),
             opened_timestamp=1234567890,
             ))
 
@@ -1393,7 +1393,7 @@ class IssuesServicerTest(unittest.TestCase):
     """When no rules match, we respond with just owner availability."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L),
+        owner_ref=common_pb2.UserRef(user_id=111),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
     mockGetFilterRules.return_value = [
@@ -1437,7 +1437,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.user_1.vacation_message = 'In Galapagos Islands'
     issue_ref = common_pb2.IssueRef(project_name='proj')
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L),
+        owner_ref=common_pb2.UserRef(user_id=111),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
     mockGetFilterRules.return_value = []
@@ -1461,7 +1461,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.user_1.vacation_message = 'In Galapagos Islands'
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L),
+        owner_ref=common_pb2.UserRef(user_id=111),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
     mockGetFilterRules.return_value = []
@@ -1485,7 +1485,7 @@ class IssuesServicerTest(unittest.TestCase):
     self.user_1.last_visit_timestamp = int(time.time())
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L),
+        owner_ref=common_pb2.UserRef(user_id=111),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
     mockGetFilterRules.return_value = []
@@ -1508,7 +1508,7 @@ class IssuesServicerTest(unittest.TestCase):
     """Test that we can match label rules and return derived labels."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L),
+        owner_ref=common_pb2.UserRef(user_id=111),
         label_refs_add=[common_pb2.LabelRef(label='foo')])
 
     mockGetFilterRules.return_value = [
@@ -1535,14 +1535,14 @@ class IssuesServicerTest(unittest.TestCase):
     """Test that we can match component rules and return derived owners."""
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Foo', 'Foo Docstring', False,
-        [], [], 0, 111L, [])
+        [], [], 0, 111, [])
     self.issue_1.owner_id = 0
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
         comp_refs_add=[common_pb2.ComponentRef(path='Foo')])
 
     mockGetFilterRules.return_value = [
-        filterrules_helpers.MakeRule('component:Foo', default_owner_id=222L)]
+        filterrules_helpers.MakeRule('component:Foo', default_owner_id=222)]
 
     request = issues_pb2.PresubmitIssueRequest(
         issue_ref=issue_ref, issue_delta=issue_delta)
@@ -1563,12 +1563,12 @@ class IssuesServicerTest(unittest.TestCase):
     field_id = self.AddField('Foo', 'ENUM_TYPE')
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L),
+        owner_ref=common_pb2.UserRef(user_id=111),
         field_vals_add=[issue_objects_pb2.FieldValue(
             value='Bar', field_ref=common_pb2.FieldRef(field_id=field_id))])
 
     mockGetFilterRules.return_value = [
-        filterrules_helpers.MakeRule('Foo=Bar', add_cc_ids=[222L, 333L])]
+        filterrules_helpers.MakeRule('Foo=Bar', add_cc_ids=[222, 333])]
 
     request = issues_pb2.PresubmitIssueRequest(
         issue_ref=issue_ref, issue_delta=issue_delta)
@@ -1591,7 +1591,7 @@ class IssuesServicerTest(unittest.TestCase):
     """Test that we can match owner rules and return warnings."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=111L))
+        owner_ref=common_pb2.UserRef(user_id=111))
 
     mockGetFilterRules.return_value = [
         filterrules_helpers.MakeRule(
@@ -1615,10 +1615,10 @@ class IssuesServicerTest(unittest.TestCase):
     """Test that we can match owner rules and return errors."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
     issue_delta = issue_objects_pb2.IssueDelta(
-        owner_ref=common_pb2.UserRef(user_id=222L),
+        owner_ref=common_pb2.UserRef(user_id=222),
         cc_refs_add=[
-            common_pb2.UserRef(user_id=111L),
-            common_pb2.UserRef(user_id=333L)])
+            common_pb2.UserRef(user_id=111),
+            common_pb2.UserRef(user_id=333)])
 
     mockGetFilterRules.return_value = [
         filterrules_helpers.MakeRule(
@@ -1664,7 +1664,7 @@ class IssuesServicerTest(unittest.TestCase):
     issues = []
     for idx in range(3, 6):
       issues.append(fake.MakeTestIssue(
-          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+          789, idx, 'sum', 'New', 111, project_name='proj', issue_id=1000+idx))
       self.services.issue.TestAddIssue(issues[-1])
       self.issue_1.blocked_on_iids.append(issues[-1].issue_id)
       self.issue_1.blocked_on_ranks.append(self.issue_1.blocked_on_ranks[-1]-1)
@@ -1691,11 +1691,11 @@ class IssuesServicerTest(unittest.TestCase):
          for blocked_on_ref in response.blocked_on_issue_refs])
 
   def testRerankBlockedOnIssues_SplitAbove(self):
-    self.project.committer_ids.append(222L)
+    self.project.committer_ids.append(222)
     issues = []
     for idx in range(3, 6):
       issues.append(fake.MakeTestIssue(
-          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+          789, idx, 'sum', 'New', 111, project_name='proj', issue_id=1000+idx))
       self.services.issue.TestAddIssue(issues[-1])
       self.issue_1.blocked_on_iids.append(issues[-1].issue_id)
       self.issue_1.blocked_on_ranks.append(self.issue_1.blocked_on_ranks[-1]-1)
@@ -1722,11 +1722,11 @@ class IssuesServicerTest(unittest.TestCase):
          for blocked_on_ref in response.blocked_on_issue_refs])
 
   def testRerankBlockedOnIssues_CantEditIssue(self):
-    self.project.committer_ids.append(222L)
+    self.project.committer_ids.append(222)
     issues = []
     for idx in range(3, 6):
       issues.append(fake.MakeTestIssue(
-          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+          789, idx, 'sum', 'New', 111, project_name='proj', issue_id=1000+idx))
       self.services.issue.TestAddIssue(issues[-1])
       self.issue_1.blocked_on_iids.append(issues[-1].issue_id)
       self.issue_1.blocked_on_ranks.append(self.issue_1.blocked_on_ranks[-1]-1)
@@ -1758,14 +1758,14 @@ class IssuesServicerTest(unittest.TestCase):
     """
     # Issue 3 is in proj2, which we don't have access to.
     project_2 = self.services.project.TestAddProject(
-        'proj2', project_id=790, owner_ids=[222L], contrib_ids=[333L])
+        'proj2', project_id=790, owner_ids=[222], contrib_ids=[333])
     project_2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     issue_3 = fake.MakeTestIssue(
-        790, 3, 'sum', 'New', 111L, project_name='proj2', issue_id=1003)
+        790, 3, 'sum', 'New', 111, project_name='proj2', issue_id=1003)
 
     # Issue 4 requires a permission we don't have in order to edit it.
     issue_4 = fake.MakeTestIssue(
-        789, 4, 'sum', 'New', 111L, project_name='proj', issue_id=1004)
+        789, 4, 'sum', 'New', 111, project_name='proj', issue_id=1004)
     issue_4.labels = ['Restrict-EditIssue-Foo']
 
     self.services.issue.TestAddIssue(issue_3)
@@ -1836,9 +1836,9 @@ class IssuesServicerTest(unittest.TestCase):
     comment = tracker_pb2.IssueComment(
         project_id=self.project.project_id,
         issue_id=self.issue_1.issue_id,
-        user_id=111L,
+        user_id=111,
         content='Foo',
-        timestamp=12345L)
+        timestamp=12345)
     self.services.issue.TestAddComment(comment, self.issue_1.local_id)
 
     request = issues_pb2.DeleteIssueCommentRequest(
@@ -1852,17 +1852,17 @@ class IssuesServicerTest(unittest.TestCase):
     self.CallWrapped(self.issues_svcr.DeleteIssueComment, mc, request)
 
     comment = self.services.issue.GetComment(self.cnxn, comment.id)
-    self.assertEqual(111L, comment.deleted_by)
+    self.assertEqual(111, comment.deleted_by)
 
   def testDeleteIssueComment_Undelete(self):
     """We can undelete an issue comment."""
     comment = tracker_pb2.IssueComment(
         project_id=self.project.project_id,
         issue_id=self.issue_1.issue_id,
-        user_id=111L,
+        user_id=111,
         content='Foo',
-        timestamp=12345L,
-        deleted_by=111L)
+        timestamp=12345,
+        deleted_by=111)
     self.services.issue.TestAddComment(comment, self.issue_1.local_id)
 
     request = issues_pb2.DeleteIssueCommentRequest(
@@ -1897,9 +1897,9 @@ class IssuesServicerTest(unittest.TestCase):
     comment = tracker_pb2.IssueComment(
         project_id=self.project.project_id,
         issue_id=self.issue_1.issue_id,
-        user_id=111L,
+        user_id=111,
         content='Foo',
-        timestamp=12345L)
+        timestamp=12345)
     self.services.issue.TestAddComment(comment, self.issue_1.local_id)
     attachment = tracker_pb2.Attachment()
     self.services.issue.TestAddAttachment(attachment, comment.id, 1)
@@ -1923,10 +1923,10 @@ class IssuesServicerTest(unittest.TestCase):
     comment = tracker_pb2.IssueComment(
         project_id=self.project.project_id,
         issue_id=self.issue_1.issue_id,
-        user_id=111L,
+        user_id=111,
         content='Foo',
-        timestamp=12345L,
-        deleted_by=111L)
+        timestamp=12345,
+        deleted_by=111)
     self.services.issue.TestAddComment(comment, self.issue_1.local_id)
     attachment = tracker_pb2.Attachment(deleted=True)
     self.services.issue.TestAddAttachment(attachment, comment.id, 1)
@@ -1963,7 +1963,7 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testFlagIssues_Normal(self):
     """Test that an user can flag an issue as spam."""
-    self.services.user.TestAddUser('user@example.com', 999L)
+    self.services.user.TestAddUser('user@example.com', 999)
 
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -1980,22 +1980,22 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue_id = self.issue_1.issue_id
     self.assertEqual(
-        [999L], self.services.spam.reports_by_issue_id[issue_id])
+        [999], self.services.spam.reports_by_issue_id[issue_id])
     self.assertNotIn(
-        999L, self.services.spam.manual_verdicts_by_issue_id[issue_id])
+        999, self.services.spam.manual_verdicts_by_issue_id[issue_id])
 
     issue_id2 = self.issue_2.issue_id
     self.assertEqual(
-        [999L], self.services.spam.reports_by_issue_id[issue_id2])
+        [999], self.services.spam.reports_by_issue_id[issue_id2])
     self.assertNotIn(
-        999L, self.services.spam.manual_verdicts_by_issue_id[issue_id2])
+        999, self.services.spam.manual_verdicts_by_issue_id[issue_id2])
 
   def testFlagIssues_Unflag(self):
     """Test that we can un-flag an issue as spam."""
     self.services.spam.FlagIssues(
-        self.cnxn, self.services.issue, [self.issue_1], 111L, True)
+        self.cnxn, self.services.issue, [self.issue_1], 111, True)
     self.services.spam.RecordManualIssueVerdicts(
-        self.cnxn, self.services.issue, [self.issue_1], 111L, True)
+        self.cnxn, self.services.issue, [self.issue_1], 111, True)
 
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -2010,7 +2010,7 @@ class IssuesServicerTest(unittest.TestCase):
     issue_id = self.issue_1.issue_id
     self.assertEqual([], self.services.spam.reports_by_issue_id[issue_id])
     self.assertFalse(
-        self.services.spam.manual_verdicts_by_issue_id[issue_id][111L])
+        self.services.spam.manual_verdicts_by_issue_id[issue_id][111])
 
   def testFlagIssues_OwnerAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
@@ -2026,15 +2026,15 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue_id = self.issue_1.issue_id
     self.assertEqual(
-        [111L], self.services.spam.reports_by_issue_id[issue_id])
+        [111], self.services.spam.reports_by_issue_id[issue_id])
     self.assertTrue(
-        self.services.spam.manual_verdicts_by_issue_id[issue_id][111L])
+        self.services.spam.manual_verdicts_by_issue_id[issue_id][111])
 
   def testFlagIssues_CommitterAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
-    self.services.user.TestAddUser('committer@example.com', 999L)
+    self.services.user.TestAddUser('committer@example.com', 999)
     self.services.project.TestAddProjectMembers(
-        [999L], self.project, fake.COMMITTER_ROLE)
+        [999], self.project, fake.COMMITTER_ROLE)
 
     request = issues_pb2.FlagIssuesRequest(
         issue_refs=[
@@ -2048,9 +2048,9 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue_id = self.issue_1.issue_id
     self.assertEqual(
-        [999L], self.services.spam.reports_by_issue_id[issue_id])
+        [999], self.services.spam.reports_by_issue_id[issue_id])
     self.assertTrue(
-        self.services.spam.manual_verdicts_by_issue_id[issue_id][999L])
+        self.services.spam.manual_verdicts_by_issue_id[issue_id][999])
 
   def testFlagIssues_ContributorAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
@@ -2066,9 +2066,9 @@ class IssuesServicerTest(unittest.TestCase):
 
     issue_id = self.issue_1.issue_id
     self.assertEqual(
-        [222L], self.services.spam.reports_by_issue_id[issue_id])
+        [222], self.services.spam.reports_by_issue_id[issue_id])
     self.assertTrue(
-        self.services.spam.manual_verdicts_by_issue_id[issue_id][222L])
+        self.services.spam.manual_verdicts_by_issue_id[issue_id][222])
 
   def testFlagIssues_NotAllowed(self):
     """Test that anon users cannot flag issues as spam."""
@@ -2126,9 +2126,9 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testFlagComment_Normal(self):
     """Test that an user can flag a comment as spam."""
-    self.services.user.TestAddUser('user@example.com', 999L)
+    self.services.user.TestAddUser('user@example.com', 999)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=self.issue_1.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -2144,20 +2144,20 @@ class IssuesServicerTest(unittest.TestCase):
 
     comment_reports = self.services.spam.comment_reports_by_issue_id
     manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
-    self.assertEqual([999L], comment_reports[self.issue_1.issue_id][comment.id])
-    self.assertNotIn(999L, manual_verdicts[comment.id])
+    self.assertEqual([999], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertNotIn(999, manual_verdicts[comment.id])
 
   def testFlagComment_Unflag(self):
     """Test that we can un-flag a comment as spam."""
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=999L,
+        project_id=789, content='soon to be deleted', user_id=999,
         issue_id=self.issue_1.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
     self.services.spam.FlagComment(
-        self.cnxn, self.issue_1.issue_id, comment.id, 999L, 111L, True)
+        self.cnxn, self.issue_1.issue_id, comment.id, 999, 111, True)
     self.services.spam.RecordManualCommentVerdict(
-        self.cnxn, self.services.issue, self.services.user, comment.id, 111L,
+        self.cnxn, self.services.issue, self.services.user, comment.id, 111,
         True)
 
     request = issues_pb2.FlagCommentRequest(
@@ -2173,12 +2173,12 @@ class IssuesServicerTest(unittest.TestCase):
     comment_reports = self.services.spam.comment_reports_by_issue_id
     manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
     self.assertEqual([], comment_reports[self.issue_1.issue_id][comment.id])
-    self.assertFalse(manual_verdicts[comment.id][111L])
+    self.assertFalse(manual_verdicts[comment.id][111])
 
   def testFlagComment_OwnerAutoVerdict(self):
     """Test that an owner can flag a comment as spam and it is a verdict."""
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=999L,
+        project_id=789, content='soon to be deleted', user_id=999,
         issue_id=self.issue_1.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -2194,17 +2194,17 @@ class IssuesServicerTest(unittest.TestCase):
 
     comment_reports = self.services.spam.comment_reports_by_issue_id
     manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
-    self.assertEqual([111L], comment_reports[self.issue_1.issue_id][comment.id])
-    self.assertTrue(manual_verdicts[comment.id][111L])
+    self.assertEqual([111], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertTrue(manual_verdicts[comment.id][111])
 
   def testFlagComment_CommitterAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
-    self.services.user.TestAddUser('committer@example.com', 999L)
+    self.services.user.TestAddUser('committer@example.com', 999)
     self.services.project.TestAddProjectMembers(
-        [999L], self.project, fake.COMMITTER_ROLE)
+        [999], self.project, fake.COMMITTER_ROLE)
 
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=999L,
+        project_id=789, content='soon to be deleted', user_id=999,
         issue_id=self.issue_1.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -2220,13 +2220,13 @@ class IssuesServicerTest(unittest.TestCase):
 
     comment_reports = self.services.spam.comment_reports_by_issue_id
     manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
-    self.assertEqual([999L], comment_reports[self.issue_1.issue_id][comment.id])
-    self.assertTrue(manual_verdicts[comment.id][999L])
+    self.assertEqual([999], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertTrue(manual_verdicts[comment.id][999])
 
   def testFlagComment_ContributorAutoVerdict(self):
     """Test that an owner can flag an issue as spam and it is a verdict."""
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=999L,
+        project_id=789, content='soon to be deleted', user_id=999,
         issue_id=self.issue_1.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -2242,13 +2242,13 @@ class IssuesServicerTest(unittest.TestCase):
 
     comment_reports = self.services.spam.comment_reports_by_issue_id
     manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
-    self.assertEqual([222L], comment_reports[self.issue_1.issue_id][comment.id])
-    self.assertTrue(manual_verdicts[comment.id][222L])
+    self.assertEqual([222], comment_reports[self.issue_1.issue_id][comment.id])
+    self.assertTrue(manual_verdicts[comment.id][222])
 
   def testFlagComment_NotAllowed(self):
     """Test that anon users cannot flag issues as spam."""
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=999L,
+        project_id=789, content='soon to be deleted', user_id=999,
         issue_id=self.issue_1.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -2270,7 +2270,7 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testListIssuePermissions_Normal(self):
     issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     self.services.issue.TestAddIssue(issue_1)
 
     request = issues_pb2.ListIssuePermissionsRequest(
@@ -2295,7 +2295,7 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testListIssuePermissions_DeletedIssue(self):
     issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     issue_1.deleted = True
     self.services.issue.TestAddIssue(issue_1)
 
@@ -2314,7 +2314,7 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testListIssuePermissions_CanViewDeletedIssue(self):
     issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     issue_1.deleted = True
     self.services.issue.TestAddIssue(issue_1)
 
@@ -2335,7 +2335,7 @@ class IssuesServicerTest(unittest.TestCase):
 
   def testListIssuePermissions_IssueRestrictions(self):
     issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     issue_1.labels = ['Restrict-SetStar-CustomPerm']
     self.services.issue.TestAddIssue(issue_1)
 
@@ -2366,9 +2366,9 @@ class IssuesServicerTest(unittest.TestCase):
         'Docstring', [])
 
     issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     issue_1.labels = ['Restrict-SetStar-CustomPerm']
-    issue_1.field_values = [tracker_pb2.FieldValue(user_id=222L, field_id=123)]
+    issue_1.field_values = [tracker_pb2.FieldValue(user_id=222, field_id=123)]
     self.services.issue.TestAddIssue(issue_1)
 
     request = issues_pb2.ListIssuePermissionsRequest(
@@ -2396,11 +2396,11 @@ class IssuesServicerTest(unittest.TestCase):
   @patch('services.tracker_fulltext.IndexIssues')
   @patch('services.tracker_fulltext.UnindexIssues')
   def testMoveIssue_Normal(self, _mock_index, _mock_unindex):
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=988, committer_ids=[111L])
+      'dest', project_id=988, committer_ids=[111])
 
     request = issues_pb2.MoveIssueRequest(
         issue_ref=common_pb2.IssueRef(
@@ -2423,13 +2423,13 @@ class IssuesServicerTest(unittest.TestCase):
         target_project.project_id, 1)
     self.assertEqual(target_project.project_id, moved_issue.project_id)
     self.assertEqual(issue.summary, moved_issue.summary)
-    self.assertEqual(moved_issue.reporter_id, 111L)
+    self.assertEqual(moved_issue.reporter_id, 111)
 
   @patch('services.tracker_fulltext.IndexIssues')
   def testCopyIssue_Normal(self, _mock_index):
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
 
     request = issues_pb2.CopyIssueRequest(
         issue_ref=common_pb2.IssueRef(
@@ -2452,4 +2452,4 @@ class IssuesServicerTest(unittest.TestCase):
         self.project.project_id, 3)
     self.assertEqual(self.project.project_id, copied_issue.project_id)
     self.assertEqual(issue.summary, copied_issue.summary)
-    self.assertEqual(copied_issue.reporter_id, 111L)
+    self.assertEqual(copied_issue.reporter_id, 111)

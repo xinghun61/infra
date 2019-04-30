@@ -20,15 +20,15 @@ class FeaturesPb2Test(unittest.TestCase):
   def testMakeHotlist_Everything(self):
     ts = 20011111111111
     hotlist = features_pb2.MakeHotlist(
-        'summer-issues', [(1000, 1, 444L, ts, ''), (1001, 2, 333L, ts, ''),
+        'summer-issues', [(1000, 1, 444, ts, ''), (1001, 2, 333, ts, ''),
                           (1009, None, None, ts, '')],
         description='desc')
     self.assertEqual('summer-issues', hotlist.name)
     self.assertEqual(
         [features_pb2.MakeHotlistItem(
-            1000, rank=1, adder_id=444L, date_added=ts, note=''),
+            1000, rank=1, adder_id=444, date_added=ts, note=''),
          features_pb2.MakeHotlistItem(
-             1001, rank=2, adder_id=333L, date_added=ts, note=''),
+             1001, rank=2, adder_id=333, date_added=ts, note=''),
          features_pb2.MakeHotlistItem(1009, date_added=ts, note=''),
          ],
         hotlist.items)
@@ -37,10 +37,10 @@ class FeaturesPb2Test(unittest.TestCase):
   def testMakeHotlistItem(self):
     ts = 20011111111111
     item_1 = features_pb2.MakeHotlistItem(
-        1000, rank=1, adder_id=111L, date_added=ts, note='short note')
+        1000, rank=1, adder_id=111, date_added=ts, note='short note')
     self.assertEqual(1000, item_1.issue_id)
     self.assertEqual(1, item_1.rank)
-    self.assertEqual(111L, item_1.adder_id)
+    self.assertEqual(111, item_1.adder_id)
     self.assertEqual(ts, item_1.date_added)
     self.assertEqual('short note', item_1.note)
 

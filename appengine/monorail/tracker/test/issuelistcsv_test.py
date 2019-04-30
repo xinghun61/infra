@@ -31,6 +31,6 @@ class IssueListCSVTest(unittest.TestCase):
   def testGatherPageData_XSRFToken(self):
     """Users cannot download the issue list without a valid token."""
     mr = testing_helpers.MakeMonorailRequest()
-    mr.auth.user_id = 111L
+    mr.auth.user_id = 111
     self.assertRaises(xsrf.TokenIncorrect,
                       self.servlet.GatherPageData, mr)

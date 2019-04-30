@@ -23,18 +23,20 @@ class HotlistDetailsTest(unittest.TestCase):
   """Unit tests for the HotlistDetails servlet class."""
 
   def setUp(self):
+    self.user_service = fake.UserService()
+    self.user_service.TestAddUser('111@test.com', 111)
     services = service_manager.Services(
-        features=fake.FeaturesService(), user=fake.UserService())
+        features=fake.FeaturesService(), user=self.user_service)
     self.servlet = hotlistdetails.HotlistDetails(
         'req', 'res', services=services)
     self.hotlist = self.servlet.services.features.TestAddHotlist(
         'hotlist', summary='hotlist summary', description='hotlist description',
-        owner_ids=[111L], editor_ids=[222L])
+        owner_ids=[111], editor_ids=[222])
     self.request, self.mr = testing_helpers.GetRequestObjects(
         hotlist=self.hotlist)
-    self.mr.auth.user_id = 111L
+    self.mr.auth.user_id = 111
     self.private_hotlist = services.features.TestAddHotlist(
-        'private_hotlist', owner_ids=[111L], editor_ids=[222L], is_private=True)
+        'private_hotlist', owner_ids=[111], editor_ids=[222], is_private=True)
     self.mox = mox.Mox()
 
   def tearDown(self):
@@ -45,30 +47,30 @@ class HotlistDetailsTest(unittest.TestCase):
     # non-members cannot view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.private_hotlist)
-    mr.auth.effective_ids = {333L}
+    mr.auth.effective_ids = {333}
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
 
     # members can view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.private_hotlist)
-    mr.auth.effective_ids = {222L, 444L}
+    mr.auth.effective_ids = {222, 444}
     self.servlet.AssertBasePermission(mr)
 
     # non-members can view public hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.hotlist)
-    mr.auth.effective_ids = {333L, 444L}
+    mr.auth.effective_ids = {333, 444}
     self.servlet.AssertBasePermission(mr)
 
     # members can view public hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.hotlist)
-    mr.auth.effective_ids = {111L, 333L}
+    mr.auth.effective_ids = {111, 333}
     self.servlet.AssertBasePermission(mr)
 
   def testGatherPageData(self):
-    self.mr.auth.effective_ids = [222L]
+    self.mr.auth.effective_ids = [222]
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual('hotlist summary', page_data['initial_summary'])
     self.assertEqual('hotlist description', page_data['initial_description'])
@@ -81,15 +83,16 @@ class HotlistDetailsTest(unittest.TestCase):
     self.assertEqual(ezt.boolean(True), page_data['cant_administer_hotlist'])
 
     # owner is veiwing, so cant_administer_hotlist is False
-    self.mr.auth.effective_ids = [111L]
+    self.mr.auth.effective_ids = [111]
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(ezt.boolean(False), page_data['cant_administer_hotlist'])
 
   def testProcessFormData(self):
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.hotlist,
-        path='/u/111L/hotlists/%s/details' % self.hotlist.hotlist_id)
-    mr.auth.user_id = 111L
+        path='/u/111/hotlists/%s/details' % self.hotlist.hotlist_id,
+        services=service_manager.Services(user=self.user_service))
+    mr.auth.user_id = 111
     post_data = fake.PostData(
         name=['hotlist'],
         summary = ['hotlist summary'],
@@ -102,8 +105,9 @@ class HotlistDetailsTest(unittest.TestCase):
   def testProcessFormData_RejectTemplate(self):
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.hotlist,
-        path='/u/111L/hotlists/%s/details' % self.hotlist.hotlist_id)
-    mr.auth.user_id=111L
+        path='/u/111/hotlists/%s/details' % self.hotlist.hotlist_id,
+        services=service_manager.Services(user=self.user_service))
+    mr.auth.user_id = 111
     post_data = fake.PostData(
         summary = [''],
         name = [''],
@@ -126,11 +130,12 @@ class HotlistDetailsTest(unittest.TestCase):
   def testProcessFormData_DuplicateName(self):
     self.servlet.services.features.TestAddHotlist(
         'FirstHotlist', summary='hotlist summary', description='description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.hotlist,
-        path='/u/111L/hotlists/%s/details' % (self.hotlist.hotlist_id))
-    mr.auth.user_id = 111L
+        path='/u/111/hotlists/%s/details' % (self.hotlist.hotlist_id),
+        services=service_manager.Services(user=self.user_service))
+    mr.auth.user_id = 111
     post_data = fake.PostData(
         summary = ['hotlist summary'],
         name = ['FirstHotlist'],
@@ -152,7 +157,8 @@ class HotlistDetailsTest(unittest.TestCase):
   def testProcessFormData_Bad(self):
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.hotlist,
-        path='/u/111L/hotlists/%s/details' % (self.hotlist.hotlist_id))
+        path='/u/111/hotlists/%s/details' % (self.hotlist.hotlist_id),
+        services=service_manager.Services(user=self.user_service))
     post_data = fake.PostData(
         summary = ['hotlist summary'],
         name = ['2badName'],

@@ -53,7 +53,7 @@ class BackendNonviewableTest(unittest.TestCase):
     """Check the special case for users who are never restricted."""
     perms = permissions.OWNER_ACTIVE_PERMISSIONSET
     nonviewable_iids = self.servlet.GetNonviewableIIDs(
-      self.mr.cnxn, self.mr.auth.user_pb, {111L}, self.project, perms, 2)
+      self.mr.cnxn, self.mr.auth.user_pb, {111}, self.project, perms, 2)
     self.assertEqual([], nonviewable_iids)
 
   def testGetNonviewableIIDs_RegularUser(self):
@@ -141,11 +141,11 @@ class BackendNonviewableTest(unittest.TestCase):
     """This visitor does not participate in any issues."""
     self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByParticipant')
     self.services.issue.GetIIDsByParticipant(
-      self.mr.cnxn, {111L}, [789], 2).AndReturn([])
+      self.mr.cnxn, {111}, [789], 2).AndReturn([])
     self.mox.ReplayAll()
 
     ok_iids = self.servlet.GetViewableIIDs(
-      self.mr.cnxn, {111L}, 789, 2)
+      self.mr.cnxn, {111}, 789, 2)
     self.mox.VerifyAll()
     self.assertEqual([], ok_iids)
 
@@ -153,10 +153,10 @@ class BackendNonviewableTest(unittest.TestCase):
     """This visitor  participates in some issues."""
     self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByParticipant')
     self.services.issue.GetIIDsByParticipant(
-      self.mr.cnxn, {111L}, [789], 2).AndReturn([543, 654])
+      self.mr.cnxn, {111}, [789], 2).AndReturn([543, 654])
     self.mox.ReplayAll()
 
     ok_iids = self.servlet.GetViewableIIDs(
-      self.mr.cnxn, {111L}, 789, 2)
+      self.mr.cnxn, {111}, 789, 2)
     self.mox.VerifyAll()
     self.assertEqual([543, 654], ok_iids)

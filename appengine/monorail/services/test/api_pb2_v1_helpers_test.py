@@ -173,7 +173,7 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertIssueIDs(self):
     """Test convert_issue_ids."""
-    issue1 = fake.MakeTestIssue(789, 1, 'one', 'New', 111L)
+    issue1 = fake.MakeTestIssue(789, 1, 'one', 'New', 111)
     self.services.issue.TestAddIssue(issue1)
     issue_ids = [100001]
     mar = mock.Mock()
@@ -185,7 +185,7 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertIssueRef(self):
     """Test convert_issueref_pbs."""
-    issue1 = fake.MakeTestIssue(12345, 1, 'one', 'New', 111L)
+    issue1 = fake.MakeTestIssue(12345, 1, 'one', 'New', 111)
     self.services.issue.TestAddIssue(issue1)
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2],
@@ -206,13 +206,13 @@ class ApiV1HelpersTest(unittest.TestCase):
     """Convert an internal Issue PB to an IssueWrapper API PB."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2], project_id=12345)
-    self.services.user.TestAddUser('user@example.com', 111L)
+    self.services.user.TestAddUser('user@example.com', 111)
 
     mar = mock.Mock()
     mar.cnxn = None
     mar.project_name = 'test-project'
     mar.project_id = 12345
-    mar.auth.effective_ids = {111L}
+    mar.auth.effective_ids = {111}
     mar.perms = permissions.READ_ONLY_PERMISSIONSET
     mar.profiler = profiler.Profiler()
     mar.config = tracker_bizobj.MakeDefaultProjectIssueConfig(12345)
@@ -258,7 +258,7 @@ class ApiV1HelpersTest(unittest.TestCase):
         tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[1])
     ]
     issue = fake.MakeTestIssue(
-        12345, 1, 'one', 'New', 111L, field_values=fvs,
+        12345, 1, 'one', 'New', 111, field_values=fvs,
         approval_values=approval_values, phases=phases)
     issue.opened_timestamp = now
     issue.owner_modified_timestamp = now
@@ -378,15 +378,15 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertApprovalAmendments(self):
     """Test convert_approval_comment."""
-    self.services.user.TestAddUser('user1@example.com', 111L)
-    self.services.user.TestAddUser('user2@example.com', 222L)
-    self.services.user.TestAddUser('user3@example.com', 333L)
+    self.services.user.TestAddUser('user1@example.com', 111)
+    self.services.user.TestAddUser('user2@example.com', 222)
+    self.services.user.TestAddUser('user3@example.com', 333)
     mar = mock.Mock()
     mar.cnxn = None
     amendment_status = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.APPROVED)
     amendment_approvers = tracker_bizobj.MakeApprovalApproversAmendment(
-        [111L, 222L], [333L])
+        [111, 222], [333])
     amendments = [amendment_status, amendment_approvers]
     result = api_pb2_v1_helpers.convert_approval_amendments(
         amendments, mar, self.services)
@@ -471,7 +471,7 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testIssueGlobalIDs(self):
     """Test issue_global_ids."""
-    issue1 = fake.MakeTestIssue(12345, 1, 'one', 'New', 111L)
+    issue1 = fake.MakeTestIssue(12345, 1, 'one', 'New', 111)
     self.services.issue.TestAddIssue(issue1)
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2],

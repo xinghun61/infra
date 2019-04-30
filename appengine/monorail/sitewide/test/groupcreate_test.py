@@ -50,7 +50,7 @@ class GroupCreateTest(unittest.TestCase):
           self.servlet.AssertBasePermission, mr)
 
     mr = testing_helpers.MakeMonorailRequest(
-        perms=permissions.GetPermissions(mr.auth.user_pb, {111L}, None))
+        perms=permissions.GetPermissions(mr.auth.user_pb, {111}, None))
     if expect_nonadmin_ok:
       self.servlet.AssertBasePermission(mr)
     else:

@@ -1015,7 +1015,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2], project_id=12345)
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[444L])
+        approval_id=1, approver_ids=[444])
 
     request, issue = self.approvalRequest(
         approval,
@@ -1067,7 +1067,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2], project_id=12345)
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[444L],
+        approval_id=1, approver_ids=[444],
         status=tracker_pb2.ApprovalStatus.NOT_SET)
 
     request, issue = self.approvalRequest(
@@ -1094,7 +1094,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'test-project', owner_ids=[2],
         project_id=12345)
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[444L],
+        approval_id=1, approver_ids=[444],
         status=tracker_pb2.ApprovalStatus.NOT_SET)
     request, _issue = self.approvalRequest(
         approval,
@@ -1144,7 +1144,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         project_id=12345)
 
     approval = tracker_pb2.ApprovalValue(
-        approval_id=1, approver_ids=[444L],
+        approval_id=1, approver_ids=[444],
         status=tracker_pb2.ApprovalStatus.NOT_SET)
     request, _issue = self.approvalRequest(
         approval,

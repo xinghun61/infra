@@ -300,44 +300,44 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     self.services.config.StoreConfig('cnxn', config)
 
     # Custom user_type field TLs
-    self.services.user.TestAddUser('TL@example.com', 111L)
-    self.services.user.TestAddUser('silentTL@example.com', 222L)
-    self.services.user.TestAddUser('approvalTL@example.com', 333L)
-    self.services.user.TestAddUser('otherapprovalTL@example.com', 444L)
+    self.services.user.TestAddUser('TL@example.com', 111)
+    self.services.user.TestAddUser('silentTL@example.com', 222)
+    self.services.user.TestAddUser('approvalTL@example.com', 333)
+    self.services.user.TestAddUser('otherapprovalTL@example.com', 444)
 
     # Approvers
-    self.services.user.TestAddUser('approver_old@example.com', 777L)
-    self.services.user.TestAddUser('approver_new@example.com', 888L)
-    self.services.user.TestAddUser('approver_still@example.com', 999L)
-    self.services.user.TestAddUser('approver_group@example.com', 666L)
-    self.services.user.TestAddUser('group_mem1@example.com', 661L)
-    self.services.user.TestAddUser('group_mem2@example.com', 662L)
-    self.services.user.TestAddUser('group_mem3@example.com', 663L)
+    self.services.user.TestAddUser('approver_old@example.com', 777)
+    self.services.user.TestAddUser('approver_new@example.com', 888)
+    self.services.user.TestAddUser('approver_still@example.com', 999)
+    self.services.user.TestAddUser('approver_group@example.com', 666)
+    self.services.user.TestAddUser('group_mem1@example.com', 661)
+    self.services.user.TestAddUser('group_mem2@example.com', 662)
+    self.services.user.TestAddUser('group_mem3@example.com', 663)
     self.services.usergroup.TestAddGroupSettings(
-        666L, 'approver_group@example.com')
-    self.services.usergroup.TestAddMembers(666L, [661L, 662L, 663L])
+        666, 'approver_group@example.com')
+    self.services.usergroup.TestAddMembers(666, [661, 662, 663])
     canary_phase = tracker_pb2.Phase(
         name='Canary', phase_id=1, rank=1)
     approval_values = [
         tracker_pb2.ApprovalValue(approval_id=3,
-                                  approver_ids=[888L, 999L, 666L, 661L])]
+                                  approver_ids=[888, 999, 666, 661])]
     approval_issue = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1,
         is_spam=True)
     approval_issue.phases = [canary_phase]
     approval_issue.approval_values = approval_values
     approval_issue.field_values = [
-        tracker_bizobj.MakeFieldValue(121, None, None, 111L, None, None, False),
-        tracker_bizobj.MakeFieldValue(122, None, None, 222L, None, None, False),
-        tracker_bizobj.MakeFieldValue(123, None, None, 333L, None, None, False),
-        tracker_bizobj.MakeFieldValue(124, None, None, 444L, None, None, False),
+        tracker_bizobj.MakeFieldValue(121, None, None, 111, None, None, False),
+        tracker_bizobj.MakeFieldValue(122, None, None, 222, None, None, False),
+        tracker_bizobj.MakeFieldValue(123, None, None, 333, None, None, False),
+        tracker_bizobj.MakeFieldValue(124, None, None, 444, None, None, False),
     ]
     self.services.issue.TestAddIssue(approval_issue)
 
-    amend = tracker_bizobj.MakeApprovalApproversAmendment([888L], [777L])
+    amend = tracker_bizobj.MakeApprovalApproversAmendment([888], [777])
 
     comment = tracker_pb2.IssueComment(
-        project_id=12345, user_id=999L, issue_id=approval_issue.issue_id,
+        project_id=12345, user_id=999, issue_id=approval_issue.issue_id,
         amendments=[amend], timestamp=1234567890, content='just a comment.')
     attach = tracker_pb2.Attachment(
         attachment_id=4567, filename='sploot.jpg', mimetype='image/png',
@@ -378,7 +378,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     amend2 = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.NEED_INFO)
     comment2 = tracker_pb2.IssueComment(
-        project_id=12345, user_id=999L, issue_id=approval_issue.issue_id,
+        project_id=12345, user_id=999, issue_id=approval_issue.issue_id,
         amendments=[amend2], timestamp=1234567891, content='')
     self.services.issue.TestAddComment(comment2, approval_issue.local_id)
     task = notify.NotifyApprovalChangeTask(
@@ -403,25 +403,25 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
   def testNotifyApprovalChangeTask_GetApprovalEmailRecipients(self):
     task = notify.NotifyApprovalChangeTask(
         request=None, response=None, services=self.services)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111)
     approval_value = tracker_pb2.ApprovalValue(
-        approver_ids=[222L, 333L],
+        approver_ids=[222, 333],
         status=tracker_pb2.ApprovalStatus.APPROVED)
     comment = tracker_pb2.IssueComment(
         project_id=789, user_id=1, issue_id=78901)
 
     # Comment with not amendments notifies everyone.
     rids = task._GetApprovalEmailRecipients(
-        approval_value, comment, issue, [777L, 888L])
-    self.assertItemsEqual(rids, [111L, 222L, 333L, 777L, 888L])
+        approval_value, comment, issue, [777, 888])
+    self.assertItemsEqual(rids, [111, 222, 333, 777, 888])
 
     # New APPROVED status notifies owners and any_comment users.
     amendment = tracker_bizobj.MakeApprovalStatusAmendment(
         tracker_pb2.ApprovalStatus.APPROVED)
     comment.amendments = [amendment]
     rids = task._GetApprovalEmailRecipients(
-        approval_value, comment, issue, [777L, 888L])
-    self.assertItemsEqual(rids, [111L, 777L, 888L])
+        approval_value, comment, issue, [777, 888])
+    self.assertItemsEqual(rids, [111, 777, 888])
 
     # New REVIEW_REQUESTED status notifies approvers.
     approval_value.status = tracker_pb2.ApprovalStatus.REVIEW_REQUESTED
@@ -429,17 +429,17 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         tracker_pb2.ApprovalStatus.REVIEW_REQUESTED)
     comment.amendments = [amendment]
     rids = task._GetApprovalEmailRecipients(
-        approval_value, comment, issue, [777L, 888L])
-    self.assertItemsEqual(rids, [222L, 333L])
+        approval_value, comment, issue, [777, 888])
+    self.assertItemsEqual(rids, [222, 333])
 
     # Approvers change notifies everyone.
     amendment = tracker_bizobj.MakeApprovalApproversAmendment(
-        [222L], [555L])
+        [222], [555])
     comment.amendments = [amendment]
-    approval_value.approver_ids = [222L]
+    approval_value.approver_ids = [222]
     rids = task._GetApprovalEmailRecipients(
-        approval_value, comment, issue, [777L], omit_ids=[444L, 333L])
-    self.assertItemsEqual(rids, [111L, 222L, 555L, 777L])
+        approval_value, comment, issue, [777], omit_ids=[444, 333])
+    self.assertItemsEqual(rids, [111, 222, 555, 777])
 
   def testOutboundEmailTask_Normal(self):
     """We can send an email."""
@@ -496,7 +496,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         payload=body,
         method='POST',
         services=self.services)
-    self.services.user.TestAddUser('banned@example.com', 404L, banned=True)
+    self.services.user.TestAddUser('banned@example.com', 404, banned=True)
     result = task.HandleRequest(mr)
     self.assertEqual('Skipping because user is banned.', result['note'])
     self.assertNotIn('from_addr', result)

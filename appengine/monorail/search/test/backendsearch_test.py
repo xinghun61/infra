@@ -25,8 +25,8 @@ class BackendSearchTest(unittest.TestCase):
     self.mr = testing_helpers.MakeMonorailRequest(
         path='/_backend/besearch?q=Priority:High&shard=2')
     self.mr.query_project_names = ['proj']
-    self.mr.specified_logged_in_user_id = 111L
-    self.mr.specified_me_user_ids = [222L]
+    self.mr.specified_logged_in_user_id = 111
+    self.mr.specified_me_user_ids = [222]
     self.mr.shard_id = 2
     self.servlet = backendsearch.BackendSearch(
         'req', 'res', services=self.services)
@@ -45,7 +45,7 @@ class BackendSearchTest(unittest.TestCase):
         error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, [222L]
+      self.mr, self.services, 100, ['proj'], 111, [222]
       ).AndReturn(pipeline)
     self.mox.ReplayAll()
 
@@ -65,7 +65,7 @@ class BackendSearchTest(unittest.TestCase):
         error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, [222L]
+      self.mr, self.services, 100, ['proj'], 111, [222]
       ).AndReturn(pipeline)
     self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
     # All issues are prefetched because they fit  on the first pagination page.
@@ -88,7 +88,7 @@ class BackendSearchTest(unittest.TestCase):
         error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, [222L]
+      self.mr, self.services, 100, ['proj'], 111, [222]
       ).AndReturn(pipeline)
     self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
     # First 5 issues are prefetched because num=5
@@ -112,7 +112,7 @@ class BackendSearchTest(unittest.TestCase):
         error=error)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, [222L]
+      self.mr, self.services, 100, ['proj'], 111, [222]
       ).AndReturn(pipeline)
     self.mox.ReplayAll()
 

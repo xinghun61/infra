@@ -42,22 +42,22 @@ class FrontendSearchPipelineTest(unittest.TestCase):
         issue=fake.IssueService(),
         config=fake.ConfigService(),
         cache_manager=fake.CacheManager())
-    self.services.user.TestAddUser('a@example.com', 111L)
+    self.services.user.TestAddUser('a@example.com', 111)
     self.project = self.services.project.TestAddProject('proj', project_id=789)
     self.mr = testing_helpers.MakeMonorailRequest(
       path='/p/proj/issues/list', project=self.project)
-    self.mr.me_user_id = 111L
+    self.mr.me_user_id = 111
     self.url_params = [(name, self.mr.GetParam(name)) for name in
                        framework_helpers.RECOGNIZED_PARAMS]
 
     self.issue_1 = fake.MakeTestIssue(
-      789, 1, 'one', 'New', 111L, labels=['Priority-High'])
+      789, 1, 'one', 'New', 111, labels=['Priority-High'])
     self.services.issue.TestAddIssue(self.issue_1)
     self.issue_2 = fake.MakeTestIssue(
-      789, 2, 'two', 'New', 111L, labels=['Priority-Low'])
+      789, 2, 'two', 'New', 111, labels=['Priority-Low'])
     self.services.issue.TestAddIssue(self.issue_2)
     self.issue_3 = fake.MakeTestIssue(
-      789, 3, 'three', 'New', 111L, labels=['Priority-Medium'])
+      789, 3, 'three', 'New', 111, labels=['Priority-Medium'])
     self.services.issue.TestAddIssue(self.issue_3)
     self.mr.sort_spec = 'Priority'
 
@@ -219,7 +219,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.assertEqual(
       [self.issue_1, self.issue_3, self.issue_2],  # high, medium, low.
       pipeline.allowed_results)
-    self.assertEqual([0, 111L], pipeline.users_by_id.keys())
+    self.assertEqual([0, 111], pipeline.users_by_id.keys())
 
   def testDetermineIssuePosition_Normal(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
@@ -412,7 +412,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
   def MakeIssues(self, num_issues):
     issues = []
     for i in range(num_issues):
-      issue = fake.MakeTestIssue(789, 100 + i, 'samp test', 'New', 111L)
+      issue = fake.MakeTestIssue(789, 100 + i, 'samp test', 'New', 111)
       issues.append(issue)
       self.services.issue.TestAddIssue(issue)
     return issues
@@ -445,7 +445,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.assertEqual([], pipeline.users_by_id.keys())
 
     pipeline._LookupNeededUsers([self.issue_1, self.issue_2, self.issue_3])
-    self.assertEqual([0, 111L], pipeline.users_by_id.keys())
+    self.assertEqual([0, 111], pipeline.users_by_id.keys())
 
   def testPaginate_Grid(self):
     self.mr.mode = 'grid'
@@ -617,7 +617,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     nonviewable_iids = {}  # Nothing should accumulate here in this case.
     processed_invalidations_up_to = 12345
     frontendsearchpipeline._GetNonviewableIIDs(
-        [789], 111L, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
+        [789], 111, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
         {}, processed_invalidations_up_to, True)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({}, nonviewable_iids)
@@ -641,7 +641,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       (789, 2): 0,  # not stale
       }
     frontendsearchpipeline._GetNonviewableIIDs(
-        [789], 111L, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
+        [789], 111, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
         project_shard_timestamps, processed_invalidations_up_to, True)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({1: {10001, 10031}, 2: {10002, 10042}}, nonviewable_iids)
@@ -659,11 +659,11 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     # Nothing is set in memcache for this case.
     a_fake_rpc = testing_helpers.Blank(callback=None)
     frontendsearchpipeline._StartBackendNonviewableCall(
-      789, 111L, 2, processed_invalidations_up_to).AndReturn(a_fake_rpc)
+      789, 111, 2, processed_invalidations_up_to).AndReturn(a_fake_rpc)
     self.mox.ReplayAll()
 
     frontendsearchpipeline._GetNonviewableIIDs(
-        [789], 111L, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
+        [789], 111, unfiltered_iids_dict.keys(), rpc_tuples, nonviewable_iids,
         {}, processed_invalidations_up_to, True)
     self.mox.VerifyAll()
     _, sid_0, rpc_0 = rpc_tuples[0]
@@ -685,7 +685,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       (789, 2): 0,  # not stale
       }
     frontendsearchpipeline._AccumulateNonviewableIIDs(
-      789, 111L, 2, cached_dict, nonviewable_iids, project_shard_timestamps,
+      789, 111, 2, cached_dict, nonviewable_iids, project_shard_timestamps,
       rpc_tuples, processed_invalidations_up_to)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({1: {10001}, 2: {10002, 10042}}, nonviewable_iids)
@@ -706,11 +706,11 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       }
     a_fake_rpc = testing_helpers.Blank(callback=None)
     frontendsearchpipeline._StartBackendNonviewableCall(
-      789, 111L, 2, processed_invalidations_up_to).AndReturn(a_fake_rpc)
+      789, 111, 2, processed_invalidations_up_to).AndReturn(a_fake_rpc)
     self.mox.ReplayAll()
 
     frontendsearchpipeline._AccumulateNonviewableIIDs(
-      789, 111L, 2, cached_dict, nonviewable_iids, project_shard_timestamps,
+      789, 111, 2, cached_dict, nonviewable_iids, project_shard_timestamps,
       rpc_tuples, processed_invalidations_up_to)
     self.mox.VerifyAll()
     _, sid_0, rpc_0 = rpc_tuples[0]
@@ -732,7 +732,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       (None, 2): 0,  # not stale
       }
     frontendsearchpipeline._AccumulateNonviewableIIDs(
-      None, 111L, 2, cached_dict, nonviewable_iids, project_shard_timestamps,
+      None, 111, 2, cached_dict, nonviewable_iids, project_shard_timestamps,
       rpc_tuples, processed_invalidations_up_to)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({1: {10001}, 2: {10002, 10042}}, nonviewable_iids)
@@ -746,11 +746,11 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     processed_invalidations_up_to = 12345
     a_fake_rpc = testing_helpers.Blank(callback=None)
     frontendsearchpipeline._StartBackendNonviewableCall(
-      789, 111L, 2, processed_invalidations_up_to).AndReturn(a_fake_rpc)
+      789, 111, 2, processed_invalidations_up_to).AndReturn(a_fake_rpc)
     self.mox.ReplayAll()
 
     frontendsearchpipeline._AccumulateNonviewableIIDs(
-      789, 111L, 2, cached_dict, nonviewable_iids, {}, rpc_tuples,
+      789, 111, 2, cached_dict, nonviewable_iids, {}, rpc_tuples,
       processed_invalidations_up_to)
     self.mox.VerifyAll()
     _, sid_0, rpc_0 = rpc_tuples[0]
@@ -787,8 +787,8 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     processed_invalidations_up_to = 12345
-    me_user_ids = [555L]
-    logged_in_user_id = 777L
+    me_user_ids = [555]
+    logged_in_user_id = 777
     new_url_num = 201
     url_params = [('num', '300'), ('groupby', 'cc')]
     frontendsearchpipeline._StartBackendSearchCall(
@@ -811,7 +811,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
 
     processed_invalidations_up_to = 12345
     frontendsearchpipeline._StartBackendNonviewableCall(
-      789, 111L, 2, processed_invalidations_up_to)
+      789, 111, 2, processed_invalidations_up_to)
     self.mox.VerifyAll()
 
   def testHandleBackendSearchResponse_500(self):
@@ -825,7 +825,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    me_user_ids = [111L]
+    me_user_ids = [111]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -857,7 +857,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    me_user_ids = [111L]
+    me_user_ids = [111]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -888,7 +888,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     search_limit_reached = {}  # Booleans accumulate here, per-shard.
     processed_invalidations_up_to = 12345
 
-    me_user_ids = [111L]
+    me_user_ids = [111]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -912,7 +912,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     processed_invalidations_up_to = 12345
     error_responses = set()
 
-    me_user_ids = [111L]
+    me_user_ids = [111]
     logged_in_user_id = 0
     new_url_num = 100
     url_params = None
@@ -952,7 +952,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     self.mox.StubOutWithMock(
         frontendsearchpipeline, '_StartBackendNonviewableCall')
     frontendsearchpipeline._HandleBackendNonviewableResponse(
-      789, 111L, 2, rpc_tuple, rpc_tuples, 0, nonviewable_iids,
+      789, 111, 2, rpc_tuple, rpc_tuples, 0, nonviewable_iids,
       processed_invalidations_up_to)
     self.assertEqual([], rpc_tuples)
     self.assertNotEqual({2: {10002, 10042}}, nonviewable_iids)
@@ -975,7 +975,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     processed_invalidations_up_to = 12345
 
     frontendsearchpipeline._HandleBackendNonviewableResponse(
-      789, 111L, 2, rpc_tuple, rpc_tuples, 2, nonviewable_iids,
+      789, 111, 2, rpc_tuple, rpc_tuples, 2, nonviewable_iids,
       processed_invalidations_up_to)
     self.assertEqual([], rpc_tuples)
     self.assertEqual({2: {10002, 10042}}, nonviewable_iids)
@@ -993,12 +993,12 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
       frontendsearchpipeline, '_StartBackendNonviewableCall')
     a_fake_rpc = testing_helpers.Blank(callback=None)
     rpc = frontendsearchpipeline._StartBackendNonviewableCall(
-      789, 111L, 2, processed_invalidations_up_to, failfast=False
+      789, 111, 2, processed_invalidations_up_to, failfast=False
       ).AndReturn(a_fake_rpc)
     self.mox.ReplayAll()
 
     frontendsearchpipeline._HandleBackendNonviewableResponse(
-      789, 111L, 2, rpc_tuple, rpc_tuples, 2, nonviewable_iids,
+      789, 111, 2, rpc_tuple, rpc_tuples, 2, nonviewable_iids,
       processed_invalidations_up_to)
     self.mox.VerifyAll()
     _, retry_shard_id, retry_rpc = rpc_tuples[0]
@@ -1013,11 +1013,11 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     sorting.InitializeArtValues(services)
 
     issue_1 = fake.MakeTestIssue(
-      789, 1, 'one', 'New', 111L, labels=['Priority-High'])
+      789, 1, 'one', 'New', 111, labels=['Priority-High'])
     issue_2 = fake.MakeTestIssue(
-      789, 2, 'two', 'New', 111L, labels=['Priority-Low'])
+      789, 2, 'two', 'New', 111, labels=['Priority-Low'])
     issue_3 = fake.MakeTestIssue(
-      789, 3, 'three', 'New', 111L, labels=['Priority-Medium'])
+      789, 3, 'three', 'New', 111, labels=['Priority-Medium'])
     issues = [issue_1, issue_2, issue_3]
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
 

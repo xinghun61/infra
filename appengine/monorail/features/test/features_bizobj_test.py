@@ -15,10 +15,10 @@ class FeaturesBizobjTest(unittest.TestCase):
 
   def setUp(self):
     self.local_ids = [1L, 2L, 3L, 4L, 5L]
-    self.issues = [fake.MakeTestIssue(1000, local_id, '', 'New', 111L)
+    self.issues = [fake.MakeTestIssue(1000, local_id, '', 'New', 111)
                    for local_id in self.local_ids]
     self.hotlistitems = [features_pb2.MakeHotlistItem(
-        issue.issue_id, rank=rank*10, adder_id=111L, date_added=3) for
+        issue.issue_id, rank=rank*10, adder_id=111, date_added=3) for
                            rank, issue in enumerate(self.issues)]
     self.iids = [item.issue_id for item in self.hotlistitems]
 
@@ -28,41 +28,41 @@ class FeaturesBizobjTest(unittest.TestCase):
       self.assertTrue(features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id))
 
     self.assertFalse(features_bizobj.IssueIsInHotlist(
-        hotlist, fake.MakeTestIssue(1000, 9L, '', 'New', 111L)))
+        hotlist, fake.MakeTestIssue(1000, 9L, '', 'New', 111)))
 
   def testSplitHotlistIssueRanks(self):
     iid_rank_tuples = [(issue.issue_id, issue.rank)
                        for issue in self.hotlistitems]
     iid_rank_tuples.reverse()
     ret = features_bizobj.SplitHotlistIssueRanks(
-        100003L, False, iid_rank_tuples)
+        100003, False, iid_rank_tuples)
     self.assertEqual(ret, (iid_rank_tuples[:2], iid_rank_tuples[2:]))
 
     iid_rank_tuples.reverse()
     ret = features_bizobj.SplitHotlistIssueRanks(
-        100003L, True, iid_rank_tuples)
+        100003, True, iid_rank_tuples)
     self.assertEqual(ret, (iid_rank_tuples[:3], iid_rank_tuples[3:]))
 
     # target issue not found
     first_pairs, second_pairs = features_bizobj.SplitHotlistIssueRanks(
-        100009L, True, iid_rank_tuples)
+        100009, True, iid_rank_tuples)
     self.assertEqual(iid_rank_tuples, first_pairs)
     self.assertEqual(second_pairs, [])
 
   def testGetOwnerIds(self):
-    hotlist = features_pb2.Hotlist(owner_ids=[111L])
-    self.assertEqual(features_bizobj.GetOwnerIds(hotlist), [111L])
+    hotlist = features_pb2.Hotlist(owner_ids=[111])
+    self.assertEqual(features_bizobj.GetOwnerIds(hotlist), [111])
 
   def testUsersOwnersOfHotlists_Empty(self):
     self.assertEqual(set(), features_bizobj.UsersOwnersOfHotlists([]))
 
   def testUsersOwnersOfHotlists_Normal(self):
     hotlist1 = features_pb2.Hotlist(
-        owner_ids=[111L, 222L], editor_ids=[333L, 444L, 555L],
-        follower_ids=[123L])
+        owner_ids=[111, 222], editor_ids=[333, 444, 555],
+        follower_ids=[123])
     hotlist2 = features_pb2.Hotlist(
-        owner_ids=[111L], editor_ids=[222L, 123L])
-    self.assertEqual(set([111L, 222L]),
+        owner_ids=[111], editor_ids=[222, 123])
+    self.assertEqual(set([111, 222]),
                      features_bizobj.UsersOwnersOfHotlists([hotlist1,
                                                             hotlist2]))
 
@@ -71,11 +71,11 @@ class FeaturesBizobjTest(unittest.TestCase):
 
   def testUsersInvolvedInHotlists_Normal(self):
     hotlist1 = features_pb2.Hotlist(
-        owner_ids=[111L, 222L], editor_ids=[333L, 444L, 555L],
-        follower_ids=[123L])
+        owner_ids=[111, 222], editor_ids=[333, 444, 555],
+        follower_ids=[123])
     hotlist2 = features_pb2.Hotlist(
-        owner_ids=[111L], editor_ids=[222L, 123L])
-    self.assertEqual(set([111L, 222L, 333L, 444L, 555L, 123L]),
+        owner_ids=[111], editor_ids=[222, 123])
+    self.assertEqual(set([111, 222, 333, 444, 555, 123]),
                      features_bizobj.UsersInvolvedInHotlists([hotlist1,
                                                               hotlist2]))
 

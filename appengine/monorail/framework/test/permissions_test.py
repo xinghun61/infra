@@ -31,15 +31,15 @@ class PermissionSetTest(unittest.TestCase):
   def setUp(self):
     self.perms = permissions.PermissionSet(['A', 'b', 'Cc'])
     self.proj = project_pb2.Project()
-    self.proj.contributor_ids.append(111L)
-    self.proj.contributor_ids.append(222L)
+    self.proj.contributor_ids.append(111)
+    self.proj.contributor_ids.append(222)
     self.proj.extra_perms.append(project_pb2.Project.ExtraPerms(
-        member_id=111L, perms=['Cc', 'D', 'e', 'Ff']))
+        member_id=111, perms=['Cc', 'D', 'e', 'Ff']))
     self.proj.extra_perms.append(project_pb2.Project.ExtraPerms(
-        member_id=222L, perms=['G', 'H']))
+        member_id=222, perms=['G', 'H']))
     # user 3 used to be a member and had extra perms, but no longer in project.
     self.proj.extra_perms.append(project_pb2.Project.ExtraPerms(
-        member_id=333L, perms=['G', 'H']))
+        member_id=333, perms=['G', 'H']))
 
   def testGetAttr(self):
     self.assertTrue(self.perms.a)
@@ -58,7 +58,7 @@ class PermissionSetTest(unittest.TestCase):
     self.assertFalse(self.perms.CanUsePerm('Z', effective_ids, self.proj, []))
 
   def testCanUsePerm_SignedInNoGroups(self):
-    effective_ids = {111L}
+    effective_ids = {111}
     self.assertTrue(self.perms.CanUsePerm('A', effective_ids, self.proj, []))
     self.assertTrue(self.perms.CanUsePerm('D', effective_ids, self.proj, []))
     self.assertTrue(self.perms.CanUsePerm(
@@ -66,7 +66,7 @@ class PermissionSetTest(unittest.TestCase):
     self.assertFalse(self.perms.CanUsePerm('G', effective_ids, self.proj, []))
     self.assertFalse(self.perms.CanUsePerm('Z', effective_ids, self.proj, []))
 
-    effective_ids = {222L}
+    effective_ids = {222}
     self.assertTrue(self.perms.CanUsePerm('A', effective_ids, self.proj, []))
     self.assertFalse(self.perms.CanUsePerm('D', effective_ids, self.proj, []))
     self.assertTrue(self.perms.CanUsePerm('G', effective_ids, self.proj, []))
@@ -75,7 +75,7 @@ class PermissionSetTest(unittest.TestCase):
         'Z', effective_ids, self.proj, ['Restrict-Z-A']))
 
   def testCanUsePerm_SignedInWithGroups(self):
-    effective_ids = {111L, 222L, 333L}
+    effective_ids = {111, 222, 333}
     self.assertTrue(self.perms.CanUsePerm('A', effective_ids, self.proj, []))
     self.assertTrue(self.perms.CanUsePerm('D', effective_ids, self.proj, []))
     self.assertTrue(self.perms.CanUsePerm('G', effective_ids, self.proj, []))
@@ -86,7 +86,7 @@ class PermissionSetTest(unittest.TestCase):
         'G', effective_ids, self.proj, ['Restrict-G-Z']))
 
   def testCanUsePerm_FormerMember(self):
-    effective_ids = {333L}
+    effective_ids = {333}
     self.assertTrue(self.perms.CanUsePerm('A', effective_ids, self.proj, []))
     self.assertFalse(self.perms.CanUsePerm('D', effective_ids, self.proj, []))
     self.assertFalse(self.perms.CanUsePerm('G', effective_ids, self.proj, []))
@@ -101,50 +101,50 @@ class PermissionSetTest(unittest.TestCase):
     self.assertFalse(self.perms.HasPerm('Z', 0, self.proj))
 
   def testHasPerm_InExtraPerms(self):
-    self.assertTrue(self.perms.HasPerm('d', 111L, self.proj))
-    self.assertTrue(self.perms.HasPerm('D', 111L, self.proj))
-    self.assertTrue(self.perms.HasPerm('Cc', 111L, self.proj))
-    self.assertTrue(self.perms.HasPerm('CC', 111L, self.proj))
-    self.assertFalse(self.perms.HasPerm('Z', 111L, self.proj))
+    self.assertTrue(self.perms.HasPerm('d', 111, self.proj))
+    self.assertTrue(self.perms.HasPerm('D', 111, self.proj))
+    self.assertTrue(self.perms.HasPerm('Cc', 111, self.proj))
+    self.assertTrue(self.perms.HasPerm('CC', 111, self.proj))
+    self.assertFalse(self.perms.HasPerm('Z', 111, self.proj))
 
-    self.assertFalse(self.perms.HasPerm('d', 222L, self.proj))
-    self.assertFalse(self.perms.HasPerm('D', 222L, self.proj))
+    self.assertFalse(self.perms.HasPerm('d', 222, self.proj))
+    self.assertFalse(self.perms.HasPerm('D', 222, self.proj))
 
     # Only current members can have extra permissions
     self.proj.contributor_ids = []
-    self.assertFalse(self.perms.HasPerm('d', 111L, self.proj))
+    self.assertFalse(self.perms.HasPerm('d', 111, self.proj))
 
     # TODO(jrobbins): also test consider_restrictions=False and
     # restriction labels directly in this class.
 
   def testHasPerm_OverrideExtraPerms(self):
-    # D is an extra perm for 111L...
-    self.assertTrue(self.perms.HasPerm('d', 111L, self.proj))
-    self.assertTrue(self.perms.HasPerm('D', 111L, self.proj))
+    # D is an extra perm for 111...
+    self.assertTrue(self.perms.HasPerm('d', 111, self.proj))
+    self.assertTrue(self.perms.HasPerm('D', 111, self.proj))
     # ...unless we tell HasPerm it isn't.
-    self.assertFalse(self.perms.HasPerm('d', 111L, self.proj, []))
-    self.assertFalse(self.perms.HasPerm('D', 111L, self.proj, []))
+    self.assertFalse(self.perms.HasPerm('d', 111, self.proj, []))
+    self.assertFalse(self.perms.HasPerm('D', 111, self.proj, []))
     # Perms in self.perms are still considered
-    self.assertTrue(self.perms.HasPerm('Cc', 111L, self.proj, []))
-    self.assertTrue(self.perms.HasPerm('CC', 111L, self.proj, []))
+    self.assertTrue(self.perms.HasPerm('Cc', 111, self.proj, []))
+    self.assertTrue(self.perms.HasPerm('CC', 111, self.proj, []))
     # Z is not an extra perm...
-    self.assertFalse(self.perms.HasPerm('Z', 111L, self.proj))
+    self.assertFalse(self.perms.HasPerm('Z', 111, self.proj))
     # ...unless we tell HasPerm it is.
-    self.assertTrue(self.perms.HasPerm('Z', 111L, self.proj, ['z']))
+    self.assertTrue(self.perms.HasPerm('Z', 111, self.proj, ['z']))
 
   def testHasPerm_GrantedPerms(self):
     self.assertTrue(self.perms.CanUsePerm(
-        'A', {111L}, self.proj, [], granted_perms=['z']))
+        'A', {111}, self.proj, [], granted_perms=['z']))
     self.assertTrue(self.perms.CanUsePerm(
-        'a', {111L}, self.proj, [], granted_perms=['z']))
+        'a', {111}, self.proj, [], granted_perms=['z']))
     self.assertTrue(self.perms.CanUsePerm(
-        'a', {111L}, self.proj, [], granted_perms=['a']))
+        'a', {111}, self.proj, [], granted_perms=['a']))
     self.assertTrue(self.perms.CanUsePerm(
-        'Z', {111L}, self.proj, [], granted_perms=['y', 'z']))
+        'Z', {111}, self.proj, [], granted_perms=['y', 'z']))
     self.assertTrue(self.perms.CanUsePerm(
-        'z', {111L}, self.proj, [], granted_perms=['y', 'z']))
+        'z', {111}, self.proj, [], granted_perms=['y', 'z']))
     self.assertFalse(self.perms.CanUsePerm(
-        'z', {111L}, self.proj, [], granted_perms=['y']))
+        'z', {111}, self.proj, [], granted_perms=['y']))
 
   def testDebugString(self):
     self.assertEqual('PermissionSet()',
@@ -163,10 +163,10 @@ class PermissionSetTest(unittest.TestCase):
 class PermissionsTest(unittest.TestCase):
 
   NOW = 1277762224  # Any timestamp will do, we only compare it to itself +/- 1
-  COMMITTER_USER_ID = 111L
-  OWNER_USER_ID = 222L
-  CONTRIB_USER_ID = 333L
-  SITE_ADMIN_USER_ID = 444L
+  COMMITTER_USER_ID = 111
+  OWNER_USER_ID = 222
+  CONTRIB_USER_ID = 333
+  SITE_ADMIN_USER_ID = 444
 
   def MakeProject(self, project_name, state, add_members=True, access=None):
     args = dict(project_name=project_name, state=state)
@@ -200,11 +200,11 @@ class PermissionsTest(unittest.TestCase):
 
     self.normal_artifact = tracker_pb2.Issue()
     self.normal_artifact.labels.extend(['hot', 'Key-Value'])
-    self.normal_artifact.reporter_id = 111L
+    self.normal_artifact.reporter_id = 111
 
     # Two PermissionSets w/ permissions outside of any project.
     self.normal_user_perms = permissions.GetPermissions(
-        None, {111L}, None)
+        None, {111}, None)
     self.admin_perms = permissions.PermissionSet(
         [permissions.ADMINISTER_SITE,
          permissions.CREATE_PROJECT])
@@ -352,7 +352,7 @@ class PermissionsTest(unittest.TestCase):
         (permissions.USER_ROLE, project_pb2.ProjectState.LIVE,
          project_pb2.ProjectAccess.ANYONE),
         permissions._GetPermissionKey(
-            999L, self.live_project))
+            999, self.live_project))
 
   def testPermissionsImmutable(self):
     self.assertTrue(isinstance(
@@ -366,22 +366,22 @@ class PermissionsTest(unittest.TestCase):
 
   def testGetExtraPerms(self):
     project = project_pb2.Project()
-    project.committer_ids.append(222L)
+    project.committer_ids.append(222)
     # User 1 is a former member with left-over extra perms that don't count.
     project.extra_perms.append(project_pb2.Project.ExtraPerms(
-        member_id=111L, perms=['a', 'b', 'c']))
+        member_id=111, perms=['a', 'b', 'c']))
     project.extra_perms.append(project_pb2.Project.ExtraPerms(
-        member_id=222L, perms=['a', 'b', 'c']))
+        member_id=222, perms=['a', 'b', 'c']))
 
     self.assertListEqual(
         [],
-        permissions.GetExtraPerms(project, 111L))
+        permissions.GetExtraPerms(project, 111))
     self.assertListEqual(
         ['a', 'b', 'c'],
-        permissions.GetExtraPerms(project, 222L))
+        permissions.GetExtraPerms(project, 222))
     self.assertListEqual(
         [],
-        permissions.GetExtraPerms(project, 333L))
+        permissions.GetExtraPerms(project, 333))
 
   def testCanDeleteComment_NoPermissionSet(self):
     """Test that if no PermissionSet is given, we can't delete comments."""
@@ -389,7 +389,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
     # If no PermissionSet is given, the user cannot delete the comment.
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 111L, None))
+        comment, commenter, 111, None))
     # Same, with no user specified.
     self.assertFalse(permissions.CanDeleteComment(
         comment, commenter, framework_constants.NO_USER_SPECIFIED, None))
@@ -405,7 +405,7 @@ class PermissionsTest(unittest.TestCase):
         comment, commenter, framework_constants.NO_USER_SPECIFIED, perms))
 
     # No logged in user, even if artifact was already deleted.
-    comment.deleted_by = 111L
+    comment.deleted_by = 111
     self.assertFalse(permissions.CanDeleteComment(
         comment, commenter, framework_constants.NO_USER_SPECIFIED, perms))
 
@@ -414,100 +414,100 @@ class PermissionsTest(unittest.TestCase):
 
     Except for spam comments or comments by banned users.
     """
-    comment = tracker_pb2.IssueComment(user_id=111L)
+    comment = tracker_pb2.IssueComment(user_id=111)
     commenter = user_pb2.User()
     perms = permissions.PermissionSet([permissions.DELETE_ANY])
 
     # Users with DeleteAny permission can delete their own comments.
     self.assertTrue(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
     # And also comments by other users
-    comment.user_id = 999L
+    comment.user_id = 999
     self.assertTrue(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
     # As well as undelete comments they deleted.
-    comment.deleted_by = 111L
+    comment.deleted_by = 111
     self.assertTrue(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
     # Or that other users deleted.
-    comment.deleted_by = 222L
+    comment.deleted_by = 222
     self.assertTrue(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
   def testCanDeleteComment_DeleteOwn(self):
     """Test that users with DeleteOwn permission can delete any comment.
 
     Except for spam comments or comments by banned users.
     """
-    comment = tracker_pb2.IssueComment(user_id=111L)
+    comment = tracker_pb2.IssueComment(user_id=111)
     commenter = user_pb2.User()
     perms = permissions.PermissionSet([permissions.DELETE_OWN])
 
     # Users with DeleteOwn permission can delete their own comments.
     self.assertTrue(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
     # But not comments by other users
-    comment.user_id = 999L
+    comment.user_id = 999
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
     # They can undelete comments they deleted.
-    comment.user_id = 111L
-    comment.deleted_by = 111L
+    comment.user_id = 111
+    comment.deleted_by = 111
     self.assertTrue(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
     # But not comments that other users deleted.
-    comment.deleted_by = 222L
+    comment.deleted_by = 222
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 111L, perms))
+        comment, commenter, 111, perms))
 
   def testCanDeleteComment_CannotDeleteSpamComments(self):
     """Test that nobody can (un)delete comments marked as spam."""
-    comment = tracker_pb2.IssueComment(user_id=111L, is_spam=True)
+    comment = tracker_pb2.IssueComment(user_id=111, is_spam=True)
     commenter = user_pb2.User()
 
     # Nobody can delete comments marked as spam.
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 111L,
+        comment, commenter, 111,
         permissions.PermissionSet([permissions.DELETE_OWN])))
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 222L,
+        comment, commenter, 222,
         permissions.PermissionSet([permissions.DELETE_ANY])))
 
     # Nobody can undelete comments marked as spam.
-    comment.deleted_by = 222L
+    comment.deleted_by = 222
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 111L,
+        comment, commenter, 111,
         permissions.PermissionSet([permissions.DELETE_OWN])))
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 222L,
+        comment, commenter, 222,
         permissions.PermissionSet([permissions.DELETE_ANY])))
 
   def testCanDeleteComment_CannotDeleteCommentsByBannedUser(self):
     """Test that nobody can (un)delete comments by banned users."""
-    comment = tracker_pb2.IssueComment(user_id=111L)
+    comment = tracker_pb2.IssueComment(user_id=111)
     commenter = user_pb2.User(banned='Some reason')
 
     # Nobody can delete comments by banned users.
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 111L,
+        comment, commenter, 111,
         permissions.PermissionSet([permissions.DELETE_OWN])))
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 222L,
+        comment, commenter, 222,
         permissions.PermissionSet([permissions.DELETE_ANY])))
 
     # Nobody can undelete comments by banned users.
-    comment.deleted_by = 222L
+    comment.deleted_by = 222
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 111L,
+        comment, commenter, 111,
         permissions.PermissionSet([permissions.DELETE_OWN])))
     self.assertFalse(permissions.CanDeleteComment(
-        comment, commenter, 222L,
+        comment, commenter, 222,
         permissions.PermissionSet([permissions.DELETE_ANY])))
 
   def testCanFlagComment_FlagSpamCanReport(self):
@@ -516,7 +516,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         permissions.PermissionSet([permissions.FLAG_SPAM]))
 
     self.assertTrue(can_flag)
@@ -529,7 +529,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [111L], 111L,
+        comment, commenter, [111], 111,
         permissions.PermissionSet([permissions.FLAG_SPAM]))
 
     self.assertTrue(can_flag)
@@ -542,7 +542,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [222L], 111L,
+        comment, commenter, [222], 111,
         permissions.PermissionSet([permissions.FLAG_SPAM]))
 
     self.assertTrue(can_flag)
@@ -553,7 +553,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [111L], 111L,
+        comment, commenter, [111], 111,
         permissions.PermissionSet([permissions.FLAG_SPAM]))
 
     self.assertFalse(can_flag)
@@ -565,7 +565,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         permissions.PermissionSet([permissions.VERDICT_SPAM]))
 
     self.assertTrue(can_flag)
@@ -577,7 +577,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         permissions.PermissionSet([permissions.VERDICT_SPAM]))
 
     self.assertTrue(can_flag)
@@ -589,7 +589,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         permissions.PermissionSet([permissions.DELETE_ANY]))
 
     self.assertFalse(can_flag)
@@ -601,7 +601,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         # Users need the VerdictSpam permission to be able to un-flag comments.
         permissions.PermissionSet([
             permissions.DELETE_ANY, permissions.FLAG_SPAM]))
@@ -615,7 +615,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User(banned='Some reason')
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         permissions.PermissionSet([
             permissions.FLAG_SPAM, permissions.VERDICT_SPAM]))
 
@@ -628,7 +628,7 @@ class PermissionsTest(unittest.TestCase):
     commenter = user_pb2.User(banned='Some reason')
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         permissions.PermissionSet([
             permissions.FLAG_SPAM, permissions.VERDICT_SPAM]))
 
@@ -637,11 +637,11 @@ class PermissionsTest(unittest.TestCase):
 
   def testCanFlagComment_CanUnFlagDeletedSpamComment(self):
     """Test that we can un-flag a deleted comment that is spam."""
-    comment = tracker_pb2.IssueComment(is_spam=True, deleted_by=111L)
+    comment = tracker_pb2.IssueComment(is_spam=True, deleted_by=111)
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 222L,
+        comment, commenter, [], 222,
         permissions.PermissionSet([permissions.VERDICT_SPAM]))
 
     self.assertTrue(can_flag)
@@ -649,11 +649,11 @@ class PermissionsTest(unittest.TestCase):
 
   def testCanFlagComment_CannotFlagDeletedComment(self):
     """Test that nobody can flag a deleted comment that is not spam."""
-    comment = tracker_pb2.IssueComment(deleted_by=111L)
+    comment = tracker_pb2.IssueComment(deleted_by=111)
     commenter = user_pb2.User()
 
     can_flag, is_flagged = permissions.CanFlagComment(
-        comment, commenter, [], 111L,
+        comment, commenter, [], 111,
         permissions.PermissionSet([
             permissions.FLAG_SPAM, permissions.VERDICT_SPAM,
             permissions.DELETE_ANY, permissions.DELETE_OWN]))
@@ -668,31 +668,31 @@ class PermissionsTest(unittest.TestCase):
     # We assume that CanViewIssue was already called. There are no further
     # restrictions to view this comment.
     self.assertTrue(permissions.CanViewComment(
-        comment, commenter, 111L, None))
+        comment, commenter, 111, None))
 
   def testCanViewComment_CannotViewCommentsByBannedUser(self):
     """Test that nobody can view comments by banned users."""
-    comment = tracker_pb2.IssueComment(user_id=111L)
+    comment = tracker_pb2.IssueComment(user_id=111)
     commenter = user_pb2.User(banned='Some reason')
 
     # Nobody can view comments by banned users.
     self.assertFalse(permissions.CanViewComment(
-        comment, commenter, 111L, permissions.ADMIN_PERMISSIONSET))
+        comment, commenter, 111, permissions.ADMIN_PERMISSIONSET))
 
   def testCanViewComment_OnlyModeratorsCanViewSpamComments(self):
     """Test that only users with VerdictSpam can view spam comments."""
-    comment = tracker_pb2.IssueComment(user_id=111L, is_spam=True)
+    comment = tracker_pb2.IssueComment(user_id=111, is_spam=True)
     commenter = user_pb2.User()
 
     # Users with VerdictSpam permission can view comments marked as spam.
     self.assertTrue(permissions.CanViewComment(
-        comment, commenter, 222L,
+        comment, commenter, 222,
         permissions.PermissionSet([permissions.VERDICT_SPAM])))
 
     # Other users cannot view comments marked as spam, even if it is their own
     # comment.
     self.assertFalse(permissions.CanViewComment(
-        comment, commenter, 111L,
+        comment, commenter, 111,
         permissions.PermissionSet([
             permissions.FLAG_SPAM, permissions.DELETE_ANY,
             permissions.DELETE_OWN])))
@@ -701,48 +701,48 @@ class PermissionsTest(unittest.TestCase):
     """Test that for deleted comments, only the users that can undelete it can
     view it.
     """
-    comment = tracker_pb2.IssueComment(user_id=111L, deleted_by=222L)
+    comment = tracker_pb2.IssueComment(user_id=111, deleted_by=222)
     commenter = user_pb2.User()
 
     # Users with DeleteAny permission can view all deleted comments.
     self.assertTrue(permissions.CanViewComment(
-        comment, commenter, 333L,
+        comment, commenter, 333,
         permissions.PermissionSet([permissions.DELETE_ANY])))
 
     # Users with DeleteOwn permissions can only see their own comments if they
     # deleted them.
-    comment.user_id = comment.deleted_by = 333L
+    comment.user_id = comment.deleted_by = 333
     self.assertTrue(permissions.CanViewComment(
-        comment, commenter, 333L,
+        comment, commenter, 333,
         permissions.PermissionSet([permissions.DELETE_OWN])))
 
     # But not comments they didn't delete.
-    comment.deleted_by = 111L
+    comment.deleted_by = 111
     self.assertFalse(permissions.CanViewComment(
-        comment, commenter, 333L,
+        comment, commenter, 333,
         permissions.PermissionSet([permissions.DELETE_OWN])))
 
   def testCanViewInboundMessage(self):
-    comment = tracker_pb2.IssueComment(user_id=111L)
+    comment = tracker_pb2.IssueComment(user_id=111)
 
     # Users can view their own inbound messages
     self.assertTrue(permissions.CanViewInboundMessage(
-        comment, 111L, permissions.EMPTY_PERMISSIONSET))
+        comment, 111, permissions.EMPTY_PERMISSIONSET))
 
     # Users with the ViewInboundMessages permissions can view inbound messages.
     self.assertTrue(permissions.CanViewInboundMessage(
-        comment, 333L,
+        comment, 333,
         permissions.PermissionSet([permissions.VIEW_INBOUND_MESSAGES])))
 
     # Other users cannot view inbound messages.
     self.assertFalse(permissions.CanViewInboundMessage(
-        comment, 333L,
+        comment, 333,
         permissions.PermissionSet([permissions.VIEW])))
 
   def testCanViewNormalArifact(self):
     # Anyone can view a non-restricted artifact.
     self.assertTrue(permissions.CanView(
-        {111L}, permissions.READ_ONLY_PERMISSIONSET,
+        {111}, permissions.READ_ONLY_PERMISSIONSET,
         self.live_project, []))
 
   def testCanCreateProject_NoPerms(self):
@@ -824,11 +824,11 @@ class PermissionsTest(unittest.TestCase):
 
   def testCanEditGroup_IsOwner(self):
     self.assertTrue(permissions.CanEditGroup(
-        permissions.PermissionSet([]), {111L}, {111L}))
+        permissions.PermissionSet([]), {111}, {111}))
 
   def testCanEditGroup_Otherwise(self):
     self.assertFalse(permissions.CanEditGroup(
-        permissions.PermissionSet([]), {111L}, {222L}))
+        permissions.PermissionSet([]), {111}, {222}))
 
   def testCanViewGroupMembers_HasPerm(self):
     self.assertTrue(permissions.CanViewGroupMembers(
@@ -839,40 +839,40 @@ class PermissionsTest(unittest.TestCase):
     group_settings = usergroup_pb2.MakeSettings('owners', friend_projects=[890])
     self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {111L}, group_settings, {222L}, {333L}, {789}))
+        {111}, group_settings, {222}, {333}, {789}))
     self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {111L}, group_settings, {222L}, {333L}, {789, 890}))
+        {111}, group_settings, {222}, {333}, {789, 890}))
 
   def testCanViewGroupMembers_VisibleToOwner(self):
     group_settings = usergroup_pb2.MakeSettings('owners')
     self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {111L}, group_settings, {222L}, {333L}, {789}))
+        {111}, group_settings, {222}, {333}, {789}))
     self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {222L}, group_settings, {222L}, {333L}, {789}))
+        {222}, group_settings, {222}, {333}, {789}))
     self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {333L}, group_settings, {222L}, {333L}, {789}))
+        {333}, group_settings, {222}, {333}, {789}))
 
   def testCanViewGroupMembers_IsVisibleToMember(self):
     group_settings = usergroup_pb2.MakeSettings('members')
     self.assertFalse(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {111L}, group_settings, {222L}, {333L}, {789}))
+        {111}, group_settings, {222}, {333}, {789}))
     self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {222L}, group_settings, {222L}, {333L}, {789}))
+        {222}, group_settings, {222}, {333}, {789}))
     self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {333L}, group_settings, {222L}, {333L}, {789}))
+        {333}, group_settings, {222}, {333}, {789}))
 
   def testCanViewGroupMembers_AnyoneCanView(self):
     group_settings = usergroup_pb2.MakeSettings('anyone')
     self.assertTrue(permissions.CanViewGroupMembers(
         permissions.PermissionSet([]),
-        {111L}, group_settings, {222L}, {333L}, {789}))
+        {111}, group_settings, {222}, {333}, {789}))
 
   def testIsBanned_AnonUser(self):
     user_view = framework_views.StuffUserView(None, None, True)
@@ -993,9 +993,9 @@ class PermissionsCheckTest(unittest.TestCase):
     self.perms = permissions.PermissionSet(['a', 'b', 'c'])
 
     self.proj = project_pb2.Project()
-    self.proj.committer_ids.append(111L)
+    self.proj.committer_ids.append(111)
     self.proj.extra_perms.append(project_pb2.Project.ExtraPerms(
-        member_id=111L, perms=['d']))
+        member_id=111, perms=['d']))
 
     # Note: z is an example of a perm that the user does not have.
     # Note: q is an example of an irrelevant perm that the user does not have.
@@ -1005,14 +1005,14 @@ class PermissionsCheckTest(unittest.TestCase):
     if project == 'default':
       project = self.proj
     return self.perms.CanUsePerm(
-        perm, {user_id or 111L}, project, restrict.split())
+        perm, {user_id or 111}, project, restrict.split())
 
   def testHasPermNoRestrictions(self):
     self.assertTrue(self.DoCanUsePerm('a'))
     self.assertTrue(self.DoCanUsePerm('A'))
     self.assertFalse(self.DoCanUsePerm('z'))
     self.assertTrue(self.DoCanUsePerm('d'))
-    self.assertFalse(self.DoCanUsePerm('d', user_id=222L))
+    self.assertFalse(self.DoCanUsePerm('d', user_id=222))
     self.assertFalse(self.DoCanUsePerm('d', project=project_pb2.Project()))
 
   def testHasPermOperationRestrictions(self):
@@ -1081,12 +1081,12 @@ class ShouldCheckForAbandonmentTest(unittest.TestCase):
         auth=authdata.AuthData())
 
   def testOwner(self):
-    self.mr.auth.effective_ids = {111L}
+    self.mr.auth.effective_ids = {111}
     self.mr.perms = permissions.OWNER_ACTIVE_PERMISSIONSET
     self.assertTrue(permissions.ShouldCheckForAbandonment(self.mr))
 
   def testNonOwner(self):
-    self.mr.auth.effective_ids = {222L}
+    self.mr.auth.effective_ids = {222}
     self.mr.perms = permissions.COMMITTER_ACTIVE_PERMISSIONSET
     self.assertFalse(permissions.ShouldCheckForAbandonment(self.mr))
     self.mr.perms = permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET
@@ -1097,7 +1097,7 @@ class ShouldCheckForAbandonmentTest(unittest.TestCase):
     self.assertFalse(permissions.ShouldCheckForAbandonment(self.mr))
 
   def testSiteAdmin(self):
-    self.mr.auth.effective_ids = {111L}
+    self.mr.auth.effective_ids = {111}
     self.mr.perms = permissions.ADMIN_PERMISSIONSET
     self.assertFalse(permissions.ShouldCheckForAbandonment(self.mr))
 
@@ -1157,11 +1157,11 @@ class RestrictionLabelsTest(unittest.TestCase):
         permissions.GetRestrictions(art))
 
 
-REPORTER_ID = 111L
-OWNER_ID = 222L
-CC_ID = 333L
-OTHER_ID = 444L
-APPROVER_ID = 555L
+REPORTER_ID = 111
+OWNER_ID = 222
+CC_ID = 333
+OTHER_ID = 444
+APPROVER_ID = 555
 
 
 class IssuePermissionsTest(unittest.TestCase):
@@ -1218,32 +1218,32 @@ class IssuePermissionsTest(unittest.TestCase):
 
   def testUpdateIssuePermissions_FromConfig(self):
     config = tracker_pb2.ProjectIssueConfig(
-        field_defs=[tracker_pb2.FieldDef(field_id=123L, grants_perm='Granted')])
+        field_defs=[tracker_pb2.FieldDef(field_id=123, grants_perm='Granted')])
     issue = tracker_pb2.Issue(
-        field_values=[tracker_pb2.FieldValue(field_id=123L, user_id=111L)])
+        field_values=[tracker_pb2.FieldValue(field_id=123, user_id=111)])
     perms = permissions.UpdateIssuePermissions(
-        permissions.USER_PERMISSIONSET, self.PROJECT, issue, {111L},
+        permissions.USER_PERMISSIONSET, self.PROJECT, issue, {111},
         config=config)
     self.assertIn('granted', perms.perm_names)
 
   def testUpdateIssuePermissions_ExtraPerms(self):
     project = project_pb2.Project()
-    project.committer_ids.append(999L)
+    project.committer_ids.append(999)
     project.extra_perms.append(
-        project_pb2.Project.ExtraPerms(member_id=999L, perms=['EditIssue']))
+        project_pb2.Project.ExtraPerms(member_id=999, perms=['EditIssue']))
     perms = permissions.UpdateIssuePermissions(
         permissions.USER_PERMISSIONSET, project,
-        self.REGULAR_ISSUE, {999L})
+        self.REGULAR_ISSUE, {999})
     self.assertIn('editissue', perms.perm_names)
 
   def testUpdateIssuePermissions_ExtraPermsAreSubjectToRestrictions(self):
     project = project_pb2.Project()
-    project.committer_ids.append(999L)
+    project.committer_ids.append(999)
     project.extra_perms.append(
-        project_pb2.Project.ExtraPerms(member_id=999L, perms=['EditIssue']))
+        project_pb2.Project.ExtraPerms(member_id=999, perms=['EditIssue']))
     perms = permissions.UpdateIssuePermissions(
         permissions.USER_PERMISSIONSET, project,
-        self.RESTRICTED_ISSUE3, {999L})
+        self.RESTRICTED_ISSUE3, {999})
     self.assertNotIn('editissue', perms.perm_names)
 
   def testUpdateIssuePermissions_GrantedPermsAreNotSubjectToRestrictions(self):
@@ -1334,12 +1334,12 @@ class IssuePermissionsTest(unittest.TestCase):
 
   def testUpdateIssuePermissions_CustomPermissionGrantsEditPermission(self):
     project = project_pb2.Project()
-    project.committer_ids.append(999L)
+    project.committer_ids.append(999)
     project.extra_perms.append(
-        project_pb2.Project.ExtraPerms(member_id=999L, perms=['Foo']))
+        project_pb2.Project.ExtraPerms(member_id=999, perms=['Foo']))
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, project,
-        self.RESTRICTED_ISSUE3, {999L})
+        self.RESTRICTED_ISSUE3, {999})
     self.assertIn('editissue', perms.perm_names)
 
   def testCanViewIssue_Deleted(self):
@@ -1520,262 +1520,262 @@ class IssuePermissionsTest(unittest.TestCase):
 
   def testCanCommentIssue_HasPerm(self):
     self.assertTrue(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([permissions.ADD_ISSUE_COMMENT]),
+        {111}, permissions.PermissionSet([permissions.ADD_ISSUE_COMMENT]),
         None, None))
     self.assertFalse(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, None))
 
   def testCanCommentIssue_HasExtraPerm(self):
     project = project_pb2.Project()
-    project.committer_ids.append(111L)
+    project.committer_ids.append(111)
     extra_perm = project_pb2.Project.ExtraPerms(
-        member_id=111L, perms=[permissions.ADD_ISSUE_COMMENT])
+        member_id=111, perms=[permissions.ADD_ISSUE_COMMENT])
     project.extra_perms.append(extra_perm)
     self.assertTrue(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         project, None))
     self.assertFalse(permissions.CanCommentIssue(
-        {222L}, permissions.PermissionSet([]),
+        {222}, permissions.PermissionSet([]),
         project, None))
 
   def testCanCommentIssue_Restricted(self):
     issue = tracker_pb2.Issue(labels=['Restrict-AddIssueComment-CoreTeam'])
     # User is granted exactly the perm they need specifically in this issue.
     self.assertTrue(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, issue, granted_perms=['addissuecomment']))
     # User is granted CoreTeam, which satifies the restriction, and allows
     # them to use the AddIssueComment permission that they have and would
     # normally be able to use in an unrestricted issue.
     self.assertTrue(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([permissions.ADD_ISSUE_COMMENT]),
+        {111}, permissions.PermissionSet([permissions.ADD_ISSUE_COMMENT]),
         None, issue, granted_perms=['coreteam']))
     # User was granted CoreTeam, but never had AddIssueComment.
     self.assertFalse(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, issue, granted_perms=['coreteam']))
     # User has AddIssueComment, but cannot satisfy restriction.
     self.assertFalse(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([permissions.ADD_ISSUE_COMMENT]),
+        {111}, permissions.PermissionSet([permissions.ADD_ISSUE_COMMENT]),
         None, issue))
 
   def testCanCommentIssue_Granted(self):
     self.assertTrue(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, None, granted_perms=['addissuecomment']))
     self.assertFalse(permissions.CanCommentIssue(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, None))
 
   def testCanUpdateApprovalStatus_Approver(self):
     # restricted status
     self.assertTrue(permissions.CanUpdateApprovalStatus(
-        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [222L], tracker_pb2.ApprovalStatus.APPROVED))
+        {111, 222}, permissions.PermissionSet([]), self.PROJECT,
+        [222], tracker_pb2.ApprovalStatus.APPROVED))
 
     # non-restricted status
     self.assertTrue(permissions.CanUpdateApprovalStatus(
-        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [222L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW))
+        {111, 222}, permissions.PermissionSet([]), self.PROJECT,
+        [222], tracker_pb2.ApprovalStatus.NEEDS_REVIEW))
 
   def testCanUpdateApprovalStatus_SiteAdmin(self):
     # restricted status
     self.assertTrue(permissions.CanUpdateApprovalStatus(
-        {444L}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
-        self.PROJECT, [222L], tracker_pb2.ApprovalStatus.NOT_APPROVED))
+        {444}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
+        self.PROJECT, [222], tracker_pb2.ApprovalStatus.NOT_APPROVED))
 
     # non-restricted status
     self.assertTrue(permissions.CanUpdateApprovalStatus(
-        {444L}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
-        self.PROJECT, [222L], tracker_pb2.ApprovalStatus.NEEDS_REVIEW))
+        {444}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
+        self.PROJECT, [222], tracker_pb2.ApprovalStatus.NEEDS_REVIEW))
 
   def testCanUpdateApprovalStatus_NonApprover(self):
     # non-restricted status
     self.assertTrue(permissions.CanUpdateApprovalStatus(
-        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [333L], tracker_pb2.ApprovalStatus.NEED_INFO))
+        {111, 222}, permissions.PermissionSet([]), self.PROJECT,
+        [333], tracker_pb2.ApprovalStatus.NEED_INFO))
 
     # restricted status
     self.assertFalse(permissions.CanUpdateApprovalStatus(
-        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [333L], tracker_pb2.ApprovalStatus.NA))
+        {111, 222}, permissions.PermissionSet([]), self.PROJECT,
+        [333], tracker_pb2.ApprovalStatus.NA))
 
   def testCanUpdateApprovers_Approver(self):
     self.assertTrue(permissions.CanUpdateApprovers(
-        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [222L]))
+        {111, 222}, permissions.PermissionSet([]), self.PROJECT,
+        [222]))
 
   def testCanUpdateApprovers_SiteAdmins(self):
     self.assertTrue(permissions.CanUpdateApprovers(
-        {444L}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
-        self.PROJECT, [222L]))
+        {444}, permissions.PermissionSet([permissions.EDIT_ISSUE_APPROVAL]),
+        self.PROJECT, [222]))
 
   def testCanUpdateApprovers_NonApprover(self):
     self.assertFalse(permissions.CanUpdateApprovers(
-        {111L, 222L}, permissions.PermissionSet([]), self.PROJECT,
-        [333L]))
+        {111, 222}, permissions.PermissionSet([]), self.PROJECT,
+        [333]))
 
   def testCanViewComponentDef_ComponentAdmin(self):
-    cd = tracker_pb2.ComponentDef(admin_ids=[111L])
+    cd = tracker_pb2.ComponentDef(admin_ids=[111])
     perms = permissions.PermissionSet([])
     self.assertTrue(permissions.CanViewComponentDef(
-        {111L}, perms, None, cd))
+        {111}, perms, None, cd))
     self.assertFalse(permissions.CanViewComponentDef(
-        {999L}, perms, None, cd))
+        {999}, perms, None, cd))
 
   def testCanViewComponentDef_NormalUser(self):
     cd = tracker_pb2.ComponentDef()
     self.assertTrue(permissions.CanViewComponentDef(
-        {111L}, permissions.PermissionSet([permissions.VIEW]),
+        {111}, permissions.PermissionSet([permissions.VIEW]),
         None, cd))
     self.assertFalse(permissions.CanViewComponentDef(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, cd))
 
   def testCanEditComponentDef_ComponentAdmin(self):
-    cd = tracker_pb2.ComponentDef(admin_ids=[111L], path='Whole')
-    sub_cd = tracker_pb2.ComponentDef(admin_ids=[222L], path='Whole>Part')
+    cd = tracker_pb2.ComponentDef(admin_ids=[111], path='Whole')
+    sub_cd = tracker_pb2.ComponentDef(admin_ids=[222], path='Whole>Part')
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     config.component_defs.append(cd)
     config.component_defs.append(sub_cd)
     perms = permissions.PermissionSet([])
     self.assertTrue(permissions.CanEditComponentDef(
-        {111L}, perms, None, cd, config))
+        {111}, perms, None, cd, config))
     self.assertFalse(permissions.CanEditComponentDef(
-        {222L}, perms, None, cd, config))
+        {222}, perms, None, cd, config))
     self.assertFalse(permissions.CanEditComponentDef(
-        {999L}, perms, None, cd, config))
+        {999}, perms, None, cd, config))
     self.assertTrue(permissions.CanEditComponentDef(
-        {111L}, perms, None, sub_cd, config))
+        {111}, perms, None, sub_cd, config))
     self.assertTrue(permissions.CanEditComponentDef(
-        {222L}, perms, None, sub_cd, config))
+        {222}, perms, None, sub_cd, config))
     self.assertFalse(permissions.CanEditComponentDef(
-        {999L}, perms, None, sub_cd, config))
+        {999}, perms, None, sub_cd, config))
 
   def testCanEditComponentDef_ProjectOwners(self):
     cd = tracker_pb2.ComponentDef(path='Whole')
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     config.component_defs.append(cd)
     self.assertTrue(permissions.CanEditComponentDef(
-        {111L}, permissions.PermissionSet([permissions.EDIT_PROJECT]),
+        {111}, permissions.PermissionSet([permissions.EDIT_PROJECT]),
         None, cd, config))
     self.assertFalse(permissions.CanEditComponentDef(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, cd, config))
 
   def testCanViewFieldDef_FieldAdmin(self):
-    fd = tracker_pb2.FieldDef(admin_ids=[111L])
+    fd = tracker_pb2.FieldDef(admin_ids=[111])
     perms = permissions.PermissionSet([])
     self.assertTrue(permissions.CanViewFieldDef(
-        {111L}, perms, None, fd))
+        {111}, perms, None, fd))
     self.assertFalse(permissions.CanViewFieldDef(
-        {999L}, perms, None, fd))
+        {999}, perms, None, fd))
 
   def testCanViewFieldDef_NormalUser(self):
     fd = tracker_pb2.FieldDef()
     self.assertTrue(permissions.CanViewFieldDef(
-        {111L}, permissions.PermissionSet([permissions.VIEW]),
+        {111}, permissions.PermissionSet([permissions.VIEW]),
         None, fd))
     self.assertFalse(permissions.CanViewFieldDef(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, fd))
 
   def testCanEditFieldDef_FieldAdmin(self):
-    fd = tracker_pb2.FieldDef(admin_ids=[111L])
+    fd = tracker_pb2.FieldDef(admin_ids=[111])
     perms = permissions.PermissionSet([])
     self.assertTrue(permissions.CanEditFieldDef(
-        {111L}, perms, None, fd))
+        {111}, perms, None, fd))
     self.assertFalse(permissions.CanEditFieldDef(
-        {999L}, perms, None, fd))
+        {999}, perms, None, fd))
 
   def testCanEditFieldDef_ProjectOwners(self):
     fd = tracker_pb2.FieldDef()
     self.assertTrue(permissions.CanEditFieldDef(
-        {111L}, permissions.PermissionSet([permissions.EDIT_PROJECT]),
+        {111}, permissions.PermissionSet([permissions.EDIT_PROJECT]),
         None, fd))
     self.assertFalse(permissions.CanEditFieldDef(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, fd))
 
   def testCanViewTemplate_TemplateAdmin(self):
-    td = tracker_pb2.TemplateDef(admin_ids=[111L])
+    td = tracker_pb2.TemplateDef(admin_ids=[111])
     perms = permissions.PermissionSet([])
     self.assertTrue(permissions.CanViewTemplate(
-        {111L}, perms, None, td))
+        {111}, perms, None, td))
     self.assertFalse(permissions.CanViewTemplate(
-        {999L}, perms, None, td))
+        {999}, perms, None, td))
 
   def testCanViewTemplate_MembersOnly(self):
     td = tracker_pb2.TemplateDef(members_only=True)
-    project = project_pb2.Project(committer_ids=[111L])
+    project = project_pb2.Project(committer_ids=[111])
     self.assertTrue(permissions.CanViewTemplate(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         project, td))
     self.assertFalse(permissions.CanViewTemplate(
-        {999L}, permissions.PermissionSet([]),
+        {999}, permissions.PermissionSet([]),
         project, td))
 
   def testCanViewTemplate_AnyoneWhoCanViewProject(self):
     td = tracker_pb2.TemplateDef()
     self.assertTrue(permissions.CanViewTemplate(
-        {111L}, permissions.PermissionSet([permissions.VIEW]),
+        {111}, permissions.PermissionSet([permissions.VIEW]),
         None, td))
     self.assertFalse(permissions.CanViewTemplate(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, td))
 
   def testCanEditTemplate_TemplateAdmin(self):
-    td = tracker_pb2.TemplateDef(admin_ids=[111L])
+    td = tracker_pb2.TemplateDef(admin_ids=[111])
     perms = permissions.PermissionSet([])
     self.assertTrue(permissions.CanEditTemplate(
-        {111L}, perms, None, td))
+        {111}, perms, None, td))
     self.assertFalse(permissions.CanEditTemplate(
-        {999L}, perms, None, td))
+        {999}, perms, None, td))
 
   def testCanEditTemplate_ProjectOwners(self):
     td = tracker_pb2.TemplateDef()
     self.assertTrue(permissions.CanEditTemplate(
-        {111L}, permissions.PermissionSet([permissions.EDIT_PROJECT]),
+        {111}, permissions.PermissionSet([permissions.EDIT_PROJECT]),
         None, td))
     self.assertFalse(permissions.CanEditTemplate(
-        {111L}, permissions.PermissionSet([]),
+        {111}, permissions.PermissionSet([]),
         None, td))
 
   def testCanViewHotlist_Private(self):
     hotlist = features_pb2.Hotlist()
     hotlist.is_private = True
-    hotlist.owner_ids.append(111L)
-    hotlist.editor_ids.append(222L)
+    hotlist.owner_ids.append(111)
+    hotlist.editor_ids.append(222)
 
-    self.assertTrue(permissions.CanViewHotlist({222L}, hotlist))
-    self.assertTrue(permissions.CanViewHotlist({111L, 333L}, hotlist))
-    self.assertFalse(permissions.CanViewHotlist({333L, 444L}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({222}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({111, 333}, hotlist))
+    self.assertFalse(permissions.CanViewHotlist({333, 444}, hotlist))
 
   def testCanViewHotlist_Public(self):
     hotlist = features_pb2.Hotlist()
     hotlist.is_private = False
-    hotlist.owner_ids.append(111L)
-    hotlist.editor_ids.append(222L)
+    hotlist.owner_ids.append(111)
+    hotlist.editor_ids.append(222)
 
-    self.assertTrue(permissions.CanViewHotlist({222L}, hotlist))
-    self.assertTrue(permissions.CanViewHotlist({111L, 333L}, hotlist))
-    self.assertTrue(permissions.CanViewHotlist({333L, 444L}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({222}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({111, 333}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({333, 444}, hotlist))
 
   def testCanEditHotlist(self):
     hotlist = features_pb2.Hotlist()
-    hotlist.owner_ids.append(111L)
-    hotlist.editor_ids.append(222L)
+    hotlist.owner_ids.append(111)
+    hotlist.editor_ids.append(222)
 
-    self.assertTrue(permissions.CanEditHotlist({222L}, hotlist))
-    self.assertTrue(permissions.CanEditHotlist({111L, 333L}, hotlist))
-    self.assertFalse(permissions.CanEditHotlist({333L, 444L}, hotlist))
+    self.assertTrue(permissions.CanEditHotlist({222}, hotlist))
+    self.assertTrue(permissions.CanEditHotlist({111, 333}, hotlist))
+    self.assertFalse(permissions.CanEditHotlist({333, 444}, hotlist))
 
   def testCanAdministerHotlist(self):
     hotlist = features_pb2.Hotlist()
-    hotlist.owner_ids.append(111L)
-    hotlist.editor_ids.append(222L)
+    hotlist.owner_ids.append(111)
+    hotlist.editor_ids.append(222)
 
-    self.assertFalse(permissions.CanAdministerHotlist({222L}, hotlist))
-    self.assertTrue(permissions.CanAdministerHotlist({111L, 333L}, hotlist))
-    self.assertFalse(permissions.CanAdministerHotlist({333L, 444L}, hotlist))
+    self.assertFalse(permissions.CanAdministerHotlist({222}, hotlist))
+    self.assertTrue(permissions.CanAdministerHotlist({111, 333}, hotlist))
+    self.assertFalse(permissions.CanAdministerHotlist({333, 444}, hotlist))

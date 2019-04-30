@@ -42,7 +42,7 @@ class ProjectExportJSONTest(unittest.TestCase):
         project=fake.ProjectService(),
         user=fake.UserService(),
         template=Mock(spec=TemplateService))
-    self.services.user.TestAddUser('user1@example.com', 111L)
+    self.services.user.TestAddUser('user1@example.com', 111)
     self.servlet = projectexport.ProjectExportJSON(
         'req', 'res', services=self.services)
     self.project = fake.Project(project_id=789)
@@ -60,7 +60,7 @@ class ProjectExportJSONTest(unittest.TestCase):
     test_templates = testing_helpers.DefaultTemplates()
     self.services.template.GetProjectTemplates = Mock(
         return_value=test_templates)
-    self.services.config.UsersInvolvedInConfig = Mock(return_value=[111L])
+    self.services.config.UsersInvolvedInConfig = Mock(return_value=[111])
 
     json_data = self.servlet.HandleRequest(self.mr)
 

@@ -40,7 +40,7 @@ class AST2SelectTest(unittest.TestCase):
         ast_pb2.MakeCond(
             ast_pb2.QueryOp.TEXT_HAS, [owner_field], ['example.com'], []),
         ast_pb2.MakeCond(
-            ast_pb2.QueryOp.EQ, [reporter_id_field], [], [111L])]
+            ast_pb2.QueryOp.EQ, [reporter_id_field], [], [111])]
     ast = ast_pb2.QueryAST(conjunctions=[ast_pb2.Conjunction(conds=conds)])
     left_joins, where, unsupported = ast2select.BuildSQLQuery(ast)
     self.assertEqual(
@@ -50,7 +50,7 @@ class AST2SelectTest(unittest.TestCase):
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
         [('(LOWER(Cond0.email) LIKE %s)', ['%example.com%']),
-         ('Issue.reporter_id = %s', [111L])],
+         ('Issue.reporter_id = %s', [111])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -373,24 +373,24 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessOwnerIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['owner_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessOwnerIDCond(cond,
         'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual(
         [('(Issue.owner_id = %s OR Issue.derived_owner_id = %s)',
-          [111L, 111L])],
+          [111, 111])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
 
   def testProcessOwnerIDCond_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['owner_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessOwnerIDCond(cond,
         'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
-    self.assertEqual([('IssueSnapshot.owner_id = %s', [111L])], where)
+    self.assertEqual([('IssueSnapshot.owner_id = %s', [111])], where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
 
@@ -485,24 +485,24 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessReporterIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['reporter_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessReporterIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual([], left_joins)
     self.assertEqual(
-        [('Issue.reporter_id = %s', [111L])],
+        [('Issue.reporter_id = %s', [111])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
 
   def testProcessReporterIDCond_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['reporter_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessReporterIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
     self.assertEqual(
-        [('IssueSnapshot.reporter_id = %s', [111L])],
+        [('IssueSnapshot.reporter_id = %s', [111])],
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
     self.assertEqual([], unsupported)
@@ -665,14 +665,14 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessCcIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['cc_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessCcIDCond(cond, 'Cond1',
         'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Issue2Cc AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Issue.shard = Cond1.issue_shard AND '
           'Cond1.cc_id = %s',
-         [111L])],
+         [111])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
@@ -683,14 +683,14 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessCcIDCond_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['cc_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessCcIDCond(cond, 'Cond1',
         'Spare1', snapshot_mode=True)
     self.assertEqual(
         [('IssueSnapshot2Cc AS Cond1 '
           'ON IssueSnapshot.id = Cond1.issuesnapshot_id '
           'AND Cond1.cc_id = %s',
-         [111L])],
+         [111])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
@@ -730,12 +730,12 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessStarredByIDCond(self):
     fd = BUILTIN_ISSUE_FIELDS['starredby_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessStarredByIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('IssueStar AS Cond1 ON Issue.id = Cond1.issue_id '
-          'AND Cond1.user_id = %s', [111L])],
+          'AND Cond1.user_id = %s', [111])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
@@ -746,7 +746,7 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessStarredByIDCond_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['starredby_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessStarredByIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
@@ -785,13 +785,13 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessCommentByIDCond_EqualsUserID(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
-          [111L])],
+          [111])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
@@ -802,7 +802,7 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessCommentByIDCond_EqualsUserID_SnapshotMode(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=True)
     self.assertEqual([], left_joins)
@@ -811,14 +811,14 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessCommentByIDCond_QuickOr(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111L, 222L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [111, 222])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.commenter_id IN (%s,%s) '
           'AND Cond1.deleted_by IS NULL',
-          [111L, 222L])],
+          [111, 222])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
@@ -829,13 +829,13 @@ class AST2SelectTest(unittest.TestCase):
 
   def testProcessCommentByIDCond_NotEqualsUserID(self):
     fd = BUILTIN_ISSUE_FIELDS['commentby_id']
-    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [111L])
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [111])
     left_joins, where, unsupported = ast2select._ProcessCommentByIDCond(
         cond, 'Cond1', 'Spare1', snapshot_mode=False)
     self.assertEqual(
         [('Comment AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.commenter_id = %s AND Cond1.deleted_by IS NULL',
-          [111L])],
+          [111])],
         left_joins)
     self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
     self.assertEqual(
@@ -1082,14 +1082,14 @@ class AST2SelectTest(unittest.TestCase):
         field_id=1, field_name='UXReview',
         field_type=tracker_pb2.FieldTypes.APPROVAL_TYPE)
     cond = ast_pb2.MakeCond(
-        ast_pb2.QueryOp.EQ, [approval_fd], [], [111L],
+        ast_pb2.QueryOp.EQ, [approval_fd], [], [111],
         key_suffix=query2ast.APPROVER_SUFFIX)
     left_joins, where, _unsupported = ast2select._ProcessApprovalFieldCond(
         cond, 'Cond1', 'Spare1', False)
     self.assertEqual(
         [('IssueApproval2Approver AS Cond1 ON Issue.id = Cond1.issue_id AND '
           'Cond1.approval_id = %s AND Cond1.approver_id = %s',
-          [1, 111L])], left_joins)
+          [1, 111])], left_joins)
     self.assertEqual(
         [('Cond1.approval_id IS NOT NULL', [])],
         where)
@@ -1171,7 +1171,7 @@ class AST2SelectTest(unittest.TestCase):
     fd = tracker_pb2.FieldDef(
       field_id=1, project_id=789, field_name='ExecutiveProducer',
       field_type=tracker_pb2.FieldTypes.USER_TYPE)
-    val = 111L
+    val = 111
     cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [val])
     left_joins, where, unsupported = ast2select._ProcessCustomFieldCond(
         cond, 'Cond1', 'Spare1', 'Phase1', snapshot_mode=False)

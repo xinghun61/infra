@@ -152,13 +152,13 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     now = int(time.time())
     self.project_service.TestAddProject('proj', project_id=789)
     self.issue_rows = [
-        (78901, 789, 1, 1, 111L, 222L,
+        (78901, 789, 1, 1, 111, 222,
          now, now, now, now, now, now,
          0, 0, 0, 1, 0, False)]
     self.summary_rows = [(78901, 'sum')]
     self.label_rows = [(78901, 1, 0)]
     self.component_rows = []
-    self.cc_rows = [(78901, 333L, 0)]
+    self.cc_rows = [(78901, 333, 0)]
     self.notify_rows = []
     self.fieldvalue_rows = []
     self.blocked_on_rows = (
@@ -326,7 +326,7 @@ class IssueServiceTest(unittest.TestCase):
     self.cnxn = self.mox.CreateMock(sql.MonorailConnection)
     self.services = service_manager.Services()
     self.services.user = fake.UserService()
-    self.reporter = self.services.user.TestAddUser('reporter@example.com', 111L)
+    self.reporter = self.services.user.TestAddUser('reporter@example.com', 111)
     self.services.usergroup = fake.UserGroupService()
     self.services.project = fake.ProjectService()
     self.project = self.services.project.TestAddProject('proj', project_id=789)
@@ -383,7 +383,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testLookupIssueRefs_Normal(self):
     issue_1 = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901, project_name='proj')
     self.services.issue.issue_2lc.CacheItem(78901, issue_1)
     actual = self.services.issue.LookupIssueRefs(self.cnxn, [78901])
@@ -396,18 +396,18 @@ class IssueServiceTest(unittest.TestCase):
   def CheckCreateIssue(self, is_project_member):
     settings.classifier_spam_thresh = 0.9
     av_23 = tracker_pb2.ApprovalValue(
-        approval_id=23, phase_id=1, approver_ids=[111L, 222L],
+        approval_id=23, phase_id=1, approver_ids=[111, 222],
         status=tracker_pb2.ApprovalStatus.NEEDS_REVIEW)
     av_24 = tracker_pb2.ApprovalValue(
-        approval_id=24, phase_id=1, approver_ids=[111L])
+        approval_id=24, phase_id=1, approver_ids=[111])
     approval_values = [av_23, av_24]
     av_rows = [(23, 78901, 1, 'needs_review', None, None),
                (24, 78901, 1, 'not_set', None, None)]
-    approver_rows = [(23, 111L, 78901), (23, 222L, 78901), (24, 111L, 78901)]
+    approver_rows = [(23, 111, 78901), (23, 222, 78901), (24, 111, 78901)]
     ad_23 = tracker_pb2.ApprovalDef(
-        approval_id=23, approver_ids=[111L], survey='Question?')
+        approval_id=23, approver_ids=[111], survey='Question?')
     ad_24 = tracker_pb2.ApprovalDef(
-        approval_id=24, approver_ids=[111L], survey='Question?')
+        approval_id=24, approver_ids=[111], survey='Question?')
     config = self.services.config.GetProjectConfig(
         self.cnxn, 789)
     config.approval_defs.extend([ad_23, ad_24])
@@ -431,7 +431,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
-        'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
+        'New', 111, [], ['Type-Defect'], [], [], 111, 'content',
         index_now=False, timestamp=self.now, approval_values=approval_values)
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
@@ -469,7 +469,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
-        'New', 111L, [], [',', '', ' ', ', '], [], [], 111L, 'content',
+        'New', 111, [], [',', '', ' ', ', '], [], [], 111, 'content',
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
@@ -497,7 +497,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
-        'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
+        'New', 111, [], ['Type-Defect'], [], [], 111, 'content',
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
@@ -520,7 +520,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     actual_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'sum',
-        'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
+        'New', 111, [], ['Type-Defect'], [], [], 111, 'content',
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
     self.assertEqual(1, actual_local_id)
@@ -540,11 +540,11 @@ class IssueServiceTest(unittest.TestCase):
 
   def SetUpGetIssues(self):
     issue_1 = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     issue_1.project_name = 'proj'
     issue_2 = fake.MakeTestIssue(
-        project_id=789, local_id=2, owner_id=111L, summary='sum',
+        project_id=789, local_id=2, owner_id=111, summary='sum',
         status='Fixed', issue_id=78902)
     issue_2.project_name = 'proj'
     self.services.issue.issue_2lc.CacheItem(78901, issue_1)
@@ -618,7 +618,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpGetPreviousLocations(78901, [(781, 1), (782, 11), (789, 1)])
     self.mox.ReplayAll()
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     locations = self.services.issue.GetPreviousLocations(self.cnxn, issue)
     self.mox.VerifyAll()
@@ -626,7 +626,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def SetUpInsertIssue(
       self, label_rows=None, av_rows=None, approver_rows=None):
-    row = (789, 1, 1, 111L, 111L,
+    row = (789, 1, 1, 111, 111,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0,
            False, 0, 0, False)
@@ -650,7 +650,7 @@ class IssueServiceTest(unittest.TestCase):
         commit=False)
 
   def SetUpInsertSpamIssue(self):
-    row = (789, 1, 1, 111L, 111L,
+    row = (789, 1, 1, 111, 111,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0, False, 0, 0, True)
     self.services.issue.issue_tbl.InsertRows(
@@ -751,7 +751,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertIssue()
     self.mox.ReplayAll()
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, reporter_id=111L,
+        project_id=789, local_id=1, owner_id=111, reporter_id=111,
         summary='sum', status='New', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=self.now, modified_timestamp=self.now)
     actual_issue_id = self.services.issue.InsertIssue(self.cnxn, issue)
@@ -762,7 +762,7 @@ class IssueServiceTest(unittest.TestCase):
     delta = given_delta or {
         'project_id': 789,
         'local_id': 1,
-        'owner_id': 111L,
+        'owner_id': 111,
         'status_id': 1,
         'opened': 123456789,
         'closed': 0,
@@ -804,7 +804,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssues_Normal(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=123456789, modified_timestamp=123456789,
         star_count=12)
@@ -816,7 +816,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssue_Normal(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=123456789, modified_timestamp=123456789,
         star_count=12)
@@ -828,7 +828,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssue_Stale(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=123456789, modified_timestamp=123456789,
         star_count=12)
@@ -841,7 +841,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesSummary(self):
     issue = fake.MakeTestIssue(
-        local_id=1, issue_id=78901, owner_id=111L, summary='sum', status='New',
+        local_id=1, issue_id=78901, owner_id=111, summary='sum', status='New',
         project_id=789)
     issue.assume_stale = False
     self.SetUpUpdateIssuesSummary()
@@ -851,7 +851,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesLabels(self):
     issue = fake.MakeTestIssue(
-        local_id=1, issue_id=78901, owner_id=111L, summary='sum', status='New',
+        local_id=1, issue_id=78901, owner_id=111, summary='sum', status='New',
         labels=['Type-Defect'], project_id=789)
     self.SetUpUpdateIssuesLabels()
     self.mox.ReplayAll()
@@ -861,7 +861,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesFields_Empty(self):
     issue = fake.MakeTestIssue(
-        local_id=1, issue_id=78901, owner_id=111L, summary='sum', status='New',
+        local_id=1, issue_id=78901, owner_id=111, summary='sum', status='New',
         project_id=789)
     self.SetUpUpdateIssuesFields()
     self.mox.ReplayAll()
@@ -870,7 +870,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesFields_Some(self):
     issue = fake.MakeTestIssue(
-        local_id=1, issue_id=78901, owner_id=111L, summary='sum', status='New',
+        local_id=1, issue_id=78901, owner_id=111, summary='sum', status='New',
         project_id=789)
     issue_shard = issue.issue_id % settings.num_logical_shards
     fv1 = tracker_bizobj.MakeFieldValue(345, 679, '', 0L, None, None, False)
@@ -902,7 +902,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesComponents_Empty(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     self.SetUpUpdateIssuesComponents()
     self.mox.ReplayAll()
@@ -912,7 +912,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesCc_Empty(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     self.SetUpUpdateIssuesCc()
     self.mox.ReplayAll()
@@ -921,15 +921,15 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesCc_Some(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
-    issue.cc_ids = [222L, 333L]
-    issue.derived_cc_ids = [888L]
+    issue.cc_ids = [222, 333]
+    issue.derived_cc_ids = [888]
     issue_shard = issue.issue_id % settings.num_logical_shards
     self.SetUpUpdateIssuesCc(issue2cc_rows=[
-        (issue.issue_id, 222L, False, issue_shard),
-        (issue.issue_id, 333L, False, issue_shard),
-        (issue.issue_id, 888L, True, issue_shard),
+        (issue.issue_id, 222, False, issue_shard),
+        (issue.issue_id, 333, False, issue_shard),
+        (issue.issue_id, 888, True, issue_shard),
         ])
     self.mox.ReplayAll()
     self.services.issue._UpdateIssuesCc(self.cnxn, [issue], commit=False)
@@ -937,7 +937,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesNotify_Empty(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     self.SetUpUpdateIssuesNotify()
     self.mox.ReplayAll()
@@ -946,7 +946,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testUpdateIssuesRelation_Empty(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     self.SetUpUpdateIssuesRelation()
     self.mox.ReplayAll()
@@ -956,18 +956,18 @@ class IssueServiceTest(unittest.TestCase):
   @patch('time.time')
   def testUpdateIssueStructure(self, mockTime):
     mockTime.return_value = self.now
-    reporter_id = 111L
+    reporter_id = 111
     comment_content = 'This issue is being converted'
     # Set up config
     config = self.services.config.GetProjectConfig(
         self.cnxn, 789)
     config.approval_defs = [
         tracker_pb2.ApprovalDef(
-            approval_id=3, survey='Question3', approver_ids=[222L]),
+            approval_id=3, survey='Question3', approver_ids=[222]),
         tracker_pb2.ApprovalDef(
-            approval_id=4, survey='Question4', approver_ids=[444L]),
+            approval_id=4, survey='Question4', approver_ids=[444]),
         tracker_pb2.ApprovalDef(
-            approval_id=7, survey='Question7', approver_ids=[222L]),
+            approval_id=7, survey='Question7', approver_ids=[222]),
     ]
     config.field_defs = [
       tracker_pb2.FieldDef(
@@ -990,19 +990,19 @@ class IssueServiceTest(unittest.TestCase):
 
     # Set up issue
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum', status='Open',
+        project_id=789, local_id=1, owner_id=111, summary='sum', status='Open',
         issue_id=78901, project_name='proj')
     issue.approval_values = [
         tracker_pb2.ApprovalValue(
             approval_id=3,
             phase_id=4,
             status=tracker_pb2.ApprovalStatus.APPROVED,
-            approver_ids=[111L],  # trumps approval_def approver_ids
+            approver_ids=[111],  # trumps approval_def approver_ids
         ),
         tracker_pb2.ApprovalValue(
             approval_id=4,
             phase_id=5,
-            approver_ids=[111L]),  # trumps approval_def approver_ids
+            approver_ids=[111]),  # trumps approval_def approver_ids
         tracker_pb2.ApprovalValue(approval_id=6)]
     issue.phases = [
         tracker_pb2.Phase(name='Expired', phase_id=4),
@@ -1055,7 +1055,7 @@ class IssueServiceTest(unittest.TestCase):
         (4, 78901, None, 'not_set', None, None),
         (7, 78901, 5, 'not_set', None, None),
     ]
-    approver_rows = [(3, 111L, 78901), (4, 111L, 78901), (7, 222L, 78901)]
+    approver_rows = [(3, 111, 78901), (4, 111, 78901), (7, 222, 78901)]
     self.SetUpUpdateIssuesApprovals(
         av_rows=av_rows, approver_rows=approver_rows)
     issue_shard = issue.issue_id % settings.num_logical_shards
@@ -1077,17 +1077,17 @@ class IssueServiceTest(unittest.TestCase):
             approval_id=3,
             phase_id=6,
             status=tracker_pb2.ApprovalStatus.APPROVED,
-            approver_ids=[111L],
+            approver_ids=[111],
         ),
         tracker_pb2.ApprovalValue(
             approval_id=4,
             status=tracker_pb2.ApprovalStatus.NOT_SET,
-            approver_ids=[111L]),
+            approver_ids=[111]),
         tracker_pb2.ApprovalValue(
             approval_id=7,
             status=tracker_pb2.ApprovalStatus.NOT_SET,
             phase_id=5,
-            approver_ids=[222L]),
+            approver_ids=[222]),
     ]
     self.assertEqual(issue.approval_values, expected_avs)
     self.assertEqual(issue.phases, template.phases)
@@ -1104,9 +1104,9 @@ class IssueServiceTest(unittest.TestCase):
 
   def testDeltaUpdateIssue_NoOp(self):
     """If the user didn't provide any content, we don't make an IssueComment."""
-    commenter_id = 222L
+    commenter_id = 222
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901, project_name='proj')
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     delta = tracker_pb2.IssueDelta()
@@ -1118,12 +1118,12 @@ class IssueServiceTest(unittest.TestCase):
     self.assertIsNone(comment_pb)
 
   def testDeltaUpdateIssue_MergedInto(self):
-    commenter_id = 222L
+    commenter_id = 222
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901, project_name='proj')
     target_issue = fake.MakeTestIssue(
-        project_id=789, local_id=2, owner_id=111L, summary='sum sum',
+        project_id=789, local_id=2, owner_id=111, summary='sum sum',
         status='Live', issue_id=78902, project_name='proj')
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
 
@@ -1160,7 +1160,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testApplyIssueComment(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
 
     self.mox.StubOutWithMock(self.services.issue, 'GetIssueByLocalID')
@@ -1198,10 +1198,10 @@ class IssueServiceTest(unittest.TestCase):
 
   def testApplyIssueComment_blockedon(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     blockedon_issue = fake.MakeTestIssue(
-        project_id=789, local_id=2, owner_id=111L, summary='sum',
+        project_id=789, local_id=2, owner_id=111, summary='sum',
         status='Live', issue_id=78902)
 
     self.mox.StubOutWithMock(self.services.issue, "GetIssueByLocalID")
@@ -1275,7 +1275,7 @@ class IssueServiceTest(unittest.TestCase):
     """Move project 711 issue 2 to become project 789 issue 1."""
     dest_project = fake.Project(project_id=789)
     issue = fake.MakeTestIssue(
-        project_id=711, local_id=2, owner_id=111L, summary='sum',
+        project_id=711, local_id=2, owner_id=111, summary='sum',
         status='Live', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=123456789, modified_timestamp=123456789,
         star_count=12)
@@ -1488,9 +1488,9 @@ class IssueServiceTest(unittest.TestCase):
 
   def SetUpCommentRows(self):
     comment_rows = [
-        (7890101, 78901, self.now, 789, 111L,
+        (7890101, 78901, self.now, 789, 111,
          None, False, False, 'unused_commentcontent_id'),
-        (7890102, 78901, self.now, 789, 111L,
+        (7890102, 78901, self.now, 789, 111,
          None, False, False, 'unused_commentcontent_id')]
     commentcontent_rows = [(7890101, 'content', 'msg'),
                            (7890102, 'content2', 'msg')]
@@ -1526,7 +1526,7 @@ class IssueServiceTest(unittest.TestCase):
     comment_ids = [101001, 101002, 101003]
     self.services.issue.comment_tbl.Select = Mock(
         return_value=[
-            (cid, cid - cid % 100, self.now, 789, 111L,
+            (cid, cid - cid % 100, self.now, 789, 111,
              None, False, False, cid + 5000)
             for cid in comment_ids])
     self.MockTheRestOfGetCommentsByID(comment_ids)
@@ -1552,11 +1552,11 @@ class IssueServiceTest(unittest.TestCase):
     replica_comment_ids = comment_ids[:-1]
 
     return_value_1 = [
-      (cid, cid - cid % 100, self.now, 789, 111L,
+      (cid, cid - cid % 100, self.now, 789, 111,
        None, False, False, cid + 5000)
       for cid in replica_comment_ids]
     return_value_2 = [
-      (cid, cid - cid % 100, self.now, 789, 111L,
+      (cid, cid - cid % 100, self.now, 789, 111,
        None, False, False, cid + 5000)
       for cid in comment_ids]
     return_values = [return_value_1, return_value_2]
@@ -1581,9 +1581,9 @@ class IssueServiceTest(unittest.TestCase):
     issue_id = 100001
     self.services.issue.comment_tbl.Select = Mock(
         return_value=[
-            (101001, 111L, None, True),
-            (101002, 222L, None, False),
-            (101003, 111L, None, False)])
+            (101001, 111, None, True),
+            (101002, 222, None, False),
+            (101003, 111, None, False)])
 
     abbr_comments = self.services.issue.GetAbbrCommentsForIssue(
         self.cnxn, issue_id)
@@ -1600,7 +1600,7 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, cols=issue_svc.COMMENT_COLS,
         where=None, issue_id=issue_ids, order_by=[('created', [])],
         shard_id=mox.IsA(int)).AndReturn([
-            (issue_id + 1000, issue_id, self.now, 789, 111L,
+            (issue_id + 1000, issue_id, self.now, 789, 111,
              None, False, False, issue_id + 5000)
             for issue_id in issue_ids])
     self.services.issue.commentcontent_tbl.Select(
@@ -1654,7 +1654,7 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, cols=issue_svc.COMMENT_COLS,
         where=None, id=comment_id, order_by=[('created', [])],
         shard_id=mox.IsA(int)).AndReturn([
-            (comment_id, int(comment_id / 100), self.now, 789, 111L,
+            (comment_id, int(comment_id / 100), self.now, 789, 111,
              None, False, True, commentcontent_id)])
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,
@@ -1708,7 +1708,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def testGetCommentsForIssue(self):
-    issue = fake.MakeTestIssue(789, 1, 'Summary', 'New', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'Summary', 'New', 111)
     self.SetUpGetComments([issue.issue_id])
     self.mox.ReplayAll()
     self.services.issue.GetCommentsForIssue(self.cnxn, issue.issue_id)
@@ -1732,7 +1732,7 @@ class IssueServiceTest(unittest.TestCase):
         inbound_message=None, commit=False).AndReturn(commentcontent_id)
     self.services.issue.comment_tbl.InsertRow(
         self.cnxn, issue_id=78901, created=self.now, project_id=789,
-        commenter_id=111L, deleted_by=None, is_spam=is_spam,
+        commenter_id=111, deleted_by=None, is_spam=is_spam,
         is_description=is_description, commentcontent_id=commentcontent_id,
         commit=False).AndReturn(comment_id)
 
@@ -1758,7 +1758,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertComment(7890101, approval_id=23)
     self.mox.ReplayAll()
     comment = tracker_pb2.IssueComment(
-        issue_id=78901, timestamp=self.now, project_id=789, user_id=111L,
+        issue_id=78901, timestamp=self.now, project_id=789, user_id=111,
         content='content', approval_id=23)
     self.services.issue.InsertComment(self.cnxn, comment, commit=True)
     self.mox.VerifyAll()
@@ -1766,8 +1766,8 @@ class IssueServiceTest(unittest.TestCase):
 
   def SetUpUpdateComment(self, comment_id, delta=None):
     delta = delta or {
-        'commenter_id': 111L,
-        'deleted_by': 222L,
+        'commenter_id': 111,
+        'deleted_by': 222,
         'is_spam': False,
         }
     self.services.issue.comment_tbl.Update(
@@ -1778,14 +1778,14 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     comment = tracker_pb2.IssueComment(
         id=7890101, issue_id=78901, timestamp=self.now, project_id=789,
-        user_id=111L, content='new content', deleted_by=222L,
+        user_id=111, content='new content', deleted_by=222,
         is_spam=False)
     self.services.issue._UpdateComment(self.cnxn, comment)
     self.mox.VerifyAll()
 
   def testMakeIssueComment(self):
     comment = self.services.issue._MakeIssueComment(
-        789, 111L, 'content', timestamp=self.now, approval_id=23)
+        789, 111, 'content', timestamp=self.now, approval_id=23)
     self.assertEqual('content', comment.content)
     self.assertEqual([], comment.amendments)
     self.assertEqual([], comment.attachments)
@@ -1793,7 +1793,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testMakeIssueComment_NonAscii(self):
     _ = self.services.issue._MakeIssueComment(
-        789, 111L, 'content', timestamp=self.now,
+        789, 111, 'content', timestamp=self.now,
         inbound_message=u'sent by написа')
 
   def testCreateIssueComment_Normal(self):
@@ -1802,7 +1802,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertComment(7890101, approval_id=24)
     self.mox.ReplayAll()
     comment = self.services.issue.CreateIssueComment(
-        self.cnxn, issue_1, 111L, 'content', timestamp=self.now, approval_id=24)
+        self.cnxn, issue_1, 111, 'content', timestamp=self.now, approval_id=24)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
 
@@ -1815,7 +1815,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     comment = self.services.issue.CreateIssueComment(
-        self.cnxn, issue_1, 111L, 'content', is_description=True,
+        self.cnxn, issue_1, 111, 'content', is_description=True,
         kept_attachments=[123], timestamp=self.now)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
@@ -1826,7 +1826,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpInsertComment(7890101, is_spam=True)
     self.mox.ReplayAll()
     comment = self.services.issue.CreateIssueComment(
-        self.cnxn, issue_1, 111L, 'content', timestamp=self.now, is_spam=True)
+        self.cnxn, issue_1, 111, 'content', timestamp=self.now, is_spam=True)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
     self.assertTrue(comment.is_spam)
@@ -1842,12 +1842,12 @@ class IssueServiceTest(unittest.TestCase):
     comment.attachments = [tracker_pb2.Attachment()]
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.SetUpUpdateComment(
-        comment.id, delta={'deleted_by': 222L, 'is_spam': False})
+        comment.id, delta={'deleted_by': 222, 'is_spam': False})
     self.SetUpUpdateIssues(given_delta={'attachment_count': 0})
     self.SetUpEnqueueIssuesForIndexing([78901])
     self.mox.ReplayAll()
     self.services.issue.SoftDeleteComment(
-        self.cnxn, issue_1, comment, 222L, self.services.user)
+        self.cnxn, issue_1, comment, 222, self.services.user)
     self.mox.VerifyAll()
 
   ### Approvals
@@ -1856,7 +1856,7 @@ class IssueServiceTest(unittest.TestCase):
     av_24 = tracker_pb2.ApprovalValue(approval_id=24)
     av_25 = tracker_pb2.ApprovalValue(approval_id=25)
     issue_1 = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901, approval_values=[av_24, av_25])
     issue_1.project_name = 'proj'
     self.services.issue.issue_2lc.CacheItem(78901, issue_1)
@@ -1869,7 +1869,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testGetIssueApproval_NoSuchApproval(self):
     issue_1 = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     issue_1.project_name = 'proj'
     self.services.issue.issue_2lc.CacheItem(78901, issue_1)
@@ -1895,26 +1895,26 @@ class IssueServiceTest(unittest.TestCase):
 
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, summary='summary', status='New',
-        owner_id=999L, issue_id=78901, labels=['noodle-puppies'])
+        owner_id=999, issue_id=78901, labels=['noodle-puppies'])
     av = tracker_pb2.ApprovalValue(approval_id=23)
     final_av = tracker_pb2.ApprovalValue(
-        approval_id=23, setter_id=111L, set_on=1234,
+        approval_id=23, setter_id=111, set_on=1234,
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
-        approver_ids=[222L, 444L])
+        approver_ids=[222, 444])
     labels_add = ['snakes-are']
     label_id = 1001
     labels_remove = ['noodle-puppies']
     amendments = [
         tracker_bizobj.MakeApprovalStatusAmendment(
             tracker_pb2.ApprovalStatus.REVIEW_REQUESTED),
-        tracker_bizobj.MakeApprovalApproversAmendment([222L, 444L], []),
+        tracker_bizobj.MakeApprovalApproversAmendment([222, 444], []),
         tracker_bizobj.MakeFieldAmendment(1, config, [4], []),
         tracker_bizobj.MakeFieldClearedAmendment(2, config),
         tracker_bizobj.MakeLabelsAmendment(labels_add, labels_remove)
     ]
     approval_delta = tracker_pb2.ApprovalDelta(
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED,
-        approver_ids_add=[222L, 444L], set_on=1234,
+        approver_ids_add=[222, 444], set_on=1234,
         subfield_vals_add=[
           tracker_bizobj.MakeFieldValue(1, 4, None, None, None, None, False)
           ],
@@ -1937,14 +1937,14 @@ class IssueServiceTest(unittest.TestCase):
     label_rows = [(78901, label_id, False, shard)]
 
     self.services.issue.DeltaUpdateIssueApproval(
-        self.cnxn, 111L, config, issue, av, approval_delta, 'some comment',
+        self.cnxn, 111, config, issue, av, approval_delta, 'some comment',
         attachments=[], commit=False, kept_attachments=[1, 2, 3])
 
     self.assertEqual(av, final_av)
 
     self.services.issue.issue2approvalvalue_tbl.Update.assert_called_once_with(
         self.cnxn,
-        {'status': 'review_requested', 'setter_id': 111L, 'set_on': 1234},
+        {'status': 'review_requested', 'setter_id': 111, 'set_on': 1234},
         approval_id=23, issue_id=78901, commit=False)
     self.services.issue.issueapproval2approver_tbl.\
         Delete.assert_called_once_with(
@@ -1968,7 +1968,7 @@ class IssueServiceTest(unittest.TestCase):
             self.cnxn, issue_svc.ISSUE2LABEL_COLS + ['issue_shard'],
             label_rows, ignore=True, commit=False)
     self.services.issue.CreateIssueComment.assert_called_once_with(
-        self.cnxn, issue, 111L, 'some comment', amendments=amendments,
+        self.cnxn, issue, 111, 'some comment', amendments=amendments,
         approval_id=23, is_description=False, attachments=[], commit=False,
         kept_attachments=[1, 2, 3])
 
@@ -1977,26 +1977,26 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, 789)
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, summary='summary', status='New',
-        owner_id=999L, issue_id=78901)
+        owner_id=999, issue_id=78901)
     av = tracker_pb2.ApprovalValue(approval_id=23)
     approval_delta = tracker_pb2.ApprovalDelta()
 
     self.services.issue.CreateIssueComment = Mock()
 
     self.services.issue.DeltaUpdateIssueApproval(
-        self.cnxn, 111L, config, issue, av, approval_delta, 'better response',
+        self.cnxn, 111, config, issue, av, approval_delta, 'better response',
         is_description=True, commit=False)
 
     self.services.issue.CreateIssueComment.assert_called_once_with(
-        self.cnxn, issue, 111L, 'better response', amendments=[],
+        self.cnxn, issue, 111, 'better response', amendments=[],
         approval_id=23, is_description=True, attachments=None, commit=False,
         kept_attachments=None)
 
   def testUpdateIssueApprovalStatus(self):
-    av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111L, set_on=1234)
+    av = tracker_pb2.ApprovalValue(approval_id=23, setter_id=111, set_on=1234)
 
     self.services.issue.issue2approvalvalue_tbl.Update(
-        self.cnxn, {'status': 'not_set', 'setter_id': 111L, 'set_on': 1234},
+        self.cnxn, {'status': 'not_set', 'setter_id': 111, 'set_on': 1234},
         approval_id=23, issue_id=78901, commit=False)
 
     self.mox.ReplayAll()
@@ -2051,12 +2051,12 @@ class IssueServiceTest(unittest.TestCase):
     pass
 
   def testSoftDeleteAttachment(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     issue.assume_stale = False
     issue.attachment_count = 1
 
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id)
     attachment = tracker_pb2.Attachment(
         attachment_id=1234)
@@ -2165,23 +2165,23 @@ class IssueServiceTest(unittest.TestCase):
   def SetUpGetIIDsByParticipant(self):
     self.services.issue.issue_tbl.Select(
         self.cnxn, shard_id=1, cols=['id'],
-        reporter_id=[111L, 888L],
+        reporter_id=[111, 888],
         where=[('shard = %s', [1]), ('Issue.project_id IN (%s)', [789])]
         ).AndReturn([(1,)])
     self.services.issue.issue_tbl.Select(
         self.cnxn, shard_id=1, cols=['id'],
-        owner_id=[111L, 888L],
+        owner_id=[111, 888],
         where=[('shard = %s', [1]), ('Issue.project_id IN (%s)', [789])]
         ).AndReturn([(2,)])
     self.services.issue.issue_tbl.Select(
         self.cnxn, shard_id=1, cols=['id'],
-        derived_owner_id=[111L, 888L],
+        derived_owner_id=[111, 888],
         where=[('shard = %s', [1]), ('Issue.project_id IN (%s)', [789])]
         ).AndReturn([(3,)])
     self.services.issue.issue_tbl.Select(
         self.cnxn, shard_id=1, cols=['id'],
         left_joins=[('Issue2Cc ON Issue2Cc.issue_id = Issue.id', [])],
-        cc_id=[111L, 888L],
+        cc_id=[111, 888],
         where=[('shard = %s', [1]), ('Issue.project_id IN (%s)', [789]),
                ('cc_id IS NOT NULL', [])]
         ).AndReturn([(4,)])
@@ -2190,7 +2190,7 @@ class IssueServiceTest(unittest.TestCase):
         left_joins=[
             ('Issue2FieldValue ON Issue.id = Issue2FieldValue.issue_id', []),
             ('FieldDef ON Issue2FieldValue.field_id = FieldDef.id', [])],
-        user_id=[111L, 888L], grants_perm='View',
+        user_id=[111, 888], grants_perm='View',
         where=[('shard = %s', [1]), ('Issue.project_id IN (%s)', [789]),
                ('user_id IS NOT NULL', [])]
         ).AndReturn([(5,)])
@@ -2199,7 +2199,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpGetIIDsByParticipant()
     self.mox.ReplayAll()
     iids = self.services.issue.GetIIDsByParticipant(
-        self.cnxn, [111L, 888L], [789], 1)
+        self.cnxn, [111, 888], [789], 1)
     self.mox.VerifyAll()
     self.assertEqual([1, 2, 3, 4, 5], iids)
 
@@ -2215,7 +2215,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def SetUpSortBlockedOn(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        project_id=789, local_id=1, owner_id=111, summary='sum',
         status='Live', issue_id=78901)
     issue.project_name = 'proj'
     issue.blocked_on_iids = [78902, 78903]

@@ -49,41 +49,41 @@ class SpamServiceTest(unittest.TestCase):
     self.mock_report_tbl.Select(
         self.cnxn, cols=['issue_id', 'user_id', 'comment_id'],
         issue_id=[234, 567, 890]).AndReturn([
-            [234, 111L, None],
-            [234, 222L, 1],
-            [567, 333L, None]])
+            [234, 111, None],
+            [234, 222, 1],
+            [567, 333, None]])
     self.mox.ReplayAll()
 
     reporters = (
         self.spam_service.LookupIssuesFlaggers(self.cnxn, [234, 567, 890]))
     self.mox.VerifyAll()
     self.assertEqual({
-        234: ([111L], {1: [222L]}),
-        567: ([333L], {}),
+        234: ([111], {1: [222]}),
+        567: ([333], {}),
     }, reporters)
 
   def testLookupIssueFlaggers(self):
     self.mock_report_tbl.Select(
         self.cnxn, cols=['issue_id', 'user_id', 'comment_id'],
         issue_id=[234]).AndReturn(
-            [[234, 111L, None], [234, 222L, 1]])
+            [[234, 111, None], [234, 222, 1]])
     self.mox.ReplayAll()
 
     issue_reporters, comment_reporters = (
         self.spam_service.LookupIssueFlaggers(self.cnxn, 234))
     self.mox.VerifyAll()
-    self.assertItemsEqual([111L], issue_reporters)
-    self.assertEqual({1: [222L]}, comment_reporters)
+    self.assertItemsEqual([111], issue_reporters)
+    self.assertEqual({1: [222]}, comment_reporters)
 
   def testFlagIssues_overThresh(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        project_id=789, local_id=1, reporter_id=111, owner_id=456,
         summary='sum', status='Live', issue_id=78901)
     issue.assume_stale = False  # We will store this issue.
 
     self.mock_report_tbl.InsertRows(self.cnxn,
         ['issue_id', 'reported_user_id', 'user_id'],
-        [(78901, 111L, 111L)], ignore=True)
+        [(78901, 111, 111)], ignore=True)
 
     self.mock_report_tbl.Select(self.cnxn,
         cols=['issue_id', 'COUNT(*)'], group_by=['issue_id'],
@@ -97,18 +97,18 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
-        self.cnxn, self.issue_service, [issue], 111L, True)
+        self.cnxn, self.issue_service, [issue], 111, True)
     self.mox.VerifyAll()
     self.assertIn(issue, self.issue_service.updated_issues)
 
   def testFlagIssues_underThresh(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        project_id=789, local_id=1, reporter_id=111, owner_id=456,
         summary='sum', status='Live', issue_id=78901)
 
     self.mock_report_tbl.InsertRows(self.cnxn,
         ['issue_id', 'reported_user_id', 'user_id'],
-        [(78901, 111L, 111L)], ignore=True)
+        [(78901, 111, 111)], ignore=True)
 
     self.mock_report_tbl.Select(self.cnxn,
         cols=['issue_id', 'COUNT(*)'], group_by=['issue_id'],
@@ -120,17 +120,17 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
-        self.cnxn, self.issue_service, [issue], 111L, True)
+        self.cnxn, self.issue_service, [issue], 111, True)
     self.mox.VerifyAll()
 
     self.assertNotIn(issue, self.issue_service.updated_issues)
 
   def testUnflagIssue_overThresh(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        project_id=789, local_id=1, reporter_id=111, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
     self.mock_report_tbl.Delete(self.cnxn, issue_id=[issue.issue_id],
-        comment_id=None, user_id=111L)
+        comment_id=None, user_id=111)
     self.mock_report_tbl.Select(self.cnxn,
         cols=['issue_id', 'COUNT(*)'], group_by=['issue_id'],
         issue_id=[78901]).AndReturn([(78901, settings.spam_flag_thresh)])
@@ -141,7 +141,7 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
-        self.cnxn, self.issue_service, [issue], 111L, False)
+        self.cnxn, self.issue_service, [issue], 111, False)
     self.mox.VerifyAll()
 
     self.assertNotIn(issue, self.issue_service.updated_issues)
@@ -152,11 +152,11 @@ class SpamServiceTest(unittest.TestCase):
     to overturn the verdict to ham. This is different from previous
     behavior. See https://crbug.com/monorail/2232 for details."""
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        project_id=789, local_id=1, reporter_id=111, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
     issue.assume_stale = False  # We will store this issue.
     self.mock_report_tbl.Delete(self.cnxn, issue_id=[issue.issue_id],
-        comment_id=None, user_id=111L)
+        comment_id=None, user_id=111)
     self.mock_report_tbl.Select(self.cnxn,
         cols=['issue_id', 'COUNT(*)'], group_by=['issue_id'],
         issue_id=[78901]).AndReturn([(78901, settings.spam_flag_thresh - 1)])
@@ -167,7 +167,7 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
-        self.cnxn, self.issue_service, [issue], 111L, False)
+        self.cnxn, self.issue_service, [issue], 111, False)
     self.mox.VerifyAll()
 
     self.assertNotIn(issue, self.issue_service.updated_issues)
@@ -175,10 +175,10 @@ class SpamServiceTest(unittest.TestCase):
 
   def testUnflagIssue_underThreshNoManualOverride(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        project_id=789, local_id=1, reporter_id=111, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
     self.mock_report_tbl.Delete(self.cnxn, issue_id=[issue.issue_id],
-        comment_id=None, user_id=111L)
+        comment_id=None, user_id=111)
     self.mock_report_tbl.Select(self.cnxn,
         cols=['issue_id', 'COUNT(*)'], group_by=['issue_id'],
         issue_id=[78901]).AndReturn([(78901, settings.spam_flag_thresh - 1)])
@@ -190,7 +190,7 @@ class SpamServiceTest(unittest.TestCase):
 
     self.mox.ReplayAll()
     self.spam_service.FlagIssues(
-        self.cnxn, self.issue_service, [issue], 111L, False)
+        self.cnxn, self.issue_service, [issue], 111, False)
     self.mox.VerifyAll()
 
     self.assertNotIn(issue, self.issue_service.updated_issues)
@@ -277,27 +277,27 @@ class SpamServiceTest(unittest.TestCase):
     self.assertEqual("2015-12-10 11:06:24", res[0].verdict_time)
 
   def testIsExempt_RegularUser(self):
-    author = user_pb2.MakeUser(111L, email='test@example.com')
+    author = user_pb2.MakeUser(111, email='test@example.com')
     self.assertFalse(self.spam_service._IsExempt(author, False))
-    author = user_pb2.MakeUser(111L, email='test@chromium.org.example.com')
+    author = user_pb2.MakeUser(111, email='test@chromium.org.example.com')
     self.assertFalse(self.spam_service._IsExempt(author, False))
 
   def testIsExempt_ProjectMember(self):
-    author = user_pb2.MakeUser(111L, email='test@example.com')
+    author = user_pb2.MakeUser(111, email='test@example.com')
     self.assertTrue(self.spam_service._IsExempt(author, True))
 
   def testIsExempt_WhitelistedDomain(self):
-    author = user_pb2.MakeUser(111L, email='test@google.com')
+    author = user_pb2.MakeUser(111, email='test@google.com')
     self.assertTrue(self.spam_service._IsExempt(author, False))
 
   def testIsExempt_TrustedNotToSpam(self):
-    author = user_pb2.MakeUser(111L, email='test@example.com')
+    author = user_pb2.MakeUser(111, email='test@example.com')
     author.ignore_action_limits = True
     self.assertTrue(self.spam_service._IsExempt(author, False))
 
   def testClassifyIssue_spam(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        project_id=789, local_id=1, reporter_id=111, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
     self.spam_service._predict = lambda body: 1.0
 
@@ -306,7 +306,7 @@ class SpamServiceTest(unittest.TestCase):
 
     comment_pb = tracker_pb2.IssueComment()
     comment_pb.content = "this is spam"
-    reporter = user_pb2.MakeUser(111L, email='test@test.com')
+    reporter = user_pb2.MakeUser(111, email='test@test.com')
     res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual(1.0, res['confidence_is_spam'])
 
@@ -320,7 +320,7 @@ class SpamServiceTest(unittest.TestCase):
 
   def testClassifyIssue_Whitelisted(self):
     issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        project_id=789, local_id=1, reporter_id=111, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
     self.spam_service._predict = assert_unreached
 
@@ -329,7 +329,7 @@ class SpamServiceTest(unittest.TestCase):
 
     comment_pb = tracker_pb2.IssueComment()
     comment_pb.content = "this is spam"
-    reporter = user_pb2.MakeUser(111L, email='test@google.com')
+    reporter = user_pb2.MakeUser(111, email='test@google.com')
     res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual(0.0, res['confidence_is_spam'])
     reporter.email = 'test@chromium.org'
@@ -342,7 +342,7 @@ class SpamServiceTest(unittest.TestCase):
     # Prevent missing service inits to fail the test.
     self.spam_service.ml_engine = True
 
-    commenter = user_pb2.MakeUser(111L, email='test@test.com')
+    commenter = user_pb2.MakeUser(111, email='test@test.com')
     res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual(1.0, res['confidence_is_spam'])
 
@@ -360,7 +360,7 @@ class SpamServiceTest(unittest.TestCase):
     # Prevent missing service inits to fail the test.
     self.spam_service.ml_engine = True
 
-    commenter = user_pb2.MakeUser(111L, email='test@google.com')
+    commenter = user_pb2.MakeUser(111, email='test@google.com')
     res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual(0.0, res['confidence_is_spam'])
 

@@ -45,7 +45,7 @@ class AST2ASTTest(unittest.TestCase):
         issue=fake.IssueService(),
         config=fake.ConfigService(),
         features=fake.FeaturesService())
-    self.services.user.TestAddUser('a@example.com', 111L)
+    self.services.user.TestAddUser('a@example.com', 111)
     self.project = self.services.project.TestAddProject(
         'proj', project_id=100)
 
@@ -510,7 +510,7 @@ class AST2ASTTest(unittest.TestCase):
         self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([OWNER_ID_FIELD], new_cond.field_defs)
-    self.assertEqual([111L], new_cond.int_values)
+    self.assertEqual([111], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
     # Non-members do not raise an exception.
@@ -525,7 +525,7 @@ class AST2ASTTest(unittest.TestCase):
         self.cnxn, cond, self.services.user, [OWNER_ID_FIELD], True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual([OWNER_ID_FIELD], new_cond.field_defs)
-    self.assertEqual([123L], new_cond.int_values)
+    self.assertEqual([123], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
     # Non-members do not raise an exception.
@@ -570,23 +570,23 @@ class AST2ASTTest(unittest.TestCase):
     hotlist_field = BUILTIN_ISSUE_FIELDS['hotlist']
     hotlist_id_field = BUILTIN_ISSUE_FIELDS['hotlist_id']
 
-    self.services.user.TestAddUser('gatsby@example.org', 111L)
-    self.services.user.TestAddUser('daisy@example.com', 222L)
-    self.services.user.TestAddUser('nick@example.org', 333L)
+    self.services.user.TestAddUser('gatsby@example.org', 111)
+    self.services.user.TestAddUser('daisy@example.com', 222)
+    self.services.user.TestAddUser('nick@example.org', 333)
 
     # Setup hotlists
     self.services.features.TestAddHotlist(
-        'Hotlist1', owner_ids=[111L], hotlist_id=10)
+        'Hotlist1', owner_ids=[111], hotlist_id=10)
     self.services.features.TestAddHotlist(
-        'Hotlist2', owner_ids=[111L], hotlist_id=20)
+        'Hotlist2', owner_ids=[111], hotlist_id=20)
     self.services.features.TestAddHotlist(
-        'Hotlist3', owner_ids=[222L], hotlist_id=30)
+        'Hotlist3', owner_ids=[222], hotlist_id=30)
     self.services.features.TestAddHotlist(
-        'Hotlist4', owner_ids=[222L], hotlist_id=40)
+        'Hotlist4', owner_ids=[222], hotlist_id=40)
     self.services.features.TestAddHotlist(
-        'Hotlist5', owner_ids=[333L], hotlist_id=50)
+        'Hotlist5', owner_ids=[333], hotlist_id=50)
     self.services.features.TestAddHotlist(
-        'Hotlist6', owner_ids=[333L], hotlist_id=60)
+        'Hotlist6', owner_ids=[333], hotlist_id=60)
 
     hotlist_query_vals = [
         'gatsby@example.org:Hotlist1',
@@ -619,7 +619,7 @@ class AST2ASTTest(unittest.TestCase):
         self.cnxn, cond, self.services, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual(cond.field_defs, new_cond.field_defs)
-    self.assertEqual([111L], new_cond.int_values)
+    self.assertEqual([111], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
     cond = ast_pb2.MakeCond(
@@ -628,7 +628,7 @@ class AST2ASTTest(unittest.TestCase):
         self.cnxn, cond, self.services, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual(cond.field_defs, new_cond.field_defs)
-    self.assertEqual([111L], new_cond.int_values)
+    self.assertEqual([111], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
 
     cond = ast_pb2.MakeCond(
@@ -663,7 +663,7 @@ class AST2ASTTest(unittest.TestCase):
         self.cnxn, cond, self.services, True)
     self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
     self.assertEqual(cond.field_defs, new_cond.field_defs)
-    self.assertEqual([111L], new_cond.int_values)
+    self.assertEqual([111], new_cond.int_values)
     self.assertEqual([], new_cond.str_values)
     self.assertEqual(query2ast.APPROVER_SUFFIX, new_cond.key_suffix)
 

@@ -25,7 +25,7 @@ class SearchPipelineTest(unittest.TestCase):
         project=fake.ProjectService(),
         issue=fake.IssueService(),
         config=fake.ConfigService())
-    self.services.user.TestAddUser('a@example.com', 111L)
+    self.services.user.TestAddUser('a@example.com', 111)
 
   def testIsStarredRE(self):
     """IS_STARRED_RE matches only the is:starred term."""
@@ -68,12 +68,12 @@ class SearchPipelineTest(unittest.TestCase):
   def testReplaceKeywordsWithUserIDs_IsStarred(self):
     """The term is:starred is replaced with starredby:USERID."""
     actual, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
-        [111L], 'is:starred')
+        [111], 'is:starred')
     self.assertEqual('starredby:111', actual)
     self.assertEqual([], warnings)
 
     actual, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
-        [111L], 'Pri=1 is:starred M=61')
+        [111], 'Pri=1 is:starred M=61')
     self.assertEqual('Pri=1 starredby:111 M=61', actual)
     self.assertEqual([], warnings)
 
@@ -87,19 +87,19 @@ class SearchPipelineTest(unittest.TestCase):
   def testReplaceKeywordsWithUserIDs_IsStarred_linked(self):
     """is:starred is replaced by starredby:uid1,uid2 for linked accounts."""
     actual, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
-        [111L, 222L], 'is:starred')
+        [111, 222], 'is:starred')
     self.assertEqual('starredby:111,222', actual)
     self.assertEqual([], warnings)
 
   def testReplaceKeywordsWithUserIDs_Me(self):
     """Terms like owner:me are replaced with owner:USERID."""
     actual, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
-        [111L], 'owner:me')
+        [111], 'owner:me')
     self.assertEqual('owner:111', actual)
     self.assertEqual([], warnings)
 
     actual, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
-        [111L], 'Pri=1 cc:me M=61')
+        [111], 'Pri=1 cc:me M=61')
     self.assertEqual('Pri=1 cc:111 M=61', actual)
     self.assertEqual([], warnings)
 
@@ -113,7 +113,7 @@ class SearchPipelineTest(unittest.TestCase):
   def testReplaceKeywordsWithUserIDs_Me_LinkedAccounts(self):
     """owner:me is replaced with owner:uid,uid for each linked account."""
     actual, warnings = searchpipeline.ReplaceKeywordsWithUserIDs(
-        [111L, 222L], 'owner:me')
+        [111, 222], 'owner:me')
     self.assertEqual('owner:111,222', actual)
     self.assertEqual([], warnings)
 

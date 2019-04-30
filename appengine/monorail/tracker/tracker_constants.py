@@ -202,8 +202,8 @@ DELETED_TEMPLATE_NAME = '<DELETED>'
 
 # This is the default maximum total bytes of files attached
 # to all the issues in a project.
-ISSUE_ATTACHMENTS_QUOTA_HARD = 50 * 1024 * 1024L
-ISSUE_ATTACHMENTS_QUOTA_SOFT = ISSUE_ATTACHMENTS_QUOTA_HARD - 1 * 1024 * 1024L
+ISSUE_ATTACHMENTS_QUOTA_HARD = 50 * 1024 * 1024
+ISSUE_ATTACHMENTS_QUOTA_SOFT = ISSUE_ATTACHMENTS_QUOTA_HARD - 1 * 1024 * 1024
 
 # Default value for nav action after updating an issue.
 DEFAULT_AFTER_ISSUE_UPDATE = user_pb2.IssueUpdateNav.STAY_SAME_ISSUE

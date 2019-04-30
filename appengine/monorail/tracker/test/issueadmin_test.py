@@ -35,7 +35,7 @@ class TestBase(unittest.TestCase):
         features=fake.FeaturesService())
     self.servlet = servlet_factory('req', 'res', services=self.services)
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=789, contrib_ids=[333L])
+        'proj', project_id=789, contrib_ids=[333])
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.services.config.StoreConfig(None, self.config)
     self.cnxn = fake.MonorailConnection()
@@ -43,7 +43,7 @@ class TestBase(unittest.TestCase):
         path='/p/proj/admin', project=self.project)
     self.mox = mox.Mox()
     self.test_template = tracker_bizobj.MakeIssueTemplate(
-        'Test Template', 'sum', 'New', 111L, 'content', [], [], [], [])
+        'Test Template', 'sum', 'New', 111, 'content', [], [], [], [])
     self.test_template.template_id = 12345
     self.test_templates = testing_helpers.DefaultTemplates()
     self.test_templates.append(self.test_template)
@@ -166,8 +166,8 @@ class AdminTemplatesTest(TestBase):
 
   def setUp(self):
     super(AdminTemplatesTest, self).setUpServlet(issueadmin.AdminTemplates)
-    self.mr.auth.user_id = 333L
-    self.mr.auth.effective_ids = {333L}
+    self.mr.auth.user_id = 333
+    self.mr.auth.effective_ids = {333}
 
   def testGatherPageData(self):
     self._mockGetUser()
@@ -231,17 +231,17 @@ class AdminComponentsTest(TestBase):
   def setUp(self):
     super(AdminComponentsTest, self).setUpServlet(issueadmin.AdminComponents)
     self.cd_clean = tracker_bizobj.MakeComponentDef(
-        1, self.project.project_id, 'BackEnd', 'doc', False, [], [111L], 100000,
-        122L, 10000000, 133L)
+        1, self.project.project_id, 'BackEnd', 'doc', False, [], [111], 100000,
+        122, 10000000, 133)
     self.cd_with_subcomp = tracker_bizobj.MakeComponentDef(
-        2, self.project.project_id, 'FrontEnd', 'doc', False, [], [111L],
-        100000, 122L, 10000000, 133L)
+        2, self.project.project_id, 'FrontEnd', 'doc', False, [], [111],
+        100000, 122, 10000000, 133)
     self.subcd = tracker_bizobj.MakeComponentDef(
-        3, self.project.project_id, 'FrontEnd>Worker', 'doc', False, [], [111L],
-        100000, 122L, 10000000, 133L)
+        3, self.project.project_id, 'FrontEnd>Worker', 'doc', False, [], [111],
+        100000, 122, 10000000, 133)
     self.cd_with_template = tracker_bizobj.MakeComponentDef(
-        4, self.project.project_id, 'Middle', 'doc', False, [], [111L],
-        100000, 122L, 10000000, 133L)
+        4, self.project.project_id, 'Middle', 'doc', False, [], [111],
+        100000, 122, 10000000, 133)
 
   def testGatherPageData(self):
     self._mockGetUser()

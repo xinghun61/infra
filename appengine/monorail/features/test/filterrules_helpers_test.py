@@ -233,7 +233,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
   def testApplyRule(self):
     cnxn = 'fake sql connection'
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 111L, labels=ORIG_LABELS)
+        789, 1, ORIG_SUMMARY, 'New', 111, labels=ORIG_LABELS)
     config = tracker_pb2.ProjectIssueConfig(project_id=self.project.project_id)
     # Empty label set cannot satisfy rule looking for labels.
     pred = 'label:a label:b'
@@ -467,7 +467,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
         filterrules_helpers.MakeRule(
             'Priority=High label:Regression', add_labels=['Urgent']),
         filterrules_helpers.MakeRule(
-            'Size=L', default_owner_id=444L),
+            'Size=L', default_owner_id=444),
         filterrules_helpers.MakeRule(
             'Size=XL', warning='It will take too long'),
         filterrules_helpers.MakeRule(
@@ -498,11 +498,11 @@ class FilterRulesHelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Size-L'])
     traces = {
-        (tracker_pb2.FieldID.OWNER, 444L):
+        (tracker_pb2.FieldID.OWNER, 444):
             'Added by rule: IF Size=L THEN SET DEFAULT OWNER',
         }
     self.assertEquals(
-        (444L, '', [], [], [], traces, [], []),
+        (444, '', [], [], [], traces, [], []),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -536,11 +536,11 @@ class FilterRulesHelpersTest(unittest.TestCase):
     traces = {
         (tracker_pb2.FieldID.LABELS, 'Priority-Low'):
             'Added by rule: IF label:HasWorkaround THEN ADD LABEL',
-        (tracker_pb2.FieldID.OWNER, 444L):
+        (tracker_pb2.FieldID.OWNER, 444):
             'Added by rule: IF Size=L THEN SET DEFAULT OWNER',
         }
     self.assertEquals(
-        (444L, '', [], ['Priority-Low'], [],
+        (444, '', [], ['Priority-Low'], [],
          traces, [], []),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
@@ -596,20 +596,20 @@ class FilterRulesHelpersTest(unittest.TestCase):
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     # Two rules fire, each one wants to add the same CC: only add once.
-    rules.append(filterrules_helpers.MakeRule('Watch', add_cc_ids=[111L]))
-    rules.append(filterrules_helpers.MakeRule('Monitor', add_cc_ids=[111L]))
+    rules.append(filterrules_helpers.MakeRule('Watch', add_cc_ids=[111]))
+    rules.append(filterrules_helpers.MakeRule('Monitor', add_cc_ids=[111]))
     config = tracker_pb2.ProjectIssueConfig(
         exclusive_label_prefixes=excl_prefixes,
         project_id=self.project.project_id)
     predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, [])
     traces = {
-        (tracker_pb2.FieldID.CC, 111L):
+        (tracker_pb2.FieldID.CC, 111):
             'Added by rule: IF Watch THEN ADD CC',
         }
     issue = fake.MakeTestIssue(
-        789, 1, ORIG_SUMMARY, 'New', 111L, labels=['Watch', 'Monitor'])
+        789, 1, ORIG_SUMMARY, 'New', 111, labels=['Watch', 'Monitor'])
     self.assertEquals(
-        (0, '', [111L], [], [],
+        (0, '', [111], [], [],
          traces, [], []),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))

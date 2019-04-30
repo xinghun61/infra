@@ -77,7 +77,7 @@ class IssueReindexTest(unittest.TestCase):
 
     issue1 = fake.MakeTestIssue(
         project_id=self.project.project_id, local_id=1, summary='sum',
-        status='New', owner_id=111L)
+        status='New', owner_id=111)
     issue1.project_name = self.project.project_name
     self.services.issue.TestAddIssue(issue1)
 

@@ -24,8 +24,8 @@ class ProjectPb2Test(unittest.TestCase):
         'proj', project_id=789, state=project_pb2.ProjectState.ARCHIVED,
         access=project_pb2.ProjectAccess.MEMBERS_ONLY, summary='sum',
         description='desc', moved_to='example.com',
-        cached_content_timestamp=1234567890, owner_ids=[111L],
-        committer_ids=[222L], contributor_ids=[333L],
+        cached_content_timestamp=1234567890, owner_ids=[111],
+        committer_ids=[222], contributor_ids=[333],
         read_only_reason='being migrated',
         home_page='example.com', docs_url='example.com/docs',
         source_url='example.com/src', logo_gcs_id='logo_id',
@@ -38,9 +38,9 @@ class ProjectPb2Test(unittest.TestCase):
     self.assertEqual('desc', project.description)
     self.assertEqual('example.com', project.moved_to)
     self.assertEqual(1234567890, project.cached_content_timestamp)
-    self.assertEqual([111L], project.owner_ids)
-    self.assertEqual([222L], project.committer_ids)
-    self.assertEqual([333L], project.contributor_ids)
+    self.assertEqual([111], project.owner_ids)
+    self.assertEqual([222], project.committer_ids)
+    self.assertEqual([333], project.contributor_ids)
     self.assertEqual('being migrated', project.read_only_reason)
     self.assertEqual('example.com', project.home_page)
     self.assertEqual('example.com/docs', project.docs_url)

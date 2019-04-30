@@ -23,28 +23,28 @@ class GrouAdminTest(unittest.TestCase):
         user=fake.UserService(),
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService())
-    self.services.user.TestAddUser('a@example.com', 111L)
-    self.services.user.TestAddUser('b@example.com', 222L)
-    self.services.user.TestAddUser('c@example.com', 333L)
-    self.services.user.TestAddUser('group@example.com', 888L)
-    self.services.user.TestAddUser('importgroup@example.com', 999L)
-    self.services.usergroup.TestAddGroupSettings(888L, 'group@example.com')
+    self.services.user.TestAddUser('a@example.com', 111)
+    self.services.user.TestAddUser('b@example.com', 222)
+    self.services.user.TestAddUser('c@example.com', 333)
+    self.services.user.TestAddUser('group@example.com', 888)
+    self.services.user.TestAddUser('importgroup@example.com', 999)
+    self.services.usergroup.TestAddGroupSettings(888, 'group@example.com')
     self.services.usergroup.TestAddGroupSettings(
-        999L, 'importgroup@example.com', external_group_type='mdb')
+        999, 'importgroup@example.com', external_group_type='mdb')
     self.servlet = groupadmin.GroupAdmin(
         'req', 'res', services=self.services)
     self.mr = testing_helpers.MakeMonorailRequest()
     self.mr.viewed_username = 'group@example.com'
-    self.mr.viewed_user_auth.user_id = 888L
+    self.mr.viewed_user_auth.user_id = 888
 
   def testAssertBasePermission(self):
     mr = testing_helpers.MakeMonorailRequest(
         perms=permissions.GetPermissions(None, {}, None))
-    mr.viewed_user_auth.user_id = 888L
+    mr.viewed_user_auth.user_id = 888
     self.assertRaises(
         permissions.PermissionException,
         self.servlet.AssertBasePermission, mr)
-    self.services.usergroup.TestAddMembers(888L, [111L], 'owner')
+    self.services.usergroup.TestAddMembers(888, [111], 'owner')
     self.servlet.AssertBasePermission(self.mr)
 
   def testGatherPageData_Normal(self):
@@ -56,7 +56,7 @@ class GrouAdminTest(unittest.TestCase):
   def testGatherPageData_Import(self):
     mr = testing_helpers.MakeMonorailRequest()
     mr.viewed_username = 'importgroup@example.com'
-    mr.viewed_user_auth.user_id = 999L
+    mr.viewed_user_auth.user_id = 999
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual('importgroup@example.com', page_data['groupname'])
     self.assertTrue(page_data['import_group'])
@@ -66,7 +66,7 @@ class GrouAdminTest(unittest.TestCase):
     post_data = fake.PostData(visibility='0')
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertIn('/g/group@example.com/groupadmin', url)
-    group_settings = self.services.usergroup.GetGroupSettings(None, 888L)
+    group_settings = self.services.usergroup.GetGroupSettings(None, 888)
     self.assertEqual(usergroup_pb2.MemberVisibility.OWNERS,
                      group_settings.who_can_view_members)
 
@@ -75,7 +75,7 @@ class GrouAdminTest(unittest.TestCase):
         group_type='1', import_group=['on'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertIn('/g/group@example.com/groupadmin', url)
-    group_settings = self.services.usergroup.GetGroupSettings(None, 888L)
+    group_settings = self.services.usergroup.GetGroupSettings(None, 888)
     self.assertEqual(usergroup_pb2.MemberVisibility.OWNERS,
                      group_settings.who_can_view_members)
     self.assertEqual(usergroup_pb2.GroupType.MDB,

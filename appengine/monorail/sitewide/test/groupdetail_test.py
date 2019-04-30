@@ -23,47 +23,47 @@ class GroupDetailTest(unittest.TestCase):
         project=fake.ProjectService(),
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
-    self.services.user.TestAddUser('a@example.com', 111L)
-    self.services.user.TestAddUser('b@example.com', 222L)
-    self.services.user.TestAddUser('c@example.com', 333L)
-    self.services.user.TestAddUser('group@example.com', 888L)
-    self.services.usergroup.TestAddGroupSettings(888L, 'group@example.com')
+    self.services.user.TestAddUser('a@example.com', 111)
+    self.services.user.TestAddUser('b@example.com', 222)
+    self.services.user.TestAddUser('c@example.com', 333)
+    self.services.user.TestAddUser('group@example.com', 888)
+    self.services.usergroup.TestAddGroupSettings(888, 'group@example.com')
     self.servlet = groupdetail.GroupDetail(
         'req', 'res', services=self.services)
     self.mr = testing_helpers.MakeMonorailRequest()
     self.mr.viewed_username = 'group@example.com'
-    self.mr.viewed_user_auth.user_id = 888L
+    self.mr.viewed_user_auth.user_id = 888
 
   def testAssertBasePermission(self):
     mr = testing_helpers.MakeMonorailRequest(
         perms=permissions.GetPermissions(None, {}, None))
-    mr.viewed_user_auth.user_id = 888L
-    mr.auth.effective_ids = set([111L])
+    mr.viewed_user_auth.user_id = 888
+    mr.auth.effective_ids = set([111])
     self.assertRaises(
         permissions.PermissionException,
         self.servlet.AssertBasePermission, mr)
-    self.services.usergroup.TestAddMembers(888L, [111L], 'member')
+    self.services.usergroup.TestAddMembers(888, [111], 'member')
     self.servlet.AssertBasePermission(mr)
 
   def testAssertBasePermission_IgnoreNoSuchGroup(self):
     """The permission check does not crash for non-existent user groups."""
     mr = testing_helpers.MakeMonorailRequest(
         perms=permissions.GetPermissions(None, {}, None))
-    mr.viewed_user_auth.user_id = 404L
-    mr.auth.effective_ids = set([111L])
+    mr.viewed_user_auth.user_id = 404
+    mr.auth.effective_ids = set([111])
     self.servlet.AssertBasePermission(mr)
 
   def testAssertBasePermission_IndirectMembership(self):
-    self.services.usergroup.TestAddGroupSettings(999L, 'subgroup@example.com')
+    self.services.usergroup.TestAddGroupSettings(999, 'subgroup@example.com')
     mr = testing_helpers.MakeMonorailRequest(
         perms=permissions.GetPermissions(None, {}, None))
-    mr.viewed_user_auth.user_id = 888L
-    mr.auth.effective_ids = set([111L])
+    mr.viewed_user_auth.user_id = 888
+    mr.auth.effective_ids = set([111])
     self.assertRaises(
         permissions.PermissionException,
         self.servlet.AssertBasePermission, mr)
-    self.services.usergroup.TestAddMembers(888L, [999L], 'member')
-    self.services.usergroup.TestAddMembers(999L, [111L], 'member')
+    self.services.usergroup.TestAddMembers(888, [999], 'member')
+    self.services.usergroup.TestAddMembers(999, [111], 'member')
     self.servlet.AssertBasePermission(mr)
 
   def testGatherPagData_ZeroMembers(self):
@@ -72,7 +72,7 @@ class GroupDetailTest(unittest.TestCase):
     self.assertEqual(0, len(pagination.visible_results))
 
   def testGatherPagData_NonzeroMembers(self):
-    self.services.usergroup.TestAddMembers(888L, [111L, 222L, 333L])
+    self.services.usergroup.TestAddMembers(888, [111, 222, 333])
     page_data = self.servlet.GatherPageData(self.mr)
     pagination = page_data['pagination']
     self.assertEqual(3, len(pagination.visible_results))
@@ -88,54 +88,54 @@ class GroupDetailTest(unittest.TestCase):
     post_data = fake.PostData(addmembers=[''], role=['member'])
     url = self.servlet.ProcessAddMembers(self.mr, post_data)
     self.assertIn('/g/group@example.com/?', url)
-    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888L])
-    self.assertEqual(0, len(members_after[888L]))
+    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888])
+    self.assertEqual(0, len(members_after[888]))
 
-    self.services.usergroup.TestAddMembers(888L, [111L, 222L, 333L])
+    self.services.usergroup.TestAddMembers(888, [111, 222, 333])
     url = self.servlet.ProcessAddMembers(self.mr, post_data)
     self.assertIn('/g/group@example.com/?', url)
-    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888L])
-    self.assertEqual(3, len(members_after[888L]))
+    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888])
+    self.assertEqual(3, len(members_after[888]))
 
   def testProcessAddMembers_SomeAdded(self):
-    self.services.usergroup.TestAddMembers(888L, [111L])
+    self.services.usergroup.TestAddMembers(888, [111])
     post_data = fake.PostData(
         addmembers=['b@example.com, c@example.com'], role=['member'])
     url = self.servlet.ProcessAddMembers(self.mr, post_data)
     self.assertIn('/g/group@example.com/?', url)
-    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888L])
-    self.assertEqual(3, len(members_after[888L]))
+    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888])
+    self.assertEqual(3, len(members_after[888]))
 
   def testProcessRemoveMembers_SomeRemoved(self):
-    self.services.usergroup.TestAddMembers(888L, [111L, 222L, 333L])
+    self.services.usergroup.TestAddMembers(888, [111, 222, 333])
     post_data = fake.PostData(remove=['b@example.com', 'c@example.com'])
     url = self.servlet.ProcessRemoveMembers(self.mr, post_data)
     self.assertIn('/g/group@example.com/?', url)
-    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888L])
-    self.assertEqual(1, len(members_after[888L]))
+    members_after, _ = self.services.usergroup.LookupMembers('cnxn', [888])
+    self.assertEqual(1, len(members_after[888]))
 
   def testProcessFormData_NoPermission(self):
     """Group members cannot edit group."""
-    self.services.usergroup.TestAddMembers(888L, [111L], 'member')
+    self.services.usergroup.TestAddMembers(888, [111], 'member')
     mr = testing_helpers.MakeMonorailRequest(
         perms=permissions.GetPermissions(None, {}, None))
-    mr.viewed_user_auth.user_id = 888L
-    mr.auth.effective_ids = set([111L])
+    mr.viewed_user_auth.user_id = 888
+    mr.auth.effective_ids = set([111])
     self.assertRaises(permissions.PermissionException,
                       self.servlet.ProcessFormData, mr, {})
 
   def testProcessFormData_OwnerPermission(self):
     """Group owners cannot edit group."""
-    self.services.usergroup.TestAddMembers(888L, [111L], 'owner')
+    self.services.usergroup.TestAddMembers(888, [111], 'owner')
     mr = testing_helpers.MakeMonorailRequest(
         perms=permissions.GetPermissions(None, {}, None))
-    mr.viewed_user_auth.user_id = 888L
-    mr.auth.effective_ids = set([111L])
+    mr.viewed_user_auth.user_id = 888
+    mr.auth.effective_ids = set([111])
     self.servlet.ProcessFormData(mr, {})
 
   def testGatherPagData_NoSuchUserGroup(self):
     """If there is no such user group, raise an exception."""
-    self.mr.viewed_user_auth.user_id = 404L
+    self.mr.viewed_user_auth.user_id = 404
     self.assertRaises(
         exceptions.NoSuchGroupException,
         self.servlet.GatherPageData, self.mr)

@@ -70,12 +70,12 @@ class BizobjTest(unittest.TestCase):
     issue = tracker_pb2.Issue()
     self.assertEqual(tracker_bizobj.GetApproverIds(issue), [])
 
-    av_1 = tracker_pb2.ApprovalValue(approver_ids=[111L, 222L])
+    av_1 = tracker_pb2.ApprovalValue(approver_ids=[111, 222])
     av_2 = tracker_pb2.ApprovalValue()
-    av_3 = tracker_pb2.ApprovalValue(approver_ids=[222L, 333L])
+    av_3 = tracker_pb2.ApprovalValue(approver_ids=[222, 333])
     issue.approval_values = [av_1, av_2, av_3]
     self.assertItemsEqual(
-        tracker_bizobj.GetApproverIds(issue), [111L, 222L, 333L])
+        tracker_bizobj.GetApproverIds(issue), [111, 222, 333])
 
   def testGetLabels(self):
     issue = tracker_pb2.Issue()
@@ -132,7 +132,7 @@ class BizobjTest(unittest.TestCase):
     config = tracker_pb2.ProjectIssueConfig()
     approval_fd = tracker_pb2.FieldDef(field_id=1, field_name='UIApproval')
     approval_def = tracker_pb2.ApprovalDef(
-        approval_id=1, approver_ids=[111L], survey='')
+        approval_id=1, approver_ids=[111], survey='')
     config.field_defs = [approval_fd]
     config.approval_defs = [approval_def]
     self.assertEqual(approval_def, tracker_bizobj.FindApprovalDef(
@@ -151,7 +151,7 @@ class BizobjTest(unittest.TestCase):
   def testFindApprovalDefByID_Normal(self):
     config = tracker_pb2.ProjectIssueConfig()
     approval_def = tracker_pb2.ApprovalDef(
-        approval_id=1, approver_ids=[111L, 222L], survey='')
+        approval_id=1, approver_ids=[111, 222], survey='')
     config.approval_defs = [approval_def]
     self.assertEqual(approval_def, tracker_bizobj.FindApprovalDefByID(
         1, config))
@@ -204,36 +204,36 @@ class BizobjTest(unittest.TestCase):
     config = tracker_pb2.ProjectIssueConfig()
     issue = tracker_pb2.Issue()
     self.assertEqual(
-        set(), tracker_bizobj.GetGrantedPerms(issue, {111L}, config))
+        set(), tracker_bizobj.GetGrantedPerms(issue, {111}, config))
 
   def testGetGrantedPerms_Default(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     issue = tracker_pb2.Issue()
     self.assertEqual(
-        set(), tracker_bizobj.GetGrantedPerms(issue, {111L}, config))
+        set(), tracker_bizobj.GetGrantedPerms(issue, {111}, config))
 
   def testGetGrantedPerms_NothingGranted(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     fd = tracker_pb2.FieldDef(field_id=1)  # Nothing granted
     config.field_defs = [fd]
-    fv = tracker_pb2.FieldValue(field_id=1, user_id=222L)
+    fv = tracker_pb2.FieldValue(field_id=1, user_id=222)
     issue = tracker_pb2.Issue(field_values=[fv])
     self.assertEqual(
         set(),
-        tracker_bizobj.GetGrantedPerms(issue, {111L, 222L}, config))
+        tracker_bizobj.GetGrantedPerms(issue, {111, 222}, config))
 
   def testGetGrantedPerms_Normal(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     fd = tracker_pb2.FieldDef(field_id=1, grants_perm='Highlight')
     config.field_defs = [fd]
-    fv = tracker_pb2.FieldValue(field_id=1, user_id=222L)
+    fv = tracker_pb2.FieldValue(field_id=1, user_id=222)
     issue = tracker_pb2.Issue(field_values=[fv])
     self.assertEqual(
         set(),
-        tracker_bizobj.GetGrantedPerms(issue, {111L}, config))
+        tracker_bizobj.GetGrantedPerms(issue, {111}, config))
     self.assertEqual(
         set(['highlight']),
-        tracker_bizobj.GetGrantedPerms(issue, {111L, 222L}, config))
+        tracker_bizobj.GetGrantedPerms(issue, {111, 222}, config))
 
   def testLabelsByPrefix(self):
     expected = tracker_bizobj.LabelsByPrefix(
@@ -327,19 +327,19 @@ class BizobjTest(unittest.TestCase):
 
   def testMakeFieldValue(self):
     # Only the first value counts.
-    fv = tracker_bizobj.MakeFieldValue(1, 42, 'yay', 111L, None, None, True)
+    fv = tracker_bizobj.MakeFieldValue(1, 42, 'yay', 111, None, None, True)
     self.assertEqual(1, fv.field_id)
     self.assertEqual(42, fv.int_value)
     self.assertIsNone(fv.str_value)
     self.assertEqual(None, fv.user_id)
     self.assertEqual(None, fv.phase_id)
 
-    fv = tracker_bizobj.MakeFieldValue(1, None, 'yay', 111L, None, None, True)
+    fv = tracker_bizobj.MakeFieldValue(1, None, 'yay', 111, None, None, True)
     self.assertEqual('yay', fv.str_value)
     self.assertEqual(None, fv.user_id)
 
-    fv = tracker_bizobj.MakeFieldValue(1, None, None, 111L, None, None, True)
-    self.assertEqual(111L, fv.user_id)
+    fv = tracker_bizobj.MakeFieldValue(1, None, None, 111, None, None, True)
+    self.assertEqual(111, fv.user_id)
     self.assertEqual(True, fv.derived)
 
     fv = tracker_bizobj.MakeFieldValue(
@@ -642,10 +642,10 @@ class BizobjTest(unittest.TestCase):
 
   def testMakeComponentDef(self):
     cd = tracker_bizobj.MakeComponentDef(
-      1, 789, 'UI', 'doc', False, [111L], [222L], 1234567890,
-      111L)
+      1, 789, 'UI', 'doc', False, [111], [222], 1234567890,
+      111)
     self.assertEqual(1, cd.component_id)
-    self.assertEqual([111L], cd.admin_ids)
+    self.assertEqual([111], cd.admin_ids)
     self.assertEqual([], cd.label_ids)
 
   def testMakeSavedQuery_WithNone(self):
@@ -666,12 +666,12 @@ class BizobjTest(unittest.TestCase):
   def testConvertDictToTemplate(self):
     template = tracker_bizobj.ConvertDictToTemplate(
         dict(name='name', content='content', summary='summary',
-             status='status', owner_id=111L))
+             status='status', owner_id=111))
     self.assertEqual('name', template.name)
     self.assertEqual('content', template.content)
     self.assertEqual('summary', template.summary)
     self.assertEqual('status', template.status)
-    self.assertEqual(111L, template.owner_id)
+    self.assertEqual(111, template.owner_id)
     self.assertFalse(template.summary_must_be_edited)
     self.assertTrue(template.owner_defaults_to_member)
     self.assertFalse(template.component_required)
@@ -877,55 +877,55 @@ class BizobjTest(unittest.TestCase):
     comment = tracker_pb2.IssueComment()
     self.assertEqual({0}, tracker_bizobj.UsersInvolvedInComment(comment))
 
-    comment.user_id = 111L
+    comment.user_id = 111
     self.assertEqual(
-        {111L}, tracker_bizobj.UsersInvolvedInComment(comment))
+        {111}, tracker_bizobj.UsersInvolvedInComment(comment))
 
     amendment = tracker_pb2.Amendment(newvalue='foo')
     comment.amendments.append(amendment)
     self.assertEqual(
-        {111L}, tracker_bizobj.UsersInvolvedInComment(comment))
+        {111}, tracker_bizobj.UsersInvolvedInComment(comment))
 
-    amendment.added_user_ids.append(222L)
-    amendment.removed_user_ids.append(333L)
-    self.assertEqual({111L, 222L, 333L},
+    amendment.added_user_ids.append(222)
+    amendment.removed_user_ids.append(333)
+    self.assertEqual({111, 222, 333},
                      tracker_bizobj.UsersInvolvedInComment(comment))
 
   def testUsersInvolvedInCommentList(self):
     self.assertEqual(set(), tracker_bizobj.UsersInvolvedInCommentList([]))
 
     c1 = tracker_pb2.IssueComment()
-    c1.user_id = 111L
+    c1.user_id = 111
     c1.amendments.append(tracker_pb2.Amendment(newvalue='foo'))
 
     c2 = tracker_pb2.IssueComment()
-    c2.user_id = 111L
+    c2.user_id = 111
     c2.amendments.append(tracker_pb2.Amendment(
-        added_user_ids=[222L], removed_user_ids=[333L]))
+        added_user_ids=[222], removed_user_ids=[333]))
 
-    self.assertEqual({111L},
+    self.assertEqual({111},
                      tracker_bizobj.UsersInvolvedInCommentList([c1]))
 
-    self.assertEqual({111L, 222L, 333L},
+    self.assertEqual({111, 222, 333},
                      tracker_bizobj.UsersInvolvedInCommentList([c2]))
 
-    self.assertEqual({111L, 222L, 333L},
+    self.assertEqual({111, 222, 333},
                      tracker_bizobj.UsersInvolvedInCommentList([c1, c2]))
 
   def testUsersInvolvedInIssues_Empty(self):
     self.assertEqual(set(), tracker_bizobj.UsersInvolvedInIssues([]))
 
   def testUsersInvolvedInIssues_Normal(self):
-    av_1 = tracker_pb2.ApprovalValue(approver_ids=[666L, 222L, 444L])
-    av_2 = tracker_pb2.ApprovalValue(approver_ids=[777L], setter_id=888L)
+    av_1 = tracker_pb2.ApprovalValue(approver_ids=[666, 222, 444])
+    av_2 = tracker_pb2.ApprovalValue(approver_ids=[777], setter_id=888)
     issue1 = tracker_pb2.Issue(
-        reporter_id=111L, owner_id=222L, cc_ids=[222L, 333L],
+        reporter_id=111, owner_id=222, cc_ids=[222, 333],
         approval_values=[av_1, av_2])
     issue2 = tracker_pb2.Issue(
-        reporter_id=333L, owner_id=444L, derived_cc_ids=[222L, 444L])
-    issue2.field_values = [tracker_pb2.FieldValue(user_id=555L)]
+        reporter_id=333, owner_id=444, derived_cc_ids=[222, 444])
+    issue2.field_values = [tracker_pb2.FieldValue(user_id=555)]
     self.assertEqual(
-        set([0L, 111L, 222L, 333L, 444L, 555L, 666L, 777L, 888L]),
+        set([0L, 111, 222, 333, 444, 555, 666, 777, 888]),
         tracker_bizobj.UsersInvolvedInIssues([issue1, issue2]))
 
   def testUsersInvolvedInTemplate_Empty(self):
@@ -936,10 +936,10 @@ class BizobjTest(unittest.TestCase):
 
   def testUsersInvolvedInTempalte_Normal(self):
     template = tracker_bizobj.MakeIssueTemplate(
-        'A report', 'Something went wrong', 'New', 111L, 'Look out!',
-        ['Priority-High'], [], [333L, 444L], [])
+        'A report', 'Something went wrong', 'New', 111, 'Look out!',
+        ['Priority-High'], [], [333, 444], [])
     self.assertEqual(
-        set([111L, 333L, 444L]),
+        set([111, 333, 444]),
         tracker_bizobj.UsersInvolvedInTemplate(template))
 
   def testUsersInvolvedInConfig_Empty(self):
@@ -949,14 +949,14 @@ class BizobjTest(unittest.TestCase):
 
   def testUsersInvolvedInConfig_Normal(self):
     """We find user IDs mentioned components, fields, and approvals."""
-    self.config.component_defs[0].admin_ids = [111L]
-    self.config.component_defs[0].cc_ids = [444L]
-    self.config.field_defs[0].admin_ids = [111L, 222L]
+    self.config.component_defs[0].admin_ids = [111]
+    self.config.component_defs[0].cc_ids = [444]
+    self.config.field_defs[0].admin_ids = [111, 222]
     approval_def = tracker_pb2.ApprovalDef(
-        approval_id=1, approver_ids=[111L, 333L], survey='')
+        approval_id=1, approver_ids=[111, 333], survey='')
     self.config.approval_defs = [approval_def]
     actual = tracker_bizobj.UsersInvolvedInConfig(self.config)
-    self.assertEqual({111L, 222L, 333L, 444L}, actual)
+    self.assertEqual({111, 222, 333, 444}, actual)
 
   def testLabelIDsInvolvedInConfig_Empty(self):
     """There are no label IDs mentioned in a default config."""
@@ -978,11 +978,11 @@ class BizobjTest(unittest.TestCase):
     labels_add = ['ittly-bittly', 'piggly-wiggly']
     labels_remove = ['golly-goops', 'whoopsie']
     actual = tracker_bizobj.MakeApprovalDelta(
-        tracker_pb2.ApprovalStatus.APPROVED, 111L, [222L], [],
+        tracker_pb2.ApprovalStatus.APPROVED, 111, [222], [],
         [added_fv], [removed_fv], clear_fvs, labels_add, labels_remove,
         set_on=1234)
     self.assertEqual(actual.status, tracker_pb2.ApprovalStatus.APPROVED)
-    self.assertEqual(actual.setter_id, 111L)
+    self.assertEqual(actual.setter_id, 111)
     self.assertEqual(actual.set_on, 1234)
     self.assertEqual(actual.subfield_vals_add, [added_fv])
     self.assertEqual(actual.subfield_vals_remove, [removed_fv])
@@ -999,7 +999,7 @@ class BizobjTest(unittest.TestCase):
     labels_add = ['ittly-bittly', 'piggly-wiggly']
     labels_remove = ['golly-goops', 'whoopsie']
     actual = tracker_bizobj.MakeApprovalDelta(
-        None, 111L, [222L], [],
+        None, 111, [222], [],
         [added_fv], [removed_fv], clear_fields,
         labels_add, labels_remove)
     self.assertIsNone(actual.status)
@@ -1012,14 +1012,14 @@ class BizobjTest(unittest.TestCase):
     removed_fv = tracker_bizobj.MakeFieldValue(
       1, None, 'removed str', None, None, None, False)
     actual = tracker_bizobj.MakeIssueDelta(
-      'New', 111L, [222L], [333L], [1], [2],
+      'New', 111, [222], [333], [1], [2],
       ['AddedLabel'], ['RemovedLabel'], [added_fv], [removed_fv],
       [3], [78901], [78902], [78903], [78904], 78905,
       'New summary')
     self.assertEqual('New', actual.status)
-    self.assertEqual(111L, actual.owner_id)
-    self.assertEqual([222L], actual.cc_ids_add)
-    self.assertEqual([333L], actual.cc_ids_remove)
+    self.assertEqual(111, actual.owner_id)
+    self.assertEqual([222], actual.cc_ids_add)
+    self.assertEqual([333], actual.cc_ids_remove)
     self.assertEqual([1], actual.comp_ids_add)
     self.assertEqual([2], actual.comp_ids_remove)
     self.assertEqual(['AddedLabel'], actual.labels_add)
@@ -1123,7 +1123,7 @@ class BizobjTest(unittest.TestCase):
   def testApplyIssueDelta_NoChange(self):
     """A delta with no change should change nothing."""
     issue = tracker_pb2.Issue(
-        status='New', owner_id=111L, cc_ids=[222L], labels=['a', 'b'],
+        status='New', owner_id=111, cc_ids=[222], labels=['a', 'b'],
         component_ids=[1], blocked_on_iids=[78902], blocking_iids=[78903],
         merged_into=78904, summary='Sum')
     delta = tracker_pb2.IssueDelta()
@@ -1132,8 +1132,8 @@ class BizobjTest(unittest.TestCase):
         self.cnxn, self.services.issue, issue, delta, self.config)
 
     self.assertEqual('New', issue.status)
-    self.assertEqual(111L, issue.owner_id)
-    self.assertEqual([222L], issue.cc_ids)
+    self.assertEqual(111, issue.owner_id)
+    self.assertEqual([222], issue.cc_ids)
     self.assertEqual(['a', 'b'], issue.labels)
     self.assertEqual([1], issue.component_ids)
     self.assertEqual([78902], issue.blocked_on_iids)
@@ -1147,23 +1147,23 @@ class BizobjTest(unittest.TestCase):
   def testApplyIssueDelta_BuiltInFields(self):
     """A delta can change built-in fields."""
     ref_issue_70 = fake.MakeTestIssue(
-        789, 70, 'Something that must be done before', 'New', 111L)
+        789, 70, 'Something that must be done before', 'New', 111)
     self.services.issue.TestAddIssue(ref_issue_70)
     ref_issue_71 = fake.MakeTestIssue(
-        789, 71, 'Something that can only be done after', 'New', 111L)
+        789, 71, 'Something that can only be done after', 'New', 111)
     self.services.issue.TestAddIssue(ref_issue_71)
     ref_issue_72 = fake.MakeTestIssue(
-        789, 72, 'Something that seems the same', 'New', 111L)
+        789, 72, 'Something that seems the same', 'New', 111)
     self.services.issue.TestAddIssue(ref_issue_72)
     ref_issue_73 = fake.MakeTestIssue(
-        789, 73, 'Something that used to seem the same', 'New', 111L)
+        789, 73, 'Something that used to seem the same', 'New', 111)
     self.services.issue.TestAddIssue(ref_issue_73)
     issue = tracker_pb2.Issue(
-        status='New', owner_id=111L, cc_ids=[222L], labels=['a', 'b'],
+        status='New', owner_id=111, cc_ids=[222], labels=['a', 'b'],
         component_ids=[1], blocked_on_iids=[78902], blocking_iids=[78903],
         merged_into=ref_issue_73.issue_id, summary='Sum')
     delta = tracker_pb2.IssueDelta(
-      status='Duplicate', owner_id=999L, cc_ids_add=[333L, 444L],
+      status='Duplicate', owner_id=999, cc_ids_add=[333, 444],
       comp_ids_add=[2], labels_add=['c', 'd'],
       blocked_on_add=[ref_issue_70.issue_id],
       blocking_add=[ref_issue_71.issue_id],
@@ -1173,8 +1173,8 @@ class BizobjTest(unittest.TestCase):
         self.cnxn, self.services.issue, issue, delta, self.config)
 
     self.assertEqual('Duplicate', issue.status)
-    self.assertEqual(999L, issue.owner_id)
-    self.assertEqual([222L, 333L, 444L], issue.cc_ids)
+    self.assertEqual(999, issue.owner_id)
+    self.assertEqual([222, 333, 444], issue.cc_ids)
     self.assertEqual([1, 2], issue.component_ids)
     self.assertEqual(['a', 'b', 'c', 'd'], issue.labels)
     self.assertEqual([78902, ref_issue_70.issue_id], issue.blocked_on_iids)
@@ -1184,8 +1184,8 @@ class BizobjTest(unittest.TestCase):
 
     self.assertEqual(
       [tracker_bizobj.MakeStatusAmendment('Duplicate', 'New'),
-       tracker_bizobj.MakeOwnerAmendment(999L, 111L),
-       tracker_bizobj.MakeCcAmendment([333L, 444L], []),
+       tracker_bizobj.MakeOwnerAmendment(999, 111),
+       tracker_bizobj.MakeCcAmendment([333, 444], []),
        tracker_bizobj.MakeComponentsAmendment([2], [], self.config),
        tracker_bizobj.MakeLabelsAmendment(['c', 'd'], []),
        tracker_bizobj.MakeBlockedOnAmendment([(None, 70)], []),
@@ -1202,7 +1202,7 @@ class BizobjTest(unittest.TestCase):
   def testApplyIssueDelta_ReferrencedIssueNotFound(self):
     """This part of the code copes with missing issues."""
     issue = tracker_pb2.Issue(
-        status='New', owner_id=111L, cc_ids=[222L], labels=['a', 'b'],
+        status='New', owner_id=111, cc_ids=[222], labels=['a', 'b'],
         component_ids=[1], blocked_on_iids=[78902], blocking_iids=[78903],
         merged_into=78904, summary='Sum')
     delta = tracker_pb2.IssueDelta(
@@ -1260,7 +1260,7 @@ class BizobjTest(unittest.TestCase):
         field_id=3, int_value=1, phase_id=2)  # clear
 
     issue = tracker_pb2.Issue(
-        status='New', owner_id=111L, summary='Sum',
+        status='New', owner_id=111, summary='Sum',
         field_values=[fv_a1_p1, fv_c2_p1, fv_b1_p2, fv_c1_p2])
     issue.phases = [
         tracker_pb2.Phase(phase_id=1, name='Phase-1'),
@@ -1306,7 +1306,7 @@ class BizobjTest(unittest.TestCase):
     fv_b1 = tracker_pb2.FieldValue(field_id=2, int_value=1)
     fv_c1 = tracker_pb2.FieldValue(field_id=3, int_value=1)
     issue = tracker_pb2.Issue(
-        status='New', owner_id=111L, labels=['d-val', 'Hot'], summary='Sum',
+        status='New', owner_id=111, labels=['d-val', 'Hot'], summary='Sum',
         field_values=[fv_a1, fv_b1, fv_c1])
     delta = tracker_pb2.IssueDelta(
       field_vals_add=[fv_a2], field_vals_remove=[fv_b1], fields_clear=[3, 4])
@@ -1328,11 +1328,11 @@ class BizobjTest(unittest.TestCase):
 
   def testMakeAmendment(self):
     amendment = tracker_bizobj.MakeAmendment(
-        tracker_pb2.FieldID.STATUS, 'new', [111L], [222L])
+        tracker_pb2.FieldID.STATUS, 'new', [111], [222])
     self.assertEqual(tracker_pb2.FieldID.STATUS, amendment.field)
     self.assertEqual('new', amendment.newvalue)
-    self.assertEqual([111L], amendment.added_user_ids)
-    self.assertEqual([222L], amendment.removed_user_ids)
+    self.assertEqual([111], amendment.added_user_ids)
+    self.assertEqual([222], amendment.removed_user_ids)
 
   def testPlusMinusString(self):
     self.assertEqual('', tracker_bizobj._PlusMinusString([], []))
@@ -1376,18 +1376,18 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual('', amendment.oldvalue)
 
   def testMakeOwnerAmendment(self):
-    amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
+    amendment = tracker_bizobj.MakeOwnerAmendment(111, 0)
     self.assertEqual(tracker_pb2.FieldID.OWNER, amendment.field)
     self.assertEqual('', amendment.newvalue)
-    self.assertEqual([111L], amendment.added_user_ids)
+    self.assertEqual([111], amendment.added_user_ids)
     self.assertEqual([0], amendment.removed_user_ids)
 
   def testMakeCcAmendment(self):
-    amendment = tracker_bizobj.MakeCcAmendment([111L], [222L])
+    amendment = tracker_bizobj.MakeCcAmendment([111], [222])
     self.assertEqual(tracker_pb2.FieldID.CC, amendment.field)
     self.assertEqual('', amendment.newvalue)
-    self.assertEqual([111L], amendment.added_user_ids)
-    self.assertEqual([222L], amendment.removed_user_ids)
+    self.assertEqual([111], amendment.added_user_ids)
+    self.assertEqual([222], amendment.removed_user_ids)
 
   def testMakeLabelsAmendment(self):
     amendment = tracker_bizobj.MakeLabelsAmendment(['added1'], ['removed1'])
@@ -1464,12 +1464,12 @@ class BizobjTest(unittest.TestCase):
     config.field_defs.append(fd)
     self.assertEqual(
         tracker_bizobj.MakeAmendment(
-            tracker_pb2.FieldID.CUSTOM, '', [111L], [222L], 'Friends'),
-        tracker_bizobj.MakeFieldAmendment(1, config, [111L], [222L]))
+            tracker_pb2.FieldID.CUSTOM, '', [111], [222], 'Friends'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [111], [222]))
     self.assertEqual(
         tracker_bizobj.MakeAmendment(
-            tracker_pb2.FieldID.CUSTOM, '', [], [222L], 'Friends'),
-        tracker_bizobj.MakeFieldAmendment(1, config, [], [222L]))
+            tracker_pb2.FieldID.CUSTOM, '', [], [222], 'Friends'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [], [222]))
 
   def testMakeFieldAmendment_SingleValued(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
@@ -1492,12 +1492,12 @@ class BizobjTest(unittest.TestCase):
     config.field_defs.append(fd)
     self.assertEqual(
         tracker_bizobj.MakeAmendment(
-            tracker_pb2.FieldID.CUSTOM, '', [111L], [], 'Friend'),
-        tracker_bizobj.MakeFieldAmendment(1, config, [111L], [222L]))
+            tracker_pb2.FieldID.CUSTOM, '', [111], [], 'Friend'),
+        tracker_bizobj.MakeFieldAmendment(1, config, [111], [222]))
     self.assertEqual(
         tracker_bizobj.MakeAmendment(
             tracker_pb2.FieldID.CUSTOM, '', [], [], 'Friend'),
-        tracker_bizobj.MakeFieldAmendment(1, config, [], [222L]))
+        tracker_bizobj.MakeFieldAmendment(1, config, [], [222]))
 
   def testMakeFieldAmendment_PhaseField(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
@@ -1507,14 +1507,14 @@ class BizobjTest(unittest.TestCase):
     config.field_defs.append(fd)
     self.assertEqual(
         tracker_bizobj.MakeAmendment(
-            tracker_pb2.FieldID.CUSTOM, '', [111L], [], 'PhaseName-Friend'),
+            tracker_pb2.FieldID.CUSTOM, '', [111], [], 'PhaseName-Friend'),
         tracker_bizobj.MakeFieldAmendment(
-            1, config, [111L], [222L], phase_name='PhaseName'))
+            1, config, [111], [222], phase_name='PhaseName'))
     self.assertEqual(
         tracker_bizobj.MakeAmendment(
             tracker_pb2.FieldID.CUSTOM, '', [], [], 'PhaseName-3-Friend'),
         tracker_bizobj.MakeFieldAmendment(
-            1, config, [], [222L], phase_name='PhaseName-3'))
+            1, config, [], [222], phase_name='PhaseName-3'))
 
   def testMakeFieldClearedAmendment_FieldNotFound(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
@@ -1548,10 +1548,10 @@ class BizobjTest(unittest.TestCase):
 
   def testMakeApprovalApproversAmendment(self):
     actual_amendment = tracker_bizobj.MakeApprovalApproversAmendment(
-        [222L], [333L])
+        [222], [333])
     amendment = tracker_pb2.Amendment(
-        field=tracker_pb2.FieldID.CUSTOM, newvalue='', added_user_ids=[222L],
-        removed_user_ids=[333L], custom_field_name='Approvers')
+        field=tracker_pb2.FieldID.CUSTOM, newvalue='', added_user_ids=[222],
+        removed_user_ids=[333], custom_field_name='Approvers')
     self.assertEqual(actual_amendment, amendment)
 
   def testMakeComponentsAmendment_NoChange(self):
@@ -1617,7 +1617,7 @@ class BizobjTest(unittest.TestCase):
 
   def testAmendmentString(self):
     users_by_id = {
-        111L: framework_views.StuffUserView(111L, 'username@gmail.com', True)
+        111: framework_views.StuffUserView(111, 'username@gmail.com', True)
         }
     summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
     self.assertEqual(
@@ -1635,16 +1635,16 @@ class BizobjTest(unittest.TestCase):
     owner_amendment = tracker_bizobj.MakeOwnerAmendment(0, 0)
     self.assertEqual(
         '----', tracker_bizobj.AmendmentString(owner_amendment, users_by_id))
-    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
+    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111, 0)
     self.assertEqual(
         'usern...@gmail.com',
         tracker_bizobj.AmendmentString(owner_amendment, users_by_id))
 
   def testAmendmentLinks(self):
     users_by_id = {
-        111L: framework_views.StuffUserView(111L, 'foo@gmail.com', False),
-        222L: framework_views.StuffUserView(222L, 'bar@gmail.com', False),
-        333L: framework_views.StuffUserView(333L, 'baz@gmail.com', False)
+        111: framework_views.StuffUserView(111, 'foo@gmail.com', False),
+        222: framework_views.StuffUserView(222, 'bar@gmail.com', False),
+        333: framework_views.StuffUserView(333, 'baz@gmail.com', False)
         }
     # SUMMARY
     summary_amendment = tracker_bizobj.MakeSummaryAmendment('new summary', None)
@@ -1686,7 +1686,7 @@ class BizobjTest(unittest.TestCase):
     self.assertEqual(
         [{'value': '----', 'url': None}],
         tracker_bizobj.AmendmentLinks(owner_amendment, users_by_id, 'proj'))
-    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111L, 0)
+    owner_amendment = tracker_bizobj.MakeOwnerAmendment(111, 0)
     self.assertEqual(
         [{'value': 'foo@gmail.com', 'url': None}],
         tracker_bizobj.AmendmentLinks(owner_amendment, users_by_id, 'proj'))
@@ -1711,14 +1711,14 @@ class BizobjTest(unittest.TestCase):
         tracker_bizobj.AmendmentLinks(label_amendment, users_by_id, 'proj'))
 
     # CC, or CUSTOM with user type
-    cc_amendment = tracker_bizobj.MakeCcAmendment([222L, 333L], [111L])
+    cc_amendment = tracker_bizobj.MakeCcAmendment([222, 333], [111])
     self.assertEqual([
         {'value': '-foo@gmail.com', 'url': None},
         {'value': 'bar@gmail.com', 'url': None},
         {'value': 'baz@gmail.com', 'url': None}],
         tracker_bizobj.AmendmentLinks(cc_amendment, users_by_id, 'proj'))
     user_amendment = tracker_bizobj.MakeAmendment(
-        tracker_pb2.FieldID.CUSTOM, None, [222L, 333L], [111L], 'ultracc')
+        tracker_pb2.FieldID.CUSTOM, None, [222, 333], [111], 'ultracc')
     self.assertEqual([
         {'value': '-foo@gmail.com', 'url': None},
         {'value': 'bar@gmail.com', 'url': None},
@@ -1727,7 +1727,7 @@ class BizobjTest(unittest.TestCase):
 
   def testGetAmendmentFieldName_Custom(self):
     amendment = tracker_bizobj.MakeAmendment(
-        tracker_pb2.FieldID.CUSTOM, None, [222L, 333L], [111L], 'Rabbit')
+        tracker_pb2.FieldID.CUSTOM, None, [222, 333], [111], 'Rabbit')
     self.assertEqual('Rabbit', tracker_bizobj.GetAmendmentFieldName(amendment))
 
   def testGetAmendmentFieldName_Builtin(self):

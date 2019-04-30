@@ -61,7 +61,7 @@ class IssueDetailTest(unittest.TestCase):
         path='/p/proj/issues/detail_ezt?id=123&q=term')
     mr.col_spec = ''
     config = tracker_pb2.ProjectIssueConfig()
-    issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111)
 
     url = issuedetailezt._ChooseNextPage(
         mr, issue.local_id, config, None, None,
@@ -95,7 +95,7 @@ class IssueDetailTest(unittest.TestCase):
         path='/p/proj/issues/detail_ezt?id=123&q=term')
     mr.col_spec = ''
     config = tracker_pb2.ProjectIssueConfig()
-    issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111)
     moved_to_project_name = 'projB'
     moved_to_project_local_id = 543
     moved_to_project_name_and_local_id = (moved_to_project_name,
@@ -138,7 +138,7 @@ class IssueDetailTest(unittest.TestCase):
         path='/p/proj/issues/detail_ezt?id=123&q=term')
     mr.col_spec = ''
     config = tracker_pb2.ProjectIssueConfig()
-    issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 123, 'summary', 'New', 111)
     copied_to_project_name = 'projB'
     copied_to_project_local_id = 543
     copied_to_project_name_and_local_id = (copied_to_project_name,
@@ -191,7 +191,7 @@ class IssueDetailTest(unittest.TestCase):
     servlet = issuedetailezt.IssueDetailEzt(
         'req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest()
-    mr.auth.user_id = 111L
+    mr.auth.user_id = 111
 
     # User needs to click through the privacy dialog.
     help_data = servlet.GatherHelpData(mr, {})
@@ -223,10 +223,10 @@ class IssueDetailTest(unittest.TestCase):
     mr.query = ''
     issue_view = testing_helpers.Blank(
         is_spam=False,
-        owner=testing_helpers.Blank(user_id=111L, avail_message='On vacation'),
+        owner=testing_helpers.Blank(user_id=111, avail_message='On vacation'),
         derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
-        cc=[testing_helpers.Blank(user_id=222L, avail_message='')],
-        derived_cc=[testing_helpers.Blank(user_id=333L, avail_message='')])
+        cc=[testing_helpers.Blank(user_id=222, avail_message='')],
+        derived_cc=[testing_helpers.Blank(user_id=333, avail_message='')])
     page_data = {'issue': issue_view}
     help_data = servlet.GatherHelpData(mr, page_data)
     self.assertEqual('availibility_msgs', help_data['cue'])
@@ -237,8 +237,8 @@ class IssueDetailTest(unittest.TestCase):
         is_spam=False,
         owner=testing_helpers.Blank(user_id=0L, avail_message='Never visited'),
         derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
-        cc=[testing_helpers.Blank(user_id=222L, avail_message='')],
-        derived_cc=[testing_helpers.Blank(user_id=333L, avail_message='')])
+        cc=[testing_helpers.Blank(user_id=222, avail_message='')],
+        derived_cc=[testing_helpers.Blank(user_id=333, avail_message='')])
     page_data = {'issue': issue_view}
     help_data = servlet.GatherHelpData(mr, page_data)
     self.assertEqual(None, help_data['cue'])
@@ -259,13 +259,13 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         spam=fake.SpamService(),
         user=fake.UserService())
     self.project = self.services.project.TestAddProject(
-      'proj', project_id=987, committer_ids=[111L])
+      'proj', project_id=987, committer_ids=[111])
     self.servlet = issuedetailezt.IssueDetailEzt(
         'req', 'res', services=self.services)
     self.mox = mox.Mox()
-    self.services.user.TestAddUser('owner@example.com', 111L)
+    self.services.user.TestAddUser('owner@example.com', 111)
     self.issue = fake.MakeTestIssue(
-        self.project.project_id, 1, 'sum', 'New', 111L, project_name='proj')
+        self.project.project_id, 1, 'sum', 'New', 111, project_name='proj')
 
     self.original_GetAdjacentIssue = issuedetailezt.GetAdjacentIssue
     issuedetailezt.GetAdjacentIssue = mock.Mock()
@@ -283,7 +283,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project, path='/p/proj/issues/detail?id=%d' %
             self.issue.local_id)
-    mr.auth.user_id = 111L
+    mr.auth.user_id = 111
 
     framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_APPROVAL, id=self.issue.local_id)
@@ -304,7 +304,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         EditIssueSummary=True, EditIssueStatus=True, EditIssueOwner=True,
         EditIssueCc=True)
     self.assertTrue(issuedetailezt._FieldEditPermitted(
-        [], '', '', 'new sum', 'new status', 111L, [222L], page_perms))
+        [], '', '', 'new sum', 'new status', 111, [222], page_perms))
 
   def testFieldEditPermitted_MissingPerms(self):
     page_perms = testing_helpers.Blank(
@@ -315,9 +315,9 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.assertFalse(issuedetailezt._FieldEditPermitted(
         [], '', '', '', 'new status', 0, [], page_perms))
     self.assertFalse(issuedetailezt._FieldEditPermitted(
-        [], '', '', '', '', 111L, [], page_perms))
+        [], '', '', '', '', 111, [], page_perms))
     self.assertFalse(issuedetailezt._FieldEditPermitted(
-        [], '', '', '', '', 0, [222L], page_perms))
+        [], '', '', '', '', 0, [222], page_perms))
 
   def testFieldEditPermitted_NeededPermsNotOffered(self):
     """Even if user has all the field-level perms, they still can't do this."""
@@ -400,7 +400,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     """Anonymous users and users without ADD_ISSUE_COMMENT cannot comment."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
-        'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
+        'summary_1', 'status', 111, [], [], [], [], 111, 'description_1')
     _, mr = testing_helpers.GetRequestObjects(
         project=self.project,
         perms=permissions.CONTRIBUTOR_INACTIVE_PERMISSIONSET)
@@ -408,7 +408,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr.local_id = local_id_1
     self.assertRaises(permissions.PermissionException,
                       self.servlet.ProcessFormData, mr, {})
-    mr.auth.user_id = 111L
+    mr.auth.user_id = 111
     self.assertRaises(permissions.PermissionException,
                       self.servlet.ProcessFormData, mr, {})
 
@@ -418,18 +418,18 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     """Non-members can comment, but never affect issue fields."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
-        'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
+        'summary_1', 'status', 111, [], [], [], [], 111, 'description_1')
     local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
-        'summary_2', 'status', 111L, [], [], [], [], 111L, 'description_2')
+        'summary_2', 'status', 111, [], [], [], [], 111, 'description_2')
 
     _amendments, _cmnt_pb = self.services.issue.ApplyIssueComment(
-        self.cnxn, self.services, 111L,
-        self.project.project_id, local_id_2, 'summary', 'Duplicate', 111L,
+        self.cnxn, self.services, 111,
+        self.project.project_id, local_id_2, 'summary', 'Duplicate', 111,
         [], [], [], [], [], [], [], [], local_id_1,
         comment='closing as a dup of 1')
 
-    non_member_user_id = 999L
+    non_member_user_id = 999
     post_data = fake.PostData({
         'merge_into': [''],  # non-member tries to remove merged_into
         'comment': ['thanks!'],
@@ -450,7 +450,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         perms=permissions.USER_PERMISSIONSET)
     mr.project_name = self.project.project_name
     mr.project = self.project
-    mr.me_user_id = 111L
+    mr.me_user_id = 111
 
     self.mox.ReplayAll()
 
@@ -474,12 +474,12 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     """Non-member had a form open, then become a member, then submitted."""
     self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
-        'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
+        'summary_1', 'status', 111, [], [], [], [], 111, 'description_1')
     local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
-        'summary_2', 'status', 111L, [], [], [], [], 111L, 'description_2')
+        'summary_2', 'status', 111, [], [], [], [], 111, 'description_2')
 
-    non_member_user_id = 999L
+    non_member_user_id = 999
     post_data = fake.PostData({
         # non-member form has no summary field, so it defaults to ''.
         'fields_not_offered': 'True',
@@ -502,7 +502,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
     mr.project_name = self.project.project_name
     mr.project = self.project
-    mr.me_user_id = 111L
+    mr.me_user_id = 111
 
     self.mox.ReplayAll()
 
@@ -530,13 +530,13 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     """Marking issue 2 as dup of 1 adds a comment to 1."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
-        'summary_1', 'New', 111L, [], [], [], [], 111L, 'description_1')
+        'summary_1', 'New', 111, [], [], [], [], 111, 'description_1')
     issue_1 = self.services.issue.GetIssueByLocalID(
         self.cnxn, self.project.project_id, local_id_1)
     issue_1.project_name = 'proj'
     local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
-        'summary_2', 'New', 111L, [], [], [], [], 111L, 'description_2')
+        'summary_2', 'New', 111, [], [], [], [], 111, 'description_2')
     issue_2 = self.services.issue.GetIssueByLocalID(
         self.cnxn, self.project.project_id, local_id_2)
     issue_2.project_name = 'proj'
@@ -555,7 +555,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         'pagegen': [str(int(time.time()) + 1)],
         })
 
-    member_user_id = 111L
+    member_user_id = 111
     _, mr = testing_helpers.GetRequestObjects(
         user_info={'user_id': member_user_id},
         path='/p/proj/issues/detail_ezt.do?id=%d' % local_id_2,
@@ -563,7 +563,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
     mr.project_name = self.project.project_name
     mr.project = self.project
-    mr.me_user_id = 111L
+    mr.me_user_id = 111
 
     # The form should be processed and redirect back to viewing the issue.
     self.servlet.ProcessFormData(mr, post_data)
@@ -590,7 +590,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
   @mock.patch('services.tracker_fulltext.IndexIssues')
   def testHandleCopyOrMove_Copy_SameProject(self, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
-        user_info={'user_id': 222L},
+        user_info={'user_id': 222},
         path='/p/proj/issues/detail_ezt.do?id=1',
         project=self.project, method='POST',
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
@@ -605,12 +605,12 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         'cnxn', self.project.project_id, 2)
     self.assertEqual(self.issue.project_id, copied_issue.project_id)
     self.assertEqual(self.issue.summary, copied_issue.summary)
-    self.assertEqual(copied_issue.reporter_id, 222L)
+    self.assertEqual(copied_issue.reporter_id, 222)
 
   @mock.patch('services.tracker_fulltext.IndexIssues')
   def testHandleCopyOrMove_Copy_DifferentProject(self, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
-        user_info={'user_id': 222L},
+        user_info={'user_id': 222},
         path='/p/proj/issues/detail_ezt.do?id=1',
         project=self.project, method='POST',
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
@@ -618,7 +618,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr.project = self.project
     self.services.issue.TestAddIssue(self.issue)
     dest_project = self.services.project.TestAddProject(
-      'dest', project_id=988, committer_ids=[111L])
+      'dest', project_id=988, committer_ids=[111])
 
     self.servlet.HandleCopyOrMove(
         'cnxn', mr, dest_project, self.issue, False, False)
@@ -628,14 +628,14 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.assertEqual(self.project.project_id, self.issue.project_id)
     self.assertEqual(dest_project.project_id, copied_issue.project_id)
     self.assertEqual(self.issue.summary, copied_issue.summary)
-    self.assertEqual(copied_issue.reporter_id, 222L)
+    self.assertEqual(copied_issue.reporter_id, 222)
 
   @mock.patch('services.tracker_fulltext.IndexIssues')
   @mock.patch('services.tracker_fulltext.UnindexIssues')
   def testHandleCopyOrMove_Move_DifferentProject(
       self, _mock_unindexissues, _mock_indexissues):
     _, mr = testing_helpers.GetRequestObjects(
-        user_info={'user_id': 222L},
+        user_info={'user_id': 222},
         path='/p/proj/issues/detail_ezt.do?id=1',
         project=self.project, method='POST',
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
@@ -643,7 +643,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr.project = self.project
     self.services.issue.TestAddIssue(self.issue)
     dest_project = self.services.project.TestAddProject(
-      'dest', project_id=988, committer_ids=[111L])
+      'dest', project_id=988, committer_ids=[111])
 
     self.servlet.HandleCopyOrMove(
         'cnxn', mr, dest_project, self.issue, False, True)
@@ -652,7 +652,7 @@ class IssueDetailFunctionsTest(unittest.TestCase):
         'cnxn', dest_project.project_id, 1)
     self.assertEqual(dest_project.project_id, moved_issue.project_id)
     self.assertEqual(self.issue.summary, moved_issue.summary)
-    self.assertEqual(moved_issue.reporter_id, 111L)
+    self.assertEqual(moved_issue.reporter_id, 111)
 
 
 class ModuleFunctionsTest(unittest.TestCase):
@@ -668,22 +668,22 @@ class ModuleFunctionsTest(unittest.TestCase):
 
     # Set up for testing getBinnedHotlistViews.
     # Project p1; issue i1 in p1; user u1 owns i1; ui1 is an *involved* user.
-    self.services.user.TestAddUser('u1', 111L)
+    self.services.user.TestAddUser('u1', 111)
     project = self.services.project.TestAddProject('p1')
     issue_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, project_id=project.project_id,
-        summary='summary', status='Open', owner_id=111L, cc_ids=[], labels=[],
-        field_values=[], component_ids=[], reporter_id=111L,
+        summary='summary', status='Open', owner_id=111, cc_ids=[], labels=[],
+        field_values=[], component_ids=[], reporter_id=111,
         marked_description='marked description')
     self.issue_id = self.services.issue.LookupIssueID(
         self.cnxn, project_id=project.project_id, local_id=issue_local_id)
     # ul1 is a *logged in* user.
-    self.services.user.TestAddUser('ul1', 222L)
+    self.services.user.TestAddUser('ul1', 222)
     # uo1 is an *other* user.
-    self.services.user.TestAddUser('uo1', 333L)
+    self.services.user.TestAddUser('uo1', 333)
 
     users_by_id = self.services.user.GetUsersByIDs(self.cnxn,
-                                                  [111L, 222L, 333L])
+                                                  [111, 222, 333])
     self.userviews_by_id = {k: framework_views.UserView(v)
         for k, v in users_by_id.items()}
 
@@ -696,66 +696,66 @@ class ModuleFunctionsTest(unittest.TestCase):
     """user u1 owns h1 and the issue; h1 should go into the "involved" bin."""
     # Hotlist h1; user u1 owns h1; u1 is the issue reporter and owner, and so
     # is an *involved* user.
-    hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111L],
+    hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111],
         hotlist_item_fields=self.hotlist_item_fields)
     h1_view = hotlist_views.HotlistView(
-        hotlist_h1, viewed_user_id=222L, user_auth=self.user_auth,
+        hotlist_h1, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([], [h1_view], []),
-        issuedetailezt._GetBinnedHotlistViews([h1_view], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([h1_view], involved_users=[111]))
 
   def test_GetBinnedHotlistViews_SignedInUserHasAHotlist(self):
     """user ul1 owns h2 and is logged in; h2 should go into the "user" bin"""
     # Hotlist h2; user ul1 owns h2; ul1 is a *logged in* user.
-    hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222L],
+    hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222],
         hotlist_item_fields=self.hotlist_item_fields)
     h2_view = hotlist_views.HotlistView(
-        hotlist_h2, viewed_user_id=222L, user_auth=self.user_auth,
+        hotlist_h2, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([h2_view], [], []),
-        issuedetailezt._GetBinnedHotlistViews([h2_view], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([h2_view], involved_users=[111]))
 
   def test_GetBinnedHotlistViews_OtherUserHasAHotlist(self):
     """user uo1 owns h3; uo1 is an "other"; h3 should go into the "user" bin"""
     # Hotlist h3; user uo1 owns h3; uo3 is an *other* user.
-    hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333L],
+    hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333],
         hotlist_item_fields=self.hotlist_item_fields)
     h3_view = hotlist_views.HotlistView(
-        hotlist_h3, viewed_user_id=222L, user_auth=self.user_auth,
+        hotlist_h3, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([], [], [h3_view]),
-        issuedetailezt._GetBinnedHotlistViews([h3_view], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([h3_view], involved_users=[111]))
 
   def test_GetBinnedHotlistViews_Empty(self):
     """When no hotlist views are passed in, all bins should be empty"""
     self.assertEqual(
         ([], [], []),
-        issuedetailezt._GetBinnedHotlistViews([], involved_users=[111L]))
+        issuedetailezt._GetBinnedHotlistViews([], involved_users=[111]))
 
   def test_GetBinnedHotlistViews_Multiple(self):
     """Should correctly bin each hotlist view when passed in multiple views"""
-    hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111L],
+    hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111],
         hotlist_item_fields=self.hotlist_item_fields)
     h1_view = hotlist_views.HotlistView(
-        hotlist_h1, viewed_user_id=222L, user_auth=self.user_auth,
+        hotlist_h1, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
-    hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222L],
+    hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222],
         hotlist_item_fields=self.hotlist_item_fields)
     h2_view = hotlist_views.HotlistView(
-        hotlist_h2, viewed_user_id=222L, user_auth=self.user_auth,
+        hotlist_h2, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
-    hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333L],
+    hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333],
         hotlist_item_fields=self.hotlist_item_fields)
     h3_view = hotlist_views.HotlistView(
-        hotlist_h3, viewed_user_id=222L, user_auth=self.user_auth,
+        hotlist_h3, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([h2_view], [h1_view], [h3_view]),
         issuedetailezt._GetBinnedHotlistViews([h1_view, h2_view, h3_view],
-                                           involved_users=[111L]))
+                                           involved_users=[111]))
 
 
 class GetAdjacentIssueTest(unittest.TestCase):
@@ -771,16 +771,16 @@ class GetAdjacentIssueTest(unittest.TestCase):
         spam=fake.SpamService())
     self.services.project.TestAddProject('proj', project_id=789)
     self.mr = testing_helpers.MakeMonorailRequest()
-    self.mr.auth.user_id = 111L
-    self.mr.auth.effective_ids = {111L}
-    self.mr.me_user_id = 111L
+    self.mr.auth.user_id = 111
+    self.mr.auth.effective_ids = {111}
+    self.mr.me_user_id = 111
     self.work_env = work_env.WorkEnv(
       self.mr, self.services, 'Testing phase')
 
   def testGetAdjacentIssue_PrevIssue(self):
-    cur_issue = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, issue_id=78902)
-    next_issue = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, issue_id=78903)
-    prev_issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    cur_issue = fake.MakeTestIssue(789, 2, 'sum', 'New', 111, issue_id=78902)
+    next_issue = fake.MakeTestIssue(789, 3, 'sum', 'New', 111, issue_id=78903)
+    prev_issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(cur_issue)
     self.services.issue.TestAddIssue(next_issue)
     self.services.issue.TestAddIssue(prev_issue)
@@ -794,9 +794,9 @@ class GetAdjacentIssueTest(unittest.TestCase):
       we.FindIssuePositionInSearch.assert_called_once_with(cur_issue)
 
   def testGetAdjacentIssue_NextIssue(self):
-    cur_issue = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, issue_id=78902)
-    next_issue = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, issue_id=78903)
-    prev_issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    cur_issue = fake.MakeTestIssue(789, 2, 'sum', 'New', 111, issue_id=78902)
+    next_issue = fake.MakeTestIssue(789, 3, 'sum', 'New', 111, issue_id=78903)
+    prev_issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(cur_issue)
     self.services.issue.TestAddIssue(next_issue)
     self.services.issue.TestAddIssue(prev_issue)
@@ -811,8 +811,8 @@ class GetAdjacentIssueTest(unittest.TestCase):
       we.FindIssuePositionInSearch.assert_called_once_with(cur_issue)
 
   def testGetAdjacentIssue_NotFound(self):
-    cur_issue = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, issue_id=78902)
-    prev_issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    cur_issue = fake.MakeTestIssue(789, 2, 'sum', 'New', 111, issue_id=78902)
+    prev_issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(cur_issue)
     self.services.issue.TestAddIssue(prev_issue)
 
@@ -835,7 +835,7 @@ class FlipperRedirectTest(unittest.TestCase):
         user=fake.UserService(),
         project=fake.ProjectService())
     self.project = self.services.project.TestAddProject(
-      'proj', project_id=987, committer_ids=[111L])
+      'proj', project_id=987, committer_ids=[111])
     self.next_servlet = issuedetailezt.FlipperNext(
         'req', 'res', services=self.services)
     self.prev_servlet = issuedetailezt.FlipperPrev(
@@ -844,19 +844,19 @@ class FlipperRedirectTest(unittest.TestCase):
         'req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest(project=self.project)
     mr.local_id = 123
-    mr.me_user_id = 111L
+    mr.me_user_id = 111
 
     self.next_servlet.mr = mr
     self.prev_servlet.mr = mr
     self.list_servlet.mr = mr
 
-    self.fake_issue_1 = fake.MakeTestIssue(987, 123, 'summary', 'New', 111L,
+    self.fake_issue_1 = fake.MakeTestIssue(987, 123, 'summary', 'New', 111,
         project_name='rutabaga')
     self.services.issue.TestAddIssue(self.fake_issue_1)
-    self.fake_issue_2 = fake.MakeTestIssue(987, 456, 'summary', 'New', 111L,
+    self.fake_issue_2 = fake.MakeTestIssue(987, 456, 'summary', 'New', 111,
         project_name='rutabaga')
     self.services.issue.TestAddIssue(self.fake_issue_2)
-    self.fake_issue_3 = fake.MakeTestIssue(987, 789, 'summary', 'New', 111L,
+    self.fake_issue_3 = fake.MakeTestIssue(987, 789, 'summary', 'New', 111,
         project_name='potato')
     self.services.issue.TestAddIssue(self.fake_issue_3)
 
@@ -943,7 +943,7 @@ class ShouldShowFlipperTest(unittest.TestCase):
         project=fake.ProjectService(),
         user=fake.UserService())
     self.project = self.services.project.TestAddProject(
-      'proj', project_id=987, committer_ids=[111L])
+      'proj', project_id=987, committer_ids=[111])
 
   def VerifyShouldShowFlipper(
       self, expected, query, sort_spec, can, create_issues=0):
@@ -963,7 +963,7 @@ class ShouldShowFlipperTest(unittest.TestCase):
     for idx in range(create_issues):
       _local_id, _ = services.issue.CreateIssue(
           self.cnxn, services, self.project.project_id,
-          'summary_%d' % idx, 'status', 111L, [], [], [], [], 111L,
+          'summary_%d' % idx, 'status', 111, [], [], [], [], 111,
           'description_%d' % idx)
 
     self.assertEqual(expected, issuedetailezt._ShouldShowFlipper(mr, services))

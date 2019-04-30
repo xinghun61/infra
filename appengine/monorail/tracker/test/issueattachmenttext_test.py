@@ -41,7 +41,7 @@ class IssueAttachmentTextTest(unittest.TestCase):
     self.servlet = issueattachmenttext.AttachmentText(
         'req', 'res', services=services)
 
-    services.user.TestAddUser('commenter@example.com', 111L)
+    services.user.TestAddUser('commenter@example.com', 111)
 
     self.issue = tracker_pb2.Issue()
     self.issue.local_id = 1
@@ -53,10 +53,10 @@ class IssueAttachmentTextTest(unittest.TestCase):
 
     self.comment0 = tracker_pb2.IssueComment()
     self.comment0.content = 'this is the description'
-    self.comment0.user_id = 111L
+    self.comment0.user_id = 111
     self.comment1 = tracker_pb2.IssueComment()
     self.comment1.content = 'this is a comment'
-    self.comment1.user_id = 111L
+    self.comment1.user_id = 111
 
     self.attach0 = tracker_pb2.Attachment(
         attachment_id=4567, filename='b.txt', mimetype='text/plain',
@@ -96,7 +96,7 @@ class IssueAttachmentTextTest(unittest.TestCase):
         path='/a/d.com/p/proj/issues/attachmentText?aid=1234',
         perms=permissions.READ_ONLY_PERMISSIONSET)
     self.servlet.GatherPageData(mr)  # OK
-    self.comment1.deleted_by = 111L
+    self.comment1.deleted_by = 111
     self.assertRaises(  # 403
         permissions.PermissionException,
         self.servlet.GatherPageData, mr)

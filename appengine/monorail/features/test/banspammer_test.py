@@ -44,14 +44,14 @@ class BanSpammerTest(unittest.TestCase):
     self.testbed.deactivate()
 
   def testProcessFormData_noPermission(self):
-    self.servlet.services.user.TestAddUser('member', 222L)
-    self.servlet.services.user.TestAddUser('spammer@domain.com', 111L)
+    self.servlet.services.user.TestAddUser('member', 222)
+    self.servlet.services.user.TestAddUser('spammer@domain.com', 111)
     mr = testing_helpers.MakeMonorailRequest(
         path='/u/spammer@domain.com/banSpammer.do',
         perms=permissions.GetPermissions(None, {}, None))
     mr.viewed_user_auth.user_view = framework_views.MakeUserView(mr.cnxn,
-        self.servlet.services.user, 111L)
-    mr.auth.user_id = 222L
+        self.servlet.services.user, 111)
+    mr.auth.user_id = 222
     self.assertRaises(permissions.PermissionException,
         self.servlet.AssertBasePermission, mr)
     try:
@@ -63,13 +63,13 @@ class BanSpammerTest(unittest.TestCase):
     self.assertEqual(0, len(tasks))
 
   def testProcessFormData_ok(self):
-    self.servlet.services.user.TestAddUser('owner', 222L)
-    self.servlet.services.user.TestAddUser('spammer@domain.com', 111L)
+    self.servlet.services.user.TestAddUser('owner', 222)
+    self.servlet.services.user.TestAddUser('spammer@domain.com', 111)
     mr = testing_helpers.MakeMonorailRequest(
         path='/u/spammer@domain.com/banSpammer.do',
         perms=permissions.ADMIN_PERMISSIONSET)
     mr.viewed_user_auth.user_view = framework_views.MakeUserView(mr.cnxn,
-        self.servlet.services.user, 111L)
+        self.servlet.services.user, 111)
     self.servlet.ProcessFormData(mr, {})
     tasks = self.taskqueue_stub.get_filtered_tasks(
         url=urls.BAN_SPAMMER_TASK + '.do')
@@ -88,7 +88,7 @@ class BanSpammerTaskTest(unittest.TestCase):
   def testProcessFormData_okNoIssues(self):
     mr = testing_helpers.MakeMonorailRequest(
         path=urls.BAN_SPAMMER_TASK + '.do', method='POST',
-        params={'spammer_id': 111L, 'reporter_id': 222L})
+        params={'spammer_id': 111, 'reporter_id': 222})
 
     self.servlet.HandleRequest(mr)
     self.assertEqual(self.res.body, json.dumps({'comments': 0, 'issues': 0}))
@@ -96,11 +96,11 @@ class BanSpammerTaskTest(unittest.TestCase):
   def testProcessFormData_okSomeIssues(self):
     mr = testing_helpers.MakeMonorailRequest(
         path=urls.BAN_SPAMMER_TASK + '.do', method='POST',
-        params={'spammer_id': 111L, 'reporter_id': 222L})
+        params={'spammer_id': 111, 'reporter_id': 222})
 
     for i in range(0, 10):
       issue = fake.MakeTestIssue(
-          001, i, 'issue_summary', 'New', 111L, project_name='project-name')
+          001, i, 'issue_summary', 'New', 111, project_name='project-name')
       self.servlet.services.issue.TestAddIssue(issue)
 
     self.servlet.HandleRequest(mr)
@@ -109,21 +109,21 @@ class BanSpammerTaskTest(unittest.TestCase):
   def testProcessFormData_okSomeCommentsAndIssues(self):
     mr = testing_helpers.MakeMonorailRequest(
         path=urls.BAN_SPAMMER_TASK + '.do', method='POST',
-        params={'spammer_id': 111L, 'reporter_id': 222L})
+        params={'spammer_id': 111, 'reporter_id': 222})
 
     for i in range(0, 12):
       issue = fake.MakeTestIssue(
-          001, i, 'issue_summary', 'New', 111L, project_name='project-name')
+          001, i, 'issue_summary', 'New', 111, project_name='project-name')
       self.servlet.services.issue.TestAddIssue(issue)
 
     for i in range(10, 20):
       issue = fake.MakeTestIssue(
-          001, i, 'issue_summary', 'New', 222L, project_name='project-name')
+          001, i, 'issue_summary', 'New', 222, project_name='project-name')
       self.servlet.services.issue.TestAddIssue(issue)
       for _ in range(0, 5):
         comment = tracker_pb2.IssueComment()
         comment.project_id = 001
-        comment.user_id = 111L
+        comment.user_id = 111
         comment.issue_id = issue.issue_id
         self.servlet.services.issue.TestAddComment(comment, issue.local_id)
     self.servlet.HandleRequest(mr)

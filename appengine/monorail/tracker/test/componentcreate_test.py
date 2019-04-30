@@ -34,11 +34,11 @@ class ComponentCreateTest(unittest.TestCase):
         'fake cnxn', self.project.project_id)
     self.services.config.StoreConfig('fake cnxn', self.config)
     self.cd = tracker_bizobj.MakeComponentDef(
-        1, self.project.project_id, 'BackEnd', 'doc', False, [], [111L], 0,
-        122L)
+        1, self.project.project_id, 'BackEnd', 'doc', False, [], [111], 0,
+        122)
     self.config.component_defs = [self.cd]
-    self.services.user.TestAddUser('a@example.com', 111L)
-    self.services.user.TestAddUser('b@example.com', 122L)
+    self.services.user.TestAddUser('a@example.com', 111)
+    self.services.user.TestAddUser('b@example.com', 122)
 
   def testAssertBasePermission(self):
     # Anon users can never do it
@@ -107,7 +107,7 @@ class ComponentCreateTest(unittest.TestCase):
     self.assertEqual([], cd.admin_ids)
     self.assertEqual([], cd.cc_ids)
     self.assertTrue(cd.created > 0)
-    self.assertEqual(122L, cd.creator_id)
+    self.assertEqual(122, cd.creator_id)
 
 
 class ComponentCreateMethodsTest(unittest.TestCase):
@@ -115,9 +115,9 @@ class ComponentCreateMethodsTest(unittest.TestCase):
   def setUp(self):
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     cd1 = tracker_bizobj.MakeComponentDef(
-        1, 789, 'BackEnd', 'doc', False, [], [111L], 0, 122L)
+        1, 789, 'BackEnd', 'doc', False, [], [111], 0, 122)
     cd2 = tracker_bizobj.MakeComponentDef(
-        2, 789, 'BackEnd>DB', 'doc', True, [], [111L], 0, 122L)
+        2, 789, 'BackEnd>DB', 'doc', True, [], [111], 0, 122)
     self.config.component_defs = [cd1, cd2]
 
   def testLeafNameErrorMessage_Invalid(self):

@@ -37,13 +37,13 @@ class TemplateSetTwoLevelCacheTest(unittest.TestCase):
       assert project_id in (1, 2)
       if project_id == 1:
         return [
-          (8, 1, 'template-8', 'content', 'summary', False, 111L, 'status',
+          (8, 1, 'template-8', 'content', 'summary', False, 111, 'status',
               False, False, False),
-          (9, 1, 'template-9', 'content', 'summary', False, 111L, 'status',
+          (9, 1, 'template-9', 'content', 'summary', False, 111, 'status',
               True, False, False)]
       else:
         return [
-          (7, 2, 'template-7', 'content', 'summary', False, 111L, 'status',
+          (7, 2, 'template-7', 'content', 'summary', False, 111, 'status',
               False, False, False)]
 
     self.ts2lc.template_service.template_tbl.Select.side_effect = mockSelect
@@ -90,13 +90,13 @@ class TemplateDefTwoLevelCacheTest(unittest.TestCase):
 
   def testFetchItems_Normal(self):
     template_9_row = (9, 1, 'template-9', 'content', 'summary',
-        False, 111L, 'status',
+        False, 111, 'status',
         False, False, False)
     template_8_row = (8, 1, 'template-8', 'content', 'summary',
-        False, 111L, 'status',
+        False, 111, 'status',
         False, False, False)
     template_7_row = (7, 2, 'template-7', 'content', 'summary',
-        False, 111L, 'status',
+        False, 111, 'status',
         False, False, False)
 
     self.template_def_2lc.template_service.template_tbl.Select\
@@ -107,7 +107,7 @@ class TemplateDefTwoLevelCacheTest(unittest.TestCase):
     self.template_def_2lc.template_service.template2component_tbl.Select\
         .return_value = [(9, 13), (7, 14)]
     self.template_def_2lc.template_service.template2admin_tbl.Select\
-        .return_value = [(9, 111L), (7, 222L)]
+        .return_value = [(9, 111), (7, 222)]
 
     fv1_row = (15, None, 'fv-1', None, None, None, False)
     fv2_row = (16, None, 'fv-2', None, None, None, False)
@@ -151,9 +151,9 @@ class TemplateDefTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual([], actual[8].component_ids)
     self.assertEqual([13], actual[9].component_ids)
 
-    self.assertEqual([222L], actual[7].admin_ids)
+    self.assertEqual([222], actual[7].admin_ids)
     self.assertEqual([], actual[8].admin_ids)
-    self.assertEqual([111L], actual[9].admin_ids)
+    self.assertEqual([111], actual[9].admin_ids)
 
     self.assertEqual([fv2], actual[7].field_values)
     self.assertEqual([], actual[8].field_values)
@@ -304,8 +304,8 @@ class CreateIssueTemplateDefTest(TemplateServiceTest):
 
     actual_template_id = self.template_service.CreateIssueTemplateDef(
         self.cnxn, 789, 'template', 'content', 'summary', True, 'Available',
-        True, True, True, owner_id=111L, labels=['label'], component_ids=[3],
-        admin_ids=[222L], field_values=[fv], phases=phases,
+        True, True, True, owner_id=111, labels=['label'], component_ids=[3],
+        admin_ids=[222], field_values=[fv], phases=phases,
         approval_values=approval_values)
 
     self.assertEqual(1, actual_template_id)
@@ -313,7 +313,7 @@ class CreateIssueTemplateDefTest(TemplateServiceTest):
     self.template_service.template_tbl.InsertRow\
         .assert_called_once_with(self.cnxn, project_id=789, name='template',
             content='content', summary='summary', summary_must_be_edited=True,
-            owner_id=111L, status='Available', members_only=True,
+            owner_id=111, status='Available', members_only=True,
             owner_defaults_to_member=True, component_required=True,
             commit=False)
     self.template_service.template2label_tbl.InsertRows\
@@ -325,7 +325,7 @@ class CreateIssueTemplateDefTest(TemplateServiceTest):
             [(1, 3)], commit=False)
     self.template_service.template2admin_tbl.InsertRows\
         .assert_called_once_with(self.cnxn, template_svc.TEMPLATE2ADMIN_COLS,
-            [(1, 222L)], commit=False)
+            [(1, 222)], commit=False)
     self.template_service.template2fieldvalue_tbl.InsertRows\
         .assert_called_once_with(self.cnxn,
             template_svc.TEMPLATE2FIELDVALUE_COLS,
@@ -365,7 +365,7 @@ class UpdateIssueTemplateDefTest(TemplateServiceTest):
         name='Canary', phase_id=11, rank=11)]
     self.template_service.UpdateIssueTemplateDef(
         self.cnxn, 789, 1, content='content', summary='summary',
-        component_required=True, labels=[], admin_ids=[111L],
+        component_required=True, labels=[], admin_ids=[111],
         phases=phases, approval_values=approval_values)
 
     new_values = dict(
@@ -381,7 +381,7 @@ class UpdateIssueTemplateDefTest(TemplateServiceTest):
         .assert_called_once_with(self.cnxn, template_id=1, commit=False)
     self.template_service.template2admin_tbl.InsertRows\
         .assert_called_once_with(self.cnxn, template_svc.TEMPLATE2ADMIN_COLS,
-            [(1, 111L)], commit=False)
+            [(1, 111)], commit=False)
     self.template_service.template2approvalvalue_tbl.Delete\
         .assert_called_once_with(self.cnxn, template_id=1, commit=False)
     self.template_service.issuephasedef_tbl.InsertRow\

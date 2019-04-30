@@ -34,20 +34,20 @@ class HotlistTableDataTest(unittest.TestCase):
         cache_manager=fake.CacheManager())
     self.services.project.TestAddProject('ProjectName', project_id = 001)
 
-    self.services.user.TestAddUser('annajowang@email.com', 111L)
-    self.services.user.TestAddUser('claremont@email.com', 222L)
+    self.services.user.TestAddUser('annajowang@email.com', 111)
+    self.services.user.TestAddUser('claremont@email.com', 222)
     issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111L, project_name='ProjectName')
+        001, 1, 'issue_summary', 'New', 111, project_name='ProjectName')
     self.services.issue.TestAddIssue(issue1)
     issue2 = fake.MakeTestIssue(
-        001, 2, 'issue_summary2', 'New', 111L, project_name='ProjectName')
+        001, 2, 'issue_summary2', 'New', 111, project_name='ProjectName')
     self.services.issue.TestAddIssue(issue2)
     issue3 = fake.MakeTestIssue(
-        001, 3, 'issue_summary3', 'New', 222L, project_name='ProjectName')
+        001, 3, 'issue_summary3', 'New', 222, project_name='ProjectName')
     self.services.issue.TestAddIssue(issue3)
     issues = [issue1, issue2, issue3]
     hotlist_items = [
-        (issue.issue_id, rank, 222L, None, '') for
+        (issue.issue_id, rank, 222, None, '') for
         rank, issue in enumerate(issues)]
 
     self.hotlist_items_list = [
@@ -56,15 +56,15 @@ class HotlistTableDataTest(unittest.TestCase):
             date_added=date, note=note) for (
                 issue_id, rank, adder_id, date, note) in hotlist_items]
     self.test_hotlist = self.services.features.TestAddHotlist(
-        'hotlist', hotlist_id=123, owner_ids=[111L],
+        'hotlist', hotlist_id=123, owner_ids=[111],
         hotlist_item_fields=hotlist_items)
     sorting.InitializeArtValues(self.services)
     self.mr = None
 
   def setUpCreateHotlistTableDataTestMR(self, **kwargs):
     self.mr = testing_helpers.MakeMonorailRequest(**kwargs)
-    self.services.user.TestAddUser('annajo@email.com', 148L)
-    self.mr.auth.effective_ids = {148L}
+    self.services.user.TestAddUser('annajo@email.com', 148)
+    self.mr.auth.effective_ids = {148}
     self.mr.col_spec = 'ID Summary Modified'
 
   def testCreateHotlistTableData(self):
@@ -105,7 +105,7 @@ class MakeTableDataTest(unittest.TestCase):
 
   def test_MakeTableData(self):
     issues = [fake.MakeTestIssue(
-        789, 1, 'issue_summary', 'New', 111L, project_name='ProjectName',
+        789, 1, 'issue_summary', 'New', 111, project_name='ProjectName',
         issue_id=1001)]
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     cell_factories = {
@@ -160,19 +160,19 @@ class HelpersUnitTest(unittest.TestCase):
                                         features=fake.FeaturesService(),
                                         user=fake.UserService())
     self.project = self.services.project.TestAddProject(
-        'ProjectName', project_id = 001, owner_ids=[111L])
+        'ProjectName', project_id=001, owner_ids=[111])
 
-    self.services.user.TestAddUser('annajowang@email.com', 111L)
-    self.services.user.TestAddUser('claremont@email.com', 222L)
+    self.services.user.TestAddUser('annajowang@email.com', 111)
+    self.services.user.TestAddUser('claremont@email.com', 222)
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111L,
+        001, 1, 'issue_summary', 'New', 111,
         project_name='ProjectName', labels='restrict-view-Googler')
     self.services.issue.TestAddIssue(self.issue1)
     self.issue3 = fake.MakeTestIssue(
-        001, 3, 'issue_summary3', 'New', 222L, project_name='ProjectName')
+        001, 3, 'issue_summary3', 'New', 222, project_name='ProjectName')
     self.services.issue.TestAddIssue(self.issue3)
     self.issue4 = fake.MakeTestIssue(
-        001, 4, 'issue_summary4', 'Fixed', 222L, closed_timestamp=232423,
+        001, 4, 'issue_summary4', 'Fixed', 222, closed_timestamp=232423,
         project_name='ProjectName')
     self.services.issue.TestAddIssue(self.issue4)
     self.issues = [self.issue1, self.issue3, self.issue4]
@@ -258,10 +258,10 @@ class HelpersUnitTest(unittest.TestCase):
 
   def testGetURLOfHotlist(self):
     cnxn = 'fake cnxn'
-    user = self.services.user.TestAddUser('claremont@email.com', 432L)
+    user = self.services.user.TestAddUser('claremont@email.com', 432)
     user.obscure_email = False
     hotlist1 = self.services.features.TestAddHotlist(
-        'hotlist1', hotlist_id=123, owner_ids=[432L])
+        'hotlist1', hotlist_id=123, owner_ids=[432])
     url = hotlist_helpers.GetURLOfHotlist(
         cnxn, hotlist1, self.services.user)
     self.assertEqual('/u/claremont@email.com/hotlists/hotlist1', url)

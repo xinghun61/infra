@@ -41,12 +41,12 @@ class IssueListUnitTest(unittest.TestCase):
         'req', 'res', services=self.services)
     self.project = self.services.project.TestAddProject('proj')
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111L, project_name='proj')
+        001, 1, 'issue_summary', 'New', 111, project_name='proj')
     self.services.issue.TestAddIssue(self.issue1)
     self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
     self.mr.project_name = self.project.project_name
-    self.mr.auth.effective_ids = {111L}
-    self.mr.me_user_id = 111L
+    self.mr.auth.effective_ids = {111}
+    self.mr.me_user_id = 111
 
     self.testbed = testbed.Testbed()
     self.testbed.activate()
@@ -114,7 +114,7 @@ class IssueListUnitTest(unittest.TestCase):
     page_data = {'table_data': []}
 
     # Signed in users see a cue to try "?" to see keyboard shortcuts.
-    mr.auth.user_id = 111L
+    mr.auth.user_id = 111
     help_data = servlet.GatherHelpData(mr, page_data)
     self.assertEqual('dit_keystrokes', help_data['cue'])
 

@@ -22,14 +22,14 @@ class GridViewHelpersTest(unittest.TestCase):
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
 
     self.art1 = fake.MakeTestIssue(
-        789, 1, 'a summary', '', 0, derived_owner_id=111L, star_count=12,
+        789, 1, 'a summary', '', 0, derived_owner_id=111, star_count=12,
         derived_labels='Priority-Medium Hot Mstone-1 Mstone-2',
         derived_status='Overdue')
     self.art2 = fake.MakeTestIssue(
-        789, 1, 'a summary', 'New', 111L, star_count=12, merged_into=200001,
+        789, 1, 'a summary', 'New', 111, star_count=12, merged_into=200001,
         labels='Priority-Medium Type-DEFECT Hot Mstone-1 Mstone-2')
     self.users_by_id = {
-        111L: framework_views.StuffUserView(111, 'foo@example.com', True),
+        111: framework_views.StuffUserView(111, 'foo@example.com', True),
         }
 
   def testSortGridHeadings(self):
@@ -99,7 +99,7 @@ class GridViewHelpersTest(unittest.TestCase):
         self.art2, 'foo', self.users_by_id, label_values, self.config, {})
     self.assertEqual([framework_constants.NO_VALUES], foo_vals)
     art3 = fake.MakeTestIssue(
-        987, 5, 'unecessary summary', 'New', 111L, star_count=12,
+        987, 5, 'unecessary summary', 'New', 111, star_count=12,
         issue_id=200001, project_name='other-project')
     related_issues = {200001: art3}
     merged_into_vals = grid_view_helpers.GetArtifactAttr(
@@ -124,13 +124,13 @@ class GridViewHelpersTest(unittest.TestCase):
 
   def testMakeLabelValuesDict_Empty(self):
     art = fake.MakeTestIssue(
-        789, 1, 'a summary', '', 0, derived_owner_id=111L, star_count=12)
+        789, 1, 'a summary', '', 0, derived_owner_id=111, star_count=12)
     label_values = grid_view_helpers.MakeLabelValuesDict(art)
     self.assertEqual({}, label_values)
 
   def testMakeLabelValuesDict(self):
     art = fake.MakeTestIssue(
-        789, 1, 'a summary', '', 0, derived_owner_id=111L, star_count=12,
+        789, 1, 'a summary', '', 0, derived_owner_id=111, star_count=12,
         labels=['Priority-Medium', 'Hot', 'Mstone-1', 'Mstone-2'])
     label_values = grid_view_helpers.MakeLabelValuesDict(art)
     self.assertEqual(
@@ -138,7 +138,7 @@ class GridViewHelpersTest(unittest.TestCase):
         label_values)
 
     art = fake.MakeTestIssue(
-        789, 1, 'a summary', '', 0, derived_owner_id=111L, star_count=12,
+        789, 1, 'a summary', '', 0, derived_owner_id=111, star_count=12,
         labels='Priority-Medium Hot Mstone-1'.split(),
         derived_labels=['Mstone-2'])
     label_values = grid_view_helpers.MakeLabelValuesDict(art)

@@ -48,26 +48,26 @@ class IssueOriginalTest(unittest.TestCase):
     summary = 'System wont boot'
     status = 'New'
     cnxn = 'fake connection'
-    self.services.user.TestAddUser('commenter@example.com', 222L)
+    self.services.user.TestAddUser('commenter@example.com', 222)
     self.local_id_1, _ = self.services.issue.CreateIssue(
         cnxn, self.services,
-        789, summary, status, 111L, [], [], [], [], 111L,
+        789, summary, status, 111, [], [], [], [], 111,
         'The screen is just dark when I press power on')
     _amendments, comment_0 = self.services.issue.ApplyIssueComment(
-        cnxn, self.services, 222L, 789, 1,
-        summary, status, 222L, [], [], [], [], [], [], [], [], 0,
+        cnxn, self.services, 222, 789, 1,
+        summary, status, 222, [], [], [], [], [], [], [], [], 0,
         comment=STRIPPED_MSG, inbound_message=ORIG_MSG)
     _amendments, comment_1 = self.services.issue.ApplyIssueComment(
-        cnxn, self.services, 222L, 789, 1,
-        summary, status, 222L, [], [], [], [], [], [], [], [], None,
+        cnxn, self.services, 222, 789, 1,
+        summary, status, 222, [], [], [], [], [], [], [], [], None,
         comment=STRIPPED_MSG, inbound_message=BAD_UNICODE_MSG)
     _amendments, comment_2 = self.services.issue.ApplyIssueComment(
-        cnxn, self.services, 222L, 789, 1,
-        summary, status, 222L, [], [], [], [], [], [], [], [], 0,
+        cnxn, self.services, 222, 789, 1,
+        summary, status, 222, [], [], [], [], [], [], [], [], 0,
         comment=STRIPPED_MSG, inbound_message=GMAIL_CRUFT_MSG)
     _amendments, comment_3 = self.services.issue.ApplyIssueComment(
-        cnxn, self.services, 222L, 789, 1,
-        summary, status, 222L, [], [], [], [], [], [], [], [], 0,
+        cnxn, self.services, 222, 789, 1,
+        summary, status, 222, [], [], [], [], [], [], [], [], 0,
         comment=STRIPPED_MSG, inbound_message=GOOD_UNICODE_MSG)
     self.issue_1 = self.services.issue.GetIssueByLocalID(
         cnxn, 789, self.local_id_1)

@@ -38,12 +38,12 @@ class BackendSearchPipelineTest(unittest.TestCase):
         issue=fake.IssueService(),
         config=fake.ConfigService(),
         cache_manager=fake.CacheManager())
-    self.services.user.TestAddUser('a@example.com', 111L)
+    self.services.user.TestAddUser('a@example.com', 111)
     self.project = self.services.project.TestAddProject('proj', project_id=789)
     self.mr = testing_helpers.MakeMonorailRequest(
       path='/p/proj/issues/list?q=Priority:High',
       project=self.project)
-    self.mr.me_user_id = 999L  # This value is not used by backend search
+    self.mr.me_user_id = 999  # This value is not used by backend search
     self.mr.shard_id = 2
     self.mr.invalidation_timestep = 12345
 
@@ -82,14 +82,14 @@ class BackendSearchPipelineTest(unittest.TestCase):
     self.SetUpPromises('owner:111')
     self.mox.ReplayAll()
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, [111L])
+      self.mr, self.services, 100, ['proj'], 111, [111])
     self.mox.VerifyAll()
 
   def testSearchForIIDs(self):
     self.SetUpPromises('Priority:High')
     self.mox.ReplayAll()
     be_pipeline = backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, 100, ['proj'], 111L, [111L])
+      self.mr, self.services, 100, ['proj'], 111, [111])
     be_pipeline.result_iids_promise = testing_helpers.Blank(
       WaitAndGetValue=lambda: ([10002, 10052], False, None))
     be_pipeline.SearchForIIDs()
@@ -110,7 +110,7 @@ class BackendSearchPipelineMethodsTest(unittest.TestCase):
         issue=fake.IssueService(),
         config=fake.ConfigService(),
         cache_manager=fake.CacheManager())
-    self.services.user.TestAddUser('a@example.com', 111L)
+    self.services.user.TestAddUser('a@example.com', 111)
     self.project = self.services.project.TestAddProject('proj', project_id=789)
     self.mr = testing_helpers.MakeMonorailRequest(
       path='/p/proj/issues/list?q=Priority:High',

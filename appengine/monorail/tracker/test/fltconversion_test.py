@@ -34,34 +34,34 @@ class FLTConvertTask(unittest.TestCase):
         'req', 'res', services=self.services)
     self.task.mr = self.mr
     self.issue = fake.MakeTestIssue(
-        789, 1, 'summary', 'New', 111L, issue_id=78901)
+        789, 1, 'summary', 'New', 111, issue_id=78901)
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.work_env = work_env.WorkEnv(
         self.mr, self.services, 'Testing')
     self.issue1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, issue_id=78901,
+        789, 1, 'sum', 'New', 111, issue_id=78901,
         labels=[
             'Launch-M-Approved-71-Stable', 'Launch-M-Target-70-Beta',
             'Launch-UI-Yes', 'Launch-Privacy-NeedInfo',
             'pm-jojwang', 'tl-annajo', 'ux-shiba', 'Type-Launch'])
     self.issue2 = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, issue_id=78902,
+        789, 2, 'sum', 'New', 111, issue_id=78902,
         labels=[
             'Launch-M-Target-71-Stable', 'Launch-M-Approved-70-Beta',
             'pm-jojwang', 'tl-annajo', 'OS-Chrome', 'OS-Android',
             'Type-Launch'])
     self.issue3 = fake.MakeTestIssue(
-        789, 3, 'sum', 'New', 111L, issue_id=78903,
+        789, 3, 'sum', 'New', 111, issue_id=78903,
         labels=['Launch-M-Approved-71-Stable',
                 'Launch-M-Approved-79-Stable-Exp', 'Launch-M-Target-70-Beta',
                 'Launch-M-Target-70-Stable', 'Launch-UI-Yes',
                 'Launch-Exp-Leadership-Yes', 'pm-annajo', 'tl-jojwang',
                 'OS-Chrome', 'Type-Launch'])
     self.issue4 = fake.MakeTestIssue(
-        789, 4, 'sum', 'New', 111L, issue_id=78904,
+        789, 4, 'sum', 'New', 111, issue_id=78904,
         labels=['Launch-UI-Yes', 'OS-Chrome', 'Type-Launch'])
     self.issue5 = fake.MakeTestIssue(
-        789, 5, 'sum', 'New', 111L, issue_id=78905,
+        789, 5, 'sum', 'New', 111, issue_id=78905,
         labels=['Launch-M-Approved-71-Stable',
                 'Launch-M-Approved-79-Stable-Exp', 'Launch-M-Target-70-Beta',
                 'Launch-M-Target-70-Stable', 'Launch-UI-Yes',
@@ -119,11 +119,11 @@ class FLTConvertTask(unittest.TestCase):
 
     def side_effect(_cnxn, email):
       if email == 'jojwang@chromium.org':
-        return 111L
+        return 111
       if email == 'annajo@google.com':
-        return 222L
+        return 222
       if email == 'shiba@google.com':
-        return 333L
+        return 333
       raise exceptions.NoSuchUserException
     self.task.services.user.LookupUserID = mock.Mock(side_effect=side_effect)
 
@@ -149,13 +149,13 @@ class FLTConvertTask(unittest.TestCase):
           14, 70, None, None, None, None, False, phase_id=89),
       # PM field
       tracker_bizobj.MakeFieldValue(
-          11, None, None, 111L, None, None, False),
+          11, None, None, 111, None, None, False),
       # TL field
       tracker_bizobj.MakeFieldValue(
-          12, None, None, 222L, None, None, False),
+          12, None, None, 222, None, None, False),
       # UX field
       tracker_bizobj.MakeFieldValue(
-          16, None, None, 333L, None, None, False)
+          16, None, None, 333, None, None, False)
     ]
 
 
@@ -172,10 +172,10 @@ class FLTConvertTask(unittest.TestCase):
             15, 70, None, None, None, None, False, phase_id=89),
         # PM field
         tracker_bizobj.MakeFieldValue(
-            11, None, None, 111L, None, None, False),
+            11, None, None, 111, None, None, False),
         # TL field
         tracker_bizobj.MakeFieldValue(
-            12, None, None, 222L, None, None, False)]
+            12, None, None, 222, None, None, False)]
 
     execute_calls = [
         mock.call(
@@ -203,11 +203,11 @@ class FLTConvertTask(unittest.TestCase):
     issue2 = copy.deepcopy(self.issue2)
     fvs = [
         tracker_bizobj.MakeFieldValue(
-            11, None, None, 222L, None, None, False),
+            11, None, None, 222, None, None, False),
         tracker_bizobj.MakeFieldValue(
-            12, None, None, 111L, None, None, False),
+            12, None, None, 111, None, None, False),
         tracker_bizobj.MakeFieldValue(
-            16, None, None, 111L, None, None, False)]
+            16, None, None, 111, None, None, False)]
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=11, field_name='PM'),
         tracker_pb2.FieldDef(field_id=12, field_name='TL'),
@@ -272,7 +272,7 @@ class FLTConvertTask(unittest.TestCase):
     ]
     self.issue1.field_values = [
         # problem = expected field for TL
-        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False),
+        tracker_bizobj.MakeFieldValue(4, None, None, 111, None, None, False),
         tracker_pb2.FieldValue(field_id=7, int_value=70, phase_id=1),
         tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=2),
     ]
@@ -293,8 +293,8 @@ class FLTConvertTask(unittest.TestCase):
     self.issue2.field_values = [
         # problem = no phase field for label 'Launch-M-Approved-70-Beta'
         tracker_pb2.FieldValue(field_id=7, int_value=71, phase_id=2),
-        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False),
-        tracker_bizobj.MakeFieldValue(5, None, None, 111L, None, None, False),
+        tracker_bizobj.MakeFieldValue(4, None, None, 111, None, None, False),
+        tracker_bizobj.MakeFieldValue(5, None, None, 111, None, None, False),
         ]
 
     self.issue3.labels.extend(['Rollout-Type-Default'])
@@ -310,7 +310,7 @@ class FLTConvertTask(unittest.TestCase):
     # problem = missing a field for TL
     self.issue3.field_values = [
         tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=6),
-        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False)
+        tracker_bizobj.MakeFieldValue(4, None, None, 111, None, None, False)
     ]
 
     self.issue4.labels.extend(['Rollout-Type-Default'])
@@ -345,8 +345,8 @@ class FLTConvertTask(unittest.TestCase):
     # problem = no phase field for label Launch-M-Target-70-Stable
     self.issue5.field_values = [
         tracker_pb2.FieldValue(field_id=8, int_value=71, phase_id=8),
-        tracker_bizobj.MakeFieldValue(4, None, None, 111L, None, None, False),
-        tracker_bizobj.MakeFieldValue(5, None, None, 111L, None, None, False)]
+        tracker_bizobj.MakeFieldValue(4, None, None, 111, None, None, False),
+        tracker_bizobj.MakeFieldValue(5, None, None, 111, None, None, False)]
 
     self.config.field_defs = [
         tracker_pb2.FieldDef(field_id=1, field_name='Chrome-Test'),
@@ -376,7 +376,7 @@ class FLTConvertTask(unittest.TestCase):
     self.task.services.issue.GetIssue = mock.Mock(
         side_effect=[
             self.issue1, self.issue2, self.issue3, self.issue4, self.issue5])
-    self.task.services.user.LookupUserID = mock.Mock(return_value=111L)
+    self.task.services.user.LookupUserID = mock.Mock(return_value=111)
     with self.work_env as we:
       we.ListIssues = mock.Mock(return_value=mockPipeline)
 
@@ -430,7 +430,7 @@ class FLTConvertTask(unittest.TestCase):
 
     # test template has no phases/approvals
     template = tracker_bizobj.MakeIssueTemplate(
-        'template', 'sum', 'New', 111L, 'content', [], [], [], [])
+        'template', 'sum', 'New', 111, 'content', [], [], [], [])
     self.task.services.template.GetTemplateByName = mock.Mock(
         return_value=template)
     self.assertRaisesRegexp(
@@ -556,7 +556,7 @@ class FLTConvertTask(unittest.TestCase):
 
     mr = testing_helpers.MakeMonorailRequest(path='url/url?launch=os')
     template = tracker_bizobj.MakeIssueTemplate(
-        'template', 'sum', 'New', 111L, 'content', [], [], [], [])
+        'template', 'sum', 'New', 111, 'content', [], [], [], [])
     self.task.services.template.GetTemplateByName = mock.Mock(
         return_value=template)
 
@@ -639,7 +639,7 @@ class FLTConvertTask(unittest.TestCase):
     self.config.approval_defs = [
         tracker_pb2.ApprovalDef(
             # test empty survey
-            approval_id=1, survey='', approver_ids=[111L, 222L]),
+            approval_id=1, survey='', approver_ids=[111, 222]),
         tracker_pb2.ApprovalDef(approval_id=2), # test missing survey
         tracker_pb2.ApprovalDef(survey='Missing approval_id should not error.'),
         tracker_pb2.ApprovalDef(approval_id=3, survey='Q1\nQ2\n\nQ3'),
@@ -661,7 +661,7 @@ class FLTConvertTask(unittest.TestCase):
         self.config, self.issue, new_avs, phases, new_fvs)
 
     # approver_ids set in ExecuteIssueChanges()
-    new_avs[0].approver_ids = [111L, 222L]
+    new_avs[0].approver_ids = [111, 222]
     self.issue.approval_values = new_avs
     self.issue.phases = phases
     delta = tracker_pb2.IssueDelta(

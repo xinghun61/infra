@@ -38,20 +38,20 @@ class RuleViewTest(unittest.TestCase):
     self.assertEquals('Unknown', view.action_value)
 
   def testDefaultOwner(self):
-    self.rule.default_owner_id = 111L
+    self.rule.default_owner_id = 111
     view = filterrules_views.RuleView(
         self.rule, {
-            111L: testing_helpers.Blank(email='jrobbins@chromium.org')})
+            111: testing_helpers.Blank(email='jrobbins@chromium.org')})
     self.assertEquals('label:a label:b', view.predicate)
     self.assertEquals('default_owner', view.action_type)
     self.assertEquals('jrobbins@chromium.org', view.action_value)
 
   def testAddCCs(self):
-    self.rule.add_cc_ids.extend([111L, 222L])
+    self.rule.add_cc_ids.extend([111, 222])
     view = filterrules_views.RuleView(
         self.rule, {
-            111L: testing_helpers.Blank(email='jrobbins@chromium.org'),
-            222L: testing_helpers.Blank(email='jrobbins@gmail.com')})
+            111: testing_helpers.Blank(email='jrobbins@chromium.org'),
+            222: testing_helpers.Blank(email='jrobbins@gmail.com')})
     self.assertEquals('label:a label:b', view.predicate)
     self.assertEquals('add_ccs', view.action_type)
     self.assertEquals('jrobbins@chromium.org, jrobbins@gmail.com',

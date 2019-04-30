@@ -28,14 +28,14 @@ class PeopleDetailTest(unittest.TestCase):
         project=fake.ProjectService(),
         usergroup=fake.UserGroupService(),
         user=fake.UserService())
-    services.user.TestAddUser('jrobbins', 111L)
-    services.user.TestAddUser('jrobbins@jrobbins.org', 333L)
-    services.user.TestAddUser('jrobbins@chromium.org', 555L)
-    services.user.TestAddUser('imso31337@gmail.com', 999L)
+    services.user.TestAddUser('jrobbins', 111)
+    services.user.TestAddUser('jrobbins@jrobbins.org', 333)
+    services.user.TestAddUser('jrobbins@chromium.org', 555)
+    services.user.TestAddUser('imso31337@gmail.com', 999)
     self.project = services.project.TestAddProject('proj')
-    self.project.owner_ids.extend([111L, 222L])
-    self.project.committer_ids.extend([333L, 444L])
-    self.project.contributor_ids.extend([555L])
+    self.project.owner_ids.extend([111, 222])
+    self.project.committer_ids.extend([333, 444])
+    self.project.contributor_ids.extend([555])
     self.servlet = peopledetail.PeopleDetail('req', 'res', services=services)
 
   def VerifyAccess(self, exception_expected):
@@ -99,7 +99,7 @@ class PeopleDetailTest(unittest.TestCase):
         path='/p/proj/people/detail?u=333',
         project=self.project,
         perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
-    mr.auth.user_id = 333L
+    mr.auth.user_id = 333
     self.servlet.AssertBasePermission(mr)
     # No PermissionException raised
 
@@ -117,12 +117,12 @@ class PeopleDetailTest(unittest.TestCase):
   def testValidateMemberID(self):
     # We can validate owners
     self.assertEquals(
-        111L,
+        111,
         self.servlet.ValidateMemberID('fake cnxn', 111, self.project))
 
     # We can parse members
     self.assertEquals(
-        333L,
+        333,
         self.servlet.ValidateMemberID(
             'fake cnxn', 333, self.project))
 

@@ -20,7 +20,7 @@ from tracker import tracker_constants
 class CommandsTest(unittest.TestCase):
 
   def VerifyParseQuickEditCommmand(
-      self, cmd, exp_summary='sum', exp_status='New', exp_owner_id=111L,
+      self, cmd, exp_summary='sum', exp_status='New', exp_owner_id=111,
       exp_cc_ids=None, exp_labels=None):
 
     issue = tracker_pb2.Issue()
@@ -28,23 +28,23 @@ class CommandsTest(unittest.TestCase):
     issue.local_id = 1
     issue.summary = 'sum'
     issue.status = 'New'
-    issue.owner_id = 111L
-    issue.cc_ids.extend([222L, 333L])
+    issue.owner_id = 111
+    issue.cc_ids.extend([222, 333])
     issue.labels.extend(['Type-Defect', 'Priority-Medium', 'Hot'])
 
     if exp_cc_ids is None:
-      exp_cc_ids = [222L, 333L]
+      exp_cc_ids = [222, 333]
     if exp_labels is None:
       exp_labels = ['Type-Defect', 'Priority-Medium', 'Hot']
 
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    logged_in_user_id = 999L
+    logged_in_user_id = 999
     services = service_manager.Services(
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService())
-    services.user.TestAddUser('jrobbins', 333L)
-    services.user.TestAddUser('jrobbins@jrobbins.org', 888L)
+    services.user.TestAddUser('jrobbins', 333)
+    services.user.TestAddUser('jrobbins@jrobbins.org', 888)
 
     cnxn = 'fake cnxn'
     (summary, status, owner_id, cc_ids,
@@ -68,9 +68,9 @@ class CommandsTest(unittest.TestCase):
         'status=limbo', exp_status='limbo')
 
     self.VerifyParseQuickEditCommmand(
-        'owner=me', exp_owner_id=999L)
+        'owner=me', exp_owner_id=999)
     self.VerifyParseQuickEditCommmand(
-        'owner=jrobbins@jrobbins.org', exp_owner_id=888L)
+        'owner=jrobbins@jrobbins.org', exp_owner_id=888)
     self.VerifyParseQuickEditCommmand(
         'owner=----', exp_owner_id=framework_constants.NO_USER_SPECIFIED)
 
@@ -82,15 +82,15 @@ class CommandsTest(unittest.TestCase):
         "summary='quoted sentence'", exp_summary='quoted sentence')
 
     self.VerifyParseQuickEditCommmand(
-        'cc=me', exp_cc_ids=[222L, 333L, 999L])
+        'cc=me', exp_cc_ids=[222, 333, 999])
     self.VerifyParseQuickEditCommmand(
-        'cc=jrobbins@jrobbins.org', exp_cc_ids=[222L, 333L, 888L])
+        'cc=jrobbins@jrobbins.org', exp_cc_ids=[222, 333, 888])
     self.VerifyParseQuickEditCommmand(
         'cc=me,jrobbins@jrobbins.org',
-        exp_cc_ids=[222L, 333L, 999L, 888L])
+        exp_cc_ids=[222, 333, 999, 888])
     self.VerifyParseQuickEditCommmand(
         'cc=-jrobbins,jrobbins@jrobbins.org',
-        exp_cc_ids=[222L, 888L])
+        exp_cc_ids=[222, 888])
 
   def testParseQuickEditCommmand_Labels(self):
     self.VerifyParseQuickEditCommmand(
@@ -116,8 +116,8 @@ class CommandsTest(unittest.TestCase):
   def testParseQuickEditCommmand_Multiple(self):
     self.VerifyParseQuickEditCommmand(
         'Priority=Low -hot owner:me cc:-jrobbins summary="other summary"',
-        exp_summary='other summary', exp_owner_id=999L,
-        exp_cc_ids=[222L], exp_labels=['Type-Defect', 'Priority-Low'])
+        exp_summary='other summary', exp_owner_id=999,
+        exp_cc_ids=[222], exp_labels=['Type-Defect', 'Priority-Low'])
 
   def testBreakCommandIntoParts_Empty(self):
     self.assertListEqual(
@@ -178,8 +178,8 @@ class CommandSyntaxParsingTest(unittest.TestCase):
         config=fake.ConfigService(),
         user=fake.UserService())
 
-    self.services.project.TestAddProject('proj', owner_ids=[111L])
-    self.services.user.TestAddUser('a@example.com', 222L)
+    self.services.project.TestAddProject('proj', owner_ids=[111])
+    self.services.user.TestAddUser('a@example.com', 222)
 
     cnxn = 'fake connection'
     config = self.services.config.GetProjectConfig(cnxn, 789)
@@ -218,10 +218,10 @@ class CommandSyntaxParsingTest(unittest.TestCase):
 
   def testLookupMeOrUsername(self):
     self.assertEqual(
-        123L,
-        commands._LookupMeOrUsername('fake cnxn', 'me', self.services, 123L))
+        123,
+        commands._LookupMeOrUsername('fake cnxn', 'me', self.services, 123))
 
     self.assertEqual(
-        222L,
+        222,
         commands._LookupMeOrUsername(
             'fake cnxn', 'a@example.com', self.services, 0))

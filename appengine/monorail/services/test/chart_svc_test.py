@@ -384,7 +384,7 @@ class ChartServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def SetUpStoreIssueSnapshots(self, replace_now=None, found_id=None,
-                               project_id=789, owner_id=111L,
+                               project_id=789, owner_id=111,
                                component_ids=None, cc_rows=None):
     """Set up all calls to mocks that StoreIssueSnapshots will call."""
     now = self.services.chart._currentTime().AndReturn(replace_now or 12345678)
@@ -408,7 +408,7 @@ class ChartServiceTest(unittest.TestCase):
     shard = 0
     self.services.chart.issuesnapshot_tbl.InsertRows(self.cnxn,
       chart_svc.ISSUESNAPSHOT_COLS[1:],
-      [(78901, shard, project_id, 1, 111L, owner_id, 1,
+      [(78901, shard, project_id, 1, 111, owner_id, 1,
         now, 4294967295, True)],
       replace=True, commit=False, return_generated_ids=True).AndReturn([5678])
 
@@ -446,15 +446,15 @@ class ChartServiceTest(unittest.TestCase):
     now_2 = 1517599999
 
     issue = fake.MakeTestIssue(issue_id=78901,
-        project_id=789, local_id=1, reporter_id=111L, owner_id=111L,
+        project_id=789, local_id=1, reporter_id=111, owner_id=111,
         summary='sum', status='Status1',
         labels=['Type-Defect'],
         component_ids=[11], assume_stale=False,
         opened_timestamp=123456789, modified_timestamp=123456789,
-        star_count=12, cc_ids=[222L, 333L], derived_cc_ids=[888L])
+        star_count=12, cc_ids=[222, 333], derived_cc_ids=[888])
 
     # Snapshot #1
-    cc_rows = [(5678, 222L), (5678, 333L), (5678, 888L)]
+    cc_rows = [(5678, 222), (5678, 333), (5678, 888)]
     self.SetUpStoreIssueSnapshots(replace_now=now_1,
       component_ids=[11], cc_rows=cc_rows)
 
@@ -476,30 +476,30 @@ class ChartServiceTest(unittest.TestCase):
     now_2 = 1517599999
 
     issue_1 = fake.MakeTestIssue(issue_id=78901,
-        project_id=789, local_id=1, reporter_id=111L, owner_id=111L,
+        project_id=789, local_id=1, reporter_id=111, owner_id=111,
         summary='sum', status='Status1',
         labels=['Type-Defect'],
         component_ids=[11, 12], assume_stale=False,
         opened_timestamp=123456789, modified_timestamp=123456789,
-        star_count=12, cc_ids=[222L, 333L], derived_cc_ids=[888L])
+        star_count=12, cc_ids=[222, 333], derived_cc_ids=[888])
 
     issue_2 = fake.MakeTestIssue(issue_id=78901,
-        project_id=123, local_id=1, reporter_id=111L, owner_id=222L,
+        project_id=123, local_id=1, reporter_id=111, owner_id=222,
         summary='sum', status='Status2',
         labels=['Type-Enhancement'],
         component_ids=[13], assume_stale=False,
         opened_timestamp=123456789, modified_timestamp=123456789,
-        star_count=12, cc_ids=[222L, 444L], derived_cc_ids=[888L, 999L])
+        star_count=12, cc_ids=[222, 444], derived_cc_ids=[888, 999])
 
     # Snapshot #1
-    cc_rows_1 = [(5678, 222L), (5678, 333L), (5678, 888L)]
+    cc_rows_1 = [(5678, 222), (5678, 333), (5678, 888)]
     self.SetUpStoreIssueSnapshots(replace_now=now_1,
       component_ids=[11, 12], cc_rows=cc_rows_1)
 
     # Snapshot #2
-    cc_rows_2 = [(5678, 222L), (5678, 444L), (5678, 888L), (5678, 999L)]
+    cc_rows_2 = [(5678, 222), (5678, 444), (5678, 888), (5678, 999)]
     self.SetUpStoreIssueSnapshots(replace_now=now_2,
-      found_id=5678, project_id=123, owner_id=222L, component_ids=[13],
+      found_id=5678, project_id=123, owner_id=222, component_ids=[13],
       cc_rows=cc_rows_2)
 
     self.mox.ReplayAll()

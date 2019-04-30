@@ -108,14 +108,14 @@ class MonorailServicerTest(unittest.TestCase):
         project=fake.ProjectService(),
         cache_manager=fake.CacheManager())
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=789, owner_ids=[111L])
-    self.user = self.services.user.TestAddUser('nonmember@example.com', 222L)
+        'proj', project_id=789, owner_ids=[111])
+    self.user = self.services.user.TestAddUser('nonmember@example.com', 222)
     self.svcr = TestableServicer(self.services)
-    self.token = xsrf.GenerateToken(222L, xsrf.XHR_SERVLET_PATH)
+    self.token = xsrf.GenerateToken(222, xsrf.XHR_SERVLET_PATH)
     self.request = UpdateSomethingRequest(exc_class=None)
     self.prpc_context = context.ServicerContext()
     self.prpc_context.set_code(codes.StatusCode.OK)
-    self.auth = authdata.AuthData(user_id=222L, email='nonmember@example.com')
+    self.auth = authdata.AuthData(user_id=222, email='nonmember@example.com')
 
     self.oauth_patcher = mock.patch(
         'google.appengine.api.oauth.get_current_user')
@@ -303,7 +303,7 @@ class MonorailServicerTest(unittest.TestCase):
     """We allow signed-in project members."""
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'proj'
-    self.project.committer_ids.append(222L)
+    self.project.committer_ids.append(222)
     metadata = {}
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
     self.svcr.AssertBaseChecks(mc, self.request, metadata)
@@ -318,7 +318,7 @@ class MonorailServicerTest(unittest.TestCase):
 
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'proj'
-    self.project.committer_ids.append(222L)
+    self.project.committer_ids.append(222)
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
 
     # nonmember@example.com is not whitelisted.
@@ -338,7 +338,7 @@ class MonorailServicerTest(unittest.TestCase):
 
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'proj'
-    self.project.committer_ids.append(222L)
+    self.project.committer_ids.append(222)
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
 
     # No client_id provided.
@@ -363,7 +363,7 @@ class MonorailServicerTest(unittest.TestCase):
 
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'proj'
-    self.project.committer_ids.append(222L)
+    self.project.committer_ids.append(222)
     metadata = {'x-xsrf-token': self.token}
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
 
@@ -399,12 +399,12 @@ class MonorailServicerTest(unittest.TestCase):
 
     # pylint: disable=attribute-defined-outside-init
     self.request.project_name = 'proj'
-    self.project.committer_ids.append(222L)
+    self.project.committer_ids.append(222)
     mc = monorailcontext.MonorailContext(self.services, auth=self.auth)
 
     # Set the token to an token created at time 1
     metadata = {monorail_servicer.XSRF_TOKEN_HEADER:
-                  xsrf.GenerateToken(222L, xsrf.XHR_SERVLET_PATH, 1)}
+                  xsrf.GenerateToken(222, xsrf.XHR_SERVLET_PATH, 1)}
 
     # The token is too old and we fail to authenticate.
     mockGetRoundedTime.side_effect = lambda: 2 + xsrf.TOKEN_TIMEOUT_SEC

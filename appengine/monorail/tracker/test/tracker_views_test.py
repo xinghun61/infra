@@ -376,14 +376,14 @@ class ComponentDefViewTest(unittest.TestCase):
     self.services = service_manager.Services(
         user=fake.UserService(),
         config=fake.ConfigService())
-    self.services.user.TestAddUser('admin@example.com', 111L)
-    self.services.user.TestAddUser('cc@example.com', 222L)
+    self.services.user.TestAddUser('admin@example.com', 111)
+    self.services.user.TestAddUser('cc@example.com', 222)
     self.users_by_id = framework_views.MakeAllUserViews(
-      'cnxn', self.services.user, [111L, 222L])
+      'cnxn', self.services.user, [111, 222])
     self.services.config.TestAddLabelsDict({'Hot': 1, 'Cold': 2})
     self.cd = tracker_bizobj.MakeComponentDef(
       10, 789, 'UI', 'User interface', False,
-      [111L], [222L], 0, 111L, label_ids=[1, 2])
+      [111], [222], 0, 111, label_ids=[1, 2])
 
   def testRootComponent(self):
     view = tracker_views.ComponentDefView(
@@ -770,7 +770,7 @@ class FieldDefViewTest(unittest.TestCase):
         None, 'no_action', 'descriptive docstring', False, None, False)
 
     self.approval_def = tracker_pb2.ApprovalDef(
-        approval_id=1, approver_ids=[111L], survey='question?')
+        approval_id=1, approver_ids=[111], survey='question?')
 
     self.field_def = tracker_bizobj.MakeFieldDef(
         2, 789, 'AffectedUsers', tracker_pb2.FieldTypes.INT_TYPE, None,
@@ -800,8 +800,8 @@ class FieldDefViewTest(unittest.TestCase):
   def testFieldDefView_Approval(self):
     config = _MakeConfig()
     approver_view = framework_views.StuffUserView(
-        111L, 'shouldnotmatter@ch.org', False)
-    user_views = {111L: approver_view}
+        111, 'shouldnotmatter@ch.org', False)
+    user_views = {111: approver_view}
 
     view = tracker_views.FieldDefView(
         self.approval_fd, config,

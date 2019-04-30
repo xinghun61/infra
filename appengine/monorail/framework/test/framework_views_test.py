@@ -92,7 +92,7 @@ class StatusViewTest(unittest.TestCase):
 class UserViewTest(unittest.TestCase):
 
   def setUp(self):
-    self.user = user_pb2.User(user_id=111L)
+    self.user = user_pb2.User(user_id=111)
 
   def testGetAvailablity_Anon(self):
     self.user.user_id = 0
@@ -164,10 +164,10 @@ class RevealEmailsToMembersTest(unittest.TestCase):
 
   def setUp(self):
     project = project_pb2.Project()
-    project.owner_ids.append(111L)
-    project.committer_ids.append(222L)
-    project.contributor_ids.append(333L)
-    project.contributor_ids.append(888L)
+    project.owner_ids.append(111)
+    project.committer_ids.append(222)
+    project.contributor_ids.append(333)
+    project.contributor_ids.append(888)
     user = user_pb2.User()
     user.is_site_admin = False
     self.mr = monorailrequest.MonorailRequest(None)
@@ -175,14 +175,14 @@ class RevealEmailsToMembersTest(unittest.TestCase):
     self.mr.auth.user_pb = user
 
   def CheckRevealAllToMember(
-      self, logged_in_user_id, expected, viewed_user_id=333L, group_id=None):
+      self, logged_in_user_id, expected, viewed_user_id=333, group_id=None):
     user_view = framework_views.StuffUserView(
         viewed_user_id, 'user@example.com', True)
 
     if group_id:
       pass  # xxx re-implement groups
 
-    users_by_id = {333L: user_view}
+    users_by_id = {333: user_view}
     self.mr.auth.user_id = logged_in_user_id
     self.mr.auth.effective_ids = {logged_in_user_id}
     # Assert display name is obscured before the reveal.
@@ -207,58 +207,58 @@ class RevealEmailsToMembersTest(unittest.TestCase):
     """We no longer give this advantage based on email address domain."""
     for priviledged_user_domain in settings.priviledged_user_domains:
       self.mr.auth.user_pb.email = 'test@' + priviledged_user_domain
-      self.CheckRevealAllToMember(100001L, False)
+      self.CheckRevealAllToMember(100001, False)
 
   def testRevealEmailToSelf(self):
     self.mr.auth.user_pb.email = 'user@example.com'
-    self.CheckRevealAllToMember(100001L, True)
+    self.CheckRevealAllToMember(100001, True)
 
   def testRevealAllEmailsToMembers_Collaborators(self):
     self.CheckRevealAllToMember(0L, False)
-    self.CheckRevealAllToMember(111L, True)
-    self.CheckRevealAllToMember(222L, True)
-    self.CheckRevealAllToMember(333L, True)
-    self.CheckRevealAllToMember(444L, False)
+    self.CheckRevealAllToMember(111, True)
+    self.CheckRevealAllToMember(222, True)
+    self.CheckRevealAllToMember(333, True)
+    self.CheckRevealAllToMember(444, False)
 
     # Viewed user has indirect role in the project via a group.
-    self.CheckRevealAllToMember(0, False, group_id=888L)
-    self.CheckRevealAllToMember(111L, True, group_id=888L)
+    self.CheckRevealAllToMember(0, False, group_id=888)
+    self.CheckRevealAllToMember(111, True, group_id=888)
     # xxx re-implement
     # self.CheckRevealAllToMember(
-    #     111, True, viewed_user_id=444L, group_id=888L)
+    #     111, True, viewed_user_id=444, group_id=888)
 
     # Logged in user has indirect role in the project via a group.
-    self.CheckRevealAllToMember(888L, True)
+    self.CheckRevealAllToMember(888, True)
 
   def testRevealAllEmailsToMembers_Admins(self):
-    self.CheckRevealAllToMember(555L, False)
+    self.CheckRevealAllToMember(555, False)
     self.mr.auth.user_pb.is_site_admin = True
-    self.CheckRevealAllToMember(555L, True)
+    self.CheckRevealAllToMember(555, True)
 
 
 class RevealAllEmailsTest(unittest.TestCase):
 
   def testRevealAllEmail(self):
     users_by_id = {
-        111L: framework_views.StuffUserView(111L, 'a@a.com', True),
-        222L: framework_views.StuffUserView(222L, 'b@b.com', True),
-        333L: framework_views.StuffUserView(333L, 'c@c.com', True),
-        999L: framework_views.StuffUserView(999L, 'z@z.com', True),
+        111: framework_views.StuffUserView(111, 'a@a.com', True),
+        222: framework_views.StuffUserView(222, 'b@b.com', True),
+        333: framework_views.StuffUserView(333, 'c@c.com', True),
+        999: framework_views.StuffUserView(999, 'z@z.com', True),
         }
     # Assert display names are obscured before the reveal.
-    self.assertEqual('a...@a.com', users_by_id[111L].display_name)
-    self.assertEqual('b...@b.com', users_by_id[222L].display_name)
-    self.assertEqual('c...@c.com', users_by_id[333L].display_name)
-    self.assertEqual('z...@z.com', users_by_id[999L].display_name)
+    self.assertEqual('a...@a.com', users_by_id[111].display_name)
+    self.assertEqual('b...@b.com', users_by_id[222].display_name)
+    self.assertEqual('c...@c.com', users_by_id[333].display_name)
+    self.assertEqual('z...@z.com', users_by_id[999].display_name)
 
     framework_views.RevealAllEmails(users_by_id)
 
-    self.assertFalse(users_by_id[111L].obscure_email)
-    self.assertFalse(users_by_id[222L].obscure_email)
-    self.assertFalse(users_by_id[333L].obscure_email)
-    self.assertFalse(users_by_id[999L].obscure_email)
+    self.assertFalse(users_by_id[111].obscure_email)
+    self.assertFalse(users_by_id[222].obscure_email)
+    self.assertFalse(users_by_id[333].obscure_email)
+    self.assertFalse(users_by_id[999].obscure_email)
     # Assert display names are now revealed.
-    self.assertEqual('a@a.com', users_by_id[111L].display_name)
-    self.assertEqual('b@b.com', users_by_id[222L].display_name)
-    self.assertEqual('c@c.com', users_by_id[333L].display_name)
-    self.assertEqual('z@z.com', users_by_id[999L].display_name)
+    self.assertEqual('a@a.com', users_by_id[111].display_name)
+    self.assertEqual('b@b.com', users_by_id[222].display_name)
+    self.assertEqual('c@c.com', users_by_id[333].display_name)
+    self.assertEqual('z@z.com', users_by_id[999].display_name)

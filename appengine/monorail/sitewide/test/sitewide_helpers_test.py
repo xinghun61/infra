@@ -13,9 +13,9 @@ from sitewide import sitewide_helpers
 from testing import fake
 
 
-REGULAR_USER_ID = 111L
-ADMIN_USER_ID = 222L
-OTHER_USER_ID = 333L
+REGULAR_USER_ID = 111
+ADMIN_USER_ID = 222
+OTHER_USER_ID = 333
 
 # Test project IDs
 REGULAR_OWNER_LIVE = 1001

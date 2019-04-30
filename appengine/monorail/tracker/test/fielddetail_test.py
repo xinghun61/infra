@@ -44,13 +44,13 @@ class FieldDetailTest(unittest.TestCase):
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(self.fd)
-    self.services.user.TestAddUser('gatsby@example.com', 111L)
-    self.services.user.TestAddUser('sport@example.com', 222L)
+    self.services.user.TestAddUser('gatsby@example.com', 111)
+    self.services.user.TestAddUser('sport@example.com', 222)
     self.mr.field_name = 'CPU'
 
     # Approvals
     self.approval_def = tracker_pb2.ApprovalDef(
-        approval_id=234, approver_ids=[111L], survey='Question 1?')
+        approval_id=234, approver_ids=[111], survey='Question 1?')
     self.sub_fd = tracker_pb2.FieldDef(
         field_name='UIMocks', approval_id=234, applicable_type='')
     self.sub_fd_deleted = tracker_pb2.FieldDef(
@@ -282,4 +282,4 @@ class FieldDetailTest(unittest.TestCase):
 
     approval_def = tracker_bizobj.FindApprovalDef('UIReview', self.config)
     self.assertEqual(len(approval_def.approver_ids), 2)
-    self.assertEqual(sorted(approval_def.approver_ids), sorted([111L, 222L]))
+    self.assertEqual(sorted(approval_def.approver_ids), sorted([111, 222]))

@@ -43,7 +43,7 @@ class HostingHomeTest(unittest.TestCase):
     self.project_b = self.services.project.TestAddProject('b', project_id=2)
 
     self.servlet = hostinghome.HostingHome('req', 'res', services=self.services)
-    self.mr = testing_helpers.MakeMonorailRequest(user_info={'user_id': 111L})
+    self.mr = testing_helpers.MakeMonorailRequest(user_info={'user_id': 111})
 
     self.orig_pipeline_class = projectsearch.ProjectSearchPipeline
     projectsearch.ProjectSearchPipeline = MockProjectSearchPipeline
@@ -67,8 +67,8 @@ class HostingHomeTest(unittest.TestCase):
     self.services.mock_visible_results = [self.project_a, self.project_b]
     # We go straight to the services layer because this is a test set up
     # rather than an actual user request.
-    self.services.project_star.SetStar('fake cnxn', 1, 111L, True)
-    self.services.project_star.SetStar('fake cnxn', 1, 222L, True)
+    self.services.project_star.SetStar('fake cnxn', 1, 111, True)
+    self.services.project_star.SetStar('fake cnxn', 1, 222, True)
     page_data = self.servlet.GatherPageData(self.mr)
     project_view_a, project_view_b = page_data['projects']
     self.assertEqual(2, project_view_a.num_stars)
@@ -76,7 +76,7 @@ class HostingHomeTest(unittest.TestCase):
 
   def testStarredProjects(self):
     self.services.mock_visible_results = [self.project_a, self.project_b]
-    self.services.project_star.SetStar('fake cnxn', 1, 111L, True)
+    self.services.project_star.SetStar('fake cnxn', 1, 111, True)
     page_data = self.servlet.GatherPageData(self.mr)
     project_view_a, project_view_b = page_data['projects']
     self.assertTrue(project_view_a.starred)

@@ -37,14 +37,14 @@ class IssuePeekTest(unittest.TestCase):
         usergroup=fake.UserGroupService(),
         features=fake.FeaturesService(),
         spam=fake.SpamService())
-    self.services.user.TestAddUser('suer@example.com', 111L)
+    self.services.user.TestAddUser('suer@example.com', 111)
     self.proj = self.services.project.TestAddProject('proj', project_id=789)
     self.cnxn = 'fake cnxn'
     self.servlet = issuepeek.IssuePeek(
         'req', 'res', services=self.services)
     self.local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services,
-        789, 'summary', 'status', 111L, [], [], [], [], 111L,
+        789, 'summary', 'status', 111, [], [], [], [], 111,
         'The screen is just dark when I press power on')
 
   def tearDown(self):
@@ -67,7 +67,7 @@ class IssuePeekTest(unittest.TestCase):
   def testPaginateComments_NotVisible(self):
     mr = testing_helpers.MakeMonorailRequest()
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111)
     issuecomment_list = [tracker_pb2.IssueComment()]
 
     # No comments yet.
@@ -97,7 +97,7 @@ class IssuePeekTest(unittest.TestCase):
   def testPaginateComments_Visible(self):
     mr = testing_helpers.MakeMonorailRequest()
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111)
     issuecomment_list = [tracker_pb2.IssueComment()]
     # full page of comments, none deleted.
     for _ in range(framework_constants.DEFAULT_COMMENTS_PER_PAGE):

@@ -72,7 +72,7 @@ class SortingTest(unittest.TestCase):
   def testMakeSingleSortKeyAccessor_WithPostProcessor(self):
     """Sorting a built-in user column should create a user accessor."""
     self.mox.StubOutWithMock(sorting, '_MakeAccessorWithPostProcessor')
-    users_by_id = {111L: 'fake user'}
+    users_by_id = {111: 'fake user'}
     sorting._MakeAccessorWithPostProcessor(
         users_by_id, 'mock owner accessor', 'mock postprocessor')
     self.mox.ReplayAll()
@@ -120,7 +120,7 @@ class SortingTest(unittest.TestCase):
   def testIndexListAccessor_SomeWellKnownValues(self):
     """Values sort according to their position in the well-known list."""
     well_known_values = [11, 33, 22]  # These represent component IDs.
-    art = fake.MakeTestIssue(789, 1, 'sum 1', 'New', 111L)
+    art = fake.MakeTestIssue(789, 1, 'sum 1', 'New', 111)
     base_accessor = lambda issue: issue.component_ids
     accessor = sorting._IndexListAccessor(well_known_values, base_accessor)
 
@@ -145,7 +145,7 @@ class SortingTest(unittest.TestCase):
   def testIndexListAccessor_NoWellKnownValues(self):
     """When there are no well-known values, all values sort last."""
     well_known_values = []  # Nothing pre-defined, so everything is oddball
-    art = fake.MakeTestIssue(789, 1, 'sum 1', 'New', 111L)
+    art = fake.MakeTestIssue(789, 1, 'sum 1', 'New', 111)
     base_accessor = lambda issue: issue.component_ids
     accessor = sorting._IndexListAccessor(well_known_values, base_accessor)
 
@@ -172,7 +172,7 @@ class SortingTest(unittest.TestCase):
 
   def testIndexOrLexicalList(self):
     well_known_values = ['Pri-High', 'Pri-Med', 'Pri-Low']
-    art = fake.MakeTestIssue(789, 1, 'sum 1', 'New', 111L, merged_into=200001)
+    art = fake.MakeTestIssue(789, 1, 'sum 1', 'New', 111, merged_into=200001)
 
     # Case 1: accessor generates no values.
     accessor = sorting._IndexOrLexicalList(well_known_values, [], 'pri', {})
@@ -206,7 +206,7 @@ class SortingTest(unittest.TestCase):
                      neg_accessor(art))
 
   def testIndexOrLexicalList_CustomFields(self):
-    art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111L)
+    art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111)
     art.labels = ['samename-value1']
     art.field_values = [tracker_bizobj.MakeFieldValue(
         3, 6078, None, None, None, None, False)]
@@ -233,7 +233,7 @@ class SortingTest(unittest.TestCase):
         [sorting.DescendingValue('value1'), -6078], neg_accessor(art))
 
   def testIndexOrLexicalList_PhaseCustomFields(self):
-    art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111L)
+    art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111)
     art.labels = ['summer.goats-value1']
     art.field_values = [
         tracker_bizobj.MakeFieldValue(
@@ -264,7 +264,7 @@ class SortingTest(unittest.TestCase):
         [sorting.DescendingValue('value1'), -34, -33], neg_accessor(art))
 
   def testIndexOrLexicalList_ApprovalStatus(self):
-    art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111L)
+    art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111)
     art.labels = ['samename-value1']
     art.approval_values = [tracker_pb2.ApprovalValue(approval_id=4)]
 
@@ -287,10 +287,10 @@ class SortingTest(unittest.TestCase):
                      neg_accessor(art))
 
   def testIndexOrLexicalList_ApprovalApprover(self):
-    art = art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111L)
+    art = art = fake.MakeTestIssue(789, 1, 'sum 2', 'New', 111)
     art.labels = ['samename-approver-value1']
     art.approval_values = [
-        tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[333L])]
+        tracker_pb2.ApprovalValue(approval_id=4, approver_ids=[333])]
 
     all_field_defs = [
         tracker_bizobj.MakeFieldDef(
@@ -298,7 +298,7 @@ class SortingTest(unittest.TestCase):
             None, None, False, False, False, None, None, None, False, None,
             None, None, None, 'cow spots', False)
     ]
-    users_by_id = {333L: framework_views.StuffUserView(333, 'a@test.com', True)}
+    users_by_id = {333: framework_views.StuffUserView(333, 'a@test.com', True)}
 
     accessor = sorting._IndexOrLexicalList(
         [], all_field_defs, 'samename-approver', users_by_id)

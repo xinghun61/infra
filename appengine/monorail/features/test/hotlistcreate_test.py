@@ -55,7 +55,7 @@ class HotlistCreateTest(unittest.TestCase):
           self.servlet.AssertBasePermission, mr)
 
     mr = testing_helpers.MakeMonorailRequest(
-        perms=permissions.GetPermissions(mr.auth.user_pb, {111L}, None))
+        perms=permissions.GetPermissions(mr.auth.user_pb, {111}, None))
     if expect_nonadmin_ok:
       self.servlet.AssertBasePermission(mr)
     else:
@@ -83,8 +83,8 @@ class HotlistCreateTest(unittest.TestCase):
     self.assertEqual('no', page_data['initial_privacy'])
 
   def testProcessFormData(self):
-    self.servlet.services.user.TestAddUser('owner', 111L)
-    self.mr.auth.user_id = 111L
+    self.servlet.services.user.TestAddUser('owner', 111)
+    self.mr.auth.user_id = 111
     post_data = fake.PostData(hotlistname=['Hotlist'], summary=['summ'],
                               description=['hey'],
                               editors=[''], is_private=['yes'])
@@ -92,8 +92,8 @@ class HotlistCreateTest(unittest.TestCase):
     self.assertTrue('/u/111/hotlists/Hotlist' in url)
 
   def testProcessFormData_OwnerInEditors(self):
-    self.servlet.services.user.TestAddUser('owner_editor', 222L)
-    self.mr.auth.user_id = 222L
+    self.servlet.services.user.TestAddUser('owner_editor', 222)
+    self.mr.auth.user_id = 222
     self.mr.cnxn = 'fake cnxn'
     post_data = fake.PostData(hotlistname=['Hotlist-owner-editor'],
                               summary=['summ'],
@@ -102,13 +102,13 @@ class HotlistCreateTest(unittest.TestCase):
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('/u/222/hotlists/Hotlist-owner-editor' in url)
     hotlists_by_id = self.servlet.services.features.LookupHotlistIDs(
-        self.mr.cnxn, ['Hotlist-owner-editor'], [222L])
-    self.assertTrue(('hotlist-owner-editor', 222L) in hotlists_by_id)
-    hotlist_id = hotlists_by_id[('hotlist-owner-editor', 222L)]
+        self.mr.cnxn, ['Hotlist-owner-editor'], [222])
+    self.assertTrue(('hotlist-owner-editor', 222) in hotlists_by_id)
+    hotlist_id = hotlists_by_id[('hotlist-owner-editor', 222)]
     hotlist = self.servlet.services.features.GetHotlist(
         self.mr.cnxn, hotlist_id, use_cache=False)
-    self.assertEquals(hotlist.owner_ids, [222L])
-    self.assertEquals(hotlist.editor_ids, [])
+    self.assertEqual(hotlist.owner_ids, [222])
+    self.assertEqual(hotlist.editor_ids, [])
 
   def testProcessFormData_RejectTemplateInvalid(self):
     mr = testing_helpers.MakeMonorailRequest()

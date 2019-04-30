@@ -45,7 +45,7 @@ class ServletTest(unittest.TestCase):
         project=fake.ProjectService(),
         project_star=fake.ProjectStarService(),
         user=fake.UserService())
-    services.user.TestAddUser('user@example.com', 111L)
+    services.user.TestAddUser('user@example.com', 111)
     self.page_class = TestableServlet(
         webapp2.Request.blank('/'), webapp2.Response(), services=services)
     self.testbed = testbed.Testbed()
@@ -96,7 +96,7 @@ class ServletTest(unittest.TestCase):
       self.page_class._FormHandlerURL('/something/detail_ezt'))
 
   def testProcessForm_NoToken(self):
-    user_id = 111L
+    user_id = 111
     request, mr = testing_helpers.GetRequestObjects(
         path='/we/we/we?so=excited',
         params={'yesterday': 'thursday', 'today': 'friday'},
@@ -120,7 +120,7 @@ class ServletTest(unittest.TestCase):
 
   def testProcessForm_BadToken(self):
 
-    user_id = 111L
+    user_id = 111
     token = 'no soup for you'
 
     request, mr = testing_helpers.GetRequestObjects(
@@ -134,7 +134,7 @@ class ServletTest(unittest.TestCase):
     self.assertEqual(None, self.page_class.seen_post_data)
 
   def testProcessForm_RawResponse(self):
-    user_id = 111L
+    user_id = 111
     token = xsrf.GenerateToken(user_id, '/we/we/we')
 
     request, mr = testing_helpers.GetRequestObjects(
@@ -150,7 +150,7 @@ class ServletTest(unittest.TestCase):
         self.page_class.response.body)
 
   def testProcessForm_Normal(self):
-    user_id = 111L
+    user_id = 111
     token = xsrf.GenerateToken(user_id, '/we/we/we')
 
     request, mr = testing_helpers.GetRequestObjects(
@@ -269,7 +269,7 @@ class ServletTest(unittest.TestCase):
     project = fake.Project(project_name='proj')
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj', project=project)
-    mr.auth.user_pb.linked_parent_id = 111L
+    mr.auth.user_pb.linked_parent_id = 111
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
     self.assertEqual('switch_to_parent_account', help_data['account_cue'])

@@ -43,37 +43,37 @@ class ProjectsServicerTest(unittest.TestCase):
         project_star=fake.ProjectStarService(),
         features=fake.FeaturesService())
 
-    self.admin = self.services.user.TestAddUser('admin@example.com', 123L)
+    self.admin = self.services.user.TestAddUser('admin@example.com', 123)
     self.admin.is_site_admin = True
-    self.services.user.TestAddUser('owner@example.com', 111L)
-    self.services.user.TestAddUser('user_222@example.com', 222L)
-    self.services.user.TestAddUser('user_333@example.com', 333L)
-    self.services.user.TestAddUser('user_444@example.com', 444L)
-    self.services.user.TestAddUser('user_666@example.com', 666L)
+    self.services.user.TestAddUser('owner@example.com', 111)
+    self.services.user.TestAddUser('user_222@example.com', 222)
+    self.services.user.TestAddUser('user_333@example.com', 333)
+    self.services.user.TestAddUser('user_444@example.com', 444)
+    self.services.user.TestAddUser('user_666@example.com', 666)
 
     # User group 888 has members: user_555 and proj@monorail.com
-    self.services.user.TestAddUser('group888@googlegroups.com', 888L)
+    self.services.user.TestAddUser('group888@googlegroups.com', 888)
     self.services.usergroup.TestAddGroupSettings(
-        888L, 'group888@googlegroups.com')
-    self.services.usergroup.TestAddMembers(888L, [555L, 1001L])
+        888, 'group888@googlegroups.com')
+    self.services.usergroup.TestAddMembers(888, [555, 1001])
 
     # User group 999 has members: user_111 and user_444
-    self.services.user.TestAddUser('group999@googlegroups.com', 999L)
+    self.services.user.TestAddUser('group999@googlegroups.com', 999)
     self.services.usergroup.TestAddGroupSettings(
-        999L, 'group999@googlegroups.com')
-    self.services.usergroup.TestAddMembers(999L, [111L, 444L])
+        999, 'group999@googlegroups.com')
+    self.services.usergroup.TestAddMembers(999, [111, 444])
 
     # User group 777 has members: user_666 and group 999.
-    self.services.user.TestAddUser('group777@googlegroups.com', 777L)
+    self.services.user.TestAddUser('group777@googlegroups.com', 777)
     self.services.usergroup.TestAddGroupSettings(
-        777L, 'group777@googlegroups.com')
-    self.services.usergroup.TestAddMembers(777L, [666L, 999L])
+        777, 'group777@googlegroups.com')
+    self.services.usergroup.TestAddMembers(777, [666, 999])
 
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789)
-    self.project.owner_ids.extend([111L])
-    self.project.committer_ids.extend([222L])
-    self.project.contributor_ids.extend([333L])
+    self.project.owner_ids.extend([111])
+    self.project.committer_ids.extend([222])
+    self.project.contributor_ids.extend([333])
     self.projects_svcr = projects_servicer.ProjectsServicer(
         self.services, make_rate_limiter=False)
     self.prpc_context = context.ServicerContext()
@@ -176,7 +176,7 @@ class ProjectsServicerTest(unittest.TestCase):
         tracker_pb2.SavedQuery(query_id=202, name='hello', query='world')
     ])
 
-    # User 333L is a contributor.
+    # User 333 is a contributor.
     mc = monorailcontext.MonorailContext(
         self.services, cnxn=self.cnxn, requester='user_333@example.com')
 
@@ -213,7 +213,7 @@ class ProjectsServicerTest(unittest.TestCase):
   def testGetCustomPermissions_Normal(self):
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=111L,
+            member_id=111,
             perms=['FooPerm', 'BarPerm'])]
 
     request = projects_pb2.GetConfigRequest(project_name='proj')
@@ -226,10 +226,10 @@ class ProjectsServicerTest(unittest.TestCase):
   def testGetCustomPermissions_PermissionsAreDedupped(self):
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=111L,
+            member_id=111,
             perms=['FooPerm', 'FooPerm']),
         project_pb2.Project.ExtraPerms(
-            member_id=222L,
+            member_id=222,
             perms=['FooPerm'])]
 
     request = projects_pb2.GetConfigRequest(project_name='proj')
@@ -242,10 +242,10 @@ class ProjectsServicerTest(unittest.TestCase):
   def testGetCustomPermissions_PermissionsAreSorted(self):
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=111L,
+            member_id=111,
             perms=['FooPerm', 'BarPerm']),
         project_pb2.Project.ExtraPerms(
-            member_id=222L,
+            member_id=222,
             perms=['BazPerm'])]
 
     request = projects_pb2.GetConfigRequest(project_name='proj')
@@ -258,7 +258,7 @@ class ProjectsServicerTest(unittest.TestCase):
   def testGetCustomPermissions_IgnoreStandardPermissions(self):
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=111L,
+            member_id=111,
             perms=permissions.STANDARD_PERMISSIONS + ['FooPerm'])]
 
     request = projects_pb2.GetConfigRequest(project_name='proj')
@@ -305,50 +305,50 @@ class ProjectsServicerTest(unittest.TestCase):
 
   def testGetVisibleMembers_Normal(self):
     # Not logged in
-    self.assertVisibleMembers([111L, 222L, 333L], [])
+    self.assertVisibleMembers([111, 222, 333], [])
     # Logged in
-    self.assertVisibleMembers([111L, 222L, 333L], [],
+    self.assertVisibleMembers([111, 222, 333], [],
                               requester='foo@example.com')
     # Logged in as owner
-    self.assertVisibleMembers([111L, 222L, 333L], [],
+    self.assertVisibleMembers([111, 222, 333], [],
                               requester='owner@example.com')
     # Logged in as committer
-    self.assertVisibleMembers([111L, 222L, 333L], [],
+    self.assertVisibleMembers([111, 222, 333], [],
                               requester='user_222@example.com')
     # Logged in as contributor
-    self.assertVisibleMembers([111L, 222L, 333L], [],
+    self.assertVisibleMembers([111, 222, 333], [],
                               requester='user_333@example.com')
 
   def testGetVisibleMembers_OnlyOwnersSeeContributors(self):
     self.project.only_owners_see_contributors = True
     # Not logged in
-    self.assertVisibleMembers([111L, 222L], [])
+    self.assertVisibleMembers([111, 222], [])
     # Logged in
-    self.assertVisibleMembers([111L, 222L], [],
+    self.assertVisibleMembers([111, 222], [],
                               requester='foo@example.com')
     # Logged in as owner
-    self.assertVisibleMembers([111L, 222L, 333L], [],
+    self.assertVisibleMembers([111, 222, 333], [],
                               requester='owner@example.com')
     # Logged in as committer
-    self.assertVisibleMembers([111L, 222L, 333L], [],
+    self.assertVisibleMembers([111, 222, 333], [],
                               requester='user_222@example.com')
     # Logged in as contributor
-    self.assertVisibleMembers([111L, 222L], [],
+    self.assertVisibleMembers([111, 222], [],
                               requester='user_333@example.com')
 
   def testGetVisibleMembers_MemberIsGroup(self):
-    self.project.contributor_ids.extend([999L])
-    self.assertVisibleMembers([111L, 222L, 333L, 444L, 999L], [999L],
+    self.project.contributor_ids.extend([999])
+    self.assertVisibleMembers([111, 222, 333, 444, 999], [999],
                               requester='owner@example.com')
 
   def testGetVisibleMembers_AcExclusion(self):
-    self.services.project.ac_exclusion_ids[self.project.project_id] = [333L]
-    self.assertVisibleMembers([111L, 222L], [], requester='owner@example.com')
+    self.services.project.ac_exclusion_ids[self.project.project_id] = [333]
+    self.assertVisibleMembers([111, 222], [], requester='owner@example.com')
 
   def testGetVisibleMembers_NoExpand(self):
-    self.services.project.no_expand_ids[self.project.project_id] = [999L]
-    self.project.contributor_ids.extend([999L])
-    self.assertVisibleMembers([111L, 222L, 333L, 999L], [999L],
+    self.services.project.no_expand_ids[self.project.project_id] = [999]
+    self.project.contributor_ids.extend([999])
+    self.assertVisibleMembers([111, 222, 333, 999], [999],
                               requester='owner@example.com')
 
   def testListStatuses(self):
@@ -378,13 +378,13 @@ class ProjectsServicerTest(unittest.TestCase):
   def testListComponents(self):
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Foo', 'Foo Component', True, [],
-        [], True, 111L, [])
+        [], True, 111, [])
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Bar', 'Bar Component', False, [],
-        [], True, 111L, [])
+        [], True, 111, [])
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Bar>Baz', 'Baz Component',
-        False, [], [], True, 111L, [])
+        False, [], [], True, 111, [])
 
     request = projects_pb2.ListComponentsRequest(project_name='proj')
     mc = monorailcontext.MonorailContext(
@@ -410,15 +410,15 @@ class ProjectsServicerTest(unittest.TestCase):
   def testListComponents_IncludeAdminInfo(self):
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Foo', 'Foo Component', True, [],
-        [], 1234567, 111L, [])
+        [], 1234567, 111, [])
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Bar', 'Bar Component', False, [],
-        [], 1234568, 111L, [])
+        [], 1234568, 111, [])
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Bar>Baz', 'Baz Component',
-        False, [], [], 1234569, 111L, [])
+        False, [], [], 1234569, 111, [])
     creator_ref = common_pb2.UserRef(
-        user_id=111L,
+        user_id=111,
         display_name='owner@example.com')
     no_user_ref = common_pb2.UserRef(
         display_name=framework_constants.NO_USER_NAME)
@@ -484,7 +484,7 @@ class ProjectsServicerTest(unittest.TestCase):
     field = response.field_defs[0]
     self.assertEqual('Foo Field', field.field_ref.field_name)
     self.assertEqual(
-        [111L, 222L],
+        [111, 222],
         sorted([user_ref.user_id for user_ref in field.user_choices]))
     self.assertEqual(
         ['owner@example.com', 'user_222@example.com'],
@@ -540,10 +540,10 @@ class ProjectsServicerTest(unittest.TestCase):
     self.AddField('Foo Field', needs_perm='FooPerm')
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=111L,
+            member_id=111,
             perms=['UnrelatedPerm']),
         project_pb2.Project.ExtraPerms(
-            member_id=222L,
+            member_id=222,
             perms=['FooPerm'])]
 
     request = projects_pb2.ListFieldsRequest(
@@ -557,7 +557,7 @@ class ProjectsServicerTest(unittest.TestCase):
     field = response.field_defs[0]
     self.assertEqual('Foo Field', field.field_ref.field_name)
     self.assertEqual(
-        [222L],
+        [222],
         sorted([user_ref.user_id for user_ref in field.user_choices]))
     self.assertEqual(
         ['user_222@example.com'],
@@ -566,10 +566,10 @@ class ProjectsServicerTest(unittest.TestCase):
   def testListFields_IndirectPermission(self):
     """Test that the permissions of effective ids are also considered."""
     self.AddField('Foo Field', needs_perm='FooPerm')
-    self.project.contributor_ids.extend([999L])
+    self.project.contributor_ids.extend([999])
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=999L,
+            member_id=999,
             perms=['FooPerm', 'BarPerm'])]
 
     request = projects_pb2.ListFieldsRequest(
@@ -583,10 +583,10 @@ class ProjectsServicerTest(unittest.TestCase):
     self.assertEqual(1, len(response.field_defs))
     field = response.field_defs[0]
     self.assertEqual('Foo Field', field.field_ref.field_name)
-    # Users 111L and 444L are members of group 999L, which has the needed
+    # Users 111 and 444 are members of group 999, which has the needed
     # permission.
     self.assertEqual(
-        [111L, 444L, 999L],
+        [111, 444, 999],
         sorted([user_ref.user_id for user_ref in field.user_choices]))
     self.assertEqual(
         ['group999@googlegroups.com', 'owner@example.com',
@@ -596,11 +596,11 @@ class ProjectsServicerTest(unittest.TestCase):
   def testListFields_TwiceIndirectPermission(self):
      """Test that only direct memberships are considered."""
      self.AddField('Foo Field', needs_perm='FooPerm')
-     self.project.contributor_ids.extend([777L])
-     self.project.contributor_ids.extend([999L])
+     self.project.contributor_ids.extend([777])
+     self.project.contributor_ids.extend([999])
      self.project.extra_perms = [
          project_pb2.Project.ExtraPerms(
-             member_id=777L,
+             member_id=777,
              perms=['FooPerm', 'BarPerm'])]
 
      request = projects_pb2.ListFieldsRequest(
@@ -615,7 +615,7 @@ class ProjectsServicerTest(unittest.TestCase):
      field = response.field_defs[0]
      self.assertEqual('Foo Field', field.field_ref.field_name)
      self.assertEqual(
-         [666L, 777L, 999L],
+         [666, 777, 999],
          sorted([user_ref.user_id for user_ref in field.user_choices]))
      self.assertEqual(
          ['group777@googlegroups.com', 'group999@googlegroups.com',
@@ -654,8 +654,8 @@ class ProjectsServicerTest(unittest.TestCase):
         ['Bar Field', 'Foo Field'],
         [field.field_ref.field_name for field in field_defs])
     self.assertEqual(
-        [[111L, 222L, 333L],
-         [111L, 222L]],
+        [[111, 222, 333],
+         [111, 222]],
         [sorted(user_ref.user_id for user_ref in field.user_choices)
          for field in field_defs])
     self.assertEqual(
@@ -692,7 +692,7 @@ class ProjectsServicerTest(unittest.TestCase):
   def testGetLabelOptions_CustomPermissions(self):
     self.project.extra_perms = [
         project_pb2.Project.ExtraPerms(
-            member_id=222L,
+            member_id=222,
             perms=['FooPerm', 'BarPerm'])]
 
     request = projects_pb2.GetLabelOptionsRequest(project_name='proj')
@@ -793,21 +793,21 @@ class ProjectsServicerTest(unittest.TestCase):
 
     for name, state in project_states.iteritems():
       self.services.project.TestAddProject(
-          'owner-' + name, state=state, owner_ids=[222L])
+          'owner-' + name, state=state, owner_ids=[222])
       self.services.project.TestAddProject(
-          'committer-' + name, state=state, committer_ids=[222L])
+          'committer-' + name, state=state, committer_ids=[222])
       contributor = self.services.project.TestAddProject(
           'contributor-' + name, state=state)
-      contributor.contributor_ids = [222L]
+      contributor.contributor_ids = [222]
 
     members_only = self.services.project.TestAddProject(
-        'members-only', owner_ids=[222L])
+        'members-only', owner_ids=[222])
     members_only.access = project_pb2.ProjectAccess.MEMBERS_ONLY
 
   def testGetUserProjects(self):
     self.AddUserProjects()
     self.services.project_star.SetStar(
-        self.cnxn, self.project.project_id, 222L, True)
+        self.cnxn, self.project.project_id, 222, True)
 
     request = projects_pb2.GetUserProjectsRequest()
     mc = monorailcontext.MonorailContext(
@@ -881,7 +881,7 @@ class ProjectsServicerTest(unittest.TestCase):
   def testCheckComponentName_ParentComponentOK(self):
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Component', 'Docstring',
-        False, [], [], 0, 111L, [])
+        False, [], [], 0, 111, [])
     request = projects_pb2.CheckComponentNameRequest(
         project_name='proj',
         parent_path='Component',
@@ -909,7 +909,7 @@ class ProjectsServicerTest(unittest.TestCase):
   def testCheckComponentName_ComponentAlreadyExists(self):
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Component', 'Docstring',
-        False, [], [], 0, 111L, [])
+        False, [], [], 0, 111, [])
     request = projects_pb2.CheckComponentNameRequest(
         project_name='proj',
         component_name='Component')

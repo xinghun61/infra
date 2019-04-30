@@ -29,7 +29,7 @@ class BannedTest(unittest.TestCase):
       servlet.AssertBasePermission(mr)
     self.assertEquals(404, cm.exception.code)
 
-    mr.auth.user_id = 111L  # User who is not banned cannot view banned page.
+    mr.auth.user_id = 111  # User who is not banned cannot view banned page.
     with self.assertRaises(webapp2.HTTPException) as cm:
       servlet.AssertBasePermission(mr)
     self.assertEquals(404, cm.exception.code)

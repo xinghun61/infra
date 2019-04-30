@@ -222,7 +222,7 @@ class NoReplyAddressTest(unittest.TestCase):
 
   def testWithCommenter(self):
     commenter_view = framework_views.StuffUserView(
-        111L, 'user@example.com', True)
+        111, 'user@example.com', True)
     self.assertEqual(
         'user via monorail '
         '<no_reply+v2.111@testbed-test.appspotmail.com>',
@@ -231,7 +231,7 @@ class NoReplyAddressTest(unittest.TestCase):
 
   def testObscuredCommenter(self):
     commenter_view = framework_views.StuffUserView(
-        111L, 'user@example.com', True)
+        111, 'user@example.com', True)
     self.assertEqual(
         u'u\u2026 via monorail '
         '<no_reply+v2.111@testbed-test.appspotmail.com>',
@@ -262,7 +262,7 @@ class FormatFromAddrTest(unittest.TestCase):
 
   def testWithCommenter(self):
     commenter_view = framework_views.StuffUserView(
-        111L, 'user@example.com', True)
+        111, 'user@example.com', True)
     self.assertEqual(
         u'user via monorail <monorail+v2.111@chromium.org>',
         emailfmt.FormatFromAddr(
@@ -270,7 +270,7 @@ class FormatFromAddrTest(unittest.TestCase):
 
   def testObscuredCommenter(self):
     commenter_view = framework_views.StuffUserView(
-        111L, 'user@example.com', True)
+        111, 'user@example.com', True)
     self.assertEqual(
         u'u\u2026 via monorail <monorail+v2.111@chromium.org>',
         emailfmt.FormatFromAddr(
@@ -279,7 +279,7 @@ class FormatFromAddrTest(unittest.TestCase):
   def testServiceAccountCommenter(self):
     johndoe_bot = '123456789@developer.gserviceaccount.com'
     commenter_view = framework_views.StuffUserView(
-        111L, johndoe_bot, True)
+        111, johndoe_bot, True)
     self.assertEqual(
         ('johndoe via monorail <monorail+v2.111@chromium.org>'),
         emailfmt.FormatFromAddr(

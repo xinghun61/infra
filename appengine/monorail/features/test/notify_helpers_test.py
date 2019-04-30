@@ -53,15 +53,15 @@ class MergeLinkedAccountReasonsTest(unittest.TestCase):
 
   def setUp(self):
     parent = user_pb2.User(
-        user_id=111L, email='parent@example.org',
-        linked_child_ids=[222L])
+        user_id=111, email='parent@example.org',
+        linked_child_ids=[222])
     child = user_pb2.User(
-        user_id=222L, email='child@example.org',
-        linked_parent_id=111L)
+        user_id=222, email='child@example.org',
+        linked_parent_id=111)
     user_3 = user_pb2.User(
-        user_id=333L, email='user4@example.org')
+        user_id=333, email='user4@example.org')
     user_4 = user_pb2.User(
-        user_id=444L, email='user4@example.org')
+        user_id=444, email='user4@example.org')
     self.addr_perm_parent = notify_reasons.AddrPerm(
         False, parent.email, parent, notify_reasons.REPLY_NOT_ALLOWED)
     self.addr_perm_child = notify_reasons.AddrPerm(
@@ -113,9 +113,9 @@ class MakeBulletedEmailWorkItemsTest(unittest.TestCase):
   def setUp(self):
     self.project = fake.Project(project_name='proj1')
     self.commenter_view = framework_views.StuffUserView(
-        111L, 'test@example.com', True)
+        111, 'test@example.com', True)
     self.issue = fake.MakeTestIssue(
-        self.project.project_id, 1234, 'summary', 'New', 111L)
+        self.project.project_id, 1234, 'summary', 'New', 111)
     self.detail_url = 'http://test-detail-url.com/id=1234'
 
   def testEmptyAddrs(self):
@@ -136,7 +136,7 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     self.project = fake.Project(project_name='proj1')
     self.project.process_inbound_email = True
     self.commenter_view = framework_views.StuffUserView(
-        111L, 'test@example.com', True)
+        111, 'test@example.com', True)
     self.expected_html_footer = (
         'You received this message because:<br/>  1. reason<br/><br/>You may '
         'adjust your notification preferences at:<br/><a href="https://'
@@ -144,9 +144,9 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         '</a>')
     self.services = service_manager.Services(
         user=fake.UserService())
-    self.member = self.services.user.TestAddUser('member@example.com', 222L)
+    self.member = self.services.user.TestAddUser('member@example.com', 222)
     self.issue = fake.MakeTestIssue(
-        self.project.project_id, 1234, 'summary', 'New', 111L,
+        self.project.project_id, 1234, 'summary', 'New', 111,
         project_name='proj1')
     self.detail_url = 'http://test-detail-url.com/id=1234'
 

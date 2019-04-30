@@ -132,9 +132,9 @@ class IssueDateActionTaskTest(unittest.TestCase):
         ]
     self.services.config.StoreConfig('cnxn', self.config)
     self.project = self.services.project.TestAddProject('proj', project_id=789)
-    self.owner = self.services.user.TestAddUser('owner@example.com', 111L)
+    self.owner = self.services.user.TestAddUser('owner@example.com', 111)
     self.date_action_user = self.services.user.TestAddUser(
-        'date-action-user@example.com', 555L)
+        'date-action-user@example.com', 555)
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -144,7 +144,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path=urls.ISSUE_DATE_ACTION_TASK + '.do?issue_id=78901')
     self.services.issue.TestAddIssue(fake.MakeTestIssue(
-        789, 1, 'summary', 'New', 111L, issue_id=78901))
+        789, 1, 'summary', 'New', 111, issue_id=78901))
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
         mr.cnxn, 78901)))
     self.mox.ReplayAll()
@@ -168,7 +168,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
 
     now = int(time.time())
     date_str = timestr.TimestampToDateWidgetStr(now)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     issue.field_values = [
         tracker_bizobj.MakeFieldValue(123, None, None, None, now, None, False)]
@@ -198,7 +198,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
 
     now = int(time.time())
     date_str = timestr.TimestampToDateWidgetStr(now)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     self.SetUpFieldValues(issue, now)
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
@@ -262,10 +262,10 @@ class IssueDateActionTaskTest(unittest.TestCase):
     next_action_field_def = self.config.field_defs[0]
     pings = [(next_action_field_def, now)]
 
-    starrer_333 = self.services.user.TestAddUser('starrer333@example.com', 333L)
+    starrer_333 = self.services.user.TestAddUser('starrer333@example.com', 333)
     starrer_333.notify_starred_ping = True
-    self.services.user.TestAddUser('starrer444@example.com', 444L)
-    starrer_ids = [333L, 444L]
+    self.services.user.TestAddUser('starrer444@example.com', 444)
+    starrer_ids = [333, 444]
     users_by_id = framework_views.MakeAllUserViews(
         'fake cnxn', self.services.user,
         [self.owner.user_id, self.date_action_user.user_id],

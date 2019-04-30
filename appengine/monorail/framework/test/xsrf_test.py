@@ -33,79 +33,79 @@ class XsrfTest(unittest.TestCase):
 
   def testGenerateToken_DifferentUsersGetDifferentTokens(self):
     self.assertNotEqual(
-        xsrf.GenerateToken(111L, '/path'),
-        xsrf.GenerateToken(222L, '/path'))
+        xsrf.GenerateToken(111, '/path'),
+        xsrf.GenerateToken(222, '/path'))
 
     self.assertNotEqual(
-        xsrf.GenerateToken(111L, '/path'),
+        xsrf.GenerateToken(111, '/path'),
         xsrf.GenerateToken(0L, '/path'))
 
   def testGenerateToken_DifferentPathsGetDifferentTokens(self):
     self.assertNotEqual(
-        xsrf.GenerateToken(111L, '/path/one'),
-        xsrf.GenerateToken(111L, '/path/two'))
+        xsrf.GenerateToken(111, '/path/one'),
+        xsrf.GenerateToken(111, '/path/two'))
 
   @patch('time.time')
   def testGenerateToken_CloseTimesGetSameTokens(self, mockTime):
     test_time = 1526671379
 
     mockTime.return_value = test_time
-    token1 = xsrf.GenerateToken(111L, '/path')
+    token1 = xsrf.GenerateToken(111, '/path')
 
     mockTime.return_value = test_time + 1
-    token2 = xsrf.GenerateToken(111L, '/path')
+    token2 = xsrf.GenerateToken(111, '/path')
     self.assertEqual(token1, token2)
 
     mockTime.return_value = test_time \
         + xsrf.TOKEN_GRANULARITY_SECONDS \
         - xsrf.TOKEN_TIMEOUT_MARGIN_SEC
-    token3 = xsrf.GenerateToken(111L, '/path')
+    token3 = xsrf.GenerateToken(111, '/path')
     self.assertEqual(token1, token3)
 
     mockTime.return_value = test_time + xsrf.TOKEN_GRANULARITY_SECONDS
-    token4 = xsrf.GenerateToken(111L, '/path')
+    token4 = xsrf.GenerateToken(111, '/path')
     self.assertNotEqual(token1, token4)
 
   def testValidToken(self):
-    token = xsrf.GenerateToken(111L, '/path')
-    xsrf.ValidateToken(token, 111L, '/path')  # no exception raised
+    token = xsrf.GenerateToken(111, '/path')
+    xsrf.ValidateToken(token, 111, '/path')  # no exception raised
 
   def testMalformedToken(self):
     self.assertRaises(
       xsrf.TokenIncorrect,
-      xsrf.ValidateToken, 'bad', 111L, '/path')
+      xsrf.ValidateToken, 'bad', 111, '/path')
     self.assertRaises(
       xsrf.TokenIncorrect,
-      xsrf.ValidateToken, '', 111L, '/path')
+      xsrf.ValidateToken, '', 111, '/path')
 
     self.assertRaises(
         xsrf.TokenIncorrect,
-        xsrf.ValidateToken, '098a08fe08b08c08a05e:9721973123', 111L, '/path')
+        xsrf.ValidateToken, '098a08fe08b08c08a05e:9721973123', 111, '/path')
 
   def testWrongUser(self):
-    token = xsrf.GenerateToken(111L, '/path')
+    token = xsrf.GenerateToken(111, '/path')
     self.assertRaises(
       xsrf.TokenIncorrect,
-      xsrf.ValidateToken, token, 222L, '/path')
+      xsrf.ValidateToken, token, 222, '/path')
 
   def testWrongPath(self):
-    token = xsrf.GenerateToken(111L, '/path/one')
+    token = xsrf.GenerateToken(111, '/path/one')
     self.assertRaises(
       xsrf.TokenIncorrect,
-      xsrf.ValidateToken, token, 111L, '/path/two')
+      xsrf.ValidateToken, token, 111, '/path/two')
 
   @patch('time.time')
   def testValidateToken_Expiration(self, mockTime):
     test_time = 1526671379
     mockTime.return_value = test_time
-    token = xsrf.GenerateToken(111L, '/path')
-    xsrf.ValidateToken(token, 111L, '/path')
+    token = xsrf.GenerateToken(111, '/path')
+    xsrf.ValidateToken(token, 111, '/path')
 
     mockTime.return_value = test_time + 1
-    xsrf.ValidateToken(token, 111L, '/path')
+    xsrf.ValidateToken(token, 111, '/path')
 
     mockTime.return_value = test_time + xsrf.TOKEN_TIMEOUT_SEC
-    xsrf.ValidateToken(token, 111L, '/path')
+    xsrf.ValidateToken(token, 111, '/path')
 
     mockTime.return_value = test_time + xsrf.TOKEN_TIMEOUT_SEC + 1
     self.assertRaises(

@@ -32,7 +32,7 @@ class UserSettingsTest(unittest.TestCase):
 
   def testAssertBasePermission(self):
     mr = testing_helpers.MakeMonorailRequest()
-    mr.auth.user_id = 111L
+    mr.auth.user_id = 111
 
     # The following should return without exception.
     self.servlet.AssertBasePermission(mr)

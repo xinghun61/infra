@@ -70,20 +70,20 @@ class HelpersTest(unittest.TestCase):
       self.services.user.TestAddUser(email, user_id)
 
     self.services.project.TestAddProject('testproj', project_id=789)
-    self.issue1 = fake.MakeTestIssue(789, 1, 'one', 'New', 111L)
+    self.issue1 = fake.MakeTestIssue(789, 1, 'one', 'New', 111)
     self.issue1.project_name = 'testproj'
     self.services.issue.TestAddIssue(self.issue1)
-    self.issue2 = fake.MakeTestIssue(789, 2, 'two', 'New', 111L)
+    self.issue2 = fake.MakeTestIssue(789, 2, 'two', 'New', 111)
     self.issue2.project_name = 'testproj'
     self.services.issue.TestAddIssue(self.issue2)
-    self.issue3 = fake.MakeTestIssue(789, 3, 'three', 'New', 111L)
+    self.issue3 = fake.MakeTestIssue(789, 3, 'three', 'New', 111)
     self.issue3.project_name = 'testproj'
     self.services.issue.TestAddIssue(self.issue3)
     self.cnxn = 'fake connextion'
     self.errors = template_helpers.EZTError()
     self.default_colspec_param = 'colspec=%s' % (
         tracker_constants.DEFAULT_COL_SPEC.replace(' ', '%20'))
-    self.services.usergroup.TestAddGroupSettings(999L, 'group@example.com')
+    self.services.usergroup.TestAddGroupSettings(999, 'group@example.com')
 
   def testParseIssueRequest_Empty(self):
     post_data = fake.PostData()
@@ -519,7 +519,7 @@ class HelpersTest(unittest.TestCase):
     project = project_pb2.Project()
     project.owner_ids.extend([1L, 2L])
     project.committer_ids.extend([3L])
-    project.contributor_ids.extend([4L, 999L])
+    project.contributor_ids.extend([4L, 999])
 
     valid, _ = tracker_helpers.IsValidIssueOwner(
         'fake cnxn', project, framework_constants.NO_USER_SPECIFIED,
@@ -549,7 +549,7 @@ class HelpersTest(unittest.TestCase):
     self.assertFalse(valid)
 
     valid, _ = tracker_helpers.IsValidIssueOwner(
-        'fake cnxn', project, 999L,
+        'fake cnxn', project, 999,
         self.services)
     self.assertFalse(valid)
 
@@ -765,10 +765,10 @@ class HelpersTest(unittest.TestCase):
 
   def testMergeCCsAndAddComment(self):
     target_issue = fake.MakeTestIssue(
-        789, 10, 'Target issue', 'New', 111L)
+        789, 10, 'Target issue', 'New', 111)
     source_issue = fake.MakeTestIssue(
-        789, 100, 'Source issue', 'New', 222L)
-    source_issue.cc_ids.append(111L)
+        789, 100, 'Source issue', 'New', 222)
+    source_issue.cc_ids.append(111)
     # Issue without owner
     source_issue_2 = fake.MakeTestIssue(
         789, 101, 'Source issue 2', 'New', 0L)
@@ -781,7 +781,7 @@ class HelpersTest(unittest.TestCase):
     initial_issue_comments = (
         self.services.issue.GetCommentsForIssue(
             'fake cnxn', target_issue.issue_id)[:])
-    mr = testing_helpers.MakeMonorailRequest(user_info={'user_id': 111L})
+    mr = testing_helpers.MakeMonorailRequest(user_info={'user_id': 111})
 
     # Merging source into target should create a comment.
     self.assertIsNotNone(
@@ -797,8 +797,8 @@ class HelpersTest(unittest.TestCase):
     # Merging source into target should add source's owner to target's CCs.
     updated_target_issue = self.services.issue.GetIssueByLocalID(
         'fake cnxn', 789, 10)
-    self.assertIn(111L, updated_target_issue.cc_ids)
-    self.assertIn(222L, updated_target_issue.cc_ids)
+    self.assertIn(111, updated_target_issue.cc_ids)
+    self.assertIn(222, updated_target_issue.cc_ids)
 
     # Merging source 2 into target should make a comment, but not update CCs.
     self.assertIsNotNone(
@@ -810,12 +810,12 @@ class HelpersTest(unittest.TestCase):
 
   def testMergeCCsAndAddComment_RestrictedSourceIssue(self):
     target_issue = fake.MakeTestIssue(
-        789, 10, 'Target issue', 'New', 222L)
+        789, 10, 'Target issue', 'New', 222)
     target_issue_2 = fake.MakeTestIssue(
-        789, 11, 'Target issue 2', 'New', 222L)
+        789, 11, 'Target issue 2', 'New', 222)
     source_issue = fake.MakeTestIssue(
-        789, 100, 'Source issue', 'New', 111L)
-    source_issue.cc_ids.append(111L)
+        789, 100, 'Source issue', 'New', 111)
+    source_issue.cc_ids.append(111)
     source_issue.labels.append('Restrict-View-Commit')
     target_issue_2.labels.append('Restrict-View-Commit')
 
@@ -826,7 +826,7 @@ class HelpersTest(unittest.TestCase):
     # We copy this list so that it isn't updated by the test framework
     initial_issue_comments = self.services.issue.GetCommentsForIssue(
         'fake cnxn', target_issue.issue_id)[:]
-    mr = testing_helpers.MakeMonorailRequest(user_info={'user_id': 111L})
+    mr = testing_helpers.MakeMonorailRequest(user_info={'user_id': 111})
     self.assertIsNotNone(
         tracker_helpers.MergeCCsAndAddComment(
             self.services, mr, source_issue, target_issue))
@@ -841,14 +841,14 @@ class HelpersTest(unittest.TestCase):
     # ...but not the target CCs...
     updated_target_issue = self.services.issue.GetIssueByLocalID(
         'fake cnxn', 789, 10)
-    self.assertNotIn(111L, updated_target_issue.cc_ids)
+    self.assertNotIn(111, updated_target_issue.cc_ids)
     # ...unless both issues have the same restrictions.
     self.assertIsNotNone(
         tracker_helpers.MergeCCsAndAddComment(
             self.services, mr, source_issue, target_issue_2))
     updated_target_issue_2 = self.services.issue.GetIssueByLocalID(
         'fake cnxn', 789, 11)
-    self.assertIn(111L, updated_target_issue_2.cc_ids)
+    self.assertIn(111, updated_target_issue_2.cc_ids)
 
   def testMergeCCsAndAddCommentMultipleIssues(self):
     pass  # TODO(jrobbins): Write this test.
@@ -893,14 +893,14 @@ class HelpersTest(unittest.TestCase):
   def testPairDerivedValuesWithRuleExplanations_SomeValues(self):
     """Test we return derived values and explanations for an issue."""
     proposed_issue = tracker_pb2.Issue(
-        derived_owner_id=111L, derived_cc_ids=[222L, 333L],
+        derived_owner_id=111, derived_cc_ids=[222, 333],
         derived_labels=['aaa', 'zzz'],
         derived_warnings=['Watch out'],
         derived_errors=['Status Assigned requires an owner'])
     traces = {
-        (tracker_pb2.FieldID.OWNER, 111L): 'explain 1',
-        (tracker_pb2.FieldID.CC, 222L): 'explain 2',
-        (tracker_pb2.FieldID.CC, 333L): 'explain 3',
+        (tracker_pb2.FieldID.OWNER, 111): 'explain 1',
+        (tracker_pb2.FieldID.CC, 222): 'explain 2',
+        (tracker_pb2.FieldID.CC, 333): 'explain 3',
         (tracker_pb2.FieldID.LABELS, 'aaa'): 'explain 4',
         (tracker_pb2.FieldID.WARNING, 'Watch out'): 'explain 6',
         (tracker_pb2.FieldID.ERROR,
@@ -910,9 +910,9 @@ class HelpersTest(unittest.TestCase):
         # If there is no trace for some derived value, why is None.
         }
     derived_users_by_id = {
-      111L: testing_helpers.Blank(email='one@example.com'),
-      222L: testing_helpers.Blank(email='two@example.com'),
-      333L: testing_helpers.Blank(email='three@example.com'),
+      111: testing_helpers.Blank(email='one@example.com'),
+      222: testing_helpers.Blank(email='two@example.com'),
+      333: testing_helpers.Blank(email='three@example.com'),
       }
     actual = tracker_helpers.PairDerivedValuesWithRuleExplanations(
         proposed_issue, traces, derived_users_by_id)
@@ -1023,11 +1023,11 @@ class GetAllIssueProjectsTest(unittest.TestCase):
 
 
 class FilterOutNonViewableIssuesTest(unittest.TestCase):
-  owner_id = 111L
-  committer_id = 222L
-  nonmember_1_id = 1002L
-  nonmember_2_id = 2002L
-  nonmember_3_id = 3002L
+  owner_id = 111
+  committer_id = 222
+  nonmember_1_id = 1002
+  nonmember_2_id = 2002
+  nonmember_3_id = 3002
 
   issue1 = tracker_pb2.Issue()
   issue1.project_name = 'proj'
@@ -1130,7 +1130,7 @@ class IssueMergeTest(unittest.TestCase):
     self.config_dict = {self.config.project_id: self.config}
 
   def testParseMergeFields_NotSpecified(self):
-    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111)
     errors = template_helpers.EZTError()
     post_data = {}
 
@@ -1147,7 +1147,7 @@ class IssueMergeTest(unittest.TestCase):
     self.assertEqual(None, merge_into_issue)
 
   def testParseMergeFields_WrongStatus(self):
-    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111)
     errors = template_helpers.EZTError()
     post_data = {'merge_into': '12'}
 
@@ -1157,7 +1157,7 @@ class IssueMergeTest(unittest.TestCase):
     self.assertEqual(None, merge_into_issue)
 
   def testParseMergeFields_NoSuchIssue(self):
-    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111)
     issue.merged_into = 12
     errors = template_helpers.EZTError()
     post_data = {'merge_into': '12'}
@@ -1169,7 +1169,7 @@ class IssueMergeTest(unittest.TestCase):
     self.assertEqual(None, merge_into_issue)
 
   def testParseMergeFields_DontSelfMerge(self):
-    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111)
     errors = template_helpers.EZTError()
     post_data = {'merge_into': '1'}
 
@@ -1183,12 +1183,12 @@ class IssueMergeTest(unittest.TestCase):
   def testParseMergeFields_NewIssueToMerge(self):
     merged_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services,
-        self.project.project_id, 'unused_summary', 'unused_status', 111L,
-        [], [], [], [], 111L, 'unused_marked_description')
+        self.project.project_id, 'unused_summary', 'unused_status', 111,
+        [], [], [], [], 111, 'unused_marked_description')
     mergee_local_id, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services,
-        self.project.project_id, 'unused_summary', 'unused_status', 111L,
-        [], [], [], [], 111L, 'unused_marked_description')
+        self.project.project_id, 'unused_summary', 'unused_status', 111,
+        [], [], [], [], 111, 'unused_marked_description')
     merged_issue = self.services.issue.GetIssueByLocalID(
         self.cnxn, self.project.project_id, merged_local_id)
     mergee_issue = self.services.issue.GetIssueByLocalID(
@@ -1205,7 +1205,7 @@ class IssueMergeTest(unittest.TestCase):
 
   def testIsMergeAllowed(self):
     mr = testing_helpers.MakeMonorailRequest()
-    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111L)
+    issue = fake.MakeTestIssue(987, 1, 'summary', 'New', 111)
     issue.project_name = self.project.project_name
 
     for (perm_set, expected_merge_allowed) in (
@@ -1254,29 +1254,29 @@ class MergeLinkedMembersTest(unittest.TestCase):
     self.cnxn = 'fake cnxn'
     self.services = service_manager.Services(
         user=fake.UserService())
-    self.user1 = self.services.user.TestAddUser('one@example.com', 111L)
-    self.user2 = self.services.user.TestAddUser('two@example.com', 222L)
+    self.user1 = self.services.user.TestAddUser('one@example.com', 111)
+    self.user2 = self.services.user.TestAddUser('two@example.com', 222)
 
   def testNoLinkedAccounts(self):
     """When no candidate accounts are linked, they are all returned."""
     actual = tracker_helpers._MergeLinkedMembers(
-        self.cnxn, self.services.user, [111L, 222L])
-    self.assertEqual([111L, 222L], actual)
+        self.cnxn, self.services.user, [111, 222])
+    self.assertEqual([111, 222], actual)
 
   def testSomeLinkedButNoMasking(self):
     """If an account has linked accounts, but they are not here, keep it."""
-    self.user1.linked_child_ids = [999L]
-    self.user2.linked_parent_id = 999L
+    self.user1.linked_child_ids = [999]
+    self.user2.linked_parent_id = 999
     actual = tracker_helpers._MergeLinkedMembers(
-        self.cnxn, self.services.user, [111L, 222L])
-    self.assertEqual([111L, 222L], actual)
+        self.cnxn, self.services.user, [111, 222])
+    self.assertEqual([111, 222], actual)
 
   def testParentMasksChild(self):
     """When two accounts linked, only the parent is returned."""
-    self.user2.linked_parent_id = 111L
+    self.user2.linked_parent_id = 111
     actual = tracker_helpers._MergeLinkedMembers(
-        self.cnxn, self.services.user, [111L, 222L])
-    self.assertEqual([111L], actual)
+        self.cnxn, self.services.user, [111, 222])
+    self.assertEqual([111], actual)
 
 
 class FilterMemberDataTest(unittest.TestCase):
@@ -1299,7 +1299,7 @@ class FilterMemberDataTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=perms)
     if not unsigned_user:
-      mr.auth.user_id = 111L
+      mr.auth.user_id = 111
       mr.auth.user_view = testing_helpers.Blank(domain='jrobbins.org')
     return tracker_helpers._FilterMemberData(
         mr, [self.owner_email], [self.committer_email],

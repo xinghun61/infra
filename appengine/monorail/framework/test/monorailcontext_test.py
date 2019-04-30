@@ -29,8 +29,8 @@ class MonorailContextTest(unittest.TestCase):
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService())
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=789, owner_ids=[111L])
-    self.user = self.services.user.TestAddUser('owner@example.com', 111L)
+        'proj', project_id=789, owner_ids=[111])
+    self.user = self.services.user.TestAddUser('owner@example.com', 111)
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -38,7 +38,7 @@ class MonorailContextTest(unittest.TestCase):
 
   def testConstructor_PassingAuthAndPerms(self):
     """We can easily make an mc for testing."""
-    auth = authdata.AuthData(user_id=111L, email='owner@example.com')
+    auth = authdata.AuthData(user_id=111, email='owner@example.com')
     mc = monorailcontext.MonorailContext(
       None, cnxn=self.cnxn, auth=auth, perms=permissions.USER_PERMISSIONSET)
     self.assertEqual(self.cnxn, mc.cnxn)
@@ -77,7 +77,7 @@ class MonorailContextTest(unittest.TestCase):
 
   def testRepr(self):
     """We get nice debugging strings."""
-    auth = authdata.AuthData(user_id=111L, email='owner@example.com')
+    auth = authdata.AuthData(user_id=111, email='owner@example.com')
     mc = monorailcontext.MonorailContext(
       None, cnxn=self.cnxn, auth=auth, perms=permissions.USER_PERMISSIONSET)
     repr_str = '%r' % mc

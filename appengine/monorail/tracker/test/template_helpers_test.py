@@ -60,13 +60,13 @@ class TemplateHelpers(unittest.TestCase):
     self.ad_4 = tracker_pb2.ApprovalDef(approval_id=4)
     self.ad_5 = tracker_pb2.ApprovalDef(approval_id=5)
     self.cd_1 = tracker_bizobj.MakeComponentDef(
-        1, 789, 'BackEnd', 'doc', False, [111L], [], 100000, 222L)
+        1, 789, 'BackEnd', 'doc', False, [111], [], 100000, 222)
 
-    self.services.user.TestAddUser('1@ex.com', 111L)
-    self.services.user.TestAddUser('2@ex.com', 222L)
-    self.services.user.TestAddUser('3@ex.com', 333L)
+    self.services.user.TestAddUser('1@ex.com', 111)
+    self.services.user.TestAddUser('2@ex.com', 222)
+    self.services.user.TestAddUser('3@ex.com', 333)
     self.services.project.TestAddProjectMembers(
-        [111L], self.project, 'OWNER_ROLE')
+        [111], self.project, 'OWNER_ROLE')
 
   def testParseTemplateRequest_Empty(self):
     post_data = fake.PostData()
@@ -152,8 +152,8 @@ class TemplateHelpers(unittest.TestCase):
      field_values, phases,
      approval_values) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
-    self.assertEqual(admin_ids, [222L])
-    self.assertEqual(owner_id, 111L)
+    self.assertEqual(admin_ids, [222])
+    self.assertEqual(owner_id, 111)
     self.assertEqual(component_ids, [1])
     self.assertEqual(field_values[0].str_value, 'NO')
     self.assertEqual(field_values[1].str_value, 'MOOD')
@@ -170,7 +170,7 @@ class TemplateHelpers(unittest.TestCase):
      field_values, phases,
      approval_values) = template_helpers.GetTemplateInfoFromParsed(
         self.mr, self.services, parsed, self.config)
-    self.assertEqual(admin_ids, [222L])
+    self.assertEqual(admin_ids, [222])
     self.assertEqual(field_values[0].str_value, 'NO')
     self.assertEqual(field_values[1].str_value, 'MOOD')
     self.assertEqual(self.mr.errors.owner, 'Owner not found.')

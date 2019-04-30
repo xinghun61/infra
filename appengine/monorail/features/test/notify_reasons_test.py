@@ -29,9 +29,9 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
 
   def setUp(self):
     self.users_by_id = {
-        111L: framework_views.StuffUserView(111L, 'owner@example.com', True),
-        222L: framework_views.StuffUserView(222L, 'member@example.com', True),
-        999L: framework_views.StuffUserView(999L, 'visitor@example.com', True),
+        111: framework_views.StuffUserView(111, 'owner@example.com', True),
+        222: framework_views.StuffUserView(222, 'member@example.com', True),
+        999: framework_views.StuffUserView(999, 'visitor@example.com', True),
         }
     self.services = service_manager.Services(
         project=fake.ProjectService(),
@@ -39,14 +39,14 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
         issue=fake.IssueService(),
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
-    self.owner = self.services.user.TestAddUser('owner@example.com', 111L)
-    self.member = self.services.user.TestAddUser('member@example.com', 222L)
-    self.visitor = self.services.user.TestAddUser('visitor@example.com', 999L)
+    self.owner = self.services.user.TestAddUser('owner@example.com', 111)
+    self.member = self.services.user.TestAddUser('member@example.com', 222)
+    self.visitor = self.services.user.TestAddUser('visitor@example.com', 999)
     self.project = self.services.project.TestAddProject(
-        'proj', owner_ids=[111L], committer_ids=[222L])
+        'proj', owner_ids=[111], committer_ids=[222])
     self.project.process_inbound_email = True
     self.issue = fake.MakeTestIssue(
-        self.project.project_id, 1, 'summary', 'New', 111L)
+        self.project.project_id, 1, 'summary', 'New', 111)
 
   def testEmptyIDs(self):
     cnxn = 'fake cnxn'
@@ -56,7 +56,7 @@ class ComputeIssueChangeAddressPermListTest(unittest.TestCase):
 
   def testRecipientIsMember(self):
     cnxn = 'fake cnxn'
-    ids_to_consider = [111L, 222L, 999L]
+    ids_to_consider = [111, 222, 999]
     addr_perm_list = notify_reasons.ComputeIssueChangeAddressPermList(
         cnxn, ids_to_consider, self.project, self.issue, self.services, set(),
         self.users_by_id, pref_check_function=lambda *args: True)
@@ -77,9 +77,9 @@ class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
         project=fake.ProjectService(),
         user=fake.UserService())
     self.project = self.services.project.TestAddProject('project')
-    self.services.user.TestAddUser('alice@gmail.com', 111L)
-    self.services.user.TestAddUser('bob@gmail.com', 222L)
-    self.services.user.TestAddUser('fred@gmail.com', 555L)
+    self.services.user.TestAddUser('alice@gmail.com', 111)
+    self.services.user.TestAddUser('bob@gmail.com', 222)
+    self.services.user.TestAddUser('fred@gmail.com', 555)
 
   def testNotifyAddress(self):
     # No mailing list or filter rules are defined
@@ -109,7 +109,7 @@ class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
 
   def testFilterRuleNotifyAddresses(self):
     issue = fake.MakeTestIssue(
-        self.project.project_id, 1, 'summary', 'New', 555L)
+        self.project.project_id, 1, 'summary', 'New', 555)
     issue.derived_notify_addrs.extend(['notify@domain.com'])
 
     addr_perm_list = notify_reasons.ComputeIssueNotificationAddrList(
@@ -139,13 +139,13 @@ class ComputeGroupReasonListTest(unittest.TestCase):
     self.project = self.services.project.TestAddProject(
       'project', project_id=789)
     self.config = self.services.config.GetProjectConfig('cnxn', 789)
-    self.alice = self.services.user.TestAddUser('alice@example.com', 111L)
-    self.bob = self.services.user.TestAddUser('bob@example.com', 222L)
-    self.fred = self.services.user.TestAddUser('fred@example.com', 555L)
+    self.alice = self.services.user.TestAddUser('alice@example.com', 111)
+    self.bob = self.services.user.TestAddUser('bob@example.com', 222)
+    self.fred = self.services.user.TestAddUser('fred@example.com', 555)
     self.users_by_id = framework_views.MakeAllUserViews(
-        'cnxn', self.services.user, [111L, 222L, 555L])
+        'cnxn', self.services.user, [111, 222, 555])
     self.issue = fake.MakeTestIssue(
-        self.project.project_id, 1, 'summary', 'New', 555L)
+        self.project.project_id, 1, 'summary', 'New', 555)
 
   def CheckGroupReasonList(
       self, actual, reporter_apl=None, owner_apl=None, old_owner_apl=None,

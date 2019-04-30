@@ -55,7 +55,7 @@ class ProjectSummaryTest(unittest.TestCase):
     # members, but has not noted any duties.
     mr = testing_helpers.MakeMonorailRequest(project=self.project)
     self.project.issue_notify_address = 'example@domain.com'
-    self.project.committer_ids.extend([111L, 222L])
+    self.project.committer_ids.extend([111, 222])
     help_data = self.servlet.GatherHelpData(mr, {})
     self.assertEqual('document_team_duties', help_data['cue'])
 

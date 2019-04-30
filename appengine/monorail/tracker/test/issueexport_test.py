@@ -50,7 +50,7 @@ class IssueExportTest(unittest.TestCase):
     self.services.issue.GetCommentsForIssues = Mock(return_value={})
     self.services.issue_star.LookupItemsStarrers = Mock(return_value={})
     self.services.user.LookupUserEmails = Mock(
-        return_value={111L: 'user1@test.com', 222L: 'user2@test.com'})
+        return_value={111: 'user1@test.com', 222: 'user2@test.com'})
 
     self.mr.project_name = self.project.project_name
     json_data = self.jsonfeed.HandleRequest(self.mr)
@@ -86,25 +86,25 @@ class IssueExportTest(unittest.TestCase):
               tracker_pb2.Phase(phase_id=2, name='Phase2', rank=2)]
     avs = [tracker_pb2.ApprovalValue(
         approval_id=1, status=tracker_pb2.ApprovalStatus.APPROVED,
-        setter_id=111L, set_on=7, approver_ids=[333L, 444L], phase_id=1)]
+        setter_id=111, set_on=7, approver_ids=[333, 444], phase_id=1)]
     fvs = [tracker_pb2.FieldValue(field_id=2, str_value='two'),
            tracker_pb2.FieldValue(field_id=3, int_value=3, phase_id=2),
            tracker_pb2.FieldValue(field_id=4, str_value='four')]
     labels = ['test', 'Type-FLT-Launch']
 
     issue = fake.MakeTestIssue(
-        self.project.project_id, 1, 'summary', 'Open', 111L, labels=labels,
-        issue_id=78901, reporter_id=222L, opened_timestamp=1,
+        self.project.project_id, 1, 'summary', 'Open', 111, labels=labels,
+        issue_id=78901, reporter_id=222, opened_timestamp=1,
         closed_timestamp=2, modified_timestamp=3, project_name='project',
         field_values=fvs, phases=phases, approval_values=avs)
 
-    email_dict = {111L: 'user1@test.com', 222L: 'user2@test.com',
-                  333L: 'user3@test.com', 444L: 'user4@test.com'}
+    email_dict = {111: 'user1@test.com', 222: 'user2@test.com',
+                  333: 'user3@test.com', 444: 'user4@test.com'}
     comment_list = [
         tracker_pb2.IssueComment(content='simple'),
         tracker_pb2.IssueComment(
             content='issue desc', is_description=True)]
-    starrer_id_list = [222L, 333L]
+    starrer_id_list = [222, 333]
 
     issue_JSON = self.jsonfeed._MakeIssueJSON(
         self.mr, issue, email_dict, comment_list, starrer_id_list)

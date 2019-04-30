@@ -49,20 +49,20 @@ class WorkEnvTest(unittest.TestCase):
         template=mock.Mock(spec=template_svc.TemplateService),
         spam=fake.SpamService())
     self.project = self.services.project.TestAddProject(
-        'proj', project_id=789, committer_ids=[111L])
+        'proj', project_id=789, committer_ids=[111])
     self.admin_user = self.services.user.TestAddUser(
-        'admin@example.com', 444L)
+        'admin@example.com', 444)
     self.admin_user.is_site_admin = True
-    self.services.user.TestAddUser('user_111@example.com', 111L)
-    self.services.user.TestAddUser('user_222@example.com', 222L)
-    self.services.user.TestAddUser('user_333@example.com', 333L)
+    self.services.user.TestAddUser('user_111@example.com', 111)
+    self.services.user.TestAddUser('user_222@example.com', 222)
+    self.services.user.TestAddUser('user_333@example.com', 333)
     self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
     self.mr.perms = permissions.READ_ONLY_PERMISSIONSET
 
     self.work_env = work_env.WorkEnv(
       self.mr, self.services, 'Testing phase')
 
-  def SignIn(self, user_id=111L):
+  def SignIn(self, user_id=111):
     self.mr.auth.user_pb = self.services.user.GetUser(self.cnxn, user_id)
     self.mr.auth.user_view = framework_views.UserView(self.mr.auth.user_pb)
     self.mr.auth.user_id = user_id
@@ -80,7 +80,7 @@ class WorkEnvTest(unittest.TestCase):
     self.SignIn(user_id=self.admin_user.user_id)
     with self.work_env as we:
       project_id = we.CreateProject(
-          'newproj', [111L], [222L], [333L], 'summary', 'desc')
+          'newproj', [111], [222], [333], 'summary', 'desc')
       actual = we.GetProject(project_id)
 
     self.assertEqual('summary', actual.summary)
@@ -94,7 +94,7 @@ class WorkEnvTest(unittest.TestCase):
     # Project 'proj' is created in setUp().
     with self.assertRaises(exceptions.ProjectAlreadyExists):
       with self.work_env as we:
-        we.CreateProject('proj', [111L], [222L], [333L], 'summary', 'desc')
+        we.CreateProject('proj', [111], [222], [333], 'summary', 'desc')
 
     self.assertFalse(
         self.services.template.CreateDefaultProjectTemplates.called)
@@ -104,7 +104,7 @@ class WorkEnvTest(unittest.TestCase):
     self.SignIn()
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
-        we.CreateProject('proj', [111L], [222L], [333L], 'summary', 'desc')
+        we.CreateProject('proj', [111], [222], [333], 'summary', 'desc')
 
     self.assertFalse(
         self.services.template.CreateDefaultProjectTemplates.called)
@@ -143,7 +143,7 @@ class WorkEnvTest(unittest.TestCase):
   def testCheckComponentName_ParentComponentOK(self):
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Component', 'Docstring',
-        False, [], [], 0, 111L, [])
+        False, [], [], 0, 111, [])
     self.SignIn()
     with self.work_env as we:
       self.assertIsNone(we.CheckComponentName(
@@ -158,7 +158,7 @@ class WorkEnvTest(unittest.TestCase):
   def testCheckComponentName_ComponentAlreadyExists(self):
     self.services.config.CreateComponentDef(
         self.cnxn, self.project.project_id, 'Component', 'Docstring',
-        False, [], [], 0, 111L, [])
+        False, [], [], 0, 111, [])
     self.SignIn()
     with self.work_env as we:
       self.assertIsNotNone(we.CheckComponentName(
@@ -166,7 +166,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCheckComponentName_NotAllowedToViewProject(self):
     self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
-    self.SignIn(333L)
+    self.SignIn(333)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.CheckComponentName(self.project.project_id, None, 'Component')
@@ -238,7 +238,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCheckFieldName_NotAllowedToViewProject(self):
     self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
-    self.SignIn(user_id=333L)
+    self.SignIn(user_id=333)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.CheckFieldName(self.project.project_id, 'Field')
@@ -303,15 +303,15 @@ class WorkEnvTest(unittest.TestCase):
     projects = {}
     for name, state in project_states.iteritems():
       projects['owner-'+name] = self.services.project.TestAddProject(
-          'owner-' + name, state=state, owner_ids=[222L])
+          'owner-' + name, state=state, owner_ids=[222])
       projects['committer-'+name] = self.services.project.TestAddProject(
-          'committer-' + name, state=state, committer_ids=[222L])
+          'committer-' + name, state=state, committer_ids=[222])
       projects['contributor-'+name] = self.services.project.TestAddProject(
           'contributor-' + name, state=state)
-      projects['contributor-'+name].contributor_ids = [222L]
+      projects['contributor-'+name].contributor_ids = [222]
 
     projects['members-only'] = self.services.project.TestAddProject(
-        'members-only', owner_ids=[222L])
+        'members-only', owner_ids=[222])
     projects['members-only'].access = (
         project_pb2.ProjectAccess.MEMBERS_ONLY)
 
@@ -322,7 +322,7 @@ class WorkEnvTest(unittest.TestCase):
     projects = self.AddUserProjects()
 
     with self.work_env as we:
-      owner, member, contrib = we.GetUserRolesInAllProjects({222L})
+      owner, member, contrib = we.GetUserRolesInAllProjects({222})
 
     by_name = lambda project: project.project_name
     self.assertEqual(
@@ -339,9 +339,9 @@ class WorkEnvTest(unittest.TestCase):
     """We can get the projects in which the user has a role."""
     projects = self.AddUserProjects()
 
-    self.SignIn(user_id=222L)
+    self.SignIn(user_id=222)
     with self.work_env as we:
-      owner, member, contrib = we.GetUserRolesInAllProjects({222L})
+      owner, member, contrib = we.GetUserRolesInAllProjects({222})
 
     by_name = lambda project: project.project_name
     self.assertEqual(
@@ -359,9 +359,9 @@ class WorkEnvTest(unittest.TestCase):
     """We can get the projects in which the user has a role."""
     projects = self.AddUserProjects()
 
-    self.SignIn(user_id=444L)
+    self.SignIn(user_id=444)
     with self.work_env as we:
-      owner, member, contrib = we.GetUserRolesInAllProjects({222L})
+      owner, member, contrib = we.GetUserRolesInAllProjects({222})
 
     by_name = lambda project: project.project_name
     self.assertEqual(
@@ -383,7 +383,7 @@ class WorkEnvTest(unittest.TestCase):
 
     self.SignIn()
     with self.work_env as we:
-      owner, archived, member, contrib = we.GetUserProjects({222L})
+      owner, archived, member, contrib = we.GetUserProjects({222})
 
     self.assertEqual([projects['owner-live']], owner)
     self.assertEqual([], archived)
@@ -394,9 +394,9 @@ class WorkEnvTest(unittest.TestCase):
     """Admins should see all projects from other users."""
     projects = self.AddUserProjects()
 
-    self.SignIn(user_id=444L)
+    self.SignIn(user_id=444)
     with self.work_env as we:
-      owner, archived, member, contrib = we.GetUserProjects({222L})
+      owner, archived, member, contrib = we.GetUserProjects({222})
 
     self.assertEqual([projects['members-only'], projects['owner-live']], owner)
     self.assertEqual([projects['owner-archived']], archived)
@@ -407,9 +407,9 @@ class WorkEnvTest(unittest.TestCase):
     """Users should see all own projects."""
     projects = self.AddUserProjects()
 
-    self.SignIn(user_id=222L)
+    self.SignIn(user_id=222)
     with self.work_env as we:
-      owner, archived, member, contrib = we.GetUserProjects({222L})
+      owner, archived, member, contrib = we.GetUserProjects({222})
 
     self.assertEqual([projects['members-only'], projects['owner-live']], owner)
     self.assertEqual([projects['owner-archived']], archived)
@@ -535,16 +535,16 @@ class WorkEnvTest(unittest.TestCase):
     project1 = self.services.project.TestAddProject('proj1', project_id=1)
     project2 = self.services.project.TestAddProject('proj2', project_id=2)
     with self.work_env as we:
-      self.SignIn(user_id=222L)
+      self.SignIn(user_id=222)
       we.StarProject(project1.project_id, True)
       we.StarProject(project2.project_id, True)
-      self.SignIn(user_id=111L)
+      self.SignIn(user_id=111)
       self.assertEqual([], we.ListStarredProjects())
       self.assertItemsEqual(
-        [project1, project2], we.ListStarredProjects(viewed_user_id=222L))
+        [project1, project2], we.ListStarredProjects(viewed_user_id=222))
       project2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
       self.assertItemsEqual(
-        [project1], we.ListStarredProjects(viewed_user_id=222L))
+        [project1], we.ListStarredProjects(viewed_user_id=222))
 
   def testGetProjectConfig_Normal(self):
     """We can get an existing config by project_id."""
@@ -568,7 +568,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.template.GetProjectTemplates.return_value = [
         private_tmpl, public_tmpl]
 
-    self.SignIn()  # user 111L is a member of self.project
+    self.SignIn()  # user 111 is a member of self.project
 
     with self.work_env as we:
       actual = we.ListProjectTemplates(self.project)
@@ -600,19 +600,19 @@ class WorkEnvTest(unittest.TestCase):
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testCreateIssue_Normal(self, fake_pasicn, fake_pasibn):
     """We can create an issue."""
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     approval_values = [tracker_pb2.ApprovalValue(approval_id=23, phase_id=3)]
     phases = [tracker_pb2.Phase(name='Canary', phase_id=3)]
     with self.work_env as we:
       actual_issue, comment = we.CreateIssue(
-          789, 'sum', 'New', 222L, [333L], ['Hot'], [], [], 'desc',
+          789, 'sum', 'New', 222, [333], ['Hot'], [], [], 'desc',
           phases=phases, approval_values=approval_values)
     self.assertEqual(789, actual_issue.project_id)
     self.assertEqual('sum', actual_issue.summary)
     self.assertEqual('New', actual_issue.status)
-    self.assertEqual(111L, actual_issue.reporter_id)
-    self.assertEqual(222L, actual_issue.owner_id)
-    self.assertEqual([333L], actual_issue.cc_ids)
+    self.assertEqual(111, actual_issue.reporter_id)
+    self.assertEqual(222, actual_issue.owner_id)
+    self.assertEqual([333], actual_issue.cc_ids)
     self.assertEqual([], actual_issue.field_values)
     self.assertEqual([], actual_issue.component_ids)
     self.assertEqual(approval_values, actual_issue.approval_values)
@@ -631,9 +631,9 @@ class WorkEnvTest(unittest.TestCase):
     # Verify that tasks were queued to send email notifications.
     hostport = 'testing-app.appspot.com'
     fake_pasicn.assert_called_once_with(
-        actual_issue.issue_id, hostport, 111L, comment_id=comment.id)
+        actual_issue.issue_id, hostport, 111, comment_id=comment.id)
     fake_pasibn.assert_called_once_with(
-        actual_issue.issue_id, hostport, [], 111L)
+        actual_issue.issue_id, hostport, [], 111)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueBlockingNotification')
@@ -641,10 +641,10 @@ class WorkEnvTest(unittest.TestCase):
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testCreateIssue_DontSendEmail(self, fake_pasicn, fake_pasibn):
     """We can create an issue, without queueing notification tasks."""
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       actual_issue, comment = we.CreateIssue(
-          789, 'sum', 'New', 222L, [333L], ['Hot'], [], [], 'desc',
+          789, 'sum', 'New', 222, [333], ['Hot'], [], [], 'desc',
           send_email=False)
     self.assertEqual(789, actual_issue.project_id)
     self.assertEqual('sum', actual_issue.summary)
@@ -659,13 +659,13 @@ class WorkEnvTest(unittest.TestCase):
   @mock.patch('services.tracker_fulltext.UnindexIssues')
   def testMoveIssue_Normal(self, mock_unindex, mock_index):
     """We can move issues."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=988, committer_ids=[111L])
+      'dest', project_id=988, committer_ids=[111])
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       moved_issue = we.MoveIssue(issue, target_project)
 
@@ -676,7 +676,7 @@ class WorkEnvTest(unittest.TestCase):
         'cnxn', target_project.project_id, 1)
     self.assertEqual(target_project.project_id, moved_issue.project_id)
     self.assertEqual(issue.summary, moved_issue.summary)
-    self.assertEqual(moved_issue.reporter_id, 111L)
+    self.assertEqual(moved_issue.reporter_id, 111)
 
     mock_unindex.assert_called_once_with([issue.issue_id])
     mock_index.assert_called_once_with(
@@ -687,14 +687,14 @@ class WorkEnvTest(unittest.TestCase):
   @mock.patch('services.tracker_fulltext.UnindexIssues')
   def testMoveIssue_MoveBackAgain(self, _mock_unindex, _mock_index):
     """We can move issues backt and get the old id."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     issue.project_name = 'proj'
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=988, owner_ids=[111L])
+      'dest', project_id=988, owner_ids=[111])
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       moved_issue = we.MoveIssue(issue, target_project)
       moved_issue = we.MoveIssue(moved_issue, self.project)
@@ -714,7 +714,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testMoveIssue_Anon(self):
     """Anon can't move issues."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     target_project = self.services.project.TestAddProject(
       'dest', project_id=988)
@@ -725,39 +725,39 @@ class WorkEnvTest(unittest.TestCase):
 
   def testMoveIssue_CantDeleteIssue(self):
     """We can't move issues if we don't have DeleteIssue perm on the issue."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=988, committer_ids=[111L])
+      'dest', project_id=988, committer_ids=[111])
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.MoveIssue(issue, target_project)
 
   def testMoveIssue_CantEditIssueOnTargetProject(self):
     """We can't move issues if we don't have EditIssue perm on target."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
       'dest', project_id=989)
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.MoveIssue(issue, target_project)
 
   def testMoveIssue_CantRestrictions(self):
     """We can't move issues if they have restriction labels."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     issue.labels = ['Restrict-Foo-Bar']
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=989, committer_ids=[111L])
+      'dest', project_id=989, committer_ids=[111])
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.assertRaises(exceptions.InputException):
       with self.work_env as we:
         we.MoveIssue(issue, target_project)
@@ -766,13 +766,13 @@ class WorkEnvTest(unittest.TestCase):
   def testCopyIssue_Normal(self, mock_index):
     """We can copy issues."""
     issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, issue_id=78901, project_name='proj')
+        789, 1, 'sum', 'New', 111, issue_id=78901, project_name='proj')
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=988, committer_ids=[111L])
+      'dest', project_id=988, committer_ids=[111])
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       copied_issue = we.CopyIssue(issue, target_project)
 
@@ -786,7 +786,7 @@ class WorkEnvTest(unittest.TestCase):
         'cnxn', target_project.project_id, 1)
     self.assertEqual(target_project.project_id, copied_issue.project_id)
     self.assertEqual(issue.summary, copied_issue.summary)
-    self.assertEqual(copied_issue.reporter_id, 111L)
+    self.assertEqual(copied_issue.reporter_id, 111)
 
     mock_index.assert_called_once_with(
        self.mr.cnxn, [copied_issue], self.services.user, self.services.issue,
@@ -808,12 +808,12 @@ class WorkEnvTest(unittest.TestCase):
   def testCopyIssue_SameProject(self, mock_index):
     """We can copy issues."""
     issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, issue_id=78901, project_name='proj')
+        789, 1, 'sum', 'New', 111, issue_id=78901, project_name='proj')
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.project
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       copied_issue = we.CopyIssue(issue, target_project)
 
@@ -827,7 +827,7 @@ class WorkEnvTest(unittest.TestCase):
         'cnxn', target_project.project_id, 2)
     self.assertEqual(target_project.project_id, copied_issue.project_id)
     self.assertEqual(issue.summary, copied_issue.summary)
-    self.assertEqual(copied_issue.reporter_id, 111L)
+    self.assertEqual(copied_issue.reporter_id, 111)
 
     mock_index.assert_called_once_with(
        self.mr.cnxn, [copied_issue], self.services.user, self.services.issue,
@@ -838,7 +838,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCopyIssue_Anon(self):
     """Anon can't copy issues."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     target_project = self.services.project.TestAddProject(
       'dest', project_id=988)
@@ -849,39 +849,39 @@ class WorkEnvTest(unittest.TestCase):
 
   def testCopyIssue_CantDeleteIssue(self):
     """We can't copy issues if we don't have DeleteIssue perm on the issue."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=988, committer_ids=[111L])
+      'dest', project_id=988, committer_ids=[111])
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.CopyIssue(issue, target_project)
 
   def testCopyIssue_CantEditIssueOnTargetProject(self):
     """We can't copy issues if we don't have EditIssue perm on target."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
       'dest', project_id=989)
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.CopyIssue(issue, target_project)
 
   def testCopyIssue_CantRestrictions(self):
     """We can't copy issues if they have restriction labels."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     issue.labels = ['Restrict-Foo-Bar']
     self.services.issue.TestAddIssue(issue)
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     target_project = self.services.project.TestAddProject(
-      'dest', project_id=989, committer_ids=[111L])
+      'dest', project_id=989, committer_ids=[111])
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.assertRaises(exceptions.InputException):
       with self.work_env as we:
         we.CopyIssue(issue, target_project)
@@ -904,12 +904,12 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetIssuesDict_Normal(self):
     """We can get an existing issue by issue_id."""
-    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue_1)
-    issue_2 = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, issue_id=78902)
+    issue_2 = fake.MakeTestIssue(789, 2, 'sum', 'New', 111, issue_id=78902)
     issue_2.labels = ['Restrict-View-CoreTeam']
     self.services.issue.TestAddIssue(issue_2)
-    issue_3 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, issue_id=78903)
+    issue_3 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111, issue_id=78903)
     self.services.issue.TestAddIssue(issue_3)
 
     with self.work_env as we:
@@ -927,7 +927,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetIssue_Normal(self):
     """We can get an existing issue by issue_id."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:
       actual = we.GetIssue(78901)
@@ -936,7 +936,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetIssue_NoPermission(self):
     """We reject attempts to get an issue we don't have permission for."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     issue.labels = ['Restrict-View-CoreTeam']
     self.services.issue.TestAddIssue(issue)
 
@@ -968,15 +968,15 @@ class WorkEnvTest(unittest.TestCase):
     ref_tuples = [
         (None, 1), ('other-proj', 1), ('proj', 99),
         ('ghost-proj', 1), ('proj', 42), ('other-proj', 1)]
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    private = fake.MakeTestIssue(789, 42, 'sum', 'New', 422L, issue_id=78942)
+    private = fake.MakeTestIssue(789, 42, 'sum', 'New', 422, issue_id=78942)
     private.labels.append('Restrict-View-CoreTeam')
     self.services.issue.TestAddIssue(private)
     self.services.project.TestAddProject(
         'other-proj', project_id=788)
     other_issue = fake.MakeTestIssue(
-        788, 1, 'sum', 'Fixed', 111L, issue_id=78801)
+        788, 1, 'sum', 'Fixed', 111, issue_id=78801)
     self.services.issue.TestAddIssue(other_issue)
 
     with self.work_env as we:
@@ -991,9 +991,9 @@ class WorkEnvTest(unittest.TestCase):
     # with only the first occurrence being preserved.
     ref_tuples += [('proj', 1), ('proj', 5)]
     expected_open = [
-        fake.MakeTestIssue(789, i, 'sum', 'New', 111L) for i in range(1, 5)]
+        fake.MakeTestIssue(789, i, 'sum', 'New', 111) for i in range(1, 5)]
     expected_closed = [
-        fake.MakeTestIssue(789, i, 'sum', 'Fixed', 111L) for i in range(5, 10)]
+        fake.MakeTestIssue(789, i, 'sum', 'Fixed', 111) for i in range(5, 10)]
     for issue in expected_open + expected_closed:
       self.services.issue.TestAddIssue(issue)
 
@@ -1005,20 +1005,20 @@ class WorkEnvTest(unittest.TestCase):
 
   def testListApplicableFieldDefs(self):
     issue_1 = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, issue_id=78901,
+        789, 1, 'sum', 'New', 111, issue_id=78901,
         labels=['type-defect', 'other-label'])
     issue_2 = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, issue_id=78902,
+        789, 2, 'sum', 'New', 111, issue_id=78902,
         labels=['type-feedback', 'other-label1'])
     issue_3 = fake.MakeTestIssue(
-        789, 3, 'sum', 'New', 111L, issue_id=78903,
+        789, 3, 'sum', 'New', 111, issue_id=78903,
         labels=['type-defect'],
         approval_values=[tracker_pb2.ApprovalValue(approval_id=3),
                          tracker_pb2.ApprovalValue(approval_id=5)])
     issue_4 = fake.MakeTestIssue(
-        789, 4, 'sum', 'New', 111L, issue_id=78904)  # test no labels at all
+        789, 4, 'sum', 'New', 111, issue_id=78904)  # test no labels at all
     issue_5 = fake.MakeTestIssue(
-        789, 5, 'sum', 'New', 111L, issue_id=78905,
+        789, 5, 'sum', 'New', 111, issue_id=78905,
         labels=['type'],  # test labels ignored
         approval_values=[tracker_pb2.ApprovalValue(approval_id=5)])
     self.services.issue.TestAddIssue(issue_1)
@@ -1057,7 +1057,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetIssueByLocalID_Normal(self):
     """We can get an existing issue by project_id and local_id."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:
       actual = we.GetIssueByLocalID(789, 1)
@@ -1084,7 +1084,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetRelatedIssueRefs_None(self):
     """We handle issues that have no related issues."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111)
     self.services.issue.TestAddIssue(issue)
 
     with self.work_env as we:
@@ -1094,10 +1094,10 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetRelatedIssueRefs_Some(self):
     """We can get refs for related issues of a given issue."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
-    sooner = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, project_name='proj')
-    later = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, project_name='proj')
-    better = fake.MakeTestIssue(789, 4, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111)
+    sooner = fake.MakeTestIssue(789, 2, 'sum', 'New', 111, project_name='proj')
+    later = fake.MakeTestIssue(789, 3, 'sum', 'New', 111, project_name='proj')
+    better = fake.MakeTestIssue(789, 4, 'sum', 'New', 111, project_name='proj')
     issue.blocked_on_iids.append(sooner.issue_id)
     issue.blocking_iids.append(later.issue_id)
     issue.merged_into = better.issue_id
@@ -1116,15 +1116,15 @@ class WorkEnvTest(unittest.TestCase):
         actual)
 
   def testGetRelatedIssueRefs_MultipleIssues(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111)
     blocking = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, project_name='proj')
-    issue2 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, project_name='proj')
+        789, 2, 'sum', 'New', 111, project_name='proj')
+    issue2 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111, project_name='proj')
     blocked_on = fake.MakeTestIssue(
-        789, 4, 'sum', 'New', 111L, project_name='proj')
-    issue3 = fake.MakeTestIssue(789, 5, 'sum', 'New', 111L, project_name='proj')
+        789, 4, 'sum', 'New', 111, project_name='proj')
+    issue3 = fake.MakeTestIssue(789, 5, 'sum', 'New', 111, project_name='proj')
     merged_into = fake.MakeTestIssue(
-        789, 6, 'sum', 'New', 111L, project_name='proj')
+        789, 6, 'sum', 'New', 111, project_name='proj')
 
     issue.blocked_on_iids.append(blocked_on.issue_id)
     issue2.blocking_iids.append(blocking.issue_id)
@@ -1147,9 +1147,9 @@ class WorkEnvTest(unittest.TestCase):
         actual)
 
   def testGetIssueRefs(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, project_name='proj1')
-    issue2 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111L, project_name='proj')
-    issue3 = fake.MakeTestIssue(789, 5, 'sum', 'New', 111L, project_name='proj')
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, project_name='proj1')
+    issue2 = fake.MakeTestIssue(789, 3, 'sum', 'New', 111, project_name='proj')
+    issue3 = fake.MakeTestIssue(789, 5, 'sum', 'New', 111, project_name='proj')
 
     self.services.issue.TestAddIssue(issue)
     self.services.issue.TestAddIssue(issue2)
@@ -1205,7 +1205,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testBulkUpdateIssueApproval_UserLacksViewPerms(self):
     approval_delta = tracker_pb2.ApprovalDelta()
-    self.SignIn(222L)
+    self.SignIn(222)
     self.project.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     with self.assertRaises(permissions.PermissionException):
       self.work_env.BulkUpdateIssueApprovals(
@@ -1225,20 +1225,20 @@ class WorkEnvTest(unittest.TestCase):
     self.services.config.StoreConfig('cnxn', config)
 
     av_24 = tracker_pb2.ApprovalValue(
-        approval_id=24, approver_ids=[111L],
-        status=tracker_pb2.ApprovalStatus.NOT_SET,set_on=1234, setter_id=999L)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+        approval_id=24, approver_ids=[111],
+        status=tracker_pb2.ApprovalStatus.NOT_SET, set_on=1234, setter_id=999)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111,
                                issue_id=78901, approval_values=[av_24])
     self.services.issue.TestAddIssue(issue)
 
     delta = tracker_pb2.ApprovalDelta(
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, set_on=2345,
-        approver_ids_add=[222L])
+        approver_ids_add=[222])
 
     self.work_env.UpdateIssueApproval(78901, 24, delta, 'please review', False)
 
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
-        self.mr.cnxn, 111L, config, issue, av_24, delta,
+        self.mr.cnxn, 111, config, issue, av_24, delta,
         comment_content='please review', is_description=False, attachments=None,
         kept_attachments=None)
 
@@ -1255,7 +1255,7 @@ class WorkEnvTest(unittest.TestCase):
     self.services.config.StoreConfig('cnxn', config)
 
     av_24 = tracker_pb2.ApprovalValue(approval_id=24)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111,
                                issue_id=78901, approval_values=[av_24])
     self.services.issue.TestAddIssue(issue)
 
@@ -1263,7 +1263,7 @@ class WorkEnvTest(unittest.TestCase):
     self.work_env.UpdateIssueApproval(78901, 24, delta, 'better response', True)
 
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
-        self.mr.cnxn, 111L, config, issue, av_24, delta,
+        self.mr.cnxn, 111, config, issue, av_24, delta,
         comment_content='better response', is_description=True,
         attachments=None, kept_attachments=None)
 
@@ -1279,21 +1279,21 @@ class WorkEnvTest(unittest.TestCase):
     self.services.config.StoreConfig('cnxn', config)
 
     av_24 = tracker_pb2.ApprovalValue(
-        approval_id=24, approver_ids=[111L],
-        status=tracker_pb2.ApprovalStatus.NOT_SET, set_on=1234, setter_id=999L)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+        approval_id=24, approver_ids=[111],
+        status=tracker_pb2.ApprovalStatus.NOT_SET, set_on=1234, setter_id=999)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111,
                                issue_id=78901, approval_values=[av_24])
     self.services.issue.TestAddIssue(issue)
 
     delta = tracker_pb2.ApprovalDelta(
         status=tracker_pb2.ApprovalStatus.REVIEW_REQUESTED, set_on=2345,
-        approver_ids_add=[222L])
+        approver_ids_add=[222])
     attachments = []
     self.work_env.UpdateIssueApproval(78901, 24, delta, 'please review', False,
                                       attachments=attachments)
 
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
-        self.mr.cnxn, 111L, config, issue, av_24, delta,
+        self.mr.cnxn, 111, config, issue, av_24, delta,
         comment_content='please review', is_description=False,
         attachments=attachments, kept_attachments=None)
 
@@ -1313,9 +1313,9 @@ class WorkEnvTest(unittest.TestCase):
     self.services.config.StoreConfig('cnxn', config)
 
     av_24 = tracker_pb2.ApprovalValue(
-        approval_id=24, approver_ids=[111L],
-        status=tracker_pb2.ApprovalStatus.NOT_SET, set_on=1234, setter_id=999L)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L,
+        approval_id=24, approver_ids=[111],
+        status=tracker_pb2.ApprovalStatus.NOT_SET, set_on=1234, setter_id=999)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111,
                                issue_id=78901, approval_values=[av_24])
     self.services.issue.TestAddIssue(issue)
 
@@ -1328,7 +1328,7 @@ class WorkEnvTest(unittest.TestCase):
     mockFilterKeptAttachments.assert_called_once_with(
         True, [1, 2, 3], comments, 24)
     self.services.issue.DeltaUpdateIssueApproval.assert_called_once_with(
-        self.mr.cnxn, 111L, config, issue, av_24, delta,
+        self.mr.cnxn, 111, config, issue, av_24, delta,
         comment_content='Another Desc', is_description=True,
         attachments=None, kept_attachments=[1, 2])
 
@@ -1336,18 +1336,18 @@ class WorkEnvTest(unittest.TestCase):
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testConvertIssueApprovalsTemplate(self, fake_pasicn):
     """We can convert an issue's approvals to match template's approvals."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     issue.approval_values = [
         tracker_pb2.ApprovalValue(
             approval_id=3,
             phase_id=4,
             status=tracker_pb2.ApprovalStatus.APPROVED,
-            approver_ids=[111L],
+            approver_ids=[111],
         ),
         tracker_pb2.ApprovalValue(
             approval_id=4,
             phase_id=5,
-            approver_ids=[111L]),
+            approver_ids=[111]),
         tracker_pb2.ApprovalValue(approval_id=6)]
     issue.phases = [
         tracker_pb2.Phase(name='Expired', phase_id=4),
@@ -1368,14 +1368,14 @@ class WorkEnvTest(unittest.TestCase):
         tracker_pb2.ApprovalValue(
             approval_id=3,
             phase_id=6,  # Different phase. Nothing else affected.
-            approver_ids=[222L]),
+            approver_ids=[222]),
         # No phase. Nothing else affected.
         tracker_pb2.ApprovalValue(approval_id=4),
         # New approval not already found in issue.
         tracker_pb2.ApprovalValue(
             approval_id=7,
             phase_id=5,
-            approver_ids=[222L]),
+            approver_ids=[222]),
     ]  # No approval 6
     template.phases = [tracker_pb2.Phase(name='Canary', phase_id=5),
                        tracker_pb2.Phase(name='Stable-Exp', phase_id=6)]
@@ -1411,15 +1411,15 @@ class WorkEnvTest(unittest.TestCase):
             approval_id=3,
             phase_id=6,
             status=tracker_pb2.ApprovalStatus.APPROVED,
-            approver_ids=[111L],
+            approver_ids=[111],
         ),
       tracker_pb2.ApprovalValue(
           approval_id=4,
-          approver_ids=[111L]),
+          approver_ids=[111]),
       tracker_pb2.ApprovalValue(
           approval_id=7,
           phase_id=5,
-          approver_ids=[222L]),
+          approver_ids=[222]),
     ]
     expected_fvs = [
         tracker_bizobj.MakeFieldValue(8, None, 'Pink', None, None, None, False),
@@ -1432,11 +1432,11 @@ class WorkEnvTest(unittest.TestCase):
     self.services.template.GetTemplateByName.assert_called_once_with(
         self.mr.cnxn, 'template_name', 789)
     fake_pasicn.assert_called_with(
-        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=False,
+        issue.issue_id, 'testing-app.appspot.com', 111, send_email=False,
         comment_id=mock.ANY)
 
   def testConvertIssueApprovalsTemplate_NoSuchTemplate(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.template.GetTemplateByName.return_value = None
     config = self.services.config.GetProjectConfig(self.cnxn, 789)
     with self.assertRaises(exceptions.NoSuchTemplateException):
@@ -1448,31 +1448,31 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateIssue_Normal(self, fake_pasicn):
     """We can update an issue."""
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 0L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 0)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta(
-        owner_id=111L, summary='New summary', cc_ids_add=[333L])
+        owner_id=111, summary='New summary', cc_ids_add=[333])
 
     with self.work_env as we:
       we.UpdateIssue(issue, delta, 'Getting started')
 
-    self.assertEqual(111L, issue.owner_id)
+    self.assertEqual(111, issue.owner_id)
     self.assertEqual('New summary', issue.summary)
-    self.assertEqual([333L], issue.cc_ids)
+    self.assertEqual([333], issue.cc_ids)
     self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
     comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
     comment_pb = comments[-1]
     self.assertFalse(comment_pb.is_description)
     fake_pasicn.assert_called_with(
-        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
-        old_owner_id=0L, comment_id=comment_pb.id)
+        issue.issue_id, 'testing-app.appspot.com', 111, send_email=True,
+        old_owner_id=0, comment_id=comment_pb.id)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_EditDescription(self, fake_pasicn):
     """We can edit an issue description."""
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta()
 
@@ -1483,15 +1483,15 @@ class WorkEnvTest(unittest.TestCase):
     comment_pb = comments[-1]
     self.assertTrue(comment_pb.is_description)
     fake_pasicn.assert_called_with(
-        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
-        old_owner_id=111L, comment_id=comment_pb.id)
+        issue.issue_id, 'testing-app.appspot.com', 111, send_email=True,
+        old_owner_id=111, comment_id=comment_pb.id)
 
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_NotAllowedToEditDescription(self, fake_pasicn):
     """We cannot edit an issue description without EditIssue permission."""
-    self.SignIn(222L)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.SignIn(222)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta()
 
@@ -1505,8 +1505,8 @@ class WorkEnvTest(unittest.TestCase):
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_AddComment(self, fake_pasicn):
     """We can add a comment."""
-    self.SignIn(222L)
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    self.SignIn(222)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta()
 
@@ -1517,17 +1517,17 @@ class WorkEnvTest(unittest.TestCase):
     comment_pb = comments[-1]
     self.assertFalse(comment_pb.is_description)
     fake_pasicn.assert_called_with(
-        issue.issue_id, 'testing-app.appspot.com', 222L, send_email=True,
-        old_owner_id=111L, comment_id=comment_pb.id)
+        issue.issue_id, 'testing-app.appspot.com', 222, send_email=True,
+        old_owner_id=111, comment_id=comment_pb.id)
 
   def testUpdateIssue_BadOwner(self):
     """We reject new issue owners that don't pass validation."""
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
     self.services.issue.TestAddIssue(issue)
 
     # No such user ID.
-    delta = tracker_pb2.IssueDelta(owner_id=555L)
+    delta = tracker_pb2.IssueDelta(owner_id=555)
     with self.work_env as we:
       with self.assertRaises(exceptions.InputException) as cm:
         we.UpdateIssue(issue, delta, '')
@@ -1535,7 +1535,7 @@ class WorkEnvTest(unittest.TestCase):
                      cm.exception.message)
 
     # Not a member
-    delta = tracker_pb2.IssueDelta(owner_id=222L)
+    delta = tracker_pb2.IssueDelta(owner_id=222)
     with self.work_env as we:
       with self.assertRaises(exceptions.InputException) as cm:
         we.UpdateIssue(issue, delta, '')
@@ -1546,15 +1546,15 @@ class WorkEnvTest(unittest.TestCase):
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_MergeInto(self, _fake_pasicn):
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
-    issue2 = fake.MakeTestIssue(789, 2, 'summary2', 'Available', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    issue2 = fake.MakeTestIssue(789, 2, 'summary2', 'Available', 111)
     self.services.issue.TestAddIssue(issue)
     self.services.issue.TestAddIssue(issue2)
     delta = tracker_pb2.IssueDelta(
         merged_into=issue2.issue_id,
         status='Duplicate')
 
-    issue.cc_ids = [111L, 222L, 333L, 444L]
+    issue.cc_ids = [111, 222, 333, 444]
     with self.work_env as we:
       we.UpdateIssue(issue, delta, '')
 
@@ -1563,7 +1563,7 @@ class WorkEnvTest(unittest.TestCase):
     # Original issue marked as duplicate.
     self.assertEqual('Duplicate', issue.status)
     # Target issue has original issue's CCs.
-    self.assertEqual([444L, 333L, 222L, 111L], issue2.cc_ids)
+    self.assertEqual([444, 333, 222, 111], issue2.cc_ids)
     # A comment was added to the target issue.
     self.assertEqual(
         'Issue 1 has been merged into this issue.',
@@ -1574,26 +1574,26 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateIssue_Attachments(self, fake_pasicn):
     """We can attach files as we make a change."""
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 0L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 0)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta(
-        owner_id=111L, summary='New summary', cc_ids_add=[333L])
+        owner_id=111, summary='New summary', cc_ids_add=[333])
 
     attachments = []
     with self.work_env as we:
       we.UpdateIssue(issue, delta, 'Getting started', attachments=attachments)
 
-    self.assertEqual(111L, issue.owner_id)
+    self.assertEqual(111, issue.owner_id)
     self.assertEqual('New summary', issue.summary)
-    self.assertEqual([333L], issue.cc_ids)
+    self.assertEqual([333], issue.cc_ids)
     self.assertEqual([issue.issue_id], self.services.issue.enqueued_issues)
 
     comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
     comment_pb = comments[-1]
     self.assertEqual([], comment_pb.attachments)
     fake_pasicn.assert_called_with(
-        issue.issue_id, 'testing-app.appspot.com', 111L, send_email=True,
-        old_owner_id=0L, comment_id=comment_pb.id)
+        issue.issue_id, 'testing-app.appspot.com', 111, send_email=True,
+        old_owner_id=0, comment_id=comment_pb.id)
 
     attachments = [
         ('README.md', 'readme content', 'text/plain'),
@@ -1609,7 +1609,7 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateIssue_KeptAttachments(self, _fake_pasicn):
     """We can attach files as we make a change."""
     self.SignIn()
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
     self.services.issue.TestAddIssue(issue)
 
     # Add some initial attachments
@@ -1636,10 +1636,10 @@ class WorkEnvTest(unittest.TestCase):
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_PermissionDenied(self, fake_pasicn):
     """We reject attempts to update an issue when the user lacks permission."""
-    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 555L)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 555)
     self.services.issue.TestAddIssue(issue)
     delta = tracker_pb2.IssueDelta(
-        owner_id=222L, summary='New summary', cc_ids_add=[333L])
+        owner_id=222, summary='New summary', cc_ids_add=[333])
 
     with self.work_env as we:
       # User is not signed in.
@@ -1647,13 +1647,13 @@ class WorkEnvTest(unittest.TestCase):
         we.UpdateIssue(issue, delta, 'I am anon')
 
       # User signed in to acconut that can view but not edit.
-      self.SignIn(user_id=222L)
+      self.SignIn(user_id=222)
       with self.assertRaises(permissions.PermissionException):
         we.UpdateIssue(issue, delta, 'I am not a project member')
 
       # User signed in to acconut that can view and edit, but issue
       # restricts edits to a perm that the user lacks.
-      self.SignIn(user_id=111L)
+      self.SignIn(user_id=111)
       issue.labels.append('Restrict-EditIssue-CoreTeam')
       with self.assertRaises(permissions.PermissionException):
         we.UpdateIssue(issue, delta, 'I lack CoreTeam')
@@ -1663,7 +1663,7 @@ class WorkEnvTest(unittest.TestCase):
   def testDeleteIssue(self):
     """We can mark and unmark an issue as deleted."""
     self.SignIn(user_id=self.admin_user.user_id)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:
       _actual = we.DeleteIssue(issue, True)
@@ -1674,43 +1674,43 @@ class WorkEnvTest(unittest.TestCase):
 
   def testFlagIssue_Normal(self):
     """Users can mark and unmark an issue as spam."""
-    self.services.user.TestAddUser('user222@example.com', 222L)
-    self.SignIn(user_id=222L)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.user.TestAddUser('user222@example.com', 222)
+    self.SignIn(user_id=222)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:
       we.FlagIssues([issue], True)
     self.assertEqual(
-        [222L], self.services.spam.reports_by_issue_id[78901])
+        [222], self.services.spam.reports_by_issue_id[78901])
     self.assertNotIn(
-        222L, self.services.spam.manual_verdicts_by_issue_id[78901])
+        222, self.services.spam.manual_verdicts_by_issue_id[78901])
     with self.work_env as we:
       we.FlagIssues([issue], False)
     self.assertEqual(
         [], self.services.spam.reports_by_issue_id[78901])
     self.assertNotIn(
-        222L, self.services.spam.manual_verdicts_by_issue_id[78901])
+        222, self.services.spam.manual_verdicts_by_issue_id[78901])
 
   def testFlagIssue_AutoVerdict(self):
     """Admins can mark and unmark an issue as spam and it counts as verdict."""
     self.SignIn(user_id=self.admin_user.user_id)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     with self.work_env as we:
       we.FlagIssues([issue], True)
     self.assertEqual(
-        [444L], self.services.spam.reports_by_issue_id[78901])
-    self.assertTrue(self.services.spam.manual_verdicts_by_issue_id[78901][444L])
+        [444], self.services.spam.reports_by_issue_id[78901])
+    self.assertTrue(self.services.spam.manual_verdicts_by_issue_id[78901][444])
     with self.work_env as we:
       we.FlagIssues([issue], False)
     self.assertEqual(
         [], self.services.spam.reports_by_issue_id[78901])
     self.assertFalse(
-        self.services.spam.manual_verdicts_by_issue_id[78901][444L])
+        self.services.spam.manual_verdicts_by_issue_id[78901][444])
 
   def testFlagIssue_NotAllowed(self):
     """Anons can't mark issues as spam."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
 
     with self.assertRaises(permissions.PermissionException):
@@ -1722,72 +1722,72 @@ class WorkEnvTest(unittest.TestCase):
         we.FlagIssues([issue], False)
 
   def testLookupIssuesFlaggers_Normal(self):
-    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue_1)
     comment_1_1 = tracker_pb2.IssueComment(
-        project_id=789, content='lorem ipsum', user_id=111L,
+        project_id=789, content='lorem ipsum', user_id=111,
         issue_id=issue_1.issue_id)
     comment_1_2 = tracker_pb2.IssueComment(
-        project_id=789, content='dolor sit amet', user_id=111L,
+        project_id=789, content='dolor sit amet', user_id=111,
         issue_id=issue_1.issue_id)
     self.services.issue.TestAddComment(comment_1_1, 1)
     self.services.issue.TestAddComment(comment_1_2, 1)
 
-    issue_2 = fake.MakeTestIssue(789, 2, 'sum', 'New', 111L, issue_id=78902)
+    issue_2 = fake.MakeTestIssue(789, 2, 'sum', 'New', 111, issue_id=78902)
     self.services.issue.TestAddIssue(issue_2)
     comment_2_1 = tracker_pb2.IssueComment(
-        project_id=789, content='lorem ipsum', user_id=111L,
+        project_id=789, content='lorem ipsum', user_id=111,
         issue_id=issue_2.issue_id)
     self.services.issue.TestAddComment(comment_2_1, 2)
 
 
-    self.SignIn(user_id=222L)
+    self.SignIn(user_id=222)
     with self.work_env as we:
       we.FlagIssues([issue_1], True)
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       we.FlagComment(issue_1, comment_1_2, True)
       we.FlagComment(issue_2, comment_2_1, True)
 
       reporters = we.LookupIssuesFlaggers([issue_1, issue_2])
       self.assertEqual({
-          issue_1.issue_id: ([222L], {comment_1_2.id: [111L]}),
-          issue_2.issue_id: ([], {comment_2_1.id: [111L]}),
+          issue_1.issue_id: ([222], {comment_1_2.id: [111]}),
+          issue_2.issue_id: ([], {comment_2_1.id: [111]}),
       }, reporters)
 
   def testLookupIssueFlaggers_Normal(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment_1 = tracker_pb2.IssueComment(
-        project_id=789, content='lorem ipsum', user_id=111L,
+        project_id=789, content='lorem ipsum', user_id=111,
         issue_id=issue.issue_id)
     comment_2 = tracker_pb2.IssueComment(
-        project_id=789, content='dolor sit amet', user_id=111L,
+        project_id=789, content='dolor sit amet', user_id=111,
         issue_id=issue.issue_id)
     self.services.issue.TestAddComment(comment_1, 1)
     self.services.issue.TestAddComment(comment_2, 2)
 
-    self.SignIn(user_id=222L)
+    self.SignIn(user_id=222)
     with self.work_env as we:
       we.FlagIssues([issue], True)
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       we.FlagComment(issue, comment_2, True)
       issue_reporters, comment_reporters = we.LookupIssueFlaggers(issue)
-      self.assertEqual([222L], issue_reporters)
-      self.assertEqual({comment_2.id: [111L]}, comment_reporters)
+      self.assertEqual([222], issue_reporters)
+      self.assertEqual({comment_2.id: [111]}, comment_reporters)
 
   def testRerankBlockedOnIssues_SplitBelow(self):
     parent_issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     self.services.issue.TestAddIssue(parent_issue)
 
     issues = []
     for idx in range(2, 6):
       issues.append(fake.MakeTestIssue(
-          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+          789, idx, 'sum', 'New', 111, project_name='proj', issue_id=1000+idx))
       self.services.issue.TestAddIssue(issues[-1])
       parent_issue.blocked_on_iids.append(issues[-1].issue_id)
       next_rank = sys.maxint
@@ -1804,13 +1804,13 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRerankBlockedOnIssues_SplitAbove(self):
     parent_issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     self.services.issue.TestAddIssue(parent_issue)
 
     issues = []
     for idx in range(2, 6):
       issues.append(fake.MakeTestIssue(
-          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+          789, idx, 'sum', 'New', 111, project_name='proj', issue_id=1000+idx))
       self.services.issue.TestAddIssue(issues[-1])
       parent_issue.blocked_on_iids.append(issues[-1].issue_id)
       next_rank = sys.maxint
@@ -1828,14 +1828,14 @@ class WorkEnvTest(unittest.TestCase):
   @mock.patch('tracker.rerank_helpers.MAX_RANKING', 1)
   def testRerankBlockedOnIssues_NoRoom(self):
     parent_issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     parent_issue.blocked_on_ranks = [1, 0, 0]
     self.services.issue.TestAddIssue(parent_issue)
 
     issues = []
     for idx in range(2, 5):
       issues.append(fake.MakeTestIssue(
-          789, idx, 'sum', 'New', 111L, project_name='proj', issue_id=1000+idx))
+          789, idx, 'sum', 'New', 111, project_name='proj', issue_id=1000+idx))
       self.services.issue.TestAddIssue(issues[-1])
       parent_issue.blocked_on_iids.append(issues[-1].issue_id)
 
@@ -1848,7 +1848,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRerankBlockedOnIssues_CantEditIssue(self):
     parent_issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 555L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 555, project_name='proj', issue_id=1001)
     parent_issue.labels = ['Restrict-EditIssue-Foo']
     self.services.issue.TestAddIssue(parent_issue)
 
@@ -1859,7 +1859,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRerankBlockedOnIssues_MovedNotOnBlockedOn(self):
     parent_issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     self.services.issue.TestAddIssue(parent_issue)
 
     self.SignIn()
@@ -1869,10 +1869,10 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRerankBlockedOnIssues_TargetNotOnBlockedOn(self):
     moved = fake.MakeTestIssue(
-        789, 2, 'sum', 'New', 111L, project_name='proj', issue_id=1002)
+        789, 2, 'sum', 'New', 111, project_name='proj', issue_id=1002)
     self.services.issue.TestAddIssue(moved)
     parent_issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L, project_name='proj', issue_id=1001)
+        789, 1, 'sum', 'New', 111, project_name='proj', issue_id=1001)
     parent_issue.blocked_on_iids = [1002]
     parent_issue.blocked_on_ranks = [1]
     self.services.issue.TestAddIssue(parent_issue)
@@ -1888,10 +1888,10 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetIssueComments_Normal(self):
     """We can get an existing issue by project_id and local_id."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='more info', user_id=111L,
+        project_id=789, content='more info', user_id=111,
         issue_id=issue.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -1906,27 +1906,27 @@ class WorkEnvTest(unittest.TestCase):
 
   def testDeleteComment_Normal(self):
     """We can mark and unmark a comment as deleted."""
-    self.SignIn(user_id=111L)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.SignIn(user_id=111)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id)
     self.services.issue.TestAddComment(comment, 1)
     with self.work_env as we:
       we.DeleteComment(issue, comment, True)
-      self.assertEqual(111L, comment.deleted_by)
+      self.assertEqual(111, comment.deleted_by)
       we.DeleteComment(issue, comment, False)
       self.assertEqual(None, comment.deleted_by)
 
   @mock.patch('services.issue_svc.IssueService.SoftDeleteComment')
   def testDeleteComment_UndeleteableSpam(self, mockSoftDeleteComment):
     """Throws exception when comment is spam and owner is deleting."""
-    self.SignIn(user_id=111L)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.SignIn(user_id=111)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id, is_spam=True)
     self.services.issue.TestAddComment(comment, 1)
     with self.work_env as we:
@@ -1941,11 +1941,11 @@ class WorkEnvTest(unittest.TestCase):
                                                mockSoftDeleteComment):
     """Throws exception when deleter doesn't have permission to do so."""
     mockCanDelete.return_value = False
-    self.SignIn(user_id=111L)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.SignIn(user_id=111)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id, is_spam=True)
     self.services.issue.TestAddComment(comment, 1)
     with self.work_env as we:
@@ -1956,11 +1956,11 @@ class WorkEnvTest(unittest.TestCase):
 
   def testDeleteAttachment_Normal(self):
     """We can mark and unmark a comment attachment as deleted."""
-    self.SignIn(user_id=111L)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.SignIn(user_id=111)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id)
     self.services.issue.TestAddComment(comment, 1)
     attachment = tracker_pb2.Attachment()
@@ -1979,11 +1979,11 @@ class WorkEnvTest(unittest.TestCase):
       self, mockCanDelete, mockSoftDeleteComment):
     """Throws exception when deleter doesn't have permission to do so."""
     mockCanDelete.return_value = False
-    self.SignIn(user_id=111L)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.SignIn(user_id=111)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id, is_spam=True)
     self.services.issue.TestAddComment(comment, 1)
     attachment = tracker_pb2.Attachment()
@@ -1998,28 +1998,28 @@ class WorkEnvTest(unittest.TestCase):
 
   def testFlagComment_Normal(self):
     """We can mark and unmark a comment as spam."""
-    self.SignIn(user_id=111L)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.SignIn(user_id=111)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
     comment_reports = self.services.spam.comment_reports_by_issue_id
     with self.work_env as we:
       we.FlagComment(issue, comment, True)
-      self.assertEqual([111L], comment_reports[issue.issue_id][comment.id])
+      self.assertEqual([111], comment_reports[issue.issue_id][comment.id])
       we.FlagComment(issue, comment, False)
       self.assertEqual([], comment_reports[issue.issue_id][comment.id])
 
   def testFlagComment_AutoVerdict(self):
     """Admins can mark and unmark a comment as spam, and it is a verdict."""
     self.SignIn(user_id=self.admin_user.user_id)
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -2027,18 +2027,18 @@ class WorkEnvTest(unittest.TestCase):
     manual_verdicts = self.services.spam.manual_verdicts_by_comment_id
     with self.work_env as we:
       we.FlagComment(issue, comment, True)
-      self.assertEqual([444L], comment_reports[issue.issue_id][comment.id])
-      self.assertTrue(manual_verdicts[comment.id][444L])
+      self.assertEqual([444], comment_reports[issue.issue_id][comment.id])
+      self.assertTrue(manual_verdicts[comment.id][444])
       we.FlagComment(issue, comment, False)
       self.assertEqual([], comment_reports[issue.issue_id][comment.id])
-      self.assertFalse(manual_verdicts[comment.id][444L])
+      self.assertFalse(manual_verdicts[comment.id][444])
 
   def testFlagComment_NotAllowed(self):
     """Anons can't mark comment as spam."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     comment = tracker_pb2.IssueComment(
-        project_id=789, content='soon to be deleted', user_id=111L,
+        project_id=789, content='soon to be deleted', user_id=111,
         issue_id=issue.issue_id)
     self.services.issue.TestAddComment(comment, 1)
 
@@ -2052,9 +2052,9 @@ class WorkEnvTest(unittest.TestCase):
 
   def testStarIssue_Normal(self):
     """We can star and unstar issues."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
 
     with self.work_env as we:
       we.StarIssue(issue, True)
@@ -2064,7 +2064,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testStarIssue_Anon(self):
     """A signed out user cannot star or unstar issues."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     # Don't sign in.
 
@@ -2074,9 +2074,9 @@ class WorkEnvTest(unittest.TestCase):
 
   def testIsIssueStarred_Normal(self):
     """We can check if the current user starred an issue or not."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
 
     with self.work_env as we:
       self.assertFalse(we.IsIssueStarred(issue))
@@ -2087,7 +2087,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testIsIssueStarred_Anon(self):
     """A signed out user has never starred anything."""
-    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     # Don't sign in.
 
@@ -2102,12 +2102,12 @@ class WorkEnvTest(unittest.TestCase):
 
   def testListStarredIssueIDs_Normal(self):
     """We can get the list of issues starred by a user."""
-    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue1)
-    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111, issue_id=78902)
     self.services.issue.TestAddIssue(issue2)
 
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       # User has not starred anything yet.
       self.assertEqual([], we.ListStarredIssueIDs())
@@ -2120,7 +2120,7 @@ class WorkEnvTest(unittest.TestCase):
           we.ListStarredIssueIDs())
 
     # Check that there is no cross-talk between users.
-    self.SignIn(user_id=222L)
+    self.SignIn(user_id=222)
     with self.work_env as we:
       # User has not starred anything yet.
       self.assertEqual([], we.ListStarredIssueIDs())
@@ -2131,61 +2131,61 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetUser(self):
     """We return the User PB for the given existing user id."""
-    expected = self.services.user.TestAddUser('test5@example.com', 555L)
+    expected = self.services.user.TestAddUser('test5@example.com', 555)
     with self.work_env as we:
-      actual = we.GetUser(555L)
+      actual = we.GetUser(555)
       self.assertEqual(expected, actual)
 
   def testGetUser_DoesntExist(self):
     """We reject attempts to get an user that doesn't exist."""
     with self.assertRaises(exceptions.NoSuchUserException):
       with self.work_env as we:
-        we.GetUser(555L)
+        we.GetUser(555)
 
   def setUpUserGroups(self):
-    self.services.user.TestAddUser('test5@example.com', 555L)
-    self.services.user.TestAddUser('test6@example.com', 666L)
+    self.services.user.TestAddUser('test5@example.com', 555)
+    self.services.user.TestAddUser('test6@example.com', 666)
     public_group_id = self.services.usergroup.CreateGroup(
         self.cnxn, self.services, 'group1@test.com', 'anyone')
     private_group_id = self.services.usergroup.CreateGroup(
         self.cnxn, self.services, 'group2@test.com', 'owners')
     self.services.usergroup.UpdateMembers(
-        self.cnxn, public_group_id, [111L], 'member')
+        self.cnxn, public_group_id, [111], 'member')
     self.services.usergroup.UpdateMembers(
-        self.cnxn, private_group_id, [555L, 111L], 'owner')
+        self.cnxn, private_group_id, [555, 111], 'owner')
     return public_group_id, private_group_id
 
   def testGetMemberships_Anon(self):
     """We return groups the user is in and that are visible to the requester."""
     public_group_id, _ = self.setUpUserGroups()
     with self.work_env as we:
-      self.assertEqual(we.GetMemberships(111L), [public_group_id])
+      self.assertEqual(we.GetMemberships(111), [public_group_id])
 
   def testGetMemberships_UserHasPerm(self):
     public_group_id, private_group_id = self.setUpUserGroups()
-    self.SignIn(user_id=555L)
+    self.SignIn(user_id=555)
     with self.work_env as we:
       self.assertItemsEqual(
-          we.GetMemberships(111L), [public_group_id, private_group_id])
+          we.GetMemberships(111), [public_group_id, private_group_id])
 
   def testGetMemeberships_UserHasNoPerm(self):
     public_group_id, _ = self.setUpUserGroups()
-    self.SignIn(user_id=666L)
+    self.SignIn(user_id=666)
     with self.work_env as we:
       self.assertItemsEqual(
-          we.GetMemberships(111L), [public_group_id])
+          we.GetMemberships(111), [public_group_id])
 
   def testGetMemeberships_GetOwnMembership(self):
     public_group_id, private_group_id = self.setUpUserGroups()
-    self.SignIn(user_id=111L)
+    self.SignIn(user_id=111)
     with self.work_env as we:
       self.assertItemsEqual(
-          we.GetMemberships(111L), [public_group_id, private_group_id])
+          we.GetMemberships(111), [public_group_id, private_group_id])
 
   def testListReferencedUsers(self):
     """We return the list of User PBs for the given existing user emails."""
-    user5 = self.services.user.TestAddUser('test5@example.com', 555L)
-    user6 = self.services.user.TestAddUser('test6@example.com', 666L)
+    user5 = self.services.user.TestAddUser('test5@example.com', 555)
+    user6 = self.services.user.TestAddUser('test6@example.com', 666)
     with self.work_env as we:
       # We ignore emails that are empty or belong to non-existent users.
       users = we.ListReferencedUsers(
@@ -2196,11 +2196,11 @@ class WorkEnvTest(unittest.TestCase):
     """We can star and unstar a user."""
     self.SignIn()
     with self.work_env as we:
-      self.assertFalse(we.IsUserStarred(111L))
-      we.StarUser(111L, True)
-      self.assertTrue(we.IsUserStarred(111L))
-      we.StarUser(111L, False)
-      self.assertFalse(we.IsUserStarred(111L))
+      self.assertFalse(we.IsUserStarred(111))
+      we.StarUser(111, True)
+      self.assertTrue(we.IsUserStarred(111))
+      we.StarUser(111, False)
+      self.assertFalse(we.IsUserStarred(111))
 
   def testStarUser_NoSuchUser(self):
     """We can't star a nonexistent user."""
@@ -2213,7 +2213,7 @@ class WorkEnvTest(unittest.TestCase):
     """Anon user can't star a user."""
     with self.assertRaises(exceptions.InputException):
       with self.work_env as we:
-        we.StarUser(111L, True)
+        we.StarUser(111, True)
 
   def testIsUserStarred_Normal(self):
     """We can check if a user is starred."""
@@ -2237,23 +2237,23 @@ class WorkEnvTest(unittest.TestCase):
     """We can count the stars of a user."""
     self.SignIn()
     with self.work_env as we:
-      self.assertEqual(0, we.GetUserStarCount(111L))
-      we.StarUser(111L, True)
-      self.assertEqual(1, we.GetUserStarCount(111L))
+      self.assertEqual(0, we.GetUserStarCount(111))
+      we.StarUser(111, True)
+      self.assertEqual(1, we.GetUserStarCount(111))
 
     self.SignIn(user_id=self.admin_user.user_id)
     with self.work_env as we:
-      we.StarUser(111L, True)
-      self.assertEqual(2, we.GetUserStarCount(111L))
-      we.StarUser(111L, False)
-      self.assertEqual(1, we.GetUserStarCount(111L))
+      we.StarUser(111, True)
+      self.assertEqual(2, we.GetUserStarCount(111))
+      we.StarUser(111, False)
+      self.assertEqual(1, we.GetUserStarCount(111))
 
   def testGetUserStarCount_NoSuchUser(self):
     """We can't count stars of a nonexistent user."""
     self.SignIn()
     with self.assertRaises(exceptions.NoSuchUserException):
       with self.work_env as we:
-        we.GetUserStarCount(111111L)
+        we.GetUserStarCount(111111)
 
   def testGetUserStarCount_NoUserSpecified(self):
     """A user ID must be specified."""
@@ -2279,11 +2279,11 @@ class WorkEnvTest(unittest.TestCase):
   def testGetPendingLinkInvites_Some(self):
     """If there are any pending invites for the current user, we get them."""
     self.SignIn()
-    self.services.user.invite_rows = [(111L, 222L), (333L, 444L), (555L, 111L)]
+    self.services.user.invite_rows = [(111, 222), (333, 444), (555, 111)]
     with self.work_env as we:
       as_parent, as_child = we.GetPendingLinkedInvites()
-    self.assertEqual([222L], as_parent)
-    self.assertEqual([555L], as_child)
+    self.assertEqual([222], as_parent)
+    self.assertEqual([555], as_child)
 
   def testInviteLinkedParent_MissingParent(self):
     """Invited parent must be specified by email."""
@@ -2326,66 +2326,66 @@ class WorkEnvTest(unittest.TestCase):
   @mock.patch('settings.linkable_domains', {'example.com': ['other.com']})
   def testInviteLinkedParent_Normal(self):
     """A child account can invite a matching parent account to link."""
-    self.services.user.TestAddUser('user_111@other.com', 555L)
+    self.services.user.TestAddUser('user_111@other.com', 555)
     self.SignIn()
     with self.work_env as we:
       we.InviteLinkedParent('user_111@other.com')
       self.assertEqual(
-          [(555L, 111L)], self.services.user.invite_rows)
+          [(555, 111)], self.services.user.invite_rows)
 
   def testAcceptLinkedChild_NoInvite(self):
     """A parent account can only accept an exiting invite."""
     self.SignIn()
-    self.services.user.invite_rows = [(111L, 222L)]
+    self.services.user.invite_rows = [(111, 222)]
     with self.work_env as we:
       with self.assertRaises(exceptions.InputException):
-        we.AcceptLinkedChild(333L)
+        we.AcceptLinkedChild(333)
 
-    self.SignIn(user_id=222L)
-    self.services.user.invite_rows = [(111L, 333L)]
+    self.SignIn(user_id=222)
+    self.services.user.invite_rows = [(111, 333)]
     with self.work_env as we:
       with self.assertRaises(exceptions.InputException):
-        we.AcceptLinkedChild(333L)
+        we.AcceptLinkedChild(333)
 
   def testAcceptLinkedChild_Normal(self):
     """A parent account can accept an invite from a child."""
     self.SignIn()
-    self.services.user.invite_rows = [(111L, 222L)]
+    self.services.user.invite_rows = [(111, 222)]
     with self.work_env as we:
-      we.AcceptLinkedChild(222L)
+      we.AcceptLinkedChild(222)
       self.assertEqual(
-        [(111L, 222L)], self.services.user.linked_account_rows)
+        [(111, 222)], self.services.user.linked_account_rows)
       self.assertEqual(
         [], self.services.user.invite_rows)
 
   def testUnlinkAccounts_NotAllowed(self):
     """Reject attempts to unlink someone else's accounts."""
-    self.SignIn(user_id=333L)
+    self.SignIn(user_id=333)
     with self.work_env as we:
       with self.assertRaises(permissions.PermissionException):
-        we.UnlinkAccounts(111L, 222L)
+        we.UnlinkAccounts(111, 222)
 
   def testUnlinkAccounts_AdminIsAllowed(self):
     """Site admins may unlink someone else's accounts."""
-    self.SignIn(user_id=444L)
-    self.services.user.linked_account_rows = [(111L, 222L)]
+    self.SignIn(user_id=444)
+    self.services.user.linked_account_rows = [(111, 222)]
     with self.work_env as we:
-      we.UnlinkAccounts(111L, 222L)
-    self.assertNotIn((111L, 222L), self.services.user.linked_account_rows)
+      we.UnlinkAccounts(111, 222)
+    self.assertNotIn((111, 222), self.services.user.linked_account_rows)
 
   def testUnlinkAccounts_Normal(self):
     """A parent or child can unlink their linked account."""
-    self.SignIn(user_id=111L)
-    self.services.user.linked_account_rows = [(111L, 222L), (333L, 444L)]
+    self.SignIn(user_id=111)
+    self.services.user.linked_account_rows = [(111, 222), (333, 444)]
     with self.work_env as we:
-      we.UnlinkAccounts(111L, 222L)
-    self.assertEqual([(333L, 444L)], self.services.user.linked_account_rows)
+      we.UnlinkAccounts(111, 222)
+    self.assertEqual([(333, 444)], self.services.user.linked_account_rows)
 
-    self.SignIn(user_id=222L)
-    self.services.user.linked_account_rows = [(111L, 222L), (333L, 444L)]
+    self.SignIn(user_id=222)
+    self.services.user.linked_account_rows = [(111, 222), (333, 444)]
     with self.work_env as we:
-      we.UnlinkAccounts(111L, 222L)
-    self.assertEqual([(333L, 444L)], self.services.user.linked_account_rows)
+      we.UnlinkAccounts(111, 222)
+    self.assertEqual([(333, 444)], self.services.user.linked_account_rows)
 
   def testUpdateUserSettings(self):
     """We can update the settings of the logged in user."""
@@ -2396,7 +2396,7 @@ class WorkEnvTest(unittest.TestCase):
           dismissed_cues=['code_of_conduct'],
           keep_people_perms_open=True)
 
-    user = self.services.user.GetUser(self.cnxn, 111L)
+    user = self.services.user.GetUser(self.cnxn, 111)
     self.assertTrue(user.obscure_email)
     self.assertTrue(user.keep_people_perms_open)
     self.assertEqual(['code_of_conduct'], user.dismissed_cues)
@@ -2419,21 +2419,21 @@ class WorkEnvTest(unittest.TestCase):
     """User who never set any pref gets empty prefs."""
     self.SignIn()
     with self.work_env as we:
-      userprefs = we.GetUserPrefs(111L)
+      userprefs = we.GetUserPrefs(111)
 
-    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(111, userprefs.user_id)
     self.assertEqual([], userprefs.prefs)
 
   def testGetUserPrefs_Mine_Some(self):
     """User who set a pref gets it back."""
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='code_font', value='true')])
     self.SignIn()
     with self.work_env as we:
-      userprefs = we.GetUserPrefs(111L)
+      userprefs = we.GetUserPrefs(111)
 
-    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(111, userprefs.user_id)
     self.assertEqual(1, len(userprefs.prefs))
     self.assertEqual('code_font', userprefs.prefs[0].name)
     self.assertEqual('true', userprefs.prefs[0].value)
@@ -2441,14 +2441,14 @@ class WorkEnvTest(unittest.TestCase):
   def testGetUserPrefs_Other_Allowed(self):
     """A site admin can read another user's prefs."""
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='code_font', value='true')])
     self.SignIn(user_id=self.admin_user.user_id)
 
     with self.work_env as we:
-      userprefs = we.GetUserPrefs(111L)
+      userprefs = we.GetUserPrefs(111)
 
-    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(111, userprefs.user_id)
     self.assertEqual(1, len(userprefs.prefs))
     self.assertEqual('code_font', userprefs.prefs[0].name)
     self.assertEqual('true', userprefs.prefs[0].value)
@@ -2456,34 +2456,34 @@ class WorkEnvTest(unittest.TestCase):
   def testGetUserPrefs_Other_Denied(self):
     """A non-admin cannot read another user's prefs."""
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='code_font', value='true')])
     # user2 is not a site admin.
-    self.SignIn(222L)
+    self.SignIn(222)
 
     with self.work_env as we:
       with self.assertRaises(permissions.PermissionException):
-        we.GetUserPrefs(111L)
+        we.GetUserPrefs(111)
 
   def _SetUpCorpUsers(self, user_ids):
-    self.services.user.TestAddUser('corp_group@example.com', 888L)
+    self.services.user.TestAddUser('corp_group@example.com', 888)
     self.services.usergroup.TestAddGroupSettings(
         888, 'corp_group@example.com')
-    self.services.usergroup.TestAddMembers(888L, user_ids)
+    self.services.usergroup.TestAddMembers(888, user_ids)
 
   # TODO(jrobbins): Update this with user group prefs when implemented.
   @mock.patch('settings.corp_mode_user_groups', ['corp_group@example.com'])
   def testGetUserPrefs_Mine_Corp(self):
     """User who belongs to corp-mode user group gets those prefs."""
-    self._SetUpCorpUsers([111L, 222L])
+    self._SetUpCorpUsers([111, 222])
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='code_font', value='true')])
     self.SignIn()
     with self.work_env as we:
-      userprefs = we.GetUserPrefs(111L)
+      userprefs = we.GetUserPrefs(111)
 
-    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(111, userprefs.user_id)
     self.assertEqual(3, len(userprefs.prefs))
     self.assertEqual('code_font', userprefs.prefs[0].name)
     self.assertEqual('true', userprefs.prefs[0].value)
@@ -2495,15 +2495,15 @@ class WorkEnvTest(unittest.TestCase):
   @mock.patch('settings.corp_mode_user_groups', ['corp_group@example.com'])
   def testGetUserPrefs_Mine_OptedOut(self):
     """If a corp user has opted out, use that pref value."""
-    self._SetUpCorpUsers([111L, 222L])
+    self._SetUpCorpUsers([111, 222])
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='restrict_new_issues', value='false')])
     self.SignIn()
     with self.work_env as we:
-      userprefs = we.GetUserPrefs(111L)
+      userprefs = we.GetUserPrefs(111)
 
-    self.assertEqual(111L, userprefs.user_id)
+    self.assertEqual(111, userprefs.user_id)
     self.assertEqual(2, len(userprefs.prefs))
     self.assertEqual('restrict_new_issues', userprefs.prefs[0].name)
     self.assertEqual('false', userprefs.prefs[0].value)
@@ -2518,76 +2518,76 @@ class WorkEnvTest(unittest.TestCase):
 
   def testSetUserPrefs_Mine_Empty(self):
     """Setting zero prefs is a no-op.."""
-    self.SignIn(111L)
+    self.SignIn(111)
 
     with self.work_env as we:
-      we.SetUserPrefs(111L, [])
+      we.SetUserPrefs(111, [])
 
-    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111)
     self.assertEqual(0, len(prefs_after.prefs))
 
   def testSetUserPrefs_Mine_Add(self):
     """User can set a preference for the first time."""
-    self.SignIn(111L)
+    self.SignIn(111)
 
     with self.work_env as we:
       we.SetUserPrefs(
-          111L,
+          111,
           [user_pb2.UserPrefValue(name='code_font', value='true')])
 
-    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111)
     self.assertEqual(1, len(prefs_after.prefs))
     self.assertEqual('code_font', prefs_after.prefs[0].name)
     self.assertEqual('true', prefs_after.prefs[0].value)
 
   def testSetUserPrefs_Mine_Overwrite(self):
     """User can change the value of a pref."""
-    self.SignIn(111L)
+    self.SignIn(111)
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='code_font', value='true')])
 
     with self.work_env as we:
       we.SetUserPrefs(
-          111L,
+          111,
           [user_pb2.UserPrefValue(name='code_font', value='false')])
 
-    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111)
     self.assertEqual(1, len(prefs_after.prefs))
     self.assertEqual('code_font', prefs_after.prefs[0].name)
     self.assertEqual('false', prefs_after.prefs[0].value)
 
   def testSetUserPrefs_Mine_Bad(self):
     """User cannot set a preference value that is not valid."""
-    self.SignIn(111L)
+    self.SignIn(111)
 
     with self.work_env as we:
       with self.assertRaises(exceptions.InputException):
         we.SetUserPrefs(
-            111L,
+            111,
             [user_pb2.UserPrefValue(name='code_font', value='sorta')])
       with self.assertRaises(exceptions.InputException):
         we.SetUserPrefs(
-            111L,
+            111,
             [user_pb2.UserPrefValue(name='sign', value='gemini')])
 
     # Regardless of exceptions, nothing was actually stored.
-    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111)
     self.assertEqual(0, len(prefs_after.prefs))
 
   def testSetUserPrefs_Other_Allowed(self):
     """A site admin can update another user's prefs."""
     self.SignIn(user_id=self.admin_user.user_id)
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='code_font', value='true')])
 
     with self.work_env as we:
       we.SetUserPrefs(
-          111L,
+          111,
           [user_pb2.UserPrefValue(name='code_font', value='false')])
 
-    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111)
     self.assertEqual(1, len(prefs_after.prefs))
     self.assertEqual('code_font', prefs_after.prefs[0].name)
     self.assertEqual('false', prefs_after.prefs[0].value)
@@ -2595,19 +2595,19 @@ class WorkEnvTest(unittest.TestCase):
   def testSetUserPrefs_Other_Denied(self):
     """A non-admin cannot set another user's prefs."""
     # user2 is not a site admin.
-    self.SignIn(222L)
+    self.SignIn(222)
     self.services.user.SetUserPrefs(
-        self.cnxn, 111L,
+        self.cnxn, 111,
         [user_pb2.UserPrefValue(name='code_font', value='true')])
 
     with self.work_env as we:
       with self.assertRaises(permissions.PermissionException):
         we.SetUserPrefs(
-            111L,
+            111,
             [user_pb2.UserPrefValue(name='code_font', value='false')])
 
     # Regardless of any exception, the preferences remain unchanged.
-    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111L)
+    prefs_after = self.services.user.GetUserPrefs(self.cnxn, 111)
     self.assertEqual(1, len(prefs_after.prefs))
     self.assertEqual('code_font', prefs_after.prefs[0].name)
     self.assertEqual('true', prefs_after.prefs[0].value)
@@ -2622,26 +2622,26 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: UpdateGroup()
   # FUTURE: DeleteGroup()
 
-  def AddIssueToHotlist(self, hotlist_id, issue_id=78901, adder_id=111L):
+  def AddIssueToHotlist(self, hotlist_id, issue_id=78901, adder_id=111):
     self.services.features.AddIssuesToHotlists(
         self.cnxn, [hotlist_id], [(issue_id, adder_id, 0, '')],
         None, None, None)
 
   def testCreateHotlist_Normal(self):
     """We can create a hotlist."""
-    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    issue_1 = fake.MakeTestIssue(789, 1, 'sum', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue_1)
 
     self.SignIn()
     with self.work_env as we:
       hotlist = we.CreateHotlist(
-          'name', 'summary', 'description', [222L], [78901], False)
+          'name', 'summary', 'description', [222], [78901], False)
 
     self.assertEqual('name', hotlist.name)
     self.assertEqual('summary', hotlist.summary)
     self.assertEqual('description', hotlist.description)
-    self.assertEqual([111L], hotlist.owner_ids)
-    self.assertEqual([222L], hotlist.editor_ids)
+    self.assertEqual([111], hotlist.owner_ids)
+    self.assertEqual([222], hotlist.editor_ids)
     self.assertEqual([78901], [item.issue_id for item in hotlist.items])
     self.assertEqual(False, hotlist.is_private)
 
@@ -2649,7 +2649,7 @@ class WorkEnvTest(unittest.TestCase):
     """We must be signed in to create a hotlist."""
     with self.assertRaises(exceptions.InputException):
       with self.work_env as we:
-        we.CreateHotlist('name', 'summary', 'description', [], [222L], False)
+        we.CreateHotlist('name', 'summary', 'description', [], [222], False)
 
   def testCreateHotlist_InvalidName(self):
     """We can't create a hotlist with an invalid name."""
@@ -2673,7 +2673,7 @@ class WorkEnvTest(unittest.TestCase):
     """We can get an existing hotlist by hotlist_id."""
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
 
     with self.work_env as we:
       actual = we.GetHotlist(hotlist.hotlist_id)
@@ -2695,15 +2695,15 @@ class WorkEnvTest(unittest.TestCase):
   def testListHotlistsByUser_Normal(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
 
     self.SignIn()
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(111L)
+      hotlists = we.ListHotlistsByUser(111)
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([111], hotlist.owner_ids)
     self.assertEqual([], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
@@ -2712,15 +2712,15 @@ class WorkEnvTest(unittest.TestCase):
   def testListHotlistsByUser_AnotherUser(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[333L], editor_ids=[])
+        owner_ids=[333], editor_ids=[])
 
     self.SignIn()
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(333L)
+      hotlists = we.ListHotlistsByUser(333)
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([333L], hotlist.owner_ids)
+    self.assertEqual([333], hotlist.owner_ids)
     self.assertEqual([], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
@@ -2729,14 +2729,14 @@ class WorkEnvTest(unittest.TestCase):
   def testListHotlistsByUser_NotSignedIn(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
 
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(111L)
+      hotlists = we.ListHotlistsByUser(111)
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([111], hotlist.owner_ids)
     self.assertEqual([], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
@@ -2751,34 +2751,34 @@ class WorkEnvTest(unittest.TestCase):
   def testListHotlistsByUser_Empty(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[333L], editor_ids=[])
+        owner_ids=[333], editor_ids=[])
 
     self.SignIn()
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(111L)
+      hotlists = we.ListHotlistsByUser(111)
 
     self.assertEqual(0, len(hotlists))
 
   def testListHotlistsByUser_NoHotlists(self):
     self.SignIn()
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(111L)
+      hotlists = we.ListHotlistsByUser(111)
 
     self.assertEqual(0, len(hotlists))
 
   def testListHotlistsByUser_PrivateHotlistAsOwner(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[333L], is_private=True)
+        owner_ids=[111], editor_ids=[333], is_private=True)
 
     self.SignIn()
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(333L)
+      hotlists = we.ListHotlistsByUser(333)
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([111L], hotlist.owner_ids)
-    self.assertEqual([333L], hotlist.editor_ids)
+    self.assertEqual([111], hotlist.owner_ids)
+    self.assertEqual([333], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
@@ -2786,16 +2786,16 @@ class WorkEnvTest(unittest.TestCase):
   def testListHotlistsByUser_PrivateHotlistAsEditor(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[333L], editor_ids=[111L], is_private=True)
+        owner_ids=[333], editor_ids=[111], is_private=True)
 
     self.SignIn()
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(333L)
+      hotlists = we.ListHotlistsByUser(333)
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([333L], hotlist.owner_ids)
-    self.assertEqual([111L], hotlist.editor_ids)
+    self.assertEqual([333], hotlist.owner_ids)
+    self.assertEqual([111], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
@@ -2803,20 +2803,20 @@ class WorkEnvTest(unittest.TestCase):
   def testListHotlistsByUser_PrivateHotlistNoAcess(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[333L], editor_ids=[], is_private=True)
+        owner_ids=[333], editor_ids=[], is_private=True)
 
     self.SignIn()
     with self.work_env as we:
-      hotlists = we.ListHotlistsByUser(333L)
+      hotlists = we.ListHotlistsByUser(333)
 
     self.assertEqual(0, len(hotlists))
 
   def testListHotlistsByIssue_Normal(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist.hotlist_id)
 
     self.SignIn()
@@ -2825,18 +2825,18 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([111], hotlist.owner_ids)
     self.assertEqual([], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
   def testListHotlistsByIssue_NotSignedIn(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist.hotlist_id)
 
     with self.work_env as we:
@@ -2844,23 +2844,23 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([111L], hotlist.owner_ids)
+    self.assertEqual([111], hotlist.owner_ids)
     self.assertEqual([], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
   def testListHotlistsByIssue_NotAllowedToSeeIssue(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     issue.labels = ['Restrict-View-CoreTeam']
     self.services.issue.TestAddIssue(issue)
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist.hotlist_id)
 
     # We should get a permission exception
-    self.SignIn(333L)
+    self.SignIn(333)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.ListHotlistsByIssue(78901)
@@ -2872,7 +2872,7 @@ class WorkEnvTest(unittest.TestCase):
         we.ListHotlistsByIssue(78901)
 
   def testListHotlistsByIssue_NoHotlists(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
 
     self.SignIn()
@@ -2882,11 +2882,11 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual(0, len(hotlists))
 
   def testListHotlistsByIssue_PrivateHotlistAsOwner(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[333L], is_private=True)
+        owner_ids=[111], editor_ids=[333], is_private=True)
     self.AddIssueToHotlist(hotlist.hotlist_id)
 
     self.SignIn()
@@ -2895,18 +2895,18 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([111L], hotlist.owner_ids)
-    self.assertEqual([333L], hotlist.editor_ids)
+    self.assertEqual([111], hotlist.owner_ids)
+    self.assertEqual([333], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
   def testListHotlistsByIssue_PrivateHotlistAsEditor(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[333L], editor_ids=[111L], is_private=True)
+        owner_ids=[333], editor_ids=[111], is_private=True)
     self.AddIssueToHotlist(hotlist.hotlist_id)
 
     self.SignIn()
@@ -2915,18 +2915,18 @@ class WorkEnvTest(unittest.TestCase):
 
     self.assertEqual(1, len(hotlists))
     hotlist = hotlists[0]
-    self.assertEqual([333L], hotlist.owner_ids)
-    self.assertEqual([111L], hotlist.editor_ids)
+    self.assertEqual([333], hotlist.owner_ids)
+    self.assertEqual([111], hotlist.editor_ids)
     self.assertEqual('Fake-Hotlist', hotlist.name)
     self.assertEqual('Summary', hotlist.summary)
     self.assertEqual('Description', hotlist.description)
 
   def testListHotlistsByIssue_PrivateHotlistNoAcess(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[444L], editor_ids=[333L], is_private=True)
+        owner_ids=[444], editor_ids=[333], is_private=True)
     self.AddIssueToHotlist(hotlist.hotlist_id)
 
     self.SignIn()
@@ -2939,20 +2939,20 @@ class WorkEnvTest(unittest.TestCase):
     hotlists = [
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[444L], editor_ids=[111L]),
+            owner_ids=[444], editor_ids=[111]),
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[333L]),
+            owner_ids=[111], editor_ids=[333]),
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Private-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[333L], is_private=True),
+            owner_ids=[111], editor_ids=[333], is_private=True),
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Private-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[222L], editor_ids=[333L], is_private=True)]
+            owner_ids=[222], editor_ids=[333], is_private=True)]
 
     for hotlist in hotlists:
       self.work_env.services.user.AddVisitedHotlist(
-          self.cnxn, 111L, hotlist.hotlist_id)
+          self.cnxn, 111, hotlist.hotlist_id)
 
     self.SignIn()
     with self.work_env as we:
@@ -2970,20 +2970,20 @@ class WorkEnvTest(unittest.TestCase):
     hotlists = [
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[444L], editor_ids=[111L]),
+            owner_ids=[444], editor_ids=[111]),
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[333L]),
+            owner_ids=[111], editor_ids=[333]),
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Private-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[333L], is_private=True),
+            owner_ids=[111], editor_ids=[333], is_private=True),
         self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Private-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[222L], editor_ids=[333L], is_private=True)]
+            owner_ids=[222], editor_ids=[333], is_private=True)]
 
     for hotlist in hotlists:
       self.work_env.services.hotlist_star.SetStar(
-          self.cnxn, hotlist.hotlist_id, 111L, True)
+          self.cnxn, hotlist.hotlist_id, 111, True)
 
     self.SignIn()
     with self.work_env as we:
@@ -3001,7 +3001,7 @@ class WorkEnvTest(unittest.TestCase):
     """We can star and unstar a hotlist."""
     hotlist_id = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[]).hotlist_id
+        owner_ids=[111], editor_ids=[]).hotlist_id
 
     self.SignIn()
     with self.work_env as we:
@@ -3054,11 +3054,11 @@ class WorkEnvTest(unittest.TestCase):
   def testGetHotlistStarCount(self):
     hotlist = self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
     self.services.hotlist_star.SetStar(
-        self.cnxn, hotlist.hotlist_id, 111L, True)
+        self.cnxn, hotlist.hotlist_id, 111, True)
     self.services.hotlist_star.SetStar(
-        self.cnxn, hotlist.hotlist_id, 222L, True)
+        self.cnxn, hotlist.hotlist_id, 222, True)
 
     with self.work_env as we:
       self.assertEqual(2, we.GetHotlistStarCount(hotlist.hotlist_id))
@@ -3093,7 +3093,7 @@ class WorkEnvTest(unittest.TestCase):
   def testCheckHotlistName_AlreadyExists(self):
     self.work_env.services.features.CreateHotlist(
         self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-        owner_ids=[111L], editor_ids=[])
+        owner_ids=[111], editor_ids=[])
 
     self.SignIn()
     with self.work_env as we:
@@ -3102,20 +3102,20 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRemoveIssuesFromHotlists(self):
     """We can remove issues from hotlists."""
-    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue1)
-    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111, issue_id=78902)
     self.services.issue.TestAddIssue(issue2)
 
     hotlist1 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist1.hotlist_id, issue1.issue_id)
     self.AddIssueToHotlist(hotlist1.hotlist_id, issue2.issue_id)
 
     hotlist2 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist2.hotlist_id, issue1.issue_id)
 
     self.SignIn()
@@ -3129,20 +3129,20 @@ class WorkEnvTest(unittest.TestCase):
 
   def testRemoveIssuesFromHotlists_RemoveIssueNotInHotlist(self):
     """Removing an issue from a hotlist that doesn't have it has no effect."""
-    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue1)
-    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111, issue_id=78902)
     self.services.issue.TestAddIssue(issue2)
 
     hotlist1 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist1.hotlist_id, issue1.issue_id)
     self.AddIssueToHotlist(hotlist1.hotlist_id, issue2.issue_id)
 
     hotlist2 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist2.hotlist_id, issue1.issue_id)
 
     self.SignIn()
@@ -3161,10 +3161,10 @@ class WorkEnvTest(unittest.TestCase):
     """Only owners and editors can remove issues."""
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
 
-    # 333L is not an owner or editor.
-    self.SignIn(333L)
+    # 333 is not an owner or editor.
+    self.SignIn(333)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.RemoveIssuesFromHotlists([hotlist.hotlist_id], [1234])
@@ -3177,17 +3177,17 @@ class WorkEnvTest(unittest.TestCase):
 
   def testAddIssuesToHotlists(self):
     """We can add issues to hotlists."""
-    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue1)
-    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111, issue_id=78902)
     self.services.issue.TestAddIssue(issue2)
 
     hotlist1 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     hotlist2 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
 
     self.SignIn()
     with self.work_env as we:
@@ -3208,20 +3208,20 @@ class WorkEnvTest(unittest.TestCase):
 
   def testAddIssuesToHotlists_IssuesAlreadyInHotlist(self):
     """Adding an issue to a hotlist that already has it has no effect."""
-    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue1)
-    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111, issue_id=78902)
     self.services.issue.TestAddIssue(issue2)
 
     hotlist1 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist1.hotlist_id, issue1.issue_id)
     self.AddIssueToHotlist(hotlist1.hotlist_id, issue2.issue_id)
 
     hotlist2 = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist-2', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist2.hotlist_id, issue1.issue_id)
 
     self.SignIn()
@@ -3240,14 +3240,14 @@ class WorkEnvTest(unittest.TestCase):
   def testAddIssuesToHotlists_NotViewable(self):
     """Users can add viewable issues to hotlists."""
     issue1 = fake.MakeTestIssue(
-        789, 1, 'sum1', 'New', 111L, issue_id=78901)
+        789, 1, 'sum1', 'New', 111, issue_id=78901)
     issue1.labels = ['Restrict-View-CoreTeam']
     self.services.issue.TestAddIssue(issue1)
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[333L], editor_ids=[])
+            owner_ids=[333], editor_ids=[])
 
-    self.SignIn(user_id=333L)
+    self.SignIn(user_id=333)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.AddIssuesToHotlists([hotlist.hotlist_id], [78901], None)
@@ -3256,10 +3256,10 @@ class WorkEnvTest(unittest.TestCase):
     """Only owners and editors can add issues."""
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
 
-    # 333L is not an owner or editor.
-    self.SignIn(user_id=333L)
+    # 333 is not an owner or editor.
+    self.SignIn(user_id=333)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.AddIssuesToHotlists([hotlist.hotlist_id], [1234], None)
@@ -3271,12 +3271,12 @@ class WorkEnvTest(unittest.TestCase):
         we.AddIssuesToHotlists([1, 2, 3], [4, 5, 6], None)
 
   def testUpdateHotlistIssueNote(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
 
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
     self.AddIssueToHotlist(hotlist.hotlist_id, issue.issue_id)
 
     self.SignIn()
@@ -3286,12 +3286,12 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual('Note', hotlist.items[0].note)
 
   def testUpdateHotlistIssueNote_IssueNotInHotlist(self):
-    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    issue = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
 
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
 
     self.SignIn()
     with self.assertRaises(exceptions.InputException):
@@ -3301,7 +3301,7 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateHotlistIssueNote_NoSuchIssue(self):
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
 
     self.SignIn()
     with self.assertRaises(exceptions.NoSuchIssueException):
@@ -3311,9 +3311,9 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateHotlistIssueNote_CantEditHotlist(self):
     hotlist = self.work_env.services.features.CreateHotlist(
             self.cnxn, 'Fake-Hotlist', 'Summary', 'Description',
-            owner_ids=[111L], editor_ids=[])
+            owner_ids=[111], editor_ids=[])
 
-    self.SignIn(user_id=333L)
+    self.SignIn(user_id=333)
     with self.assertRaises(permissions.PermissionException):
       with self.work_env as we:
         we.UpdateHotlistIssueNote(hotlist.hotlist_id, 78901, 'Note')
@@ -3328,7 +3328,7 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: DeleteHotlist()
 
   def testDismissCue(self):
-    user = self.services.user.test_users[111L]
+    user = self.services.user.test_users[111]
     self.assertEqual(0, len(user.dismissed_cues))
 
     self.SignIn()
@@ -3339,7 +3339,7 @@ class WorkEnvTest(unittest.TestCase):
                      user.dismissed_cues)
 
   def testDismissCue_NoCueId(self):
-    user = self.services.user.test_users[111L]
+    user = self.services.user.test_users[111]
 
     self.SignIn()
     with self.assertRaises(exceptions.InputException):
@@ -3349,7 +3349,7 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([], user.dismissed_cues)
 
   def testDismissCue_NotSignedIn(self):
-    user = self.services.user.test_users[111L]
+    user = self.services.user.test_users[111]
 
     with self.assertRaises(exceptions.InputException):
       with self.work_env as we:
@@ -3358,7 +3358,7 @@ class WorkEnvTest(unittest.TestCase):
     self.assertEqual([], user.dismissed_cues)
 
   def testDismissCue_CueAlreadyDismissed(self):
-    user = self.services.user.test_users[111L]
+    user = self.services.user.test_users[111]
     user.dismissed_cues = ['code_of_conduct']
 
     self.SignIn()
@@ -3369,7 +3369,7 @@ class WorkEnvTest(unittest.TestCase):
                      user.dismissed_cues)
 
   def testDismissCue_UnrecognizedCueId(self):
-    user = self.services.user.test_users[111L]
+    user = self.services.user.test_users[111]
 
     self.SignIn()
     with self.assertRaises(exceptions.InputException):

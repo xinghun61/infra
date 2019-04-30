@@ -51,9 +51,9 @@ class GroupListTest(unittest.TestCase):
     self.assertEqual([], page_data['groups'])
 
   def testGatherPagData_NonzeroGroups(self):
-    self.services.usergroup.TestAddGroupSettings(777L, 'group_a@example.com')
-    self.services.usergroup.TestAddGroupSettings(888L, 'group_b@example.com')
-    self.services.usergroup.TestAddMembers(888L, [111L, 222L, 333L])
+    self.services.usergroup.TestAddGroupSettings(777, 'group_a@example.com')
+    self.services.usergroup.TestAddGroupSettings(888, 'group_b@example.com')
+    self.services.usergroup.TestAddMembers(888, [111, 222, 333])
     page_data = self.servlet.GatherPageData(self.mr)
     group_view_a, group_view_b = page_data['groups']
     self.assertEqual('group_a@example.com', group_view_a.name)
@@ -71,11 +71,11 @@ class GroupListTest(unittest.TestCase):
 
   def testProcessFormData_Normal(self):
     self.services.usergroup.TestAddGroupSettings(
-        888L, 'group_b@example.com',friend_projects=[789])
-    self.services.usergroup.TestAddMembers(888L, [111L, 222L, 333L])
+        888, 'group_b@example.com', friend_projects=[789])
+    self.services.usergroup.TestAddMembers(888, [111, 222, 333])
 
     post_data = fake.PostData(
         remove=[888],
         removebtn=[1])
     self.servlet.ProcessFormData(self.mr, post_data)
-    self.assertNotIn(888L, self.services.usergroup.group_settings)
+    self.assertNotIn(888, self.services.usergroup.group_settings)

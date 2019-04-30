@@ -49,44 +49,44 @@ class AbstractStarServiceTest(unittest.TestCase):
   def SetUpLookupItemsStarrers(self):
     self.mock_tbl.Select(
         self.cnxn, cols=['item_id', 'user_id'],
-        item_id=[234]).AndReturn([(234, 111L), (234, 222L)])
+        item_id=[234]).AndReturn([(234, 111), (234, 222)])
 
   def testLookupItemsStarrers(self):
-    self.star_service.starrer_cache.CacheItem(123, [111L, 333L])
+    self.star_service.starrer_cache.CacheItem(123, [111, 333])
     self.SetUpLookupItemsStarrers()
     self.mox.ReplayAll()
     starrer_list_dict = self.star_service.LookupItemsStarrers(
         self.cnxn, [123, 234])
     self.mox.VerifyAll()
     self.assertItemsEqual([123, 234], starrer_list_dict.keys())
-    self.assertItemsEqual([111L, 333L], starrer_list_dict[123])
-    self.assertItemsEqual([111L, 222L], starrer_list_dict[234])
-    self.assertItemsEqual([111L, 333L],
+    self.assertItemsEqual([111, 333], starrer_list_dict[123])
+    self.assertItemsEqual([111, 222], starrer_list_dict[234])
+    self.assertItemsEqual([111, 333],
                           self.star_service.starrer_cache.GetItem(123))
-    self.assertItemsEqual([111L, 222L],
+    self.assertItemsEqual([111, 222],
                           self.star_service.starrer_cache.GetItem(234))
 
   def SetUpLookupStarredItemIDs(self):
     self.mock_tbl.Select(
-        self.cnxn, cols=['item_id'], user_id=111L).AndReturn(
+        self.cnxn, cols=['item_id'], user_id=111).AndReturn(
             [(123,), (234,)])
 
   def testLookupStarredItemIDs(self):
     self.SetUpLookupStarredItemIDs()
     self.mox.ReplayAll()
-    item_ids = self.star_service.LookupStarredItemIDs(self.cnxn, 111L)
+    item_ids = self.star_service.LookupStarredItemIDs(self.cnxn, 111)
     self.mox.VerifyAll()
     self.assertItemsEqual([123, 234], item_ids)
     self.assertItemsEqual([123, 234],
-                          self.star_service.star_cache.GetItem(111L))
+                          self.star_service.star_cache.GetItem(111))
 
   def testIsItemStarredBy(self):
     self.SetUpLookupStarredItemIDs()
     self.mox.ReplayAll()
-    self.assertTrue(self.star_service.IsItemStarredBy(self.cnxn, 123, 111L))
+    self.assertTrue(self.star_service.IsItemStarredBy(self.cnxn, 123, 111))
     self.assertTrue(self.star_service.IsItemStarredBy(self.cnxn, 234, 111))
     self.assertFalse(
-        self.star_service.IsItemStarredBy(self.cnxn, 435, 111L))
+        self.star_service.IsItemStarredBy(self.cnxn, 435, 111))
     self.mox.VerifyAll()
 
   def SetUpCountItemStars(self):
@@ -115,24 +115,24 @@ class AbstractStarServiceTest(unittest.TestCase):
 
   def SetUpSetStar_Add(self):
     self.mock_tbl.InsertRows(
-        self.cnxn, ['item_id', 'user_id'], [(123, 111L)], ignore=True)
+        self.cnxn, ['item_id', 'user_id'], [(123, 111)], ignore=True)
 
   def testSetStar_Add(self):
     self.SetUpSetStar_Add()
     self.mox.ReplayAll()
-    self.star_service.SetStar(self.cnxn, 123, 111L, True)
+    self.star_service.SetStar(self.cnxn, 123, 111, True)
     self.mox.VerifyAll()
     self.assertFalse(self.star_service.star_cache.HasItem(123))
     self.assertFalse(self.star_service.starrer_cache.HasItem(123))
     self.assertFalse(self.star_service.star_count_cache.HasItem(123))
 
   def SetUpSetStar_Remove(self):
-    self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=[111L])
+    self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=[111])
 
   def testSetStar_Remove(self):
     self.SetUpSetStar_Remove()
     self.mox.ReplayAll()
-    self.star_service.SetStar(self.cnxn, 123, 111L, False)
+    self.star_service.SetStar(self.cnxn, 123, 111, False)
     self.mox.VerifyAll()
     self.assertFalse(self.star_service.star_cache.HasItem(123))
     self.assertFalse(self.star_service.starrer_cache.HasItem(123))
@@ -140,25 +140,25 @@ class AbstractStarServiceTest(unittest.TestCase):
 
   def SetUpSetStarsBatch_Add(self):
     self.mock_tbl.InsertRows(
-        self.cnxn, ['item_id', 'user_id'], [(123, 111L), (123, 222L)],
+        self.cnxn, ['item_id', 'user_id'], [(123, 111), (123, 222)],
         ignore=True)
 
   def testSetStarsBatch_Add(self):
     self.SetUpSetStarsBatch_Add()
     self.mox.ReplayAll()
-    self.star_service.SetStarsBatch(self.cnxn, 123, [111L, 222L], True)
+    self.star_service.SetStarsBatch(self.cnxn, 123, [111, 222], True)
     self.mox.VerifyAll()
     self.assertFalse(self.star_service.star_cache.HasItem(123))
     self.assertFalse(self.star_service.starrer_cache.HasItem(123))
     self.assertFalse(self.star_service.star_count_cache.HasItem(123))
 
   def SetUpSetStarsBatch_Remove(self):
-    self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=[111L, 222L])
+    self.mock_tbl.Delete(self.cnxn, item_id=123, user_id=[111, 222])
 
   def testSetStarsBatch_Remove(self):
     self.SetUpSetStarsBatch_Remove()
     self.mox.ReplayAll()
-    self.star_service.SetStarsBatch(self.cnxn, 123, [111L, 222L], False)
+    self.star_service.SetStarsBatch(self.cnxn, 123, [111, 222], False)
     self.mox.VerifyAll()
     self.assertFalse(self.star_service.star_cache.HasItem(123))
     self.assertFalse(self.star_service.starrer_cache.HasItem(123))

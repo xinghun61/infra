@@ -70,9 +70,9 @@ class MonorailApiRequestUnitTest(unittest.TestCase):
         usergroup=fake.UserGroupService())
     self.project = self.services.project.TestAddProject(
         'proj', project_id=789)
-    self.services.user.TestAddUser('requester@example.com', 111L)
+    self.services.user.TestAddUser('requester@example.com', 111)
     self.issue = fake.MakeTestIssue(
-        789, 1, 'sum', 'New', 111L)
+        789, 1, 'sum', 'New', 111)
     self.services.issue.TestAddIssue(self.issue)
 
     self.patcher_1 = mock.patch('endpoints.get_current_user')
@@ -387,7 +387,7 @@ class CalcDefaultQueryTest(unittest.TestCase):
   def setUp(self):
     self.project = project_pb2.Project()
     self.project.project_name = 'proj'
-    self.project.owner_ids = [111L]
+    self.project.owner_ids = [111]
     self.config = tracker_pb2.ProjectIssueConfig()
 
   def testIssueListURL_NotDefaultCan(self):
@@ -429,7 +429,7 @@ class CalcDefaultQueryTest(unittest.TestCase):
     mr.auth = testing_helpers.Blank(effective_ids=set())
     self.assertEqual('', mr._CalcDefaultQuery())
 
-    mr.auth = testing_helpers.Blank(effective_ids={999L})
+    mr.auth = testing_helpers.Blank(effective_ids={999})
     self.assertEqual('', mr._CalcDefaultQuery())
 
   def testIssueListURL_Customized_Member(self):
@@ -439,7 +439,7 @@ class CalcDefaultQueryTest(unittest.TestCase):
     mr.project = self.project
     mr.config = self.config
     mr.config.member_default_query = 'owner:me'
-    mr.auth = testing_helpers.Blank(effective_ids={111L})
+    mr.auth = testing_helpers.Blank(effective_ids={111})
     self.assertEqual('owner:me', mr._CalcDefaultQuery())
 
 

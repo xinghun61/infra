@@ -40,12 +40,12 @@ class MembershipTwoLevelCacheTest(unittest.TestCase):
     self.usergroup_service = MakeUserGroupService(self.cache_manager, self.mox)
 
   def testDeserializeMemberships(self):
-    memberships_rows = [(111L, 777L), (111L, 888L), (222L, 888L)]
+    memberships_rows = [(111, 777), (111, 888), (222, 888)]
     actual = self.usergroup_service.memberships_2lc._DeserializeMemberships(
         memberships_rows)
-    self.assertItemsEqual([111L, 222L], actual.keys())
-    self.assertItemsEqual([777L, 888L], actual[111L])
-    self.assertItemsEqual([888L], actual[222L])
+    self.assertItemsEqual([111, 222], actual.keys())
+    self.assertItemsEqual([777, 888], actual[111])
+    self.assertItemsEqual([888], actual[222])
 
 
 class UserGroupServiceTest(unittest.TestCase):
@@ -74,22 +74,22 @@ class UserGroupServiceTest(unittest.TestCase):
     self.SetUpUpdateSettings(group_id, visiblity, external_group_type)
 
   def testCreateGroup_Normal(self):
-    self.services.user.TestAddUser('group@example.com', 888L)
-    self.SetUpCreateGroup(888L, 'anyone')
+    self.services.user.TestAddUser('group@example.com', 888)
+    self.SetUpCreateGroup(888, 'anyone')
     self.mox.ReplayAll()
     actual_group_id = self.usergroup_service.CreateGroup(
         self.cnxn, self.services, 'group@example.com', 'anyone')
     self.mox.VerifyAll()
-    self.assertEqual(888L, actual_group_id)
+    self.assertEqual(888, actual_group_id)
 
   def testCreateGroup_Import(self):
-    self.services.user.TestAddUser('troopers', 888L)
-    self.SetUpCreateGroup(888L, 'owners', 'mdb')
+    self.services.user.TestAddUser('troopers', 888)
+    self.SetUpCreateGroup(888, 'owners', 'mdb')
     self.mox.ReplayAll()
     actual_group_id = self.usergroup_service.CreateGroup(
         self.cnxn, self.services, 'troopers', 'owners', 'mdb')
     self.mox.VerifyAll()
-    self.assertEqual(888L, actual_group_id)
+    self.assertEqual(888, actual_group_id)
 
   def SetUpDetermineWhichUserIDsAreGroups(self, ids_to_query, mock_group_ids):
     self.usergroup_service.usergroupsettings_tbl.Select(
@@ -117,12 +117,12 @@ class UserGroupServiceTest(unittest.TestCase):
   def testLookupUserGroupID_Found(self):
     mock_select = mock.MagicMock()
     self.services.usergroup.usergroupsettings_tbl.Select = mock_select
-    mock_select.return_value = [('group@example.com', 888L)]
+    mock_select.return_value = [('group@example.com', 888)]
 
     actual = self.services.usergroup.LookupUserGroupID(
         self.cnxn, 'group@example.com')
 
-    self.assertEqual(888L, actual)
+    self.assertEqual(888, actual)
     mock_select.assert_called_once_with(
       self.cnxn, cols=['email', 'group_id'],
       left_joins=[('User ON UserGroupSettings.group_id = User.user_id', [])],
@@ -151,8 +151,8 @@ class UserGroupServiceTest(unittest.TestCase):
 
   def testLookupAllMemberships(self):
     self.usergroup_service.group_dag.initialized = True
-    self.usergroup_service.memberships_2lc.CacheItem(111L, {888L, 999L})
-    self.SetUpLookupAllMemberships([222L], [(222L, 777L), (222L, 999L)])
+    self.usergroup_service.memberships_2lc.CacheItem(111, {888, 999})
+    self.SetUpLookupAllMemberships([222], [(222, 777), (222, 999)])
     self.usergroup_service.usergroupsettings_tbl.Select(
           self.cnxn, cols=['group_id']).AndReturn([])
     self.usergroup_service.usergroup_tbl.Select(
@@ -160,10 +160,10 @@ class UserGroupServiceTest(unittest.TestCase):
           user_id=[]).AndReturn([])
     self.mox.ReplayAll()
     actual_membership_dict = self.usergroup_service.LookupAllMemberships(
-        self.cnxn, [111L, 222L])
+        self.cnxn, [111, 222])
     self.mox.VerifyAll()
     self.assertEqual(
-        {111L: {888L, 999}, 222L: {777L, 999L}},
+        {111: {888, 999}, 222: {777, 999}},
         actual_membership_dict)
 
   def SetUpRemoveMembers(self, group_id, member_ids):
@@ -172,23 +172,23 @@ class UserGroupServiceTest(unittest.TestCase):
 
   def testRemoveMembers(self):
     self.usergroup_service.group_dag.initialized = True
-    self.SetUpRemoveMembers(888L, [111L, 222L])
-    self.SetUpLookupAllMembers([111L, 222L], [], {}, {})
+    self.SetUpRemoveMembers(888, [111, 222])
+    self.SetUpLookupAllMembers([111, 222], [], {}, {})
     self.mox.ReplayAll()
-    self.usergroup_service.RemoveMembers(self.cnxn, 888L, [111L, 222L])
+    self.usergroup_service.RemoveMembers(self.cnxn, 888, [111, 222])
     self.mox.VerifyAll()
 
   def testUpdateMembers(self):
     self.usergroup_service.group_dag.initialized = True
     self.usergroup_service.usergroup_tbl.Delete(
-        self.cnxn, group_id=888L, user_id=[111L, 222L])
+        self.cnxn, group_id=888, user_id=[111, 222])
     self.usergroup_service.usergroup_tbl.InsertRows(
         self.cnxn, ['user_id', 'group_id', 'role'],
-        [(111L, 888L, 'member'), (222L, 888L, 'member')])
-    self.SetUpLookupAllMembers([111L, 222L], [], {}, {})
+        [(111, 888, 'member'), (222, 888, 'member')])
+    self.SetUpLookupAllMembers([111, 222], [], {}, {})
     self.mox.ReplayAll()
     self.usergroup_service.UpdateMembers(
-        self.cnxn, 888L, [111L, 222L], 'member')
+        self.cnxn, 888, [111, 222], 'member')
     self.mox.VerifyAll()
 
   def testUpdateMembers_CircleDetection(self):
@@ -382,8 +382,8 @@ class UserGroupServiceTest(unittest.TestCase):
 
   def testGetAllUserGroupsInfo(self):
     self.SetUpGetAllUserGroupsInfo(
-        [('group@example.com', 888L, 'anyone', None, 0, 1, 0)],
-        [(888L, 12)])
+        [('group@example.com', 888, 'anyone', None, 0, 1, 0)],
+        [(888, 12)])
     self.mox.ReplayAll()
     actual_infos = self.usergroup_service.GetAllUserGroupsInfo(self.cnxn)
     self.mox.VerifyAll()
@@ -393,7 +393,7 @@ class UserGroupServiceTest(unittest.TestCase):
     self.assertEqual(12, count)
     self.assertEqual(usergroup_pb2.MemberVisibility.ANYONE,
                      group_settings.who_can_view_members)
-    self.assertEqual(888L, group_id)
+    self.assertEqual(888, group_id)
 
   def SetUpGetGroupSettings(self, group_ids, mock_result_rows,
                             mock_friends=None):
@@ -414,35 +414,35 @@ class UserGroupServiceTest(unittest.TestCase):
     self.assertEqual({}, actual_settings_dict)
 
   def testGetGroupSettings_NoGroupsFound(self):
-    self.SetUpGetGroupSettings([777L], [])
+    self.SetUpGetGroupSettings([777], [])
     self.mox.ReplayAll()
     actual_settings_dict = self.usergroup_service.GetAllGroupSettings(
-        self.cnxn, [777L])
+        self.cnxn, [777])
     self.mox.VerifyAll()
     self.assertEqual({}, actual_settings_dict)
 
   def testGetGroupSettings_SomeGroups(self):
     self.SetUpGetGroupSettings(
-        [777L, 888L, 999L],
-        [(888L, 'anyone', None, 0, 1, 0), (999L, 'members', None, 0, 1, 0)])
+        [777, 888, 999],
+        [(888, 'anyone', None, 0, 1, 0), (999, 'members', None, 0, 1, 0)])
     self.mox.ReplayAll()
     actual_settings_dict = self.usergroup_service.GetAllGroupSettings(
-        self.cnxn, [777L, 888L, 999L])
+        self.cnxn, [777, 888, 999])
     self.mox.VerifyAll()
     self.assertEqual(
-        {888L: usergroup_pb2.MakeSettings('anyone'),
-         999L: usergroup_pb2.MakeSettings('members')},
+        {888: usergroup_pb2.MakeSettings('anyone'),
+         999: usergroup_pb2.MakeSettings('members')},
         actual_settings_dict)
 
   def testGetGroupSettings_NoSuchGroup(self):
-    self.SetUpGetGroupSettings([777L], [])
+    self.SetUpGetGroupSettings([777], [])
     self.mox.ReplayAll()
-    actual_settings = self.usergroup_service.GetGroupSettings(self.cnxn, 777L)
+    actual_settings = self.usergroup_service.GetGroupSettings(self.cnxn, 777)
     self.mox.VerifyAll()
     self.assertEqual(None, actual_settings)
 
   def testGetGroupSettings_Found(self):
-    self.SetUpGetGroupSettings([888L], [(888L, 'anyone', None, 0, 1, 0)])
+    self.SetUpGetGroupSettings([888], [(888, 'anyone', None, 0, 1, 0)])
     self.mox.ReplayAll()
     actual_settings = self.usergroup_service.GetGroupSettings(self.cnxn, 888)
     self.mox.VerifyAll()
@@ -452,7 +452,7 @@ class UserGroupServiceTest(unittest.TestCase):
 
   def testGetGroupSettings_Import(self):
     self.SetUpGetGroupSettings(
-        [888L], [(888L, 'owners', 'mdb', 0, 1, 0)])
+        [888], [(888, 'owners', 'mdb', 0, 1, 0)])
     self.mox.ReplayAll()
     actual_settings = self.usergroup_service.GetGroupSettings(self.cnxn, 888)
     self.mox.VerifyAll()
@@ -480,25 +480,25 @@ class UserGroupServiceTest(unittest.TestCase):
         self.cnxn, ['group_id', 'project_id'], rows)
 
   def testUpdateSettings_Normal(self):
-    self.SetUpUpdateSettings(888L, 'anyone')
+    self.SetUpUpdateSettings(888, 'anyone')
     self.mox.ReplayAll()
     self.usergroup_service.UpdateSettings(
-        self.cnxn, 888L, usergroup_pb2.MakeSettings('anyone'))
+        self.cnxn, 888, usergroup_pb2.MakeSettings('anyone'))
     self.mox.VerifyAll()
 
   def testUpdateSettings_Import(self):
-    self.SetUpUpdateSettings(888L, 'owners', 'mdb')
+    self.SetUpUpdateSettings(888, 'owners', 'mdb')
     self.mox.ReplayAll()
     self.usergroup_service.UpdateSettings(
-        self.cnxn, 888L,
+        self.cnxn, 888,
         usergroup_pb2.MakeSettings('owners', 'mdb'))
     self.mox.VerifyAll()
 
   def testUpdateSettings_WithFriends(self):
-    self.SetUpUpdateSettings(888L, 'anyone', friend_projects=[789])
+    self.SetUpUpdateSettings(888, 'anyone', friend_projects=[789])
     self.mox.ReplayAll()
     self.usergroup_service.UpdateSettings(
-        self.cnxn, 888L,
+        self.cnxn, 888,
         usergroup_pb2.MakeSettings('anyone', friend_projects=[789]))
     self.mox.VerifyAll()
 

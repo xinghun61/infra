@@ -18,33 +18,33 @@ class AuthDataTest(unittest.TestCase):
     self.services = service_manager.Services(
         user=fake.UserService(),
         usergroup=fake.UserGroupService())
-    self.services.user.TestAddUser('test@example.com', 111L)
+    self.services.user.TestAddUser('test@example.com', 111)
 
   # TODO(jrobbins): Fill in a bunch of missing tests here.
 
   def testFinishInitialization_NoMemberships(self):
     """No user groups means effective_ids == {user_id}."""
-    auth = authdata.AuthData(user_id=111L, email='test@example.com')
+    auth = authdata.AuthData(user_id=111, email='test@example.com')
     authdata.AuthData._FinishInitialization(
         self.cnxn, auth, self.services)
-    self.assertEqual(auth.user_id, 111L)
-    self.assertEqual(auth.effective_ids, {111L})
+    self.assertEqual(auth.user_id, 111)
+    self.assertEqual(auth.effective_ids, {111})
 
   def testFinishInitialization_NormalMemberships(self):
     """effective_ids should be {user_id, group_id...}."""
-    self.services.usergroup.TestAddMembers(888L, [111L])
-    self.services.usergroup.TestAddMembers(999L, [111L])
-    auth = authdata.AuthData(user_id=111L, email='test@example.com')
+    self.services.usergroup.TestAddMembers(888, [111])
+    self.services.usergroup.TestAddMembers(999, [111])
+    auth = authdata.AuthData(user_id=111, email='test@example.com')
     authdata.AuthData._FinishInitialization(
         self.cnxn, auth, self.services)
-    self.assertEqual(auth.user_id, 111L)
-    self.assertEqual(auth.effective_ids, {111L, 888L, 999L})
+    self.assertEqual(auth.user_id, 111)
+    self.assertEqual(auth.effective_ids, {111, 888, 999})
 
   def testFinishInitialization_ComputedUserGroup(self):
     """effective_ids should be {user_id, group_id...}."""
-    self.services.usergroup.TestAddGroupSettings(888L, 'everyone@example.com')
-    auth = authdata.AuthData(user_id=111L, email='test@example.com')
+    self.services.usergroup.TestAddGroupSettings(888, 'everyone@example.com')
+    auth = authdata.AuthData(user_id=111, email='test@example.com')
     authdata.AuthData._FinishInitialization(
         self.cnxn, auth, self.services)
-    self.assertEqual(auth.user_id, 111L)
-    self.assertEqual(auth.effective_ids, {111L, 888L})
+    self.assertEqual(auth.user_id, 111)
+    self.assertEqual(auth.effective_ids, {111, 888})

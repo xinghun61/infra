@@ -49,13 +49,13 @@ class IssueattachmentTest(unittest.TestCase):
     self.project = services.project.TestAddProject('proj')
     self.servlet = issueattachment.AttachmentPage(
         'req', webapp2.Response(), services=services)
-    services.user.TestAddUser('commenter@example.com', 111L)
+    services.user.TestAddUser('commenter@example.com', 111)
     self.issue = fake.MakeTestIssue(
-        self.project.project_id, 1, 'summary', 'New', 111L)
+        self.project.project_id, 1, 'summary', 'New', 111)
     services.issue.TestAddIssue(self.issue)
     self.comment = tracker_pb2.IssueComment(
         id=123, issue_id=self.issue.issue_id,
-        project_id=self.project.project_id, user_id=111L,
+        project_id=self.project.project_id, user_id=111,
         content='this is a comment')
     services.issue.TestAddComment(self.comment, self.issue.local_id)
     self.attachment = tracker_pb2.Attachment(

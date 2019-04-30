@@ -13,13 +13,13 @@ from proto import user_pb2
 class UserPb2Test(unittest.TestCase):
 
   def testUser_Defaults(self):
-    user = user_pb2.MakeUser(111L)
-    self.assertEqual(111L, user.user_id)
+    user = user_pb2.MakeUser(111)
+    self.assertEqual(111, user.user_id)
     self.assertFalse(user.obscure_email)
     self.assertIsNone(user.email)
 
   def testUser_Everything(self):
-    user = user_pb2.MakeUser(111L, email='user@example.com', obscure_email=True)
-    self.assertEqual(111L, user.user_id)
+    user = user_pb2.MakeUser(111, email='user@example.com', obscure_email=True)
+    self.assertEqual(111, user.user_id)
     self.assertTrue(user.obscure_email)
     self.assertEqual('user@example.com', user.email)

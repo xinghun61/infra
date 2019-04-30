@@ -41,7 +41,7 @@ class InboundEmailTest(unittest.TestCase):
         project=fake.ProjectService())
     self.project = self.services.project.TestAddProject(
         'proj', project_id=987, process_inbound_email=True,
-        contrib_ids=[111L])
+        contrib_ids=[111])
     self.project_addr = 'proj@monorail.example.com'
 
     self.issue = tracker_pb2.Issue()
@@ -152,12 +152,12 @@ class InboundEmailTest(unittest.TestCase):
                       email_task['subject'])
 
   def testProcessMail_BannedAccount(self):
-    self.services.user.TestAddUser('user@example.com', 111L)
+    self.services.user.TestAddUser('user@example.com', 111)
     class MockAuthData:
       def __init__(self):
-        self.user_pb = user_pb2.MakeUser(111L)
+        self.user_pb = user_pb2.MakeUser(111)
         self.effective_ids = set([1, 2, 3])
-        self.user_id = 111L
+        self.user_id = 111
     mock_auth_data = MockAuthData()
     mock_auth_data.user_pb.banned = 'banned'
 
@@ -180,12 +180,12 @@ class InboundEmailTest(unittest.TestCase):
                       email_task['subject'])
 
   def testProcessMail_Success(self):
-    self.services.user.TestAddUser('user@example.com', 111L)
+    self.services.user.TestAddUser('user@example.com', 111)
     class MockAuthData:
       def __init__(self):
-        self.user_pb = user_pb2.MakeUser(111L)
+        self.user_pb = user_pb2.MakeUser(111)
         self.effective_ids = set([1, 2, 3])
-        self.user_id = 111L
+        self.user_id = 111
     mock_auth_data = MockAuthData()
 
     self.mox.StubOutWithMock(emailfmt, 'ValidateReferencesHeader')
@@ -206,7 +206,7 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.inbound, 'ProcessIssueReply')
     self.inbound.ProcessIssueReply(
         mox.IgnoreArg(), self.project, 123, self.project_addr,
-        'user@example.com', 111L, mock_auth_data.effective_ids,
+        'user@example.com', 111, mock_auth_data.effective_ids,
         'test permissions', 'awesome!')
 
     self.mox.ReplayAll()
@@ -223,7 +223,7 @@ class InboundEmailTest(unittest.TestCase):
     self.inbound.IsWhitelisted('user@malicious.com').AndReturn(False)
 
     self.mox.ReplayAll()
-    auth = authdata.AuthData(user_id=111L, email='user@example.com')
+    auth = authdata.AuthData(user_id=111, email='user@example.com')
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@malicious.com',
         auth, 'issue title', 'issue body', 'incident')
@@ -246,18 +246,18 @@ class InboundEmailTest(unittest.TestCase):
     ).AndReturn(None)
 
     # Mock command parsing.
-    mock_uia = commitlogcommands.UpdateIssueAction(101L)
+    mock_uia = commitlogcommands.UpdateIssueAction(101)
     self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
-    commitlogcommands.UpdateIssueAction(101L).AndReturn(mock_uia)
+    commitlogcommands.UpdateIssueAction(101).AndReturn(mock_uia)
 
     self.mox.StubOutWithMock(mock_uia, 'Parse')
     mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111L, ['issue body'],
+        self.cnxn, self.project.project_name, 111, ['issue body'],
         self.services, strip_quoted_lines=True)
 
     self.mox.ReplayAll()
 
-    auth = authdata.AuthData(user_id=111L, email='user@example.com')
+    auth = authdata.AuthData(user_id=111, email='user@example.com')
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@google.com',
         auth, 'issue title', 'issue body', 'incident-1')
@@ -266,12 +266,12 @@ class InboundEmailTest(unittest.TestCase):
     self.assertIsNone(ret)
 
     actual_issue = self.services.issue.GetIssueByLocalID(
-        self.cnxn, self.project.project_id, 101L)
+        self.cnxn, self.project.project_id, 101)
     actual_comments = self.services.issue.GetCommentsForIssue(
         self.cnxn, actual_issue.issue_id)
     self.assertEqual('issue title', actual_issue.summary)
     self.assertEqual('Available', actual_issue.status)
-    self.assertEqual(111L, actual_issue.reporter_id)
+    self.assertEqual(111, actual_issue.reporter_id)
     self.assertEqual([1], actual_issue.component_ids)
     self.assertEqual(None, actual_issue.owner_id)
     self.assertEqual(
@@ -302,18 +302,18 @@ class InboundEmailTest(unittest.TestCase):
     ).AndReturn(None)
 
     # Mock command parsing.
-    mock_uia = commitlogcommands.UpdateIssueAction(101L)
+    mock_uia = commitlogcommands.UpdateIssueAction(101)
     self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
-    commitlogcommands.UpdateIssueAction(101L).AndReturn(mock_uia)
+    commitlogcommands.UpdateIssueAction(101).AndReturn(mock_uia)
 
     self.mox.StubOutWithMock(mock_uia, 'Parse')
     mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111L, ['issue body codesearch'],
+        self.cnxn, self.project.project_name, 111, ['issue body codesearch'],
         self.services, strip_quoted_lines=True)
 
     self.mox.ReplayAll()
 
-    auth = authdata.AuthData(user_id=111L, email='user@example.com')
+    auth = authdata.AuthData(user_id=111, email='user@example.com')
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@google.com',
         auth, 'issue title', 'issue body codesearch', 'incident-1')
@@ -322,7 +322,7 @@ class InboundEmailTest(unittest.TestCase):
     self.assertIsNone(ret)
 
     actual_issue = self.services.issue.GetIssueByLocalID(
-        self.cnxn, self.project.project_id, 101L)
+        self.cnxn, self.project.project_id, 101)
     self.assertEqual([2], actual_issue.component_ids)
     self.assertEqual(1, len(fake_pasicn.mock_calls))
     self.assertEqual(1, len(fake_pasibn.mock_calls))
@@ -346,11 +346,11 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(self.services.issue, 'GetComments')
     self.services.issue.GetComments(self.cnxn,
-        issue_id=[self.issue.issue_id], commenter_id=[111L]).AndReturn([])
+        issue_id=[self.issue.issue_id], commenter_id=[111]).AndReturn([])
 
     self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
     self.services.issue.CreateIssueComment(
-        self.cnxn, self.issue, 111L,
+        self.cnxn, self.issue, 111,
         'Filed by user@example.com on behalf of user@google.com\n\nissue body'
         ).AndReturn(None)
 
@@ -361,12 +361,12 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(mock_uia, 'Parse')
     mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111L, ['issue body'],
+        self.cnxn, self.project.project_name, 111, ['issue body'],
         self.services, strip_quoted_lines=True)
 
     self.mox.ReplayAll()
 
-    auth = authdata.AuthData(user_id=111L, email='user@example.com')
+    auth = authdata.AuthData(user_id=111, email='user@example.com')
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@google.com',
         auth, 'issue title', 'issue body', 'incident-1')
@@ -396,7 +396,7 @@ class InboundEmailTest(unittest.TestCase):
 
       self.mox.StubOutWithMock(self.services.issue, 'GetComments')
       self.services.issue.GetComments(self.cnxn,
-          issue_id=[self.issue.issue_id], commenter_id=[111L]).AndReturn(
+          issue_id=[self.issue.issue_id], commenter_id=[111]).AndReturn(
           [comment])
 
       # CreateIssueComment should not be called.
@@ -404,7 +404,7 @@ class InboundEmailTest(unittest.TestCase):
 
       self.mox.ReplayAll()
 
-      auth = authdata.AuthData(user_id=111L, email='user@example.com')
+      auth = authdata.AuthData(user_id=111, email='user@example.com')
       ret = self.inbound.ProcessAlert(
           self.cnxn, self.project, self.project_addr, 'user@google.com',
           auth, 'issue title', 'issue body', 'incident-1')
@@ -416,7 +416,7 @@ class InboundEmailTest(unittest.TestCase):
     nonexistant_local_id = 200
     email_tasks = self.inbound.ProcessIssueReply(
         self.cnxn, self.project, nonexistant_local_id, self.project_addr,
-        'user@example.com', 111L, [1, 2, 3], permissions.USER_PERMISSIONSET,
+        'user@example.com', 111, [1, 2, 3], permissions.USER_PERMISSIONSET,
         'awesome!')
     self.assertEquals(1, len(email_tasks))
     email_task = email_tasks[0]
@@ -429,7 +429,7 @@ class InboundEmailTest(unittest.TestCase):
     self.issue.deleted = True
     email_tasks = self.inbound.ProcessIssueReply(
         self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'user@example.com', 111L, [1, 2, 3], permissions.USER_PERMISSIONSET,
+        'user@example.com', 111, [1, 2, 3], permissions.USER_PERMISSIONSET,
         'awesome!')
     self.assertEquals(1, len(email_tasks))
     email_task = email_tasks[0]
@@ -441,7 +441,7 @@ class InboundEmailTest(unittest.TestCase):
   def VerifyUserHasNoPerm(self, perms):
     email_tasks = self.inbound.ProcessIssueReply(
         self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'user@example.com', 111L, [1, 2, 3], perms, 'awesome!')
+        'user@example.com', 111, [1, 2, 3], perms, 'awesome!')
     self.assertEquals(1, len(email_tasks))
     email_task = email_tasks[0]
     self.assertEquals('user@example.com', email_task['to'])
@@ -467,7 +467,7 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(mock_uia, 'Parse')
     mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111L, ['awesome!'], self.services,
+        self.cnxn, self.project.project_name, 111, ['awesome!'], self.services,
         strip_quoted_lines=True)
     self.mox.StubOutWithMock(mock_uia, 'Run')
     # Allow edit is false here because the permission set does not contain
@@ -477,7 +477,7 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.ReplayAll()
     ret = self.inbound.ProcessIssueReply(
         self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'from_addr', 111L, [1, 2, 3], perms, 'awesome!')
+        'from_addr', 111, [1, 2, 3], perms, 'awesome!')
     self.mox.VerifyAll()
     self.assertIsNone(ret)
 
@@ -490,7 +490,7 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(mock_uia, 'Parse')
     mock_uia.Parse(
-        self.cnxn, self.project.project_name, 111L, ['awesome!'], self.services,
+        self.cnxn, self.project.project_name, 111, ['awesome!'], self.services,
         strip_quoted_lines=True)
     self.mox.StubOutWithMock(mock_uia, 'Run')
     mock_uia.Run(self.cnxn, self.services, allow_edit=True)
@@ -498,7 +498,7 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.ReplayAll()
     ret = self.inbound.ProcessIssueReply(
         self.cnxn, self.project, self.issue.local_id, self.project_addr,
-        'from_addr', 111L, [1, 2, 3], perms, 'awesome!')
+        'from_addr', 111, [1, 2, 3], perms, 'awesome!')
     self.mox.VerifyAll()
     self.assertIsNone(ret)
 
@@ -509,7 +509,7 @@ class BouncedEmailTest(unittest.TestCase):
     self.cnxn = 'fake cnxn'
     self.services = service_manager.Services(
         user=fake.UserService())
-    self.user = self.services.user.TestAddUser('user@example.com', 111L)
+    self.user = self.services.user.TestAddUser('user@example.com', 111)
 
     app = webapp2.WSGIApplication(config={'services': self.services})
     app.set_globals(app=app)

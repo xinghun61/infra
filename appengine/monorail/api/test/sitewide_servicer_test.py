@@ -28,7 +28,7 @@ class SitewideServicerTest(unittest.TestCase):
     self.services = service_manager.Services(
         usergroup=fake.UserGroupService(),
         user=fake.UserService())
-    self.user_1 = self.services.user.TestAddUser('owner@example.com', 111L)
+    self.user_1 = self.services.user.TestAddUser('owner@example.com', 111)
     self.sitewide_svcr = sitewide_servicer.SitewideServicer(
         self.services, make_rate_limiter=False)
 
@@ -44,7 +44,7 @@ class SitewideServicerTest(unittest.TestCase):
     mockGetRoundedTime.side_effect = lambda: 1 + xsrf.REFRESH_TOKEN_TIMEOUT_SEC
 
     token_path = 'token_path'
-    token = xsrf.GenerateToken(111L, token_path, 1)
+    token = xsrf.GenerateToken(111, token_path, 1)
 
     request = sitewide_pb2.RefreshTokenRequest(
         token=token, token_path=token_path)
@@ -84,7 +84,7 @@ class SitewideServicerTest(unittest.TestCase):
     mockGetRoundedTime.side_effect = lambda: 2 + xsrf.REFRESH_TOKEN_TIMEOUT_SEC
 
     token_path = 'token_path'
-    token = xsrf.GenerateToken(111L, token_path, 1)
+    token = xsrf.GenerateToken(111, token_path, 1)
 
     request = sitewide_pb2.RefreshTokenRequest(
         token=token, token_path=token_path)

@@ -84,7 +84,7 @@ class IssueBulkEditTest(unittest.TestCase):
     """Test GPD works in a normal no-corner-cases case."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'issue summary', 'New', None,
-        [], [], [], [], 111L, 'test issue')
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project)
     mr.local_id_list = [local_id_1]
@@ -104,7 +104,7 @@ class IssueBulkEditTest(unittest.TestCase):
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'issue summary', 'New', None, [],
         ['restrict-view-Googler'], [], [],
-        111L, 'test issue')
+        111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project)
     mr.local_id_list = [local_id_1]
@@ -117,7 +117,7 @@ class IssueBulkEditTest(unittest.TestCase):
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'issue summary', 'New', None, [],
         ['type-customlabels'], [], [],
-        111L, 'test issue')
+        111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project)
     mr.local_id_list = [local_id_1]
@@ -134,8 +134,8 @@ class IssueBulkEditTest(unittest.TestCase):
   def testProcessFormData(self):
     """Test that PFD works in a normal no-corner-cases case."""
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -212,8 +212,8 @@ class IssueBulkEditTest(unittest.TestCase):
     self.assertEqual(400, self.servlet.response.status)
 
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     mr.perms = permissions.OWNER_ACTIVE_PERMISSIONSET
     mr.local_id_list = [local_id_1]
     mr.project_name = 'proj'
@@ -249,8 +249,8 @@ class IssueBulkEditTest(unittest.TestCase):
   def testProcessFormData_BadUserField(self):
     """Test PFD when a nonexistent user is added as a field value."""
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -273,8 +273,8 @@ class IssueBulkEditTest(unittest.TestCase):
   def testProcessFormData_CustomFields(self):
     """Test PFD processes edits to custom fields."""
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -300,10 +300,10 @@ class IssueBulkEditTest(unittest.TestCase):
     """Test PFD processes null/cleared status values."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id, 'issue summary',
-        'New', 111L, [], [], [], [], 111L, 'test issue')
+        'New', 111, [], [], [], [], 111, 'test issue')
     merge_into_local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id, 'issue summary2',
-        'New', 112L, [], [], [], [], 112L, 'test issue2')
+        'New', 112, [], [], [], [], 112, 'test issue2')
 
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
@@ -329,10 +329,10 @@ class IssueBulkEditTest(unittest.TestCase):
     """Test PFD processes null/cleared status values."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id, 'issue summary',
-        'New', 111L, [], [], [], [], 111L, 'test issue')
+        'New', 111, [], [], [], [], 111, 'test issue')
     local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id, 'issue summary2',
-        'New', 112L, [], [], [], [], 112L, 'test issue2')
+        'New', 112, [], [], [], [], 112, 'test issue2')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -353,13 +353,13 @@ class IssueBulkEditTest(unittest.TestCase):
     """Test PFD processes null/cleared status values."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id, 'issue summary',
-        'New', 111L, [], [], [], [], 111L, 'test issue')
+        'New', 111, [], [], [], [], 111, 'test issue')
     local_id_2, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id, 'issue summary2',
-        'New', 111L, [], [], [], [], 111L, 'test issue2')
+        'New', 111, [], [], [], [], 111, 'test issue2')
     merge_into_local_id_3, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id, 'issue summary3',
-        'New', 112L, [], [], [], [], 112L, 'test issue3')
+        'New', 112, [], [], [], [], 112, 'test issue3')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -377,61 +377,61 @@ class IssueBulkEditTest(unittest.TestCase):
     merge_into_issue = self.services.issue.GetIssueByLocalID(
         mr.cnxn, self.project.project_id, merge_into_local_id_3)
     merge_into_issue.project_name = 'proj'
-    merge_into_issue.cc_ids = [113L, 120L]
+    merge_into_issue.cc_ids = [113, 120]
     self.services.issue_star.SetStar(
-        mr.cnxn, self.services, None, merge_into_issue.issue_id, 120L, True)
+        mr.cnxn, self.services, None, merge_into_issue.issue_id, 120, True)
 
     # Add project_name, CCs and starrers to the source issues.
     # Issue 1
     issue_1 = self.services.issue.GetIssueByLocalID(
         mr.cnxn, self.project.project_id, local_id_1)
     issue_1.project_name = 'proj'
-    issue_1.cc_ids = [113L, 114L]
+    issue_1.cc_ids = [113, 114]
     self.services.issue_star.SetStar(
-        mr.cnxn, self.services, None, issue_1.issue_id, 113L, True)
+        mr.cnxn, self.services, None, issue_1.issue_id, 113, True)
     # Issue 2
     issue_2 = self.services.issue.GetIssueByLocalID(
         mr.cnxn, self.project.project_id, local_id_2)
     issue_2.project_name = 'proj'
-    issue_2.cc_ids = [113L, 115L, 118L]
+    issue_2.cc_ids = [113, 115, 118]
     self.services.issue_star.SetStar(
-        mr.cnxn, self.services, None, issue_2.issue_id, 114L, True)
+        mr.cnxn, self.services, None, issue_2.issue_id, 114, True)
     self.services.issue_star.SetStar(
-        mr.cnxn, self.services, None, issue_2.issue_id, 115L, True)
+        mr.cnxn, self.services, None, issue_2.issue_id, 115, True)
 
     self.servlet.ProcessFormData(mr, post_data)
 
     # Verify both source issues were updated.
-    self.assertEquals(
+    self.assertEqual(
         (tracker_pb2.FieldID.STATUS, 'Duplicate'),
         self.GetFirstAmendment(self.project.project_id, local_id_1))
-    self.assertEquals(
+    self.assertEqual(
         (tracker_pb2.FieldID.STATUS, 'Duplicate'),
         self.GetFirstAmendment(self.project.project_id, local_id_2))
 
     # Verify that the merge into issue was updated with a comment.
     comments = self.services.issue.GetCommentsForIssue(
         self.cnxn, merge_into_issue.issue_id)
-    self.assertEquals(
+    self.assertEqual(
         'Issue 1 has been merged into this issue.\n'
         'Issue 2 has been merged into this issue.', comments[-1].content)
 
     # Verify CC lists and owner were merged to the merge_into issue.
-    self.assertEquals(
-            [113L, 120L, 114L, 115L, 118L, 111L], merge_into_issue.cc_ids)
+    self.assertEqual(
+            [113, 120, 114, 115, 118, 111], merge_into_issue.cc_ids)
     # Verify new starrers were added to the merge_into issue.
-    self.assertEquals(4,
+    self.assertEqual(4,
                       self.services.issue_star.CountItemStars(
                           self.cnxn, merge_into_issue.issue_id))
-    self.assertEquals([120L, 113L, 114L, 115L],
+    self.assertEqual([120, 113, 114, 115],
                       self.services.issue_star.LookupItemStarrers(
                           self.cnxn, merge_into_issue.issue_id))
 
   def testProcessFormData_ClearStatus(self):
     """Test PFD processes null/cleared status values."""
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -451,7 +451,7 @@ class IssueBulkEditTest(unittest.TestCase):
     """Test PFD rejects invalid owner emails."""
     local_id_1, _ = self.services.issue.CreateIssue(
         self.cnxn, self.services, 789, 'issue summary', 'New', None,
-        [], [], [], [], 111L, 'test issue')
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -467,8 +467,8 @@ class IssueBulkEditTest(unittest.TestCase):
   def testProcessFormData_MoveTo(self):
     """Test PFD processes move_to values."""
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue to move', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue to move', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     move_to_project = self.services.project.TestAddProject(
         name='proj2', project_id=790, owner_ids=[111])
 
@@ -493,8 +493,8 @@ class IssueBulkEditTest(unittest.TestCase):
   def testProcessFormData_InvalidBlockIssues(self):
     """Test PFD processes invalid blocked_on and blocking values."""
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -516,14 +516,14 @@ class IssueBulkEditTest(unittest.TestCase):
   def testProcessFormData_NormalBlockIssues(self):
     """Test PFD processes blocked_on and blocking values."""
     local_id_1, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'issue summary', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     blocking_id, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'blocking', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'blocking', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     blocked_on_id, _ = self.services.issue.CreateIssue(
-        self.cnxn, self.services, 789, 'blocked on', 'New', 111L,
-        [], [], [], [], 111L, 'test issue')
+        self.cnxn, self.services, 789, 'blocked on', 'New', 111,
+        [], [], [], [], 111, 'test issue')
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
