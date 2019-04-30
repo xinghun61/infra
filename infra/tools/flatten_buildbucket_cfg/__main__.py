@@ -98,7 +98,8 @@ def flatten(orig):
       bucket_cfg.swarming.builders.sort(key=lambda x: x.name)
   # Sort top-level entries by name
   project_cfg.buckets.sort(key=lambda x: x.name)
-  project_cfg.acl_sets.sort(key=lambda x: x.name)
+  # Clear fields that have been expanded and are now irrelevant.
+  project_cfg.ClearField('acl_sets')
   project_cfg.ClearField('builder_mixins')
   return text_format.MessageToString(project_cfg, as_utf8=True)
 
