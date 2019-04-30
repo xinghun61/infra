@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -175,7 +176,9 @@ func (b *buildUpdater) UpdateBuild(ctx context.Context, req *buildbucketpb.Updat
 // updates steps, output properties and output gitiles commit.
 func (b *buildUpdater) ParseAnnotations(ctx context.Context, ann *milo.Step) (*buildbucketpb.UpdateBuildRequest, error) {
 	updatePaths := []string{"build.steps", "build.output.properties"}
-	steps, err := deprecated.ConvertBuildSteps(ctx, ann.Substep, b.annAddr)
+	prefix, _ := b.annAddr.Path.Split()
+	fullPrefix := fmt.Sprintf("%s/+/%s", b.annAddr.Project, prefix)
+	steps, err := deprecated.ConvertBuildSteps(ctx, ann.Substep, b.annAddr.Host, fullPrefix)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to parse steps from an annotation proto").Err()
 	}
