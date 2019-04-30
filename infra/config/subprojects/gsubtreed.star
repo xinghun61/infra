@@ -9,7 +9,6 @@ load('//lib/infra.star', 'infra')
 
 def gsubtreed_cron(
       name,
-      service_account,
       target_repo,
       execution_timeout=None,
       schedule=None,
@@ -30,7 +29,7 @@ def gsubtreed_cron(
           'cores': '2',
           'pool': 'luci.infra.cron',
       },
-      service_account = service_account,
+      service_account = 'gsubtreed@chops-service-accounts.iam.gserviceaccount.com',
       # 1 stuck builder shouldn't block others using the same pool of machines.
       execution_timeout = execution_timeout or 10 * time.minute,
       schedule = schedule or 'with 240s interval',
@@ -41,12 +40,8 @@ def gsubtreed_cron(
   )
 
 
-# TODO(agable): Update the rest of these builders to use the
-# gsubtreed@chops-service-accounts.iam.gserviceaccount.com account.
-
 gsubtreed_cron(
     name = 'gsubtreed-chromium',
-    service_account = 'gsubtreed-chromium-src@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/chromium/src',
     # Re-bootstrapping chromium repo takes 1+ hours.
     execution_timeout = 3 * time.hour,
@@ -55,31 +50,25 @@ gsubtreed_cron(
 )
 gsubtreed_cron(
     name = 'gsubtreed-chromiumos-platform2',
-    service_account = 'gsubtreed-chromiumos-platform2@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/chromiumos/platform2',
 )
 gsubtreed_cron(
     name = 'gsubtreed-aosp-platform-system-core',
-    service_account = 'gsubtreed-aosp@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/aosp/platform/system/core',
 )
 gsubtreed_cron(
     name = 'gsubtreed-llvm-clang',
-    service_account = 'gsubtreed-llvm-clang@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/external/github.com/llvm-mirror/clang',
 )
 gsubtreed_cron(
     name = 'gsubtreed-selenium',
-    service_account = 'gsubtreed@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/external/github.com/SeleniumHQ/selenium',
 )
 gsubtreed_cron(
     name = 'gsubtreed-infra',
-    service_account = 'gsubtreed-infra-infra@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/infra/infra',
 )
 gsubtreed_cron(
     name = 'gsubtreed-luci-py',
-    service_account = 'gsubtreed-luci-py@chops-service-accounts.iam.gserviceaccount.com',
     target_repo = 'https://chromium.googlesource.com/infra/luci/luci-py',
 )
