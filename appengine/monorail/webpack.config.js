@@ -26,6 +26,9 @@ const config = {
     path: path.resolve(__dirname, 'static/dist'),
     publicPath: '/static/dist/',
   },
+  externals: {
+    moment: 'moment',
+  },
 };
 
 module.exports = (env, argv) => {
