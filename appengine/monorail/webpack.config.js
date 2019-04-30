@@ -24,6 +24,8 @@ const config = {
   output: {
     filename: '[name].min.js',
     path: path.resolve(__dirname, 'static/dist'),
+    // __webpack_public_path__ is used to dynamically set the public path to
+    // the App Engine version URL.
     publicPath: '/static/dist/',
   },
   externals: {

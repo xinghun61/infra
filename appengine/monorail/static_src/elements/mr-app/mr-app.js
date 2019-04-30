@@ -60,6 +60,7 @@ export class MrApp extends connectStore(PolymerElement) {
       userDisplayName: String,
       queryParams: Object,
       dirtyForms: Array,
+      versionBase: String,
       _currentContext: {
         type: Object,
         value: {},
@@ -143,6 +144,8 @@ export class MrApp extends connectStore(PolymerElement) {
       Number.parseInt(ctx.query.id), ctx.params.project));
 
     this.projectName = ctx.params.project;
+
+    __webpack_public_path__ = `${this.versionBase}/static/dist/`;
 
     await import(/* webpackChunkName: "mr-issue-page" */ '../issue-detail/mr-issue-page/mr-issue-page.js');
     // TODO(zhangtiff): Make sure the properties passed in to the loaded

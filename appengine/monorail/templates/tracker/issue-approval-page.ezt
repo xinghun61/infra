@@ -8,6 +8,7 @@
   issue-entry-url="[issue_entry_url]"
   login-url="[login_url]"
   logout-url="[logout_url]"
+  version-base="[version_base]"
 ></mr-app>
 
 [include "../framework/polymer-footer.ezt"]
