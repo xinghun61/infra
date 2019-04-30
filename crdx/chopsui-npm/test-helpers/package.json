@@ -1,0 +1,15 @@
+{
+  "name": "@chopsui/test-helpers",
+  "version": "0.1.3",
+  "description": "Test helpers for ChOps.",
+  "author": "The Chromium Authors",
+  "license": "BSD-3-Clause",
+  "main": "test-helpers.js",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
+  },
+  "dependencies": {
+    "axe-core": "^3.2.2"
+  }
+}

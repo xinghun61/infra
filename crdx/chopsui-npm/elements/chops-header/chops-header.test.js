@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {ChopsHeader} from './chops-header.js';
+import {auditA11y} from '../../test-helpers';
 
 let element;
 
@@ -27,4 +28,8 @@ test('changing appTitle sets title', async () => {
   await element.updateComplete;
   const title = element.shadowRoot.querySelector('#headerTitleTextMain');
   assert.equal(title.textContent.trim(), 'test');
+});
+
+test('a11y', () => {
+  return auditA11y(element);
 });

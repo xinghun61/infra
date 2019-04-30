@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {ChopsSignin} from './index.js';
+import {auditA11y} from '../../test-helpers';
 
 let element;
 
@@ -31,4 +32,8 @@ test('clientId set, no error message', async () => {
   element.setAttribute('client-id', 'foobar');
   await element.updateComplete;
   assert.isUndefined(element.errorMsg);
+});
+
+test('a11y', () => {
+  return auditA11y(element);
 });

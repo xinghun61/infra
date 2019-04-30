@@ -4,6 +4,7 @@
 
 import {assert} from 'chai';
 import {ChopsLogin} from './index.js';
+import {auditA11y} from '../../test-helpers';
 
 let element;
 
@@ -27,4 +28,8 @@ test('changing user sets user', async () => {
   await element.updateComplete;
   const link = element.shadowRoot.querySelector('a');
   assert.equal(link.textContent.trim(), 'LOGOUT');
+});
+
+test('a11y', () => {
+  return auditA11y(element);
 });

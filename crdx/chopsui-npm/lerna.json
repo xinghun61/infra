@@ -1,6 +1,7 @@
 {
   "packages": [
-    "elements/*"
+    "elements/*",
+    "test-helpers/*"
   ],
   "version": "0.1.3"
 }
