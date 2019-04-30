@@ -25,7 +25,7 @@ For this example, we'll be adding 'scandir' at version 1.7.
          to see if it covers all the platforms your users care about. If not
          then you may have to use `SourceOrPrebuilt.`
       1. Example: https://pypi.org/project/pillow/#files
-   1. PrebuiltOrSource
+   1. SourceOrPrebuilt
       1. Python libs with c extensions, pre-built for some platforms we care
          about. These don't require extra C libraries though, just typical
          system/python C libraries.
