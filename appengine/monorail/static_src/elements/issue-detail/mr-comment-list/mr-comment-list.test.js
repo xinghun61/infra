@@ -69,15 +69,17 @@ suite('mr-comment-list', () => {
     assert.instanceOf(element, MrCommentList);
   });
 
-  test('scrolls to comment', () => {
+  test('scrolls to comment', async () => {
     flush();
 
-    const commentElement = element.shadowRoot.querySelector('#c3');
+    const commentElements = element.shadowRoot.querySelectorAll('mr-comment');
+    const commentElement = commentElements[commentElements.length - 1];
     sinon.stub(commentElement, 'scrollIntoView');
 
     element.focusId = 'c3';
 
     flush();
+    await commentElement.updateComplete;
 
     assert.isTrue(element._hideComments);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);

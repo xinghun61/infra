@@ -2,9 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
-import {store, connectStore} from 'elements/reducers/base.js';
+import {LitElement, html, css} from 'lit-element';
+import {store} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 
 import 'elements/chops/chops-button/chops-button.js';
@@ -29,316 +28,280 @@ const ISSUE_REF_FIELD_NAMES = [
  * A component for an individual comment.
  *
  */
-export class MrComment extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <style>
-        :host {
-          display: block;
-          margin: 1.5em 0 0 0;
-        }
-        :host([highlighted]) {
-          /* TODO(zhangtiff): Come up with a better highlighted style. */
-          border: 1px solid var(--chops-primary-accent-color);
-        }
-        :host([hidden]) {
-          display: none;
-        }
-        .comment-header {
-          background: var(--chops-card-heading-bg);
-          padding: 3px 1px 1px 8px;
-          width: 100%;
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          align-items: center;
-          box-sizing: border-box;
-        }
-        .comment-header a {
-          display: inline-flex;
-        }
-        .comment-options {
-          float: right;
-          text-align: right;
-          text-decoration: none;
-        }
-        .comment-body {
-          margin: 4px;
-          box-sizing: border-box;
-        }
-        .deleted-comment-notice {
-          margin-left: 4px;
-        }
-        .issue-diff {
-          background: var(--chops-card-details-bg);
-          display: inline-block;
-          padding: 4px 8px;
-          width: 100%;
-          box-sizing: border-box;
-        }
-      </style>
-      <span
-        role="heading"
-        aria-level\$="[[headingLevel]]"
-        class="comment-header"
-      >
-        <div>
-          <a
-            href\$="?id=[[comment.localId]]#[[id]]"
-          >Comment [[comment.sequenceNum]]</a>
+export class MrComment extends LitElement {
+  constructor() {
+    super();
 
-          <template is="dom-if" if="[[!_hideDeletedComment]]">
-            by
-            <mr-user-link user-ref="[[comment.commenter]]"></mr-user-link>
-            <template is="dom-if" if="[[!quickMode]]">
-              on
-              <chops-timestamp
-                timestamp="[[comment.timestamp]]"
-              ></chops-timestamp>
-            </template>
-          </template>
-          <template is="dom-if" if="[[_hideDeletedComment]]">
-            <span class="deleted-comment-notice">
-              Deleted
-            </span>
-          </template>
-        </div>
-        <template is="dom-if" if="[[_offerCommentOptions(quickMode, comment)]]">
-          <div class="comment-options">
-            <mr-dropdown
-              items="[[_getCommentOptions(_isExpandedIfDeleted, comment)]]"
-              icon="more_vert"
-            ></mr-dropdown>
-          </div>
-        </template>
-      </span>
-      <template is="dom-if" if="[[!_hideDeletedComment]]">
-        <template is="dom-if" if="[[_showDiff(comment)]]">
-          <div class="issue-diff">
-            <template is="dom-repeat" items="[[comment.amendments]]" as="delta">
-              <strong>[[delta.fieldName]]:</strong>
-              <template
-                is="dom-repeat"
-                items="[[_issuesForAmendment(delta, comment.projectName)]]"
-                as="issue"
-              >
-                <mr-issue-link
-                  project-name="[[comment.projectName]]"
-                  issue="[[issue.issue]]"
-                  text="[[issue.text]]"
-                ></mr-issue-link>
-              </template>
-              <template is="dom-if" if="[[!_amendmentHasIssueRefs(delta.fieldName)]]">
-                [[delta.newOrDeltaValue]]
-              </template>
-              <template is="dom-if" if="[[delta.oldValue]]">
-                (was: [[delta.oldValue]])
-              </template>
-              <br>
-            </template>
-            <template is="dom-if" if="[[comment.descriptionNum]]">
-              Description was changed.
-            </template>
-          </div><br>
-        </template>
-        <div class="comment-body">
-          <mr-comment-content
-            hidden\$="[[comment.descriptionNum]]"
-            content="[[comment.content]]"
-            is-deleted="[[comment.isDeleted]]"
-          ></mr-comment-content>
-          <template is="dom-if" if="[[!quickMode]]">
-            <div hidden\$="[[comment.descriptionNum]]">
-              <template
-                is="dom-repeat"
-                items="[[comment.attachments]]"
-                as="attachment"
-              >
-                <mr-attachment
-                  attachment="[[attachment]]"
-                  project-name="[[comment.projectName]]"
-                  local-id="[[comment.localId]]"
-                  sequence-num="[[comment.sequenceNum]]"
-                  can-delete="[[comment.canDelete]]"
-                ></mr-attachment>
-              </template>
-            </div>
-          </template>
-        </div>
-      </template>
-    `;
-  }
-
-  static get is() {
-    return 'mr-comment';
+    this._isExpandedIfDeleted = false;
   }
 
   static get properties() {
     return {
-      comment: Object,
-      focusId: String,
-      headingLevel: String,
-      quickMode: Boolean,
-      id: {
-        type: String,
-        reflectToAttribute: true,
-        computed: '_computeId(comment.sequenceNum)',
-      },
+      comment: {type: Object},
+      headingLevel: {type: String},
+      quickMode: {type: Boolean},
       highlighted: {
-        type: String,
-        reflectToAttribute: true,
-        computed: '_computeIsHighlighted(id, focusId)',
-      },
-      _isExpandedIfDeleted: {
         type: Boolean,
-        value: false,
+        reflect: true,
       },
-      _hideDeletedComment: {
-        type: Boolean,
-        computed: '_computeHideDeletedComment(_isExpandedIfDeleted, comment)',
-      },
+      _isExpandedIfDeleted: {type: Boolean},
     };
   }
 
-  _computeId(sequenceNum) {
-    if (!sequenceNum) return;
-    return `c${sequenceNum}`;
-  }
+  updated(changedProperties) {
+    super.updated(changedProperties);
 
-  _computeIsHighlighted(id, focusId) {
-    if (!id || !focusId) return;
-    if (id === focusId) {
-      window.requestAnimationFrame(() => {
-        this.scrollIntoView();
-        // TODO(ehmaldonado): Figure out a way to get the height from the issue
-        // header, and scroll by that amount.
-        window.scrollBy(0, -150);
-      });
-      return true;
+    if (changedProperties.has('highlighted') && this.highlighted) {
+      this.scrollIntoView();
+      // TODO(ehmaldonado): Figure out a way to get the height from the issue
+      // header, and scroll by that amount.
+      window.scrollBy(0, -150);
     }
-    return false;
   }
 
-  _computeHideDeletedComment(isExpandedIfDeleted, comment) {
-    return Boolean(comment.isDeleted && !isExpandedIfDeleted);
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        margin: 1.5em 0 0 0;
+      }
+      :host([highlighted]) {
+        border: 1px solid var(--chops-primary-accent-color);
+        box-shadow: 0 0 4px 4px var(--chops-primary-accent-bg);
+      }
+      :host([hidden]) {
+        display: none;
+      }
+      .comment-header {
+        background: var(--chops-card-heading-bg);
+        padding: 3px 1px 1px 8px;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        box-sizing: border-box;
+      }
+      .comment-header a {
+        display: inline-flex;
+      }
+      .comment-options {
+        float: right;
+        text-align: right;
+        text-decoration: none;
+      }
+      .comment-body {
+        margin: 4px;
+        box-sizing: border-box;
+      }
+      .deleted-comment-notice {
+        margin-left: 4px;
+      }
+      .issue-diff {
+        background: var(--chops-card-details-bg);
+        display: inline-block;
+        padding: 4px 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+    `;
   }
 
-  _deleteComment(comment) {
-    const issueRef = {
-      projectName: comment.projectName,
-      localId: comment.localId,
-    };
-    window.prpcClient.call('monorail.Issues', 'DeleteIssueComment', {
-      issueRef,
-      sequenceNum: comment.sequenceNum,
-      delete: comment.isDeleted === undefined,
-    }).then((resp) => {
-      store.dispatch(issue.fetchComments({issueRef}));
-    });
+  render() {
+    return html`
+      ${this._renderHeading()}
+      ${_shouldShowComment(this._isExpandedIfDeleted, this.comment) ? html`
+        ${this._renderDiff()}
+        ${this._renderBody()}
+      ` : ''}
+    `;
   }
 
-  _flagComment(comment) {
-    const issueRef = {
-      projectName: comment.projectName,
-      localId: comment.localId,
-    };
-    window.prpcClient.call('monorail.Issues', 'FlagComment', {
-      issueRef,
-      sequenceNum: comment.sequenceNum,
-      flag: comment.isSpam === undefined,
-    }).then((resp) => {
-      store.dispatch(issue.fetchComments({issueRef}));
-    });
+  _renderHeading() {
+    return html`
+      <div
+        role="heading"
+        aria-level=${this.headingLevel}
+        class="comment-header">
+        <div>
+          <a href="?id=${this.comment.localId}#c${this.comment.sequenceNum}"
+          >Comment ${this.comment.sequenceNum}</a>
+
+          ${this._renderByline()}
+        </div>
+        ${_shouldOfferCommentOptions(this.quickMode, this.comment) ? html`
+          <div class="comment-options">
+            <mr-dropdown
+              .items=${_commentOptions(
+                  this._isExpandedIfDeleted,
+                  this.comment,
+                  this._toggleHideDeletedComment.bind(this))}
+              icon="more_vert"
+            ></mr-dropdown>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  _renderByline() {
+    if (_shouldShowComment(this._isExpandedIfDeleted, this.comment)) {
+      return html`
+        by
+        <mr-user-link .userRef=${this.comment.commenter}></mr-user-link>
+        ${!this.quickMode ? html`
+          on
+          <chops-timestamp
+              timestamp=${this.comment.timestamp}></chops-timestamp>
+        ` : ''}
+      `;
+    } else {
+      return html`<span class="deleted-comment-notice">Deleted</span>`;
+    }
+  }
+
+  _renderDiff() {
+    if (!(this.comment.descriptionNum || this.comment.amendments)) return '';
+
+    return html`
+      <div class="issue-diff">
+        ${(this.comment.amendments || []).map((delta) => html`
+          <strong>${delta.fieldName}:</strong>
+          ${_issuesForAmendment(delta, this.comment.projectName).map((issue) => html`
+            <mr-issue-link
+              projectName=${this.comment.projectName}
+              .issue=${issue.issue}
+              text=${issue.text}
+            ></mr-issue-link>
+          `)}
+          ${!_amendmentHasIssueRefs(delta.fieldName) ? delta.newOrDeltaValue : ''}
+          ${delta.oldValue ? `(was: ${delta.oldValue})` : ''}
+          <br>
+        `)}
+        ${this.comment.descriptionNum ? 'Description was changed.' : ''}
+      </div><br>
+    `;
+  }
+
+  _renderBody() {
+    return html`
+      <div class="comment-body">
+        <mr-comment-content
+          ?hidden=${this.comment.descriptionNum}
+          .content=${this.comment.content}
+          ?isDeleted=${this.comment.isDeleted}
+        ></mr-comment-content>
+        ${this.quickMode ? '' : html`
+          <div ?hidden=${this.comment.descriptionNum}>
+            ${(this.comment.attachments || []).map((attachment) => html`
+              <mr-attachment
+                .attachment=${attachment}
+                projectName=${this.comment.projectName}
+                localId=${this.comment.localId}
+                sequenceNum=${this.comment.sequenceNum}
+                ?canDelete=${this.comment.canDelete}
+              ></mr-attachment>
+            `)}
+          </div>
+        `}
+      </div>
+    `;
   }
 
   _toggleHideDeletedComment() {
     this._isExpandedIfDeleted = !this._isExpandedIfDeleted;
   }
-
-  _offerCommentOptions(quickMode, comment) {
-    return !quickMode && (comment.canDelete || comment.canFlag);
-  }
-
-  _canExpandDeletedComment(comment) {
-    return ((comment.isSpam && comment.canFlag)
-            || (comment.isDeleted && comment.canDelete));
-  }
-
-  _getCommentOptions(isExpandedIfDeleted, comment) {
-    const options = [];
-    if (this._canExpandDeletedComment(comment)) {
-      const text = (isExpandedIfDeleted ? 'Hide' : 'Show') + ' comment content';
-      options.push({
-        text: text,
-        handler: this._toggleHideDeletedComment.bind(this, comment),
-      });
-      options.push({separator: true});
-    }
-    if (comment.canDelete) {
-      const text = (comment.isDeleted ? 'Undelete' : 'Delete') + ' comment';
-      options.push({
-        text: text,
-        handler: this._deleteComment.bind(this, comment),
-      });
-    }
-    if (comment.canFlag) {
-      const text = (comment.isSpam ? 'Unflag' : 'Flag') + ' comment';
-      options.push({
-        text: text,
-        handler: this._flagComment.bind(this, comment),
-      });
-    }
-    return options;
-  }
-
-  _amendmentHasIssueRefs(fieldName) {
-    return ISSUE_REF_FIELD_NAMES.includes(fieldName);
-  }
-
-  _issuesForAmendment(delta, projectName) {
-    if (!this._amendmentHasIssueRefs(delta.fieldName)
-        || !delta.newOrDeltaValue) {
-      return [];
-    }
-    // TODO(ehmaldonado): Request the issue to check for permissions and display
-    // the issue summary.
-    return delta.newOrDeltaValue.split(' ').map((issueRef) => {
-      const matches = issueRef.match(ISSUE_ID_REGEX);
-      return {
-        issue: {
-          projectName: matches[1] ? matches[1] : projectName,
-          localId: matches[2],
-        },
-        text: issueRef,
-      };
-    });
-  }
-
-  _showDiff(comment) {
-    return comment.descriptionNum || comment.amendments;
-  }
-
-  _deleteAttachment(e) {
-    const issueRef = {
-      projectName: e.target.dataset.projectName,
-      localId: Number.parseInt(e.target.dataset.localId),
-    };
-
-    const promise = window.prpcClient.call(
-      'monorail.Issues', 'DeleteAttachment',
-      {
-        issueRef,
-        sequenceNum: Number.parseInt(e.target.dataset.sequenceNum),
-        attachmentId: Number.parseInt(e.target.dataset.attachmentId),
-        delete: (e.target.dataset.markDeleted !== undefined),
-      });
-
-    promise.then(() => {
-      store.dispatch(issue.fetchComments({issueRef}));
-    }, (error) => {
-      console.log('Failed to (un)delete attachment', error);
-    });
-  }
 }
 
-customElements.define(MrComment.is, MrComment);
+function _shouldShowComment(isExpandedIfDeleted, comment) {
+  return !comment.isDeleted || isExpandedIfDeleted;
+}
+
+function _shouldOfferCommentOptions(quickMode, comment) {
+  return !quickMode && (comment.canDelete || comment.canFlag);
+}
+
+function _commentOptions(isExpandedIfDeleted, comment, toggleHandler) {
+  const options = [];
+  if (_canExpandDeletedComment(comment)) {
+    const text =
+      (isExpandedIfDeleted ? 'Hide' : 'Show') + ' comment content';
+    options.push({
+      text: text,
+      handler: toggleHandler,
+    });
+    options.push({separator: true});
+  }
+  if (comment.canDelete) {
+    const text =
+      (comment.isDeleted ? 'Undelete' : 'Delete') + ' comment';
+    options.push({
+      text: text,
+      handler: _deleteComment.bind(null, comment),
+    });
+  }
+  if (comment.canFlag) {
+    const text = (comment.isSpam ? 'Unflag' : 'Flag') + ' comment';
+    options.push({
+      text: text,
+      handler: _flagComment.bind(null, comment),
+    });
+  }
+  return options;
+}
+
+function _canExpandDeletedComment(comment) {
+  return ((comment.isSpam && comment.canFlag)
+          || (comment.isDeleted && comment.canDelete));
+}
+
+async function _deleteComment(comment) {
+  const issueRef = {
+    projectName: comment.projectName,
+    localId: comment.localId,
+  };
+  await window.prpcClient.call('monorail.Issues', 'DeleteIssueComment', {
+    issueRef,
+    sequenceNum: comment.sequenceNum,
+    delete: comment.isDeleted === undefined,
+  });
+  store.dispatch(issue.fetchComments({issueRef}));
+}
+
+async function _flagComment(comment) {
+  const issueRef = {
+    projectName: comment.projectName,
+    localId: comment.localId,
+  };
+  await window.prpcClient.call('monorail.Issues', 'FlagComment', {
+    issueRef,
+    sequenceNum: comment.sequenceNum,
+    flag: comment.isSpam === undefined,
+  });
+  store.dispatch(issue.fetchComments({issueRef}));
+}
+
+function _issuesForAmendment(delta, projectName) {
+  if (!_amendmentHasIssueRefs(delta.fieldName)
+      || !delta.newOrDeltaValue) {
+    return [];
+  }
+  // TODO(ehmaldonado): Request the issue to check for permissions and display
+  // the issue summary.
+  return delta.newOrDeltaValue.split(' ').map((issueRef) => {
+    const matches = issueRef.match(ISSUE_ID_REGEX);
+    return {
+      issue: {
+        projectName: matches[1] ? matches[1] : projectName,
+        localId: matches[2],
+      },
+      text: issueRef,
+    };
+  });
+}
+
+function _amendmentHasIssueRefs(fieldName) {
+  return ISSUE_REF_FIELD_NAMES.includes(fieldName);
+}
+
+customElements.define('mr-comment', MrComment);

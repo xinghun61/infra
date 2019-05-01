@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrComment} from './mr-comment.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 
 let element;
@@ -27,26 +26,21 @@ suite('mr-comment', () => {
       timestamp: 1549319989,
     };
     document.body.appendChild(element);
-
-    sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
   });
 
   teardown(() => {
     document.body.removeChild(element);
-
-    window.requestAnimationFrame.restore();
   });
 
   test('initializes', () => {
     assert.instanceOf(element, MrComment);
   });
 
-  test('scrolls to comment', () => {
-    flush();
-
+  test('scrolls to comment', async () => {
     sinon.stub(element, 'scrollIntoView');
 
-    element.focusId = 'c3';
+    element.highlighted = true;
+    await element.updateComplete;
 
     assert.isTrue(element.scrollIntoView.calledOnce);
 

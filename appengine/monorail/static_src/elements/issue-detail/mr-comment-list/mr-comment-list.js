@@ -55,9 +55,9 @@ export class MrCommentList extends connectStore(PolymerElement) {
       <template is="dom-repeat" items="[[comments]]" as="comment">
         <template is="dom-if" if="[[_computeShowComment(_hideComments, _commentsHiddenCount, index)]]">
           <mr-comment
-            focus-id="[[focusId]]"
             comment="[[comment]]"
             heading-level="[[headingLevel]]"
+            highlighted="[[_computeHighlighted(focusId, comment)]]"
             quick-mode="[[quickMode]]"
           ></mr-comment>
         </template>
@@ -132,6 +132,11 @@ export class MrCommentList extends connectStore(PolymerElement) {
 
   _computeShowComment(hideComments, commentsHiddenCount, index) {
     return !hideComments || index >= commentsHiddenCount;
+  }
+
+  _computeHighlighted(focusId, comment) {
+    if (!comment.sequenceNum || !focusId) return;
+    return 'c' + comment.sequenceNum === focusId;
   }
 
   _computeCommentsHiddenCount(shownCount, numComments) {
