@@ -1,6 +1,10 @@
 queue:
 - name: schedule-assigners
   rate: 20/m
+  retry_parameters:
+          task_age_limit: 1m
 
 - name: run-assigners
   rate: 20/m
+  retry_parameters:
+          task_age_limit: 20s

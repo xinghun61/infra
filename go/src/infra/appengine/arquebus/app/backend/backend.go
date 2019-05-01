@@ -17,10 +17,13 @@ package backend
 
 import (
 	"context"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/tq"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/arquebus/app/backend/model"
@@ -28,7 +31,20 @@ import (
 )
 
 var (
-	dispatcher = tq.Dispatcher{BaseURL: "/internal/tq/"}
+	// maxIssueUpdatesExecutionTime is the maximum duration that a single Task
+	// run can spend for issue searches and updates.
+	maxIssueUpdatesExecutionTime = time.Second * 40
+	dispatcher                   = tq.Dispatcher{BaseURL: "/internal/tq/"}
+
+	// nRetriesForSavingTaskEntity is the maximum number of trasnsactions that
+	// should be attempted to save Task entity in endTaskRun().
+	//
+	// After searchAndUpdateIssues(), the status of the Task entity is set
+	// with one of Failed, Succeeded, and Aborted. However, if it fails to
+	// save the Task entity in datastore, Arquebus returns nil to TaskQueue
+	// to prevent the TQ work from being retried and performing another
+	// searchAndUpdateIssues().
+	nRetriesForSavingTaskEntity = 8
 )
 
 // Dispatcher returns the dispatcher instance to be used by all other
@@ -39,6 +55,11 @@ func Dispatcher() *tq.Dispatcher {
 
 // InstallHandlers installs TaskQueue handlers into a given task queue.
 func InstallHandlers(r *router.Router, m router.MiddlewareChain) {
+	registerTaskHandlers(Dispatcher())
+	Dispatcher().InstallRoutes(r, m)
+}
+
+func registerTaskHandlers(dispatcher *tq.Dispatcher) {
 	dispatcher.RegisterTask(
 		&ScheduleAssignerTask{}, scheduleAssignerTaskHandler,
 		"schedule-assigners", nil,
@@ -47,7 +68,6 @@ func InstallHandlers(r *router.Router, m router.MiddlewareChain) {
 		&RunAssignerTask{}, runAssignerTaskHandler,
 		"run-assigners", nil,
 	)
-	dispatcher.InstallRoutes(r, m)
 }
 
 // GetAllAssigners returns all assigners.
@@ -103,11 +123,6 @@ func scheduleAssignerTaskHandler(c context.Context, tqTask proto.Message) error 
 	}, &datastore.TransactionOptions{})
 }
 
-func runAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
-	// TODO(crbug/849469): implement this
-	return nil
-}
-
 func scheduleRuns(c context.Context, assignerID string, tasks []*model.Task) error {
 	tqTasks := make([]*tq.Task, len(tasks))
 	for i, task := range tasks {
@@ -120,4 +135,105 @@ func scheduleRuns(c context.Context, assignerID string, tasks []*model.Task) err
 		}
 	}
 	return Dispatcher().AddTask(c, tqTasks...)
+}
+
+// startTaskRun updates the task status, based on the current status of
+// the assigner and task.
+func startTaskRun(c context.Context, assignerID string, taskID int64) (assigner *model.Assigner, task *model.Task, err error) {
+	err = datastore.RunInTransaction(c, func(c context.Context) error {
+		assigner, task, err = model.GetTask(c, assignerID, taskID)
+		if err != nil {
+			return err
+		}
+
+		if task.Status != model.TaskStatus_Scheduled {
+			logging.Warningf(c, ""+
+				`the status is not "scheduled.", but "%q". It's likely `+
+				`that this Task run has been already processed by `+
+				`another worker`,
+				task.Status,
+			)
+			// return nil for assigner and task so that this TQ work will end
+			// immediately without processing the Assigner Task.
+			assigner = nil
+			task = nil
+			return nil
+		}
+
+		now := clock.Now(c).UTC()
+		task.Started = now
+		nextSch := task.ExpectedStart.Add(assigner.Interval)
+
+		// check for drained assigner and stale tasks,
+		switch {
+		case assigner.IsDrained:
+			task.Status = model.TaskStatus_Cancelled
+			task.WriteLog(c, "the assigner has been drained; cancelling")
+			task.Ended = now
+
+		case nextSch.Before(now.Add(maxIssueUpdatesExecutionTime)):
+			// It's either the task is stale or the remaining time is not long
+			// enough to have the maximum issue update execution time.
+			task.Status = model.TaskStatus_Cancelled
+			task.WriteLog(c, ""+
+				"stale task or the remaining time before the next schedule "+
+				"is too short; there should be at least %s left; cancelling",
+				maxIssueUpdatesExecutionTime)
+			task.Ended = now
+
+		default:
+			task.Status = model.TaskStatus_Running
+		}
+
+		if err := datastore.Put(c, task); err != nil {
+			return err
+		}
+		return nil
+	}, &datastore.TransactionOptions{})
+	return
+}
+
+// endTaskRun updates the task status, based on the current status of
+// the assigner and task.
+func endTaskRun(c context.Context, task *model.Task) error {
+	task.Ended = clock.Now(c).UTC()
+	return datastore.RunInTransaction(c, func(c context.Context) error {
+		return datastore.Put(c, task)
+	}, &datastore.TransactionOptions{Attempts: nRetriesForSavingTaskEntity})
+}
+
+// runAssignerTaskHandler runs an Assigner task, based on the Task entity.
+func runAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
+	msg := tqTask.(*RunAssignerTask)
+	assigner, task, err := startTaskRun(c, msg.AssignerId, msg.TaskId)
+	if err != nil {
+		// if it fails to update the Task entity with a new status, then
+		// returns an error to trigger retries.
+		return err
+	} else if task == nil || task.Status != model.TaskStatus_Running {
+		return nil
+	}
+
+	// At this moment, the assigner might have been drained. However, this
+	// task run should continue, as draining an assigner doesn't cancel
+	// a running task.
+	//
+	// If errors occur within searchAndUpdateIssues(), that means either
+	// Monorail is flaky or unavailable. searchAndUpdateIssues() just marks
+	// the Task as failed, and the Task run ends here without retries.
+	issueUpdateErr := searchAndUpdateIssues(c, assigner, task)
+	if err := endTaskRun(c, task); err != nil {
+		// If datastore.Put() fails, ignore the error. Returning the error
+		// will cause the TQ task retried and searchAndUpdateIssues() will
+		// be performed again.
+		issueUpdateResult := "successful searchAndUpdateIssues()."
+		if issueUpdateErr != nil {
+			issueUpdateResult = "un" + issueUpdateResult
+		}
+		logging.Errorf(
+			c, "Failed to update Task entity after %s; %s",
+			issueUpdateResult, err,
+		)
+	}
+	return nil
 }

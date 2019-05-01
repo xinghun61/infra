@@ -6,5 +6,6 @@ cron:
 - description: Schedule Assigner runs
   url: /internal/cron/schedule-assigners
   # If the schedule of this cron changes, please also update
-  # backend.model.assigner.go:scheduleAssignerCronInterval
+  # backend.model.assigner.go:scheduleAssignerCronInterval and
+  # queue.yaml:schedule-assigners.retry_parameters.task_age_limit
   schedule: every 1 minutes
