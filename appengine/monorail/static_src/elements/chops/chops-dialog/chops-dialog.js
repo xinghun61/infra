@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 const ESC_KEYCODE = 27;
 
@@ -13,70 +12,69 @@ const ESC_KEYCODE = 27;
  * @customElement
  * @polymer
  */
-export class ChopsDialog extends PolymerElement {
-  static get template() {
-    return html`
-      <style>
-        :host {
-          position: fixed;
-          z-index: 9999;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100%;
-          overflow: auto;
-          background-color: rgba(0,0,0,0.4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        :host(:not([opened])), [hidden] {
-          display: none;
-          visibility: hidden;
-        }
-        :host([close-on-outside-click]),
-        :host([close-on-outside-click]) .dialog::backdrop {
-          /* TODO(zhangtiff): Deprecate custom backdrop in favor of native
-           * browser backdrop.
-           */
-          cursor: pointer;
-        }
-        .dialog {
-          background: none;
-          border: 0;
-          overflow: auto;
-          max-width: 90%;
-        }
-        .dialog-content {
-          /* This extra div is here because otherwise the browser can't
-           * differentiate between a click event that hits the dialog element or
-           * its backdrop pseudoelement.
-           */
-          box-sizing: border-box;
-          background: white;
-          padding: 1em 16px;
-          cursor: default;
-          box-shadow: 0px 3px 20px 0px hsla(0, 0%, 0%, 0.4);
+export class ChopsDialog extends LitElement {
+  static get styles() {
+    return css`
+      :host {
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      :host(:not([opened])), [hidden] {
+        display: none;
+        visibility: hidden;
+      }
+      :host([closeOnOutsideClick]),
+      :host([closeOnOutsideClick]) .dialog::backdrop {
+        /* TODO(zhangtiff): Deprecate custom backdrop in favor of native
+        * browser backdrop.
+        */
+        cursor: pointer;
+      }
+      .dialog {
+        background: none;
+        border: 0;
+        overflow: auto;
+        max-width: 90%;
+      }
+      .dialog-content {
+        /* This extra div is here because otherwise the browser can't
+        * differentiate between a click event that hits the dialog element or
+        * its backdrop pseudoelement.
+        */
+        box-sizing: border-box;
+        background: white;
+        padding: 1em 16px;
+        cursor: default;
+        box-shadow: 0px 3px 20px 0px hsla(0, 0%, 0%, 0.4);
 
-          /*
-           * Would have really preferred to just have the dialog itself be the
-           * :host element so that users could style it more easily, but this
-           * causes issues with the backdrop, because there's not a good way to
-           * make a child element appear behind its parent without using wrappers.
-           */
-          @apply --chops-dialog-theme;
-        }
-      </style>
+        /*
+        * Would have really preferred to just have the dialog itself be the
+        * :host element so that users could style it more easily, but this
+        * causes issues with the backdrop, because there's not a good way to
+        * make a child element appear behind its parent without using wrappers.
+        */
+        @apply --chops-dialog-theme;
+      }
+    `;
+  }
+
+  render() {
+    return html`
       <dialog class="dialog" role="dialog" on-cancel="handleCancel" >
         <div class="dialog-content">
           <slot></slot>
         </div>
       </dialog>
     `;
-  }
-
-  static get is() {
-    return 'chops-dialog';
   }
 
   static get properties() {
@@ -86,9 +84,7 @@ export class ChopsDialog extends PolymerElement {
        */
       opened: {
         type: Boolean,
-        value: false,
-        reflectToAttribute: true,
-        observer: '_openedChanged',
+        reflect: true,
       },
       /**
        * A boolean that determines whether clicking outside of the dialog
@@ -96,22 +92,21 @@ export class ChopsDialog extends PolymerElement {
        */
       closeOnOutsideClick: {
         type: Boolean,
-        value: true,
-        reflectToAttribute: true,
       },
       /**
        * A function fired when the element tries to change its own opened
        * state. This is useful if you want the dialog state managed outside
        * of the dialog instead of with internal state. (ie: with Redux)
        */
-      onOpenedChange: Object,
+      onOpenedChange: {
+        type: Object,
+      },
       /**
        * Allow people to exit the dialog using keyboard shortcuts. Defaults
        * to the escape key.
        */
       exitKeys: {
         type: Array,
-        value: [ESC_KEYCODE],
       },
       /**
        * When True, force the user to interact with the dialog rather than
@@ -119,17 +114,28 @@ export class ChopsDialog extends PolymerElement {
        */
       forced: {
         type: Boolean,
-        value: false,
       },
-      _boundKeydownHandler: Object,
-      _previousFocusedElement: Object,
+      _boundKeydownHandler: {
+        type: Object,
+      },
+      _previousFocusedElement: {
+        type: Object,
+      },
     };
   }
 
-  ready() {
-    super.ready();
+  constructor() {
+    super();
 
+    this.opened = false;
+    this.closeOnOutsideClick = true;
+    this.exitKeys = [ESC_KEYCODE];
+    this.forced = false;
     this._boundKeydownHandler = this._keydownHandler.bind(this);
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
 
     this.addEventListener('click', (evt) => {
       if (!this.opened || !this.closeOnOutsideClick || this.forced) return;
@@ -143,10 +149,7 @@ export class ChopsDialog extends PolymerElement {
 
       this.close();
     });
-  }
 
-  connectedCallback() {
-    super.connectedCallback();
     window.addEventListener('keydown', this._boundKeydownHandler, true);
   }
 
@@ -154,6 +157,12 @@ export class ChopsDialog extends PolymerElement {
     super.disconnectedCallback();
     window.removeEventListener('keydown', this._boundKeydownHandler,
       true);
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('opened')) {
+      this._openedChanged(this.opened);
+    }
   }
 
   _keydownHandler(event) {
@@ -228,16 +237,17 @@ export class ChopsDialog extends PolymerElement {
 
       if (this._previousFocusedElement) {
         const element = this._previousFocusedElement;
-        setTimeout(function() {
+        requestAnimationFrame(() => {
           // HACK. This is to prevent a possible accessibility bug where
           // using a keypress to trigger a button that exits a modal causes
           // the modal to immediately re-open because the button that
           // originally opened the modal refocuses, and the keypress
           // propagates.
           element.focus();
-        }, 1);
+        });
       }
     }
   }
 }
-customElements.define(ChopsDialog.is, ChopsDialog);
+
+customElements.define('chops-dialog', ChopsDialog);

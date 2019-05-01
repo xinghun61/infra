@@ -64,11 +64,14 @@ suite('mr-cues', () => {
   });
 
   test('show or close privacy dialog', () => {
-    sinon.spy(HTMLDialogElement.prototype, 'showModal');
-    sinon.spy(HTMLDialogElement.prototype, 'close');
+    const dialog = element.shadowRoot.querySelector('chops-dialog');
+
     element._showPrivacyDialogChanged(true);
-    assert.isTrue(HTMLDialogElement.prototype.showModal.calledOnce);
+
+    assert.isTrue(dialog.opened);
+
     element._showPrivacyDialogChanged(false);
-    assert.isTrue(HTMLDialogElement.prototype.close.calledOnce);
+
+    assert.isFalse(dialog.opened);
   });
 });

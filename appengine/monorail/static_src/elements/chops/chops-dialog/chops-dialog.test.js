@@ -21,11 +21,16 @@ suite('chops-dialog', () => {
     assert.instanceOf(element, ChopsDialog);
   });
 
-  test('chops-dialog is visible when open', () => {
+  test('chops-dialog is visible when open', async () => {
     element.opened = false;
+
+    await element.updateComplete;
+
     expect(element).be.hidden;
 
     element.opened = true;
+
+    await element.updateComplete;
 
     expect(element).be.visible;
   });
