@@ -91,14 +91,6 @@ module.exports = function(config) {
 
     // configure coverage reporter
     coverageReporter: {
-      check: {
-        global: {
-          statements: 75,
-          branches: 67,
-          functions: 75,
-          lines: 75,
-        },
-      },
       dir: 'coverage',
       reporters: [
         {type: 'lcovonly', subdir: '.'},
