@@ -424,8 +424,9 @@ class FetchSourceFile(BaseHandler):
 class ProcessCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
-  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, bucket,
-                                 builder, build_id):
+  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, builder,
+                                 build_id):
+
     # Load the commit log first so that we could fail fast before redo all.
     repo_url = 'https://%s/%s.git' % (commit.host, commit.project)
     change_log = CachedGitilesRepository(FinditHttpClient(),
@@ -441,8 +442,8 @@ class ProcessCodeCoverageData(BaseHandler):
         project=commit.project,
         ref=commit.ref,
         revision=commit.id,
-        bucket=bucket,
-        builder=builder,
+        bucket=builder.bucket,
+        builder=builder.builder,
         commit_position=change_log.commit_position,
         commit_timestamp=change_log.committer.time,
         manifest=manifest,
@@ -510,8 +511,8 @@ class ProcessCodeCoverageData(BaseHandler):
                 ref=commit.ref,
                 revision=commit.id,
                 path=group_data['path'],
-                bucket=bucket,
-                builder=builder,
+                bucket=builder.bucket,
+                builder=builder.builder,
                 data=group_data)
           else:
             coverage_data = SummaryCoverageData.Create(
@@ -521,8 +522,8 @@ class ProcessCodeCoverageData(BaseHandler):
                 revision=commit.id,
                 data_type=actual_data_type,
                 path=group_data['path'],
-                bucket=bucket,
-                builder=builder,
+                bucket=builder.bucket,
+                builder=builder.builder,
                 data=group_data)
 
           entities.append(coverage_data)
@@ -539,8 +540,8 @@ class ProcessCodeCoverageData(BaseHandler):
             revision=commit.id,
             data_type='components',
             path='>>',
-            bucket=bucket,
-            builder=builder,
+            bucket=builder.bucket,
+            builder=builder.builder,
             data={
                 'dirs': component_summaries,
                 'path': '>>'
@@ -552,18 +553,16 @@ class ProcessCodeCoverageData(BaseHandler):
       report.visible = True
       report.put()
 
-      # TODO(crbug.com/947594): Without this if statement hack, metrics from
-      # multiple builders are mixed together, which results in the issue that
-      # alerts are NOT fired even when a builder is broken because other
-      # builders still generate reports fine.
-      #
-      # Remove this hack once the bug is fixed.
-      if builder == 'linux-code-coverage':
-        monitoring.code_coverage_full_reports.increment({
-            'host': commit.host,
-            'project': commit.project,
-            'ref': commit.ref or 'refs/heads/master',
-        })
+      monitoring.code_coverage_full_reports.increment({
+          'host':
+              commit.host,
+          'project':
+              commit.project,
+          'ref':
+              commit.ref or 'refs/heads/master',
+          'builder':
+              '%s/%s/%s' % (builder.project, builder.bucket, builder.builder),
+      })
 
   def _FetchAndSaveFileIfNecessary(self, report, path, revision):
     """Fetches the file from gitiles and store to cloud storage if not exist.
@@ -666,8 +665,7 @@ class ProcessCodeCoverageData(BaseHandler):
     else:  # For a commit, we save the data by file and directory.
       assert build.input.gitiles_commit is not None, 'Expect a commit'
       self._ProcessFullRepositoryData(build.input.gitiles_commit, data,
-                                      full_gs_dir, build.builder.bucket,
-                                      build.builder.builder, build_id)
+                                      full_gs_dir, build.builder, build_id)
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""

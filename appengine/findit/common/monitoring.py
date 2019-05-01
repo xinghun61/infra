@@ -150,8 +150,10 @@ code_coverage_cq_errors = gae_ts_mon.CounterMetric(
 
 code_coverage_full_reports = gae_ts_mon.CounterMetric(
     'code-coverage/full-reports',
-    'Number of whole-codebase coverage reports', [
+    'Number of whole-codebase coverage reports',
+    [
         gae_ts_mon.StringField('host'),
-        gae_ts_mon.StringField('project'),
+        gae_ts_mon.StringField('project'),  # Gerrit project.
         gae_ts_mon.StringField('ref'),
+        gae_ts_mon.StringField('builder'),  # <luci_project>/<bucket>/<builder>
     ])
