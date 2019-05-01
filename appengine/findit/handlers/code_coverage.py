@@ -623,28 +623,16 @@ class ProcessCodeCoverageData(BaseHandler):
                                       'linux-coverage-rel')):
       return
 
-    if build.builder.bucket == 'try':
-      # Convert the Struct to standard dict, to use .get, .iteritems etc.
-      properties = dict(build.output.properties.items())
-      gs_bucket = properties.get('coverage_gs_bucket')
-      gs_path = properties.get('coverage_metadata_gs_path')
-      if properties.get('process_coverage_data_failure'):
-        monitoring.code_coverage_cq_errors.increment({
-            'project': build.builder.project,
-            'bucket': build.builder.bucket,
-            'builder': build.builder.builder,
-        })
-    else:
-      # TODO(crbug.com/922104): There is an issue that when there are too many
-      # test targets (350+ fuzzers), build output properties would exceed
-      # maximum size and become empty in the response. Works it around
-      # temporarily by hard coding the gs_bucket and gs_path, remove the hack
-      # after the bug is fixed.
-      gs_bucket = 'code-coverage-data'
-      commit = build.input.gitiles_commit
-      gs_path = ('postsubmit/%s/%s/%s/%s/%s/%s/metadata') % (
-          commit.host, commit.project, commit.id, build.builder.bucket,
-          build.builder.builder, build_id)
+    # Convert the Struct to standard dict, to use .get, .iteritems etc.
+    properties = dict(build.output.properties.items())
+    gs_bucket = properties.get('coverage_gs_bucket')
+    gs_path = properties.get('coverage_metadata_gs_path')
+    if properties.get('process_coverage_data_failure'):
+      monitoring.code_coverage_cq_errors.increment({
+          'project': build.builder.project,
+          'bucket': build.builder.bucket,
+          'builder': build.builder.builder,
+      })
 
     # Ensure that the coverage data is ready.
     if not gs_bucket or not gs_path:

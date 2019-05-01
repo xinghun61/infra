@@ -324,6 +324,12 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
     build.builder.project = 'chrome'
     build.builder.bucket = 'coverage'
     build.builder.builder = 'linux-code-coverage'
+    build.output.properties.items.return_value = [
+        ('coverage_gs_bucket', 'code-coverage-data'),
+        ('coverage_metadata_gs_path',
+         ('postsubmit/chromium.googlesource.com/chromium/src/'
+          'aaaaa/coverage/linux-code-coverage/123456789/metadata'))
+    ]
     build.input.gitiles_commit = mock.Mock(
         host='chromium.googlesource.com',
         project='chromium/src',
