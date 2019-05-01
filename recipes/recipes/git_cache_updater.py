@@ -83,6 +83,11 @@ def RunSteps(api, bucket, repo_urls):
               '--prune',
               '--reset-fetch-config',
               '--verbose',
+              '--ref', 'refs/branch-heads/*',
+              # By default, "refs/heads/*" and refs/tags/* are checked out by
+              # git_cache. However, for heavy branching repos,
+              # 'refs/branch-heads/*' is also very useful (crbug/942169).
+              # This is a noop for repos without refs/branch-heads.
             ],
             # It's fine for this to fail, just move on to the next one.
             ok_ret='any')

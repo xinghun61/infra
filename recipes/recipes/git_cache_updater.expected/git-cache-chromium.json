@@ -42,7 +42,9 @@
       "[CACHE]/builder/w",
       "--prune",
       "--reset-fetch-config",
-      "--verbose"
+      "--verbose",
+      "--ref",
+      "refs/branch-heads/*"
     ],
     "env": {
       "CHROME_HEADLESS": "1",
@@ -65,7 +67,9 @@
       "[CACHE]/builder/w",
       "--prune",
       "--reset-fetch-config",
-      "--verbose"
+      "--verbose",
+      "--ref",
+      "refs/branch-heads/*"
     ],
     "env": {
       "CHROME_HEADLESS": "1",
@@ -88,7 +92,9 @@
       "[CACHE]/builder/w",
       "--prune",
       "--reset-fetch-config",
-      "--verbose"
+      "--verbose",
+      "--ref",
+      "refs/branch-heads/*"
     ],
     "env": {
       "CHROME_HEADLESS": "1",
