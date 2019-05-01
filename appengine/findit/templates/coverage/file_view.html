@@ -85,6 +85,19 @@
     $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
     });
+    window.addEventListener('load', function(){
+      // Insert a link to the first uncovered line if any.
+      // TODO(crbug.com/958167): Make this view a polymer element, and implement
+      // this behavior as part of it.
+      var uncovered = document.getElementsByClassName("uncovered-count");
+      if (uncovered.length > 0) {
+        var link = document.createElement('a');
+        link.href = document.querySelector('td.uncovered-code a').href;
+        link.text = '(Jump to first uncovered line)';
+        var placeholder = document.querySelector('#link-first-uncovered');
+        placeholder.appendChild(link);
+      }
+    });
   </script>
 </head>
 
@@ -127,7 +140,7 @@
         <tr>
           <th>Line</th>
           <th>Count</th>
-          <th>Source Code</th>
+          <th>Source Code <span id="link-first-uncovered"></span></th>
         </tr>
       </thead>
 
