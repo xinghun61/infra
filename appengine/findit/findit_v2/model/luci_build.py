@@ -9,6 +9,8 @@ builds. And also to differentiate from the data models in v1.
 
 from google.appengine.ext import ndb
 
+from buildbucket_proto.build_pb2 import BuilderID
+
 from findit_v2.model.gitiles_commit import GitilesCommit
 from services import git
 
@@ -20,22 +22,18 @@ def ParseBuilderId(builder_id):
     builder_id (str): Builder id in the format project/bucket/builder.
 
   Returns:
-    {
-      'project': project,
-      'bucket': bucket,
-      'builder': builder
-    }
+    build_pb2.BuilderID based on the str formatted builder_id.
   """
   parts = builder_id.split('/')
 
   assert len(parts) == 3, 'builder_id {} in an invalid format.'.format(
       builder_id)
 
-  return {
-      'project': parts[0],
-      'bucket': parts[1],
-      'builder': parts[2],
-  }
+  return BuilderID(
+      project=parts[0],
+      bucket=parts[1],
+      builder=parts[2],
+  )
 
 
 def SaveFailedBuild(context, build, build_failure_type):
@@ -112,15 +110,41 @@ class LuciBuild(ndb.Model):
   status = ndb.IntegerProperty()
 
   @classmethod
-  def Create(cls, luci_project, luci_bucket, luci_builder, build_id,
-             legacy_build_number, gitiles_host, gitiles_project, gitiles_ref,
-             gitiles_id, commit_position, status, create_time):
+  def Create(cls,
+             luci_project,
+             luci_bucket,
+             luci_builder,
+             build_id,
+             legacy_build_number,
+             gitiles_host,
+             gitiles_project,
+             gitiles_ref,
+             gitiles_id,
+             commit_position,
+             status,
+             create_time,
+             parent_key=None):
     gitiles_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
         gitiles_id=gitiles_id,
         commit_position=commit_position)
+
+    if parent_key:
+      # Rerun builds belong to each analysis, so they need to also set their
+      # parent.
+      return cls(
+          luci_project=luci_project,
+          bucket_id='{}/{}'.format(luci_project, luci_bucket),
+          builder_id='{}/{}/{}'.format(luci_project, luci_bucket, luci_builder),
+          build_id=build_id,
+          legacy_build_number=legacy_build_number,
+          gitiles_commit=gitiles_commit,
+          create_time=create_time,
+          status=status,
+          id=build_id,
+          parent=parent_key)
 
     return cls(
         luci_project=luci_project,
@@ -154,34 +178,4 @@ class LuciFailedBuild(LuciBuild):
     instance.start_time = start_time
     instance.end_time = end_time
     instance.build_failure_type = build_failure_type
-    return instance
-
-
-class LuciRerunBuild(LuciBuild):
-  """Class for a rerun build triggered by Findit in a rerun based analysis."""
-  # Id of the build that Findit analyzes on.
-  # Use this rerun builds can be linked back to the build and analysis.
-  referred_build_id = ndb.IntegerProperty(required=True)
-
-  # Type of failures this rerun build is for.
-  build_failure_type = ndb.StringProperty()
-
-  # Detailed results of the rerun build.
-  # Pass/failed compile targets in the rerun build for compile,
-  # Pass/failed tests in the rerun build for test, and detailed test results.
-  failure_info = ndb.JsonProperty(compressed=True, indexed=False)
-
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  @classmethod
-  def Create(cls, luci_project, luci_bucket, luci_builder, build_id,
-             legacy_build_number, gitiles_host, gitiles_project, gitiles_ref,
-             gitiles_id, commit_position, status, create_time,
-             build_failure_type, referred_build_id):
-    instance = super(LuciRerunBuild, cls).Create(
-        luci_project, luci_bucket, luci_builder, build_id, legacy_build_number,
-        gitiles_host, gitiles_project, gitiles_ref, gitiles_id, commit_position,
-        status, create_time)
-
-    instance.build_failure_type = build_failure_type
-    instance.referred_build_id = referred_build_id
     return instance

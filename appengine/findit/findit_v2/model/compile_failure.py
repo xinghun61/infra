@@ -2,13 +2,28 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
+
 from google.appengine.ext import ndb
 
 from findit_v2.model.atomic_failure import AtomicFailure
 from findit_v2.model.base_failure_analysis import BaseFailureAnalysis
 from findit_v2.model.failure_group import BaseFailureGroup
 from findit_v2.model.gitiles_commit import GitilesCommit
+from findit_v2.model.luci_build import LuciBuild
 from gae_libs.model.versioned_model import VersionedModel
+
+
+def _GetFailedTargets(compile_failures):
+  """Gets failed compile targets of each compile step."""
+  failed_targets = defaultdict(list)
+  for compile_failure in compile_failures:
+    failed_targets[compile_failure.step_ui_name].extend(
+        compile_failure.output_targets)
+  return {
+      step_ui_name: list(set(failed_targets_in_step))
+      for step_ui_name, failed_targets_in_step in failed_targets.iteritems()
+  }
 
 
 class CompileFailure(AtomicFailure):
@@ -61,12 +76,10 @@ class CompileFailureGroup(BaseFailureGroup):
 
   @property
   def failed_targets(self):
-    """Gets a list of failed compile targets that are included in the group."""
+    """Gets failed compile targets of each compile step that are included in the
+      group."""
     failed_target_objects = ndb.get_multi(self.compile_failure_keys)
-    targets = []
-    for target_obj in failed_target_objects:
-      targets.extend(target_obj.output_targets)
-    return list(set(targets))
+    return _GetFailedTargets(failed_target_objects)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
@@ -98,6 +111,13 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
   """
   # Key to the failed targets this analysis analyzes.
   compile_failure_keys = ndb.KeyProperty(CompileFailure, repeated=True)
+
+  @property
+  def failed_targets(self):
+    """Gets a list of failed compile targets of each compile step that are
+      analyzed in the analysis."""
+    failed_target_objects = ndb.get_multi(self.compile_failure_keys)
+    return _GetFailedTargets(failed_target_objects)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
@@ -132,3 +152,34 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
     instance.compile_failure_keys = compile_failure_keys
 
     return instance
+
+
+class CompileFailureInRerunBuild(ndb.Model):
+  """Atomic compile failure in a rerun build.
+
+  Since we only need to keep a simple record on what's failed in rerun build,
+  it's no need to reuse CompileFailure.
+  """
+  # Full step name.
+  step_ui_name = ndb.StringProperty()
+
+  # Output targets of one failed compile edge that the rerun build tested.
+  output_targets = ndb.StringProperty(repeated=True)
+
+
+class CompileRerunBuild(LuciBuild):
+  """Class for a rerun build for a compile failure analysis."""
+
+  # Compile failures in the rerun build.
+  failures = ndb.LocalStructuredProperty(
+      CompileFailureInRerunBuild, repeated=True)
+
+  def GetFailedTargets(self):
+    """Gets a list of failed compile targets of each compile step that failed
+      in the rerun build."""
+    return _GetFailedTargets(self.failures)
+
+  @classmethod
+  def SearchBuildOnCommit(cls, analysis_key, commit):
+    return cls.query(ancestor=analysis_key).filter(
+        cls.gitiles_commit.gitiles_id == commit.gitiles_id).fetch()

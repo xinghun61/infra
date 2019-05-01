@@ -116,3 +116,35 @@ class ChromeOSProjectAPI(ProjectAPI):
         project=build.builder.project,
         bucket=build.builder.bucket,
         builder=rerun_builder)
+
+  def GetCompileRerunBuildInputProperties(self, referred_build, failed_targets):
+    """Gets input properties of a rerun build for compile failures.
+
+    Args:
+      referred_build (buildbucket build.proto): ALL info about the
+        referred_build. This build could be the build being analyzed, or a
+        previous rerun build for the failed build.
+      failed_targets (dict): Targets Findit wants to rerun in the build.
+
+    Returns:
+      (dict): input properties of the rerun build."""
+    build_target = json_format.MessageToDict(
+        referred_build.input.properties).get('build_target', {}).get('name')
+    assert build_target, (
+        'Failed to get build_target for ChromeOS build {}'.format(
+            referred_build.id))
+
+    targets = failed_targets.get(_COMPILE_STEP_NAME, [])
+    if not targets:
+      return None
+
+    return {
+        'recipe': 'build_target',
+        'build_target': {
+            'name': build_target
+        },
+        'findit_bisect': {
+            'targets': targets
+        },
+        'build_image': False
+    }

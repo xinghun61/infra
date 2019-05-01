@@ -107,3 +107,36 @@ class ChromeOSProjectAPITest(unittest.TestCase):
 
     self.assertEqual('chromeos/postsubmit/builder-bisect',
                      ChromeOSProjectAPI().GetRerunBuilderId(build))
+
+  def testGetCompileRerunBuildInputProperties(self):
+    build_target = 'abc'
+    targets = {'build_packages': ['target1']}
+
+    build = Build()
+    build.input.properties['build_target'] = {'name': build_target}
+
+    expected_prop = {
+        'recipe': 'build_target',
+        'build_target': {
+            'name': build_target
+        },
+        'findit_bisect': {
+            'targets': ['target1']
+        },
+        'build_image': False
+    }
+
+    self.assertEqual(
+        expected_prop,
+        ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
+            build, targets))
+
+  def testGetCompileRerunBuildInputPropertiesOtherStep(self):
+    build_target = 'abc'
+    targets = {'compile': ['target1']}
+
+    build = Build()
+    build.input.properties['build_target'] = {'name': build_target}
+
+    self.assertIsNone(ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
+        build, targets))

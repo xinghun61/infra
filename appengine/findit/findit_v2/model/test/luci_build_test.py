@@ -13,7 +13,6 @@ from google.appengine.ext import ndb
 from findit_v2.model import luci_build
 from findit_v2.model.luci_build import ParseBuilderId
 from findit_v2.model.luci_build import LuciFailedBuild
-from findit_v2.model.luci_build import LuciRerunBuild
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
 from services import git
@@ -69,37 +68,11 @@ class LuciFailedBuildTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(1, len(res2))
     self.assertEqual(build_id, res2[0].build_id)
 
-  def testLuciRerunBuild(self):
-    build_id = 1234567890
-    commit_position = 65432
-
-    LuciRerunBuild.Create(
-        luci_project='chromium',
-        luci_bucket='ci',
-        luci_builder='Linux Builder',
-        build_id=build_id,
-        legacy_build_number=11111,
-        gitiles_host='chromium.googlesource.com',
-        gitiles_project='chromium/src',
-        gitiles_ref='refs/heads/master',
-        gitiles_id='git_hash',
-        commit_position=commit_position,
-        status=1,
-        create_time=datetime(2019, 3, 28),
-        build_failure_type=StepTypeEnum.COMPILE,
-        referred_build_id=87654321).put()
-
-    rerun_build = LuciRerunBuild.get_by_id(build_id)
-    self.assertIsNotNone(rerun_build)
-
   def testParseBuilderId(self):
-    expected_res = {
-        'project': 'chromium',
-        'bucket': 'ci',
-        'builder': 'Linux Builder',
-    }
-
-    self.assertEqual(expected_res, ParseBuilderId('chromium/ci/Linux Builder'))
+    builder = ParseBuilderId('chromium/ci/Linux Builder')
+    self.assertEqual('chromium', builder.project)
+    self.assertEqual('ci', builder.bucket)
+    self.assertEqual('Linux Builder', builder.builder)
 
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=67890)
   def testSaveFailedBuild(self, _):

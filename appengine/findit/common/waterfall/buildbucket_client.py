@@ -442,7 +442,6 @@ def TriggerV2Build(builder,
         },
         ...
       ]
-
   """
   request = ScheduleBuildRequest(
       builder=builder,

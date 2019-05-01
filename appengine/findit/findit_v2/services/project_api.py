@@ -15,6 +15,7 @@ class ProjectAPI(object):  # pragma: no cover.
     Returns:
       findit_v2.services.failure_type.StepTypeEnum
     """
+    # pylint: disable=unused-argument
     raise NotImplementedError
 
   def GetCompileFailures(self, build, compile_steps):
@@ -50,6 +51,7 @@ class ProjectAPI(object):  # pragma: no cover.
         },
       }
     """
+    # pylint: disable=unused-argument
     raise NotImplementedError
 
   def GetRerunBuilderId(self, build):
@@ -61,4 +63,19 @@ class ProjectAPI(object):  # pragma: no cover.
     Returns:
       (str): Builder id in the format luci_project/luci_bucket/luci_builder
     """
+    # pylint: disable=unused-argument
     raise NotImplementedError
+
+  def GetCompileRerunBuildInputProperties(self, referred_build, failed_targets):
+    """Gets input properties of a rerun build for compile failures.
+
+    Args:
+      referred_build (buildbucket build.proto): ALL info about the
+        referred_build. This build could be the build being analyzed, or a
+        previous rerun build for the failed build.
+      failed_targets (list of str): Targets Findit wants to rerun in the build.
+
+    Returns:
+      (dict): input properties of the rerun build."""
+    # pylint: disable=unused-argument
+    return NotImplementedError

@@ -9,6 +9,9 @@ from google.appengine.ext import ndb
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileFailureGroup
+from findit_v2.model.compile_failure import CompileFailureInRerunBuild
+from findit_v2.model.compile_failure import CompileRerunBuild
+from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.failure_type import StepTypeEnum
 from waterfall.test import wf_testcase
@@ -69,9 +72,11 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
         compile_failure_keys=[te.key for te in self.target_entities]).put()
 
     group = CompileFailureGroup.get_by_id(self.build_id)
-    self.assertItemsEqual(['target1.o', 'target2.o'], group.failed_targets)
+    self.assertItemsEqual({
+        'compile': ['target1.o', 'target2.o']
+    }, group.failed_targets)
 
-  def testCompileFailureAnalysis(self):
+  def _CreateCompileFailureAnalysis(self):
     analysis = CompileFailureAnalysis.Create(
         luci_project='chromium',
         luci_bucket='ci',
@@ -87,6 +92,68 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
         rerun_builder_id='findit_variables',
         compile_failure_keys=[te.key for te in self.target_entities])
     analysis.Save()
+    return analysis
 
+  def testCompileFailureAnalysis(self):
+    self._CreateCompileFailureAnalysis()
     analysis = CompileFailureAnalysis.GetVersion(self.build_id)
     self.assertIsNotNone(analysis)
+
+  def _CreateCompileRerunBuild(self, build_id, commit_position, analysis_key):
+    build = CompileRerunBuild.Create(
+        luci_project='chromium',
+        luci_bucket='ci',
+        luci_builder='Linux Builder',
+        build_id=build_id,
+        legacy_build_number=11111,
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=commit_position,
+        status=1,
+        create_time=datetime(2019, 3, 28),
+        parent_key=analysis_key)
+    build.put()
+
+  def testLuciRerunBuild(self):
+    build_id = 1234567890
+    commit_position = 65432
+    analysis = self._CreateCompileFailureAnalysis()
+    self._CreateCompileRerunBuild(build_id, commit_position, analysis.key)
+
+    rerun_build = CompileRerunBuild.get_by_id(build_id, parent=analysis.key)
+    self.assertIsNotNone(rerun_build)
+
+  def testLuciRerunBuildGetFailedTargets(self):
+    build_id = 1234567890
+    commit_position = 65432
+    analysis = self._CreateCompileFailureAnalysis()
+    self._CreateCompileRerunBuild(build_id, commit_position, analysis.key)
+
+    rerun_build = CompileRerunBuild.get_by_id(build_id, parent=analysis.key)
+    rerun_build.results = []
+    for target in self.target_entities:
+      result = CompileFailureInRerunBuild(
+          step_ui_name=target.step_ui_name,
+          output_targets=target.output_targets)
+      rerun_build.failures.append(result)
+
+    result = rerun_build.GetFailedTargets()
+    self.assertItemsEqual(['target1.o', 'target2.o'], result['compile'])
+
+  def testLuciRerunBuildSearch(self):
+    build_id = 1234567890
+    commit_position = 65432
+    commit = GitilesCommit(
+        gitiles_host='chromium.googlesource.com',
+        gitiles_project='chromium/src',
+        gitiles_ref='refs/heads/master',
+        gitiles_id='git_hash',
+        commit_position=commit_position)
+    analysis = self._CreateCompileFailureAnalysis()
+    self._CreateCompileRerunBuild(build_id, commit_position, analysis.key)
+
+    rerun_builds = CompileRerunBuild.SearchBuildOnCommit(analysis.key, commit)
+    self.assertEqual(1, len(rerun_builds))
+    self.assertEqual(build_id, rerun_builds[0].build_id)
