@@ -302,12 +302,14 @@ class Servlet(webapp2.RequestHandler):
       csp_supports_report_sample = (
         (browser == 'Chrome' and browser_major_version >= 59) or
         (browser == 'Opera' and browser_major_version >= 46))
+      version_base = _VersionBaseURL(self.mr.request)
       self.response.headers.add(csp_header,
            ("default-src %(scheme)s ; "
             "script-src"
             " %(rep_samp)s"  # Report 40 chars of any inline violation.
             " 'unsafe-inline'"  # Only counts in browsers that lack CSP2.
             " 'strict-dynamic'"  # Allows <script nonce> to load more.
+            " %(version_base)s/static/dist/"
             " 'self' 'nonce-%(nonce)s'; "
             "child-src 'none'; "
             "frame-src 'none'; "
@@ -319,6 +321,7 @@ class Servlet(webapp2.RequestHandler):
             'nonce': nonce,
             'scheme': csp_scheme,
             'rep_samp': "'report-sample'" if csp_supports_report_sample else '',
+            'version_base': version_base,
             }))
 
       page_data.update(self._GatherFlagData(self.mr))
@@ -618,14 +621,7 @@ class Servlet(webapp2.RequestHandler):
     login_url = _SafeCreateLoginURL(mr)
     logout_url = _SafeCreateLogoutURL(mr)
     logout_url_goto_home = users.create_logout_url('/')
-
-    if settings.local_mode:
-      version_base = '%s://%s' % (
-        mr.request.scheme, mr.request.host)
-    else:
-      version_base = '%s://%s-dot-%s' % (
-        mr.request.scheme, modules.get_current_version_name(),
-        app_identity.get_default_version_hostname())
+    version_base = _VersionBaseURL(mr.request)
 
     base_data = {
         # EZT does not have constants for True and False, so we pass them in.
@@ -942,3 +938,15 @@ def _SafeCreateLogoutURL(mr):
       return users.create_logout_url('/p/%s' % mr.project_name)
     else:
       return users.create_logout_url('/')
+
+
+def _VersionBaseURL(request):
+  """Return a version-specific URL that we use to load static assets."""
+  if settings.local_mode:
+    version_base = '%s://%s' % (request.scheme, request.host)
+  else:
+    version_base = '%s://%s-dot-%s' % (
+      request.scheme, modules.get_current_version_name(),
+      app_identity.get_default_version_hostname())
+
+  return version_base

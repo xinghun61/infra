@@ -6,8 +6,10 @@
 """Unit tests for servlet base class module."""
 
 import time
+import mock
 import unittest
 
+from google.appengine.api import app_identity
 from google.appengine.ext import testbed
 
 import webapp2
@@ -311,3 +313,21 @@ class ProjectIsRestrictedTest(unittest.TestCase):
     proj.state = project_pb2.ProjectState.LIVE
     proj.access = project_pb2.ProjectAccess.MEMBERS_ONLY
     self.assertTrue(servlet._ProjectIsRestricted(mr))
+
+class VersionBaseTest(unittest.TestCase):
+
+  @mock.patch('settings.local_mode', True)
+  def testLocalhost(self):
+    request = webapp2.Request.blank('/', base_url='http://localhost:8080')
+    actual = servlet._VersionBaseURL(request)
+    expected = 'http://localhost:8080'
+    self.assertEqual(expected, actual)
+
+  @mock.patch('settings.local_mode', False)
+  @mock.patch('google.appengine.api.app_identity.get_default_version_hostname')
+  def testProd(self, mock_gdvh):
+    mock_gdvh.return_value = 'monorail-prod.appspot.com'
+    request = webapp2.Request.blank('/', base_url='https://bugs.chromium.org')
+    actual = servlet._VersionBaseURL(request)
+    expected = 'https://test-dot-monorail-prod.appspot.com'
+    self.assertEqual(expected, actual)
