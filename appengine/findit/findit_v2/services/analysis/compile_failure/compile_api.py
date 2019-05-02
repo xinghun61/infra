@@ -4,7 +4,7 @@
 
 import logging
 
-from findit_v2.services.analysis.compile_failure import compile_analysis_util
+from findit_v2.services.analysis.compile_failure import pre_compile_analysis
 from findit_v2.services import projects
 
 
@@ -32,19 +32,19 @@ def AnalyzeCompileFailure(context, build, compile_steps):
       build, compile_steps)
 
   # Updates detailed_compile_failures for first failures.
-  compile_analysis_util.DetectFirstFailures(context, build,
-                                            detailed_compile_failures)
+  pre_compile_analysis.DetectFirstFailures(context, build,
+                                           detailed_compile_failures)
   # TODO(crbug.com/949836): Look for existing failure groups.
-  compile_analysis_util.SaveCompileFailures(context, build,
-                                            detailed_compile_failures)
+  pre_compile_analysis.SaveCompileFailures(context, build,
+                                           detailed_compile_failures)
 
   first_failures_in_current_build = (
-      compile_analysis_util.GetFirstFailuresInCurrentBuild(
+      pre_compile_analysis.GetFirstFailuresInCurrentBuild(
           context, build, detailed_compile_failures))
 
   if not first_failures_in_current_build['failures']:
     # No first time failures in current build. No need for a new analysis.
     return
 
-  compile_analysis_util.SaveCompileAnalysis(context, build,
-                                            first_failures_in_current_build)
+  pre_compile_analysis.SaveCompileAnalysis(context, build,
+                                           first_failures_in_current_build)
