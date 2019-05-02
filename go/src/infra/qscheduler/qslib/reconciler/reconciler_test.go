@@ -180,9 +180,9 @@ func TestQueuedAssignment(t *testing.T) {
 		r := New()
 		s := scheduler.New(t0)
 		Convey("given a worker with a label is idle", func() {
-			wid := scheduler.WorkerID("Worker1")
+			preferredWorkerID := scheduler.WorkerID("Worker1")
 			labels := stringset.NewFromSlice("Label1")
-			r.AssignTasks(ctx, s, t0, scheduler.NullEventSink, &IdleWorker{wid, labels})
+			r.AssignTasks(ctx, s, t0, scheduler.NullEventSink, &IdleWorker{preferredWorkerID, labels})
 			Convey("given a request is enqueued with that label", func() {
 				rid := scheduler.RequestID("Request1")
 				taskUpdate := &TaskWaitingRequest{
@@ -193,21 +193,33 @@ func TestQueuedAssignment(t *testing.T) {
 				}
 				r.NotifyTaskWaiting(ctx, s, scheduler.NullEventSink, taskUpdate)
 				Convey("when a different worker without that label calls AssignTasks", func() {
-					wid2 := scheduler.WorkerID("Worker2")
+					otherWorkerID := scheduler.WorkerID("Worker2")
+					otherWorker := &IdleWorker{otherWorkerID, stringset.New(0)}
 					t1 := time.Unix(1, 0)
-					as := r.AssignTasks(ctx, s, t1, scheduler.NullEventSink, &IdleWorker{wid2, stringset.New(0)})
+					as := r.AssignTasks(ctx, s, t1, scheduler.NullEventSink, otherWorker)
 					Convey("then it is given no task.", func() {
 						So(as, ShouldBeEmpty)
 					})
 					Convey("when the labeled worker calls AssignTasks", func() {
-						as = r.AssignTasks(ctx, s, t1, scheduler.NullEventSink, &IdleWorker{wid, labels})
+						as = r.AssignTasks(ctx, s, t1, scheduler.NullEventSink, &IdleWorker{preferredWorkerID, labels})
 						Convey("it is given the task.", func() {
 							So(as, ShouldHaveLength, 1)
 							So(as[0].RequestID, ShouldEqual, rid)
-							So(as[0].WorkerID, ShouldEqual, wid)
+							So(as[0].WorkerID, ShouldEqual, preferredWorkerID)
 							So(as[0].ProvisionRequired, ShouldBeFalse)
 						})
+						Convey("when the worker queue timeout expires without the preferred worker picking up the task", func() {
+							t2 := t1.Add(2 * WorkerQueueTimeout)
+							as := r.AssignTasks(ctx, s, t2, scheduler.NullEventSink, otherWorker)
+							Convey("then the other worker is given the task.", func() {
+								So(as, ShouldHaveLength, 1)
+								So(as[0].RequestID, ShouldEqual, rid)
+								So(as[0].WorkerID, ShouldEqual, otherWorkerID)
+								So(as[0].ProvisionRequired, ShouldBeTrue)
+							})
+						})
 					})
+
 				})
 			})
 		})

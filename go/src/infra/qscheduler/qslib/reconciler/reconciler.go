@@ -42,6 +42,11 @@ import (
 	"go.chromium.org/luci/common/logging"
 )
 
+// WorkerQueueTimeout is the time after which a task will return to the queue
+// if it was assigned to a worker but the worker never picked it up.
+// TODO(akeshet): Make this a configurable value.
+const WorkerQueueTimeout = time.Duration(10) * time.Minute
+
 // New returns a new initialized State instance.
 func New() *State {
 	return &State{
@@ -90,6 +95,7 @@ type Assignment struct {
 // to those workers (if there are tasks available).
 func (state *State) AssignTasks(ctx context.Context, s *scheduler.Scheduler, t time.Time, events scheduler.EventSink, workers ...*IdleWorker) []Assignment {
 	state.ensureMaps()
+	state.timeoutWorkers(ctx, s, t, events)
 	s.UpdateTime(ctx, t)
 
 	// Determine which of the supplied workers should be newly marked as
@@ -235,6 +241,22 @@ func (state *State) NotifyTaskAbsent(ctx context.Context, s *scheduler.Scheduler
 		}
 	}
 	delete(state.proto.TaskErrors, string(rid))
+}
+
+// timeoutWorkers enforces the timeout for workers to pick up their assigned tasks.
+func (state *State) timeoutWorkers(ctx context.Context, s *scheduler.Scheduler, t time.Time, events scheduler.EventSink) {
+	for wid, q := range state.proto.WorkerQueues {
+		qTime := tutils.Timestamp(q.EnqueueTime)
+		if t.Sub(qTime) < WorkerQueueTimeout {
+			continue
+		}
+
+		// Timed out waiting for worker to pick up its assigned task.
+		if err := s.Unassign(ctx, scheduler.RequestID(q.TaskToAssign), scheduler.WorkerID(wid), t, events); err != nil {
+			logging.Debugf(ctx, "%s", err.Error())
+		}
+		delete(state.proto.WorkerQueues, wid)
+	}
 }
 
 // ensureMaps initializes any nil maps in reconciler.
