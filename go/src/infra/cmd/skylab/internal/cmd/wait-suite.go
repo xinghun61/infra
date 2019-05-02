@@ -85,7 +85,7 @@ func (c *waitSuiteRun) innerRun(a subcommands.Application, args []string, env su
 			return err
 		}
 
-		return postWaitSuite(ctx, []string{taskID}, s, a.GetOut())
+		return postWaitSuite(ctx, taskID, s, a.GetOut())
 	case <-time.After(time.Duration(c.timeoutMins) * time.Minute):
 		suiteWaitCancel()
 		return fmt.Errorf("timed out waiting for the suite task to finish")
@@ -165,12 +165,12 @@ func getSwarmingStdoutsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 	return results, nil
 }
 
-func postWaitSuite(ctx context.Context, taskIDs []string, s *swarming.Service, w io.Writer) error {
-	results, err := getSwarmingResultsForIds(ctx, taskIDs, s)
+func postWaitSuite(ctx context.Context, suiteTaskID string, s *swarming.Service, w io.Writer) error {
+	results, err := getSwarmingResultsForIds(ctx, []string{suiteTaskID}, s)
 	if err != nil {
 		return err
 	}
-	stdouts, err := getSwarmingStdoutsForIds(ctx, taskIDs, s)
+	stdouts, err := getSwarmingStdoutsForIds(ctx, []string{suiteTaskID}, s)
 	if err != nil {
 		return err
 	}
@@ -182,19 +182,16 @@ func postWaitSuite(ctx context.Context, taskIDs []string, s *swarming.Service, w
 	for i, c := range childs {
 		childResults[i] = &taskResult{Name: c.Name, State: c.State, Failure: c.Failure}
 	}
-	m := make(map[string]waitTaskResult, len(taskIDs))
-	for _, taskID := range taskIDs {
-		m[taskID] = waitTaskResult{
-			SuiteResult:  &taskResult{Name: results[0].Name, State: results[0].State, Failure: results[0].Failure},
-			Stdout:       stdouts[0].Output,
-			ChildResults: childResults,
-		}
+	result := &waitTaskResult{
+		SuiteResult:  &taskResult{Name: results[0].Name, State: results[0].State, Failure: results[0].Failure},
+		Stdout:       stdouts[0].Output,
+		ChildResults: childResults,
 	}
-	printJSONResults(w, m)
+	printJSONResults(w, result)
 	return nil
 }
 
-func printJSONResults(w io.Writer, m map[string]waitTaskResult) {
+func printJSONResults(w io.Writer, m *waitTaskResult) {
 	outputJSON, err := json.Marshal(m)
 	if err != nil {
 		panic(err)
