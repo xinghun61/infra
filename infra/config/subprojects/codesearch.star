@@ -143,12 +143,12 @@ def update_submodules_mirror(
   )
 
 
-# Runs every two hours (at predictable times).
+# Runs every four hours (at predictable times).
 builder(
     name = 'codesearch-gen-chromium-initiator',
     executable = build.recipe('chromium_codesearch_initiator'),
     category = 'gen|init',
-    schedule = '0 */2 * * *',
+    schedule = '0 */4 * * *',
 )
 
 
