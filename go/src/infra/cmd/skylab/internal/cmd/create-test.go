@@ -57,6 +57,7 @@ will be executed in a low priority. If the tasks runs in a quotascheduler contro
 			`Additional provisionable labels to use for the test
 (e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
 multiple times.  Optional.`)
+		c.Flags.StringVar(&c.parentTaskID, "parent-task-id", "", "For internal use only.")
 		return c
 	},
 }
@@ -77,6 +78,7 @@ type createTestRun struct {
 	testArgs        string
 	qsAccount       string
 	provisionLabels []string
+	parentTaskID    string
 }
 
 // validateArgs ensures that the command line arguments are
@@ -165,10 +167,11 @@ func (c *createTestRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	req := &swarming.SwarmingRpcsNewTaskRequest{
-		Name:       taskName,
-		Tags:       tags,
-		TaskSlices: slices,
-		Priority:   int64(c.priority),
+		Name:         taskName,
+		Tags:         tags,
+		TaskSlices:   slices,
+		Priority:     int64(c.priority),
+		ParentTaskId: c.parentTaskID,
 	}
 
 	ctx := cli.GetContext(a, c, env)
