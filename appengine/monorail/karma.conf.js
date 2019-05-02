@@ -59,6 +59,7 @@ module.exports = function(config) {
       'karma-mocha',
       'karma-sinon',
       'karma-sourcemap-loader',
+      'karma-spec-reporter',
       'karma-webpack',
     ],
 
@@ -86,7 +87,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['progress'].concat(coverage ? ['coverage'] : []),
+    reporters: ['spec'].concat(coverage ? ['coverage'] : []),
 
 
     // configure coverage reporter
