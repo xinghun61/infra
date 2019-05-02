@@ -8,19 +8,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-const (
-	pacificTZ = "US/Pacific"
-	estTZ     = "EST"
-	apacTZ    = "Australia/Sydney"
-	euTZ      = "UTC"
-)
-
-type memberTZ struct {
-	members string
-	TZ      *time.Location
-}
-
-func TestGenerateTZFair(t *testing.T) {
+func TestGenerateTZRecent(t *testing.T) {
 
 	pacificLocation, err := time.LoadLocation(pacificTZ)
 	if err != nil {
@@ -400,10 +388,10 @@ func TestGenerateTZFair(t *testing.T) {
 	}
 
 	as := New()
-	as.Register(NewTZFair())
-	generator, err := as.Fetch("TZFair")
+	as.Register(NewTZRecent())
+	generator, err := as.Fetch("TZRecent")
 	if err != nil {
-		t.Fatalf("as.Fetch(%q) failed: %v", "TZFair", err)
+		t.Fatalf("as.Fetch(%q) failed: %v", "TZRecent", err)
 	}
 
 	for _, tst := range tests {

@@ -5,7 +5,6 @@
 package algo
 
 import (
-	"fmt"
 	"infra/appengine/rotang"
 	"math/rand"
 	"testing"
@@ -14,60 +13,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-var midnight = time.Date(2006, 8, 2, 0, 0, 0, 0, time.UTC)
-
-func stringToShifts(in, shiftName string) []rotang.ShiftEntry {
-	var res []rotang.ShiftEntry
-	for tm, c := range in {
-		baseTime := midnight.Add(-time.Duration(len(in)-tm) * time.Hour * 24)
-		res = append(res, rotang.ShiftEntry{
-			Name:      shiftName,
-			StartTime: baseTime,
-			EndTime:   baseTime.Add(time.Hour * 24),
-			OnCall: []rotang.ShiftMember{
-				{
-					Email:     fmt.Sprintf("%c@%c.com", c, c),
-					ShiftName: shiftName,
-				},
-			},
-			Comment: "stringToShifts",
-		})
-
-	}
-	return res
-}
-
-func stringToMembers(in string, tz *time.Location) []rotang.Member {
-	var res []rotang.Member
-	for _, c := range in {
-		res = append(res, rotang.Member{
-			Email: fmt.Sprintf("%c@%c.com", c, c),
-			TZ:    *tz,
-		})
-	}
-	return res
-}
-
-func stringToShiftMembers(in, shift string) []rotang.ShiftMember {
-	var res []rotang.ShiftMember
-	for _, c := range in {
-		res = append(res, rotang.ShiftMember{
-			Email:     fmt.Sprintf("%c@%c.com", c, c),
-			ShiftName: shift,
-		})
-	}
-	return res
-}
-
-func membersToString(members []rotang.Member) string {
-	var res []byte
-	for _, m := range members {
-		res = append(res, m.Email[0])
-	}
-	return string(res)
-}
-
-func TestMakeFair(t *testing.T) {
+func TestMakeRecent(t *testing.T) {
 
 	tests := []struct {
 		name    string
@@ -75,7 +21,7 @@ func TestMakeFair(t *testing.T) {
 		members string
 		want    string
 	}{{
-		name:    "Simple cycle",
+		name:    "Simple Cycle",
 		shifts:  "ABCDEFGHI",
 		members: "ABCDEFGHI",
 		want:    "ABCDEFGHI",
@@ -91,30 +37,30 @@ func TestMakeFair(t *testing.T) {
 		want:    "CDEFGHIAB",
 	}, {
 		name:    "Recent vs multiple times",
-		shifts:  "AABCDEFGHI",
+		shifts:  "ABCDEFGHII",
 		members: "ABCDEFGHI",
-		want:    "BCDEAFGHI",
+		want:    "ABCDEFGHI",
 	}, {
 		name:    "Recent and multiple",
 		shifts:  "ABCDEFGHIIA",
 		members: "ABCDEFGHI",
-		want:    "BCDEFGHAI",
+		want:    "BCDEFGHIA",
 	}, {
 		name:    "Recent multiple and not in there",
 		shifts:  "ABCDEGCHIJA",
 		members: "ABCDEFGHIJ",
-		want:    "FBDEGHIJCA",
+		want:    "FBDEGCHIJA",
 	}}
 
 	for _, tst := range tests {
-		res := makeFair(stringToMembers(tst.members, mtvTime), stringToShifts(tst.shifts, "MTV all day"))
+		res := makeRecent(stringToMembers(tst.members, mtvTime), stringToShifts(tst.shifts, "MTV all day"))
 		if got, want := membersToString(res), tst.want; got != want {
-			t.Errorf("%s: makeFair(_, _ ) = %q want: %q", tst.name, got, want)
+			t.Errorf("%s: makeRecent(_, _ ) = %q want: %q", tst.name, got, want)
 		}
 	}
 }
 
-func TestGenerateFair(t *testing.T) {
+func TestGenerateRecent(t *testing.T) {
 	tests := []struct {
 		name      string
 		fail      bool
@@ -126,7 +72,7 @@ func TestGenerateFair(t *testing.T) {
 		want      []rotang.ShiftEntry
 	}{
 		{
-			name: "Simple Cycle",
+			name: "Simple cycle",
 			cfg: &rotang.Configuration{
 				Config: rotang.Config{
 					Name: "Test Rota",
@@ -140,7 +86,7 @@ func TestGenerateFair(t *testing.T) {
 							},
 						},
 						ShiftMembers: 1,
-						Generator:    "Fair",
+						Generator:    "Recent",
 					},
 				},
 			},
@@ -156,8 +102,8 @@ func TestGenerateFair(t *testing.T) {
 							ShiftName: "Test Shift",
 						},
 					},
-					StartTime: midnight.Add(2 * fullDay),
-					EndTime:   midnight.Add(6*fullDay + time.Hour*8), // Length of the shift is 5 days.
+					StartTime: midnight.Add(2 * fullDay),                       // Shift skips two days.
+					EndTime:   midnight.Add(fullDay + 5*fullDay + time.Hour*8), // Length of the shift is 5 days.
 					Comment:   "",
 				}, {
 					Name: "Test Shift",
@@ -267,10 +213,10 @@ func TestGenerateFair(t *testing.T) {
 	rand.Seed(7357)
 
 	as := New()
-	as.Register(NewFair())
-	generator, err := as.Fetch("Fair")
+	as.Register(NewRecent())
+	generator, err := as.Fetch("Recent")
 	if err != nil {
-		t.Fatalf("as.Fetch(%q) failed: %v", "Fair", err)
+		t.Fatalf("as.Fetch(%q) failed: %v", "Recent", err)
 	}
 
 	for _, tst := range tests {

@@ -277,11 +277,24 @@ Note: *For the OOO entries to be saved you need to click the `Update` button whe
     * **TZFair**
 
       Adds one member per TZ to the shift. Among the members of a particular timezone it behaves the same as Fair.
-      Note that this overrides `ShiftMembers`, forcing it to be equal to the number of timezones represented in the shift.
+      Note that this overrides `ShiftMembers`, forcing it to be equal to the number of time-zones represented in the shift.
 
     * **Random**
 
       Randomly assigns members to shifts.
+
+    * **Recent**
+
+      The Recent generator only consider the last time a member was on-call.
+      This gives the member with the last oncall shift will not be scheduled again until everyone with a less recent shift
+      has been scheduled. Compared to the Fair generator the Recent generator does not take number of shifts into account.
+
+    * **TZRecent**
+
+      Adds one member per TZ to the shift. Among the members of a particular timezone it behaves the same as Recent.
+      Note that this overrides `ShiftMembers`, forcing it to be equal to the number of time-zones represented in the shift.
+
+
 
   * **AllDayEvents**
 
@@ -313,7 +326,7 @@ the configuration setting will be used.
 ## Test Email
 
 On the front page following the [Test Email](https://rota-ng.appspot.com/emailtest) link takes you to a list of all the
-rotations you own and/or are a member of. 
+rotations you own and/or are a member of.
 
 - Clicking the `Test` button expands the Email template.
 - Clicking the `Send` button sends the generated email to the logged in user.

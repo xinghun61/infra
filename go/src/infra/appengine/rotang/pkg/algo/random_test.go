@@ -233,8 +233,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(2 * fullDay),                       // Shift skips two days.
-				EndTime:   midnight.Add(fullDay + 5*fullDay + time.Hour*8), // Length of the shift is 5 days.
+				StartTime: midnight,                              // Shift skips two days.
+				EndTime:   midnight.Add(4*fullDay + time.Hour*8), // Length of the shift is 5 days.
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -244,8 +244,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(9 * fullDay),
-				EndTime:   midnight.Add(8*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(6*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -255,8 +255,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(16 * fullDay),
-				EndTime:   midnight.Add(15*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(14 * fullDay),
+				EndTime:   midnight.Add(13*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -266,8 +266,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(23 * fullDay),
-				EndTime:   midnight.Add(22*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(21 * fullDay),
+				EndTime:   midnight.Add(20*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -277,8 +277,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(30 * fullDay),
-				EndTime:   midnight.Add(29*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(28 * fullDay),
+				EndTime:   midnight.Add(27*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -288,8 +288,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(37 * fullDay),
-				EndTime:   midnight.Add(36*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(35 * fullDay),
+				EndTime:   midnight.Add(34*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -299,8 +299,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(44 * fullDay),
-				EndTime:   midnight.Add(43*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(42 * fullDay),
+				EndTime:   midnight.Add(41*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -310,8 +310,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(51 * fullDay),
-				EndTime:   midnight.Add(50*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(49 * fullDay),
+				EndTime:   midnight.Add(48*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -321,8 +321,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(58 * fullDay),
-				EndTime:   midnight.Add(57*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(56 * fullDay),
+				EndTime:   midnight.Add(55*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			}, {
 				Name: "Test Shift",
@@ -332,8 +332,8 @@ func TestGenerateRandom(t *testing.T) {
 						ShiftName: "Test Shift",
 					},
 				},
-				StartTime: midnight.Add(65 * fullDay),
-				EndTime:   midnight.Add(64*fullDay + 5*fullDay + time.Hour*8),
+				StartTime: midnight.Add(63 * fullDay),
+				EndTime:   midnight.Add(62*fullDay + 5*fullDay + time.Hour*8),
 				Comment:   "",
 			},
 		},
