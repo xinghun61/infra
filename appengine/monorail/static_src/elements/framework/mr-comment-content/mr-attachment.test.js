@@ -5,7 +5,6 @@
 import {assert, expect} from 'chai';
 import {MrAttachment} from './mr-attachment.js';
 import sinon from 'sinon';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 
 let element;
@@ -28,51 +27,51 @@ suite('mr-comment-content', () => {
     assert.instanceOf(element, MrAttachment);
   });
 
-  test('shows image thumbnail', () => {
+  test('shows image thumbnail', async () => {
     element.attachment = {
       thumbnailUrl: 'thumbnail.jpeg',
       contentType: 'image/jpeg',
     };
-    flush();
+    await element.updateComplete;
     const img = element.shadowRoot.querySelector('img');
     assert.isNotNull(img);
     assert.isTrue(img.src.endsWith('thumbnail.jpeg'));
   });
 
-  test('shows video thumbnail', () => {
+  test('shows video thumbnail', async () => {
     element.attachment = {
       viewUrl: 'video.mp4',
       contentType: 'video/mpeg',
     };
-    flush();
+    await element.updateComplete;
     const video = element.shadowRoot.querySelector('video');
     assert.isNotNull(video);
     assert.isTrue(video.src.endsWith('video.mp4'));
   });
 
-  test('does not show image thumbnail if deleted', () => {
+  test('does not show image thumbnail if deleted', async () => {
     element.attachment = {
       thumbnailUrl: 'thumbnail.jpeg',
       contentType: 'image/jpeg',
       isDeleted: true,
     };
-    flush();
+    await element.updateComplete;
     const img = element.shadowRoot.querySelector('img');
     assert.isNull(img);
   });
 
-  test('does not show video thumbnail if deleted', () => {
+  test('does not show video thumbnail if deleted', async () => {
     element.attachment = {
       viewUrl: 'video.mp4',
       contentType: 'video/mpeg',
       isDeleted: true,
     };
-    flush();
+    await element.updateComplete;
     const video = element.shadowRoot.querySelector('video');
     assert.isNull(video);
   });
 
-  test('deletes attachment', () => {
+  test('deletes attachment', async () => {
     element.attachment = {
       attachmentId: 67890,
       isDeleted: false,
@@ -81,7 +80,7 @@ suite('mr-comment-content', () => {
     element.projectName = 'proj';
     element.localId = 1234;
     element.sequenceNum = 3;
-    flush();
+    await element.updateComplete;
 
     const deleteButton = element.shadowRoot.querySelector('chops-button');
     deleteButton.click();
@@ -101,7 +100,7 @@ suite('mr-comment-content', () => {
     assert.isTrue(window.prpcClient.call.calledOnce);
   });
 
-  test('undeletes attachment', () => {
+  test('undeletes attachment', async () => {
     element.attachment = {
       attachmentId: 67890,
       isDeleted: true,
@@ -110,7 +109,7 @@ suite('mr-comment-content', () => {
     element.projectName = 'proj';
     element.localId = 1234;
     element.sequenceNum = 3;
-    flush();
+    await element.updateComplete;
 
     const deleteButton = element.shadowRoot.querySelector('chops-button');
     deleteButton.click();
@@ -130,38 +129,38 @@ suite('mr-comment-content', () => {
     assert.isTrue(window.prpcClient.call.calledOnce);
   });
 
-  test('view link is not displayed if not given', () => {
+  test('view link is not displayed if not given', async () => {
     element.attachment = {};
-    flush();
+    await element.updateComplete;
     const viewLink = element.shadowRoot.querySelector('#view-link');
     assert.isNotNull(viewLink);
     expect(viewLink).be.hidden;
   });
 
-  test('view link is displayed if given', () => {
+  test('view link is displayed if given', async () => {
     element.attachment = {
       viewUrl: 'http://example.com/attachment.foo',
     };
-    flush();
+    await element.updateComplete;
     const viewLink = element.shadowRoot.querySelector('#view-link');
     assert.isNotNull(viewLink);
     expect(viewLink).be.visible;
     assert.equal(viewLink.href, 'http://example.com/attachment.foo');
   });
 
-  test('download link is not displayed if not given', () => {
+  test('download link is not displayed if not given', async () => {
     element.attachment = {};
-    flush();
+    await element.updateComplete;
     const downloadLink = element.shadowRoot.querySelector('#download-link');
     assert.isNotNull(downloadLink);
     expect(downloadLink).be.hidden;
   });
 
-  test('download link is displayed if given', () => {
+  test('download link is displayed if given', async () => {
     element.attachment = {
       downloadUrl: 'http://example.com/attachment.foo',
     };
-    flush();
+    await element.updateComplete;
     const downloadLink = element.shadowRoot.querySelector('#download-link');
     assert.isNotNull(downloadLink);
     expect(downloadLink).be.visible;
