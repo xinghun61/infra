@@ -595,6 +595,39 @@ class ProcessCodeCoverageData(BaseHandler):
         params=params)
 
   def _ProcessCLPatchData(self, patch, data, build_id):
+    """Processes and updates coverage data for per-cl build.
+
+    Part of the responsibility of this method is to calculate per-file coverage
+    percentage for the following use cases:
+    1. Surface them on Gerrit to provide an overview of the test coverage of
+       the CL for authors and reviewers.
+    2. For metrics tracking to understand the impact of the coverage data.
+
+    Args:
+      patch (tuple): A tuple of two properties: change (int) and patchset (int).
+      data (list): A list of dicts with the following properties:
+                     'path': Source absolute path to the source file.
+                     'lines': A list of dicts with the following properties:
+                       'count': #times the range is executed.
+                       'first': Starting line number of the range (inclusive).
+                       'last': Ending line number of the range (inclusive).
+      build_id (int): Id of the build to process coverage data for.
+    """
+    # Calculate absolute coverage percentage.
+    for per_file_data in data:
+      num_covered_lines = 0
+      num_total_lines = 0
+      for range_data in per_file_data['lines']:
+        num_lines = range_data['last'] - range_data['first'] + 1
+        num_total_lines += num_lines
+        if range_data['count'] > 0:
+          num_covered_lines += num_lines
+
+      absolute_percentage = (100 * num_covered_lines) / num_total_lines
+      per_file_data['covered_lines'] = num_covered_lines
+      per_file_data['total_lines'] = num_total_lines
+      per_file_data['absolute_coverage_percentage'] = absolute_percentage
+
     # For a CL/patch, we save the entire data in one entity.
     PresubmitCoverageData.Create(
         server_host=patch.host,

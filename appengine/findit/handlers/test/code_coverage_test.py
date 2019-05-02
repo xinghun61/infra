@@ -273,13 +273,19 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
         'dirs':
             None,
         'files': [{
-            'path': '//dir/test.cc',
+            'path':
+                '//dir/test.cc',
             'lines': [{
                 'count': 100,
                 'first': 1,
+                'last': 1,
+            }, {
+                'count': 0,
+                'first': 2,
                 'last': 2,
             }],
-            'total_lines': 2
+            'total_lines':
+                2
         }],
         'summaries':
             None,
@@ -305,8 +311,14 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
         build_id=123456789,
         data=coverage_data['files'])
     fetched_entities = PresubmitCoverageData.query().fetch()
+
     self.assertEqual(1, len(fetched_entities))
     self.assertEqual(expected_entity, fetched_entities[0])
+    data = fetched_entities[0].data
+    self.assertEqual('//dir/test.cc', data[0]['path'])
+    self.assertEqual(1, data[0]['covered_lines'])
+    self.assertEqual(2, data[0]['total_lines'])
+    self.assertEqual(50, data[0]['absolute_coverage_percentage'])
 
   @mock.patch.object(code_coverage.ProcessCodeCoverageData,
                      '_FetchAndSaveFileIfNecessary')
