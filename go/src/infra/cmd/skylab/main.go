@@ -57,7 +57,10 @@ func getApplication() *cli.Application {
 			cmd.InternalListDroneDuts,
 			cmd.InternalPrintBotInfo,
 			cmd.InternalVerifyInventory,
+			// TODO(akeshet): Delete this subcommand once all callers migrated
+			// to WaitTask.
 			cmd.WaitSuite,
+			cmd.WaitTask,
 		},
 	}
 }
