@@ -15,8 +15,8 @@ import * as ui from 'elements/reducers/ui.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 import 'elements/framework/mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
-import '../mr-edit-metadata/mr-edit-metadata.js';
-import '../mr-metadata/mr-metadata.js';
+import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
+import 'elements/issue-detail/metadata/mr-metadata/mr-metadata.js';
 import 'elements/shared/mr-shared-styles.js';
 
 const APPROVER_RESTRICTED_STATUSES = new Set(

@@ -5,11 +5,11 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '../../chops/chops-button/chops-button.js';
+import 'elements/chops/chops-button/chops-button.js';
 import './mr-issue-header.js';
 import './mr-restriction-indicator';
 import '../mr-issue-details/mr-issue-details.js';
-import '../mr-metadata/mr-issue-metadata.js';
+import '../metadata/mr-metadata/mr-issue-metadata.js';
 import '../mr-launch-overview/mr-launch-overview.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';

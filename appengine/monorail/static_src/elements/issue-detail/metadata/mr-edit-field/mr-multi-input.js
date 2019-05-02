@@ -4,7 +4,7 @@
 
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '../../chops/chops-button/chops-button.js';
+import 'elements/chops/chops-button/chops-button.js';
 import 'elements/shared/mr-shared-styles.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 

@@ -4,7 +4,7 @@
 
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
-import 'elements/issue-detail/mr-edit-field/mr-edit-field.js';
+import 'elements/issue-detail/metadata/mr-edit-field/mr-edit-field.js';
 import 'elements/framework/mr-error/mr-error.js';
 
 

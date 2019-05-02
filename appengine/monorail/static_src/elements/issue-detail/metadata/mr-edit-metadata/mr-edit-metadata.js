@@ -17,7 +17,7 @@ import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString} from 'elements/shared/converters.js';
 import {isEmptyObject, equalsIgnoreCase} from 'elements/shared/helpers.js';
 import 'elements/shared/mr-shared-styles.js';
-import {MetadataMixin} from 'elements/issue-detail/shared/metadata-mixin.js';
+import {MetadataMixin} from 'elements/issue-detail/metadata/shared/metadata-mixin.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import * as ui from 'elements/reducers/ui.js';

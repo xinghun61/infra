@@ -9,7 +9,7 @@ import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import 'elements/framework/mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
-import '../mr-edit-metadata/mr-edit-issue.js';
+import '../metadata/mr-edit-metadata/mr-edit-issue.js';
 import 'elements/shared/mr-shared-styles.js';
 
 /**

@@ -5,10 +5,11 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '../../chops/chops-timestamp/chops-timestamp.js';
+import 'elements/chops/chops-timestamp/chops-timestamp.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
-import {MetadataMixin} from 'elements/issue-detail/shared/metadata-mixin.js';
+import {MetadataMixin} from
+  'elements/issue-detail/metadata/shared/metadata-mixin.js';
 import * as issue from 'elements/reducers/issue.js';
 import 'elements/shared/mr-shared-styles.js';
 import './mr-field-values.js';

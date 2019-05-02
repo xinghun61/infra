@@ -5,14 +5,14 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 
-import '../../chops/chops-dialog/chops-dialog.js';
+import 'elements/chops/chops-dialog/chops-dialog.js';
 import {store} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import '../mr-approval-card/mr-approval-card.js';
-import '../mr-edit-metadata/mr-edit-metadata.js';
-import '../mr-metadata/mr-field-values.js';
-import {MetadataMixin} from 'elements/issue-detail/shared/metadata-mixin.js';
+import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
+import 'elements/issue-detail/metadata/mr-metadata/mr-field-values.js';
+import {MetadataMixin} from 'elements/issue-detail/metadata/shared/metadata-mixin.js';
 import 'elements/shared/mr-shared-styles.js';
 
 const TARGET_PHASE_MILESTONE_MAP = {
