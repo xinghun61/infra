@@ -79,8 +79,9 @@ func (s *QSchedulerViewServerImpl) InspectPool(ctx context.Context, r *qschedule
 	balances := sp.Scheduler.GetBalances()
 	responseBalance := make(map[string]*protos.SchedulerState_Balance)
 	for aid, b := range balances {
+		bCopy := b
 		responseBalance[string(aid)] = &protos.SchedulerState_Balance{
-			Value: b[:],
+			Value: bCopy[:],
 		}
 	}
 
