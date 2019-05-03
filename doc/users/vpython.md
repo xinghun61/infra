@@ -536,94 +536,74 @@ If a wheel is needed, but is not in this list, please
 
 Below are some templates for commonly used `vpython` wheel bundles.
 
-### requests 2.13.0 / cryptography 1.8.1
+### requests 2.21.0 / PyOpenSSL 19.0.0 / cryptography 2.6.1
 
 This template can be used to include `requests`. The largest transitive set
-of dependencies that `requests` has is derived from the `cryptography` package.
+of dependencies that `requests` has is derived from the `PyOpenSSL` package.
 
 ```protobuf
 
 wheel: <
   name: "infra/python/wheels/requests-py2_py3"
-  version: "version:2.13.0"
+  version: "version:2.21.0"
+>
+
+wheel: <
+  name: "infra/python/wheels/urllib3-py2_py3"
+  version: "version:1.24.3"
+>
+wheel: <
+  name: "infra/python/wheels/certifi-py2_py3"
+  version: "version:2019.3.9"
+>
+wheel: <
+  name: "infra/python/wheels/chardet-py2_py3"
+  version: "version:3.0.4"
+>
+wheel: <
+  name: "infra/python/wheels/idna-py2_py3"
+  version: "version:2.8"
 >
 
 ##
-# BEGIN "cryptography" dependencies.
+# BEGIN pyopenssl and its dependencies.
 ##
 
+wheel: <
+  name: "infra/python/wheels/pyopenssl-py2_py3"
+  version: "version:19.0.0"
+>
 wheel: <
   name: "infra/python/wheels/cryptography/${vpython_platform}"
-  version: "version:2.0.3"
+  version: "version:2.6.1"
 >
-
-wheel: <
-  name: "infra/python/wheels/appdirs-py2_py3"
-  version: "version:1.4.3"
->
-
 wheel: <
   name: "infra/python/wheels/asn1crypto-py2_py3"
   version: "version:0.22.0"
 >
-
 wheel: <
   name: "infra/python/wheels/enum34-py2"
   version: "version:1.1.6"
 >
-
-wheel: <
-  name: "infra/python/wheels/cffi/${vpython_platform}"
-  version: "version:1.10.0"
->
-
-wheel: <
-  name: "infra/python/wheels/idna-py2_py3"
-  version: "version:2.5"
->
-
 wheel: <
   name: "infra/python/wheels/ipaddress-py2"
   version: "version:1.0.18"
 >
-
 wheel: <
-  name: "infra/python/wheels/packaging-py2_py3"
-  version: "version:16.8"
+  name: "infra/python/wheels/cffi/${vpython_platform}"
+  version: "version:1.12.3"
 >
-
-wheel: <
-  name: "infra/python/wheels/pyasn1-py2_py3"
-  version: "version:0.2.3"
->
-
 wheel: <
   name: "infra/python/wheels/pycparser-py2_py3"
-  version: "version:2.17"
+  version: "version:2.19"
 >
-
-wheel: <
-  name: "infra/python/wheels/pyopenssl-py2_py3"
-  version: "version:17.2.0"
->
-
-wheel: <
-  name: "infra/python/wheels/pyparsing-py2_py3"
-  version: "version:2.2.0"
->
-
-wheel: <
-  name: "infra/python/wheels/setuptools-py2_py3"
-  version: "version:34.3.2"
->
-
 wheel: <
   name: "infra/python/wheels/six-py2_py3"
   version: "version:1.10.0"
 >
 
 ##
-# END "cryptography" dependencies.
+# END pyopenssl and its dependencies.
 ##
 ```
 

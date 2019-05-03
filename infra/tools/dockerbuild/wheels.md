@@ -468,6 +468,18 @@ wheel: <
 
 * *universal*
 
+### 2019.3.9
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/certifi-py2_py3"
+  version: "version:2019.3.9"
+>
+```
+
+
+* *universal*
+
 ## **cffi**
 
 ### 1.10.0
@@ -476,6 +488,29 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/cffi/${vpython_platform}"
   version: "version:1.10.0"
+>
+```
+
+
+* *linux-arm64*
+* *linux-armv6*
+* *linux-mips*
+* *linux-mips64*
+* *linux-mipsel*
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
+* *windows-x64*
+* *windows-x86*
+
+### 1.12.3
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/cffi/${vpython_platform}"
+  version: "version:1.12.3"
 >
 ```
 
@@ -2101,6 +2136,18 @@ wheel: <
 
 * *universal*
 
+### 2.19
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/pycparser-py2_py3"
+  version: "version:2.19"
+>
+```
+
+
+* *universal*
+
 ## **pycrypto**
 
 ### 2.6.1
@@ -2790,6 +2837,18 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/urllib3-py2_py3"
   version: "version:1.24.1"
+>
+```
+
+
+* *universal*
+
+### 1.24.3
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/urllib3-py2_py3"
+  version: "version:1.24.3"
 >
 ```
 

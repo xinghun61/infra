@@ -4,6 +4,8 @@ omit =
     # Antibody third_party files
     ./infra/tools/antibody/static/third_party/*
     ./infra/services/bugdroid/*
+    # Smoke tests do not cover the actual source.
+    ./infra/tools/dockerbuild/test/*
 
 [report]
 exclude_lines =

@@ -24,6 +24,8 @@ WIN_ENABLED_PACKAGES = [
   'infra/libs/service_utils',
   'infra/libs/state_machine',
 
+  'infra/tools/dockerbuild',  # for wheel smoke tests
+
   'infra/services/service_manager',
 
   'packages/infra_libs/infra_libs/event_mon',
