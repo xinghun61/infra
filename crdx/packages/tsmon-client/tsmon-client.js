@@ -192,10 +192,10 @@
 
         rawMetricValues.push(rawMetricValue);
       }
+      if (rawMetricValues.length === 0) return;
 
       this.fetchImpl(rawMetricValues)
         .then(resp => {
-          window.console.log("ts_mon response", resp);
           return resp.text();
         })
         .then(text => {
