@@ -22,6 +22,7 @@ export class MrCodeFontToggle extends connectStore(PolymerElement) {
       <chops-toggle
          checked="[[_codeFont]]"
          on-checked-change="_checkedChangeHandler"
+         title="Code font"
        >Code</chops-toggle>
     `;
   }
