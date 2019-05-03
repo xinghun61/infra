@@ -658,6 +658,29 @@ wheel: <
 * *windows-x64*
 * *windows-x86*
 
+### 2.6.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/cryptography/${vpython_platform}"
+  version: "version:2.6.1"
+>
+```
+
+
+* *linux-arm64*
+* *linux-armv6*
+* *linux-mips*
+* *linux-mips64*
+* *linux-mipsel*
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
+* *windows-x64*
+* *windows-x86*
+
 ## **enum34**
 
 ### 1.1.6
@@ -806,6 +829,20 @@ wheel: <
 wheel: <
   name: "infra/python/wheels/google-auth-py2_py3"
   version: "version:1.2.1"
+>
+```
+
+
+* *universal*
+
+## **google-auth-oauthlib**
+
+### 0.3.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/google-auth-oauthlib-py2_py3"
+  version: "version:0.3.0"
 >
 ```
 
