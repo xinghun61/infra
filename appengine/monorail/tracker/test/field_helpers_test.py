@@ -22,6 +22,10 @@ class FieldHelpersTest(unittest.TestCase):
 
   def setUp(self):
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.config.well_known_labels.append(tracker_pb2.LabelDef(
+        label='OldLabel', label_docstring='Do not use any longer',
+        deprecated=True))
+
     self.services = service_manager.Services(
         usergroup=fake.UserGroupService(),
         config=fake.ConfigService(),
@@ -52,7 +56,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual('', parsed.applicable_type)
     self.assertEqual('', parsed.applicable_predicate)
     unchanged_labels = [
-        (label_def.label, label_def.label_docstring, False)
+        (label_def.label, label_def.label_docstring, label_def.deprecated)
         for label_def in self.config.well_known_labels]
     self.assertEqual(unchanged_labels, parsed.revised_labels)
     self.assertEqual('', parsed.approvers_str)
@@ -100,7 +104,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual('Defect', parsed.applicable_type)
     self.assertEqual('', parsed.applicable_predicate)
     unchanged_labels = [
-        (label_def.label, label_def.label_docstring, False)
+        (label_def.label, label_def.label_docstring, label_def.deprecated)
         for label_def in self.config.well_known_labels]
     new_labels = [
         ('somefield-Hot', 'Lots of activity', False),
@@ -126,7 +130,7 @@ class FieldHelpersTest(unittest.TestCase):
     revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
         choices_text, field_name, self.config, 'enum_type')
     unchanged_labels = [
-        (label_def.label, label_def.label_docstring, False)
+        (label_def.label, label_def.label_docstring, label_def.deprecated)
         for label_def in self.config.well_known_labels]
     new_labels = [
         ('somefield-Hot', 'Lots of activity', False),
@@ -139,7 +143,7 @@ class FieldHelpersTest(unittest.TestCase):
     revised_labels = field_helpers._ParseChoicesIntoWellKnownLabels(
         choices_text, field_name, self.config, 'enum_type')
     kept_labels = [
-        (label_def.label, label_def.label_docstring, False)
+        (label_def.label, label_def.label_docstring, label_def.deprecated)
         for label_def in self.config.well_known_labels
         if not label_def.label.startswith('Priority-')]
     new_labels = [

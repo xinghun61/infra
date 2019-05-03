@@ -110,7 +110,7 @@ def _ParseChoicesIntoWellKnownLabels(
       ('%s-%s' % (field_name, label), choice_docstring.strip(), False)
       for label, choice_docstring in matches]
   kept_labels = [
-      (wkl.label, wkl.label_docstring, False)
+      (wkl.label, wkl.label_docstring, wkl.deprecated)
       for wkl in config.well_known_labels
       if not tracker_bizobj.LabelIsMaskedByField(
           wkl.label, maskingFieldNames)]
