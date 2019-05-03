@@ -39,9 +39,9 @@ class HotlistIssuesCsvTest(unittest.TestCase):
         'req', webapp2.Response(), services=self.services)
     self.user1 = self.services.user.TestAddUser('testuser@gmail.com', 111)
     self.user2 = self.services.user.TestAddUser('testuser2@gmail.com', 222)
-    self.services.project.TestAddProject('project-name', project_id=001)
+    self.services.project.TestAddProject('project-name', project_id=1)
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111, project_name='project-name')
+        1, 1, 'issue_summary', 'New', 111, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue1)
     self.issues = [self.issue1]
     self.hotlist_item_fields = [

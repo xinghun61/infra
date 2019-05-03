@@ -100,7 +100,7 @@ class BanSpammerTaskTest(unittest.TestCase):
 
     for i in range(0, 10):
       issue = fake.MakeTestIssue(
-          001, i, 'issue_summary', 'New', 111, project_name='project-name')
+          1, i, 'issue_summary', 'New', 111, project_name='project-name')
       self.servlet.services.issue.TestAddIssue(issue)
 
     self.servlet.HandleRequest(mr)
@@ -113,16 +113,16 @@ class BanSpammerTaskTest(unittest.TestCase):
 
     for i in range(0, 12):
       issue = fake.MakeTestIssue(
-          001, i, 'issue_summary', 'New', 111, project_name='project-name')
+          1, i, 'issue_summary', 'New', 111, project_name='project-name')
       self.servlet.services.issue.TestAddIssue(issue)
 
     for i in range(10, 20):
       issue = fake.MakeTestIssue(
-          001, i, 'issue_summary', 'New', 222, project_name='project-name')
+          1, i, 'issue_summary', 'New', 222, project_name='project-name')
       self.servlet.services.issue.TestAddIssue(issue)
       for _ in range(0, 5):
         comment = tracker_pb2.IssueComment()
-        comment.project_id = 001
+        comment.project_id = 1
         comment.user_id = 111
         comment.issue_id = issue.issue_id
         self.servlet.services.issue.TestAddComment(comment, issue.local_id)

@@ -32,18 +32,18 @@ class HotlistTableDataTest(unittest.TestCase):
         project=fake.ProjectService(),
         user=fake.UserService(),
         cache_manager=fake.CacheManager())
-    self.services.project.TestAddProject('ProjectName', project_id = 001)
+    self.services.project.TestAddProject('ProjectName', project_id=1)
 
     self.services.user.TestAddUser('annajowang@email.com', 111)
     self.services.user.TestAddUser('claremont@email.com', 222)
     issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111, project_name='ProjectName')
+        1, 1, 'issue_summary', 'New', 111, project_name='ProjectName')
     self.services.issue.TestAddIssue(issue1)
     issue2 = fake.MakeTestIssue(
-        001, 2, 'issue_summary2', 'New', 111, project_name='ProjectName')
+        1, 2, 'issue_summary2', 'New', 111, project_name='ProjectName')
     self.services.issue.TestAddIssue(issue2)
     issue3 = fake.MakeTestIssue(
-        001, 3, 'issue_summary3', 'New', 222, project_name='ProjectName')
+        1, 3, 'issue_summary3', 'New', 222, project_name='ProjectName')
     self.services.issue.TestAddIssue(issue3)
     issues = [issue1, issue2, issue3]
     hotlist_items = [
@@ -160,19 +160,19 @@ class HelpersUnitTest(unittest.TestCase):
                                         features=fake.FeaturesService(),
                                         user=fake.UserService())
     self.project = self.services.project.TestAddProject(
-        'ProjectName', project_id=001, owner_ids=[111])
+        'ProjectName', project_id=1, owner_ids=[111])
 
     self.services.user.TestAddUser('annajowang@email.com', 111)
     self.services.user.TestAddUser('claremont@email.com', 222)
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111,
+        1, 1, 'issue_summary', 'New', 111,
         project_name='ProjectName', labels='restrict-view-Googler')
     self.services.issue.TestAddIssue(self.issue1)
     self.issue3 = fake.MakeTestIssue(
-        001, 3, 'issue_summary3', 'New', 222, project_name='ProjectName')
+        1, 3, 'issue_summary3', 'New', 222, project_name='ProjectName')
     self.services.issue.TestAddIssue(self.issue3)
     self.issue4 = fake.MakeTestIssue(
-        001, 4, 'issue_summary4', 'Fixed', 222, closed_timestamp=232423,
+        1, 4, 'issue_summary4', 'Fixed', 222, closed_timestamp=232423,
         project_name='ProjectName')
     self.services.issue.TestAddIssue(self.issue4)
     self.issues = [self.issue1, self.issue3, self.issue4]

@@ -41,7 +41,7 @@ class IssueListUnitTest(unittest.TestCase):
         'req', 'res', services=self.services)
     self.project = self.services.project.TestAddProject('proj')
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111, project_name='proj')
+        1, 1, 'issue_summary', 'New', 111, project_name='proj')
     self.services.issue.TestAddIssue(self.issue1)
     self.mr = testing_helpers.MakeMonorailRequest(project=self.project)
     self.mr.project_name = self.project.project_name
