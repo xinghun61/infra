@@ -162,7 +162,7 @@ var RuleMap = map[string]*RepoConfig{
 		MonorailProject: "chromium",
 		NotifierEmail:   "notifier@cr-audit-commits.appspotmail.com",
 		Rules: map[string]RuleSet{
-			"autoroll-rules-skia": AutoRollRulesForFilesAndDirs("skia-autoroll@skia-public.iam.gserviceaccount.com", []string{fileDEPS}, []string{dirSKCMS}),
+			"autoroll-rules-skia": AutoRollRulesForFilesAndDirs("skia-autoroll@skia-public.iam.gserviceaccount.com", []string{fileDEPS}, dirsSKCMS),
 			"bookmaker":           AutoRollRulesAPIDocs("skia-bookmaker@skia-swarming-bots.iam.gserviceaccount.com"),
 			"recreate-skps":       AutoRollRulesSkiaAssets("skia-recreate-skps@skia-swarming-bots.iam.gserviceaccount.com", []string{"go_deps", "skp"}),
 		},

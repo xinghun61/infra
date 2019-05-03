@@ -13,7 +13,6 @@ import (
 
 const (
 	dirLayoutTests = "third_party/blink/web_tests"
-	dirSKCMS       = "third_party/skcms"
 	dirSkiaAPIDocs = "site/user/api"
 
 	fileAFDO            = "chrome/android/profiles/newest.txt"
@@ -22,6 +21,10 @@ const (
 	fileFuchsiaSDKMac   = "build/fuchsia/mac.sdk.sha1"
 	fileSkiaManifest    = "manifest/skia"
 	fileSkiaTasks       = "infra/bots/tasks.json"
+)
+
+var (
+	dirsSKCMS = []string{"include/third_party/skcms", "third_party/skcms"}
 )
 
 // AutoRollRulesForFilesAndDirs returns an AccountRules instance for an account
@@ -72,7 +75,7 @@ func AutoRollRulesFuchsiaSDKVersion(account string) AccountRules {
 // AutoRollRulesSKCMS returns an AccountRules instance for an account which
 // should only modify ``third_party/skcms``.
 func AutoRollRulesSKCMS(account string) AccountRules {
-	return AutoRollRulesForDirList(account, []string{dirSKCMS})
+	return AutoRollRulesForDirList(account, dirsSKCMS)
 }
 
 // AutoRollRulesLayoutTests returns an AccountRules instance for an account
