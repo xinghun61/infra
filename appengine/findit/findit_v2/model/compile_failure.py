@@ -179,6 +179,34 @@ class CompileRerunBuild(LuciBuild):
       in the rerun build."""
     return _GetFailedTargets(self.failures)
 
+  def SaveRerunBuildResults(self, status, detailed_compile_failures):
+    """Saves the results of this rerun build.
+
+    Args:
+      status (int): status of the build. See common_pb2 for available values.
+      detailed_compile_failures (dict): Compile failures in the rerun build.
+      Format is like:
+      {
+        'compile': {
+          'failures': {
+            'target_str': {
+              'output_targets': ['t1'],
+              'rule': 'CXX,
+              ...
+            }
+          }
+        }
+      }
+    """
+    self.status = status  # pylint: disable=attribute-defined-outside-init
+    self.failures = []
+    for step_ui_name, step_info in detailed_compile_failures.iteritems():
+      for failure in step_info['failures'].itervalues():
+        failure_entity = CompileFailureInRerunBuild(
+            step_ui_name=step_ui_name, output_targets=failure['output_targets'])
+        self.failures.append(failure_entity)
+    self.put()
+
   @classmethod
   def SearchBuildOnCommit(cls, analysis_key, commit):
     return cls.query(ancestor=analysis_key).filter(

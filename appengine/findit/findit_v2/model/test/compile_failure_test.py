@@ -4,6 +4,7 @@
 
 from datetime import datetime
 
+from buildbucket_proto import common_pb2
 from google.appengine.ext import ndb
 
 from findit_v2.model.compile_failure import CompileFailure
@@ -124,6 +125,41 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
 
     rerun_build = CompileRerunBuild.get_by_id(build_id, parent=analysis.key)
     self.assertIsNotNone(rerun_build)
+
+    detailed_compile_failures = {
+        'compile': {
+            'failures': {
+                'target1 target2': {
+                    'output_targets': ['target1.o', 'target2.o'],
+                    'rule': 'CXX',
+                    'first_failed_build': {
+                        'id': 8000000000121,
+                        'number': 121,
+                        'commit_id': 'git_sha'
+                    },
+                    'last_passed_build': {
+                        'id': 8000000000120,
+                        'number': 120,
+                        'commit_id': 'git_sha'
+                    },
+                },
+            },
+            'first_failed_build': {
+                'id': 8000000000121,
+                'number': 121,
+                'commit_id': 'git_sha'
+            },
+            'last_passed_build': {
+                'id': 8000000000120,
+                'number': 120,
+                'commit_id': 'git_sha'
+            },
+        },
+    }
+    rerun_build.SaveRerunBuildResults(common_pb2.FAILURE,
+                                      detailed_compile_failures)
+    result = rerun_build.GetFailedTargets()
+    self.assertItemsEqual(['target1.o', 'target2.o'], result['compile'])
 
   def testLuciRerunBuildGetFailedTargets(self):
     build_id = 1234567890

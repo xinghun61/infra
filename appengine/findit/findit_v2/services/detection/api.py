@@ -4,9 +4,9 @@
 
 import logging
 
-from buildbucket_proto import common_pb2
-
-from findit_v2.services import projects
+from findit_v2.services import build_util
+from findit_v2.services import constants
+from findit_v2.services.analysis.compile_failure import compile_api
 from findit_v2.services.failure_type import StepTypeEnum
 
 
@@ -23,17 +23,10 @@ def OnBuildFailure(context, build):
   logging.info('Context of analysis: %r', context)
   logging.info('Failed build is: %r', build.id)
 
-  failed_steps = []
-  project_api = projects.GetProjectAPI(context.luci_project_name)
-  assert project_api, 'Unsupported project {}'.format(context.luci_project_name)
-
-  for step in build.steps:
-    if step.status != common_pb2.FAILURE:
-      continue
-    failure_type = project_api.ClassifyStepType(step)
-    failed_steps.append((step, failure_type))
+  failed_steps = build_util.GetFailedStepsInBuild(context, build)
 
   if not failed_steps:
+    logging.debug('No failed steps found for failed build %d', build.id)
     return False
 
   compile_steps = [
@@ -48,4 +41,36 @@ def OnBuildFailure(context, build):
     return True
 
   logging.info('Unsupported failure types: %r', [fs[1] for fs in failed_steps])
+  return False
+
+
+def OnRerunBuildCompletion(context, rerun_build):
+  """Processes the completed rerun build within the given context.
+
+   Args:
+     context (findit_v2.services.context.Context): Scope of the analysis.
+     rerun_build (buildbucket build.proto): ALL info about the rerun build.
+
+   Returns:
+     True if the rerun build completes with SUCCESS or FAILURE status, otherwise
+     False.
+   """
+  logging.info('Context of analysis: %r', context)
+  logging.info('Rerun build is: %r', rerun_build.id)
+
+  purpose_tag = None
+  for tag in rerun_build.tags:
+    if tag.key == constants.RERUN_BUILD_PURPOSE_TAG_KEY:
+      purpose_tag = tag.value
+
+  if not purpose_tag:
+    logging.error('No purpose tag set for rerun build %d', rerun_build.id)
+    return False
+
+  if purpose_tag == constants.COMPILE_RERUN_BUILD_PURPOSE:
+    # The rerun build is for a compile failure analysis.
+    return compile_api.OnCompileRerunBuildCompletion(context, rerun_build)
+
+  logging.info('Rerun build %d with unsupported purpose %s.', rerun_build.id,
+               purpose_tag)
   return False

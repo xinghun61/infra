@@ -5,14 +5,21 @@
 import mock
 import unittest
 
+from buildbucket_proto.build_pb2 import Build
 from google.protobuf.field_mask_pb2 import FieldMask
 
-from buildbucket_proto.build_pb2 import Build
-
+from common.constants import DEFAULT_SERVICE_ACCOUNT
 from findit_v2.services import api
 from findit_v2.services.context import Context
 
-_MOCKED_LUCI_PROJECTS = {'project': {'ci': ['builder'],}}
+_MOCKED_LUCI_PROJECTS = {
+    'project': {
+        'ci': {
+            'supported_builders': ['builder'],
+            'rerun_builders': ['r_builder']
+        },
+    }
+}
 
 _MOCKED_GERRIT_PROJECTS = {
     'project': {
@@ -31,15 +38,6 @@ class APITest(unittest.TestCase):
   def testNoSupportedProject(self, *_):
     self.assertFalse(
         api.OnBuildCompletion('unsupported-project', 'ci', 'builder', 123,
-                              'FAILURE'))
-
-  @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
-              _MOCKED_LUCI_PROJECTS)
-  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
-              _MOCKED_GERRIT_PROJECTS)
-  def testNoSupportedci(self, *_):
-    self.assertFalse(
-        api.OnBuildCompletion('project', 'unsupported-ci', 'builder', 123,
                               'FAILURE'))
 
   @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
@@ -98,3 +96,74 @@ class APITest(unittest.TestCase):
             gitiles_project='project/name',
             gitiles_ref='ref/heads/master',
             gitiles_id='git_sha'), build)
+
+  @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
+              _MOCKED_LUCI_PROJECTS)
+  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
+              _MOCKED_GERRIT_PROJECTS)
+  @mock.patch('common.waterfall.buildbucket_client.GetV2Build')
+  @mock.patch('findit_v2.services.detection.api.OnRerunBuildCompletion')
+  def testOnRerunBuildCompletion(self, mocked_OnRerunBuildCompletion,
+                                 mocked_GetV2Build, *_):
+    build = Build()
+    build.created_by = 'user:{}'.format(DEFAULT_SERVICE_ACCOUNT)
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+    mocked_GetV2Build.return_value = build
+    self.assertTrue(
+        api.OnBuildCompletion('project', 'ci', 'r_builder', 123, 'SUCCESS'))
+    mocked_GetV2Build.assert_called_once_with(
+        123, fields=FieldMask(paths=['*']))
+    mocked_OnRerunBuildCompletion.assert_called_once_with(
+        Context(
+            luci_project_name='project',
+            gitiles_host='gitiles.host.com',
+            gitiles_project='project/name',
+            gitiles_ref='ref/heads/master',
+            gitiles_id='git_sha'), build)
+
+  @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
+              _MOCKED_LUCI_PROJECTS)
+  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
+              _MOCKED_GERRIT_PROJECTS)
+  @mock.patch('common.waterfall.buildbucket_client.GetV2Build')
+  def testOnRerunBuildCompletionNotTriggeredByFindit(self, mocked_GetV2Build,
+                                                     *_):
+    build = Build()
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+    mocked_GetV2Build.return_value = build
+    self.assertFalse(
+        api.OnBuildCompletion('project', 'ci', 'r_builder', 123, 'SUCCESS'))
+    mocked_GetV2Build.assert_called_once_with(
+        123, fields=FieldMask(paths=['*']))
+
+  @mock.patch('findit_v2.services.projects.LUCI_PROJECTS',
+              _MOCKED_LUCI_PROJECTS)
+  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
+              _MOCKED_GERRIT_PROJECTS)
+  @mock.patch('common.waterfall.buildbucket_client.GetV2Build')
+  @mock.patch('findit_v2.services.detection.api.OnRerunBuildCompletion')
+  def testOnRerunBuildCompletionInvalidCommit(
+      self, mocked_OnRerunBuildCompletion, mocked_GetV2Build, *_):
+    build = Build()
+    build.input.gitiles_commit.host = 'invalid.gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+    mocked_GetV2Build.return_value = build
+    self.assertFalse(
+        api.OnBuildCompletion('project', 'ci', 'r_builder', 123, 'SUCCESS'))
+    mocked_GetV2Build.assert_called_once_with(
+        123, fields=FieldMask(paths=['*']))
+    self.assertFalse(mocked_OnRerunBuildCompletion.called)
+
+  @mock.patch(
+      'common.waterfall.buildbucket_client.GetV2Build', return_value=None)
+  def testGetBuildAndContextForAnalysisNoBuild(self, _):
+    self.assertEqual((None, None),
+                     api.GetBuildAndContextForAnalysis('chromium', 123))
