@@ -72,7 +72,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--patch_ref",
-      "https://chromium.googlesource.com/infra/luci/luci-go@refs/changes/72/607472/2",
+      "https://chromium.googlesource.com/infra/luci/luci-go@refs/heads/master:refs/changes/72/607472/2",
       "--revision",
       "infra@origin/master",
       "--revision",
