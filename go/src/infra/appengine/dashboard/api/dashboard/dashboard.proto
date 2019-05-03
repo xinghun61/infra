@@ -6,6 +6,8 @@ syntax = "proto3";
 
 package dashboard;
 
+import "google/protobuf/timestamp.proto";
+
 // The ChromeOps statuses service definition.
 service ChopsServiceStatus {
   rpc UpdateOpenIncidents (UpdateOpenIncidentsRequest) returns (UpdateOpenIncidentsResponse) {}
@@ -50,4 +52,40 @@ message ChopsService {
   string name = 1;
   repeated ChopsIncident incidents = 2;
   string sla = 3;
+}
+
+// The ChromeOps Announcements service definition.
+service ChopsAnnouncements {
+  rpc CreateLiveAnnouncement (CreateLiveAnnouncementRequest) returns (CreateLiveAnnouncementResponse) {}
+}
+
+message CreateLiveAnnouncementRequest {
+  string message_content = 1;
+  repeated Platform platforms = 2;
+}
+
+message CreateLiveAnnouncementResponse {
+  Announcement announcement = 1;
+}
+
+// Platform represents a ChOps frontend service (eg. "monorail", "gerrit" for chromium) in
+// which Announcement messages should be displayed.
+message Platform {
+  string name = 1;
+  // Specific pages in which the Announcement should be shown.
+  // If no url_paths are given, the Announcement should
+  // be visible on every page of the service.
+  repeated string url_paths = 2;
+}
+
+message Announcement {
+  int64 id = 1;
+  google.protobuf.Timestamp start_time = 2;
+  string message_content = 3;
+  string creator = 4;
+  google.protobuf.Timestamp end_time = 5;
+  // Announcements that are retired are no longer relevant to users
+  // and should not be displayed in platforms.
+  bool retired = 6;
+  repeated Platform platforms = 7;
 }
