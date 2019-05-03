@@ -57,7 +57,7 @@ will be executed in a low priority. If the tasks runs in a quotascheduler contro
 			`Additional provisionable labels to use for the test
 (e.g. cheets-version:git_pi-arc/cheets_x86_64).  May be specified
 multiple times.  Optional.`)
-		c.Flags.StringVar(&c.parentTaskID, "parent-task-id", "", "For internal use only.")
+		c.Flags.StringVar(&c.parentTaskID, "parent-task-run-id", "", "For internal use only. Task run ID of the parent (suite) task to this test. Note that this must be a run ID (i.e. not ending in 0).")
 		return c
 	},
 }
