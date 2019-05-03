@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from recipe_engine import post_process
+
 DEPS = [
     'depot_tools/depot_tools',
     'depot_tools/gsutil',
@@ -102,14 +104,20 @@ def RunSteps(api):
           api.path.join(src_dir, 'build', 'linux', 'sysroot_scripts',
                         'install-sysroot.py'), ['--arch=amd64'])
 
-      clang_update_args = [
-          '--force-local-build', '--without-android', '--skip-checkout'
-      ]
+      clang_update_script = 'update.py'
+      clang_update_args = ['--force-local-build']
+      if [int(x) for x in version.split('.')] >= [76, 0, 3784, 0]:
+        # After 76.0.3784.0, build.py is used instead of update.py.
+        clang_update_script = 'build.py'
+        clang_update_args = []
+
+      clang_update_args.extend(['--without-android', '--skip-checkout'])
       if [int(x) for x in version.split('.')] >= [71, 0, 3551, 0]:
         clang_update_args.append('--without-fuchsia')
       api.python(
           'Build clang.',
-          api.path.join(src_dir, 'tools', 'clang', 'scripts', 'update.py'),
+          api.path.join(src_dir, 'tools', 'clang', 'scripts',
+                        clang_update_script),
           clang_update_args)
 
       gn_bootstrap_args = [
@@ -146,3 +154,12 @@ def GenTests(api):
       version='71.0.3551.0') + api.platform('linux', 64))
   yield (api.test('basic-gn-without-sysroot') + api.properties.generic(
       version='72.0.3610.0') + api.platform('linux', 64))
+  yield (api.test('basic-m76') + api.properties.generic(version='76.0.3784.0') +
+         api.platform('linux', 64) +
+         api.post_process(post_process.StepCommandRE, 'Build clang.',
+                          ['python', '-u',
+                           '.*/build.py',
+                           '--without-android',
+                           '--skip-checkout',
+                           '--without-fuchsia']) +
+         api.post_process(post_process.DropExpectation))

@@ -4,7 +4,7 @@
 
 # pylint: disable=line-too-long
 
-from recipe_engine import recipe_api
+from recipe_engine import post_process, recipe_api
 
 import contextlib
 
@@ -249,15 +249,22 @@ def publish_tarball(api):
           'chrome', 'test', 'data', 'webui', 'i18n_process_css_test.html')])
 
   if int(version.split('.')[0]) >= 65:
-    update_args = ['--force-local-build', '--without-android',
-                   '--use-system-cmake', '--gcc-toolchain=/usr',
-                   '--skip-build']
+    update_script = 'update.py'
+    update_args = ['--force-local-build']
+    if [int(x) for x in version.split('.')] >= [76, 0, 3784, 0]:
+      # After 76.0.3784.0, build.py is used instead of update.py to build clang.
+      update_script = 'build.py'
+      update_args = []
 
+    update_args.extend(['--without-android',
+                        '--use-system-cmake',
+                        '--gcc-toolchain=/usr',
+                        '--skip-build'])
     if [int(x) for x in version.split('.')] >= [71, 0, 3551, 0]:
       update_args.append('--without-fuchsia')
 
     api.step('download clang sources', [
-        api.path['checkout'].join('tools', 'clang', 'scripts', 'update.py')
+        api.path['checkout'].join('tools', 'clang', 'scripts', update_script)
         ] + update_args)
 
   api.python('fetch android AFDO profile', api.path['checkout'].join(
@@ -389,4 +396,19 @@ def GenTests(api):
     api.properties.generic() +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output(''))
+  )
+
+  yield (
+    api.test('basic-m76') +
+    api.runtime(is_luci=True, is_experimental=False) +
+    api.properties.generic(version='76.0.3784.0') +
+    api.platform('linux', 64) +
+    api.post_process(post_process.StepCommandRE,
+                     'download clang sources', ['.*/build.py',
+                                                '--without-android',
+                                                '--use-system-cmake',
+                                                '--gcc-toolchain=/usr',
+                                                '--skip-build',
+                                                '--without-fuchsia']) +
+    api.post_process(post_process.DropExpectation)
   )
