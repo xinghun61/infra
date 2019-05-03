@@ -758,6 +758,20 @@ wheel: <
 
 * *universal*
 
+## **flask**
+
+### 1.0.2
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/flask-py2_py3"
+  version: "version:1.0.2"
+>
+```
+
+
+* *universal*
+
 ## **funcsigs**
 
 ### 1.0.2
