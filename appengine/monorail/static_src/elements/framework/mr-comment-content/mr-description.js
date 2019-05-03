@@ -29,7 +29,10 @@ export class MrDescription extends PolymerElement {
         }
       </style>
       <div class="select-container">
-        <select on-change="_selectChanged" hidden\$="[[!_hasDescriptionSelector]]">
+        <select
+          on-change="_selectChanged"
+          hidden\$="[[!_hasDescriptionSelector]]"
+          aria-label="Description history menu">
           <template is="dom-repeat" items="[[descriptionList]]" as="description">
             <option value$="[[index]]" selected$="[[_isSelected(index, selectedIndex)]]">
               Description #[[_addOne(index)]] by [[description.commenter.displayName]]
