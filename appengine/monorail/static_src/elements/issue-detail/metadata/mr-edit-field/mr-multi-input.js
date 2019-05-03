@@ -2,13 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
+import deepEqual from 'deep-equal';
 
 import 'elements/chops/chops-button/chops-button.js';
-import 'elements/shared/mr-shared-styles.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles';
 
 const DELIMITER_REGEX = /[,;\s+]/;
+const DELIMITABLE_TYPES = [fieldTypes.STR_TYPE, fieldTypes.URL_TYPE,
+  fieldTypes.DATE_TYPE];
 
 /**
  * `<mr-multi-input>`
@@ -18,10 +21,11 @@ const DELIMITER_REGEX = /[,;\s+]/;
  * HTML5 input types such as dates or fields which cannot be delimited.
  *
  */
-export class MrMultiInput extends PolymerElement {
-  static get template() {
-    return html`
-      <style include="mr-shared-styles">
+export class MrMultiInput extends LitElement {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           display: grid;
           grid-gap: var(--mr-input-grid-gap);
@@ -35,83 +39,90 @@ export class MrMultiInput extends PolymerElement {
           color: var(--chops-text-color);
         }
         input {
-          @apply --mr-edit-field-styles;
-          width: unset;
+          box-sizing: border-box;
+          padding: var(--mr-edit-field-padding);
+          font-size: var(--chops-main-font-size);
         }
         chops-button {
           /* Use grid to determine sizing for button, not
-           * chops-button styles. */
+          * chops-button styles. */
           margin-left: unset;
           font-size: var(--chops-main-font-size);
           padding: 0 8px;
           text-align: left;
           justify-content: flex-start;
         }
-      </style>
-      <template is="dom-repeat" items="[[immutableValues]]">
-        <div class="derived" title$="Derived: [[item]]">
-          [[item]]
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      ${this.immutableValues.map((value) => html`
+        <div class="derived" title="Derived: ${value}">
+          ${value}
         </div>
+      `)}
       </template>
-      <template is="dom-repeat" items="[[_multiInputs]]">
+      ${this._multiInputs.map((value, i) => html`
         <input
-          id$="multi[[index]]"
-          type$="[[type]]"
-          aria-label$="[[name]] input #[[index]]"
-          value$="[[item]]"
-          data-ac-type$="[[acType]]"
-          autocomplete$="[[autocomplete]]"
-          on-keyup="_onKeyup"
-          on-blur="_onBlur"
-          on-focus="_runLegacyAcFocus"
+          part="edit-field"
+          id="multi${i}"
+          type=${this.type}
+          aria-label="${this.name} input #${i}"
+          value=${value}
+          data-ac-type=${this.acType}
+          autocomplete=${this.autocomplete}
+          @keyup=${this._onKeyup}
+          @blur=${this._onBlur}
+          @focus=${this._runLegacyAcFocus}
         />
-      </template>
-      <chops-button on-click="_addEntry" class="de-emphasized">
-        [[addEntryText]]
+      `)}
+      <chops-button @click=${this._addEntry} class="de-emphasized">
+        ${this.addEntryText}
       </chops-button>
     `;
   }
 
-  static get is() {
-    return 'mr-multi-input';
-  }
-
   static get properties() {
     return {
-      name: String,
+      name: {type: String},
       initialValues: {
         type: Array,
-        value: () => [],
-        observer: 'reset',
+        hasChanged(newVal, oldVal) {
+          // Prevent extra recomputations of the same initial value cause
+          // values to be reset.
+          return !deepEqual(newVal, oldVal);
+        },
       },
-      immutableValues: Array,
-      type: {
-        type: String,
-        value: 'text',
-      },
-      acType: String,
-      autocomplete: String,
-      addEntryText: {
-        type: String,
-        value: 'Add entry',
-      },
-      delimiterRegex: {
-        type: Object,
-        value: () => DELIMITER_REGEX,
-      },
-      _isDelimitable: {
-        type: Boolean,
-        computed: '_computeIsDelimitable(type)',
-      },
-      _multiInputs: {
-        type: Array,
-        value: () => [''],
-      },
+      immutableValues: {type: Array},
+      type: {type: String},
+      acType: {type: String},
+      autocomplete: {type: String},
+      addEntryText: {type: String},
+      delimiterRegex: {type: Object},
+      _multiInputs: {type: Array},
     };
   }
 
-  reset() {
-    this._setValuesForInputs(this.initialValues, true);
+  constructor() {
+    super();
+    this.immutableValues = [];
+    this.initialValues = [];
+    this.delimiterRegex = DELIMITER_REGEX;
+    this._multiInputs = [''];
+    this.type = 'text';
+    this.addEntryText = 'Add entry';
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('initialValues')) {
+      this.reset();
+    }
+  }
+
+  async reset() {
+    await this._setValuesForInputs(this.initialValues, true);
   }
 
   getValues() {
@@ -120,7 +131,7 @@ export class MrMultiInput extends PolymerElement {
     this.shadowRoot.querySelectorAll('input').forEach((input) => {
       const value = input.value.trim();
       if (value) {
-        if (this._isDelimitable) {
+        if (!DELIMITABLE_TYPES.includes(this.type)) {
           // Only split up values by comma for fields that use autocomplete.
           valueList.push(
             ...value.split(this.delimiterRegex).filter(Boolean));
@@ -132,36 +143,28 @@ export class MrMultiInput extends PolymerElement {
     return valueList;
   }
 
-  setValues(values) {
+  async setValues(values) {
     this.initialValues = values;
 
-    this.reset();
+    await this.reset();
   }
 
   _addEntry() {
-    this.push('_multiInputs', '');
+    this._multiInputs = this._multiInputs.concat(['']);
   }
 
   _onKeyup() {
     this.dispatchEvent(new CustomEvent('change'));
   }
 
-  _onBlur() {
-    this._postProcess();
+  async _onBlur() {
+    await this._setValuesForInputs(this.getValues());
     this.dispatchEvent(new CustomEvent('blur'));
   }
 
-  _computeIsDelimitable(type) {
-    return ![fieldTypes.STR_TYPE, fieldTypes.URL_TYPE,
-      fieldTypes.DATE_TYPE].includes(type);
-  }
-
-  _postProcess() {
-    this._setValuesForInputs(this.getValues());
-  }
-
-  _setValuesForInputs(values, hardReset) {
-    // Note: Not all vvalues may be applied to inputs here, but that's okay
+  async _setValuesForInputs(values, hardReset) {
+    await this.updateComplete;
+    // Note: Not all values may be applied to inputs here, but that's okay
     // because extra values will be created as new inputs.
     this.shadowRoot.querySelectorAll('input').forEach((input, i) => {
       if (i < values.length) {
@@ -187,4 +190,4 @@ export class MrMultiInput extends PolymerElement {
   }
 }
 
-customElements.define(MrMultiInput.is, MrMultiInput);
+customElements.define('mr-multi-input', MrMultiInput);

@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {MrEditIssue} from './mr-edit-issue.js';
 import sinon from 'sinon';
 
@@ -23,18 +22,23 @@ suite('mr-edit-issue', () => {
     assert.instanceOf(element, MrEditIssue);
   });
 
-  test('scrolls into view', () => {
+  test('scrolls into view', async () => {
+    await element.updateComplete;
+
     const header = element.shadowRoot.querySelector('#makechanges');
     sinon.stub(header, 'scrollIntoView');
 
     element.focusId = 'makechanges';
+    await element.updateComplete;
 
     assert.isTrue(header.scrollIntoView.calledOnce);
 
     header.scrollIntoView.restore();
   });
 
-  test('shows current status even if not defined for project', () => {
+  test('shows current status even if not defined for project', async () => {
+    await element.updateComplete;
+
     const editMetadata = element.shadowRoot.querySelector('mr-edit-metadata');
     assert.deepEqual(editMetadata.statuses, []);
 
@@ -42,6 +46,8 @@ suite('mr-edit-issue', () => {
       {status: 'hello'},
       {status: 'world'},
     ]};
+
+    await editMetadata.updateComplete;
 
     assert.deepEqual(editMetadata.statuses, [
       {status: 'hello'},
@@ -52,6 +58,8 @@ suite('mr-edit-issue', () => {
       statusRef: {status: 'hello'},
     };
 
+    await editMetadata.updateComplete;
+
     assert.deepEqual(editMetadata.statuses, [
       {status: 'hello'},
       {status: 'world'},
@@ -61,6 +69,8 @@ suite('mr-edit-issue', () => {
       statusRef: {status: 'weirdStatus'},
     };
 
+    await editMetadata.updateComplete;
+
     assert.deepEqual(editMetadata.statuses, [
       {status: 'weirdStatus'},
       {status: 'hello'},
@@ -68,7 +78,9 @@ suite('mr-edit-issue', () => {
     ]);
   });
 
-  test('ignores deprecated statuses, unless used on current issue', () => {
+  test('ignores deprecated statuses, unless used on current issue', async () => {
+    await element.updateComplete;
+
     const editMetadata = element.shadowRoot.querySelector('mr-edit-metadata');
     assert.deepEqual(editMetadata.statuses, []);
 
@@ -77,14 +89,21 @@ suite('mr-edit-issue', () => {
       {status: 'accepted', deprecated: false},
       {status: 'compiling', deprecated: true},
     ]};
+
+    await editMetadata.updateComplete;
+
     assert.deepEqual(editMetadata.statuses, [
       {status: 'new'},
       {status: 'accepted', deprecated: false},
     ]);
 
+
     element.issue = {
       statusRef: {status: 'compiling'},
     };
+
+    await editMetadata.updateComplete;
+
     assert.deepEqual(editMetadata.statuses, [
       {status: 'compiling'},
       {status: 'new'},

@@ -10,7 +10,6 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 let element;
 
 suite('mr-edit-status', () => {
-
   setup(() => {
     element = document.createElement('mr-edit-status');
     element.statuses = [

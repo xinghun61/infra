@@ -10,6 +10,8 @@ import {removePrefix} from 'elements/shared/helpers.js';
 import {issueRefToString} from 'elements/shared/converters.js';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
+import {fieldValueMapKey} from
+  '../issue-detail/metadata/shared/metadata-helpers.js';
 
 // Actions
 const SET_ISSUE_REF = 'SET_ISSUE_REF';
@@ -376,11 +378,8 @@ export const fieldValueMap = createSelector(
     const acc = new Map();
     for (const v of fieldValues) {
       if (!v || !v.fieldRef || !v.fieldRef.fieldName || !v.value) continue;
-      let key = [v.fieldRef.fieldName];
-      if (v.phaseRef && v.phaseRef.phaseName) {
-        key.push(v.phaseRef.phaseName);
-      }
-      key = key.join(' ');
+      const key = fieldValueMapKey(v.fieldRef.fieldName,
+        v.phaseRef ? v.phaseRef.phaseName : undefined);
       if (acc.has(key)) {
         acc.get(key).push(v.value);
       } else {

@@ -229,9 +229,9 @@ export class MrApprovalCard extends connectStore(PolymerElement) {
             field-defs="[[fieldDefs]]"
             statuses="[[_availableStatuses]]"
             status="[[_status]]"
-            has-approver-privileges="[[_hasApproverPrivileges]]"
-            is-approval
-            disabled="[[updatingApproval]]"
+            hasApproverPrivileges$="[[_hasApproverPrivileges]]"
+            isApproval="true"
+            disabled$="[[updatingApproval]]"
             error="[[updateApprovalError.description]]"
             on-save="save"
             on-discard="reset"

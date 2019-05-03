@@ -30,6 +30,7 @@ suite('mr-edit-field', () => {
     // Simulate user input.
     element.shadowRoot.querySelector('#editInput').value = 'jackalope';
     element.initialValues = [];
+    element.reset();
     assert.equal(element.getValue(), '');
   });
 
@@ -122,7 +123,7 @@ suite('mr-edit-field', () => {
     assert.deepEqual(element.getValue(), '');
   });
 
-  test('edit enum updates value when initialValues change', () => {
+  test('edit enum updates value on reset', () => {
     element.multi = true;
     element.type = fieldTypes.ENUM_TYPE;
     element.options = [
@@ -134,6 +135,8 @@ suite('mr-edit-field', () => {
     flush();
 
     element.initialValues = ['hello'];
+    element.reset();
+
     assert.deepEqual(element.getValues(), ['hello']);
 
     // User checks all boxes.
@@ -143,12 +146,14 @@ suite('mr-edit-field', () => {
           checkbox.checked = true;
         }
       );
-    // User input should not be overridden by the initialValue variable.
+    // User input should not be overridden by the initialValues variable.
     assert.deepEqual(element.getValues(), ['hello', 'world', 'fake']);
     // Initial values should not change based on user input.
     assert.deepEqual(element.initialValues, ['hello']);
 
     element.initialValues = ['hello', 'world'];
+    element.reset();
+
     assert.deepEqual(element.getValues(), ['hello', 'world']);
   });
 });

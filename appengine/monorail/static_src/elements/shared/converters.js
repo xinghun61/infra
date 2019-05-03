@@ -2,11 +2,32 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import {equalsIgnoreCase} from './helpers';
+
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
 
 export function displayNameToUserRef(displayName) {
   return {displayName};
+}
+
+export function userRefToDisplayName(userRef) {
+  return userRef && userRef.displayName;
+}
+
+export function userRefsToDisplayNames(userRefs) {
+  if (!userRefs) return [];
+  return userRefs.map(userRefToDisplayName);
+}
+
+export function userRefsWithIds(userRefs) {
+  if (!userRefs) return [];
+  return userRefs.filter((u) => u.userId);
+}
+
+export function filteredUserDisplayNames(userRefs) {
+  if (!userRefs) return [];
+  return userRefsToDisplayNames(userRefsWithIds(userRefs));
 }
 
 export function labelStringToRef(label) {
@@ -19,6 +40,15 @@ export function fieldNameToLabelPrefix(fieldName) {
 
 export function componentStringToRef(path) {
   return {path};
+}
+
+export function componentRefToString(componentRef) {
+  return componentRef && componentRef.path;
+}
+
+export function componentRefsToStrings(componentRefs) {
+  if (!componentRefs) return [];
+  return componentRefs.map(componentRefToString);
 }
 
 export function issueStringToRef(defaultProjectName, idStr) {
@@ -34,9 +64,14 @@ export function issueStringToRef(defaultProjectName, idStr) {
 
 export function issueRefToString(ref, projectName) {
   if (!ref) return '';
-  if (projectName && projectName.length &&
-      ref.projectName.toLowerCase() === projectName.toLowerCase()) {
+  if (projectName && projectName.length
+      && equalsIgnoreCase(ref.projectName, projectName)) {
     return `${ref.localId}`;
   }
   return `${ref.projectName}:${ref.localId}`;
+}
+
+export function issueRefsToStrings(arr, projectName) {
+  if (!arr || !arr.length) return [];
+  return arr.map((ref) => issueRefToString(ref, projectName));
 }

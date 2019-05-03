@@ -82,7 +82,6 @@ export class MrEditField extends PolymerElement {
         on-change="_onChange"
         on-blur="_onChange"
       ></mr-multi-input>
-
       <input
         hidden$="[[!_inputIsWidget(_widgetType, 'BASIC_INPUT')]]"
         id="editInput"
@@ -123,7 +122,6 @@ export class MrEditField extends PolymerElement {
       initialValues: {
         type: Array,
         value: () => [],
-        observer: 'reset',
       },
       derivedValues: {
         type: Array,
@@ -273,11 +271,12 @@ export class MrEditField extends PolymerElement {
   }
 
   _cloneValues(arr) {
+    if (!arr || !arr.length) return [];
     return [...arr];
   }
 
   _getSingleValue(arr) {
-    return arr.length ? arr[0] : '';
+    return arr && arr.length ? arr[0] : '';
   }
 
   // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.

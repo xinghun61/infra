@@ -12,7 +12,7 @@ import './mr-edit-field.js';
 
 
 /**
- * `<mr-edit-metadata>`
+ * `<mr-edit-status>`
  *
  * Editing form for either an approval or the overall issue.
  *
@@ -78,7 +78,7 @@ export class MrEditStatus extends PolymerElement {
         <label for="mergedIntoInput" id="mergedIntoLabel">Merged into:</label>
         <mr-edit-field
           id="mergedIntoInput"
-          initial-values="[[mergedInto]]"
+          initial-values="[[_wrapList(mergedInto)]]"
           on-change="_onChange"
         ></mr-edit-field>
       </div>`;
@@ -127,6 +127,7 @@ export class MrEditStatus extends PolymerElement {
     flush();
   }
 
+  // TODO(zhangtiff): Make mr-edit-status receive a projectName.
   getDelta(projectName) {
     const result = {};
     const root = this.shadowRoot;
@@ -144,7 +145,7 @@ export class MrEditStatus extends PolymerElement {
     } else if (this._showMergedInto) {
       const newMergedInto = root.querySelector(
         '#mergedIntoInput').getValue();
-      if (newMergedInto !== this.mergedInto[0]) {
+      if (newMergedInto !== this.mergedInto) {
         result['mergedIntoRef'] = issueStringToRef(projectName, newMergedInto);
       }
     }
@@ -185,6 +186,11 @@ export class MrEditStatus extends PolymerElement {
 
   _onChange() {
     this.dispatchEvent(new CustomEvent('change'));
+  }
+
+  // TODO(zhangtiff): Remove in Lit-Element upgrade.
+  _wrapList(v) {
+    return v ? [v] : [];
   }
 }
 

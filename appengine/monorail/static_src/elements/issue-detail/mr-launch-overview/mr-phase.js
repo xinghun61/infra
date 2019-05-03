@@ -12,7 +12,8 @@ import * as project from 'elements/reducers/project.js';
 import '../mr-approval-card/mr-approval-card.js';
 import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
 import 'elements/issue-detail/metadata/mr-metadata/mr-field-values.js';
-import {MetadataMixin} from 'elements/issue-detail/metadata/shared/metadata-mixin.js';
+import {MetadataMixin} from
+  'elements/issue-detail/metadata/shared/metadata-mixin.js';
 import 'elements/shared/mr-shared-styles.js';
 
 const TARGET_PHASE_MILESTONE_MAP = {
@@ -138,12 +139,12 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
           field-defs="[[fieldDefs]]"
           field-values="[[fieldValues]]"
           phase-name="[[phaseName]]"
-          disabled="[[updatingIssue]]"
+          disabled$="[[updatingIssue]]"
           error="[[updateIssueError.description]]"
           on-save="save"
           on-discard="cancel"
-          is-approval=""
-          disable-attachments=""
+          isApproval="true"
+          disableAttachments="true"
         ></mr-edit-metadata>
       </chops-dialog>
     `;
@@ -226,16 +227,17 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
 
   edit() {
     this.reset();
-    this.$.editPhase.open();
+    this.shadowRoot.querySelector('#editPhase').open();
   }
 
   cancel() {
-    this.$.editPhase.close();
+    this.shadowRoot.querySelector('#editPhase').close();
     this.reset();
   }
 
   reset() {
-    this.shadowRoot.querySelector('#metadataForm').reset();
+    const form = this.shadowRoot.querySelector('#metadataForm');
+    form.reset();
   }
 
   save() {

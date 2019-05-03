@@ -2,15 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import * as ui from 'elements/reducers/ui.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import './mr-edit-metadata.js';
-import 'elements/shared/mr-shared-styles.js';
 
 
 /**
@@ -19,83 +18,103 @@ import 'elements/shared/mr-shared-styles.js';
  * Issue editing form.
  *
  */
-export class MrEditIssue extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <style include="mr-shared-styles">
+export class MrEditIssue extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         h2 a {
           text-decoration: none;
           color: var(--mr-content-heading-color);
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    const issue = this.issue || {};
+    return html`
       <h2 id="makechanges" class="medium-heading">
         <a href="#makechanges">Add a comment and make changes</a>
       </h2>
       <mr-edit-metadata
-        form-name="Issue Edit"
-        owner-name="[[_ownerDisplayName(issue.ownerRef)]]"
-        cc="[[issue.ccRefs]]"
-        status="[[issue.statusRef.status]]"
-        statuses="[[_computeStatuses(projectConfig.statusDefs, issue.statusRef)]]"
-        summary="[[issue.summary]]"
-        components="[[issue.componentRefs]]"
-        field-defs="[[_fieldDefs]]"
-        field-values="[[issue.fieldValues]]"
-        blocked-on="[[issue.blockedOnIssueRefs]]"
-        blocking="[[issue.blockingIssueRefs]]"
-        merged-into="[[issue.mergedIntoIssueRef]]"
-        label-names="[[_labelNames]]"
-        derived-labels="[[_derivedLabels]]"
-        on-save="save"
-        on-discard="reset"
-        on-change="_presubmitIssue"
-        disabled="[[updatingIssue]]"
-        error="[[updateIssueError.description]]"
+        .formName="Issue Edit"
+        .ownerName=${this._ownerDisplayName(issue.ownerRef)}
+        .cc=${issue.ccRefs}
+        .status=${issue.statusRef && issue.statusRef.status}
+        .statuses=${this._availableStatuses(this.projectConfig.statusDefs, this.issue.statusRef)}
+        .summary=${issue.summary}
+        .components=${issue.componentRefs}
+        .fieldDefs=${this._fieldDefs}
+        .fieldValues=${issue.fieldValues}
+        .blockedOn=${issue.blockedOnIssueRefs}
+        .blocking=${issue.blockingIssueRefs}
+        .mergedInto=${issue.mergedIntoIssueRef}
+        .labelNames=${this._labelNames}
+        .derivedLabels=${this._derivedLabels}
+        .disabled=${this.updatingIssue}
+        .error=${this.updateIssueError && this.updateIssueError.description}
+        @save=${this.save}
+        @discard=${this.reset}
+        @change=${this._presubmitIssue}
       ></mr-edit-metadata>
     `;
-  }
-
-  static get is() {
-    return 'mr-edit-issue';
   }
 
   static get properties() {
     return {
       issue: {
         type: Object,
-        observer: '_resetConditionally',
       },
-      issueRef: Object,
-      projectConfig: Object,
-      updatingIssue: Boolean,
-      updateIssueError: Object,
+      issueRef: {
+        type: Object,
+      },
+      projectConfig: {
+        type: Object,
+      },
+      updatingIssue: {
+        type: Boolean,
+      },
+      updateIssueError: {
+        type: Object,
+      },
       focusId: {
         type: String,
-        observer: '_focusIdChanged',
       },
-      _resetOnChange: Boolean,
-      _labelNames: {
+      _resetOnChange: {
+        type: Boolean,
+      },
+      _fieldDefs: {
         type: Array,
-        computed: '_computeLabelNames(issue.labelRefs)',
       },
-      _derivedLabels: {
-        type: Array,
-        computed: '_computeDerivedLabels(issue.labelRefs)',
-      },
-      _fieldDefs: Array,
     };
   }
 
   stateChanged(state) {
-    this.setProperties({
-      issue: issue.issue(state),
-      issueRef: issue.issueRef(state),
-      projectConfig: project.project(state).config,
-      updatingIssue: issue.requests(state).update.requesting,
-      updateIssueError: issue.requests(state).update.error,
-      focusId: ui.focusId(state),
-      _fieldDefs: issue.fieldDefs(state),
-    });
+    this.issue = issue.issue(state);
+    this.issueRef = issue.issueRef(state);
+    this.projectConfig = project.project(state).config;
+    this.updatingIssue = issue.requests(state).update.requesting;
+    this.updateIssueError = issue.requests(state).update.error;
+    this.focusId = ui.focusId(state);
+    this._fieldDefs = issue.fieldDefs(state);
+  }
+
+  updated(changedProperties) {
+    if (this.focusId && changedProperties.has('focusId')) {
+      // TODO(zhangtiff): Generalize logic to focus elements based on ID
+      // to a reuseable class mixin.
+      if (this.focusId.toLowerCase() === 'makechanges') {
+        this.focus();
+      }
+    }
+
+    if (this.issue && changedProperties.has('issue')) {
+      if (this._resetOnChange) {
+        this._resetOnChange = false;
+        this.reset();
+      }
+    }
   }
 
   reset() {
@@ -132,29 +151,15 @@ export class MrEditIssue extends connectStore(PolymerElement) {
     editForm.focus();
   }
 
-  _resetConditionally() {
-    if (this._resetOnChange) {
-      this._resetOnChange = false;
-      this.reset();
-    }
-  }
-
-  _focusIdChanged(focusId) {
-    if (!focusId) return;
-    // TODO(zhangtiff): Generalize logic to focus elements based on ID
-    // to a reuseable class mixin.
-    if (focusId.toLowerCase() === 'makechanges') {
-      this.focus();
-    }
-  }
-
-  _computeLabelNames(labels) {
-    if (!labels) return [];
+  get _labelNames() {
+    if (!this.issue || !this.issue.labelRefs) return [];
+    const labels = this.issue.labelRefs;
     return labels.filter((l) => !l.isDerived).map((l) => l.label);
   }
 
-  _computeDerivedLabels(labels) {
-    if (!labels) return [];
+  get _derivedLabels() {
+    if (!this.issue || !this.issue.labelRefs) return [];
+    const labels = this.issue.labelRefs;
     return labels.filter((l) => l.isDerived).map((l) => l.label);
   }
 
@@ -170,7 +175,7 @@ export class MrEditIssue extends connectStore(PolymerElement) {
     store.dispatch(issue.presubmit(message));
   }
 
-  _computeStatuses(statusDefsArg, currentStatusRef) {
+  _availableStatuses(statusDefsArg, currentStatusRef) {
     let statusDefs = statusDefsArg || [];
     statusDefs = statusDefs.filter((status) => !status.deprecated);
     if (!currentStatusRef || statusDefs.find(
@@ -179,4 +184,4 @@ export class MrEditIssue extends connectStore(PolymerElement) {
   }
 }
 
-customElements.define(MrEditIssue.is, MrEditIssue);
+customElements.define('mr-edit-issue', MrEditIssue);
