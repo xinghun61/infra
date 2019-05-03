@@ -7,6 +7,7 @@ import os
 from .types import Spec
 from .builder import Builder, BuildPackageFromPyPiWheel, StageWheelForPackage
 
+from . import source
 from . import util
 
 class Cryptography(Builder):
@@ -66,6 +67,7 @@ class Cryptography(Builder):
               '-fPIC',
               '--prefix=%s' % (prefix,),
               'no-shared',
+              'no-afalgeng',  # https://github.com/openssl/openssl/issues/1685
               'no-ssl3',
               wheel.plat.openssl_target,
             ]),
@@ -114,3 +116,30 @@ class Cryptography(Builder):
       StageWheelForPackage(
         system, os.path.join(crypt_dir, 'dist'), wheel)
       return None
+
+
+class CryptographyPyPI(Cryptography):
+  def __init__(self, name, ver, openssl):
+    """Adapts Cryptography wheel builder to use available PyPI wheels.
+
+    Builds wheels for platforms not present in PyPI (e.g ARM) from source.
+    Builds statically and links to OpenSSL of given version.
+    """
+    super(CryptographyPyPI, self).__init__(name,
+      source.pypi_sdist('cryptography', ver),
+      source.remote_archive(
+          name='openssl',
+          version=openssl,
+          url='https://www.openssl.org/source/openssl-%s.tar.gz' % openssl,
+      ),
+      arch_map={
+        'mac-x64': ['macosx_10_6_intel'],
+      },
+      packaged=[
+        'manylinux-x86',
+        'manylinux-x64',
+        'mac-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  )

@@ -464,27 +464,12 @@ SPECS.update({s.spec.tag: s for s in assert_sorted('OpenCV',
 )})
 
 
-from .wheel_cryptography import Cryptography
-SPECS.update({s.spec.tag: s for s in assert_sorted('Cryptography',
-  Cryptography('cryptography',
-      source.pypi_sdist('cryptography', '2.0.3'),
-      source.remote_archive(
-          name='openssl',
-          version='1.1.0f',
-          url='https://www.openssl.org/source/openssl-1.1.0f.tar.gz',
-      ),
-      arch_map={
-        'mac-x64': ['macosx_10_6_intel'],
-      },
-      packaged=[
-        'manylinux-x86',
-        'manylinux-x64',
-        'mac-x64',
-        'windows-x86',
-        'windows-x64',
-      ],
-  ),
+from .wheel_cryptography import CryptographyPyPI
+SPECS.update({s.spec.tag: s for s in assert_sorted('CryptographyPyPI',
+  CryptographyPyPI('cryptography', '2.0.3', openssl='1.1.0f'),
+  CryptographyPyPI('cryptography', '2.6.1', openssl='1.1.0f'),
 )})
+
 
 from .wheel_wheel import MultiWheel
 SPECS.update({s.spec.tag: s for s in assert_sorted('MultiWheel',
