@@ -68,6 +68,30 @@ suite('mr-edit-issue', () => {
     ]);
   });
 
+  test('ignores deprecated statuses, unless used on current issue', () => {
+    const editMetadata = element.shadowRoot.querySelector('mr-edit-metadata');
+    assert.deepEqual(editMetadata.statuses, []);
+
+    element.projectConfig = {statusDefs: [
+      {status: 'new'},
+      {status: 'accepted', deprecated: false},
+      {status: 'compiling', deprecated: true},
+    ]};
+    assert.deepEqual(editMetadata.statuses, [
+      {status: 'new'},
+      {status: 'accepted', deprecated: false},
+    ]);
+
+    element.issue = {
+      statusRef: {status: 'compiling'},
+    };
+    assert.deepEqual(editMetadata.statuses, [
+      {status: 'compiling'},
+      {status: 'new'},
+      {status: 'accepted', deprecated: false},
+    ]);
+  });
+
   test('Filter out empty or deleted user owners', () => {
     assert.equal(element._ownerDisplayName({displayName: '----'}), '');
     assert.equal(

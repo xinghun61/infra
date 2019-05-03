@@ -171,7 +171,8 @@ export class MrEditIssue extends connectStore(PolymerElement) {
   }
 
   _computeStatuses(statusDefsArg, currentStatusRef) {
-    const statusDefs = statusDefsArg || [];
+    let statusDefs = statusDefsArg || [];
+    statusDefs = statusDefs.filter((status) => !status.deprecated);
     if (!currentStatusRef || statusDefs.find(
       (status) => status.status === currentStatusRef.status)) return statusDefs;
     return [currentStatusRef, ...statusDefs];

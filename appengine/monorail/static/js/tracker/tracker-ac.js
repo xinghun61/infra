@@ -1038,14 +1038,16 @@ function TKR_convertStatuses(statusesResponse) {
   jsonData.open = [];
   jsonData.closed = [];
   for (const s of statusDefs) {
-    const item = {
-      name: s.status,
-      doc: s.docstring,
-    };
-    if (s.meansOpen) {
-      jsonData.open.push(item);
-    } else {
-      jsonData.closed.push(item);
+    if (!s.deprecated) {
+      const item = {
+        name: s.status,
+        doc: s.docstring,
+      };
+      if (s.meansOpen) {
+        jsonData.open.push(item);
+      } else {
+        jsonData.closed.push(item);
+      }
     }
   }
 
