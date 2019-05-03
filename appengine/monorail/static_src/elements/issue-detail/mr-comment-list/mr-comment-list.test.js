@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrCommentList} from './mr-comment-list.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 
 let element;
@@ -55,14 +54,10 @@ suite('mr-comment-list', () => {
         timestamp: 1549320189,
       },
     ];
-
-    sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
   });
 
   teardown(() => {
     document.body.removeChild(element);
-
-    window.requestAnimationFrame.restore();
   });
 
   test('initializes', () => {
@@ -70,7 +65,7 @@ suite('mr-comment-list', () => {
   });
 
   test('scrolls to comment', async () => {
-    flush();
+    await element.updateComplete;
 
     const commentElements = element.shadowRoot.querySelectorAll('mr-comment');
     const commentElement = commentElements[commentElements.length - 1];
@@ -78,8 +73,7 @@ suite('mr-comment-list', () => {
 
     element.focusId = 'c3';
 
-    flush();
-    await commentElement.updateComplete;
+    await element.updateComplete;
 
     assert.isTrue(element._hideComments);
     assert.isTrue(commentElement.scrollIntoView.calledOnce);
@@ -87,40 +81,40 @@ suite('mr-comment-list', () => {
     commentElement.scrollIntoView.restore();
   });
 
-  test('scrolls to hidden comment', () => {
-    flush();
+  test('scrolls to hidden comment', async () => {
+    await element.updateComplete;
 
     element.focusId = 'c1';
 
-    flush();
+    await element.updateComplete;
 
     assert.isFalse(element._hideComments);
     // TODO: Check that the comment has been scrolled into view.
   });
 
-  test('doesnt scroll to unknown comment', () => {
-    flush();
+  test('doesnt scroll to unknown comment', async () => {
+    await element.updateComplete;
 
     element.focusId = 'c100';
 
-    flush();
+    await element.updateComplete;
 
     assert.isTrue(element._hideComments);
   });
 
-  test('edit-metadata is displayed if user has addissuecomment', () => {
+  test('edit-metadata is displayed if user has addissuecomment', async () => {
     element.issuePermissions = ['addissuecomment'];
 
-    flush();
+    await element.updateComplete;
 
     assert.isNull(
       element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
   });
 
-  test('edit-metadata is hidden if user has no addissuecomment', () => {
+  test('edit-metadata is hidden if user has no addissuecomment', async () => {
     element.issuePermissions = [];
 
-    flush();
+    await element.updateComplete;
 
     assert.isNotNull(
       element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));

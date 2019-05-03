@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {cache} from 'lit-html/directives/cache.js';
+import {LitElement, html, css} from 'lit-element';
 
 import '../../chops/chops-button/chops-button.js';
 import './mr-comment.js';
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as ui from 'elements/reducers/ui.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
 
@@ -20,152 +20,127 @@ const ADD_ISSUE_COMMENT_PERMISSION = 'addissuecomment';
  * Display a list of Monorail comments.
  *
  */
-export class MrCommentList extends connectStore(PolymerElement) {
-  static get template() {
+export class MrCommentList extends connectStore(LitElement) {
+  constructor() {
+    super();
+
+    this.commentsShownCount = 2;
+    this.comments = [];
+    this.headingLevel = 4;
+    this.quickMode = false;
+
+    this.issuePermissions = [];
+    this.focusId = null;
+
+    this._hideComments = true;
+  }
+
+  static get properties() {
+    return {
+      commentsShownCount: {type: Number},
+      comments: {type: Array},
+      headingLevel: {type: Number},
+      quickMode: {type: Boolean},
+
+      issuePermissions: {type: Array},
+      focusId: {type: String},
+
+      _hideComments: {type: Boolean},
+    };
+  }
+
+  stateChanged(state) {
+    this.issuePermissions = issue.permissions(state);
+    this.focusId = ui.focusId(state);
+  }
+
+  updated(changedProperties) {
+    super.updated(changedProperties);
+
+    if (!this._hideComments) return;
+
+    // If any hidden comment is focused, show all hidden comments.
+    const hiddenCount =
+      _hiddenCount(this.comments.length, this.commentsShownCount);
+    const hiddenComments = this.comments.slice(0, hiddenCount);
+    for (const comment of hiddenComments) {
+      if ('c' + comment.sequenceNum === this.focusId) {
+        this._hideComments = false;
+        break;
+      }
+    };
+  }
+
+  static get styles() {
+    return [SHARED_STYLES, css`
+      button.toggle {
+        background: none;
+        color: var(--chops-link-color);
+        border: 0;
+        border-bottom: var(--chops-normal-border);
+        border-top: var(--chops-normal-border);
+        width: 100%;
+        padding: 0.5em 8px;
+        text-align: left;
+        font-size: var(--chops-main-font-size);
+      }
+      button.toggle:hover {
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      button.toggle[hidden] {
+        display: none;
+      }
+      .edit-slot {
+        margin-top: 3em;
+      }
+    `];
+  }
+
+  render() {
+    const hiddenCount =
+      _hiddenCount(this.comments.length, this.commentsShownCount);
     return html`
-      <style include="mr-shared-styles">
-        button.toggle {
-          background: none;
-          color: var(--chops-link-color);
-          border: 0;
-          border-bottom: var(--chops-normal-border);
-          border-top: var(--chops-normal-border);
-          width: 100%;
-          padding: 0.5em 8px;
-          text-align: left;
-          font-size: var(--chops-main-font-size);
-        }
-        button.toggle:hover {
-          cursor: pointer;
-          text-decoration: underline;
-        }
-        button.toggle[hidden] {
-          display: none;
-        }
-        .edit-slot {
-          margin-top: 3em;
-        }
-      </style>
-      <button on-click="toggleComments" class="toggle" hidden\$="[[_hideToggle]]">
-        [[_computeCommentToggleVerb(_hideComments)]]
-        [[_commentsHiddenCount]]
+      <button @click=${this._toggleHide}
+          class="toggle"
+          ?hidden=${hiddenCount <= 0}>
+        ${this._hideComments ? 'Show' : 'Hide'}
+        ${hiddenCount}
         older
-        [[_pluralize(_commentsHiddenCount, 'comment')]]
+        ${hiddenCount == 1 ? 'comment' : 'comments'}
       </button>
-      <template is="dom-repeat" items="[[comments]]" as="comment">
-        <template is="dom-if" if="[[_computeShowComment(_hideComments, _commentsHiddenCount, index)]]">
-          <mr-comment
-            comment="[[comment]]"
-            heading-level="[[headingLevel]]"
-            highlighted="[[_computeHighlighted(focusId, comment)]]"
-            quick-mode="[[quickMode]]"
-          ></mr-comment>
-        </template>
-      </template>
-      <div class="edit-slot" hidden$="[[!_canAddComment(issuePermissions)]]">
+      ${cache(this._hideComments ? '' :
+        html`${this.comments.slice(0, hiddenCount).map(
+          this.renderComment.bind(this))}`)}
+      ${this.comments.slice(hiddenCount).map(this.renderComment.bind(this))}
+      <div class="edit-slot"
+          ?hidden=${!_canAddComment(this.issuePermissions)}>
         <slot></slot>
       </div>
     `;
   }
 
-  static get is() {
-    return 'mr-comment-list';
+  renderComment(comment) {
+    return html`
+      <mr-comment
+          .comment=${comment}
+          headingLevel=${this.headingLevel}
+          ?highlighted=${'c' + comment.sequenceNum === this.focusId}
+          ?quickMode=${this.quickMode}
+      ></mr-comment>`;
   }
 
-  static get properties() {
-    return {
-      commentsShownCount: {
-        type: Number,
-        value: 2,
-      },
-      comments: {
-        type: Array,
-        value: [],
-      },
-      headingLevel: {
-        type: Number,
-        value: 4,
-      },
-      issuePermissions: Object,
-      focusId: String,
-      quickMode: {
-        type: Boolean,
-        value: false,
-      },
-      _hideComments: {
-        type: Boolean,
-        value: true,
-      },
-      _commentsHiddenCount: {
-        type: Number,
-        computed: '_computeCommentsHiddenCount(commentsShownCount, comments.length)',
-      },
-      _hideToggle: {
-        type: Boolean,
-        value: false,
-        computed: '_computeHideToggle(_commentsHiddenCount)',
-      },
-    };
-  }
-
-  static get observers() {
-    return [
-      '_onFocusId(' +
-        'focusId, comments, _hideComments, _commentsHiddenCount)',
-    ];
-  }
-
-  stateChanged(state) {
-    this.setProperties({
-      focusId: ui.focusId(state),
-      issuePermissions: issue.permissions(state),
-    });
-  }
-
-  toggleComments() {
+  _toggleHide() {
     this._hideComments = !this._hideComments;
   }
-
-  _canAddComment(issuePermissions) {
-    return (issuePermissions || []).includes(ADD_ISSUE_COMMENT_PERMISSION);
-  }
-
-  _computeShowComment(hideComments, commentsHiddenCount, index) {
-    return !hideComments || index >= commentsHiddenCount;
-  }
-
-  _computeHighlighted(focusId, comment) {
-    if (!comment.sequenceNum || !focusId) return;
-    return 'c' + comment.sequenceNum === focusId;
-  }
-
-  _computeCommentsHiddenCount(shownCount, numComments) {
-    return Math.max(numComments - shownCount, 0);
-  }
-
-  _computeHideToggle(hiddenCount) {
-    return hiddenCount <= 0;
-  }
-
-  _computeCommentToggleVerb(hideComments) {
-    return hideComments ? 'Show' : 'Hide';
-  }
-
-  _pluralize(count, baseWord, pluralWord) {
-    pluralWord = pluralWord || `${baseWord}s`;
-    return count == 1 ? baseWord : pluralWord;
-  }
-
-  _onFocusId(focusId, comments, hideComments, commentsHiddenCount) {
-    if (!comments || !focusId || !hideComments) return;
-    for (let i = 0; i < comments.length; ++i) {
-      const commentId = 'c' + comments[i].sequenceNum;
-      if (commentId === focusId &&
-          !this._computeShowComment(hideComments, commentsHiddenCount, i)) {
-        this._hideComments = false;
-        break;
-      }
-    }
-  }
 }
-customElements.define(MrCommentList.is, MrCommentList);
+
+function _hiddenCount(commentCount, commentsShownCount) {
+  return Math.max(commentCount - commentsShownCount, 0);
+}
+
+function _canAddComment(issuePermissions) {
+  return (issuePermissions || []).includes(ADD_ISSUE_COMMENT_PERMISSION);
+}
+
+customElements.define('mr-comment-list', MrCommentList);
