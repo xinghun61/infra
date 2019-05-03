@@ -254,8 +254,9 @@ See [Available Wheels](#Available-Wheels) for examples and more information.
 
 In a CIPD `vpython` package:
 
-* The `name` is a CIPD path to the wheel package. Names should begin with
-  `infra/python/wheels`.
+* The `name` is a CIPD path to the wheel package. Names usually begin with
+  `infra/python/wheels`, but users who build their own CIPD/Wheel packages
+  could instruct vpython to load them from any CIPD prefix.
     * Universal packages, packages that are pure-Python and aren't bound to any
       specific operating system or architecture, will be simply named after
       their package.
@@ -525,8 +526,8 @@ A list of wheels that Chrome Operations produces using a wheel production
 script, `dockerbuild`, can be found
 [here](/infra/tools/dockerbuild/wheels.md).
 
-`vpython` wheels are stored in CIPD. The raw index of all available wheel CIPD
-packages space can be viewed
+`vpython` wheels are stored in CIPD. The raw index of all ChOPS-provided
+wheel CIPD packages space can be viewed
 [here](https://chrome-infra-packages.appspot.com/p/infra/python/wheels).
 
 If a wheel is needed, but is not in this list, please
