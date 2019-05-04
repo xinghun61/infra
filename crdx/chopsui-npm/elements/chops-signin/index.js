@@ -53,11 +53,10 @@ export class ChopsSignin extends LitElement {
       ${this.errorMsg?
     html`<div class="error">Error: ${this.errorMsg}</div>` :
     html`${!profile ?
-      html`Signin with Google ${this.icon_}` :
-      html`Signout of ${profile.getEmail()} ${profile.getImageUrl() ?
-        html`<img src="${profile.getImageUrl()}">` :
-        html`${this.icon_}`}`}`}
-    `;
+      this._icon :
+      profile.getImageUrl() ?
+        html`<img title="Sign out of ${profile.getEmail()}" src="${profile.getImageUrl()}">` :
+        this._icon}`}`;
   }
 
   static get properties() {
@@ -88,7 +87,7 @@ export class ChopsSignin extends LitElement {
     }
   }
 
-  get icon_() {
+  get _icon() {
     return svg`<svg viewBox="0 0 24 24">
       <path
         d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0
@@ -100,6 +99,11 @@ export class ChopsSignin extends LitElement {
 
   onUserUpdate_() {
     this.profile = getUserProfileSync();
+    if (this.profile) {
+      this.setAttribute('title', 'Sign out of Google');
+    } else {
+      this.setAttribute('title', 'Sign in with Google');
+    }
   }
 
   onClick_() {

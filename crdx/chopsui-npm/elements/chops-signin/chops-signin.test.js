@@ -34,6 +34,11 @@ test('clientId set, no error message', async () => {
   assert.isUndefined(element.errorMsg);
 });
 
+test('update user', () => {
+  element.onUserUpdate_();
+  assert.equal(element.title, 'Sign in with Google');
+});
+
 test('a11y', () => {
   return auditA11y(element);
 });
