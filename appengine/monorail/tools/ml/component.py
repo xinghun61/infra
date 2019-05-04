@@ -112,8 +112,8 @@ def read_indexes(response, component_index):
 
 def main():
   if not credentials and 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
-    print ('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. '
-          'Exiting.')
+    print(('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. '
+          'Exiting.'))
     sys.exit(1)
 
   parser = argparse.ArgumentParser(

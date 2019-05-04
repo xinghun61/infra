@@ -87,10 +87,10 @@ def make_http(args):
     credentials = credentials.create_scoped([OAUTH_SCOPE])
     logging.debug('Will request as client %r', credentials.client_id)
     if not args.host:
-      print ('[ERROR] OAuth on localhost will always see user '
+      print(('[ERROR] OAuth on localhost will always see user '
              'example@example.com, so we do not support that.\n'
              'Instead, add --server=YOUR_STAGING_SERVER, '
-             'or use --test_account=USER@example.com.')
+             'or use --test_account=USER@example.com.'))
       sys.exit(1)
 
     http = credentials.authorize(http)
@@ -125,7 +125,7 @@ def make_call(service, method, json_body, args):
     logging.info('Received response: %s', contents)
   except httplib2.HttpLib2Error as e:
     if hasattr(e.reason, 'errno') and e.reason.errno == errno.ECONNREFUSED:
-      print '[Error] Could not reach server. Is it running?'
+      print('[Error] Could not reach server. Is it running?')
     else:
       raise e
 

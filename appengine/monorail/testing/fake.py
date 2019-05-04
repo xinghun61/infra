@@ -1914,7 +1914,6 @@ class IssueService(object):
   def SoftDeleteComment(
       self, cnxn, issue, comment, deleted_by_user_id, user_service,
       delete=True, reindex=False, is_spam=False):
-    print "Soft deleting", comment
     pid = comment.project_id
     # Find the original comment by the sequence number.
     c = None

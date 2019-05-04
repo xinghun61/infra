@@ -98,8 +98,8 @@ def CompareAccuracy(args):
 
 def main():
   if not credentials and 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
-    print ('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. '
-          'Exiting.')
+    print(('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. '
+          'Exiting.'))
     sys.exit(1)
 
   parser = argparse.ArgumentParser(description='Spam classifier utilities.')
@@ -149,7 +149,7 @@ def main():
   }
   res = cmds[args.command](args)
 
-  print json.dumps(res, indent=2)
+  print(json.dumps(res, indent=2))
 
 
 if __name__ == '__main__':

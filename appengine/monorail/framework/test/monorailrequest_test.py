@@ -581,7 +581,7 @@ class TestPermissionLookup(unittest.TestCase):
     mr = monorailrequest.MonorailRequest(self.services)
     with mr.profiler.Phase('parse user info'):
       mr.ParseRequest(request, self.services)
-      print 'mr.auth is %r' % mr.auth
+      print('mr.auth is %r' % mr.auth)
     return mr
 
   def testOwnerPermissions_Live(self):

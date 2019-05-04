@@ -145,7 +145,6 @@ class FieldCreate(servlet.Servlet):
       )
       return
 
-    print 'parsed is %r' % (parsed,)
     approval_id = None
     if parsed.parent_approval_name and (
         parsed.field_type_str != 'approval_type'):
