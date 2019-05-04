@@ -6,14 +6,16 @@ package cmd
 
 import (
 	"fmt"
+	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
+	"infra/cmd/qscheduler/internal/site"
+	"io"
+	"sort"
+	"text/tabwriter"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
 	"go.chromium.org/luci/auth/client/authcli"
 	"go.chromium.org/luci/common/cli"
-
-	qscheduler "infra/appengine/qscheduler-swarming/api/qscheduler/v1"
-	"infra/cmd/qscheduler/internal/site"
 )
 
 // Inspect subcommand: Inspect a qscheduler pool.
@@ -25,14 +27,57 @@ var Inspect = &subcommands.Command{
 		c := &inspectRun{}
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
+		c.Flags.BoolVar(&c.accounts, "accounts", false, "Show the account balances and policies.")
 		return c
 	},
+}
+
+type row []string
+
+// print prints the row into tabWriter.
+func (r row) print(tw *tabwriter.Writer) {
+	for _, s := range r {
+		fmt.Fprintf(tw, "%s\t", s)
+	}
+}
+
+type table []row
+
+// print prints the table into tabWriter.
+func (t table) print(tw *tabwriter.Writer) {
+	for _, r := range t {
+		r.print(tw)
+		fmt.Fprintln(tw)
+	}
+}
+
+// sort alphabetically sorts the table by its first colmun.
+func (t table) sort() {
+	if len(t) <= 1 {
+		return
+	}
+	sort.Slice(t, func(i, j int) bool { return t[i][0] < t[j][0] })
+	return
+}
+
+// floatInsert inserts float slice to a row. If the size of the slice
+// is less than l, it will append 0.0 instead.
+func floatInsert(v []float32, l int, r row) row {
+	for k := 0; k < l; k++ {
+		if k >= len(v) {
+			r = append(r, fmt.Sprintf("%.1f", 0.0))
+			continue
+		}
+		r = append(r, fmt.Sprintf("%.1f", v[k]))
+	}
+	return r
 }
 
 type inspectRun struct {
 	subcommands.CommandRunBase
 	authFlags authcli.Flags
 	envFlags  envFlags
+	accounts  bool
 }
 
 func (c *inspectRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -68,7 +113,77 @@ func (c *inspectRun) Run(a subcommands.Application, args []string, env subcomman
 		return 1
 	}
 
-	fmt.Println(proto.MarshalTextString(resp))
-
+	if c.accounts {
+		printAccountTables(a.GetOut(), resp)
+	} else {
+		fmt.Println(proto.MarshalTextString(resp))
+	}
 	return 0
+}
+
+func printAccountTables(w io.Writer, report *qscheduler.InspectPoolResponse) {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	printAccountBalancesTable(tw, report)
+	printAccountRatesTable(tw, report)
+	printAccountPoliciesTable(tw, report)
+	tw.Flush()
+}
+
+func printAccountBalancesTable(tw *tabwriter.Writer, report *qscheduler.InspectPoolResponse) {
+	fmt.Fprintln(tw, "Account Balance(bot seconds)")
+	fmt.Fprintln(tw, "================================================================")
+	header := row{"Account", "P0", "P1", "P2", "P3", "P4"}
+	header.print(tw)
+	fmt.Fprintln(tw)
+	t := make(table, 0, len(report.AccountBalances))
+	for account, balance := range report.GetAccountBalances() {
+		r := make(row, 0, len(header))
+		r = append(r, account)
+		t = append(t, floatInsert(balance.GetValue(), len(header)-1, r))
+	}
+	t.sort()
+	t.print(tw)
+	fmt.Fprintln(tw)
+	return
+}
+
+func printAccountRatesTable(tw *tabwriter.Writer, report *qscheduler.InspectPoolResponse) {
+	fmt.Fprintln(tw, "Account Charge Rate(bot seconds per second)")
+	fmt.Fprintln(tw, "================================================================")
+	header := row{"Account", "P0", "P1", "P2", "P3", "P4"}
+	header.print(tw)
+	fmt.Fprintln(tw)
+	t := make(table, 0, len(report.GetAccountConfigs()))
+	for account, config := range report.GetAccountConfigs() {
+		r := make(row, 0, len(header))
+		r = append(r, account)
+		t = append(t, floatInsert(config.GetChargeRate(), len(header)-1, r))
+	}
+	t.sort()
+	t.print(tw)
+	fmt.Fprintln(tw)
+	return
+}
+
+func printAccountPoliciesTable(tw *tabwriter.Writer, report *qscheduler.InspectPoolResponse) {
+	fmt.Fprintln(tw, "Account Policy")
+	fmt.Fprintln(tw, "================================================================")
+	header := row{"Account", "MaxChargeSec", "MaxFanout", "DisableFreeTasks"}
+	header.print(tw)
+	fmt.Fprintln(tw)
+	t := make(table, 0, len(report.GetAccountConfigs()))
+	for account, config := range report.GetAccountConfigs() {
+		r := make(row, 0, len(header))
+		r = append(r, []string{
+			account,
+			fmt.Sprintf("%.1f", config.GetMaxChargeSeconds()),
+			fmt.Sprintf("%d", config.GetMaxFanout()),
+			fmt.Sprintf("%t", config.GetDisableFreeTasks()),
+		}...)
+		t = append(t, r)
+	}
+	t.sort()
+	t.print(tw)
+	fmt.Fprintln(tw)
+	return
 }
