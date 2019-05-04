@@ -18,3 +18,20 @@
     window.getTSMonClient().recordIssueDetailSpaTiming();
   });
 </script>
+
+<script type="text/javascript" nonce="[nonce]">
+  runOnLoad(function() {
+    if (typeof(ClientLogger) === "function") {
+      let cl = new ClientLogger("issues");
+      if (cl.started("new-issue")) {
+        cl.logEnd("new-issue", null, 120 * 1000);
+      }
+      if (cl.started("issue-search")) {
+        cl.logEnd("issue-search");
+      }
+      if (cl.started("issue-update")) {
+        cl.logEnd("issue-update", "computer-time", 120 * 1000);
+      }
+    }
+  });
+</script>
