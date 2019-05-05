@@ -24,6 +24,10 @@ var Known = []*Master{
 		Identifier: "chromium.clang",
 	},
 	{
+		Name:       "ChromiumDawn",
+		Identifier: "chromium.dawn",
+	},
+	{
 		Name:       "ChromiumFYI",
 		Identifier: "chromium.fyi",
 	},
@@ -126,6 +130,10 @@ var Known = []*Master{
 	{
 		Name:       "TryserverChromiumChromiumOS",
 		Identifier: "tryserver.chromium.chromiumos",
+	},
+	{
+		Name:       "TryserverChromiumDawn",
+		Identifier: "tryserver.chromium.dawn",
 	},
 	{
 		Name:       "TryServerChromiumLinux",
