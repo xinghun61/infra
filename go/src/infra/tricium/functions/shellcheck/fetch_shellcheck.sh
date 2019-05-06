@@ -1,10 +1,11 @@
 #!/bin/bash -e
 
-# When updating the version, you must update the SHA512/256 sum as well, e.g.:
-# shasum -a 512256 "${ARCHIVE}" > "${ARCHIVE}.sum"
-VERSION=v0.4.7
-ARCHIVE="shellcheck-${VERSION}.linux.x86_64.tar.xz"
-URL="https://storage.googleapis.com/shellcheck/${ARCHIVE}"
+# When updating the version, you must update the SHA512 sum as well, e.g.:
+# shasum -a 512 "${ARCHIVE}" > "${ARCHIVE}.sum"
+VERSION=0.6.0-r3
+SDK_VERSION=2019.05.02.024514
+ARCHIVE="shellcheck-${VERSION}.tbz2"
+URL="https://storage.googleapis.com/chromeos-prebuilt/host/amd64/amd64-host/chroot-${SDK_VERSION}/packages/dev-util/${ARCHIVE}"
 SUMFILE="${ARCHIVE}.sum"
 
 die() {
@@ -20,10 +21,13 @@ curl "${URL}" -o "${ARCHIVE}"
 echo
 
 echo "Checking archive integrity..."
-shasum -a 512256 -c "${SUMFILE}" || die "Integrity check failed!"
+shasum -a 512 -c "${SUMFILE}" || die "Integrity check failed!"
 echo
 
 echo "Extracting shellcheck binary..."
-# NOTE: Transforms shellcheck-<version>/ to bin/shellcheck/.
-tar --xz -xf "${ARCHIVE}" "${BINARY_PATH}" \
-  --transform="s|shellcheck-${VERSION}|bin/shellcheck|"
+# NOTE: Transforms tar paths into bin/shellcheck/.
+tar --bzip2 -xf "${ARCHIVE}" --wildcards \
+	--transform='s|.*/|bin/shellcheck/|' \
+	./usr/bin/shellcheck \
+	./usr/share/doc/*/LICENSE.bz2
+chmod a+rX,a-w ./bin/shellcheck/*
