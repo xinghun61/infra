@@ -127,7 +127,7 @@
       "-root",
       "[START_DIR]/packages",
       "-ensure-file",
-      "infra/nodejs/nodejs/${platform} node_version:8.9.4",
+      "infra/nodejs/nodejs/${platform} node_version:10.15.3",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -137,7 +137,7 @@
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"\": [@@@",
       "@@@STEP_LOG_LINE@json.output@      {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-node_version:8.9\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"instance_id\": \"resolved-instance_id-of-node_version:10.\", @@@",
       "@@@STEP_LOG_LINE@json.output@        \"package\": \"infra/nodejs/nodejs/resolved-platform\"@@@",
       "@@@STEP_LOG_LINE@json.output@      }@@@",
       "@@@STEP_LOG_LINE@json.output@    ]@@@",
@@ -149,7 +149,7 @@
   {
     "cmd": [
       "npm",
-      "install"
+      "ci"
     ],
     "cwd": "[START_DIR]/infra/appengine/findit",
     "env": {
@@ -187,7 +187,7 @@
   {
     "cmd": [
       "npm",
-      "install"
+      "ci"
     ],
     "cwd": "[START_DIR]/infra/crdx/chopsui",
     "env": {
@@ -237,7 +237,7 @@
   {
     "cmd": [
       "npm",
-      "install"
+      "ci"
     ],
     "cwd": "[START_DIR]/infra/appengine/monorail",
     "env": {
@@ -260,7 +260,7 @@
   {
     "cmd": [
       "npm",
-      "install"
+      "ci"
     ],
     "cwd": "[START_DIR]/infra/go/src/infra/appengine/dashboard/frontend",
     "env": {
@@ -283,7 +283,7 @@
   {
     "cmd": [
       "npm",
-      "install"
+      "ci"
     ],
     "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
     "env": {
