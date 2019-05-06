@@ -83,8 +83,15 @@ func Insert(ctx context.Context, bsm map[string]*fleet.BotSummary) (dutIDs []str
 		})
 		updated = append(updated, bs.GetDutId())
 	}
-	if err := datastore.Put(ctx, es); err != nil {
-		return nil, errors.Annotate(err, "failed to put BotSummaries").Err()
+	const batchSize = 20
+	for i := 0; i < len(es); i += batchSize {
+		end := i + batchSize
+		if end > len(es) {
+			end = len(es)
+		}
+		if err := datastore.Put(ctx, es[i:end]); err != nil {
+			return nil, errors.Annotate(err, "failed to put BotSummaries").Err()
+		}
 	}
 	return updated, nil
 }
