@@ -5,61 +5,50 @@
 package metrics
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/golang/protobuf/jsonpb"
+	"infra/appengine/depot_tools_metrics/schema"
 )
 
 func TestExtractsMetrics(t *testing.T) {
-	jsonInput := strings.NewReader(
-		`{"metrics_version": 1,
-		  "python_version": "2.7.13",
-		  "git_version": "2.18.1",
-		  "execution_time": 1000,
-		  "timestamp": 0,
-		  "exit_code": 0,
-		  "command": "gclient config",
-		  "depot_tools_age": 1234,
-		  "host_arch": "x86",
-		  "host_os": "linux"}`)
-	expectedStrings := map[string]string{
-		"python_version": "2.7.13",
-		"git_version":    "2.18.1",
-		"command":        "gclient config",
-		"host_arch":      "x86",
-		"host_os":        "linux",
-	}
-	expectedNumbers := map[string]float64{
-		"metrics_version": 1,
-		"execution_time":  1000,
-		"timestamp":       0,
-		"exit_code":       0,
-		"depot_tools_age": 1234,
+	jsonInput := `
+		{"metrics_version": 1,
+		 "timestamp": 5678,
+		 "command": "gclient config",
+		 "arguments": ["verbose"],
+		 "execution_time": 1000,
+		 "exit_code": 0,
+		 "sub_commands": [{
+			"command": "git push",
+			"exit_code": 1,
+			"execution_time": 123,
+			"arguments": ["cc", "notify=ALL", "label"]}],
+		 "http_requests": [{
+			"host": "chromium-review.googlesource.com",
+			"method": "POST",
+			"path": "changes/abandon",
+			"arguments": ["ALL_REVISIONS", "LABELS"],
+			"status": 403,
+			"response_time": 456}],
+		 "project_urls": [
+			"https://chromium.googlesource.com/chromium/src",
+			"https://chromium.googlesource.com/external/gyp"],
+		 "depot_tools_age": 1234,
+		 "host_arch": "x86",
+		 "host_os": "linux",
+		 "python_version": "2.7.13",
+		 "git_version": "2.18.1"}`
+
+	var metrics schema.Metrics
+	err := jsonpb.UnmarshalString(jsonInput, &metrics)
+	if err != nil {
+		t.Fatalf("failed unexpectedly with %v\n", err)
 	}
 
-	m, err := extractMetrics(jsonInput)
+	err = checkConstraints(metrics)
 	if err != nil {
-		t.Fatalf("extractMetrics failed unexpectedly with %v\n", err)
-	}
-	for k, v := range expectedStrings {
-		if actualV, ok := m[k].(string); !ok {
-			t.Errorf("Field %v not found, or has the wrong type.", k)
-		} else if actualV != v {
-			t.Errorf("Unexpected value for %v: expected=%v got=%v\n", k, v, actualV)
-		} else {
-			delete(m, k)
-		}
-	}
-	for k, v := range expectedNumbers {
-		if actualV, ok := m[k].(float64); !ok {
-			t.Errorf("Field %v not found, or has the wrong type.", k)
-		} else if actualV != v {
-			t.Errorf("Unexpected value for %v: expected=%v got=%v\n", k, v, actualV)
-		} else {
-			delete(m, k)
-		}
-	}
-	if len(m) != 0 {
-		t.Errorf("Unexpected extra fields: %v\n", m)
+		t.Fatalf("failed unexpectedly with %v\n", err)
 	}
 }
 
@@ -171,10 +160,14 @@ func TestRejectsBadReports(t *testing.T) {
 		},
 	}
 	for _, testCase := range testCases {
-		jsonInput := strings.NewReader(testCase[1])
-		_, err := extractMetrics(jsonInput)
+		var metrics schema.Metrics
+		err := jsonpb.UnmarshalString(testCase[0], &metrics)
 		if err == nil {
-			t.Errorf("Expected extractMetrics to fail on %v because of %v.", testCase[1], testCase[0])
+			err = checkConstraints(metrics)
+			if err == nil {
+				t.Errorf("Expected constraints for %v to fail because of %v. metrics:\n%v",
+					testCase[1], testCase[0], metrics)
+			}
 		}
 	}
 }

@@ -54,7 +54,6 @@ github.com/sergi/go-diff/diffmatchpatch
 github.com/shirou/gopsutil/
 github.com/smartystreets/
 github.com/waigani/diffparser
-github.com/xeipuuv/gojsonschema
 github.com/xtgo/set
 github.com/yosuke-furukawa/json5/encoding/json5
 

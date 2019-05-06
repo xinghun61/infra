@@ -1,0 +1,118 @@
+// Copyright 2019 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package schema;
+
+// HttpRequest stores information on the HTTP requests made by the command.
+message HttpRequest {
+  // The host the request was made to. Must be one of the |knownHTTPHosts| in
+  // metrics/constants.go.
+  // e.g. chromium-review.googlesource.com
+  string host = 1;
+
+  // The HTTP method used to make the request (e.g. GET, POST).
+  string method = 2;
+
+  // The path and URL arguments of the request.
+  // The path must be one of the |knownHTTPPaths| and the arguments must be
+  // |knownHTTPArguments| as defined in metrics/constants.go.
+  //
+  // The URL is not recorded since it might contain PII. Similarly, in most
+  // cases, only the name of the arguments (and not their values) are recorded.
+  // When the possible values for an argument is a fixed set, as is the case for
+  // "o-parameters" in Gerrit, they'll be recorded as arguments.
+  // Each argument is recorded separately, so as to make it easier to query.
+  //
+  // e.g. If the request was to
+  // '/changes/?q=owner:foo@example.com+is:open&n=3&o=LABELS&o=ALL_REVISIONS'
+  // The path will be '/changes' and the arguments will be 'q', 'n', 'o',
+  // 'LABELS' and 'ALL_REVISIONS'.
+  string path = 3;
+  repeated string arguments = 4;
+
+  // The HTTP response status.
+  int64 status = 5;
+
+  // The latency of the HTTP request in ms.
+  // TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
+  double response_time = 6;
+}
+
+// SubCommand stores information on the sub-commands executed by the command.
+message SubCommand {
+  // The sub-command that was executed. Must be one of the |knownSubCommands| in
+  // metrics/constans.go.
+  string command = 1;
+
+  // The arguments passed to the sub-command. All arguments must be
+  // |knownSubCommandArguments| as defined in metrics/constants.go.
+  repeated string arguments = 2;
+
+  // The runtime of the sub-command runtime in ms.
+  // TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
+  double execution_time = 3;
+
+  // The exit code of the sub-command.
+  int64 exit_code = 4;
+}
+
+// Metrics stores information for a depot_tools command's execution.
+message Metrics {
+  // The version of the format used to report the metrics.
+  int64 metrics_version = 1;
+
+  // A UNIX timestamp for the time when the command was executed.
+  // TODO(ehmaldonado): Consider converting to google.protobuf.Timestamp.
+  int64 timestamp = 2;
+
+  // The command that was executed. Must be one of the |knownCommands| defined
+  // in metrics/constants.go.
+  string command = 3;
+
+  // The arguments passed to the command. All arguments must be |knownArguments|
+  // as defined in metrics/constants.go.
+  repeated string arguments = 4;
+
+  // The runtime of the command in ms.
+  // TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
+  double execution_time = 5;
+
+  // The exit code of the command.
+  int64 exit_code = 6;
+
+  // Information on the sub-commands executed by this command.
+  repeated SubCommand sub_commands = 7;
+
+  // Information on the HTTP requests made by this command.
+  repeated HttpRequest http_requests = 8;
+
+  // The URLs of the current project(s).
+  // e.g. The project to which git-cl uploads a change; the projects gclient is
+  // configured to manage; etc.
+  // Must be one of the |knownProjectURLs| as defined in metrics/constants.go.
+  repeated string project_urls = 9;
+
+  // A UNIX timestamp for the time depot_tools was last modified.
+  // TODO(ehmaldonado): Consider converting to google.protobuf.Timestamp.
+  double depot_tools_age = 10;
+
+  // The arch the command was executed on. Must be one of the |knownHostArchs|
+  // as defined in metrics/constants.go.
+  // e.g. x86, arm
+  string host_arch = 11;
+
+  // The OS the command was executed on. Must be one of the |knownOSs| as
+  // defined in metrics/constants.go.
+  string host_os = 12;
+
+  // The python version the command was executed with. Must match the
+  // |pythonVersionRegex| defined in metrics/constants.go.
+  string python_version = 13;
+
+  // The git version the command used. Must match the |gitVersionRegex| defined
+  // in metrics/constants.go.
+  string git_version = 14;
+}
