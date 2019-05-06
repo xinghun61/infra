@@ -35,43 +35,35 @@ suite('mr-cues', () => {
   });
 
   test('anon does not see privacy dialog', () => {
-    assert.isFalse(element._computeShowPrivacyDialog(
-      'unused', 'unused', 'unused'));
+    assert.isFalse(element._showPrivacyDialog);
   });
 
   test('signed in user sees no privacy dialog before prefs load', () => {
     element.userDisplayName = 'user@example.com';
-    assert.isFalse(element._computeShowPrivacyDialog(
-      'unused', false, 'unused'));
+    element.prefsLoaded = false;
+    assert.isFalse(element._showPrivacyDialog);
   });
 
   test('signed in user sees no privacy dialog if already dismissed', () => {
     element.userDisplayName = 'user@example.com';
-    assert.isFalse(element._computeShowPrivacyDialog(
-      'unused', true, true));
+    element.prefsLoaded = true;
+    element.dismissedDialog = true;
+    assert.isFalse(element._showPrivacyDialog);
   });
 
   test('signed in user sees no privacy dialog if dismissal pref set', () => {
     element.userDisplayName = 'user@example.com';
-    assert.isFalse(element._computeShowPrivacyDialog(
-      new Map([['privacy_click_through', 'true']]), true, false));
+    element.prefsLoaded = true;
+    element.dismissedDialog = true;
+    element.prefs = new Map([['privacy_click_through', 'true']]);
+    assert.isFalse(element._showPrivacyDialog);
   });
 
   test('signed in user sees privacy dialog if dismissal pref missing', () => {
     element.userDisplayName = 'user@example.com';
-    assert.isTrue(element._computeShowPrivacyDialog(
-      new Map(), true, false));
-  });
-
-  test('show or close privacy dialog', () => {
-    const dialog = element.shadowRoot.querySelector('chops-dialog');
-
-    element._showPrivacyDialogChanged(true);
-
-    assert.isTrue(dialog.opened);
-
-    element._showPrivacyDialogChanged(false);
-
-    assert.isFalse(dialog.opened);
+    element.prefsLoaded = true;
+    element.dismissedDialog = false;
+    element.prefs = new Map();
+    assert.isTrue(element._showPrivacyDialog);
   });
 });

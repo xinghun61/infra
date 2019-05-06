@@ -2,13 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 import {connectStore} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 /**
  * `<mr-cues>`
@@ -18,31 +17,51 @@ import 'elements/shared/mr-shared-styles.js';
  * viewed and the user's preferences.
  *
  */
-export class MrCues extends connectStore(PolymerElement) {
-  static get template() {
+export class MrCues extends connectStore(LitElement) {
+  constructor() {
+    super();
+    this.dismissedDialog = false;
+  }
+
+  static get properties() {
+    return {
+      userDisplayName: {type: String},
+      prefs: {type: Object},
+      prefsLoaded: {type: Boolean},
+      dismissedDialog: {type: Boolean},
+    };
+  }
+
+  static get styles() {
+    return [SHARED_STYLES, css`
+      h2 {
+        margin-top: 0;
+        display: flex;
+        justify-content: space-between;
+        font-weight: normal;
+        border-bottom: 2px solid white;
+        font-size: var(--chops-large-font-size);
+        padding-bottom: 0.5em;
+      }
+      .edit-actions {
+        width: 100%;
+        margin: 0.5em 0;
+        text-align: right;
+      }
+      i.material-icons {
+        color: #FF6F00;
+        margin-right: 4px;
+      }
+    `];
+  }
+
+  render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-shared-styles">
-        h2 {
-          margin-top: 0;
-          display: flex;
-          justify-content: space-between;
-          font-weight: normal;
-          border-bottom: 2px solid white;
-          font-size: var(--chops-large-font-size);
-          padding-bottom: 0.5em;
-        }
-        .edit-actions {
-          width: 100%;
-          margin: 0.5em 0;
-          text-align: right;
-        }
-        i.material-icons {
-          color: #FF6F00;
-          margin-right: 4px;
-        }
-      </style>
-      <chops-dialog id="privacyDialog" forced>
+      <chops-dialog
+        id="privacyDialog"
+        ?opened=${this._showPrivacyDialog}
+        forced>
         <div class="dialog-content">
           <h2>Email display settings</h2>
 
@@ -62,7 +81,7 @@ export class MrCues extends connectStore(PolymerElement) {
 
 
           <div class="edit-actions">
-            <chops-button on-click="dismissDialog">
+              <chops-button @click=${this.dismissDialog}>
               Got it
             </button>
           </div>
@@ -71,52 +90,18 @@ export class MrCues extends connectStore(PolymerElement) {
     `;
   }
 
-  static get properties() {
-    return {
-      userDisplayName: String,
-      prefs: Object,
-      prefsLoaded: Boolean,
-      dismissedDialog: {
-        type: Boolean,
-        value: false,
-      },
-      showPrivacyDialog: {
-        type: Boolean,
-        computed:
-        '_computeShowPrivacyDialog(prefs, prefsLoaded, dismissedDialog)',
-      },
-    };
-  }
-
   stateChanged(state) {
-    this.setProperties({
-      prefs: user.user(state).prefs,
-      prefsLoaded: user.user(state).prefsLoaded,
-    });
+    this.prefs = user.user(state).prefs;
+    this.prefsLoaded = user.user(state).prefsLoaded;
   }
 
-  static get observers() {
-    return [
-      '_showPrivacyDialogChanged(showPrivacyDialog)',
-    ];
-  }
-
-  _computeShowPrivacyDialog(prefs, prefsLoaded, dismissedDialog) {
+  get _showPrivacyDialog() {
     if (!this.userDisplayName) return false;
-    if (!prefsLoaded) return false;
-    if (dismissedDialog) return false;
-    if (!prefs) return false;
-    if (prefs.get('privacy_click_through') === 'true') return false;
+    if (!this.prefsLoaded) return false;
+    if (this.dismissedDialog) return false;
+    if (!this.prefs) return false;
+    if (this.prefs.get('privacy_click_through') === 'true') return false;
     return true;
-  }
-
-  _showPrivacyDialogChanged(showPrivacyDialog) {
-    const privacyDialog = this.shadowRoot.querySelector('#privacyDialog');
-    if (showPrivacyDialog) {
-      privacyDialog.open();
-    } else {
-      privacyDialog.close();
-    }
   }
 
   dismissDialog() {
@@ -125,10 +110,6 @@ export class MrCues extends connectStore(PolymerElement) {
       prefs: [{name: 'privacy_click_through', value: 'true'}],
     });
   }
-
-  static get is() {
-    return 'mr-cues';
-  }
 }
 
-customElements.define(MrCues.is, MrCues);
+customElements.define('mr-cues', MrCues);
