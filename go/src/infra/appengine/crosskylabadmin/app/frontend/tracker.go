@@ -16,6 +16,7 @@ package frontend
 
 import (
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/duration"
@@ -62,6 +63,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 		return nil, errors.Annotate(err, "failed to obtain Swarming client").Err()
 	}
 
+	log.Printf("Getting bots from Swarming")
 	bots, err := getBotsFromSwarming(ctx, sc, cfg.Swarming.BotPool, req.Selectors)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to get bots from Swarming").Err()
@@ -79,6 +81,7 @@ func (tsi *TrackerServerImpl) RefreshBots(ctx context.Context, req *fleet.Refres
 	if err := addTaskInfoToSummaries(ctx, sc, bsm); err != nil {
 		return nil, errors.Annotate(err, "failed to set idle time for bots").Err()
 	}
+	log.Printf("Inserting bot summaries into datastore")
 	updated, err := botsummary.Insert(ctx, bsm)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to insert bots").Err()
