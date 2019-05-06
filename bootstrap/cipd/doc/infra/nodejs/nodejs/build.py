@@ -37,7 +37,7 @@ NodePackage = collections.namedtuple('NodePackage', ('filename', 'sha256'))
 # Node parameter dictionary.
 NODE_PARAMS = NodeParams(
     # The Node.js version.
-    version='8.9.4',
+    version='10.15.3',
 )
 
 # URL template for a Node.js package.
@@ -47,11 +47,11 @@ NODE_URL_TEMPLATE = 'https://nodejs.org/dist/v%(version)s/%(filename)s'
 PLATFORMS = collections.OrderedDict({
   'linux-amd64': NodePackage(
       filename = 'node-v%(version)s-linux-x64.tar.xz',
-      sha256='68b94aac38cd5d87ab79c5b38306e34a20575f31a3ea788d117c20fffcca3370',
+      sha256='faddbe418064baf2226c2fcbd038c3ef4ae6f936eb952a1138c7ff8cfe862438',
   ),
   'mac-amd64': NodePackage(
       filename = 'node-v%(version)s-darwin-x64.tar.gz',
-      sha256='ca50f7d2035eb805306e303b644bb1cde170ce2615e0a2c6e95fb80881c48c24',
+      sha256='7a5eaa1f69614375a695ccb62017248e5dcc15b0b8edffa7db5b52997cf992ba',
   ),
 })
 
