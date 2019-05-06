@@ -197,7 +197,7 @@ class UrlFormattingTest(unittest.TestCase):
     query_pairs = []
     for name in framework_helpers.RECOGNIZED_PARAMS:
       params[name] = name
-      if name is not 'can' and name is not 'start':
+      if name != 'can' and name != 'start':
         query_pairs.append('%s=%s' % (name, 123))
     path = '/dude/wheres/my/car'
     mr = testing_helpers.MakeMonorailRequest(
@@ -218,7 +218,7 @@ class UrlFormattingTest(unittest.TestCase):
     query_pairs.append('id=200')  # id should be the first parameter.
     for name in framework_helpers.RECOGNIZED_PARAMS:
       params[name] = name
-      if name is not 'can' and name is not 'start':
+      if name != 'can' and name != 'start':
         query_pairs.append('%s=%s' % (name, 123))
     path = '/dude/wheres/my/car'
     mr = testing_helpers.MakeMonorailRequest(
