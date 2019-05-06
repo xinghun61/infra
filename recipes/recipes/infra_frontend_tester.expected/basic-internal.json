@@ -149,7 +149,7 @@
   {
     "cmd": [
       "npm",
-      "ci"
+      "install"
     ],
     "cwd": "[START_DIR]/infra_internal/appengine/chromiumdash",
     "env": {

@@ -45,7 +45,7 @@ def RunSteps(api):
 def RunInfraInternalFrontendTests(api, env):
   cwd = api.path['checkout'].join('appengine', 'chromiumdash')
   with api.context(env=env, cwd=cwd):
-    api.step('chromiumdash npm install', ['npm', 'ci'])
+    api.step('chromiumdash npm install', ['npm', 'install'])
     api.step('chromiumdash bower install', ['npx', 'bower', 'install'])
     api.step(
         'chromiumdash run-wct', ['npx', 'run-wct', '--dep', 'third_party'])
@@ -55,14 +55,14 @@ def RunInfraInternalFrontendTests(api, env):
 def RunInfraFrontendTests(api, env):
   cwd = api.path['checkout'].join('appengine', 'findit')
   with api.context(env=env, cwd=cwd):
-    api.step('findit npm install', ['npm', 'ci'])
+    api.step('findit npm install', ['npm', 'install'])
     api.step('findit run-wct', ['npx', 'run-wct', '--base', 'ui/',
         '--dep', 'third_party'])
     api.step('findit generate js coverage report', ['npx', 'nyc', 'report'])
 
   cwd = api.path['checkout'].join('crdx', 'chopsui')
   with api.context(env=env, cwd=cwd):
-    api.step('chopsui npm install', ['npm', 'ci'])
+    api.step('chopsui npm install', ['npm', 'install'])
     api.step('chopsui bower install', ['npx', 'bower', 'install'])
     api.step('chopsui run-wct', ['npx', 'run-wct', '--prefix', 'test',
         '--dep', 'bower_components'])
@@ -78,7 +78,7 @@ def RunInfraFrontendTests(api, env):
   cwd = api.path['checkout'].join('go', 'src', 'infra', 'appengine',
       'sheriff-o-matic', 'frontend')
   with api.context(env=env, cwd=cwd):
-    api.step('sheriff-o-matic npm install', ['npm', 'ci'])
+    api.step('sheriff-o-matic npm install', ['npm', 'install'])
     api.step('sheriff-o-matic bower install', ['npx', 'bower', 'install'])
     api.step('sheriff-o-matic run-wct', ['npx', 'run-wct'])
     api.step('sheriff-o-matic generate js coverage report',
@@ -87,7 +87,7 @@ def RunInfraFrontendTests(api, env):
 
 def RunFrontendTests(api, env, cwd, app_name):
   with api.context(env=env, cwd=cwd):
-    api.step(('%s npm install' % app_name), ['npm', 'ci'])
+    api.step(('%s npm install' % app_name), ['npm', 'install'])
     api.step(('%s test' % app_name), ['npm', 'run', 'test'])
 
 

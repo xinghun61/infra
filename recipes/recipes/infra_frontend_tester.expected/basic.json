@@ -149,7 +149,7 @@
   {
     "cmd": [
       "npm",
-      "ci"
+      "install"
     ],
     "cwd": "[START_DIR]/infra/appengine/findit",
     "env": {
@@ -187,7 +187,7 @@
   {
     "cmd": [
       "npm",
-      "ci"
+      "install"
     ],
     "cwd": "[START_DIR]/infra/crdx/chopsui",
     "env": {
@@ -237,7 +237,7 @@
   {
     "cmd": [
       "npm",
-      "ci"
+      "install"
     ],
     "cwd": "[START_DIR]/infra/appengine/monorail",
     "env": {
@@ -260,7 +260,7 @@
   {
     "cmd": [
       "npm",
-      "ci"
+      "install"
     ],
     "cwd": "[START_DIR]/infra/go/src/infra/appengine/dashboard/frontend",
     "env": {
@@ -283,7 +283,7 @@
   {
     "cmd": [
       "npm",
-      "ci"
+      "install"
     ],
     "cwd": "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic/frontend",
     "env": {
