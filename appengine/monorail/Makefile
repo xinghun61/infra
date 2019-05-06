@@ -80,7 +80,7 @@ serve_remote_email: config_local
 run: serve
 
 deps:
-	npm install --no-save
+	npm ci --no-save
 
 	mkdir -p deployed_node_modules/@webcomponents/webcomponentsjs/
 
@@ -95,7 +95,7 @@ clean_deps:
 	rm -rf node_modules
 
 node_deps:
-	npm install
+	npm ci
 
 karma: node_deps
 	npx karma start --debug --coverage
