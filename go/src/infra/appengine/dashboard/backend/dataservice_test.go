@@ -15,50 +15,6 @@ import (
 	"go.chromium.org/luci/appengine/gaetesting"
 )
 
-var (
-	serviceIdx = datastore.IndexDefinition{
-		Kind:     "Service",
-		Ancestor: true,
-		SortBy: []datastore.IndexColumn{
-			{
-				Property:   "Name",
-				Descending: true,
-			},
-		},
-	}
-
-	incidentIdx = datastore.IndexDefinition{
-		Kind:     "ServiceIncident",
-		Ancestor: true,
-		SortBy: []datastore.IndexColumn{
-			{
-				Property:   "ID",
-				Descending: true,
-			},
-		},
-	}
-	incidentIneqStartIdx = datastore.IndexDefinition{
-		Kind:     "ServiceIncident",
-		Ancestor: true,
-		SortBy: []datastore.IndexColumn{
-			{
-				Property: "StartTime",
-			},
-		},
-	}
-	incidentIneqEndIdx = datastore.IndexDefinition{
-		Kind:     "ServiceIncident",
-		Ancestor: true,
-		SortBy: []datastore.IndexColumn{
-			{
-				Property: "EndTime",
-			},
-		},
-	}
-
-	indexes = []*datastore.IndexDefinition{&serviceIdx, &incidentIdx, &incidentIneqStartIdx, &incidentIneqEndIdx}
-)
-
 type getServiceTest struct {
 	inputID    string
 	expService *Service
@@ -113,7 +69,7 @@ func newTestContext() context.Context {
 	ctx := gaetesting.TestingContext()
 	testing := datastore.GetTestable(ctx)
 	testing.Consistent(true)
-	testing.AddIndexes(indexes...)
+	testing.AutoIndex(true)
 	return ctx
 }
 

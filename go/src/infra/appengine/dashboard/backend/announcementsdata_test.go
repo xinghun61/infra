@@ -12,11 +12,11 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.chromium.org/gae/service/datastore"
-	"golang.org/x/net/context"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestConvertAnnouncement(t *testing.T) {
-	ctx := context.Background()
 	startTS := int64(764797594)
 	endTS := int64(764883994)
 	testCases := []struct {
@@ -76,7 +76,7 @@ func TestConvertAnnouncement(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		actual, err := tc.ann.ToProto(ctx, tc.platforms)
+		actual, err := tc.ann.ToProto(tc.platforms)
 		if err != nil {
 			t.Errorf("%d: unexpected error - %s", i, err)
 		}
@@ -84,4 +84,32 @@ func TestConvertAnnouncement(t *testing.T) {
 			t.Errorf("%d: expected %+v, found %+v", i, tc.expected, actual)
 		}
 	}
+}
+
+func TestCreateLiveAnnouncement(t *testing.T) {
+	Convey("CreateLiveAnnouncement", t, func() {
+		ctx := newTestContext()
+		Convey("successful Announcement creator", func() {
+			platforms := []*Platform{
+				{
+					Name:     "monorail",
+					URLPaths: []string{"p/chromium/*"},
+				},
+				{
+					Name:     "som",
+					URLPaths: []string{"c/infra/infra/*"},
+				},
+			}
+			ann, err := CreateLiveAnnouncement(
+				ctx, "Cow cow cow", "cowman", platforms)
+			So(err, ShouldBeNil)
+			So(platforms, ShouldHaveLength, 2)
+			// Test getting platforms and announcement does not result
+			// in error and they were saved correctly in datastore.
+			for _, platform := range platforms {
+				So(datastore.Get(ctx, platform), ShouldBeNil)
+			}
+			So(datastore.Get(ctx, ann), ShouldBeNil)
+		})
+	})
 }

@@ -13,8 +13,8 @@ import (
 type announcementsService struct{}
 
 func (s *announcementsService) CreateLiveAnnouncement(ctx context.Context, _ *dashpb.CreateLiveAnnouncementRequest) (*dashpb.CreateLiveAnnouncementResponse, error) {
-	// TODO(jojwang): call converter functions in annconverters.go
-	// before calling functions in backend announcementsdats.go to
-	// save to datstore.
+	// TODO(jojwang): call ingestPlatforms anningesters.go and
+	// check logged in user has permission to create an announcement
+	// before calling backend.CreateLiveAnnouncement
 	return &dashpb.CreateLiveAnnouncementResponse{}, nil
 }

@@ -37,7 +37,7 @@ type Platform struct {
 //
 // It returns (aProto, nil) on successful conversion or (nil, err) if there
 // was an error while converting timestamps.
-func (a *Announcement) ToProto(ctx context.Context, platforms []*Platform) (*dashpb.Announcement, error) {
+func (a *Announcement) ToProto(platforms []*Platform) (*dashpb.Announcement, error) {
 	aProto := &dashpb.Announcement{
 		Id:             a.ID,
 		MessageContent: a.Message,
@@ -78,4 +78,34 @@ func ConvertPlatforms(platforms []*Platform) (convertedPlatforms []*dashpb.Platf
 	return
 }
 
-// TODO(jojwang): This file will hold methods that save Announcements and Platforms to datastore.
+// CreateLiveAnnouncement takes announcement information and Platforms to build
+// an Announcement and adds AnnouncementKeys to all platforms and puts all
+// structs in Datastore.
+//
+// It returns (announcement, nil) on success, and (nil, err) on datastore errors.
+func CreateLiveAnnouncement(c context.Context, message, creator string, platforms []*Platform) (*Announcement, error) {
+	announcement := &Announcement{
+		StartTime: time.Now().UTC(),
+		Message:   message,
+		Creator:   creator,
+	}
+	err := datastore.RunInTransaction(c, func(c context.Context) error {
+		if err := datastore.Put(c, announcement); err != nil {
+			return fmt.Errorf("error writing announcement to datastore - %s", err)
+		}
+
+		announcementKey := datastore.NewKey(c, "Announcement", "", announcement.ID, nil)
+		for _, platform := range platforms {
+			platform.AnnouncementKey = announcementKey
+		}
+
+		if err := datastore.Put(c, platforms); err != nil {
+			return fmt.Errorf("error writing platforms to datastore - %s", err)
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, err
+	}
+	return announcement, nil
+}
