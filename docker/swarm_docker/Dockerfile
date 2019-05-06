@@ -1,13 +1,10 @@
-FROM ubuntu:trusty
+FROM ubuntu:xenial
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN /usr/bin/apt-get update
 RUN /usr/bin/apt-get -y dist-upgrade
-RUN /usr/bin/apt-get -y install curl
-RUN /usr/bin/apt-get -y install sudo
-RUN /usr/bin/apt-get -y install python
-RUN /usr/bin/apt-get -y install lsof
+RUN /usr/bin/apt-get -y install curl lsof python sudo
 
 # Cleanup to shrink image sizes.
 RUN /usr/bin/find /var/lib/apt/lists /tmp /var/tmp /usr/share/info \
