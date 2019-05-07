@@ -67,6 +67,7 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 		}
 		resShift.Comment = s.Comment
 		if err = h.shiftStore(ctx.Context).UpdateShift(ctx.Context, cfg.Config.Name, resShift); err != nil {
+			logging.Warningf(ctx.Context, "UpdateShift(ctx, %q, %v) failed: %v", cfg.Config.Name, resShift, err)
 			return err
 		}
 

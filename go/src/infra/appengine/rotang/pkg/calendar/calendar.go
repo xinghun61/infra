@@ -87,6 +87,7 @@ func (c *Calendar) Event(ctx *router.Context, cfg *rotang.Configuration, shift *
 func findShifts(ctx context.Context, shifts []rotang.ShiftEntry, find *rotang.ShiftEntry) (*rotang.ShiftEntry, error) {
 	for _, s := range shifts {
 		if s.EvtID == find.EvtID {
+			s.StartTime, s.EndTime = find.StartTime, find.EndTime
 			return &s, nil
 		}
 		if s.StartTime == find.StartTime && s.EndTime == find.EndTime {
