@@ -56,7 +56,7 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     failures_in_build = CompileFailure.query(ancestor=build_key).fetch()
     self.assertEqual(2, len(failures_in_build))
     self.assertItemsEqual([['target1.o'], ['target2.o']],
-                          [f.output_targets for f in failures_in_build])
+                          [f.GetFailureIdentifier() for f in failures_in_build])
 
   def testCompileFailureGroup(self):
     CompileFailureGroup.Create(
@@ -99,6 +99,9 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
     self._CreateCompileFailureAnalysis()
     analysis = CompileFailureAnalysis.GetVersion(self.build_id)
     self.assertIsNotNone(analysis)
+    self.assertItemsEqual({
+        'compile': ['target1.o', 'target2.o']
+    }, analysis.failed_targets)
 
   def _CreateCompileRerunBuild(self, build_id, commit_position, analysis_key):
     build = CompileRerunBuild.Create(

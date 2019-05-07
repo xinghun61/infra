@@ -14,10 +14,10 @@ from findit_v2.model.luci_build import LuciBuild
 from gae_libs.model.versioned_model import VersionedModel
 
 
-def _GetFailedTargets(compile_failures):
+def GetFailedTargets(compile_failures):
   """Gets failed compile targets of each compile step."""
   failed_targets = defaultdict(list)
-  for compile_failure in compile_failures:
+  for compile_failure in compile_failures or []:
     failed_targets[compile_failure.step_ui_name].extend(
         compile_failure.output_targets)
   return {
@@ -62,6 +62,11 @@ class CompileFailure(AtomicFailure):
     instance.dependencies = dependencies or []
     return instance
 
+  def GetFailureIdentifier(self):
+    """Gets the identifier to differentiate a compile failure in the compile
+      step."""
+    return self.output_targets
+
 
 class CompileFailureGroup(BaseFailureGroup):
   """Class for group of compile failures."""
@@ -79,7 +84,7 @@ class CompileFailureGroup(BaseFailureGroup):
     """Gets failed compile targets of each compile step that are included in the
       group."""
     failed_target_objects = ndb.get_multi(self.compile_failure_keys)
-    return _GetFailedTargets(failed_target_objects)
+    return GetFailedTargets(failed_target_objects)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
@@ -117,7 +122,7 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
     """Gets a list of failed compile targets of each compile step that are
       analyzed in the analysis."""
     failed_target_objects = ndb.get_multi(self.compile_failure_keys)
-    return _GetFailedTargets(failed_target_objects)
+    return GetFailedTargets(failed_target_objects)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
@@ -177,7 +182,7 @@ class CompileRerunBuild(LuciBuild):
   def GetFailedTargets(self):
     """Gets a list of failed compile targets of each compile step that failed
       in the rerun build."""
-    return _GetFailedTargets(self.failures)
+    return GetFailedTargets(self.failures)
 
   def SaveRerunBuildResults(self, status, detailed_compile_failures):
     """Saves the results of this rerun build.
@@ -191,7 +196,7 @@ class CompileRerunBuild(LuciBuild):
           'failures': {
             'target_str': {
               'output_targets': ['t1'],
-              'rule': 'CXX,
+              'rule': 'CXX',
               ...
             }
           }
