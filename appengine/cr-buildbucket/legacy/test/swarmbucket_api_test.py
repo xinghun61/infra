@@ -300,6 +300,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                             },
                         },
                         'createdBy': 'anonymous:anonymous',
+                        'exe': {},
                         'input': {},
                         'createTime': '2015-11-30T00:00:00Z',
                     },

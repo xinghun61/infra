@@ -123,6 +123,7 @@ class BuildRequest(_BuildRequestBase):
             ),
         ),
         critical=sbr.critical,
+        exe=sbr.exe,
     )
     build_proto.create_time.FromDatetime(now)
 
