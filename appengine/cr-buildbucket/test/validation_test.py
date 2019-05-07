@@ -414,6 +414,33 @@ class ScheduleBuildRequestTests(BaseTestCase):
     )
     self.assert_invalid(msg, r'notify.user_data: must be <= 4096 bytes')
 
+  def test_cipd_version_latest(self):
+    msg = rpc_pb2.ScheduleBuildRequest(
+        builder=build_pb2.BuilderID(
+            project='chromium', bucket='try', builder='linux-rel'
+        ),
+        exe=dict(cipd_version='latest'),
+    )
+    self.assert_valid(msg)
+
+  def test_cipd_version_invalid(self):
+    msg = rpc_pb2.ScheduleBuildRequest(
+        builder=build_pb2.BuilderID(
+            project='chromium', bucket='try', builder='linux-rel'
+        ),
+        exe=dict(cipd_version=':'),
+    )
+    self.assert_invalid(msg, r'exe.cipd_version: invalid version ":"')
+
+  def test_cipd_package(self):
+    msg = rpc_pb2.ScheduleBuildRequest(
+        builder=build_pb2.BuilderID(
+            project='chromium', bucket='try', builder='linux-rel'
+        ),
+        exe=dict(cipd_package='something'),
+    )
+    self.assert_invalid(msg, r'exe.cipd_package: disallowed')
+
 
 class CancelBuildRequestTests(BaseTestCase):
   func_name = 'validate_cancel_build_request'

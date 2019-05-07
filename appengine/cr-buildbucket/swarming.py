@@ -617,9 +617,14 @@ def _setup_recipes(build, builder_cfg, params):
       'recipe_package:%s' % builder_cfg.recipe.cipd_package,
   ]
   extra_cipd_packages = [{
-      'path': _KITCHEN_CHECKOUT,
-      'package_name': builder_cfg.recipe.cipd_package,
-      'version': builder_cfg.recipe.cipd_version or 'refs/heads/master',
+      'path':
+          _KITCHEN_CHECKOUT,
+      'package_name':
+          builder_cfg.recipe.cipd_package,
+      'version': (
+          build.proto.exe.cipd_version or builder_cfg.recipe.cipd_version or
+          'refs/heads/master'
+      ),
   }]
 
   return extra_swarming_tags, extra_cipd_packages, extra_task_template_params

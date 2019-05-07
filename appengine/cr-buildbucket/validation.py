@@ -14,6 +14,8 @@ import logging
 import re
 import threading
 
+from components import cipd
+
 from proto import common_pb2
 
 import buildtags
@@ -217,6 +219,12 @@ def validate_schedule_build_request(
   if req.HasField('builder'):
     with _enter('builder'):
       validate_builder_id(req.builder, require_builder=require_builder)
+
+  with _enter('exe'):
+    _check_falsehood(req.exe, 'cipd_package')
+    if req.exe.cipd_version:
+      with _enter('cipd_version'):
+        _validate_cipd_version(req.exe.cipd_version)
 
   with _enter('properties'):
     validate_struct(req.properties)
@@ -523,6 +531,11 @@ def _validate_predicate_output_gitiles_commit(commit):
 # Internals.
 
 
+def _validate_cipd_version(version):
+  if not cipd.is_valid_version(version):
+    _err('invalid version "%s"', version)
+
+
 def _struct_has_path(struct, path):
   """Returns True if struct has a value at field path."""
   for p in path:
@@ -550,6 +563,13 @@ def _check_truth(msg, *field_names):
   for f in field_names:
     if not getattr(msg, f):
       _enter_err(f, 'required')
+
+
+def _check_falsehood(msg, *field_names):
+  """Validates that the field values are falsish."""
+  for f in field_names:
+    if getattr(msg, f):
+      _enter_err(f, 'disallowed')
 
 
 def _check_repeated(msg, field_name, validator):

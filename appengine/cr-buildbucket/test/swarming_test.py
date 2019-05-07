@@ -709,6 +709,15 @@ class TaskDefTest(BaseTest):
         slices[0]['properties']['dimensions'],
     )
 
+  def test_override_exe_version(self):
+    build = test_util.build(exe=dict(cipd_version='canary'))
+    task_slice = self.prepare_task_def(build)['task_slices'][0]
+    (pkg,) = [
+        p for p in task_slice['properties']['cipd_input']['packages']
+        if p['package_name'] == 'infra/recipe_bundle'
+    ]
+    self.assertEqual(pkg['version'], 'canary')
+
   def test_override_dimensions(self):
     build = test_util.build(
         for_creation=True,
