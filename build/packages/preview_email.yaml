@@ -1,0 +1,13 @@
+package: infra/tools/preview_email/${platform}
+description: Preview LUCI Notify email templates
+platforms:
+  - linux-amd64
+  - mac-amd64
+  - windows-amd64
+go_packages:
+  - go.chromium.org/luci/luci_notify/cmd/preview_email
+install_mode: copy
+root: ../../go/bin
+data:
+  - file: preview_email${exe_suffix}
+  - version_file: .versions/preview_email${exe_suffix}.cipd_version

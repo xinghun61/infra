@@ -118,6 +118,7 @@ LAYOUT = Layout(
         'github.com/golang/mock/mockgen',
         'go.chromium.org/gae/tools/proto-gae',
         'go.chromium.org/luci/grpc/cmd/...',
+        'go.chromium.org/luci/luci_notify/cmd/...',
         'go.chromium.org/luci/tools/cmd/...',
         'infra/cmd/bqexport',
         'infra/cmd/cloudsqlhelper',
