@@ -137,9 +137,7 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": "gsubmodd"
-      },
+      "failure": {},
       "humanReason": "Step('gsubmodd') failed with return_code 1"
     },
     "name": "$result"

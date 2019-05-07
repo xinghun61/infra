@@ -608,9 +608,7 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": "result (2)"
-      },
+      "failure": {},
       "humanReason": "Step('result (2)') failed with return_code 1"
     },
     "name": "$result"

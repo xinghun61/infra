@@ -300,9 +300,7 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": "roll result"
-      },
+      "failure": {},
       "humanReason": "Step('roll result') failed with return_code 1"
     },
     "name": "$result"

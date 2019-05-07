@@ -1,11 +1,6 @@
 [
   {
     "failure": {
-      "exception": {
-        "traceback": [
-          "<omitted by recipe engine>"
-        ]
-      },
       "humanReason": "Conflicting git repo URLs:\n  `git_repo` property 'https://chromium.googlesource.com/infra/infra.GIT'\n  but triggered on Gitiles commit {host: \"chromium.googlesource.com\"\nproject: \"chromium/tools/build\"\nid: \"2d72510e447ab60a9728aeea2362d8be2cbd7789\"\nref: \"refs/heads/master\"\n}"
     },
     "name": "$result"

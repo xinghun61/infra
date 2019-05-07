@@ -192,9 +192,7 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": "calculate webrtc lkgr"
-      },
+      "failure": {},
       "humanReason": "Step('calculate webrtc lkgr') failed with return_code 1"
     },
     "name": "$result"

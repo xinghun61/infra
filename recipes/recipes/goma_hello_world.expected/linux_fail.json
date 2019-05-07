@@ -326,9 +326,7 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": "link"
-      },
+      "failure": {},
       "humanReason": "Step('link') failed with return_code 1"
     },
     "name": "$result"

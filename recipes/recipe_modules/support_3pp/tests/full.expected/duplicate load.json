@@ -71,11 +71,6 @@
   },
   {
     "failure": {
-      "exception": {
-        "traceback": [
-          "<omitted by recipe engine>"
-        ]
-      },
       "humanReason": "Uncaught Exception: DuplicatePackage('something',)"
     },
     "name": "$result"

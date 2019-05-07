@@ -49,9 +49,7 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": ""
-      },
+      "failure": {},
       "humanReason": "Bad spec PB for 'bad'"
     },
     "name": "$result"

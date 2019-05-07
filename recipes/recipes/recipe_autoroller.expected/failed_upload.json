@@ -407,9 +407,7 @@
   },
   {
     "failure": {
-      "failure": {
-        "step": "Aggregate step failure."
-      },
+      "failure": {},
       "humanReason": "1 out of 1 aggregated steps failed: Step('build.git cl upload failed') failed with return_code 1"
     },
     "name": "$result"
