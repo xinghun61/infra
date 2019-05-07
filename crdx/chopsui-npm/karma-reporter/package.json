@@ -1,0 +1,31 @@
+{
+  "name": "@chopsui/karma-reporter",
+  "version": "1.0.4",
+  "description": "JSON reporter for ChOps apps running tests with Karma",
+  "main": "test-reporter.js",
+  "author": "The Chromium Authors",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
+  },
+  "dependencies": {
+    "axe-core": "^3.2.2"
+  },
+  "peerDependencies": {
+    "karma": ">=0.9"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.2.0",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "eslint": "^4.7.2",
+    "karma-chrome-launcher": "^2.2.0",
+    "karma-mocha": "^1.3.0",
+    "karma": ">=0.9",
+    "mocha": "^3.5.3"
+  }
+}
