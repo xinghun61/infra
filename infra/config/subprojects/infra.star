@@ -29,7 +29,7 @@ def ci_builder(name, os, cpu=None):
   )
 
 
-def try_builder(name, os, recipe=None):
+def try_builder(name, os, recipe=None, experiment_percentage=None):
   infra.builder(
       name = name,
       bucket = 'try',
@@ -39,6 +39,7 @@ def try_builder(name, os, recipe=None):
   luci.cq_tryjob_verifier(
       builder = name,
       cq_group = 'infra cq',
+      experiment_percentage=experiment_percentage,
   )
 
 
@@ -58,13 +59,21 @@ ci_builder(name = 'infra-continuous-win7-32', os = 'Windows', cpu = 'x86-32')
 ci_builder(name = 'infra-continuous-win10-64', os = 'Windows-10')
 
 # All trybots.
+# TODO(tandrii): remove "Legacy Style" named builders
+# in favor of "lower-case" style ones after May 10th.
+try_builder(name = 'infra-try-xenial-64', os = 'Ubuntu-16.04', experiment_percentage=100)
 try_builder(name = 'Infra Linux Trusty 64 Tester', os = 'Ubuntu-14.04')
+try_builder(name = 'infra-try-trusty-64', os = 'Ubuntu-14.04', experiment_percentage=100)
 try_builder(name = 'Infra Mac Tester', os = 'Mac-10.13')
+try_builder(name = 'infra-try-mac', os = 'Mac-10.13', experiment_percentage=100)
 try_builder(name = 'Infra Win Tester', os = 'Windows')
+try_builder(name = 'infra-try-win', os = 'Windows', experiment_percentage=100)
 try_builder(name = 'Infra Frontend Tester', os = 'Ubuntu-14.04', recipe = 'infra_frontend_tester')
+try_builder(name = 'infra-try-frontend', os = 'Ubuntu-14.04', recipe = 'infra_frontend_tester', experiment_percentage=100)
 
 # Presubmit trybot.
 build.presubmit(name = 'Infra Presubmit', cq_group = 'infra cq', repo_name = 'infra')
+build.presubmit(name = 'infra-try-presubmit', cq_group = 'infra cq', repo_name = 'infra')
 
 # Recipes ecosystem.
 recipes.simulation_tester(
