@@ -1,0 +1,15 @@
+{
+  "name": "@chopsui/chops-signin-aware",
+  "version": "0.1.4",
+  "description": "A shared signin-aware element for Chops.",
+  "author": "The Chromium Authors",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
+  },
+  "dependencies": {
+    "@chopsui/chops-signin": "^0.1.4",
+    "lit-element": "^2.0.0"
+  }
+}

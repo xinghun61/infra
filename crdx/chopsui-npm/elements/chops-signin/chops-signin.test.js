@@ -20,7 +20,7 @@ afterEach(() => {
 });
 
 test('initializes', () => {
-  assert.instanceOf(element, ChopsSignin);
+  assert.equal(element.constructor.name, 'ChopsSignin');
 });
 
 test('lack of clientId results in error message', async () => {

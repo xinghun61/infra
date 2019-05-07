@@ -120,7 +120,11 @@ export class ChopsSignin extends LitElement {
   }
 }
 
-customElements.define('chops-signin', ChopsSignin);
+// This check is for unit tests, which fail with '"chops-signin" has
+// already been used with this registry` errors.
+if (!customElements.get('chops-signin')) {
+  customElements.define('chops-signin', ChopsSignin);
+}
 
 export function getAuthInstanceAsync() {
   return authInitializedPromise.then(function() {
