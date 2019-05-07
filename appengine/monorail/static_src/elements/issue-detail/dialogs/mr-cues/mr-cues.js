@@ -86,7 +86,7 @@ export class MrCues extends connectStore(LitElement) {
             </button>
           </div>
         </div>
-      </dialog>
+      </chops-dialog>
     `;
   }
 

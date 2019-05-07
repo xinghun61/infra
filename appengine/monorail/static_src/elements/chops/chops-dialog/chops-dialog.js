@@ -69,7 +69,7 @@ export class ChopsDialog extends LitElement {
 
   render() {
     return html`
-      <dialog class="dialog" role="dialog" on-cancel="handleCancel" >
+      <dialog class="dialog" role="dialog" @cancel=${this._cancelHandler}>
         <div class="dialog-content">
           <slot></slot>
         </div>
@@ -195,8 +195,10 @@ export class ChopsDialog extends LitElement {
     this.opened = !this.opened;
   }
 
-  handleCancel(evt) {
-    if (this.forced) {
+  _cancelHandler(evt) {
+    if (!this.forced) {
+      this.close();
+    } else {
       evt.preventDefault();
     }
   }
