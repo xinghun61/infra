@@ -193,7 +193,7 @@ func cronDiscoverBuilders(c *router.Context) error {
 
 func handleBuildbucketPubSub(c *router.Context) error {
 	var msg struct {
-		Build    buildbucket.ApiCommonBuildMessage
+		Build    buildbucket.LegacyApiCommonBuildMessage
 		Hostname string
 	}
 	if err := parsePubSubJSON(c.Request.Body, &msg); err != nil {

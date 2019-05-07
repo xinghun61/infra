@@ -36,8 +36,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func buildMsg(key groupKey, duration time.Duration, result string) *bbapi.ApiCommonBuildMessage {
-	return &bbapi.ApiCommonBuildMessage{
+func buildMsg(key groupKey, duration time.Duration, result string) *bbapi.LegacyApiCommonBuildMessage {
+	return &bbapi.LegacyApiCommonBuildMessage{
 		Tags:              []string{strpair.Format(bbapi.TagBuildSet, protoutil.GerritBuildSet(key.GerritChange()))},
 		Status:            "COMPLETED",
 		Result:            result,
@@ -72,7 +72,7 @@ func TestAnalyze(t *testing.T) {
 		// Mock buildbucket server.
 		var buildSets []mockedBuildSet
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			res := &bbapi.ApiSearchResponseMessage{}
+			res := &bbapi.LegacyApiSearchResponseMessage{}
 			defer func() {
 				err := json.NewEncoder(w).Encode(res)
 				testCtx.So(err, ShouldBeNil)

@@ -195,7 +195,7 @@ type properties struct {
 	GotRevision string `json:"got_revision"`
 }
 
-func parseOutputProperties(msg *bbapi.ApiCommonBuildMessage) (properties, error) {
+func parseOutputProperties(msg *bbapi.LegacyApiCommonBuildMessage) (properties, error) {
 	if msg.ResultDetailsJson == "" {
 		return properties{}, nil
 	}
@@ -222,7 +222,7 @@ func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 		req.MaxBuilds(int64(cap(keys)))
 	}
 
-	foundBuilds := make(chan *bbapi.ApiCommonBuildMessage, cap(keys))
+	foundBuilds := make(chan *bbapi.LegacyApiCommonBuildMessage, cap(keys))
 	var searchErr error
 	go func() {
 		defer close(foundBuilds)
@@ -390,7 +390,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 			"builds(status)",
 			"builds(url)",
 		)
-		var msgs []*bbapi.ApiCommonBuildMessage
+		var msgs []*bbapi.LegacyApiCommonBuildMessage
 		msgs, _, *err = req.Fetch(0, nil)
 		if *err != nil {
 			return

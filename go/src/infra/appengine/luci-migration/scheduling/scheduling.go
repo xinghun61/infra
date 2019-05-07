@@ -74,7 +74,7 @@ type Build struct {
 }
 
 // ParseBuild parses a raw buildbucket build message to a Build.
-func ParseBuild(msg *bbapi.ApiCommonBuildMessage) (*Build, error) {
+func ParseBuild(msg *bbapi.LegacyApiCommonBuildMessage) (*Build, error) {
 	tags := strpair.ParseMap(msg.Tags)
 	build := &Build{
 		ID:             msg.Id,
@@ -200,7 +200,7 @@ func (h *Scheduler) buildbotBuildCompleted(c context.Context, build *Build) erro
 	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.ID, 10))
 	newTags.Set(attemptTagKey, "0")
 	newTags.Set(bbapi.TagBuildSet, protoutil.GerritBuildSet(build.Change))
-	newBuild := &bbapi.ApiPutRequestMessage{
+	newBuild := &bbapi.LegacyApiPutRequestMessage{
 		Bucket:            master.LuciBucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
 		ParametersJson:    newParamsJSON,
@@ -251,7 +251,7 @@ func (h *Scheduler) luciBuildFailed(c context.Context, build *Build) error {
 	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.BuildbotBuildID, 10))
 	newTags.Set(attemptTagKey, strconv.Itoa(build.Attempt+1))
 	newTags.Set(bbapi.TagBuildSet, changeBS)
-	newBuild := &bbapi.ApiPutRequestMessage{
+	newBuild := &bbapi.LegacyApiPutRequestMessage{
 		Bucket:            build.Bucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
 		ParametersJson:    build.ParametersJSON,
@@ -297,7 +297,7 @@ func withLock(c context.Context, buildID int64, f func() error) error {
 }
 
 // schedule creates a build and logs a successful result.
-func (h *Scheduler) schedule(c context.Context, builder string, req *bbapi.ApiPutRequestMessage) error {
+func (h *Scheduler) schedule(c context.Context, builder string, req *bbapi.LegacyApiPutRequestMessage) error {
 	req.Tags = append(req.Tags, "user_agent:luci-migration")
 	req.Experimental = true
 

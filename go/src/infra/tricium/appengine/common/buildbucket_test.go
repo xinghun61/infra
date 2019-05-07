@@ -69,9 +69,9 @@ func TestMakeRequest(t *testing.T) {
 
 		So(
 			makeRequest(pubsubTopic, pubsubUserdata, parametersJSON, tags),
-			ShouldResemble, &bbapi.ApiPutRequestMessage{
+			ShouldResemble, &bbapi.LegacyApiPutRequestMessage{
 				Bucket: bucket,
-				PubsubCallback: &bbapi.ApiPubSubCallbackMessage{
+				PubsubCallback: &bbapi.LegacyApiPubSubCallbackMessage{
 					Topic:    pubsubTopic,
 					UserData: pubsubUserdata,
 				},

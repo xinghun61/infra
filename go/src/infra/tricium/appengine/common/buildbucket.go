@@ -163,10 +163,10 @@ func swarmingParametersJSON(worker *admin.Worker, recipe *admin.Worker_Recipe) (
 	return string(parametersJSON), err
 }
 
-func makeRequest(pubsubTopic, pubsubUserdata, parametersJSON string, tags []string) *bbapi.ApiPutRequestMessage {
-	return &bbapi.ApiPutRequestMessage{
+func makeRequest(pubsubTopic, pubsubUserdata, parametersJSON string, tags []string) *bbapi.LegacyApiPutRequestMessage {
+	return &bbapi.LegacyApiPutRequestMessage{
 		Bucket: bucket,
-		PubsubCallback: &bbapi.ApiPubSubCallbackMessage{
+		PubsubCallback: &bbapi.LegacyApiPubSubCallbackMessage{
 			Topic:    pubsubTopic,
 			UserData: pubsubUserdata,
 		},

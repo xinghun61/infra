@@ -31,7 +31,7 @@ const (
 )
 
 func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, tags []string,
-	canary settings.Trinary, result, failureReason string, max int) ([]*bbapi.ApiCommonBuildMessage, error) {
+	canary settings.Trinary, result, failureReason string, max int) ([]*bbapi.LegacyApiCommonBuildMessage, error) {
 	if max <= 0 || max > maxBuildBucketResults {
 		max = maxBuildBucketResults
 	}
@@ -52,7 +52,7 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 	defer cancelFunc()
 
 	var (
-		builds []*bbapi.ApiCommonBuildMessage
+		builds []*bbapi.LegacyApiCommonBuildMessage
 		curs   string
 	)
 	for {
@@ -84,7 +84,7 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 			req = req.Canary(false)
 		}
 
-		var res *bbapi.ApiSearchResponseMessage
+		var res *bbapi.LegacyApiSearchResponseMessage
 		err := retry.Retry(c, transient.Only(retry.Default), func() error {
 			var err error
 			if res, err = req.Context(c).Do(); err != nil {
@@ -124,7 +124,7 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 	return builds, nil
 }
 
-func makeBuildBucketError(e *bbapi.ApiErrorMessage) error {
+func makeBuildBucketError(e *bbapi.LegacyApiErrorMessage) error {
 	return errors.Reason("BuildBucket error: %s", e.Message).InternalReason(e.Reason).Err()
 }
 

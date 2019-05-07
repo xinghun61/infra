@@ -41,7 +41,7 @@ func TestScheduling(t *testing.T) {
 	t.Parallel()
 
 	Convey("ParseBuild", t, func() {
-		msg := &bbapi.ApiCommonBuildMessage{
+		msg := &bbapi.LegacyApiCommonBuildMessage{
 			Id:     1,
 			Bucket: "luci.chromium.ci",
 			Tags: []string{
@@ -104,13 +104,13 @@ func TestScheduling(t *testing.T) {
 
 		// Mock buildbucket server.
 		putResponseCode := 0
-		var actualPutRequests []*bbapi.ApiPutRequestMessage
-		var searchResults []*bbapi.ApiCommonBuildMessage
+		var actualPutRequests []*bbapi.LegacyApiPutRequestMessage
+		var searchResults []*bbapi.LegacyApiCommonBuildMessage
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var res interface{}
 			switch r.URL.Path {
 			case "/builds":
-				req := &bbapi.ApiPutRequestMessage{}
+				req := &bbapi.LegacyApiPutRequestMessage{}
 				err := json.NewDecoder(r.Body).Decode(req)
 				testCtx.So(err, ShouldBeNil)
 				actualPutRequests = append(actualPutRequests, req)
@@ -120,12 +120,12 @@ func TestScheduling(t *testing.T) {
 					return
 				}
 
-				res = &bbapi.ApiBuildResponseMessage{
-					Build: &bbapi.ApiCommonBuildMessage{Id: 123456789},
+				res = &bbapi.LegacyApiBuildResponseMessage{
+					Build: &bbapi.LegacyApiCommonBuildMessage{Id: 123456789},
 				}
 
 			case "/search":
-				res = &bbapi.ApiSearchResponseMessage{Builds: searchResults}
+				res = &bbapi.LegacyApiSearchResponseMessage{Builds: searchResults}
 
 			default:
 				panic("invalid path " + r.URL.Path)
@@ -203,7 +203,7 @@ func TestScheduling(t *testing.T) {
 				})
 
 				So(actualPutRequests, ShouldHaveLength, 1)
-				So(actualPutRequests, ShouldResemble, []*bbapi.ApiPutRequestMessage{
+				So(actualPutRequests, ShouldResemble, []*bbapi.LegacyApiPutRequestMessage{
 					{
 						Bucket:            "luci.chromium.try",
 						ClientOperationId: "luci-migration-retry-54",
@@ -258,7 +258,7 @@ func TestScheduling(t *testing.T) {
 				err := h.BuildCompleted(c, b)
 				So(err, ShouldBeNil)
 
-				So(actualPutRequests, ShouldResemble, []*bbapi.ApiPutRequestMessage{
+				So(actualPutRequests, ShouldResemble, []*bbapi.LegacyApiPutRequestMessage{
 					{
 						Bucket:            "luci.test.x",
 						ClientOperationId: "luci-migration-retry-54",
@@ -300,7 +300,7 @@ func TestScheduling(t *testing.T) {
 					BuildbotBuildID: 53,
 					Attempt:         0,
 				}
-				searchResults = []*bbapi.ApiCommonBuildMessage{{
+				searchResults = []*bbapi.LegacyApiCommonBuildMessage{{
 					CreatedTs: bbapi.FormatTimestamp(b.CreationTime) + 1, // 1 newer Build
 				}}
 				err := h.BuildCompleted(c, b)

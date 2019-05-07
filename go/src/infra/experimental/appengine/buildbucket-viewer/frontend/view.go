@@ -83,7 +83,7 @@ func (bs buildStatus) aggregate(other buildStatus) buildStatus {
 	return bs
 }
 
-func getBuildStatus(b *bbapi.ApiCommonBuildMessage) buildStatus {
+func getBuildStatus(b *bbapi.LegacyApiCommonBuildMessage) buildStatus {
 	switch b.Status {
 	case "SCHEDULED":
 		return buildPending
