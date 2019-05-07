@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html} from 'lit-element';
 
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
@@ -16,87 +15,36 @@ import {displayNameToUserRef} from 'elements/shared/converters.js';
  * according to their type.
  *
  */
-export class MrFieldValues extends PolymerElement {
-  static get template() {
-    return html`
-      <template is="dom-if" if="[[_fieldIsUrl(type)]]">
-        <template is="dom-repeat" items="[[values]]" as="value">
-          <a href$="[[value]]">[[value]]</a>
-        </template>
-      </template>
-
-      <template is="dom-if" if="[[_fieldIsUser(type)]]">
-        <template is="dom-repeat" items="[[values]]" as="value">
-          <mr-user-link user-ref="[[_displayNameToUserRef(value)]]"></mr-user-link>
-        </template>
-      </template>
-
-      <template is="dom-if" if="[[_fieldIsRemainingTypes(type)]]">
-        <template is="dom-repeat" items="[[values]]" as="value">
-          <a href$="/p/[[projectName]]/issues/list?q=[[name]]=&quot;[[value]]&quot;">
-            [[value]]</a><span hidden$="[[_isLastItem(values.length, index)]]">,</span>
-        </template>
-      </template>
-
-      <template is="dom-if" if="[[!values.length]]">
-        ----
-      </template>
-    `;
-  }
-
-  static get is() {
-    return 'mr-field-values';
+export class MrFieldValues extends LitElement {
+  render() {
+    if (!this.values || !this.values.length) {
+      return html`----`;
+    }
+    switch (this.type) {
+      case fieldTypes.URL_TYPE:
+        return html`${this.values.map((value) => html`
+          <a href=${value} target="_blank" rel="nofollow">${value}</a>
+        `)}`;
+      case fieldTypes.USER_TYPE:
+        return html`${this.values.map((value) => html`
+          <mr-user-link .userRef=${displayNameToUserRef(value)}></mr-user-link>
+        `)}`;
+      default:
+        return html`${this.values.map((value, i) => html`
+          <a href="/p/${this.projectName}/issues/list?q=${this.name}=&quot;${value}&quot;">
+            ${value}</a>${this.values.length - 1 > i ? ', ' : ''}
+        `)}`;
+    }
   }
 
   static get properties() {
     return {
-      name: String,
-      type: Object,
-      projectName: String,
-      values: {
-        type: Array,
-        value: () => [],
-      },
+      name: {type: String},
+      type: {type: Object},
+      projectName: {type: String},
+      values: {type: Array},
     };
-  }
-
-  _fieldIsDate(type) {
-    return type === fieldTypes.DATE_TYPE;
-  }
-
-  _fieldIsEnum(type) {
-    return type === fieldTypes.ENUM_TYPE;
-  }
-
-  _fieldIsInt(type) {
-    return type === fieldTypes.INT_TYPE;
-  }
-
-  _fieldIsStr(type) {
-    return type === fieldTypes.STR_TYPE;
-  }
-
-  _fieldIsUser(type) {
-    return type === fieldTypes.USER_TYPE;
-  }
-
-  _fieldIsUrl(type) {
-    return type === fieldTypes.URL_TYPE;
-  }
-
-  _fieldIsRemainingTypes(type) {
-    return this._fieldIsDate(type) || this._fieldIsEnum(type) ||
-      this._fieldIsInt(type) || this._fieldIsStr(type);
-  }
-
-  _isLastItem(l, i) {
-    return i >= l - 1;
-  }
-
-  // TODO(zhangtiff): Remove in lit-element.
-  _displayNameToUserRef(name) {
-    return displayNameToUserRef(name);
   }
 }
 
-customElements.define(MrFieldValues.is, MrFieldValues);
+customElements.define('mr-field-values', MrFieldValues);

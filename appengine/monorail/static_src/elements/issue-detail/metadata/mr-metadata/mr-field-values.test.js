@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrFieldValues} from './mr-field-values.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 import {fieldTypes} from 'elements/shared/field-types.js';
 
@@ -25,10 +24,10 @@ suite('mr-field-values', () => {
     assert.instanceOf(element, MrFieldValues);
   });
 
-  test('renders empty if no values', () => {
+  test('renders empty if no values', async () => {
     element.values = [];
 
-    flush();
+    await element.updateComplete;
 
     assert.equal('----', element.shadowRoot.textContent.trim());
   });
@@ -37,7 +36,7 @@ suite('mr-field-values', () => {
     element.type = fieldTypes.USER_TYPE;
     element.values = ['test@example.com', 'hello@world.com'];
 
-    flush();
+    await element.updateComplete;
 
     const links = element.shadowRoot.querySelectorAll('mr-user-link');
 
@@ -48,11 +47,11 @@ suite('mr-field-values', () => {
     assert.include(links[1].shadowRoot.textContent, 'hello@world.com');
   });
 
-  test('renders URLs when type is url', () => {
+  test('renders URLs when type is url', async () => {
     element.type = fieldTypes.URL_TYPE;
     element.values = ['http://hello.world', 'go/link'];
 
-    flush();
+    await element.updateComplete;
 
     const links = element.shadowRoot.querySelectorAll('a');
 
@@ -63,13 +62,13 @@ suite('mr-field-values', () => {
     assert.include(links[1].href, 'go/link');
   });
 
-  test('renders generic field when field is string', () => {
+  test('renders generic field when field is string', async () => {
     element.type = fieldTypes.STR_TYPE;
     element.values = ['blah', 'random value', 'nothing here'];
     element.name = 'fieldName';
     element.projectName = 'project';
 
-    flush();
+    await element.updateComplete;
 
     const links = element.shadowRoot.querySelectorAll('a');
 
