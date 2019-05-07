@@ -1682,6 +1682,26 @@ class WorkEnv(object):
 
     return commits
 
+  def ExpungeUsers(self, _user_ids):
+    """Permanently deletes user data and removes remaining user references
+       for all listed users."""
+    # self.services.spam.ExpungeUsersInSpam(self.mc.cnxn, user_ids)
+    # self.services.issue.ExpungeUsersInIssues(self.mc.cnxn, user_ids)
+    # self.services.star.ExpungeUsersInStars(self.mc.cnxn, user_ids)
+
+    # self.services.features.ExpungeUsersInQuickEdits(self.mc.cnxn, user_ids)
+    # self.services.features.ExpungeUsersInSavedQueries(self.mc.cnxn, user_ids)
+
+    # hotlist_ids = self.services.features.ExpungeUsersInHotlist(
+    # self.mc.cnxn, user_ids)
+    # self.ExpungeHotlists(hotlist_ids)
+
+    # self.services.template.ExpungeUsersInTemplates(self.mc.cnxn, user_ids)
+    # self.services.config.ExpungeUsersInConfgis(self.mc.cnxn, user_ids)
+    # self.services.usergroup.ExpungeUsersInGroups(self.mc.cnxn, user_ids)
+    # self.services.user.ExpungeUsers(self.mc.cnxn, user_ids)
+    return
+
   ### Group methods
 
   # FUTURE: CreateGroup()
@@ -1690,6 +1710,12 @@ class WorkEnv(object):
   # FUTURE: DeleteGroup()
 
   ### Hotlist methods
+
+  def ExpungeHotlists(self, _hotlist_ids):
+    # self.services.star.ExpungeHotlistsInStar
+    # self.services.user.ExpungeHotlistsInUsers
+    # self.services.features.ExpungeHotlists
+    return
 
   def CreateHotlist(
       self, name, summary, description, editor_ids, issue_ids, is_private):

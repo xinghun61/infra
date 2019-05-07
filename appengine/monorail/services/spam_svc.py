@@ -14,6 +14,7 @@ import sys
 from collections import defaultdict
 from features import filterrules_helpers
 from framework import sql
+from framework import framework_constants
 from infra_libs import ts_mon
 from services import ml_helpers
 
@@ -29,6 +30,8 @@ REASON_FAIL_OPEN = 'fail_open'
 SPAM_CLASS_LABEL = '1'
 
 SPAMREPORT_ISSUE_COLS = ['issue_id', 'reported_user_id', 'user_id']
+SPAMVERDICT_ISSUE_COL = ['created', 'content_created', 'user_id',
+                         'reported_user_id', 'comment_id', 'issue_id']
 MANUALVERDICT_ISSUE_COLS = ['user_id', 'issue_id', 'is_spam', 'reason',
     'project_id']
 THRESHVERDICT_ISSUE_COLS = ['issue_id', 'is_spam', 'reason', 'project_id']
@@ -611,6 +614,19 @@ class SpamService(object):
         ])
 
     return comments, count
+
+  def ExpungeUsersInSpam(self, cnxn, user_ids):
+    """Removes all references to given users from Spam DB tables.
+
+    This method will not commit the operations. This method will
+    not make changes to in-memory data.
+    """
+    commit = False
+    self.report_tbl.Delete(cnxn, reported_user_id=user_ids, commit=commit)
+
+    delta = {'user_id': framework_constants.DELETED_USER_ID}
+    self.report_tbl.Update(cnxn, delta, user_id=user_ids, commit=commit)
+    self.verdict_tbl.Update(cnxn, delta, user_id=user_ids, commit=commit)
 
 
 class ModerationItem:

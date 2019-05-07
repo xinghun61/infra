@@ -13,10 +13,12 @@ from google.appengine.ext import testbed
 
 import settings
 from framework import sql
+from framework import framework_constants
 from proto import user_pb2
 from proto import tracker_pb2
 from services import spam_svc
 from testing import fake
+from mock import Mock
 
 
 def assert_unreached():
@@ -39,6 +41,10 @@ class SpamServiceTest(unittest.TestCase):
     self.spam_service.report_tbl = self.mock_report_tbl
     self.spam_service.verdict_tbl = self.mock_verdict_tbl
     self.spam_service.issue_tbl = self.mock_issue_tbl
+
+    self.spam_service.report_tbl.Delete = Mock()
+    self.spam_service.report_tbl.Update = Mock()
+    self.spam_service.verdict_tbl.Update = Mock()
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -372,3 +378,15 @@ class SpamServiceTest(unittest.TestCase):
     actual = self.spam_service.ham_classification()
     self.assertEqual(actual['confidence_is_spam'], 0.0)
     self.assertEqual(actual['failed_open'], False)
+
+  def testExpungeUsersInSpam(self):
+    user_ids = [3, 4, 5]
+    self.spam_service.ExpungeUsersInSpam(self.cnxn, user_ids=user_ids)
+
+    self.spam_service.report_tbl.Delete.assert_called_once_with(
+        self.cnxn, reported_user_id=user_ids, commit=False)
+    delta = {'user_id': framework_constants.DELETED_USER_ID}
+    self.spam_service.report_tbl.Update.assert_called_once_with(
+        self.cnxn, delta, user_id=user_ids, commit=False)
+    self.spam_service.verdict_tbl.Update.assert_called_once_with(
+        self.cnxn, delta, user_id=user_ids, commit=False)
