@@ -682,14 +682,24 @@ class AbstractStarService(object):
     self.stars_by_starrer_id = {}
     self.expunged_item_ids = []
 
-  def ExpungeStars(self, _cnxn, item_id):
+  def ExpungeStars(self, _cnxn, item_id, commit=True):
     self.expunged_item_ids.append(item_id)
-    old_starrer = self.stars_by_item_id.get(item_id)
+    old_starrers = self.stars_by_item_id.get(item_id, [])
     self.stars_by_item_id[item_id] = []
-    if self.stars_by_starrer_id.get(old_starrer):
-      self.stars_by_starrer_id[old_starrer] = [
-          it for it in self.stars_by_starrer_id[old_starrer]
-          if it != item_id]
+    for old_starrer in old_starrers:
+      if self.stars_by_starrer_id.get(old_starrer):
+        self.stars_by_starrer_id[old_starrer] = [
+            it for it in self.stars_by_starrer_id[old_starrer]
+            if it != item_id]
+
+  def ExpungeStarsByUsers(self, _cnxn, user_ids):
+    for user_id in user_ids:
+      item_ids = self.stars_by_starrer_id.pop(user_id, [])
+      for item_id in item_ids:
+        starrers = self.stars_by_item_id.get(item_id, None)
+        if starrers:
+          self.stars_by_item_id[item_id] = [
+              starrer for starrer in starrers if starrer != user_id]
 
   def LookupItemStarrers(self, _cnxn, item_id):
     return self.stars_by_item_id.get(item_id, [])

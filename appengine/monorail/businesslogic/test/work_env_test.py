@@ -3377,3 +3377,35 @@ class WorkEnvTest(unittest.TestCase):
         we.DismissCue('foo')
 
     self.assertEqual([], user.dismissed_cues)
+
+  def setUpExpungeUsersFromStars(self):
+    config = fake.MakeTestConfig(789, [], [])
+    self.work_env.services.project_star.SetStarsBatch(
+        self.cnxn, 789, [222L, 444L, 555L], True)
+    self.work_env.services.issue_star.SetStarsBatch(
+        self.cnxn, self.services, config, 78901, [222L, 444L, 666L], True)
+    self.work_env.services.hotlist_star.SetStarsBatch(
+        self.cnxn, 1678, [222L, 444L, 555L], True)
+    self.work_env.services.user_star.SetStarsBatch(
+        self.cnxn, 888L, [222L, 333L, 777L], True)
+    self.work_env.services.user_star.SetStarsBatch(
+        self.cnxn, 999L, [111L, 222L, 333L], True)
+
+  def testExpungeUsersFromStars(self):
+    self.setUpExpungeUsersFromStars()
+    user_ids = [999L, 222L, 555L]
+    self.work_env.expungeUsersFromStars(user_ids)
+    self.assertEqual(
+        self.work_env.services.project_star.LookupItemStarrers(self.cnxn, 789),
+        [444L])
+    self.assertEqual(
+        self.work_env.services.issue_star.LookupItemStarrers(self.cnxn, 78901),
+        [444L, 666L])
+    self.assertEqual(
+        self.work_env.services.hotlist_star.LookupItemStarrers(self.cnxn, 1678),
+        [444L])
+    self.assertEqual(
+        self.work_env.services.user_star.LookupItemStarrers(self.cnxn, 888L),
+        [333L, 777L])
+    self.assertEqual(
+        self.work_env.services.user_star.expunged_item_ids, [999L, 222L, 555L])

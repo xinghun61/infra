@@ -51,9 +51,16 @@ class AbstractStarService(object):
     # Counts of the users that starred an item, keyed by item ID.
     self.star_count_cache = caches.RamCache(cache_manager, cache_kind)
 
-  def ExpungeStars(self, cnxn, item_id):
+  def ExpungeStars(self, cnxn, item_id, commit=True):
     """Wipes an item's stars from the system."""
-    self.tbl.Delete(cnxn, **{self.item_col: item_id})
+    self.tbl.Delete(cnxn, commit=commit, **{self.item_col: item_id})
+
+  def ExpungeStarsByUsers(self, cnxn, user_ids):
+    """Wipes a user's stars from the system.
+    This method will not commit the operation. This method will
+    not make changes to in-memory data.
+    """
+    self.tbl.Delete(cnxn, user_id=user_ids, commit=False)
 
   def LookupItemStarrers(self, cnxn, item_id):
     """Returns list of users having stars on the specified item."""

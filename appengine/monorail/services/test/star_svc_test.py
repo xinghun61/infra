@@ -12,6 +12,7 @@ import mox
 from google.appengine.ext import testbed
 
 import settings
+from mock import Mock
 from framework import sql
 from proto import user_pb2
 from services import star_svc
@@ -31,6 +32,7 @@ class AbstractStarServiceTest(unittest.TestCase):
     self.cache_manager = fake.CacheManager()
     self.star_service = star_svc.AbstractStarService(
         self.cache_manager, self.mock_tbl, 'item_id', 'user_id', 'project')
+    self.mock_tbl.Delete = Mock()
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -38,13 +40,19 @@ class AbstractStarServiceTest(unittest.TestCase):
     self.mox.ResetAll()
 
   def SetUpExpungeStars(self):
-    self.mock_tbl.Delete(self.cnxn, item_id=123)
+    self.mock_tbl.Delete(self.cnxn, item_id=123, commit=True)
 
   def testExpungeStars(self):
     self.SetUpExpungeStars()
     self.mox.ReplayAll()
     self.star_service.ExpungeStars(self.cnxn, 123)
     self.mox.VerifyAll()
+
+  def testExpungeUsersByStars(self):
+    user_ids = [2, 3, 4]
+    self.star_service.ExpungeStarsByUsers(self.cnxn, user_ids)
+    self.mock_tbl.Delete.assert_called_once_with(
+        self.cnxn, user_id=user_ids, commit=False)
 
   def SetUpLookupItemsStarrers(self):
     self.mock_tbl.Select(
