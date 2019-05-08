@@ -5,9 +5,6 @@
 
 """Constants that define the Monorail URL space."""
 
-# robots.txt
-ROBOTS = '/robots.txt'
-
 # URLs of site-wide Monorail pages
 HOSTING_HOME = '/hosting/'  # the big search box w/ popular labels
 PROJECT_CREATE = '/hosting/createProject'

@@ -33,6 +33,11 @@ handlers:
 - url: /_ah/api/.*
   script: monorailapp.endpoints
 
+- url: /robots.txt
+  static_files: static/robots.txt
+  upload: static/robots.txt
+  expiration: "10m"
+
 - url: /database-maintenance
   static_files: static/database-maintenance.html
   upload: static/database-maintenance.html
