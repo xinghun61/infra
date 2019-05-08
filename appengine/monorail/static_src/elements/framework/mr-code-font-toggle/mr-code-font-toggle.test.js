@@ -8,8 +8,8 @@ import {MrCodeFontToggle} from './mr-code-font-toggle.js';
 
 let element;
 
-suite('mr-code-font-toggle', () => {
-  setup(() => {
+describe('mr-code-font-toggle', () => {
+  beforeEach(() => {
     element = document.createElement('mr-code-font-toggle');
     document.body.appendChild(element);
     window.prpcClient = {
@@ -18,16 +18,16 @@ suite('mr-code-font-toggle', () => {
     sinon.spy(window.prpcClient, 'call');
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrCodeFontToggle);
   });
 
-  test('toggle font', () => {
+  it('toggle font', () => {
     element.userDisplayName = 'test@example.com';
     const chopsToggle = element.shadowRoot.querySelector('chops-toggle');
     const label = chopsToggle.shadowRoot.querySelector('label');

@@ -10,21 +10,21 @@ import {fieldTypes} from 'elements/shared/field-types.js';
 
 let element;
 
-suite('mr-edit-field', () => {
-  setup(() => {
+describe('mr-edit-field', () => {
+  beforeEach(() => {
     element = document.createElement('mr-edit-field');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrEditField);
   });
 
-  test('reset input value', () => {
+  it('reset input value', () => {
     flush();
 
     // Simulate user input.
@@ -34,14 +34,14 @@ suite('mr-edit-field', () => {
     assert.equal(element.getValue(), '');
   });
 
-  test('input updates when initialValues change', () => {
+  it('input updates when initialValues change', () => {
     flush();
 
     element.initialValues = ['hello'];
     assert.equal(element.getValue(), 'hello');
   });
 
-  test('initial value does not change after setValue', () => {
+  it('initial value does not change after setValue', () => {
     flush();
 
     element.initialValues = ['hello'];
@@ -49,14 +49,14 @@ suite('mr-edit-field', () => {
     assert.deepEqual(element.initialValues, ['hello']);
   });
 
-  test('input updates when setValue is called', () => {
+  it('input updates when setValue is called', () => {
     flush();
     element.initialValues = ['hello'];
     element.setValue('world');
     assert.equal(element.getValue(), 'world');
   });
 
-  test('initial value does not change after user input', () => {
+  it('initial value does not change after user input', () => {
     flush();
     element.initialValues = ['hello'];
     // Simulate user input.
@@ -64,21 +64,21 @@ suite('mr-edit-field', () => {
     assert.deepEqual(element.initialValues, ['hello']);
   });
 
-  test('get value after user input', () => {
+  it('get value after user input', () => {
     element.initialValues = ['hello'];
     // Simulate user input.
     element.shadowRoot.querySelector('#editInput').value = 'jackalope';
     assert.equal(element.getValue(), 'jackalope');
   });
 
-  test('input value was added', () => {
+  it('input value was added', () => {
     flush();
     // Simulate user input.
     element.shadowRoot.querySelector('#editInput').value = 'jackalope';
     assert.deepEqual(element.getValuesAdded(), ['jackalope']);
   });
 
-  test('input value was removed', () => {
+  it('input value was removed', () => {
     flush();
     element.initialValues = ['hello'];
     // Simulate user input.
@@ -86,7 +86,7 @@ suite('mr-edit-field', () => {
     assert.deepEqual(element.getValuesRemoved(), ['hello']);
   });
 
-  test('input value was changed', () => {
+  it('input value was changed', () => {
     flush();
     element.initialValues = ['hello'];
     // Simulate user input.
@@ -94,7 +94,7 @@ suite('mr-edit-field', () => {
     assert.deepEqual(element.getValuesAdded(), ['world']);
   });
 
-  test('edit select updates value when initialValues change', () => {
+  it('edit select updates value when initialValues change', () => {
     element.multi = false;
     element.type = fieldTypes.ENUM_TYPE;
 
@@ -123,7 +123,7 @@ suite('mr-edit-field', () => {
     assert.deepEqual(element.getValue(), '');
   });
 
-  test('edit enum updates value on reset', () => {
+  it('edit enum updates value on reset', () => {
     element.multi = true;
     element.type = fieldTypes.ENUM_TYPE;
     element.options = [

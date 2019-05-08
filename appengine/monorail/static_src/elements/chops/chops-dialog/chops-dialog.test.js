@@ -7,21 +7,21 @@ import {ChopsDialog} from './chops-dialog.js';
 
 let element;
 
-suite('chops-dialog', () => {
-  setup(() => {
+describe('chops-dialog', () => {
+  beforeEach(() => {
     element = document.createElement('chops-dialog');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, ChopsDialog);
   });
 
-  test('chops-dialog is visible when open', async () => {
+  it('chops-dialog is visible when open', async () => {
     element.opened = false;
 
     await element.updateComplete;

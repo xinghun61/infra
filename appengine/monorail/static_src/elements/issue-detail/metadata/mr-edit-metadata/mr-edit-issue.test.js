@@ -8,21 +8,21 @@ import sinon from 'sinon';
 
 let element;
 
-suite('mr-edit-issue', () => {
-  setup(() => {
+describe('mr-edit-issue', () => {
+  beforeEach(() => {
     element = document.createElement('mr-edit-issue');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrEditIssue);
   });
 
-  test('scrolls into view', async () => {
+  it('scrolls into view', async () => {
     await element.updateComplete;
 
     const header = element.shadowRoot.querySelector('#makechanges');
@@ -36,7 +36,7 @@ suite('mr-edit-issue', () => {
     header.scrollIntoView.restore();
   });
 
-  test('shows current status even if not defined for project', async () => {
+  it('shows current status even if not defined for project', async () => {
     await element.updateComplete;
 
     const editMetadata = element.shadowRoot.querySelector('mr-edit-metadata');
@@ -78,7 +78,7 @@ suite('mr-edit-issue', () => {
     ]);
   });
 
-  test('ignores deprecated statuses, unless used on current issue', async () => {
+  it('ignores deprecated statuses, unless used on current issue', async () => {
     await element.updateComplete;
 
     const editMetadata = element.shadowRoot.querySelector('mr-edit-metadata');
@@ -111,7 +111,7 @@ suite('mr-edit-issue', () => {
     ]);
   });
 
-  test('Filter out empty or deleted user owners', () => {
+  it('Filter out empty or deleted user owners', () => {
     assert.equal(element._ownerDisplayName({displayName: '----'}), '');
     assert.equal(
       element._ownerDisplayName({displayName: 'a deleted user'}),

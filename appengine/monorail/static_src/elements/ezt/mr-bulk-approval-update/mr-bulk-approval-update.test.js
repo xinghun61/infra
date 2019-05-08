@@ -12,8 +12,8 @@ let element;
 let prpcStub;
 let root;
 
-suite('mr-bulk-approval-update', () => {
-  setup(() => {
+describe('mr-bulk-approval-update', () => {
+  beforeEach(() => {
     element = document.createElement('mr-bulk-approval-update');
     document.body.appendChild(element);
 
@@ -29,16 +29,16 @@ suite('mr-bulk-approval-update', () => {
     prpcStub = sinon.stub(window.prpcClient, 'call');
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     prpcStub.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrBulkApprovalUpdate);
   });
 
-  test('_computeIssueRefs: missing information', () => {
+  it('_computeIssueRefs: missing information', () => {
     element.projectName = 'chromium';
     assert.equal(element.issueRefs.length, 0);
 
@@ -50,7 +50,7 @@ suite('mr-bulk-approval-update', () => {
     assert.equal(element.issueRefs.length, 0);
   });
 
-  test('_computeIssueRefs: normal', () => {
+  it('_computeIssueRefs: normal', () => {
     const project = 'chromium';
     element.projectName = project;
     element.localIdsStr = '1,2,3';
@@ -61,7 +61,7 @@ suite('mr-bulk-approval-update', () => {
     ]);
   });
 
-  test('fetchApprovals: applicable fields exist', async () => {
+  it('fetchApprovals: applicable fields exist', async () => {
     const responseFieldDefs = [
       {fieldRef: {type: 'INT_TYPE'}},
       {fieldRef: {type: 'APPROVAL_TYPE'}},
@@ -84,7 +84,7 @@ suite('mr-bulk-approval-update', () => {
     assert.equal(null, element.errorMessage);
   });
 
-  test('fetchApprovals: applicable fields dont exist', async () => {
+  it('fetchApprovals: applicable fields dont exist', async () => {
     const promise = Promise.resolve({fieldDefs: []});
     prpcStub.returns(promise);
     root.querySelector('.js-showApprovals').click();
@@ -95,7 +95,7 @@ suite('mr-bulk-approval-update', () => {
     assert.equal(NO_APPROVALS_MESSAGE, element.errorMessage);
   });
 
-  test('save: normal', async () => {
+  it('save: normal', async () => {
     const promise = Promise.resolve({issueRefs: [{localId: '1'}, {localId: '3'}]});
     prpcStub.returns(promise);
     const fieldDefs = [
@@ -151,7 +151,7 @@ suite('mr-bulk-approval-update', () => {
       expectedMessage);
   });
 
-  test('save: no updates', async () => {
+  it('save: no updates', async () => {
     const promise = Promise.resolve({issueRefs: []});
     prpcStub.returns(promise);
     const fieldDefs = [

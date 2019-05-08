@@ -11,8 +11,8 @@ let preventDefault;
 let mockEvent;
 
 
-suite('mr-upload', () => {
-  setup(() => {
+describe('mr-upload', () => {
+  beforeEach(() => {
     element = document.createElement('mr-upload');
     document.body.appendChild(element);
 
@@ -25,15 +25,15 @@ suite('mr-upload', () => {
     };
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrUpload);
   });
 
-  test('reset clears files', () => {
+  it('reset clears files', () => {
     element.files = [new File([''], 'filename.txt'), new File([''], 'hello')];
 
     element.reset();
@@ -41,7 +41,7 @@ suite('mr-upload', () => {
     assert.deepEqual(element.files, []);
   });
 
-  test('editing file selector adds files', () => {
+  it('editing file selector adds files', () => {
     const files = [
       new File([''], 'filename.txt'),
       new File([''], 'hello'),
@@ -60,7 +60,7 @@ suite('mr-upload', () => {
     assert.deepEqual(element.files, files);
   });
 
-  test('files are rendered', () => {
+  it('files are rendered', () => {
     element.files = [
       new File([''], 'filename.txt'),
       new File([''], 'hello'),
@@ -78,7 +78,7 @@ suite('mr-upload', () => {
     assert.include(items[2].textContent, 'file.png');
   });
 
-  test('clicking removes file', () => {
+  it('clicking removes file', () => {
     element.files = [
       new File([''], 'filename.txt'),
       new File([''], 'hello'),
@@ -114,7 +114,7 @@ suite('mr-upload', () => {
     assert.include(items[0].textContent, 'file.png');
   });
 
-  test('duplicate files are ignored', () => {
+  it('duplicate files are ignored', () => {
     const file1 = new File([''], 'filename.txt');
     const file2 = new File([''], 'woahhh');
     const file3 = new File([''], 'filename');
@@ -126,7 +126,7 @@ suite('mr-upload', () => {
     assert.deepEqual(element.files, [file1, file2, file3]);
   });
 
-  test('dragging file into window expands element', () => {
+  it('dragging file into window expands element', () => {
     assert.isFalse(element.expanded);
     assert.deepEqual(element.files, []);
 
@@ -149,7 +149,7 @@ suite('mr-upload', () => {
     assert.isTrue(preventDefault.calledTwice);
   });
 
-  test('dragging non-file into window does not expands element', () => {
+  it('dragging non-file into window does not expands element', () => {
     assert.isFalse(element.expanded);
 
     element._onDragIntoWindow(mockEvent(
@@ -167,7 +167,7 @@ suite('mr-upload', () => {
     assert.isFalse(preventDefault.called);
   });
 
-  test('dragging file over element highlights it', () => {
+  it('dragging file over element highlights it', () => {
     assert.isFalse(element.highlighted);
     assert.deepEqual(element.files, []);
 
@@ -190,7 +190,7 @@ suite('mr-upload', () => {
     assert.isTrue(preventDefault.calledTwice);
   });
 
-  test('dropping file over element selects it', () => {
+  it('dropping file over element selects it', () => {
     const files = [
       new File([''], 'filename.txt'),
       new File([''], 'hello'),
@@ -203,7 +203,7 @@ suite('mr-upload', () => {
     assert.deepEqual(element.files, files);
   });
 
-  test('loadFiles loads files', async () => {
+  it('loadFiles loads files', async () => {
     element.files = [
       new File(['some content'], 'filename.txt'),
       new File([''], 'hello'),

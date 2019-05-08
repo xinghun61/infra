@@ -8,21 +8,21 @@ import {MrCrbugLink} from './mr-crbug-link.js';
 
 let element;
 
-suite('mr-crbug-link', () => {
-  setup(() => {
+describe('mr-crbug-link', () => {
+  beforeEach(() => {
     element = document.createElement('mr-crbug-link');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrCrbugLink);
   });
 
-  test('In prod, link to crbug.com with project name specified', () => {
+  it('In prod, link to crbug.com with project name specified', () => {
     element._getHost = () => 'bugs.chromium.org';
     element.issue = {
       projectName: 'test',
@@ -32,7 +32,7 @@ suite('mr-crbug-link', () => {
     assert.equal(link.href, 'https://crbug.com/test/11');
   });
 
-  test('In prod, link to crbug.com with implicit project name', () => {
+  it('In prod, link to crbug.com with implicit project name', () => {
     element._getHost = () => 'bugs.chromium.org';
     element.issue = {
       projectName: 'chromium',
@@ -42,7 +42,7 @@ suite('mr-crbug-link', () => {
     assert.equal(link.href, 'https://crbug.com/11');
   });
 
-  test('does not redirects to approval page for regular issues', () => {
+  it('does not redirects to approval page for regular issues', () => {
     element.issue = {
       projectName: 'test',
       localId: 11,

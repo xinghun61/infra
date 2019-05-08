@@ -8,8 +8,8 @@ import {MrUpdateIssueHotlists} from './mr-update-issue-hotlists.js';
 let element;
 let form;
 
-suite('mr-update-issue-hotlists', () => {
-  setup(async () => {
+describe('mr-update-issue-hotlists', () => {
+  beforeEach(async () => {
     element = document.createElement('mr-update-issue-hotlists');
     document.body.appendChild(element);
 
@@ -17,19 +17,19 @@ suite('mr-update-issue-hotlists', () => {
     form = element.shadowRoot.querySelector('#issueHotlistsForm');
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrUpdateIssueHotlists);
   });
 
-  test('no changes', () => {
+  it('no changes', () => {
     assert.deepEqual(element.changes, {added: [], removed: []});
   });
 
-  test('selecting new issues produces changes', async () => {
+  it('selecting new issues produces changes', async () => {
     element.issueHotlists = [
       {name: 'Hotlist-1', ownerRef: {userId: 12345}},
       {name: 'Hotlist-2', ownerRef: {userId: 12345}},
@@ -51,7 +51,8 @@ suite('mr-update-issue-hotlists', () => {
     });
   });
 
-  test('adding new issue produces changes', async () => {
+
+  it('adding new issue produces changes', async () => {
     await element.updateComplete;
     form.newHotlistName.value = 'New-Hotlist';
     assert.deepEqual(element.changes, {
@@ -64,7 +65,7 @@ suite('mr-update-issue-hotlists', () => {
     });
   });
 
-  test('reset changes', async () => {
+  it('reset changes', async () => {
     element.issueHotlists = [
       {name: 'Hotlist-1', ownerRef: {userId: 12345}},
       {name: 'Hotlist-2', ownerRef: {userId: 12345}},

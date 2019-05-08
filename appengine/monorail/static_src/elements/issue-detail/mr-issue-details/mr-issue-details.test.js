@@ -7,26 +7,29 @@ import {assert} from 'chai';
 import {MrIssueDetails} from './mr-issue-details.js';
 import sinon from 'sinon';
 import * as issue from 'elements/reducers/issue.js';
-
+import AutoRefreshPrpcClient from 'prpc.js';
 
 let element;
 
-suite('mr-issue-details', () => {
-  setup(() => {
+describe('mr-issue-details', () => {
+  beforeEach(() => {
     element = document.createElement('mr-issue-details');
     document.body.appendChild(element);
+
+    window.prpcClient = new AutoRefreshPrpcClient(
+      'token', 1234);
 
     sinon.stub(window.prpcClient, 'call').callsFake(
       () => Promise.resolve({}));
     sinon.spy(issue.update);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrIssueDetails);
   });
 });

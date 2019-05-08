@@ -12,21 +12,21 @@ import {ISSUE_EDIT_PERMISSION,
 
 let element;
 
-suite('mr-issue-header', () => {
-  setup(() => {
+describe('mr-issue-header', () => {
+  beforeEach(() => {
     element = document.createElement('mr-issue-header');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrIssueHeader);
   });
 
-  test('updating issue id changes header', function() {
+  it('updating issue id changes header', function() {
     assert.equal(issue.issueRef(store.getState()).localId, 0);
     store.dispatch(issue.setIssueRef(1));
     assert.equal(issue.issueRef(store.getState()).localId, 1);
@@ -38,7 +38,7 @@ suite('mr-issue-header', () => {
     // assert.deepEqual(element.issue, {summary: 'test'});
   });
 
-  test('_computeIssueOptions toggles spam', () => {
+  it('_computeIssueOptions toggles spam', () => {
     element.issuePermissions = [ISSUE_FLAGSPAM_PERMISSION];
     element.issue = {isSpam: false};
     assert.isDefined(findOptionWithText(element._issueOptions,
@@ -67,7 +67,7 @@ suite('mr-issue-header', () => {
       'Un-flag issue as spam'));
   });
 
-  test('_computeIssueOptions toggles convert issue', () => {
+  it('_computeIssueOptions toggles convert issue', () => {
     element.issuePermissions = [];
     element.projectTemplates = [];
 
@@ -89,7 +89,7 @@ suite('mr-issue-header', () => {
       'Convert issue template'));
   });
 
-  test('shows edit description link', () => {
+  it('shows edit description link', () => {
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
 
     flush();
@@ -97,7 +97,7 @@ suite('mr-issue-header', () => {
     assert.isNotNull(element.shadowRoot.querySelector('a'));
   });
 
-  test('no edit description link without edit issue permission', () => {
+  it('no edit description link without edit issue permission', () => {
     element.issuePermissions = [];
 
     flush();

@@ -8,21 +8,21 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
-suite('mr-approval-card', () => {
-  setup(() => {
+describe('mr-approval-card', () => {
+  beforeEach(() => {
     element = document.createElement('mr-approval-card');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrApprovalCard);
   });
 
-  test('_isApprover true when user is an approver', () => {
+  it('_isApprover true when user is an approver', () => {
     const userNotInList = element._computeIsApprover([
       {displayName: 'tester@user.com'},
       {displayName: 'test@notuser.com'},
@@ -60,7 +60,7 @@ suite('mr-approval-card', () => {
     assert.isTrue(userGroupInList);
   });
 
-  test('site admins have approver privileges', () => {
+  it('site admins have approver privileges', () => {
     const notice = element.shadowRoot.querySelector('.approver-notice');
     assert.equal(notice.textContent.trim(), '');
 
@@ -74,7 +74,7 @@ suite('mr-approval-card', () => {
     });
   });
 
-  test('site admins see all approval statuses except NotSet', () => {
+  it('site admins see all approval statuses except NotSet', () => {
     element.user = {isSiteAdmin: true};
 
     assert.isFalse(element._isApprover);
@@ -91,7 +91,7 @@ suite('mr-approval-card', () => {
     assert.equal(element._availableStatuses[6].status, 'NotApproved');
   });
 
-  test('approvers see all approval statuses except NotSet', () => {
+  it('approvers see all approval statuses except NotSet', () => {
     element.user = {isSiteAdmin: false, email: 'test@email.com'};
     element.approvers = [{displayName: 'test@email.com'}];
 
@@ -109,7 +109,7 @@ suite('mr-approval-card', () => {
     assert.equal(element._availableStatuses[6].status, 'NotApproved');
   });
 
-  test('non-approvers see non-restricted approval statuses', () => {
+  it('non-approvers see non-restricted approval statuses', () => {
     element.user = {isSiteAdmin: false, displayName: 'test@email.com'};
     element.approvers = [{displayName: 'test@otheremail.com'}];
 
@@ -124,7 +124,7 @@ suite('mr-approval-card', () => {
     assert.equal(element._availableStatuses[3].status, 'NeedInfo');
   });
 
-  test('non-approvers see restricted approval status when set', () => {
+  it('non-approvers see restricted approval status when set', () => {
     element.user = {isSiteAdmin: false, displayName: 'test@email.com'};
     element.approvers = [{displayName: 'test@otheremail.com'}];
 
@@ -140,7 +140,7 @@ suite('mr-approval-card', () => {
     assert.equal(element._availableStatuses[4].status, 'Approved');
   });
 
-  test('expands to show focused comment', () => {
+  it('expands to show focused comment', () => {
     element.focusId = 'c4';
     element.fieldName = 'field';
     element.comments = [
@@ -166,7 +166,7 @@ suite('mr-approval-card', () => {
     assert.isTrue(element.opened);
   });
 
-  test('does not expands to show focused comment on other elements', () => {
+  it('does not expands to show focused comment on other elements', () => {
     element.focusId = 'c3';
     element.fieldName = 'field';
     element.comments = [

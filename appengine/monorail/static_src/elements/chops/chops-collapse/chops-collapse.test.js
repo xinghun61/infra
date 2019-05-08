@@ -7,21 +7,21 @@ import {ChopsCollapse} from './chops-collapse.js';
 
 
 let element;
-suite('chops-collapse', () => {
-  setup(() => {
+describe('chops-collapse', () => {
+  beforeEach(() => {
     element = document.createElement('chops-collapse');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, ChopsCollapse);
   });
 
-  test('toggling chops-collapse changes aria-hidden', () => {
+  it('toggling chops-collapse changes aria-hidden', () => {
     element.opened = true;
 
     assert.isNull(element.getAttribute('aria-hidden'));

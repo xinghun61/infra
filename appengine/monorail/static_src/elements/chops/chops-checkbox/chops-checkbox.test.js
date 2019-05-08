@@ -8,21 +8,21 @@ import {ChopsCheckbox} from './chops-checkbox.js';
 
 let element;
 
-suite('chops-checkbox', () => {
-  setup(() => {
+describe('chops-checkbox', () => {
+  beforeEach(() => {
     element = document.createElement('chops-checkbox');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, ChopsCheckbox);
   });
 
-  test('clicking checkbox dispatches checked-change event', async () => {
+  it('clicking checkbox dispatches checked-change event', async () => {
     element.checked = false;
     sinon.stub(window, 'CustomEvent');
     sinon.stub(element, 'dispatchEvent');

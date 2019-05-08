@@ -13,8 +13,8 @@ import sinon from 'sinon';
 
 let clock;
 
-suite('chops-timestamp-helpers', () => {
-  setup(() => {
+describe('chops-timestamp-helpers', () => {
+  beforeEach(() => {
     // Set clock to the Epoch.
     clock = sinon.useFakeTimers({
       now: new Date(0),
@@ -22,11 +22,11 @@ suite('chops-timestamp-helpers', () => {
     });
   });
 
-  teardown(() => {
+  afterEach(() => {
     clock.restore();
   });
 
-  test('standardTime', () => {
+  it('standardTime', () => {
     let date = new Date();
     assert.equal(standardTime(date), `${FORMATTER.format(date)} (just now)`);
 
@@ -34,14 +34,14 @@ suite('chops-timestamp-helpers', () => {
     assert.equal(standardTime(date), FORMATTER.format(date));
   });
 
-  test('standardTimeShort', () => {
+  it('standardTimeShort', () => {
     assert.equal(standardTimeShort(new Date()), `just now`);
 
     const date = new Date(1548808276 * 1000);
     assert.equal(standardTimeShort(date), SHORT_FORMATTER.format(date));
   });
 
-  test('relativeTime future', () => {
+  it('relativeTime future', () => {
     assert.equal(relativeTime(new Date()), `just now`);
 
     assert.equal(relativeTime(new Date(59 * 1000)), `just now`);
@@ -68,7 +68,7 @@ suite('chops-timestamp-helpers', () => {
     assert.equal(relativeTime(new Date(30 * 24 * 60 * 60 * 1000)), '');
   });
 
-  test('relativeTime past', () => {
+  it('relativeTime past', () => {
     const baseTime = 234234 * 1000;
 
     clock.tick(baseTime);

@@ -11,8 +11,8 @@ let element;
 let commentContent;
 let selectMenu;
 
-suite('mr-description', () => {
-  setup(() => {
+describe('mr-description', () => {
+  beforeEach(() => {
     element = document.createElement('mr-description');
     document.body.appendChild(element);
 
@@ -20,15 +20,15 @@ suite('mr-description', () => {
     commentContent = element.shadowRoot.querySelector('mr-comment-content');
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrDescription);
   });
 
-  test('changes rendered description on select change', () => {
+  it('changes rendered description on select change', () => {
     element.descriptionList = [
       {content: 'description one'},
       {content: 'description two'},
@@ -45,7 +45,7 @@ suite('mr-description', () => {
     assert.equal('description one', commentContent.content);
   });
 
-  test('hides selector when only one description', () => {
+  it('hides selector when only one description', () => {
     element.descriptionList = [
       {content: 'Hello world'},
       {content: 'rutabaga'},

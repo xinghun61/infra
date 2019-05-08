@@ -6,8 +6,8 @@ import {assert} from 'chai';
 import * as project from './project.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 
-suite('project', () => {
-  test('fieldDefs', () => {
+describe('project', () => {
+  it('fieldDefs', () => {
     assert.deepEqual(project.fieldDefs({project: {}}), []);
     assert.deepEqual(project.fieldDefs({project: {config: {}}}), []);
     assert.deepEqual(project.fieldDefs({
@@ -15,7 +15,7 @@ suite('project', () => {
     }), [{fieldRef: {fieldName: 'test'}}]);
   });
 
-  test('labelDefMap', () => {
+  it('labelDefMap', () => {
     assert.deepEqual(project.labelDefMap({project: {}}), new Map());
     assert.deepEqual(project.labelDefMap({project: {config: {}}}), new Map());
     assert.deepEqual(project.labelDefMap({
@@ -33,7 +33,7 @@ suite('project', () => {
     ]));
   });
 
-  test('enumFieldDefs', () => {
+  it('enumFieldDefs', () => {
     assert.deepEqual(project.enumFieldDefs({project: {}}), []);
     assert.deepEqual(project.enumFieldDefs({project: {config: {}}}), []);
     assert.deepEqual(project.enumFieldDefs({
@@ -45,7 +45,7 @@ suite('project', () => {
     }), [{fieldRef: {fieldName: 'enum', type: fieldTypes.ENUM_TYPE}}]);
   });
 
-  test('optionsPerEnumField', () => {
+  it('optionsPerEnumField', () => {
     assert.deepEqual(project.optionsPerEnumField({project: {}}), new Map());
     assert.deepEqual(project.optionsPerEnumField({
       project: {config: {
@@ -67,7 +67,7 @@ suite('project', () => {
     ]));
   });
 
-  test('fieldDefsByApprovalName', () => {
+  it('fieldDefsByApprovalName', () => {
     assert.deepEqual(project.fieldDefsByApprovalName({project: {}}), new Map());
 
     assert.deepEqual(project.fieldDefsByApprovalName({project: {config: {

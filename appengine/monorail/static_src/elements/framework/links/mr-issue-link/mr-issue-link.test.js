@@ -9,21 +9,21 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
-suite('mr-issue-link', () => {
-  setup(() => {
+describe('mr-issue-link', () => {
+  beforeEach(() => {
     element = document.createElement('mr-issue-link');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrIssueLink);
   });
 
-  test('strikethrough when closed', () => {
+  it('strikethrough when closed', () => {
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.isFalse(
       window.getComputedStyle(link).getPropertyValue(
@@ -37,7 +37,7 @@ suite('mr-issue-link', () => {
         'text-decoration').includes('line-through'));
   });
 
-  test('shows projectName only when different from global', () => {
+  it('shows projectName only when different from global', () => {
     element.issue = {
       projectName: 'test',
       localId: 11,
@@ -56,7 +56,7 @@ suite('mr-issue-link', () => {
     assert.equal(link.textContent.trim(), 'Issue test:11');
   });
 
-  test('shows links for issues', () => {
+  it('shows links for issues', () => {
     element.issue = {
       projectName: 'test',
       localId: 11,

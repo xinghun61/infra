@@ -10,8 +10,8 @@ import Mousetrap from 'mousetrap';
 
 let element;
 
-suite('mr-keystrokes', () => {
-  setup(() => {
+describe('mr-keystrokes', () => {
+  beforeEach(() => {
     element = document.createElement('mr-keystrokes');
     document.body.appendChild(element);
 
@@ -21,17 +21,17 @@ suite('mr-keystrokes', () => {
     sinon.stub(page, 'call');
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
 
     page.call.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrKeystrokes);
   });
 
-  test('? and esc open and close dialog', () => {
+  it('? and esc open and close dialog', () => {
     assert.isFalse(element.opened);
 
     Mousetrap.trigger('?');

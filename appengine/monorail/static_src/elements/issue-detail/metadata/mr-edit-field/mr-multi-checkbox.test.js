@@ -7,17 +7,17 @@ import {MrMultiCheckbox} from './mr-multi-checkbox.js';
 
 let element;
 
-suite('mr-multi-checkbox', () => {
-  setup(() => {
+describe('mr-multi-checkbox', () => {
+  beforeEach(() => {
     element = document.createElement('mr-multi-checkbox');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrMultiCheckbox);
   });
 });

@@ -6,28 +6,38 @@ import {assert} from 'chai';
 import sinon from 'sinon';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {MrSearchBar} from './mr-search-bar.js';
+import AutoRefreshPrpcClient from 'prpc.js';
 
 let element;
 
-suite('mr-search-bar', () => {
-  setup(() => {
+describe('mr-search-bar', () => {
+  beforeEach(() => {
     element = document.createElement('mr-search-bar');
     document.body.appendChild(element);
+
+    window.CS_env = {
+      token: 'rutabaga-token',
+      tokenExpiresSec: 1234,
+      app_version: 'rutabaga-version',
+    };
+
+    window.prpcClient = new AutoRefreshPrpcClient(
+      CS_env.token, CS_env.tokenExpiresSec);
 
     sinon.stub(window.prpcClient, 'call').callsFake(
       () => Promise.resolve({}));
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrSearchBar);
   });
 
-  test('render user saved queries', () => {
+  it('render user saved queries', () => {
     element.userDisplayName = 'test@user.com';
     element.userSavedQueries = [
       {name: 'test query', queryId: 101},
@@ -48,7 +58,7 @@ suite('mr-search-bar', () => {
     assert.equal(queryOptions[1].textContent, 'hello world');
   });
 
-  test('render project saved queries', () => {
+  it('render project saved queries', () => {
     element.userDisplayName = 'test@user.com';
     element.projectSavedQueries = [
       {name: 'test query', queryId: 101},

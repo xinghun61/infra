@@ -7,17 +7,17 @@ import {MrHotlistLink} from './mr-hotlist-link.js';
 
 let element;
 
-suite('mr-hotlist-link', () => {
-  setup(() => {
+describe('mr-hotlist-link', () => {
+  beforeEach(() => {
     element = document.createElement('mr-hotlist-link');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrHotlistLink);
   });
 });

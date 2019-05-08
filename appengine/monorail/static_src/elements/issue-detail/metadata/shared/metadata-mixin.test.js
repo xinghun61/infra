@@ -16,21 +16,21 @@ class MockMetadataElement extends MetadataMixin(PolymerElement) {
 
 customElements.define(MockMetadataElement.is, MockMetadataElement);
 
-suite('mr-metadata', () => {
-  setup(() => {
+describe('mr-metadata', () => {
+  beforeEach(() => {
     element = document.createElement('mock-metadata-element');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MockMetadataElement);
   });
 
-  test('groups only applicable to type=FLT-Launch', () => {
+  it('groups only applicable to type=FLT-Launch', () => {
     element.issueType = 'Not-FLT-Launch';
 
     assert.deepEqual(element._filteredGroups, []);

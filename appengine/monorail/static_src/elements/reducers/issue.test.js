@@ -6,20 +6,20 @@ import {assert} from 'chai';
 import * as issue from './issue.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 
-suite('issue', () => {
-  test('issue', () => {
+describe('issue', () => {
+  it('issue', () => {
     assert.deepEqual(issue.issue(wrapIssue()), {});
     assert.deepEqual(issue.issue(wrapIssue({localId: 100})), {localId: 100});
   });
 
-  test('fieldValues', () => {
+  it('fieldValues', () => {
     assert.isUndefined(issue.fieldValues(wrapIssue()));
     assert.deepEqual(issue.fieldValues(wrapIssue({
       fieldValues: [{value: 'v'}],
     })), [{value: 'v'}]);
   });
 
-  test('type', () => {
+  it('type', () => {
     assert.isUndefined(issue.type(wrapIssue()));
     assert.isUndefined(issue.type(wrapIssue({
       fieldValues: [{value: 'v'}],
@@ -32,7 +32,7 @@ suite('issue', () => {
     })), 'Defect');
   });
 
-  test('restrictions', () => {
+  it('restrictions', () => {
     assert.deepEqual(issue.restrictions(wrapIssue()), {});
     assert.deepEqual(issue.restrictions(wrapIssue({labelRefs: []})), {});
 
@@ -55,13 +55,13 @@ suite('issue', () => {
     });
   });
 
-  test('isOpen', () => {
+  it('isOpen', () => {
     assert.isFalse(issue.isOpen(wrapIssue()));
     assert.isTrue(issue.isOpen(wrapIssue({statusRef: {meansOpen: true}})));
     assert.isFalse(issue.isOpen(wrapIssue({statusRef: {meansOpen: false}})));
   });
 
-  test('blockingIssues', () => {
+  it('blockingIssues', () => {
     const relatedIssues = new Map([
       ['proj:1',
         {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]}],
@@ -104,7 +104,7 @@ suite('issue', () => {
       ]);
   });
 
-  test('blockedOnIssues', () => {
+  it('blockedOnIssues', () => {
     const relatedIssues = new Map([
       ['proj:1',
         {localId: 1, projectName: 'proj', labelRefs: [{label: 'label'}]}],
@@ -147,7 +147,7 @@ suite('issue', () => {
       ]);
   });
 
-  test('sortedBlockedOn', () => {
+  it('sortedBlockedOn', () => {
     const relatedIssues = new Map([
       ['proj:1',
         {localId: 1, projectName: 'proj', statusRef: {meansOpen: true}}],
@@ -209,7 +209,7 @@ suite('issue', () => {
     );
   });
 
-  test('mergedInto', () => {
+  it('mergedInto', () => {
     assert.deepEqual(issue.mergedInto(wrapIssue()), {});
     assert.deepEqual(issue.mergedInto(wrapIssue({
       mergedIntoIssueRef: {localId: 22, projectName: 'proj'},
@@ -235,7 +235,7 @@ suite('issue', () => {
     });
   });
 
-  test('fieldValueMap', () => {
+  it('fieldValueMap', () => {
     assert.deepEqual(issue.fieldValueMap(wrapIssue()), new Map());
     assert.deepEqual(issue.fieldValueMap(wrapIssue({
       fieldValues: [],
@@ -252,7 +252,7 @@ suite('issue', () => {
     ]));
   });
 
-  test('fieldDefs', () => {
+  it('fieldDefs', () => {
     assert.deepEqual(issue.fieldDefs({
       project: {},
       ...wrapIssue(),

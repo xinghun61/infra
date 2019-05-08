@@ -7,17 +7,17 @@ import {MrAccountDropdown} from './mr-account-dropdown.js';
 
 let element;
 
-suite('mr-account-dropdown', () => {
-  setup(() => {
+describe('mr-account-dropdown', () => {
+  beforeEach(() => {
     element = document.createElement('mr-account-dropdown');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrAccountDropdown);
   });
 });

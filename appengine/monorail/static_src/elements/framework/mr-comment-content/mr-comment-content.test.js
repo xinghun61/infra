@@ -8,17 +8,17 @@ import {MrCommentContent} from './mr-comment-content.js';
 
 let element;
 
-suite('mr-comment-content', () => {
-  setup(() => {
+describe('mr-comment-content', () => {
+  beforeEach(() => {
     element = document.createElement('mr-comment-content');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrCommentContent);
   });
 });

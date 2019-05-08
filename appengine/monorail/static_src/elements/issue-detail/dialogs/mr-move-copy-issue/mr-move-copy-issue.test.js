@@ -7,17 +7,17 @@ import {MrMoveCopyIssue} from './mr-move-copy-issue.js';
 
 let element;
 
-suite('mr-move-copy-issue', () => {
-  setup(() => {
+describe('mr-move-copy-issue', () => {
+  beforeEach(() => {
     element = document.createElement('mr-move-copy-issue');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrMoveCopyIssue);
   });
 });

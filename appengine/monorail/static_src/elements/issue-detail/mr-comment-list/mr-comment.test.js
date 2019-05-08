@@ -9,8 +9,8 @@ import {MrComment} from './mr-comment.js';
 
 let element;
 
-suite('mr-comment', () => {
-  setup(() => {
+describe('mr-comment', () => {
+  beforeEach(() => {
     element = document.createElement('mr-comment');
     element.comment = {
       canFlag: true,
@@ -28,15 +28,15 @@ suite('mr-comment', () => {
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrComment);
   });
 
-  test('scrolls to comment', async () => {
+  it('scrolls to comment', async () => {
     sinon.stub(element, 'scrollIntoView');
 
     element.highlighted = true;

@@ -10,7 +10,7 @@ let element;
 let chartLoadedPromise;
 let dataLoadedPromise;
 
-const setupElement = () => {
+const beforeEachElement = () => {
   if (element && document.body.contains(element)) {
     // Avoid setting up multiple versions of the same element.
     document.body.removeChild(element);
@@ -29,8 +29,8 @@ const setupElement = () => {
   return el;
 };
 
-suite('mr-chart', () => {
-  setup(() => {
+describe('mr-chart', () => {
+  beforeEach(() => {
     window.CS_env = {
       token: 'rutabaga-token',
       tokenExpiresSec: 0,
@@ -59,10 +59,10 @@ suite('mr-chart', () => {
     // Stub RAF to execute immediately.
     sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
 
-    element = setupElement();
+    element = beforeEachElement();
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
 
     window.fetch.restore();
@@ -70,14 +70,14 @@ suite('mr-chart', () => {
     AutoRefreshPrpcClient.isTokenExpired.restore();
   });
 
-  suite('constructor', () => {
-    test('sets this.projectname', () => {
+  describe('constructor', () => {
+    it('sets this.projectname', () => {
       assert.equal(element.projectName, 'rutabaga');
     });
   });
 
-  suite('data loading', () => {
-    setup(() => {
+  describe('data loading', () => {
+    beforeEach(() => {
       // Stub search params.
       sinon.stub(MrChart, 'getSearchParams');
       const searchParams = new URLSearchParams();
@@ -95,21 +95,21 @@ suite('mr-chart', () => {
       });
 
       // Re-instantiate element after stubs.
-      element = setupElement();
+      element = beforeEachElement();
     });
 
-    teardown(() => {
+    afterEach(() => {
       MrChart.getSearchParams.restore();
       MrChart.makeTimestamps.restore();
       MrChart.getEndDate.restore();
     });
 
-    test('makes a series of XHR calls', async () => {
+    it('makes a series of XHR calls', async () => {
       await dataLoadedPromise;
       assert.deepEqual(element.values, [8, 8, 8, 8, 8, 8]);
     });
 
-    test('sets indices and correctly re-orders values', async () => {
+    it('sets indices and correctly re-orders values', async () => {
       await dataLoadedPromise;
 
       const timestampMap = new Map([
@@ -131,7 +131,7 @@ suite('mr-chart', () => {
       MrChart.prototype._fetchDataAtTimestamp.restore();
     });
 
-    test('if issue count is null, defaults to 0', async () => {
+    it('if issue count is null, defaults to 0', async () => {
       window.fetch.restore();
       sinon.stub(window, 'fetch').callsFake(() => {
         return new Promise((resolve, reject) => {
@@ -153,7 +153,7 @@ suite('mr-chart', () => {
         return [1234567, 2345678, 3456789];
       });
 
-      element = setupElement();
+      element = beforeEachElement();
       await new Promise((resolve) => {
         element.addEventListener('allDataLoaded', resolve);
       });
@@ -163,20 +163,20 @@ suite('mr-chart', () => {
     });
   });
 
-  suite('end date change detection', () => {
-    setup(async () => {
+  describe('end date change detection', () => {
+    beforeEach(async () => {
       await chartLoadedPromise;
 
       sinon.spy(window.history, 'pushState');
       sinon.spy(element, '_fetchData');
     });
 
-    teardown(() => {
+    afterEach(() => {
       element._fetchData.restore();
       window.history.pushState.restore();
     });
 
-    test('changes URL param when end_date input changes', async () => {
+    it('changes URL param when end_date input changes', async () => {
       element.endDateInput.value = '2017-10-02';
       const event = new Event('change');
       element.endDateInput.dispatchEvent(event);
@@ -191,12 +191,12 @@ suite('mr-chart', () => {
     });
   });
 
-  suite('progress bar', () => {
-    setup(async () => {
+  describe('progress bar', () => {
+    beforeEach(async () => {
       await chartLoadedPromise;
     });
 
-    test('visible based on loading progress', async () => {
+    it('visible based on loading progress', async () => {
       assert.equal(element.progressBar.style.visibility, 'visible');
       assert.equal(element.progressBar.value, 0.05);
       assert.isTrue(element.endDateInput.disabled);
@@ -225,9 +225,9 @@ suite('mr-chart', () => {
   });
 
 
-  suite('static methods', () => {
-    suite('sortInBisectOrder', () => {
-      test('orders first, last, median recursively', () => {
+  describe('static methods', () => {
+    describe('sortInBisectOrder', () => {
+      it('orders first, last, median recursively', () => {
         assert.deepEqual(MrChart.sortInBisectOrder([]), []);
         assert.deepEqual(MrChart.sortInBisectOrder([9]), [9]);
         assert.deepEqual(MrChart.sortInBisectOrder([8, 9]), [8, 9]);
@@ -237,13 +237,13 @@ suite('mr-chart', () => {
       });
     });
 
-    suite('makeTimestamps', () => {
-      test('throws an error if endDate not passed', () => {
+    describe('makeTimestamps', () => {
+      it('throws an error if endDate not passed', () => {
         assert.throws(() => {
           MrChart.makeTimestamps();
         }, 'endDate required');
       });
-      test('returns an array of in seconds', () => {
+      it('returns an array of in seconds', () => {
         const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
         const secondsInDay = 24 * 60 * 60;
 
@@ -255,12 +255,12 @@ suite('mr-chart', () => {
       });
     });
 
-    suite('dateStringToDate', () => {
-      test('returns null if no input', () => {
+    describe('dateStringToDate', () => {
+      it('returns null if no input', () => {
         assert.isNull(MrChart.dateStringToDate());
       });
 
-      test('returns a new Date at EOD UTC', () => {
+      it('returns a new Date at EOD UTC', () => {
         const actualDate = MrChart.dateStringToDate('2018-11-03');
         const expectedDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
         assert.equal(expectedDate.getTime(), 1541289599000, 'Sanity check.');
@@ -269,8 +269,8 @@ suite('mr-chart', () => {
       });
     });
 
-    suite('getSearchParams', () => {
-      test('returns URLSearchParams', () => {
+    describe('getSearchParams', () => {
+      it('returns URLSearchParams', () => {
         const urlParams = new URLSearchParams(location.search.substring(1));
         urlParams.set('eat', 'rutabagas');
         const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
@@ -281,20 +281,20 @@ suite('mr-chart', () => {
       });
     });
 
-    suite('getEndDate', () => {
+    describe('getEndDate', () => {
       let clock;
 
-      setup(() => {
+      beforeEach(() => {
         sinon.stub(MrChart, 'getSearchParams');
         clock = sinon.useFakeTimers(10000);
       });
 
-      teardown(() => {
+      afterEach(() => {
         clock.restore();
         MrChart.getSearchParams.restore();
       });
 
-      test('returns end date if in URL params', () => {
+      it('returns end date if in URL params', () => {
         const searchParams = new URLSearchParams();
         searchParams.set('end_date', '2018-11-03');
         MrChart.getSearchParams.returns(searchParams);
@@ -307,7 +307,7 @@ suite('mr-chart', () => {
         assert.equal(actual.getTime(), expectedDate.getTime());
       });
 
-      test('returns EOD of current date if not in URL params', () => {
+      it('returns EOD of current date if not in URL params', () => {
         MrChart.getSearchParams.returns(new URLSearchParams());
 
         const expectedDate = new Date();
@@ -318,7 +318,7 @@ suite('mr-chart', () => {
         assert.equal(MrChart.getEndDate().getTime(), expectedDate.getTime());
       });
 
-      test('returns EOD of URL param is empty', () => {
+      it('returns EOD of URL param is empty', () => {
         const searchParams = new URLSearchParams();
         searchParams.set('end_date', '');
         MrChart.getSearchParams.returns(searchParams);
@@ -332,8 +332,8 @@ suite('mr-chart', () => {
       });
     });
 
-    suite('makeIndices', () => {
-      test('returns dates in mm/dd/yyy format', () => {
+    describe('makeIndices', () => {
+      it('returns dates in mm/dd/yyy format', () => {
         const timestamps = [
           1540857599, 1540943999, 1541030399,
           1541116799, 1541203199, 1541289599,

@@ -10,8 +10,8 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 let element;
 let randomButton;
 
-suite('mr-dropdown', () => {
-  setup(() => {
+describe('mr-dropdown', () => {
+  beforeEach(() => {
     element = document.createElement('mr-dropdown');
     document.body.appendChild(element);
 
@@ -19,16 +19,16 @@ suite('mr-dropdown', () => {
     document.body.appendChild(randomButton);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     document.body.removeChild(randomButton);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrDropdown);
   });
 
-  test('toggle changes opened state', () => {
+  it('toggle changes opened state', () => {
     element.open();
     assert.isTrue(element.opened);
 
@@ -47,7 +47,7 @@ suite('mr-dropdown', () => {
   });
 
 
-  test('clicking outside element closes menu', () => {
+  it('clicking outside element closes menu', () => {
     element.open();
     assert.isTrue(element.opened);
 
@@ -56,7 +56,7 @@ suite('mr-dropdown', () => {
     assert.isFalse(element.opened);
   });
 
-  test('items with handlers are handled', () => {
+  it('items with handlers are handled', () => {
     const handler1 = sinon.spy();
     const handler2 = sinon.spy();
     const handler3 = sinon.spy();

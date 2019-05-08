@@ -12,22 +12,22 @@ window.CS_env = {
   token: 'foo-token',
 };
 
-suite('mr-app', () => {
-  setup(() => {
+describe('mr-app', () => {
+  beforeEach(() => {
     element = document.createElement('mr-app');
     document.body.appendChild(element);
     element.formsToCheck = [];
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrApp);
   });
 
-  test('_loadIssuePage loads issue page', async () => {
+  it('_loadIssuePage loads issue page', async () => {
     await element._loadIssuePage({
       query: {id: '234'},
       params: {project: 'chromium'},

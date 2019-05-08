@@ -4,32 +4,32 @@ import {autolink} from './autolink.js';
 const components = autolink.Components;
 const markupAutolinks = autolink.markupAutolinks;
 
-suite('autolink', () => {
-  suite('crbug component functions', () => {
+describe('autolink', () => {
+  describe('crbug component functions', () => {
     const {extractRefs, refRegs, replacer} = components.get('01-tracker-crbug');
 
-    test('Extract crbug project and local ids', () => {
+    it('Extract crbug project and local ids', () => {
       const match = refRegs[0].exec('https://crbug.com/monorail/1234');
       refRegs[0].lastIndex = 0;
       const ref = extractRefs(match);
       assert.deepEqual(ref, [{projectName: 'monorail', localId: '1234'}]);
     });
 
-    test('Extract crbug default project name', () => {
+    it('Extract crbug default project name', () => {
       const match = refRegs[0].exec('http://crbug.com/1234');
       refRegs[0].lastIndex = 0;
       const ref = extractRefs(match);
       assert.deepEqual(ref, [{projectName: 'chromium', localId: '1234'}]);
     });
 
-    test('Extract crbug passed project name is ignored', () => {
+    it('Extract crbug passed project name is ignored', () => {
       const match = refRegs[0].exec('https://crbug.com/1234');
       refRegs[0].lastIndex = 0;
       const ref = extractRefs(match, 'foo');
       assert.deepEqual(ref, [{projectName: 'chromium', localId: '1234'}]);
     });
 
-    test('Replace crbug with found components', () => {
+    it('Replace crbug with found components', () => {
       const str = 'crbug.com/monorail/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
@@ -51,7 +51,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace crbug with default project_name', () => {
+    it('Replace crbug with default project_name', () => {
       const str = 'crbug.com/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
@@ -74,7 +74,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace crbug incomplete responses', () => {
+    it('Replace crbug incomplete responses', () => {
       const str = 'crbug.com/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
@@ -86,7 +86,7 @@ suite('autolink', () => {
       assert.deepEqual(actualRun, [{content: str}]);
     });
 
-    test('Replace crbug passed project name is ignored', () => {
+    it('Replace crbug passed project name is ignored', () => {
       const str = 'crbug.com/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
@@ -109,7 +109,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace crbug with no found components', () => {
+    it('Replace crbug with no found components', () => {
       const str = 'crbug.com/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
@@ -118,7 +118,7 @@ suite('autolink', () => {
       assert.deepEqual(actualRun, [{content: str}]);
     });
 
-    test('Replace crbug with no issue summary', () => {
+    it('Replace crbug with no issue summary', () => {
       const str = 'crbug.com/monorail/1234';
       const match = refRegs[0].exec(str);
       refRegs[0].lastIndex = 0;
@@ -141,14 +141,14 @@ suite('autolink', () => {
     });
   });
 
-  suite('regular tracker component functions', () => {
+  describe('regular tracker component functions', () => {
     const {extractRefs, refRegs, replacer} =
       components.get('04-tracker-regular');
     const str = 'bugs=123, monorail:234 or #345 and PROJ:#456';
     const match = refRegs[0].exec(str);
     refRegs[0].lastIndex = 0;
 
-    test('Extract tracker projects and local ids', () => {
+    it('Extract tracker projects and local ids', () => {
       const actualRefs = extractRefs(match, 'foo-project');
       assert.deepEqual(
         actualRefs,
@@ -158,7 +158,7 @@ suite('autolink', () => {
           {projectName: 'PROJ', localId: '456'}]);
     });
 
-    test('Replace tracker refs.', () => {
+    it('Replace tracker refs.', () => {
       const components = {
         openRefs: [
           {summary: 'sum', projectName: 'monorail', localId: 888},
@@ -196,7 +196,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace tracker refs mixed case refs.', () => {
+    it('Replace tracker refs mixed case refs.', () => {
       const components = {
         openRefs: [
           {projectName: 'mOnOrAIl', localId: 234},
@@ -234,18 +234,18 @@ suite('autolink', () => {
     });
   });
 
-  suite('user email component functions', () => {
+  describe('user email component functions', () => {
     const {extractRefs, refRegs, replacer} = components.get('02-user-emails');
     const str = 'We should ask User1@gmail.com to confirm.';
     const match = refRegs[0].exec(str);
     refRegs[0].lastIndex = 0;
 
-    test('Extract user email', () => {
+    it('Extract user email', () => {
       const actualEmail = extractRefs(match, 'unusedProjectName');
       assert.equal('User1@gmail.com', actualEmail);
     });
 
-    test('Replace existing user.', () => {
+    it('Replace existing user.', () => {
       const components = {
         users: [{email: 'user2@gmail.com'}, {email: 'user1@gmail.com'}]};
       const actualTextRun = replacer(match, components);
@@ -255,7 +255,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace non-existent user.', () => {
+    it('Replace non-existent user.', () => {
       const actualTextRun = replacer(match, {});
       assert.deepEqual(
         actualTextRun,
@@ -268,10 +268,10 @@ suite('autolink', () => {
     });
   });
 
-  suite('url component functions.', () => {
+  describe('url component functions.', () => {
     const {refRegs, replacer} = components.get('03-urls');
 
-    test('test short link regex string', () => {
+    it('test short link regex string', () => {
       const shortLinkRE = refRegs[0];
       const str =
         'go/shortlinks ./_go/shortlinks bo/short bo/1234  ' +
@@ -287,7 +287,7 @@ suite('autolink', () => {
       );
     });
 
-    test('test numeric short link regex string', () => {
+    it('test numeric short link regex string', () => {
       const shortNumLinkRE = refRegs[1];
       const str = 'go/nono omg/ohno omg/123 .cl/123 b/1234';
       let match;
@@ -298,7 +298,7 @@ suite('autolink', () => {
       assert.deepEqual(actualMatches, [' omg/123', ' b/1234']);
     });
 
-    test('test implied link regex string', () => {
+    it('test implied link regex string', () => {
       const impliedLinkRE = refRegs[2];
       const str = 'incomplete.com .help.com hey.net/other="(blah)"';
       let match;
@@ -310,7 +310,7 @@ suite('autolink', () => {
         actualMatches, ['incomplete.com', ' hey.net/other="(blah)"']);
     });
 
-    test('test full link regex string', () => {
+    it('test full link regex string', () => {
       const isLinkRE = refRegs[3];
       const str =
         'https://www.go.com ' +
@@ -325,7 +325,7 @@ suite('autolink', () => {
         ['https://www.go.com', 'http://website.net/other="(}])">']);
     });
 
-    test('Replace URL plain text', () => {
+    it('Replace URL plain text', () => {
       const match = refRegs[2].exec('link here: (website.net/other="here").');
       refRegs[2].lastIndex = 0;
       const actualTextRuns = replacer(match);
@@ -340,7 +340,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace URL existing http', () => {
+    it('Replace URL existing http', () => {
       const match = refRegs[3].exec('link here: (https://website.net/other="here").');
       refRegs[3].lastIndex = 0;
       const actualTextRuns = replacer(match);
@@ -354,7 +354,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace URL with short-link as substring', () => {
+    it('Replace URL with short-link as substring', () => {
       const match = refRegs[3].exec('https://website.net/who/me/yes/you');
       refRegs[3].lastIndex = 0;
       const actualTextRuns = replacer(match);
@@ -372,7 +372,7 @@ suite('autolink', () => {
       assert.isNull(refRegs[0].exec('https://website.net/who/me/yes/you'));
     });
 
-    test('Replace short-link plain text', () => {
+    it('Replace short-link plain text', () => {
       const match = refRegs[0].exec('link here: (who/me).');
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
@@ -387,7 +387,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace short-link plain text initial characters', () => {
+    it('Replace short-link plain text initial characters', () => {
       const match = refRegs[0].exec('link here: who/me');
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
@@ -401,7 +401,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace URL existing http', () => {
+    it('Replace URL existing http', () => {
       const match = refRegs[0].exec('link here: (http://who/me).');
       refRegs[0].lastIndex = 0;
       const actualTextRuns = replacer(match);
@@ -416,7 +416,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Replace URL short link', () => {
+    it('Replace URL short link', () => {
       ['go', 'g', 'shortn', 'who', 'teams'].forEach((prefix) => {
         const match = refRegs[0].exec(`link here: (${prefix}/abcd).`);
         refRegs[0].lastIndex = 0;
@@ -433,7 +433,7 @@ suite('autolink', () => {
       });
     });
 
-    test('Replace URL numeric short link', () => {
+    it('Replace URL numeric short link', () => {
       ['b', 't', 'o', 'omg', 'cl', 'cr'].forEach((prefix) => {
         const match = refRegs[1].exec(`link here: (${prefix}/1234).`);
         refRegs[1].lastIndex = 0;
@@ -450,10 +450,10 @@ suite('autolink', () => {
     });
   });
 
-  suite('versioncontrol component functions.', () => {
+  describe('versioncontrol component functions.', () => {
     const {refRegs, replacer} = components.get('06-versioncontrol');
 
-    test('test git hash regex', () => {
+    it('test git hash regex', () => {
       const gitHashRE = refRegs[0];
       const str =
           'r63b72a71d5fbce6739c51c3846dd94bd62b91091 blha blah ' +
@@ -473,7 +473,7 @@ suite('autolink', () => {
         ]);
     });
 
-    test('test svn regex', () => {
+    it('test svn regex', () => {
       const svnRE = refRegs[1];
       const str =
           'r1234 blah blah ' +
@@ -492,7 +492,7 @@ suite('autolink', () => {
         ]);
     });
 
-    test('replace revision refs plain text', () => {
+    it('replace revision refs plain text', () => {
       const str = 'r63b72a71d5fbce6739c51c3846dd94bd62b91091';
       const match = refRegs[0].exec(str);
       const actualTextRuns = replacer(match);
@@ -508,7 +508,7 @@ suite('autolink', () => {
   });
 
 
-  suite('markupAutolinks tests', () => {
+  describe('markupAutolinks tests', () => {
     const componentRefs = new Map();
     componentRefs.set('01-tracker-crbug', {
       openRefs: [],
@@ -522,12 +522,12 @@ suite('autolink', () => {
       users: [{email: 'user2@example.com'}],
     });
 
-    test('empty string does not cause error', () => {
+    it('empty string does not cause error', () => {
       const actualTextRuns = markupAutolinks('', componentRefs);
       assert.deepEqual(actualTextRuns, []);
     });
 
-    test('no nested autolinking', () => {
+    it('no nested autolinking', () => {
       const plainString = 'test <b>autolinking go/testlink</b> is not nested';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
@@ -538,7 +538,7 @@ suite('autolink', () => {
         ]);
     });
 
-    test('URLs are autolinked', () => {
+    it('URLs are autolinked', () => {
       const plainString = 'this http string contains http://google.com for you';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
@@ -549,7 +549,7 @@ suite('autolink', () => {
         ]);
     });
 
-    test('different component types are correctly linked', () => {
+    it('different component types are correctly linked', () => {
       const plainString = 'test (User2@example.com and crbug.com/99) get link';
       const actualTextRuns = markupAutolinks(plainString, componentRefs);
       assert.deepEqual(
@@ -580,7 +580,7 @@ suite('autolink', () => {
       );
     });
 
-    test('Invalid issue refs do not get linked', () => {
+    it('Invalid issue refs do not get linked', () => {
       const plainString =
         'bug123, bug 123a, bug-123 and https://bug:123.example.com ' +
         'do not get linked.';
@@ -603,7 +603,7 @@ suite('autolink', () => {
         ]);
     });
 
-    test('Only existing issues get linked', () => {
+    it('Only existing issues get linked', () => {
       const plainString =
         'only existing bugs = 456, monorail:123, 234 and chromium:345 get ' +
         'linked';
@@ -657,7 +657,7 @@ suite('autolink', () => {
       );
     });
 
-    test('multilined bolds are not bolded', () => {
+    it('multilined bolds are not bolded', () => {
       const plainString =
         '<b>no multiline bolding \n' +
         'not allowed go/survey is still linked</b>';

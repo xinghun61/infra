@@ -8,21 +8,21 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
-suite('mr-restriction-indicator', () => {
-  setup(() => {
+describe('mr-restriction-indicator', () => {
+  beforeEach(() => {
     element = document.createElement('mr-restriction-indicator');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrRestrictionIndicator);
   });
 
-  test('shows element only when restricted or showNotice', () => {
+  it('shows element only when restricted or showNotice', () => {
     assert.isTrue(element.hasAttribute('hidden'));
 
     element.restrictions = {view: ['Google']};
@@ -55,7 +55,7 @@ suite('mr-restriction-indicator', () => {
     assert.isFalse(element.hasAttribute('hidden'));
   });
 
-  test('displays view restrictions', () => {
+  it('displays view restrictions', () => {
     element.restrictions = {
       view: ['Google', 'hello'],
       edit: ['Editor', 'world'],
@@ -69,7 +69,7 @@ suite('mr-restriction-indicator', () => {
     assert.include(element.shadowRoot.textContent, restrictString);
   });
 
-  test('displays edit restrictions', () => {
+  it('displays edit restrictions', () => {
     element.restrictions = {
       view: [],
       edit: ['Editor', 'world'],
@@ -83,7 +83,7 @@ suite('mr-restriction-indicator', () => {
     assert.include(element.shadowRoot.textContent, restrictString);
   });
 
-  test('displays comment restrictions', () => {
+  it('displays comment restrictions', () => {
     element.restrictions = {
       view: [],
       edit: [],
@@ -97,7 +97,7 @@ suite('mr-restriction-indicator', () => {
     assert.include(element.shadowRoot.textContent, restrictString);
   });
 
-  test('displays public issue notice, if the user has that pref', () => {
+  it('displays public issue notice, if the user has that pref', () => {
     element.restrictions = {};
 
     element.prefs = new Map();
@@ -111,5 +111,4 @@ suite('mr-restriction-indicator', () => {
 
     assert.include(element.shadowRoot.textContent, noticeString);
   });
-
 });

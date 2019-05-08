@@ -9,8 +9,8 @@ import {MrCommentList} from './mr-comment-list.js';
 
 let element;
 
-suite('mr-comment-list', () => {
-  setup(() => {
+describe('mr-comment-list', () => {
+  beforeEach(() => {
     element = document.createElement('mr-comment-list');
     document.body.appendChild(element);
     element.comments = [
@@ -56,15 +56,15 @@ suite('mr-comment-list', () => {
     ];
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrCommentList);
   });
 
-  test('scrolls to comment', async () => {
+  it('scrolls to comment', async () => {
     await element.updateComplete;
 
     const commentElements = element.shadowRoot.querySelectorAll('mr-comment');
@@ -81,7 +81,7 @@ suite('mr-comment-list', () => {
     commentElement.scrollIntoView.restore();
   });
 
-  test('scrolls to hidden comment', async () => {
+  it('scrolls to hidden comment', async () => {
     await element.updateComplete;
 
     element.focusId = 'c1';
@@ -92,7 +92,7 @@ suite('mr-comment-list', () => {
     // TODO: Check that the comment has been scrolled into view.
   });
 
-  test('doesnt scroll to unknown comment', async () => {
+  it('doesnt scroll to unknown comment', async () => {
     await element.updateComplete;
 
     element.focusId = 'c100';
@@ -102,7 +102,7 @@ suite('mr-comment-list', () => {
     assert.isTrue(element._hideComments);
   });
 
-  test('edit-metadata is displayed if user has addissuecomment', async () => {
+  it('edit-metadata is displayed if user has addissuecomment', async () => {
     element.issuePermissions = ['addissuecomment'];
 
     await element.updateComplete;
@@ -111,7 +111,7 @@ suite('mr-comment-list', () => {
       element.shadowRoot.querySelector('.edit-slot').getAttribute('hidden'));
   });
 
-  test('edit-metadata is hidden if user has no addissuecomment', async () => {
+  it('edit-metadata is hidden if user has no addissuecomment', async () => {
     element.issuePermissions = [];
 
     await element.updateComplete;

@@ -20,28 +20,28 @@ export const initialValueUpdateComplete = async (element) => {
   return true;
 };
 
-suite('mr-multi-input', () => {
-  setup(() => {
+describe('mr-multi-input', () => {
+  beforeEach(() => {
     element = document.createElement('mr-multi-input');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrMultiInput);
   });
 
-  test('input updates when initialValues change', async () => {
+  it('input updates when initialValues change', async () => {
     element.initialValues = ['hello', 'world'];
     await initialValueUpdateComplete(element);
 
     assert.deepEqual(await element.getValues(), ['hello', 'world']);
   });
 
-  test('input updates when setValues is called', async () => {
+  it('input updates when setValues is called', async () => {
     element.initialValues = ['hello', 'world'];
     await initialValueUpdateComplete(element);
 
@@ -50,7 +50,7 @@ suite('mr-multi-input', () => {
       ['jaunty', 'jackalope', 'jumps', 'joyously']);
   });
 
-  test('initial value does not change after user input', async () => {
+  it('initial value does not change after user input', async () => {
     element.initialValues = ['hello'];
     await initialValueUpdateComplete(element);
 
@@ -59,7 +59,7 @@ suite('mr-multi-input', () => {
     assert.deepEqual(element.initialValues, ['hello']);
   });
 
-  test('resetting input to initial value works', async () => {
+  it('resetting input to initial value works', async () => {
     element.initialValues = [];
     await initialValueUpdateComplete(element);
 
@@ -72,7 +72,7 @@ suite('mr-multi-input', () => {
     assert.equal(element.shadowRoot.querySelector('#multi0').value.trim(), '');
   });
 
-  test('get value after user input', async () => {
+  it('get value after user input', async () => {
     element.initialValues = ['hello'];
     await initialValueUpdateComplete(element);
     // Simulate user input.
@@ -80,14 +80,14 @@ suite('mr-multi-input', () => {
     assert.deepEqual(element.getValues(), ['hello', 'heron']);
   });
 
-  test('input value was added', async () => {
+  it('input value was added', async () => {
     await element.updateComplete;
     // Simulate user input.
     element.shadowRoot.querySelector('#multi0').value = 'jackalope';
     assert.deepEqual(element.getValues(), ['jackalope']);
   });
 
-  test('input value was removed', async () => {
+  it('input value was removed', async () => {
     element.initialValues = ['hello'];
     await initialValueUpdateComplete(element);
     // Simulate user input.
@@ -95,7 +95,7 @@ suite('mr-multi-input', () => {
     assert.deepEqual(element.getValues(), []);
   });
 
-  test('input value was changed', async () => {
+  it('input value was changed', async () => {
     element.initialValues = ['hello'];
     await initialValueUpdateComplete(element);
     // Simulate user input.
@@ -103,7 +103,7 @@ suite('mr-multi-input', () => {
     assert.deepEqual(element.getValues(), ['world']);
   });
 
-  test('input value has commas', async () => {
+  it('input value has commas', async () => {
     await element.updateComplete;
     element.acType = 'member';
 
@@ -125,7 +125,7 @@ suite('mr-multi-input', () => {
       element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously!']);
   });
 
-  test('input value has commas but is not delimitable', async () => {
+  it('input value has commas but is not delimitable', async () => {
     await element.updateComplete;
     element.type = fieldTypes.STR_TYPE;
 

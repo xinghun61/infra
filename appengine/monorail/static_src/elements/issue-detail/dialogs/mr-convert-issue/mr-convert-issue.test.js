@@ -7,21 +7,21 @@ import {MrConvertIssue} from './mr-convert-issue.js';
 
 let element;
 
-suite('mr-convert-issue', () => {
-  setup(() => {
+describe('mr-convert-issue', () => {
+  beforeEach(() => {
     element = document.createElement('mr-convert-issue');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrConvertIssue);
   });
 
-  test('no template chosen', async () => {
+  it('no template chosen', async () => {
     await element.updateComplete;
 
     const buttons = element.shadowRoot.querySelectorAll('chops-button');

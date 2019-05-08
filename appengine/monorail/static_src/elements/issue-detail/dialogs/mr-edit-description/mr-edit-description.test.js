@@ -10,8 +10,8 @@ import * as issue from 'elements/reducers/issue.js';
 
 let element;
 
-suite('mr-edit-description', () => {
-  setup(() => {
+describe('mr-edit-descriptions', () => {
+  beforeEach(() => {
     element = document.createElement('mr-edit-description');
     document.body.appendChild(element);
     element.comments = [
@@ -62,16 +62,16 @@ suite('mr-edit-description', () => {
     sinon.spy(issue.update);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrEditDescription);
   });
 
-  test('selects last issue description', async () => {
+  it('selects last issue description', async () => {
     element._fieldName = '';
     element.reset();
 
@@ -81,7 +81,7 @@ suite('mr-edit-description', () => {
     assert.equal(element._displayedTitle, 'Description');
   });
 
-  test('selects last survey', async () => {
+  it('selects last survey', async () => {
     element._fieldName = 'foo';
     element.reset();
 
@@ -91,7 +91,7 @@ suite('mr-edit-description', () => {
     assert.equal(element._displayedTitle, 'foo Survey');
   });
 
-  test('toggle sendEmail', async () => {
+  it('toggle sendEmail', async () => {
     element.reset();
     await element.updateComplete;
 

@@ -10,21 +10,21 @@ import {fieldTypes} from 'elements/shared/field-types.js';
 
 let element;
 
-suite('mr-field-values', () => {
-  setup(() => {
+describe('mr-field-values', () => {
+  beforeEach(() => {
     element = document.createElement('mr-field-values');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrFieldValues);
   });
 
-  test('renders empty if no values', async () => {
+  it('renders empty if no values', async () => {
     element.values = [];
 
     await element.updateComplete;
@@ -32,7 +32,7 @@ suite('mr-field-values', () => {
     assert.equal('----', element.shadowRoot.textContent.trim());
   });
 
-  test('renders user links when type is user', async () => {
+  it('renders user links when type is user', async () => {
     element.type = fieldTypes.USER_TYPE;
     element.values = ['test@example.com', 'hello@world.com'];
 
@@ -47,7 +47,7 @@ suite('mr-field-values', () => {
     assert.include(links[1].shadowRoot.textContent, 'hello@world.com');
   });
 
-  test('renders URLs when type is url', async () => {
+  it('renders URLs when type is url', async () => {
     element.type = fieldTypes.URL_TYPE;
     element.values = ['http://hello.world', 'go/link'];
 
@@ -62,7 +62,7 @@ suite('mr-field-values', () => {
     assert.include(links[1].href, 'go/link');
   });
 
-  test('renders generic field when field is string', async () => {
+  it('renders generic field when field is string', async () => {
     element.type = fieldTypes.STR_TYPE;
     element.values = ['blah', 'random value', 'nothing here'];
     element.name = 'fieldName';

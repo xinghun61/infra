@@ -17,8 +17,8 @@ import {initialValueUpdateComplete} from '../mr-edit-field/mr-multi-input.test.j
 let element;
 
 
-suite('mr-edit-metadata', () => {
-  setup(() => {
+describe('mr-edit-metadata', () => {
+  beforeEach(() => {
     element = document.createElement('mr-edit-metadata');
     document.body.appendChild(element);
 
@@ -27,16 +27,16 @@ suite('mr-edit-metadata', () => {
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     store.dispatch.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrEditMetadata);
   });
 
-  test('disconnecting element reports form is not dirty', () => {
+  it('disconnecting element reports form is not dirty', () => {
     element.formName = 'test';
 
     assert.isFalse(store.dispatch.calledOnce);
@@ -56,11 +56,11 @@ suite('mr-edit-metadata', () => {
     document.body.appendChild(element);
   });
 
-  test('delta empty when no changes', () => {
+  it('delta empty when no changes', () => {
     assert.deepEqual(element.getDelta(), {});
   });
 
-  test('toggling checkbox toggles sendEmail', async () => {
+  it('toggling checkbox toggles sendEmail', async () => {
     element.sendEmail = false;
 
     await element.updateComplete;
@@ -87,7 +87,7 @@ suite('mr-edit-metadata', () => {
     assert.equal(element.sendEmail, true);
   });
 
-  test('changing status produces delta change', async () => {
+  it('changing status produces delta change', async () => {
     element.statuses = [
       {'status': 'New'},
       {'status': 'Old'},
@@ -107,7 +107,7 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('not changing status produces no delta', async () => {
+  it('not changing status produces no delta', async () => {
     element.statuses = [
       {'status': 'Duplicate'},
     ];
@@ -124,7 +124,7 @@ suite('mr-edit-metadata', () => {
     assert.deepEqual(element.getDelta(), {});
   });
 
-  test('changing status to duplicate produces delta change', async () => {
+  it('changing status to duplicate produces delta change', async () => {
     element.statuses = [
       {'status': 'New'},
       {'status': 'Duplicate'},
@@ -154,7 +154,7 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('changing summary produces delta change', async () => {
+  it('changing summary produces delta change', async () => {
     element.summary = 'Old summary';
 
     await element.updateComplete;
@@ -166,7 +166,7 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('changing custom fields produces delta', async () => {
+  it('changing custom fields produces delta', async () => {
     element.fieldValueMap = new Map([['fakeField', ['prev value']]]);
     element.fieldDefs = [
       {
@@ -209,7 +209,7 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('changing approvers produces delta', async () => {
+  it('changing approvers produces delta', async () => {
     element.isApproval = true;
     element.hasApproverPrivileges = true;
     element.approvers = [
@@ -238,7 +238,7 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('changing blockedon produces delta change', async () => {
+  it('changing blockedon produces delta change', async () => {
     element.blockedOn = [
       {projectName: 'chromium', localId: '1234'},
       {projectName: 'monorail', localId: '4567'},
@@ -265,7 +265,7 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('_optionsForField computes options', () => {
+  it('_optionsForField computes options', () => {
     const optionsPerEnumField = new Map([
       ['enumfield', [{optionName: 'one'}, {optionName: 'two'}]],
     ]);
@@ -280,7 +280,7 @@ suite('mr-edit-metadata', () => {
       ]);
   });
 
-  test('changing enum fields produces delta', async () => {
+  it('changing enum fields produces delta', async () => {
     element.fieldDefs = [
       {
         fieldRef: {
@@ -324,7 +324,7 @@ suite('mr-edit-metadata', () => {
     });
   });
 
-  test('adding components produces delta', async () => {
+  it('adding components produces delta', async () => {
     element.isApproval = false;
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
 
@@ -362,7 +362,7 @@ suite('mr-edit-metadata', () => {
     assert.deepEqual(element.getDelta(), {});
   });
 
-  test('approver input appears when user has privileges', async () => {
+  it('approver input appears when user has privileges', async () => {
     assert.isNull(
       element.shadowRoot.querySelector('#approversInput'));
     element.isApproval = true;
@@ -374,7 +374,7 @@ suite('mr-edit-metadata', () => {
       element.shadowRoot.querySelector('#approversInput'));
   });
 
-  test('reset empties form values', async () => {
+  it('reset empties form values', async () => {
     element.fieldDefs = [
       {
         fieldRef: {
@@ -410,7 +410,7 @@ suite('mr-edit-metadata', () => {
     assert.lengthOf(uploader.files, 0);
   });
 
-  test('edit issue permissions', async () => {
+  it('edit issue permissions', async () => {
     const allFields = ['summary', 'status', 'owner', 'cc'];
     const testCases = [
       {permissions: [], nonNull: []},
@@ -437,7 +437,7 @@ suite('mr-edit-metadata', () => {
     }
   });
 
-  test('duplicate issue is rendered correctly', async () => {
+  it('duplicate issue is rendered correctly', async () => {
     element.statuses = [
       {'status': 'Duplicate'},
     ];
@@ -458,7 +458,7 @@ suite('mr-edit-metadata', () => {
       root.querySelector('#mergedIntoInput').getValue(), '1234');
   });
 
-  test('duplicate issue on different project is rendered correctly', async () => {
+  it('duplicate issue on different project is rendered correctly', async () => {
     element.statuses = [
       {'status': 'Duplicate'},
     ];
@@ -479,7 +479,7 @@ suite('mr-edit-metadata', () => {
       root.querySelector('#mergedIntoInput').getValue(), 'monorail:1234');
   });
 
-  test('blocking issues are rendered correctly', async () => {
+  it('blocking issues are rendered correctly', async () => {
     element.blocking = [
       {projectName: 'chromium', localId: '1234'},
       {projectName: 'monorail', localId: '4567'},
@@ -494,7 +494,7 @@ suite('mr-edit-metadata', () => {
     assert.deepEqual(['1234', 'monorail:4567'], blockingInput.getValues());
   });
 
-  test('filter out deleted users', async () => {
+  it('filter out deleted users', async () => {
     element.cc = [
       {displayName: 'test@example.com', userId: '1234'},
       {displayName: 'a deleted user'},

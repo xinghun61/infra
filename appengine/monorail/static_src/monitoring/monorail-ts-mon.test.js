@@ -3,10 +3,10 @@ import sinon from 'sinon';
 
 import MonorailTSMon, {PAGE_TYPES} from './monorail-ts-mon.js';
 
-suite('MonorailTSMon', () => {
+describe('MonorailTSMon', () => {
   let mts;
 
-  setup(() => {
+  beforeEach(() => {
     window.CS_env = {
       token: 'rutabaga-token',
       tokenExpiresSec: 1234,
@@ -17,25 +17,25 @@ suite('MonorailTSMon', () => {
     mts = new MonorailTSMon();
   });
 
-  teardown(() => {
+  afterEach(() => {
     delete window.CS_env;
   });
 
-  suite('constructor', () => {
-    test('initializes a prpcClient', () => {
+  describe('constructor', () => {
+    it('initializes a prpcClient', () => {
       assert.equal(mts.prpcClient.constructor.name, 'AutoRefreshPrpcClient');
     });
 
-    test('sets a client ID', () => {
+    it('sets a client ID', () => {
       assert.isNotNull(mts.clientId);
     });
 
-    test('disables sending after next flush', () => {
+    it('disables sending after next flush', () => {
       sinon.assert.calledOnce(mts.disableAfterNextFlush);
     });
   });
 
-  test('generateClientId', () => {
+  it('generateClientId', () => {
     const clientID = MonorailTSMon.generateClientId();
     assert.isNaN(clientID);
     const clientIDNum = parseInt(clientID, 32);
@@ -44,8 +44,8 @@ suite('MonorailTSMon', () => {
     assert.isAtMost(clientIDNum, Math.pow(2, 32));
   });
 
-  suite('recordUserTiming', () => {
-    test('records a timing metric only if matches', () => {
+  describe('recordUserTiming', () => {
+    it('records a timing metric only if matches', () => {
       const metric = {add: sinon.spy() };
       mts._userTimingMetrics = [{
         category: 'rutabaga',
@@ -74,17 +74,17 @@ suite('MonorailTSMon', () => {
     });
   });
 
-  suite('recordPageLoadTiming', () => {
-    setup(() => {
+  describe('recordPageLoadTiming', () => {
+    beforeEach(() => {
       mts.pageLoadMetric = {add: sinon.spy()};
       sinon.stub(MonorailTSMon, 'isPageVisible').callsFake(() => (true));
     });
 
-    teardown(() => {
+    afterEach(() => {
       MonorailTSMon.isPageVisible.restore();
     });
 
-    test('records page load on issue list page', () => {
+    it('records page load on issue list page', () => {
       mts.recordIssueListTiming();
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
@@ -98,7 +98,7 @@ suite('MonorailTSMon', () => {
         'document_visible'), true);
     });
 
-    test('records page load on issue detail page', () => {
+    it('records page load on issue detail page', () => {
       mts.recordIssueDetailTiming();
       sinon.assert.calledOnce(mts.pageLoadMetric.add);
       assert.isNumber(mts.pageLoadMetric.add.getCall(0).args[0]);
@@ -112,12 +112,12 @@ suite('MonorailTSMon', () => {
         'document_visible'), true);
     });
 
-    test('does not record page load timing on other pages', () => {
+    it('does not record page load timing on other pages', () => {
       mts.recordPageLoadTiming();
       sinon.assert.notCalled(mts.pageLoadMetric.add);
     });
 
-    test('does not record page load timing if over max threshold', () => {
+    it('does not record page load timing if over max threshold', () => {
       window.performance = {
         timing: {
           navigationStart: 1000,
@@ -128,7 +128,7 @@ suite('MonorailTSMon', () => {
       sinon.assert.notCalled(mts.pageLoadMetric.add);
     });
 
-    test('records page load on issue detail page if under threshold', () => {
+    it('records page load on issue detail page if under threshold', () => {
       MonorailTSMon.isPageVisible.restore();
       sinon.stub(MonorailTSMon, 'isPageVisible').callsFake(() => (false));
       window.performance = {
@@ -152,8 +152,8 @@ suite('MonorailTSMon', () => {
     });
   });
 
-  suite('getGlobalClient', () => {
-    test('only creates one global client', () => {
+  describe('getGlobalClient', () => {
+    it('only creates one global client', () => {
       delete window.__tsMonClient;
       const client1 = MonorailTSMon.getGlobalClient();
       assert.equal(client1, window.__tsMonClient);

@@ -8,6 +8,7 @@ import sinon from 'sinon';
 import {MrIssuePage} from './mr-issue-page.js';
 import {store} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
+import AutoRefreshPrpcClient from 'prpc.js';
 
 let element;
 let loadingElement;
@@ -27,25 +28,33 @@ function populateElementReferences() {
   issueElement = element.shadowRoot.querySelector('#issue');
 }
 
-suite('mr-issue-page', () => {
-  setup(() => {
+describe('mr-issue-page', () => {
+  beforeEach(() => {
     element = document.createElement('mr-issue-page');
     document.body.appendChild(element);
+
+    window.CS_env = {
+      token: 'rutabaga-token',
+      tokenExpiresSec: 1234,
+      app_version: 'rutabaga-version',
+    };
+    window.prpcClient = new AutoRefreshPrpcClient(
+      CS_env.token, CS_env.tokenExpiresSec);
 
     prpcStub = sinon.stub(window.prpcClient, 'call');
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
 
     prpcStub.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrIssuePage);
   });
 
-  test('issue not loaded yet', () => {
+  it('issue not loaded yet', () => {
     element.fetchingIssue = true;
 
     populateElementReferences();
@@ -56,7 +65,7 @@ suite('mr-issue-page', () => {
     assert.isNull(issueElement);
   });
 
-  test('no loading on future issue fetches', () => {
+  it('no loading on future issue fetches', () => {
     element.issue = {localId: 222};
     element.fetchingIssue = true;
 
@@ -68,7 +77,7 @@ suite('mr-issue-page', () => {
     assert.isNotNull(issueElement);
   });
 
-  test('fetch error', () => {
+  it('fetch error', () => {
     element.fetchingIssue = false;
     element.fetchIssueError = 'error';
     populateElementReferences();
@@ -79,7 +88,7 @@ suite('mr-issue-page', () => {
     assert.isNull(issueElement);
   });
 
-  test('deleted issue', () => {
+  it('deleted issue', () => {
     element.fetchingIssue = false;
     element.issue = {isDeleted: true};
     populateElementReferences();
@@ -90,7 +99,7 @@ suite('mr-issue-page', () => {
     assert.isNull(issueElement);
   });
 
-  test('normal issue', () => {
+  it('normal issue', () => {
     element.fetchingIssue = false;
     element.issue = {localId: 111};
     populateElementReferences();
@@ -101,7 +110,7 @@ suite('mr-issue-page', () => {
     assert.isNotNull(issueElement);
   });
 
-  test('code font pref toggles attribute', () => {
+  it('code font pref toggles attribute', () => {
     assert.isFalse(element.codeFont);
     assert.isFalse(element.hasAttribute('code-font'));
 
@@ -116,7 +125,7 @@ suite('mr-issue-page', () => {
     assert.isFalse(element.hasAttribute('code-font'));
   });
 
-  test('undeleting issue only shown if you have permissions', async () => {
+  it('undeleting issue only shown if you have permissions', async () => {
     element.issue = {isDeleted: true};
 
     populateElementReferences();
@@ -133,7 +142,7 @@ suite('mr-issue-page', () => {
     assert.isNotNull(button);
   });
 
-  test('undeleting issue updates page with issue', async () => {
+  it('undeleting issue updates page with issue', async () => {
     const issueRef = {localId: 111, projectName: 'test'};
     const deletedIssuePromise = Promise.resolve({
       issue: {isDeleted: true},
@@ -187,7 +196,7 @@ suite('mr-issue-page', () => {
     element._undeleteIssue.restore();
   });
 
-  test('issue has moved', () => {
+  it('issue has moved', () => {
     element.fetchingIssue = false;
     element.issue = {movedToRef: {projectName: 'hello', localId: 10}};
 

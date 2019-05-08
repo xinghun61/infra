@@ -5,29 +5,37 @@
 import {assert, expect} from 'chai';
 import {MrAttachment} from './mr-attachment.js';
 import sinon from 'sinon';
-
+import AutoRefreshPrpcClient from 'prpc.js';
 
 let element;
 
-suite('mr-comment-content', () => {
-  setup(() => {
+describe('mr-attachment', () => {
+  beforeEach(() => {
     element = document.createElement('mr-attachment');
     document.body.appendChild(element);
+
+    window.CS_env = {
+      token: 'rutabaga-token',
+      tokenExpiresSec: 1234,
+      app_version: 'rutabaga-version',
+    };
+    window.prpcClient = new AutoRefreshPrpcClient(
+      CS_env.token, CS_env.tokenExpiresSec);
 
     sinon.stub(window.prpcClient, 'call').callsFake(
       () => Promise.resolve({}));
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     window.prpcClient.call.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrAttachment);
   });
 
-  test('shows image thumbnail', async () => {
+  it('shows image thumbnail', async () => {
     element.attachment = {
       thumbnailUrl: 'thumbnail.jpeg',
       contentType: 'image/jpeg',
@@ -38,7 +46,7 @@ suite('mr-comment-content', () => {
     assert.isTrue(img.src.endsWith('thumbnail.jpeg'));
   });
 
-  test('shows video thumbnail', async () => {
+  it('shows video thumbnail', async () => {
     element.attachment = {
       viewUrl: 'video.mp4',
       contentType: 'video/mpeg',
@@ -49,7 +57,7 @@ suite('mr-comment-content', () => {
     assert.isTrue(video.src.endsWith('video.mp4'));
   });
 
-  test('does not show image thumbnail if deleted', async () => {
+  it('does not show image thumbnail if deleted', async () => {
     element.attachment = {
       thumbnailUrl: 'thumbnail.jpeg',
       contentType: 'image/jpeg',
@@ -60,7 +68,7 @@ suite('mr-comment-content', () => {
     assert.isNull(img);
   });
 
-  test('does not show video thumbnail if deleted', async () => {
+  it('does not show video thumbnail if deleted', async () => {
     element.attachment = {
       viewUrl: 'video.mp4',
       contentType: 'video/mpeg',
@@ -71,7 +79,7 @@ suite('mr-comment-content', () => {
     assert.isNull(video);
   });
 
-  test('deletes attachment', async () => {
+  it('deletes attachment', async () => {
     element.attachment = {
       attachmentId: 67890,
       isDeleted: false,
@@ -100,7 +108,7 @@ suite('mr-comment-content', () => {
     assert.isTrue(window.prpcClient.call.calledOnce);
   });
 
-  test('undeletes attachment', async () => {
+  it('undeletes attachment', async () => {
     element.attachment = {
       attachmentId: 67890,
       isDeleted: true,
@@ -129,7 +137,7 @@ suite('mr-comment-content', () => {
     assert.isTrue(window.prpcClient.call.calledOnce);
   });
 
-  test('view link is not displayed if not given', async () => {
+  it('view link is not displayed if not given', async () => {
     element.attachment = {};
     await element.updateComplete;
     const viewLink = element.shadowRoot.querySelector('#view-link');
@@ -137,7 +145,7 @@ suite('mr-comment-content', () => {
     expect(viewLink).be.hidden;
   });
 
-  test('view link is displayed if given', async () => {
+  it('view link is displayed if given', async () => {
     element.attachment = {
       viewUrl: 'http://example.com/attachment.foo',
     };
@@ -148,7 +156,7 @@ suite('mr-comment-content', () => {
     assert.equal(viewLink.href, 'http://example.com/attachment.foo');
   });
 
-  test('download link is not displayed if not given', async () => {
+  it('download link is not displayed if not given', async () => {
     element.attachment = {};
     await element.updateComplete;
     const downloadLink = element.shadowRoot.querySelector('#download-link');
@@ -156,7 +164,7 @@ suite('mr-comment-content', () => {
     expect(downloadLink).be.hidden;
   });
 
-  test('download link is displayed if given', async () => {
+  it('download link is displayed if given', async () => {
     element.attachment = {
       downloadUrl: 'http://example.com/attachment.foo',
     };

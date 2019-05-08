@@ -20,7 +20,7 @@ module.exports = function(config) {
     client: {
       mocha: {
         reporter: 'html',
-        ui: 'tdd',
+        ui: 'bdd',
         checkLeaks: true,
         // prpcClient and __tsMonClient probably shouldn't be allowed to
         // leak between tests, but locating the current source of these
@@ -36,7 +36,7 @@ module.exports = function(config) {
 
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['mocha', 'sinon'],
+    frameworks: ['parallel', 'mocha', 'sinon'],
 
 
     // list of files / patterns to load in the browser
@@ -62,11 +62,20 @@ module.exports = function(config) {
       'karma-chrome-launcher',
       'karma-coverage',
       'karma-mocha',
+      'karma-parallel',
       'karma-sinon',
       'karma-sourcemap-loader',
       'karma-spec-reporter',
       'karma-webpack',
     ],
+
+    parallelOptions: {
+      // Our builder is on a VM with 8 CPUs, so force this
+      // to run the same number of shards locally too.
+      // Vary this number to stress test order dependencies.
+      executors: isDebug ? 1 : 7, // Defaults to cpu-count - 1
+      shardStrategy: 'round-robin',
+    },
 
     webpack: {
       // webpack configuration

@@ -9,21 +9,21 @@ import {flush} from '@polymer/polymer/lib/utils/flush';
 
 let element;
 
-suite('mr-issue-metadata', () => {
-  setup(() => {
+describe('mr-issue-metadata', () => {
+  beforeEach(() => {
     element = document.createElement('mr-issue-metadata');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrIssueMetadata);
   });
 
-  test('labels render', () => {
+  it('labels render', () => {
     element.issue = {
       labelRefs: [
         {label: 'test'},

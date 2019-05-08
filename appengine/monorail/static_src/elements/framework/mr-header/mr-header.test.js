@@ -8,21 +8,21 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
-suite('mr-header', () => {
-  setup(() => {
+describe('mr-header', () => {
+  beforeEach(() => {
     element = document.createElement('mr-header');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrHeader);
   });
 
-  test('presentationConfig renders', () => {
+  it('presentationConfig renders', () => {
     element.issueEntryUrl = 'https://google.com/test/';
     element.projectThumbnailUrl = 'http://images.google.com/';
     element.presentationConfig = {

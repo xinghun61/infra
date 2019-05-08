@@ -8,17 +8,17 @@ import {MrPhase} from './mr-phase.js';
 
 let element;
 
-suite('mr-phase', () => {
-  setup(() => {
+describe('mr-phase', () => {
+  beforeEach(() => {
     element = document.createElement('mr-phase');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrPhase);
   });
 });

@@ -9,8 +9,8 @@ import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
-suite('mr-edit-status', () => {
-  setup(() => {
+describe('mr-edit-status', () => {
+  beforeEach(() => {
     element = document.createElement('mr-edit-status');
     element.statuses = [
       {'status': 'New'},
@@ -20,19 +20,19 @@ suite('mr-edit-status', () => {
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrEditStatus);
   });
 
-  test('delta empty when no changes', () => {
+  it('delta empty when no changes', () => {
     assert.deepEqual(element.getDelta(), {});
   });
 
-  test('change status', () => {
+  it('change status', () => {
     element.status = 'New';
 
     flush();
@@ -43,7 +43,7 @@ suite('mr-edit-status', () => {
     });
   });
 
-  test('mark as duplicate', () => {
+  it('mark as duplicate', () => {
     element.status = 'New';
 
     flush();
@@ -64,7 +64,7 @@ suite('mr-edit-status', () => {
     });
   });
 
-  test('remove mark as duplicate', () => {
+  it('remove mark as duplicate', () => {
     element.status = 'Duplicate';
     element.mergedInto = 'chromium:1234';
 

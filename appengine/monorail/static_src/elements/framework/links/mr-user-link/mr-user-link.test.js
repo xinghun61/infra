@@ -23,21 +23,21 @@ function getElements() {
     '#availability-text');
 }
 
-suite('mr-user-link', () => {
-  setup(() => {
+describe('mr-user-link', () => {
+  beforeEach(() => {
     element = document.createElement('mr-user-link');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrUserLink);
   });
 
-  test('no link when no userId and displayName is null value', async () => {
+  it('no link when no userId and displayName is null value', async () => {
     element.userRef = {displayName: '----'};
 
     await element.updateComplete;
@@ -51,7 +51,7 @@ suite('mr-user-link', () => {
     assert.isTrue(availabilityText.hidden);
   });
 
-  test('link when displayName', async () => {
+  it('link when displayName', async () => {
     element.userRef = {displayName: 'test@example.com'};
 
     await element.updateComplete;
@@ -66,7 +66,7 @@ suite('mr-user-link', () => {
     assert.isTrue(availabilityText.hidden);
   });
 
-  test('link when userId', async () => {
+  it('link when userId', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
 
     await element.updateComplete;
@@ -81,7 +81,7 @@ suite('mr-user-link', () => {
     assert.isTrue(availabilityText.hidden);
   });
 
-  test('show availability', async () => {
+  it('show availability', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
       [['test@example.com', {availability: 'foo'}]]);
@@ -98,7 +98,7 @@ suite('mr-user-link', () => {
     assert.isTrue(availabilityText.hidden);
   });
 
-  test('dont show availability', async () => {
+  it('dont show availability', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
       [['test@example.com', {availability: 'foo'}]]);
@@ -113,7 +113,7 @@ suite('mr-user-link', () => {
     assert.isTrue(availabilityText.hidden);
   });
 
-  test('show availability text', async () => {
+  it('show availability text', async () => {
     element.userRef = {userId: '1234', displayName: 'test@example.com'};
     element.referencedUsers = new Map(
       [['test@example.com', {availability: 'foo'}]]);

@@ -10,8 +10,8 @@ const xssiPrefix = ')]}\'';
 
 let element;
 
-suite('mr-flipper', () => {
-  setup(() => {
+describe('mr-flipper', () => {
+  beforeEach(() => {
     element = document.createElement('mr-flipper');
     document.body.appendChild(element);
 
@@ -26,17 +26,17 @@ suite('mr-flipper', () => {
     window.fetch.returns(Promise.resolve(response));
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
 
     window.fetch.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrFlipper);
   });
 
-  test('renders links', async () => {
+  it('renders links', async () => {
     // Test DOM after properties are updated.
     element._populateResponseData({
       cur_index: 4,

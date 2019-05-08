@@ -8,19 +8,19 @@ import {MrMetadata} from './mr-metadata.js';
 
 let element;
 
-suite('mr-metadata', () => {
-  setup(() => {
+describe('mr-metadata', () => {
+  beforeEach(() => {
     element = document.createElement('mr-metadata');
     document.body.appendChild(element);
 
     element.projectName = 'proj';
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrMetadata);
   });
 });

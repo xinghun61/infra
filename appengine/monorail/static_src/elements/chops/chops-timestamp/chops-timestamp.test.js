@@ -14,8 +14,8 @@ import sinon from 'sinon';
 let element;
 let clock;
 
-suite('chops-timestamp', () => {
-  setup(() => {
+describe('chops-timestamp', () => {
+  beforeEach(() => {
     element = document.createElement('chops-timestamp');
     document.body.appendChild(element);
 
@@ -30,16 +30,16 @@ suite('chops-timestamp', () => {
     element.timezone = 'UTC';
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
     clock.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, ChopsTimestamp);
   });
 
-  test('changing timestamp changes date', () => {
+  it('changing timestamp changes date', () => {
     const timestamp = 1548808276;
     element.timestamp = String(timestamp);
 
@@ -47,7 +47,7 @@ suite('chops-timestamp', () => {
       FORMATTER.format(new Date(timestamp * 1000)));
   });
 
-  test('parses ISO dates', () => {
+  it('parses ISO dates', () => {
     const timestamp = '2016-11-11';
     element.timestamp = timestamp;
 
@@ -55,13 +55,13 @@ suite('chops-timestamp', () => {
       FORMATTER.format(new Date(timestamp)));
   });
 
-  test('invalid timestamp format', () => {
+  it('invalid timestamp format', () => {
     expect(() => {
       element.timestamp = 'random string';
     }).to.throw('Timestamp is in an invalid format.');
   });
 
-  test('short time renders shorter time', () => {
+  it('short time renders shorter time', () => {
     element.short = true;
     element.timestamp = '5';
 

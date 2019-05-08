@@ -8,21 +8,21 @@ import {MrRelatedIssuesTable} from './mr-related-issues-table.js';
 
 let element;
 
-suite('mr-related-issues-table', () => {
-  setup(() => {
+describe('mr-related-issues-table', () => {
+  beforeEach(() => {
     element = document.createElement('mr-related-issues-table');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrRelatedIssuesTable);
   });
 
-  test('computes blocked on table rows', () => {
+  it('computes blocked on table rows', () => {
     element.projectName = 'proj';
     element.sortedBlockedOn = [
       {projectName: 'proj', localId: 1, statusRef: {meansOpen: true},
@@ -104,7 +104,8 @@ suite('mr-related-issues-table', () => {
         cells: [
           {
             type: 'issue',
-            issue: {projectName: 'proj', localId: 5, statusRef: {meansOpen: false},
+            issue: {projectName: 'proj', localId: 5,
+              statusRef: {meansOpen: false},
               summary: 'Issue 5'},
             isClosed: true,
           },
@@ -119,7 +120,8 @@ suite('mr-related-issues-table', () => {
         cells: [
           {
             type: 'issue',
-            issue: {projectName: 'proj2', localId: 6, statusRef: {meansOpen: false},
+            issue: {projectName: 'proj2', localId: 6,
+              statusRef: {meansOpen: false},
               summary: 'Issue 6 on another project'},
             isClosed: true,
           },

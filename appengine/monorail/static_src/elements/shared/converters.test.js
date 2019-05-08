@@ -7,66 +7,66 @@ import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString, fieldNameToLabelPrefix,
 } from './converters.js';
 
-suite('displayNameToUserRef', () => {
-  test('converts displayName', () => {
+describe('displayNameToUserRef', () => {
+  it('converts displayName', () => {
     assert.deepEqual(displayNameToUserRef('foo'), {displayName: 'foo'});
   });
 });
 
-suite('labelStringToRef', () => {
-  test('converts label', () => {
+describe('labelStringToRef', () => {
+  it('converts label', () => {
     assert.deepEqual(labelStringToRef('foo'), {label: 'foo'});
   });
 });
 
-suite('fieldNameToLabelPrefix', () => {
-  test('converts fieldName', () => {
+describe('fieldNameToLabelPrefix', () => {
+  it('converts fieldName', () => {
     assert.deepEqual(fieldNameToLabelPrefix('test'), 'test-');
     assert.deepEqual(fieldNameToLabelPrefix('test-hello'), 'test-hello-');
     assert.deepEqual(fieldNameToLabelPrefix('WHATEVER'), 'whatever-');
   });
 });
 
-suite('componentStringToRef', () => {
-  test('converts component', () => {
+describe('componentStringToRef', () => {
+  it('converts component', () => {
     assert.deepEqual(componentStringToRef('foo'), {path: 'foo'});
   });
 });
 
-suite('issueStringToRef', () => {
-  test('converts issue default project', () => {
+describe('issueStringToRef', () => {
+  it('converts issue default project', () => {
     assert.deepEqual(
       issueStringToRef('proj', '1234'),
       {projectName: 'proj', localId: 1234});
   });
 
-  test('converts issue with project', () => {
+  it('converts issue with project', () => {
     assert.deepEqual(
       issueStringToRef('proj', 'foo:1234'),
       {projectName: 'foo', localId: 1234});
   });
 });
 
-suite('issueRefToString', () => {
-  test('no ref', () => {
+describe('issueRefToString', () => {
+  it('no ref', () => {
     assert.equal(issueRefToString(), '');
   });
 
-  test('ref with no project name', () => {
+  it('ref with no project name', () => {
     assert.equal(
       'other:1234',
       issueRefToString({projectName: 'other', localId: 1234})
     );
   });
 
-  test('ref with different project name', () => {
+  it('ref with different project name', () => {
     assert.equal(
       'other:1234',
       issueRefToString({projectName: 'other', localId: 1234}, 'proj')
     );
   });
 
-  test('ref with same project name', () => {
+  it('ref with same project name', () => {
     assert.equal(
       '1234',
       issueRefToString({projectName: 'proj', localId: 1234}, 'proj')

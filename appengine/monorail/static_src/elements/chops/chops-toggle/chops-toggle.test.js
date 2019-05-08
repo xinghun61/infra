@@ -8,22 +8,21 @@ import {ChopsToggle} from './chops-toggle.js';
 
 let element;
 
-suite('chops-toggle', () => {
-
-  setup(() => {
+describe('chops-toggle', () => {
+  beforeEach(() => {
     element = document.createElement('chops-toggle');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, ChopsToggle);
   });
 
-  test('clicking toggle dispatches checked-change event', () => {
+  it('clicking toggle dispatches checked-change event', () => {
     element.checked = false;
     sinon.stub(window, 'CustomEvent');
     sinon.stub(element, 'dispatchEvent');

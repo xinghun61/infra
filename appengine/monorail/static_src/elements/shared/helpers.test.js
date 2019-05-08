@@ -5,8 +5,8 @@
 import {assert} from 'chai';
 import {hasPrefix} from './helpers.js';
 
-suite('hasPrefix', () => {
-  test('only true when has prefix', () => {
+describe('hasPrefix', () => {
+  it('only true when has prefix', () => {
     assert.isFalse(hasPrefix('teststring', 'test-'));
     assert.isFalse(hasPrefix('stringtest-', 'test-'));
     assert.isFalse(hasPrefix('^test-$', 'test-'));
@@ -14,7 +14,7 @@ suite('hasPrefix', () => {
     assert.isTrue(hasPrefix('test-fsdfsdf', 'test-'));
   });
 
-  test('ignores case when checking prefix', () => {
+  it('ignores case when checking prefix', () => {
     assert.isTrue(hasPrefix('TEST-string', 'test-'));
     assert.isTrue(hasPrefix('test-string', 'test-'));
     assert.isTrue(hasPrefix('tEsT-string', 'test-'));

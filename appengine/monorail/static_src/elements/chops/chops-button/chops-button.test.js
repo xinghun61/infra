@@ -8,27 +8,27 @@ import {auditA11y} from 'elements/shared/test-helpers';
 
 let element;
 
-suite('chops-button', () => {
-  setup(() => {
+describe('chops-button', () => {
+  beforeEach(() => {
     element = document.createElement('chops-button');
     document.body.appendChild(element);
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, ChopsButton);
   });
 
-  test('initial a11y', async () => {
+  it('initial a11y', async () => {
     const text = document.createTextNode('button text');
     element.appendChild(text);
     await auditA11y(element);
   });
 
-  test('chops-button can be disabled', async () => {
+  it('chops-button can be disabled', async () => {
     assert.isFalse(element.hasAttribute('disabled'));
 
     element.disabled = true;

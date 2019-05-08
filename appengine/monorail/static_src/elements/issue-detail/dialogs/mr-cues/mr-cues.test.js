@@ -8,25 +8,25 @@ import page from 'page';
 
 let element;
 
-suite('mr-cues', () => {
-  setup(() => {
+describe('mr-cues', () => {
+  beforeEach(() => {
     element = document.createElement('mr-cues');
     document.body.appendChild(element);
 
     sinon.stub(page, 'call');
   });
 
-  teardown(() => {
+  afterEach(() => {
     document.body.removeChild(element);
 
     page.call.restore();
   });
 
-  test('initializes', () => {
+  it('initializes', () => {
     assert.instanceOf(element, MrCues);
   });
 
-  test('stateChanged', () => {
+  it('stateChanged', () => {
     const state = {user: {currentUser:
       {prefs: new Map(), prefsLoaded: false}}};
     element.stateChanged(state);
@@ -34,24 +34,24 @@ suite('mr-cues', () => {
     assert.isFalse(element.prefsLoaded);
   });
 
-  test('anon does not see privacy dialog', () => {
+  it('anon does not see privacy dialog', () => {
     assert.isFalse(element._showPrivacyDialog);
   });
 
-  test('signed in user sees no privacy dialog before prefs load', () => {
+  it('signed in user sees no privacy dialog before prefs load', () => {
     element.userDisplayName = 'user@example.com';
     element.prefsLoaded = false;
     assert.isFalse(element._showPrivacyDialog);
   });
 
-  test('signed in user sees no privacy dialog if already dismissed', () => {
+  it('signed in user sees no privacy dialog if already dismissed', () => {
     element.userDisplayName = 'user@example.com';
     element.prefsLoaded = true;
     element.dismissedDialog = true;
     assert.isFalse(element._showPrivacyDialog);
   });
 
-  test('signed in user sees no privacy dialog if dismissal pref set', () => {
+  it('signed in user sees no privacy dialog if dismissal pref set', () => {
     element.userDisplayName = 'user@example.com';
     element.prefsLoaded = true;
     element.dismissedDialog = true;
@@ -59,7 +59,7 @@ suite('mr-cues', () => {
     assert.isFalse(element._showPrivacyDialog);
   });
 
-  test('signed in user sees privacy dialog if dismissal pref missing', () => {
+  it('signed in user sees privacy dialog if dismissal pref missing', () => {
     element.userDisplayName = 'user@example.com';
     element.prefsLoaded = true;
     element.dismissedDialog = false;
