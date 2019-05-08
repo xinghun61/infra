@@ -5,7 +5,10 @@
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrEditMetadata} from './mr-edit-metadata.js';
-import {ISSUE_EDIT_PERMISSION} from 'elements/shared/permissions.js';
+import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
+  ISSUE_EDIT_STATUS_PERMISSION, ISSUE_EDIT_OWNER_PERMISSION,
+  ISSUE_EDIT_CC_PERMISSION,
+} from 'elements/shared/permissions.js';
 import {store} from 'elements/reducers/base.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {initialValueUpdateComplete} from '../mr-edit-field/mr-multi-input.test.js';
@@ -409,14 +412,31 @@ suite('mr-edit-metadata', () => {
     assert.lengthOf(uploader.files, 0);
   });
 
-  test('no edit issue permission', async () => {
-    element.issuePermissions = [];
-    await element.updateComplete;
+  test('edit issue permissions', async () => {
+    const allFields = ['summary', 'status', 'owner', 'cc'];
+    const testCases = [
+      {permissions: [], nonNull: []},
+      {permissions: [ISSUE_EDIT_PERMISSION], nonNull: allFields},
+      {permissions: [ISSUE_EDIT_SUMMARY_PERMISSION], nonNull: ['summary']},
+      {permissions: [ISSUE_EDIT_STATUS_PERMISSION], nonNull: ['status']},
+      {permissions: [ISSUE_EDIT_OWNER_PERMISSION], nonNull: ['owner']},
+      {permissions: [ISSUE_EDIT_CC_PERMISSION], nonNull: ['cc']},
+    ];
+    element.statuses = [{'status': 'Foo'}];
 
-    assert.isNull(
-      element.shadowRoot.querySelector('#inputGrid'));
-    assert.isNull(
-      element.shadowRoot.querySelector('#summaryInput'));
+    for (const testCase of testCases) {
+      element.issuePermissions = testCase.permissions;
+      await element.updateComplete;
+
+      allFields.forEach((fieldName) => {
+        const field = element.shadowRoot.querySelector(`#${fieldName}Input`);
+        if (testCase.nonNull.includes(fieldName)) {
+          assert.isNotNull(field);
+        } else {
+          assert.isNull(field);
+        }
+      });
+    }
   });
 
   test('duplicate issue is rendered correctly', async () => {

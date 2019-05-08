@@ -24,7 +24,10 @@ import * as project from 'elements/reducers/project.js';
 import * as ui from 'elements/reducers/ui.js';
 import '../mr-edit-field/mr-edit-field.js';
 import '../mr-edit-field/mr-edit-status.js';
-import {ISSUE_EDIT_PERMISSION} from 'elements/shared/permissions.js';
+import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
+  ISSUE_EDIT_STATUS_PERMISSION, ISSUE_EDIT_OWNER_PERMISSION,
+  ISSUE_EDIT_CC_PERMISSION,
+} from 'elements/shared/permissions.js';
 import {fieldDefsWithGroup, fieldDefsWithoutGroup,
   valuesForField} from '../shared/metadata-helpers.js';
 
@@ -171,7 +174,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
           ?hidden=${this.disableAttachments}
         ></mr-upload>
         <div class="input-grid">
-          ${this._canEditIssue ? this._renderEditFields() : ''}
+          ${this._renderEditFields()}
           ${this._renderPresubmitErrorsAndWarnings()}
 
           <span></span>
@@ -277,17 +280,19 @@ export class MrEditMetadata extends connectStore(LitElement) {
     }
 
     return html`
-      ${this._renderSummary()}
-      ${this._renderStatus()}
-      ${this._renderOwner()}
-      ${this._renderCC()}
-      ${this._renderComponents()}
+      ${this._canEditSummary ? this._renderSummary() : ''}
+      ${this._canEditStatus ? this._renderStatus() : ''}
+      ${this._canEditOwner ? this._renderOwner() : ''}
+      ${this._canEditCC ? this._renderCC() : ''}
+      ${this._canEditIssue ? html`
+        ${this._renderComponents()}
 
-      ${this._renderFieldDefs()}
-      ${this._renderRelatedIssues()}
-      ${this._renderLabels()}
+        ${this._renderFieldDefs()}
+        ${this._renderRelatedIssues()}
+        ${this._renderLabels()}
 
-      ${this._renderNicheFieldToggle()}
+        ${this._renderNicheFieldToggle()}
+      ` : ''}
     `;
   }
 
@@ -539,6 +544,30 @@ export class MrEditMetadata extends connectStore(LitElement) {
     return issuePermissions.includes(ISSUE_EDIT_PERMISSION);
   }
 
+  get _canEditSummary() {
+    const issuePermissions = this.issuePermissions || [];
+    return this._canEditIssue
+      || issuePermissions.includes(ISSUE_EDIT_SUMMARY_PERMISSION);
+  }
+
+  get _canEditStatus() {
+    const issuePermissions = this.issuePermissions || [];
+    return this._canEditIssue
+      || issuePermissions.includes(ISSUE_EDIT_STATUS_PERMISSION);
+  }
+
+  get _canEditOwner() {
+    const issuePermissions = this.issuePermissions || [];
+    return this._canEditIssue
+      || issuePermissions.includes(ISSUE_EDIT_OWNER_PERMISSION);
+  }
+
+  get _canEditCC() {
+    const issuePermissions = this.issuePermissions || [];
+    return this._canEditIssue
+      || issuePermissions.includes(ISSUE_EDIT_CC_PERMISSION);
+  }
+
   get _ccNames() {
     const users = this.cc || [];
     return filteredUserDisplayNames(users.filter((u) => !u.isDerived));
@@ -648,18 +677,18 @@ export class MrEditMetadata extends connectStore(LitElement) {
   }
 
   getDelta() {
-    if (!this._canEditIssue) return {};
-
     const result = {};
     const root = this.shadowRoot;
 
-    const statusInput = root.querySelector('#statusInput');
-    if (statusInput) {
-      Object.assign(result, statusInput.getDelta(this.projectName));
+    if (this._canEditStatus) {
+      const statusInput = root.querySelector('#statusInput');
+      if (statusInput) {
+        Object.assign(result, statusInput.getDelta(this.projectName));
+      }
     }
 
     if (this.isApproval) {
-      if (this.hasApproverPrivileges) {
+      if (this._canEditIssue && this.hasApproverPrivileges) {
         this._addListChangesToDelta(
           result, 'approversInput', 'approverRefsAdd', 'approverRefsRemove',
           displayNameToUserRef);
@@ -668,56 +697,66 @@ export class MrEditMetadata extends connectStore(LitElement) {
       // TODO(zhangtiff): Consider representing baked-in fields such as owner,
       // cc, and status similarly to custom fields to reduce repeated code.
 
-      const summaryInput = root.querySelector('#summaryInput');
-      if (summaryInput) {
-        const newSummary = summaryInput.value;
-        if (newSummary !== this.summary) {
-          result.summary = newSummary;
+      if (this._canEditSummary) {
+        const summaryInput = root.querySelector('#summaryInput');
+        if (summaryInput) {
+          const newSummary = summaryInput.value;
+          if (newSummary !== this.summary) {
+            result.summary = newSummary;
+          }
         }
       }
 
-      const ownerInput = root.querySelector('#ownerInput');
-      if (ownerInput) {
-        const newOwner = ownerInput.getValue();
-        if (newOwner !== this.ownerName) {
-          result.ownerRef = displayNameToUserRef(newOwner);
+      if (this._canEditOwner) {
+        const ownerInput = root.querySelector('#ownerInput');
+        if (ownerInput) {
+          const newOwner = ownerInput.getValue();
+          if (newOwner !== this.ownerName) {
+            result.ownerRef = displayNameToUserRef(newOwner);
+          }
         }
       }
 
-      this._addListChangesToDelta(result, 'labelsInput',
-        'labelRefsAdd', 'labelRefsRemove', labelStringToRef);
+      if (this._canEditCC) {
+        this._addListChangesToDelta(result, 'ccInput',
+          'ccRefsAdd', 'ccRefsRemove', displayNameToUserRef);
+      }
 
-      this._addListChangesToDelta(result, 'ccInput',
-        'ccRefsAdd', 'ccRefsRemove', displayNameToUserRef);
+      if (this._canEditIssue) {
+        this._addListChangesToDelta(result, 'labelsInput',
+          'labelRefsAdd', 'labelRefsRemove', labelStringToRef);
 
-      this._addListChangesToDelta(result, 'componentsInput',
-        'compRefsAdd', 'compRefsRemove', componentStringToRef);
+        this._addListChangesToDelta(result, 'componentsInput',
+          'compRefsAdd', 'compRefsRemove', componentStringToRef);
 
-      this._addListChangesToDelta(result, 'blockedOnInput',
-        'blockedOnRefsAdd', 'blockedOnRefsRemove',
-        issueStringToRef.bind(null, this.projectName));
+        this._addListChangesToDelta(result, 'blockedOnInput',
+          'blockedOnRefsAdd', 'blockedOnRefsRemove',
+          issueStringToRef.bind(null, this.projectName));
 
-      this._addListChangesToDelta(result, 'blockingInput',
-        'blockingRefsAdd', 'blockingRefsRemove',
-        issueStringToRef.bind(null, this.projectName));
+        this._addListChangesToDelta(result, 'blockingInput',
+          'blockingRefsAdd', 'blockingRefsRemove',
+          issueStringToRef.bind(null, this.projectName));
+      }
     }
 
-    const fieldDefs = this.fieldDefs || [];
-    fieldDefs.forEach(({fieldRef}) => {
-      const fieldNameInput = this._idForField(fieldRef.fieldName);
-      this._addListChangesToDelta(
-        result, fieldNameInput, 'fieldValsAdd', 'fieldValsRemove',
-        (v) => {
-          return {
-            fieldRef: {
-              fieldName: fieldRef.fieldName,
-              fieldId: fieldRef.fieldId,
-            },
-            value: v,
-          };
-        }
-      );
-    });
+    if (this._canEditIssue) {
+      const fieldDefs = this.fieldDefs || [];
+      fieldDefs.forEach(({fieldRef}) => {
+        const fieldNameInput = this._idForField(fieldRef.fieldName);
+        this._addListChangesToDelta(
+          result, fieldNameInput, 'fieldValsAdd', 'fieldValsRemove',
+          (v) => {
+            return {
+              fieldRef: {
+                fieldName: fieldRef.fieldName,
+                fieldId: fieldRef.fieldId,
+              },
+              value: v,
+            };
+          }
+        );
+      });
+    }
 
     return result;
   }
