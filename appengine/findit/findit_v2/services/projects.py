@@ -9,7 +9,7 @@ from findit_v2.services.chromium_api import ChromiumProjectAPI
 # TODO (crbug.com/941625): Move these configs to a LUCI config.
 
 # Supported projects by Findit. The names here are defined by Buildbucket.
-# There is an assumption/requirement: supported builders and rerun
+# There is an assumption/requirement: supported builders and
 # rerun_builders are separated.
 # both supported_builders and rerun_builders can be none.
 # {
@@ -58,4 +58,4 @@ GERRIT_PROJECTS = {
 
 def GetProjectAPI(project):
   """Gets the project API for the project."""
-  return GERRIT_PROJECTS.get(project)['project-api']
+  return GERRIT_PROJECTS.get(project, {}).get('project-api')

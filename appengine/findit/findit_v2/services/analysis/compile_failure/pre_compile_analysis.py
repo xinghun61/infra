@@ -145,7 +145,8 @@ def _GetPreviousCompileStepsAndFailuresInPreviousBuild(
   return prev_compile_steps, prev_failures
 
 
-def DetectFirstFailures(context, build, detailed_compile_failures):
+def UpdateCompileFailuresWithFirstFailureInfo(context, build,
+                                              detailed_compile_failures):
   """Updates detailed_compile_failures with first failure info.
 
   Args:

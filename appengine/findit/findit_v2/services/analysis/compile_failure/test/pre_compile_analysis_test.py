@@ -131,8 +131,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
   @mock.patch.object(ChromiumProjectAPI, 'GetCompileFailures')
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
-  def testDetectFirstFailures(self, mock_prev_builds, mock_get_build,
-                              mock_prev_failures):
+  def testUpdateCompileFailuresWithFirstFailureInfo(
+      self, mock_prev_builds, mock_get_build, mock_prev_failures):
     """Test for the most common case: found both first_failed_build_id and
       last_passed_build_id."""
     mock_step = Step()
@@ -199,8 +199,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         },
     }
 
-    pre_compile_analysis.DetectFirstFailures(self.context, self.build,
-                                             detailed_compile_failures)
+    pre_compile_analysis.UpdateCompileFailuresWithFirstFailureInfo(
+        self.context, self.build, detailed_compile_failures)
 
     expected_failures = {
         'compile': {
@@ -221,8 +221,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
 
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
-  def testDetectFirstFailuresPrevBuildDifferentStep(self, mock_prev_builds,
-                                                    mock_get_build):
+  def testUpdateCompileFailuresWithFirstFailureInfoPrevBuildDifferentStep(
+      self, mock_prev_builds, mock_get_build):
     """Test for previous build failed with different steps."""
     mock_step = Step()
     mock_step.name = 'test'
@@ -270,8 +270,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         },
     }
 
-    pre_compile_analysis.DetectFirstFailures(self.context, self.build,
-                                             detailed_compile_failures)
+    pre_compile_analysis.UpdateCompileFailuresWithFirstFailureInfo(
+        self.context, self.build, detailed_compile_failures)
 
     expected_failures = {
         'compile': {
@@ -291,8 +291,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
 
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
-  def testDetectFirstFailuresPrevBuildNoCompile(self, mock_prev_builds,
-                                                mock_get_build):
+  def testUpdateCompileFailuresWithFirstFailureInfoPrevBuildNoCompile(
+      self, mock_prev_builds, mock_get_build):
     """Test for previous build didn't run compile."""
     mock_step = Step()
     mock_step.name = 'test'
@@ -337,8 +337,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         },
     }
 
-    pre_compile_analysis.DetectFirstFailures(self.context, self.build,
-                                             detailed_compile_failures)
+    pre_compile_analysis.UpdateCompileFailuresWithFirstFailureInfo(
+        self.context, self.build, detailed_compile_failures)
 
     expected_failures = {
         'compile': {
@@ -359,7 +359,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
   @mock.patch.object(ChromiumProjectAPI, 'GetCompileFailures')
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
-  def testDetectFirstFailuresDifferentFirstFailure(
+  def testUpdateCompileFailuresWithFirstFailureInfoDifferentFirstFailure(
       self, mock_prev_builds, mock_get_build, mock_prev_failures):
     """Test for targets in current build failed from different builds."""
     mock_step = Step()
@@ -491,8 +491,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         },
     }
 
-    pre_compile_analysis.DetectFirstFailures(self.context, self.build,
-                                             detailed_compile_failures)
+    pre_compile_analysis.UpdateCompileFailuresWithFirstFailureInfo(
+        self.context, self.build, detailed_compile_failures)
 
     expected_failures = {
         'compile': {
@@ -519,8 +519,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
 
   @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
-  def testDetectFirstFailuresPrevBuildInfraFailure(self, mock_prev_builds,
-                                                   mock_get_build):
+  def testUpdateCompileFailuresWithFirstFailureInfoPrevBuildInfraFailure(
+      self, mock_prev_builds, mock_get_build):
     """Test for previous build failed with different steps."""
     mock_step1 = Step()
     mock_step1.name = 'compile'
@@ -565,8 +565,8 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         },
     }
 
-    pre_compile_analysis.DetectFirstFailures(self.context, self.build,
-                                             detailed_compile_failures)
+    pre_compile_analysis.UpdateCompileFailuresWithFirstFailureInfo(
+        self.context, self.build, detailed_compile_failures)
 
     expected_failures = {
         'compile': {
