@@ -1149,14 +1149,31 @@ class WorkEnv(object):
     Returns:
       Nothing.
     """
-    try:
-      self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
-    except permissions.PermissionException as e:
-      # No issue changes and we're not editing the issue description.
-      if delta == tracker_pb2.IssueDelta() and not is_description:
+    if not self._UserCanUsePermInIssue(issue, permissions.EDIT_ISSUE):
+      # We're editing the issue description. Only users with EditIssue
+      # permission can edit the description.
+      if is_description:
+        raise permissions.PermissionException(
+            'Users lack permission EditIssue in issue')
+      # If we're adding a comment, we must have AddIssueComment permission.
+      if comment_content:
         self._AssertPermInIssue(issue, permissions.ADD_ISSUE_COMMENT)
-      else:  # TODO(jrobbins): Add EditIssueCc, EditIssueSummary, etc.
-        raise e
+      # If we're modifying the issue, check that we only modify the fields we're
+      # allowed to edit.
+      if delta != tracker_pb2.IssueDelta():
+        allowed_delta = tracker_pb2.IssueDelta()
+        if self._UserCanUsePermInIssue(issue, permissions.EDIT_ISSUE_STATUS):
+          allowed_delta.status = delta.status
+        if self._UserCanUsePermInIssue(issue, permissions.EDIT_ISSUE_SUMMARY):
+          allowed_delta.summary = delta.summary
+        if self._UserCanUsePermInIssue(issue, permissions.EDIT_ISSUE_OWNER):
+          allowed_delta.owner_id = delta.owner_id
+        if self._UserCanUsePermInIssue(issue, permissions.EDIT_ISSUE_CC):
+          allowed_delta.cc_ids_add = delta.cc_ids_add
+          allowed_delta.cc_ids_remove = delta.cc_ids_remove
+        if delta != allowed_delta:
+          raise permissions.PermissionException(
+              'Users lack permission EditIssue in issue')
 
     project = self.GetProject(issue.project_id)
     config = self.GetProjectConfig(issue.project_id)

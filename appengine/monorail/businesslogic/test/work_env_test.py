@@ -1520,6 +1520,95 @@ class WorkEnvTest(unittest.TestCase):
         issue.issue_id, 'testing-app.appspot.com', 222, send_email=True,
         old_owner_id=111, comment_id=comment_pb.id)
 
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch('framework.permissions.GetExtraPerms')
+  def testUpdateIssue_EditOwner(self, fake_extra_perms, fake_pasicn):
+    """We can edit the owner with the EditIssueOwner permission."""
+    self.SignIn(222)
+    fake_extra_perms.return_value = [permissions.EDIT_ISSUE_OWNER]
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(owner_id=0)
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, '')
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertFalse(comment_pb.is_description)
+    self.assertEqual(0, issue.owner_id)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 222, send_email=True,
+        old_owner_id=111, comment_id=comment_pb.id)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch('framework.permissions.GetExtraPerms')
+  def testUpdateIssue_EditSummary(self, fake_extra_perms, fake_pasicn):
+    """We can edit the owner with the EditIssueOwner permission."""
+    self.SignIn(222)
+    fake_extra_perms.return_value = [permissions.EDIT_ISSUE_SUMMARY]
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(summary='New Summary')
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, '')
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertFalse(comment_pb.is_description)
+    self.assertEqual('New Summary', issue.summary)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 222, send_email=True,
+        old_owner_id=111, comment_id=comment_pb.id)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch('framework.permissions.GetExtraPerms')
+  def testUpdateIssue_EditStatus(self, fake_extra_perms, fake_pasicn):
+    """We can edit the owner with the EditIssueOwner permission."""
+    self.SignIn(222)
+    fake_extra_perms.return_value = [permissions.EDIT_ISSUE_STATUS]
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(status='Fixed')
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, '')
+
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    comment_pb = comments[-1]
+    self.assertFalse(comment_pb.is_description)
+    self.assertEqual('Fixed', issue.status)
+    fake_pasicn.assert_called_with(
+        issue.issue_id, 'testing-app.appspot.com', 222, send_email=True,
+        old_owner_id=111, comment_id=comment_pb.id)
+
+  @mock.patch(
+      'features.send_notifications.PrepareAndSendIssueChangeNotification')
+  @mock.patch('framework.permissions.GetExtraPerms')
+  def testUpdateIssue_EditCC(self, fake_extra_perms, _fake_pasicn):
+    """We can edit the owner with the EditIssueOwner permission."""
+    self.SignIn(222)
+    fake_extra_perms.return_value = [permissions.EDIT_ISSUE_CC]
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    issue.cc_ids = [111]
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(cc_ids_add=[222])
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, '')
+
+    self.assertEqual([111, 222], issue.cc_ids)
+    delta = tracker_pb2.IssueDelta(cc_ids_remove=[111])
+
+    with self.work_env as we:
+      we.UpdateIssue(issue, delta, '')
+
+    self.assertEqual([222], issue.cc_ids)
+
   def testUpdateIssue_BadOwner(self):
     """We reject new issue owners that don't pass validation."""
     self.SignIn()

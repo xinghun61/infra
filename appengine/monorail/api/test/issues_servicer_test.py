@@ -378,9 +378,11 @@ class IssuesServicerTest(unittest.TestCase):
     with self.assertRaises(permissions.PermissionException):
       self.CallWrapped(self.issues_svcr.UpdateIssue, mc, request)
 
-  def testUpdateIssue_JustAComment(self):
+  @patch('features.send_notifications.PrepareAndSendIssueChangeNotification')
+  def testUpdateIssue_JustAComment(self, _fake_pasicn):
     """We check AddIssueComment when the user is only commenting."""
     request = issues_pb2.UpdateIssueRequest()
+    request.comment_content = 'Foo'
     request.issue_ref.project_name = 'proj'
     request.issue_ref.local_id = 1
     # Note: no delta.
