@@ -2897,6 +2897,20 @@ wheel: <
 
 * *universal*
 
+## **wheel**
+
+### 0.33.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/wheel-py2_py3"
+  version: "version:0.33.1"
+>
+```
+
+
+* *universal*
+
 ## **wrapt**
 
 ### 1.10.11
