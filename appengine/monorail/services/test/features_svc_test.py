@@ -9,6 +9,7 @@ import logging
 import mox
 import time
 import unittest
+from mock import Mock
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
@@ -153,6 +154,20 @@ class FeaturesServiceTest(unittest.TestCase):
     self.features_service.ExpungeQuickEditHistory(
         self.cnxn, 12345)
     self.mox.VerifyAll()
+
+  def testExpungeQuickEditsByUsers(self):
+    user_ids = [333L, 555L, 777L]
+    commit = False
+
+    self.features_service.quickeditmostrecent_tbl.Delete = Mock()
+    self.features_service.quickedithistory_tbl.Delete = Mock()
+
+    self.features_service.ExpungeQuickEditsByUsers(self.cnxn, user_ids)
+
+    self.features_service.quickeditmostrecent_tbl.Delete.\
+assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
+    self.features_service.quickedithistory_tbl.Delete.\
+assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
 
   ### Saved User and Project Queries
 
@@ -342,6 +357,26 @@ class FeaturesServiceTest(unittest.TestCase):
     self.features_service.ExpungeSavedQueriesExecuteInProject(
         self.cnxn, 12345)
     self.mox.VerifyAll()
+
+  def testExpungeSavedQueriesByUsers(self):
+    user_ids = [222L, 444L, 666L]
+    commit = False
+
+    sv_rows = [(8,), (9,)]
+    self.features_service.user2savedquery_tbl.Select = Mock(
+        return_value=sv_rows)
+    self.features_service.user2savedquery_tbl.Delete = Mock()
+    self.features_service.savedquery_tbl.Delete = Mock()
+
+    self.features_service.ExpungeSavedQueriesByUsers(self.cnxn, user_ids)
+
+    self.features_service.user2savedquery_tbl.Select.assert_called_once_with(
+        self.cnxn, cols=['query_id'], user_id=user_ids)
+    self.features_service.user2savedquery_tbl.Delete.assert_called_once_with(
+        self.cnxn, user_id=user_ids, commit=commit)
+    self.features_service.savedquery_tbl.Delete.assert_called_once_with(
+        self.cnxn, id=[8, 9], commit=commit)
+
 
   ### Filter Rules
 
