@@ -3,21 +3,19 @@
 // found in the LICENSE file.
 
 import page from 'page';
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-import '../../../chops/chops-button/chops-button.js';
-import '../../../chops/chops-dialog/chops-dialog.js';
-import 'elements/shared/mr-shared-styles.js';
+import 'elements/chops/chops-button/chops-button.js';
+import 'elements/chops/chops-dialog/chops-dialog.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
-export class MrMoveCopyIssue extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrMoveCopyIssue extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         .target-project-dialog {
           display: block;
           font-size: var(--chops-main-font-size);
@@ -37,27 +35,34 @@ export class MrMoveCopyIssue extends connectStore(PolymerElement) {
           width: 95%;
           padding: 0.25em 4px;
         }
-      </style>
-      <chops-dialog id="dialog">
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      <chops-dialog>
         <div class="target-project-dialog">
-          <h3 class="medium-heading">[[_action]] issue</h3>
+          <h3 class="medium-heading">${this._action} issue</h3>
           <div class="input-grid">
             <label for="targetProjectInput">Target project:</label>
-            <input id="targetProjectInput"></input>
+            <input id="targetProjectInput" />
           </div>
 
-          <div class="error">
-            <template is="dom-if" if="[[_targetProjectError]]">
-              [[_targetProjectError]]
-            </template>
-          </div>
+          ${this._targetProjectError ? html`
+            <div class="error">
+              ${this._targetProjectError}
+            </div>
+          ` : ''}
 
           <div class="edit-actions">
-            <chops-button on-click="cancel" class="de-emphasized">
+            <chops-button @click=${this.cancel} class="de-emphasized">
               Cancel
             </chops-button>
-            <chops-button on-click="save" class="emphasized">
-              [[_action]] issue
+            <chops-button @click=${this.save} class="emphasized">
+              ${this._action} issue
             </chops-button>
           </div>
         </div>
@@ -65,44 +70,39 @@ export class MrMoveCopyIssue extends connectStore(PolymerElement) {
     `;
   }
 
-  static get is() {
-    return 'mr-move-copy-issue';
-  }
-
   static get properties() {
     return {
-      issueRef: Object,
-      _action: String,
-      _targetProjectError: String,
+      issueRef: {type: Object},
+      _action: {type: String},
+      _targetProjectError: {type: String},
     };
   }
 
   stateChanged(state) {
-    this.setProperties({
-      issueRef: issue.issueRef(state),
-    });
+    this.issueRef = issue.issueRef(state);
   }
 
   open(e) {
-    this.$.dialog.open();
+    this.shadowRoot.querySelector('chops-dialog').open();
     this._action = e.detail.action;
     this.reset();
   }
 
   reset() {
-    this.$.targetProjectInput.value = '';
+    this.shadowRoot.querySelector('#targetProjectInput').value = '';
     this._targetProjectError = '';
   }
 
   cancel() {
-    this.$.dialog.close();
+    this.shadowRoot.querySelector('chops-dialog').close();
   }
 
   save() {
     const method = this._action + 'Issue';
     window.prpcClient.call('monorail.Issues', method, {
       issueRef: this.issueRef,
-      targetProjectName: this.$.targetProjectInput.value,
+      targetProjectName: this.shadowRoot.querySelector(
+        '#targetProjectInput').value,
     }).then((response) => {
       const projectName = response.newIssueRef.projectName;
       const localId = response.newIssueRef.localId;
@@ -114,4 +114,4 @@ export class MrMoveCopyIssue extends connectStore(PolymerElement) {
   }
 }
 
-customElements.define(MrMoveCopyIssue.is, MrMoveCopyIssue);
+customElements.define('mr-move-copy-issue', MrMoveCopyIssue);

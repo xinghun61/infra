@@ -121,8 +121,6 @@ suite('mr-edit-metadata', () => {
     await element.updateComplete;
     flush(); // TODO(zhangtiff): Remove once mr-edit-status is upgraded.
 
-    console.log(element.getDelta());
-
     assert.deepEqual(element.getDelta(), {});
   });
 

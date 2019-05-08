@@ -55,14 +55,8 @@ export class ChopsDialog extends LitElement {
         padding: 1em 16px;
         cursor: default;
         box-shadow: 0px 3px 20px 0px hsla(0, 0%, 0%, 0.4);
-
-        /*
-        * Would have really preferred to just have the dialog itself be the
-        * :host element so that users could style it more easily, but this
-        * causes issues with the backdrop, because there's not a good way to
-        * make a child element appear behind its parent without using wrappers.
-        */
-        @apply --chops-dialog-theme;
+        width: var(--chops-dialog-width);
+        max-width: var(--chops-dialog-max-width, 100%);
       }
     `;
   }

@@ -38,7 +38,7 @@ suite('mr-related-issues-table', () => {
       {projectName: 'proj2', localId: 6, statusRef: {meansOpen: false},
         summary: 'Issue 6 on another project'},
     ];
-    assert.deepEqual(element.rows, [
+    assert.deepEqual(element._rows, [
       {
         draggable: true,
         cells: [

@@ -2,29 +2,29 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
-import '../../../chops/chops-dialog/chops-dialog.js';
+import 'elements/chops/chops-dialog/chops-dialog.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as user from 'elements/reducers/user.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
-export class MrUpdateIssueHotlists extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrUpdateIssueHotlists extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           font-size: var(--chops-main-font-size);
-          --chops-dialog-theme: {
-            max-width: 500px;
-          };
+          --chops-dialog-max-width: 500px;
         }
         select,
         input {
-          @apply --mr-edit-field-styles;
+          box-sizing: border-box;
+          width: var(--mr-edit-field-width);
+          padding: var(--mr-edit-field-padding);
+          font-size: var(--chops-main-font-size);
         }
         input[type="checkbox"] {
           width: auto;
@@ -68,38 +68,50 @@ export class MrUpdateIssueHotlists extends connectStore(PolymerElement) {
           color: red;
           margin-bottom: 1px;
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <chops-dialog>
         <h3 class="medium-heading">Add issue to hotlists</h3>
         <form id="issueHotlistsForm">
-          <template is="dom-if" if="[[userHotlists.length]]">
-            <template is="dom-repeat" items="[[userHotlists]]">
-              <label title="[[item.name]]: [[item.summary]]">
-                <input
-                  title\$="[[_checkboxTitle(item, issueHotlists, this)]]"
-                  on-click="_updateCheckboxTitle"
-                  type="checkbox"
-                  id\$="[[item.name]]"
-                  checked\$="[[_issueInHotlist(item, issueHotlists)]]"
-                >
-                [[item.name]]
-              </label>
-            </template>
-          </template>
+          ${this.userHotlists.length ? this.userHotlists.map((hotlist) => html`
+            <label title="${hotlist.name}: ${hotlist.summary}">
+              <input
+                title=${this._checkboxTitle(hotlist, this.issueHotlists)}
+                type="checkbox"
+                id=${hotlist.name}
+                ?checked=${this._issueInHotlist(hotlist, this.issueHotlists)}
+                @click=${this._updateCheckboxTitle}
+              >
+              ${hotlist.name}
+            </label>
+          `) : ''}
           <h3 class="medium-heading">Create new hotlist</h3>
           <div class="input-grid">
-            <label for="_newHotlistName">New hotlist name:</label>
-            <input type="text" name="_newHotlistName" id="_newHotlistName">
+            <label for="newHotlistName">New hotlist name:</label>
+            <input type="text" name="newHotlistName">
           </div>
           <br>
-          <template is="dom-if" if="[[error]]">
-            <div class="error">[[error]]</div>
-          </template>
+          ${this.error ? html`
+            <div class="error">${this.error}</div>
+          `: ''}
           <div class="edit-actions">
-            <chops-button on-click="discard" class="de-emphasized discard-button" disabled="[[disabled]]">
+            <chops-button
+              class="de-emphasized discard-button"
+              ?disabled=${this.disabled}
+              @click=${this.discard}
+            >
               Discard
             </chops-button>
-            <chops-button on-click="save" class="emphasized" disabled="[[disabled]]">
+            <chops-button
+              class="emphasized"
+              ?disabled=${this.disabled}
+              @click=${this.save}
+            >
               Save changes
             </chops-button>
           </div>
@@ -108,27 +120,21 @@ export class MrUpdateIssueHotlists extends connectStore(PolymerElement) {
     `;
   }
 
-  static get is() {
-    return 'mr-update-issue-hotlists';
-  }
-
   static get properties() {
     return {
-      issueRef: Object,
-      issueHotlists: Array,
-      userHotlists: Array,
-      user: Object,
-      error: String,
+      issueRef: {type: Object},
+      issueHotlists: {type: Array},
+      userHotlists: {type: Array},
+      user: {type: Object},
+      error: {type: String},
     };
   }
 
   stateChanged(state) {
-    this.setProperties({
-      issueRef: issue.issueRef(state),
-      issueHotlists: issue.hotlists(state),
-      user: user.user(state),
-      userHotlists: user.user(state).hotlists,
-    });
+    this.issueRef = issue.issueRef(state);
+    this.issueHotlists = issue.hotlists(state);
+    this.user = user.user(state);
+    this.userHotlists = user.user(state).hotlists;
   }
 
   open() {
@@ -202,7 +208,7 @@ export class MrUpdateIssueHotlists extends connectStore(PolymerElement) {
     return (isChecked ? 'Remove issue from' : 'Add issue to') + ' this hotlist';
   }
 
-  _checkboxTitle(hotlist, issueHotlists, foo) {
+  _checkboxTitle(hotlist, issueHotlists) {
     return this._getCheckboxTitle(this._issueInHotlist(hotlist, issueHotlists));
   }
 
@@ -231,9 +237,9 @@ export class MrUpdateIssueHotlists extends connectStore(PolymerElement) {
         });
       }
     });
-    if (form._newHotlistName.value) {
+    if (form.newHotlistName.value) {
       changes.created = {
-        name: form._newHotlistName.value,
+        name: form.newHotlistName.value,
         summary: 'Hotlist created from issue.',
       };
     }
@@ -241,4 +247,4 @@ export class MrUpdateIssueHotlists extends connectStore(PolymerElement) {
   }
 }
 
-customElements.define(MrUpdateIssueHotlists.is, MrUpdateIssueHotlists);
+customElements.define('mr-update-issue-hotlists', MrUpdateIssueHotlists);

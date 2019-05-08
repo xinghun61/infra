@@ -5,13 +5,12 @@
 import {assert} from 'chai';
 import {MrEditDescription} from './mr-edit-description.js';
 import sinon from 'sinon';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import * as issue from 'elements/reducers/issue.js';
 
 
 let element;
 
-suite('mr-edit-descriptions', () => {
+suite('mr-edit-description', () => {
   setup(() => {
     element = document.createElement('mr-edit-description');
     document.body.appendChild(element);
@@ -72,34 +71,44 @@ suite('mr-edit-descriptions', () => {
     assert.instanceOf(element, MrEditDescription);
   });
 
-  test('selects last issue description', () => {
+  test('selects last issue description', async () => {
     element._fieldName = '';
     element.reset();
-    flush();
+
+    await element.updateComplete;
+
     assert.equal(element._displayedContent, 'last description');
     assert.equal(element._displayedTitle, 'Description');
   });
 
-  test('selects last survey', () => {
+  test('selects last survey', async () => {
     element._fieldName = 'foo';
     element.reset();
-    flush();
+
+    await element.updateComplete;
+
     assert.equal(element._displayedContent, 'last foo survey');
     assert.equal(element._displayedTitle, 'foo Survey');
   });
 
   test('toggle sendEmail', async () => {
     element.reset();
-    flush();
+    await element.updateComplete;
+
     const sendEmail = element.shadowRoot.querySelector('#sendEmail');
 
     await sendEmail.updateComplete;
 
     sendEmail.click();
-    assert.equal(element._sendEmail, false);
+    await element.updateComplete;
+    assert.isFalse(element._sendEmail);
+
     sendEmail.click();
-    assert.equal(element._sendEmail, true);
+    await element.updateComplete;
+    assert.isTrue(element._sendEmail);
+
     sendEmail.click();
-    assert.equal(element._sendEmail, false);
+    await element.updateComplete;
+    assert.isFalse(element._sendEmail);
   });
 });

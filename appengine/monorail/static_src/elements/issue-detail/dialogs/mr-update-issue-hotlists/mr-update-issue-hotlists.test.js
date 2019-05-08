@@ -4,16 +4,16 @@
 
 import {assert} from 'chai';
 import {MrUpdateIssueHotlists} from './mr-update-issue-hotlists.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 let form;
 
 suite('mr-update-issue-hotlists', () => {
-  setup(() => {
+  setup(async () => {
     element = document.createElement('mr-update-issue-hotlists');
     document.body.appendChild(element);
 
+    await element.updateComplete;
     form = element.shadowRoot.querySelector('#issueHotlistsForm');
   });
 
@@ -29,7 +29,7 @@ suite('mr-update-issue-hotlists', () => {
     assert.deepEqual(element.changes, {added: [], removed: []});
   });
 
-  test('selecting new issues produces changes', () => {
+  test('selecting new issues produces changes', async () => {
     element.issueHotlists = [
       {name: 'Hotlist-1', ownerRef: {userId: 12345}},
       {name: 'Hotlist-2', ownerRef: {userId: 12345}},
@@ -41,7 +41,7 @@ suite('mr-update-issue-hotlists', () => {
     ];
     element.user = {userId: 67890};
 
-    flush();
+    await element.updateComplete;
 
     form['Hotlist-1'].checked = false;
     form['Hotlist-2'].checked = true;
@@ -51,9 +51,9 @@ suite('mr-update-issue-hotlists', () => {
     });
   });
 
-  test('adding new issue produces changes', () => {
-    flush();
-    form._newHotlistName.value = 'New-Hotlist';
+  test('adding new issue produces changes', async () => {
+    await element.updateComplete;
+    form.newHotlistName.value = 'New-Hotlist';
     assert.deepEqual(element.changes, {
       added: [],
       removed: [],
@@ -64,7 +64,7 @@ suite('mr-update-issue-hotlists', () => {
     });
   });
 
-  test('reset changes', () => {
+  test('reset changes', async () => {
     element.issueHotlists = [
       {name: 'Hotlist-1', ownerRef: {userId: 12345}},
       {name: 'Hotlist-2', ownerRef: {userId: 12345}},
@@ -75,14 +75,15 @@ suite('mr-update-issue-hotlists', () => {
       {name: 'Hotlist-2', ownerRef: {userId: 67890}},
     ];
     element.user = {userId: 67890};
-    flush();
+
+    await element.updateComplete;
 
     form['Hotlist-1'].checked = false;
     form['Hotlist-2'].checked = true;
-    form._newHotlisName = 'New-Hotlist';
+    form.newHotlisName = 'New-Hotlist';
     element.reset();
     assert.isTrue(form['Hotlist-1'].checked);
     assert.isFalse(form['Hotlist-2'].checked);
-    assert.equal(form._newHotlistName.value, '');
+    assert.equal(form.newHotlistName.value, '');
   });
 });

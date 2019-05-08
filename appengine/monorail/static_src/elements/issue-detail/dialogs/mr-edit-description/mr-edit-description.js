@@ -2,17 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
-import '../../../framework/mr-upload/mr-upload.js';
-import '../../../framework/mr-error/mr-error.js';
+import 'elements/framework/mr-upload/mr-upload.js';
+import 'elements/framework/mr-error/mr-error.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-import '../../../chops/chops-checkbox/chops-checkbox.js';
-import '../../../chops/chops-dialog/chops-dialog.js';
-import 'elements/shared/mr-shared-styles.js';
+import 'elements/chops/chops-checkbox/chops-checkbox.js';
+import 'elements/chops/chops-dialog/chops-dialog.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 
 /**
@@ -21,17 +20,13 @@ import 'elements/shared/mr-shared-styles.js';
  * A dialog to edit descriptions.
  *
  */
-export class MrEditDescription extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrEditDescription extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         chops-dialog {
-          --chops-dialog-theme: {
-            width: 800px;
-            max-width: 100%;
-          };
+          --chops-dialog-width: 800px;
         }
         textarea {
           font-family: var(--mr-toggled-font-family);
@@ -54,51 +49,60 @@ export class MrEditDescription extends connectStore(PolymerElement) {
           justify-content: space-between;
           align-items: center;
         }
-      </style>
-      <chops-dialog id='dialog'>
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      <chops-dialog>
         <h3 class="medium-heading">
-          Edit [[_displayedTitle]]
+          Edit ${this._displayedTitle}
         </h3>
         <textarea
           id="description"
           class="content"
-          value="{{_displayedContent::input}}"
+          @keyup=${this._updateDisplayedContent}
+          @change=${this._updateDisplayedContent}
+          value=${this._displayedContent}
         ></textarea>
         <h3 class="medium-heading">
           Add attachments
         </h3>
         <div class="attachments">
-          <template is="dom-repeat" items="[[_attachments]]" as="attachment">
-            <label title$="[[option.docstring]]">
+          ${this._attachments && this._attachments.map((attachment) => html`
+            <label>
               <chops-checkbox
                 type="checkbox"
                 checked="true"
                 class="kept-attachment"
-                on-checked-change="_keptAttachmentIdsChanged"
-                data-attachment-id\$="[[attachment.attachmentId]]"
+                data-attachment-id=${attachment.attachmentId}
+                @checked-change=${this._keptAttachmentIdsChanged}
               />
-              <a href="[[attachment.viewUrl]]" target="_blank">
-                [[attachment.filename]]
+              <a href=${attachment.viewUrl} target="_blank">
+                ${attachment.filename}
               </a>
             </label>
             <br>
-          </template>
+          `)}
           <mr-upload></mr-upload>
         </div>
         <mr-error
-          hidden$="[[!_attachmentError]]"
-        >[[_attachmentError]]</mr-error>
+          ?hidden=${!this._attachmentError}
+        >${this._attachmentError}</mr-error>
         <div class="edit-controls">
           <chops-checkbox
             id="sendEmail"
-            checked="[[_sendEmail]]"
-            on-checked-change="_setSendEmail"
+            ?checked=${this._sendEmail}
+            @checked-change=${this._setSendEmail}
           >Send email</chops-checkbox>
           <div>
-            <chops-button id="discard" on-click="cancel" class="de-emphasized">
+            <chops-button id="discard" @click=${this.cancel} class="de-emphasized">
               Discard
             </chops-button>
-            <chops-button id="save" on-click="save" class="emphasized">
+            <chops-button id="save" @click=${this.save} class="emphasized">
               Save changes
             </chops-button>
           </div>
@@ -107,30 +111,104 @@ export class MrEditDescription extends connectStore(PolymerElement) {
     `;
   }
 
-  static get is() {
-    return 'mr-edit-description';
-  }
-
   static get properties() {
     return {
-      comments: Array,
-      issueRef: Object,
-      _attachmentError: String,
-      _attachments: Array,
-      _boldLines: Array,
-      _displayedContent: String,
-      _displayedTitle: String,
-      _fieldName: String,
-      _keptAttachmentIds: Object,
-      _sendEmail: Boolean,
+      comments: {type: Array},
+      issueRef: {type: Object},
+      _attachmentError: {type: String},
+      _attachments: {type: Array},
+      _boldLines: {type: Array},
+      _displayedContent: {type: String},
+      _displayedTitle: {type: String},
+      _fieldName: {type: String},
+      _keptAttachmentIds: {type: Object},
+      _sendEmail: {type: Boolean},
     };
   }
 
   stateChanged(state) {
-    this.setProperties({
-      comments: issue.comments(state),
-      issueRef: issue.issueRef(state),
+    this.comments = issue.comments(state);
+    this.issueRef = issue.issueRef(state);
+  }
+
+  async open(e) {
+    await this.updateComplete;
+    this.shadowRoot.querySelector('chops-dialog').open();
+    this._fieldName = e.detail.fieldName;
+    this.reset();
+  }
+
+  async reset() {
+    await this.updateComplete;
+    this._attachmentError = '';
+    this._attachments = [];
+    this._boldLines = [];
+    this._keptAttachmentIds = new Set();
+
+    const uploader = this.shadowRoot.querySelector('mr-upload');
+    if (uploader) {
+      uploader.reset();
+    }
+
+    // Sets _displayedContent and _displayedTitle.
+    this._initializeView(this.comments, this._fieldName);
+
+    this.shadowRoot.querySelectorAll('.kept-attachment').forEach((checkbox) => {
+      checkbox.checked = true;
     });
+    this.shadowRoot.querySelector('#sendEmail').checked = true;
+
+    this._sendEmail = true;
+
+    // Force description to be set to the property value.
+    this.shadowRoot.querySelector('#description').value =
+      this._displayedContent;
+  }
+
+  async cancel() {
+    await this.updateComplete;
+    this.shadowRoot.querySelector('chops-dialog').close();
+  }
+
+  async save() {
+    const commentContent = this._markupNewContent();
+    const sendEmail = this._sendEmail;
+    const keptAttachments = Array.from(this._keptAttachmentIds);
+    const message = {
+      issueRef: this.issueRef,
+      isDescription: true,
+      commentContent,
+      keptAttachments,
+      sendEmail,
+    };
+
+    try {
+      const uploader = this.shadowRoot.querySelector('mr-upload');
+      const uploads = await uploader.loadFiles();
+      if (uploads && uploads.length) {
+        message.uploads = uploads;
+      }
+
+      if (!this._fieldName) {
+        store.dispatch(issue.update(message));
+      } else {
+        // This is editing an approval if there is no field name.
+        message.fieldRef = {
+          type: fieldTypes.APPROVAL_TYPE,
+          fieldName: this._fieldName,
+        };
+        store.dispatch(issue.updateApproval(message));
+      }
+      this.shadowRoot.querySelector('chops-dialog').close();
+    } catch (e) {
+      this._attachmentError = `Error while loading file for attachment: ${
+        e.message}`;
+    }
+  }
+
+  _updateDisplayedContent(e) {
+    const target = e.target;
+    this._displayedContent = target.value;
   }
 
   _keptAttachmentIdsChanged(e) {
@@ -143,23 +221,25 @@ export class MrEditDescription extends connectStore(PolymerElement) {
     }
   }
 
-  _computeDisplayed(comments, fieldName) {
+  _initializeView(comments, fieldName) {
     this._displayedTitle = fieldName ? `${fieldName} Survey` : 'Description';
 
     if (!comments || comments.length === 0) return;
-    let content = '';
-    for (const comment of comments.slice().reverse()) {
+
+    // Get description or survey from list of comments.
+    for (let i = comments.length - 1; i >= 0; i--) {
+      const comment = comments[i];
       if (this._isDescription(comment, fieldName)) {
-        content = comment.content;
         if (comment.attachments) {
           this._keptAttachmentIds = new Set(comment.attachments.map(
             (attachment) => Number.parseInt(attachment.attachmentId)));
           this._attachments = comment.attachments;
         }
+        this._processRawContent(comment.content);
+
         break;
       }
     }
-    this._processRawContent(content);
   }
 
   _isDescription(comment, fieldName) {
@@ -209,71 +289,6 @@ export class MrEditDescription extends connectStore(PolymerElement) {
   _setSendEmail(e) {
     this._sendEmail = e.detail.checked;
   }
-
-  open(e) {
-    this.$.dialog.open();
-    this._fieldName = e.detail.fieldName;
-    this.reset();
-  }
-
-  reset() {
-    this._attachmentError = '';
-    this._attachments = [];
-    this._boldLines = [];
-    this._displayedContent = '';
-    this._keptAttachmentIds = new Set();
-
-    const uploader = this.shadowRoot.querySelector('mr-upload');
-    if (uploader) {
-      uploader.reset();
-    }
-
-    this._computeDisplayed(this.comments, this._fieldName);
-    this.shadowRoot.querySelectorAll('.kept-attachment').forEach((checkbox) => {
-      checkbox.checked = true;
-    });
-    this.shadowRoot.querySelector('#sendEmail').checked = true;
-  }
-
-  cancel() {
-    this.shadowRoot.querySelector('#dialog').close();
-  }
-
-  async save() {
-    const commentContent = this._markupNewContent();
-    const sendEmail = this._sendEmail;
-    const keptAttachments = Array.from(this._keptAttachmentIds);
-    const message = {
-      issueRef: this.issueRef,
-      isDescription: true,
-      commentContent,
-      keptAttachments,
-      sendEmail,
-    };
-
-    try {
-      const uploader = this.shadowRoot.querySelector('mr-upload');
-      const uploads = await uploader.loadFiles();
-      if (uploads && uploads.length) {
-        message.uploads = uploads;
-      }
-
-      if (!this._fieldName) {
-        store.dispatch(issue.update(message));
-      } else {
-        // This is editing an approval if there is no field name.
-        message.fieldRef = {
-          type: fieldTypes.APPROVAL_TYPE,
-          fieldName: this._fieldName,
-        };
-        store.dispatch(issue.updateApproval(message));
-      }
-      this.$.dialog.close();
-    } catch (e) {
-      this._attachmentError = `Error while loading file for attachment: ${
-        e.message}`;
-    }
-  }
 }
 
-customElements.define(MrEditDescription.is, MrEditDescription);
+customElements.define('mr-edit-description', MrEditDescription);

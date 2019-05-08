@@ -2,20 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
-import '../../../chops/chops-dialog/chops-dialog.js';
-import '../../../framework/links/mr-issue-link/mr-issue-link.js';
+import 'elements/chops/chops-dialog/chops-dialog.js';
+import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {ISSUE_EDIT_PERMISSION} from 'elements/shared/permissions';
 
-export class MrRelatedIssuesTable extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrRelatedIssuesTable extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           display: block;
           font-size: var(--chops-main-font-size);
@@ -59,98 +59,119 @@ export class MrRelatedIssuesTable extends connectStore(PolymerElement) {
           color: red;
           margin-bottom: 1em;
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    const rerankEnabled = (this.issuePermissions
+      || []).includes(ISSUE_EDIT_PERMISSION);
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <chops-dialog>
         <h3 class="medium-heading">Blocked on issues</h3>
-        <template is="dom-if" if="[[error]]">
-          <div class="error">[[error]]</div>
-        </template>
+        ${this.error ? html`
+          <div class="error">${this.error}</div>
+        ` : ''}
         <table><tbody>
           <tr>
-            <template is="dom-if" if="[[rerankEnabled]]">
-              <th></th>
-            </template>
-            <template is="dom-repeat" items="[[columns]]" as="column">
-              <th>[[column]]</th>
-            </template>
+            ${rerankEnabled ? html`<th></th>` : ''}
+            ${this.columns.map((column) => html`
+              <th>${column}</th>
+            `)}
           </tr>
-          <template is="dom-repeat" items="[[renderRows]]" as="row">
-            <tr class\$="[[_getClass(index, srcIndex)]]" draggable="[[_canRerank(rerankEnabled, row)]]" data-index\$="[[index]]" on-dragstart="_dragstart" on-dragend="_dragend" on-dragover="_dragover" on-drop="_dragdrop">
-              <template is="dom-if" if="[[rerankEnabled]]">
+
+          ${this._renderedRows.map((row, index) => html`
+            <tr
+              class=${index === this.srcIndex ? 'dragged' : ''}
+              draggable=${rerankEnabled && row.draggable}
+              data-index=${index}
+              @dragstart=${this._dragstart}
+              @dragend=${this._dragend}
+              @dragover=${this._dragover}
+              @drop=${this._dragdrop}
+            >
+              ${rerankEnabled ? html`
                 <td>
-                  <template is="dom-if" if="[[_canRerank(rerankEnabled, row)]]">
+                  ${rerankEnabled && row.draggable ? html`
                     <i class="material-icons draggable">drag_indicator</i>
-                  </template>
+                  ` : ''}
                 </td>
-              </template>
-              <template is="dom-repeat" items="[[row.cells]]" as="cell">
+              ` : ''}
+
+              ${row.cells.map((cell) => html`
                 <td>
-                  <template is="dom-if" if="[[_isIssue(cell)]]">
-                    <mr-issue-link project-name="[[issueRef.projectName]]" issue="[[cell.issue]]"></mr-issue-link>
-                  </template>
-                  <template is="dom-if" if="[[_isText(cell)]]">
-                    [[cell.content]]
-                  </template>
+                  ${cell.type === 'issue' ? html`
+                    <mr-issue-link
+                      .projectName=${this.issueRef.projectName}
+                      .issue=${cell.issue}
+                    ></mr-issue-link>
+                  ` : ''}
+                  ${cell.type === 'text' ? cell.content : ''}
                 </td>
-              </template>
+              `)}
             </tr>
-          </template>
+          `)}
         </tbody></table>
       </chops-dialog>
     `;
   }
 
-  static get is() {
-    return 'mr-related-issues-table';
-  }
-
   static get properties() {
     return {
-      columns: {
-        type: Array,
-        value: ['Issue', 'Summary'],
-      },
-      rows: {
-        type: Array,
-        value: [],
-        observer: 'reset',
-        computed: `_blockedOnTableRows(sortedBlockedOn)`,
-      },
-      rerankEnabled: {
-        type: Boolean,
-        value: false,
-      },
-      renderRows: {
-        type: Array,
-        value: [],
-      },
-      error: {
-        type: String,
-        value: '',
-      },
-      srcIndex: {
-        type: Number,
-        value: null,
-      },
-      rerankEnabled: {
-        type: Boolean,
-        computed: '_canRerankIssues(issuePermissions)',
-      },
-      issueRef: Object,
-      issuePermissions: Array,
-      sortedBlockedOn: Array,
+      columns: {type: Array},
+      error: {type: String},
+      srcIndex: {type: Number},
+      issueRef: {type: Object},
+      issuePermissions: {type: Array},
+      sortedBlockedOn: {type: Array},
+      _renderedRows: {type: Array},
     };
   }
 
   stateChanged(state) {
-    this.setProperties({
-      issueRef: issue.issueRef(state),
-      issuePermissions: issue.permissions(state),
-      sortedBlockedOn: issue.sortedBlockedOn(state),
+    this.issueRef = issue.issueRef(state);
+    this.issuePermissions = issue.permissions(state);
+    this.sortedBlockedOn = issue.sortedBlockedOn(state);
+  }
+
+  constructor() {
+    super();
+    this.columns = ['Issue', 'Summary'];
+  }
+
+  update(changedProperties) {
+    if (changedProperties.has('sortedBlockedOn')) {
+      this.reset();
+    }
+    super.update(changedProperties);
+  }
+
+  get _rows() {
+    const blockedOn = this.sortedBlockedOn;
+    if (!blockedOn) return [];
+    return blockedOn.map((issue) => {
+      const isClosed = issue.statusRef ? !issue.statusRef.meansOpen : false;
+      const row = {
+        draggable: !isClosed,
+        cells: [
+          {
+            type: 'issue',
+            issue: issue,
+            isClosed: Boolean(isClosed),
+          },
+          {
+            type: 'text',
+            content: issue.summary,
+          },
+        ],
+      };
+      return row;
     });
   }
 
-  open() {
+  async open() {
+    await this.updateComplete;
     this.reset();
     this.shadowRoot.querySelector('chops-dialog').open();
   }
@@ -158,26 +179,7 @@ export class MrRelatedIssuesTable extends connectStore(PolymerElement) {
   reset() {
     this.error = null;
     this.srcIndex = null;
-    this.renderRows = this.rows.slice();
-  }
-
-  _canRerankIssues(issuePermissions) {
-    return (issuePermissions || []).includes('editissue');
-  }
-
-  _isIssue(item) {
-    return item.type === 'issue';
-  }
-
-  _isText(item) {
-    return item.type === 'text';
-  }
-
-  _getClass(index, srcIndex) {
-    if (index === srcIndex) {
-      return 'dragged';
-    }
-    return '';
+    this._renderedRows = this._rows.slice();
   }
 
   _dragstart(e) {
@@ -204,14 +206,14 @@ export class MrRelatedIssuesTable extends connectStore(PolymerElement) {
 
   _dragdrop(e) {
     if (e.currentTarget.draggable && this.srcIndex !== null) {
-      const src = this.renderRows[this.srcIndex];
+      const src = this._renderedRows[this.srcIndex];
       if (this.srcIndex > 0) {
-        const target = this.renderRows[this.srcIndex - 1];
+        const target = this._renderedRows[this.srcIndex - 1];
         const above = false;
         this._reorderBlockedOn(src, target, above);
       } else if (this.srcIndex === 0 &&
-                 this.renderRows[1] && this.renderRows[1].draggable) {
-        const target = this.renderRows[1];
+                 this._renderedRows[1] && this._renderedRows[1].draggable) {
+        const target = this._renderedRows[1];
         const above = true;
         this._reorderBlockedOn(src, target, above);
       }
@@ -249,42 +251,17 @@ export class MrRelatedIssuesTable extends connectStore(PolymerElement) {
 
   _reorderRows(srcIndex, toIndex) {
     if (srcIndex <= toIndex) {
-      this.renderRows = this.renderRows.slice(0, srcIndex).concat(
-        this.renderRows.slice(srcIndex + 1, toIndex + 1),
-        [this.renderRows[srcIndex]],
-        this.renderRows.slice(toIndex + 1));
+      this._renderedRows = this._renderedRows.slice(0, srcIndex).concat(
+        this._renderedRows.slice(srcIndex + 1, toIndex + 1),
+        [this._renderedRows[srcIndex]],
+        this._renderedRows.slice(toIndex + 1));
     } else {
-      this.renderRows = this.renderRows.slice(0, toIndex).concat(
-        [this.renderRows[srcIndex]],
-        this.renderRows.slice(toIndex, srcIndex),
-        this.renderRows.slice(srcIndex + 1));
+      this._renderedRows = this._renderedRows.slice(0, toIndex).concat(
+        [this._renderedRows[srcIndex]],
+        this._renderedRows.slice(toIndex, srcIndex),
+        this._renderedRows.slice(srcIndex + 1));
     }
-  }
-
-  _canRerank(rerankEnabled, row) {
-    return rerankEnabled && row.draggable;
-  }
-
-  _blockedOnTableRows(blockedOn) {
-    return (blockedOn || []).map((issue) => {
-      const isClosed = issue.statusRef ? !issue.statusRef.meansOpen : false;
-      const row = {
-        draggable: !isClosed,
-        cells: [
-          {
-            type: 'issue',
-            issue: issue,
-            isClosed: Boolean(isClosed),
-          },
-          {
-            type: 'text',
-            content: issue.summary,
-          },
-        ],
-      };
-      return row;
-    });
   }
 }
 
-customElements.define(MrRelatedIssuesTable.is, MrRelatedIssuesTable);
+customElements.define('mr-related-issues-table', MrRelatedIssuesTable);
