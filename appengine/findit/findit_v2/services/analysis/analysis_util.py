@@ -4,6 +4,60 @@
 """Shared logic of all types of analysis."""
 
 from collections import defaultdict
+import logging
+
+from findit_v2.model.gitiles_commit import GitilesCommit
+
+
+def BisectGitilesCommit(context, left_bound_commit, right_bound_commit,
+                        commit_position_to_git_hash_map):
+  """Uses bisection to get the gitiles to check.
+
+  Args:
+    context (findit_v2.services.context.Context): Scope of the analysis.
+    left_bound_commit (GitilesCommit): left bound of the regression range, not
+    included. It should be the last passed commit found so far.
+    right_bound_commit (GitilesCommit): right bound of the regression range,
+      included. It should be the first failed commit found so far.
+    commit_position_to_git_hash_map (dict): A map of commit_positions to
+      git_hashes.
+
+  Return:
+    (GitilesCommit, GitilesCommit): Commit to bisect next, or the culprit
+      commit. If the next commit is identified, there will be no culprit
+        commit and vice versa.
+  """
+  assert left_bound_commit and right_bound_commit, (
+      'Requiring two bounds to determine a bisecting commit')
+
+  left_commit_position = left_bound_commit.commit_position
+  right_commit_position = right_bound_commit.commit_position
+  assert left_commit_position <= right_commit_position, (
+      'left bound commit is after right.')
+
+  if right_commit_position == left_commit_position + 1:
+    # Cannot further divide the regression range, culprit is the
+    #  ight_bound_commit.
+    return None, right_bound_commit
+
+  bisect_commit_position = left_commit_position + (
+      right_commit_position - left_commit_position) / 2
+
+  bisect_commit_gitiles_id = commit_position_to_git_hash_map.get(
+      bisect_commit_position) if commit_position_to_git_hash_map else None
+
+  if not bisect_commit_gitiles_id:
+    logging.error('Failed to get git_hash for change %s/%s/%s/%d',
+                  context.gitiles_host, context.gitiles_project,
+                  context.gitiles_ref, bisect_commit_position)
+    return None, None
+
+  return GitilesCommit(
+      gitiles_host=context.gitiles_host,
+      gitiles_project=context.gitiles_project,
+      gitiles_ref=context.gitiles_ref,
+      gitiles_id=bisect_commit_gitiles_id,
+      commit_position=bisect_commit_position), None
 
 
 def UpdateFailureRegressionRanges(rerun_builds_info, failures_with_range):

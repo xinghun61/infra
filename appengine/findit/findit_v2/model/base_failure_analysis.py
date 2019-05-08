@@ -46,6 +46,6 @@ class BaseFailureAnalysis(ndb.Model):
   end_time = ndb.DateTimeProperty(indexed=False)
 
   # Status of the analysis, see libs.analysis_status.
-  status = ndb.IntegerProperty(default=analysis_status.PENDING, indexed=False)
+  status = ndb.IntegerProperty(default=analysis_status.RUNNING, indexed=False)
   # Error code and message, if any.
   error = ndb.JsonProperty(indexed=False)

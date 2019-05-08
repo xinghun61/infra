@@ -115,6 +115,23 @@ class CompileApiTest(wf_testcase.TestCase):
     self.assertItemsEqual(['target1.o', 'target2.o'],
                           rerun_build.GetFailedTargets()['compile'])
 
+  def testProcessAndSaveRerunBuildResultAnalysisMissing(self):
+    build_id = 8000000000123
+    build_number = 123
+    builder = BuilderID(
+        project='chromium', bucket='findit', builder='findit-variable')
+    build = Build(
+        id=build_id,
+        builder=builder,
+        number=build_number,
+        status=common_pb2.FAILURE,
+        tags=[{
+            'key': 'analyzed_build_id',
+            'value': '87654321'
+        }])
+    self.assertFalse(
+        compile_api.OnCompileRerunBuildCompletion(self.context, build))
+
   def testProcessRerunBuildResultNoAnalyzedBuildIdTag(self):
     build_id = 8000000000123
     build_number = 123

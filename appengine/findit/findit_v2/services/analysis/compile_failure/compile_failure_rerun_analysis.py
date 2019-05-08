@@ -9,10 +9,17 @@ from buildbucket_proto import common_pb2
 from google.appengine.ext import ndb
 
 from common.waterfall import buildbucket_client
+from findit_v2.model import compile_failure
+from findit_v2.model import luci_build
+from findit_v2.model.compile_failure import CompileFailureAnalysis
 from findit_v2.model.compile_failure import CompileRerunBuild
+from findit_v2.model.gitiles_commit import Culprit
 from findit_v2.services import projects
 from findit_v2.services import constants
 from findit_v2.services.analysis import analysis_util
+from libs import analysis_status
+from libs import time_util
+from services import git
 
 
 def _GetRegressionRangesForCompileFailures(analysis):
@@ -181,3 +188,106 @@ def TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis_key,
       status=new_build.status,
       create_time=new_build.create_time.ToDatetime(),
       parent_key=analysis_key).put()
+
+
+def _SaveCulpritInCompileFailures(compile_failures, culprit_commit):
+  """Saves the culprit to compile failures.
+
+  Args:
+    compile_failures (list of CompileFailure): CompileFailures that are caused
+      by the culprit_commit.
+    culprit_commit (GitilesCommit): The commit that caused compile failure(s).
+  """
+  culprit_entity = Culprit.GetOrCreate(
+      gitiles_host=culprit_commit.gitiles_host,
+      gitiles_project=culprit_commit.gitiles_project,
+      gitiles_ref=culprit_commit.gitiles_ref,
+      gitiles_id=culprit_commit.gitiles_id,
+      commit_position=culprit_commit.commit_position,
+      failure_urlsafe_keys=[cf.key.urlsafe() for cf in compile_failures])
+
+  for failure in compile_failures:
+    failure.culprit_commit_key = culprit_entity.key
+  ndb.put_multi(compile_failures)
+
+
+def RerunBasedAnalysis(context, analyzed_build_id, referred_build):
+  """Checks rerun build results and looks for either the culprit or the next
+    commit to compile. Then wraps up the analysis with culprit or continues the
+     analysis by triggering the next rerun build.
+
+    Args:
+      context (findit_v2.services.context.Context): Scope of the analysis.
+      analyzed_build_id (int): Build id of the build that's being analyzed.
+      referred_build (buildbucket build.proto): Info about the build being
+        referred to trigger new rerun builds. This build could be the analyzed
+        build or a previous rerun build in the same analysis.
+  """
+  analysis = CompileFailureAnalysis.GetVersion(analyzed_build_id)
+  assert analysis, 'Failed to get CompileFailureAnalysis for build {}'.format(
+      analyzed_build_id)
+
+  rerun_builder = luci_build.ParseBuilderId(analysis.rerun_builder_id)
+
+  # Gets a map from commit_position to gitiles_ids (git_hash/ revision) for the
+  # commits between lass_passed_commit and first_failed_commit, bounds are
+  # included.
+  commit_position_to_git_hash_map = git.MapCommitPositionsToGitHashes(
+      analysis.first_failed_commit.gitiles_id,
+      analysis.first_failed_commit.commit_position,
+      analysis.last_passed_commit.commit_position,
+      repo_url=git.GetRepoUrlFromContext(context))
+  analysis_completed = True
+  analysis_error = None
+
+  # Gets updated regression range for the targets based on rerun build
+  # results. The format is like:
+  # [
+  #   {
+  #     'failures': {'compile': ['target1', 'target2']},
+  #     'last_passed_commit': left_bound_commit,
+  #     'first_failed_commit': right_bound_commit},
+  #   {
+  #     'failures': {'compile': ['target3']},
+  #     'last_passed_commit': other_left_bound_commit,
+  #     'first_failed_commit': other_right_bound_commit},
+  # ]
+  # It's possible that failures have different regression range so that multiple
+  # rerun builds got triggered for different failures on different commit.
+  # Though this case should be rare.
+  updated_ranges = _GetRegressionRangesForCompileFailures(analysis)
+  for failures_with_range in updated_ranges:
+    last_passed_commit = failures_with_range['last_passed_commit']
+    first_failed_commit = failures_with_range['first_failed_commit']
+    failures = failures_with_range['failures']
+
+    rerun_commit, culprit_commit = analysis_util.BisectGitilesCommit(
+        context, last_passed_commit, first_failed_commit,
+        commit_position_to_git_hash_map)
+    if culprit_commit:
+      # Analysis for these failures has run to the end.
+      _SaveCulpritInCompileFailures(failures, culprit_commit)
+      continue
+
+    # No culprit found for these failures, analysis continues.
+    analysis_completed = False
+    if not rerun_commit:
+      # TODO (crbug.com/957760): Properly recover failed analysis.
+      analysis_error = (
+          'Failed to find the next commit to run from the range {}..{}'.format(
+              last_passed_commit.commit_position,
+              first_failed_commit.commit_position))
+      continue
+
+    # Triggers a rerun build unless there's an existing one.
+    # It's possible if the existing one is still running so that Findit doesn't
+    # know that build's result.
+    TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis.key,
+                      rerun_builder, rerun_commit,
+                      compile_failure.GetFailedTargets(failures))
+
+  analysis.Update(
+      status=analysis_status.COMPLETED
+      if analysis_completed else analysis_status.RUNNING,
+      end_time=time_util.GetUTCNow(),
+      error=analysis_error)

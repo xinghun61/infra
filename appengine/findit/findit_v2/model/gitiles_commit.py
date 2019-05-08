@@ -62,3 +62,31 @@ class Culprit(GitilesCommit):
   def Get(cls, gitiles_host, gitiles_project, gitiles_ref, gitiles_id):
     return cls._CreateKey(gitiles_host, gitiles_project, gitiles_ref,
                           gitiles_id).get()
+
+  @classmethod
+  def GetOrCreate(cls,
+                  gitiles_host,
+                  gitiles_project,
+                  gitiles_ref,
+                  gitiles_id,
+                  commit_position=None,
+                  failure_urlsafe_keys=None):
+    """Gets or Creates a Culprit entity.
+
+    If failure_urlsafe_keys provided, update the culprit as well.
+    """
+    updated = False
+    culprit = cls.Get(gitiles_host, gitiles_project, gitiles_ref, gitiles_id)
+    if not culprit:
+      culprit = cls.Create(gitiles_host, gitiles_project, gitiles_ref,
+                           gitiles_id, commit_position)
+      updated = True
+
+    if failure_urlsafe_keys:
+      culprit.failure_urlsafe_keys = list(
+          set(culprit.failure_urlsafe_keys) | set(failure_urlsafe_keys))
+      updated = True
+
+    if updated:
+      culprit.put()
+    return culprit

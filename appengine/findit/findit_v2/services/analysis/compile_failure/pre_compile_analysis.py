@@ -14,9 +14,9 @@ from google.appengine.ext import ndb
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common.waterfall import buildbucket_client
+from findit_v2.model import luci_build
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
-from findit_v2.model import luci_build
 from findit_v2.services import projects
 from findit_v2.services import constants
 from findit_v2.services.failure_type import StepTypeEnum

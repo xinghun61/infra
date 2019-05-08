@@ -131,7 +131,7 @@ class LuciBuild(ndb.Model):
         gitiles_id=gitiles_id,
         commit_position=commit_position)
 
-    if parent_key:
+    if parent_key:  # pragma: no cover. (tested when testing CompileRerunBuild)
       # Rerun builds belong to each analysis, so they need to also set their
       # parent.
       return cls(

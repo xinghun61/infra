@@ -18,11 +18,16 @@ import logging
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from gae_libs.caches import PickledMemCache
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs.cache_decorator import Cached
 from libs.gitiles.gitiles_repository import (GitilesRepository as
                                              NonCachedGitilesRepository)
 from libs import time_util
 from services.constants import CHROMIUM_GIT_REPOSITORY_URL
+
+# Caches the commit_position to revisions map for 1 day.
+_COMMIT_REVISION_MAP_CACHE_EXPIRE_TIME_SECONDS = 1 * 24 * 60 * 60
 
 
 def GetGitBlame(repo_url, revision, touched_file_path):
@@ -214,6 +219,10 @@ def ChangeCommittedWithinTime(revision,
   return in_time
 
 
+@Cached(
+    PickledMemCache(),
+    namespace='gitiles_commit',
+    expire_time=_COMMIT_REVISION_MAP_CACHE_EXPIRE_TIME_SECONDS)
 def MapCommitPositionsToGitHashes(end_revision,
                                   end_commit_position,
                                   start_commit_position,

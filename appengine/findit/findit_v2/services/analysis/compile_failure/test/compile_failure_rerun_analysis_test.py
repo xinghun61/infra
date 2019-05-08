@@ -8,6 +8,7 @@ import mock
 from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
+from google.appengine.ext import ndb
 
 from common.waterfall import buildbucket_client
 from findit_v2.model.compile_failure import CompileFailure
@@ -20,6 +21,8 @@ from findit_v2.services.analysis.compile_failure import (
 from findit_v2.services.chromium_api import ChromiumProjectAPI
 from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
+from libs import analysis_status
+from services import git
 from waterfall.test import wf_testcase
 
 
@@ -259,3 +262,62 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     self.assertEqual([self.compile_failure], results[0]['failures'])
     self.assertEqual(6000002, results[0]['first_failed_commit'].commit_position)
     self.assertEqual(6000000, results[0]['last_passed_commit'].commit_position)
+
+  @mock.patch.object(
+      compile_failure_rerun_analysis,
+      '_GetRerunBuildInputProperties',
+      return_value={'recipe': 'compile'})
+  @mock.patch.object(buildbucket_client, 'TriggerV2Build')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisContinueWithNextRerunBuild(self, mock_revisions,
+                                                       mock_trigger_build, _):
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+    mock_rerun_build = Build(id=8000055000123, number=78990)
+    mock_rerun_build.create_time.FromDatetime(datetime(2019, 4, 30))
+    mock_trigger_build.return_value = mock_rerun_build
+
+    compile_failure_rerun_analysis.RerunBasedAnalysis(self.context,
+                                                      self.build_id, self.build)
+    self.assertTrue(mock_trigger_build.called)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+
+    rerun_builds = CompileRerunBuild.query(ancestor=self.analysis.key).fetch()
+    self.assertEqual(1, len(rerun_builds))
+    self.assertEqual(6000002, rerun_builds[0].gitiles_commit.commit_position)
+
+  @mock.patch.object(compile_failure_rerun_analysis, 'TriggerRerunBuild')
+  @mock.patch.object(git, 'MapCommitPositionsToGitHashes')
+  def testRerunBasedAnalysisEndWithCulprit(self, mock_revisions,
+                                           mock_trigger_build):
+    rerun_build_failures = {
+        'compile': {
+            'failures': {
+                'target_str': {
+                    'output_targets': ['a.o'],
+                    'rule': 'CXX'
+                }
+            }
+        }
+    }
+
+    rerun_build = self._CreateCompileRerunBuild(commit_position=6000001)
+    rerun_build.SaveRerunBuildResults(20, rerun_build_failures)
+
+    mock_revisions.return_value = {n: str(n) for n in xrange(6000000, 6000005)}
+
+    compile_failure_rerun_analysis.RerunBasedAnalysis(self.context,
+                                                      self.build_id, self.build)
+    self.assertFalse(mock_trigger_build.called)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+    compile_failures = ndb.get_multi(analysis.compile_failure_keys)
+    culprit_key = compile_failures[0].culprit_commit_key
+    self.assertIsNotNone(culprit_key)
+    culprit = culprit_key.get()
+    self.assertEqual(6000001, culprit.commit_position)
+    self.assertEqual([cf.key.urlsafe() for cf in compile_failures],
+                     culprit.failure_urlsafe_keys)

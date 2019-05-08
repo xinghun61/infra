@@ -158,6 +158,13 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
 
     return instance
 
+  def Update(self, end_time=None, status=None, error=None):
+    # pylint: disable=attribute-defined-outside-init
+    self.end_time = self.end_time or end_time
+    self.status = status if status is not None else self.status
+    self.error = error if error else self.error
+    self.put()
+
 
 class CompileFailureInRerunBuild(ndb.Model):
   """Atomic compile failure in a rerun build.

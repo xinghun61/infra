@@ -82,3 +82,14 @@ class AtomicFailure(ndb.Model):
     instance.last_passed_build_id = last_passed_build_id
     instance.failure_group_build_id = failure_group_build_id
     return instance
+
+  def GetFailureIdentifier(self):
+    """Returns the identifier for the failure within its step.
+
+    Returns:
+    (list): information to identify a failure.
+      - For compile failures, it'll be the output_targets.
+      - For test failures, it'll be the [test_name].
+
+    """
+    raise NotImplementedError

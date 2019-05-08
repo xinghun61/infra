@@ -8,6 +8,7 @@ from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.gitiles_commit import GitilesCommit
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis import analysis_util
+from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
 from waterfall.test import wf_testcase
 
@@ -56,6 +57,84 @@ class AnalysisUtilTest(wf_testcase.TestCase):
         gitiles_ref=self.gitiles_ref,
         gitiles_id=gitiles_id,
         commit_position=commit_position)
+
+  def testBisectGitilesCommitGetNextCommit(self):
+    gitiles_host = 'gitiles.host.com'
+    gitiles_project = 'project/name'
+    gitiles_ref = 'ref/heads/master'
+    left_bound_gitiles_id = '100'
+    right_bound_gitiles_id = '110'
+
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project=gitiles_project,
+        gitiles_host=gitiles_host,
+        gitiles_ref=gitiles_ref,
+        gitiles_id=right_bound_gitiles_id)
+
+    left_bound_commit = self._CreateGitilesCommit(left_bound_gitiles_id, 100)
+
+    right_bound_commit = self._CreateGitilesCommit(right_bound_gitiles_id, 110)
+
+    revisions = {n: str(n) for n in xrange(100, 110)}
+
+    bisect_commit, culprit_commit = analysis_util.BisectGitilesCommit(
+        context, left_bound_commit, right_bound_commit, revisions)
+
+    self.assertEqual(105, bisect_commit.commit_position)
+    self.assertIsNone(culprit_commit)
+
+  def testBisectGitilesCommitGetCulpritCommit(self):
+    gitiles_host = 'gitiles.host.com'
+    gitiles_project = 'project/name'
+    gitiles_ref = 'ref/heads/master'
+    left_bound_gitiles_id = '100'
+    right_bound_gitiles_id = '110'
+
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project=gitiles_project,
+        gitiles_host=gitiles_host,
+        gitiles_ref=gitiles_ref,
+        gitiles_id=right_bound_gitiles_id)
+
+    left_bound_commit = self._CreateGitilesCommit(left_bound_gitiles_id, 109)
+
+    right_bound_commit = self._CreateGitilesCommit(right_bound_gitiles_id, 110)
+
+    revisions = {n: str(n) for n in xrange(100, 110)}
+
+    bisect_commit, culprit_commit = analysis_util.BisectGitilesCommit(
+        context, left_bound_commit, right_bound_commit, revisions)
+
+    self.assertIsNone(bisect_commit)
+    self.assertEqual(110, culprit_commit.commit_position)
+
+  def testBisectGitilesCommitFailedToGetGitilesId(self):
+    gitiles_host = 'gitiles.host.com'
+    gitiles_project = 'project/name'
+    gitiles_ref = 'ref/heads/master'
+    left_bound_gitiles_id = '100'
+    right_bound_gitiles_id = '110'
+
+    context = Context(
+        luci_project_name='chromium',
+        gitiles_project=gitiles_project,
+        gitiles_host=gitiles_host,
+        gitiles_ref=gitiles_ref,
+        gitiles_id=right_bound_gitiles_id)
+
+    left_bound_commit = self._CreateGitilesCommit(left_bound_gitiles_id, 100)
+
+    right_bound_commit = self._CreateGitilesCommit(right_bound_gitiles_id, 110)
+
+    revisions = {}
+
+    bisect_commit, culprit_commit = analysis_util.BisectGitilesCommit(
+        context, left_bound_commit, right_bound_commit, revisions)
+
+    self.assertIsNone(bisect_commit)
+    self.assertIsNone(culprit_commit)
 
   def testUpdateFailureRegressionRanges(self):
     rerun_builds_info = [(self.commits[5], {}),
