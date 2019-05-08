@@ -25,5 +25,9 @@ var func_var = function (){
     console.log(`this is a very long template literal ${1 + 1} there should be no max-len warning`);
     console.log('this is a very long regular string ${1 + 1} there should be a max-len warning');
 }
+// Switch cases should be indented.
+switch (1) {
+case 1: foo();
+}
 func_var()  // Missing semicolon.
 const unusedVar = 0;
