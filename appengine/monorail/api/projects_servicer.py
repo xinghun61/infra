@@ -137,11 +137,15 @@ class ProjectsServicer(monorail_servicer.MonorailServicer):
 
     users_by_id = tracker_helpers.GetVisibleMembers(mc, project, self.services)
 
+    sorted_user_ids = sorted(
+        users_by_id, key=lambda uid: users_by_id[uid].email)
     user_refs = converters.ConvertUserRefs(
-        sorted(users_by_id), [], users_by_id, True)
+        sorted_user_ids, [], users_by_id, True)
+    sorted_group_ids = sorted(
+        (uv.user_id for uv in users_by_id.values() if uv.is_group),
+        key=lambda uid: users_by_id[uid].email)
     group_refs = converters.ConvertUserRefs(
-        sorted(uv.user_id for uv in users_by_id.values() if uv.is_group), [],
-        users_by_id, True)
+        sorted_group_ids, [], users_by_id, True)
 
     result = projects_pb2.GetVisibleMembersResponse(
         user_refs=user_refs, group_refs=group_refs)

@@ -338,7 +338,7 @@ class ProjectsServicerTest(unittest.TestCase):
 
   def testGetVisibleMembers_MemberIsGroup(self):
     self.project.contributor_ids.extend([999])
-    self.assertVisibleMembers([111, 222, 333, 444, 999], [999],
+    self.assertVisibleMembers([999, 111, 222, 333, 444], [999],
                               requester='owner@example.com')
 
   def testGetVisibleMembers_AcExclusion(self):
@@ -348,7 +348,7 @@ class ProjectsServicerTest(unittest.TestCase):
   def testGetVisibleMembers_NoExpand(self):
     self.services.project.no_expand_ids[self.project.project_id] = [999]
     self.project.contributor_ids.extend([999])
-    self.assertVisibleMembers([111, 222, 333, 999], [999],
+    self.assertVisibleMembers([999, 111, 222, 333], [999],
                               requester='owner@example.com')
 
   def testListStatuses(self):
