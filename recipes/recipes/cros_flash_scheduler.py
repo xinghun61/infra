@@ -54,11 +54,6 @@ LKGM_RE = re.compile(r'\d+\.\d+\.\d+')
 # GS bucket that stores test images for all CrOS boards.
 CHROMEOS_IMAGE_BUCKET = 'chromeos-image-archive'
 
-# The name of the builder to which every DUT swarming bot belongs. This builder
-# exists solely so the bots can run the cros_flash recipe.
-DUT_FLASHING_BUILDER = 'cros-dut-flash'
-DUT_FLASHING_BUILDER_BUCKET = 'luci.infra.cron'
-
 PROPERTIES = {
   'swarming_server': Property(
       kind=str,
@@ -76,7 +71,15 @@ PROPERTIES = {
   'random_seed': Property(
       kind=Single((int, float)),
       help='Random seed to set when selected a subset of bots to flash.',
-      default=None)
+      default=None),
+  'flashing_builder': Property(
+      kind=str,
+      help='Name of the builder that does the flashing task',
+      default='cros-dut-flash'),
+  'flashing_builder_bucket': Property(
+      kind=str,
+      help='Bucket containing the flashing builder',
+      default='luci.infra.cron')
 }
 
 
@@ -178,11 +181,12 @@ def get_closest_available_version(api, board, lkgm_base):
   return None, None
 
 
-def trigger_flash(api, bot, gs_image_path):
+def trigger_flash(api, bot, gs_image_path, flashing_builder,
+                  flashing_builder_bucket):
   build_req = {
-    'bucket': DUT_FLASHING_BUILDER_BUCKET,
+    'bucket': flashing_builder_bucket,
     'parameters': {
-      'builder_name': DUT_FLASHING_BUILDER,
+      'builder_name': flashing_builder,
       'properties': {
         'gs_image_bucket': CHROMEOS_IMAGE_BUCKET,
         # gs_image_path expects everything to the right of the bucket name
@@ -209,7 +213,7 @@ def trigger_flash(api, bot, gs_image_path):
 
 
 def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
-             random_seed):
+             random_seed, flashing_builder, flashing_builder_bucket):
   # Recipe-runtime import of random to avoid "Non-whitelisted" recipe errors.
   # TODO(crbug.com/913124): Remove this.
   import random
@@ -289,7 +293,8 @@ def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
   with api.step.nest('flash bots'):
     for bot in bots_to_flash:
       flashing_requests.add(
-          trigger_flash(api, bot, gs_image_path))
+          trigger_flash(api, bot, gs_image_path, flashing_builder,
+                        flashing_builder_bucket))
 
   # Wait for all the flashing jobs. Nest it under a single step since there
   # will be several buildbucket.get_build() step calls.
@@ -357,6 +362,8 @@ def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
         'swarming_server': swarming_server,
         'swarming_pool': swarming_pool,
         'device_type': device_type,
+        'flashing_builder': flashing_builder,
+        'flashing_builder_bucket': flashing_builder_bucket,
       },
     },
   }

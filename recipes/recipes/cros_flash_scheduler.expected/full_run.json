@@ -484,7 +484,7 @@
       "put",
       "-host",
       "some-buildbucket-server",
-      "{\"bucket\": \"luci.infra.cron\", \"experimental\": false, \"parameters_json\": \"{\\\"builder_name\\\": \\\"cros-scheduler\\\", \\\"properties\\\": {\\\"bb_host\\\": \\\"some-buildbucket-server\\\", \\\"device_type\\\": \\\"some-device-type\\\", \\\"swarming_pool\\\": \\\"some-swarming-pool\\\", \\\"swarming_server\\\": \\\"some-swarming-server\\\"}}\", \"tags\": [\"builder:cros-scheduler\", \"buildset:commit/gitiles/chromium.googlesource.com/infra/+/2d72510e447ab60a9728aeea2362d8be2cbd7789\", \"gitiles_ref:refs/heads/master\", \"parent_buildername:cros-scheduler\", \"user_agent:recipe\"]}"
+      "{\"bucket\": \"luci.infra.cron\", \"experimental\": false, \"parameters_json\": \"{\\\"builder_name\\\": \\\"cros-scheduler\\\", \\\"properties\\\": {\\\"bb_host\\\": \\\"some-buildbucket-server\\\", \\\"device_type\\\": \\\"some-device-type\\\", \\\"flashing_builder\\\": \\\"cros-dut-flash\\\", \\\"flashing_builder_bucket\\\": \\\"luci.infra.cron\\\", \\\"swarming_pool\\\": \\\"some-swarming-pool\\\", \\\"swarming_server\\\": \\\"some-swarming-server\\\"}}\", \"tags\": [\"builder:cros-scheduler\", \"buildset:commit/gitiles/chromium.googlesource.com/infra/+/2d72510e447ab60a9728aeea2362d8be2cbd7789\", \"gitiles_ref:refs/heads/master\", \"parent_buildername:cros-scheduler\", \"user_agent:recipe\"]}"
     ],
     "infra_step": true,
     "name": "retrigger myself",
