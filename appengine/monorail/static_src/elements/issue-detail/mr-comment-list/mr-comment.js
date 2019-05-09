@@ -52,10 +52,12 @@ export class MrComment extends LitElement {
     super.updated(changedProperties);
 
     if (changedProperties.has('highlighted') && this.highlighted) {
-      this.scrollIntoView();
-      // TODO(ehmaldonado): Figure out a way to get the height from the issue
-      // header, and scroll by that amount.
-      window.scrollBy(0, -150);
+      window.requestAnimationFrame(() => {
+        this.scrollIntoView();
+        // TODO(ehmaldonado): Figure out a way to get the height from the issue
+        // header, and scroll by that amount.
+        window.scrollBy(0, -150);
+      });
     }
   }
 

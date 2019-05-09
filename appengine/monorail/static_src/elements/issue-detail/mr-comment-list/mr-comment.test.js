@@ -26,10 +26,14 @@ describe('mr-comment', () => {
       timestamp: 1549319989,
     };
     document.body.appendChild(element);
+
+    // Stub RAF to execute immediately.
+    sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
   });
 
   afterEach(() => {
     document.body.removeChild(element);
+    window.requestAnimationFrame.restore();
   });
 
   it('initializes', () => {
