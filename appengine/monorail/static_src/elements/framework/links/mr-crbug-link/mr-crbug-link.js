@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 import * as issue from 'elements/reducers/issue.js';
 
 /**
@@ -12,55 +11,43 @@ import * as issue from 'elements/reducers/issue.js';
  * Displays a crbug short-link to an issue.
  *
  */
-export class MrCrbugLink extends PolymerElement {
-  static get template() {
+export class MrCrbugLink extends LitElement {
+  static get styles() {
+    return css`
+      a.material-icons {
+        font-size: var(--chops-icon-font-size);
+        display: inline-block;
+        color: var(--chops-primary-icon-color);
+        padding: 0 2px;
+        box-sizing: border-box;
+        text-decoration: none;
+        vertical-align: middle;
+      }
+    `;
+  }
+
+  render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style>
-        a.material-icons {
-          font-size: var(--chops-icon-font-size);
-          display: inline-block;
-          color: var(--chops-primary-icon-color);
-          padding: 0 2px;
-          box-sizing: border-box;
-          text-decoration: none;
-          vertical-align: middle;
-        }
-      </style>
       <a
         id="bugLink"
         class="material-icons"
-        href$="[[_issueUrl]]"
+        href=${this._issueUrl}
         title="crbug link"
       >link</a>
     `;
   }
 
-  static get is() {
-    return 'mr-crbug-link';
-  }
-
   static get properties() {
     return {
       // The issue being viewed. Falls back gracefully if this is only a ref.
-      issue: Object,
-      _issueUrl: {
-        type: String,
-        computed: '_computeIssueUrl(issue)',
-      },
+      issue: {type: Object},
     };
   }
 
-  stateChanged(state) {
-    this.issue = issue.issue(state);
-  }
-
-  _getHost() {
-    // This function allows us to mock the host in unit testing.
-    return document.location.host;
-  }
-
-  _computeIssueUrl(issue) {
+  get _issueUrl() {
+    const issue = this.issue;
+    if (!issue) return '';
     if (this._getHost() === 'bugs.chromium.org') {
       const projectPart = (
         issue.projectName == 'chromium' ? '' : issue.projectName + '/');
@@ -69,5 +56,10 @@ export class MrCrbugLink extends PolymerElement {
     const issueType = issue.approvalValues ? 'approval' : 'detail';
     return `/p/${issue.projectName}/issues/${issueType}?id=${issue.localId}`;
   }
+
+  _getHost() {
+    // This function allows us to mock the host in unit testing.
+    return document.location.host;
+  }
 }
-customElements.define(MrCrbugLink.is, MrCrbugLink);
+customElements.define('mr-crbug-link', MrCrbugLink);

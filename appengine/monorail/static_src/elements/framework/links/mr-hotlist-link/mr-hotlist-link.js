@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html} from 'lit-element';
 
 /**
  * `<mr-hotlist-link>`
@@ -11,25 +10,22 @@ import {PolymerElement, html} from '@polymer/polymer';
  * Displays a link to a hotlist.
  *
  */
-export class MrHotlistLink extends PolymerElement {
-  static get template() {
+export class MrHotlistLink extends LitElement {
+  render() {
+    if (!this.hotlist) return html``;
     return html`
       <a
-        href$="/u/[[hotlist.ownerRef.userId]]/hotlists/[[hotlist.name]]"
-        title$="[[hotlist.name]] - [[hotlist.summary]]"
+        href="/u/${this.hotlist.ownerRef && this.hotlist.ownerRef.userId}/hotlists/${this.hotlist.name}"
+        title="${this.hotlist.name} - ${this.hotlist.summary}"
       >
-        [[hotlist.name]]</a>
+        ${this.hotlist.name}</a>
     `;
-  }
-
-  static get is() {
-    return 'mr-hotlist-link';
   }
 
   static get properties() {
     return {
-      hotlist: Object,
+      hotlist: {type: Object},
     };
   }
 }
-customElements.define(MrHotlistLink.is, MrHotlistLink);
+customElements.define('mr-hotlist-link', MrHotlistLink);

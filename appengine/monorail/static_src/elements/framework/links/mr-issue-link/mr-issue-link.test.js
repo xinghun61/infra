@@ -4,8 +4,6 @@
 
 import {assert} from 'chai';
 import {MrIssueLink} from './mr-issue-link.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
-
 
 let element;
 
@@ -23,44 +21,52 @@ describe('mr-issue-link', () => {
     assert.instanceOf(element, MrIssueLink);
   });
 
-  it('strikethrough when closed', () => {
+  it('strikethrough when closed', async () => {
+    await element.updateComplete;
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.isFalse(
       window.getComputedStyle(link).getPropertyValue(
         'text-decoration').includes('line-through'));
     element.issue = {statusRef: {meansOpen: false}};
 
-    flush();
+    await element.updateComplete;
 
     assert.isTrue(
       window.getComputedStyle(link).getPropertyValue(
         'text-decoration').includes('line-through'));
   });
 
-  it('shows projectName only when different from global', () => {
+  it('shows projectName only when different from global', async () => {
     element.issue = {
       projectName: 'test',
       localId: 11,
     };
+    await element.updateComplete;
+
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.equal(link.textContent.trim(), 'Issue test:11');
 
     element.projectName = 'test';
+    await element.updateComplete;
 
     assert.equal(link.textContent.trim(), 'Issue 11');
 
     element.projectName = 'other';
+    await element.updateComplete;
 
-    flush();
+    await element.updateComplete;
 
     assert.equal(link.textContent.trim(), 'Issue test:11');
   });
 
-  it('shows links for issues', () => {
+  it('shows links for issues', async () => {
     element.issue = {
       projectName: 'test',
       localId: 11,
     };
+
+    await element.updateComplete;
+
     const link = element.shadowRoot.querySelector('#bugLink');
     assert.include(link.href.trim(), '/p/test/issues/detail?id=11');
   });
