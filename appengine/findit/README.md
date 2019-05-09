@@ -22,7 +22,10 @@ Then open http://localhost:8080 for the home page.
 # How to run unit tests for Findit?
 
 From command line, run:
-  `make test`
+  `make test` to run all tests;
+  `make test TEST_GLOB=<path to a sub dir>` to run tests in a sub directory;
+  'make test TEST_GLOB=<path to a sub dir>:*<test name>*' to run a given test.
+
 
 If a code path branch is not tested and no line number is shown in the command
 line output, you could check the code coverage report shown in the output.

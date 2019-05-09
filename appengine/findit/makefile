@@ -19,7 +19,7 @@ REMOTE_FINDIT_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -A $(APPID) | grep "de
 REMOTE_FINDIT_HASH := `$(INFRAPYTHON) $(GAE_PY) active -A $(APPID) | grep "default:" | awk '{print $$2}' | cut -d '-' -f2`
 REMOTE_COVERAGE_VERSION := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "code-coverage-backend:" | awk '{print $$2}'`
 REMOTE_COVERAGE_HASH := `$(INFRAPYTHON) $(GAE_PY) active -b -A $(APPID) | grep "code-coverage-backend:" | awk '{print $$2}' | cut -d '-' -f2`
-
+TEST_GLOB ?= "appengine/findit"
 
 help:
 	@echo "Findit:"
@@ -40,8 +40,12 @@ help:
 	      "please migrate traffic for modules: $(CODE_COVERAGE_MODULES)"
 	@echo "https://pantheon.corp.google.com/appengine/versions?project=findit-for-me"
 	@echo
+	@echo "Run tests"
+	@echo "To run ALL tests: \`make test\`"
+	@echo "To run tests in a sub directory: \`make test TEST_GLOB=appengine/findit/test\`"
+	@echo "To run a given test: \`make test TEST_GLOB=appengine/findit/test:*testUnrecognizedMasterUrl*\`"
+	@echo
 	@echo "To format code use \`make format\`"
-	@echo "To run tests use \`make test\`"
 	@echo "To run all modules locally use \`make run\`"
 
 
@@ -143,9 +147,17 @@ clean-expect_tests:  # $$ is to escape $ in makefile.
 	  awk '{print $$2}' | xargs kill -9 >/dev/null 2>&1 | echo
 
 test: clean-expect_tests
+ifeq ($(TEST_GLOB),"appengine/findit")
 	@mkdir -p $(TMPDIR)/coverage
-	$(INFRAPYTHON) ../../test.py test appengine/findit \
-	  --html-report $(TMPDIR)/coverage
+	$(INFRAPYTHON) ../../test.py test $(TEST_GLOB) \
+      --html-report $(TMPDIR)/coverage
+else
+	@echo "Note: code coverage disabled when running selected tests."
+	@echo
+	@mkdir -p $(TMPDIR)/coverage
+	$(INFRAPYTHON) ../../test.py test $(TEST_GLOB) \
+      --html-report $(TMPDIR)/coverage --coveragerc appengine/findit/.coveragerc --no-coverage
+endif
 
 node_deps:
 	npm install
