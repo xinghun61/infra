@@ -119,25 +119,40 @@ class BuildBotTest(unittest.TestCase):
 
   @mock.patch.object(buildbot.buildbucket_client,
                      'GetV2BuildByBuilderAndBuildNumber')
-  def testParseCIBuildLongUrl(self, mock_get_master):
-    url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
-           '/Linux%20Tests%20SANDBOX/3932')
+  def testParseBuildLongUrl(self, mock_get_master):
 
     master_name = 'chromium.sandbox'
     mock_build = Build()
     mock_build.input.properties['mastername'] = master_name
     mock_get_master.return_value = mock_build
-    expected_result = (master_name, 'Linux Tests SANDBOX', 3932)
-    self.assertEqual(expected_result, buildbot.ParseBuildUrl(url))
+
+    cases = {
+        'https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
+        '/Linux%20Tests%20SANDBOX/3932': (master_name, 'Linux Tests SANDBOX',
+                                          3932),
+        'https://luci-milo.appspot.com/p/chromium/builders'
+        '/luci.chromium.ci/b2/111': (master_name, 'b2', 111),
+        'https://luci-milo.appspot.com/p/chromium/builders/ci/b2/111': (
+            master_name, 'b2', 111),
+    }
+
+    for url, expected_result in cases.iteritems():
+      result = buildbot.ParseBuildUrl(url)
+      self.assertEqual(expected_result, result)
 
   @mock.patch.object(
       buildbot.buildbucket_client,
       'GetV2BuildByBuilderAndBuildNumber',
       return_value=None)
-  def testParseCIBuildLongUrlNoBuilds(self, _):
-    url = ('https://ci.chromium.org/p/chromium/builders/ci'
-           '/Linux%20Tests%20SANDBOX/3932')
-    self.assertIsNone(buildbot.ParseBuildUrl(url))
+  def testParseBuildLongUrlNoBuilds(self, _):
+    cases = [
+        'https://ci.chromium.org/p/chromium/builders/ci'
+        '/Linux%20Tests%20SANDBOX/3932',
+        'https://luci-milo.appspot.com/p/chromium/builders/ci/b2/111',
+    ]
+
+    for url in cases:
+      self.assertIsNone(buildbot.ParseBuildUrl(url))
 
   def testParseStepUrl(self):
     cases = {

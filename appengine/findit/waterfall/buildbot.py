@@ -61,6 +61,10 @@ _MILO_BUILD_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)/([^/]+)/(\d+)'
     '(?:/.*)?$')
 
+_MILO_BUILD_LONG_URL_PATTERN = re.compile(
+    r'^https?://luci-milo\.appspot\.com/p/([^/]+)/builders/([^/]+)/([^/]+)'
+    '/(\d+)(?:/.*)?$')  # pylint: disable=anomalous-backslash-in-string
+
 _CI_BUILD_URL_PATTERN = re.compile(
     r'^https?://ci\.chromium\.org/buildbot/([^/]+)/([^/]+)/(\d+)'
     '(?:/.*)?$')
@@ -204,9 +208,13 @@ def _GetBuildbotMasterName(project, bucket_name, builder_name, build_number):
 
 
 # TODO(crbug/802940): Remove this when the API of getting LUCI build is ready.
-def _ParseCIBuildLongUrl(url):
-  """Parses urls in _CI_BUILD_LONG_URL_PATTERN pattern."""
-  match = _CI_BUILD_LONG_URL_PATTERN.match(url)
+def _ParseBuildLongUrl(url):
+  """Parses _CI_BUILD_LONG_URL_PATTERN and _MILO_BUILD_LONG_URL_PATTERN urls."""
+  match = None
+  for pattern in (_CI_BUILD_LONG_URL_PATTERN, _MILO_BUILD_LONG_URL_PATTERN):
+    match = pattern.match(url)
+    if match:
+      break
   if not match:
     return None
 
@@ -238,7 +246,7 @@ def ParseBuildUrl(url):
     if match:
       break
   if not match:
-    return _ParseCIBuildLongUrl(url)
+    return _ParseBuildLongUrl(url)
 
   master_name, builder_name, build_number = match.groups()
   builder_name = urllib.unquote(builder_name)
