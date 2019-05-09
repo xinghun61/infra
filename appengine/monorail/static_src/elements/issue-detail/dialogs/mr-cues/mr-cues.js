@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import {connectStore} from 'elements/reducers/base.js';
+import {store, connectStore} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
@@ -20,7 +20,6 @@ import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 export class MrCues extends connectStore(LitElement) {
   constructor() {
     super();
-    this.dismissedDialog = false;
   }
 
   static get properties() {
@@ -28,12 +27,14 @@ export class MrCues extends connectStore(LitElement) {
       userDisplayName: {type: String},
       prefs: {type: Object},
       prefsLoaded: {type: Boolean},
-      dismissedDialog: {type: Boolean},
     };
   }
 
   static get styles() {
     return [SHARED_STYLES, css`
+      :host {
+        --chops-dialog-max-width: 800px;
+      }
       h2 {
         margin-top: 0;
         display: flex;
@@ -58,33 +59,66 @@ export class MrCues extends connectStore(LitElement) {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
       <chops-dialog
         id="privacyDialog"
         ?opened=${this._showPrivacyDialog}
         forced>
-        <div class="dialog-content">
-          <h2>Email display settings</h2>
+        <h2>Email display settings</h2>
 
-          <p>There is a <a href="/hosting/settings">setting</a> to control how
-          your email address appears on comments and issues that you post.</p>
+        <p>There is a <a href="/hosting/settings">setting</a> to control how
+        your email address appears on comments and issues that you post.</p>
 
-          <p>Project members will always see your full email address.  By
-          default, other users who visit the site will see an
-          abbreviated version of your email address.</p>
+        <p>Project members will always see your full email address.  By
+        default, other users who visit the site will see an
+        abbreviated version of your email address.</p>
 
-          <p>If you do not wish your email address to be shared, there
-          are other ways to <a
-          href="http://www.chromium.org/getting-involved">get
-          involved</a> in the community.  To report a problem when using
-          the Chrome browser, you may use the "Report an issue..."  item
-          on the "Help" menu.</p>
+        <p>If you do not wish your email address to be shared, there
+        are other ways to <a
+        href="http://www.chromium.org/getting-involved">get
+        involved</a> in the community.  To report a problem when using
+        the Chrome browser, you may use the "Report an issue..."  item
+        on the "Help" menu.</p>
 
 
-          <div class="edit-actions">
-              <chops-button @click=${this.dismissDialog}>
-              Got it
-            </button>
-          </div>
+        <div class="edit-actions">
+          <chops-button @click=${this.dismissPrivacyDialog}>
+            Got it
+          </chops-button>
+        </div>
+      </chops-dialog>
+
+      <chops-dialog
+        id="corpModeDialog"
+        ?opened=${this._showCorpModeDialog}
+        forced>
+        <h2>This site hosts public issues in public projects</h2>
+
+        <p>Unlike our internal issue tracker, this site makes most
+        issues public, unless the issue is labeled with a Restrict-View-*
+        label, such as Restrict-View-Google.</p>
+
+        <p>Components are not used for permissions.  And, regardless of
+        restriction labels, the issue reporter, owner,
+        and Cc&apos;d users may always view the issue.</p>
+
+        <p>Your account is a member of a user group that indicates that
+        you may have access to confidential information.  To help prevent
+        leaks when working in public projects, the issue tracker UX has
+        been altered for you:</p>
+
+        <ul>
+         <li>When you open a new issue, the form will initially have a
+         Restrict-View-Google label.  If you know that your issue does
+         not contain confidential information, please remove the label.</li>
+         <li>When you view public issues, a red banner is shown to remind
+         you that any comments or attachments you post will be public.</li>
+        </ul>
+
+        <div class="edit-actions">
+          <chops-button @click=${this.dismissCorpModeDialog}>
+            Got it
+          </chops-button>
         </div>
       </chops-dialog>
     `;
@@ -98,17 +132,45 @@ export class MrCues extends connectStore(LitElement) {
   get _showPrivacyDialog() {
     if (!this.userDisplayName) return false;
     if (!this.prefsLoaded) return false;
-    if (this.dismissedDialog) return false;
     if (!this.prefs) return false;
     if (this.prefs.get('privacy_click_through') === 'true') return false;
     return true;
   }
 
-  dismissDialog() {
-    this.dismissedDialog = true;
-    window.prpcClient.call('monorail.Users', 'SetUserPrefs', {
-      prefs: [{name: 'privacy_click_through', value: 'true'}],
-    });
+  dismissPrivacyDialog() {
+    this.setDismissedCue('privacy_click_through');
+  }
+
+  get _showCorpModeDialog() {
+    // TODO(jrobbins): Replace this with a API call that gets the project.
+    if (window.CS_env.projectIsRestricted) return false;
+    if (!this.userDisplayName) return false;
+    if (!this.prefsLoaded) return false;
+    if (!this.prefs) return false;
+    if (this.prefs.get('public_issue_notice') !== 'true') return false;
+    if (this.prefs.get('corp_mode_click_through') === 'true') return false;
+    return true;
+  }
+
+  dismissCorpModeDialog() {
+    this.setDismissedCue('corp_mode_click_through');
+  }
+
+  setDismissedCue(pref) {
+    const newPrefs = [{name: pref, value: 'true'}];
+    if (this.userDisplayName) {
+      // TODO(jrobbins): Move some of this into user.js.
+      const message = {prefs: newPrefs};
+      const setPrefsCall = window.prpcClient.call(
+        'monorail.Users', 'SetUserPrefs', message);
+      setPrefsCall.then((resp) => {
+        store.dispatch(user.fetchPrefs());
+      }).catch((reason) => {
+        console.error('SetUserPrefs failed: ' + reason);
+      });
+    } else {
+      store.dispatch(user.setPrefs(newPrefs));
+    }
   }
 }
 

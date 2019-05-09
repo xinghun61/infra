@@ -44,17 +44,9 @@ describe('mr-cues', () => {
     assert.isFalse(element._showPrivacyDialog);
   });
 
-  it('signed in user sees no privacy dialog if already dismissed', () => {
-    element.userDisplayName = 'user@example.com';
-    element.prefsLoaded = true;
-    element.dismissedDialog = true;
-    assert.isFalse(element._showPrivacyDialog);
-  });
-
   it('signed in user sees no privacy dialog if dismissal pref set', () => {
     element.userDisplayName = 'user@example.com';
     element.prefsLoaded = true;
-    element.dismissedDialog = true;
     element.prefs = new Map([['privacy_click_through', 'true']]);
     assert.isFalse(element._showPrivacyDialog);
   });
@@ -62,8 +54,46 @@ describe('mr-cues', () => {
   it('signed in user sees privacy dialog if dismissal pref missing', () => {
     element.userDisplayName = 'user@example.com';
     element.prefsLoaded = true;
-    element.dismissedDialog = false;
     element.prefs = new Map();
     assert.isTrue(element._showPrivacyDialog);
+  });
+
+  it('anon does not see corp mode dialog', () => {
+    assert.isFalse(element._showCorpModeDialog);
+  });
+
+  it('signed in user sees no corp mode dialog before prefs load', () => {
+    element.userDisplayName = 'user@example.com';
+    element.prefsLoaded = false;
+    assert.isFalse(element._showCorpModeDialog);
+  });
+
+  it('signed in user sees no corp mode dialog if dismissal pref set', () => {
+    element.userDisplayName = 'user@example.com';
+    element.prefsLoaded = true;
+    element.prefs = new Map([['corp_mode_click_through', 'true']]);
+    assert.isFalse(element._showCorpModeDialog);
+  });
+
+  it('non-corp user sees no corp mode dialog', () => {
+    element.userDisplayName = 'user@example.com';
+    element.prefsLoaded = true;
+    element.prefs = new Map();
+    assert.isFalse(element._showCorpModeDialog);
+  });
+
+  it('corp user sees corp mode dialog if dismissal pref missing', () => {
+    element.userDisplayName = 'user@example.com';
+    element.prefsLoaded = true;
+    element.prefs = new Map([['public_issue_notice', 'true']]);
+    assert.isTrue(element._showCorpModeDialog);
+  });
+
+  it('corp user sees no corp mode dialog in members-only project', () => {
+    window.CS_env = {projectIsRestricted: true};
+    element.userDisplayName = 'user@example.com';
+    element.prefsLoaded = true;
+    element.prefs = new Map([['public_issue_notice', 'true']]);
+    assert.isFalse(element._showCorpModeDialog);
   });
 });
