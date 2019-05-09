@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 // TODO(zhangtiff): Remove this hardcoded data once backend custom
-// field grouping is implemented.
+// field grouping is implemented. http://crbug.com/monorail/4549
 export const HARDCODED_FIELD_GROUPS = [
   {
     groupName: 'Feature Team',
@@ -20,7 +20,8 @@ export const HARDCODED_FIELD_GROUPS = [
   },
 ];
 
-export const fieldGroupMap = (fieldGroups) => {
+export const fieldGroupMap = (fieldGroupsArg, issueType) => {
+  const fieldGroups = groupsForType(fieldGroupsArg, issueType);
   return fieldGroups.reduce((acc, group) => {
     return group.fieldNames.reduce((acc, fieldName) => {
       acc[fieldName] = group.groupName;
@@ -28,8 +29,6 @@ export const fieldGroupMap = (fieldGroups) => {
     }, acc);
   }, {});
 };
-
-export const FIELD_GROUP_MAP = fieldGroupMap(HARDCODED_FIELD_GROUPS);
 
 export const valuesForField = (fieldValueMap, fieldName, phaseName) => {
   if (!fieldValueMap) return [];
@@ -53,8 +52,8 @@ export const groupsForType = (fieldGroups, issueType) => {
   });
 };
 
-export const fieldDefsWithGroup = (fieldDefs, fieldGroupsArg) => {
-  const fieldGroups = fieldGroupsArg || HARDCODED_FIELD_GROUPS;
+export const fieldDefsWithGroup = (fieldDefs, fieldGroupsArg, issueType) => {
+  const fieldGroups = groupsForType(fieldGroupsArg, issueType);
   if (!fieldDefs) return [];
   const groups = [];
   fieldGroups.forEach((group) => {
@@ -76,9 +75,9 @@ export const fieldDefsWithGroup = (fieldDefs, fieldGroupsArg) => {
   return groups;
 };
 
-export const fieldDefsWithoutGroup = (fieldDefs, fieldMap) => {
+export const fieldDefsWithoutGroup = (fieldDefs, fieldGroups, issueType) => {
   if (!fieldDefs) return [];
-  const map = fieldMap || fieldGroupMap(HARDCODED_FIELD_GROUPS);
+  const map = fieldGroupMap(fieldGroups, issueType);
   return fieldDefs.filter((fd) => {
     return !(fd.fieldRef.fieldName in map);
   });

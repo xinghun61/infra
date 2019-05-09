@@ -4,24 +4,7 @@
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-
-// TODO(zhangtiff): Remove this hardcoded data once backend custom
-// field grouping is implemented.
-export const HARDCODED_FIELD_GROUPS = [
-  {
-    groupName: 'Feature Team',
-    fieldNames: ['PM', 'Tech Lead', 'Tech-Lead', 'TechLead', 'TL',
-      'Team', 'UX', 'TE'],
-    applicableType: 'FLT-Launch',
-  },
-  {
-    groupName: 'Docs',
-    fieldNames: ['PRD', 'DD', 'Design Doc', 'Design-Doc',
-      'DesignDoc', 'Mocks', 'Test Plan', 'Test-Plan', 'TestPlan',
-      'Metrics'],
-    applicableType: 'FLT-Launch',
-  },
-];
+import {HARDCODED_FIELD_GROUPS} from './metadata-helpers.js';
 
 export const MetadataMixin = (superClass) => {
   return class extends connectStore(superClass) {

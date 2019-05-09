@@ -3,7 +3,8 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MetadataMixin, HARDCODED_FIELD_GROUPS} from './metadata-mixin.js';
+import {MetadataMixin} from './metadata-mixin.js';
+import {HARDCODED_FIELD_GROUPS} from './metadata-helpers.js';
 import {PolymerElement} from '@polymer/polymer';
 
 let element;

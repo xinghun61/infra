@@ -25,7 +25,7 @@ module.exports = function(config) {
         // __tsMonClient probably shouldn't be allowed to
         // leak between tests, but locating the current source of these
         // leaks has proven quite difficult.
-        globals: ['__tsMonClient', 'ga', 'Color', 'Chart'],
+        globals: ['CS_env', '__tsMonClient', 'ga', 'Color', 'Chart'],
       },
     },
 

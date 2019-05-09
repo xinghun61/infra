@@ -29,7 +29,8 @@ import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
   ISSUE_EDIT_CC_PERMISSION,
 } from 'elements/shared/permissions.js';
 import {fieldDefsWithGroup, fieldDefsWithoutGroup,
-  valuesForField} from '../shared/metadata-helpers.js';
+  valuesForField,
+  HARDCODED_FIELD_GROUPS} from '../shared/metadata-helpers.js';
 
 
 const DEBOUNCED_PRESUBMIT_TIME_OUT = 400;
@@ -394,7 +395,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
   _renderFieldDefs() {
     return html`
-      ${fieldDefsWithGroup(this.fieldDefs).map((group) => html`
+      ${fieldDefsWithGroup(this.fieldDefs, this.fieldGroups, this.issueType).map((group) => html`
         <fieldset class="group">
           <legend>${group.groupName}</legend>
           <div class="input-grid">
@@ -403,7 +404,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
         </fieldset>
       `)}
 
-      ${fieldDefsWithoutGroup(this.fieldDefs).map((field) => this._renderCustomField(field))}
+      ${fieldDefsWithoutGroup(this.fieldDefs, this.fieldGroups, this.issueType).map((field) => this._renderCustomField(field))}
     `;
   }
 
@@ -522,6 +523,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
       fieldValueMap: {type: Object},
       issueType: {type: String},
       optionsPerEnumField: {type: String},
+      fieldGroups: {type: Object},
       _debouncedProcessChanges: {type: Object},
     };
   }
@@ -532,6 +534,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.ownerName = '';
     this.sendEmail = true;
     this.mergedInto = {};
+    this.fieldGroups = HARDCODED_FIELD_GROUPS;
   }
 
   get _nicheFieldCount() {
