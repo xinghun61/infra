@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'sinon';
 import {assert} from 'chai';
-import sinon from 'sinon';
 import {MrCodeFontToggle} from './mr-code-font-toggle.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 let element;
 
@@ -12,15 +13,12 @@ describe('mr-code-font-toggle', () => {
   beforeEach(() => {
     element = document.createElement('mr-code-font-toggle');
     document.body.appendChild(element);
-    window.prpcClient = {
-      call: () => Promise.resolve({}),
-    };
-    sinon.spy(window.prpcClient, 'call');
+    sinon.stub(prpcClient, 'call').returns(Promise.resolve({}));
   });
 
   afterEach(() => {
     document.body.removeChild(element);
-    window.prpcClient.call.restore();
+    prpcClient.call.restore();
   });
 
   it('initializes', () => {
@@ -33,20 +31,20 @@ describe('mr-code-font-toggle', () => {
     const label = chopsToggle.shadowRoot.querySelector('label');
 
     label.click(); // Toggle it on.
-    assert.deepEqual(window.prpcClient.call.getCall(0).args, [
+    assert.deepEqual(prpcClient.call.getCall(0).args, [
       'monorail.Users',
       'SetUserPrefs',
       {prefs: [{name: 'code_font', value: 'true'}]},
     ]);
-    assert.isTrue(window.prpcClient.call.calledOnce);
+    assert.isTrue(prpcClient.call.calledOnce);
 
     element.prefs = new Map([['code_font', 'true']]);
     label.click(); // Toggle it off.
-    assert.deepEqual(window.prpcClient.call.getCall(1).args, [
+    assert.deepEqual(prpcClient.call.getCall(1).args, [
       'monorail.Users',
       'SetUserPrefs',
       {prefs: [{name: 'code_font', value: 'false'}]},
     ]);
-    assert.isTrue(window.prpcClient.call.calledTwice);
+    assert.isTrue(prpcClient.call.calledTwice);
   });
 });

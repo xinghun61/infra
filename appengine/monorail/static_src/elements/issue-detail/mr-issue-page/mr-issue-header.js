@@ -18,7 +18,7 @@ import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/shared/mr-shared-styles.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_DELETE_PERMISSION,
   ISSUE_FLAGSPAM_PERMISSION} from 'elements/shared/permissions.js';
-
+import {prpcClient} from 'prpc-client-instance.js';
 
 const DELETE_ISSUE_CONFIRMATION_NOTICE = `\
 Normally, you would just close issues by setting their status to a closed value.
@@ -254,7 +254,7 @@ export class MrIssueHeader extends connectStore(PolymerElement) {
   }
 
   _markIssue() {
-    window.prpcClient.call('monorail.Issues', 'FlagIssues', {
+    prpcClient.call('monorail.Issues', 'FlagIssues', {
       issueRefs: [{
         projectName: this.issue.projectName,
         localId: this.issue.localId,
@@ -274,7 +274,7 @@ export class MrIssueHeader extends connectStore(PolymerElement) {
   _deleteIssue() {
     const ok = confirm(DELETE_ISSUE_CONFIRMATION_NOTICE);
     if (ok) {
-      window.prpcClient.call('monorail.Issues', 'DeleteIssue', {
+      prpcClient.call('monorail.Issues', 'DeleteIssue', {
         issueRef: {
           projectName: this.issue.projectName,
           localId: this.issue.localId,

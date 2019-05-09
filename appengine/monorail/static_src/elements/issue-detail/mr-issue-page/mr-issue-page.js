@@ -23,6 +23,7 @@ import '../dialogs/mr-convert-issue/mr-convert-issue.js';
 import '../dialogs/mr-related-issues-table/mr-related-issues-table.js';
 import '../dialogs/mr-update-issue-hotlists/mr-update-issue-hotlists.js';
 import '../dialogs/mr-cues/mr-cues.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 const APPROVAL_COMMENT_COUNT = 5;
 const DETAIL_COMMENT_COUNT = 100;
@@ -322,7 +323,7 @@ export class MrIssuePage extends connectStore(PolymerElement) {
   }
 
   _undeleteIssue() {
-    window.prpcClient.call('monorail.Issues', 'DeleteIssue', {
+    prpcClient.call('monorail.Issues', 'DeleteIssue', {
       issueRef: this.issueRef,
       delete: false,
     }).then(() => {

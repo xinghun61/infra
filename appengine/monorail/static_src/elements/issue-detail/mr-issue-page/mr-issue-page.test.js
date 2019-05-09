@@ -8,7 +8,7 @@ import sinon from 'sinon';
 import {MrIssuePage} from './mr-issue-page.js';
 import {store} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-import AutoRefreshPrpcClient from 'prpc.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 let element;
 let loadingElement;
@@ -16,8 +16,6 @@ let fetchErrorElement;
 let deletedElement;
 let movedElement;
 let issueElement;
-
-let prpcStub;
 
 function populateElementReferences() {
   flush();
@@ -32,22 +30,12 @@ describe('mr-issue-page', () => {
   beforeEach(() => {
     element = document.createElement('mr-issue-page');
     document.body.appendChild(element);
-
-    window.CS_env = {
-      token: 'rutabaga-token',
-      tokenExpiresSec: 1234,
-      app_version: 'rutabaga-version',
-    };
-    window.prpcClient = new AutoRefreshPrpcClient(
-      CS_env.token, CS_env.tokenExpiresSec);
-
-    prpcStub = sinon.stub(window.prpcClient, 'call');
+    sinon.stub(prpcClient, 'call');
   });
 
   afterEach(() => {
     document.body.removeChild(element);
-
-    prpcStub.restore();
+    prpcClient.call.restore();
   });
 
   it('initializes', () => {
@@ -152,11 +140,10 @@ describe('mr-issue-page', () => {
     });
     const deletePromise = Promise.resolve({});
     sinon.spy(element, '_undeleteIssue');
-
-    prpcStub.withArgs('monorail.Issues', 'GetIssue', {issueRef})
+    prpcClient.call.withArgs('monorail.Issues', 'GetIssue', {issueRef})
       .onFirstCall().returns(deletedIssuePromise)
       .onSecondCall().returns(issuePromise);
-    prpcStub.withArgs('monorail.Issues', 'DeleteIssue',
+    prpcClient.call.withArgs('monorail.Issues', 'DeleteIssue',
       {delete: false, issueRef}).returns(deletePromise);
 
     store.dispatch(
@@ -178,9 +165,9 @@ describe('mr-issue-page', () => {
     const button = element.shadowRoot.querySelector('.undelete');
     button.click();
 
-    sinon.assert.calledWith(prpcStub, 'monorail.Issues', 'GetIssue',
+    sinon.assert.calledWith(prpcClient.call, 'monorail.Issues', 'GetIssue',
       {issueRef});
-    sinon.assert.calledWith(prpcStub, 'monorail.Issues', 'DeleteIssue',
+    sinon.assert.calledWith(prpcClient.call, 'monorail.Issues', 'DeleteIssue',
       {delete: false, issueRef});
 
     await deletePromise;

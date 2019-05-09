@@ -13,6 +13,7 @@ import 'elements/issue-detail/mr-comment-list/mr-comment-list.js';
 import 'elements/framework/mr-comment-content/mr-description.js';
 // eslint-disable-next-line max-len
 import 'elements/issue-detail/dialogs/mr-edit-description/mr-edit-description.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 /**
  * `<ezt-comments>`
@@ -133,10 +134,10 @@ export class EztComments extends connectStore(PolymerElement) {
   initialize() {
     this.quickMode = false;
 
-    if (!window.prpcClient) {
-      // window.prpcClient is not defined yet, but we need it to fetch the
+    if (!prpcClient) {
+      // prpcClient is not defined yet, but we need it to fetch the
       // comment references for autocomplete.
-      window.prpcClient = new AutoRefreshPrpcClient(
+      prpcClient = new AutoRefreshPrpcClient(
         window.CS_env.token, window.CS_env.tokenExpiresSec);
     }
 

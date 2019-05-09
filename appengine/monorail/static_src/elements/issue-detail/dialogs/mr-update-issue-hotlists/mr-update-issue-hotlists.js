@@ -9,6 +9,7 @@ import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as user from 'elements/reducers/user.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 export class MrUpdateIssueHotlists extends connectStore(LitElement) {
   static get styles() {
@@ -163,7 +164,7 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
 
     const promises = [];
     if (changes.added.length) {
-      promises.push(window.prpcClient.call(
+      promises.push(prpcClient.call(
         'monorail.Features', 'AddIssuesToHotlists', {
           hotlistRefs: changes.added,
           issueRefs: [issueRef],
@@ -171,7 +172,7 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
       ));
     }
     if (changes.removed.length) {
-      promises.push(window.prpcClient.call(
+      promises.push(prpcClient.call(
         'monorail.Features', 'RemoveIssuesFromHotlists', {
           hotlistRefs: changes.removed,
           issueRefs: [issueRef],
@@ -179,7 +180,7 @@ export class MrUpdateIssueHotlists extends connectStore(LitElement) {
       ));
     }
     if (changes.created) {
-      promises.push(window.prpcClient.call(
+      promises.push(prpcClient.call(
         'monorail.Features', 'CreateHotlist', {
           name: changes.created.name,
           summary: changes.created.summary,

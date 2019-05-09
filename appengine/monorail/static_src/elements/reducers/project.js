@@ -8,6 +8,7 @@ import {createReducer, createRequestReducer} from './redux-helpers.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 import {hasPrefix, removePrefix} from 'elements/shared/helpers.js';
 import {fieldNameToLabelPrefix} from 'elements/shared/converters.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 // Actions
 const FETCH_CONFIG_START = 'project/FETCH_CONFIG_START';
@@ -163,7 +164,7 @@ export const fetch = (projectName) => async (dispatch) => {
 const fetchConfig = (projectName) => async (dispatch) => {
   dispatch({type: FETCH_CONFIG_START});
 
-  const getConfig = window.prpcClient.call(
+  const getConfig = prpcClient.call(
     'monorail.Projects', 'GetConfig', {projectName});
 
   // TODO(zhangtiff): Remove this once we properly stub out prpc calls.
@@ -180,7 +181,7 @@ const fetchConfig = (projectName) => async (dispatch) => {
 const fetchTemplates = (projectName) => async (dispatch) => {
   dispatch({type: FETCH_TEMPLATES_START});
 
-  const listTemplates = window.prpcClient.call(
+  const listTemplates = prpcClient.call(
     'monorail.Projects', 'ListProjectTemplates', {projectName});
 
   // TODO(zhangtiff): Remove (see above TODO).

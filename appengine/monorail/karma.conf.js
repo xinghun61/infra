@@ -22,10 +22,10 @@ module.exports = function(config) {
         reporter: 'html',
         ui: 'bdd',
         checkLeaks: true,
-        // prpcClient and __tsMonClient probably shouldn't be allowed to
+        // __tsMonClient probably shouldn't be allowed to
         // leak between tests, but locating the current source of these
         // leaks has proven quite difficult.
-        globals: ['prpcClient', '__tsMonClient', 'ga', 'Color', 'Chart'],
+        globals: ['__tsMonClient', 'ga', 'Color', 'Chart'],
       },
     },
 

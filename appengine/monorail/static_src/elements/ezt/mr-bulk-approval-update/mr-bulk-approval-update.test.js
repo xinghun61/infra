@@ -6,10 +6,9 @@ import {assert} from 'chai';
 import {MrBulkApprovalUpdate, NO_APPROVALS_MESSAGE,
   NO_UPDATES_MESSAGE} from './mr-bulk-approval-update.js';
 import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import AutoRefreshPrpcClient from 'prpc.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 let element;
-let prpcStub;
 let root;
 
 describe('mr-bulk-approval-update', () => {
@@ -18,20 +17,12 @@ describe('mr-bulk-approval-update', () => {
     document.body.appendChild(element);
 
     root = element.shadowRoot;
-
-    window.CS_env = {
-      token: 'rutabaga-token',
-      tokenExpiresSec: 1234,
-      app_version: 'rutabaga-version',
-    };
-    window.prpcClient = new AutoRefreshPrpcClient(
-      CS_env.token, CS_env.tokenExpiresSec);
-    prpcStub = sinon.stub(window.prpcClient, 'call');
+    sinon.stub(prpcClient, 'call');
   });
 
   afterEach(() => {
     document.body.removeChild(element);
-    prpcStub.restore();
+    prpcClient.call.restore();
   });
 
   it('initializes', () => {
@@ -68,7 +59,7 @@ describe('mr-bulk-approval-update', () => {
       {fieldRef: {type: 'APPROVAL_TYPE'}},
     ];
     const promise = Promise.resolve({fieldDefs: responseFieldDefs});
-    prpcStub.returns(promise);
+    prpcClient.call.returns(promise);
 
     sinon.spy(element, 'fetchApprovals');
     root.querySelector('.js-showApprovals').click();
@@ -86,7 +77,7 @@ describe('mr-bulk-approval-update', () => {
 
   it('fetchApprovals: applicable fields dont exist', async () => {
     const promise = Promise.resolve({fieldDefs: []});
-    prpcStub.returns(promise);
+    prpcClient.call.returns(promise);
     root.querySelector('.js-showApprovals').click();
 
     await promise;
@@ -96,8 +87,9 @@ describe('mr-bulk-approval-update', () => {
   });
 
   it('save: normal', async () => {
-    const promise = Promise.resolve({issueRefs: [{localId: '1'}, {localId: '3'}]});
-    prpcStub.returns(promise);
+    const promise =
+      Promise.resolve({issueRefs: [{localId: '1'}, {localId: '3'}]});
+    prpcClient.call.returns(promise);
     const fieldDefs = [
       {fieldRef: {fieldName: 'Approval-One', type: 'APPROVAL_TYPE'}},
       {fieldRef: {fieldName: 'Approval-Two', type: 'APPROVAL_TYPE'}},
@@ -145,7 +137,7 @@ describe('mr-bulk-approval-update', () => {
       send_email: true,
     };
     sinon.assert.calledWith(
-      prpcStub,
+      prpcClient.call,
       'monorail.Issues',
       'BulkUpdateApprovals',
       expectedMessage);
@@ -153,7 +145,7 @@ describe('mr-bulk-approval-update', () => {
 
   it('save: no updates', async () => {
     const promise = Promise.resolve({issueRefs: []});
-    prpcStub.returns(promise);
+    prpcClient.call.returns(promise);
     const fieldDefs = [
       {fieldRef: {fieldName: 'Approval-One', type: 'APPROVAL_TYPE'}},
       {fieldRef: {fieldName: 'Approval-Two', type: 'APPROVAL_TYPE'}},

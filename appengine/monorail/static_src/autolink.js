@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 'use strict';
+import {prpcClient} from 'prpc-client-instance.js';
 
 // When crbug links don't specify a project, the default project is Chromium.
 const CRBUG_DEFAULT_PROJECT = 'chromium';
@@ -106,7 +107,7 @@ function LookupReferencedIssues(issueRefs, componentName) {
     const message = {
       issueRefs: issueRefs,
     };
-    const listReferencedIssues = window.prpcClient.call(
+    const listReferencedIssues = prpcClient.call(
       'monorail.Issues', 'ListReferencedIssues', message);
     return listReferencedIssues.then((response) => {
       resolve({'componentName': componentName, 'existingRefs': response});
@@ -119,7 +120,7 @@ function LookupReferencedUsers(emails, componentName) {
     const userRefs = emails.map((displayName) => {
       return {displayName};
     });
-    const listReferencedUsers = window.prpcClient.call(
+    const listReferencedUsers = prpcClient.call(
       'monorail.Users', 'ListReferencedUsers', {userRefs});
     return listReferencedUsers.then((response) => {
       resolve({'componentName': componentName, 'existingRefs': response});

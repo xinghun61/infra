@@ -5,6 +5,7 @@
 import '@polymer/polymer/polymer-legacy.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 import 'elements/framework/mr-header/mr-header.js';
 import '../mr-activity-table/mr-activity-table.js';
@@ -189,7 +190,7 @@ export class MrProfilePage extends PolymerElement {
       untilTimestamp: currentTime,
     };
 
-    const getCommits = window.prpcClient.call(
+    const getCommits = prpcClient.call(
       'monorail.Users', 'GetUserCommits', commitMessage
     );
 
@@ -204,7 +205,7 @@ export class MrProfilePage extends PolymerElement {
       },
     };
 
-    const listActivities = window.prpcClient.call(
+    const listActivities = prpcClient.call(
       'monorail.Issues', 'ListActivities', commentMessage
     );
 

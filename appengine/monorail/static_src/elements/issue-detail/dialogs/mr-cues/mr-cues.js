@@ -8,6 +8,7 @@ import * as user from 'elements/reducers/user.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 /**
  * `<mr-cues>`
@@ -161,7 +162,7 @@ export class MrCues extends connectStore(LitElement) {
     if (this.userDisplayName) {
       // TODO(jrobbins): Move some of this into user.js.
       const message = {prefs: newPrefs};
-      const setPrefsCall = window.prpcClient.call(
+      const setPrefsCall = prpcClient.call(
         'monorail.Users', 'SetUserPrefs', message);
       setPrefsCall.then((resp) => {
         store.dispatch(user.fetchPrefs());

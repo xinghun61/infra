@@ -4,12 +4,9 @@
 
 import {assert} from 'chai';
 import {MrEditDescription} from './mr-edit-description.js';
-import sinon from 'sinon';
 import * as issue from 'elements/reducers/issue.js';
 
-
 let element;
-
 describe('mr-edit-descriptions', () => {
   beforeEach(() => {
     element = document.createElement('mr-edit-description');
@@ -54,17 +51,10 @@ describe('mr-edit-descriptions', () => {
         content: 'third comment',
       },
     ];
-
-    window.prpcClient = {
-      call: () => Promise.resolve({}),
-    };
-    sinon.spy(window.prpcClient, 'call');
-    sinon.spy(issue.update);
   });
 
   afterEach(() => {
     document.body.removeChild(element);
-    window.prpcClient.call.restore();
   });
 
   it('initializes', () => {

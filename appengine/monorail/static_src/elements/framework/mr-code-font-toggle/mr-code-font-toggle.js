@@ -8,6 +8,7 @@ import {PolymerElement, html} from '@polymer/polymer';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
 import 'elements/chops/chops-toggle/chops-toggle.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 /**
  * `<mr-code-font-toggle>`
@@ -66,7 +67,7 @@ export class MrCodeFontToggle extends connectStore(PolymerElement) {
       const message = {
         prefs: [{name: 'code_font', value: '' + checked}],
       };
-      const setPrefsCall = window.prpcClient.call(
+      const setPrefsCall = prpcClient.call(
         'monorail.Users', 'SetUserPrefs', message);
       setPrefsCall.then((resp) => {
         this.fetchPrefs();

@@ -6,7 +6,7 @@ import '@polymer/polymer/polymer-legacy.js';
 import {PolymerElement, html} from '@polymer/polymer';
 import 'elements/issue-detail/metadata/mr-edit-field/mr-edit-field.js';
 import 'elements/framework/mr-error/mr-error.js';
-
+import {prpcClient} from 'prpc-client-instance.js';
 
 // TODO(jojwang): Move all useful FLT const to a shared file.
 const TEXT_TO_STATUS_ENUM = {
@@ -145,7 +145,7 @@ export class MrBulkApprovalUpdate extends PolymerElement {
 
   fetchApprovals(evt) {
     const message = {issueRefs: this.issueRefs};
-    window.prpcClient.call('monorail.Issues', 'ListApplicableFieldDefs', message).then(
+    prpcClient.call('monorail.Issues', 'ListApplicableFieldDefs', message).then(
       (resp) => {
         const root = this.shadowRoot;
         if (resp.fieldDefs) {
@@ -195,7 +195,7 @@ export class MrBulkApprovalUpdate extends PolymerElement {
     if (Object.keys(delta).length) {
       message.approvalDelta = delta;
     }
-    window.prpcClient.call('monorail.Issues', 'BulkUpdateApprovals', message).then(
+    prpcClient.call('monorail.Issues', 'BulkUpdateApprovals', message).then(
       (resp) => {
         if (resp.issueRefs && resp.issueRefs.length) {
           const idsStr = Array.from(resp.issueRefs, (ref) => ref.localId).join(', ');

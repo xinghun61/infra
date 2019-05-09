@@ -10,6 +10,7 @@ import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import {ISSUE_EDIT_PERMISSION} from 'elements/shared/permissions';
+import {prpcClient} from 'prpc-client-instance.js';
 
 export class MrRelatedIssuesTable extends connectStore(LitElement) {
   static get styles() {
@@ -225,7 +226,7 @@ export class MrRelatedIssuesTable extends connectStore(LitElement) {
     const src = srcArg.cells[0].issue;
     const target = targetArg.cells[0].issue;
 
-    const reorderRequest = window.prpcClient.call(
+    const reorderRequest = prpcClient.call(
       'monorail.Issues', 'RerankBlockedOnIssues', {
         issueRef: this.issueRef,
         movedRef: {

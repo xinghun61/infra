@@ -12,6 +12,7 @@ import {createReducer, createRequestReducer} from './redux-helpers.js';
 import * as project from './project.js';
 import {fieldValueMapKey} from
   '../issue-detail/metadata/shared/metadata-helpers.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 // Actions
 const SET_ISSUE_REF = 'SET_ISSUE_REF';
@@ -467,7 +468,7 @@ export const fetchReferencedUsers = (issue) => async (dispatch) => {
   });
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Users', 'ListReferencedUsers', {userRefs});
 
     const referencedUsers = new Map();
@@ -497,7 +498,7 @@ export const fetchRelatedIssues = (issue) => async (dispatch) => {
     issueRefs: refsToFetch,
   };
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'ListReferencedIssues', message);
 
     const relatedIssues = new Map();
@@ -532,7 +533,7 @@ export const fetch = (message) => async (dispatch) => {
   dispatch({type: FETCH_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'GetIssue', message
     );
     const movedToRef = resp.movedToRef;
@@ -557,7 +558,7 @@ export const fetchHotlists = (issue) => async (dispatch) => {
   dispatch({type: FETCH_HOTLISTS_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Features', 'ListHotlistsByIssue', {issue});
 
     const hotlists = (resp.hotlists || []);
@@ -574,7 +575,7 @@ export const fetchPermissions = (message) => async (dispatch) => {
   dispatch({type: FETCH_PERMISSIONS_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'ListIssuePermissions', message
     );
 
@@ -588,7 +589,7 @@ export const fetchComments = (message) => async (dispatch) => {
   dispatch({type: FETCH_COMMENTS_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'ListComments', message
     );
 
@@ -604,7 +605,7 @@ export const fetchIsStarred = (message) => async (dispatch) => {
   dispatch({type: FETCH_IS_STARRED_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'IsIssueStarred', message
     );
 
@@ -620,7 +621,7 @@ export const star = (issueRef, starred) => async (dispatch) => {
   const message = {issueRef, starred};
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'StarIssue', message
     );
 
@@ -638,7 +639,7 @@ export const presubmit = (message) => async (dispatch) => {
   dispatch({type: PRESUBMIT_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'PresubmitIssue', message);
 
     dispatch({type: PRESUBMIT_SUCCESS, presubmitResponse: resp});
@@ -651,7 +652,7 @@ export const updateApproval = (message) => async (dispatch) => {
   dispatch({type: UPDATE_APPROVAL_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'UpdateApproval', message);
 
     dispatch({type: UPDATE_APPROVAL_SUCCESS, approval: resp.approval});
@@ -667,7 +668,7 @@ export const update = (message) => async (dispatch) => {
   dispatch({type: UPDATE_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'UpdateIssue', message);
 
     dispatch({type: UPDATE_SUCCESS, issue: resp.issue});
@@ -684,7 +685,7 @@ export const convert = (message) => async (dispatch) => {
   dispatch({type: CONVERT_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Issues', 'ConvertIssueApprovalsTemplate', message);
 
     dispatch({type: CONVERT_SUCCESS, issue: resp.issue});

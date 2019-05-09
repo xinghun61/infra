@@ -4,6 +4,7 @@
 
 import {combineReducers} from 'redux';
 import {createReducer, createRequestReducer} from './redux-helpers.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 // Actions
 const FETCH_START = 'user/FETCH_START';
@@ -93,9 +94,9 @@ export const fetch = (displayName) => async (dispatch) => {
 
   try {
     const resp = await Promise.all([
-      window.prpcClient.call(
+      prpcClient.call(
         'monorail.Users', 'GetUser', message),
-      window.prpcClient.call(
+      prpcClient.call(
         'monorail.Users', 'GetMemberships', message),
     ]);
 
@@ -115,7 +116,7 @@ export const fetchHotlists = (displayName) => async (dispatch) => {
   dispatch({type: FETCH_HOTLISTS_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Features', 'ListHotlistsByUser', {user: {displayName}});
 
     const hotlists = resp.hotlists || [];
@@ -132,7 +133,7 @@ export const fetchPrefs = () => async (dispatch) => {
   dispatch({type: FETCH_PREFS_START});
 
   try {
-    const resp = await window.prpcClient.call(
+    const resp = await prpcClient.call(
       'monorail.Users', 'GetUserPrefs', {});
 
     const prefs = new Map((resp.prefs || []).map((pref) => {

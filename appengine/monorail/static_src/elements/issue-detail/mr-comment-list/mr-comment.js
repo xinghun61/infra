@@ -13,6 +13,7 @@ import 'elements/framework/mr-comment-content/mr-attachment.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:-?([a-z0-9-]+):)?(\d+)/i;
@@ -262,7 +263,7 @@ async function _deleteComment(comment) {
     projectName: comment.projectName,
     localId: comment.localId,
   };
-  await window.prpcClient.call('monorail.Issues', 'DeleteIssueComment', {
+  await prpcClient.call('monorail.Issues', 'DeleteIssueComment', {
     issueRef,
     sequenceNum: comment.sequenceNum,
     delete: comment.isDeleted === undefined,
@@ -275,7 +276,7 @@ async function _flagComment(comment) {
     projectName: comment.projectName,
     localId: comment.localId,
   };
-  await window.prpcClient.call('monorail.Issues', 'FlagComment', {
+  await prpcClient.call('monorail.Issues', 'FlagComment', {
     issueRef,
     sequenceNum: comment.sequenceNum,
     flag: comment.isSpam === undefined,

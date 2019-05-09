@@ -4,8 +4,7 @@
 
 import {assert, expect} from 'chai';
 import {MrAttachment} from './mr-attachment.js';
-import sinon from 'sinon';
-import AutoRefreshPrpcClient from 'prpc.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 let element;
 
@@ -13,22 +12,12 @@ describe('mr-attachment', () => {
   beforeEach(() => {
     element = document.createElement('mr-attachment');
     document.body.appendChild(element);
-
-    window.CS_env = {
-      token: 'rutabaga-token',
-      tokenExpiresSec: 1234,
-      app_version: 'rutabaga-version',
-    };
-    window.prpcClient = new AutoRefreshPrpcClient(
-      CS_env.token, CS_env.tokenExpiresSec);
-
-    sinon.stub(window.prpcClient, 'call').callsFake(
-      () => Promise.resolve({}));
+    sinon.stub(prpcClient, 'call').returns(Promise.resolve({}));
   });
 
   afterEach(() => {
     document.body.removeChild(element);
-    window.prpcClient.call.restore();
+    prpcClient.call.restore();
   });
 
   it('initializes', () => {
@@ -80,6 +69,8 @@ describe('mr-attachment', () => {
   });
 
   it('deletes attachment', async () => {
+    prpcClient.call.callsFake(() => Promise.resolve({}));
+
     element.attachment = {
       attachmentId: 67890,
       isDeleted: false,
@@ -93,7 +84,7 @@ describe('mr-attachment', () => {
     const deleteButton = element.shadowRoot.querySelector('chops-button');
     deleteButton.click();
 
-    assert.deepEqual(window.prpcClient.call.getCall(0).args, [
+    assert.deepEqual(prpcClient.call.getCall(0).args, [
       'monorail.Issues', 'DeleteAttachment',
       {
         issueRef: {
@@ -105,10 +96,11 @@ describe('mr-attachment', () => {
         delete: true,
       },
     ]);
-    assert.isTrue(window.prpcClient.call.calledOnce);
+    assert.isTrue(prpcClient.call.calledOnce);
   });
 
   it('undeletes attachment', async () => {
+    prpcClient.call.callsFake(() => Promise.resolve({}));
     element.attachment = {
       attachmentId: 67890,
       isDeleted: true,
@@ -122,7 +114,7 @@ describe('mr-attachment', () => {
     const deleteButton = element.shadowRoot.querySelector('chops-button');
     deleteButton.click();
 
-    assert.deepEqual(window.prpcClient.call.getCall(0).args, [
+    assert.deepEqual(prpcClient.call.getCall(0).args, [
       'monorail.Issues', 'DeleteAttachment',
       {
         issueRef: {
@@ -134,7 +126,7 @@ describe('mr-attachment', () => {
         delete: false,
       },
     ]);
-    assert.isTrue(window.prpcClient.call.calledOnce);
+    assert.isTrue(prpcClient.call.calledOnce);
   });
 
   it('view link is not displayed if not given', async () => {

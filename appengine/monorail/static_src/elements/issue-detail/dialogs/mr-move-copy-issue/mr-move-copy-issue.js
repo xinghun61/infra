@@ -10,6 +10,7 @@ import * as issue from 'elements/reducers/issue.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 export class MrMoveCopyIssue extends connectStore(LitElement) {
   static get styles() {
@@ -99,7 +100,7 @@ export class MrMoveCopyIssue extends connectStore(LitElement) {
 
   save() {
     const method = this._action + 'Issue';
-    window.prpcClient.call('monorail.Issues', method, {
+    prpcClient.call('monorail.Issues', method, {
       issueRef: this.issueRef,
       targetProjectName: this.shadowRoot.querySelector(
         '#targetProjectInput').value,
