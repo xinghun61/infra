@@ -21,6 +21,9 @@ message Config {
 
     // A list of Assigner config(s).
     repeated Assigner assigners = 3;
+
+    // The endpoint for RotaNG APIs.
+    string rotang_hostname = 4;
 }
 
 // IssueQuery describes the issue query to be used for searching unassigned

@@ -39,9 +39,46 @@ func validateConfig(c *validation.Context, configSet, path string, content []byt
 		c.Errorf("not a valid Config proto message: %s", err)
 		return nil
 	}
+
+	validateAccessGroup(c, cfg.AccessGroup)
+	validateMonorailHostname(c, cfg.MonorailHostname)
+	validateAssigners(c, cfg.Assigners)
+	validateRotangHostname(c, cfg.RotangHostname)
+	return nil
+}
+
+func validateAccessGroup(c *validation.Context, group string) {
+	c.Enter("access_group: %s", group)
+	if group == "" {
+		c.Errorf("empty value is not allowed")
+	}
+	c.Exit()
+}
+
+func validateMonorailHostname(c *validation.Context, hostname string) {
+	c.Enter("monorail_hostname")
+	if hostname == "" {
+		c.Errorf("empty value is not allowed")
+	} else if _, err := url.Parse(hostname); err != nil {
+		c.Errorf("invalid hostname: %s", hostname)
+	}
+	c.Exit()
+}
+
+func validateRotangHostname(c *validation.Context, hostname string) {
+	c.Enter("rotang_hostname")
+	if hostname == "" {
+		c.Errorf("empty value is not allowed")
+	} else if _, err := url.Parse(hostname); err != nil {
+		c.Errorf("invalid hostname: %s", hostname)
+	}
+	c.Exit()
+}
+
+func validateAssigners(c *validation.Context, assigners []*Assigner) {
 	// check duplicate IDs.
-	seen := stringset.New(len(cfg.Assigners))
-	for i, assigner := range cfg.Assigners {
+	seen := stringset.New(len(assigners))
+	for i, assigner := range assigners {
 		c.Enter("assigner #%d:%s", i+1, assigner.Id)
 		if !seen.Add(assigner.Id) {
 			c.Errorf("duplicate id")
@@ -49,7 +86,6 @@ func validateConfig(c *validation.Context, configSet, path string, content []byt
 		validateAssigner(c, assigner)
 		c.Exit()
 	}
-	return nil
 }
 
 func validateAssigner(c *validation.Context, assigner *Assigner) {

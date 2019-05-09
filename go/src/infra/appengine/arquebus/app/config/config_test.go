@@ -27,6 +27,7 @@ func createConfig(id string) *Config {
 	return &Config{
 		AccessGroup:      "trooper",
 		MonorailHostname: "example.com",
+		RotangHostname:   "example.net",
 		Assigners:        []*Assigner{&cfg},
 	}
 }
@@ -57,8 +58,16 @@ func TestConfigValidator(t *testing.T) {
 		So(validate(cfg), ShouldBeNil)
 	})
 
-	Convey("empty config is valid", t, func() {
-		So(validate(&Config{}), ShouldBeNil)
+	Convey("empty monorail_hostname is not valid", t, func() {
+		cfg := createConfig("my-assigner")
+		cfg.MonorailHostname = ""
+		So(validate(cfg), ShouldErrLike, "empty value is not allowed")
+	})
+
+	Convey("empty rotang_hostname is not valid", t, func() {
+		cfg := createConfig("my-assigner")
+		cfg.RotangHostname = ""
+		So(validate(cfg), ShouldErrLike, "empty value is not allowed")
 	})
 
 	Convey("validateConfig catches errors", t, func() {
