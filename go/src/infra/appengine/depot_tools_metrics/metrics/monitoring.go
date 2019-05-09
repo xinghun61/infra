@@ -21,12 +21,16 @@ import (
 const chromiumSrc = "https://chromium.googlesource.com/chromium/src"
 
 var (
-	// GitPushLatency keeps track of how long it takes to run git push per repo.
-	GitPushLatency = metric.NewCumulativeDistribution(
-		"depot_tools_metrics/git_push_latency",
-		"Time it takes to run git push.",
-		&types.MetricMetadata{Units: types.Milliseconds},
-		distribution.DefaultBucketer,
+	// GitLatency keeps track of how long it takes to run a git command per repo and exit code.
+	// We only keep track of the git commands executed by a depot_tools command.
+	GitLatency = metric.NewCumulativeDistribution(
+		"depot_tools_metrics/git/latency",
+		"Time it takes to run a git command.",
+		&types.MetricMetadata{Units: types.Seconds},
+		// A growth factor if 1.045 with 200 buckets covers up to about 100m,
+		// which is the interval we're interested about.
+		distribution.GeometricBucketer(1.045, 200),
+		field.String("command"),
 		field.Int("exit_code"),
 		field.String("repo"),
 	)
@@ -48,6 +52,6 @@ func reportGitPushMetrics(ctx context.Context, m schema.Metrics) {
 		if sc.Command != "git push" {
 			continue
 		}
-		GitPushLatency.Add(ctx, sc.ExecutionTime, sc.ExitCode, repo)
+		GitLatency.Add(ctx, sc.ExecutionTime, "git push", sc.ExitCode, repo)
 	}
 }

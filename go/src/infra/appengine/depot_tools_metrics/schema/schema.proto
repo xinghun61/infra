@@ -36,7 +36,7 @@ message HttpRequest {
   // The HTTP response status.
   int64 status = 5;
 
-  // The latency of the HTTP request in ms.
+  // The latency of the HTTP request in seconds.
   // TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
   double response_time = 6;
 }
@@ -51,7 +51,7 @@ message SubCommand {
   // |knownSubCommandArguments| as defined in metrics/constants.go.
   repeated string arguments = 2;
 
-  // The runtime of the sub-command runtime in ms.
+  // The runtime of the sub-command runtime in seconds.
   // TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
   double execution_time = 3;
 
@@ -76,7 +76,7 @@ message Metrics {
   // as defined in metrics/constants.go.
   repeated string arguments = 4;
 
-  // The runtime of the command in ms.
+  // The runtime of the command in seconds.
   // TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
   double execution_time = 5;
 

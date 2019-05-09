@@ -46,7 +46,7 @@ type HttpRequest struct {
 	Arguments []string `protobuf:"bytes,4,rep,name=arguments,proto3" json:"arguments,omitempty"`
 	// The HTTP response status.
 	Status int64 `protobuf:"varint,5,opt,name=status,proto3" json:"status,omitempty"`
-	// The latency of the HTTP request in ms.
+	// The latency of the HTTP request in seconds.
 	// TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
 	ResponseTime         float64  `protobuf:"fixed64,6,opt,name=response_time,json=responseTime,proto3" json:"response_time,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -129,7 +129,7 @@ type SubCommand struct {
 	// The arguments passed to the sub-command. All arguments must be
 	// |knownSubCommandArguments| as defined in metrics/constants.go.
 	Arguments []string `protobuf:"bytes,2,rep,name=arguments,proto3" json:"arguments,omitempty"`
-	// The runtime of the sub-command runtime in ms.
+	// The runtime of the sub-command runtime in seconds.
 	// TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
 	ExecutionTime float64 `protobuf:"fixed64,3,opt,name=execution_time,json=executionTime,proto3" json:"execution_time,omitempty"`
 	// The exit code of the sub-command.
@@ -205,7 +205,7 @@ type Metrics struct {
 	// The arguments passed to the command. All arguments must be |knownArguments|
 	// as defined in metrics/constants.go.
 	Arguments []string `protobuf:"bytes,4,rep,name=arguments,proto3" json:"arguments,omitempty"`
-	// The runtime of the command in ms.
+	// The runtime of the command in seconds.
 	// TODO(ehmaldonado): Consider converting to google.protobuf.Duration.
 	ExecutionTime float64 `protobuf:"fixed64,5,opt,name=execution_time,json=executionTime,proto3" json:"execution_time,omitempty"`
 	// The exit code of the command.
