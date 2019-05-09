@@ -560,6 +560,14 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		results := &tricium.Data_Results{}
 		analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.c", false, cp[".c"], results)
 		So(results, ShouldResemble, expected)
+
+		Convey("unless the entire word is in the ignore list", func() {
+			fileContent := "token WontFix is OK"
+
+			results := &tricium.Data_Results{}
+			analyzeFile(bufio.NewScanner(strings.NewReader(fileContent)), "test.txt", true, cp[".txt"], results)
+			So(results.Comments, ShouldBeEmpty)
+		})
 	})
 }
 

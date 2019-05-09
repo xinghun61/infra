@@ -51,12 +51,13 @@ var (
 	// ignoredWords are words that might be in the dictionary but shouldn't be
 	// flagged.
 	ignoredWords = []string{
-		"als",    // "ambient light sensor"
-		"backed", // "backed by"
-		"ect",    // effective connection type
-		"gae",    // Google App Engine
-		"seeked", // JS event
-		"tast",   // Name of a ChromeOS test
+		"als",     // "ambient light sensor"
+		"backed",  // "backed by"
+		"ect",     // effective connection type
+		"gae",     // Google App Engine
+		"seeked",  // JS event
+		"tast",    // Name of a ChromeOS test
+		"wontfix", // Monorail bug status
 	}
 	textFileExts = []string{".txt", ".md"}
 
@@ -244,6 +245,11 @@ func analyzeWords(commentWord, stopPattern string,
 		// which are more likely to be false positives because they usually
 		// aren't real words, and may be constant identifiers.
 		if wordToCheck == strings.ToUpper(wordToCheck) {
+			continue
+		}
+
+		// Check if the word is in the ignore list (even if camelcased).
+		if inSlice(strings.ToLower(wordToCheck), ignoredWords) {
 			continue
 		}
 
