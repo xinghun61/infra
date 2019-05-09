@@ -299,7 +299,7 @@ describe('autolink', () => {
     });
 
     it('test implied link regex string', () => {
-      const impliedLinkRE = refRegs[2];
+      const impliedLinkRE = refRegs[3];
       const str = 'incomplete.com .help.com hey.net/other="(blah)"';
       let match;
       let actualMatches = [];
@@ -311,7 +311,7 @@ describe('autolink', () => {
     });
 
     it('test full link regex string', () => {
-      const isLinkRE = refRegs[3];
+      const isLinkRE = refRegs[2];
       const str =
         'https://www.go.com ' +
         'nospacehttps://www.blah.com http://website.net/other="(}])"><)';
@@ -326,8 +326,8 @@ describe('autolink', () => {
     });
 
     it('Replace URL plain text', () => {
-      const match = refRegs[2].exec('link here: (website.net/other="here").');
-      refRegs[2].lastIndex = 0;
+      const match = refRegs[3].exec('link here: (website.net/other="here").');
+      refRegs[3].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
         actualTextRuns,
@@ -341,8 +341,8 @@ describe('autolink', () => {
     });
 
     it('Replace URL existing http', () => {
-      const match = refRegs[3].exec('link here: (https://website.net/other="here").');
-      refRegs[3].lastIndex = 0;
+      const match = refRegs[2].exec('link here: (https://website.net/other="here").');
+      refRegs[2].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
         actualTextRuns,
@@ -355,8 +355,8 @@ describe('autolink', () => {
     });
 
     it('Replace URL with short-link as substring', () => {
-      const match = refRegs[3].exec('https://website.net/who/me/yes/you');
-      refRegs[3].lastIndex = 0;
+      const match = refRegs[2].exec('https://website.net/who/me/yes/you');
+      refRegs[2].lastIndex = 0;
       const actualTextRuns = replacer(match);
 
       assert.deepEqual(

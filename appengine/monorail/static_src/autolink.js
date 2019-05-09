@@ -70,8 +70,12 @@ Components.set(
     extractRefs: (match, _currentProjectName) => {
       return [match[0]];
     },
-    refRegs: [SHORT_LINK_RE, NUMERIC_SHORT_LINK_RE, IMPLIED_LINK_RE,
-      IS_LINK_RE],
+    refRegs: [
+      SHORT_LINK_RE,
+      NUMERIC_SHORT_LINK_RE,
+      IS_LINK_RE,
+      IMPLIED_LINK_RE,
+    ],
     replacer: ReplaceLinkRef,
   }
 );
