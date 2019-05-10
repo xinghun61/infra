@@ -11,6 +11,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/sync/parallel"
 	"golang.org/x/net/context"
 )
 
@@ -26,10 +28,16 @@ type Announcement struct {
 
 // Platform contains information for where and how an ancestor Announcement should be displayed.
 type Platform struct {
-	ID              int64          `gae:"$id"`
 	AnnouncementKey *datastore.Key `gae:"$parent"`
-	Name            string
+	Name            string         `gae:"$id"`
 	URLPaths        []string
+}
+
+func (a *Announcement) getPlatforms(c context.Context) ([]*Platform, error) {
+	platforms := []*Platform{}
+	q := datastore.NewQuery("Platform").Ancestor(datastore.KeyForObj(c, a))
+	err := datastore.GetAll(c, q, &platforms)
+	return platforms, err
 }
 
 // ToProto takes a slice of Platforms that is assumed to belong
@@ -78,6 +86,8 @@ func ConvertPlatforms(platforms []*Platform) (convertedPlatforms []*dashpb.Platf
 	return
 }
 
+// TODO(jojwang): update this to return dashpb.Announcement
+
 // CreateLiveAnnouncement takes announcement information and Platforms to build
 // an Announcement and adds AnnouncementKeys to all platforms and puts all
 // structs in Datastore.
@@ -85,7 +95,8 @@ func ConvertPlatforms(platforms []*Platform) (convertedPlatforms []*dashpb.Platf
 // It returns (announcement, nil) on success, and (nil, err) on datastore errors.
 func CreateLiveAnnouncement(c context.Context, message, creator string, platforms []*Platform) (*Announcement, error) {
 	announcement := &Announcement{
-		StartTime: time.Now().UTC(),
+		// datastore will only store timestamps precise to microseconds.
+		StartTime: clock.Now(c).UTC().Truncate(time.Microsecond),
 		Message:   message,
 		Creator:   creator,
 	}
@@ -109,3 +120,68 @@ func CreateLiveAnnouncement(c context.Context, message, creator string, platform
 	}
 	return announcement, nil
 }
+
+// GetLiveAnnouncements returns dashpb.Announcements that are not retired.
+// If a platformName is specified, only live Announcements that are ancestor to the
+// platform will be returned. Otherwise, all live Announcements will be returned.
+//
+// It returns (announcements, nil) on success, and (nil, err) on datastore or conversion errors.
+func GetLiveAnnouncements(c context.Context, platformName string) ([]*dashpb.Announcement, error) {
+	var liveAnns []*Announcement
+	annQ := datastore.NewQuery("Announcement").Eq("Retired", false)
+	if err := datastore.GetAll(c, annQ, &liveAnns); err != nil {
+		return nil, fmt.Errorf("error getting Announcement entities - %s", err)
+	}
+
+	finalAnns := liveAnns
+	if platformName != "" {
+		finalAnns = make([]*Announcement, 0, len(liveAnns))
+		pKeys := make([]*datastore.Key, len(liveAnns))
+		for i, ann := range liveAnns {
+			pKeys[i] = datastore.NewKey(c, "Platform", platformName, 0, datastore.KeyForObj(c, ann))
+		}
+		existsR, err := datastore.Exists(c, pKeys)
+		if err != nil {
+			return nil, fmt.Errorf("error checking for platform existence - %s", err)
+		}
+		for i, ann := range liveAnns {
+			if existsR.Get(0, i) {
+				finalAnns = append(finalAnns, ann)
+			}
+		}
+	}
+	return GetAllAnnouncementsPlatforms(c, finalAnns)
+}
+
+// GetAllAnnouncementsPlatforms takes Announcements that have incomplete or empty
+// Platforms, fetches the platforms from datastore, and returns everything in dashpb.Announcements.
+//
+// It returns (announcements, nil) on success, and (nil, err) on datastore or conversion errors.
+func GetAllAnnouncementsPlatforms(c context.Context, announcements []*Announcement) ([]*dashpb.Announcement, error) {
+	annProtos := make([]*dashpb.Announcement, len(announcements))
+	err := parallel.FanOutIn(func(workC chan<- func() error) {
+		for i, ann := range announcements {
+			i := i
+			ann := ann
+			workC <- func() error {
+				platforms, err := ann.getPlatforms(c)
+				if err != nil {
+					return fmt.Errorf("error getting Platform entities -%s", err)
+				}
+				annProtos[i], err = ann.ToProto(platforms)
+				if err != nil {
+					return fmt.Errorf("error converting Announcement - %s", err)
+				}
+				return nil
+			}
+		}
+	})
+	if err != nil {
+		return nil, err
+	}
+	return annProtos, nil
+}
+
+// TODO(jojwang)
+// func GetRetiredAnnouncements(offset int) ([]*dashpb.Announcement, error)
+// func RetireAnnouncement(announcementId int64) error

@@ -13,6 +13,7 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/appengine/gaetesting"
+	"go.chromium.org/luci/common/clock/testclock"
 )
 
 type getServiceTest struct {
@@ -67,6 +68,7 @@ var testIncs = []ServiceIncident{
 
 func newTestContext() context.Context {
 	ctx := gaetesting.TestingContext()
+	ctx, _ = testclock.UseTime(ctx, testclock.TestRecentTimeUTC)
 	testing := datastore.GetTestable(ctx)
 	testing.Consistent(true)
 	testing.AutoIndex(true)

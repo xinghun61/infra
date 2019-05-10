@@ -16,6 +16,18 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+var chickenAnn = &Announcement{Message: "chicken is missing", Creator: "farmer1"}
+var cowAnn = &Announcement{Message: "cow is missing", Creator: "farmer2"}
+var retiredAnn = &Announcement{Message: "fox is missing", Creator: "farmer3", Retired: true}
+
+var chickBarnPlat = &Platform{Name: "barn"}
+var chickHousePlat = &Platform{Name: "house", URLPaths: []string{"kitchen/*"}}
+var chickenPlats = []*Platform{chickBarnPlat, chickHousePlat}
+
+var cowBarnPlat = &Platform{Name: "barn"}
+var cowFieldPlat = &Platform{Name: "field"}
+var cowPlats = []*Platform{cowBarnPlat, cowFieldPlat}
+
 func TestConvertAnnouncement(t *testing.T) {
 	startTS := int64(764797594)
 	endTS := int64(764883994)
@@ -39,7 +51,6 @@ func TestConvertAnnouncement(t *testing.T) {
 					Name:            "gerrit",
 					URLPaths:        []string{"c/infra/infra/*", "src/*"},
 					AnnouncementKey: &datastore.Key{},
-					ID:              123456,
 				},
 			},
 			expected: &dashpb.Announcement{
@@ -110,6 +121,32 @@ func TestCreateLiveAnnouncement(t *testing.T) {
 				So(datastore.Get(ctx, platform), ShouldBeNil)
 			}
 			So(datastore.Get(ctx, ann), ShouldBeNil)
+		})
+	})
+}
+
+func TestGetLiveAnnouncements(t *testing.T) {
+	Convey("GetLiveAnnouncements", t, func() {
+		ctx := newTestContext()
+		datastore.Put(ctx, retiredAnn)
+		cowAnnFull, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
+		chickenAnnFull, _ := CreateLiveAnnouncement(ctx, chickenAnn.Message, chickenAnn.Creator, chickenPlats)
+		cowProto, _ := cowAnnFull.ToProto(cowPlats)
+		chickenProto, _ := chickenAnnFull.ToProto(chickenPlats)
+		Convey("get all live announcements", func() {
+			anns, err := GetLiveAnnouncements(ctx, "")
+			So(err, ShouldBeNil)
+			So(anns, ShouldResemble, []*dashpb.Announcement{cowProto, chickenProto})
+		})
+		Convey("get live announcements for house", func() {
+			anns, err := GetLiveAnnouncements(ctx, "house")
+			So(err, ShouldBeNil)
+			So(anns, ShouldResemble, []*dashpb.Announcement{chickenProto})
+		})
+		Convey("get live announcements for barn", func() {
+			anns, err := GetLiveAnnouncements(ctx, "barn")
+			So(err, ShouldBeNil)
+			So(anns, ShouldResemble, []*dashpb.Announcement{cowProto, chickenProto})
 		})
 	})
 }

@@ -15,6 +15,7 @@ type announcementsService struct{}
 func (s *announcementsService) CreateLiveAnnouncement(ctx context.Context, _ *dashpb.CreateLiveAnnouncementRequest) (*dashpb.CreateLiveAnnouncementResponse, error) {
 	// TODO(jojwang): call ingestPlatforms anningesters.go and
 	// check logged in user has permission to create an announcement
+	// check len(req.platforms) > 0
 	// before calling backend.CreateLiveAnnouncement
 	return &dashpb.CreateLiveAnnouncementResponse{}, nil
 }
