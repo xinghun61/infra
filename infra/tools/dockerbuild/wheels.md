@@ -1317,7 +1317,6 @@ wheel: <
 * *manylinux-x86*
 * *manylinux-x86-ucs2*
 * *windows-x64*
-* *windows-x86*
 
 ## **grpc-google-iam-admin-v1**
 

@@ -205,9 +205,11 @@ def BuildPackageFromSource(system, wheel, src, env=None):
       '.',
     ]
 
-    extra_env = {
-      'host_alias': dx.platform.cross_triple,
-    }
+    extra_env = {}
+    if dx.platform:
+      extra_env = {
+        'host_alias': dx.platform.cross_triple,
+      }
     if env:
       extra_env.update(env)
 

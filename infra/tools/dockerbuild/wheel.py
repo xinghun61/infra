@@ -172,7 +172,10 @@ SPECS.update({s.spec.tag: s for s in assert_sorted('SourceOrPrebuilt',
       'greenlet', '0.4.15', packaged=(
         'manylinux-x64',
         'windows-x64',
-      )
+      ),
+      skip_plat=[
+        'windows-x86',
+      ]
   ),
   SourceOrPrebuilt('grpcio', '1.4.0'),
   SourceOrPrebuilt('lazy-object-proxy', '1.3.1',
