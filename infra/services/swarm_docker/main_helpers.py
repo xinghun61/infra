@@ -250,8 +250,7 @@ def launch_containers(
               'Container %s is out of date. Shutting it down.', c.name)
           c.kill_swarming_bot()
 
-  # Make sure all requested containers are running.
-  if not draining_host:
+    # Make sure all requested containers are running.
     def _create_container(container_desc):
       try:
         with flock(container_desc.lock_file):
