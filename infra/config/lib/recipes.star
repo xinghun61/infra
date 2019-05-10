@@ -61,7 +61,7 @@ def simulation_tester(
     )
 
 
-def roll_trybots(upstream, downstream, cq_group):
+def roll_trybots(upstream, downstream, cq_group, os = 'Ubuntu-14.04'):
   """Defines a bunch of recipe roller trybots, one per downstream project."""
   for proj in downstream:
     name = '%s downstream Recipe Roll tester from %s' % (_friendly(proj), _friendly(upstream))
@@ -76,7 +76,7 @@ def roll_trybots(upstream, downstream, cq_group):
             'downstream_url': _repo_url(proj),
         },
         dimensions = {
-            'os': 'Ubuntu-14.04',
+            'os': os,
             'cpu': 'x86-64',
             'pool': 'luci.flex.try',
         },
