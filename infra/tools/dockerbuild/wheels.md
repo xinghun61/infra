@@ -45,6 +45,20 @@ wheel: <
 
 * *universal*
 
+## **Click**
+
+### 7.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/click-py2_py3"
+  version: "version:7.0"
+>
+```
+
+
+* *universal*
+
 ## **Django**
 
 ### 1.5.1
@@ -99,6 +113,18 @@ wheel: <
 
 * *universal*
 
+### 2.10.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/jinja2-py2_py3"
+  version: "version:2.10.1"
+>
+```
+
+
+* *universal*
+
 ## **Markdown**
 
 ### 3.0.1
@@ -134,6 +160,29 @@ wheel: <
 * *manylinux-x64-ucs2*
 * *manylinux-x86*
 * *manylinux-x86-ucs2*
+
+### 1.1.1
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/markupsafe/${vpython_platform}"
+  version: "version:1.1.1"
+>
+```
+
+
+* *linux-arm64*
+* *linux-armv6*
+* *linux-mips*
+* *linux-mips64*
+* *linux-mipsel*
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
+* *windows-x64*
+* *windows-x86*
 
 ## **MySQL-python**
 
@@ -206,6 +255,20 @@ wheel: <
 
 * *manylinux-x64*
 * *manylinux-x86*
+
+## **Werkzeug**
+
+### 0.15.2
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/werkzeug-py2_py3"
+  version: "version:0.15.2"
+>
+```
+
+
+* *universal*
 
 ## **absl-py**
 
