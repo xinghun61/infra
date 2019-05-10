@@ -57,5 +57,6 @@ ci_builder(name = 'luci-gae-continuous-trusty-64', os = 'Ubuntu-14.04')
 ci_builder(name = 'luci-gae-continuous-mac', os = 'Mac-10.13')
 ci_builder(name = 'luci-gae-continuous-win', os = 'Windows-10')
 
-try_builder(name = 'Luci-GAE Linux Trusty 64 Tester', os = 'Ubuntu-14.04')
-try_builder(name = 'Luci-GAE Presubmit', os = 'Ubuntu-14.04', presubmit = True)
+try_builder(name = 'luci-gae-try-linux-trusty-64', os = 'Ubuntu-14.04')
+try_builder(name = 'luci-gae-try-linux-xenial-64', os = 'Ubuntu-16.04')
+try_builder(name = 'luci-gae-try-presubmit', os = 'Ubuntu-16.04', presubmit = True)
