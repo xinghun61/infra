@@ -1381,6 +1381,20 @@ wheel: <
 
 * *universal*
 
+## **itsdangerous**
+
+### 1.1.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/itsdangerous-py2_py3"
+  version: "version:1.1.0"
+>
+```
+
+
+* *universal*
+
 ## **json5**
 
 ### 0.6.0
