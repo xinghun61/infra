@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import cgi
 import datetime
 import json
 import logging
@@ -167,7 +168,8 @@ class TSMonJSHandler(webapp2.RequestHandler):
 
       if not metric:
         self.response.set_status(400)
-        self.response.write('Metric "%s" is not defined.' % name)
+        self.response.write('Metric "%s" is not defined.' %
+                            cgi.escape(name))
         logging.warning(
             'gae_ts_mon error: Metric "%s" is not defined.', name)
         return
@@ -179,7 +181,8 @@ class TSMonJSHandler(webapp2.RequestHandler):
         metric_field_keys = set(fs.name for fs in metric.field_spec)
         if set(fields.keys()) != metric_field_keys:
           self.response.set_status(400)
-          self.response.write('Supplied fields do not match metric "%s".' % name)
+          self.response.write('Supplied fields do not match metric "%s".' %
+                              cgi.escape(name))
           logging.warning(
               'gae_ts_mon error: Supplied fields do not match metric "%s".',
               name)

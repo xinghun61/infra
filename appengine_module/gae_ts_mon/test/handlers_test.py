@@ -208,6 +208,31 @@ class TSMonJSHandlerTest(test_case.TestCase):
     self.assertEqual(self.response.status_int, 400)
     self.assertIn('is not defined', self.response.body)
 
+  def test_post_metrics_malcious_metric_name(self):
+    """Metric name is echoed back in a safely escaped form."""
+    self.request.body = json.dumps({
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/not_defined<script>alert(1)</script>',
+            'ValueType': 2,
+          },
+          'Cells': [{
+            'value': 'rutabaga',
+            'fields': {
+              'client_id': '789',
+              'rutabaga_id': '789',
+            },
+          }],
+        },
+      ],
+    })
+    self.ts_mon_handler.post()
+
+    self.assertEqual(self.response.status_int, 400)
+    self.assertNotIn('<script>', self.response.body)
+    self.assertIn('is not defined', self.response.body)
+
   def test_post_metrics_invalid_fields(self):
     """Test case when metric name is fine but fields are not."""
     self.request.body = json.dumps({
@@ -230,6 +255,31 @@ class TSMonJSHandlerTest(test_case.TestCase):
     self.ts_mon_handler.post()
 
     self.assertEqual(self.response.status_int, 400)
+    self.assertIn('fields do not match', self.response.body)
+
+  def test_post_metrics_maliciou_fields(self):
+    """Invalid fields are echoed in a safely escaped format."""
+    self.request.body = json.dumps({
+      'metrics': [
+        {
+          'MetricInfo': {
+            'Name': 'frontend/boolean_test',
+            'ValueType': 2,
+          },
+          'Cells': [{
+            'value': True,
+            'fields': {
+              'client_id<script>alert(1)</script>': '789',
+              'rutabaga_id': '789',
+            },
+          }],
+        },
+      ],
+    })
+    self.ts_mon_handler.post()
+
+    self.assertEqual(self.response.status_int, 400)
+    self.assertNotIn('<script>', self.response.body)
     self.assertIn('fields do not match', self.response.body)
 
   def test_post_rejects_cumulative_without_start_time(self):
