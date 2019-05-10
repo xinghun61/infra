@@ -39,17 +39,21 @@ describe('chops-timestamp', () => {
     assert.instanceOf(element, ChopsTimestamp);
   });
 
-  it('changing timestamp changes date', () => {
+  it('changing timestamp changes date', async () => {
     const timestamp = 1548808276;
     element.timestamp = String(timestamp);
+
+    await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
       FORMATTER.format(new Date(timestamp * 1000)));
   });
 
-  it('parses ISO dates', () => {
+  it('parses ISO dates', async () => {
     const timestamp = '2016-11-11';
     element.timestamp = timestamp;
+
+    await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
       FORMATTER.format(new Date(timestamp)));
@@ -57,24 +61,30 @@ describe('chops-timestamp', () => {
 
   it('invalid timestamp format', () => {
     expect(() => {
-      element.timestamp = 'random string';
+      element._parseTimestamp('random string');
     }).to.throw('Timestamp is in an invalid format.');
   });
 
-  it('short time renders shorter time', () => {
+  it('short time renders shorter time', async () => {
     element.short = true;
     element.timestamp = '5';
+
+    await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
       `just now`);
 
     element.timestamp = '60';
 
+    await element.updateComplete;
+
     assert.include(element.shadowRoot.textContent,
       `a minute from now`);
 
     const timestamp = 1548808276;
     element.timestamp = String(timestamp);
+
+    await element.updateComplete;
 
     assert.include(element.shadowRoot.textContent,
       SHORT_FORMATTER.format(timestamp * 1000));

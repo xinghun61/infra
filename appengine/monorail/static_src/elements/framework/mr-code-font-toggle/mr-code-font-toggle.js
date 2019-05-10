@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html} from 'lit-element';
 
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
@@ -17,33 +16,22 @@ import {prpcClient} from 'prpc-client-instance.js';
  * causes issue description and comment text to switch to monospace
  * font and the setting is saved in the user's preferences.
  */
-export class MrCodeFontToggle extends connectStore(PolymerElement) {
-  static get template() {
+export class MrCodeFontToggle extends connectStore(LitElement) {
+  render() {
     return html`
       <chops-toggle
-         checked="[[_codeFont]]"
-         on-checked-change="_checkedChangeHandler"
-         title="Code font"
+        ?checked=${this._codeFont}
+        @checked-change=${this._checkedChangeHandler}
+        title="Code font"
        >Code</chops-toggle>
     `;
   }
 
-  static get is() {
-    return 'mr-code-font-toggle';
-  }
-
   static get properties() {
     return {
-      prefs: Object,
-      userDisplayName: String,
-      initialValue: {
-        type: Boolean,
-        value: false,
-      },
-      _codeFont: {
-        type: Boolean,
-        computed: '_computeCodeFont(prefs, initialValue)',
-      },
+      prefs: {type: Object},
+      userDisplayName: {type: String},
+      initialValue: {type: Boolean},
     };
   }
 
@@ -51,7 +39,14 @@ export class MrCodeFontToggle extends connectStore(PolymerElement) {
     this.prefs = user.user(state).prefs;
   }
 
-  _computeCodeFont(prefs, initialValue) {
+  constructor() {
+    super();
+    this.initialValue = false;
+    this.userDisplayName = '';
+  }
+
+  get _codeFont() {
+    const {prefs, initialValue} = this;
     if (!prefs) return initialValue;
     return prefs.get('code_font') === 'true';
   }
@@ -81,4 +76,4 @@ export class MrCodeFontToggle extends connectStore(PolymerElement) {
     }
   }
 }
-customElements.define(MrCodeFontToggle.is, MrCodeFontToggle);
+customElements.define('mr-code-font-toggle', MrCodeFontToggle);

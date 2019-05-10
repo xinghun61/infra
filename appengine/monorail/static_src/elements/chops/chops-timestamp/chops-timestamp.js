@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html} from 'lit-element';
 
 import {standardTime, standardTimeShort} from './chops-timestamp-helpers';
 
@@ -15,15 +14,11 @@ import {standardTime, standardTimeShort} from './chops-timestamp-helpers';
  * @customElement
  * @polymer
  */
-export class ChopsTimestamp extends PolymerElement {
-  static get template() {
+export class ChopsTimestamp extends LitElement {
+  render() {
     return html`
-      [[_displayedTime]]
+      ${this._displayedTime}
     `;
-  }
-
-  static get is() {
-    return 'chops-timestamp';
   }
 
   static get properties() {
@@ -31,32 +26,35 @@ export class ChopsTimestamp extends PolymerElement {
       /** The data for the time which can be in any format readable by
        *  Date.parse.
        */
-      timestamp: String,
+      timestamp: {type: String},
       /** When true, a shorter version of the date will be displayed. */
-      short: {
-        type: Boolean,
-        value: false,
-      },
-      /** Show the full timestamp on hover. */
-      title: {
-        type: String,
-        reflectToAttribute: true,
-        computed: '_renderFullTime(date)',
-      },
-      /** The Date object, which is stored in UTC, to be processed. */
-      _date: {
-        type: Object,
-        computed: '_computeDate(timestamp)',
-      },
-      /** The displayed time. */
-      _displayedTime: {
-        type: String,
-        computed: '_computeDisplayedTime(_date, short)',
-      },
+      short: {type: Boolean},
+      /** The Date object, which is stored in UTC, to be converted to a string. */
+      _date: {type: Object},
     };
   }
 
-  _computeDate(timestamp) {
+  get _displayedTime() {
+    const date = this._date;
+    const short = this.short;
+    // TODO(zhangtiff): Add logic to dynamically re-compute relative time
+    //   based on set intervals.
+    if (!date) return;
+    if (short) {
+      return standardTimeShort(date);
+    }
+    return standardTime(date);
+  }
+
+  update(changedProperties) {
+    if (changedProperties.has('timestamp')) {
+      this._date = this._parseTimestamp(this.timestamp);
+      this.setAttribute('title', standardTime(this._date));
+    }
+    super.update(changedProperties);
+  }
+
+  _parseTimestamp(timestamp) {
     if (!timestamp) return;
 
     let unixTimeMs = 0;
@@ -77,19 +75,5 @@ export class ChopsTimestamp extends PolymerElement {
     }
     return new Date(unixTimeMs);
   }
-
-  _computeDisplayedTime(date, short) {
-    // TODO(zhangtiff): Add logic to dynamically re-compute relative time
-    //   based on set intervals.
-    if (!date) return;
-    if (short) {
-      return standardTimeShort(date);
-    }
-    return standardTime(date);
-  }
-
-  _renderFullTime(date) {
-    return standardTime(date);
-  }
 }
-customElements.define(ChopsTimestamp.is, ChopsTimestamp);
+customElements.define('chops-timestamp', ChopsTimestamp);

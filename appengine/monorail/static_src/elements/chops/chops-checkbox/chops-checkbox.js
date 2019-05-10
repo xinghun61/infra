@@ -79,9 +79,7 @@ export class ChopsCheckbox extends LitElement {
 
   static get properties() {
     return {
-      label: {
-        type: String,
-      },
+      label: {type: String},
       /**
        * Note: At the moment, this component does not manage its own
        * internal checked state. It expects its checked state to come
@@ -91,17 +89,8 @@ export class ChopsCheckbox extends LitElement {
        * This can be generalized in the future to support multiple
        * ways of managing checked state if needed.
        **/
-      checked: {
-        type: Boolean,
-      },
+      checked: {type: Boolean},
     };
-  }
-
-  update(changedProperties) {
-    if (changedProperties.has('checked')) {
-      this._checkedChange(this.checked);
-    }
-    super.update(changedProperties);
   }
 
   click() {

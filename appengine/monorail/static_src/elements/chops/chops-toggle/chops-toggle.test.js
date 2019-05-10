@@ -22,12 +22,14 @@ describe('chops-toggle', () => {
     assert.instanceOf(element, ChopsToggle);
   });
 
-  it('clicking toggle dispatches checked-change event', () => {
+  it('clicking toggle dispatches checked-change event', async () => {
     element.checked = false;
     sinon.stub(window, 'CustomEvent');
     sinon.stub(element, 'dispatchEvent');
 
-    element.shadowRoot.querySelector('#checkbox').click();
+    await element.updateComplete;
+
+    element.click();
 
     assert.deepEqual(window.CustomEvent.args[0][0], 'checked-change');
     assert.deepEqual(window.CustomEvent.args[0][1], {

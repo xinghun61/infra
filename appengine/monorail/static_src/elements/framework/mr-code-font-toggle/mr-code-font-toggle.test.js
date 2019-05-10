@@ -25,26 +25,30 @@ describe('mr-code-font-toggle', () => {
     assert.instanceOf(element, MrCodeFontToggle);
   });
 
-  it('toggle font', () => {
+  it('toggle font', async () => {
     element.userDisplayName = 'test@example.com';
-    const chopsToggle = element.shadowRoot.querySelector('chops-toggle');
-    const label = chopsToggle.shadowRoot.querySelector('label');
 
-    label.click(); // Toggle it on.
-    assert.deepEqual(prpcClient.call.getCall(0).args, [
+    await element.updateComplete;
+
+    const chopsToggle = element.shadowRoot.querySelector('chops-toggle');
+
+    chopsToggle.click(); // Toggle it on.
+    await element.updateComplete;
+
+    sinon.assert.calledWith(
+      prpcClient.call,
       'monorail.Users',
       'SetUserPrefs',
-      {prefs: [{name: 'code_font', value: 'true'}]},
-    ]);
-    assert.isTrue(prpcClient.call.calledOnce);
+      {prefs: [{name: 'code_font', value: 'true'}]});
 
     element.prefs = new Map([['code_font', 'true']]);
-    label.click(); // Toggle it off.
-    assert.deepEqual(prpcClient.call.getCall(1).args, [
+    chopsToggle.click(); // Toggle it off.
+    await element.updateComplete;
+
+    sinon.assert.calledWith(
+      prpcClient.call,
       'monorail.Users',
       'SetUserPrefs',
-      {prefs: [{name: 'code_font', value: 'false'}]},
-    ]);
-    assert.isTrue(prpcClient.call.calledTwice);
+      {prefs: [{name: 'code_font', value: 'false'}]});
   });
 });
