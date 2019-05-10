@@ -31,11 +31,14 @@ class SourceOrPrebuilt(Builder):
           available via PyPi. If None, a default set of packaged wheels will be
           generated based on standard PyPi expectations, encoded with each
           Platform's "packaged" property.
+      env (Dict[str, str]|None): Envvars to set when building the wheel from
+          source.
       kwargs: Keyword arguments forwarded to Builder.
     """
     self._pypi_src = source.pypi_sdist(name, version)
     self._packaged = set(
       kwargs.pop('packaged', (p.name for p in platform.PACKAGED)))
+    self._env = kwargs.pop('env', None)
 
     super(SourceOrPrebuilt, self).__init__(
       Spec(name, self._pypi_src.version, universal=None, default=True),
@@ -44,7 +47,7 @@ class SourceOrPrebuilt(Builder):
   def build_fn(self, system, wheel):
     if wheel.plat.name in self._packaged:
       return BuildPackageFromPyPiWheel(system, wheel)
-    return BuildPackageFromSource(system, wheel, self._pypi_src)
+    return BuildPackageFromSource(system, wheel, self._pypi_src, self._env)
 
 
 class MultiWheel(Builder):

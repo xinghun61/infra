@@ -14,6 +14,9 @@ class Platform(collections.namedtuple('Platform', (
     # (e.g., "cp27-cp27mu").
     'manylinux_name',
 
+    # The value to pass to e.g. `./configure --host ...`
+    'cross_triple',
+
     # The Python wheel ABI.
     'wheel_abi',
 
@@ -52,6 +55,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='linux-armv6',
         manylinux_name=None,
+        cross_triple='arm-linux-gnueabihf',
         wheel_abi='cp27mu',
         wheel_plat=(
           'linux_armv6l', 'linux_armv7l', 'linux_armv8l', 'linux_armv9l'),
@@ -64,6 +68,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='linux-arm64',
         manylinux_name=None,
+        cross_triple='aarch64-unknown-linux-gnueabi',
         wheel_abi='cp27mu',
         wheel_plat=('linux_arm64', 'linux_aarch64'),
         dockcross_base='linux-arm64',
@@ -75,6 +80,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='linux-mipsel',
         manylinux_name=None,
+        cross_triple='mipsel-linux-gnu',
         wheel_abi='cp27mu',
         wheel_plat=('linux_mipsel',),
         dockcross_base='linux-mipsel',
@@ -88,6 +94,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='linux-mips',
         manylinux_name=None,
+        cross_triple='mips-unknown-linux-gnu',
         wheel_abi='cp27mu',
         wheel_plat=('linux_mips',),
         dockcross_base='linux-mips',
@@ -98,6 +105,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='linux-mips64',
         manylinux_name=None,
+        cross_triple='mips-unknown-linux-gnu',
         wheel_abi='cp27mu',
         wheel_plat=('linux_mips64',),
         dockcross_base='linux-mips',
@@ -109,6 +117,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='manylinux-x64',
         manylinux_name='cp27-cp27mu',
+        cross_triple='x86_64-linux-gnu',
         wheel_abi='cp27mu',
         wheel_plat=('manylinux1_x86_64',),
         dockcross_base='manylinux-x64',
@@ -122,6 +131,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='manylinux-x64-ucs2',
         manylinux_name='cp27-cp27m',
+        cross_triple='x86_64-linux-gnu',
         wheel_abi='cp27m',
         wheel_plat=('manylinux1_x86_64',),
         dockcross_base='manylinux-x64',
@@ -133,6 +143,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='manylinux-x86',
         manylinux_name='cp27-cp27mu',
+        cross_triple='i686-linux-gnu',
         wheel_abi='cp27mu',
         wheel_plat=('manylinux1_i686',),
         dockcross_base='manylinux-x86',
@@ -146,6 +157,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='manylinux-x86-ucs2',
         manylinux_name='cp27-cp27m',
+        cross_triple='i686-linux-gnu',
         wheel_abi='cp27m',
         wheel_plat=('manylinux1_i686',),
         dockcross_base='manylinux-x86',
@@ -157,6 +169,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='mac-x64',
         manylinux_name=None,
+        cross_triple='',
         wheel_abi='cp27m',
         wheel_plat=('macosx_10_6_intel',),
         dockcross_base=None,
@@ -168,6 +181,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='windows-x86',
         manylinux_name=None,
+        cross_triple='',
         wheel_abi='cp27m',
         wheel_plat=('win32',),
         dockcross_base=None,
@@ -179,6 +193,7 @@ ALL = {p.name: p for p in (
     Platform(
         name='windows-x64',
         manylinux_name=None,
+        cross_triple='',
         wheel_abi='cp27m',
         wheel_plat=('win_amd64',),
         dockcross_base=None,
@@ -205,6 +220,7 @@ def NativePlatform():
 UNIVERSAL = Platform(
     name='universal',
     manylinux_name=None,
+    cross_triple='',
     wheel_abi='none',
     wheel_plat=('any',),
     dockcross_base=None,

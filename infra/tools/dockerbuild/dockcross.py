@@ -39,7 +39,7 @@ def _docker_image_exists(system, identifier):
 class Builder(object):
 
   # Tag used for pushed Docker images.
-  DOCKER_IMAGE_TAG = 'v1.4.4'
+  DOCKER_IMAGE_TAG = 'v1.4.5'
 
   # The Docker repository to use.
   DOCKER_REPOSITORY = 'https://gcr.io'
@@ -382,7 +382,7 @@ SOURCES = {
 
   'get-pip': source.remote_file(
     name='get-pip',
-    version='1',
+    version='19.1',
     url='https://bootstrap.pypa.io/get-pip.py',
   ),
 

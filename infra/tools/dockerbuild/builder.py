@@ -183,13 +183,15 @@ def BuildPackageFromPyPiWheel(system, wheel):
     StageWheelForPackage(system, tdir, wheel)
 
 
-def BuildPackageFromSource(system, wheel, src):
+def BuildPackageFromSource(system, wheel, src, env=None):
   """Creates Python wheel from src.
 
   Args:
     system (dockerbuild.runtime.System): Represents the local system.
     wheel (dockerbuild.wheel.Wheel): The wheel to build.
     src (dockerbuild.source.Source): The source to build the wheel from.
+    env (Dict[str, str]|None): Additional envvars to set while building the
+      wheel.
   """
   dx = system.dockcross_image(wheel.plat)
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
@@ -203,11 +205,18 @@ def BuildPackageFromSource(system, wheel, src):
       '.',
     ]
 
+    extra_env = {
+      'host_alias': dx.platform.cross_triple,
+    }
+    if env:
+      extra_env.update(env)
+
     util.check_run(
         system,
         dx,
         tdir,
         cmd,
-        cwd=build_dir)
+        cwd=build_dir,
+        env=extra_env)
 
     StageWheelForPackage(system, tdir, wheel)

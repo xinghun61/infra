@@ -112,7 +112,7 @@ RUN ARCHIVE_PATH=$$(basename ${python27_relpath}) \
 ENV \
   PYTHONPATH="$${LOCAL_PREFIX}/lib/python2.7/site-packages" \
   LDFLAGS="-L${cross_python_prefix}/lib $$LDFLAGS" \
-  CFLAGS="-I${cross_python_prefix}/include/python2.7 $$CFLAGS" \
+  CPPFLAGS="-I${cross_python_prefix}/include/python2.7 $$CPPFLAGS" \
   PYTHONXCPREFIX="${cross_python_prefix}" \
   XPYTHONPATH="$${CROSS_PREFIX}/lib/python2.7/site-packages"
 
