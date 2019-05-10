@@ -14,7 +14,8 @@ infra.cq_group(
 )
 
 build.presubmit(
-    name = 'Luci-py Presubmit',
+    name = 'luci-py-try-presubmit',
     cq_group = 'luci-py cq',
     repo_name = 'luci_py',
+    os  = 'Ubuntu-16.04',
 )
