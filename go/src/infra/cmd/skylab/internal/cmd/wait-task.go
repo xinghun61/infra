@@ -48,8 +48,6 @@ type taskResult struct {
 }
 
 type waitTaskResult struct {
-	// TODO(akeshet): Delete this field, it is replaced by TaskResult.
-	SuiteResult  *taskResult   `json:"suite-result"`
 	TaskResult   *taskResult   `json:"task-result"`
 	Stdout       string        `json:"stdout"`
 	ChildResults []*taskResult `json:"child-results"`
@@ -186,7 +184,6 @@ func postWaitTask(ctx context.Context, taskID string, s *swarming.Service, w io.
 	}
 	tr := &taskResult{Name: results[0].Name, State: results[0].State, Failure: results[0].Failure}
 	result := &waitTaskResult{
-		SuiteResult:  tr,
 		TaskResult:   tr,
 		Stdout:       stdouts[0].Output,
 		ChildResults: childResults,
