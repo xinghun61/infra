@@ -55,6 +55,7 @@ specified multiple times.`)
 		c.Flags.StringVar(&c.qsAccount, "qs-account", "", "Quotascheduler account for test jobs.")
 		c.Flags.BoolVar(&c.orphan, "orphan", false, "Create a suite that doesn't wait for its child tests to finish. Internal or expert use ONLY!")
 		c.Flags.BoolVar(&c.json, "json", false, "Format output as JSON")
+		c.Flags.StringVar(&c.taskName, "task-name", "", "Optional name to be used for the Swarming task.")
 		return c
 	},
 }
@@ -75,6 +76,7 @@ type createSuiteRun struct {
 	qsAccount   string
 	orphan      bool
 	json        bool
+	taskName    string
 }
 
 func (c *createSuiteRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -121,6 +123,9 @@ func (c *createSuiteRun) innerRun(a subcommands.Application, args []string, env 
 
 	task := taskInfo{
 		Name: c.image + "-" + suiteName,
+	}
+	if c.taskName != "" {
+		task.Name = c.taskName
 	}
 
 	task.ID, err = createSuiteTask(ctx, s, task.Name, c.priority, slices, tags)
