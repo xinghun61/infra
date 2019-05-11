@@ -54,7 +54,18 @@ Components.set(
   }
 );
 Components.set(
-  '02-user-emails',
+  '02-full-urls',
+  {
+    lookup: null,
+    extractRefs: (match, _currentProjectName) => {
+      return [match[0]];
+    },
+    refRegs: [IS_LINK_RE],
+    replacer: ReplaceLinkRef,
+  }
+);
+Components.set(
+  '03-user-emails',
   {
     lookup: LookupReferencedUsers,
     extractRefs: (match, _currentProjectName) => {
@@ -65,7 +76,16 @@ Components.set(
   }
 );
 Components.set(
-  '03-urls',
+  '04-tracker-regular',
+  {
+    lookup: LookupReferencedIssues,
+    extractRefs: ExtractTrackerProjectAndIssueIds,
+    refRegs: [ISSUE_TRACKER_RE],
+    replacer: ReplaceTrackerIssueRef,
+  }
+);
+Components.set(
+  '05-linkify-shorthand',
   {
     lookup: null,
     extractRefs: (match, _currentProjectName) => {
@@ -74,19 +94,9 @@ Components.set(
     refRegs: [
       SHORT_LINK_RE,
       NUMERIC_SHORT_LINK_RE,
-      IS_LINK_RE,
       IMPLIED_LINK_RE,
     ],
     replacer: ReplaceLinkRef,
-  }
-);
-Components.set(
-  '04-tracker-regular',
-  {
-    lookup: LookupReferencedIssues,
-    extractRefs: ExtractTrackerProjectAndIssueIds,
-    refRegs: [ISSUE_TRACKER_RE],
-    replacer: ReplaceTrackerIssueRef,
   }
 );
 Components.set(

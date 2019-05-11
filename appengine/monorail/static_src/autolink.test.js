@@ -235,7 +235,7 @@ describe('autolink', () => {
   });
 
   describe('user email component functions', () => {
-    const {extractRefs, refRegs, replacer} = components.get('02-user-emails');
+    const {extractRefs, refRegs, replacer} = components.get('03-user-emails');
     const str = 'We should ask User1@gmail.com to confirm.';
     const match = refRegs[0].exec(str);
     refRegs[0].lastIndex = 0;
@@ -268,8 +268,74 @@ describe('autolink', () => {
     });
   });
 
-  describe('url component functions.', () => {
-    const {refRegs, replacer} = components.get('03-urls');
+  describe('full url component functions.', () => {
+    const {refRegs, replacer} = components.get('02-full-urls');
+
+    it('test full link regex string', () => {
+      const isLinkRE = refRegs[0];
+      const str =
+        'https://www.go.com ' +
+        'nospacehttps://www.blah.com http://website.net/other="(}])"><)';
+      let match;
+      const actualMatches = [];
+      while ((match = isLinkRE.exec(str)) !== null) {
+        actualMatches.push(match[0]);
+      }
+      assert.deepEqual(
+        actualMatches,
+        ['https://www.go.com', 'http://website.net/other="(}])">']);
+    });
+
+    it('Replace URL existing http', () => {
+      const match = refRegs[0].exec('link here: (https://website.net/other="here").');
+      refRegs[0].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+      assert.deepEqual(
+        actualTextRuns,
+        [{tag: 'a',
+          href: 'https://website.net/other="here"',
+          content: 'https://website.net/other="here"',
+        },
+        {content: ').'}]
+      );
+    });
+
+    it('Replace URL with short-link as substring', () => {
+      const match = refRegs[0].exec('https://website.net/who/me/yes/you');
+      refRegs[0].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+
+      assert.deepEqual(
+        actualTextRuns,
+        [{tag: 'a',
+          href: 'https://website.net/who/me/yes/you',
+          content: 'https://website.net/who/me/yes/you',
+        }]
+      );
+    });
+
+    it('Replace URL with email as substring', () => {
+      const match = refRegs[0].exec('https://website.net/who/foo@example.com');
+      refRegs[0].lastIndex = 0;
+      const actualTextRuns = replacer(match);
+
+      assert.deepEqual(
+        actualTextRuns,
+        [{tag: 'a',
+          href: 'https://website.net/who/foo@example.com',
+          content: 'https://website.net/who/foo@example.com',
+        }]
+      );
+    });
+  });
+
+  describe('shorthand url component functions.', () => {
+    const {refRegs, replacer} = components.get('05-linkify-shorthand');
+
+    it('Short link does not match URL with short-link as substring', () => {
+      refRegs[0].lastIndex = 0;
+      assert.isNull(refRegs[0].exec('https://website.net/who/me/yes/you'));
+    });
 
     it('test short link regex string', () => {
       const shortLinkRE = refRegs[0];
@@ -299,7 +365,7 @@ describe('autolink', () => {
     });
 
     it('test implied link regex string', () => {
-      const impliedLinkRE = refRegs[3];
+      const impliedLinkRE = refRegs[2];
       const str = 'incomplete.com .help.com hey.net/other="(blah)"';
       let match;
       let actualMatches = [];
@@ -310,24 +376,9 @@ describe('autolink', () => {
         actualMatches, ['incomplete.com', ' hey.net/other="(blah)"']);
     });
 
-    it('test full link regex string', () => {
-      const isLinkRE = refRegs[2];
-      const str =
-        'https://www.go.com ' +
-        'nospacehttps://www.blah.com http://website.net/other="(}])"><)';
-      let match;
-      let actualMatches = [];
-      while ((match = isLinkRE.exec(str)) !== null) {
-        actualMatches.push(match[0]);
-      }
-      assert.deepEqual(
-        actualMatches,
-        ['https://www.go.com', 'http://website.net/other="(}])">']);
-    });
-
     it('Replace URL plain text', () => {
-      const match = refRegs[3].exec('link here: (website.net/other="here").');
-      refRegs[3].lastIndex = 0;
+      const match = refRegs[2].exec('link here: (website.net/other="here").');
+      refRegs[2].lastIndex = 0;
       const actualTextRuns = replacer(match);
       assert.deepEqual(
         actualTextRuns,
@@ -340,36 +391,19 @@ describe('autolink', () => {
       );
     });
 
-    it('Replace URL existing http', () => {
-      const match = refRegs[2].exec('link here: (https://website.net/other="here").');
-      refRegs[2].lastIndex = 0;
-      const actualTextRuns = replacer(match);
-      assert.deepEqual(
-        actualTextRuns,
-        [{tag: 'a',
-          href: 'https://website.net/other="here"',
-          content: 'https://website.net/other="here"',
-        },
-        {content: ').'}]
-      );
-    });
-
-    it('Replace URL with short-link as substring', () => {
-      const match = refRegs[2].exec('https://website.net/who/me/yes/you');
-      refRegs[2].lastIndex = 0;
-      const actualTextRuns = replacer(match);
-
-      assert.deepEqual(
-        actualTextRuns,
-        [{tag: 'a',
-          href: 'https://website.net/who/me/yes/you',
-          content: 'https://website.net/who/me/yes/you',
-        }]
-      );
-
-      // Short link re doesn't match.
+    it('Replace short link existing http', () => {
+      const match = refRegs[0].exec('link here: (http://who/me).');
       refRegs[0].lastIndex = 0;
-      assert.isNull(refRegs[0].exec('https://website.net/who/me/yes/you'));
+      const actualTextRuns = replacer(match);
+      assert.deepEqual(
+        actualTextRuns,
+        [{content: '('},
+          {tag: 'a',
+            href: 'http://who/me',
+            content: 'http://who/me',
+          },
+          {content: ').'}]
+      );
     });
 
     it('Replace short-link plain text', () => {
@@ -398,21 +432,6 @@ describe('autolink', () => {
             href: 'http://who/me',
             content: 'who/me',
           }]
-      );
-    });
-
-    it('Replace URL existing http', () => {
-      const match = refRegs[0].exec('link here: (http://who/me).');
-      refRegs[0].lastIndex = 0;
-      const actualTextRuns = replacer(match);
-      assert.deepEqual(
-        actualTextRuns,
-        [{content: '('},
-          {tag: 'a',
-            href: 'http://who/me',
-            content: 'http://who/me',
-          },
-          {content: ').'}]
       );
     });
 
@@ -518,7 +537,7 @@ describe('autolink', () => {
       openRefs: [{summary: 'monorail', projectName: 'monorail', localId: 123}],
       closedRefs: [{projectName: 'chromium', localId: 456}],
     });
-    componentRefs.set('02-user-emails', {
+    componentRefs.set('03-user-emails', {
       users: [{email: 'user2@example.com'}],
     });
 
