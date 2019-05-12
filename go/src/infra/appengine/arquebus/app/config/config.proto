@@ -35,20 +35,25 @@ message IssueQuery {
   repeated string project_names = 2;
 }
 
+// Oncall represents a rotation shift modelled in RotaNG.
+message Oncall {
+  // The name of a rotation.
+  string rotation = 1;
+
+  enum Position {
+    UNSET = 0;
+    PRIMARY = 1;
+    SECONDARY = 2;
+  }
+  // The oncall position in the shift.
+  Position position = 2;
+}
+
 // UserSource represents a single source to find a valid Monorail user to whom
 // Arquebus will assign or cc issues found.
 message UserSource {
   oneof from {
-    // TODO(crbug/849469) - document available query params for rotation and
-    // add a link here.
-
-    // rotation refers to a rotatation in RotaNG, and written in the following
-    // format.
-    // : rotation_name?position={primary,secondary}
-    //
-    // position is a required parameter and the value can be either primary
-    // or secondary.
-    string rotation = 1; // e.g., my-rotation?position=primary
+    Oncall oncall = 1;
 
     // user refers to the email address of a Monorail user account.
     string email = 2; // e.g., user@chromium.org

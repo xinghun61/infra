@@ -32,6 +32,12 @@ func createConfig(id string) *Config {
 	}
 }
 
+func createOncallSource(rotation string) *UserSource_Oncall {
+	return &UserSource_Oncall{
+		Oncall: &Oncall{Rotation: rotation, Position: Oncall_PRIMARY},
+	}
+}
+
 func TestConfigValidator(t *testing.T) {
 	t.Parallel()
 	rules := &validation.RuleSet{}
@@ -123,6 +129,24 @@ func TestConfigValidator(t *testing.T) {
 			So(validate(cfg), ShouldErrLike, "missing project_names")
 		})
 
+		Convey("for valid UserResource", func() {
+			cfg := createConfig("my-assigner")
+			assigner := cfg.Assigners[0]
+			source := &UserSource{}
+			assigner.Assignees[0] = source
+
+			Convey("with valid rotation names", func() {
+				source.From = createOncallSource("rotation")
+				So(validate(cfg), ShouldBeNil)
+				source.From = createOncallSource("r")
+				So(validate(cfg), ShouldBeNil)
+				source.From = createOncallSource("rotation-1")
+				So(validate(cfg), ShouldBeNil)
+				source.From = createOncallSource("My Oncall Rotation-2")
+				So(validate(cfg), ShouldBeNil)
+			})
+		})
+
 		Convey("for invalid UserResource", func() {
 			cfg := createConfig("my-assigner")
 			assigner := cfg.Assigners[0]
@@ -134,16 +158,20 @@ func TestConfigValidator(t *testing.T) {
 				So(validate(cfg), ShouldErrLike, "missing value")
 			})
 
-			Convey("with missing position in rotation", func() {
-				source.From = &UserSource_Rotation{Rotation: "rotation"}
-				So(validate(cfg), ShouldErrLike, "missing position")
-				source.From = &UserSource_Rotation{Rotation: "rotation?position"}
-				So(validate(cfg), ShouldErrLike, "missing position")
-			})
-
-			Convey("with invalid position in rotation", func() {
-				source.From = &UserSource_Rotation{Rotation: "rotation?position=left"}
-				So(validate(cfg), ShouldErrLike, "invalid position value")
+			Convey("with invalid rotation names", func() {
+				invalidID := "invalid id"
+				source.From = createOncallSource(" rotation")
+				So(validate(cfg), ShouldErrLike, invalidID)
+				source.From = createOncallSource("rotation ")
+				So(validate(cfg), ShouldErrLike, invalidID)
+				source.From = createOncallSource("r@otation")
+				So(validate(cfg), ShouldErrLike, invalidID)
+				source.From = createOncallSource("ro#tation")
+				So(validate(cfg), ShouldErrLike, invalidID)
+				source.From = createOncallSource(" ")
+				So(validate(cfg), ShouldErrLike, invalidID)
+				source.From = createOncallSource("")
+				So(validate(cfg), ShouldErrLike, invalidID)
 			})
 
 			Convey("with invalid user", func() {

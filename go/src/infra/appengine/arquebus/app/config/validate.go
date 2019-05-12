@@ -30,7 +30,8 @@ import (
 
 const (
 	// The regex rule that all assigner IDs must conform to.
-	assignerIDRegex = `^([a-z0-9]+-?)*[a-z0-9]$`
+	assignerIDRegex   = `^([a-z0-9]+-?)*[a-z0-9]$`
+	rotationNameRegex = `^([[:alnum:]][[:word:]- ]?)*[[:alnum:]]$`
 )
 
 func validateConfig(c *validation.Context, configSet, path string, content []byte) error {
@@ -147,33 +148,26 @@ func validateAssigner(c *validation.Context, assigner *Assigner) {
 }
 
 func validateUserSource(c *validation.Context, source *UserSource) {
-	rotation := source.GetRotation()
-	email := source.GetEmail()
-
-	if rotation != "" {
-		validateRotation(c, rotation)
-	} else if email != "" {
+	if oncall := source.GetOncall(); oncall != nil {
+		validateOncall(c, oncall)
+	} else if email := source.GetEmail(); email != "" {
 		validateEmail(c, email)
 	} else {
 		c.Errorf("missing value")
 	}
 }
 
-func validateRotation(c *validation.Context, rotation string) {
-	// The value of Rotation should be a valid URL without Scheme specified.
-	u, err := url.Parse(rotation)
-	if err != nil {
-		c.Errorf("invalid rotation: %s", err)
-	} else if u.Scheme != "" {
-		c.Errorf("scheme must not be specified: %s", u.Scheme)
+func validateOncall(c *validation.Context, oncall *Oncall) {
+	re := regexp.MustCompile(rotationNameRegex)
+	if !re.MatchString(oncall.Rotation) {
+		c.Errorf(
+			"invalid id; only alphabet and numeric characters are allowed, " +
+				"but a space, hyphen, or underscore may be put between " +
+				"the first and last characters.",
+		)
 	}
-
-	// position is a required parameter for rotation values.
-	position := u.Query().Get("position")
-	if position == "" {
-		c.Errorf("missing position")
-	} else if position != "primary" && position != "secondary" {
-		c.Errorf("invalid position value: %s", position)
+	if oncall.Position == Oncall_UNSET {
+		c.Errorf("missing oncall position")
 	}
 }
 
