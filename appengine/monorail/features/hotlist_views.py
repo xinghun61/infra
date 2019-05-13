@@ -69,9 +69,6 @@ class HotlistView(template_helpers.PBProxy):
           '/u/%s/hotlists/%s' % (
               owner.email, hotlist_pb.name))
 
-    if not self.visible:
-      return
-
     self.role_name = ''
     if viewed_user_id in hotlist_pb.owner_ids:
       self.role_name = 'owner'

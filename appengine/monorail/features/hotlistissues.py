@@ -124,19 +124,12 @@ class HotlistIssues(servlet.Servlet):
     return page_data
   # TODO(jojwang): implement peek issue on hover, implement starring issues
 
-  def _IsHotlistStarred(self, cnxn, logged_in_user_id, hotlist_id):
-    """Return whether the logged in user starred the viewed hotlist."""
-    if logged_in_user_id:
-      return self.services.hotlist_star.IsItemStarredBy(
-          cnxn, hotlist_id, logged_in_user_id)
-    return False
-
   def _GetHotlist(self, mr):
     """Retrieve the current hotlist."""
     if mr.hotlist_id is None:
       return None
     try:
-      hotlist = self.services.features.GetHotlist( mr.cnxn, mr.hotlist_id)
+      hotlist = self.services.features.GetHotlist(mr.cnxn, mr.hotlist_id)
     except features_svc.NoSuchHotlistException:
       self.abort(404, 'hotlist not found')
     return hotlist
