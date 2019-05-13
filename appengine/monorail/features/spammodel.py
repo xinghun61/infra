@@ -68,7 +68,7 @@ class TrainingDataExportTask(servlet.Servlet):
             fixed_summary.encode('utf-8'), fixed_comment.encode('utf-8'), email,
         ])
 
-      comments, _count = (
+      comments = (
           self.services.spam.GetTrainingComments(
               mr.cnxn, self.services.issue, since, offset=0, limit=BATCH_SIZE))
       total_comments = len(comments)

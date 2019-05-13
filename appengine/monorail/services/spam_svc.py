@@ -587,7 +587,9 @@ class SpamService(object):
     """
 
     # get all of the manual verdicts in the past day.
-    results = self.verdict_tbl.Select(cnxn,
+    results = self.verdict_tbl.Select(
+        cnxn,
+        distinct=True,
         cols=['comment_id'],
         where=[
             ('overruled = %s', [False]),
@@ -603,17 +605,7 @@ class SpamService(object):
     # Don't care about sequence numbers in this context yet.
     comments = issue_service.GetCommentsByID(cnxn, comment_ids,
         defaultdict(int))
-
-    count = self.verdict_tbl.SelectValue(cnxn,
-        col='COUNT(*)',
-        where=[
-            ('overruled = %s', [False]),
-            ('reason = %s', ['manual']),
-            ('comment_id IS NOT NULL', []),
-            ('created > %s', [since.isoformat()]),
-        ])
-
-    return comments, count
+    return comments
 
   def ExpungeUsersInSpam(self, cnxn, user_ids):
     """Removes all references to given users from Spam DB tables.
