@@ -392,27 +392,3 @@ class CreationTest(testing.AppengineTestCase):
     self.assertIsNone(b1)
     self.assertIsNone(ex2)
     self.assertIsNotNone(b2)
-
-  # @mock.patch('search.add_to_tag_index_async', autospec=True)
-  # def test_tag_index_contention(self, add_to_tag_index_async):
-
-  #   def mock_create_task_async(build):
-  #     sw = build.proto.infra.swarming
-  #     sw.hostname = 'swarming.example.com'
-  #     sw.task_id = str(build.proto.number)
-  #     return future(None)
-
-  #   swarming.create_task_async.side_effect = mock_create_task_async
-  #   add_to_tag_index_async.side_effect = Exception('contention')
-  #   swarming.cancel_task_async.side_effect = [
-  #       future(None), future_exception(Exception())
-  #   ]
-
-  #   with self.assertRaisesRegexp(Exception, 'contention'):
-  #     creation.add_many_async([
-  #         self.build_request(dict(tags=[dict(key='buildset', value='a')])),
-  #         self.build_request(dict(tags=[dict(key='buildset', value='a')])),
-  #     ]).get_result()
-
-  #   swarming.cancel_task_async.assert_any_call('swarming.example.com', '1')
-  #   swarming.cancel_task_async.assert_any_call('swarming.example.com', '2')

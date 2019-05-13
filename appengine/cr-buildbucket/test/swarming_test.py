@@ -194,7 +194,9 @@ class TaskDefTest(BaseTest):
     )
 
   def prepare_task_def(self, build):
-    return swarming.prepare_task_def_async(build, self.builder_cfg).get_result()
+    return swarming.prepare_task_def_async(
+        build, self.builder_cfg, self.settings.swarming
+    ).get_result()
 
   @parameterized.expand([
       ({'changes': 0},),

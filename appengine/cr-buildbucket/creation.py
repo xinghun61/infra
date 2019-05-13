@@ -264,7 +264,7 @@ class NewBuild(object):
       self.build = yield model.Build.get_by_id_async(build_id)
 
   @ndb.tasklet
-  def put_and_cache_async(self):
+  def put_and_cache_async(self, settings):
     """Puts a build, updates metrics and memcache."""
     assert self.build
     assert not self.exception
@@ -276,7 +276,9 @@ class NewBuild(object):
     if self.builder_cfg:  # pragma: no branch
       # This is a LUCI builder.
       try:
-        sync_task = yield swarming.create_sync_task_async(b, self.builder_cfg)
+        sync_task = yield swarming.create_sync_task_async(
+            b, self.builder_cfg, settings.swarming
+        )
       except errors.Error as ex:
         self.exception = ex
         return
@@ -370,7 +372,9 @@ def add_many_async(build_requests):
     yield _update_builders_async(to_create, now)
     yield _generate_build_numbers_async(to_create)
     yield search.update_tag_indexes_async([nb.build for nb in to_create])
-    yield [nb.put_and_cache_async() for nb in to_create]
+
+    settings = yield config.get_settings_async()
+    yield [nb.put_and_cache_async(settings) for nb in to_create]
 
   raise ndb.Return([nb.result() for nb in new_builds])
 

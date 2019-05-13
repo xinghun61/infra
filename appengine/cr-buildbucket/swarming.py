@@ -108,12 +108,6 @@ class CanaryTemplateNotFound(TemplateNotFound):
 
 
 @ndb.tasklet
-def _get_settings_async():  # pragma: no cover
-  settings = yield config.get_settings_async()
-  raise ndb.Return(settings.swarming)
-
-
-@ndb.tasklet
 def _get_task_template_async(canary, canary_required=True):
   """Gets a tuple (template_revision, template_dict, canary_bool).
 
@@ -827,7 +821,7 @@ def _setup_swarming_request_pubsub(task, build):
 
 
 @ndb.tasklet
-def prepare_task_def_async(build, builder_cfg, fake_build=False):
+def prepare_task_def_async(build, builder_cfg, settings, fake_build=False):
   """Prepares a swarming task definition.
 
   Validates the new build.
@@ -840,8 +834,6 @@ def prepare_task_def_async(build, builder_cfg, fake_build=False):
     raise errors.InvalidInputError(
         'Swarming buckets do not support creation of leased builds'
     )
-
-  settings = yield _get_settings_async()
 
   bp = build.proto
 
@@ -874,12 +866,14 @@ def prepare_task_def_async(build, builder_cfg, fake_build=False):
 
 
 @ndb.tasklet
-def create_sync_task_async(build, builder_cfg):  # pragma: no cover
+def create_sync_task_async(build, builder_cfg, settings):  # pragma: no cover
   """Returns def of a push task that maintains build state until it ends.
+
+  Settings is service_config_pb2.SwarmingSettings.
 
   Handled by TaskSyncBuild.
   """
-  task_def = yield prepare_task_def_async(build, builder_cfg)
+  task_def = yield prepare_task_def_async(build, builder_cfg, settings)
   payload = {
       'id': build.key.id(),
       'task_def': task_def,
