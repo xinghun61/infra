@@ -78,6 +78,9 @@ export class MrApp extends connectStore(PolymerElement) {
     // TODO(zhangtiff): Figure out some way to save Redux state between
     //   page loads.
 
+    // page doesn't handle users reloading the page or closing a tab.
+    window.onbeforeunload = this._confirmDiscardMessage.bind(this);
+
     page('*', (ctx, next) => {
       // Navigate to the requested element if a hash is present.
       if (ctx.hash) {
@@ -95,7 +98,8 @@ export class MrApp extends connectStore(PolymerElement) {
 
       // Check if there were forms with unsaved data before loading the next
       // page.
-      if (this._confirmDiscard()) {
+      const discardMessage = this._confirmDiscardMessage();
+      if (!discardMessage || confirm(discardMessage)) {
         // Clear the forms to be checked, since we're navigating away.
         store.dispatch(ui.clearDirtyForms());
       } else {
@@ -158,12 +162,12 @@ export class MrApp extends connectStore(PolymerElement) {
     });
   }
 
-  _confirmDiscard() {
-    if (!this.dirtyForms.length) return true;
+  _confirmDiscardMessage() {
+    if (!this.dirtyForms.length) return null;
     const dirtyFormsMessage =
       'Discard your changes in the following forms?\n' +
       arrayToEnglish(this.dirtyForms);
-    return confirm(dirtyFormsMessage);
+    return dirtyFormsMessage;
   }
 }
 
