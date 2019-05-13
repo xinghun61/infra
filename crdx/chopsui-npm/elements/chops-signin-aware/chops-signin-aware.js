@@ -28,19 +28,16 @@ export class ChopsSigninAware extends LitElement {
       authHeaders: {
         attribute: 'auth-headers',
         type: Object,
-        notify: true,
         readOnly: true,
       },
       profile: {
         attribute: 'profile',
         type: Object,
-        notify: true,
         readOnly: true,
       },
       signedIn: {
         attribute: 'signed-in',
         type: Boolean,
-        notify: true,
         readOnly: true,
       },
     };
