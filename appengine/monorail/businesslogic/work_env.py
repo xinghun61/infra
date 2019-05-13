@@ -1714,7 +1714,8 @@ class WorkEnv(object):
 
     # hotlist_ids = self.services.features.ExpungeUsersInHotlist(
     # self.mc.cnxn, user_ids)
-    # self.ExpungeHotlists(hotlist_ids)
+    # self.services.features.ExpungeHotlists(
+    #self.mc.cnxn, user_ids, self.services.star, self.services.user)
 
     # self.services.template.ExpungeUsersInTemplates(self.mc.cnxn, user_ids)
     # self.services.config.ExpungeUsersInConfgis(self.mc.cnxn, user_ids)
@@ -1730,12 +1731,6 @@ class WorkEnv(object):
   # FUTURE: DeleteGroup()
 
   ### Hotlist methods
-
-  def ExpungeHotlists(self, _hotlist_ids):
-    # self.services.star.ExpungeHotlistsInStar
-    # self.services.user.ExpungeHotlistsInUsers
-    # self.services.features.ExpungeHotlists
-    return
 
   def CreateHotlist(
       self, name, summary, description, editor_ids, issue_ids, is_private):

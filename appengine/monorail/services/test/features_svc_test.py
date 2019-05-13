@@ -9,7 +9,7 @@ import logging
 import mox
 import time
 import unittest
-from mock import Mock
+import mock
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
@@ -23,6 +23,8 @@ from framework import sql
 from proto import tracker_pb2
 from services import chart_svc
 from services import features_svc
+from services import star_svc
+from services import user_svc
 from testing import fake
 from tracker import tracker_bizobj
 from tracker import tracker_constants
@@ -159,8 +161,8 @@ class FeaturesServiceTest(unittest.TestCase):
     user_ids = [333L, 555L, 777L]
     commit = False
 
-    self.features_service.quickeditmostrecent_tbl.Delete = Mock()
-    self.features_service.quickedithistory_tbl.Delete = Mock()
+    self.features_service.quickeditmostrecent_tbl.Delete = mock.Mock()
+    self.features_service.quickedithistory_tbl.Delete = mock.Mock()
 
     self.features_service.ExpungeQuickEditsByUsers(self.cnxn, user_ids)
 
@@ -363,10 +365,10 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
     commit = False
 
     sv_rows = [(8,), (9,)]
-    self.features_service.user2savedquery_tbl.Select = Mock(
+    self.features_service.user2savedquery_tbl.Select = mock.Mock(
         return_value=sv_rows)
-    self.features_service.user2savedquery_tbl.Delete = Mock()
-    self.features_service.savedquery_tbl.Delete = Mock()
+    self.features_service.user2savedquery_tbl.Delete = mock.Mock()
+    self.features_service.savedquery_tbl.Delete = mock.Mock()
 
     self.features_service.ExpungeSavedQueriesByUsers(self.cnxn, user_ids)
 
@@ -832,6 +834,36 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
     self.mox.ReplayAll()
     self.features_service.DeleteHotlist(self.cnxn, 678, commit=False)
     self.mox.VerifyAll()
+
+  def testExpungeHotlists(self):
+    hotliststar_tbl = mock.Mock()
+    star_service = star_svc.AbstractStarService(
+        self.cache_manager, hotliststar_tbl, 'hotlist_id', 'user_id', 'hotlist')
+    hotliststar_tbl.Delete = mock.Mock()
+    user_service = user_svc.UserService(self.cache_manager)
+    user_service.hotlistvisithistory_tbl.Delete = mock.Mock()
+
+    self.features_service.hotlist2user_tbl.Delete = mock.Mock()
+    self.features_service.hotlist2issue_tbl.Delete = mock.Mock()
+    self.features_service.hotlist_tbl.Delete = mock.Mock()
+
+    hotlist_ids = [678, 679]
+    self.features_service.ExpungeHotlists(
+        self.cnxn, hotlist_ids, star_service, user_service)
+
+    star_calls = [mock.call(self.cnxn, commit=False, hotlist_id=hotlist_ids[0]),
+                  mock.call(self.cnxn, commit=False, hotlist_id=hotlist_ids[1])]
+    hotliststar_tbl.Delete.assert_has_calls(star_calls)
+
+    user_service.hotlistvisithistory_tbl.Delete.assert_called_once_with(
+        self.cnxn, commit=False, hotlist_id=hotlist_ids)
+
+    self.features_service.hotlist2user_tbl.Delete.assert_called_once_with(
+        self.cnxn, hotlist_id=hotlist_ids, commit=False)
+    self.features_service.hotlist2issue_tbl.Delete.assert_called_once_with(
+        self.cnxn, hotlist_id=hotlist_ids, commit=False)
+    self.features_service.hotlist_tbl.Delete.assert_called_once_with(
+        self.cnxn, id=hotlist_ids, commit=False)
 
   def testGetProjectIDsFromHotlist(self):
     self.features_service.hotlist2issue_tbl.Select(self.cnxn,

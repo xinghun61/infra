@@ -981,6 +981,19 @@ class FeaturesService(object):
       project_id = project_id[0]
       self.config_service.InvalidateMemcacheForEntireProject(project_id)
 
+  def ExpungeHotlists(self, cnxn, hotlist_ids, star_svc, user_svc):
+    """Wipes the given hotlists from the DB tables.
+
+    This method will not commit the operation. This method will not make
+    changes to in-memory data.
+    """
+    for hotlist_id in hotlist_ids:
+      star_svc.ExpungeStars(cnxn, hotlist_id, commit=False)
+    user_svc.ExpungeHotlistsFromHistory(cnxn, hotlist_ids, commit=False)
+    self.hotlist2user_tbl.Delete(cnxn, hotlist_id=hotlist_ids, commit=False)
+    self.hotlist2issue_tbl.Delete(cnxn, hotlist_id=hotlist_ids, commit=False)
+    self.hotlist_tbl.Delete(cnxn, id=hotlist_ids, commit=False)
+
 
 class HotlistAlreadyExists(Exception):
   """Tried to create a hotlist with the same name as another hotlist

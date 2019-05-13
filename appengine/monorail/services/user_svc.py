@@ -498,9 +498,9 @@ class UserService(object):
         [(hotlist_id, user_id, int(time.time()))],
         commit=commit)
 
-  def DeleteHotlistFromHistory(self, cnxn, hotlist_id, commit=True):
+  def ExpungeHotlistsFromHistory(self, cnxn, hotlist_ids, commit=True):
     self.hotlistvisithistory_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, commit=commit)
+        cnxn, hotlist_id=hotlist_ids, commit=commit)
 
   def TrimUserVisitedHotlists(self, cnxn, commit=True):
     """For any user who has visited more than 10 hotlists, trim history."""
@@ -517,7 +517,6 @@ class UserService(object):
          self.hotlistvisithistory_tbl.Delete(
              cnxn, user_id=user_id, where=[('viewed < %s', [cut_off_date])],
              commit=commit)
-
 
   ### Linked account invites
 
