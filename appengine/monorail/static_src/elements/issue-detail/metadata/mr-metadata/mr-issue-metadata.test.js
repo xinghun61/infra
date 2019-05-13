@@ -4,8 +4,7 @@
 
 import {assert} from 'chai';
 import {MrIssueMetadata} from './mr-issue-metadata.js';
-import {flush} from '@polymer/polymer/lib/utils/flush';
-
+import sinon from 'sinon';
 
 let element;
 
@@ -23,7 +22,21 @@ describe('mr-issue-metadata', () => {
     assert.instanceOf(element, MrIssueMetadata);
   });
 
-  it('labels render', () => {
+  it('clicking star toggles star', async () => {
+    sinon.spy(element, 'toggleStar');
+
+    await element.updateComplete;
+
+    assert.isTrue(element._canStar);
+    assert.isTrue(element.toggleStar.notCalled);
+
+    element.shadowRoot.querySelector('.star-button').click();
+    assert.isTrue(element.toggleStar.called);
+
+    element.toggleStar.restore();
+  });
+
+  it('labels render', async () => {
     element.issue = {
       labelRefs: [
         {label: 'test'},
@@ -35,7 +48,7 @@ describe('mr-issue-metadata', () => {
       ['test', {label: 'test', docstring: 'this is a docstring'}],
     ]);
 
-    flush();
+    await element.updateComplete;
 
     const labels = element.shadowRoot.querySelectorAll('.label');
 

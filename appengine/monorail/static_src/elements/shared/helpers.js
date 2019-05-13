@@ -31,6 +31,11 @@ export function arrayToEnglish(arr) {
   return arr.join(' and ');
 }
 
+export function pluralize(count, singular, pluralArg) {
+  const plural = pluralArg || singular + 's';
+  return count === 1 ? singular : plural;
+}
+
 export function isEmptyObject(obj) {
   return Object.keys(obj).length === 0;
 }

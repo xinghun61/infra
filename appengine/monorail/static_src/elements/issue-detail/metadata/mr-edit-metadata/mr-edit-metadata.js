@@ -28,8 +28,7 @@ import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
   ISSUE_EDIT_STATUS_PERMISSION, ISSUE_EDIT_OWNER_PERMISSION,
   ISSUE_EDIT_CC_PERMISSION,
 } from 'elements/shared/permissions.js';
-import {fieldDefsWithGroup, fieldDefsWithoutGroup,
-  valuesForField,
+import {fieldDefsWithGroup, fieldDefsWithoutGroup, valuesForField,
   HARDCODED_FIELD_GROUPS} from '../shared/metadata-helpers.js';
 
 

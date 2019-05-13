@@ -397,7 +397,7 @@ export const components = createSelector(
   project.componentsMap,
   (issue, components) => {
     if (!issue || !issue.componentRefs) return [];
-    return issue.componentRefs.map((comp) => components.get(comp.path));
+    return issue.componentRefs.map((comp) => components.get(comp.path) || comp);
   }
 );
 

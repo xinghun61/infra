@@ -2,17 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
+import {connectStore} from 'elements/reducers/base.js';
 import 'elements/chops/chops-timestamp/chops-timestamp.js';
 import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
-import {MetadataMixin} from
-  'elements/issue-detail/metadata/shared/metadata-mixin.js';
+
 import * as issue from 'elements/reducers/issue.js';
 import 'elements/shared/mr-shared-styles.js';
 import './mr-field-values.js';
+import {HARDCODED_FIELD_GROUPS, valuesForField, fieldDefsWithGroup,
+  fieldDefsWithoutGroup} from '../shared/metadata-helpers.js';
 
 /**
  * `<mr-metadata>`
@@ -20,236 +21,237 @@ import './mr-field-values.js';
  * Generalized metadata for either approvals or issues.
  *
  */
-export class MrMetadata extends MetadataMixin(PolymerElement) {
-  static get template() {
+export class MrMetadata extends connectStore(LitElement) {
+  static get styles() {
+    return css`
+      :host {
+        display: table;
+        table-layout: fixed;
+        width: 100%;
+      }
+      td, th {
+        padding: 0.5em 4px;
+        vertical-align: top;
+        text-overflow: ellipsis;
+        overflow: hidden;
+      }
+      td {
+        width: 60%;
+      }
+      th {
+        text-align: left;
+        width: 40%;
+      }
+      .group-separator {
+        border-top: var(--chops-normal-border);
+      }
+      .group-title {
+        font-weight: normal;
+        font-style: oblique;
+        border-bottom: var(--chops-normal-border);
+        text-align: center;
+      }
+    `;
+  }
+
+  render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <style include="mr-shared-styles">
-        :host {
-          display: table;
-          table-layout: fixed;
-          width: 100%;
-        }
-        td, th {
-          padding: 0.5em 4px;
-          vertical-align: top;
-          text-overflow: ellipsis;
-          overflow: hidden;
-        }
-        td {
-          width: 60%;
-        }
-        th {
-          text-align: left;
-          width: 40%;
-        }
-        .group-separator {
-          border-top: var(--chops-normal-border);
-        }
-        .group-title {
-          font-weight: normal;
-          font-style: oblique;
-          border-bottom: var(--chops-normal-border);
-          text-align: center;
-        }
-      </style>
-      <template is="dom-if" if="[[approvalStatus]]">
+      ${this.approvalStatus ? html`
         <tr>
           <th>Status:</th>
           <td>
-            [[approvalStatus]]
+            ${this.approvalStatus}
           </td>
         </tr>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[approvers.length]]">
+      ${this.approvers && this.approvers.length ? html`
         <tr>
           <th>Approvers:</th>
           <td>
-            <template is="dom-repeat" items="[[approvers]]">
+            ${this.approvers.map((approver) => html`
               <mr-user-link
-                user-ref="[[item]]"
+                .userRef=${approver}
                 showAvailabilityIcon
               ></mr-user-link>
               <br />
-            </template>
+            `)}
           </td>
         </tr>
-      </template>
-      <template is="dom-if" if="[[setter]]">
+      `: ''}
+
+      ${this.setter ? html`
         <th>Setter:</th>
         <td>
           <mr-user-link
-            user-ref="[[setter]]"
+            .userRef=${this.setter}
             showAvailabilityIcon
           ></mr-user-link>
         </td>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[owner]]">
-        <tr>
-          <th>Owner:</th>
-          <td>
-            <mr-user-link
-              user-ref="[[owner]]"
-              showAvailabilityIcon
-              showAvailabilityText
-            ></mr-user-link>
-          </td>
-        </tr>
-      </template>
+      ${this.owner ? html`
+        <th>Owner:</th>
+        <td>
+          <mr-user-link
+            .userRef=${this.owner}
+            showAvailabilityIcon
+            showAvailabilityText
+          ></mr-user-link>
+        </td>
+      `: ''}
 
-      <template is="dom-if" if="[[cc.length]]">
+      ${this.cc && this.cc.length ? html`
         <tr>
           <th>CC:</th>
           <td>
-            <template is="dom-repeat" items="[[cc]]">
+            ${this.cc.map((cc) => html`
               <mr-user-link
-                user-ref="[[item]]"
+                .userRef=${cc}
                 showAvailabilityIcon
               ></mr-user-link>
               <br />
-            </template>
+            `)}
           </td>
         </tr>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[issueStatus]]">
+      ${this.issueStatus ? html`
         <tr>
           <th>Status:</th>
           <td>
-            [[issueStatus.status]]
-            <em hidden$="[[!issueStatus.meansOpen]]">
-              (Open)
-            </em>
-            <em hidden$="[[issueStatus.meansOpen]]">
-              (Closed)
+            ${this.issueStatus.status}
+            <em>
+              ${this.issueStatus.meansOpen ? '(Open)' : '(Closed)'}
             </em>
           </td>
         </tr>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[_issueIsDuplicate(issueStatus)]]">
+      ${this.issueStatus === 'Duplicate' ? html`
         <tr>
           <th>MergedInto:</th>
           <td>
             <mr-issue-link
-              project-name="[[issueRef.projectName]]"
-              issue="[[mergedInto]]"
+              .projectName=${this.issueRef.projectName}
+              .issue=${this.mergedInto}
             ></mr-issue-link>
           </td>
         </tr>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[components.length]]">
+      ${this.components && this.components.length ? html`
         <tr>
           <th>Components:</th>
           <td>
-            <template is="dom-repeat" items="[[components]]">
-              <a href$="/p/[[issueRef.projectName]]/issues/list?q=component:[[item.path]]"
-                title$="[[item.path]] = [[item.docstring]]"
+            ${this.components.map((comp) => html`
+              <a href="/p/${this.issueRef.projectName}/issues/list?q=component:${comp.path}"
+                title="${comp.path}${comp.docstring ? ' = ' + comp.docstring : ''}"
               >
-                [[item.path]]</a><br />
-            </template>
+                ${comp.path}</a><br />
+            `)}
           </td>
         </tr>
-      </template>
+      `:''}
 
-      <template is="dom-if" if="[[modifiedTimestamp]]">
+      ${this.modifiedTimestamp ? html`
         <tr>
           <th>Modified:</th>
           <td>
-            <chops-timestamp timestamp="[[modifiedTimestamp]]" short></chops-timestamp>
+            <chops-timestamp
+              .timestamp=${this.modifiedTimestamp}
+              short
+            ></chops-timestamp>
           </td>
         </tr>
-      </template>
+      `:''}
 
-      <template is="dom-repeat" items="[[_fieldDefsWithGroups]]" as="group">
-        <tr>
-          <th class="group-title" colspan="2">
-            [[group.groupName]]
-          </th>
-        </tr>
-        <template is="dom-repeat" items="[[group.fieldDefs]]" as="field">
-          <tr hidden$="[[_fieldIsHidden(fieldValueMap, field)]]">
-            <th title$="[[field.docstring]]">[[field.fieldRef.fieldName]]:</th>
-            <td>
-              <mr-field-values
-                name="[[field.fieldRef.fieldName]]"
-                type="[[field.fieldRef.type]]"
-                values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
-                project-name="[[issueRef.projectName]]"
-              ></mr-field-values>
-            </td>
-          </tr>
-        </template>
-        <tr>
-          <th class="group-separator" colspan="2"></th>
-        </tr>
-      </template>
-
-      <template is="dom-repeat" items="[[_fieldDefsWithoutGroup]]" as="field">
-        <tr hidden$="[[_fieldIsHidden(fieldValueMap, field)]]">
-          <th title$="[[field.fieldRef.fieldName]]">[[field.fieldRef.fieldName]]:</th>
-          <td>
-            <mr-field-values
-              name="[[field.fieldRef.fieldName]]"
-              type="[[field.fieldRef.type]]"
-              values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName)]]"
-              project-name="[[issueRef.projectName]]"
-            ></mr-field-values>
-          </td>
-        </tr>
-      </template>
+      ${this._renderCustomFields()}
     `;
   }
 
-  static get is() {
-    return 'mr-metadata';
+  _renderCustomFields() {
+    const grouped = fieldDefsWithGroup(this.fieldDefs,
+      this.fieldGroups, this.issueType);
+    const ungrouped = fieldDefsWithoutGroup(this.fieldDefs,
+      this.fieldGroups, this.issueType);
+    return html`
+      ${grouped.map((group) => html`
+        <tr>
+          <th class="group-title" colspan="2">
+            ${group.groupName}
+          </th>
+        </tr>
+        ${this._renderCustomFieldList(group.fieldDefs)}
+        <tr>
+          <th class="group-separator" colspan="2"></th>
+        </tr>
+      `)}
+
+      ${this._renderCustomFieldList(ungrouped)}
+    `;
+  }
+
+  _renderCustomFieldList(fieldDefs) {
+    if (!fieldDefs || !fieldDefs.length) return '';
+    return fieldDefs.map((field) => {
+      const fieldValues = valuesForField(
+        this.fieldValueMap, field.fieldRef.fieldName) || [];
+      return html`
+        <tr ?hidden=${field.isNiche && !fieldValues.length}>
+          <th title=${field.docstring}>${field.fieldRef.fieldName}:</th>
+          <td>
+            <mr-field-values
+              .name=${field.fieldRef.fieldName}
+              .type=${field.fieldRef.type}
+              .values=${fieldValues}
+              .projectName=${this.issueRef.projectName}
+            ></mr-field-values>
+          </td>
+        </tr>
+      `;
+    });
   }
 
   static get properties() {
     return {
-      approvalStatus: String,
-      approvers: Array,
-      setter: Object,
-      cc: Array,
-      components: Array,
-      issueStatus: String,
-      mergedInto: Object,
-      owner: Object,
-      isApproval: {
-        type: Boolean,
-        value: false,
-      },
-      issueRef: Object,
-      role: {
-        type: String,
-        value: 'table',
-        reflectToAttribute: true,
-      },
-      fieldValueMap: Object, // Set by MetadataMixin.
+      approvalStatus: {type: Array},
+      approvers: {type: Array},
+      setter: {type: Object},
+      cc: {type: Array},
+      components: {type: Array},
+      fieldDefs: {type: Array},
+      fieldGroups: {type: Array},
+      issueStatus: {type: String},
+      issueType: {type: String},
+      mergedInto: {type: Object},
+      owner: {type: Object},
+      isApproval: {type: Boolean},
+      issueRef: {type: Object},
+      fieldValueMap: {type: Object},
     };
   }
 
+  constructor() {
+    super();
+    this.isApproval = false;
+    this.fieldGroups = HARDCODED_FIELD_GROUPS;
+    this.issueRef = {};
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this.setAttribute('role', 'table');
+  }
+
   stateChanged(state) {
-    super.stateChanged(state);
-
-    this.setProperties({
-      issueRef: issue.issueRef(state),
-      relatedIssues: issue.relatedIssues(state),
-    });
-  }
-
-  _fieldIsHidden(fieldValueMap, fieldDef) {
-    return fieldDef.isNiche && !this._valuesForField(fieldValueMap,
-      fieldDef.fieldRef.fieldName).length;
-  }
-
-  _issueIsDuplicate(issueStatus) {
-    return issueStatus.status === 'Duplicate';
+    this.fieldValueMap = issue.fieldValueMap(state);
+    this.issueType = issue.type(state);
+    this.issueRef = issue.issueRef(state);
+    this.relatedIssues = issue.relatedIssues(state);
   }
 }
 
-customElements.define(MrMetadata.is, MrMetadata);
+customElements.define('mr-metadata', MrMetadata);

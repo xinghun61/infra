@@ -23,4 +23,8 @@ describe('mr-metadata', () => {
   it('initializes', () => {
     assert.instanceOf(element, MrMetadata);
   });
+
+  it('has table role set', () => {
+    assert.equal(element.getAttribute('role'), 'table');
+  });
 });

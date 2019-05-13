@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
@@ -11,8 +10,10 @@ import * as project from 'elements/reducers/project.js';
 import * as user from 'elements/reducers/user.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 import 'elements/framework/links/mr-hotlist-link/mr-hotlist-link.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {pluralize} from 'elements/shared/helpers.js';
 import './mr-metadata.js';
+
 
 /**
  * `<mr-issue-metadata>`
@@ -20,11 +21,11 @@ import './mr-metadata.js';
  * The metadata view for a single issue. Contains information such as the owner.
  *
  */
-export class MrIssueMetadata extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrIssueMetadata extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           box-sizing: border-box;
           padding: 0.25em 8px;
@@ -105,190 +106,196 @@ export class MrIssueMetadata extends connectStore(PolymerElement) {
         .star-line i.material-icons.starred {
           color: cornflowerblue;
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    const hotlistsByRole = this._hotlistsByRole;
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <div class="star-line">
-        <button on-click="toggleStar" disabled\$="[[!_canStar]]">
-          <template is="dom-if" if="[[isStarred]]">
-            <i class="material-icons starred" title="You've starred this issue">star</i>
-          </template>
-          <template is="dom-if" if="[[!isStarred]]">
-            <i class="material-icons" title="Click to star this issue">star_border</i>
-          </template>
+        <button class="star-button" @click=${this.toggleStar} ?disabled=${!this._canStar}>
+          ${this.isStarred ? html`
+            <i class="material-icons starred" title="You've starred this issue">
+              star
+            </i>
+          `: html`
+            <i class="material-icons" title="Click to star this issue">
+              star_border
+            </i>
+          `}
         </button>
-        Starred by [[_renderCount(issue.starCount)]] user[[_renderPluralS(issue.starCount)]]
+        Starred by ${this.issue.starCount || 0} ${pluralize(this.issue.starCount, 'user')}
       </div>
       <mr-metadata
         aria-label="Issue Metadata"
-        owner="[[issue.ownerRef]]"
-        cc="[[issue.ccRefs]]"
-        issue-status="[[issue.statusRef]]"
-        components="[[_components]]"
-        field-defs="[[_fieldDefs]]"
-        merged-into="[[mergedInto]]"
-        modified-timestamp="[[issue.modifiedTimestamp]]"
+        .owner=${this.issue.ownerRef}
+        .cc=${this.issue.ccRefs}
+        .issueStatus=${this.issue.statusRef}
+        .components=${this._components}
+        .fieldDefs=${this._fieldDefs}
+        .mergedInto=${this.mergedInto}
+        .modifiedTimestamp=${this.issue.modifiedTimestamp}
       ></mr-metadata>
 
       <div class="labels-container">
-        <template is="dom-repeat" items="[[issue.labelRefs]]" as="label">
+        ${this.issue.labelRefs && this.issue.labelRefs.map((label) => html`
           <a
-            title$="[[_computeLabelTitle(labelDefMap, label)]]"
-            href$="/p/[[issueRef.projectName]]/issues/list?q=label:[[label.label]]"
+            title="${_labelTitle(this.labelDefMap, label)}"
+            href="/p/${this.issueRef.projectName}/issues/list?q=label:${label.label}"
             class="label"
-            data-derived$="[[label.isDerived]]"
-          >[[label.label]]</a>
+            ?data-derived=${label.isDerived}
+          >${label.label}</a>
           <br>
-        </template>
+        `)}
       </div>
 
-      <template is="dom-if" if="[[sortedBlockedOn.length]]">
+      ${this.sortedBlockedOn.length ? html`
         <div class="bottom-section-cell">
           <h3>BlockedOn:</h3>
             <div class="bottom-section-content">
-            <template is="dom-repeat" items="[[sortedBlockedOn]]">
+            ${this.sortedBlockedOn.map((issue) => html`
               <mr-issue-link
-                project-name="[[issueRef.projectName]]"
-                issue="[[item]]"
+                .projectName=${this.issueRef.projectName}
+                .issue=${issue}
               >
               </mr-issue-link>
               <br />
-            </template>
+            `)}
             <button
               class="linkify"
-              on-click="openViewBlockedOn"
+              @click=${this.openViewBlockedOn}
             >
               <i class="material-icons">list</i>
               View details
             </button>
           </div>
         </div>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[blocking.length]]">
+      ${this.blocking.length ? html`
         <div class="bottom-section-cell">
           <h3>Blocking:</h3>
           <div class="bottom-section-content">
-            <template is="dom-repeat" items="[[blocking]]">
+            ${this.blocking.map((issue) => html`
               <mr-issue-link
-                project-name="[[issueRef.projectName]]"
-                issue="[[item]]"
+                .projectName=${this.issueRef.projectName}
+                .issue=${issue}
               >
               </mr-issue-link>
               <br />
-            </template>
+            `)}
           </div>
         </div>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[user]]">
+      ${this.user ? html`
         <div class="bottom-section-cell">
           <h3>Your Hotlists:</h3>
           <div class="bottom-section-content">
-            <template is="dom-if" if="[[hotlistsByRole.user.length]]">
-              <template
-                is="dom-repeat"
-                items="[[hotlistsByRole.user]]"
-                as="hotlist"
-              >
-                <mr-hotlist-link hotlist="[[hotlist]]"></mr-hotlist-link>
-              </template>
-            </template>
+            ${this._renderHotlists(hotlistsByRole.user)}
             <button
               class="linkify"
-              on-click="openUpdateHotlists"
+              @click=${this.openUpdateHotlists}
             >
               <i class="material-icons">create</i> Update your hotlists
             </button>
           </div>
         </div>
-      </template>
+      `: ''}
 
-      <template is="dom-if" if="[[hotlistsByRole.participants.length]]">
+      ${hotlistsByRole.participants.length ? html`
         <div class="bottom-section-cell">
           <h3>Participant's Hotlists:</h3>
           <div class="bottom-section-content">
-            <template
-              is="dom-repeat"
-              items="[[hotlistsByRole.participants]]"
-              as="hotlist"
-            >
-              <mr-hotlist-link hotlist="[[hotlist]]"></mr-hotlist-link>
-            </template>
+            ${this._renderHotlists(hotlistsByRole.participants)}
           </div>
         </div>
-      </template>
+      ` : ''}
 
-      <template is="dom-if" if="[[hotlistsByRole.others.length]]">
+      ${hotlistsByRole.others.length ? html`
         <div class="bottom-section-cell">
           <h3>Other Hotlists:</h3>
           <div class="bottom-section-content">
-            <template
-              is="dom-repeat"
-              items="[[hotlistsByRole.others]]"
-              as="hotlist"
-            >
-              <mr-hotlist-link hotlist="[[hotlist]]"></mr-hotlist-link>
-            </template>
+            ${this._renderHotlists(hotlistsByRole.others)}
           </div>
         </div>
-      </template>
+      ` : ''}
     `;
   }
 
-  static get is() {
-    return 'mr-issue-metadata';
+  _renderHotlists(hotlists) {
+    return hotlists.map((hotlist) => html`
+      <mr-hotlist-link .hotlist=${hotlist}></mr-hotlist-link>
+    `);
   }
 
   static get properties() {
     return {
-      issue: Object,
-      issueRef: Object,
+      issue: {type: Object},
+      issueRef: {type: Object},
       projectConfig: String,
-      user: Object,
-      isStarred: {
-        type: Boolean,
-        value: false,
-      },
-      fetchingIsStarred: Boolean,
-      starringIssue: Boolean,
-      issueHotlists: Array,
-      blocking: Array,
-      sortedBlockedOn: Array,
-      relatedIssues: Object,
-      hotlistsByRole: {
-        type: Object,
-        computed: `_splitIssueHotlistsByRole(issueHotlists,
-          user.userId, issue.ownerRef, issue.ccRefs)`,
-      },
-      labelDefMap: Object,
-      _components: Array,
-      _fieldDefs: Array,
-      _canStar: {
-        type: Boolean,
-        computed: '_computeCanStar(fetchingIsStarred, starringIssue)',
-      },
-      _type: String,
+      user: {type: Object},
+      isStarred: {type: Boolean},
+      fetchingIsStarred: {type: Boolean},
+      starringIssue: {type: Boolean},
+      issueHotlists: {type: Array},
+      blocking: {type: Array},
+      sortedBlockedOn: {type: Array},
+      relatedIssues: {type: Object},
+      labelDefMap: {type: Object},
+      _components: {type: Array},
+      _fieldDefs: {type: Array},
+      _type: {type: String},
     };
   }
 
   stateChanged(state) {
-    this.setProperties({
-      issue: issue.issue(state),
-      issueRef: issue.issueRef(state),
-      user: user.user(state),
-      projectConfig: project.project(state).config,
-      isStarred: issue.isStarred(state),
-      fetchingIsStarred: issue.requests(state).fetchIsStarred.requesting,
-      starringIssue: issue.requests(state).star.requesting,
-      blocking: issue.blockingIssues(state),
-      sortedBlockedOn: issue.sortedBlockedOn(state),
-      mergedInto: issue.mergedInto(state),
-      relatedIssues: issue.relatedIssues(state),
-      issueHotlists: issue.hotlists(state),
-      labelDefMap: project.labelDefMap(state),
-      _components: issue.components(state),
-      _fieldDefs: issue.fieldDefs(state),
-      _type: issue.type(state),
+    this.issue = issue.issue(state);
+    this.issueRef = issue.issueRef(state);
+    this.user = user.user(state);
+    this.projectConfig = project.project(state).config;
+    this.isStarred = issue.isStarred(state);
+    this.fetchingIsStarred = issue.requests(state).fetchIsStarred.requesting;
+    this.starringIssue = issue.requests(state).star.requesting;
+    this.blocking = issue.blockingIssues(state);
+    this.sortedBlockedOn = issue.sortedBlockedOn(state);
+    this.mergedInto = issue.mergedInto(state);
+    this.relatedIssues = issue.relatedIssues(state);
+    this.issueHotlists = issue.hotlists(state);
+    this.labelDefMap = project.labelDefMap(state);
+    this._components = issue.components(state);
+    this._fieldDefs = issue.fieldDefs(state);
+    this._type = issue.type(state);
+  }
+
+  get _canStar() {
+    const {fetchingIsStarred, starringIssue} = this;
+    return !(fetchingIsStarred || starringIssue);
+  }
+
+  get _hotlistsByRole() {
+    const issueHotlists = this.issueHotlists;
+    const userId = this.user && this.user.userId;
+    const owner = this.issue && this.issue.ownerRef;
+    const cc = this.issue && this.issue.ccRefs;
+
+    const hotlists = {
+      user: [],
+      participants: [],
+      others: [],
+    };
+    (issueHotlists || []).forEach((hotlist) => {
+      if (hotlist.ownerRef.userId === userId) {
+        hotlists.user.push(hotlist);
+      } else if (_userIsParticipant(hotlist.ownerRef, owner, cc)) {
+        hotlists.participants.push(hotlist);
+      } else {
+        hotlists.others.push(hotlist);
+      }
     });
+    return hotlists;
   }
 
   toggleStar() {
@@ -319,56 +326,24 @@ export class MrIssueMetadata extends connectStore(PolymerElement) {
       },
     }));
   }
-
-  _computeCanStar(fetching, starring) {
-    return !(fetching || starring);
-  }
-
-  _userIsParticipant(user, owner, cc) {
-    if (owner && owner.userId === user.userId) {
-      return true;
-    }
-    return cc && cc.some((ccUser) => ccUser && ccUser.UserId === user.userId);
-  }
-
-  _splitIssueHotlistsByRole(issueHotlists, userId, owner, cc) {
-    const hotlists = {
-      user: [],
-      participants: [],
-      others: [],
-    };
-    (issueHotlists || []).forEach((hotlist) => {
-      if (hotlist.ownerRef.userId === userId) {
-        hotlists.user.push(hotlist);
-      } else if (this._userIsParticipant(hotlist.ownerRef, owner, cc)) {
-        hotlists.participants.push(hotlist);
-      } else {
-        hotlists.others.push(hotlist);
-      }
-    });
-    return hotlists;
-  }
-
-  // TODO(zhangtiff): Remove when upgrading to lit-element.
-  _renderPluralS(count) {
-    return count == 1 ? '' : 's';
-  }
-
-  // TODO(zhangtiff): Remove when upgrading to lit-element.
-  _renderCount(count) {
-    return count ? count : 0;
-  }
-
-  _computeLabelTitle(labelDefMap, label) {
-    if (!label) return '';
-    let docstring = '';
-    const key = label.label.toLowerCase();
-    if (labelDefMap && labelDefMap.has(key)) {
-      docstring = labelDefMap.get(key).docstring;
-    }
-    return (label.isDerived ? 'Derived: ' : '') + label.label
-      + (docstring ? ` = ${docstring}` : '');
-  }
 }
 
-customElements.define(MrIssueMetadata.is, MrIssueMetadata);
+function _userIsParticipant(user, owner, cc) {
+  if (owner && owner.userId === user.userId) {
+    return true;
+  }
+  return cc && cc.some((ccUser) => ccUser && ccUser.UserId === user.userId);
+}
+
+function _labelTitle(labelDefMap, label) {
+  if (!label) return '';
+  let docstring = '';
+  const key = label.label.toLowerCase();
+  if (labelDefMap && labelDefMap.has(key)) {
+    docstring = labelDefMap.get(key).docstring;
+  }
+  return (label.isDerived ? 'Derived: ' : '') + label.label
+    + (docstring ? ` = ${docstring}` : '');
+}
+
+customElements.define('mr-issue-metadata', MrIssueMetadata);
