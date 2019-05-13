@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import './mr-dropdown.js';
 
@@ -13,23 +12,23 @@ import './mr-dropdown.js';
  * Account dropdown menu for Monorail.
  *
  */
-export class MrAccountDropdown extends PolymerElement {
-  static get template() {
-    return html`
-      <style>
+export class MrAccountDropdown extends LitElement {
+  static get styles() {
+    return css`
         :host {
           position: relative;
           display: inline-block;
           height: 100%;
           font-size: inherit;
         }
-      </style>
-      <mr-dropdown text="[[userDisplayName]]" items="[[items]]" icon="arrow_drop_down"></mr-dropdown>
     `;
   }
 
-  static get is() {
-    return 'mr-account-dropdown';
+  render() {
+    return html`
+      <mr-dropdown .text=${this.userDisplayName} .items=${this.items}
+          .icon="arrow_drop_down"></mr-dropdown>
+    `;
   }
 
   static get properties() {
@@ -37,26 +36,22 @@ export class MrAccountDropdown extends PolymerElement {
       userDisplayName: String,
       logoutUrl: String,
       loginUrl: String,
-      items: {
-        type: Array,
-        computed: '_computeUserMenuItems(userDisplayName, loginUrl, logoutUrl)',
-      },
     };
   }
 
-  _computeUserMenuItems(userDisplayName, loginUrl, logoutUrl) {
+  get items() {
     return [
-      {text: 'Switch accounts', url: loginUrl},
+      {text: 'Switch accounts', url: this.loginUrl},
       {separator: true},
-      {text: 'Profile', url: `/u/${userDisplayName}`},
-      {text: 'Updates', url: `/u/${userDisplayName}/updates`},
+      {text: 'Profile', url: `/u/${this.userDisplayName}`},
+      {text: 'Updates', url: `/u/${this.userDisplayName}/updates`},
       {text: 'Settings', url: '/hosting/settings'},
-      {text: 'Saved queries', url: `/u/${userDisplayName}/queries`},
-      {text: 'Hotlists', url: `/u/${userDisplayName}/hotlists`},
+      {text: 'Saved queries', url: `/u/${this.userDisplayName}/queries`},
+      {text: 'Hotlists', url: `/u/${this.userDisplayName}/hotlists`},
       {separator: true},
-      {text: 'Sign out', url: logoutUrl},
+      {text: 'Sign out', url: this.logoutUrl},
     ];
   }
 }
 
-customElements.define(MrAccountDropdown.is, MrAccountDropdown);
+customElements.define('mr-account-dropdown', MrAccountDropdown);

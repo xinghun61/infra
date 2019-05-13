@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrDropdown} from './mr-dropdown.js';
 import sinon from 'sinon';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 let randomButton;
@@ -56,7 +55,7 @@ describe('mr-dropdown', () => {
     assert.isFalse(element.opened);
   });
 
-  it('items with handlers are handled', () => {
+  it('items with handlers are handled', async () => {
     const handler1 = sinon.spy();
     const handler2 = sinon.spy();
     const handler3 = sinon.spy();
@@ -81,7 +80,7 @@ describe('mr-dropdown', () => {
 
     element.open();
 
-    flush();
+    await element.updateComplete;
 
     const items = element.shadowRoot.querySelectorAll('.menu-item');
 
