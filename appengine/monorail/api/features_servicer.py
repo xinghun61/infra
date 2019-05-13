@@ -38,6 +38,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         mc.cnxn, request.user, self.services.user)
 
     with work_env.WorkEnv(mc, self.services) as we:
+      mc.LookupLoggedInUserPerms(None)
       hotlists = we.ListHotlistsByUser(user_id)
 
     with mc.profiler.Phase('making user views'):
@@ -85,6 +86,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
   def ListRecentlyVisitedHotlists(self, mc, _request):
     """Return the recently visited hotlists for the logged in user."""
     with work_env.WorkEnv(mc, self.services) as we:
+      mc.LookupLoggedInUserPerms(None)
       hotlists = we.ListRecentlyVisitedHotlists()
 
     with mc.profiler.Phase('making user views'):
@@ -106,6 +108,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
   def ListStarredHotlists(self, mc, _request):
     """Return the starred hotlists for the logged in user."""
     with work_env.WorkEnv(mc, self.services) as we:
+      mc.LookupLoggedInUserPerms(None)
       hotlists = we.ListStarredHotlists()
 
     with mc.profiler.Phase('maknig user views'):
@@ -131,6 +134,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         request.hotlist_ref)
 
     with work_env.WorkEnv(mc, self.services) as we:
+      mc.LookupLoggedInUserPerms(None)
       star_count = we.GetHotlistStarCount(hotlist_id)
 
     result = features_pb2.GetHotlistStarCountResponse(star_count=star_count)
@@ -144,6 +148,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         request.hotlist_ref)
 
     with work_env.WorkEnv(mc, self.services) as we:
+      mc.LookupLoggedInUserPerms(None)
       we.StarHotlist(hotlist_id, request.starred)
       star_count = we.GetHotlistStarCount(hotlist_id)
 
@@ -242,6 +247,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         mc.cnxn, request.issue_refs, self.services)
 
     with work_env.WorkEnv(mc, self.services) as we:
+      mc.LookupLoggedInUserPerms(None)
       we.RemoveIssuesFromHotlists(hotlist_ids, issue_ids)
 
     result = features_pb2.RemoveIssuesFromHotlistsResponse()
@@ -257,6 +263,7 @@ class FeaturesServicer(monorail_servicer.MonorailServicer):
         mc.cnxn, request.issue_refs, self.services)
 
     with work_env.WorkEnv(mc, self.services) as we:
+      mc.LookupLoggedInUserPerms(None)
       we.AddIssuesToHotlists(hotlist_ids, issue_ids, request.note)
 
     result = features_pb2.AddIssuesToHotlistsResponse()

@@ -46,7 +46,7 @@ class HotlistDetailsTest(unittest.TestCase):
   def testAssertBasePermission(self):
     # non-members cannot view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
-        hotlist=self.private_hotlist)
+        hotlist=self.private_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.effective_ids = {333}
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
@@ -71,6 +71,7 @@ class HotlistDetailsTest(unittest.TestCase):
 
   def testGatherPageData(self):
     self.mr.auth.effective_ids = [222]
+    self.mr.perms = permissions.EMPTY_PERMISSIONSET
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual('hotlist summary', page_data['initial_summary'])
     self.assertEqual('hotlist description', page_data['initial_description'])
@@ -91,7 +92,8 @@ class HotlistDetailsTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=self.hotlist,
         path='/u/111/hotlists/%s/details' % self.hotlist.hotlist_id,
-        services=service_manager.Services(user=self.user_service))
+        services=service_manager.Services(user=self.user_service),
+        perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.user_id = 111
     post_data = fake.PostData(
         name=['hotlist'],

@@ -43,12 +43,12 @@ class HotlistView(template_helpers.PBProxy):
   """Wrapper class that makes it easier to display a hotlist via EZT."""
 
   def __init__(
-      self, hotlist_pb, user_auth=None,
+      self, hotlist_pb, perms, user_auth=None,
       viewed_user_id=None, users_by_id=None, is_starred=False):
     super(HotlistView, self).__init__(hotlist_pb)
 
     self.visible = permissions.CanViewHotlist(
-        user_auth.effective_ids, hotlist_pb)
+        user_auth.effective_ids, perms, hotlist_pb)
 
     self.access_is_private = ezt.boolean(hotlist_pb.is_private)
     if not hotlist_pb.owner_ids:  # Should never happen.

@@ -1152,25 +1152,26 @@ def CanEditTemplate(effective_ids, perms, project, template):
   return perms.CanUsePerm(EDIT_PROJECT, effective_ids, project, [])
 
 
-def CanViewHotlist(effective_ids, hotlist):
+def CanViewHotlist(effective_ids, perms, hotlist):
   """Return True if a user can view the given hotlist."""
-  if not hotlist.is_private:
+  if not hotlist.is_private or perms.HasPerm(ADMINISTER_SITE, None, None):
     return True
 
-  # TODO(lukasperaza): allow site admins to see any hotlist
   return any([user_id in (hotlist.owner_ids + hotlist.editor_ids)
               for user_id in effective_ids])
 
 
-def CanEditHotlist(effective_ids, hotlist):
+def CanEditHotlist(effective_ids, perms, hotlist):
   """Return True if a user is editor(add/remove issues and change rankings)."""
-  return any([user_id in (hotlist.owner_ids + hotlist.editor_ids)
-              for user_id in effective_ids])
+  return perms.HasPerm(ADMINISTER_SITE, None, None) or any(
+      [user_id in (hotlist.owner_ids + hotlist.editor_ids)
+       for user_id in effective_ids])
 
 
-def CanAdministerHotlist(effective_ids, hotlist):
-  """Return True if user is owner(add/remove members, edit/delte hotlist)."""
-  return any([user_id in hotlist.owner_ids for user_id in effective_ids])
+def CanAdministerHotlist(effective_ids, perms, hotlist):
+  """Return True if user is owner(add/remove members, edit/delete hotlist)."""
+  return perms.HasPerm(ADMINISTER_SITE, None, None) or any(
+      [user_id in hotlist.owner_ids for user_id in effective_ids])
 
 
 def CanCreateHotlist(perms):

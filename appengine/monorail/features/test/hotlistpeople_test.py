@@ -40,7 +40,8 @@ class HotlistPeopleListTest(unittest.TestCase):
 
   def testAssertBasePermission(self):
     # owner can view people in private hotlist
-    mr = testing_helpers.MakeMonorailRequest(hotlist=self.private_hotlist)
+    mr = testing_helpers.MakeMonorailRequest(
+        hotlist=self.private_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.effective_ids = {111, 444}
     self.servlet.AssertBasePermission(mr)
 
@@ -67,7 +68,8 @@ class HotlistPeopleListTest(unittest.TestCase):
     self.servlet.AssertBasePermission(mr)
 
   def testGatherPageData(self):
-    mr = testing_helpers.MakeMonorailRequest(hotlist=self.public_hotlist)
+    mr = testing_helpers.MakeMonorailRequest(
+        hotlist=self.public_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.user_id = 111
     mr.auth.effective_ids = {111}
     mr.cnxn = 'fake cnxn'
@@ -95,8 +97,7 @@ class HotlistPeopleListTest(unittest.TestCase):
     """Only owner can change member of hotlist."""
     mr = testing_helpers.MakeMonorailRequest(
         path='/u/buzbuz@gmail.com/hotlists/PrivateHotlist/people',
-        hotlist=self.private_hotlist,
-        )
+        hotlist=self.private_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.effective_ids = {111, 444}
     self.servlet.ProcessFormData(mr, {})
 

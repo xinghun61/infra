@@ -63,9 +63,11 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         'hotlist', hotlist_id=123, owner_ids=[222], editor_ids=[111],
         hotlist_item_fields=self.hotlist_item_fields)
     self.hotlistissues = self.test_hotlist.items
-    self.mr = testing_helpers.MakeMonorailRequest(hotlist=self.test_hotlist,
-                                                  path='/u/222/hotlists/123',
-                                                  services = self.services)
+    # Unless perms is specified,
+    # MakeMonorailRequest will return an mr with admin permissions.
+    self.mr = testing_helpers.MakeMonorailRequest(
+        hotlist=self.test_hotlist, path='/u/222/hotlists/123',
+        services=self.services, perms=permissions.EMPTY_PERMISSIONSET)
     self.mr.hotlist_id = self.test_hotlist.hotlist_id
     self.mr.auth.user_id = 111
     self.mr.auth.effective_ids = {111}
@@ -84,7 +86,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         hotlist_item_fields=self.hotlist_item_fields, is_private=True)
     # non-members cannot view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
-        hotlist=private_hotlist)
+        hotlist=private_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.effective_ids = {333}
     mr.hotlist_id = private_hotlist.hotlist_id
     self.assertRaises(permissions.PermissionException,
@@ -92,21 +94,21 @@ class HotlistIssuesUnitTest(unittest.TestCase):
 
     # members can view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
-        hotlist=private_hotlist)
+        hotlist=private_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.effective_ids = {222, 444}
     mr.hotlist_id = private_hotlist.hotlist_id
     self.servlet.AssertBasePermission(mr)
 
     # non-members can view public hotlists
     mr = testing_helpers.MakeMonorailRequest(
-        hotlist=self.test_hotlist)
+        hotlist=self.test_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.effective_ids = {333, 444}
     mr.hotlist_id = self.test_hotlist.hotlist_id
     self.servlet.AssertBasePermission(mr)
 
     # members can view public hotlists
     mr = testing_helpers.MakeMonorailRequest(
-        hotlist=self.test_hotlist)
+        hotlist=self.test_hotlist, perms=permissions.EMPTY_PERMISSIONSET)
     mr.auth.effective_ids = {111, 333}
     mr.hotlist_id = self.test_hotlist.hotlist_id
     self.servlet.AssertBasePermission(mr)

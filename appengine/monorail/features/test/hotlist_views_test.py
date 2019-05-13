@@ -10,6 +10,7 @@ import unittest
 from features import hotlist_views
 from framework import authdata
 from framework import framework_views
+from framework import permissions
 from services import service_manager
 from testing import fake
 from proto import user_pb2
@@ -58,31 +59,32 @@ class HotlistViewTest(unittest.TestCase):
     self.user_auth.user_id = 3
     self.users_by_id = {1: self.user1_view, 2: self.user2_view,
         3: self.user3_view, 4: self.user4_view}
+    self.perms = permissions.EMPTY_PERMISSIONSET
 
   def testNoOwner(self):
     hotlist = fake.Hotlist('unowned', 500, owner_ids=[])
-    view = hotlist_views.HotlistView(hotlist, self.user_auth, 1,
-                                             self.users_by_id)
+    view = hotlist_views.HotlistView(hotlist, self.perms,
+                                     self.user_auth, 1, self.users_by_id)
     self.assertFalse(view.url)
 
   def testBanned(self):
     # With a banned user
     hotlist = fake.Hotlist('userBanned', 423, owner_ids=[4])
-    hotlist_view = hotlist_views.HotlistView(hotlist, self.user_auth, 1,
-                                             self.users_by_id)
+    hotlist_view = hotlist_views.HotlistView(
+        hotlist, self.perms, self.user_auth, 1, self.users_by_id)
     self.assertFalse(hotlist_view.visible)
 
     # With a user not banned
     hotlist = fake.Hotlist('userNotBanned', 453, owner_ids=[1])
-    hotlist_view = hotlist_views.HotlistView(hotlist, self.user_auth, 1,
-                                             self.users_by_id)
+    hotlist_view = hotlist_views.HotlistView(
+        hotlist, self.perms, self.user_auth, 1, self.users_by_id)
     self.assertTrue(hotlist_view.visible)
 
   def testNoPermissions(self):
     hotlist = fake.Hotlist(
         'private', 333, is_private=True, owner_ids=[1], editor_ids=[2])
     hotlist_view = hotlist_views.HotlistView(
-        hotlist, self.user_auth, 1, self.users_by_id)
+        hotlist, self.perms, self.user_auth, 1, self.users_by_id)
     self.assertFalse(hotlist_view.visible)
     self.assertEqual(hotlist_view.url, '/u/1/hotlists/private')
 
@@ -91,13 +93,15 @@ class HotlistViewTest(unittest.TestCase):
     hotlist = fake.Hotlist(
         'noObscureHotlist', 133, owner_ids=[2], editor_ids=[3])
     hotlist_view = hotlist_views.HotlistView(
-        hotlist, self.user_auth, viewed_user_id=3, users_by_id=self.users_by_id)
+        hotlist, self.perms, self.user_auth,
+        viewed_user_id=3, users_by_id=self.users_by_id)
     self.assertEqual(hotlist_view.url, '/u/user2/hotlists/noObscureHotlist')
 
     #owner with obscure_email:true
     hotlist = fake.Hotlist('ObscureHotlist', 133, owner_ids=[1], editor_ids=[3])
     hotlist_view = hotlist_views.HotlistView(
-        hotlist, self.user_auth, viewed_user_id=1, users_by_id=self.users_by_id)
+        hotlist, self.perms, self.user_auth, viewed_user_id=1,
+        users_by_id=self.users_by_id)
     self.assertEqual(hotlist_view.url, '/u/1/hotlists/ObscureHotlist')
 
   def testOtherAttributes(self):
@@ -108,7 +112,7 @@ class HotlistViewTest(unittest.TestCase):
                                 is_private=False, owner_ids=[1],
                                 editor_ids=[2, 3])
     hotlist_view = hotlist_views.HotlistView(
-        hotlist, self.user_auth, viewed_user_id=2,
+        hotlist, self.perms, self.user_auth, viewed_user_id=2,
         users_by_id=self.users_by_id, is_starred=True)
     self.assertTrue(hotlist_view.visible, True)
     self.assertEqual(hotlist_view.role_name, 'editor')

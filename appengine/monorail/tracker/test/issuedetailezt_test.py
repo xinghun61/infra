@@ -681,6 +681,7 @@ class ModuleFunctionsTest(unittest.TestCase):
     self.services.user.TestAddUser('ul1', 222)
     # uo1 is an *other* user.
     self.services.user.TestAddUser('uo1', 333)
+    self.perms = permissions.EMPTY_PERMISSIONSET
 
     users_by_id = self.services.user.GetUsersByIDs(self.cnxn,
                                                   [111, 222, 333])
@@ -699,7 +700,7 @@ class ModuleFunctionsTest(unittest.TestCase):
     hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111],
         hotlist_item_fields=self.hotlist_item_fields)
     h1_view = hotlist_views.HotlistView(
-        hotlist_h1, viewed_user_id=222, user_auth=self.user_auth,
+        hotlist_h1, self.perms, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([], [h1_view], []),
@@ -711,7 +712,7 @@ class ModuleFunctionsTest(unittest.TestCase):
     hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222],
         hotlist_item_fields=self.hotlist_item_fields)
     h2_view = hotlist_views.HotlistView(
-        hotlist_h2, viewed_user_id=222, user_auth=self.user_auth,
+        hotlist_h2, self.perms, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([h2_view], [], []),
@@ -723,7 +724,7 @@ class ModuleFunctionsTest(unittest.TestCase):
     hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333],
         hotlist_item_fields=self.hotlist_item_fields)
     h3_view = hotlist_views.HotlistView(
-        hotlist_h3, viewed_user_id=222, user_auth=self.user_auth,
+        hotlist_h3, self.perms, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([], [], [h3_view]),
@@ -740,17 +741,17 @@ class ModuleFunctionsTest(unittest.TestCase):
     hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111],
         hotlist_item_fields=self.hotlist_item_fields)
     h1_view = hotlist_views.HotlistView(
-        hotlist_h1, viewed_user_id=222, user_auth=self.user_auth,
+        hotlist_h1, self.perms, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222],
         hotlist_item_fields=self.hotlist_item_fields)
     h2_view = hotlist_views.HotlistView(
-        hotlist_h2, viewed_user_id=222, user_auth=self.user_auth,
+        hotlist_h2, self.perms, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333],
         hotlist_item_fields=self.hotlist_item_fields)
     h3_view = hotlist_views.HotlistView(
-        hotlist_h3, viewed_user_id=222, user_auth=self.user_auth,
+        hotlist_h3, self.perms, viewed_user_id=222, user_auth=self.user_auth,
         users_by_id=self.userviews_by_id)
     self.assertEqual(
         ([h2_view], [h1_view], [h3_view]),

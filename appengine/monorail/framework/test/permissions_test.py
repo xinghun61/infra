@@ -1196,6 +1196,9 @@ class IssuePermissionsTest(unittest.TestCase):
 
   PROJECT = project_pb2.Project()
 
+  ADMIN_PERMS = permissions.ADMIN_PERMISSIONSET
+  PERMS = permissions.EMPTY_PERMISSIONSET
+
   def testUpdateIssuePermissions_Normal(self):
     perms = permissions.UpdateIssuePermissions(
         permissions.COMMITTER_ACTIVE_PERMISSIONSET, self.PROJECT,
@@ -1748,9 +1751,14 @@ class IssuePermissionsTest(unittest.TestCase):
     hotlist.owner_ids.append(111)
     hotlist.editor_ids.append(222)
 
-    self.assertTrue(permissions.CanViewHotlist({222}, hotlist))
-    self.assertTrue(permissions.CanViewHotlist({111, 333}, hotlist))
-    self.assertFalse(permissions.CanViewHotlist({333, 444}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({222}, self.PERMS, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({111, 333}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanViewHotlist({111, 333}, self.ADMIN_PERMS, hotlist))
+    self.assertFalse(
+        permissions.CanViewHotlist({333, 444}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanViewHotlist({333, 444}, self.ADMIN_PERMS, hotlist))
 
   def testCanViewHotlist_Public(self):
     hotlist = features_pb2.Hotlist()
@@ -1758,24 +1766,38 @@ class IssuePermissionsTest(unittest.TestCase):
     hotlist.owner_ids.append(111)
     hotlist.editor_ids.append(222)
 
-    self.assertTrue(permissions.CanViewHotlist({222}, hotlist))
-    self.assertTrue(permissions.CanViewHotlist({111, 333}, hotlist))
-    self.assertTrue(permissions.CanViewHotlist({333, 444}, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({222}, self.PERMS, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({111, 333}, self.PERMS, hotlist))
+    self.assertTrue(permissions.CanViewHotlist({333, 444}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanViewHotlist({333, 444}, self.ADMIN_PERMS, hotlist))
 
   def testCanEditHotlist(self):
     hotlist = features_pb2.Hotlist()
     hotlist.owner_ids.append(111)
     hotlist.editor_ids.append(222)
 
-    self.assertTrue(permissions.CanEditHotlist({222}, hotlist))
-    self.assertTrue(permissions.CanEditHotlist({111, 333}, hotlist))
-    self.assertFalse(permissions.CanEditHotlist({333, 444}, hotlist))
+    self.assertTrue(permissions.CanEditHotlist({222}, self.PERMS, hotlist))
+    self.assertTrue(permissions.CanEditHotlist({111, 333}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanEditHotlist({111, 333}, self.ADMIN_PERMS, hotlist))
+    self.assertFalse(
+        permissions.CanEditHotlist({333, 444}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanEditHotlist({333, 444}, self.ADMIN_PERMS, hotlist))
 
   def testCanAdministerHotlist(self):
     hotlist = features_pb2.Hotlist()
     hotlist.owner_ids.append(111)
     hotlist.editor_ids.append(222)
 
-    self.assertFalse(permissions.CanAdministerHotlist({222}, hotlist))
-    self.assertTrue(permissions.CanAdministerHotlist({111, 333}, hotlist))
-    self.assertFalse(permissions.CanAdministerHotlist({333, 444}, hotlist))
+    self.assertFalse(
+        permissions.CanAdministerHotlist({222}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanAdministerHotlist({111, 333}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanAdministerHotlist({111, 333}, self.ADMIN_PERMS, hotlist))
+    self.assertFalse(
+        permissions.CanAdministerHotlist({333, 444}, self.PERMS, hotlist))
+    self.assertTrue(
+        permissions.CanAdministerHotlist({333, 444}, self.ADMIN_PERMS, hotlist))

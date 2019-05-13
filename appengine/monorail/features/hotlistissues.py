@@ -52,7 +52,8 @@ class HotlistIssues(servlet.Servlet):
       hotlist = self._GetHotlist(mr)
     except features_svc.NoSuchHotlistException:
       return
-    permit_view = permissions.CanViewHotlist(mr.auth.effective_ids, hotlist)
+    permit_view = permissions.CanViewHotlist(
+        mr.auth.effective_ids, mr.perms, hotlist)
     if not permit_view:
       raise permissions.PermissionException(
         'User is not allowed to view this hotlist')
@@ -80,9 +81,9 @@ class HotlistIssues(servlet.Servlet):
 
     with mr.profiler.Phase('making page perms'):
       owner_permissions = permissions.CanAdministerHotlist(
-          mr.auth.effective_ids, mr.hotlist)
+          mr.auth.effective_ids, mr.perms, mr.hotlist)
       editor_permissions = permissions.CanEditHotlist(
-          mr.auth.effective_ids, mr.hotlist)
+          mr.auth.effective_ids, mr.perms, mr.hotlist)
       # TODO(jojwang): each issue should have an individual
       # SetStar status based on its project to indicate whether or not
       # the star icon should be shown to the user.

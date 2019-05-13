@@ -33,7 +33,7 @@ class HotlistDetails(servlet.Servlet):
 
   def AssertBasePermission(self, mr):
     super(HotlistDetails, self).AssertBasePermission(mr)
-    if not permissions.CanViewHotlist(mr.auth.effective_ids, mr.hotlist):
+    if not permissions.CanViewHotlist(mr.auth.effective_ids, mr.perms, mr.hotlist):
       raise permissions.PermissionException(
           'User is not allowed to view the hotlist details')
 
@@ -43,7 +43,7 @@ class HotlistDetails(servlet.Servlet):
       self.services.user.AddVisitedHotlist(
           mr.cnxn, mr.auth.user_id, mr.hotlist_id)
     cant_administer_hotlist = not permissions.CanAdministerHotlist(
-        mr.auth.effective_ids, mr.hotlist)
+        mr.auth.effective_ids, mr.perms, mr.hotlist)
 
     return {
         'initial_summary': mr.hotlist.summary,

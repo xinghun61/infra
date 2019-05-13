@@ -31,7 +31,8 @@ class HotlistPeopleList(servlet.Servlet):
 
   def AssertBasePermission(self, mr):
     super(HotlistPeopleList, self).AssertBasePermission(mr)
-    if not permissions.CanViewHotlist(mr.auth.effective_ids, mr.hotlist):
+    if not permissions.CanViewHotlist(
+        mr.auth.effective_ids, mr.perms, mr.hotlist):
       raise permissions.PermissionException(
           'User is now allowed to view the hotlist people list')
 
@@ -73,7 +74,7 @@ class HotlistPeopleList(servlet.Servlet):
         '%s%s' % (hotlist_url, urls.HOTLIST_PEOPLE), url_params=url_params)
 
     offer_membership_editing = permissions.CanAdministerHotlist(
-        mr.auth.effective_ids, mr.hotlist)
+        mr.auth.effective_ids, mr.perms, mr.hotlist)
 
     offer_remove_self = (
         not offer_membership_editing and
@@ -104,7 +105,7 @@ class HotlistPeopleList(servlet.Servlet):
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""
     permit_edit = permissions.CanAdministerHotlist(
-        mr.auth.effective_ids, mr.hotlist)
+        mr.auth.effective_ids, mr.perms, mr.hotlist)
     can_remove_self = (
         not permit_edit and
         mr.auth.user_id and

@@ -26,7 +26,8 @@ class RerankHotlistIssue(jsonfeed.JsonFeed):
         hotlist = self._GetHotlist(mr)
       except features_svc.NoSuchHotlistException:
         return
-      edit_perm = permissions.CanEditHotlist(mr.auth.effective_ids, hotlist)
+      edit_perm = permissions.CanEditHotlist(
+          mr.auth.effective_ids, mr.perms, hotlist)
       if not edit_perm:
         raise permissions.PermissionException(
             'User is not allowed to re-rank this hotlist')

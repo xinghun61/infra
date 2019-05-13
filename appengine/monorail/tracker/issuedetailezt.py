@@ -346,7 +346,7 @@ class IssueDetailEzt(issuepeek.IssuePeek):
             issue_hotlists))
 
     issue_hotlist_views = [hotlist_views.HotlistView(
-        hotlist_pb, mr.auth, mr.auth.user_id, users_by_id,
+        hotlist_pb, mr.perms, mr.auth, mr.auth.user_id, users_by_id,
         self.services.hotlist_star.IsItemStarredBy(
             mr.cnxn, hotlist_pb.hotlist_id, mr.auth.user_id)
     ) for hotlist_pb in self.services.features.GetHotlistsByIssueID(
@@ -1343,7 +1343,8 @@ class FlipperIndex(jsonfeed.JsonFeed):
         if not features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id):
           raise exceptions.InvalidHotlistException()
 
-        if not permissions.CanViewHotlist(mr.auth.effective_ids, hotlist):
+        if not permissions.CanViewHotlist(
+            mr.auth.effective_ids, mr.perms, hotlist):
           raise permissions.PermissionException()
 
         (prev_iid, cur_index, next_iid, total_count

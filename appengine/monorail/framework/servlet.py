@@ -593,7 +593,7 @@ class Servlet(webapp2.RequestHandler):
           mr.cnxn, self.services.user,
           features_bizobj.UsersInvolvedInHotlists([mr.hotlist]))
       hotlist_view = hotlist_views.HotlistView(
-          mr.hotlist, mr.auth, mr.viewed_user_auth.user_id,
+          mr.hotlist, mr.perms, mr.auth, mr.viewed_user_auth.user_id,
           users_by_id, self.services.hotlist_star.IsItemStarredBy(
             mr.cnxn, mr.hotlist.hotlist_id, mr.auth.user_id))
       grid_x_attr = mr.x.lower()

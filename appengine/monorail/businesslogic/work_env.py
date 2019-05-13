@@ -159,12 +159,14 @@ class WorkEnv(object):
 
   def _AssertUserCanViewHotlist(self, hotlist):
     """Make sure the user may view the hotlist."""
-    if not permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist):
+    if not permissions.CanViewHotlist(
+        self.mc.auth.effective_ids, self.mc.perms, hotlist):
       raise permissions.PermissionException(
           'User is not allowed to view this hotlist')
 
   def _AssertUserCanEditHotlist(self, hotlist):
-    if not permissions.CanEditHotlist(self.mc.auth.effective_ids, hotlist):
+    if not permissions.CanEditHotlist(
+        self.mc.auth.effective_ids, self.mc.perms, hotlist):
       raise permissions.PermissionException(
           'User is not allowed to edit this hotlist')
 
@@ -1806,7 +1808,8 @@ class WorkEnv(object):
     result = [
         hotlist
         for hotlist in hotlists
-        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+        if permissions.CanViewHotlist(
+            self.mc.auth.effective_ids, self.mc.perms, hotlist)]
     return result
 
   def ListHotlistsByIssue(self, issue_id):
@@ -1829,7 +1832,8 @@ class WorkEnv(object):
     result = [
         hotlist
         for hotlist in hotlists
-        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+        if permissions.CanViewHotlist(
+            self.mc.auth.effective_ids, self.mc.perms, hotlist)]
     return result
 
   def ListRecentlyVisitedHotlists(self):
@@ -1856,7 +1860,8 @@ class WorkEnv(object):
     result = [
         hotlist
         for hotlist in hotlists
-        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+        if permissions.CanViewHotlist(
+            self.mc.auth.effective_ids, self.mc.perms, hotlist)]
     return result
 
   def ListStarredHotlists(self):
@@ -1882,7 +1887,8 @@ class WorkEnv(object):
     result = [
         hotlist
         for hotlist in hotlists
-        if permissions.CanViewHotlist(self.mc.auth.effective_ids, hotlist)]
+        if permissions.CanViewHotlist(
+            self.mc.auth.effective_ids, self.mc.perms, hotlist)]
     return result
 
   def StarHotlist(self, hotlist_id, starred):
