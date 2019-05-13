@@ -24,11 +24,10 @@ import tempfile
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
-LUCI_GO_DIR = os.path.normpath(
-    os.path.join(
-        THIS_DIR,
-        *('../../../../go/src/go.chromium.org/luci').split('/')
-    )
+INFRA_ROOT = os.path.normpath(os.path.join(THIS_DIR, '..', '..', '..', '..'))
+LUCI_GO_DIR = os.path.join(INFRA_ROOT, 'go', 'src', 'go.chromium.org', 'luci')
+COMPONENTS_TOOLS_DIR = os.path.join(
+    INFRA_ROOT, 'luci', 'appengine', 'components', 'tools'
 )
 RPC_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'grpc', 'proto')
 BUILDBUCKET_PROTO_DIR = os.path.join(LUCI_GO_DIR, 'buildbucket', 'proto')
@@ -71,7 +70,12 @@ def main():
       '--prpc-python_out=.',
   ]
   args += [os.path.join(tmpd, f) for f in proto_files]
-  subprocess.check_call(args, cwd=tmpd)
+
+  # Include protoc-gen-prpc-python in $PATH.
+  env = os.environ.copy()
+  env['PATH'] = '%s%s%s' % (COMPONENTS_TOOLS_DIR, os.path.pathsep, env['PATH'])
+
+  subprocess.check_call(args, cwd=tmpd, env=env)
   pb2_files = find_files(tmpd, suffix='_pb2.py')
 
   # Remove all _pb2.py and .pyc from the dest dir
