@@ -22,6 +22,10 @@ func (t *testGenerator) Name() string {
 	return t.name
 }
 
+func (t *testGenerator) TZConsider() bool {
+	return false
+}
+
 func (t *testGenerator) Generate(_ *rotang.Configuration, _ time.Time, _ []rotang.ShiftEntry, _ []rotang.Member, _ int) ([]rotang.ShiftEntry, error) {
 	return nil, nil
 }

@@ -19,12 +19,26 @@ func (h *State) Oncall(ctx context.Context, req *apb.OncallRequest) (*apb.Oncall
 	if req.GetName() == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "rotation name is required")
 	}
+	cfg, err := h.configStore(ctx).RotaConfig(ctx, req.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(cfg) != 1 {
+		return nil, status.Errorf(codes.Internal, "RotaConfig did not return 1 configuration, got: %d", len(cfg))
+	}
+
+	gen, err := h.generators.Fetch(cfg[0].Config.Shifts.Generator)
+	if err != nil {
+		return nil, err
+	}
+
 	shift, err := h.shiftStore(ctx).Oncall(ctx, clock.Now(ctx), req.Name)
 	if err != nil {
 		return nil, err
 	}
 
-	s, err := shiftsToProto([]rotang.ShiftEntry{*shift})
+	s, err := h.shiftsToProto(ctx, []rotang.ShiftEntry{*shift})
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +47,8 @@ func (h *State) Oncall(ctx context.Context, req *apb.OncallRequest) (*apb.Oncall
 	}
 
 	return &apb.OncallResponse{
-		Shift: s[0],
+		Shift:      s[0],
+		TzConsider: gen.TZConsider(),
 	}, nil
 }
 
@@ -87,7 +102,7 @@ func (h *State) Shifts(ctx context.Context, req *apb.ShiftsRequest) (*apb.Shifts
 	if err != nil {
 		return nil, err
 	}
-	res, err := shiftsToProto(shifts)
+	res, err := h.shiftsToProto(ctx, shifts)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +111,7 @@ func (h *State) Shifts(ctx context.Context, req *apb.ShiftsRequest) (*apb.Shifts
 	}, nil
 }
 
-func shiftsToProto(shifts []rotang.ShiftEntry) ([]*apb.ShiftEntry, error) {
+func (h *State) shiftsToProto(ctx context.Context, shifts []rotang.ShiftEntry) ([]*apb.ShiftEntry, error) {
 	var res []*apb.ShiftEntry
 	for _, s := range shifts {
 		protoStart, err := ptypes.TimestampProto(s.StartTime)
@@ -107,11 +122,9 @@ func shiftsToProto(shifts []rotang.ShiftEntry) ([]*apb.ShiftEntry, error) {
 		if err != nil {
 			return nil, err
 		}
-		var oncall []*apb.OnCaller
-		for _, o := range s.OnCall {
-			oncall = append(oncall, &apb.OnCaller{
-				Email: o.Email,
-			})
+		oncall, err := h.protoOnCaller(ctx, &s)
+		if err != nil {
+			return nil, err
 		}
 		res = append(res, &apb.ShiftEntry{
 			Name:      s.Name,
@@ -120,6 +133,23 @@ func shiftsToProto(shifts []rotang.ShiftEntry) ([]*apb.ShiftEntry, error) {
 			End:       protoEnd,
 			Comment:   s.Comment,
 			EventId:   s.EvtID,
+		})
+	}
+	return res, nil
+}
+
+func (h *State) protoOnCaller(ctx context.Context, shift *rotang.ShiftEntry) ([]*apb.OnCaller, error) {
+	var res []*apb.OnCaller
+	store := h.memberStore(ctx)
+	for _, o := range shift.OnCall {
+		m, err := store.Member(ctx, o.Email)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, &apb.OnCaller{
+			Email: o.Email,
+			Name:  m.Name,
+			Tz:    m.TZ.String(),
 		})
 	}
 	return res, nil

@@ -20,6 +20,11 @@ func NewRandomGen() *RandomGen {
 	return &RandomGen{}
 }
 
+// TZConsider indicates if the generator considered the TimeZones of members.
+func (r *RandomGen) TZConsider() bool {
+	return false
+}
+
 // Generate generates shifts usings members at random.
 func (r *RandomGen) Generate(sc *rotang.Configuration, start time.Time, previous []rotang.ShiftEntry, members []rotang.Member, shiftsToSchedule int) ([]rotang.ShiftEntry, error) {
 	Random(members)

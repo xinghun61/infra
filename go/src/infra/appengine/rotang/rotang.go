@@ -229,6 +229,7 @@ type ShiftStorer interface {
 type RotaGenerator interface {
 	Name() string
 	Generate(sc *Configuration, start time.Time, previous []ShiftEntry, members []Member, shiftsToSchedule int) ([]ShiftEntry, error)
+	TZConsider() bool
 }
 
 // ShiftModifier is used to modify shifts produced by the Generator.

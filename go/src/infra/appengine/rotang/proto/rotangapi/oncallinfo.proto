@@ -33,6 +33,29 @@ message OncallRequest {
 message OncallResponse {
   // shift contains the current shift entry for the specified rotation.
   ShiftEntry shift = 1;
+  // tz_consider indicates if the rotation generator considers the TimeZone
+  // of members when scheduling memmbers.
+  // A rotation using a Generator considering timezones will generatate a shift
+  // with one on-caller per TZ of their members.
+  // Eg. if a rotation have members:
+  //
+  // Australia/Sydney:
+  //  syd1@oncall.com
+  //  syd2@oncall.com
+  // EST
+  //  est1@oncall.com
+  //  est2@oncall.com
+  // US/Pacific
+  //  mtv1@oncall.com
+  //  mtv2@oncall.com
+  // UTC
+  //  utc1@oncall.com
+  //  utc2@oncall.com
+  //
+  // A rotation using a tz_consider generator would generate a shift with one
+  // one member from each TZ.
+  //   syd1@oncall.com , est1@oncall.com , mtv1@oncall.com and utc1@oncall.com
+  bool tz_consider = 2;
 }
 
 // ListRotationsRequest is used to get a list of all configured rotations.
@@ -92,9 +115,11 @@ message ShiftEntry {
   string event_id = 6;
 }
 
-// OnCaller contains one membe on-call for a shift.
+// OnCaller contains one member on-call for a shift.
 message OnCaller {
   string email = 1;
+  string name = 2;
+  string tz = 3;
 }
 
 // Rotation contains the Rotation information returned by the List

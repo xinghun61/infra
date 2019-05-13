@@ -56,3 +56,8 @@ func (t *TZRecent) Generate(sc *rotang.Configuration, start time.Time, previous 
 func (t *TZRecent) Name() string {
 	return "TZRecent"
 }
+
+// TZConsider indicates if the generator consideres the TimeZones of members.
+func (t *TZRecent) TZConsider() bool {
+	return false
+}

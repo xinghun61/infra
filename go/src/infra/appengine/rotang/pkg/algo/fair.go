@@ -73,6 +73,11 @@ func (f *Fair) Name() string {
 	return "Fair"
 }
 
+// TZConsider indicates if the generator considers the TimeZones of members.
+func (f *Fair) TZConsider() bool {
+	return false
+}
+
 // makeFair sorts the oncall members according to most recent oncall and number of oncall shifts.
 func makeFair(members []rotang.Member, previous []rotang.ShiftEntry) []rotang.Member {
 	sort.Sort(ByStart(previous))

@@ -60,6 +60,11 @@ func (t *TZFair) Name() string {
 	return "TZFair"
 }
 
+// TZConsider indicates if the generator consideres the TimeZones of members.
+func (t *TZFair) TZConsider() bool {
+	return true
+}
+
 // tzSlice turn the slices of rotang.ShiftEntry into a slice of ShiftEntry with
 // one member per TZ slice.
 //

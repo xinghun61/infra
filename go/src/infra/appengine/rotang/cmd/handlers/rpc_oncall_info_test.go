@@ -45,6 +45,7 @@ func TestRPCSchedule(t *testing.T) {
 				Config: rotang.Config{
 					Name: "Test Rota",
 					Shifts: rotang.ShiftConfig{
+						Generator: "Fair",
 						Shifts: []rotang.Shift{
 							{
 								Name: "MTV All Day",
@@ -66,8 +67,12 @@ func TestRPCSchedule(t *testing.T) {
 		members: []rotang.Member{
 			{
 				Email: "mtv1@oncall.com",
+				Name:  "Mtv1 Mtvsson",
+				TZ:    *time.UTC,
 			}, {
 				Email: "mtv2@oncall.com",
+				Name:  "Mtv2 Mtvsson",
+				TZ:    *time.UTC,
 			},
 		},
 		shifts: []rotang.ShiftEntry{
@@ -88,6 +93,8 @@ func TestRPCSchedule(t *testing.T) {
 			name: "MTV All Day"
 			oncallers: <
 					email: "mtv1@oncall.com",
+					name: "Mtv1 Mtvsson",
+					tz: "UTC",
 			>,
 			start: {
 				seconds: 1143849600,
@@ -175,6 +182,7 @@ func TestRPCOncall(t *testing.T) {
 				Config: rotang.Config{
 					Name: "Test Rota",
 					Shifts: rotang.ShiftConfig{
+						Generator: "Fair",
 						Shifts: []rotang.Shift{
 							{
 								Name: "MTV All Day",
@@ -196,8 +204,12 @@ func TestRPCOncall(t *testing.T) {
 		members: []rotang.Member{
 			{
 				Email: "mtv1@oncall.com",
+				Name:  "Mtv1 Mtvsson",
+				TZ:    *time.UTC,
 			}, {
 				Email: "mtv2@oncall.com",
+				Name:  "Mtv2 Mtvsson",
+				TZ:    *time.UTC,
 			},
 		},
 		shifts: []rotang.ShiftEntry{
@@ -217,6 +229,8 @@ func TestRPCOncall(t *testing.T) {
 				name: "MTV All Day",
 				oncallers: <
 					email: "mtv1@oncall.com",
+					name: "Mtv1 Mtvsson",
+					tz: "UTC",
 				>,
 				start: {
 					seconds: 1143849600,
@@ -229,6 +243,73 @@ func TestRPCOncall(t *testing.T) {
 		name: "No rota name",
 		fail: true,
 		ctx:  ctx,
+	}, {
+		name: "TZConsider generator",
+		in:   `name: "Test Rota"`,
+		time: midnight,
+		ctx:  ctx,
+		cfgs: []*rotang.Configuration{
+			{
+				Config: rotang.Config{
+					Name: "Test Rota",
+					Shifts: rotang.ShiftConfig{
+						Generator: "TZRecent",
+						Shifts: []rotang.Shift{
+							{
+								Name: "MTV All Day",
+							},
+						},
+					},
+				},
+				Members: []rotang.ShiftMember{
+					{
+						Email:     "mtv1@oncall.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "mtv2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "mtv1@oncall.com",
+				Name:  "Mtv1 Mtvsson",
+				TZ:    *time.UTC,
+			}, {
+				Email: "mtv2@oncall.com",
+				Name:  "Mtv2 Mtvsson",
+				TZ:    *time.UTC,
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+			},
+		},
+		want: `shift: {
+				name: "MTV All Day",
+				oncallers: <
+					email: "mtv1@oncall.com",
+					name: "Mtv1 Mtvsson",
+					tz: "UTC",
+				>,
+				start: {
+					seconds: 1143849600,
+				},
+				end: {
+					seconds: 1144022400,
+				},
+			}`,
 	}}
 
 	h := testSetup(t)
@@ -301,6 +382,7 @@ func TestRPCList(t *testing.T) {
 				Config: rotang.Config{
 					Name: "Test Rota",
 					Shifts: rotang.ShiftConfig{
+						Generator: "Fair",
 						Shifts: []rotang.Shift{
 							{
 								Name: "MTV All Day",
@@ -322,8 +404,10 @@ func TestRPCList(t *testing.T) {
 		members: []rotang.Member{
 			{
 				Email: "mtv1@oncall.com",
+				Name:  "Mtv1 Mtvsson",
 			}, {
 				Email: "mtv2@oncall.com",
+				Name:  "Mtv2 Mtvsson",
 			},
 		},
 		want: `

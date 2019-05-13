@@ -53,6 +53,9 @@ func testSetup(t *testing.T) *State {
 	gs.Register(algo.NewLegacy())
 	gs.Register(algo.NewFair())
 	gs.Register(algo.NewRandomGen())
+	gs.Register(algo.NewTZFair())
+	gs.Register(algo.NewRecent())
+	gs.Register(algo.NewTZRecent())
 	// Register Modifiers.
 	gs.RegisterModifier(algo.NewWeekendSkip())
 	gs.RegisterModifier(algo.NewSplitShift())

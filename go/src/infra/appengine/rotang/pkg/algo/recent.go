@@ -25,7 +25,7 @@ func NewRecent() *Recent {
 // The recent generator takes when someone was last on-call into consideration.
 //
 // See the tests for further examples of how members are selected.
-func (f *Recent) Generate(sc *rotang.Configuration, start time.Time, previous []rotang.ShiftEntry, members []rotang.Member, shiftsToSchedule int) ([]rotang.ShiftEntry, error) {
+func (r *Recent) Generate(sc *rotang.Configuration, start time.Time, previous []rotang.ShiftEntry, members []rotang.Member, shiftsToSchedule int) ([]rotang.ShiftEntry, error) {
 	if len(previous) < 1 {
 		Random(members)
 		return MakeShifts(sc, start, HandleShiftMembers(sc, members), shiftsToSchedule), nil
@@ -44,8 +44,13 @@ func (f *Recent) Generate(sc *rotang.Configuration, start time.Time, previous []
 }
 
 // Name returns the name of the Generator.
-func (f *Recent) Name() string {
+func (r *Recent) Name() string {
 	return "Recent"
+}
+
+// TZConsider indicates if the generator consideres the TimeZones of members.
+func (r *Recent) TZConsider() bool {
+	return false
 }
 
 func makeRecent(members []rotang.Member, previous []rotang.ShiftEntry) []rotang.Member {

@@ -40,6 +40,11 @@ func (l *Legacy) Name() string {
 	return "Legacy"
 }
 
+// TZConsider indicates if the generator considers the TimeZones of members.
+func (l *Legacy) TZConsider() bool {
+	return false
+}
+
 // Generate tries to be similar to the legacy rotation script generator. In short it just produces a list of all members split into PDT members and others.
 // It then schedules shifts with PDT members first before dipping into the others pool.
 func (l *Legacy) Generate(sc *rotang.Configuration, start time.Time, previous []rotang.ShiftEntry, members []rotang.Member, shiftsToSchedule int) ([]rotang.ShiftEntry, error) {
