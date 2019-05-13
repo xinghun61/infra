@@ -114,13 +114,17 @@ func TestCreateLiveAnnouncement(t *testing.T) {
 			ann, err := CreateLiveAnnouncement(
 				ctx, "Cow cow cow", "cowman", platforms)
 			So(err, ShouldBeNil)
-			So(platforms, ShouldHaveLength, 2)
+			So(ann.Platforms, ShouldHaveLength, 2)
 			// Test getting platforms and announcement does not result
 			// in error and they were saved correctly in datastore.
+			annKey := datastore.NewKey(ctx, "Announcement", "", ann.Id, nil)
 			for _, platform := range platforms {
-				So(datastore.Get(ctx, platform), ShouldBeNil)
+				pKey := datastore.NewKey(ctx, "Platform", platform.Name, 0, annKey)
+				existsR, _ := datastore.Exists(ctx, pKey)
+				So(existsR.All(), ShouldBeTrue)
 			}
-			So(datastore.Get(ctx, ann), ShouldBeNil)
+			existsR, _ := datastore.Exists(ctx, annKey)
+			So(existsR.All(), ShouldBeTrue)
 		})
 	})
 }
@@ -129,10 +133,8 @@ func TestGetLiveAnnouncements(t *testing.T) {
 	Convey("GetLiveAnnouncements", t, func() {
 		ctx := newTestContext()
 		datastore.Put(ctx, retiredAnn)
-		cowAnnFull, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
-		chickenAnnFull, _ := CreateLiveAnnouncement(ctx, chickenAnn.Message, chickenAnn.Creator, chickenPlats)
-		cowProto, _ := cowAnnFull.ToProto(cowPlats)
-		chickenProto, _ := chickenAnnFull.ToProto(chickenPlats)
+		cowProto, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
+		chickenProto, _ := CreateLiveAnnouncement(ctx, chickenAnn.Message, chickenAnn.Creator, chickenPlats)
 		Convey("get all live announcements", func() {
 			anns, err := GetLiveAnnouncements(ctx, "")
 			So(err, ShouldBeNil)

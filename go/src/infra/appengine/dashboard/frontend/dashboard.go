@@ -69,7 +69,10 @@ func init() {
 
 	api := newRPCServer()
 	dashpb.RegisterChopsServiceStatusServer(api, &dashboardService{})
-	dashpb.RegisterChopsAnnouncementsServer(api, &announcementsService{})
+	dashpb.RegisterChopsAnnouncementsServer(api, &dashpb.DecoratedChopsAnnouncements{
+		Service: &announcementsServiceImpl{},
+		Prelude: announcementsPrelude,
+	})
 	discovery.Enable(api)
 	api.InstallHandlers(r, standard.Base())
 }

@@ -9,8 +9,8 @@ import (
 	"infra/appengine/dashboard/backend"
 	"time"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"golang.org/x/net/context"
 )
@@ -19,11 +19,11 @@ type dashboardService struct{}
 
 func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.UpdateOpenIncidentsRequest) (*dashpb.UpdateOpenIncidentsResponse, error) {
 	if req.ChopsService == nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "ChopsService field was empty")
+		return nil, status.Error(codes.InvalidArgument, "ChopsService field was empty")
 	}
 	serviceName := req.ChopsService.Name
 	if serviceName == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "name field in ChopsService was empty")
+		return nil, status.Error(codes.InvalidArgument, "name field in ChopsService was empty")
 	}
 
 	incidentsByID := make(map[string]dashpb.ChopsIncident, len(req.ChopsService.Incidents))
@@ -33,7 +33,7 @@ func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.
 
 	dsIncidents, err := backend.GetServiceIncidents(ctx, serviceName, &backend.QueryOptions{Status: backend.IncidentStatusOpen})
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "error getting ServiceIncidents from datastore - %s", err)
+		return nil, status.Errorf(codes.Internal, "error getting ServiceIncidents from datastore - %s", err)
 	}
 	for _, dsIncident := range dsIncidents {
 		id := dsIncident.ID
@@ -48,7 +48,7 @@ func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.
 	for id, inc := range incidentsByID {
 		err := backend.AddIncident(ctx, id, serviceName, backend.Severity(int(inc.Severity)))
 		if err != nil {
-			return nil, grpc.Errorf(codes.Internal, "error storing new Incident to datastore - %s", err)
+			return nil, status.Errorf(codes.Internal, "error storing new Incident to datastore - %s", err)
 		}
 	}
 
@@ -73,7 +73,7 @@ func (s *dashboardService) GetAllServicesData(ctx context.Context, req *dashpb.G
 
 	slaTemplateService, nonSLATemplateService, err := createServicesPageData(ctx, firstDate, lastDate)
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "error collecting data from datastore - %s", err)
+		return nil, status.Errorf(codes.Internal, "error collecting data from datastore - %s", err)
 	}
 	chopsServices := make([]*dashpb.ChopsService, len(slaTemplateService))
 	for i, templateService := range slaTemplateService {

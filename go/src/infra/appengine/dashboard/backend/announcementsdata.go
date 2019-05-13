@@ -55,13 +55,13 @@ func (a *Announcement) ToProto(platforms []*Platform) (*dashpb.Announcement, err
 	}
 	endTime, err := ptypes.TimestampProto(a.EndTime)
 	if err != nil {
-		return nil, fmt.Errorf("invalid time for EndTime - %s", err)
+		return nil, fmt.Errorf("error converting announcement EndTime - %s", err)
 	}
 	aProto.EndTime = endTime
 
 	startTime, err := ptypes.TimestampProto(a.StartTime)
 	if err != nil {
-		return nil, fmt.Errorf("invalid time for StartTime - %s", err)
+		return nil, fmt.Errorf("error converting announcement StartTime - %s", err)
 	}
 	aProto.StartTime = startTime
 
@@ -93,7 +93,7 @@ func ConvertPlatforms(platforms []*Platform) (convertedPlatforms []*dashpb.Platf
 // structs in Datastore.
 //
 // It returns (announcement, nil) on success, and (nil, err) on datastore errors.
-func CreateLiveAnnouncement(c context.Context, message, creator string, platforms []*Platform) (*Announcement, error) {
+func CreateLiveAnnouncement(c context.Context, message, creator string, platforms []*Platform) (*dashpb.Announcement, error) {
 	announcement := &Announcement{
 		// datastore will only store timestamps precise to microseconds.
 		StartTime: clock.Now(c).UTC().Truncate(time.Microsecond),
@@ -118,7 +118,7 @@ func CreateLiveAnnouncement(c context.Context, message, creator string, platform
 	if err != nil {
 		return nil, err
 	}
-	return announcement, nil
+	return announcement.ToProto(platforms)
 }
 
 // GetLiveAnnouncements returns dashpb.Announcements that are not retired.
