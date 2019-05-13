@@ -4,9 +4,7 @@
 
 import {assert} from 'chai';
 import sinon from 'sinon';
-import '@chopsui/prpc-client';
-
-const PrpcClient = window.chops.rpc.PrpcClient;
+import {PrpcClient, GrpcError, ProtocolError} from '../prpc-client';
 
 suite('PrpcClient.constructor', () => {
 
@@ -129,7 +127,7 @@ suite('PrpcClient.call', () => {
             },
             body: '{"rutabaga":"request"}',
           });
-      assert.instanceOf(err, window.chops.rpc.GrpcError);
+      assert.instanceOf(err, GrpcError);
       assert.equal(err.code, 5);
       assert.equal(err.codeName, 'NOT_FOUND');
       assert.equal(err.description, 'an error message');
@@ -159,7 +157,7 @@ suite('PrpcClient.call', () => {
             },
             body: '{"rutabaga":"request"}',
           });
-      assert.instanceOf(err, window.chops.rpc.ProtocolError);
+      assert.instanceOf(err, ProtocolError);
       assert.equal(err.httpStatus, 200);
       assert.equal(err.description, 'Invalid X-Prpc-Grpc-Code response header');
     }
@@ -184,7 +182,7 @@ suite('PrpcClient.call', () => {
 
 suite('GrpcError', () => {
   test('constructor', () => {
-    const error = new window.chops.rpc.GrpcError(13, 'description');
+    const error = new GrpcError(13, 'description');
     assert.equal(error.code, 13);
     assert.equal(error.description, 'description');
     assert.equal(error.message, 'code: 13 (INTERNAL) desc: description');
@@ -193,7 +191,7 @@ suite('GrpcError', () => {
 
 suite('ProtocolError', () => {
   test('constructor', () => {
-    const error = new window.chops.rpc.ProtocolError(400, 'description');
+    const error = new ProtocolError(400, 'description');
     assert.equal(error.httpStatus, 400);
     assert.equal(error.description, 'description');
     assert.equal(error.message, 'status: 400 desc: description');

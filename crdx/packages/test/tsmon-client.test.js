@@ -4,11 +4,7 @@
 
 import {assert} from 'chai';
 import sinon from 'sinon';
-import '@chopsui/tsmon-client';
-
-const TSMonClient = window.chops.tsmon.TSMonClient;
-const ValueType = window.chops.tsmon.ValueType;
-const FieldType = window.chops.tsmon.FieldType;
+import {TSMonClient, FieldType, Distribution} from '../tsmon-client';
 
 let tsm;
 
@@ -169,7 +165,7 @@ suite('geometric bucketer', () => {
 
 suite('distribution', () => {
   test('add', () => {
-    const d = new chops.tsmon.Distribution(TSMonClient.geometricBucketer());
+    const d = new Distribution(TSMonClient.geometricBucketer());
     assert.equal(0, d.sum);
     assert.equal(0, d.count);
     assert.deepEqual(new Map(), d.buckets);
@@ -190,16 +186,16 @@ suite('distribution', () => {
   });
 
   test('add on bucket boundary', () => {
-    const d = new chops.tsmon.Distribution(TSMonClient.fixedWidthBucketer(10));
+    const d = new Distribution(TSMonClient.fixedWidthBucketer(10));
     d.add(10);
 
     assert.equal(10, d.sum);
     assert.equal(1, d.count);
-    assert.deepEqual(new Map([[1, 1], [2, 1]]), d.buckets);
+    assertMapEqual(new Map([[2, 1]]), d.buckets);
   });
 
   test('underflow bucket', () => {
-    const d = new chops.tsmon.Distribution(TSMonClient.fixedWidthBucketer(10));
+    const d = new Distribution(TSMonClient.fixedWidthBucketer(10));
     d.add(-1);
 
     assert.equal(-1, d.sum);
@@ -213,7 +209,7 @@ suite('distribution', () => {
   });
 
   test('overflow bucket', () => {
-    const d = new chops.tsmon.Distribution(TSMonClient.fixedWidthBucketer(10, 10));
+    const d = new Distribution(TSMonClient.fixedWidthBucketer(10, 10));
     d.add(100);
 
     assert.equal(100, d.sum);
@@ -228,16 +224,16 @@ suite('distribution', () => {
 });
 
 suite('flush', () => {
- test('disableAfterNextFlush stops sending metrics', () => {
-   assert.isTrue(tsm._continueSendingMetrics);
-   assert.isOk(tsm._flushTimer);
+  test('disableAfterNextFlush stops sending metrics', () => {
+    assert.isTrue(tsm._continueSendingMetrics);
+    assert.isOk(tsm._flushTimer);
 
     tsm.disableAfterNextFlush();
     tsm._onFlush();
 
     assert.isFalse(tsm._continueSendingMetrics);
     assert.isNull(tsm._flushTimer);
-    assert.isTrue(window.fetch.called);
+    assert.isFalse(window.fetch.called);
   });
 
   test('cumulative distribution', () => {
