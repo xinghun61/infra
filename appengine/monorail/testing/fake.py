@@ -560,6 +560,7 @@ class UserService(object):
         banned_reason=None):
     """Updates the user pb."""
     self.test_users[user_id] = user
+    user.banned = banned_reason if is_banned else ''
 
   def GetPendingLinkedInvites(self, cnxn, user_id):
     invite_as_parent = [row[1] for row in self.invite_rows

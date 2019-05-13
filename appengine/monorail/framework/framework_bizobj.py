@@ -200,6 +200,8 @@ USER_PREF_DEFS = {
   'availibility_msgs': re.compile('(true|false)'),
   'your_email_bounced': re.compile('(true|false)'),
   'search_for_numbers': re.compile('(true|false)'),
+  'restrict_new_issues': re.compile('(true|false)'),
+  'public_issue_notice': re.compile('(true|false)'),
   }
 MAX_PREF_VALUE_LENGTH = 80
 

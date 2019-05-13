@@ -67,6 +67,23 @@
  <br>
 </div>
 
+<h4>Community interactions</h4>
+<div style="margin:0 0 2em 2em">
+ <input type="checkbox" name="restrict_new_issues" id="restrict_new_issues" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_prefs.restrict_new_issues]checked="checked"[end] >
+ <label for="restrict_new_issues">
+   When entering a new issue, add Restrict-View-Google to the form.
+ </label><br>
+
+ <input type="checkbox" name="public_issue_notice" id="public_issue_notice" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_prefs.public_issue_notice]checked="checked"[end] >
+ <label for="public_issue_notice">
+   When viewing a public issue, display a banner.
+ </label><br>
+</div>
+
 <h4>Availability</h4>
 <div style="margin:0 0 2em 2em">
  Vacation message:

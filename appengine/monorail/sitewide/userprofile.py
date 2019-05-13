@@ -194,9 +194,12 @@ class UserProfile(servlet.Servlet):
         'offer_unlink': ezt.boolean(offer_unlink),
         }
 
+    with work_env.WorkEnv(mr, self.services) as we:
+      viewed_user_prefs = we.GetUserPrefs(mr.viewed_user_auth.user_id)
     user_settings = (
         framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        mr.auth.user_id, mr.viewed_user_auth.user_view, viewed_user))
+        mr.auth.user_id, mr.viewed_user_auth.user_view, viewed_user,
+        viewed_user_prefs))
     page_data.update(user_settings)
 
     return page_data
@@ -211,9 +214,9 @@ class UserProfile(servlet.Servlet):
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""
     has_admin_perm = mr.perms.HasPerm(permissions.ADMINISTER_SITE, None, None)
-    framework_helpers.UserSettings.ProcessSettingsForm(
-        mr.cnxn, self.services.user, post_data, mr.viewed_user_auth.user_id,
-        mr.viewed_user_auth.user_pb, admin=has_admin_perm)
+    with work_env.WorkEnv(mr, self.services) as we:
+      framework_helpers.UserSettings.ProcessSettingsForm(
+          we, post_data, mr.viewed_user_auth.user_pb, admin=has_admin_perm)
 
     # TODO(jrobbins): Check all calls to FormatAbsoluteURL for include_project.
     return framework_helpers.FormatAbsoluteURL(

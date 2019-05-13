@@ -20,10 +20,12 @@ from google.appengine.api import app_identity
 from third_party import ezt
 
 import settings
+from framework import framework_bizobj
 from framework import framework_constants
 from framework import template_helpers
 from framework import timestr
 from framework import urls
+from proto import user_pb2
 from services import client_config_svc
 
 
@@ -346,6 +348,7 @@ def ComputeListDeltas(old_list, new_list):
   removed.difference_update(new_list)
   return list(added), list(removed)
 
+
 def GetRoleName(effective_ids, project):
   """Determines the name of the role a member has for a given project.
 
@@ -381,19 +384,30 @@ class UserSettings(object):
 
   @classmethod
   def GatherUnifiedSettingsPageData(
-      cls, logged_in_user_id, settings_user_view, settings_user):
+      cls, logged_in_user_id, settings_user_view, settings_user,
+      settings_user_prefs):
     """Gather EZT variables needed for the unified user settings form.
 
     Args:
       logged_in_user_id: The user ID of the acting user.
       settings_user_view: The UserView of the target user.
       settings_user: The User PB of the target user.
+      settings_user_prefs: UserPrefs object for the view user.
 
     Returns:
       A dictionary giving the names and values of all the variables to
       be exported to EZT to support the unified user settings form template.
     """
 
+    settings_user_prefs_view = template_helpers.EZTItem(
+      **{name: None for name in framework_bizobj.USER_PREF_DEFS})
+    for upv in settings_user_prefs.prefs:
+      if upv.value == 'true':
+        setattr(settings_user_prefs_view, upv.name, True)
+      elif upv.value == 'false':
+        setattr(settings_user_prefs_view, upv.name, None)
+
+    logging.info('settings_user_prefs_view is %r' % settings_user_prefs_view)
     return {
         'settings_user': settings_user_view,
         'settings_user_pb': template_helpers.PBProxy(settings_user),
@@ -402,6 +416,7 @@ class UserSettings(object):
         'profile_url_fragment': (
             settings_user_view.profile_url[len('/u/'):]),
         'preview_on_hover': ezt.boolean(settings_user.preview_on_hover),
+        'settings_user_prefs': settings_user_prefs_view,
         }
 
   @classmethod
@@ -420,17 +435,14 @@ class UserSettings(object):
         cnxn, user_id, user, is_banned='banned' in post_data,
             banned_reason=post_data.get('banned_reason', ''))
 
-
   @classmethod
   def ProcessSettingsForm(
-      cls, cnxn, user_service, post_data, user_id, user, admin=False):
+      cls, we, post_data, user, admin=False):
     """Process the posted form data from the unified user settings form.
 
     Args:
-      cnxn: connection to the SQL database.
-      user_service: An instance of UserService for saving changes.
+      we: A WorkEnvironment with cnxn and services.
       post_data: The parsed post data from the form submission request.
-      user_id: The user id of the target user.
       user: The user PB of the target user.
       admin: Whether settings reserved for admins are supported.
     """
@@ -442,8 +454,8 @@ class UserSettings(object):
       kwargs.update(is_banned='banned' in post_data,
                     banned_reason=post_data.get('banned_reason', ''))
 
-    user_service.UpdateUserSettings(
-        cnxn, user_id, user, notify='notify' in post_data,
+    we.UpdateUserSettings(
+        user, notify='notify' in post_data,
         notify_starred='notify_starred' in post_data,
         email_compact_subject='email_compact_subject' in post_data,
         email_view_widget='email_view_widget' in post_data,
@@ -452,6 +464,13 @@ class UserSettings(object):
         obscure_email=obscure_email,
         vacation_message=post_data.get('vacation_message', ''),
         **kwargs)
+
+    user_prefs = []
+    for pref_name in ['restrict_new_issues', 'public_issue_notice']:
+      user_prefs.append(user_pb2.UserPrefValue(
+          name=pref_name,
+          value=('true' if pref_name in post_data else 'false')))
+    we.SetUserPrefs(user.user_id, user_prefs)
 
 
 def GetHostPort():

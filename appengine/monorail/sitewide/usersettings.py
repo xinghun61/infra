@@ -10,6 +10,7 @@ import urllib
 
 from third_party import ezt
 
+from businesslogic import work_env
 from framework import framework_helpers
 from framework import permissions
 from framework import servlet
@@ -40,16 +41,19 @@ class UserSettings(servlet.Servlet):
         'offer_saved_queries_subtab': ezt.boolean(True),
         'viewing_self': ezt.boolean(True),
         }
+    with work_env.WorkEnv(mr, self.services) as we:
+      settings_user_prefs = we.GetUserPrefs(mr.auth.user_id)
     page_data.update(
         framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-            mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb))
+            mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb,
+            settings_user_prefs))
     return page_data
 
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""
-    framework_helpers.UserSettings.ProcessSettingsForm(
-        mr.cnxn, self.services.user, post_data,
-        mr.auth.user_id, mr.auth.user_pb)
+    with work_env.WorkEnv(mr, self.services) as we:
+      framework_helpers.UserSettings.ProcessSettingsForm(
+          we, post_data, mr.auth.user_pb)
 
     url = framework_helpers.FormatAbsoluteURL(
         mr, urls.USER_SETTINGS, include_project=False,

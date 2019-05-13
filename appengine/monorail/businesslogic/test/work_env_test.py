@@ -2479,22 +2479,24 @@ class WorkEnvTest(unittest.TestCase):
   def testUpdateUserSettings(self):
     """We can update the settings of the logged in user."""
     self.SignIn()
+    user = self.services.user.GetUser(self.cnxn, 111)
     with self.work_env as we:
       we.UpdateUserSettings(
+          user,
           obscure_email=True,
           dismissed_cues=['code_of_conduct'],
           keep_people_perms_open=True)
 
-    user = self.services.user.GetUser(self.cnxn, 111)
     self.assertTrue(user.obscure_email)
     self.assertTrue(user.keep_people_perms_open)
     self.assertEqual(['code_of_conduct'], user.dismissed_cues)
 
   def testUpdateUserSettings_Anon(self):
     """A user must be logged in."""
+    anon = self.services.user.GetUser(self.cnxn, 0)
     with self.work_env as we:
       with self.assertRaises(exceptions.InputException):
-        we.UpdateUserSettings(keep_people_perms_open=True)
+        we.UpdateUserSettings(anon, keep_people_perms_open=True)
 
   def testGetUserPrefs_Anon(self):
     """Anon always has empty prefs."""

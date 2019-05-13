@@ -46,7 +46,8 @@ class UserSettingsTest(unittest.TestCase):
     self.mox.StubOutWithMock(
         framework_helpers.UserSettings, 'GatherUnifiedSettingsPageData')
     framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        0L, None, mox.IsA(user_pb2.User)).AndReturn({'unified': None})
+        0L, None, mox.IsA(user_pb2.User), mox.IsA(user_pb2.UserPrefs)
+        ).AndReturn({'unified': None})
     self.mox.ReplayAll()
 
     mr = testing_helpers.MakeMonorailRequest()

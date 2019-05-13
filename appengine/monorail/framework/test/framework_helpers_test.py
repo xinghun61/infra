@@ -10,10 +10,12 @@ import unittest
 import mox
 import time
 
+from businesslogic import work_env
 from framework import framework_helpers
 from framework import framework_views
 from proto import features_pb2
 from proto import project_pb2
+from proto import user_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -396,12 +398,21 @@ class ComputeListDeltasTest(unittest.TestCase):
 
 class UserSettingsTest(unittest.TestCase):
 
+  def setUp(self):
+    self.mr = testing_helpers.MakeMonorailRequest()
+    self.cnxn = 'cnxn'
+    self.services = service_manager.Services(
+        user=fake.UserService(),
+        usergroup=fake.UserGroupService())
+
   def testGatherUnifiedSettingsPageData(self):
-    mr = testing_helpers.MakeMonorailRequest()
+    mr = self.mr
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
     mr.auth.user_view.profile_url = '/u/profile/url'
+    userprefs = user_pb2.UserPrefs(
+      prefs=[user_pb2.UserPrefValue(name='public_issue_notice', value='true')])
     page_data = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
-        mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb)
+        mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb, userprefs)
 
     expected_keys = [
         'settings_user',
@@ -410,12 +421,55 @@ class UserSettingsTest(unittest.TestCase):
         'self',
         'profile_url_fragment',
         'preview_on_hover',
+        'settings_user_prefs',
         ]
     self.assertItemsEqual(expected_keys, page_data.keys())
 
     self.assertEqual('profile/url', page_data['profile_url_fragment'])
+    self.assertTrue(page_data['settings_user_prefs'].public_issue_notice)
+    self.assertFalse(page_data['settings_user_prefs'].restrict_new_issues)
 
-  # TODO(jrobbins): Test ProcessForm.
+  def testProcessBanForm(self):
+    """We can ban and unban users."""
+    user = self.services.user.TestAddUser('one@example.com', 111)
+    post_data = {'banned': 1, 'banned_reason': 'rude'}
+    framework_helpers.UserSettings.ProcessBanForm(
+      self.cnxn, self.services.user, post_data, 111, user)
+    self.assertEqual('rude', user.banned)
+
+    post_data = {}  # not banned
+    framework_helpers.UserSettings.ProcessBanForm(
+      self.cnxn, self.services.user, post_data, 111, user)
+    self.assertEqual('', user.banned)
+
+  def testProcessSettingsForm_OldStylePrefs(self):
+    """We can set prefs that are stored in the User PB."""
+    user = self.services.user.TestAddUser('one@example.com', 111)
+    post_data = {'obscure_email': 1, 'notify': 1}
+    with work_env.WorkEnv(self.mr, self.services) as we:
+      framework_helpers.UserSettings.ProcessSettingsForm(
+          we, post_data, user)
+
+    self.assertTrue(user.obscure_email)
+    self.assertTrue(user.notify_issue_change)
+    self.assertFalse(user.notify_starred_ping)
+
+  def testProcessSettingsForm_NewStylePrefs(self):
+    """We can set prefs that are stored in the UserPrefs PB."""
+    user = self.services.user.TestAddUser('one@example.com', 111)
+    post_data = {'restrict_new_issues': 1}
+    with work_env.WorkEnv(self.mr, self.services) as we:
+      framework_helpers.UserSettings.ProcessSettingsForm(
+          we, post_data, user)
+      userprefs = we.GetUserPrefs(111)
+
+    actual = {upv.name: upv.value
+              for upv in userprefs.prefs}
+    expected = {
+      'restrict_new_issues': 'true',
+      'public_issue_notice': 'false',
+      }
+    self.assertEqual(expected, actual)
 
 
 class MurmurHash3Test(unittest.TestCase):

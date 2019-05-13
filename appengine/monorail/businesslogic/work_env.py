@@ -1612,19 +1612,20 @@ class WorkEnv(object):
     with self.mc.profiler.Phase('Unlink accounts'):
       self.services.user.UnlinkAccounts(self.mc.cnxn, parent_id, child_id)
 
-  def UpdateUserSettings(self, **kwargs):
+  def UpdateUserSettings(self, user, **kwargs):
     """Update the preferences of the specified user.
 
     Args:
+      user: User PB for the user to update.
       keyword_args: dictionary of setting names mapped to new values.
     """
-    if not self.mc.auth.user_id:
+    if not user or not user.user_id:
       raise exceptions.InputException('Cannot update user settings for anon.')
 
     with self.mc.profiler.Phase(
         'updating settings for %s with %s' % (self.mc.auth.user_id, kwargs)):
       self.services.user.UpdateUserSettings(
-          self.mc.cnxn, self.mc.auth.user_id, self.mc.auth.user_pb, **kwargs)
+          self.mc.cnxn, user.user_id, user, **kwargs)
 
   def GetUserPrefs(self, user_id):
     """Get the UserPrefs for the specified user."""
@@ -2079,7 +2080,8 @@ class WorkEnv(object):
         return
       new_dismissed_cues.append(cue_id)
 
-    self.UpdateUserSettings(dismissed_cues=new_dismissed_cues)
+    self.UpdateUserSettings(
+        self.mc.auth.user_pb, dismissed_cues=new_dismissed_cues)
 
   def expungeUsersFromStars(self, user_ids):
     """Wipes any starred user or user's stars from all star services.
