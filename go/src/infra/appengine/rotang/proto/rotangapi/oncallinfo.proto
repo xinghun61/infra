@@ -1,0 +1,109 @@
+// Definitions for the RotaNG OncallInfo Service.
+// This API can be used to query information about
+// who's currently oncall or for an arbitrary time
+// range.
+syntax = "proto3";
+
+package rotangapi;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+
+// The OncallInfo service provides an API to get who's on-call
+// information from RotaNG.
+service OncallInfo {
+  // Oncall can be used to get the current oncaller(s) for the
+  // provided rotation.
+  rpc Oncall(OncallRequest) returns (OncallResponse) {}
+  // ListRotations lists all configured rotations.
+  rpc ListRotations(ListRotationsRequest) returns (ListRotationsResponse) {}
+  // Shifts returns ShiftEntries for a specific time range.
+  // Leaving times empty returns all shifts.
+  rpc Shifts(ShiftsRequest) returns (ShiftsResponse) {}
+}
+
+// OncallRequest contains the name of the rotation of interest.
+message OncallRequest {
+  // name is a required field containing the name of the rotation
+  // of interest.
+  string name = 1;
+}
+
+// OncallResponse contains the current on-callers for a rotation.
+message OncallResponse {
+  // shift contains the current shift entry for the specified rotation.
+  ShiftEntry shift = 1;
+}
+
+// ListRotationsRequest is used to get a list of all configured rotations.
+message ListRotationsRequest {}
+
+// ListRotationsResponse contains the configured rotations.
+message ListRotationsResponse {
+  repeated Rotation rotations = 1;
+}
+
+// ShiftsRequest defines shifts of interest to fetch.
+message ShiftsRequest {
+  // name is a required field containing the rotation name of interest.
+  string name = 1;
+  // start contains the beginning of the time range of interest.
+  // Leaving this field empty will fetch shifts from the beginning of time.
+  google.protobuf.Timestamp start = 2;
+  // end contains the end of the time range of interest.
+  // Leaving this field empty will fetch shift to the end of time.
+  google.protobuf.Timestamp end = 3;
+}
+
+// ShiftsResponse contains the shifts requested by ShiftsRequest.
+message ShiftsResponse {
+  repeated ShiftEntry shifts = 1;
+}
+
+// Shift defines a shift configuration.
+// RotaNG supports rotations with multiple shifts.
+// Eg. follow-the-sun configurations:
+// Shift:
+//   SYD: 8hours
+//   MTV: 8hours
+//   EY:  8hours.
+message ShiftConfiguration {
+  string name = 1;
+  google.protobuf.Duration duration = 2;
+  repeated ShiftEntry entries = 3;
+}
+
+// ShiftEntry defines a single shift.
+message ShiftEntry {
+  // name is the Shift configuration this entry belongs to.
+  string name = 1;
+  // oncallers is the email addresses of the members on-call
+  // for this shift.
+  repeated OnCaller oncallers = 2;
+  // start is the start of this shift.
+  google.protobuf.Timestamp start = 3;
+  // end is the end of the shift.
+  google.protobuf.Timestamp end = 4;
+  // comment contains an optional comment about this shift.
+  // Eg. Information about a shift swap.
+  string comment = 5;
+  // event_id contains the Google Calendar Event ID of this shift.
+  // Only enabled rotations will have event_id's.
+  string event_id = 6;
+}
+
+// OnCaller contains one membe on-call for a shift.
+message OnCaller {
+  string email = 1;
+}
+
+// Rotation contains the Rotation information returned by the List
+// RPC call.
+message Rotation {
+  // name contain the name of the rotation.
+  string name = 1;
+  // enabled signifies if the rotation is enabled.
+  // A rotation needs to be enabled to create/modify Google calendar
+  // events and sending e-mails.
+  bool enabled = 2;
+}

@@ -19,6 +19,7 @@ import (
 	"infra/appengine/rotang/pkg/calendar"
 	"infra/appengine/rotang/pkg/datastore"
 
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
@@ -26,6 +27,8 @@ import (
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/discovery"
+	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
@@ -34,6 +37,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	gcal "google.golang.org/api/calendar/v3"
+
+	apb "infra/appengine/rotang/proto/rotangapi"
 )
 
 const (
@@ -76,13 +81,13 @@ var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg s
 	w.Write([]byte(msg))
 }
 
-func requireGoogler(ctx *router.Context, next router.Handler) {
-	isGoogler, err := auth.IsMember(ctx.Context, authGroup)
+func requireSheriff(ctx *router.Context, next router.Handler) {
+	hasAccess, err := auth.IsMember(ctx.Context, authGroup)
 	if err != nil {
 		errStatus(ctx.Context, ctx.Writer, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if !isGoogler {
+	if !hasAccess {
 		url, err := auth.LoginURL(ctx.Context, ctx.Params.ByName("path"))
 		if err != nil {
 			errStatus(ctx.Context, ctx.Writer, http.StatusForbidden, "Access denied err:"+err.Error())
@@ -166,6 +171,17 @@ func prepareTemplates(templatesPath string) *templates.Bundle {
 	}
 }
 
+func checkAPIAccess(ctx context.Context, methodName string, req proto.Message) (context.Context, error) {
+	hasAccess, err := auth.IsMember(ctx, authGroup)
+	if err != nil {
+		return nil, err
+	}
+	if !hasAccess {
+		return nil, status.Errorf(codes.PermissionDenied, "%s does not have access to the Oncall API", auth.CurrentIdentity(ctx))
+	}
+	return ctx, nil
+}
+
 func init() {
 	prodENV := os.Getenv("PROD_ENV")
 	switch prodENV {
@@ -189,7 +205,7 @@ func init() {
 
 	tmw := middleware.Extend(templates.WithTemplates(prepareTemplates("templates")), auth.Authenticate(server.UsersAPIAuthMethod{}))
 
-	protected := tmw.Extend(requireGoogler)
+	protected := tmw.Extend(requireSheriff)
 
 	// Sort out the generators.
 	gs := algo.New()
@@ -223,6 +239,14 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var api prpc.Server
+	apb.RegisterOncallInfoServer(&api, &apb.DecoratedOncallInfo{
+		Service: h,
+		Prelude: checkAPIAccess,
+	})
+	discovery.Enable(&api)
+	api.InstallHandlers(r, standard.Base())
 
 	r.GET("/", tmw, h.HandleIndex)
 	r.GET("/upload", protected, h.HandleUpload)

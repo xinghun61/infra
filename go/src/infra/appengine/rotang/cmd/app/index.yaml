@@ -10,3 +10,8 @@ indexes:
   ancestor: yes
   properties:
   - name: "EndTime"
+
+- kind: "DsShiftEntry"
+  ancestor: yes
+  properties:
+  - name: "StartTime"
