@@ -79,7 +79,11 @@ PROPERTIES = {
   'flashing_builder_bucket': Property(
       kind=str,
       help='Bucket containing the flashing builder',
-      default='luci.infra.cron')
+      default='luci.infra.cron'),
+  'image_type': Property(
+      kind=str,
+      help='Type of image to be flashed [release, release-tryjob, full, etc.]',
+      default='full'),
 }
 
 
@@ -138,7 +142,7 @@ class DUTBot(object):
     self._parse_swarming_dict(result.stdout)
 
 
-def get_closest_available_version(api, board, lkgm_base):
+def get_closest_available_version(api, board, image_type, lkgm_base):
   """Returns the GS path of the latest image for the given board and lkgm.
 
   This finds the first LATEST-$lkgm file in GS closest to the current lkgm.
@@ -155,10 +159,7 @@ def get_closest_available_version(api, board, lkgm_base):
     The 5-digit manifest for the latest image.
     GS path for the latest image.
   """
-  # Append '-full' to every board, which indicates we want public versions
-  # of the board's images.
-  # TODO(crbug.com/866062): Support private images (if we ever want them).
-  board += '-full'
+  board += '-' + image_type
   gs_path_prefix = 'gs://%s/%s/' % (CHROMEOS_IMAGE_BUCKET, board)
   with api.step.nest('find latest image at %s' % lkgm_base):
     # Occasionally an image won't be available for the board at the current
@@ -213,7 +214,8 @@ def trigger_flash(api, bot, gs_image_path, flashing_builder,
 
 
 def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
-             random_seed, flashing_builder, flashing_builder_bucket):
+             random_seed, flashing_builder, flashing_builder_bucket,
+             image_type):
   # Recipe-runtime import of random to avoid "Non-whitelisted" recipe errors.
   # TODO(crbug.com/913124): Remove this.
   import random
@@ -240,7 +242,7 @@ def RunSteps(api, swarming_server, swarming_pool, device_type, bb_host,
 
   # Fetch the full path in GS for the board at the current lkgm.
   latest_version_base, latest_version_gs_path = get_closest_available_version(
-      api, device_type, lkgm_base)
+      api, device_type, image_type, lkgm_base)
   if not latest_version_gs_path:
     api.python.failing_step('no available image at %s' % lkgm, '')
   gs_image_path = latest_version_gs_path + '/chromiumos_test_image.tar.xz'
