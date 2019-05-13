@@ -260,7 +260,6 @@ class NewBuild(object):
       return
 
     build_id = yield ndb.get_context().memcache_get(cache_key)
-    logging.debug('build cache get: %r => %r', cache_key, build_id)
     if build_id:
       self.build = yield model.Build.get_by_id_async(build_id)
 
@@ -311,7 +310,6 @@ class NewBuild(object):
     cache_key = self.request._request_id_memcache_key()
     if cache_key:  # pragma: no branch
       yield ndb.get_context().memcache_set(cache_key, b.key.id(), 60)
-      logging.debug('build cache put: %r => %r', cache_key, b.key.id())
 
 
 @ndb.tasklet
