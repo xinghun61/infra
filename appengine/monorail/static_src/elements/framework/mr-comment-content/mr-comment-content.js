@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
+import {ifDefined} from 'lit-html/directives/if-defined';
 import {autolink} from 'autolink.js';
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
@@ -14,83 +14,69 @@ import * as issue from 'elements/reducers/issue.js';
  * Displays text for a comment.
  *
  */
-export class MrCommentContent extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <style>
-        :host {
-          word-break: break-word;
-          font-size: var(--chops-main-font-size);
-          line-height: 130%;
-          font-family: var(--mr-toggled-font-family);
-        }
-        :host[is-deleted] {
-          color: #888;
-          font-style: italic;
-        }
-        .line {
-          white-space: pre-wrap;
-        }
-        .strike-through {
-          text-decoration: line-through;
-        }
-      </style>
-      <template is="dom-repeat" items="[[_textRuns]]" as="run"
-        ><b
-            class="line"
-            hidden\$="[[!_isTagEqual(run.tag, 'b')]]"
-          >[[run.content]]</b
-        ><br hidden\$="[[!_isTagEqual(run.tag, 'br')]]"
-        ><a
-            class="line"
-            hidden\$="[[!_isTagEqual(run.tag, 'a')]]"
-            target="_blank"
-            href\$="[[run.href]]"
-            class\$="[[run.css]]"
-            title\$="[[run.title]]"
-          >[[run.content]]</a
-        ><span class="line" hidden\$="[[run.tag]]">[[run.content]]</span
-      ></template>
-    `;
-  }
+export class MrCommentContent extends connectStore(LitElement) {
+  constructor() {
+    super();
 
-  static get is() {
-    return 'mr-comment-content';
+    this.content = '';
+    this.commentReferences = new Map();
+    this.isDeleted = false;
+    this.projectName = '';
   }
 
   static get properties() {
     return {
-      content: String,
-      commentReferences: {
-        type: Object,
-        value: () => new Map(),
-      },
-      isDeleted: {
-        type: Boolean,
-        reflectToAttribute: true,
-      },
-      projectName: String,
-      _textRuns: {
-        type: Array,
-        computed: '_computeTextRuns(content, commentReferences, projectName)',
-      },
+      content: {type: String},
+      commentReferences: {type: Object},
+      isDeleted: {type: Boolean},
+      projectName: {type: String},
     };
   }
 
-  stateChanged(state) {
-    this.setProperties({
-      commentReferences: issue.commentReferences(state),
-      projectName: issue.issueRef(state).projectName,
+  static get styles() {
+    return css`
+      :host {
+        word-break: break-word;
+        font-size: var(--chops-main-font-size);
+        line-height: 130%;
+        font-family: var(--mr-toggled-font-family);
+      }
+      :host[isDeleted] {
+        color: #888;
+        font-style: italic;
+      }
+      .line {
+        white-space: pre-wrap;
+      }
+      .strike-through {
+        text-decoration: line-through;
+      }
+    `;
+  }
+
+  render() {
+    const runs = autolink.markupAutolinks(
+      this.content, this.commentReferences, this.projectName);
+    const templates = runs.map((run) => {
+      switch (run.tag) {
+        case 'b':
+          return html`<b class="line">${run.content}</b>`;
+        case 'br':
+          return html`<br>`;
+        case 'a':
+          return html`
+            <a class="line" target="_blank" href=${run.href} class=${run.css}
+                title=${ifDefined(run.title)}>${run.content}</a>`;
+        default:
+          return html`<span class="line">${run.content}</span>`;
+      }
     });
+    return html`${templates}`;
   }
 
-  _isTagEqual(tag, str) {
-    return tag == str;
-  }
-
-  _computeTextRuns(content, commentReferences, projectName) {
-    return autolink.markupAutolinks(
-      content, commentReferences, projectName);
+  stateChanged(state) {
+    this.commentReferences = issue.commentReferences(state);
+    this.projectName = issue.issueRef(state).projectName;
   }
 }
-customElements.define(MrCommentContent.is, MrCommentContent);
+customElements.define('mr-comment-content', MrCommentContent);

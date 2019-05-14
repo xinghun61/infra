@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 import './mr-comment-content.js';
 import './mr-attachment.js';
 
@@ -16,103 +16,87 @@ import {standardTimeShort} from
  * Element for displaying a description or survey.
  *
  */
-export class MrDescription extends PolymerElement {
-  static get template() {
-    return html`
-      <style>
-        .select-container {
-          width: 100%;
-          float: left;
-        }
-        select {
-          float: right;
-        }
-      </style>
-      <div class="select-container">
-        <select
-          on-change="_selectChanged"
-          hidden\$="[[!_hasDescriptionSelector]]"
-          aria-label="Description history menu">
-          <template is="dom-repeat" items="[[descriptionList]]" as="description">
-            <option value$="[[index]]" selected$="[[_isSelected(index, selectedIndex)]]">
-              Description #[[_addOne(index)]] by [[description.commenter.displayName]]
-              ([[_formatRelativeTime(description.timestamp)]])
-            </option>
-          </template>
-        </select>
-      </div>
-      <mr-comment-content
-        content="[[_selectedDescription.content]]"
-      ></mr-comment-content>
-      <div>
-        <template is="dom-repeat" items="[[_selectedDescription.attachments]]" as="attachment">
-          <mr-attachment
-            attachment="[[attachment]]"
-            project-name="[[_selectedDescription.projectName]]"
-            local-id="[[_selectedDescription.localId]]"
-            sequence-num="[[_selectedDescription.sequenceNum]]"
-            can-delete="[[_selectedDescription.canDelete]]"
-          ></mr-attachment>
-        </template>
-      </div>
-    `;
-  }
+export class MrDescription extends LitElement {
+  constructor() {
+    super();
 
-  static get is() {
-    return 'mr-description';
+    this.descriptionList = [];
+    this.selectedIndex = 0;
   }
 
   static get properties() {
     return {
-      descriptionList: {
-        type: Array,
-        observer: '_onDescriptionListChanged',
-      },
-      selectedIndex: Number,
-      _selectedDescription: {
-        type: Text,
-        computed: '_computeSelectedDescription(descriptionList, selectedIndex)',
-      },
-      _hasDescriptionSelector: {
-        type: Boolean,
-        computed: '_computeHasDescriptionSelector(descriptionList)',
-      },
+      descriptionList: {type: Array},
+      selectedIndex: {type: Number},
     };
   }
 
-  _computeHasDescriptionSelector(descriptionList) {
-    return descriptionList && descriptionList.length > 1;
+  updated(changedProperties) {
+    super.updated(changedProperties);
+
+    if (changedProperties.has('descriptionList')) {
+      if (!this.descriptionList || !this.descriptionList.length) return;
+      this.selectedIndex = this.descriptionList.length - 1;
+    }
   }
 
-  _computeSelectedDescription(descriptionList, selectedIndex) {
-    if (!descriptionList || !descriptionList.length
-      || selectedIndex === undefined || selectedIndex < 0
-      || selectedIndex >= descriptionList.length) return {};
-    return descriptionList[selectedIndex];
+  static get styles() {
+    return css`
+      .select-container {
+        width: 100%;
+        float: left;
+      }
+      select {
+        float: right;
+      }
+    `;
   }
 
-  _onDescriptionListChanged(descriptionList) {
-    if (!descriptionList || !descriptionList.length) return;
-    this.selectedIndex = descriptionList.length - 1;
-  }
+  render() {
+    const selectedDescription =
+      (this.descriptionList || [])[this.selectedIndex] || {};
 
-  _isSelected(index, selectedIndex) {
-    return index === selectedIndex;
+    return html`
+      <div class="select-container">
+        <select
+          @change=${this._selectChanged}
+          ?hidden=${!this.descriptionList || this.descriptionList.length <= 1}
+          aria-label="Description history menu">
+          ${this.descriptionList.map((description, index) => html`
+            <option value=${index} ?selected=${index === this.selectedIndex}>
+              Description #${index + 1} by ${description.commenter.displayName}
+              (${_relativeTime(description.timestamp)})
+            </option>
+          `)}
+        </select>
+      </div>
+      <mr-comment-content
+        .content=${selectedDescription.content}
+      ></mr-comment-content>
+      <div>
+        ${(selectedDescription.attachments || []).map((attachment) => html`
+          <mr-attachment
+            .attachment=${attachment}
+            .projectName=${selectedDescription.projectName}
+            .localId=${selectedDescription.localId}
+            .sequenceNum=${selectedDescription.sequenceNum}
+            .canDelete=${selectedDescription.canDelete}
+          ></mr-attachment>
+        `)}
+      </div>
+    `;
   }
 
   _selectChanged(evt) {
     if (!evt || !evt.target) return;
     this.selectedIndex = Number.parseInt(evt.target.value);
   }
-
-  _formatRelativeTime(unixTime) {
-    unixTime = Number.parseInt(unixTime);
-    if (Number.isNaN(unixTime)) return;
-    return standardTimeShort(new Date(unixTime * 1000));
-  }
-
-  _addOne(num) {
-    return num + 1;
-  }
 }
-customElements.define(MrDescription.is, MrDescription);
+
+function _relativeTime(unixTime) {
+  unixTime = Number.parseInt(unixTime);
+  if (Number.isNaN(unixTime)) return;
+  return standardTimeShort(new Date(unixTime * 1000));
+}
+
+customElements.define('mr-description', MrDescription);
