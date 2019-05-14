@@ -9,7 +9,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_ready_to_commit",
         "patchset": 1,
         "issue": 123456789,
@@ -34,7 +33,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_stop",
         "patchset": 1,
         "issue": 123456789,
@@ -59,7 +57,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_committed",
         "patchset": 1,
         "issue": 123456789,
@@ -84,7 +81,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_ready_to_commit",
         "patchset": 1,
         "issue": 123456789,
@@ -109,7 +105,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_committing",
         "patchset": 1,
         "issue": 123456789,
@@ -134,7 +129,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_ready_to_commit",
         "patchset": 1,
         "issue": 123456789,
@@ -160,7 +154,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434405203552430,
-        "done": true,
         "action": "verifier_pass",
         "patchset": 1,
         "issue": 123456789
@@ -256,7 +249,6 @@
         },
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434405203552430,
-        "done": false,
         "action": "verifier_jobs_update",
         "patchset": 1,
         "issue": 123456789
@@ -325,7 +317,6 @@
         },
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434405203552430,
-        "done": false,
         "action": "verifier_jobs_update",
         "patchset": 1,
         "issue": 123456789
@@ -351,7 +342,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434405203552430,
-        "done": false,
         "action": "verifier_trigger",
         "patchset": 1,
         "issue": 123456789,
@@ -384,7 +374,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434405203552430,
-        "done": true,
         "action": "verifier_start",
         "patchset": 1,
         "issue": 123456789
@@ -410,7 +399,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 0,
-        "done": true,
         "action": "verifier_custom_trybots",
         "patchset": 1,
         "issue": 123456789
@@ -435,7 +423,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": false,
         "action": "patch_start",
         "patchset": 1,
         "issue": 123456789,
@@ -460,7 +447,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_stop",
         "patchset": 1,
         "issue": 123456789,
@@ -500,7 +486,6 @@
             }
           ]
         },
-        "done": true,
         "action": "patch_failed",
         "patchset": 1,
         "issue": 123456789,
@@ -526,7 +511,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404451503610,
-        "done": true,
         "action": "verifier_fail",
         "patchset": 1,
         "issue": 123456789
@@ -663,7 +647,6 @@
         },
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404451503610,
-        "done": false,
         "action": "verifier_jobs_update",
         "patchset": 1,
         "issue": 123456789
@@ -689,7 +672,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404451503610,
-        "done": false,
         "action": "verifier_trigger",
         "patchset": 1,
         "issue": 123456789,
@@ -723,7 +705,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404451503610,
-        "done": false,
         "action": "verifier_retry",
         "patchset": 1,
         "issue": 123456789
@@ -808,7 +789,6 @@
         },
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404451503610,
-        "done": false,
         "action": "verifier_jobs_update",
         "patchset": 1,
         "issue": 123456789
@@ -834,7 +814,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404451503610,
-        "done": false,
         "action": "verifier_trigger",
         "patchset": 1,
         "issue": 123456789,
@@ -867,7 +846,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404451503610,
-        "done": true,
         "action": "verifier_start",
         "patchset": 1,
         "issue": 123456789
@@ -893,7 +871,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 0,
-        "done": true,
         "action": "verifier_custom_trybots",
         "patchset": 1,
         "issue": 123456789
@@ -918,7 +895,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": false,
         "action": "patch_start",
         "patchset": 1,
         "issue": 123456789,
@@ -943,7 +919,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_stop",
         "patchset": 1,
         "issue": 123456789,
@@ -983,7 +958,6 @@
             }
           ]
         },
-        "done": true,
         "action": "patch_failed",
         "patchset": 1,
         "issue": 123456789,
@@ -1009,7 +983,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404228060430,
-        "done": true,
         "action": "verifier_fail",
         "patchset": 1,
         "issue": 123456789
@@ -1146,7 +1119,6 @@
         },
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404228060430,
-        "done": false,
         "action": "verifier_jobs_update",
         "patchset": 1,
         "issue": 123456789
@@ -1172,7 +1144,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404228060430,
-        "done": false,
         "action": "verifier_trigger",
         "patchset": 1,
         "issue": 123456789,
@@ -1206,7 +1177,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404228060430,
-        "done": false,
         "action": "verifier_retry",
         "patchset": 1,
         "issue": 123456789
@@ -1291,7 +1261,6 @@
         },
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404228060430,
-        "done": false,
         "action": "verifier_jobs_update",
         "patchset": 1,
         "issue": 123456789
@@ -1317,7 +1286,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404228060430,
-        "done": false,
         "action": "verifier_trigger",
         "patchset": 1,
         "issue": 123456789,
@@ -1350,7 +1318,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 1434404228060430,
-        "done": true,
         "action": "verifier_start",
         "patchset": 1,
         "issue": 123456789
@@ -1376,7 +1343,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "attempt_start_ts": 0,
-        "done": true,
         "action": "verifier_custom_trybots",
         "patchset": 1,
         "issue": 123456789
@@ -1401,7 +1367,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": false,
         "action": "patch_start",
         "patchset": 1,
         "issue": 123456789,
@@ -1426,7 +1391,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": true,
         "action": "patch_stop",
         "patchset": 1,
         "issue": 123456789,
@@ -1455,7 +1419,6 @@
           "fail_type": "missing_lgtm",
           "failed_try_jobs": null
         },
-        "done": true,
         "action": "patch_failed",
         "patchset": 1,
         "issue": 123456789,
@@ -1480,7 +1443,6 @@
         "project": "blink",
         "owner": "test@chromium.org",
         "reason": null,
-        "done": false,
         "action": "patch_start",
         "patchset": 1,
         "issue": 123456789,

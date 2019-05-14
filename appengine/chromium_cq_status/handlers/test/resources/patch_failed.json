@@ -9,7 +9,6 @@
 			"project": "skiabuildbot",
 			"owner": "test@chromium.org",
 			"reason": null,
-			"done": false,
 			"action": "patch_start",
 			"patchset": 1,
 			"issue": 123456789,
@@ -36,7 +35,6 @@
 			"project": "skiabuildbot",
 			"owner": "test@chromium.org",
 			"attempt_start_ts": 1434395516693630,
-			"done": true,
 			"action": "verifier_start",
 			"patchset": 1,
 			"issue": 123456789
@@ -63,7 +61,6 @@
 			"project": "skiabuildbot",
 			"owner": "test@chromium.org",
 			"attempt_start_ts": 1434395516693630,
-			"done": false,
 			"action": "verifier_trigger",
 			"patchset": 1,
 			"issue": 123456789,
@@ -151,7 +148,6 @@
 			},
 			"owner": "test@chromium.org",
 			"attempt_start_ts": 1434395516693630,
-			"done": false,
 			"action": "verifier_jobs_update",
 			"patchset": 1,
 			"issue": 123456789
@@ -229,7 +225,6 @@
 			},
 			"owner": "test@chromium.org",
 			"attempt_start_ts": 1434395516693630,
-			"done": false,
 			"action": "verifier_jobs_update",
 			"patchset": 1,
 			"issue": 123456789
@@ -256,7 +251,6 @@
 			"project": "skiabuildbot",
 			"owner": "test@chromium.org",
 			"attempt_start_ts": 1434395516693630,
-			"done": true,
 			"action": "verifier_fail",
 			"patchset": 1,
 			"issue": 123456789
@@ -282,7 +276,6 @@
 			"project": "skiabuildbot",
 			"owner": "test@chromium.org",
 			"reason": null,
-			"done": true,
 			"action": "patch_failed",
 			"patchset": 1,
 			"issue": 123456789,
@@ -308,7 +301,6 @@
 			"project": "skiabuildbot",
 			"owner": "test@chromium.org",
 			"reason": null,
-			"done": true,
 			"action": "patch_stop",
 			"patchset": 1,
 			"issue": 123456789,
