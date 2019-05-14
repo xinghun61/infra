@@ -5,6 +5,8 @@
 
 """Unittest for the dateaction module."""
 
+from __future__ import division
+
 import logging
 import time
 import unittest
@@ -43,7 +45,7 @@ class DateActionCronTest(unittest.TestCase):
     NOW = 1492120863
     self.mox.StubOutWithMock(time, 'time')
     time.time().MultipleTimes().AndReturn(NOW)
-    TIMESTAMP_MIN = (NOW / framework_constants.SECS_PER_DAY *
+    TIMESTAMP_MIN = (NOW // framework_constants.SECS_PER_DAY *
                      framework_constants.SECS_PER_DAY)
     TIMESTAMP_MAX = TIMESTAMP_MIN + framework_constants.SECS_PER_DAY
 

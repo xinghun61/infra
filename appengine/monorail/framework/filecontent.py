@@ -5,6 +5,8 @@
 
 """Utility routines for dealing with MIME types and decoding text files."""
 
+from __future__ import division
+
 import itertools
 import logging
 

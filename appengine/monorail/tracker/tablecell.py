@@ -5,6 +5,8 @@
 
 """Classes that generate value cells in the issue list table."""
 
+from __future__ import division
+
 import logging
 import time
 from third_party import ezt
@@ -471,7 +473,7 @@ class TableCellOwnerLastVisitDaysAgo(table_view_helpers.TableCell):
     last_visit_days_ago = None
     if owner_view and owner_view.user.last_visit_timestamp:
       secs_ago = int(time.time()) - owner_view.user.last_visit_timestamp
-      last_visit_days_ago = secs_ago / framework_constants.SECS_PER_DAY
+      last_visit_days_ago = secs_ago // framework_constants.SECS_PER_DAY
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_UNFILTERABLE, [last_visit_days_ago])
 

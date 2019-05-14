@@ -13,6 +13,8 @@ The page also shows project data storage quota and usage values, and
 site admins can edit those quotas.
 """
 
+from __future__ import division
+
 import logging
 import time
 
@@ -102,11 +104,11 @@ class ProjectAdminAdvanced(servlet.Servlet):
   def _BuildComponentQuota(self, used_bytes, quota_bytes, field_name):
     """Return an object to easily display quota info in EZT."""
     if quota_bytes:
-      used_percent = 100 * used_bytes / quota_bytes
+      used_percent = 100 * used_bytes // quota_bytes
     else:
       used_percent = 0
 
-    quota_mb = quota_bytes / 1024 / 1024
+    quota_mb = quota_bytes // 1024 // 1024
 
     return template_helpers.EZTItem(
         used=template_helpers.BytesKbOrMb(used_bytes),

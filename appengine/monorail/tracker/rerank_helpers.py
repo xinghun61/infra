@@ -9,6 +9,8 @@ This file contains methods that implement a reranking algorithm for
 issues in a list.
 """
 
+from __future__ import division
+
 import sys
 
 MAX_RANKING = sys.maxint
@@ -56,8 +58,8 @@ def GetInsertRankings(lower, higher, moved_ids):
 
 def _DistributeRanks(low, high, rank_count):
   """Compute evenly distributed ranks in a range"""
-  bucket_size = (high - low) / rank_count
-  first_rank = low + (bucket_size + 1) / 2
+  bucket_size = (high - low) // rank_count
+  first_rank = low + (bucket_size + 1) // 2
   return range(first_rank, high, bucket_size)
 
 

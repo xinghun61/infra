@@ -5,6 +5,8 @@
 
 """Helper functions and classes used throughout Monorail."""
 
+from __future__ import division
+
 import logging
 import random
 import string
@@ -537,7 +539,7 @@ def MurmurHash3_x86_32(key, seed=0x0):
     return h;
 
   length = len(key)
-  nblocks = int(length / 4)
+  nblocks = int(length // 4)
 
   h1 = seed;
 

@@ -6,6 +6,8 @@
 
 """Unit tests for issue_svc module."""
 
+from __future__ import division
+
 import logging
 import time
 import unittest
@@ -1654,7 +1656,7 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, cols=issue_svc.COMMENT_COLS,
         where=None, id=comment_id, order_by=[('created', [])],
         shard_id=mox.IsA(int)).AndReturn([
-            (comment_id, int(comment_id / 100), self.now, 789, 111,
+            (comment_id, int(comment_id // 100), self.now, 789, 111,
              None, False, True, commentcontent_id)])
     self.services.issue.commentcontent_tbl.Select(
         self.cnxn, cols=issue_svc.COMMENTCONTENT_COLS,

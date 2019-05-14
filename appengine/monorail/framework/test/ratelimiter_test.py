@@ -5,6 +5,9 @@
 
 """Unit tests for RateLimiter.
 """
+
+from __future__ import division
+
 import unittest
 
 from google.appengine.api import memcache
@@ -257,7 +260,7 @@ class RateLimiterTest(unittest.TestCase):
     self.ratelimiter.CheckStart(request, start_time)
 
     # Take longer than the threshold to process the request.
-    now = start_time + (settings.ratelimiting_cost_thresh_ms + 1) / 1000
+    now = start_time + (settings.ratelimiting_cost_thresh_ms + 1) // 1000
 
     # The request finished, taking longer than the cost
     # threshold.

@@ -9,6 +9,8 @@ feature extraction, so that the serving code and training code both use the same
 set of features.
 """
 
+from __future__ import division
+
 import csv
 import hashlib
 import httplib2

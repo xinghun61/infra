@@ -10,6 +10,8 @@ to perform an action when that date arrives, then this cron handler and the
 associated tasks carry out those actions on that issue.
 """
 
+from __future__ import division
+
 import logging
 import time
 
@@ -81,7 +83,7 @@ class DateActionCron(jsonfeed.InternalTask):
 
 def _GetTimestampRange(now):
   """Return a (min, max) timestamp range for today."""
-  timestamp_min = (now / framework_constants.SECS_PER_DAY *
+  timestamp_min = (now // framework_constants.SECS_PER_DAY *
                    framework_constants.SECS_PER_DAY)
   timestamp_max = timestamp_min + framework_constants.SECS_PER_DAY
   return timestamp_min, timestamp_max

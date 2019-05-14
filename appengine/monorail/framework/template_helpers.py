@@ -5,6 +5,8 @@
 
 """Some utility classes for interacting with templates."""
 
+from __future__ import division
+
 import cgi
 import cStringIO
 import httplib

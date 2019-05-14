@@ -5,6 +5,8 @@
 
 """Unit tests for template_helpers module."""
 
+from __future__ import division
+
 import unittest
 
 from framework import pbproxy_test_pb2
@@ -147,8 +149,8 @@ class HelpersUnitTest(unittest.TestCase):
       self.assertEqual(fitted_unsafe_text, unicode_s)
 
       # Set some values that test FitString well.
-      available_space = length / 2
-      max_trailing = length / 4
+      available_space = length // 2
+      max_trailing = length // 4
       # Break the string at various places - symmetric range around 0
       for i in range(1-max_trailing, max_trailing):
         # Test the FitUnsafeText method.

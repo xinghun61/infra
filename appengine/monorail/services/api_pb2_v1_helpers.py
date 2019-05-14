@@ -5,6 +5,8 @@
 
 """Convert Monorail PB objects to API PB objects"""
 
+from __future__ import division
+
 import datetime
 import logging
 import time
@@ -103,7 +105,7 @@ def convert_person(user_id, cnxn, services, trap_exception=False):
   days_ago = None
   if user.last_visit_timestamp:
     secs_ago = int(time.time()) - user.last_visit_timestamp
-    days_ago = secs_ago / framework_constants.SECS_PER_DAY
+    days_ago = secs_ago // framework_constants.SECS_PER_DAY
   return api_pb2_v1.AtomPerson(
       kind='monorail#issuePerson',
       name=user.email,

@@ -17,6 +17,8 @@ On-page debugging and performance info is useful because it makes it easier
 to explore performance interactively.
 """
 
+from __future__ import division
+
 import datetime
 import logging
 import random
@@ -158,7 +160,7 @@ class _Phase(object):
     if self.ms <= 30:
       return
 
-    percent = self.elapsed_seconds / total_seconds * 100
+    percent = self.elapsed_seconds // total_seconds * 100
     lines.append('%s%5d ms (%2d%%): %s' % (indent, self.ms, percent, self.name))
 
     # Remove IDs etc to reduce the phase name cardinality for ts_mon.

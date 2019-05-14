@@ -14,6 +14,8 @@ pagination page can be shown.  Alternatively, this class can determine just the
 position the currently shown issue would occupy in the overall sorted list.
 """
 
+from __future__ import division
+
 import json
 
 import collections
@@ -436,7 +438,7 @@ class FrontendSearchPipeline(object):
     on_hand_issues = {}  # {iid: issue} of sample issues already in RAM.
     needed_iids = []  # [iid, ...] of sample issues not in RAM yet.
     chunk_size = max(MIN_SAMPLE_CHUNK_SIZE, min(MAX_SAMPLE_CHUNK_SIZE,
-        int(len(issue_ids) / PREFERRED_NUM_CHUNKS)))
+        int(len(issue_ids) // PREFERRED_NUM_CHUNKS)))
     for i in range(chunk_size, len(issue_ids), chunk_size):
       issue = self.services.issue.GetAnyOnHandIssue(
           issue_ids, start=i, end=min(i + chunk_size, len(issue_ids)))
