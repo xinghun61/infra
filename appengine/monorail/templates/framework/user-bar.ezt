@@ -1,9 +1,9 @@
 <span style="padding: 0 1em">
   [if-any logged_in_user]
     <mr-account-dropdown
-      user-display-name="[logged_in_user.email]"
-      login-url="[login_url]"
-      logout-url="[logout_url]"
+      userDisplayName="[logged_in_user.email]"
+      loginUrl="[login_url]"
+      logoutUrl="[logout_url]"
     ></mr-account-dropdown>
   [else]
     <a href="[login_url]"><u>Sign in</u></a>
