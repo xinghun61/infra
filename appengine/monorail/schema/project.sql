@@ -104,22 +104,6 @@ CREATE TABLE Project (
 ) ENGINE=INNODB;
 
 
-CREATE TABLE ActionLimit (
-  user_id INT UNSIGNED NOT NULL,
-  action_kind ENUM (
-      'project_creation', 'issue_comment', 'issue_attachment',
-      'issue_bulk_edit', 'api_request'),
-  recent_count INT,
-  reset_timestamp INT,
-  lifetime_count INT,
-  lifetime_limit INT,
-  period_soft_limit INT,
-  period_hard_limit INT,
-
-  PRIMARY KEY (user_id, action_kind)
-) ENGINE=INNODB;
-
-
 -- TODO(jrobbins): Phase out this table and move data to UserPrefs.
 CREATE TABLE DismissedCues (
   user_id INT UNSIGNED NOT NULL,

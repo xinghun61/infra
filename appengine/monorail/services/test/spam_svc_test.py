@@ -296,11 +296,6 @@ class SpamServiceTest(unittest.TestCase):
     author = user_pb2.MakeUser(111, email='test@google.com')
     self.assertTrue(self.spam_service._IsExempt(author, False))
 
-  def testIsExempt_TrustedNotToSpam(self):
-    author = user_pb2.MakeUser(111, email='test@example.com')
-    author.ignore_action_limits = True
-    self.assertTrue(self.spam_service._IsExempt(author, False))
-
   def testClassifyIssue_spam(self):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111, owner_id=456,

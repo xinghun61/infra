@@ -1652,3 +1652,8 @@ This is part of phasing out DismissedCues.
 INSERT IGNORE INTO UserPrefs (user_id, name, value)
 SELECT user_id, cue, 'true'
 FROM DismissedCues;
+
+================================================================
+2019-05-13: Drop unused ActionLimit table.
+
+DROP TABLE ActionLimit;

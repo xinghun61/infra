@@ -154,8 +154,6 @@ class UserProfile(servlet.Servlet):
         'viewed_user_may_be_spammer': ezt.boolean(viewed_user_may_be_spammer),
         'viewed_user_is_spammer': ezt.boolean(viewed_user_is_spammer),
         'viewed_user_is_banned': ezt.boolean(viewed_user.banned),
-        'viewed_user_ignore_action_limits': (
-            ezt.boolean(viewed_user.ignore_action_limits)),
         'owner_of_projects': [
             project_views.ProjectView(
                 p, starred=p.project_id in logged_in_starred_pids)

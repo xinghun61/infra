@@ -336,10 +336,6 @@ class SpamService(object):
       logging.info('%s whitelisted from spam filtering', author.email)
       return True
 
-    if author.ignore_action_limits:
-      logging.info('%s trusted not to spam', author.email)
-      return True
-
     if is_project_member:
       logging.info('%s is a project member, assuming ham', author.email)
       return True
