@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is govered by a BSD-style
 # license that can be found in the LICENSE file or at
