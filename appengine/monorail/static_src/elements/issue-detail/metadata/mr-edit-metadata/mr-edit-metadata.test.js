@@ -324,6 +324,57 @@ describe('mr-edit-metadata', () => {
     });
   });
 
+  it('changing multiple single valued enum fields', async () => {
+    element.fieldDefs = [
+      {
+        fieldRef: {
+          fieldName: 'enumField',
+          fieldId: 1,
+          type: 'ENUM_TYPE',
+        },
+      },
+      {
+        fieldRef: {
+          fieldName: 'enumField2',
+          fieldId: 2,
+          type: 'ENUM_TYPE',
+        },
+      },
+    ];
+
+    element.optionsPerEnumField = new Map([
+      ['enumfield', [{optionName: 'one'}, {optionName: 'two'}]],
+      ['enumfield2', [{optionName: 'three'}, {optionName: 'four'}]],
+    ]);
+
+    await element.updateComplete;
+
+    element.shadowRoot.querySelector('#enumFieldInput').setValue(['two']);
+    element.shadowRoot.querySelector('#enumField2Input').setValue(['three']);
+
+    await initialValueUpdateComplete(element);
+    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+
+    assert.deepEqual(element.getDelta(), {
+      fieldValsAdd: [
+        {
+          fieldRef: {
+            fieldName: 'enumField',
+            fieldId: 1,
+          },
+          value: 'two',
+        },
+        {
+          fieldRef: {
+            fieldName: 'enumField2',
+            fieldId: 2,
+          },
+          value: 'three',
+        },
+      ],
+    });
+  });
+
   it('adding components produces delta', async () => {
     element.isApproval = false;
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];

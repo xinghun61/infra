@@ -790,10 +790,16 @@ export class MrEditMetadata extends connectStore(LitElement) {
     const valuesAdded = input.getValuesAdded();
     const valuesRemoved = input.getValuesRemoved();
     if (valuesAdded && valuesAdded.length) {
-      delta[addedKey] = valuesAdded.map(mapFn);
+      if (!delta.hasOwnProperty(addedKey)) {
+        delta[addedKey] = [];
+      }
+      delta[addedKey].push(...valuesAdded.map(mapFn));
     }
     if (valuesRemoved && valuesRemoved.length) {
-      delta[removedKey] = valuesRemoved.map(mapFn);
+      if (!delta.hasOwnProperty(removedKey)) {
+        delta[removedKey] = [];
+      }
+      delta[removedKey].push(...valuesRemoved.map(mapFn));
     }
   }
 
