@@ -190,10 +190,10 @@ export class MrIssueMetadata extends connectStore(LitElement) {
         </div>
       `: ''}
 
-      ${this.user ? html`
+      ${this.user && this.user.userId ? html`
         <div class="bottom-section-cell">
           <h3>Your Hotlists:</h3>
-          <div class="bottom-section-content">
+          <div class="bottom-section-content" id="user-hotlists">
             ${this._renderHotlists(hotlistsByRole.user)}
             <button
               class="linkify"

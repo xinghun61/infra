@@ -61,4 +61,15 @@ describe('mr-issue-metadata', () => {
     assert.equal(labels[1].getAttribute('title'), 'Derived: hello-world');
     assert.isDefined(labels[1].dataset.derived);
   });
+
+  it('update hotlist button is shown to users', async () => {
+    element.user = {userId: 1234};
+    await element.updateComplete;
+    assert.isNotNull(element.shadowRoot.querySelector('#user-hotlists'));
+  });
+
+  it('update hotlist button is not shown to anon', async () => {
+    await element.updateComplete;
+    assert.isNull(element.shadowRoot.querySelector('#user-hotlists'));
+  });
 });
