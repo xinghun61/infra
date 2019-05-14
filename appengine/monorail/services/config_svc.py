@@ -19,6 +19,7 @@ from google.appengine.api import memcache
 
 import settings
 from framework import exceptions
+from framework import framework_constants
 from framework import sql
 from proto import tracker_pb2
 from services import caches
@@ -1003,6 +1004,24 @@ class ConfigService(object):
     self.projectissueconfig_tbl.Delete(cnxn, project_id=project_id)
 
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
+
+  def ExpungeUsersInConfigs(self, cnxn, user_ids):
+    """Wipes specified users from the configs system.
+
+      This method will not commit the operation. This method will
+      not make changes to in-memory data.
+    """
+    self.component2admin_tbl.Delete(cnxn, admin_id=user_ids, commit=False)
+    self.component2cc_tbl.Delete(cnxn, cc_id=user_ids, commit=False)
+    self.componentdef_tbl.Update(
+        cnxn, {'creator_id': framework_constants.DELETED_USER_ID},
+        creator_id=user_ids, commit=False)
+    self.componentdef_tbl.Update(
+        cnxn, {'modifier_id': framework_constants.DELETED_USER_ID},
+        modifier_id=user_ids, commit=False)
+    self.fielddef2admin_tbl.Delete(cnxn, admin_id=user_ids, commit=False)
+    self.approvaldef2approver_tbl.Delete(
+        cnxn, approver_id=user_ids, commit=False)
 
   ### Custom field definitions
 

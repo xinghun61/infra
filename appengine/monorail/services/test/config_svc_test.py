@@ -8,13 +8,14 @@
 import re
 import unittest
 import logging
+import mock
 
-from mock import Mock, patch
 import mox
 
 from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
+from framework import framework_constants
 from framework import sql
 from proto import tracker_pb2
 from services import config_svc
@@ -819,6 +820,36 @@ class ConfigServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.config_service.ExpungeConfig(self.cnxn, 789)
     self.mox.VerifyAll()
+
+  def testExpungeUsersInConfigs(self):
+
+    self.config_service.component2admin_tbl.Delete = mock.Mock()
+    self.config_service.component2cc_tbl.Delete = mock.Mock()
+    self.config_service.componentdef_tbl.Update = mock.Mock()
+
+    self.config_service.fielddef2admin_tbl.Delete = mock.Mock()
+    self.config_service.approvaldef2approver_tbl.Delete = mock.Mock()
+
+    user_ids = [111L, 222L, 333L]
+    self.config_service.ExpungeUsersInConfigs(self.cnxn, user_ids)
+
+    self.config_service.component2admin_tbl.Delete.assert_called_once_with(
+        self.cnxn, admin_id=user_ids, commit=False)
+    self.config_service.component2cc_tbl.Delete.assert_called_once_with(
+        self.cnxn, cc_id=user_ids, commit=False)
+    cdef_calls = [
+        mock.call(
+            self.cnxn, {'creator_id': framework_constants.DELETED_USER_ID},
+            creator_id=user_ids, commit=False),
+        mock.call(
+            self.cnxn, {'modifier_id': framework_constants.DELETED_USER_ID},
+            modifier_id=user_ids, commit=False)]
+    self.config_service.componentdef_tbl.Update.assert_has_calls(cdef_calls)
+
+    self.config_service.fielddef2admin_tbl.Delete.assert_called_once_with(
+        self.cnxn, admin_id=user_ids, commit=False)
+    self.config_service.approvaldef2approver_tbl.Delete.assert_called_once_with(
+        self.cnxn, approver_id=user_ids, commit=False)
 
   ### Custom field definitions
 
