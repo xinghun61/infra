@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
-import * as issue from 'elements/reducers/issue.js';
 
 /**
  * `<mr-crbug-link>`

@@ -4,7 +4,11 @@
 
 import {assert} from 'chai';
 import {MrHeader} from './mr-header.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
+
+
+window.CS_env = {
+  token: 'foo-token',
+};
 
 let element;
 
@@ -22,14 +26,14 @@ describe('mr-header', () => {
     assert.instanceOf(element, MrHeader);
   });
 
-  it('presentationConfig renders', () => {
+  it('presentationConfig renders', async () => {
     element.issueEntryUrl = 'https://google.com/test/';
     element.projectThumbnailUrl = 'http://images.google.com/';
     element.presentationConfig = {
       projectSummary: 'The best project',
     };
 
-    flush();
+    await element.updateComplete;
 
     assert.equal(element.shadowRoot.querySelector('.project-logo').src,
       'http://images.google.com/');

@@ -3,8 +3,12 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {MrSearchBar} from './mr-search-bar.js';
+
+
+window.CS_env = {
+  token: 'foo-token',
+};
 
 let element;
 
@@ -22,14 +26,14 @@ describe('mr-search-bar', () => {
     assert.instanceOf(element, MrSearchBar);
   });
 
-  it('render user saved queries', () => {
+  it('render user saved queries', async () => {
     element.userDisplayName = 'test@user.com';
     element.userSavedQueries = [
       {name: 'test query', queryId: 101},
       {name: 'hello world', queryId: 202},
     ];
 
-    flush();
+    await element.updateComplete;
 
     const queryOptions = element.shadowRoot.querySelectorAll(
       '.user-query');
@@ -43,14 +47,14 @@ describe('mr-search-bar', () => {
     assert.equal(queryOptions[1].textContent, 'hello world');
   });
 
-  it('render project saved queries', () => {
+  it('render project saved queries', async () => {
     element.userDisplayName = 'test@user.com';
     element.projectSavedQueries = [
       {name: 'test query', queryId: 101},
       {name: 'hello world', queryId: 202},
     ];
 
-    flush();
+    await element.updateComplete;
 
     const queryOptions = element.shadowRoot.querySelectorAll(
       '.project-query');

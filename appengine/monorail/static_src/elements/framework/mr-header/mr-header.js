@@ -2,19 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 import qs from 'qs';
 
 import '../mr-dropdown/mr-dropdown.js';
 import '../mr-dropdown/mr-account-dropdown.js';
 import './mr-search-bar.js';
 
-// TODO(zhangtiff): Move these styles outside of FLT folder.
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 import ClientLogger from 'monitoring/client-logger';
+
 
 /**
  * `<mr-header>`
@@ -22,11 +21,11 @@ import ClientLogger from 'monitoring/client-logger';
  * The header for Monorail.
  *
  */
-export class MrHeader extends PolymerElement {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrHeader extends LitElement {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           color: var(--chops-header-text-color);
           box-sizing: border-box;
@@ -92,99 +91,95 @@ export class MrHeader extends PolymerElement {
           margin-left: auto;
           justify-content: flex-end;
         }
-      </style>
-      <a href\$="/p/[[projectName]]/">
-        <template is="dom-if" if="[[projectThumbnailUrl]]">
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+      <a href="/p/${this.projectName}/">
+        ${this.projectThumbnailUrl ? html`
           <img
             class="project-logo"
-            src$="[[projectThumbnailUrl]]"
+            src=${this.projectThumbnailUrl}
             title="Issues"
           />
-        </template>
+        ` : ''}
         <i
           class="material-icons"
           title="Issues"
-          hidden\$="[[projectThumbnailUrl]]"
+          ?hidden=${this.projectThumbnailUrl}
         >home</i>
       </a>
       <mr-dropdown
         class="project-selector"
-        text="[[projectName]]"
-        items="[[_projectDropdownItems]]"
-        menu-alignment="left"
-        title$="[[presentationConfig.projectSummary]]"
+        .text=${this.projectName}
+        .items=${this._projectDropdownItems}
+        menuAlignment="left"
+        title=${this.presentationConfig.projectSummary}
       ></mr-dropdown>
-      <a class="button emphasized new-issue-link" href\$="[[issueEntryUrl]]">
+      <a class="button emphasized new-issue-link" href=${this.issueEntryUrl}>
         New issue
       </a>
       <mr-search-bar
-        project-name="[[projectName]]"
-        user-display-name="[[userDisplayName]]"
-        project-saved-queries="[[presentationConfig.savedQueries]]"
-        default-can="[[_computeDefaultCan(queryParams.can)]]"
-        initial-value="[[_computeInitialSearch(
-          presentationConfig.defaultQuery, queryParams.q)]]"
-        query-params="[[queryParams]]"
+        .projectName=${this.projectName}
+        .userDisplayName=${this.userDisplayName}
+        .projectSavedQueries=${this.presentationConfig.savedQueries}
+        .defaultCan=${this._defaultCan}
+        .initialValue=${this._initialSearch}
+        .queryParams=${this.queryParams}
       ></mr-search-bar>
 
       <div class="right-section">
         <mr-dropdown
           icon="settings"
-          items="[[_projectSettingsItems]]"
+          .items=${this._projectSettingsItems}
         ></mr-dropdown>
 
-        <template is="dom-if" if="[[userDisplayName]]">
+        ${this.userDisplayName ? html`
           <mr-account-dropdown
-            user-display-name="[[userDisplayName]]"
-            logout-url="[[logoutUrl]]"
-            login-url="[[loginUrl]]"
+            .userDisplayName=${this.userDisplayName}
+            .logoutUrl=${this.logoutUrl}
+            .loginUrl=${this.loginUrl}
           ></mr-account-dropdown>
-        </template>
+        `: ''}
         <a
-          href\$="[[loginUrl]]"
-          hidden\$="[[userDisplayName]]"
+          href=${this.loginUrl}
+          ?hidden=${this.userDisplayName}
         >Sign in</a>
       </div>
     `;
   }
 
-  static get is() {
-    return 'mr-header';
-  }
-
   static get properties() {
     return {
-      // TODO(zhangtiff): Make this use permissions from API.
-      canAdministerProject: {
-        type: Boolean,
-        value: true,
-      },
-      loginUrl: String,
-      logoutUrl: String,
-      projectName: {
-        type: String,
-        observer: '_projectChanged',
-      },
-      projectThumbnailUrl: String,
-      userDisplayName: {
-        type: String,
-        observer: '_userChanged',
-      },
-      userProjects: Object,
-      presentationConfig: Object,
-      queryParams: Object,
+      canAdministerProject: {type: Boolean},
+      loginUrl: {type: String},
+      logoutUrl: {type: String},
+      projectName: {type: String},
+      // Project thumbnail is set separately from presentationConfig to prevent
+      // "flashing" logo when navigating EZT pages.
+      projectThumbnailUrl: {type: String},
+      userDisplayName: {type: String},
+      userProjects: {type: Object},
+      presentationConfig: {type: Object},
+      queryParams: {type: Object},
       // TODO(zhangtiff): Change this to be dynamically computed by the
       //   frontend with logic similar to ComputeIssueEntryURL().
-      issueEntryUrl: String,
-      _projectSettingsItems: {
-        type: Array,
-        computed: '_computeProjectSettingsItems(projectName, canAdministerProject)',
-      },
-      _projectDropdownItems: {
-        type: Array,
-        computed: '_computeProjectDropdownItems(userProjects, loginUrl)',
-      },
+      issueEntryUrl: {type: String},
+      clientLogger: {type: Object},
     };
+  }
+
+  constructor() {
+    super();
+
+    // TODO(zhangtiff): Make this use permissions from API.
+    this.canAdministerProject = true;
+
+    this.presentationConfig = {};
+    this.clientLogger = new ClientLogger('mr-header');
   }
 
   connectedCallback() {
@@ -199,34 +194,37 @@ export class MrHeader extends PolymerElement {
     this.queryParams = qs.parse(queryString);
   }
 
-  ready() {
-    super.ready();
-    this.clientLogger = new ClientLogger('mr-header');
+  updated(changedProperties) {
+    if (changedProperties.has('projectName')) {
+      this._fetchPresentationConfig(this.projectName);
+    }
+    if (changedProperties.has('userDisplayName')) {
+      this._fetchUserProjects(this.userDisplayName);
+    }
   }
 
-  _projectChanged(projectName) {
-    const presentationConfigPromise = prpcClient.call(
+  // TODO(zhangtiff): Make this into an action creator.
+  async _fetchPresentationConfig(projectName) {
+    const presentationConfig = await prpcClient.call(
       'monorail.Projects', 'GetPresentationConfig', {projectName});
-    presentationConfigPromise.then((presentationConfig) => {
-      this.presentationConfig = presentationConfig;
-      this.projectThumbnailUrl = presentationConfig.projectThumbnailUrl;
-    });
+
+    this.presentationConfig = presentationConfig;
+    this.projectThumbnailUrl = presentationConfig.projectThumbnailUrl;
   }
 
-  _userChanged(displayName) {
+  async _fetchUserProjects(displayName) {
     if (!displayName) return;
     // Only fetch projects for logged in users.
     // TODO(zhangtiff): Add this state to Redux. This is left out from
     //   Redux for now because this code is meant to run on non-SPA pages
     //   as well.
-    const userProjectsPromise = prpcClient.call(
+    const userProjects = await prpcClient.call(
       'monorail.Projects', 'GetUserProjects', {});
-    userProjectsPromise.then((userProjects) => {
-      this.userProjects = userProjects;
-    });
+    this.userProjects = userProjects;
   }
 
-  _computeProjectDropdownItems(userProjects, loginUrl) {
+  get _projectDropdownItems() {
+    const {userProjects, loginUrl} = this;
     if (!userProjects) {
       return [{text: 'Sign in to see your projects', url: loginUrl}];
     }
@@ -265,12 +263,8 @@ export class MrHeader extends PolymerElement {
     return items;
   }
 
-  _projectChangedHandler(item) {
-    // Just log it to GA and continue.
-    this.clientLogger.logEvent('project-change', item.url);
-  }
-
-  _computeProjectSettingsItems(projectName, canAdministerProject) {
+  get _projectSettingsItems() {
+    const {projectName, canAdministerProject} = this;
     const items = [
       {text: 'People', url: `/p/${projectName}/people/list`},
       {text: 'Development Process', url: `/p/${projectName}/adminIntro`},
@@ -284,14 +278,23 @@ export class MrHeader extends PolymerElement {
     return items;
   }
 
-  _computeInitialSearch(defaultQuery, q) {
+  get _initialSearch() {
+    const defaultQuery = this.presentationConfig
+      && this.presentationConfig.defaultQuery;
+    const q = this.queryParams && this.queryParams.q;
     const qIsString = typeof q === 'string';
     return qIsString ? q : defaultQuery;
   }
 
-  _computeDefaultCan(can) {
-    return can ? can : 2;
+  get _defaultCan() {
+    const can = this.queryParams && this.queryParams.can;
+    return can ? can : '2';
+  }
+
+  _projectChangedHandler(item) {
+    // Just log it to GA and continue.
+    this.clientLogger.logEvent('project-change', item.url);
   }
 }
 
-customElements.define(MrHeader.is, MrHeader);
+customElements.define('mr-header', MrHeader);
