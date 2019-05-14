@@ -160,15 +160,15 @@ export class MrIssuePage extends connectStore(PolymerElement) {
         }
       </style>
       <mr-cues id="cues" user-display-name="[[userDisplayName]]"></mr-cues>
-      <template is="dom-if" if="[[_showLoading(fetchingIssue, issue)]]">
-        <div class="container-no-issue" id="loading">
-          Loading...
+      <template is="dom-if" if="[[fetchIssueError]]">
+        <div class="container-no-issue" id="fetch-error">
+          [[fetchIssueError.description]]
         </div>
       </template>
-      <template is="dom-if" if="[[!_showLoading(fetchingIssue, issue)]]">
-        <template is="dom-if" if="[[fetchIssueError]]">
-          <div class="container-no-issue" id="fetch-error">
-            [[fetchIssueError.description]]
+      <template is="dom-if" if="[[!fetchIssueError]]">
+        <template is="dom-if" if="[[_showLoading(fetchingIssue, issue)]]">
+          <div class="container-no-issue" id="loading">
+            Loading...
           </div>
         </template>
         <template is="dom-if" if="[[_issueIsDeleted(issue)]]">

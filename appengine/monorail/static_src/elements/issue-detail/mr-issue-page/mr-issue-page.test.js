@@ -196,4 +196,25 @@ describe('mr-issue-page', () => {
     const link = movedElement.querySelector('.new-location');
     assert.equal(link.getAttribute('href'), '/p/hello/issues/detail?id=10');
   });
+
+  it('moving to a restricted issue', () => {
+    element.fetchingIssue = false;
+    element.issue = {localId: 111};
+
+    flush();
+
+    element.issue = {localId: 222};
+    element.fetchIssueError = 'error';
+
+    populateElementReferences();
+    flush();
+
+    assert.isNull(loadingElement);
+    assert.isNotNull(fetchErrorElement);
+    assert.isNull(deletedElement);
+    assert.isNull(movedElement);
+    // TODO(ehmaldonado): Replace with isNull once mr-issue-page is converted to
+    // lit-element.
+    assert.equal(window.getComputedStyle(issueElement).display, 'none');
+  });
 });
