@@ -548,6 +548,48 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
           self.cnxn, 'Fake-Hotlist', 'Misnamed Hotlist',
           'This name is already in use', [567], [678])
 
+  def testTransferHotlistOwnership(self):
+    hotlist_id = 123
+    new_owner_id = 222L
+    hotlist = fake.Hotlist(hotlist_name='unique', hotlist_id=hotlist_id,
+                           owner_ids=[111L], editor_ids=[222L],
+                           follower_ids=[444L])
+    # LookupHotlistIDs, proposed new owner, owns no hotlist with the same name.
+    self.features_service.hotlist2user_tbl.Select = mock.Mock(
+        return_value=[(223, new_owner_id), (567, new_owner_id)])
+    self.features_service.hotlist_tbl.Select = mock.Mock(return_value=[])
+
+    # UpdateHotlistRoles
+    self.features_service.GetHotlist = mock.Mock(return_value=hotlist)
+    self.features_service.hotlist2user_tbl.Delete = mock.Mock()
+    self.features_service.hotlist2user_tbl.InsertRows = mock.Mock()
+
+    self.features_service.TransferHotlistOwnership(
+        self.cnxn, hotlist, new_owner_id, True)
+
+    self.features_service.hotlist2user_tbl.Delete.assert_called_once_with(
+        self.cnxn, hotlist_id=hotlist_id, commit=False)
+
+    self.features_service.GetHotlist.assert_called_once_with(
+        self.cnxn, hotlist_id, use_cache=False)
+    insert_rows = [(hotlist_id, new_owner_id, 'owner'),
+                   (hotlist_id, 222L, 'editor'),
+                   (hotlist_id, 111L, 'editor'),
+                   (hotlist_id, 444L, 'follower')]
+    self.features_service.hotlist2user_tbl.InsertRows.assert_called_once_with(
+        self.cnxn, features_svc.HOTLIST2USER_COLS, insert_rows, commit=False)
+
+  def testTransferHotlistOwnership_RejectNewOwner(self):
+    hotlist = fake.Hotlist(hotlist_name='sameName', hotlist_id=123,
+                           owner_ids=[111L], editor_ids=[222L])
+    self.features_service.hotlist2user_tbl.Select = mock.Mock(
+        return_value=[(123, 222L), (567, 222L)])
+    self.features_service.hotlist_tbl.Select = mock.Mock(
+        return_value=[(123, 'sameName'), (567, 'diffName')])
+    with self.assertRaises(exceptions.InputException):
+      self.features_service.TransferHotlistOwnership(
+          self.cnxn, hotlist, 222L, True)
+
   def SetUpLookupHotlistIDs(self):
     self.features_service.hotlist_tbl.Select(
       self.cnxn, cols=['id', 'name'], is_deleted=False,
@@ -706,24 +748,16 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
       self, hotlist_id, owner_ids, editor_ids, follower_ids):
 
     self.features_service.hotlist2user_tbl.Delete(
-        self.cnxn, hotlist_id=hotlist_id, role_name='owner', commit=False)
-    self.features_service.hotlist2user_tbl.Delete(
-        self.cnxn, hotlist_id=hotlist_id, role_name='editor', commit=False)
-    self.features_service.hotlist2user_tbl.Delete(
-        self.cnxn, hotlist_id=hotlist_id, role_name='follower', commit=False)
+        self.cnxn, hotlist_id=hotlist_id, commit=False)
 
+    insert_rows = [(hotlist_id, user_id, 'owner') for user_id in owner_ids]
+    insert_rows.extend(
+        [(hotlist_id, user_id, 'editor') for user_id in editor_ids])
+    insert_rows.extend(
+        [(hotlist_id, user_id, 'follower') for user_id in follower_ids])
     self.features_service.hotlist2user_tbl.InsertRows(
         self.cnxn, ['hotlist_id', 'user_id', 'role_name'],
-        [(hotlist_id, user_id, 'owner') for user_id in owner_ids],
-        commit=False)
-    self.features_service.hotlist2user_tbl.InsertRows(
-        self.cnxn, ['hotlist_id', 'user_id', 'role_name'],
-        [(hotlist_id, user_id, 'editor') for user_id in editor_ids],
-        commit=False)
-    self.features_service.hotlist2user_tbl.InsertRows(
-        self.cnxn, ['hotlist_id', 'user_id', 'role_name'],
-        [(hotlist_id, user_id, 'follower') for user_id in follower_ids],
-        commit=False)
+        insert_rows, commit=False)
 
     self.cnxn.Commit()
 

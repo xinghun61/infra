@@ -2303,7 +2303,7 @@ class FeaturesService(object):
     return hotlists_dict[hotlist_id]
 
   def UpdateHotlistRoles(
-      self, cnxn, hotlist_id, owner_ids, editor_ids, follower_ids):
+      self, cnxn, hotlist_id, owner_ids, editor_ids, follower_ids, commit=True):
     hotlist = self.hotlists_by_id.get(hotlist_id)
     if not hotlist:
       raise features_svc.NoSuchHotlistException(

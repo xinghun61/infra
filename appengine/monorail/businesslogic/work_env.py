@@ -1712,10 +1712,7 @@ class WorkEnv(object):
     # self.services.features.ExpungeUsersInQuickEdits(self.mc.cnxn, user_ids)
     # self.services.features.ExpungeUsersInSavedQueries(self.mc.cnxn, user_ids)
 
-    # hotlist_ids = self.services.features.ExpungeUsersInHotlist(
-    # self.mc.cnxn, user_ids)
-    # self.services.features.ExpungeHotlists(
-    #self.mc.cnxn, user_ids, self.services.star, self.services.user)
+    # self.expungeUsersInHotlists(user_ids)
 
     # self.services.template.ExpungeUsersInTemplates(self.mc.cnxn, user_ids)
     # self.services.config.ExpungeUsersInConfgis(self.mc.cnxn, user_ids)
@@ -1731,6 +1728,18 @@ class WorkEnv(object):
   # FUTURE: DeleteGroup()
 
   ### Hotlist methods
+
+  def expungeUsersInHotlists(self, _user_ids):
+    pass
+      # use self.services.features.TransferHotistOwnership() to transfer
+      # as many hotlists has possible.
+      #self.services.features.ExpungeUsersInHotlists(
+      #  self.mc.cnxn, user_ids, self.services.star, self.services.user)
+      # self.services.features.ExpungeHotlists will be called
+      # in ExpungeUsersInHotlists
+
+  # FUTURE: TransferHotlistOwnership(), checks permissions before calling
+  # self.services.features.TransferHotlistOwnership()
 
   def CreateHotlist(
       self, name, summary, description, editor_ids, issue_ids, is_private):

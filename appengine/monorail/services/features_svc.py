@@ -806,6 +806,20 @@ class FeaturesService(object):
 
     return hotlist_id
 
+  def TransferHotlistOwnership(
+      self, cnxn, hotlist, new_owner_id, remain_editor, commit=True):
+    """Transfers ownership of a hotlist to a new owner."""
+    if self.LookupHotlistIDs(cnxn, [hotlist.name], [new_owner_id]):
+      raise exceptions.InputException(
+          'Proposed new owner already owns a hotlist with this name.')
+
+    new_editor_ids = hotlist.editor_ids
+    if remain_editor:
+      new_editor_ids.extend(hotlist.owner_ids)
+    self.UpdateHotlistRoles(
+        cnxn, hotlist.hotlist_id, [new_owner_id], new_editor_ids,
+        hotlist.follower_ids, commit=commit)
+
   ### Lookup hotlist IDs
 
   def LookupHotlistIDs(self, cnxn, hotlist_names, owner_ids):
@@ -921,7 +935,7 @@ class FeaturesService(object):
     return hotlist_dict.get(hotlist_id)
 
   def UpdateHotlistRoles(
-      self, cnxn, hotlist_id, owner_ids, editor_ids, follower_ids):
+      self, cnxn, hotlist_id, owner_ids, editor_ids, follower_ids, commit=True):
     """"Store the hotlist's roles in the DB."""
     # This will be a newly contructed object, not from the cache and not
     # shared with any other thread.
@@ -930,26 +944,18 @@ class FeaturesService(object):
       raise NoSuchHotlistException()
 
     self.hotlist2user_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, role_name='owner', commit=False)
-    self.hotlist2user_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, role_name='editor', commit=False)
-    self.hotlist2user_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, role_name='follower', commit=False)
+        cnxn, hotlist_id=hotlist_id, commit=False)
 
+    insert_rows = [(hotlist_id, user_id, 'owner') for user_id in owner_ids]
+    insert_rows.extend(
+        [(hotlist_id, user_id, 'editor') for user_id in editor_ids])
+    insert_rows.extend(
+        [(hotlist_id, user_id, 'follower') for user_id in follower_ids])
     self.hotlist2user_tbl.InsertRows(
-        cnxn, ['hotlist_id', 'user_id', 'role_name'],
-        [(hotlist_id, user_id, 'owner') for user_id in owner_ids],
-        commit=False)
-    self.hotlist2user_tbl.InsertRows(
-        cnxn, ['hotlist_id', 'user_id', 'role_name'],
-        [(hotlist_id, user_id, 'editor') for user_id in editor_ids],
-        commit=False)
-    self.hotlist2user_tbl.InsertRows(
-        cnxn, ['hotlist_id', 'user_id', 'role_name'],
-        [(hotlist_id, user_id, 'follower') for user_id in follower_ids],
-        commit=False)
+        cnxn, HOTLIST2USER_COLS, insert_rows, commit=False)
 
-    cnxn.Commit()
+    if commit:
+      cnxn.Commit()
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
     self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.owner_ids)
     hotlist.owner_ids = owner_ids
