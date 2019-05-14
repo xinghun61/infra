@@ -228,10 +228,7 @@ export class MrSearchBar extends LitElement {
   static get properties() {
     return {
       projectName: {type: String},
-      userDisplayName: {
-        type: String,
-        observer: '_userChanged',
-      },
+      userDisplayName: {type: String},
       defaultCan: {type: String},
       initialValue: {type: String},
       projectSavedQueries: {type: Array},
@@ -274,6 +271,16 @@ export class MrSearchBar extends LitElement {
     window.removeEventListener('focus-search', this.focus);
   }
 
+  updated(changedProperties) {
+    if (this.userDisplayName && changedProperties.has('userDisplayName')) {
+      const userSavedQueriesPromise = prpcClient.call('monorail.Users',
+        'GetSavedQueries', {});
+      userSavedQueriesPromise.then((resp) => {
+        this.userSavedQueries = resp.savedQueries;
+      });
+    }
+  }
+
   focus() {
     const search = this.shadowRoot.querySelector('#searchq');
     search.focus();
@@ -300,14 +307,6 @@ export class MrSearchBar extends LitElement {
     if (option.dataset.href) {
       window.location.href = option.dataset.href;
     }
-  }
-
-  _userChanged() {
-    const userSavedQueriesPromise = prpcClient.call('monorail.Users',
-      'GetSavedQueries', {});
-    userSavedQueriesPromise.then((resp) => {
-      this.userSavedQueries = resp.savedQueries;
-    });
   }
 }
 
