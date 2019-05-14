@@ -108,12 +108,13 @@ def OnBuildCompletion(project, bucket, builder_name, build_id, build_result):
   Returns:
     False if it is unsupported or skipped; otherwise True.
   """
-  assert bucket in [
-      'ci', 'postsubmit'
-  ], 'Only support ci/postsubmit bucket for %s, but got %s' % (project, bucket)
-
   # Skip builders that are not in the whitelist of a supported project/bucket.
   bucket_info = projects.LUCI_PROJECTS.get(project, {}).get(bucket, {})
+  if not bucket_info:
+    logging.info('project: %s, bucket: %s is not supported.' % (
+    project, bucket))
+    return False
+
   supported_builders = bucket_info.get('supported_builders', [])
   rerun_builders = bucket_info.get('rerun_builders', [])
 
