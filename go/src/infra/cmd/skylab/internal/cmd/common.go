@@ -223,7 +223,7 @@ func withGoogleAPIRetries(ctx context.Context, maxAttempts int, f func() error) 
 		if !ok {
 			return err
 		}
-		if retryableCodes[apiErr.Code] {
+		if !retryableCodes[apiErr.Code] {
 			return err
 		}
 	}
