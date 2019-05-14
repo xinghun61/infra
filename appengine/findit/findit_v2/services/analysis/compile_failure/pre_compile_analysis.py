@@ -30,29 +30,28 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
     context (findit_v2.services.context.Context): Scope of the analysis.
     build (buildbucket build.proto): ALL info about the build.
     detailed_compile_failures (dict): A dict of detailed compile failures.
-       {
-        'build_packages': {  # compile step name.
-          'failures': {
-            'pkg': {  # Concatenated string of output_targets.
-              'rule': 'emerge',
-              'output_targets': ['pkg'],
-              'first_failed_build': {
-                'id': 8765432109,
-                'number': 123,
-                'commit_id': 'git_sha'
-              },
-              'last_passed_build': None
+     {
+      'step_name': {
+        'failures': {
+          frozenset(['target1', 'target2']): {
+            'rule': 'emerge',
+            'first_failed_build': {
+              'id': 8765432109,
+              'number': 123,
+              'commit_id': 654321
             },
-            ...
+            'last_passed_build': None
           },
-          'first_failed_build': {
-            'id': 8765432109,
-            'number': 123,
-            'commit_id': 'git_sha'
-          },
-          'last_passed_build': None
+          ...
         },
-      }
+        'first_failed_build': {
+          'id': 8765432109,
+          'number': 123,
+          'commit_id': 654321
+        },
+        'last_passed_build': None
+      },
+    }
   """
   build_entity = luci_build.SaveFailedBuild(context, build,
                                             StepTypeEnum.COMPILE)
@@ -79,11 +78,11 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
       compile_failure_entities.append(new_entity)
       continue
 
-    for failure in failures.itervalues():
+    for output_targets, failure in failures.iteritems():
       new_entity = CompileFailure.Create(
           failed_build_key=failed_build_key,
           step_ui_name=step_ui_name,
-          output_targets=failure.get('output_targets'),
+          output_targets=list(output_targets),
           first_failed_build_id=failure.get('first_failed_build', {}).get('id'),
           failure_group_build_id=failure.get('failure_group_build_id',
                                              {}).get('id'),
@@ -156,13 +155,12 @@ def UpdateCompileFailuresWithFirstFailureInfo(context, build,
       {
         'step_name': {
           'failures': {
-            'target1 target2': {
+            frozenset(['target1', 'target2']): {
               'rule': 'emerge',
-              'output_targets': ['target1', 'target2'],
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
-                'commit_id': 'git_sha'
+                'commit_id': 654321
               },
               'last_passed_build': None
             },
@@ -171,7 +169,7 @@ def UpdateCompileFailuresWithFirstFailureInfo(context, build,
           'first_failed_build': {
             'id': 8765432109,
             'number': 123,
-            'commit_id': 'git_sha'
+            'commit_id': 654321
           },
           'last_passed_build': None
         },
@@ -270,11 +268,10 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
     build (buildbucket build.proto): ALL info about the build.
     detailed_compile_failures (dict): A dict of detailed compile failures.
       {
-        'build_packages': {
+        'step_name': {
           'failures': {
-            'pkg': {
+            frozenset(['target1', 'target2']): {
               'rule': 'emerge',
-              'output_targets': ['pkg'],
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
@@ -287,7 +284,7 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
           'first_failed_build': {
             'id': 8765432109,
             'number': 123,
-            'commit_id': 'git_sha'
+            'commit_id': 654321
           },
           'last_passed_build': None
         },
@@ -321,7 +318,7 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
     return original_build
 
   luci_project = context.luci_project_name
-  project_api = projects.GERRIT_PROJECTS[luci_project]['project-api']
+  project_api = projects.GetProjectAPI(luci_project)
   assert project_api, 'Unsupported project {}'.format(luci_project)
 
   first_failures_in_current_build = {'failures': {}, 'last_passed_build': None}
@@ -339,9 +336,9 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
           'output_targets': [],
           'last_passed_build': step_info['last_passed_build'],
       }
-      for failure in step_info['failures'].itervalues():
+      for output_targets, failure in step_info['failures'].iteritems():
         first_failures_in_current_build['failures'][step_ui_name][
-            'output_targets'].extend(failure['output_targets'])
+            'output_targets'].append(output_targets)
 
       first_failures_in_current_build['last_passed_build'] = (
           GetLastPassedBuildToUse(
@@ -353,11 +350,10 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
         'output_targets': [],
         'last_passed_build': step_info['last_passed_build'],
     }
-    for failure in step_info['failures'].itervalues():
+    for output_targets, failure in step_info['failures'].iteritems():
       if failure['first_failed_build']['id'] == build.id and failure[
           'last_passed_build']:
-        first_failures_in_step['output_targets'].extend(
-            failure['output_targets'])
+        first_failures_in_step['output_targets'].append(output_targets)
         first_failures_in_step['last_passed_build'] = (
             GetLastPassedBuildToUse(first_failures_in_step['last_passed_build'],
                                     failure['last_passed_build']))
@@ -416,8 +412,8 @@ def _GetCompileFailureKeys(build, first_failures_in_current_build):
     if not first_failures.get(compile_failure_entity.step_ui_name):
       continue
 
-    if not set(compile_failure_entity.output_targets).issubset(
-        set(first_failures[compile_failure_entity.step_ui_name])):
+    if not (set(compile_failure_entity.output_targets) in first_failures[
+        compile_failure_entity.step_ui_name]):
       continue
     compile_failure_keys.append(compile_failure_entity.key)
   return compile_failure_keys
@@ -451,7 +447,7 @@ def SaveCompileAnalysis(context, build, first_failures_in_current_build):
       }
   """
   luci_project = context.luci_project_name
-  project_api = projects.GERRIT_PROJECTS[luci_project]['project-api']
+  project_api = projects.GetProjectAPI(luci_project)
   assert project_api, 'Unsupported project {}'.format(luci_project)
 
   rerun_builder_id = project_api.GetRerunBuilderId(build)

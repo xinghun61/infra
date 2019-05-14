@@ -41,9 +41,8 @@ class ChromeOSProjectAPI(ProjectAPI):
       {
         'step_name': {
           'failures': {
-            'target1 target2': {
+            frozenset(['target1', 'target2']): {
               'rule': 'emerge',
-              'output_targets': ['target1', 'target2'],
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,
@@ -90,10 +89,11 @@ class ChromeOSProjectAPI(ProjectAPI):
     for failure in build_compile_failure_output.get('failures', []):
       # Joins targets in a str for faster look up when looking for the same
       # failures in previous builds.
-      targets_str = ' '.join(sorted(failure['output_targets']))
-      failures_dict[targets_str] = failure
-      failures_dict[targets_str]['first_failed_build'] = build_info
-      failures_dict[targets_str]['last_passed_build'] = None
+      output_targets = frozenset(failure['output_targets'])
+      failures_dict[output_targets] = {}
+      failures_dict[output_targets]['rule'] = failure.get('rule')
+      failures_dict[output_targets]['first_failed_build'] = build_info
+      failures_dict[output_targets]['last_passed_build'] = None
 
     return detailed_compile_failures
 

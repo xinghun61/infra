@@ -43,7 +43,6 @@ GERRIT_PROJECTS = {
         'gerrit-host': 'chromium-review.googlesource.com',
         'gitiles-host': 'chromium.googlesource.com',
         'dependencies': 'DEPS',
-        'project-api': ChromiumProjectAPI(),
     },
     'chromeos': {
         'name': 'chromeos/manifest-internal',
@@ -51,11 +50,22 @@ GERRIT_PROJECTS = {
         # annealing snapshots commits and they don't have code review.
         'gitiles-host': 'chrome-internal.googlesource.com',
         'dependencies': 'placeholder/path/to/the/manifest.xml',
-        'project-api': ChromeOSProjectAPI(),
+    }
+}
+
+# Project related configs.
+PROJECT_CFG = {
+    'chromium': {
+        'project_api': ChromiumProjectAPI(),
+        'group_failures': False,
+    },
+    'chromeos': {
+        'project_api': ChromeOSProjectAPI(),
+        'group_failures': True,
     }
 }
 
 
 def GetProjectAPI(project):
   """Gets the project API for the project."""
-  return GERRIT_PROJECTS.get(project, {}).get('project-api')
+  return PROJECT_CFG.get(project, {}).get('project_api')

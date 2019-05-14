@@ -50,8 +50,7 @@ class ChromeOSProjectAPITest(unittest.TestCase):
     expected_failures = {
         'build_packages': {
             'failures': {
-                'chromeos/target1': {
-                    'output_targets': ['chromeos/target1'],
+                frozenset(['chromeos/target1']): {
                     'rule': 'emerge',
                     'first_failed_build': {
                         'id': build_id,

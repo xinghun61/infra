@@ -30,9 +30,6 @@ class DummyProjectAPI(ProjectAPI):
     pass
 
 
-_MOCKED_GERRIT_PROJECTS = {'project': {'project-api': DummyProjectAPI(),}}
-
-
 class APITest(unittest.TestCase):
 
   def setUp(self):
@@ -44,8 +41,9 @@ class APITest(unittest.TestCase):
         gitiles_ref='ref/heads/master',
         gitiles_id='git_sha')
 
-  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
-              _MOCKED_GERRIT_PROJECTS)
+  @mock.patch(
+      'findit_v2.services.projects.GetProjectAPI',
+      return_value=DummyProjectAPI())
   def testNoValidFailure(self, *_):
     build = Build()
     step = build.steps.add()
@@ -53,8 +51,9 @@ class APITest(unittest.TestCase):
     step.status = common_pb2.INFRA_FAILURE
     self.assertFalse(api.OnBuildFailure(self.context, build))
 
-  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
-              _MOCKED_GERRIT_PROJECTS)
+  @mock.patch(
+      'findit_v2.services.projects.GetProjectAPI',
+      return_value=DummyProjectAPI())
   def testTestFailure(self, *_):
     build = Build()
     step = build.steps.add()
@@ -62,8 +61,9 @@ class APITest(unittest.TestCase):
     step.status = common_pb2.FAILURE
     self.assertFalse(api.OnBuildFailure(self.context, build))
 
-  @mock.patch('findit_v2.services.projects.GERRIT_PROJECTS',
-              _MOCKED_GERRIT_PROJECTS)
+  @mock.patch('findit_v2.se'
+              'rvices.projects.GetProjectAPI',
+              return_value=DummyProjectAPI())
   def testCompileFailure(self, *_):
     build = Build()
     step = build.steps.add()

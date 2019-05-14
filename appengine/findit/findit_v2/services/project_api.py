@@ -28,11 +28,10 @@ class ProjectAPI(object):  # pragma: no cover.
     Returns:
       (dict): Information about detailed compile_failures.
       {
-        'build_packages': {
+        'step_name': {
           'failures': {
-            'pkg': {
+            frozenset(['target1', 'target2']): {
               'rule': 'emerge',
-              'output_targets': ['pkg'],
               'first_failed_build': {
                 'id': 8765432109,
                 'number': 123,

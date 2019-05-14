@@ -61,8 +61,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': {
                         'id': 8000000000121,
@@ -172,8 +171,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     mock_prev_failures.return_value = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': build_122_info,
                     'last_passed_build': None,
@@ -187,8 +185,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
@@ -205,8 +202,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     expected_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': build_122_info,
                     'last_passed_build': build_121_info,
@@ -258,8 +254,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
@@ -276,8 +271,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     expected_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_122_info,
@@ -325,8 +319,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
@@ -343,8 +336,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     expected_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_121_info,
@@ -421,8 +413,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     failures_122 = {
         'compile': {
             'failures': {
-                'target3': {
-                    'output_targets': ['target3'],
+                frozenset(['target3']): {
                     'rule': 'ACTION',
                     'first_failed_build': build_122_info,
                     'last_passed_build': None,
@@ -436,14 +427,12 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     failures_121 = {
         'compile': {
             'failures': {
-                'target3': {
-                    'output_targets': ['target3'],
+                frozenset(['target3']): {
                     'rule': 'ACTION',
                     'first_failed_build': build_121_info,
                     'last_passed_build': None,
                 },
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': build_121_info,
                     'last_passed_build': None,
@@ -457,8 +446,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     failures_120 = {
         'compile': {
             'failures': {
-                'target4': {
-                    'output_targets': ['target4'],
+                frozenset(['target4']): {
                     'rule': 'CC',
                     'first_failed_build': build_120_info,
                     'last_passed_build': None,
@@ -473,14 +461,12 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
                 },
-                'target3': {
-                    'output_targets': ['target3'],
+                frozenset(['target3']): {
                     'rule': 'ACTION',
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
@@ -497,14 +483,12 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     expected_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_122_info,
                 },
-                'target3': {
-                    'output_targets': ['target3'],
+                frozenset(['target3']): {
                     'rule': 'ACTION',
                     'first_failed_build': build_121_info,
                     'last_passed_build': build_120_info,
@@ -553,8 +537,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
@@ -571,8 +554,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     expected_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_121_info,
@@ -594,8 +576,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_122_info,
@@ -609,7 +590,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     expected_res = {
         'failures': {
             'compile': {
-                'output_targets': ['target1', 'target2'],
+                'output_targets': [{'target1', 'target2'}],
                 'last_passed_build': build_122_info,
             },
         },
@@ -637,8 +618,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': build_122_info,
                     'last_passed_build': build_121_info,
@@ -661,8 +641,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': None,
@@ -752,20 +731,17 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_122_info,
                 },
-                'target3': {
-                    'output_targets': ['target3'],
+                frozenset(['target3']): {
                     'rule': 'ACTION',
                     'first_failed_build': build_122_info,
                     'last_passed_build': None,
                 },
-                'target4': {
-                    'output_targets': ['target4'],
+                frozenset(['target4']): {
                     'rule': 'ACTION',
                     'first_failed_build': self.build_info,
                     'last_passed_build': build_121_info,
@@ -779,7 +755,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     expected_res = {
         'failures': {
             'compile': {
-                'output_targets': ['target4', 'target1', 'target2'],
+                'output_targets': [{'target4'}, {'target1', 'target2'}],
                 'last_passed_build': build_121_info,
             },
         },
@@ -807,8 +783,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     detailed_compile_failures = {
         'compile': {
             'failures': {
-                'target1 target2': {
-                    'output_targets': ['target1', 'target2'],
+                frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
                     'first_failed_build': {
                         'id': 8000000000121,
@@ -821,8 +796,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
                         'commit_id': 'git_sha'
                     },
                 },
-                'target3': {
-                    'output_targets': ['target3'],
+                frozenset(['target3']): {
                     'rule': 'ACTION',
                     'first_failed_build': build_121_info,
                     'last_passed_build': None,
@@ -847,7 +821,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     first_failures_in_current_build = {
         'failures': {
             'compile': {
-                'output_targets': ['target1', 'target2'],
+                'output_targets': [{'target1', 'target2'}],
                 'last_passed_build': build_121_info,
             },
         },
@@ -863,5 +837,5 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
     self.assertEqual('chromium/findit/findit_variables',
                      analysis.rerun_builder_id)
     self.assertEqual(1, len(analysis.compile_failure_keys))
-    self.assertEqual(['target1', 'target2'],
-                     analysis.compile_failure_keys[0].get().output_targets)
+    self.assertItemsEqual(['target1', 'target2'],
+                          analysis.compile_failure_keys[0].get().output_targets)
