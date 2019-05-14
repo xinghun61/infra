@@ -177,7 +177,7 @@
   },
   {
     "failure": {
-      "humanReason": "Infra Failure: Step('git diff-index') returned 2"
+      "humanReason": "Infra Failure: Step('git diff-index') (retcode: 2)"
     },
     "name": "$result"
   }

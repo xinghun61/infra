@@ -97,7 +97,10 @@
   },
   {
     "cmd": [],
-    "name": "clear old images"
+    "name": "clear old images",
+    "~followup_annotations": [
+      "@@@STEP_WARNINGS@@@"
+    ]
   },
   {
     "cmd": [

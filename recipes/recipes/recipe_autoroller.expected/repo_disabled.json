@@ -42,7 +42,10 @@
   },
   {
     "cmd": [],
-    "name": "build"
+    "name": "build",
+    "~followup_annotations": [
+      "@@@STEP_WARNINGS@@@"
+    ]
   },
   {
     "cmd": [

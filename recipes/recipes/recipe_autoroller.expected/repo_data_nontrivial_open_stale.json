@@ -42,7 +42,10 @@
   },
   {
     "cmd": [],
-    "name": "build"
+    "name": "build",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [
@@ -253,7 +256,7 @@
   {
     "failure": {
       "failure": {},
-      "humanReason": "1 out of 1 aggregated steps failed: Step('build.stale roll') failed with return_code 1"
+      "humanReason": "1 out of 1 aggregated steps failed: Step('build.stale roll') (retcode: 1)"
     },
     "name": "$result"
   }

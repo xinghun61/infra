@@ -27,7 +27,10 @@
   },
   {
     "cmd": [],
-    "name": "load package specs"
+    "name": "load package specs",
+    "~followup_annotations": [
+      "@@@STEP_EXCEPTION@@@"
+    ]
   },
   {
     "cmd": [
@@ -44,6 +47,31 @@
     "name": "load package specs.read 'bad'",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "name": "RECIPE CRASH (Uncaught exception)",
+    "~followup_annotations": [
+      "@@@STEP_EXCEPTION@@@",
+      "The recipe has crashed at point 'Uncaught exception'!",
+      "",
+      "Traceback (most recent call last):",
+      "  File \"RECIPE_REPO[recipe_engine]/recipe_engine/internal/engine.py\", line 375, in run_steps",
+      "    raw_result = recipe_obj.run_steps(api, engine)",
+      "  File \"RECIPE_REPO[recipe_engine]/recipe_engine/internal/recipe_deps.py\", line 670, in run_steps",
+      "    properties_def, api=api)",
+      "  File \"RECIPE_REPO[recipe_engine]/recipe_engine/internal/property_invoker.py\", line 89, in invoke_with_properties",
+      "    arg_names, **additional_args)",
+      "  File \"RECIPE_REPO[recipe_engine]/recipe_engine/internal/property_invoker.py\", line 52, in _invoke_with_properties",
+      "    return callable_obj(*props, **additional_args)",
+      "  File \"RECIPE_REPO[infra]/recipes/recipe_modules/support_3pp/tests/full.py\", line 36, in RunSteps",
+      "    builder.join('package_repo'))",
+      "  File \"RECIPE_REPO[recipe_engine]/recipe_engine/recipe_api.py\", line 594, in _inner",
+      "    return func(*a, **kw)",
+      "  File \"RECIPE_REPO[infra]/recipes/recipe_modules/support_3pp/api.py\", line 563, in load_packages_from_path",
+      "    raise BadParse('While adding %r: %r' % (pkg, str(ex)))",
+      "BadParse: While adding 'bad': '1:1 : Message type \"recipe_modules.infra.support_3pp.Spec\" has no field named \"narwhal\".'"
     ]
   },
   {

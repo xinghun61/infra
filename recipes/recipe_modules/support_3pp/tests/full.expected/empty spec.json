@@ -27,7 +27,10 @@
   },
   {
     "cmd": [],
-    "name": "load package specs"
+    "name": "load package specs",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [

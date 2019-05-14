@@ -91,7 +91,7 @@
   {
     "failure": {
       "failure": {},
-      "humanReason": "Step('ensure docker installed') failed with return_code 1"
+      "humanReason": "Step('ensure docker installed') (retcode: 1)"
     },
     "name": "$result"
   }

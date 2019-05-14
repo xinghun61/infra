@@ -1,7 +1,10 @@
 [
   {
     "cmd": [],
-    "name": "Sync go/linux-amd64"
+    "name": "Sync go/linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [
@@ -25,7 +28,10 @@
   },
   {
     "cmd": [],
-    "name": "Sync go/mac-amd64"
+    "name": "Sync go/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [
@@ -49,7 +55,10 @@
   },
   {
     "cmd": [],
-    "name": "Sync python/all"
+    "name": "Sync python/all",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [

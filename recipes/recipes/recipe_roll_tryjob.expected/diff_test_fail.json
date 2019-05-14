@@ -591,7 +591,7 @@
   {
     "failure": {
       "failure": {},
-      "humanReason": "Step('result') failed with return_code 1"
+      "humanReason": "Step('result') (retcode: 1)"
     },
     "name": "$result"
   }

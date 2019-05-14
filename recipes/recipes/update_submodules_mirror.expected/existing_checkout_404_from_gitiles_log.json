@@ -55,7 +55,10 @@
   },
   {
     "cmd": [],
-    "name": "Check for new commits"
+    "name": "Check for new commits",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [

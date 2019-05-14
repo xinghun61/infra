@@ -1162,7 +1162,7 @@
   {
     "failure": {
       "failure": {},
-      "humanReason": "Step('make') failed with return_code 1"
+      "humanReason": "Step('make') (retcode: 1)"
     },
     "name": "$result"
   }
