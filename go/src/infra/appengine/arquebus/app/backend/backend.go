@@ -195,8 +195,24 @@ func startTaskRun(c context.Context, assignerID string, taskID int64) (assigner 
 
 // endTaskRun updates the task status, based on the current status of
 // the assigner and task.
-func endTaskRun(c context.Context, task *model.Task) error {
+func endTaskRun(c context.Context, task *model.Task, nIssuesUpdated int, issueUpdateError error) error {
+	switch {
+	// As long as at least one issue has been updated, then it should be
+	// marked as succeeded, even if it stopped after an error or timeout.
+	case nIssuesUpdated > 0:
+		task.Status = model.TaskStatus_Succeeded
+	case issueUpdateError == context.DeadlineExceeded:
+		task.Status = model.TaskStatus_Aborted
+	case issueUpdateError != nil:
+		task.Status = model.TaskStatus_Failed
+	default:
+		// TODO(crbug/849469): replace Task.WasNoopSuccess with
+		// Task.nIssuesUpdated.
+		task.WasNoopSuccess = true
+		task.Status = model.TaskStatus_Succeeded
+	}
 	task.Ended = clock.Now(c).UTC()
+
 	return datastore.RunInTransaction(c, func(c context.Context) error {
 		return datastore.Put(c, task)
 	}, &datastore.TransactionOptions{Attempts: nRetriesForSavingTaskEntity})
@@ -221,8 +237,18 @@ func runAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
 	// If errors occur within searchAndUpdateIssues(), that means either
 	// Monorail is flaky or unavailable. searchAndUpdateIssues() just marks
 	// the Task as failed, and the Task run ends here without retries.
-	issueUpdateErr := searchAndUpdateIssues(c, assigner, task)
-	if err := endTaskRun(c, task); err != nil {
+	timedCtx, cancel := context.WithTimeout(c, maxIssueUpdatesExecutionTime)
+	defer cancel()
+	nIssuesUpdated, issueUpdateErr := searchAndUpdateIssues(
+		timedCtx, assigner, task,
+	)
+	// if the error was due to the context timeout, override issueUpdateErr
+	// with it so that endTaskRun() can recognize the timeout error.
+	if err != nil && timedCtx.Err() == context.DeadlineExceeded {
+		issueUpdateErr = context.DeadlineExceeded
+	}
+
+	if err := endTaskRun(c, task, nIssuesUpdated, issueUpdateErr); err != nil {
 		// If datastore.Put() fails, ignore the error. Returning the error
 		// will cause the TQ task retried and searchAndUpdateIssues() will
 		// be performed again.

@@ -55,10 +55,10 @@ type Assigner struct {
 	Interval time.Duration `gae:",noindex"`
 
 	// AssigneesRaw is a blob with serialized config.UserSource.
-	AssigneesRaw [][]byte `gae:",noindex"`
+	AssigneesRaw [][]byte `gae:",noindex" json:"-"`
 
 	// CCsRaw is a blob with serialized config.UserSource.
-	CCsRaw [][]byte `gae:",noindex"`
+	CCsRaw [][]byte `gae:",noindex" json:"-"`
 
 	Description string `gae:",noindex"`
 
@@ -114,10 +114,10 @@ func (a *Assigner) updateIfChanged(c context.Context, cfg *config.Assigner, rev 
 }
 
 // Assignees returns a list of UserSource to look for issue assignees from.
-func (a *Assigner) Assignees() ([]*config.UserSource, error) {
-	results := make([]*config.UserSource, len(a.AssigneesRaw))
+func (a *Assigner) Assignees() ([]config.UserSource, error) {
+	results := make([]config.UserSource, len(a.AssigneesRaw))
 	for i, raw := range a.AssigneesRaw {
-		if err := proto.Unmarshal(raw, results[i]); err != nil {
+		if err := proto.Unmarshal(raw, &results[i]); err != nil {
 			return nil, err
 		}
 	}
@@ -125,10 +125,10 @@ func (a *Assigner) Assignees() ([]*config.UserSource, error) {
 }
 
 // CCs returns a list of UserSource to look for whom to cc issues from.
-func (a *Assigner) CCs() ([]*config.UserSource, error) {
-	results := make([]*config.UserSource, len(a.CCsRaw))
+func (a *Assigner) CCs() ([]config.UserSource, error) {
+	results := make([]config.UserSource, len(a.CCsRaw))
 	for i, raw := range a.CCsRaw {
-		if err := proto.Unmarshal(raw, results[i]); err != nil {
+		if err := proto.Unmarshal(raw, &results[i]); err != nil {
 			return nil, err
 		}
 	}

@@ -64,18 +64,18 @@ func Middleware(c *router.Context, next router.Handler) {
 		return
 	}
 
-	c.Context = setConfig(c.Context, &cfg)
-	c.Context = setConfigMeta(c.Context, &meta)
+	c.Context = SetConfig(c.Context, &cfg)
+	c.Context = SetConfigMeta(c.Context, &meta)
 	next(c)
 }
 
-// setConfig installs cfg into c.
-func setConfig(c context.Context, cfg *Config) context.Context {
+// SetConfig installs cfg into c.
+func SetConfig(c context.Context, cfg *Config) context.Context {
 	return context.WithValue(c, ctxKeyConfig, cfg)
 }
 
-// setConfigMeta installs the Config.Meta into c.
-func setConfigMeta(c context.Context, meta *config.Meta) context.Context {
+// SetConfigMeta installs the Config.Meta into c.
+func SetConfigMeta(c context.Context, meta *config.Meta) context.Context {
 	return context.WithValue(c, ctxKeyConfigMeta, meta)
 }
 

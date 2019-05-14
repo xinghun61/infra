@@ -17,25 +17,47 @@ package backend
 import (
 	"context"
 
-	"go.chromium.org/luci/common/clock"
-
 	"infra/appengine/arquebus/app/backend/model"
+	"infra/monorailv2/api/api_proto"
 )
 
 // searchAndUpdateIssues searches and update issues for the Assigner.
-func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *model.Task) error {
-	defer func() { task.Ended = clock.Now(c).UTC() }()
-	assignees, ccs, err := findAssigneeAndCCs(c, assigner)
+func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *model.Task) (int, error) {
+	assignee, ccs, err := findAssigneeAndCCs(c, assigner, task)
 	if err != nil {
-		task.Status = model.TaskStatus_Failed
-		return err
-	}
-	if assignees == nil && ccs == nil {
-		// early stop if there is no one available to assign or cc issues to.
-		task.WriteLog(c, "No assignee was available.")
-		task.WasNoopSuccess = true
+		task.WriteLog(c, "Failed to find assignees and ccs; %s", err.Error())
+		return 0, err
 	}
 
-	task.Status = model.TaskStatus_Succeeded
-	return nil
+	if assignee == nil && ccs == nil {
+		// early stop if there is no one available to assign or cc issues to.
+		task.WriteLog(
+			c, "No one was available to be assigned or cc-ed; "+
+				"skipping issue searches and updates.",
+		)
+		return 0, nil
+	}
+
+	issues, err := searchIssues(c, assigner, task)
+	if err != nil {
+		task.WriteLog(c, "Failed to search issues; %s", err.Error())
+		return 0, err
+	}
+	return updateIssues(c, assigner, task, issues, assignee, ccs)
+}
+
+func searchIssues(c context.Context, assigner *model.Assigner, task *model.Task) ([]*monorail.Issue, error) {
+	// TODO(crbug/849469) implement me
+	task.WriteLog(c, "No issues have been found.")
+	return nil, nil
+}
+
+func updateIssues(c context.Context, assigner *model.Assigner, task *model.Task, issues []*monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (int, error) {
+	nUpdated := 0
+	for range issues {
+		// TODO(crbug/849469) implement me
+		nUpdated++
+	}
+	task.WriteLog(c, "%d issues have been updated.", nUpdated)
+	return nUpdated, nil
 }
