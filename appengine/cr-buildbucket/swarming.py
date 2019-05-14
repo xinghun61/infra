@@ -658,12 +658,34 @@ def _setup_swarming_request_task_slices(
   """Mutate the task request with named cache, CIPD packages and (soon) expiring
   dimensions.
   """
+  # TODO(maruel): Use textproto once https://crbug.com/913953 is done.
+  expected = frozenset((
+      '__comment__',
+      'name',
+      'pool_task_template',
+      'priority',
+      'service_account',
+      'tags',
+      'task_slices',
+  ))
+  if set(task) - expected:
+    raise errors.InvalidInputError(
+        'Unexpected task keys: %s' % sorted(set(task) - expected)
+    )
+
   # For now, refuse a task template with more than one TaskSlice. Otherwise
   # it would be much harder to rationalize what's happening while reading the
   # Swarming task template.
   if len(task[u'task_slices']) != 1:
     raise errors.InvalidInputError(
         'base swarming task template can only have one task_slices'
+    )
+
+  expected = frozenset(('expiration_secs', 'properties', 'wait_for_capacity'))
+  if set(task[u'task_slices'][0]) - expected:
+    raise errors.InvalidInputError(
+        'Unexpected slice keys: %s' %
+        sorted(set(task[u'task_slices'][0]) - expected)
     )
 
   if builder_cfg.expiration_secs > 0:
@@ -727,6 +749,20 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
     dict {expiration_sec: [{'key': key, 'value': value}]} to support caches.
     This is different than the format in flatten_swarmingcfg.parse_dimensions().
   """
+  expected = frozenset((
+      'caches',
+      'cipd_input',
+      'command',
+      'containment',
+      'env_prefixes',
+      'execution_timeout_secs',
+      'extra_args',
+  ))
+  if set(props) - expected:
+    raise errors.InvalidInputError(
+        'Unexpected properties keys: %s' % sorted(set(props) - expected)
+    )
+
   props.setdefault('env', []).append({
       'key': 'BUILDBUCKET_EXPERIMENTAL',
       'value': str(build.experimental).upper(),
@@ -759,7 +795,7 @@ def _setup_swarming_props(build, builder_cfg, extra_cipd_packages, props):
         assert value
         out[expiration_secs].append({u'key': key, u'value': value})
 
-  props['dimensions'] = out.pop(0, [])
+  props[u'dimensions'] = out.pop(0, [])
   props[u'dimensions'].sort(key=lambda x: (x[u'key'], x[u'value']))
   return out
 

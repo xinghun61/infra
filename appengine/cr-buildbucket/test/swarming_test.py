@@ -120,7 +120,7 @@ class TaskDefTest(BaseTest):
         'name':
             'bb-${build_id}-${project}-${builder}',
         'priority':
-            '100',
+            100,
         'tags': [
             (
                 'log_location:logdog://luci-logdog-dev.appspot.com/${project}/'
@@ -164,8 +164,6 @@ class TaskDefTest(BaseTest):
             },
             'wait_for_capacity': False,
         },],
-        'numerical_value_for_coverage_in_format_obj':
-            42,
     }
     self.task_template_canary = self.task_template.copy()
     self.task_template_canary['name'] += '-canary'
@@ -593,8 +591,6 @@ class TaskDefTest(BaseTest):
                        sort_keys=True),
         'service_account':
             'robot@example.com',
-        'numerical_value_for_coverage_in_format_obj':
-            42,
     }
     self.assertEqual(test_util.ununicode(actual), expected)
 
@@ -774,6 +770,27 @@ class TaskDefTest(BaseTest):
     build.parameters['swarming'] = {
         'override_builder_cfg': {'build_numbers': False}
     }
+    with self.assertRaises(errors.InvalidInputError):
+      self.prepare_task_def(build)
+
+  def test_unexpected_template_task_key(self):
+    # Unexpected task key.
+    build = test_util.build()
+    self.task_template['unexpected_key'] = True
+    with self.assertRaises(errors.InvalidInputError):
+      self.prepare_task_def(build)
+
+  def test_unexpected_template_slices_key(self):
+    # Unexpected task key.
+    build = test_util.build()
+    self.task_template['task_slices'][0]['unexpected_key'] = True
+    with self.assertRaises(errors.InvalidInputError):
+      self.prepare_task_def(build)
+
+  def test_unexpected_template_properties_key(self):
+    # Unexpected task key.
+    build = test_util.build()
+    self.task_template['task_slices'][0]['properties']['unexpected_key'] = True
     with self.assertRaises(errors.InvalidInputError):
       self.prepare_task_def(build)
 
