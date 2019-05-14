@@ -506,6 +506,17 @@ class TemplateService(object):
     # TODO(3816): Delete all other relations here.
     self.template_tbl.Delete(cnxn, project_id=project_id)
 
+  def ExpungeUsersInTemplates(self, cnxn, user_ids):
+    """Wipes a user from the templates system.
+
+      This method will not commit the operation. This method will
+      not make changes to in-memory data.
+    """
+    self.template2admin_tbl.Delete(cnxn, admin_id=user_ids, commit=False)
+    self.template2fieldvalue_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.template_tbl.Update(
+        cnxn, {'owner_id': None}, owner_id=user_ids, commit=False)
+
 
 def UnpackTemplate(template_row):
   """Partially construct a template object using info from a DB row."""

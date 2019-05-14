@@ -430,6 +430,28 @@ class DeleteTemplateTest(TemplateServiceTest):
         .assert_called_once_with(self.cnxn, [1])
 
 
+class ExpungeUsersInTemplatesTest(TemplateServiceTest):
+
+  def setUp(self):
+    super(ExpungeUsersInTemplatesTest, self).setUp()
+
+    self.template_service.template2admin_tbl.Delete = Mock()
+    self.template_service.template2fieldvalue_tbl.Delete = Mock()
+    self.template_service.template_tbl.Update = Mock()
+
+  def testExpungeUsersInTemplates(self):
+    user_ids = [111L, 222L]
+    self.template_service.ExpungeUsersInTemplates(self.cnxn, user_ids)
+
+    self.template_service.template2admin_tbl.Delete.assert_called_once_with(
+            self.cnxn, admin_id=user_ids, commit=False)
+    self.template_service.template2fieldvalue_tbl\
+        .Delete.assert_called_once_with(
+            self.cnxn, user_id=user_ids, commit=False)
+    self.template_service.template_tbl.Update.assert_called_once_with(
+        self.cnxn, {'owner_id': None}, owner_id=user_ids, commit=False)
+
+
 class UnpackTemplateTest(unittest.TestCase):
 
   def testEmpty(self):
