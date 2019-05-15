@@ -203,7 +203,7 @@ class MetricsTest(testing.AppengineTestCase):
             dict(key='user_agent', value='cq'),
             dict(key='something', value='else'),
         ],
-        infra=dict(buildbucket=dict(canary=True)),
+        canary=common_pb2.YES,
     )
     expected = {
         'bucket': 'luci.chromium.try',

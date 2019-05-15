@@ -630,13 +630,6 @@ class TaskDefTest(BaseTest):
         'value': 'TRUE',
     }, env)
 
-  def test_without_template(self):
-    self.task_template = None
-    self.task_template_canary = None
-
-    with self.assertRaises(swarming.TemplateNotFound):
-      self.prepare_task_def(test_util.build())
-
   def test_max_dimensions(self):
     self.builder_cfg.dimensions.extend([
         '60:opt1:ional',
@@ -662,32 +655,10 @@ class TaskDefTest(BaseTest):
       self.prepare_task_def(test_util.build())
 
   def test_canary_template(self):
-    build = test_util.build(id=1, for_creation=True)
-    build.canary_preference = model.CanaryPreference.CANARY
+    build = test_util.build(id=1, canary=common_pb2.YES, for_creation=True)
 
     actual = self.prepare_task_def(build)
     self.assertTrue(actual['name'].endswith('-canary'))
-
-  def test_no_canary_template_explicit(self):
-    build = test_util.build()
-    build.canary_preference = model.CanaryPreference.CANARY
-
-    self.task_template_canary = None
-    with self.assertRaises(errors.InvalidInputError):
-      self.prepare_task_def(build)
-
-  @mock.patch('swarming._should_use_canary_template', autospec=True)
-  def test_no_canary_template_implicit(self, should_use_canary_template):
-    should_use_canary_template.return_value = True
-    self.task_template_canary = None
-    self.builder_cfg.task_template_canary_percentage.value = 54
-
-    build = test_util.build()
-    build.canary_preference = model.CanaryPreference.AUTO
-    self.prepare_task_def(build)
-
-    self.assertFalse(build.proto.infra.buildbucket.canary)
-    should_use_canary_template.assert_called_with(54)
 
   def test_override_cfg(self):
     build = test_util.build()

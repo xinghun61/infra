@@ -28,6 +28,11 @@ import sequence
 import swarming
 import tq
 
+# The default percentage of builds that are marked as canary.
+# This number is relatively high so we treat canary seriously and that we have
+# a strong signal if the canary is broken.
+_DEFAULT_CANARY_PERCENTAGE = 10
+
 _BuildRequestBase = collections.namedtuple(
     '_BuildRequestBase', [
         'schedule_build_request',
@@ -100,7 +105,7 @@ class BuildRequest(_BuildRequestBase):
         ((identity or auth.get_current_identity()).to_bytes(), req_id)
     )
 
-  def create_build_proto(self, build_id, created_by, now):
+  def create_build_proto(self, build_id, builder_cfg, created_by, now):
     """Converts the request to a build_pb2.Build.
 
     Assumes self is valid.
@@ -133,6 +138,15 @@ class BuildRequest(_BuildRequestBase):
     if sbr.priority:
       build_proto.infra.swarming.priority = sbr.priority
 
+    if sbr.canary != common_pb2.UNSET:
+      build_proto.canary = sbr.canary == common_pb2.YES
+    else:
+      canary_percentage = _DEFAULT_CANARY_PERCENTAGE
+      if builder_cfg.HasField(  # pragma: no branch
+          'task_template_canary_percentage'):
+        canary_percentage = builder_cfg.task_template_canary_percentage.value
+      build_proto.canary = _should_be_canary(canary_percentage)
+
     return build_proto
 
   @staticmethod
@@ -155,14 +169,16 @@ class BuildRequest(_BuildRequestBase):
 
     return tags
 
-  def create_build(self, build_id, created_by, now):
+  def create_build(self, build_id, builder_cfg, created_by, now):
     """Converts the request to a build.
 
     Assumes self is valid.
     """
     sbr = self.schedule_build_request
 
-    build_proto = self.create_build_proto(build_id, created_by, now)
+    build_proto = self.create_build_proto(
+        build_id, builder_cfg, created_by, now
+    )
     build = model.Build(
         id=build_id,
         proto=build_proto,
@@ -175,7 +191,6 @@ class BuildRequest(_BuildRequestBase):
         create_time=now,
         never_leased=self.lease_expiration_date is None,
         retry_of=self.retry_of,
-        canary_preference=model.TRINARY_TO_CANARY_PREFERENCE[sbr.canary],
         experimental=bbutil.TRINARY_TO_BOOLISH[sbr.experimental],
     )
 
@@ -292,9 +307,6 @@ class NewBuild(object):
     b.infra_bytes = bp.infra.SerializeToString()
     bp.ClearField('infra')
 
-    # Guarantee canary is not None.
-    b.canary = b.canary or False
-
     @ndb.transactional_tasklet
     def txn_async():
       if (yield b.key.get_async()):  # pragma: no cover
@@ -367,7 +379,9 @@ def add_many_async(build_requests):
   if to_create:
     build_ids = model.create_build_ids(now, len(to_create))
     for nb, build_id in zip(to_create, build_ids):
-      nb.build = nb.request.create_build(build_id, identity, now)
+      nb.build = nb.request.create_build(
+          build_id, nb.builder_cfg, identity, now
+      )
 
     yield _update_builders_async(to_create, now)
     yield _generate_build_numbers_async(to_create)
@@ -433,3 +447,7 @@ def _generate_build_numbers_async(new_builds):
 
 def _should_update_builder(probability):  # pragma: no cover
   return random.random() < probability
+
+
+def _should_be_canary(percentage):  # pragma: no cover
+  return random.randint(0, 99) < percentage

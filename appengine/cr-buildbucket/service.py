@@ -221,7 +221,6 @@ def reset(build_id):
     build.status_changed_time = utils.utcnow()
     build.clear_lease()
     build.url = None
-    build.canary = None
     _fut_results(build.put_async(), events.on_build_resetting_async(build))
     return build
 
@@ -230,19 +229,17 @@ def reset(build_id):
   return build
 
 
-def start(build_id, lease_key, url, canary):
+def start(build_id, lease_key, url):
   """Marks build as STARTED. Idempotent.
 
   Args:
     build_id: id of the started build.
     lease_key: current lease key.
     url (str): a URL to a build-system-specific build, viewable by a human.
-    canary (bool): True if canary build infrastructure is used for this build.
 
   Returns:
     The updated Build.
   """
-  assert isinstance(canary, bool), canary
   validate_lease_key(lease_key)
   validate_url(url)
 
@@ -269,7 +266,6 @@ def start(build_id, lease_key, url, canary):
     build.proto.status = common_pb2.STARTED
     build.status_changed_time = now
     build.url = url
-    build.canary = canary
     _fut_results(build.put_async(), events.on_build_starting_async(build))
     return True, build
 

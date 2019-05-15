@@ -37,6 +37,8 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         return_value='cr-buildbucket.appspot.com'
     )
 
+    self.patch('creation._should_be_canary', side_effect=lambda p: p > 50)
+
     auth_testing.reset_local_state()
     auth.bootstrap_group('all', [auth.Anonymous])
     user.clear_request_cache()
@@ -130,7 +132,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     self.patch(
         'swarming._get_task_template_async',
-        return_value=future(('rev', self.task_template, False))
+        return_value=future(('rev', self.task_template))
     )
 
   def test_get_builders(self):

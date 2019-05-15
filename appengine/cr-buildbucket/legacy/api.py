@@ -69,7 +69,7 @@ class PutRequestMessage(messages.Message):
   parameters_json = messages.StringField(4)
   lease_expiration_ts = messages.IntegerField(5)
   pubsub_callback = messages.MessageField(PubSubCallbackMessage, 6)
-  canary_preference = messages.EnumField(model.CanaryPreference, 7)
+  canary_preference = messages.EnumField(api_common.CanaryPreference, 7)
   experimental = messages.BooleanField(8)
 
 
@@ -158,6 +158,9 @@ def put_request_message_to_build_request(put_request):
       properties=bbutil.dict_to_struct(props),
       request_id=put_request.client_operation_id,
       experimental=bbutil.BOOLISH_TO_TRINARY[put_request.experimental],
+      canary=api_common.CANARY_PREFERENCE_TO_TRINARY.get(
+          put_request.canary_preference, common_pb2.UNSET
+      ),
   )
   sbr.builder.project, sbr.builder.bucket = config.parse_bucket_id(
       put_request.bucket
@@ -481,8 +484,7 @@ class BuildBucketApi(remote.Service):
     sbr = rpc_pb2.ScheduleBuildRequest(
         builder=build.proto.builder,
         request_id=request.client_operation_id,
-        canary=model.CANARY_PREFERENCE_TO_TRINARY[
-            (build.canary_preference or model.CanaryPreference.AUTO)],
+        canary=common_pb2.YES if build.canary else common_pb2.NO,
         properties=build.proto.input.properties,
         gerrit_changes=build.proto.input.gerrit_changes[:],
     )
@@ -657,7 +659,6 @@ class BuildBucketApi(remote.Service):
   class StartRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
     url = messages.StringField(2)
-    canary = messages.BooleanField(3)
 
   @buildbucket_api_method(
       id_resource_container(StartRequestBodyMessage),
@@ -668,9 +669,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def start(self, request):
     """Marks a build as started."""
-    build = service.start(
-        request.id, request.lease_key, request.url, bool(request.canary)
-    )
+    build = service.start(request.id, request.lease_key, request.url)
     return build_to_response_message(build)
 
   ####### HEARTBEAT ############################################################

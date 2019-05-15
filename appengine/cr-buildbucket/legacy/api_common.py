@@ -68,6 +68,25 @@ def to_bucket_id_async(bucket):
   raise ndb.Return(bucket_id)
 
 
+class CanaryPreference(messages.Enum):
+  # The build system will decide whether to use canary or not
+  AUTO = 1
+  # Use the production build infrastructure
+  PROD = 2
+  # Use the canary build infrastructure
+  CANARY = 3
+
+
+CANARY_PREFERENCE_TO_TRINARY = {
+    CanaryPreference.AUTO: common_pb2.UNSET,
+    CanaryPreference.PROD: common_pb2.NO,
+    CanaryPreference.CANARY: common_pb2.YES,
+}
+TRINARY_TO_CANARY_PREFERENCE = {
+    v: k for k, v in CANARY_PREFERENCE_TO_TRINARY.iteritems()
+}
+
+
 class BuildMessage(messages.Message):
   """Describes model.Build, see its docstring."""
   id = messages.IntegerField(1, required=True)
@@ -90,7 +109,7 @@ class BuildMessage(messages.Message):
   status_changed_ts = messages.IntegerField(17)
   utcnow_ts = messages.IntegerField(18, required=True)
   retry_of = messages.IntegerField(19)
-  canary_preference = messages.EnumField(model.CanaryPreference, 21)
+  canary_preference = messages.EnumField(CanaryPreference, 21)
   canary = messages.BooleanField(22)
   project = messages.StringField(23)
   experimental = messages.BooleanField(24)
@@ -232,7 +251,11 @@ def build_to_message(build, build_output_properties, include_lease_key=False):
       status_changed_ts=utils.datetime_to_timestamp(build.status_changed_time),
       utcnow_ts=utils.datetime_to_timestamp(utils.utcnow()),
       retry_of=build.retry_of,
-      canary_preference=build.canary_preference,
+      canary_preference=(
+          # This is not accurate, but it does not matter at this point.
+          # This is deprecated.
+          CanaryPreference.CANARY if build.canary else CanaryPreference.PROD
+      ),
       canary=build.canary,
       experimental=build.experimental,
       service_account=sw.task_service_account,

@@ -99,6 +99,7 @@ class CreationTest(testing.AppengineTestCase):
     )
 
     self.patch('creation._should_update_builder', side_effect=lambda p: p > 0.5)
+    self.patch('creation._should_be_canary', side_effect=lambda p: p > 50)
 
     self.patch('search.TagIndex.random_shard_index', return_value=0)
 
@@ -150,6 +151,18 @@ class CreationTest(testing.AppengineTestCase):
   def test_critical(self):
     build = self.add(dict(critical=common_pb2.YES))
     self.assertEqual(build.proto.critical, common_pb2.YES)
+
+  def test_canary_in_request(self):
+    build = self.add(dict(canary=common_pb2.YES))
+    self.assertTrue(build.proto.canary)
+
+  def test_canary_in_builder(self):
+    builder_cfg = self.chromium_try.swarming.builders[0]
+    builder_cfg.task_template_canary_percentage.value = 100
+    config.put_bucket('chromium', 'a' * 40, self.chromium_try)
+
+    build = self.add()
+    self.assertTrue(build.proto.canary)
 
   def test_properties(self):
     props = {'foo': 'bar', 'qux': 1}

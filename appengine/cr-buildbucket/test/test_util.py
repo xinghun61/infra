@@ -71,6 +71,7 @@ BUILD_DEFAULTS = build_pb2.Build(
     status=common_pb2.SCHEDULED,
     created_by='anonymous:anonymous',
     tags=[INDEXED_TAG],
+    canary=False,
     infra=dict(
         swarming=dict(
             hostname='swarming.example.com',
@@ -151,8 +152,6 @@ def build(for_creation=False, **build_proto_fields):  # pragma: no cover
           model.PROPERTIES_PARAMETER:
               bbutil.struct_to_dict(proto.input.properties),
       },
-      canary_preference=model.CanaryPreference.PROD,
-      canary=infra.buildbucket.canary,
       url='https://ci.example.com/%d' % proto.id,
       is_luci=infra.HasField('swarming'),
       swarming_task_key='swarming_task_key',

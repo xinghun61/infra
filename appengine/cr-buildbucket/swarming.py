@@ -74,12 +74,6 @@ _PUBSUB_TOPIC = 'swarming'
 _PARAM_SWARMING = 'swarming'
 _PARAM_CHANGES = 'changes'
 
-# The default percentage of builds that use canary swarming task template.
-# This number is relatively high so we treat canary seriously and that we have
-# a strong signal if the canary is broken.
-# If it is, the template must be reverted to a stable version ASAP.
-_DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
-
 DEFAULT_TASK_PRIORITY = 30
 
 # This is the path, relative to the swarming run dir, to the directory that
@@ -103,27 +97,18 @@ class TemplateNotFound(Error):
   """Raised when a task template is not found."""
 
 
-class CanaryTemplateNotFound(TemplateNotFound):
-  """Raised when canary template is explicitly requested, but not found."""
-
-
 @ndb.tasklet
-def _get_task_template_async(canary, canary_required=True):
-  """Gets a tuple (template_revision, template_dict, canary_bool).
+def _get_task_template_async(canary):
+  """Gets a tuple (template_revision, template_dict).
 
   Args:
-    canary (bool): specifies a whether canary template should be returned.
-    canary_required (bool): controls the behavior if |canary| is True and
-      the canary template is not found. If False use the non-canary template,
-      otherwise raise CanaryTemplateNotFound.
-      Ignored if canary is False.
+    canary (bool): whether canary template should be returned.
 
   Returns:
-    Tuple (template_revision, template_dict, canary):
+    Tuple (template_revision, template_dict):
       template_revision (str): revision of the template, e.g. commit hash.
       template_dict (dict): parsed template, or None if not found.
         May contain $parameters that must be expanded using format_obj().
-      canary (bool): True if the returned template is a canary template.
   """
   text = None
   revision = None
@@ -132,27 +117,15 @@ def _get_task_template_async(canary, canary_required=True):
     revision, text = yield component_config.get_self_config_async(
         'swarming_task_template_canary.json', store_last_good=True
     )
-    canary = bool(text)
-    if not text:
-      if canary_required:
-        raise CanaryTemplateNotFound(
-            'canary swarming task template is requested, '
-            'but the canary template is not found'
-        )
-      logging.warning(
-          'canary swarming task template is not found. using the default one'
-      )
 
   if not text:
     revision, text = yield component_config.get_self_config_async(
         'swarming_task_template.json', store_last_good=True
     )
 
-  template = None
-  if text:
-    template = json.loads(text)
-    template.pop('__comment__', None)
-  raise ndb.Return(revision, template, canary)
+  template = json.loads(text)
+  template.pop('__comment__', None)
+  raise ndb.Return(revision, template)
 
 
 def validate_build_parameters(params):
@@ -440,33 +413,13 @@ def _create_task_def_async(builder_cfg, build, fake_build):
       build.proto.input.properties, allow_reserved=bool(build.retry_of)
   )
 
-  # Use canary template?
-  assert isinstance(build.canary_preference, model.CanaryPreference)
-  if build.canary_preference == model.CanaryPreference.AUTO:
-    canary_percentage = _DEFAULT_CANARY_TEMPLATE_PERCENTAGE
-    if builder_cfg.HasField(  # pragma: no branch
-        'task_template_canary_percentage'):
-      canary_percentage = builder_cfg.task_template_canary_percentage.value
-    build.canary = _should_use_canary_template(canary_percentage)
-  else:
-    build.canary = build.canary_preference == model.CanaryPreference.CANARY
-
   builder_cfg = _prepare_builder_config(build, builder_cfg)
 
-  try:
-    task_template_rev, task_template, build.canary = (
-        yield _get_task_template_async(
-            build.canary,
-            build.canary_preference == model.CanaryPreference.CANARY
-        )
-    )
-  except CanaryTemplateNotFound as ex:
-    raise errors.InvalidInputError(ex.message)
-  if not task_template:
-    raise TemplateNotFound('task template is not configured')
+  task_template_rev, task_template = yield _get_task_template_async(
+      build.canary
+  )
 
   build.proto.infra.buildbucket.service_config_revision = task_template_rev
-  build.proto.infra.buildbucket.canary = build.canary
 
   assert builder_cfg.swarming_host
   build.proto.infra.swarming.hostname = builder_cfg.swarming_host

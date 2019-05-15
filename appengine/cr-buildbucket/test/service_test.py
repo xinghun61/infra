@@ -302,7 +302,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(build.lease_key)
     self.assertIsNone(build.lease_expiration_date)
     self.assertIsNone(build.leasee)
-    self.assertIsNone(build.canary)
     self.lease(1)
 
   def test_reset_is_idempotent(self):
@@ -339,41 +338,38 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.validate_url(123)
 
-  def start(self, build, url=None, lease_key=None, canary=False):
-    return service.start(
-        build.key.id(), lease_key or build.lease_key, url, canary
-    )
+  def start(self, build, url=None, lease_key=None):
+    return service.start(build.key.id(), lease_key or build.lease_key, url)
 
   def test_start(self):
     build = self.new_leased_build()
-    build = self.start(build, url='http://localhost', canary=True)
+    build = self.start(build, url='http://localhost')
     self.assertEqual(build.proto.status, common_pb2.STARTED)
     self.assertEqual(build.url, 'http://localhost')
     self.assertEqual(build.proto.start_time.ToDatetime(), self.now)
-    self.assertTrue(build.canary)
 
   def test_start_started_build(self):
     build = self.new_leased_build(id=1)
     lease_key = build.lease_key
     url = 'http://localhost/'
 
-    service.start(1, lease_key, url, False)
-    service.start(1, lease_key, url, False)
-    service.start(1, lease_key, url + '1', False)
+    service.start(1, lease_key, url)
+    service.start(1, lease_key, url)
+    service.start(1, lease_key, url + '1')
 
   def test_start_non_leased_build(self):
     self.classic_build(id=1).put()
     with self.assertRaises(errors.LeaseExpiredError):
-      service.start(1, 42, None, False)
+      service.start(1, 42, None)
 
   def test_start_completed_build(self):
     self.classic_build(id=1, status=common_pb2.SUCCESS).put()
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.start(1, 42, None, False)
+      service.start(1, 42, None)
 
   def test_start_without_lease_key(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.start(1, None, None, False)
+      service.start(1, None, None)
 
   @contextlib.contextmanager
   def callback_test(self, build):

@@ -27,6 +27,7 @@ def _build_default_field_paths(prefix=''):  # pragma: no cover
       'status',
       'status_details',
       'update_time',
+      'canary',
       # TODO(nodir): add the following fields when they are defined in the
       # proto:
       # 'user_duration',

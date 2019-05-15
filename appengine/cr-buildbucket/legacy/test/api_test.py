@@ -692,12 +692,9 @@ class V1ApiTest(testing.EndpointsTestCase):
         'id': '1',
         'lease_key': 42,
         'url': build.url,
-        'canary': True,
     }
     res = self.call_api('start', req).json_body
-    start.assert_called_once_with(
-        1, req['lease_key'], req['url'], req['canary']
-    )
+    start.assert_called_once_with(1, req['lease_key'], req['url'])
     self.assertEqual(res['build']['id'], '1')
     self.assertEqual(res['build']['url'], req['url'])
 

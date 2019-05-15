@@ -73,25 +73,6 @@ class CancelationReason(messages.Enum):
   TIMEOUT = 2
 
 
-class CanaryPreference(messages.Enum):
-  # The build system will decide whether to use canary or not
-  AUTO = 1
-  # Use the production build infrastructure
-  PROD = 2
-  # Use the canary build infrastructure
-  CANARY = 3
-
-
-CANARY_PREFERENCE_TO_TRINARY = {
-    CanaryPreference.AUTO: common_pb2.UNSET,
-    CanaryPreference.PROD: common_pb2.NO,
-    CanaryPreference.CANARY: common_pb2.YES,
-}
-TRINARY_TO_CANARY_PREFERENCE = {
-    v: k for k, v in CANARY_PREFERENCE_TO_TRINARY.iteritems()
-}
-
-
 class PubSubCallback(ndb.Model):
   """Parameters for a callack push task."""
   topic = ndb.StringProperty(required=True, indexed=False)
@@ -190,10 +171,6 @@ class Build(ndb.Model):
     yield infra
     self.infra_bytes = infra.SerializeToString()
 
-  # Specifies whether canary of build infrastructure should be used for this
-  # build.
-  canary_preference = msgprop.EnumProperty(CanaryPreference, indexed=False)
-
   # A randomly generated key associated with the created swarming task.
   # Embedded in a build token provided to a swarming task in secret bytes.
   # Needed in case Buildbucket unintentionally creates multiple swarming tasks
@@ -236,6 +213,8 @@ class Build(ndb.Model):
           self.proto.builder.project,
           self.proto.builder.bucket,
           self.proto.builder.builder))
+
+  canary = ndb.ComputedProperty(lambda self: self.proto.canary)
 
   # Value of proto.create_time.
   # Making this property computed is not-entirely trivial because
@@ -310,14 +289,6 @@ class Build(ndb.Model):
   is_leased = ndb.ComputedProperty(lambda self: self.lease_key is not None)
   leasee = auth.IdentityProperty()
   never_leased = ndb.BooleanProperty()
-
-  # == Properties redundant with "proto" =======================================
-
-  # True if canary build infrastructure is used to run this build.
-  # It may be None only in SCHEDULED state. Otherwise it must be True or False.
-  # If canary_preference is CANARY, this field value does not have to be True,
-  # e.g. if the build infrastructure does not have a canary.
-  canary = ndb.BooleanProperty()
 
   # ============================================================================
 
