@@ -9,6 +9,7 @@ import time
 import unittest
 
 import mox
+import mock
 
 from google.appengine.ext import testbed
 
@@ -477,3 +478,18 @@ class ProjectServiceTest(unittest.TestCase):
     self.project_service.UpdateExtraPerms(
         self.cnxn, 234, 111, ['SecurityTeam'], now=NOW)
     self.mox.VerifyAll()
+
+  def testExpungeUsersInProjects(self):
+    self.project_service.extraperm_tbl.Delete = mock.Mock()
+    self.project_service.acexclusion_tbl.Delete = mock.Mock()
+    self.project_service.membernotes_tbl.Delete = mock.Mock()
+    self.project_service.user2project_tbl.Delete = mock.Mock()
+
+    user_ids = [111L, 222L]
+    self.project_service.ExpungeUsersInProjects(self.cnxn, user_ids)
+
+    call = [mock.call(self.cnxn, user_id=user_ids, commit=False)]
+    self.project_service.extraperm_tbl.Delete.assert_has_calls(call)
+    self.project_service.acexclusion_tbl.Delete.assert_has_calls(call)
+    self.project_service.membernotes_tbl.Delete.assert_has_calls(call)
+    self.project_service.user2project_tbl.Delete.assert_has_calls(call)
