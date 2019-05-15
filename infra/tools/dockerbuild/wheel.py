@@ -145,9 +145,32 @@ SPECS.update({s.spec.tag: s for s in assert_sorted('SourceOrPrebuilt',
       'mac-x64': ['macosx_10_6_intel'],
     },
   ),
-  SourceOrPrebuilt('coverage', '4.3.4'),
-  SourceOrPrebuilt('coverage', '4.5.1',
-      skip_plat=['mac-x64'],
+  SourceOrPrebuilt(
+      'coverage', '4.3.4',
+      packaged=[
+        'manylinux-x86',
+        'manylinux-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
+  SourceOrPrebuilt(
+      'coverage', '4.5.1',
+      packaged=[
+        'manylinux-x86',
+        'manylinux-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
+  SourceOrPrebuilt(
+      'coverage', '4.5.3',
+      packaged=[
+        'manylinux-x86',
+        'manylinux-x64',
+        'windows-x86',
+        'windows-x64',
+      ],
   ),
   SourceOrPrebuilt('crcmod', '1.7', packaged=(),
       skip_plat=[

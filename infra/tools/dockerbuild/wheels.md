@@ -701,6 +701,30 @@ wheel: <
 * *linux-mips*
 * *linux-mips64*
 * *linux-mipsel*
+* *mac-x64*
+* *manylinux-x64*
+* *manylinux-x64-ucs2*
+* *manylinux-x86*
+* *manylinux-x86-ucs2*
+* *windows-x64*
+* *windows-x86*
+
+### 4.5.3
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/coverage/${vpython_platform}"
+  version: "version:4.5.3"
+>
+```
+
+
+* *linux-arm64*
+* *linux-armv6*
+* *linux-mips*
+* *linux-mips64*
+* *linux-mipsel*
+* *mac-x64*
 * *manylinux-x64*
 * *manylinux-x64-ucs2*
 * *manylinux-x86*
