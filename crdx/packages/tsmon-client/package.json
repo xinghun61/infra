@@ -1,6 +1,6 @@
 {
   "name": "@chopsui/tsmon-client",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Send timeseries data from the frontend.",
   "main": "tsmon-client.js",
   "scripts": {
