@@ -552,7 +552,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
     hotlist_id = 123
     new_owner_id = 222L
     hotlist = fake.Hotlist(hotlist_name='unique', hotlist_id=hotlist_id,
-                           owner_ids=[111L], editor_ids=[222L],
+                           owner_ids=[111L], editor_ids=[222L, 333L],
                            follower_ids=[444L])
     # LookupHotlistIDs, proposed new owner, owns no hotlist with the same name.
     self.features_service.hotlist2user_tbl.Select = mock.Mock(
@@ -573,7 +573,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
     self.features_service.GetHotlist.assert_called_once_with(
         self.cnxn, hotlist_id, use_cache=False)
     insert_rows = [(hotlist_id, new_owner_id, 'owner'),
-                   (hotlist_id, 222L, 'editor'),
+                   (hotlist_id, 333L, 'editor'),
                    (hotlist_id, 111L, 'editor'),
                    (hotlist_id, 444L, 'follower')]
     self.features_service.hotlist2user_tbl.InsertRows.assert_called_once_with(

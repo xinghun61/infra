@@ -816,9 +816,14 @@ class FeaturesService(object):
     new_editor_ids = hotlist.editor_ids
     if remain_editor:
       new_editor_ids.extend(hotlist.owner_ids)
+    if new_owner_id in new_editor_ids:
+      new_editor_ids.remove(new_owner_id)
+    new_follower_ids = hotlist.follower_ids
+    if new_owner_id in new_follower_ids:
+      new_follower_ids.remove(new_owner_id)
     self.UpdateHotlistRoles(
         cnxn, hotlist.hotlist_id, [new_owner_id], new_editor_ids,
-        hotlist.follower_ids, commit=commit)
+        new_follower_ids, commit=commit)
 
   ### Lookup hotlist IDs
 
