@@ -20,6 +20,8 @@ import (
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/retry"
+	"go.chromium.org/luci/common/retry/transient"
 	"google.golang.org/api/googleapi"
 
 	"infra/cmd/skylab/internal/flagx"
@@ -182,7 +184,9 @@ func toKeyvalMap(keyvals []string) (map[string]string, error) {
 	return m, nil
 }
 
-var retryableCodes = map[int]bool{
+// swarmingRetryableCodes defines error codes from swarming RPCs that are to be
+// considered transient and retryable.
+var swarmingRetryableCodes = map[int]bool{
 	http.StatusInternalServerError: true, // 500
 	http.StatusBadGateway:          true, // 502
 	http.StatusServiceUnavailable:  true, // 503
@@ -190,44 +194,41 @@ var retryableCodes = map[int]bool{
 	http.StatusInsufficientStorage: true, // 507
 }
 
-// withGoogleAPIRetries calls a function, retrying calls that return
-// a retryable googleapi.Error error code.
-//
-// The function is retried up to maxAttempts times, or until the supplied
-// context expires.
-//
-// If any attempt returns a non-retryable error or a non-googleapi error,
-// then that error is returned.
-//
-// If the final attempt returns an error, then that error is returned.
-//
-// TODO(akeshet): Don't roll our own retry function if we can avoid it. Or, if
-// we really must roll our own, add exponential backoff to it.
-func withGoogleAPIRetries(ctx context.Context, maxAttempts int, f func() error) error {
-	if maxAttempts < 1 {
-		panic("maxAttempts must be >1")
+// swarmingRetryParams defines the retry strategy for handling transient errors
+// from swarming RPCs.
+func swarmingRetryParams() retry.Iterator {
+	return &retry.ExponentialBackoff{
+		Limited: retry.Limited{
+			Delay:   500 * time.Millisecond,
+			Retries: 5,
+		},
+		Multiplier: 2,
 	}
-	var err error
-	for i := 0; i < maxAttempts; i++ {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
+}
 
-		err = f()
-		if err == nil {
-			return nil
-		}
-		apiErr, ok := err.(*googleapi.Error)
-		if !ok {
-			return err
-		}
-		if !retryableCodes[apiErr.Code] {
-			return err
-		}
+// swarmingTagErrorIfTransient applies tags to swarming RPC errors that are
+// transient and should be retried.
+func swarmingTagErrorIfTransient(err error) error {
+	if err == nil {
+		return err
 	}
-	return err
+	apiErr, ok := err.(*googleapi.Error)
+	if !ok {
+		return err
+	}
+	if !swarmingRetryableCodes[apiErr.Code] {
+		return err
+	}
+	return transient.Tag.Apply(err)
+}
+
+// swarmingCallWithRetries calls the given function, retrying transient swarming
+// errors, with swarming-appropriate backoff and delay.
+func swarmingCallWithRetries(ctx context.Context, f func() error) error {
+	taggedFunc := func() error {
+		return swarmingTagErrorIfTransient(f())
+	}
+	return retry.Retry(ctx, transient.Only(swarmingRetryParams), taggedFunc, nil)
 }
 
 // swarmingCreateTaskWithRetries calls swarming's NewTaskRequest rpc, retrying
@@ -239,7 +240,8 @@ func swarmingCreateTaskWithRetries(ctx context.Context, s *swarming.Service, req
 		resp, err = s.Tasks.New(req).Context(ctx).Do()
 		return err
 	}
-	if err := withGoogleAPIRetries(ctx, 5, createTask); err != nil {
+
+	if err := swarmingCallWithRetries(ctx, createTask); err != nil {
 		return nil, err
 	}
 	return resp, nil
