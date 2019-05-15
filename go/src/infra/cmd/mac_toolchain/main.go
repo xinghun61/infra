@@ -59,6 +59,7 @@ func (t *KindType) Set(v string) error {
 
 type commonFlags struct {
 	subcommands.CommandRunBase
+	verbose           bool
 	cipdPackagePrefix string
 }
 
@@ -88,6 +89,13 @@ func normalizeCipdPrefix(prefix string) string {
 		prefix = prefix[:len(prefix)-1]
 	}
 	return prefix
+}
+
+func (c *commonFlags) ModifyContext(ctx context.Context) context.Context {
+	if c.verbose {
+		ctx = logging.SetLevel(ctx, logging.Debug)
+	}
+	return ctx
 }
 
 func (c *installRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -152,6 +160,7 @@ func (c *packageRun) Run(a subcommands.Application, args []string, env subcomman
 }
 
 func commonFlagVars(c *commonFlags) {
+	c.Flags.BoolVar(&c.verbose, "verbose", false, "Log more.")
 	c.Flags.StringVar(&c.cipdPackagePrefix, "cipd-package-prefix", DefaultCipdPackagePrefix, "CIPD package prefix.")
 }
 
@@ -225,7 +234,7 @@ func main() {
 			goLoggerCfg.Format = "[%{level:.1s} %{time:2006-01-02 15:04:05}] %{message}"
 			ctx = goLoggerCfg.Use(ctx)
 
-			ctx = (&logging.Config{Level: logging.Debug}).Set(ctx)
+			ctx = logging.SetLevel(ctx, logging.Warning)
 			ctx = useRealExec(ctx)
 			return ctx
 		},
