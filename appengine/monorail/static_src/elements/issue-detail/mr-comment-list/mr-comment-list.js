@@ -110,8 +110,8 @@ export class MrCommentList extends connectStore(LitElement) {
         ${hiddenCount == 1 ? 'comment' : 'comments'}
       </button>
       ${cache(this._hideComments ? '' :
-        html`${this.comments.slice(0, hiddenCount).map(
-          this.renderComment.bind(this))}`)}
+    html`${this.comments.slice(0, hiddenCount).map(
+      this.renderComment.bind(this))}`)}
       ${this.comments.slice(hiddenCount).map(this.renderComment.bind(this))}
       <div class="edit-slot"
           ?hidden=${!_canAddComment(this.issuePermissions)}>

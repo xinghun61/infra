@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrApprovalCard} from './mr-approval-card.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
@@ -23,55 +22,70 @@ describe('mr-approval-card', () => {
   });
 
   it('_isApprover true when user is an approver', () => {
-    const userNotInList = element._computeIsApprover([
+    // User not in approver list.
+    element.approvers = [
       {displayName: 'tester@user.com'},
       {displayName: 'test@notuser.com'},
       {displayName: 'hello@world.com'},
-    ], 'test@user.com', []);
-    assert.isFalse(userNotInList);
+    ];
+    element.user = {email: 'test@user.com', groups: []};
+    assert.isFalse(element._isApprover);
 
-    const userInList = element._computeIsApprover([
+    // Use is in approver list.
+    element.approvers = [
       {displayName: 'tester@user.com'},
       {displayName: 'test@notuser.com'},
       {displayName: 'hello@world.com'},
       {displayName: 'test@user.com'},
-    ], 'test@user.com', []);
-    assert.isTrue(userInList);
+    ];
+    assert.isTrue(element._isApprover);
 
-    const userGroupNotInList = element._computeIsApprover([
+    // User's group is not in the list.
+    element.approvers = [
       {displayName: 'tester@user.com'},
       {displayName: 'nongroup@group.com'},
       {displayName: 'group@nongroup.com'},
       {displayName: 'ignore@test.com'},
-    ], 'test@user.com', [
-      {displayName: 'group@group.com'},
-      {displayName: 'test@group.com'},
-      {displayName: 'group@user.com'},
-    ]);
-    assert.isFalse(userGroupNotInList);
+    ];
+    element.user = {
+      email: 'test@user.com',
+      groups: [
+        {displayName: 'group@group.com'},
+        {displayName: 'test@group.com'},
+        {displayName: 'group@user.com'},
+      ],
+    };
+    assert.isFalse(element._isApprover);
 
-    const userGroupInList = element._computeIsApprover([
+    // User's group is in the list.
+    element.approvers = [
       {displayName: 'tester@user.com'},
       {displayName: 'group@group.com'},
       {displayName: 'test@notuser.com'},
-    ], 'test@user.com', [
-      {displayName: 'group@group.com'},
-    ]);
-    assert.isTrue(userGroupInList);
+    ];
+    element.user = {
+      email: 'test@user.com',
+      groups: [
+        {displayName: 'group@group.com'},
+      ],
+    };
+    assert.isTrue(element._isApprover);
   });
 
-  it('site admins have approver privileges', () => {
+  it('site admins have approver privileges', async () => {
+    await element.updateComplete;
+
     const notice = element.shadowRoot.querySelector('.approver-notice');
     assert.equal(notice.textContent.trim(), '');
 
     element.user = {isSiteAdmin: true};
+    await element.updateComplete;
+
     assert.isTrue(element._hasApproverPrivileges);
 
-    flush(() => {
-      assert.equal(notice.textContent.trim(),
-        'Your site admin privileges give you full access to edit this approval.'
-      );
-    });
+    assert.equal(notice.textContent.trim(),
+      'Your site admin privileges give you full access to edit this approval.'
+    );
   });
 
   it('site admins see all approval statuses except NotSet', () => {
@@ -140,7 +154,7 @@ describe('mr-approval-card', () => {
     assert.equal(element._availableStatuses[4].status, 'Approved');
   });
 
-  it('expands to show focused comment', () => {
+  it('expands to show focused comment', async () => {
     element.focusId = 'c4';
     element.fieldName = 'field';
     element.comments = [
@@ -161,14 +175,13 @@ describe('mr-approval-card', () => {
       },
     ];
 
-    flush();
+    await element.updateComplete;
 
     assert.isTrue(element.opened);
   });
 
-  it('does not expands to show focused comment on other elements', () => {
+  it('does not expand to show focused comment on other elements', async () => {
     element.focusId = 'c3';
-    element.fieldName = 'field';
     element.comments = [
       {
         sequenceNum: 1,
@@ -179,15 +192,12 @@ describe('mr-approval-card', () => {
         approvalRef: {fieldName: 'field'},
       },
       {
-        sequenceNum: 3,
-      },
-      {
         sequenceNum: 4,
         approvalRef: {fieldName: 'field'},
       },
     ];
 
-    flush();
+    await element.updateComplete;
 
     assert.isFalse(element.opened);
   });

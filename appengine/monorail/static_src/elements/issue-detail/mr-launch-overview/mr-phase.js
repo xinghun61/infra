@@ -2,19 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import {store} from 'elements/reducers/base.js';
+import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import '../mr-approval-card/mr-approval-card.js';
+import {valuesForField} from
+  'elements/issue-detail/metadata/shared/metadata-helpers.js';
 import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
 import 'elements/issue-detail/metadata/mr-metadata/mr-field-values.js';
-import {MetadataMixin} from
-  'elements/issue-detail/metadata/shared/metadata-mixin.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 const TARGET_PHASE_MILESTONE_MAP = {
   'Beta': 'feature_freeze',
@@ -40,11 +39,11 @@ const PHASES_WITH_MILESTONES = ['Beta', 'Stable', 'Stable-Exp', 'Stable-Full'];
  * This is the component for a single phase.
  *
  */
-export class MrPhase extends MetadataMixin(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrPhase extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           display: block;
         }
@@ -80,149 +79,133 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
         .phase-edit {
           padding: 0.1em 8px;
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    const isPhaseWithMilestone = PHASES_WITH_MILESTONES.includes(this.phaseName);
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <h2>
         <div>
-          Approvals<span hidden\$="[[_isEmpty(phaseName)]]">:
-            [[phaseName]]
+          Approvals<span ?hidden=${!this.phaseName || !this.phaseName.length}>:
+            ${this.phaseName}
           </span>
-          <template is="dom-if" if="[[_isPhaseWithMilestone(phaseName)]]">
-            <template is="dom-repeat" items="[[fieldDefs]]" as="field">
+          ${isPhaseWithMilestone ? html`${this.fieldDefs
+            && this.fieldDefs.map((field) => html`
               <div class="chip">
-                [[field.fieldRef.fieldName]]:
+                ${field.fieldRef.fieldName}:
                 <mr-field-values
-                  name="[[field.fieldRef.fieldName]]"
-                  type="[[field.fieldRef.type]]"
-                  values="[[_valuesForField(fieldValueMap, field.fieldRef.fieldName, phaseName)]]"
-                  project-name="[[issueRef.projectName]]"
+                  .name=${field.fieldRef.fieldName}
+                  .type=${field.fieldRef.type}
+                  .values=${valuesForField(this.fieldValueMap, field.fieldRef.fieldName, this.phaseName)}
+                  .projectName=${this.issueRef.projectName}
                 ></mr-field-values>
               </div>
-            </template>
-            <em hidden\$="[[!_nextDate]]">
-              [[_dateDescriptor]]
-              <chops-timestamp timestamp="[[_nextDate]]"></chops-timestamp>
+            `)}
+            <em ?hidden=${!this._nextDate}>
+              ${this._dateDescriptor}
+              <chops-timestamp .timestamp=${this._nextDate}></chops-timestamp>
             </em>
-          </template>
+          `: ''}
         </div>
-        <template is="dom-if" if="[[_isPhaseWithMilestone(phaseName)]]">
-          <chops-button on-click="edit" class="de-emphasized phase-edit">
+        ${isPhaseWithMilestone ? html`
+          <chops-button @click=${this.edit} class="de-emphasized phase-edit">
             <i class="material-icons">create</i>
             Edit
           </chops-button>
-        </template>
+        `: ''}
       </h2>
-      <template is="dom-repeat" items="[[approvals]]">
+      ${this.approvals && this.approvals.map((approval) => html`
         <mr-approval-card
-          approvers="[[item.approverRefs]]"
-          setter="[[item.setterRef]]"
-          field-name="[[item.fieldRef.fieldName]]"
-          phase-name="[[phaseName]]"
-          status-enum="[[item.status]]"
-          survey="[[item.survey]]"
-          survey-template="[[item.surveyTemplate]]"
-          urls="[[item.urls]]"
-          labels="[[item.labels]]"
-          users="[[item.users]]"
+          .approvers=${approval.approverRefs}
+          .setter=${approval.setterRef}
+          .fieldName=${approval.fieldRef.fieldName}
+          .phaseName=${this.phaseName}
+          .statusEnum=${approval.status}
+          .survey=${approval.survey}
+          .surveyTemplate=${approval.surveyTemplate}
+          .urls=${approval.urls}
+          .labels=${approval.labels}
+          .users=${approval.users}
         ></mr-approval-card>
-      </template>
-      <template is="dom-if" if="[[!approvals.length]]">
-        No tasks for this phase.
-      </template>
+      `)}
+      ${!this.approvals || !this.approvals.length ? html`No tasks for this phase.` : ''}
       <chops-dialog id="editPhase" aria-labelledby="phaseDialogTitle">
         <h3 id="phaseDialogTitle" class="medium-heading">
-          Editing phase: [[phaseName]]
+          Editing phase: ${this.phaseName}
         </h3>
         <mr-edit-metadata
           id="metadataForm"
-          form-name="[[phaseName]]"
           class="edit-actions-right"
-          field-defs="[[fieldDefs]]"
-          field-values="[[fieldValues]]"
-          phase-name="[[phaseName]]"
-          disabled$="[[updatingIssue]]"
-          error="[[updateIssueError.description]]"
-          on-save="save"
-          on-discard="cancel"
-          isApproval="true"
-          disableAttachments="true"
+          .formName=${this.phaseName}
+          .fieldDefs=${this.fieldDefs}
+          .fieldValues=${this.fieldValues}
+          .phaseName=${this.phaseName}
+          ?disabled=${this.updatingIssue}
+          .error=${this.updateIssueError && this.updateIssueError.description}
+          @save=${this.save}
+          @discard=${this.cancel}
+          isApproval
+          disableAttachments
         ></mr-edit-metadata>
       </chops-dialog>
     `;
   }
 
-  static get is() {
-    return 'mr-phase';
-  }
-
   static get properties() {
     return {
-      issue: {
-        type: Object,
-        observer: 'reset',
-      },
-      issueRef: Object,
-      phaseName: {
-        type: String,
-        value: '',
-      },
-      updatingIssue: {
-        type: Boolean,
-        observer: '_updatingIssueChanged',
-      },
-      updateIssueError: Object,
-      approvals: Array,
-      fieldDefs: Array,
-      fieldValueMap: { // Set by MetadataMixin.
-        type: Object,
-        value: () => {},
-      },
-      // Possible values: Target, Approved, Launched.
-      _status: {
-        type: String,
-        computed: `_computeStatus(_targetMilestone, _approvedMilestone,
-          _launchedMilestone)`,
-      },
-      _approvedMilestone: {
-        type: Number,
-        computed: '_computeApprovedMilestone(fieldValueMap, phaseName)',
-      },
-      _launchedMilestone: {
-        type: Number,
-        computed: '_computeLaunchedMilestone(fieldValueMap, phaseName)',
-      },
-      _targetMilestone: {
-        type: Number,
-        computed: '_computeTargetMilestone(fieldValueMap, phaseName)',
-      },
-      _fetchedMilestone: {
-        type: Number,
-        computed: `_computeFetchedMilestone(_targetMilestone,
-          _approvedMilestone, _launchedMilestone)`,
-        observer: '_fetchMilestoneData',
-      },
-      _nextDate: {
-        type: Number, // Unix time.
-        computed: `_computeNextDate(
-          phaseName, _status, _milestoneData.mstones)`,
-        value: 0,
-      },
-      _dateDescriptor: {
-        type: String,
-        computed: '_computeDateDescriptor(_status)',
-      },
-      _milestoneData: Object,
+      issue: {type: Object},
+      issueRef: {type: Object},
+      phaseName: {type: String},
+      updatingIssue: {type: Boolean},
+      updateIssueError: {type: Object},
+      approvals: {type: Array},
+      fieldDefs: {type: Array},
+      fieldValueMap: {type: Object},
+      _milestoneData: {type: Object},
     };
   }
 
   stateChanged(state) {
-    super.stateChanged(state);
-    this.setProperties({
-      issue: issue.issue(state),
-      issueRef: issue.issueRef(state),
-      updatingIssue: issue.requests(state).update.requesting,
-      updateIssueError: issue.requests(state).update.error,
-      fieldDefs: project.fieldDefsForPhases(state),
-    });
+    this.fieldValueMap = issue.fieldValueMap(state);
+    this.issue = issue.issue(state);
+    this.issueRef = issue.issueRef(state);
+    this.updatingIssue = issue.requests(state).update.requesting;
+    this.updateIssueError = issue.requests(state).update.error;
+    this.fieldDefs = project.fieldDefsForPhases(state);
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('issue')) {
+      this.reset();
+    }
+    if (changedProperties.has('updatingIssue')) {
+      if (!this.updatingIssue && !this.updateIssueError) {
+        // Close phase edit modal only after a request finishes without errors.
+        this.cancel();
+      }
+    }
+
+    if (changedProperties.has('fieldValueMap') || changedProperties.has('phaseName')) {
+      const oldFieldValueMap = changedProperties.has('fieldValueMap') ?
+        changedProperties.get('fieldValueMap') :
+        this.fieldValueMap;
+      const oldPhaseName = changedProperties.has('phaseName') ?
+        changedProperties.get('phaseName') :
+        this.phaseName;
+      const oldMilestone = _fetchedMilestone(oldFieldValueMap, oldPhaseName);
+      const milestone = _fetchedMilestone(this.fieldValueMap, this.phaseName);
+
+      if (milestone && milestone !== oldMilestone) {
+        window.fetch(
+          `https://chromepmo.appspot.com/schedule/mstone/json?mstone=${milestone}`
+        ).then((resp) => resp.json()).then((resp) => {
+          this._milestoneData = resp;
+        });
+      }
+    }
   }
 
   edit() {
@@ -265,14 +248,10 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     }
   }
 
-  _updatingIssueChanged(isUpdateInFlight) {
-    if (!isUpdateInFlight && !this.updateIssueError) {
-      // Close phase edit modal only after request finishes without errors.
-      this.cancel();
-    }
-  }
-
-  _computeNextDate(phaseName, status, data) {
+  get _nextDate() {
+    const phaseName = this.phaseName;
+    const status = this._status;
+    let data = this._milestoneData && this._milestoneData.mstones;
     // Data pulled from https://chromepmo.appspot.com/schedule/mstone/json?mstone=xx
     if (!phaseName || !status || !data || !data.length) return 0;
     data = data[0];
@@ -285,7 +264,8 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     return Math.floor((new Date(data[key])).getTime() / 1000);
   }
 
-  _computeDateDescriptor(status) {
+  get _dateDescriptor() {
+    const status = this._status;
     if (status === 'Approved') {
       return 'Launching on ';
     } else if (status === 'Launched') {
@@ -294,27 +274,10 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     return 'Due by ';
   }
 
-  _computeMilestoneFieldValue(fieldValueMap, phaseName, fieldName) {
-    const values = this._valuesForField(fieldValueMap, fieldName, phaseName);
-    return values.length ? values[0] : undefined;
-  }
-
-  _computeApprovedMilestone(fieldValueMap, phaseName) {
-    return this._computeMilestoneFieldValue(fieldValueMap, phaseName,
-      'M-Approved');
-  }
-
-  _computeLaunchedMilestone(fieldValueMap, phaseName) {
-    return this._computeMilestoneFieldValue(fieldValueMap, phaseName,
-      'M-Launched');
-  }
-
-  _computeTargetMilestone(fieldValueMap, phaseName) {
-    return this._computeMilestoneFieldValue(fieldValueMap, phaseName,
-      'M-Target');
-  }
-
-  _computeStatus(target, approved, launched) {
+  get _status() {
+    const target = _targetMilestone(this.fieldValueMap, this.phaseName);
+    const approved = _approvedMilestone(this.fieldValueMap, this.phaseName);
+    const launched = _launchedMilestone(this.fieldValueMap, this.phaseName);
     if (approved >= target) {
       if (launched >= approved) {
         return 'Launched';
@@ -323,28 +286,33 @@ export class MrPhase extends MetadataMixin(PolymerElement) {
     }
     return 'Target';
   }
-
-  _computeFetchedMilestone(target, approved, launched) {
-    return Math.max(target || 0, approved || 0, launched || 0);
-  }
-
-  _fetchMilestoneData(milestone) {
-    if (!milestone) return;
-    // HACK. Eventually we want to create a less bespoke way of getting
-    // milestone metadata into Monorail.
-    window.fetch(
-      `https://chromepmo.appspot.com/schedule/mstone/json?mstone=${milestone}`
-    ).then((resp) => resp.json()).then((resp) => {
-      this._milestoneData = resp;
-    });
-  }
-
-  _isPhaseWithMilestone(phaseName) {
-    return PHASES_WITH_MILESTONES.includes(phaseName);
-  }
-
-  _isEmpty(str) {
-    return !str || !str.length;
-  }
 }
-customElements.define(MrPhase.is, MrPhase);
+
+function _milestoneFieldValue(fieldValueMap, phaseName, fieldName) {
+  const values = valuesForField(fieldValueMap, fieldName, phaseName);
+  return values.length ? values[0] : undefined;
+}
+
+function _approvedMilestone(fieldValueMap, phaseName) {
+  return _milestoneFieldValue(fieldValueMap, phaseName,
+    'M-Approved');
+}
+
+function _launchedMilestone(fieldValueMap, phaseName) {
+  return _milestoneFieldValue(fieldValueMap, phaseName,
+    'M-Launched');
+}
+
+function _targetMilestone(fieldValueMap, phaseName) {
+  return _milestoneFieldValue(fieldValueMap, phaseName,
+    'M-Target');
+}
+
+function _fetchedMilestone(fieldValueMap, phaseName) {
+  const target = _targetMilestone(fieldValueMap, phaseName);
+  const approved = _approvedMilestone(fieldValueMap, phaseName);
+  const launched = _launchedMilestone(fieldValueMap, phaseName);
+  return Math.max(target || 0, approved || 0, launched || 0);
+}
+
+customElements.define('mr-phase', MrPhase);

@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import 'elements/chops/chops-collapse/chops-collapse.js';
@@ -17,7 +16,7 @@ import 'elements/framework/mr-comment-content/mr-description.js';
 import '../mr-comment-list/mr-comment-list.js';
 import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
 import 'elements/issue-detail/metadata/mr-metadata/mr-metadata.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 const APPROVER_RESTRICTED_STATUSES = new Set(
   ['NA', 'Approved', 'NotApproved']);
@@ -73,18 +72,20 @@ const CLASS_ICON_MAP = {
   'status-rejected': 'close',
 };
 
+const APPROVAL_STATUSES = Object.keys(STATUS_CLASS_MAP).map((status) => ({
+  status, docstring: STATUS_DOCSTRING_MAP[status], rank: 1}));
+
 /**
  * `<mr-approval-card>`
  *
  * This element shows a card for a single approval.
  *
  */
-export class MrApprovalCard extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrApprovalCard extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           width: 100%;
           background-color: white;
@@ -177,183 +178,164 @@ export class MrApprovalCard extends connectStore(PolymerElement) {
           justify-content: space-between;
           align-items: flex-end;
         }
-      </style>
-      <button class="header" on-click="toggleCard" aria-expanded$="[[_toString(opened)]]">
-        <i class="material-icons expand-icon">[[_expandIcon]]</i>
-        <h3>[[fieldName]]</h3>
+      `,
+    ];
+  }
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      <button
+        class="header"
+        @click=${this.toggleCard}
+        aria-expanded=${(this.opened || false).toString()}
+      >
+        <i class="material-icons expand-icon">
+          ${this.opened ? 'expand_less' : 'expand_more'}
+        </i>
+        <h3>${this.fieldName}</h3>
         <span class="status">
-          <i class="material-icons status-icon">[[_statusIcon]]</i>
-          [[_status]]
+          <i class="material-icons status-icon">
+            ${CLASS_ICON_MAP[this._statusClass]}
+          </i>
+          ${this._status}
         </span>
       </button>
-      <chops-collapse class="card-content" opened$="[[opened]]">
+      <chops-collapse class="card-content" ?opened=${this.opened}>
         <div class="approver-notice">
-          <template is="dom-if" if="[[_isApprover]]">
+          ${this._isApprover ? html`
             You are an approver for this bit.
-          </template>
-          <template is="dom-if" if="[[user.isSiteAdmin]]">
+          `: ''}
+          ${this.user && this.user.isSiteAdmin ? html`
             Your site admin privileges give you full access to edit this approval.
-          </template>
+          `: ''}
         </div>
         <mr-metadata
-          aria-label$="[[fieldName]] Approval Metadata"
-          approval-status="[[_status]]"
-          approvers="[[approvers]]"
-          setter="[[setter]]"
-          field-defs="[[fieldDefs]]"
-          is-approval="true"
+          aria-label="${this.fieldName} Approval Metadata"
+          .approvalStatus=${this._status}
+          .approvers=${this.approvers}
+          .setter=${this.setter}
+          .fieldDefs=${this.fieldDefs}
+          isApproval
         ></mr-metadata>
         <h4
           class="medium-heading"
           role="heading"
         >
-          [[fieldName]] Survey
-          <chops-button on-click="_openEditSurvey">
+          ${this.fieldName} Survey
+          <chops-button @click=${this._openSurveyEditor}>
             Edit responses
           </chops-button>
         </h4>
         <mr-description
           class="survey"
-          description-list="[[_surveyList]]"
+          .descriptionList=${this._allSurveys}
         ></mr-description>
         <mr-comment-list
-          heading-level=4
-          comments="[[_comments]]"
+          headingLevel=4
+          .comments=${this.comments}
         >
-          <h4 id$="[[_editId]]" class="medium-heading">
-            Editing approval: [[phaseName]] &gt; [[fieldName]]
+          <h4 id="edit${this.fieldName}" class="medium-heading">
+            Editing approval: ${this.phaseName} &gt; ${this.fieldName}
           </h4>
           <mr-edit-metadata
-            form-name="[[phaseName]] > [[fieldName]]"
-            approvers="[[approvers]]"
-            field-defs="[[fieldDefs]]"
-            statuses="[[_availableStatuses]]"
-            status="[[_status]]"
-            hasApproverPrivileges$="[[_hasApproverPrivileges]]"
-            isApproval="true"
-            disabled$="[[updatingApproval]]"
-            error="[[updateApprovalError.description]]"
-            on-save="save"
-            on-discard="reset"
+            .formName="${this.phaseName} > ${this.fieldName}"
+            .approvers=${this.approvers}
+            .fieldDefs=${this.fieldDefs}
+            .statuses=${this._availableStatuses}
+            .status=${this._status}
+            .error=${this.updateError && this.updateError.description}
+            ?disabled=${this.updatingApproval}
+            ?hasApproverPrivileges=${this._hasApproverPrivileges}
+            isApproval
+            @save=${this.save}
+            @discard=${this.reset}
           ></mr-edit-metadata>
         </mr-comment-list>
       </chops-collapse>
     `;
   }
 
-  static get is() {
-    return 'mr-approval-card';
-  }
-
   static get properties() {
     return {
-      fieldName: String,
-      approvers: Array,
-      approvalComments: Array,
-      phaseName: String,
-      setter: Object,
-      fieldDefs: {
-        type: Array,
-        computed:
-          '_computeApprovalFieldDefs(fieldDefsByApprovalName, fieldName)',
-      },
-      fieldDefsByApprovalName: Object,
-      focusId: String,
-      user: Object,
-      issue: {
-        type: Object,
-        observer: 'reset',
-      },
-      issueRef: Object,
-      projectConfig: Object,
-      class: {
-        type: String,
-        reflectToAttribute: true,
-        computed: '_computeClass(_status)',
-      },
-      comments: Array,
+      fieldName: {type: String},
+      approvers: {type: Array},
+      phaseName: {type: String},
+      setter: {type: Object},
+      fieldDefs: {type: Array},
+      focusId: {type: String},
+      user: {type: Object},
+      issue: {type: Object},
+      issueRef: {type: Object},
+      projectConfig: {type: Object},
+      comments: {type: String},
       opened: {
         type: Boolean,
-        reflectToAttribute: true,
-        value: false,
+        reflect: true,
       },
-      statusEnum: {
-        type: String,
-        value: '',
-      },
-      statuses: {
-        type: Array,
-        value: () => {
-          return Object.keys(STATUS_CLASS_MAP).map(
-            (status) => (
-              {status, docstring: STATUS_DOCSTRING_MAP[status], rank: 1}));
-        },
-      },
-      updatingApproval: Boolean,
-      updateApprovalError: Object,
-      _availableStatuses: {
-        type: Array,
-        computed: '_filterStatuses(_status, statuses, _hasApproverPrivileges)',
-      },
-      _comments: {
-        type: Array,
-        computed: '_filterComments(comments, fieldName)',
-      },
-      _editId: {
-        type: String,
-        computed: '_computeEditId(fieldName)',
-      },
-      _survey: {
-        type: Object,
-        computed: '_computeSurvey(_surveyList)',
-      },
-      _surveyList: {
-        type: Array,
-        computed: '_computeSurveyList(comments, fieldName)',
-      },
-      _isApprover: {
-        type: Boolean,
-        computed: '_computeIsApprover(approvers, user.email, user.groups)',
-        observer: '_openUserCards',
-      },
-      _hasApproverPrivileges: {
-        type: Boolean,
-        computed: `_computeHasApproverPrivileges(user.isSiteAdmin,
-          _isApprover)`,
-      },
-      _expandIcon: {
-        type: String,
-        computed: '_computeExpandIcon(opened)',
-      },
-      _status: {
-        type: String,
-        computed: '_computeStatus(statusEnum)',
-      },
-      _statusIcon: {
-        type: String,
-        computed: '_computeStatusIcon(class)',
-      },
+      statusEnum: {type: String},
+      updatingApproval: {type: Boolean},
+      updateError: {type: Object},
+      _allSurveys: {type: Array},
     };
   }
 
-  static get observers() {
-    return [
-      '_onFocusId(_comments, focusId)',
-    ];
+  constructor() {
+    super();
+    this.opened = false;
+    this.comments = [];
+    this.fieldDefs = [];
+    this._allSurveys = [];
   }
 
   stateChanged(state) {
-    this.setProperties({
-      fieldDefsByApprovalName: project.fieldDefsByApprovalName(state),
-      focusId: ui.focusId(state),
-      user: user.user(state),
-      issue: issue.issue(state),
-      issueRef: issue.issueRef(state),
-      projectConfig: project.project(state).config,
-      comments: issue.comments(state),
-      updatingApproval: issue.requests(state).updateApproval.requesting,
-      updateApprovalError: issue.requests(state).updateApproval.error,
-    });
+    const fieldDefsByApproval = project.fieldDefsByApprovalName(state);
+    if (fieldDefsByApproval && this.fieldName
+        && fieldDefsByApproval.has(this.fieldName)) {
+      this.fieldDefs = fieldDefsByApproval.get(this.fieldName);
+    }
+    const commentsByApproval = issue.commentsByApprovalName(state);
+    if (commentsByApproval && this.fieldName
+      && commentsByApproval.has(this.fieldName)) {
+      this.comments = commentsByApproval.get(this.fieldName);
+
+      this._allSurveys = this.comments.filter((c) => c.descriptionNum);
+    }
+    this.focusId = ui.focusId(state);
+    this.user = user.user(state);
+    this.issue = issue.issue(state);
+    this.issueRef = issue.issueRef(state);
+    this.projectConfig = project.project(state).config;
+    this.updatingApproval = issue.requests(state).updateApproval.requesting;
+    this.updateError = issue.requests(state).updateApproval.error;
+  }
+
+  update(changedProperties) {
+    if ((changedProperties.has('comments') || changedProperties.has('focusId'))
+        && this.comments) {
+      const focused = this.comments.find(
+        (comment) => `c${comment.sequenceNum}` === this.focusId);
+      if (focused) {
+        // Make sure to open the card when a comment is focused.
+        this.opened = true;
+      }
+    }
+    if (changedProperties.has('statusEnum')) {
+      this.setAttribute('class', this._statusClass);
+    }
+    if (changedProperties.has('user') || changedProperties.has('approvers')) {
+      if (this._isApprover) {
+        // Open the card by default if the user is an approver.
+        this.opened = true;
+      }
+    }
+    super.update(changedProperties);
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('issue')) {
+      this.reset();
+    }
   }
 
   reset() {
@@ -400,83 +382,36 @@ export class MrApprovalCard extends connectStore(PolymerElement) {
     }
   }
 
-  _displayNamesToUserRefs(list) {
-    return list.map((name) => ({'displayName': name}));
+  get _statusClass() {
+    return STATUS_CLASS_MAP[this._status];
   }
 
-  _computeClass(status) {
-    return STATUS_CLASS_MAP[status];
+  get _status() {
+    return STATUS_ENUM_TO_TEXT[this.statusEnum || ''];
   }
 
-  _computeExpandIcon(opened) {
-    if (opened) {
-      return 'expand_less';
-    }
-    return 'expand_more';
-  }
-
-  _computeStatus(statusEnum) {
-    return STATUS_ENUM_TO_TEXT[statusEnum || ''];
-  }
-
-  _computeStatusIcon(cl) {
-    return CLASS_ICON_MAP[cl];
-  }
-
-  _computeIsApprover(approvers, userEmail, userGroups) {
-    if (!userEmail || !approvers) return false;
-    userGroups = userGroups || [];
-    return !!approvers.find((a) => {
-      return a.displayName === userEmail || userGroups.find(
+  get _isApprover() {
+    if (!this.approvers || !this.user || !this.user.email) return false;
+    const userGroups = this.user.groups || [];
+    return !!this.approvers.find((a) => {
+      return a.displayName === this.user.email || userGroups.find(
         (group) => group.displayName === a.displayName
       );
     });
   }
 
-  _computeHasApproverPrivileges(isSiteAdmin, isApprover) {
-    return isSiteAdmin || isApprover;
+  get _hasApproverPrivileges() {
+    return (this.user && this.user.isSiteAdmin) || this._isApprover;
   }
 
-  // TODO(zhangtiff): Change data flow here so that this is only computed
-  // once for all approvals.
-  _filterComments(comments, fieldName) {
-    if (!comments || !fieldName) return;
-    return comments.filter((c) => (
-      c.approvalRef && c.approvalRef.fieldName === fieldName
-    )).splice(1);
-  }
-
-  _computeApprovalFieldDefs(fdMap, approvalName) {
-    if (!fdMap) return [];
-    return fdMap.get(approvalName) || [];
-  }
-
-  _computeEditId(fieldName) {
-    return `edit${fieldName}`;
-  }
-
-  _computeSurvey(surveyList) {
-    if (!surveyList || !surveyList.length) return;
-    return surveyList[surveyList.length - 1];
-  }
-
-  // TODO(zhangtiff): Change data flow here so that this is only computed
-  // once for all approvals.
-  _computeSurveyList(comments, fieldName) {
-    if (!comments || !fieldName) return;
-    return comments.filter((comment) => comment.approvalRef
-        && comment.approvalRef.fieldName === fieldName
-        && comment.descriptionNum);
-  }
-
-  _filterStatuses(status, statuses, hasApproverPrivileges) {
-    return statuses.filter((s) => {
-      if (s.status === status) {
+  get _availableStatuses() {
+    return APPROVAL_STATUSES.filter((s) => {
+      if (s.status === this._status) {
         // The current status should always appear as an option.
         return true;
       }
 
-      if (!hasApproverPrivileges
+      if (!this._hasApproverPrivileges
           && APPROVER_RESTRICTED_STATUSES.has(s.status)) {
         // If you are not an approver and and this status is restricted,
         // you can't change to this status.
@@ -488,17 +423,7 @@ export class MrApprovalCard extends connectStore(PolymerElement) {
     });
   }
 
-  _openUserCards(isApprover) {
-    if (!this.opened && isApprover) {
-      this.opened = true;
-    }
-  }
-
-  _toString(bool) {
-    return bool.toString();
-  }
-
-  _openEditSurvey() {
+  _openSurveyEditor() {
     this.dispatchEvent(new CustomEvent('open-dialog', {
       bubbles: true,
       composed: true,
@@ -508,16 +433,6 @@ export class MrApprovalCard extends connectStore(PolymerElement) {
       },
     }));
   }
-
-  _onFocusId(comments, focusId) {
-    for (const comment of (comments || [])) {
-      const commentId = 'c' + comment.sequenceNum;
-      if (commentId === focusId) {
-        this.opened = true;
-        break;
-      }
-    }
-  }
 }
 
-customElements.define(MrApprovalCard.is, MrApprovalCard);
+customElements.define('mr-approval-card', MrApprovalCard);

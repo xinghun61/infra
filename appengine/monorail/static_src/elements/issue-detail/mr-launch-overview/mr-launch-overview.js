@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
@@ -15,71 +14,69 @@ import './mr-phase.js';
  * This is a shorthand view of the phases for a user to see a quick overview.
  *
  */
-export class MrLaunchOverview extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet">
-      <style>
-        :host {
-          width: 100%;
-          display: flex;
-          flex-flow: column;
-          justify-content: flex-start;
-          align-items: stretch;
-        }
-        :host([hidden]) {
-          display: none;
-        }
-        mr-phase {
-          margin-bottom: 0.75em;
-        }
-      </style>
-      <template is="dom-repeat" items="[[phases]]" as="phase">
-        <mr-phase phase-name="[[phase.phaseRef.phaseName]]" approvals="[[_approvalsForPhase(approvals, phase.phaseRef.phaseName)]]"></mr-phase>
-      </template>
-      <template is="dom-if" if="[[_phaselessApprovals.length]]">
-        <mr-phase approvals="[[_phaselessApprovals]]"></mr-phase>
-      </template>
+export class MrLaunchOverview extends connectStore(LitElement) {
+  static get styles() {
+    return css`
+      :host {
+        width: 100%;
+        display: flex;
+        flex-flow: column;
+        justify-content: flex-start;
+        align-items: stretch;
+      }
+      :host([hidden]) {
+        display: none;
+      }
+      mr-phase {
+        margin-bottom: 0.75em;
+      }
     `;
   }
 
-  static get is() {
-    return 'mr-launch-overview';
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      ${this.phases.map((phase) => html`
+        <mr-phase
+          .phaseName=${phase.phaseRef.phaseName}
+          .approvals=${this._approvalsForPhase(this.approvals, phase.phaseRef.phaseName)}
+        ></mr-phase>
+      `)}
+      ${this._phaselessApprovals.length ? html`
+        <mr-phase .approvals=${this._phaselessApprovals}></mr-phase>
+      `: ''}
+    `;
   }
 
   static get properties() {
     return {
-      approvals: {
-        type: Array,
-        value: () => [],
-      },
-      phases: {
-        type: Array,
-        value: () => [],
-      },
+      approvals: {type: Array},
+      phases: {type: Array},
       hidden: {
         type: Boolean,
-        reflectToAttribute: true,
-        computed: '_computeIsHidden(phases, approvals)',
-      },
-      _phaselessApprovals: {
-        type: Array,
-        computed: '_approvalsForPhase(approvals)',
+        reflect: true,
       },
     };
   }
 
   stateChanged(state) {
     if (!issue.issue(state)) return;
-    this.setProperties({
-      approvals: issue.issue(state).approvalValues,
-      phases: issue.issue(state).phases,
-    });
+
+    this.approvals = issue.issue(state).approvalValues;
+    this.phases = issue.issue(state).phases;
   }
 
-  _computeIsHidden(phases, approvals) {
-    return (!phases || !phases.length) && (!approvals || !approvals.length);
+  update(changedProperties) {
+    if (changedProperties.has('phases') || changedProperties.has('approvals')) {
+      this.hidden = (!this.phases || !this.phases.length)
+        && (!this.approvals || !this.approvals.length);
+    }
+    super.update(changedProperties);
+  }
+
+  get _phaselessApprovals() {
+    return this._approvalsForPhase(this.approvals);
   }
 
   _approvalsForPhase(approvals, phaseName) {
@@ -89,4 +86,4 @@ export class MrLaunchOverview extends connectStore(PolymerElement) {
     });
   }
 }
-customElements.define(MrLaunchOverview.is, MrLaunchOverview);
+customElements.define('mr-launch-overview', MrLaunchOverview);

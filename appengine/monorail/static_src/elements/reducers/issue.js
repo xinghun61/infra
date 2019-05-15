@@ -259,6 +259,23 @@ export const isStarred = (state) => state.issue.isStarred;
 
 export const requests = (state) => state.issue.requests;
 
+// TODO(zhangtiff): Split up either comments or approvals into their own "duck".
+export const commentsByApprovalName = createSelector(
+  comments,
+  (comments) => {
+    const map = new Map();
+    comments.forEach((comment) => {
+      const key = (comment.approvalRef && comment.approvalRef.fieldName) || '';
+      if (map.has(key)) {
+        map.get(key).push(comment);
+      } else {
+        map.set(key, [comment]);
+      }
+    });
+    return map;
+  }
+);
+
 export const fieldValues = createSelector(
   issue,
   (issue) => issue && issue.fieldValues
