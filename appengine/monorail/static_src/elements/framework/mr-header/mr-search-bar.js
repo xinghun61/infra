@@ -235,6 +235,10 @@ export class MrSearchBar extends LitElement {
       userSavedQueries: {type: Array},
       queryParams: {type: Object},
       keptQueryParams: {type: Array},
+      _boundFocus: {
+        type: Object,
+        hasChanged: () => false,
+      },
     };
   }
 
@@ -261,14 +265,14 @@ export class MrSearchBar extends LitElement {
 
     // Global event listeners. Make sure to unbind these when the
     // element disconnects.
-
-    window.addEventListener('focus-search', this.focus);
+    this._boundFocus = this.focus.bind(this);
+    window.addEventListener('focus-search', this._boundFocus);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
 
-    window.removeEventListener('focus-search', this.focus);
+    window.removeEventListener('focus-search', this._boundFocus);
   }
 
   updated(changedProperties) {

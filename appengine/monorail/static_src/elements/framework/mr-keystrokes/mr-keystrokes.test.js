@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrKeystrokes} from './mr-keystrokes.js';
 import page from 'page';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import Mousetrap from 'mousetrap';
 
 let element;
@@ -31,17 +30,18 @@ describe('mr-keystrokes', () => {
     assert.instanceOf(element, MrKeystrokes);
   });
 
-  it('? and esc open and close dialog', () => {
+  it('? and esc open and close dialog', async () => {
+    await element.updateComplete;
     assert.isFalse(element.opened);
 
     Mousetrap.trigger('?');
 
-    flush();
+    await element.updateComplete;
     assert.isTrue(element.opened);
 
     Mousetrap.trigger('esc');
 
-    flush();
+    await element.updateComplete;
     assert.isFalse(element.opened);
   });
 
