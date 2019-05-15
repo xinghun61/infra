@@ -502,6 +502,22 @@ class UserGroupServiceTest(unittest.TestCase):
         usergroup_pb2.MakeSettings('anyone', friend_projects=[789]))
     self.mox.VerifyAll()
 
+  def testExpungeUsersInGroups(self):
+    self.usergroup_service.usergroupprojects_tbl.Delete = mock.Mock()
+    self.usergroup_service.usergroupsettings_tbl.Delete = mock.Mock()
+    self.usergroup_service.usergroup_tbl.Delete = mock.Mock()
+
+    ids = [222L, 333L, 444L]
+    self.usergroup_service.ExpungeUsersInGroups(self.cnxn, ids)
+
+    self.usergroup_service.usergroupprojects_tbl.Delete.assert_called_once_with(
+        self.cnxn, group_id=ids, commit=False)
+    self.usergroup_service.usergroupsettings_tbl.Delete.assert_called_once_with(
+        self.cnxn, group_id=ids, commit=False)
+    self.usergroup_service.usergroup_tbl.Delete.assert_has_calls(
+        [mock.call(self.cnxn, group_id=ids, commit=False),
+         mock.call(self.cnxn, user_id=ids, commit=False)])
+
   def SetUpDAG(self, group_id_rows, usergroup_rows):
     self.usergroup_service.usergroupsettings_tbl.Select(
         self.cnxn, cols=['group_id']).AndReturn(group_id_rows)

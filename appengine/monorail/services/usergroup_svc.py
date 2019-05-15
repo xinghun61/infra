@@ -547,6 +547,23 @@ class UserGroupService(object):
 
   # TODO(jrobbins): re-implement FindUntrustedGroups()
 
+  def ExpungeUsersInGroups(self, cnxn, ids):
+    """Wipes the given user from the groups system.
+    The given user_ids may to members or groups, or groups themselves.
+    The groups and all their members will be deleted. The users will be
+    wiped from the groups they belong to.
+
+    It will NOT delete user entries. This method will not commit the
+    operations. This method will not make any changes to in-memory data.
+    """
+    # Delete any groups
+    self.usergroupprojects_tbl.Delete(cnxn, group_id=ids, commit=False)
+    self.usergroupsettings_tbl.Delete(cnxn, group_id=ids, commit=False)
+    self.usergroup_tbl.Delete(cnxn, group_id=ids, commit=False)
+
+    # Delete any group members
+    self.usergroup_tbl.Delete(cnxn, user_id=ids, commit=False)
+
 
 class UserGroupDAG(object):
   """A directed-acyclic graph of potentially nested user groups."""

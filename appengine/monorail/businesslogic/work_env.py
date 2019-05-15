@@ -1712,12 +1712,14 @@ class WorkEnv(object):
     # self.services.features.ExpungeUsersInQuickEdits(self.mc.cnxn, user_ids)
     # self.services.features.ExpungeUsersInSavedQueries(self.mc.cnxn, user_ids)
 
-    # self.expungeUsersInHotlists(user_ids)
+    # self.services.features.ExpungeUsersInHotlists(user_ids)
 
     # self.services.template.ExpungeUsersInTemplates(self.mc.cnxn, user_ids)
-    # self.services.config.ExpungeUsersInConfgis(self.mc.cnxn, user_ids)
+    # self.services.config.ExpungeUsersInConfigs(self.mc.cnxn, user_ids)
     # self.services.usergroup.ExpungeUsersInGroups(self.mc.cnxn, user_ids)
     # self.services.user.ExpungeUsers(self.mc.cnxn, user_ids)
+
+    # self.services.usergroup.group_dag.MarkObsolete()
     return
 
   ### Group methods
