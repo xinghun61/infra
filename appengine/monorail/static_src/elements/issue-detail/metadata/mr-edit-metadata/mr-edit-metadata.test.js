@@ -10,8 +10,6 @@ import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
   ISSUE_EDIT_CC_PERMISSION,
 } from 'elements/shared/permissions.js';
 import {store} from 'elements/reducers/base.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
-import {initialValueUpdateComplete} from '../mr-edit-field/mr-multi-input.test.js';
 
 
 let element;
@@ -96,11 +94,11 @@ describe('mr-edit-metadata', () => {
     element.status = 'New';
 
     await element.updateComplete;
-    flush(); // TODO(zhangtiff): Remove once mr-edit-status is upgraded.
 
     const statusComponent = element.shadowRoot.querySelector('#statusInput');
-    const root = statusComponent.shadowRoot;
-    root.querySelector('#statusInput').value = 'Old';
+    statusComponent.status = 'Old';
+
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       status: 'Old',
@@ -112,14 +110,16 @@ describe('mr-edit-metadata', () => {
       {'status': 'Duplicate'},
     ];
     element.status = 'Duplicate';
+
     element.mergedInto = {
       projectName: 'chromium',
       localId: 1234,
     };
+
     element.projectName = 'chromium';
 
     await element.updateComplete;
-    flush(); // TODO(zhangtiff): Remove once mr-edit-status is upgraded.
+    await element.updateComplete; // Merged input updates its value.
 
     assert.deepEqual(element.getDelta(), {});
   });
@@ -132,7 +132,6 @@ describe('mr-edit-metadata', () => {
     element.status = 'New';
 
     await element.updateComplete;
-    flush(); // TODO(zhangtiff): Remove once mr-edit-status is upgraded.
 
     const statusComponent = element.shadowRoot.querySelector(
       '#statusInput');
@@ -223,8 +222,7 @@ describe('mr-edit-metadata', () => {
     element.shadowRoot.querySelector('#approversInput').setValue(
       ['chicken@example.com', 'foo@example.com', 'dog@example.com']);
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       approverRefsAdd: [
@@ -250,8 +248,7 @@ describe('mr-edit-metadata', () => {
     const blockedOnInput = element.shadowRoot.querySelector('#blockedOnInput');
     blockedOnInput.setValue(['1234', 'v8:5678']);
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       blockedOnRefsAdd: [{
@@ -297,12 +294,12 @@ describe('mr-edit-metadata', () => {
     ]);
 
     await element.updateComplete;
+    await element.updateComplete;
 
     element.shadowRoot.querySelector(
       '#enumFieldInput').setValue(['one', 'two']);
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       fieldValsAdd: [
@@ -352,8 +349,7 @@ describe('mr-edit-metadata', () => {
     element.shadowRoot.querySelector('#enumFieldInput').setValue(['two']);
     element.shadowRoot.querySelector('#enumField2Input').setValue(['three']);
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       fieldValsAdd: [
@@ -385,8 +381,7 @@ describe('mr-edit-metadata', () => {
 
     compInput.setValue(['Hello>World']);
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       compRefsAdd: [
@@ -396,8 +391,7 @@ describe('mr-edit-metadata', () => {
 
     compInput.setValue(['Hello>World', 'Test', 'Multi']);
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       compRefsAdd: [
@@ -408,7 +402,7 @@ describe('mr-edit-metadata', () => {
     });
 
     compInput.setValue([]);
-    await initialValueUpdateComplete(element);
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {});
   });
@@ -419,7 +413,7 @@ describe('mr-edit-metadata', () => {
     element.isApproval = true;
     element.hasApproverPrivileges = true;
 
-    await initialValueUpdateComplete(element);
+    await element.updateComplete;
 
     assert.isNotNull(
       element.shadowRoot.querySelector('#approversInput'));
@@ -455,9 +449,9 @@ describe('mr-edit-metadata', () => {
     await element.reset();
 
     assert.lengthOf(element.shadowRoot.querySelector(
-      '#testFieldInput').getValue(), 0);
+      '#testFieldInput').value, 0);
     assert.lengthOf(element.shadowRoot.querySelector(
-      '#fakeFieldInput').getValue(), 0);
+      '#fakeFieldInput').value, 0);
     assert.lengthOf(uploader.files, 0);
   });
 
@@ -499,14 +493,14 @@ describe('mr-edit-metadata', () => {
       localId: 1234,
     };
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
+    await element.updateComplete;
 
     const statusComponent = element.shadowRoot.querySelector(
       '#statusInput');
     const root = statusComponent.shadowRoot;
     assert.equal(
-      root.querySelector('#mergedIntoInput').getValue(), '1234');
+      root.querySelector('#mergedIntoInput').value, '1234');
   });
 
   it('duplicate issue on different project is rendered correctly', async () => {
@@ -520,14 +514,14 @@ describe('mr-edit-metadata', () => {
       localId: 1234,
     };
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
+    await element.updateComplete;
 
     const statusComponent = element.shadowRoot.querySelector(
       '#statusInput');
     const root = statusComponent.shadowRoot;
     assert.equal(
-      root.querySelector('#mergedIntoInput').getValue(), 'monorail:1234');
+      root.querySelector('#mergedIntoInput').value, 'monorail:1234');
   });
 
   it('blocking issues are rendered correctly', async () => {
@@ -537,12 +531,11 @@ describe('mr-edit-metadata', () => {
     ];
     element.projectName = 'chromium';
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     const blockingInput = element.shadowRoot.querySelector('#blockingInput');
 
-    assert.deepEqual(['1234', 'monorail:4567'], blockingInput.getValues());
+    assert.deepEqual(['1234', 'monorail:4567'], blockingInput.values);
   });
 
   it('filter out deleted users', async () => {
@@ -552,11 +545,10 @@ describe('mr-edit-metadata', () => {
       {displayName: 'someone@example.com', userId: '5678'},
     ];
 
-    await initialValueUpdateComplete(element);
-    flush(); // TODO(zhangtiff): Remove once mr-edit-field is upgraded.
+    await element.updateComplete;
 
     const actualValues =
-      element.shadowRoot.querySelector('#ccInput').getValues();
+      element.shadowRoot.querySelector('#ccInput').values;
     assert.deepEqual(actualValues, [
       'test@example.com',
       'someone@example.com',

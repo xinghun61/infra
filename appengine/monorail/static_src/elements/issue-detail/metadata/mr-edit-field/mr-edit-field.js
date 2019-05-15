@@ -2,15 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
+import deepEqual from 'deep-equal';
 import {fieldTypes} from 'elements/shared/field-types.js';
 import {arrayDifference, equalsIgnoreCase} from 'elements/shared/helpers.js';
 
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles';
 import './mr-multi-input.js';
 import './mr-multi-checkbox.js';
+
 
 const BASIC_INPUT = 'BASIC_INPUT';
 const MULTI_INPUT = 'MULTI_INPUT';
@@ -23,12 +24,11 @@ const SELECT_INPUT = 'SELECT_INPUT';
  * A single edit input for a fieldDef + the values of the field.
  *
  */
-export class MrEditField extends PolymerElement {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrEditField extends LitElement {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           display: block;
         }
@@ -36,69 +36,86 @@ export class MrEditField extends PolymerElement {
           display: none;
         }
         mr-multi-input {
-          width: 95%;
+          width: var(--mr-edit-field-width);
         }
         input,
         select {
-          @apply --mr-edit-field-styles;
+          width: var(--mr-edit-field-width);
+          padding: var(--mr-edit-field-padding);
         }
-      </style>
-      <mr-multi-checkbox
-        hidden$="[[!_inputIsWidget(_widgetType, 'CHECKBOX_INPUT')]]"
-        options="[[options]]"
-        values="[[_cloneValues(initialValues)]]"
-        on-change="_onChange"
-      ></mr-multi-checkbox>
+      `,
+    ];
+  }
 
-      <select
-        hidden$="[[!_inputIsWidget(_widgetType, 'SELECT_INPUT')]]"
-        id="editSelect"
-        on-change="_onChange"
-        aria-label$="[[name]]"
-      >
-        <option value="">----</option>
-        <template is="dom-repeat" items="[[options]]" as="option">
-          <option
-            value$="[[option.optionName]]"
-            selected$="[[_computeIsSelected(_initialValue, option.optionName)]]"
-          >
-            [[option.optionName]]
-            <template is="dom-if" if="[[option.docstring]]">
-              - [[option.docstring]]
-            </template>
-          </option>
-        </template>
-      </select>
-
-      <mr-multi-input
-        hidden$="[[!_inputIsWidget(_widgetType, 'MULTI_INPUT')]]"
-        immutable-values="[[derivedValues]]"
-        initial-values="[[_cloneValues(initialValues)]]"
-        name="[[name]]"
-        add-entry-text="Add [[name]]"
-        type="[[_html5InputType]]"
-        ac-type="[[acType]]"
-        autocomplete="[[_domAutocomplete]]"
-        on-change="_onChange"
-        on-blur="_onChange"
-      ></mr-multi-input>
-      <input
-        hidden$="[[!_inputIsWidget(_widgetType, 'BASIC_INPUT')]]"
-        id="editInput"
-        type$="[[_html5InputType]]"
-        value$="[[_initialValue]]"
-        data-ac-type$="[[acType]]"
-        autocomplete$="[[_domAutocomplete]]"
-        placeholder$="[[placeholder]]"
-        on-keyup="_onChange"
-        on-focus="_runLegacyAcFocus"
-        aria-label$="[[name]]"
-      />
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
+      ${this._renderInput()}
     `;
   }
 
-  static get is() {
-    return 'mr-edit-field';
+  _renderInput() {
+    switch (this._widgetType) {
+      case CHECKBOX_INPUT:
+        return html`
+          <mr-multi-checkbox
+            .options=${this.options}
+            .values=${[...this.values]}
+            @change=${this._changeHandler}
+          ></mr-multi-checkbox>
+        `;
+      case SELECT_INPUT:
+        return html`
+          <select
+            id="editSelect"
+            aria-label=${this.name}
+            @change=${this._changeHandler}
+          >
+            <option value="">----</option>
+            ${this.options.map((option) => html`
+              <option
+                value=${option.optionName}
+                .selected=${this.value === option.optionName}
+              >
+                ${option.optionName}
+                ${option.docstring ? ' = ' + option.docstring : ''}
+              </option>
+            `)}
+          </select>
+        `;
+      case MULTI_INPUT:
+        return html`
+          <mr-multi-input
+            .immutableValues=${this.derivedValues}
+            .initialValues=${[...this.initialValues]}
+            .name=${this.name}
+            .addEntryText="Add ${this.name}"
+            .type=${this._html5InputType}
+            .acType=${this.acType}
+            .autocomplete=${this._domAutocomplete}
+            @change=${this._changeHandler}
+            @blur=${this._changeHandler}
+          ></mr-multi-input>
+        `;
+      case BASIC_INPUT:
+        return html`
+          <input
+            id="editInput"
+            type=${this._html5InputType}
+            .value=${this.value}
+            data-ac-type=${this.acType}
+            autocomplete=${this._domAutocomplete}
+            placeholder=${this.placeholder}
+            @keyup=${this._changeHandler}
+            @blur=${this._changeHandler}
+            @focus=${this._runLegacyAcFocus}
+            aria-label=${this.name}
+          />
+        `;
+      default:
+        return '';
+    }
   }
 
   static get properties() {
@@ -108,111 +125,73 @@ export class MrEditField extends PolymerElement {
       // the Monorail custom field types whereas "acType" includes additional
       // data types such as components, and labels.
       // String specifying what kind of autocomplete to add to this field.
-      acType: String,
+      acType: {type: String},
       // "type" is based on the various custom field types available in
       // Monorail.
-      type: String,
-      multi: {
-        type: Boolean,
-        value: false,
-      },
-      name: String,
+      type: {type: String},
+      multi: {type: Boolean},
+      name: {type: String},
       // Only used for basic, non-repeated fields.
-      placeholder: String,
+      placeholder: {type: String},
       initialValues: {
         type: Array,
-        value: () => [],
+        hasChanged(newVal, oldVal) {
+          // Prevent extra recomputations of the same initial value causing
+          // values to be reset.
+          return !deepEqual(newVal, oldVal);
+        },
       },
-      derivedValues: {
-        type: Array,
-        value: [],
-      },
+      // The ucrrent user-inputted values for a field.
+      values: {type: Array},
+      derivedValues: {type: Array},
       // For enum fields, the possible options that you have. Each entry is a
       // label type with an additional optionName field added.
-      options: {
-        type: Array,
-        value: () => [],
-      },
-      _domAutocomplete: {
-        type: String,
-        computed: '_computeDomAutocomplete(acType)',
-      },
-      _widgetType: {
-        type: String,
-        computed: '_computeWidgetType(type, multi)',
-      },
-      _html5InputType: {
-        type: String,
-        computed: '_computeHtml5InputType(type)',
-      },
-      _initialValue: {
-        type: String,
-        computed: '_computeInitialValue(initialValues)',
-      },
+      options: {type: Array},
+      _checkboxRef: {type: Object},
+      _selectRef: {type: Object},
+      _multiInputRef: {type: Object},
+      _inputRef: {type: Object},
     };
   }
 
-  focus() {
-    const input = this._getInput();
-    if (input && input.focus) {
-      input.focus();
+  constructor() {
+    super();
+    this.initialValues = [];
+    this.values = [];
+    this.derivedValues = [];
+    this.options = [];
+    this.multi = false;
+
+    this.actType = '';
+    this.placeholder = '';
+    this.type = '';
+  }
+
+  update(changedProperties) {
+    if (changedProperties.has('initialValues')) {
+      // Assume we always want to reset the user's input when initial
+      // values change.
+      this.values = this.initialValues;
+    }
+    super.update(changedProperties);
+  }
+
+  updated(changedProperties) {
+    if (changedProperties.has('type') || changedProperties.has('multi')) {
+      this._checkboxRef = this.shadowRoot.querySelector('mr-multi-checkbox');
+      this._selectRef = this.shadowRoot.querySelector('#editSelect');
+      this._multiInputRef = this.shadowRoot.querySelector('mr-multi-input');
+      this._inputRef = this.shadowRoot.querySelector('#editInput');
     }
   }
 
-  reset() {
-    this.setValue(this.initialValues);
+  get value() {
+    return this._getSingleValue(this.values);
   }
 
-  setValue(v) {
-    const values = Array.isArray(v) ? v : [v];
-    const input = this._getInput();
-
-    if (input.setValues) {
-      input.setValues(this._cloneValues(values));
-    } else if (this._widgetType === BASIC_INPUT) {
-      input.value = this._getSingleValue(values);
-    } else if (this._widgetType === SELECT_INPUT) {
-      const newValue = this._getSingleValue(values);
-
-      if (newValue) {
-        const options = [...input.querySelectorAll('option')];
-        input.value = newValue;
-        input.selectedIndex = options.findIndex(
-          (option) => this._computeIsSelected(newValue, option.value));
-      } else {
-        input.selectedIndex = null;
-      }
-    }
-  }
-
-  getValuesAdded() {
-    if (!this.getValues().length) return [];
-    return arrayDifference(
-      this.getValues(), this.initialValues, equalsIgnoreCase);
-  }
-
-  getValuesRemoved() {
-    if (!this.multi && this.getValues().length > 0) return [];
-    return arrayDifference(
-      this.initialValues, this.getValues(), equalsIgnoreCase);
-  }
-
-  getValues() {
-    const input = this._getInput();
-    if (input.getValues) {
-      // Out custom input widgets all have a "getValues" function.
-      return input.getValues();
-    }
-    // Is a native input element.
-    const value = input.value.trim();
-    return value.length ? [value] : [];
-  }
-
-  getValue() {
-    return this._getSingleValue(this.getValues());
-  }
-
-  _computeWidgetType(type, multi) {
+  get _widgetType() {
+    const type = this.type;
+    const multi = this.multi;
     if (type === fieldTypes.ENUM_TYPE) {
       if (multi) {
         return CHECKBOX_INPUT;
@@ -226,29 +205,8 @@ export class MrEditField extends PolymerElement {
     }
   }
 
-  _inputIsWidget(widgetType, comparisonType) {
-    return widgetType === comparisonType;
-  }
-
-  _getInput() {
-    switch (this._widgetType) {
-      case CHECKBOX_INPUT:
-        return this.shadowRoot.querySelector('mr-multi-checkbox');
-      case SELECT_INPUT:
-        return this.shadowRoot.querySelector('#editSelect');
-      case MULTI_INPUT:
-        return this.shadowRoot.querySelector('mr-multi-input');
-      case BASIC_INPUT:
-      default:
-        return this.shadowRoot.querySelector('#editInput');
-    }
-  }
-
-  _computeIsSelected(initialValue, optionName) {
-    return initialValue === optionName;
-  }
-
-  _computeHtml5InputType(type) {
+  get _html5InputType() {
+    const type = this.type;
     if (type === fieldTypes.INT_TYPE) {
       return 'number';
     } else if (type === fieldTypes.DATE_TYPE) {
@@ -257,26 +215,78 @@ export class MrEditField extends PolymerElement {
     return 'text';
   }
 
-  _computeDomAutocomplete(acType) {
+  get _domAutocomplete() {
+    const acType = this.acType;
     if (acType) return 'off';
     return '';
   }
 
-  _computeInitialValue(initialValues) {
-    return this._getSingleValue(initialValues);
+  focus() {
+    const input = this._getInput();
+    if (input && input.focus) {
+      input.focus();
+    }
   }
 
-  _onChange() {
+  _getInput() {
+    switch (this._widgetType) {
+      case CHECKBOX_INPUT:
+        return this._checkboxRef;
+      case SELECT_INPUT:
+        return this._selectRef;
+      case MULTI_INPUT:
+        return this._multiInputRef;
+      case BASIC_INPUT:
+      default:
+        return this._inputRef;
+    }
+  }
+
+  reset() {
+    this.setValue(this.initialValues);
+  }
+
+  setValue(v) {
+    let values = v;
+    if (!Array.isArray(v)) {
+      values = !!v ? [v] : [];
+    }
+    this.values = values;
+    const input = this._getInput();
+
+    if (input && input.setValues) {
+      input.setValues([...values]);
+    }
+  }
+
+  getValuesAdded() {
+    if (!this.values || !this.values.length) return [];
+    return arrayDifference(
+      this.values, this.initialValues, equalsIgnoreCase);
+  }
+
+  getValuesRemoved() {
+    if (!this.multi && (!this.values || this.values.length > 0)) return [];
+    return arrayDifference(
+      this.initialValues, this.values, equalsIgnoreCase);
+  }
+
+  _changeHandler(e) {
+    const input = e.target;
+    if (input.getValues) {
+      // Our custom input widgets all have a "getValues" function.
+      this.values = input.getValues();
+    } else {
+      // Is a native input element.
+      const value = input.value.trim();
+      this.values = value.length ? [value] : [];
+    }
+
     this.dispatchEvent(new CustomEvent('change'));
   }
 
-  _cloneValues(arr) {
-    if (!arr || !arr.length) return [];
-    return [...arr];
-  }
-
   _getSingleValue(arr) {
-    return arr && arr.length ? arr[0] : '';
+    return (arr && arr.length) ? arr[0] : '';
   }
 
   // TODO(zhangtiff): Delete this code once deprecating legacy autocomplete.
@@ -288,4 +298,4 @@ export class MrEditField extends PolymerElement {
   }
 }
 
-customElements.define(MrEditField.is, MrEditField);
+customElements.define('mr-edit-field', MrEditField);

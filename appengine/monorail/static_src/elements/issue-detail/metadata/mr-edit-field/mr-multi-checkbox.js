@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 /**
  * `<mr-multi-checkbox>`
@@ -10,44 +10,59 @@ import {PolymerElement, html} from '@polymer/polymer';
  * A web component for managing values in a set of checkboxes.
  *
  */
-export class MrMultiCheckbox extends PolymerElement {
-  static get template() {
-    return html`
-      <style>
-        input[type="checkbox"] {
-          width: auto;
-          height: auto;
-        }
-      </style>
-      <template is="dom-repeat" items="[[options]]" as="option">
-        <label title$="[[option.docstring]]">
-          <input
-            type="checkbox"
-            name$="[[name]]"
-            value$="[[option.optionName]]"
-            checked$="[[_optionInValues(values, option.optionName)]]"
-            on-change="_onChange"
-          />
-          [[option.optionName]]
-        </label>
-      </template>
+export class MrMultiCheckbox extends LitElement {
+  static get styles() {
+    return css`
+      input[type="checkbox"] {
+        width: auto;
+        height: auto;
+      }
     `;
   }
 
-  static get is() {
-    return 'mr-multi-checkbox';
+  render() {
+    return html`
+      ${this.options.map((option) => html`
+        <label title=${option.docstring}>
+          <input
+            type="checkbox"
+            name=${this.name}
+            value=${option.optionName}
+            ?checked=${this.values.includes(option.optionName)}
+            @change=${this._changeHandler}
+          />
+          ${option.optionName}
+        </label>
+      `)}
+    `;
   }
 
   static get properties() {
     return {
-      values: Array,
-      options: Array,
+      values: {type: Array},
+      options: {type: Array},
+      _inputRefs: {type: Object},
     };
+  }
+
+
+  updated(changedProperties) {
+    if (changedProperties.has('options')) {
+      this._inputRefs = this.shadowRoot.querySelectorAll('input');
+    }
+
+    if (changedProperties.has('values')) {
+      this.reset();
+    }
+  }
+
+  reset() {
+    this.setValues(this.values);
   }
 
   getValues() {
     const valueList = [];
-    this.shadowRoot.querySelectorAll('input').forEach((c) => {
+    this._inputRefs.forEach((c) => {
       if (c.checked) {
         valueList.push(c.value.trim());
       }
@@ -56,20 +71,16 @@ export class MrMultiCheckbox extends PolymerElement {
   }
 
   setValues(values) {
-    this.shadowRoot.querySelectorAll('input').forEach(
+    this._inputRefs.forEach(
       (checkbox) => {
-        checkbox.checked = this._optionInValues(values, checkbox.value);
+        checkbox.checked = values.includes(checkbox.value);
       }
     );
   }
 
-  _optionInValues(values, optionName) {
-    return values.includes(optionName);
-  }
-
-  _onChange() {
+  _changeHandler() {
     this.dispatchEvent(new CustomEvent('change'));
   }
 }
 
-customElements.define(MrMultiCheckbox.is, MrMultiCheckbox);
+customElements.define('mr-multi-checkbox', MrMultiCheckbox);

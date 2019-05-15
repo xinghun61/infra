@@ -52,6 +52,8 @@ export function componentRefsToStrings(componentRefs) {
 }
 
 export function issueStringToRef(defaultProjectName, idStr) {
+  if (!idStr) return {};
+
   const matches = idStr.match(ISSUE_ID_REGEX);
   if (!matches) {
     // TODO(zhangtiff): Add proper clientside form validation.

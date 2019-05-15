@@ -2,12 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
+import {LitElement, html, css} from 'lit-element';
 
 import {issueStringToRef} from 'elements/shared/converters.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles';
 import './mr-edit-field.js';
 
 
@@ -17,15 +15,17 @@ import './mr-edit-field.js';
  * Editing form for either an approval or the overall issue.
  *
  */
-export class MrEditStatus extends PolymerElement {
-  static get template() {
-    return html`
-      <style include="mr-shared-styles">
+export class MrEditStatus extends LitElement {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           width: 100%;
         }
         select {
-          @apply --mr-edit-field-styles;
+          width: var(--mr-edit-field-width);
+          padding: var(--mr-edit-field-padding);
         }
         .grid-input {
           margin-top: 8px;
@@ -41,123 +41,79 @@ export class MrEditStatus extends PolymerElement {
           word-wrap: break-word;
           text-align: left;
         }
-      </style>
-      <select id="statusInput" on-change="_statusInputChanged" aria-label="Status">
-        <template is="dom-repeat" items="[[_statusesGrouped]]" as="group">
-          <optgroup label$="[[group.name]]" hidden$="[[!group.name]]">
-            <template is="dom-repeat" items="[[group.statuses]]">
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      <select
+        @change=${this._selectChangeHandler}
+        aria-label="Status"
+        id="statusInput"
+      >
+        ${this._statusesGrouped.map((group) => html`
+          <optgroup label=${group.name} ?hidden=${!group.name}>
+            ${group.statuses.map((item) => html`
               <option
-                value$="[[item.status]]"
-                selected$="[[_computeIsSelected(status, item.status)]]"
+                value=${item.status}
+                .selected=${this.status === item.status}
               >
-                [[item.status]]
-                <template is="dom-if" if="[[item.docstring]]">
-                  = [[item.docstring]]
-                </template>
+                ${item.status}
+                ${item.docstring ? `= ${item.docstring}` : ''}
               </option>
-            </template>
+            `)}
           </optgroup>
 
-          <template is="dom-if" if="[[!group.name]]">
-            <template is="dom-repeat" items="[[group.statuses]]">
+          ${!group.name ? html`
+            ${group.statuses.map((item) => html`
               <option
-                value$="[[item.status]]"
-                selected$="[[_computeIsSelected(status, item.status)]]"
+                value=${item.status}
+                .selected=${this.status === item.status}
               >
-                [[item.status]]
-                <template is="dom-if" if="[[item.docstring]]">
-                  = [[item.docstring]]
-                </template>
+                ${item.status}
+                ${item.docstring ? `= ${item.docstring}` : ''}
               </option>
-            </template>
-          </template>
-        </template>
+            `)}
+          ` : ''}
+        `)}
       </select>
 
-      <div class="grid-input" hidden$="[[!_showMergedInto]]">
+      <div class="grid-input" ?hidden=${!this._showMergedInto}>
         <label for="mergedIntoInput" id="mergedIntoLabel">Merged into:</label>
         <mr-edit-field
           id="mergedIntoInput"
-          initial-values="[[_wrapList(mergedInto)]]"
-          on-change="_onChange"
+          .initialValues=${this.mergedInto ? [this.mergedInto] : []}
+          @change=${this._changeHandler}
         ></mr-edit-field>
       </div>`;
   }
 
-  static get is() {
-    return 'mr-edit-status';
-  }
-
   static get properties() {
     return {
-      status: {
-        type: String,
-        value: '',
-        observer: '_initialStatusChanged',
-      },
-      statuses: {
-        type: Array,
-        value: () => [],
-      },
-      isApproval: {
-        type: Boolean,
-        value: false,
-      },
-      mergedInto: {
-        type: String,
-        value: '',
-      },
-      _statusesGrouped: {
-        type: Array,
-        computed: '_computeStatusesGrouped(statuses, isApproval)',
-      },
-      _showMergedInto: Boolean,
+      initialStatus: {type: String},
+      status: {type: String},
+      statuses: {type: Array},
+      isApproval: {type: Boolean},
+      mergedInto: {type: String},
     };
   }
 
-  reset() {
-    const mergedIntoInput = this.shadowRoot.querySelector('#mergedIntoInput');
-    if (mergedIntoInput) {
-      mergedIntoInput.reset();
+  update(changedProperties) {
+    if (changedProperties.has('initialStatus')) {
+      this.status = this.initialStatus;
     }
-    const initialIndex = this.statuses.findIndex(
-      (option) => this.status === option.status);
-    this.shadowRoot.querySelector('#statusInput').selectedIndex = initialIndex;
-    this._initialStatusChanged();
-    flush();
+    super.update(changedProperties);
   }
 
-  // TODO(zhangtiff): Make mr-edit-status receive a projectName.
-  getDelta(projectName) {
-    const result = {};
-    const root = this.shadowRoot;
-
-    const statusInput = root.querySelector('#statusInput');
-    if (statusInput) {
-      const newStatus = statusInput.value;
-      if (newStatus !== this.status) {
-        result['status'] = newStatus;
-      }
-    }
-
-    if (this.status === 'Duplicate' && !this._showMergedInto) {
-      result['mergedIntoRef'] = {};
-    } else if (this._showMergedInto) {
-      const newMergedInto = root.querySelector(
-        '#mergedIntoInput').getValue();
-      if (newMergedInto !== this.mergedInto) {
-        result['mergedIntoRef'] = issueStringToRef(projectName, newMergedInto);
-      }
-    }
-
-    return result;
+  get _showMergedInto() {
+    const status = this.status || this.initialStatus;
+    return (status === 'Duplicate');
   }
 
-  _computeIsSelected(a, b) {
-    return a === b;
-  }
-
-  _computeStatusesGrouped(statuses, isApproval) {
+  get _statusesGrouped() {
+    const statuses = this.statuses;
+    const isApproval = this.isApproval;
     if (!statuses) return [];
     if (isApproval) {
       return [{statuses: statuses}];
@@ -174,24 +130,45 @@ export class MrEditStatus extends PolymerElement {
     ];
   }
 
-  _statusInputChanged() {
-    const statusInput = this.shadowRoot.querySelector('#statusInput');
-    this._showMergedInto = (statusInput.value === 'Duplicate');
-    this._onChange();
+  async reset() {
+    await this.updateComplete;
+    const mergedIntoInput = this.shadowRoot.querySelector('#mergedIntoInput');
+    if (mergedIntoInput) {
+      mergedIntoInput.reset();
+    }
+    this.status = this.initialStatus;
   }
 
-  _initialStatusChanged() {
-    this._showMergedInto = (this.status === 'Duplicate');
+  // TODO(zhangtiff): Make mr-edit-status receive a projectName.
+  getDelta(projectName) {
+    const result = {};
+
+    if (this.status !== this.initialStatus) {
+      result['status'] = this.status;
+    }
+
+    if (this.initialStatus === 'Duplicate' && !this._showMergedInto) {
+      result['mergedIntoRef'] = {};
+    } else if (this._showMergedInto) {
+      const newMergedInto = this.shadowRoot.querySelector(
+        '#mergedIntoInput').value;
+      if (newMergedInto !== this.mergedInto) {
+        result['mergedIntoRef'] = issueStringToRef(projectName, newMergedInto);
+      }
+    }
+
+    return result;
   }
 
-  _onChange() {
+  _selectChangeHandler(e) {
+    const statusInput = e.target;
+    this.status = statusInput.value;
+    this._changeHandler(e);
+  }
+
+  _changeHandler(e) {
     this.dispatchEvent(new CustomEvent('change'));
-  }
-
-  // TODO(zhangtiff): Remove in Lit-Element upgrade.
-  _wrapList(v) {
-    return v ? [v] : [];
   }
 }
 
-customElements.define(MrEditStatus.is, MrEditStatus);
+customElements.define('mr-edit-status', MrEditStatus);

@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrEditStatus} from './mr-edit-status.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 
 let element;
@@ -32,27 +31,32 @@ describe('mr-edit-status', () => {
     assert.deepEqual(element.getDelta(), {});
   });
 
-  it('change status', () => {
-    element.status = 'New';
+  it('change status', async () => {
+    element.initialStatus = 'New';
 
-    flush();
+    await element.updateComplete;
 
-    element.shadowRoot.querySelector('#statusInput').value = 'Old';
+    const statusInput = element.shadowRoot.querySelector('select');
+    statusInput.value = 'Old';
+    statusInput.dispatchEvent(new Event('change'));
+
+    await element.updateComplete;
+
     assert.deepEqual(element.getDelta(), {
       status: 'Old',
     });
   });
 
-  it('mark as duplicate', () => {
-    element.status = 'New';
+  it('mark as duplicate', async () => {
+    element.initialStatus = 'New';
 
-    flush();
+    await element.updateComplete;
 
-    const statusInput = element.shadowRoot.querySelector('#statusInput');
+    const statusInput = element.shadowRoot.querySelector('select');
     statusInput.value = 'Duplicate';
     statusInput.dispatchEvent(new Event('change'));
 
-    flush();
+    await element.updateComplete;
 
     element.shadowRoot.querySelector('#mergedIntoInput').setValue('chromium:123');
     assert.deepEqual(element.getDelta(), {
@@ -64,17 +68,17 @@ describe('mr-edit-status', () => {
     });
   });
 
-  it('remove mark as duplicate', () => {
-    element.status = 'Duplicate';
+  it('remove mark as duplicate', async () => {
+    element.initialStatus = 'Duplicate';
     element.mergedInto = 'chromium:1234';
 
-    flush();
+    await element.updateComplete;
 
-    const statusInput = element.shadowRoot.querySelector('#statusInput');
+    const statusInput = element.shadowRoot.querySelector('select');
     statusInput.value = 'New';
     statusInput.dispatchEvent(new Event('change'));
 
-    flush();
+    await element.updateComplete;
 
     assert.deepEqual(element.getDelta(), {
       status: 'New',

@@ -61,7 +61,8 @@ export const SHARED_STYLES = css`
     color: var(--chops-primary-button-color);
     text-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.25);
   }
-  textarea {
+  textarea, select, input {
+    box-sizing: border-box;
     font-size: var(--chops-main-font-size);
   }
   /* Note: decoupling heading levels from styles is useful for

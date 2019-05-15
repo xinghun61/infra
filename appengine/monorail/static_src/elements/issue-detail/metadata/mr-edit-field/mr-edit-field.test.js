@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrEditField} from './mr-edit-field.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 
 
@@ -24,77 +23,111 @@ describe('mr-edit-field', () => {
     assert.instanceOf(element, MrEditField);
   });
 
-  it('reset input value', () => {
-    flush();
-
+  it('reset input value', async () => {
     // Simulate user input.
-    element.shadowRoot.querySelector('#editInput').value = 'jackalope';
     element.initialValues = [];
+    await element.updateComplete;
+
+    element.setValue('jackalope');
+
+    assert.equal(element.value, 'jackalope');
+
     element.reset();
-    assert.equal(element.getValue(), '');
+    await element.updateComplete;
+
+    assert.equal(element.value, '');
   });
 
-  it('input updates when initialValues change', () => {
-    flush();
-
+  it('input updates when initialValues change', async () => {
     element.initialValues = ['hello'];
-    assert.equal(element.getValue(), 'hello');
+
+    await element.updateComplete;
+
+    assert.equal(element.value, 'hello');
   });
 
-  it('initial value does not change after setValue', () => {
-    flush();
-
+  it('initial value does not change after setValue', async () => {
     element.initialValues = ['hello'];
+    await element.updateComplete;
+
     element.setValue('world');
+
+    await element.updateComplete;
+
     assert.deepEqual(element.initialValues, ['hello']);
+    assert.equal(element.value, 'world');
   });
 
-  it('input updates when setValue is called', () => {
-    flush();
+  it('input updates when setValue is called', async () => {
     element.initialValues = ['hello'];
+    await element.updateComplete;
+
     element.setValue('world');
-    assert.equal(element.getValue(), 'world');
+    await element.updateComplete;
+
+    assert.equal(element.value, 'world');
   });
 
-  it('initial value does not change after user input', () => {
-    flush();
+  it('initial value does not change after user input', async () => {
     element.initialValues = ['hello'];
+    await element.updateComplete;
+
     // Simulate user input.
-    element.shadowRoot.querySelector('#editInput').value = 'jackalope';
+    element.setValue('jackalope');
+    await element.updateComplete;
+
     assert.deepEqual(element.initialValues, ['hello']);
+    assert.equal(element.value, 'jackalope');
   });
 
-  it('get value after user input', () => {
+  it('get value after user input', async () => {
     element.initialValues = ['hello'];
+    await element.updateComplete;
+
     // Simulate user input.
-    element.shadowRoot.querySelector('#editInput').value = 'jackalope';
-    assert.equal(element.getValue(), 'jackalope');
+    element.setValue('jackalope');
+    await element.updateComplete;
+
+    assert.equal(element.value, 'jackalope');
   });
 
-  it('input value was added', () => {
-    flush();
+  it('input value was added', async () => {
     // Simulate user input.
-    element.shadowRoot.querySelector('#editInput').value = 'jackalope';
+    await element.updateComplete;
+
+    element.setValue('jackalope');
+    await element.updateComplete;
+
     assert.deepEqual(element.getValuesAdded(), ['jackalope']);
+    assert.deepEqual(element.getValuesRemoved(), []);
   });
 
-  it('input value was removed', () => {
-    flush();
+  it('input value was removed', async () => {
+    await element.updateComplete;
+
     element.initialValues = ['hello'];
+    await element.updateComplete;
+
     // Simulate user input.
-    element.shadowRoot.querySelector('#editInput').value = '';
+    element.setValue('');
+    await element.updateComplete;
+
+    assert.deepEqual(element.getValuesAdded(), []);
     assert.deepEqual(element.getValuesRemoved(), ['hello']);
   });
 
-  it('input value was changed', () => {
-    flush();
+  it('input value was changed', async () => {
     element.initialValues = ['hello'];
+    await element.updateComplete;
+
     // Simulate user input.
-    element.shadowRoot.querySelector('#editInput').value = 'world';
+    element.setValue('world');
+    await element.updateComplete;
+
     assert.deepEqual(element.getValuesAdded(), ['world']);
   });
 
-  it('edit select updates value when initialValues change', () => {
+  it('edit select updates value when initialValues change', async () => {
     element.multi = false;
     element.type = fieldTypes.ENUM_TYPE;
 
@@ -104,26 +137,34 @@ describe('mr-edit-field', () => {
       {optionName: 'text'},
     ];
 
-    flush();
+    await element.updateComplete;
 
     element.initialValues = ['hello'];
-    assert.equal(element.getValue(), 'hello');
+    await element.updateComplete;
+
+    assert.equal(element.value, 'hello');
 
     // Simulate user input.
-    element.shadowRoot.querySelector('#editSelect').value = 'jackalope';
+    element.setValue('jackalope');
+    await element.updateComplete;
+
     // User input should not be overridden by the initialValue variable.
-    assert.equal(element.getValue(), 'jackalope');
+    assert.equal(element.value, 'jackalope');
     // Initial values should not change based on user input.
     assert.deepEqual(element.initialValues, ['hello']);
 
     element.initialValues = ['text'];
-    assert.equal(element.getValue(), 'text');
+    await element.updateComplete;
+
+    assert.equal(element.value, 'text');
 
     element.initialValues = [];
-    assert.deepEqual(element.getValue(), '');
+    await element.updateComplete;
+
+    assert.deepEqual(element.value, '');
   });
 
-  it('edit enum updates value on reset', () => {
+  it('edit enum updates value on reset', async () => {
     element.multi = true;
     element.type = fieldTypes.ENUM_TYPE;
     element.options = [
@@ -132,28 +173,32 @@ describe('mr-edit-field', () => {
       {optionName: 'fake'},
     ];
 
-    flush();
+    await element.updateComplete;
 
     element.initialValues = ['hello'];
     element.reset();
+    await element.updateComplete;
 
-    assert.deepEqual(element.getValues(), ['hello']);
+    assert.deepEqual(element.values, ['hello']);
 
     // User checks all boxes.
-    element.shadowRoot.querySelector('mr-multi-checkbox').shadowRoot
-      .querySelectorAll('input').forEach(
-        (checkbox) => {
-          checkbox.checked = true;
-        }
-      );
+    element._checkboxRef._inputRefs.forEach(
+      (checkbox) => {
+        checkbox.checked = true;
+      }
+    );
+    element._checkboxRef._changeHandler();
+    await element.updateComplete;
+
     // User input should not be overridden by the initialValues variable.
-    assert.deepEqual(element.getValues(), ['hello', 'world', 'fake']);
+    assert.deepEqual(element.values, ['hello', 'world', 'fake']);
     // Initial values should not change based on user input.
     assert.deepEqual(element.initialValues, ['hello']);
 
     element.initialValues = ['hello', 'world'];
     element.reset();
+    await element.updateComplete;
 
-    assert.deepEqual(element.getValues(), ['hello', 'world']);
+    assert.deepEqual(element.values, ['hello', 'world']);
   });
 });

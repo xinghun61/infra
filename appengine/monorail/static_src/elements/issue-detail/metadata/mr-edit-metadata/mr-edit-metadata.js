@@ -210,40 +210,40 @@ export class MrEditMetadata extends connectStore(LitElement) {
     const hasDerivedValues = hasCcs || hasLabels;
     return html`
       ${hasDerivedValues ? html`
-          <span></span>
-          <div class="presubmit-derived-header">
-            Filter rules and components will add
-          </div>
+        <span></span>
+        <div class="presubmit-derived-header">
+          Filter rules and components will add
+        </div>
         ` : ''}
 
       ${hasCcs? html`
-          <label
-            for="derived-ccs"
-            class="presubmit-derived-header"
-          >CC:</label>
-          <div id="derived-ccs">
-            ${derivedCcs.map((cc) => html`
-              <span
-                title=${cc.why}
-                class="presubmit-derived"
-              >${cc.value}</span>
-            `)}
-          </div>
+        <label
+          for="derived-ccs"
+          class="presubmit-derived-header"
+        >CC:</label>
+        <div id="derived-ccs">
+          ${derivedCcs.map((cc) => html`
+            <span
+              title=${cc.why}
+              class="presubmit-derived"
+            >${cc.value}</span>
+          `)}
+        </div>
         ` : ''}
 
       ${hasLabels ? html`
-          <label
-            for="derived-labels"
-            class="presubmit-derived-header"
-          >Labels:</label>
-          <div id="derived-labels">
-            ${derivedLabels.map((label) => html`
-              <span
-                title=${label.why}
-                class="presubmit-derived"
-              >${label.value}</span>
-            `)}
-          </div>
+        <label
+          for="derived-labels"
+          class="presubmit-derived-header"
+        >Labels:</label>
+        <div id="derived-labels">
+          ${derivedLabels.map((label) => html`
+            <span
+              title=${label.why}
+              class="presubmit-derived"
+            >${label.value}</span>
+          `)}
+        </div>
         ` : ''}
     `;
   }
@@ -383,7 +383,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
       <mr-edit-status
         id="statusInput"
-        .status=${this.status}
+        .initialStatus=${this.status}
         .statuses=${this.statuses}
         .mergedInto=${issueRefToString(this.mergedInto, this.projectName)}
         ?isApproval=${this.isApproval}
@@ -712,7 +712,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
       if (this._canEditOwner) {
         const ownerInput = root.querySelector('#ownerInput');
         if (ownerInput) {
-          const newOwner = ownerInput.getValue();
+          const newOwner = ownerInput.value;
           if (newOwner !== this.ownerName) {
             result.ownerRef = displayNameToUserRef(newOwner);
           }
@@ -819,7 +819,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
   _idForField(name) {
     return `${name}Input`;
   }
-
 
   _optionsForField(optionsPerEnumField, fieldValueMap, fieldName, phaseName) {
     if (!optionsPerEnumField || !fieldName) return [];
