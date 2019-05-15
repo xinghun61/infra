@@ -11,6 +11,7 @@ import webapp2
 
 from framework import framework_helpers
 from framework import framework_views
+from framework import permissions
 from proto import project_pb2
 from proto import user_pb2
 from services import service_manager
@@ -31,7 +32,7 @@ STATES = {
 
 def MakeReqInfo(
     user_pb, user_id, viewed_user_pb, viewed_user_id, viewed_user_name):
-  mr = fake.MonorailRequest(None)
+  mr = fake.MonorailRequest(None, perms=permissions.USER_PERMISSIONSET)
   mr.auth.user_pb = user_pb
   mr.auth.user_id = user_id
   mr.auth.effective_ids = {user_id}
@@ -121,7 +122,7 @@ class UserProfileTest(unittest.TestCase):
     self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
     self.mock_guspd.assert_called_once_with(
         111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
-        mock.ANY)
+        None)
 
   def testGatherPageData_RegularUserViewingOwnProjects(self):
     """A user can see all their own projects: live or archived."""
@@ -141,7 +142,7 @@ class UserProfileTest(unittest.TestCase):
         'regular-owner-archived')
     self.mock_guspd.assert_called_once_with(
         111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
-        mock.ANY)
+        None)
 
   def testGatherPageData_RegularUserViewingStarredUsers(self):
     """A user can see display names of other users that they starred."""
@@ -159,7 +160,7 @@ class UserProfileTest(unittest.TestCase):
     self.assertEquals('["3...@gmail.com"]', page_data['starred_users_json'])
     self.mock_guspd.assert_called_once_with(
         111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
-        mock.ANY)
+        None)
 
   def testGatherPageData_AdminViewingOtherUserAddress(self):
     """Site admins always see full email addresses of other users."""
@@ -186,7 +187,7 @@ class UserProfileTest(unittest.TestCase):
     self.assertEquals('other@xyz.com', page_data['viewed_user_display_name'])
     self.mock_guspd.assert_called_once_with(
         111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
-        mock.ANY)
+        None)
 
   def testGatherPageData_RegularUserViewingOtherUserAddressObscured(self):
     """Email should be revealed to others depending on obscure_email."""
@@ -200,7 +201,7 @@ class UserProfileTest(unittest.TestCase):
     self.assertEquals('ot...@xyz.com', page_data['viewed_user_display_name'])
     self.mock_guspd.assert_called_once_with(
         111, mr.viewed_user_auth.user_view, mr.viewed_user_auth.user_pb,
-        mock.ANY)
+        None)
 
   def testGatherPageData_NoLinkedAccounts(self):
     """An account with no linked accounts should not show anything linked."""

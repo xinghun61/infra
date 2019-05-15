@@ -429,6 +429,18 @@ class UserSettingsTest(unittest.TestCase):
     self.assertTrue(page_data['settings_user_prefs'].public_issue_notice)
     self.assertFalse(page_data['settings_user_prefs'].restrict_new_issues)
 
+  def testGatherUnifiedSettingsPageData_NoUserPrefs(self):
+    """If UserPrefs were not loaded, consider them all false."""
+    mr = self.mr
+    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
+    userprefs = None
+
+    page_data = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
+        mr.auth.user_id, mr.auth.user_view, mr.auth.user_pb, userprefs)
+
+    self.assertFalse(page_data['settings_user_prefs'].public_issue_notice)
+    self.assertFalse(page_data['settings_user_prefs'].restrict_new_issues)
+
   def testProcessBanForm(self):
     """We can ban and unban users."""
     user = self.services.user.TestAddUser('one@example.com', 111)

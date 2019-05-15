@@ -192,8 +192,11 @@ class UserProfile(servlet.Servlet):
         'offer_unlink': ezt.boolean(offer_unlink),
         }
 
-    with work_env.WorkEnv(mr, self.services) as we:
-      viewed_user_prefs = we.GetUserPrefs(mr.viewed_user_auth.user_id)
+    viewed_user_prefs = None
+    if mr.perms.HasPerm(permissions.EDIT_OTHER_USERS, None, None):
+      with work_env.WorkEnv(mr, self.services) as we:
+        viewed_user_prefs = we.GetUserPrefs(mr.viewed_user_auth.user_id)
+
     user_settings = (
         framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
         mr.auth.user_id, mr.viewed_user_auth.user_view, viewed_user,
@@ -211,7 +214,7 @@ class UserProfile(servlet.Servlet):
 
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""
-    has_admin_perm = mr.perms.HasPerm(permissions.ADMINISTER_SITE, None, None)
+    has_admin_perm = mr.perms.HasPerm(permissions.EDIT_OTHER_USERS, None, None)
     with work_env.WorkEnv(mr, self.services) as we:
       framework_helpers.UserSettings.ProcessSettingsForm(
           we, post_data, mr.viewed_user_auth.user_pb, admin=has_admin_perm)

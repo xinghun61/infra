@@ -403,11 +403,12 @@ class UserSettings(object):
 
     settings_user_prefs_view = template_helpers.EZTItem(
       **{name: None for name in framework_bizobj.USER_PREF_DEFS})
-    for upv in settings_user_prefs.prefs:
-      if upv.value == 'true':
-        setattr(settings_user_prefs_view, upv.name, True)
-      elif upv.value == 'false':
-        setattr(settings_user_prefs_view, upv.name, None)
+    if settings_user_prefs:
+      for upv in settings_user_prefs.prefs:
+        if upv.value == 'true':
+          setattr(settings_user_prefs_view, upv.name, True)
+        elif upv.value == 'false':
+          setattr(settings_user_prefs_view, upv.name, None)
 
     logging.info('settings_user_prefs_view is %r' % settings_user_prefs_view)
     return {
