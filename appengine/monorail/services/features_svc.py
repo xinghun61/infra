@@ -1005,6 +1005,38 @@ class FeaturesService(object):
     self.hotlist2issue_tbl.Delete(cnxn, hotlist_id=hotlist_ids, commit=False)
     self.hotlist_tbl.Delete(cnxn, id=hotlist_ids, commit=False)
 
+  def ExpungeUsersInHotlists(self, cnxn, user_ids, star_svc, user_svc):
+    """Wipes the given users and any hotlists they owned from the
+       hotlists system.
+
+    This method will not commit the operation. This method will not make
+    changes to in-memory data.
+    """
+    # Transfer hotlist ownership to editors, if possible.
+    hotlists_by_id = self.LookupUserHotlists(cnxn, user_ids)
+    hotlists_to_delete = []
+    for hotlist_id, hotlist in hotlists_by_id.iteritems():
+      # One of the users to be deleted is an owner of hotlist.
+      if not set(hotlist.owner_ids).isdisjoint(user_ids):
+        hotlists_to_delete.append(hotlist_id)
+        candidate_new_owners = [user_id for user_id in hotlist.editor_ids
+                                if user_id not in user_ids]
+        for candidate_id in candidate_new_owners:
+          try:
+            self.TransferHotlistOwnership(
+                cnxn, hotlist, candidate_id, False, commit=False)
+            # Hotlist transferred successfully. No need to delete it.
+            hotlists_to_delete.remove(hotlist_id)
+            break
+          except exceptions.InputException:
+            pass
+
+    # Delete users
+    self.hotlist2user_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    user_svc.ExpungeUsersHotlistsHistory(cnxn, user_ids, commit=False)
+    # Delete hotlists
+    self.ExpungeHotlists(cnxn, hotlists_to_delete, star_svc, user_svc)
+
 
 class HotlistAlreadyExists(Exception):
   """Tried to create a hotlist with the same name as another hotlist

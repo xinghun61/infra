@@ -899,6 +899,65 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
     self.features_service.hotlist_tbl.Delete.assert_called_once_with(
         self.cnxn, id=hotlist_ids, commit=False)
 
+  def testExpungeUsersInHotlists(self):
+    hotliststar_tbl = mock.Mock()
+    star_service = star_svc.AbstractStarService(
+        self.cache_manager, hotliststar_tbl, 'hotlist_id', 'user_id', 'hotlist')
+    user_service = user_svc.UserService(self.cache_manager)
+    user_ids = [111L, 222L]
+
+    # hotlist1 will get transferred to 333L
+    hotlist1 = fake.Hotlist(hotlist_name='unique', hotlist_id=123,
+                            owner_ids=[111L], editor_ids=[222L, 333L])
+    # hotlist2 will get deleted
+    hotlist2 = fake.Hotlist(hotlist_name='name', hotlist_id=223,
+                            owner_ids=[222L], editor_ids=[111L, 333L])
+    delete_hotlists = [hotlist2.hotlist_id]
+    hotlists_by_id = {hotlist1.hotlist_id: hotlist1,
+                      hotlist2.hotlist_id: hotlist2}
+    self.features_service.LookupUserHotlists = mock.Mock(
+        return_value=hotlists_by_id)
+
+    # User 333L already has a hotlist named 'name'.
+    def side_effect(_cnxn, hotlist_names, owner_ids):
+      if 333L in owner_ids and 'name' in hotlist_names:
+        return {('name', 333L): 567}
+      return {}
+    self.features_service.LookupHotlistIDs = mock.Mock(
+        side_effect=side_effect)
+    # Called to transfer hotlist ownership
+    self.features_service.UpdateHotlistRoles = mock.Mock()
+
+    # Called to expunge users and hotlists
+    self.features_service.hotlist2user_tbl.Delete = mock.Mock()
+    user_service.hotlistvisithistory_tbl.Delete = mock.Mock()
+
+    # Called to expunge hotlists
+    self.features_service.hotlist2issue_tbl.Delete = mock.Mock()
+    self.features_service.hotlist_tbl.Delete = mock.Mock()
+    hotliststar_tbl.Delete = mock.Mock()
+
+    self.features_service.ExpungeUsersInHotlists(
+        self.cnxn, user_ids, star_service, user_service)
+
+    self.features_service.UpdateHotlistRoles.assert_called_once_with(
+        self.cnxn, hotlist1.hotlist_id, [333L], [222L], [], commit=False)
+
+    self.features_service.hotlist2user_tbl.Delete.assert_has_calls(
+        [mock.call(self.cnxn, user_id=user_ids, commit=False),
+         mock.call(self.cnxn, hotlist_id=delete_hotlists, commit=False)])
+    user_service.hotlistvisithistory_tbl.Delete.assert_has_calls(
+        [mock.call(self.cnxn, user_id=user_ids, commit=False),
+         mock.call(self.cnxn, hotlist_id=delete_hotlists, commit=False)])
+
+    self.features_service.hotlist2issue_tbl.Delete.assert_called_once_with(
+        self.cnxn, hotlist_id=delete_hotlists, commit=False)
+    hotliststar_tbl.Delete.assert_has_calls(
+        [mock.call(self.cnxn, commit=False, hotlist_id=delete_hotlists[0])])
+    self.features_service.hotlist_tbl.Delete.assert_called_once_with(
+        self.cnxn, id=delete_hotlists, commit=False)
+
+
   def testGetProjectIDsFromHotlist(self):
     self.features_service.hotlist2issue_tbl.Select(self.cnxn,
         cols=['Issue.project_id'], hotlist_id=678, distinct=True,

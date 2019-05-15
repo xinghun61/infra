@@ -7,7 +7,7 @@
 
 import unittest
 
-from mock import Mock
+import mock
 import mox
 import time
 
@@ -304,6 +304,22 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.AddVisitedHotlist(self.cnxn, 111, 123, commit=False)
     self.mox.VerifyAll()
 
+  def testExpungeHotlistsFromHistory(self):
+    self.user_service.hotlistvisithistory_tbl.Delete = mock.Mock()
+    hotlist_ids = [123, 223]
+    self.user_service.ExpungeHotlistsFromHistory(
+        self.cnxn, hotlist_ids, commit=False)
+    self.user_service.hotlistvisithistory_tbl.Delete.assert_called_once_with(
+        self.cnxn, hotlist_id=hotlist_ids, commit=False)
+
+  def testExpungeUsersHotlistsHistory(self):
+    self.user_service.hotlistvisithistory_tbl.Delete = mock.Mock()
+    user_ids = [111L, 222L]
+    self.user_service.ExpungeUsersHotlistsHistory(
+        self.cnxn, user_ids, commit=False)
+    self.user_service.hotlistvisithistory_tbl.Delete.assert_called_once_with(
+        self.cnxn, user_id=user_ids, commit=False)
+
   def SetUpTrimUserVisitedHotlists(self, user_ids):
     self.user_service.hotlistvisithistory_tbl.Select(
         self.cnxn, cols=['user_id'], group_by=['user_id'],
@@ -335,7 +351,7 @@ class UserServiceTest(unittest.TestCase):
 
   def testGetPendingLinkedInvites_None(self):
     """A user who has no link invites gets empty lists."""
-    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl = mock.Mock()
     self.user_service.linkedaccountinvite_tbl.Select.return_value = []
     as_parent, as_child = self.user_service.GetPendingLinkedInvites(
         self.cnxn, 111)
@@ -344,7 +360,7 @@ class UserServiceTest(unittest.TestCase):
 
   def testGetPendingLinkedInvites_Some(self):
     """A user who has link invites can get them."""
-    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl = mock.Mock()
     self.user_service.linkedaccountinvite_tbl.Select.return_value = [
         (111, 222), (111, 333), (888, 999), (333, 111)]
     as_parent, as_child = self.user_service.GetPendingLinkedInvites(
@@ -354,13 +370,13 @@ class UserServiceTest(unittest.TestCase):
 
   def testAssertNotAlreadyLinked_NotLinked(self):
     """No exception is raised when accounts are not already linked."""
-    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl = mock.Mock()
     self.user_service.linkedaccount_tbl.Select.return_value = []
     self.user_service._AssertNotAlreadyLinked(self.cnxn, 111, 222)
 
   def testAssertNotAlreadyLinked_AlreadyLinked(self):
     """Reject attempt to link any account that is already linked."""
-    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl = mock.Mock()
     self.user_service.linkedaccount_tbl.Select.return_value = [
         (111, 222)]
     with self.assertRaises(exceptions.InputException):
@@ -377,9 +393,9 @@ class UserServiceTest(unittest.TestCase):
 
   def testInviteLinkedParent_Normal(self):
     """One account can invite another to link."""
-    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl = mock.Mock()
     self.user_service.linkedaccount_tbl.Select.return_value = []
-    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl = mock.Mock()
     self.user_service.InviteLinkedParent(
         self.cnxn, 111, 222)
     self.user_service.linkedaccountinvite_tbl.InsertRow.assert_called_once_with(
@@ -394,9 +410,9 @@ class UserServiceTest(unittest.TestCase):
 
   def testAcceptLinkedChild_Missing(self):
     """Reject attempts to link without a matching invite."""
-    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl = mock.Mock()
     self.user_service.linkedaccountinvite_tbl.Select.return_value = []
-    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl = mock.Mock()
     self.user_service.linkedaccount_tbl.Select.return_value = []
     with self.assertRaises(exceptions.InputException) as cm:
       self.user_service.AcceptLinkedChild(self.cnxn, 111, 333)
@@ -404,10 +420,10 @@ class UserServiceTest(unittest.TestCase):
 
   def testAcceptLinkedChild_Normal(self):
     """Create linkage between accounts and remove invite."""
-    self.user_service.linkedaccountinvite_tbl = Mock()
+    self.user_service.linkedaccountinvite_tbl = mock.Mock()
     self.user_service.linkedaccountinvite_tbl.Select.return_value = [
         (111, 222), (333, 444)]
-    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl = mock.Mock()
     self.user_service.linkedaccount_tbl.Select.return_value = []
 
     self.user_service.AcceptLinkedChild(self.cnxn, 111, 222)
@@ -427,7 +443,7 @@ class UserServiceTest(unittest.TestCase):
 
   def testUnlinkAccounts_Normal(self):
     """We can unlink accounts."""
-    self.user_service.linkedaccount_tbl = Mock()
+    self.user_service.linkedaccount_tbl = mock.Mock()
     self.user_service.UnlinkAccounts(self.cnxn, 111, 222)
     self.user_service.linkedaccount_tbl.Delete.assert_called_once_with(
         self.cnxn, parent_id=111, child_id=222)
@@ -442,7 +458,7 @@ class UserServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def testGetUsersPrefs(self):
-    self.user_service.userprefs_tbl = Mock()
+    self.user_service.userprefs_tbl = mock.Mock()
     self.user_service.userprefs_tbl.Select.return_value = [
         (111, 'code_font', 'true'),
         (111, 'keep_perms_open', 'true'),
@@ -464,7 +480,7 @@ class UserServiceTest(unittest.TestCase):
     self.assertEqual(expected, prefs_dict)
 
   def testGetUserPrefs(self):
-    self.user_service.userprefs_tbl = Mock()
+    self.user_service.userprefs_tbl = mock.Mock()
     self.user_service.userprefs_tbl.Select.return_value = [
         (111, 'code_font', 'true'),
         (111, 'keep_perms_open', 'true'),
@@ -483,7 +499,7 @@ class UserServiceTest(unittest.TestCase):
     self.assertEqual(expected, userprefs)
 
   def testSetUserPrefs(self):
-    self.user_service.userprefs_tbl = Mock()
+    self.user_service.userprefs_tbl = mock.Mock()
     pref_values = [user_pb2.UserPrefValue(name='code_font', value='true'),
                    user_pb2.UserPrefValue(name='keep_perms_open', value='true')]
     self.user_service.SetUserPrefs(self.cnxn, 111, pref_values)
@@ -492,5 +508,3 @@ class UserServiceTest(unittest.TestCase):
         [(111, 'code_font', 'true'),
          (111, 'keep_perms_open', 'true')],
         replace=True)
-
-

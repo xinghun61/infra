@@ -502,6 +502,9 @@ class UserService(object):
     self.hotlistvisithistory_tbl.Delete(
         cnxn, hotlist_id=hotlist_ids, commit=commit)
 
+  def ExpungeUsersHotlistsHistory(self, cnxn, user_ids, commit=True):
+    self.hotlistvisithistory_tbl.Delete(cnxn, user_id=user_ids, commit=commit)
+
   def TrimUserVisitedHotlists(self, cnxn, commit=True):
     """For any user who has visited more than 10 hotlists, trim history."""
     user_id_rows = self.hotlistvisithistory_tbl.Select(
