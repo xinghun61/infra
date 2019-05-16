@@ -74,51 +74,30 @@ func (c *waitTaskRun) innerRun(a subcommands.Application, args []string, env sub
 		return err
 	}
 
-	taskWaitCtx, taskWaitCancel := context.WithCancel(ctx)
+	taskWaitCtx, taskWaitCancel := context.WithTimeout(ctx, time.Duration(c.timeoutMins)*time.Minute)
 	defer taskWaitCancel()
-	taskWaitErr := make(chan error, 1)
-	go waitTask(taskWaitCtx, taskWaitErr, taskID, s, a.GetErr())
 
-	select {
-	case err := <-taskWaitErr:
-		if err != nil {
-			return err
+	if err = waitTask(taskWaitCtx, taskID, s); err != nil {
+		if err == context.DeadlineExceeded {
+			return errors.New("timed out waiting for task to complete")
 		}
-
-		return postWaitTask(ctx, taskID, s, a.GetOut())
-	case <-time.After(time.Duration(c.timeoutMins) * time.Minute):
-		taskWaitCancel()
-		return fmt.Errorf("timed out waiting for the task to finish")
+		return err
 	}
+
+	return postWaitTask(ctx, taskID, s, a.GetOut())
 }
 
-func waitTask(ctx context.Context, taskWaitErr chan error, taskID string, s *swarming.Service, w io.Writer) {
-	// Repeatedly attempt to check whether the task is finished.
-	// Returning after either a success or a maximum attempt count of errors happen or a timeout is reached.
-	defer close(taskWaitErr)
-	repeatedErr := 0
+// waitTask waits until the task with the given ID has completed.
+//
+// It returns an error if the given context was cancelled or in case of swarming
+// rpc failures (after transient retry).
+func waitTask(ctx context.Context, taskID string, s *swarming.Service) error {
 	sleepInterval := time.Duration(15 * time.Second)
-	maxServiceDowntime := time.Duration(15 * time.Minute)
 	for {
 		results, err := getSwarmingResultsForIds(ctx, []string{taskID}, s)
 		if err != nil {
-			if ctx.Err() != nil {
-				taskWaitErr <- err
-				return
-			}
-			fmt.Fprintln(w, err)
-			repeatedErr++
-			if repeatedErr >= int(maxServiceDowntime/sleepInterval) {
-				taskWaitErr <- err
-				return
-			}
-			if err = sleepOrCancel(ctx, sleepInterval); err != nil {
-				taskWaitErr <- err
-				return
-			}
-			continue
+			return err
 		}
-		repeatedErr = 0
 		// Possible values:
 		//   "BOT_DIED"
 		//   "CANCELED"
@@ -130,13 +109,12 @@ func waitTask(ctx context.Context, taskWaitErr chan error, taskID string, s *swa
 		//   "PENDING"
 		//   "RUNNING"
 		//   "TIMED_OUT"
-		// Only retry when State=RUNNING or PENDING
+		// Keep waiting if task state is RUNNING or PENDING
 		if s := results[0].State; s != "RUNNING" && s != "PENDING" {
-			return
+			return nil
 		}
 		if err = sleepOrCancel(ctx, sleepInterval); err != nil {
-			taskWaitErr <- err
-			return
+			return err
 		}
 	}
 }
