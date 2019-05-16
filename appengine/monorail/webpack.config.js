@@ -7,6 +7,8 @@
 const path = require('path');
 const webpack = require('webpack');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
 
 const config = {
   entry: {
@@ -16,13 +18,48 @@ const config = {
     'ezt-footer-scripts-package': './static_src/elements/ezt/ezt-footer-scripts-package.js',
   },
   devtool: 'eval-source-map',
-  plugins: [],
+  plugins: [
+    new HtmlWebpackPlugin({
+      chunks: ['mr-app'],
+      template: 'static_src/webpacked-scripts-template.html',
+      filename: '../../templates/webpack-out/mr-app.ezt',
+    }),
+    new HtmlWebpackPlugin({
+      chunks: ['mr-profile-page'],
+      template: 'static_src/webpacked-scripts-template.html',
+      filename: '../../templates/webpack-out/mr-profile-page.ezt',
+    }),
+    new HtmlWebpackPlugin({
+      chunks: ['ezt-element-package'],
+      template: 'static_src/webpacked-scripts-template.html',
+      filename: '../../templates/webpack-out/ezt-element-package.ezt',
+    }),
+    new HtmlWebpackPlugin({
+      chunks: ['ezt-footer-scripts-package'],
+      template: 'static_src/webpacked-scripts-template.html',
+      filename: '../../templates/webpack-out/ezt-footer-scripts-package.ezt',
+    }),
+    new ScriptExtHtmlWebpackPlugin({
+      custom: [
+        {
+          test: /\.js$/,
+          attribute: 'nonce',
+          value: '[nonce]',
+        },
+        {
+          test: /\.js$/,
+          attribute: 'type',
+          value: 'module',
+        },
+      ],
+    }),
+  ],
   resolve: {
     extensions: ['.js'],
     modules: ['node_modules', 'static_src'],
   },
   output: {
-    filename: '[name].min.js',
+    filename: '[name].[contenthash].min.js',
     path: path.resolve(__dirname, 'static/dist'),
     // __webpack_public_path__ is used to dynamically set the public path to
     // the App Engine version URL.

@@ -10,7 +10,8 @@
   src="[version_base]/deployed_node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"
   nonce="[nonce]"
 ></script>
-<script src="[version_base]/static/dist/ezt-element-package.min.js" nonce="[nonce]"></script>
+
+[include "../webpack-out/ezt-element-package.ezt"]
 
 <body class="[main_tab_mode] [if-any perms.EditIssue]perms_EditIssue[end]">
 

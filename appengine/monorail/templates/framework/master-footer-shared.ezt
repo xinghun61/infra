@@ -19,7 +19,8 @@
 
 [include "debug.ezt"]
 
-<script type="module" src="[version_base]/static/dist/ezt-footer-scripts-package.min.js" nonce="[nonce]"></script>
+[include "../webpack-out/ezt-footer-scripts-package.ezt"]
+
 <script type="module" nonce="[nonce]">
 // Load and instantiate pRPC client before any other script.
 window.prpcClient = new AutoRefreshPrpcClient(
