@@ -10,7 +10,6 @@ import 'elements/framework/links/mr-issue-link/mr-issue-link.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 
 import * as issue from 'elements/reducers/issue.js';
-import 'elements/shared/mr-shared-styles.js';
 import './mr-field-values.js';
 import {HARDCODED_FIELD_GROUPS, valuesForField, fieldDefsWithGroup,
   fieldDefsWithoutGroup} from '../shared/metadata-helpers.js';

@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {assert} from 'chai';
 import sinon from 'sinon';
 import {MrIssuePage} from './mr-issue-page.js';
@@ -18,7 +17,6 @@ let movedElement;
 let issueElement;
 
 function populateElementReferences() {
-  flush();
   loadingElement = element.shadowRoot.querySelector('#loading');
   fetchErrorElement = element.shadowRoot.querySelector('#fetch-error');
   deletedElement = element.shadowRoot.querySelector('#deleted');
@@ -42,9 +40,10 @@ describe('mr-issue-page', () => {
     assert.instanceOf(element, MrIssuePage);
   });
 
-  it('issue not loaded yet', () => {
+  it('issue not loaded yet', async () => {
     element.fetchingIssue = true;
 
+    await element.updateComplete;
     populateElementReferences();
 
     assert.isNotNull(loadingElement);
@@ -53,10 +52,11 @@ describe('mr-issue-page', () => {
     assert.isNull(issueElement);
   });
 
-  it('no loading on future issue fetches', () => {
+  it('no loading on future issue fetches', async () => {
     element.issue = {localId: 222};
     element.fetchingIssue = true;
 
+    await element.updateComplete;
     populateElementReferences();
 
     assert.isNull(loadingElement);
@@ -65,9 +65,11 @@ describe('mr-issue-page', () => {
     assert.isNotNull(issueElement);
   });
 
-  it('fetch error', () => {
+  it('fetch error', async () => {
     element.fetchingIssue = false;
     element.fetchIssueError = 'error';
+
+    await element.updateComplete;
     populateElementReferences();
 
     assert.isNull(loadingElement);
@@ -76,9 +78,11 @@ describe('mr-issue-page', () => {
     assert.isNull(issueElement);
   });
 
-  it('deleted issue', () => {
+  it('deleted issue', async () => {
     element.fetchingIssue = false;
     element.issue = {isDeleted: true};
+
+    await element.updateComplete;
     populateElementReferences();
 
     assert.isNull(loadingElement);
@@ -87,9 +91,11 @@ describe('mr-issue-page', () => {
     assert.isNull(issueElement);
   });
 
-  it('normal issue', () => {
+  it('normal issue', async () => {
     element.fetchingIssue = false;
     element.issue = {localId: 111};
+
+    await element.updateComplete;
     populateElementReferences();
 
     assert.isNull(loadingElement);
@@ -98,24 +104,26 @@ describe('mr-issue-page', () => {
     assert.isNotNull(issueElement);
   });
 
-  it('code font pref toggles attribute', () => {
-    assert.isFalse(element.codeFont);
+  it('code font pref toggles attribute', async () => {
+    await element.updateComplete;
+
     assert.isFalse(element.hasAttribute('code-font'));
 
     element.prefs = new Map([['code_font', 'true']]);
+    await element.updateComplete;
 
-    assert.isTrue(element.codeFont);
     assert.isTrue(element.hasAttribute('code-font'));
 
     element.prefs = new Map([['code_font', 'false']]);
+    await element.updateComplete;
 
-    assert.isFalse(element.codeFont);
     assert.isFalse(element.hasAttribute('code-font'));
   });
 
   it('undeleting issue only shown if you have permissions', async () => {
     element.issue = {isDeleted: true};
 
+    await element.updateComplete;
     populateElementReferences();
 
     assert.isNotNull(deletedElement);
@@ -124,7 +132,7 @@ describe('mr-issue-page', () => {
     assert.isNull(button);
 
     element.issuePermissions = ['deleteissue'];
-    flush();
+    await element.updateComplete;
 
     button = element.shadowRoot.querySelector('.undelete');
     assert.isNotNull(button);
@@ -151,6 +159,7 @@ describe('mr-issue-page', () => {
 
     await deletedIssuePromise;
 
+    await element.updateComplete;
     populateElementReferences();
 
     assert.deepEqual(element.issue, {isDeleted: true});
@@ -160,7 +169,7 @@ describe('mr-issue-page', () => {
     // Make undelete button visible. This must be after deletedIssuePromise
     // resolves since issuePermissions are cleared by Redux after that promise.
     element.issuePermissions = ['deleteissue'];
-    flush();
+    await element.updateComplete;
 
     const button = element.shadowRoot.querySelector('.undelete');
     button.click();
@@ -172,21 +181,24 @@ describe('mr-issue-page', () => {
 
     await deletePromise;
     await issuePromise;
+    await element.updateComplete;
 
     assert.isTrue(element._undeleteIssue.calledOnce);
 
     assert.deepEqual(element.issue, {localId: 111, projectName: 'test'});
 
+    await element.updateComplete;
     populateElementReferences();
     assert.isNotNull(issueElement);
 
     element._undeleteIssue.restore();
   });
 
-  it('issue has moved', () => {
+  it('issue has moved', async () => {
     element.fetchingIssue = false;
     element.issue = {movedToRef: {projectName: 'hello', localId: 10}};
 
+    await element.updateComplete;
     populateElementReferences();
 
     assert.isNull(issueElement);
@@ -197,24 +209,22 @@ describe('mr-issue-page', () => {
     assert.equal(link.getAttribute('href'), '/p/hello/issues/detail?id=10');
   });
 
-  it('moving to a restricted issue', () => {
+  it('moving to a restricted issue', async () => {
     element.fetchingIssue = false;
     element.issue = {localId: 111};
 
-    flush();
+    await element.updateComplete;
 
     element.issue = {localId: 222};
     element.fetchIssueError = 'error';
 
     populateElementReferences();
-    flush();
+    await element.updateComplete;
 
     assert.isNull(loadingElement);
     assert.isNotNull(fetchErrorElement);
     assert.isNull(deletedElement);
     assert.isNull(movedElement);
-    // TODO(ehmaldonado): Replace with isNull once mr-issue-page is converted to
-    // lit-element.
-    assert.equal(window.getComputedStyle(issueElement).display, 'none');
+    assert.isNull(issueElement);
   });
 });

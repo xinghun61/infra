@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import 'elements/chops/chops-button/chops-button.js';
 import './mr-issue-header.js';
@@ -15,7 +14,8 @@ import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import * as user from 'elements/reducers/user.js';
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {ISSUE_DELETE_PERMISSION} from 'elements/shared/permissions.js';
 
 import '../dialogs/mr-edit-description/mr-edit-description.js';
 import '../dialogs/mr-move-copy-issue/mr-move-copy-issue.js';
@@ -34,10 +34,11 @@ const DETAIL_COMMENT_COUNT = 100;
  * The main entry point for a Monorail issue detail page.
  *
  */
-export class MrIssuePage extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <style include="mr-shared-styles">
+export class MrIssuePage extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           --mr-issue-page-horizontal-padding: 12px;
           --mr-toggled-font-family: inherit;
@@ -158,43 +159,60 @@ export class MrIssuePage extends connectStore(PolymerElement) {
             position: static;
           }
         }
-      </style>
-      <mr-cues id="cues" user-display-name="[[userDisplayName]]"></mr-cues>
-      <template is="dom-if" if="[[fetchIssueError]]">
+      `,
+    ];
+  }
+
+  render() {
+    const issueIsEmpty = !this.issue || !this.issue.localId;
+    const movedToRef = this.issue.movedToRef;
+    const commentShown = this.issue.approvalValues ? APPROVAL_COMMENT_COUNT
+      : DETAIL_COMMENT_COUNT;
+
+    return html`
+      <mr-cues id="cues" .userDisplayName=${this.userDisplayName}></mr-cues>
+      ${this.fetchIssueError ? html`
         <div class="container-no-issue" id="fetch-error">
-          [[fetchIssueError.description]]
+          ${this.fetchIssueError.description}
         </div>
-      </template>
-      <template is="dom-if" if="[[!fetchIssueError]]">
-        <template is="dom-if" if="[[_showLoading(fetchingIssue, issue)]]">
+      `: html`
+        ${this.fetchingIssue && issueIsEmpty ? html`
           <div class="container-no-issue" id="loading">
             Loading...
           </div>
+        ` : ''}
         </template>
-        <template is="dom-if" if="[[_issueIsDeleted(issue)]]">
+        ${this.issue.isDeleted ? html`
           <div class="container-no-issue" id="deleted">
-            <p>Issue [[issueRef.localId]] has been deleted.</p>
-            <template is="dom-if" if="[[_showUndelete(issuePermissions)]]">
-              <chops-button on-click="_undeleteIssue" class="undelete emphasized">
+            <p>Issue ${this.issueRef.localId} has been deleted.</p>
+            ${this.issuePermissions.includes(ISSUE_DELETE_PERMISSION) ? html`
+              <chops-button
+                @click=${this._undeleteIssue}
+                class="undelete emphasized"
+              >
                 Undelete Issue
               </chops-button>
-            </template>
+            `: ''}
           </div>
-        </template>
-        <template is="dom-if" if="[[_issueIsMoved(issue.movedToRef)]]">
+        `: ''}
+        ${movedToRef && movedToRef.localId ? html`
           <div class="container-no-issue" id="moved">
             <h2>Issue has moved.</h2>
             <p>
-              This issue was moved to [[issue.movedToRef.projectName]].
-              <a class="new-location" href$="/p/[[issue.movedToRef.projectName]]/issues/detail?id=[[issue.movedToRef.localId]]">
+              This issue was moved to ${movedToRef.projectName}.
+              <a
+                class="new-location"
+                href="/p/${movedToRef.projectName}/issues/detail?id=${movedToRef.localId}"
+              >
                 Go to issue</a>.
             </p>
           </div>
-        </template>
-        <template is="dom-if" if="[[!_issueIsEmpty(issue)]]">
+        `: ''}
+
+        ${!issueIsEmpty ? html`
           <div
             class="container-outside"
-            on-open-dialog="_onOpenDialog"
+            @open-dialog=${this._onOpenDialog}
             id="issue"
           >
             <aside class="metadata-container">
@@ -203,14 +221,14 @@ export class MrIssuePage extends connectStore(PolymerElement) {
             <div class="container-issue">
               <div class="issue-header-container">
                 <mr-issue-header
-                  user-display-name="[[userDisplayName]]"
+                  .userDisplayName=${this.userDisplayName}
                 ></mr-issue-header>
                 <mr-restriction-indicator></mr-restriction-indicator>
               </div>
               <div class="container-issue-content">
                 <mr-issue-details
                   class="main-item"
-                  comments-shown-count="[[_commentsShownCount(issue)]]"
+                  .commentsShownCount=${commentShown}
                 ></mr-issue-details>
                 <mr-launch-overview class="main-item"></mr-launch-overview>
               </div>
@@ -221,66 +239,87 @@ export class MrIssuePage extends connectStore(PolymerElement) {
           <mr-convert-issue id="convert-issue"></mr-convert-issue>
           <mr-related-issues-table id="reorder-related-issues"></mr-related-issues-table>
           <mr-update-issue-hotlists id="update-issue-hotlists"></mr-update-issue-hotlists>
-        </template>
-      </template>
+        `: ''}
+      `}
     `;
-  }
-
-  static get is() {
-    return 'mr-issue-page';
   }
 
   static get properties() {
     return {
-      issueEntryUrl: String,
-      queryParams: {
-        type: Object,
-        value: () => {},
-      },
-      userDisplayName: String,
+      issueEntryUrl: {type: String},
+      queryParams: {type: Object},
+      userDisplayName: {type: String},
       // Redux state.
-      fetchIssueError: String,
-      fetchingIssue: Boolean,
-      fetchingProjectConfig: Boolean,
-      issue: Object,
+      fetchIssueError: {type: String},
+      fetchingIssue: {type: Boolean},
+      fetchingProjectConfig: {type: Boolean},
+      issue: {type: Object},
       issueClosed: {
         type: Boolean,
-        reflectToAttribute: true,
+        reflect: true,
       },
-      issuePermissions: Object,
-      issueRef: Object,
-      prefs: Object,
-      codeFont: {
-        type: Boolean,
-        computed: '_computeCodeFont(prefs)',
-        reflectToAttribute: true,
-      },
+      issuePermissions: {type: Object},
+      issueRef: {type: Object},
+      prefs: {type: Object},
     };
   }
 
+  constructor() {
+    super();
+    this.issue = {};
+    this.issueRef = {};
+    this.issuePermissions = [];
+    this.pref = {};
+  }
+
   stateChanged(state) {
-    this.setProperties({
-      issue: issue.issue(state),
-      issueRef: issue.issueRef(state),
-      fetchIssueError: issue.requests(state).fetch.error,
-      fetchingIssue: issue.requests(state).fetch.requesting,
-      fetchingProjectConfig: project.fetchingConfig(state),
-      issueClosed: !issue.isOpen(state),
-      issuePermissions: issue.permissions(state),
-      prefs: user.user(state).prefs,
-    });
+    this.issue = issue.issue(state);
+    this.issueRef = issue.issueRef(state);
+    this.fetchIssueError = issue.requests(state).fetch.error;
+    this.fetchingIssue = issue.requests(state).fetch.requesting;
+    this.fetchingProjectConfig = project.fetchingConfig(state);
+    this.issueClosed = !issue.isOpen(state);
+    this.issuePermissions = issue.permissions(state);
+    this.prefs = user.user(state).prefs;
   }
 
-  static get observers() {
-    return [
-      '_issueChanged(issueRef, issue)',
-      '_fetchIssue(issueRef)',
-      '_projectNameChanged(issueRef.projectName)',
-      '_userDisplayNameChanged(userDisplayName)',
-    ];
+  update(changedProperties) {
+    if (changedProperties.has('prefs')) {
+      if (this.prefs.get('code_font') === 'true') {
+        this.setAttribute('code-font', '');
+      } else if (this.hasAttribute('code-font')) {
+        this.removeAttribute('code-font');
+      }
+    }
+    super.update(changedProperties);
   }
 
-  _issueChanged(issueRef, issue) {
+  updated(changedProperties) {
+    if (changedProperties.has('issueRef')) {
+      if (this.issueRef.localId && this.issueRef.projectName
+          && !this.fetchingIssue) {
+        // Reload the issue data when the id changes.
+        store.dispatch(issue.fetchIssuePageData({issueRef: this.issueRef}));
+      }
+
+      const oldRef = changedProperties.get('issueRef');
+      const oldProjectName = oldRef && oldRef.projectName;
+      if (this.issueRef.projectName && oldProjectName
+          !== this.issueRef.projectName && !this.fetchingProjectConfig) {
+        store.dispatch(project.fetch(this.issueRef.projectName));
+      }
+    }
+
+    if (changedProperties.has('userDisplayName')) {
+      store.dispatch(user.fetch(this.userDisplayName));
+    }
+
+    if (changedProperties.has('issueRef') || changedProperties.has('issue')) {
+      this._setPageTitle(this.issueRef, this.issue);
+    }
+  }
+
+  _setPageTitle(issueRef, issue) {
     if (!issueRef) return;
     let title =
       issueRef.localId ? `${issueRef.localId} - ` : 'Loading issue... - ';
@@ -296,30 +335,8 @@ export class MrIssuePage extends connectStore(PolymerElement) {
     document.title = title;
   }
 
-  _fetchIssue(issueRef) {
-    if (issueRef.localId && issueRef.projectName && !this.fetchingIssue) {
-      // Reload the issue data when the id changes.
-      store.dispatch(issue.fetchIssuePageData({issueRef}));
-    }
-  }
-
-  _projectNameChanged(projectName) {
-    if (projectName && !this.fetchingProjectConfig) {
-      // Reload project config and templates when the project name changes.
-      store.dispatch(project.fetch(projectName));
-    }
-  }
-
-  _userDisplayNameChanged(userDisplayName) {
-    store.dispatch(user.fetch(userDisplayName));
-  }
-
   _onOpenDialog(e) {
     this.shadowRoot.querySelector('#' + e.detail.dialogId).open(e);
-  }
-
-  _commentsShownCount(issue) {
-    return issue.approvalValues ? APPROVAL_COMMENT_COUNT : DETAIL_COMMENT_COUNT;
   }
 
   _undeleteIssue() {
@@ -327,34 +344,9 @@ export class MrIssuePage extends connectStore(PolymerElement) {
       issueRef: this.issueRef,
       delete: false,
     }).then(() => {
-      this._fetchIssue(this.issueRef);
+      store.dispatch(issue.fetchIssuePageData({issueRef: this.issueRef}));
     });
-  }
-
-  _showUndelete(issuePermissions) {
-    return (issuePermissions || []).includes('deleteissue');
-  }
-
-  _computeCodeFont(prefs) {
-    if (!prefs) return false;
-    return prefs.get('code_font') === 'true';
-  }
-
-  _issueIsEmpty(issue) {
-    return !issue || !issue.localId;
-  }
-
-  _issueIsDeleted(issue) {
-    return issue && issue.isDeleted;
-  }
-
-  _issueIsMoved(ref) {
-    return ref && ref.projectName && ref.localId;
-  }
-
-  _showLoading(fetchingIssue, issue) {
-    return fetchingIssue && this._issueIsEmpty(issue);
   }
 }
 
-customElements.define(MrIssuePage.is, MrIssuePage);
+customElements.define('mr-issue-page', MrIssuePage);

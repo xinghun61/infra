@@ -8,7 +8,6 @@ import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import 'elements/chops/chops-button/chops-button.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-import 'elements/shared/mr-shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 /**
