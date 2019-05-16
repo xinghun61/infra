@@ -315,13 +315,18 @@ func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(ctx context.Context, b
 	return trs, nil
 }
 
-// TimeSinceBotTask returns the duration.Duration elapsed since the given task
+// TimeSinceBotTask calls TimeSinceBotTaskN with time.Now().
+func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, error) {
+	return TimeSinceBotTaskN(tr, time.Now())
+}
+
+// TimeSinceBotTaskN returns the duration.Duration elapsed since the given task
 // completed on a bot.
 //
 // This function only considers tasks that were executed by Swarming to a
 // specific bot. For tasks that were never executed on a bot, this function
 // returns nil duration.
-func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, error) {
+func TimeSinceBotTaskN(tr *swarming.SwarmingRpcsTaskResult, now time.Time) (*duration.Duration, error) {
 	if tr.State == "RUNNING" {
 		return &duration.Duration{}, nil
 	}
@@ -332,7 +337,7 @@ func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, 
 	if t.IsZero() {
 		return nil, nil
 	}
-	return google.NewDuration(time.Now().Sub(t)), nil
+	return google.NewDuration(now.Sub(t)), nil
 }
 
 // TaskDoneTime returns the time when the given task completed on a
