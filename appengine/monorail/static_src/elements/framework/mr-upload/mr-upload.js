@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
-import 'elements/shared/mr-shared-styles.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 
 /**
  * `<mr-upload>`
@@ -12,12 +12,11 @@ import 'elements/shared/mr-shared-styles.js';
  * A file uploading widget for use in adding attachments and similar things.
  *
  */
-export class MrUpload extends PolymerElement {
-  static get template() {
-    return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-            rel="stylesheet">
-      <style include="mr-shared-styles">
+export class MrUpload extends LitElement {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           display: block;
           width: 100%;
@@ -105,78 +104,64 @@ export class MrUpload extends PolymerElement {
           justify-content: flex-start;
           width: 100%;
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    return html`
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+            rel="stylesheet">
       <div class="controls">
-        <input id="file-uploader" type="file" multiple on-change="_filesChanged">
+        <input id="file-uploader" type="file" multiple @change=${this._filesChanged}>
         <label class="button" for="file-uploader">
           <i class="material-icons">attach_file</i>Add attachments
         </label>
         Drop files here to add them (Max: 10.0 MB per comment)
       </div>
-      <ul hidden$="[[!files.length]]">
-        <template is="dom-repeat" items="[[files]]" as="file">
+      <ul ?hidden=${!this.files || !this.files.length}>
+        ${this.files.map((file, i) => html`
           <li>
-            [[file.name]]
-            <button data-index$="[[index]]" on-click="_removeFile">
+            ${file.name}
+            <button data-index=${i} @click=${this._removeFile}>
               <i class="material-icons">clear</i>
             </button>
           </li>
-        </template>
+        `)}
       </ul>
     `;
   }
 
-  static get is() {
-    return 'mr-upload';
-  }
-
   static get properties() {
     return {
-      files: {
-        type: Array,
-        value: () => [],
-      },
+      files: {type: Array},
       highlighted: {
         type: Boolean,
-        reflectToAttribute: true,
-        value: false,
+        reflect: true,
       },
       expanded: {
         type: Boolean,
-        reflectToAttribute: true,
-        value: false,
+        reflect: true,
       },
-      _boundOnDragIntoWindow: {
-        type: Function,
-        value: function() {
-          return this._onDragIntoWindow.bind(this);
-        },
-      },
-      _boundOnDragOutOfWindow: {
-        type: Function,
-        value: function() {
-          return this._onDragOutOfWindow.bind(this);
-        },
-      },
-      _boundOnDragInto: {
-        type: Function,
-        value: function() {
-          return this._onDragInto.bind(this);
-        },
-      },
-      _boundOnDragLeave: {
-        type: Function,
-        value: function() {
-          return this._onDragLeave.bind(this);
-        },
-      },
-      _boundOnDrop: {
-        type: Function,
-        value: function() {
-          return this._onDrop.bind(this);
-        },
-      },
+      _boundOnDragIntoWindow: {type: Object},
+      _boundOnDragOutOfWindow: {type: Object},
+      _boundOnDragInto: {type: Object},
+      _boundOnDragLeave: {type: Object},
+      _boundOnDrop: {type: Object},
     };
+  }
+
+  constructor() {
+    super();
+
+    this.expanded = false;
+    this.highlighted = false;
+    this.files = [];
+    this._boundOnDragIntoWindow = this._onDragIntoWindow.bind(this);
+    this._boundOnDragOutOfWindow = this._onDragOutOfWindow.bind(this);
+    this._boundOnDragInto = this._onDragInto.bind(this);
+    this._boundOnDragLeave = this._onDragLeave.bind(this);
+    this._boundOnDrop = this._onDrop.bind(this);
   }
 
   connectedCallback() {
@@ -294,7 +279,7 @@ export class MrUpload extends PolymerElement {
       return !matchingFile;
     });
 
-    this.push('files', ...files);
+    this.files = this.files.concat(files);
   }
 
   _filesMatch(a, b) {
@@ -312,7 +297,10 @@ export class MrUpload extends PolymerElement {
     const index = Number.parseInt(target.dataset.index);
     if (index < 0 || index >= this.files.length) return;
 
-    this.splice('files', index, 1);
+    this.files.splice(index, 1);
+
+    // Trigger an update.
+    this.files = [...this.files];
   }
 }
-customElements.define(MrUpload.is, MrUpload);
+customElements.define('mr-upload', MrUpload);

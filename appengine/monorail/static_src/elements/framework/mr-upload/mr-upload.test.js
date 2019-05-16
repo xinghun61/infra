@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrUpload} from './mr-upload.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 let preventDefault;
@@ -60,14 +59,14 @@ describe('mr-upload', () => {
     assert.deepEqual(element.files, files);
   });
 
-  it('files are rendered', () => {
+  it('files are rendered', async () => {
     element.files = [
       new File([''], 'filename.txt'),
       new File([''], 'hello'),
       new File([''], 'file.png'),
     ];
 
-    flush();
+    await element.updateComplete;
 
     const items = element.shadowRoot.querySelectorAll('li');
 
@@ -78,14 +77,14 @@ describe('mr-upload', () => {
     assert.include(items[2].textContent, 'file.png');
   });
 
-  it('clicking removes file', () => {
+  it('clicking removes file', async () => {
     element.files = [
       new File([''], 'filename.txt'),
       new File([''], 'hello'),
       new File([''], 'file.png'),
     ];
 
-    flush();
+    await element.updateComplete;
 
     let items = element.shadowRoot.querySelectorAll('li');
 
@@ -93,7 +92,7 @@ describe('mr-upload', () => {
 
     items[1].querySelector('button').click();
 
-    flush();
+    await element.updateComplete;
 
     items = element.shadowRoot.querySelectorAll('li');
 
@@ -105,7 +104,7 @@ describe('mr-upload', () => {
     // Make sure clicking works even for children targets.
     items[0].querySelector('i.material-icons').click();
 
-    flush();
+    await element.updateComplete;
 
     items = element.shadowRoot.querySelectorAll('li');
 
