@@ -207,6 +207,9 @@ message GetDeploymentStatusResponse{
 
   // The Skylab task created for the DUT deployment.
   string task_url = 4;
+
+  // An explanatory message for the deployment status.
+  string message = 5;
 }
 
 message DeleteDutsRequest {
