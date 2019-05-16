@@ -37,7 +37,8 @@ class ProjectAPI(object):  # pragma: no cover.
                 'number': 123,
                 'commit_id': 654321
               },
-              'last_passed_build': None
+              'last_passed_build': None,
+              'failure_group_build': None,
             },
             ...
           },
@@ -47,6 +48,7 @@ class ProjectAPI(object):  # pragma: no cover.
             'commit_id': 654321
           },
           'last_passed_build': None
+          'failure_group_build': None,
         },
       }
     """
@@ -78,3 +80,35 @@ class ProjectAPI(object):  # pragma: no cover.
       (dict): input properties of the rerun build."""
     # pylint: disable=unused-argument
     return NotImplementedError
+
+  def GetFailuresWithMatchingCompileFailureGroups(
+      self, context, build, first_failures_in_current_build):
+    """Gets reusable failure groups for given compile failure(s).
+
+    Args:
+      context (findit_v2.services.context.Context): Scope of the analysis.
+      build (buildbucket build.proto): ALL info about the build.
+      first_failures_in_current_build (dict): A dict for failures that happened
+      the first time in current build.
+      {
+      'failures': {
+        'compile': {
+          'output_targets': ['target4', 'target1', 'target2'],
+          'last_passed_build': {
+            'id': 8765432109,
+            'number': 122,
+            'commit_id': 'git_sha1'
+          },
+        },
+      },
+      'last_passed_build': {
+        'id': 8765432109,
+        'number': 122,
+        'commit_id': 'git_sha1'
+      }
+    }
+    """
+    # For projects that don't need to group failures (e.g. chromium), this is
+    # a no-op.
+    # pylint: disable=unused-argument
+    return {}

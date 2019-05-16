@@ -2,17 +2,55 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import unittest
+from datetime import datetime
 
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.step_pb2 import Step
 
+from findit_v2.model.compile_failure import CompileFailure
+from findit_v2.model.compile_failure import CompileFailureGroup
+from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.chromeos_api import ChromeOSProjectAPI
+from findit_v2.services.context import Context
 from findit_v2.services.failure_type import StepTypeEnum
+from waterfall.test import wf_testcase
 
 
-class ChromeOSProjectAPITest(unittest.TestCase):
+class ChromeOSProjectAPITest(wf_testcase.TestCase):
+
+  def setUp(self):
+    super(ChromeOSProjectAPITest, self).setUp()
+    self.first_failed_commit_id = 'git_sha'
+    self.first_failed_commit_position = 65450
+    self.context = Context(
+        luci_project_name='chromeos',
+        gitiles_host='gitiles.host.com',
+        gitiles_project='project/name',
+        gitiles_ref='ref/heads/master',
+        gitiles_id='git_sha')
+
+    self.builder = BuilderID(
+        project='chromeos', bucket='postsubmit', builder='builder-postsubmit')
+
+    self.group_build_id = 8000000000189
+    self.group_build = LuciFailedBuild.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket=self.builder.bucket,
+        luci_builder='builder2-postsubmit',
+        build_id=self.group_build_id,
+        legacy_build_number=12345,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        gitiles_id=self.context.gitiles_id,
+        commit_position=self.first_failed_commit_position,
+        status=20,
+        create_time=datetime(2019, 3, 28),
+        start_time=datetime(2019, 3, 28, 0, 1),
+        end_time=datetime(2019, 3, 28, 1),
+        build_failure_type=StepTypeEnum.COMPILE)
+    self.group_build.put()
 
   def testCompileStep(self):
     step = Step()
@@ -99,9 +137,7 @@ class ChromeOSProjectAPITest(unittest.TestCase):
                      ChromeOSProjectAPI().GetCompileFailures(build, [step]))
 
   def testGetRerunBuilderId(self):
-    builder = BuilderID(
-        project='chromeos', bucket='postsubmit', builder='builder-postsubmit')
-    build = Build(builder=builder)
+    build = Build(builder=self.builder)
     build.output.properties['BISECT_BUILDER'] = 'builder-bisect'
 
     self.assertEqual('chromeos/postsubmit/builder-bisect',
@@ -139,3 +175,143 @@ class ChromeOSProjectAPITest(unittest.TestCase):
 
     self.assertIsNone(ChromeOSProjectAPI().GetCompileRerunBuildInputProperties(
         build, targets))
+
+  def testGetFailuresWithMatchingCompileFailureGroupsNoExistingGroup(self):
+    build_id = 8000000000122
+    build = Build(builder=self.builder, number=122, id=build_id)
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+
+    last_passed_build_info = {
+        'id': 8000000000121,
+        'number': 121,
+        'commit_id': 'git_sha_121'
+    }
+
+    first_failures_in_current_build = {
+        'failures': {
+            'build_packages': {
+                'output_targets': [frozenset(['target1'])],
+                'last_passed_build': last_passed_build_info,
+            },
+        },
+        'last_passed_build': last_passed_build_info
+    }
+
+    self.assertEqual(
+        {},
+        ChromeOSProjectAPI().GetFailuresWithMatchingCompileFailureGroups(
+            self.context, build, first_failures_in_current_build))
+
+  def testGetFailuresWithMatchingCompileFailureGroupsFailureNotExactlySame(
+      self):
+    build_id = 8000000000122
+    build = Build(builder=self.builder, number=122, id=build_id)
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+
+    last_passed_build_info = {
+        'id': 8000000000121,
+        'number': 121,
+        'commit_id': 'git_sha_121'
+    }
+
+    first_failures_in_current_build = {
+        'failures': {
+            'build_packages': {
+                'output_targets': [
+                    frozenset(['target1']),
+                    frozenset(['target2'])
+                ],
+                'last_passed_build':
+                    last_passed_build_info,
+            },
+        },
+        'last_passed_build': last_passed_build_info
+    }
+
+    compile_failure = CompileFailure.Create(
+        self.group_build.key,
+        'build_packages', ['target1'],
+        'CXX',
+        first_failed_build_id=self.group_build_id,
+        last_passed_build_id=8000000000160)
+    compile_failure.put()
+
+    CompileFailureGroup.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket=build.builder.bucket,
+        build_id=self.group_build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id=last_passed_build_info['commit_id'],
+        last_passed_cp=654321,
+        first_failed_gitiles_id=self.first_failed_commit_id,
+        first_failed_cp=654340,
+        compile_failure_keys=[compile_failure.key]).put()
+
+    self.assertEqual(
+        {},
+        ChromeOSProjectAPI().GetFailuresWithMatchingCompileFailureGroups(
+            self.context, build, first_failures_in_current_build))
+
+  def testGetFailuresWithMatchingCompileFailureGroupsWithExistingGroup(self):
+    build_id = 8000000000122
+    build = Build(builder=self.builder, number=122, id=build_id)
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha'
+
+    last_passed_build_info = {
+        'id': 8000000000121,
+        'number': 121,
+        'commit_id': 'git_sha_121'
+    }
+
+    first_failures_in_current_build = {
+        'failures': {
+            'build_packages': {
+                'output_targets': [frozenset(['target1']),],
+                'last_passed_build': last_passed_build_info,
+            },
+        },
+        'last_passed_build': last_passed_build_info
+    }
+
+    compile_failure = CompileFailure.Create(
+        self.group_build.key,
+        'build_packages', ['target1'],
+        'CXX',
+        first_failed_build_id=self.group_build_id,
+        last_passed_build_id=8000000000160)
+    compile_failure.put()
+
+    CompileFailureGroup.Create(
+        luci_project=self.context.luci_project_name,
+        luci_bucket=build.builder.bucket,
+        build_id=self.group_build_id,
+        gitiles_host=self.context.gitiles_host,
+        gitiles_project=self.context.gitiles_project,
+        gitiles_ref=self.context.gitiles_ref,
+        last_passed_gitiles_id=last_passed_build_info['commit_id'],
+        last_passed_cp=654321,
+        first_failed_gitiles_id=self.first_failed_commit_id,
+        first_failed_cp=654340,
+        compile_failure_keys=[compile_failure.key]).put()
+
+    expected_failures_with_existing_group = {
+        'build_packages': {
+            frozenset(['target1']): self.group_build_id
+        }
+    }
+
+    self.assertEqual(
+        expected_failures_with_existing_group,
+        ChromeOSProjectAPI().GetFailuresWithMatchingCompileFailureGroups(
+            self.context, build, first_failures_in_current_build))

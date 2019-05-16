@@ -28,7 +28,7 @@ class BaseFailureGroup(ndb.Model):
 
   # Regression range of the failures in the first build.
   last_passed_commit = ndb.StructuredProperty(GitilesCommit, indexed=False)
-  first_failed_commit = ndb.StructuredProperty(GitilesCommit, indexed=False)
+  first_failed_commit = ndb.StructuredProperty(GitilesCommit)
 
   # Time when the group is created.
   create_time = ndb.DateTimeProperty(required=True, auto_now_add=True)
