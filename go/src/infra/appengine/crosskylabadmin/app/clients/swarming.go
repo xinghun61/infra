@@ -322,28 +322,45 @@ func (sc *swarmingClientImpl) ListSortedRecentTasksForBot(ctx context.Context, b
 // specific bot. For tasks that were never executed on a bot, this function
 // returns nil duration.
 func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, error) {
+	if tr.State == "RUNNING" {
+		return &duration.Duration{}, nil
+	}
+	t, err := TaskDoneTime(tr)
+	if err != nil {
+		return nil, errors.Annotate(err, "get time since bot task").Err()
+	}
+	if t.IsZero() {
+		return nil, nil
+	}
+	return google.NewDuration(time.Now().Sub(t)), nil
+}
+
+// TaskDoneTime returns the time when the given task completed on a
+// bot.  If the task was never run or is still running, this function
+// returns a zero time.
+func TaskDoneTime(tr *swarming.SwarmingRpcsTaskResult) (time.Time, error) {
 	switch tr.State {
 	case "RUNNING":
-		return &duration.Duration{}, nil
+		return time.Time{}, nil
 	case "COMPLETED", "TIMED_OUT":
 		// TIMED_OUT tasks are considered to have completed as opposed to EXPIRED
 		// tasks, which set tr.AbandonedTs
-		ts, err := time.Parse(SwarmingTimeLayout, tr.CompletedTs)
+		t, err := time.Parse(SwarmingTimeLayout, tr.CompletedTs)
 		if err != nil {
-			return nil, errors.Annotate(err, "swarming returned corrupted completed timestamp %s", tr.CompletedTs).Err()
+			return time.Time{}, errors.Annotate(err, "get task done time").Err()
 		}
-		return google.NewDuration(time.Now().Sub(ts)), nil
+		return t, nil
 	case "KILLED":
-		ts, err := time.Parse(SwarmingTimeLayout, tr.AbandonedTs)
+		t, err := time.Parse(SwarmingTimeLayout, tr.AbandonedTs)
 		if err != nil {
-			return nil, errors.Annotate(err, "swarming returned corrupted abandoned timestamp %s", tr.AbandonedTs).Err()
+			return time.Time{}, errors.Annotate(err, "get task done time").Err()
 		}
-		return google.NewDuration(time.Now().Sub(ts)), nil
+		return t, nil
 	case "BOT_DIED", "CANCELED", "EXPIRED", "NO_RESOURCE", "PENDING":
 		// These states do not indicate any actual run of a task on the dut.
-		return nil, nil
+		return time.Time{}, nil
 	default:
-		return nil, fmt.Errorf("unknown swarming task state %s", tr.State)
+		return time.Time{}, errors.Reason("get task done time: unknown task state %s", tr.State).Err()
 	}
 }
 

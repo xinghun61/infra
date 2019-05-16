@@ -16,6 +16,7 @@ package clients
 
 import (
 	"testing"
+	"time"
 
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 
@@ -47,6 +48,68 @@ func TestGetStateDimension(t *testing.T) {
 			got := GetStateDimension(c.input)
 			if got != c.want {
 				t.Errorf("getStateDimension(%#v) = %#v; want %#v", c.input, got, c.want)
+			}
+		})
+	}
+}
+
+func TestTaskDoneTime(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		desc  string
+		input swarming.SwarmingRpcsTaskResult
+		want  time.Time
+	}{
+		{
+			desc: "completed",
+			input: swarming.SwarmingRpcsTaskResult{
+				State:       "COMPLETED",
+				CompletedTs: "2016-01-02T10:04:05.999999999",
+			},
+			want: time.Date(2016, 1, 2, 10, 4, 5, 999999999, time.UTC),
+		},
+		{
+			desc: "timed out",
+			input: swarming.SwarmingRpcsTaskResult{
+				State:       "TIMED_OUT",
+				CompletedTs: "2016-01-02T10:04:05.999999999",
+			},
+			want: time.Date(2016, 1, 2, 10, 4, 5, 999999999, time.UTC),
+		},
+		{
+			desc: "running",
+			input: swarming.SwarmingRpcsTaskResult{
+				State: "RUNNING",
+			},
+			want: time.Time{},
+		},
+		{
+			desc: "killed",
+			input: swarming.SwarmingRpcsTaskResult{
+				State:       "KILLED",
+				AbandonedTs: "2016-01-02T10:04:05.999999999",
+			},
+			want: time.Date(2016, 1, 2, 10, 4, 5, 999999999, time.UTC),
+		},
+		{
+			desc: "expired",
+			input: swarming.SwarmingRpcsTaskResult{
+				State: "EXPIRED",
+			},
+			want: time.Time{},
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.desc, func(t *testing.T) {
+			t.Parallel()
+			got, err := TaskDoneTime(&c.input)
+			if err != nil {
+				t.Fatalf("TaskDoneTime returned unexpected error: %s", err)
+			}
+			if !got.Equal(c.want) {
+				t.Errorf("TaskDoneTime(%#v) = %s; want %s", c.input, got.Format(time.RFC3339Nano),
+					c.want.Format(time.RFC3339Nano))
 			}
 		})
 	}
