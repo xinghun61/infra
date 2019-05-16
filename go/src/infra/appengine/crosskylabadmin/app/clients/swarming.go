@@ -341,11 +341,10 @@ func TimeSinceBotTask(tr *swarming.SwarmingRpcsTaskResult) (*duration.Duration, 
 		return google.NewDuration(time.Now().Sub(ts)), nil
 	case "BOT_DIED", "CANCELED", "EXPIRED", "NO_RESOURCE", "PENDING":
 		// These states do not indicate any actual run of a task on the dut.
-		break
+		return nil, nil
 	default:
 		return nil, fmt.Errorf("unknown swarming task state %s", tr.State)
 	}
-	return nil, nil
 }
 
 // Pager manages pagination of API calls.
