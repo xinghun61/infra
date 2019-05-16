@@ -184,8 +184,13 @@ func getSwarmingResultsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []string, includePassed bool) ([]*swarming.SwarmingRpcsTaskResult, error) {
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
-	results, err := s.Tasks.List().Tags(tags...).Context(ctx).Do()
-	if err != nil {
+	var results *swarming.SwarmingRpcsTaskList
+	getResults := func() error {
+		var err error
+		results, err = s.Tasks.List().Tags(tags...).Context(ctx).Do()
+		return err
+	}
+	if err := swarmingCallWithRetries(ctx, getResults); err != nil {
 		return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for tags %s", tags)).Err()
 	}
 	var filteredTasks []*swarming.SwarmingRpcsTaskResult
