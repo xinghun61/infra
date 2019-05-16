@@ -222,12 +222,12 @@ func deployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swarm
 	ds := &deploy.Status{Status: fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS}
 	ds.ChangeURL, err = addDUTToFleet(ctx, s, nd, o.GetAssignServoPortIfMissing())
 	if err != nil {
-		failDeployStatus(ctx, ds, "failed to add dut to fleet")
+		failDeployStatus(ctx, ds, fmt.Sprintf("failed to add dut to fleet: %s", err))
 		return ds
 	}
 	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, nd.GetId(), a)
 	if err != nil {
-		failDeployStatus(ctx, ds, "failed to create deploy task")
+		failDeployStatus(ctx, ds, fmt.Sprintf("failed to create deploy task: %s", err))
 		return ds
 	}
 	return ds
