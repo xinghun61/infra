@@ -55,7 +55,7 @@ describe('mr-edit-metadata', () => {
   });
 
   it('delta empty when no changes', () => {
-    assert.deepEqual(element.getDelta(), {});
+    assert.deepEqual(element.delta, {});
   });
 
   it('toggling checkbox toggles sendEmail', async () => {
@@ -100,9 +100,25 @@ describe('mr-edit-metadata', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       status: 'Old',
     });
+  });
+
+  it('invalid status throws', async () => {
+    element.statuses = [
+      {'status': 'New'},
+      {'status': 'Old'},
+      {'status': 'Duplicate'},
+    ];
+    element.status = 'Duplicate';
+
+    await element.updateComplete;
+
+    const statusComponent = element.shadowRoot.querySelector('#statusInput');
+    statusComponent.shadowRoot.querySelector('#mergedIntoInput').setValue('xx');
+    assert.deepEqual(element.delta, {});
+    assert.equal(element.error, 'Invalid input for field: mergedInto');
   });
 
   it('not changing status produces no delta', async () => {
@@ -121,7 +137,7 @@ describe('mr-edit-metadata', () => {
     await element.updateComplete;
     await element.updateComplete; // Merged input updates its value.
 
-    assert.deepEqual(element.getDelta(), {});
+    assert.deepEqual(element.delta, {});
   });
 
   it('changing status to duplicate produces delta change', async () => {
@@ -144,7 +160,7 @@ describe('mr-edit-metadata', () => {
 
     root.querySelector('#mergedIntoInput').setValue(
       'chromium:1234');
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       status: 'Duplicate',
       mergedIntoRef: {
         projectName: 'chromium',
@@ -160,7 +176,7 @@ describe('mr-edit-metadata', () => {
 
     element.shadowRoot.querySelector(
       '#summaryInput').value = 'newfangled fancy summary';
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       summary: 'newfangled fancy summary',
     });
   });
@@ -186,7 +202,7 @@ describe('mr-edit-metadata', () => {
 
     element.shadowRoot.querySelector('#testFieldInput').setValue('test value');
     element.shadowRoot.querySelector('#fakeFieldInput').setValue('');
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       fieldValsAdd: [
         {
           fieldRef: {
@@ -224,7 +240,7 @@ describe('mr-edit-metadata', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       approverRefsAdd: [
         {displayName: 'chicken@example.com'},
         {displayName: 'dog@example.com'},
@@ -250,7 +266,7 @@ describe('mr-edit-metadata', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       blockedOnRefsAdd: [{
         projectName: 'v8',
         localId: 5678,
@@ -301,7 +317,7 @@ describe('mr-edit-metadata', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       fieldValsAdd: [
         {
           fieldRef: {
@@ -351,7 +367,7 @@ describe('mr-edit-metadata', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       fieldValsAdd: [
         {
           fieldRef: {
@@ -383,7 +399,7 @@ describe('mr-edit-metadata', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       compRefsAdd: [
         {path: 'Hello>World'},
       ],
@@ -393,7 +409,7 @@ describe('mr-edit-metadata', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       compRefsAdd: [
         {path: 'Hello>World'},
         {path: 'Test'},
@@ -404,7 +420,7 @@ describe('mr-edit-metadata', () => {
     compInput.setValue([]);
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {});
+    assert.deepEqual(element.delta, {});
   });
 
   it('approver input appears when user has privileges', async () => {

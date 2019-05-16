@@ -126,7 +126,7 @@ export class MrEditIssue extends connectStore(LitElement) {
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
     const message = {
       issueRef: this.issueRef,
-      delta: form.getDelta(),
+      delta: form.delta,
       commentContent: form.getCommentContent(),
       sendEmail: form.sendEmail,
     };

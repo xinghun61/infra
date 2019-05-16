@@ -12,6 +12,7 @@ import 'elements/chops/chops-checkbox/chops-checkbox.js';
 import 'elements/framework/mr-error/mr-error.js';
 import 'elements/framework/mr-warning/mr-warning.js';
 import {store, connectStore} from 'elements/reducers/base.js';
+import {UserInputError} from 'elements/shared/errors.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   componentRefsToStrings, issueStringToRef, issueRefToString,
@@ -161,8 +162,6 @@ export class MrEditMetadata extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      ${this.error ? html`
-        <mr-error>${this.error}</mr-error>` : ''}
       <form id="editForm">
         <textarea
           id="commentText"
@@ -175,7 +174,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
         ></mr-upload>
         <div class="input-grid">
           ${this._renderEditFields()}
-          ${this._renderPresubmitErrorsAndWarnings()}
+          ${this._renderErrorsAndWarnings()}
 
           <span></span>
           <div class="edit-actions">
@@ -248,11 +247,11 @@ export class MrEditMetadata extends connectStore(LitElement) {
     `;
   }
 
-  _renderPresubmitErrorsAndWarnings() {
+  _renderErrorsAndWarnings() {
     const presubmitResponse = this.presubmitResponse || {};
     const presubmitWarnings = presubmitResponse.warnings || [];
     const presubmitErrors = presubmitResponse.errors || [];
-    return (presubmitWarnings.length || presubmitErrors.length) ?
+    return (this.error || presubmitWarnings.length || presubmitErrors.length) ?
       html`
         <span></span>
         <div>
@@ -264,6 +263,8 @@ export class MrEditMetadata extends connectStore(LitElement) {
           ${presubmitErrors.map((error) => html`
             <mr-error title=${error.why}>${error.value}</mr-error>
           `)}
+          ${this.error ? html`
+            <mr-error>${this.error}</mr-error>` : ''}
         </div>
       ` : '';
   }
@@ -655,7 +656,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
   }
 
   discard() {
-    const isDirty = this.getCommentContent() || !isEmptyObject(this.getDelta());
+    const isDirty = this.getCommentContent() || !isEmptyObject(this.delta);
     if (!isDirty || confirm('Discard your changes?')) {
       this.dispatchEvent(new CustomEvent('discard'));
     }
@@ -678,22 +679,43 @@ export class MrEditMetadata extends connectStore(LitElement) {
     }
   }
 
-  getDelta() {
+  get delta() {
+    try {
+      return this._getDelta();
+    } catch (e) {
+      if (!(e instanceof UserInputError)) throw e;
+      this.error = e.message;
+      return {};
+    }
+  }
+
+  _getDelta() {
     const result = {};
     const root = this.shadowRoot;
 
-    if (this._canEditStatus) {
-      const statusInput = root.querySelector('#statusInput');
-      if (statusInput) {
-        Object.assign(result, statusInput.getDelta(this.projectName));
+    const statusInput = root.querySelector('#statusInput');
+    if (this._canEditStatus && statusInput) {
+      const statusDelta = statusInput.delta;
+      const errorMessage = 'Invalid input for field: mergedInto';
+      if (statusDelta.mergedInto) {
+        result.mergedIntoRef = issueStringToRef(
+          this.projectName, statusDelta.mergedInto);
+        if (!result.mergedIntoRef) {
+          throw new UserInputError(errorMessage);
+        }
+      }
+      if (this.error === errorMessage) {
+        this.error = '';
+      }
+      if (statusDelta.status) {
+        result.status = statusDelta.status;
       }
     }
 
     if (this.isApproval) {
       if (this._canEditIssue && this.hasApproverPrivileges) {
-        this._addListChangesToDelta(
-          result, 'approversInput', 'approverRefsAdd', 'approverRefsRemove',
-          displayNameToUserRef);
+        this._updateDeltaWithAddedAndRemoved(
+          result, 'approvers', 'approverRefs', displayNameToUserRef);
       }
     } else {
       // TODO(zhangtiff): Consider representing baked-in fields such as owner,
@@ -720,23 +742,20 @@ export class MrEditMetadata extends connectStore(LitElement) {
       }
 
       if (this._canEditCC) {
-        this._addListChangesToDelta(result, 'ccInput',
-          'ccRefsAdd', 'ccRefsRemove', displayNameToUserRef);
+        this._updateDeltaWithAddedAndRemoved(
+          result, 'cc', 'ccRefs', displayNameToUserRef);
       }
 
       if (this._canEditIssue) {
-        this._addListChangesToDelta(result, 'labelsInput',
-          'labelRefsAdd', 'labelRefsRemove', labelStringToRef);
-
-        this._addListChangesToDelta(result, 'componentsInput',
-          'compRefsAdd', 'compRefsRemove', componentStringToRef);
-
-        this._addListChangesToDelta(result, 'blockedOnInput',
-          'blockedOnRefsAdd', 'blockedOnRefsRemove',
+        this._updateDeltaWithAddedAndRemoved(
+          result, 'labels', 'labelRefs', labelStringToRef);
+        this._updateDeltaWithAddedAndRemoved(
+          result, 'components', 'compRefs', componentStringToRef);
+        this._updateDeltaWithAddedAndRemoved(
+          result, 'blockedOn', 'blockedOnRefs',
           issueStringToRef.bind(null, this.projectName));
-
-        this._addListChangesToDelta(result, 'blockingInput',
-          'blockingRefsAdd', 'blockingRefsRemove',
+        this._updateDeltaWithAddedAndRemoved(
+          result, 'blocking', 'blockingRefs',
           issueStringToRef.bind(null, this.projectName));
       }
     }
@@ -744,9 +763,8 @@ export class MrEditMetadata extends connectStore(LitElement) {
     if (this._canEditIssue) {
       const fieldDefs = this.fieldDefs || [];
       fieldDefs.forEach(({fieldRef}) => {
-        const fieldNameInput = this._idForField(fieldRef.fieldName);
-        this._addListChangesToDelta(
-          result, fieldNameInput, 'fieldValsAdd', 'fieldValsRemove',
+        this._updateDeltaWithAddedAndRemoved(
+          result, fieldRef.fieldName, 'fieldVals',
           (v) => {
             return {
               fieldRef: {
@@ -773,7 +791,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
         // Don't run this functionality if the element has disconnected.
         if (!this.isConnected) return;
 
-        const delta = this.getDelta();
+        const delta = this.delta;
         const commentContent = this.getCommentContent();
         store.dispatch(ui.reportDirtyForm(
           this.formName, !isEmptyObject(delta) || Boolean(commentContent)));
@@ -783,24 +801,31 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this._debouncedProcessChanges();
   }
 
-  _addListChangesToDelta(delta, inputId, addedKey, removedKey, mapFn) {
-    const root = this.shadowRoot;
-    const input = root.querySelector(`#${inputId}`);
+  _updateDeltaWithAddedAndRemoved(delta, fieldName, key, mapFn) {
+    const input = this.shadowRoot.querySelector(`#${fieldName}Input`);
     if (!input) return;
-    const valuesAdded = input.getValuesAdded();
-    const valuesRemoved = input.getValuesRemoved();
-    if (valuesAdded && valuesAdded.length) {
-      if (!delta.hasOwnProperty(addedKey)) {
-        delta[addedKey] = [];
-      }
-      delta[addedKey].push(...valuesAdded.map(mapFn));
+
+    // TODO(ehmaldonado): Tell the user what format is a valid input.
+    const errorMessage = `Invalid input for field: ${fieldName}`;
+
+    this._addListChangesToDelta(
+      delta, input.getValuesAdded(), key + 'Add', errorMessage, mapFn);
+    this._addListChangesToDelta(
+      delta, input.getValuesRemoved(), key + 'Remove', errorMessage, mapFn);
+
+    if (this.error === errorMessage) {
+      this.error = '';
     }
-    if (valuesRemoved && valuesRemoved.length) {
-      if (!delta.hasOwnProperty(removedKey)) {
-        delta[removedKey] = [];
-      }
-      delta[removedKey].push(...valuesRemoved.map(mapFn));
+  }
+
+  _addListChangesToDelta(delta, values, key, errorMessage, mapFn) {
+    if (!values || !values.length) return;
+    const mappedValues = values.map(mapFn);
+    if (!mappedValues.every(Boolean)) {
+      throw new UserInputError(errorMessage);
     }
+    if (!delta.hasOwnProperty(key)) delta[key] = [];
+    delta[key].push(...mappedValues);
   }
 
   // This function exists because <label for="inputId"> doesn't work for custom

@@ -28,7 +28,7 @@ describe('mr-edit-status', () => {
   });
 
   it('delta empty when no changes', () => {
-    assert.deepEqual(element.getDelta(), {});
+    assert.deepEqual(element.delta, {});
   });
 
   it('change status', async () => {
@@ -42,9 +42,7 @@ describe('mr-edit-status', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
-      status: 'Old',
-    });
+    assert.deepEqual(element.delta, {status: 'Old'});
   });
 
   it('mark as duplicate', async () => {
@@ -58,13 +56,10 @@ describe('mr-edit-status', () => {
 
     await element.updateComplete;
 
-    element.shadowRoot.querySelector('#mergedIntoInput').setValue('chromium:123');
-    assert.deepEqual(element.getDelta(), {
+    element.shadowRoot.querySelector('#mergedIntoInput').setValue('proj:123');
+    assert.deepEqual(element.delta, {
       status: 'Duplicate',
-      mergedIntoRef: {
-        projectName: 'chromium',
-        localId: 123,
-      },
+      mergedInto: 'proj:123',
     });
   });
 
@@ -80,9 +75,9 @@ describe('mr-edit-status', () => {
 
     await element.updateComplete;
 
-    assert.deepEqual(element.getDelta(), {
+    assert.deepEqual(element.delta, {
       status: 'New',
-      mergedIntoRef: {},
+      mergedInto: '',
     });
   });
 });

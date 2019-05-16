@@ -4,10 +4,8 @@
 
 import {LitElement, html, css} from 'lit-element';
 
-import {issueStringToRef} from 'elements/shared/converters.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles';
 import './mr-edit-field.js';
-
 
 /**
  * `<mr-edit-status>`
@@ -139,22 +137,21 @@ export class MrEditStatus extends LitElement {
     this.status = this.initialStatus;
   }
 
-  // TODO(zhangtiff): Make mr-edit-status receive a projectName.
-  getDelta(projectName) {
+  get delta() {
     const result = {};
 
     if (this.status !== this.initialStatus) {
       result['status'] = this.status;
     }
 
-    if (this.initialStatus === 'Duplicate' && !this._showMergedInto) {
-      result['mergedIntoRef'] = {};
-    } else if (this._showMergedInto) {
+    if (this._showMergedInto) {
       const newMergedInto = this.shadowRoot.querySelector(
         '#mergedIntoInput').value;
       if (newMergedInto !== this.mergedInto) {
-        result['mergedIntoRef'] = issueStringToRef(projectName, newMergedInto);
+        result['mergedInto'] = newMergedInto;
       }
+    } else if (this.initialStatus === 'Duplicate') {
+      result['mergedInto'] = '';
     }
 
     return result;

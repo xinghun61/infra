@@ -56,8 +56,7 @@ export function issueStringToRef(defaultProjectName, idStr) {
 
   const matches = idStr.match(ISSUE_ID_REGEX);
   if (!matches) {
-    // TODO(zhangtiff): Add proper clientside form validation.
-    throw new Error('Bug has an invalid input format');
+    return null;
   }
   const projectName = matches[1] ? matches[1] : defaultProjectName;
   const localId = Number.parseInt(matches[2]);
