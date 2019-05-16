@@ -156,11 +156,16 @@ func getSwarmingStdoutsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 	defer cf()
 	results := make([]*swarming.SwarmingRpcsTaskOutput, len(IDs))
 	for i, ID := range IDs {
-		r, err := s.Task.Stdout(ID).Context(ctx).Do()
-		if err != nil {
+		var result *swarming.SwarmingRpcsTaskOutput
+		getResult := func() error {
+			var err error
+			result, err = s.Task.Stdout(ID).Context(ctx).Do()
+			return err
+		}
+		if err := swarmingCallWithRetries(ctx, getResult); err != nil {
 			return nil, errors.Annotate(err, fmt.Sprintf("get swarming stdout for task %s", ID)).Err()
 		}
-		results[i] = r
+		results[i] = result
 	}
 	return results, nil
 }
