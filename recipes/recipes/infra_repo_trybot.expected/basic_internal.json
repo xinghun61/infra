@@ -72,7 +72,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--patch_ref",
-      "https://chrome-internal.googlesource.com/infra/infra_internal@refs/changes/56/123456/7",
+      "https://chrome-internal.googlesource.com/infra/infra_internal@refs/heads/master:refs/changes/56/123456/7",
       "--revision",
       "infra_internal@HEAD"
     ],
