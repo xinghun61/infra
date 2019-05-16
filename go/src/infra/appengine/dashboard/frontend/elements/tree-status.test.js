@@ -33,7 +33,7 @@ suite('tree-status', () => {
         ]
     );
 
-    element.$.treeStatusAjax.generateRequest();
+    element._getTreeStatus();
     server.respond();
 
     flush(() => {
@@ -57,7 +57,7 @@ suite('tree-status', () => {
         ]
     );
 
-    element.$.treeStatusAjax.generateRequest();
+    element._getTreeStatus();
     server.respond();
 
     flush(() => {

@@ -8,10 +8,10 @@ import '@polymer/app-layout/app-header/app-header.js';
 import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/app-layout/app-scroll-effects/app-scroll-effects.js';
 import '@polymer/app-layout/app-scroll-effects/effects/waterfall.js';
-import '@polymer/iron-ajax/iron-ajax.js';
 import {timeOut} from '@polymer/polymer/lib/utils/async.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+import {prpcClient} from 'prpc.js';
 
 import 'last-updated-message.js';
 import 'tree-status.js';
@@ -53,17 +53,6 @@ export class ChopsdashApp extends PolymerElement {
       }
     </style>
     <link rel="stylesheet" type="text/css" href="/static/icons.css">
-    <iron-ajax
-      id="ajax"
-      url="/prpc/dashboard.ChopsServiceStatus/GetAllServicesData"
-      method="POST"
-      content-type="application/json"
-      accept="json"
-      json-prefix=")]}'"
-      on-response="_refreshCountdown"
-      handle-as="json"
-      last-response="{{ajaxResponse}}"
-      ></iron-ajax>
     <div id="app">
       <app-header reveals effects="waterfall">
         <app-toolbar>
@@ -112,7 +101,7 @@ export class ChopsdashApp extends PolymerElement {
   }
   static get is() { return 'chopsdash-app'; }
 
-  ready() {
+   ready() {
     super.ready();
     this._refreshData();
   }
@@ -134,32 +123,26 @@ export class ChopsdashApp extends PolymerElement {
         value: new Date().setHours(23, 50, 50, 0),
         observer: '_refreshData',
       },
-      loginUrl: {
-        type: String,
-      },
-      logoutUrl: {
-        type: String,
-      },
+      loginUrl: String,
+      logoutUrl: String,
       // Services that are not covered by an SLA.
-      nonSLAServices: {
-        type: Array,
-        computed: '_updateNonSLAServices(ajaxResponse)'
-      },
+      nonSLAServices: Array,
       // Services covered by an SLA.
-      services: {
-        type: Array,
-        computed: '_updateServices(ajaxResponse)'
-      },
-      user: {
-        type: String,
-      }
+      services: Array,
+      user: String,
     }
   }
 
   _refreshData() {
-    let body = {uptoTime: Math.floor(this.latestDateTs / 1000)};
-    this.$.ajax.body = JSON.stringify(body);
-    this.$.ajax.generateRequest();
+    const message = {uptoTime: Math.floor(this.latestDateTs / 1000)};
+    const promise = prpcClient.call(
+        'dashboard.ChopsServiceStatus', 'GetAllServicesData', message)
+    promise.then((resp) => {
+      this.nonSLAServices = resp.nonslaServices;
+      this.services = resp.services;
+    }, (error) => {
+      console.log(error);  // TODO(jojwang): display response errors in UI.
+    });
   }
 
   _refreshCountdown() {
@@ -178,14 +161,6 @@ export class ChopsdashApp extends PolymerElement {
         this.set('lastUpdated.relativeTime', lastRefresh + 1);
         this._countdown(lastRefresh + 1); }, update_message_time);
     }
-  }
-
-  _updateServices(jsonData) {
-    return jsonData.services;
-  }
-
-  _updateNonSLAServices(jsonData) {
-    return jsonData.nonslaServices;
   }
 }
 customElements.define(ChopsdashApp.is, ChopsdashApp);

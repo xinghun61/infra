@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import '@polymer/polymer/polymer-legacy.js';
-import '@polymer/iron-ajax/iron-ajax.js'
 import {timeOut} from '@polymer/polymer/lib/utils/async.js';
 import {html} from '@polymer/polymer/lib/utils/html-tag.js';
 import {PolymerElement} from '@polymer/polymer/polymer-element.js';
@@ -34,15 +33,6 @@ export class TreeStatus extends PolymerElement{
           width: 100%;
         }
       </style>
-      <iron-ajax
-        id="treeStatusAjax"
-        url="https://infra-status.appspot.com/current?format=json"
-        method="GET"
-        handle-as="json"
-        last-error="{{_statusErrorJson}}"
-        last-response="{{_statusJson}}"
-        on-response="_refresh"
-        debounce-duration="300"></iron-ajax>
       <div class="tree-banner" hidden$="[[!_hasError]]">
         Error fetching tree status
       </div>
@@ -55,7 +45,8 @@ export class TreeStatus extends PolymerElement{
 
   ready() {
     super.ready();
-    this.$.treeStatusAjax.generateRequest();
+    this._getTreeStatus();
+    this._refresh();
   }
 
   static get properties() {
@@ -81,13 +72,8 @@ export class TreeStatus extends PolymerElement{
         value: false,
       },
 
-      _statusErrorJson: {
-        type: Object,
-      },
-
-      _statusJson: {
-        type: Object,
-      },
+      _statusErrorJson: Object,
+      _statusJson: Object,
     }
   }
   _computeMessage(json) {
@@ -114,8 +100,16 @@ export class TreeStatus extends PolymerElement{
 
   _refresh() {
     timeOut.run(() => {
-      this.$.treeStatusAjax.generateRequest();
+      this._getTreeStatus();
     }, RELOAD_TIME);
+  }
+
+  _getTreeStatus() {
+    window.fetch(
+	'https://infra-status.appspot.com/current?format=json'
+    ).then((resp) => resp.json()).then((resp) => {
+      this._statusJson = resp;
+    });
   }
 }
 customElements.define(TreeStatus.is, TreeStatus);
