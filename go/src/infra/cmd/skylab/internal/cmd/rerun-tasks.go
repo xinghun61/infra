@@ -167,8 +167,13 @@ func getSwarmingResultsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 	defer cf()
 	results := make([]*swarming.SwarmingRpcsTaskResult, len(IDs))
 	for i, ID := range IDs {
-		r, err := s.Task.Result(ID).Context(ctx).Do()
-		if err != nil {
+		var r *swarming.SwarmingRpcsTaskResult
+		getResult := func() error {
+			var err error
+			r, err = s.Task.Result(ID).Context(ctx).Do()
+			return err
+		}
+		if err := swarmingCallWithRetries(ctx, getResult); err != nil {
 			return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for task %s", ID)).Err()
 		}
 		results[i] = r
