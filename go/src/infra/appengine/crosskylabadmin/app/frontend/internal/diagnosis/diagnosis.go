@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/timestamp"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/errors"
@@ -35,11 +36,25 @@ type BotTaskLister interface {
 	ListBotTasks(string) clients.BotTasksCursor
 }
 
+// Diagnosis contains information for diagnosing a bot's tasks.
+type Diagnosis struct {
+	Tasks []*fleet.Task
+	// IdleDuration is how long the bot was idle since the last
+	// task run.  This is only accurate to the second.
+	IdleDuration *duration.Duration
+}
+
+// Bot is a wrapper for bot info needed to pass to Diagnose.
+type Bot struct {
+	ID    string
+	State fleet.DutState
+}
+
 // Diagnose returns information about a bot based on its tasks.
-func Diagnose(ctx context.Context, sc BotTaskLister, botID string, s fleet.DutState) ([]*fleet.Task, error) {
-	c := sc.ListBotTasks(botID)
+func Diagnose(ctx context.Context, sc BotTaskLister, b Bot, now time.Time) (Diagnosis, error) {
+	c := sc.ListBotTasks(b.ID)
 	p := clients.Pager{Remaining: diagnosisTaskLimit}
-	b := newDiagnosisBuilder(s)
+	db := newDiagnosisBuilder(b.State, now)
 	for {
 		chunk := p.Next()
 		if chunk == 0 {
@@ -47,43 +62,53 @@ func Diagnose(ctx context.Context, sc BotTaskLister, botID string, s fleet.DutSt
 		}
 		ts, err := c.Next(ctx, int64(chunk))
 		if err != nil {
-			return b.tasks, errors.Reason("failed to list tasks for bot %s", botID).InternalReason(err.Error()).Err()
+			return db.diagnosis, errors.Annotate(err, "diagnose bot %s", b.ID).Err()
 		}
 		if len(ts) == 0 {
 			break
 		}
-		if done := b.consume(ts); done {
+		cont, err := db.consume(ts)
+		if err != nil {
+			return db.diagnosis, errors.Annotate(err, "diagnose bot %s", b.ID).Err()
+		}
+		if !cont {
 			break
 		}
 		p.Record(len(ts))
 	}
-	return b.tasks, nil
+	return db.diagnosis, nil
 }
 
 // diagnosisBuilder builds a slice of diagnosis tasks.
 type diagnosisBuilder struct {
 	annotator   stateAnnotator
-	tasks       []*fleet.Task
+	diagnosis   Diagnosis
+	now         time.Time
 	foundRepair bool
 	foundChange bool
 	done        bool
 }
 
-func newDiagnosisBuilder(s fleet.DutState) *diagnosisBuilder {
+func newDiagnosisBuilder(s fleet.DutState, now time.Time) *diagnosisBuilder {
 	return &diagnosisBuilder{
 		annotator: stateAnnotator{
 			prev: s,
 		},
+		now: now,
 	}
 }
 
 // consume consumes tasks to build a diagnosis.
-// This method returns true if no more tasks are needed.
-func (b *diagnosisBuilder) consume(s []*swarming.SwarmingRpcsTaskResult) bool {
+// This method returns true while more tasks are needed.
+// This method returns any error encountered.
+func (b *diagnosisBuilder) consume(s []*swarming.SwarmingRpcsTaskResult) (bool, error) {
 	if b.done {
-		return true
+		return true, nil
 	}
 	for _, t := range s {
+		if err := b.updateIdleDuration(t); err != nil {
+			return false, errors.Annotate(err, "find idle duration").Err()
+		}
 		a := b.annotator.annotate(t)
 		// Make it convenient to track that each task is only
 		// added once.
@@ -94,7 +119,7 @@ func (b *diagnosisBuilder) consume(s []*swarming.SwarmingRpcsTaskResult) bool {
 			}
 			// TODO(ayatane): Maybe log conversion errors?
 			ft, _ := convertTask(t, a)
-			b.tasks = append(b.tasks, ft)
+			b.diagnosis.Tasks = append(b.diagnosis.Tasks, ft)
 			added = true
 		}
 		// Add the newest repair task to the diagnosis.
@@ -110,12 +135,27 @@ func (b *diagnosisBuilder) consume(s []*swarming.SwarmingRpcsTaskResult) bool {
 				continue
 			}
 			b.done = true
-			return true
+			return false, nil
 		}
 		b.foundChange = true
 		addTask()
 	}
-	return false
+	return true, nil
+}
+
+func (b *diagnosisBuilder) updateIdleDuration(t *swarming.SwarmingRpcsTaskResult) error {
+	d, err := clients.TimeSinceBotTaskN(t, b.now)
+	if err != nil {
+		return err
+	}
+	// Use the new duration if we don't have a duration yet or we
+	// found a shorter idle duration.  This doesn't check for
+	// nanosecond/less than second resolution for simplicity since
+	// we don't need that level of precision.
+	if b.diagnosis.IdleDuration == nil || b.diagnosis.IdleDuration.Seconds > d.Seconds {
+		b.diagnosis.IdleDuration = d
+	}
+	return nil
 }
 
 func isRepair(t *swarming.SwarmingRpcsTaskResult) bool {

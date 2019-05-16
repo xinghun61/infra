@@ -17,6 +17,7 @@ package frontend
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
@@ -265,16 +266,16 @@ func addTaskInfoToSummaries(ctx context.Context, sc clients.SwarmingClient, bsm 
 // addTaskInfoToSummary updates the bot summary with information derived
 // from the bot's tasks.
 func addTaskInfoToSummary(ctx context.Context, sc clients.SwarmingClient, botID string, bs *fleet.BotSummary) error {
-	d, err := getIdleDuration(ctx, sc, botID)
-	if err != nil {
-		return errors.Annotate(err, "failed to get idle duration of bot %s", botID).Err()
+	b := diagnosis.Bot{
+		ID:    botID,
+		State: bs.DutState,
 	}
-	bs.IdleDuration = d
-	ts, err := diagnosis.Diagnose(ctx, sc, botID, bs.DutState)
+	d, err := diagnosis.Diagnose(ctx, sc, b, time.Now())
 	if err != nil {
 		return errors.Annotate(err, "failed to get diagnosis for bot %s", botID).Err()
 	}
-	bs.Diagnosis = ts
+	bs.Diagnosis = d.Tasks
+	bs.IdleDuration = d.IdleDuration
 	return nil
 }
 
