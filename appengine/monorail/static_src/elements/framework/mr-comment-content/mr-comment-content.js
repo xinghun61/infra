@@ -28,7 +28,10 @@ export class MrCommentContent extends connectStore(LitElement) {
     return {
       content: {type: String},
       commentReferences: {type: Object},
-      isDeleted: {type: Boolean},
+      isDeleted: {
+        type: Boolean,
+        reflect: true,
+      },
       projectName: {type: String},
     };
   }
@@ -41,7 +44,7 @@ export class MrCommentContent extends connectStore(LitElement) {
         line-height: 130%;
         font-family: var(--mr-toggled-font-family);
       }
-      :host[isDeleted] {
+      :host([isDeleted]) {
         color: #888;
         font-style: italic;
       }

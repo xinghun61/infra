@@ -40,7 +40,6 @@ export class MrComment extends LitElement {
     return {
       comment: {type: Object},
       headingLevel: {type: String},
-      quickMode: {type: Boolean},
       highlighted: {
         type: Boolean,
         reflect: true,
@@ -132,13 +131,10 @@ export class MrComment extends LitElement {
 
           ${this._renderByline()}
         </div>
-        ${_shouldOfferCommentOptions(this.quickMode, this.comment) ? html`
+        ${_shouldOfferCommentOptions(this.comment) ? html`
           <div class="comment-options">
             <mr-dropdown
-              .items=${_commentOptions(
-                  this._isExpandedIfDeleted,
-                  this.comment,
-                  this._toggleHideDeletedComment.bind(this))}
+              .items=${_commentOptions(this._isExpandedIfDeleted, this.comment, this._toggleHideDeletedComment.bind(this))}
               icon="more_vert"
             ></mr-dropdown>
           </div>
@@ -152,11 +148,10 @@ export class MrComment extends LitElement {
       return html`
         by
         <mr-user-link .userRef=${this.comment.commenter}></mr-user-link>
-        ${!this.quickMode ? html`
           on
           <chops-timestamp
-              timestamp=${this.comment.timestamp}></chops-timestamp>
-        ` : ''}
+            .timestamp=${this.comment.timestamp}
+          ></chops-timestamp>
       `;
     } else {
       return html`<span class="deleted-comment-notice">Deleted</span>`;
@@ -194,19 +189,17 @@ export class MrComment extends LitElement {
           .content=${this.comment.content}
           ?isDeleted=${this.comment.isDeleted}
         ></mr-comment-content>
-        ${this.quickMode ? '' : html`
-          <div ?hidden=${this.comment.descriptionNum}>
-            ${(this.comment.attachments || []).map((attachment) => html`
-              <mr-attachment
-                .attachment=${attachment}
-                projectName=${this.comment.projectName}
-                localId=${this.comment.localId}
-                sequenceNum=${this.comment.sequenceNum}
-                ?canDelete=${this.comment.canDelete}
-              ></mr-attachment>
-            `)}
-          </div>
-        `}
+        <div ?hidden=${this.comment.descriptionNum}>
+          ${(this.comment.attachments || []).map((attachment) => html`
+            <mr-attachment
+              .attachment=${attachment}
+              projectName=${this.comment.projectName}
+              localId=${this.comment.localId}
+              sequenceNum=${this.comment.sequenceNum}
+              ?canDelete=${this.comment.canDelete}
+            ></mr-attachment>
+          `)}
+        </div>
       </div>
     `;
   }
@@ -220,8 +213,8 @@ function _shouldShowComment(isExpandedIfDeleted, comment) {
   return !comment.isDeleted || isExpandedIfDeleted;
 }
 
-function _shouldOfferCommentOptions(quickMode, comment) {
-  return !quickMode && (comment.canDelete || comment.canFlag);
+function _shouldOfferCommentOptions(comment) {
+  return comment.canDelete || comment.canFlag;
 }
 
 function _commentOptions(isExpandedIfDeleted, comment, toggleHandler) {

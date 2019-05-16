@@ -27,7 +27,6 @@ export class MrCommentList extends connectStore(LitElement) {
     this.commentsShownCount = 2;
     this.comments = [];
     this.headingLevel = 4;
-    this.quickMode = false;
 
     this.issuePermissions = [];
     this.focusId = null;
@@ -40,7 +39,6 @@ export class MrCommentList extends connectStore(LitElement) {
       commentsShownCount: {type: Number},
       comments: {type: Array},
       headingLevel: {type: Number},
-      quickMode: {type: Boolean},
 
       issuePermissions: {type: Array},
       focusId: {type: String},
@@ -126,7 +124,6 @@ export class MrCommentList extends connectStore(LitElement) {
           .comment=${comment}
           headingLevel=${this.headingLevel}
           ?highlighted=${'c' + comment.sequenceNum === this.focusId}
-          ?quickMode=${this.quickMode}
       ></mr-comment>`;
   }
 

@@ -102,10 +102,10 @@
       <h3 class="visually_hidden">Issue description</h3>
       <ezt-comments
         id="ezt-comments"
-        comment-list="[comment_list]"
-        description-list="[description_list]"
-        issue-id="[issue.local_id]"
-        project-name="[projectname]"
+        commentList="[comment_list]"
+        descriptionList="[description_list]"
+        issueId="[issue.local_id]"
+        projectName="[projectname]"
       ></ezt-comments>
     </div>
   </div>
@@ -133,7 +133,7 @@
 runOnLoad(function() {
   window.getTSMonClient().recordIssueDetailTiming();
 
-  $('ezt-comments').initialize();
+  $('ezt-comments').initializeState();
 
   $('mr-flipper-slot').appendChild(document.createElement('mr-flipper'));
   const mrCodeFontToggle = document.createElement('mr-code-font-toggle');
