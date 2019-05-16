@@ -73,6 +73,10 @@ func TestDiagnose(t *testing.T) {
 	})
 }
 
+func makeTime(seq int) time.Time {
+	return time.Unix(int64(seq), 0).UTC()
+}
+
 func makeTs(seq int) *timestamp.Timestamp {
 	return &timestamp.Timestamp{Seconds: int64(seq)}
 }
@@ -86,7 +90,7 @@ func makeTask(name string, state string, seq int) *swarming.SwarmingRpcsTaskResu
 				Value: []string{state},
 			},
 		},
-		StartedTs: time.Unix(int64(seq), 0).UTC().Format(clients.SwarmingTimeLayout),
+		StartedTs: makeTime(seq).Format(clients.SwarmingTimeLayout),
 	}
 }
 
