@@ -30,10 +30,12 @@ import (
 
 const diagnosisTaskLimit = 200
 
+// BotTaskLister is the interface used by Diagnose to list bot tasks.
 type BotTaskLister interface {
 	ListBotTasks(string) clients.BotTasksCursor
 }
 
+// Diagnose returns information about a bot based on its tasks.
 func Diagnose(ctx context.Context, sc BotTaskLister, botID string, s fleet.DutState) ([]*fleet.Task, error) {
 	c := sc.ListBotTasks(botID)
 	p := clients.Pager{Remaining: diagnosisTaskLimit}
