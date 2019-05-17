@@ -20,6 +20,7 @@ import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import {APPROVER_RESTRICTED_STATUSES, STATUS_ENUM_TO_TEXT, TEXT_TO_STATUS_ENUM,
   STATUS_CLASS_MAP, CLASS_ICON_MAP, APPROVAL_STATUSES,
 } from 'elements/shared/approval-consts.js';
+import {commentListToDescriptionList} from 'elements/shared/converters.js';
 
 
 /**
@@ -243,10 +244,10 @@ export class MrApprovalCard extends connectStore(LitElement) {
     }
     const commentsByApproval = issue.commentsByApprovalName(state);
     if (commentsByApproval && this.fieldName
-      && commentsByApproval.has(this.fieldName)) {
-      this.comments = commentsByApproval.get(this.fieldName);
-
-      this._allSurveys = this.comments.filter((c) => c.descriptionNum);
+        && commentsByApproval.has(this.fieldName)) {
+      const comments = commentsByApproval.get(this.fieldName);
+      this.comments = comments.slice(1);
+      this._allSurveys = commentListToDescriptionList(comments);
     }
     this.focusId = ui.focusId(state);
     this.user = user.user(state);
@@ -295,7 +296,7 @@ export class MrApprovalCard extends connectStore(LitElement) {
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
 
     const commentContent = form.getCommentContent();
-    const approvalDelta = form.getDelta();
+    const approvalDelta = form.delta;
     if (approvalDelta.status) {
       approvalDelta.status = TEXT_TO_STATUS_ENUM[approvalDelta.status];
     }

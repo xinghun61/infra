@@ -12,6 +12,7 @@ import * as issue from 'elements/reducers/issue.js';
 import 'elements/chops/chops-checkbox/chops-checkbox.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {commentListToDescriptionList} from 'elements/shared/converters.js';
 
 
 /**
@@ -59,14 +60,14 @@ export class MrEditDescription extends connectStore(LitElement) {
             rel="stylesheet">
       <chops-dialog>
         <h3 class="medium-heading">
-          Edit ${this._displayedTitle}
+          Edit ${this._title}
         </h3>
         <textarea
           id="description"
           class="content"
-          @keyup=${this._updateDisplayedContent}
-          @change=${this._updateDisplayedContent}
-          value=${this._displayedContent}
+          @keyup=${this._setEditedDescription}
+          @change=${this._setEditedDescription}
+          .value=${this._editedDescription}
         ></textarea>
         <h3 class="medium-heading">
           Add attachments
@@ -113,28 +114,28 @@ export class MrEditDescription extends connectStore(LitElement) {
 
   static get properties() {
     return {
-      comments: {type: Array},
+      commentsByApproval: {type: Array},
       issueRef: {type: Object},
+      fieldName: {type: String},
       _attachmentError: {type: String},
       _attachments: {type: Array},
       _boldLines: {type: Array},
-      _displayedContent: {type: String},
-      _displayedTitle: {type: String},
-      _fieldName: {type: String},
+      _editedDescription: {type: String},
+      _title: {type: String},
       _keptAttachmentIds: {type: Object},
       _sendEmail: {type: Boolean},
     };
   }
 
   stateChanged(state) {
-    this.comments = issue.comments(state);
+    this.commentsByApproval = issue.commentsByApprovalName(state);
     this.issueRef = issue.issueRef(state);
   }
 
   async open(e) {
     await this.updateComplete;
     this.shadowRoot.querySelector('chops-dialog').open();
-    this._fieldName = e.detail.fieldName;
+    this.fieldName = e.detail.fieldName;
     this.reset();
   }
 
@@ -150,8 +151,8 @@ export class MrEditDescription extends connectStore(LitElement) {
       uploader.reset();
     }
 
-    // Sets _displayedContent and _displayedTitle.
-    this._initializeView(this.comments, this._fieldName);
+    // Sets _editedDescription and _title.
+    this._initializeView(this.commentsByApproval, this.fieldName);
 
     this.shadowRoot.querySelectorAll('.kept-attachment').forEach((checkbox) => {
       checkbox.checked = true;
@@ -159,10 +160,6 @@ export class MrEditDescription extends connectStore(LitElement) {
     this.shadowRoot.querySelector('#sendEmail').checked = true;
 
     this._sendEmail = true;
-
-    // Force description to be set to the property value.
-    this.shadowRoot.querySelector('#description').value =
-      this._displayedContent;
   }
 
   async cancel() {
@@ -189,13 +186,13 @@ export class MrEditDescription extends connectStore(LitElement) {
         message.uploads = uploads;
       }
 
-      if (!this._fieldName) {
+      if (!this.fieldName) {
         store.dispatch(issue.update(message));
       } else {
         // This is editing an approval if there is no field name.
         message.fieldRef = {
           type: fieldTypes.APPROVAL_TYPE,
-          fieldName: this._fieldName,
+          fieldName: this.fieldName,
         };
         store.dispatch(issue.updateApproval(message));
       }
@@ -206,9 +203,9 @@ export class MrEditDescription extends connectStore(LitElement) {
     }
   }
 
-  _updateDisplayedContent(e) {
+  _setEditedDescription(e) {
     const target = e.target;
-    this._displayedContent = target.value;
+    this._editedDescription = target.value;
   }
 
   _keptAttachmentIdsChanged(e) {
@@ -221,33 +218,21 @@ export class MrEditDescription extends connectStore(LitElement) {
     }
   }
 
-  _initializeView(comments, fieldName) {
-    this._displayedTitle = fieldName ? `${fieldName} Survey` : 'Description';
+  _initializeView(commentsByApproval, fieldName) {
+    this._title = fieldName ? `${fieldName} Survey` : 'Description';
+    const key = fieldName || '';
+    if (!commentsByApproval || !commentsByApproval.has(key)) return;
+    const comments = commentListToDescriptionList(commentsByApproval.get(key));
 
-    if (!comments || comments.length === 0) return;
+    const comment = comments[comments.length - 1];
 
-    // Get description or survey from list of comments.
-    for (let i = comments.length - 1; i >= 0; i--) {
-      const comment = comments[i];
-      if (this._isDescription(comment, fieldName)) {
-        if (comment.attachments) {
-          this._keptAttachmentIds = new Set(comment.attachments.map(
-            (attachment) => Number.parseInt(attachment.attachmentId)));
-          this._attachments = comment.attachments;
-        }
-        this._processRawContent(comment.content);
-
-        break;
-      }
+    if (comment.attachments) {
+      this._keptAttachmentIds = new Set(comment.attachments.map(
+        (attachment) => Number.parseInt(attachment.attachmentId)));
+      this._attachments = comment.attachments;
     }
-  }
 
-  _isDescription(comment, fieldName) {
-    if (!comment.descriptionNum) return false;
-    if (!fieldName && !comment.approvalRef) return true;
-    if (fieldName && comment.approvalRef) {
-      return comment.approvalRef.fieldName === fieldName;
-    }
+    this._processRawContent(comment.content);
   }
 
   _processRawContent(content) {
@@ -268,11 +253,11 @@ export class MrEditDescription extends connectStore(LitElement) {
     });
 
     this._boldLines = boldLines;
-    this._displayedContent = cleanContent;
+    this._editedDescription = cleanContent;
   }
 
   _markupNewContent() {
-    const lines = this._displayedContent.trim().split('\n');
+    const lines = this._editedDescription.trim().split('\n');
     const markedLines = lines.map((line) => {
       let markedLine = line;
       const matchingBoldLine = this._boldLines.find(

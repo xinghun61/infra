@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import {connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
@@ -16,111 +16,114 @@ import {arrayToEnglish} from 'elements/shared/helpers.js';
  * Display for showing whether an issue is restricted.
  *
  */
-export class MrRestrictionIndicator extends connectStore(PolymerElement) {
-  static get template() {
+export class MrRestrictionIndicator extends connectStore(LitElement) {
+  static get styles() {
+    return css`
+      :host {
+        width: 100%;
+        margin-top: 0;
+        background-color: var(--monorail-metadata-toggled-bg);
+        border-bottom: var(--chops-normal-border);
+        font-size: var(--chops-main-font-size);
+        padding: 0.25em 8px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+      }
+      :host([showWarning]) {
+        background-color: var(--chops-red-700);
+        color: white;
+        font-weight: bold;
+      }
+      :host([showWarning]) i {
+        color: white;
+      }
+      :host([hidden]) {
+        display: none;
+      }
+      i.material-icons {
+        color: var(--chops-primary-icon-color);
+        font-size: var(--chops-icon-font-size);
+      }
+      .lock-icon {
+        margin-right: 4px;
+      }
+      i.warning-icon {
+        margin-right: 4px;
+      }
+      i[hidden] {
+        display: none;
+      }
+    `;
+  }
+
+  render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
-      <style>
-        :host {
-          width: 100%;
-          margin-top: 0;
-          background-color: var(--monorail-metadata-toggled-bg);
-          border-bottom: var(--chops-normal-border);
-          font-size: var(--chops-main-font-size);
-          padding: 0.25em 8px;
-          box-sizing: border-box;
-          display: flex;
-          flex-direction: row;
-          justify-content: flex-start;
-          align-items: center;
-        }
-        :host([show-notice]) {
-          background-color: var(--chops-red-700);
-          color: white;
-          font-weight: bold;
-        }
-        :host([show-notice]) i {
-          color: white;
-        }
-        :host([hidden]) {
-          display: none;
-        }
-        i.material-icons {
-          color: var(--chops-primary-icon-color);
-          font-size: var(--chops-icon-font-size);
-        }
-        .lock-icon {
-          margin-right: 4px;
-        }
-        i.warning-icon {
-          margin-right: 4px;
-        }
-        i[hidden] {
-          display: none;
-        }
-      </style>
       <i
         class="lock-icon material-icons"
         icon="lock"
-        hidden$="[[!_restrictionText]]"
-        title$="[[_restrictionText]]"
+        ?hidden=${!this._restrictionText}
+        title=${this._restrictionText}
       >
         lock
       </i>
       <i
         class="warning-icon material-icons"
         icon="warning"
-        hidden$="[[!showNotice]]"
-        title$="[[_noticeText]]"
-    >
+        ?hidden=${!this.showWarning}
+        title=${this._warningText}
+      >
         warning
       </i>
-      [[_combinedText]]
+      ${this._combinedText}
     `;
-  }
-
-  static get is() {
-    return 'mr-restriction-indicator';
   }
 
   static get properties() {
     return {
       restrictions: Object,
       prefs: Object,
-      _restrictionText: {
-        type: String,
-        computed: '_computeRestrictionText(restrictions)',
-      },
-      _noticeText: {
-        type: String,
-        computed: '_computeNoticeText(restrictions, prefs)',
-      },
-      showNotice: {
-        type: String,
-        reflectToAttribute: true,
-        computed: '_computeShowNotice(_noticeText)',
-      },
-      _combinedText: {
-        type: String,
-        computed: '_computeCombinedText(_restrictionText, _noticeText)',
-      },
       hidden: {
         type: Boolean,
-        reflectToAttribute: true,
-        computed: '_computeHidden(_combinedText)',
+        reflect: true,
+      },
+      showWarning: {
+        type: Boolean,
+        reflect: true,
       },
     };
   }
 
-  stateChanged(state) {
-    this.setProperties({
-      restrictions: issue.restrictions(state),
-      prefs: user.user(state).prefs,
-    });
+  constructor() {
+    super();
+
+    this.hidden = true;
+    this.showWarning = false;
+    this.prefs = {};
   }
 
-  _computeNoticeText(restrictions, prefs) {
+  stateChanged(state) {
+    this.restrictions = issue.restrictions(state);
+    this.prefs = user.user(state).prefs;
+  }
+
+  update(changedProperties) {
+    if (changedProperties.has('prefs')
+        || changedProperties.has('restrictions')) {
+      this.hidden = !this._combinedText;
+
+      this.showWarning = !!this._warningText;
+    }
+
+    super.update(changedProperties);
+  }
+
+  get _warningText() {
+    const {restrictions, prefs} = this;
     if (!prefs) return '';
     if (!restrictions) return '';
     if ('view' in restrictions && restrictions['view'].length) return '';
@@ -130,20 +133,13 @@ export class MrRestrictionIndicator extends connectStore(PolymerElement) {
     return '';
   }
 
-  _computeShowNotice(_noticeText) {
-    return _noticeText != '';
+  get _combinedText() {
+    if (this._warningText) return this._warningText;
+    return this._restrictionText;
   }
 
-  _computeCombinedText(_restrictionText, _noticeText) {
-    if (_noticeText) return _noticeText;
-    return _restrictionText;
-  }
-
-  _computeHidden(_combinedText) {
-    return !_combinedText;
-  }
-
-  _computeRestrictionText(restrictions) {
+  get _restrictionText() {
+    const {restrictions} = this;
     if (!restrictions) return;
     if ('view' in restrictions && restrictions['view'].length) {
       return `Only users with ${arrayToEnglish(restrictions['view'])
@@ -159,4 +155,4 @@ export class MrRestrictionIndicator extends connectStore(PolymerElement) {
   }
 }
 
-customElements.define(MrRestrictionIndicator.is, MrRestrictionIndicator);
+customElements.define('mr-restriction-indicator', MrRestrictionIndicator);

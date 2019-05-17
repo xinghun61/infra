@@ -225,7 +225,7 @@ export class MrPhase extends connectStore(LitElement) {
 
   save() {
     const form = this.shadowRoot.querySelector('#metadataForm');
-    const delta = form.getDelta();
+    const delta = form.delta;
 
     if (delta.fieldValsAdd) {
       delta.fieldValsAdd = delta.fieldValsAdd.map(

@@ -44,10 +44,10 @@ export class MrIssuePage extends connectStore(LitElement) {
           --mr-toggled-font-family: inherit;
           --monorail-metadata-toggled-bg: var(--monorail-metadata-open-bg);
         }
-        :host([issue-closed]) {
+        :host([issueClosed]) {
           --monorail-metadata-toggled-bg: var(--monorail-metadata-closed-bg);
         }
-        :host([code-font]) {
+        :host([codeFont]) {
           --mr-toggled-font-family: Monospace;
         }
         .container-issue {
@@ -258,6 +258,10 @@ export class MrIssuePage extends connectStore(LitElement) {
         type: Boolean,
         reflect: true,
       },
+      codeFont: {
+        type: Boolean,
+        reflect: true,
+      },
       issuePermissions: {type: Object},
       issueRef: {type: Object},
       prefs: {type: Object},
@@ -270,6 +274,7 @@ export class MrIssuePage extends connectStore(LitElement) {
     this.issueRef = {};
     this.issuePermissions = [];
     this.pref = {};
+    this.codeFont = false;
   }
 
   stateChanged(state) {
@@ -285,11 +290,7 @@ export class MrIssuePage extends connectStore(LitElement) {
 
   update(changedProperties) {
     if (changedProperties.has('prefs')) {
-      if (this.prefs.get('code_font') === 'true') {
-        this.setAttribute('code-font', '');
-      } else if (this.hasAttribute('code-font')) {
-        this.removeAttribute('code-font');
-      }
+      this.codeFont = this.prefs.get('code_font') === 'true';
     }
     super.update(changedProperties);
   }

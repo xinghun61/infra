@@ -5,19 +5,13 @@
 import {css} from 'lit-element';
 
 export const SHARED_STYLES = css`
-  :root {
+  :host {
     --mr-edit-field-padding: 0.125em 4px;
     --mr-edit-field-width: 90%;
-    --mr-edit-field-styles: {
-      box-sizing: border-box;
-      width: var(--mr-edit-field-width);
-      padding: var(--mr-edit-field-padding);
-      font-size: var(--chops-main-font-size);
-    };
-
     --mr-input-grid-gap: 6px;
     --mr-content-heading-color: hsl(227, 60%, 39%);
   }
+
   .linkify {
     text-decoration: underline;
     color: var(--chops-link-color);

@@ -6,7 +6,6 @@ import {assert} from 'chai';
 import {MrIssueHeader} from './mr-issue-header.js';
 import {store} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {ISSUE_EDIT_PERMISSION,
   ISSUE_FLAGSPAM_PERMISSION} from 'elements/shared/permissions.js';
 
@@ -89,18 +88,18 @@ describe('mr-issue-header', () => {
       'Convert issue template'));
   });
 
-  it('shows edit description link', () => {
+  it('shows edit description link', async () => {
     element.issuePermissions = [ISSUE_EDIT_PERMISSION];
 
-    flush();
+    await element.updateComplete;
 
     assert.isNotNull(element.shadowRoot.querySelector('a'));
   });
 
-  it('no edit description link without edit issue permission', () => {
+  it('no edit description link without edit issue permission', async () => {
     element.issuePermissions = [];
 
-    flush();
+    await element.updateComplete;
 
     assert.isNull(element.shadowRoot.querySelector('a'));
   });

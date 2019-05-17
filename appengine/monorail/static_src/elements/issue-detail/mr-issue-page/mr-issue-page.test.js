@@ -107,17 +107,17 @@ describe('mr-issue-page', () => {
   it('code font pref toggles attribute', async () => {
     await element.updateComplete;
 
-    assert.isFalse(element.hasAttribute('code-font'));
+    assert.isFalse(element.hasAttribute('codeFont'));
 
     element.prefs = new Map([['code_font', 'true']]);
     await element.updateComplete;
 
-    assert.isTrue(element.hasAttribute('code-font'));
+    assert.isTrue(element.hasAttribute('codeFont'));
 
     element.prefs = new Map([['code_font', 'false']]);
     await element.updateComplete;
 
-    assert.isFalse(element.hasAttribute('code-font'));
+    assert.isFalse(element.hasAttribute('codeFont'));
   });
 
   it('undeleting issue only shown if you have permissions', async () => {

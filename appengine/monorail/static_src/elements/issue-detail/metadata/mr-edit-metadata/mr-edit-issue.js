@@ -38,7 +38,7 @@ export class MrEditIssue extends connectStore(LitElement) {
         <a href="#makechanges">Add a comment and make changes</a>
       </h2>
       <mr-edit-metadata
-        .formName="Issue Edit"
+        formName="Issue Edit"
         .ownerName=${this._ownerDisplayName(issue.ownerRef)}
         .cc=${issue.ccRefs}
         .status=${issue.statusRef && issue.statusRef.status}

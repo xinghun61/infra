@@ -2,20 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html, css} from 'lit-element';
 
 import 'elements/issue-detail/mr-flipper/mr-flipper.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
-import 'elements//chops/chops-timestamp/chops-timestamp.js';
+import 'elements/chops/chops-timestamp/chops-timestamp.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import 'elements/framework/links/mr-user-link/mr-user-link.js';
 import 'elements/framework/links/mr-crbug-link/mr-crbug-link.js';
 import 'elements/framework/mr-code-font-toggle/mr-code-font-toggle.js';
 import 'elements/framework/mr-dropdown/mr-dropdown.js';
-import 'elements/shared/mr-shared-styles.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_DELETE_PERMISSION,
   ISSUE_FLAGSPAM_PERMISSION} from 'elements/shared/permissions.js';
 import {prpcClient} from 'prpc-client-instance.js';
@@ -31,10 +30,11 @@ Are you sure you want to delete this issue?`;
  * The header for a given launch issue.
  *
  */
-export class MrIssueHeader extends connectStore(PolymerElement) {
-  static get template() {
-    return html`
-      <style>
+export class MrIssueHeader extends connectStore(LitElement) {
+  static get styles() {
+    return [
+      SHARED_STYLES,
+      css`
         :host {
           width: 100%;
           margin-top: 0;
@@ -128,92 +128,93 @@ export class MrIssueHeader extends connectStore(PolymerElement) {
             margin-bottom: 0.5em;
           }
         }
-      </style>
+      `,
+    ];
+  }
+
+  render() {
+    return html`
       <div class="main-text-outer">
         <div class="main-text">
           <h1>
-            <template is="dom-if" if="[[issue.isSpam]]">
+            ${this.issue.isSpam ? html`
               <span class="spam-notice">Spam</span>
-            </template>
-            Issue [[issue.localId]]: [[issue.summary]]
+            `: ''}
+            Issue ${this.issue.localId}: ${this.issue.summary}
           </h1>
           <small class="byline">
             Reported by
-            <mr-user-link user-ref="[[issue.reporterRef]]"></mr-user-link>
-            on <chops-timestamp timestamp="[[issue.openedTimestamp]]"></chops-timestamp>
+            <mr-user-link .userRef=${this.issue.reporterRef}></mr-user-link>
+            on <chops-timestamp .timestamp=${this.issue.openedTimestamp}></chops-timestamp>
           </small>
         </div>
       </div>
       <div class="issue-actions">
         <div class="code-font-and-description-edit">
           <div>
-            <mr-crbug-link issue="[[issue]]"></mr-crbug-link>
+            <mr-crbug-link .issue=${this.issue}></mr-crbug-link>
             <mr-code-font-toggle
-              user-display-name="[[userDisplayName]]"
+              .userDisplayName=${this.userDisplayName}
             ></mr-code-font-toggle>
           </div>
-          <template is="dom-if" if="[[_canEditIssue]]">
-            <a on-click="_openEditDescription">Edit description</a>
-          </template>
+          ${this._canEditIssue ? html`
+            <a @click=${this._openEditDescription}>Edit description</a>
+          `: ''}
         </div>
-        <template is="dom-if" if="[[_issueOptions.length]]">
+        ${this._issueOptions.length ? html`
           <mr-dropdown
-            items="[[_issueOptions]]"
+            .items=${this._issueOptions}
             icon="more_vert"
           ></mr-dropdown>
-        </template>
+        ` : ''}
         <mr-flipper></mr-flipper>
       </div>
     `;
   }
 
-  static get is() {
-    return 'mr-issue-header';
-  }
-
   static get properties() {
     return {
-      userDisplayName: String,
-      issue: {
-        type: Object,
-        value: () => {},
-      },
-      issuePermissions: Object,
-      projectTemplates: Array,
-      _canEditIssue: {
-        type: Boolean,
-        computed: '_computeCanEditIssue(issuePermissions)',
-      },
-      _issueOptions: {
-        type: Array,
-        computed: `_computeIssueOptions(issuePermissions, issue.isSpam,
-          isRestricted, projectTemplates)`,
-      },
-      _action: String,
-      _targetProjectError: String,
+      userDisplayName: {type: String},
+      issue: {type: Object},
+      issuePermissions: {type: Object},
+      isRestricted: {type: Boolean},
+      projectTemplates: {type: Array},
+      _action: {type: String},
+      _targetProjectError: {type: String},
     };
   }
 
+  constructor() {
+    super();
+    this.issuePermissions = [];
+    this.projectTemplates = [];
+    this.issue = {};
+    this.isRestricted = false;
+  }
+
   stateChanged(state) {
-    this.setProperties({
-      issue: issue.issue(state),
-      issuePermissions: issue.permissions(state),
-      projectTemplates: project.project(state).templates,
-    });
+    this.issue = issue.issue(state);
+    this.issuePermissions = issue.permissions(state);
+    this.projectTemplates = project.project(state).templates;
+
+    const restrictions = issue.restrictions(state);
+    this.isRestricted = restrictions && Object.keys(restrictions).length;
   }
 
-  _computeCanEditIssue(issuePermissions) {
-    return (issuePermissions || []).includes(ISSUE_EDIT_PERMISSION);
+  get _canEditIssue() {
+    return this.issuePermissions.includes(ISSUE_EDIT_PERMISSION);
   }
 
-  _computeIssueOptions(issuePermissions, isSpam, isRestricted,
-    projectTemplates) {
+  get _issueOptions() {
     // We create two edit Arrays for the top and bottom half of the menu,
     // to be separated by a separator in the UI.
     const editOptions = [];
     const riskyOptions = [];
-    const permissions = issuePermissions || [];
-    const templates = projectTemplates || [];
+    const isSpam = this.issue.isSpam;
+    const isRestricted = this.isRestricted;
+
+    const permissions = this.issuePermissions;
+    const templates = this.projectTemplates;
 
 
     if (permissions.includes(ISSUE_FLAGSPAM_PERMISSION)) {
@@ -325,4 +326,4 @@ export class MrIssueHeader extends connectStore(PolymerElement) {
   }
 }
 
-customElements.define(MrIssueHeader.is, MrIssueHeader);
+customElements.define('mr-issue-header', MrIssueHeader);

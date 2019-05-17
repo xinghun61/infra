@@ -64,7 +64,7 @@ export class MrLaunchOverview extends connectStore(LitElement) {
     super();
     this.approvals = [];
     this.phases = [];
-    this.hidden = false;
+    this.hidden = true;
   }
 
   stateChanged(state) {

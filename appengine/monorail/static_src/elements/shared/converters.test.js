@@ -5,6 +5,7 @@
 import {assert} from 'chai';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
   issueStringToRef, issueRefToString, fieldNameToLabelPrefix,
+  commentListToDescriptionList,
 } from './converters.js';
 
 describe('displayNameToUserRef', () => {
@@ -71,5 +72,35 @@ describe('issueRefToString', () => {
       '1234',
       issueRefToString({projectName: 'proj', localId: 1234}, 'proj')
     );
+  });
+});
+
+describe('commentListToDescriptionList', () => {
+  it('empty list', () => {
+    assert.deepEqual(commentListToDescriptionList(), []);
+    assert.deepEqual(commentListToDescriptionList([]), []);
+  });
+
+  it('first comment is description', () => {
+    assert.deepEqual(commentListToDescriptionList([
+      {content: 'test'},
+      {content: 'hello'},
+      {content: 'world'},
+    ]), [{content: 'test'}]);
+  });
+
+  it('some descriptions', () => {
+    assert.deepEqual(commentListToDescriptionList([
+      {content: 'test'},
+      {content: 'hello', descriptionNum: 1},
+      {content: 'world'},
+      {content: 'this'},
+      {content: 'is a'},
+      {content: 'description', descriptionNum: 2},
+    ]), [
+      {content: 'test'},
+      {content: 'hello', descriptionNum: 1},
+      {content: 'description', descriptionNum: 2},
+    ]);
   });
 });

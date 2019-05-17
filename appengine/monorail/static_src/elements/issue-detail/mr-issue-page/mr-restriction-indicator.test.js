@@ -4,7 +4,6 @@
 
 import {assert} from 'chai';
 import {MrRestrictionIndicator} from './mr-restriction-indicator.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 
 let element;
 
@@ -22,27 +21,34 @@ describe('mr-restriction-indicator', () => {
     assert.instanceOf(element, MrRestrictionIndicator);
   });
 
-  it('shows element only when restricted or showNotice', () => {
+  it('shows element only when restricted or showWarning', async () => {
+    await element.updateComplete;
+
     assert.isTrue(element.hasAttribute('hidden'));
 
     element.restrictions = {view: ['Google']};
-    flush();
+    await element.updateComplete;
+
     assert.isFalse(element.hasAttribute('hidden'));
 
     element.restrictions = {};
-    flush();
+    await element.updateComplete;
+
     assert.isTrue(element.hasAttribute('hidden'));
 
     element.prefs = new Map([['public_issue_notice', 'true']]);
-    flush();
+    await element.updateComplete;
+
     assert.isFalse(element.hasAttribute('hidden'));
 
     element.prefs = new Map([['public_issue_notice', 'false']]);
-    flush();
+    await element.updateComplete;
+
     assert.isTrue(element.hasAttribute('hidden'));
 
     element.prefs = new Map([]);
-    flush();
+    await element.updateComplete;
+
     assert.isTrue(element.hasAttribute('hidden'));
 
     // It is possible to have an edit or comment restriction on
@@ -51,16 +57,19 @@ describe('mr-restriction-indicator', () => {
     // public issue notice.
     element.restrictions = new Map([['edit', ['Google']]]);
     element.prefs = new Map([['public_issue_notice', 'true']]);
-    flush();
+    await element.updateComplete;
+
     assert.isFalse(element.hasAttribute('hidden'));
   });
 
-  it('displays view restrictions', () => {
+  it('displays view restrictions', async () => {
     element.restrictions = {
       view: ['Google', 'hello'],
       edit: ['Editor', 'world'],
       comment: ['commentor'],
     };
+
+    await element.updateComplete;
 
     const restrictString =
       'Only users with Google and hello permission can view this issue.';
@@ -69,12 +78,14 @@ describe('mr-restriction-indicator', () => {
     assert.include(element.shadowRoot.textContent, restrictString);
   });
 
-  it('displays edit restrictions', () => {
+  it('displays edit restrictions', async () => {
     element.restrictions = {
       view: [],
       edit: ['Editor', 'world'],
       comment: ['commentor'],
     };
+
+    await element.updateComplete;
 
     const restrictString =
       'Only users with Editor and world permission may make changes.';
@@ -83,12 +94,14 @@ describe('mr-restriction-indicator', () => {
     assert.include(element.shadowRoot.textContent, restrictString);
   });
 
-  it('displays comment restrictions', () => {
+  it('displays comment restrictions', async () => {
     element.restrictions = {
       view: [],
       edit: [],
       comment: ['commentor'],
     };
+
+    await element.updateComplete;
 
     const restrictString =
       'Only users with commentor permission may comment.';
@@ -97,7 +110,7 @@ describe('mr-restriction-indicator', () => {
     assert.include(element.shadowRoot.textContent, restrictString);
   });
 
-  it('displays public issue notice, if the user has that pref', () => {
+  it('displays public issue notice, if the user has that pref', async () => {
     element.restrictions = {};
 
     element.prefs = new Map();
@@ -105,9 +118,12 @@ describe('mr-restriction-indicator', () => {
     assert.include(element.shadowRoot.textContent, '');
 
     element.prefs = new Map([['public_issue_notice', 'true']]);
+
+    await element.updateComplete;
+
     const noticeString =
       'Public issue: Please do not post confidential information.';
-    assert.equal(element._noticeText, noticeString);
+    assert.equal(element._warningText, noticeString);
 
     assert.include(element.shadowRoot.textContent, noticeString);
   });

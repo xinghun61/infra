@@ -4,53 +4,56 @@
 
 import {assert} from 'chai';
 import {MrEditDescription} from './mr-edit-description.js';
-import * as issue from 'elements/reducers/issue.js';
 
 let element;
-describe('mr-edit-descriptions', () => {
+describe('mr-edit-description', () => {
   beforeEach(() => {
     element = document.createElement('mr-edit-description');
     document.body.appendChild(element);
-    element.comments = [
-      {
-        descriptionNum: 1,
-        content: 'first description',
-      },
-      {
-        content: 'first comment',
-      },
-      {
-        descriptionNum: 1,
-        content: '<b>last</b> description',
-      },
-      {
-        descriptionNum: 1,
-        content: 'first foo survey',
-        approvalRef: {
-          fieldName: 'foo',
+    element.commentsByApproval = new Map([
+      ['', [
+        {
+          descriptionNum: 1,
+          content: 'first description',
         },
-      },
-      {
-        content: 'second comment',
-      },
-      {
-        descriptionNum: 1,
-        content: 'last foo survey',
-        approvalRef: {
-          fieldName: 'foo',
+        {
+          content: 'first comment',
         },
-      },
-      {
-        descriptionNum: 1,
-        content: 'bar survey',
-        approvalRef: {
-          fieldName: 'bar',
+        {
+          descriptionNum: 2,
+          content: '<b>last</b> description',
         },
-      },
-      {
-        content: 'third comment',
-      },
-    ];
+        {
+          content: 'second comment',
+        },
+        {
+          content: 'third comment',
+        },
+      ]], ['foo', [
+        {
+          descriptionNum: 1,
+          content: 'first foo survey',
+          approvalRef: {
+            fieldName: 'foo',
+          },
+        },
+        {
+          descriptionNum: 2,
+          content: 'last foo survey',
+          approvalRef: {
+            fieldName: 'foo',
+          },
+        },
+      ]], ['bar', [
+        {
+          descriptionNum: 1,
+          content: 'bar survey',
+          approvalRef: {
+            fieldName: 'bar',
+          },
+        },
+      ]],
+    ]);
   });
 
   afterEach(() => {
@@ -62,23 +65,23 @@ describe('mr-edit-descriptions', () => {
   });
 
   it('selects last issue description', async () => {
-    element._fieldName = '';
+    element.fieldName = '';
     element.reset();
 
     await element.updateComplete;
 
-    assert.equal(element._displayedContent, 'last description');
-    assert.equal(element._displayedTitle, 'Description');
+    assert.equal(element._editedDescription, 'last description');
+    assert.equal(element._title, 'Description');
   });
 
   it('selects last survey', async () => {
-    element._fieldName = 'foo';
+    element.fieldName = 'foo';
     element.reset();
 
     await element.updateComplete;
 
-    assert.equal(element._displayedContent, 'last foo survey');
-    assert.equal(element._displayedTitle, 'foo Survey');
+    assert.equal(element._editedDescription, 'last foo survey');
+    assert.equal(element._title, 'foo Survey');
   });
 
   it('toggle sendEmail', async () => {

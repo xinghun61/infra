@@ -39,6 +39,9 @@ const FETCH_PREFS_FAILURE = 'user/FETCH_PREFS_FAILURE';
 const USER_DEFAULT = {
   groups: [],
   hotlists: [],
+  // TODO(zhangtiff): Replace this Map in the Redux state with a plain object.
+  //   Maps are not recommended in Redux state.
+  //   See: https://github.com/reduxjs/redux/issues/1499
   prefs: new Map(),
   prefsLoaded: false,
 };

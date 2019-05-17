@@ -76,3 +76,10 @@ export function issueRefsToStrings(arr, projectName) {
   if (!arr || !arr.length) return [];
   return arr.map((ref) => issueRefToString(ref, projectName));
 }
+
+export function commentListToDescriptionList(comments) {
+  if (!comments) return [];
+  // First comment is always a description, even if it doesn't have a
+  // descriptionNum.
+  return comments.filter((c, i) => !i || c.descriptionNum);
+}
