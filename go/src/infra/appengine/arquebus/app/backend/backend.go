@@ -34,7 +34,6 @@ var (
 	// maxIssueUpdatesExecutionTime is the maximum duration that a single Task
 	// run can spend for issue searches and updates.
 	maxIssueUpdatesExecutionTime = time.Second * 40
-	dispatcher                   = tq.Dispatcher{BaseURL: "/internal/tq/"}
 
 	// nRetriesForSavingTaskEntity is the maximum number of trasnsactions that
 	// should be attempted to save Task entity in endTaskRun().
@@ -47,16 +46,30 @@ var (
 	nRetriesForSavingTaskEntity = 8
 )
 
-// Dispatcher returns the dispatcher instance to be used by all other
-// modules to interact with the backend module.
-func Dispatcher() *tq.Dispatcher {
-	return &dispatcher
+var ctxKeyDispatcher = "tq dispatcher"
+
+// GetDispatcher returns the dispatcher instance installed in the context.
+func GetDispatcher(c context.Context) *tq.Dispatcher {
+	return c.Value(&ctxKeyDispatcher).(*tq.Dispatcher)
+}
+
+// setDispatcher installs the dispatcher instance into the context.
+func setDispatcher(c context.Context, dispatcher *tq.Dispatcher) context.Context {
+	return context.WithValue(c, &ctxKeyDispatcher, dispatcher)
 }
 
 // InstallHandlers installs TaskQueue handlers into a given task queue.
 func InstallHandlers(r *router.Router, m router.MiddlewareChain) {
-	registerTaskHandlers(Dispatcher())
-	Dispatcher().InstallRoutes(r, m)
+	dispatcher := &tq.Dispatcher{BaseURL: "/internal/tq/"}
+	registerTaskHandlers(dispatcher)
+
+	// install the dispatcher into the context so that it can be accessed via
+	// the context
+	m = m.Extend(func(rc *router.Context, next router.Handler) {
+		rc.Context = setDispatcher(rc.Context, dispatcher)
+		next(rc)
+	})
+	dispatcher.InstallRoutes(r, m)
 }
 
 func registerTaskHandlers(dispatcher *tq.Dispatcher) {
@@ -134,7 +147,7 @@ func scheduleRuns(c context.Context, assignerID string, tasks []*model.Task) err
 			ETA: task.ExpectedStart,
 		}
 	}
-	return Dispatcher().AddTask(c, tqTasks...)
+	return GetDispatcher(c).AddTask(c, tqTasks...)
 }
 
 // startTaskRun updates the task status, based on the current status of

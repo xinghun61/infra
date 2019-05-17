@@ -69,7 +69,7 @@ func scheduleAssigners(c *router.Context) {
 			},
 		})
 	}
-	if err := backend.Dispatcher().AddTask(ctx, tasks...); err != nil {
+	if err := backend.GetDispatcher(ctx).AddTask(ctx, tasks...); err != nil {
 		http500res(c, err, "failed to add tasks to task queue")
 		return
 	}

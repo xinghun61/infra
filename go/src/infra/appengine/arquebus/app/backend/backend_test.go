@@ -13,12 +13,25 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/appengine/tq"
+	"go.chromium.org/luci/appengine/tq/tqtesting"
 	"go.chromium.org/luci/common/clock"
 
 	"infra/appengine/arquebus/app/backend/model"
 	"infra/appengine/arquebus/app/config"
 	"infra/appengine/arquebus/app/util"
 )
+
+// createTestContextWithTQ creates a test context with testable a TaskQueue.
+func createTestContextWithTQ() context.Context {
+	d := &tq.Dispatcher{}
+	registerTaskHandlers(d)
+
+	c := util.CreateTestContext()
+	tq := tqtesting.GetTestable(c, d)
+	tq.CreateQueues()
+	return setDispatcher(c, d)
+}
 
 // createAssigner creates a sample Assigner entity.
 func createAssigner(c context.Context, id string) *model.Assigner {
@@ -57,10 +70,9 @@ func triggerRunTaskHandler(c context.Context, assignerID string, taskID int64) *
 func TestBackend(t *testing.T) {
 	t.Parallel()
 	assignerID := "test-assigner"
-	registerTaskHandlers(Dispatcher())
 
 	Convey("scheduleAssignerTaskHandler", t, func() {
-		c := util.CreateTestContext()
+		c := createTestContextWithTQ()
 		createAssigner(c, assignerID)
 		tasks := triggerScheduleTaskHandler(c, assignerID)
 		So(tasks, ShouldNotBeNil)
@@ -77,7 +89,7 @@ func TestBackend(t *testing.T) {
 	})
 
 	Convey("runAssignerTaskHandler", t, func() {
-		c := util.CreateTestContext()
+		c := createTestContextWithTQ()
 		createAssigner(c, assignerID)
 		tasks := triggerScheduleTaskHandler(c, assignerID)
 		So(tasks, ShouldNotBeNil)

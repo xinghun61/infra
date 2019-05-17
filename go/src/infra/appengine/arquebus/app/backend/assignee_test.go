@@ -81,7 +81,7 @@ func TestAssignee(t *testing.T) {
 	assignerID := "test-assigner"
 
 	Convey("findAssigneeAndCCs", t, func() {
-		c := util.CreateTestContext()
+		c := createTestContextWithTQ()
 		c = config.SetConfig(c, &config.Config{
 			AccessGroup:      "engineers",
 			MonorailHostname: "example.com",

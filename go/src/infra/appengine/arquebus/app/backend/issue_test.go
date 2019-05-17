@@ -10,7 +10,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/appengine/arquebus/app/config"
-	"infra/appengine/arquebus/app/util"
 )
 
 func TestSearchAndUpdateIssues(t *testing.T) {
@@ -18,7 +17,7 @@ func TestSearchAndUpdateIssues(t *testing.T) {
 	assignerID := "test-assigner"
 
 	Convey("searchAndUpdateIssues", t, func() {
-		c := util.CreateTestContext()
+		c := createTestContextWithTQ()
 		c = config.SetConfig(c, &config.Config{
 			AccessGroup:      "engineers",
 			MonorailHostname: "example.com",

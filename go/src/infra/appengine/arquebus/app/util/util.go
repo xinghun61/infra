@@ -25,7 +25,6 @@ import (
 
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/gae/service/urlfetch"
 )
 
@@ -92,10 +91,6 @@ func SetupTaskIndexes(c context.Context) {
 func CreateTestContext() context.Context {
 	c := memory.Use(context.Background())
 	SetupTaskIndexes(c)
-
-	tq := taskqueue.GetTestable(c)
-	tq.CreateQueue("schedule-assigners")
-	tq.CreateQueue("run-assigners")
 
 	c = urlfetch.Set(c, &MockHTTPTransport{
 		Responses: map[string]string{},
