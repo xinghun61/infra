@@ -27,12 +27,13 @@ luci.cq_group(
 
 # Presubmit trybots.
 build.presubmit(
-    name = 'Recipes-py Presubmit',
+    name = 'recipes-py-try-presubmit',
     cq_group = 'recipes-py cq',
     repo_name = 'recipes_py',
+    os = 'Ubuntu-16.04',
 )
 build.presubmit(
-    name = 'Recipes-py Windows Presubmit',
+    name = 'recipes-py-try-presubmit-win',
     cq_group = 'recipes-py cq',
     repo_name = 'recipes_py',
     os = 'Windows-10',
