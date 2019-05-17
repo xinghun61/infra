@@ -5,12 +5,10 @@
 package cmd
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -152,80 +150,6 @@ func printTaskInfo(results []*swarming.SwarmingRpcsTaskResult, siteEnv site.Envi
 		fmt.Printf("... and %d more tasks\n", len(results)-showTaskLimit)
 	}
 	fmt.Println(strings.Repeat("-", 80))
-}
-
-func prompt(s string) bool {
-	fmt.Fprintf(os.Stderr, s)
-	reader := bufio.NewReader(os.Stdin)
-	answer, _ := reader.ReadString('\n')
-	answer = strings.TrimSpace(answer)
-	return answer == "y" || answer == "Y"
-}
-
-func getSwarmingResultsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskResult, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
-	results := make([]*swarming.SwarmingRpcsTaskResult, len(IDs))
-	for i, ID := range IDs {
-		var r *swarming.SwarmingRpcsTaskResult
-		getResult := func() error {
-			var err error
-			r, err = s.Task.Result(ID).Context(ctx).Do()
-			return err
-		}
-		if err := swarmingCallWithRetries(ctx, getResult); err != nil {
-			return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for task %s", ID)).Err()
-		}
-		results[i] = r
-	}
-	return results, nil
-}
-
-func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []string, includePassed bool) ([]*swarming.SwarmingRpcsTaskResult, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
-	var results *swarming.SwarmingRpcsTaskList
-	getResults := func() error {
-		var err error
-		results, err = s.Tasks.List().Tags(tags...).Context(ctx).Do()
-		return err
-	}
-	if err := swarmingCallWithRetries(ctx, getResults); err != nil {
-		return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for tags %s", tags)).Err()
-	}
-	var filteredTasks []*swarming.SwarmingRpcsTaskResult
-	if !includePassed {
-		for _, r := range results.Items {
-			// Failure includes: COMPLETED_FAILURE (test failure), TIMED OUT
-			// Internal Failure includes: BOT_DIED
-			// Tasks in CANCELED, NO_RESOURCE, EXPIRED are skipped (won't be rerun)
-			if r.Failure || r.InternalFailure {
-				filteredTasks = append(filteredTasks, r)
-			}
-		}
-	} else {
-		filteredTasks = results.Items
-	}
-	return filteredTasks, nil
-}
-
-func getSwarmingRequestsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskRequest, error) {
-	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
-	defer cf()
-	requests := make([]*swarming.SwarmingRpcsTaskRequest, len(IDs))
-	for i, ID := range IDs {
-		var request *swarming.SwarmingRpcsTaskRequest
-		getRequest := func() error {
-			var err error
-			request, err = s.Task.Request(ID).Context(ctx).Do()
-			return err
-		}
-		if err := swarmingCallWithRetries(ctx, getRequest); err != nil {
-			return nil, errors.Annotate(err, fmt.Sprintf("rerun task %s", ID)).Err()
-		}
-		requests[i] = request
-	}
-	return requests, nil
 }
 
 func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsTaskRequest, siteEnv site.Environment) (map[string]*swarming.SwarmingRpcsNewTaskRequest, error) {
