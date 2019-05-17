@@ -44,19 +44,21 @@ var RerunTasks = &subcommands.Command{
 		c.Flags.Var(flag.StringSlice(&c.tags), "tag", "Tasks that match all these tags (and that were not already a retry task) will be retried. Task-id and tag cannot be both specified. May be specified multiple times.")
 		c.Flags.BoolVar(&c.includePassed, "include-passed", false, "If true, rerun tasks even if they passed the first time. Only apply to tasks matched by tags.")
 		c.Flags.BoolVar(&c.dryRun, "dry-run", false, "Print tasks that would be rerun, but don't actually rerun them.")
+		c.Flags.BoolVar(&c.preserveParent, "preserve-parent", false, "Preserve the parent task ID of retried tasks. This should be used only within the context of a suite retrying its own children.")
 		return c
 	},
 }
 
 type rerunTasksRun struct {
 	subcommands.CommandRunBase
-	authFlags     authcli.Flags
-	envFlags      envFlags
-	outputJSON    bool
-	taskIds       []string
-	tags          []string
-	includePassed bool
-	dryRun        bool
+	authFlags      authcli.Flags
+	envFlags       envFlags
+	outputJSON     bool
+	taskIds        []string
+	tags           []string
+	includePassed  bool
+	dryRun         bool
+	preserveParent bool
 }
 
 func (c *rerunTasksRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -109,7 +111,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 		return err
 	}
 
-	newRequests, err := getNewRequests(originalIDs, originalRequests, siteEnv)
+	newRequests, err := getNewRequests(originalIDs, originalRequests, c.preserveParent, siteEnv)
 	if err != nil {
 		return err
 	}
@@ -152,7 +154,7 @@ func printTaskInfo(results []*swarming.SwarmingRpcsTaskResult, siteEnv site.Envi
 	fmt.Println(strings.Repeat("-", 80))
 }
 
-func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsTaskRequest, siteEnv site.Environment) (map[string]*swarming.SwarmingRpcsNewTaskRequest, error) {
+func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsTaskRequest, preserveParent bool, siteEnv site.Environment) (map[string]*swarming.SwarmingRpcsNewTaskRequest, error) {
 	newRequests := make(map[string]*swarming.SwarmingRpcsNewTaskRequest)
 	rerunTag := fmt.Sprintf("%s:%s", rerunTagKey, rerunTagVal)
 	for i, original := range originalRequests {
@@ -161,7 +163,7 @@ func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsT
 			continue
 		}
 
-		newRequest, err := createRerunRequest(original, taskIDs[i], siteEnv)
+		newRequest, err := createRerunRequest(original, taskIDs[i], preserveParent, siteEnv)
 		if err != nil {
 			return nil, errors.Annotate(err, fmt.Sprintf("rerun task %s", original.Name)).Err()
 		}
@@ -171,7 +173,7 @@ func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsT
 }
 
 // createRerunRequest modifies a request to produce rerun a Skylab task.
-func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID string, siteEnv site.Environment) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID string, preserveParent bool, siteEnv site.Environment) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 	newURL := worker.GenerateLogDogURL(siteEnv.Wrapped())
 	for _, s := range original.TaskSlices {
 		cmd := s.Properties.Command
@@ -190,11 +192,22 @@ func createRerunRequest(original *swarming.SwarmingRpcsTaskRequest, originalID s
 	original.Tags = upsertTag(original.Tags, rerunTagKey, rerunTagVal)
 	original.Tags = upsertTag(original.Tags, "retry_original_task_id", originalID)
 
+	var parentTaskID string
+	// TODO(akeshet): If preserveParent is false, we should also drop any
+	// parent_task_id:XXX tag that exists on the original task. Taking that as
+	// followup because the tag is an informal API used by run_suite_skylab when
+	// it creates tasks, to make then searchable. First it should be turned into
+	// a real API enforced by skylab create-test.
+	if preserveParent {
+		parentTaskID = original.ParentTaskId
+	}
+
 	return &swarming.SwarmingRpcsNewTaskRequest{
-		Name:       original.Name,
-		Tags:       original.Tags,
-		TaskSlices: original.TaskSlices,
-		Priority:   original.Priority,
+		Name:         original.Name,
+		Tags:         original.Tags,
+		TaskSlices:   original.TaskSlices,
+		ParentTaskId: parentTaskID,
+		Priority:     original.Priority,
 	}, nil
 }
 
