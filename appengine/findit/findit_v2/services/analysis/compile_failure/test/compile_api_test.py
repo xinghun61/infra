@@ -42,9 +42,9 @@ class CompileApiTest(wf_testcase.TestCase):
         gitiles_project=self.context.gitiles_project,
         gitiles_ref=self.context.gitiles_ref,
         last_passed_gitiles_id='last_passed_git_hash',
-        last_passed_cp=65432,
+        last_passed_commit_position=65432,
         first_failed_gitiles_id=self.context.gitiles_id,
-        first_failed_cp=65450,
+        first_failed_commit_position=65450,
         rerun_builder_id='chromeos/postsubmit/builder-bisect',
         compile_failure_keys=[])
     self.analysis.Save()

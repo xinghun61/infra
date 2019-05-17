@@ -57,11 +57,11 @@ GERRIT_PROJECTS = {
 PROJECT_CFG = {
     'chromium': {
         'project_api': ChromiumProjectAPI(),
-        'group_failures': False,
+        'should_group_failures': False,
     },
     'chromeos': {
         'project_api': ChromeOSProjectAPI(),
-        'group_failures': True,
+        'should_group_failures': True,
     }
 }
 

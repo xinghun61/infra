@@ -90,16 +90,16 @@ class CompileFailureGroup(BaseFailureGroup):
   @classmethod
   def Create(cls, luci_project, luci_bucket, build_id, gitiles_host,
              gitiles_project, gitiles_ref, last_passed_gitiles_id,
-             last_passed_cp, first_failed_gitiles_id, first_failed_cp,
-             compile_failure_keys):
+             last_passed_commit_position, first_failed_gitiles_id,
+             first_failed_commit_position, compile_failure_keys):
     assert compile_failure_keys, (
         'no failed_targets when creating CompileFailureGroup for {}'.format(
             build_id))
 
     instance = super(CompileFailureGroup, cls).Create(
         luci_project, luci_bucket, build_id, gitiles_host, gitiles_project,
-        gitiles_ref, last_passed_gitiles_id, last_passed_cp,
-        first_failed_gitiles_id, first_failed_cp)
+        gitiles_ref, last_passed_gitiles_id, last_passed_commit_position,
+        first_failed_gitiles_id, first_failed_commit_position)
 
     instance.compile_failure_keys = compile_failure_keys
     return instance
@@ -128,8 +128,9 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
   @classmethod
   def Create(cls, luci_project, luci_bucket, luci_builder, build_id,
              gitiles_host, gitiles_project, gitiles_ref, last_passed_gitiles_id,
-             last_passed_cp, first_failed_gitiles_id, first_failed_cp,
-             rerun_builder_id, compile_failure_keys):
+             last_passed_commit_position, first_failed_gitiles_id,
+             first_failed_commit_position, rerun_builder_id,
+             compile_failure_keys):
     instance = super(CompileFailureAnalysis, cls).Create(build_id)
 
     last_passed_commit = GitilesCommit(
@@ -137,14 +138,14 @@ class CompileFailureAnalysis(BaseFailureAnalysis, VersionedModel):
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
         gitiles_id=last_passed_gitiles_id,
-        commit_position=last_passed_cp)
+        commit_position=last_passed_commit_position)
 
     first_failed_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
         gitiles_id=first_failed_gitiles_id,
-        commit_position=first_failed_cp)
+        commit_position=first_failed_commit_position)
 
     instance.luci_project = luci_project
     instance.bucket_id = '{}/{}'.format(luci_project, luci_bucket)

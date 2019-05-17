@@ -17,6 +17,7 @@ from common.waterfall import buildbucket_client
 from findit_v2.model import luci_build
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
+from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.services import projects
 from findit_v2.services import constants
 from findit_v2.services.failure_type import StepTypeEnum
@@ -66,26 +67,31 @@ def SaveCompileFailures(context, build, detailed_compile_failures):
       logging.warning(
           'Cannot get detailed compile failure info for build %d,'
           ' saving step level info only.', build.id)
+      first_failed_build_id = step_info.get('first_failed_build', {}).get('id')
       new_entity = CompileFailure.Create(
           failed_build_key=failed_build_key,
           step_ui_name=step_ui_name,
           output_targets=None,
-          first_failed_build_id=step_info.get('first_failed_build',
-                                              {}).get('id'),
-          failure_group_build_id=step_info.get('failure_group_build_id',
-                                               {}).get('id'),
-      )
+          first_failed_build_id=first_failed_build_id,
+          last_passed_build_id=step_info.get('last_passed_build', {}).get('id'),
+          # Default to first_failed_build_id, will be updated later if matching
+          # group exists.
+          failure_group_build_id=first_failed_build_id)
       compile_failure_entities.append(new_entity)
       continue
 
     for output_targets, failure in failures.iteritems():
+      first_failed_build_id = failure.get('first_failed_build', {}).get('id')
       new_entity = CompileFailure.Create(
           failed_build_key=failed_build_key,
           step_ui_name=step_ui_name,
           output_targets=list(output_targets),
-          first_failed_build_id=failure.get('first_failed_build', {}).get('id'),
-          failure_group_build_id=failure.get('failure_group_build_id',
-                                             {}).get('id'),
+          first_failed_build_id=first_failed_build_id,
+          last_passed_build_id=(failure.get('last_passed_build') or
+                                {}).get('id'),
+          # Default to first_failed_build_id, will be updated later if matching
+          # group exists.
+          failure_group_build_id=first_failed_build_id,
           rule=failure.get('rule'),
           dependencies=failure.get('dependencies'))
       compile_failure_entities.append(new_entity)
@@ -162,7 +168,7 @@ def UpdateCompileFailuresWithFirstFailureInfo(context, build,
                 'number': 123,
                 'commit_id': 654321
               },
-              'last_passed_build': None
+              'last_passed_build': None,
             },
             ...
           },
@@ -171,7 +177,7 @@ def UpdateCompileFailuresWithFirstFailureInfo(context, build,
             'number': 123,
             'commit_id': 654321
           },
-          'last_passed_build': None
+          'last_passed_build': None,
         },
       }
   """
@@ -253,6 +259,12 @@ def UpdateCompileFailuresWithFirstFailureInfo(context, build,
       return
 
 
+def _GetEarlierBuild(build1, build2):
+  if (not build1 or (build2 and build1['number'] > build2['number'])):
+    return build2
+  return build1
+
+
 def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
   """Gets failures that happened the first time in the current build.
 
@@ -305,18 +317,12 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
       'last_passed_build': {
         # In this build all the failures that happened in the build being
         # analyzed passed.
-        'id': 8765432109,
-        'number': 122,
-        'commit_id': 'git_sha1'
+        'id': 8765432108,
+        'number': 121,
+        'commit_id': 'git_sha0'
       }
     }
   """
-
-  def GetLastPassedBuildToUse(original_build, new_build):
-    if (not original_build or original_build['number'] > new_build['number']):
-      return new_build
-    return original_build
-
   luci_project = context.luci_project_name
   project_api = projects.GetProjectAPI(luci_project)
   assert project_api, 'Unsupported project {}'.format(luci_project)
@@ -341,9 +347,8 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
             'output_targets'].append(output_targets)
 
       first_failures_in_current_build['last_passed_build'] = (
-          GetLastPassedBuildToUse(
-              first_failures_in_current_build['last_passed_build'],
-              step_info['last_passed_build']))
+          _GetEarlierBuild(first_failures_in_current_build['last_passed_build'],
+                           step_info['last_passed_build']))
       continue
 
     first_failures_in_step = {
@@ -355,28 +360,195 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
           'last_passed_build']:
         first_failures_in_step['output_targets'].append(output_targets)
         first_failures_in_step['last_passed_build'] = (
-            GetLastPassedBuildToUse(first_failures_in_step['last_passed_build'],
-                                    failure['last_passed_build']))
+            _GetEarlierBuild(first_failures_in_step['last_passed_build'],
+                             failure['last_passed_build']))
     if first_failures_in_step['output_targets']:
       # Some failures are first time failures in current build.
       first_failures_in_current_build['failures'][
           step_ui_name] = first_failures_in_step
 
       first_failures_in_current_build['last_passed_build'] = (
-          GetLastPassedBuildToUse(
-              first_failures_in_current_build['last_passed_build'],
-              first_failures_in_step['last_passed_build']))
+          _GetEarlierBuild(first_failures_in_current_build['last_passed_build'],
+                           first_failures_in_step['last_passed_build']))
 
   return first_failures_in_current_build
 
 
-def _GetCompileFailureKeys(build, first_failures_in_current_build):
+def _GetFailuresWithoutMatchingCompileFailureGroups(
+    first_failures_in_current_build, failures_with_existing_group):
+  """Regenerates first_failures_in_current_build without any failures with
+    existing group.
+
+  Args:
+    first_failures_in_current_build (dict): A dict for failures that happened
+      the first time in current build.
+      {
+        'failures': {
+          'step name': {
+            'output_targets': [
+              frozenset(['target4']),
+              frozenset(['target1', 'target2'])],
+            'last_passed_build': {
+              'id': 8765432109,
+              'number': 122,
+              'commit_id': 'git_sha1'
+            },
+          },
+        },
+        'last_passed_build': {
+          'id': 8765432109,
+          'number': 122,
+          'commit_id': 'git_sha1'
+        }
+      }
+    failures_with_existing_group (dict): Failures with their failure group id.
+      {
+        'step name': {
+          frozenset(['target4']):  8765432000,
+        ]
+      }
+
+  Returns:
+    failures_without_existing_group (dict): updated version of
+      first_failures_in_current_build, no failures with existing group.
+  """
+  failures_without_existing_group = {'failures': {}, 'last_passed_build': None}
+
+  # Uses current_build's id as the failure group id for all the failures
+  # without existing groups.
+  for step_ui_name, step_failure in first_failures_in_current_build[
+      'failures'].iteritems():
+    step_failures_without_existing_group = []
+    for output_target in step_failure['output_targets']:
+      if output_target in failures_with_existing_group.get(step_ui_name, {}):
+        continue
+      step_failures_without_existing_group.append(output_target)
+    if step_failures_without_existing_group:
+      failures_without_existing_group['failures'][step_ui_name] = {
+          'output_targets': step_failures_without_existing_group,
+          'last_passed_build': step_failure['last_passed_build']
+      }
+      failures_without_existing_group['last_passed_build'] = (
+          _GetEarlierBuild(first_failures_in_current_build['last_passed_build'],
+                           step_failure['last_passed_build']))
+  return failures_without_existing_group
+
+
+def _GetCompileFailureEntitiesForABuild(build):
+  build_entity = luci_build.LuciFailedBuild.get_by_id(build.id)
+  assert build_entity, 'No LuciFailedBuild entity for build {}'.format(build.id)
+
+  compile_failure_entities = CompileFailure.query(
+      ancestor=build_entity.key).fetch()
+  assert compile_failure_entities, (
+      'No compile failure saved in datastore for build {}'.format(build.id))
+  return compile_failure_entities
+
+
+def _UpdateCompileFailureEntitiesWithGroupInfo(build,
+                                               failures_with_existing_group):
+  """Update failure_group_build_id for failures that found matching group.
+
+  Args:
+    build (buildbucket build.proto): ALL info about the build.
+    failures_with_existing_group (dict): A dict of failures from
+        first_failures_in_current_build that found a matching group.
+        {
+          'step name': {
+            frozenset(['target4']):  8765432000,
+          ]
+        }
+  """
+  compile_failure_entities = _GetCompileFailureEntitiesForABuild(build)
+  entities_to_save = []
+  for failure_entity in compile_failure_entities:
+    failure_group_build_id = failures_with_existing_group.get(
+        failure_entity.step_ui_name, {}).get(
+            frozenset(failure_entity.output_targets))
+    if failure_group_build_id:
+      failure_entity.failure_group_build_id = failure_group_build_id
+      entities_to_save.append(failure_entity)
+
+  ndb.put_multi(entities_to_save)
+
+
+def GetFirstFailuresInCurrentBuildWithoutGroup(context, build,
+                                               first_failures_in_current_build):
+  """Gets first failures without existing failure groups.
+
+  Args:
+    context (findit_v2.services.context.Context): Scope of the analysis.
+    build (buildbucket build.proto): ALL info about the build.
+    first_failures_in_current_build (dict): A dict for failures that happened
+      the first time in current build.
+      {
+        'failures': {
+          'step name': {
+            'output_targets': [
+              frozenset(['target4']),
+              frozenset(['target1', 'target2'])],
+            'last_passed_build': {
+              'id': 8765432109,
+              'number': 122,
+              'commit_id': 'git_sha1'
+            },
+          },
+        },
+        'last_passed_build': {
+          'id': 8765432109,
+          'number': 122,
+          'commit_id': 'git_sha1'
+        }
+      }
+
+  Returns:
+    failures_without_existing_group (dict): updated version of
+      first_failures_in_current_build, no failures with existing group.
+  """
+  luci_project = context.luci_project_name
+  project_api = projects.GetProjectAPI(luci_project)
+  assert project_api, 'Unsupported project {}'.format(luci_project)
+
+  failures_with_existing_group = (
+      project_api.GetFailuresWithMatchingCompileFailureGroups(
+          context, build, first_failures_in_current_build))
+
+  if not failures_with_existing_group:
+    # All failures need a new group.
+    return first_failures_in_current_build
+
+  _UpdateCompileFailureEntitiesWithGroupInfo(build,
+                                             failures_with_existing_group)
+
+  return _GetFailuresWithoutMatchingCompileFailureGroups(
+      first_failures_in_current_build, failures_with_existing_group)
+
+
+def _CreateAndSaveFailureGroupEntity(
+    context, build, compile_failure_keys, last_passed_gitiles_id,
+    last_passed_commit_position, first_failed_commit_position):
+  group_entity = CompileFailureGroup.Create(
+      luci_project=context.luci_project_name,
+      luci_bucket=build.builder.bucket,
+      build_id=build.id,
+      gitiles_host=context.gitiles_host,
+      gitiles_project=context.gitiles_project,
+      gitiles_ref=context.gitiles_ref,
+      last_passed_gitiles_id=last_passed_gitiles_id,
+      last_passed_commit_position=last_passed_commit_position,
+      first_failed_gitiles_id=context.gitiles_id,
+      first_failed_commit_position=first_failed_commit_position,
+      compile_failure_keys=compile_failure_keys)
+  group_entity.put()
+
+
+def _GetCompileFailureKeys(build, failures_without_existing_group):
   """Gets keys to the compile failures that failed the first time in the build.
 
   Args:
     build (buildbucket build.proto): ALL info about the build.
-    first_failures_in_current_build (dict): A dict for failures that happened
-      the first time in current build.
+    failures_without_existing_group (dict): A dict for failures that happened
+      the first time in current build and with no matching group.
       {
       'failures': {
         'compile': {
@@ -395,17 +567,11 @@ def _GetCompileFailureKeys(build, first_failures_in_current_build):
       }
     }
   """
-  build_entity = luci_build.LuciFailedBuild.get_by_id(build.id)
-  assert build_entity, 'No LuciFailedBuild entity for build {}'.format(build.id)
-
-  compile_failure_entities = CompileFailure.query(
-      ancestor=build_entity.key).fetch()
-  assert compile_failure_entities, (
-      'No compile failure saved in datastore for build {}'.format(build.id))
+  compile_failure_entities = _GetCompileFailureEntitiesForABuild(build)
 
   first_failures = {
       s: failure['output_targets']
-      for s, failure in first_failures_in_current_build['failures'].iteritems()
+      for s, failure in failures_without_existing_group['failures'].iteritems()
   }
   compile_failure_keys = []
   for compile_failure_entity in compile_failure_entities:
@@ -419,15 +585,16 @@ def _GetCompileFailureKeys(build, first_failures_in_current_build):
   return compile_failure_keys
 
 
-def SaveCompileAnalysis(context, build, first_failures_in_current_build):
+def SaveCompileAnalysis(context, build, failures_without_existing_group,
+                        should_group_failures):
   """Creates and saves CompileFailureAnalysis entity for the build being
     analyzed if there are first failures in the build.
 
   Args:
     context (findit_v2.services.context.Context): Scope of the analysis.
     build (buildbucket build.proto): ALL info about the build.
-    first_failures_in_current_build (dict): A dict for failures that happened
-      the first time in current build.
+    failures_without_existing_group (dict): A dict for failures that happened
+      the first time in current build and with no matching group.
       {
         'failures': {
           'compile': {
@@ -445,6 +612,8 @@ def SaveCompileAnalysis(context, build, first_failures_in_current_build):
           'commit_id': 'git_sha1'
         }
       }
+    should_group_failures (bool): Project config for if failures should be
+      grouped to reduce duplicated analyses.
   """
   luci_project = context.luci_project_name
   project_api = projects.GetProjectAPI(luci_project)
@@ -455,10 +624,20 @@ def SaveCompileAnalysis(context, build, first_failures_in_current_build):
   # Gets keys to the compile failures that failed the first time in the build.
   # They will be the failures to analyze in the analysis.
   compile_failure_keys = _GetCompileFailureKeys(
-      build, first_failures_in_current_build)
-  last_passed_gitiles_id = first_failures_in_current_build['last_passed_build'][
-      'commit_id']
+      build, failures_without_existing_group)
+
   repo_url = git.GetRepoUrlFromContext(context)
+  last_passed_gitiles_id = failures_without_existing_group['last_passed_build'][
+      'commit_id']
+  last_passed_commit_position = git.GetCommitPositionFromRevision(
+      last_passed_gitiles_id, repo_url)
+  first_failed_commit_position = git.GetCommitPositionFromRevision(
+      context.gitiles_id, repo_url)
+
+  if should_group_failures:
+    _CreateAndSaveFailureGroupEntity(
+        context, build, compile_failure_keys, last_passed_gitiles_id,
+        last_passed_commit_position, first_failed_commit_position)
 
   analysis = CompileFailureAnalysis.Create(
       luci_project=luci_project,
@@ -469,11 +648,9 @@ def SaveCompileAnalysis(context, build, first_failures_in_current_build):
       gitiles_project=context.gitiles_project,
       gitiles_ref=context.gitiles_ref,
       last_passed_gitiles_id=last_passed_gitiles_id,
-      last_passed_cp=git.GetCommitPositionFromRevision(last_passed_gitiles_id,
-                                                       repo_url),
+      last_passed_commit_position=last_passed_commit_position,
       first_failed_gitiles_id=context.gitiles_id,
-      first_failed_cp=git.GetCommitPositionFromRevision(context.gitiles_id,
-                                                        repo_url),
+      first_failed_commit_position=first_failed_commit_position,
       rerun_builder_id=rerun_builder_id,
       compile_failure_keys=compile_failure_keys)
   analysis.Save()

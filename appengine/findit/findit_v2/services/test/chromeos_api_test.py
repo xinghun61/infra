@@ -250,9 +250,9 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         gitiles_project=self.context.gitiles_project,
         gitiles_ref=self.context.gitiles_ref,
         last_passed_gitiles_id=last_passed_build_info['commit_id'],
-        last_passed_cp=654321,
+        last_passed_commit_position=654321,
         first_failed_gitiles_id=self.first_failed_commit_id,
-        first_failed_cp=654340,
+        first_failed_commit_position=654340,
         compile_failure_keys=[compile_failure.key]).put()
 
     self.assertEqual(
@@ -300,9 +300,9 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         gitiles_project=self.context.gitiles_project,
         gitiles_ref=self.context.gitiles_ref,
         last_passed_gitiles_id=last_passed_build_info['commit_id'],
-        last_passed_cp=654321,
+        last_passed_commit_position=654321,
         first_failed_gitiles_id=self.first_failed_commit_id,
-        first_failed_cp=654340,
+        first_failed_commit_position=654340,
         compile_failure_keys=[compile_failure.key]).put()
 
     expected_failures_with_existing_group = {

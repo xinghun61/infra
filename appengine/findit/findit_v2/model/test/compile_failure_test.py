@@ -68,9 +68,9 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
         gitiles_project='chromium/src',
         gitiles_ref='refs/heads/master',
         last_passed_gitiles_id='last_passed_git_hash',
-        last_passed_cp=65432,
+        last_passed_commit_position=65432,
         first_failed_gitiles_id='first_failure_git_hash',
-        first_failed_cp=65450,
+        first_failed_commit_position=65450,
         compile_failure_keys=[te.key for te in self.target_entities]).put()
 
     group = CompileFailureGroup.get_by_id(self.build_id)
@@ -88,9 +88,9 @@ class CompileFailureTest(wf_testcase.WaterfallTestCase):
         gitiles_project='chromium/src',
         gitiles_ref='refs/heads/master',
         last_passed_gitiles_id='last_passed_git_hash',
-        last_passed_cp=65432,
+        last_passed_commit_position=65432,
         first_failed_gitiles_id='first_failure_git_hash',
-        first_failed_cp=65450,
+        first_failed_commit_position=65450,
         rerun_builder_id='findit_variables',
         compile_failure_keys=[te.key for te in self.target_entities])
     analysis.Save()

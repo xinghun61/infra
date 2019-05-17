@@ -89,9 +89,9 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
         gitiles_project=self.context.gitiles_project,
         gitiles_ref=self.context.gitiles_ref,
         last_passed_gitiles_id='left_sha',
-        last_passed_cp=6000000,
+        last_passed_commit_position=6000000,
         first_failed_gitiles_id=self.context.gitiles_id,
-        first_failed_cp=6000005,
+        first_failed_commit_position=6000005,
         rerun_builder_id='chromium/findit/findit-variables',
         compile_failure_keys=[self.compile_failure.key])
     self.analysis.Save()

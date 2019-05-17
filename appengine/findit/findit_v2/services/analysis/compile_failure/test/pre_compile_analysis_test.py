@@ -14,6 +14,7 @@ from buildbucket_proto.step_pb2 import Step
 from common.waterfall import buildbucket_client
 from findit_v2.model.compile_failure import CompileFailure
 from findit_v2.model.compile_failure import CompileFailureAnalysis
+from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.model.luci_build import LuciFailedBuild
 from findit_v2.services.analysis.compile_failure import pre_compile_analysis
 from findit_v2.services.chromium_api import ChromiumProjectAPI
@@ -48,7 +49,7 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         gitiles_host='gitiles.host.com',
         gitiles_project='project/name',
         gitiles_ref='ref/heads/master',
-        gitiles_id='git_sha')
+        gitiles_id='git_sha_123')
 
     self.build_info = {
         'id': 8000000000123,
@@ -774,10 +775,10 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
   @mock.patch.object(
       git, 'GetCommitPositionFromRevision', side_effect=[66680, 66666, 66680])
   def testSaveCompileAnalysis(self, *_):
-    build_121_info = {
-        'id': 8000000000121,
-        'number': self.build_number - 2,
-        'commit_id': 'git_sha_121'
+    build_120_info = {
+        'id': 8000000000120,
+        'number': self.build_number - 3,
+        'commit_id': 'git_sha_120'
     }
 
     detailed_compile_failures = {
@@ -785,33 +786,17 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
             'failures': {
                 frozenset(['target1', 'target2']): {
                     'rule': 'CXX',
-                    'first_failed_build': {
-                        'id': 8000000000121,
-                        'number': 121,
-                        'commit_id': 'git_sha'
-                    },
-                    'last_passed_build': {
-                        'id': 8000000000120,
-                        'number': 120,
-                        'commit_id': 'git_sha'
-                    },
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_120_info,
                 },
                 frozenset(['target3']): {
                     'rule': 'ACTION',
-                    'first_failed_build': build_121_info,
+                    'first_failed_build': self.build_info,
                     'last_passed_build': None,
                 },
             },
-            'first_failed_build': {
-                'id': 8000000000121,
-                'number': 121,
-                'commit_id': 'git_sha'
-            },
-            'last_passed_build': {
-                'id': 8000000000120,
-                'number': 120,
-                'commit_id': 'git_sha'
-            },
+            'first_failed_build': self.build_info,
+            'last_passed_build': build_120_info,
         },
     }
 
@@ -822,20 +807,160 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         'failures': {
             'compile': {
                 'output_targets': [{'target1', 'target2'}],
-                'last_passed_build': build_121_info,
+                'last_passed_build': build_120_info,
             },
         },
-        'last_passed_build': build_121_info
+        'last_passed_build': build_120_info
     }
-    pre_compile_analysis.SaveCompileAnalysis(self.context, self.build,
-                                             first_failures_in_current_build)
+    pre_compile_analysis.SaveCompileAnalysis(
+        self.context, self.build, first_failures_in_current_build, False)
 
     analysis = CompileFailureAnalysis.GetVersion(self.build_id)
     self.assertIsNotNone(analysis)
-    self.assertEqual('git_sha_121', analysis.last_passed_commit.gitiles_id)
+    self.assertEqual('git_sha_120', analysis.last_passed_commit.gitiles_id)
     self.assertEqual(66666, analysis.last_passed_commit.commit_position)
     self.assertEqual('chromium/findit/findit_variables',
                      analysis.rerun_builder_id)
     self.assertEqual(1, len(analysis.compile_failure_keys))
     self.assertItemsEqual(['target1', 'target2'],
                           analysis.compile_failure_keys[0].get().output_targets)
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetRerunBuilderId',
+      return_value='chromium/findit/findit_variables')
+  @mock.patch.object(
+      git, 'GetCommitPositionFromRevision', side_effect=[66680, 66666, 66680])
+  def testSaveCompileAnalysisWithGroup(self, *_):
+    build_120_info = {
+        'id': 8000000000120,
+        'number': self.build_number - 3,
+        'commit_id': 'git_sha_120'
+    }
+
+    detailed_compile_failures = {
+        'compile': {
+            'failures': {
+                frozenset(['target1', 'target2']): {
+                    'rule': 'CXX',
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_120_info,
+                },
+                frozenset(['target3']): {
+                    'rule': 'ACTION',
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': None,
+                },
+            },
+            'first_failed_build': self.build_info,
+            'last_passed_build': build_120_info,
+        },
+    }
+
+    pre_compile_analysis.SaveCompileFailures(self.context, self.build,
+                                             detailed_compile_failures)
+
+    first_failures_in_current_build = {
+        'failures': {
+            'compile': {
+                'output_targets': [{'target1', 'target2'}],
+                'last_passed_build': build_120_info,
+            },
+        },
+        'last_passed_build': build_120_info
+    }
+    pre_compile_analysis.SaveCompileAnalysis(
+        self.context, self.build, first_failures_in_current_build, True)
+
+    analysis = CompileFailureAnalysis.GetVersion(self.build_id)
+    self.assertIsNotNone(analysis)
+    self.assertEqual('git_sha_120', analysis.last_passed_commit.gitiles_id)
+    self.assertEqual(66666, analysis.last_passed_commit.commit_position)
+    self.assertEqual('chromium/findit/findit_variables',
+                     analysis.rerun_builder_id)
+    self.assertEqual(1, len(analysis.compile_failure_keys))
+    self.assertItemsEqual(['target1', 'target2'],
+                          analysis.compile_failure_keys[0].get().output_targets)
+
+    group = CompileFailureGroup.get_by_id(self.build_id)
+    self.assertIsNotNone(group)
+    self.assertEqual('git_sha_120', analysis.last_passed_commit.gitiles_id)
+    self.assertEqual(self.build_info['commit_id'],
+                     analysis.first_failed_commit.gitiles_id)
+
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetFailuresWithMatchingCompileFailureGroups',
+      return_value={})
+  def testGetFirstFailuresInCurrentBuildWithoutGroupNoExistingGroup(self, _):
+    self.assertEqual(
+        {},
+        pre_compile_analysis.GetFirstFailuresInCurrentBuildWithoutGroup(
+            self.context, self.build, {}))
+
+  @mock.patch.object(
+      git, 'GetCommitPositionFromRevision', side_effect=[66680, 66666, 66680])
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetFailuresWithMatchingCompileFailureGroups',
+      return_value={'compile': {
+          frozenset(['target1']): 8000000000134
+      }})
+  def testGetFirstFailuresInCurrentBuildWithoutGroupPartialExistingGroup(
+      self, *_):
+    build_121_info = {
+        'id': 8000000000121,
+        'number': self.build_number - 2,
+        'commit_id': 'git_sha_121'
+    }
+    first_failures_in_current_build = {
+        'failures': {
+            'compile': {
+                'output_targets': [
+                    frozenset(['target1']),
+                    frozenset(['target2'])
+                ],
+                'last_passed_build':
+                    build_121_info,
+            },
+        },
+        'last_passed_build': build_121_info
+    }
+
+    # Creates and saves entities of the existing group.
+    detailed_compile_failures = {
+        'compile': {
+            'failures': {
+                frozenset(['target1']): {
+                    'rule': 'CXX',
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_121_info,
+                },
+                frozenset(['target2']): {
+                    'rule': 'ACTION',
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_121_info,
+                },
+            },
+            'first_failed_build': self.build_info,
+            'last_passed_build': build_121_info,
+        },
+    }
+
+    pre_compile_analysis.SaveCompileFailures(self.context, self.build,
+                                             detailed_compile_failures)
+
+    expected_result = {
+        'failures': {
+            'compile': {
+                'output_targets': [frozenset(['target2'])],
+                'last_passed_build': build_121_info,
+            },
+        },
+        'last_passed_build': build_121_info
+    }
+
+    self.assertEqual(
+        expected_result,
+        pre_compile_analysis.GetFirstFailuresInCurrentBuildWithoutGroup(
+            self.context, self.build, first_failures_in_current_build))

@@ -36,8 +36,8 @@ class BaseFailureGroup(ndb.Model):
   @classmethod
   def Create(cls, luci_project, luci_bucket, build_id, gitiles_host,
              gitiles_project, gitiles_ref, last_passed_gitiles_id,
-             last_passed_cp, first_failed_gitiles_id,
-             first_failed_cp):  # pragma: no cover.
+             last_passed_commit_position, first_failed_gitiles_id,
+             first_failed_commit_position):  # pragma: no cover.
     """Creates an entity for a failure group.
 
     Args:
@@ -48,14 +48,14 @@ class BaseFailureGroup(ndb.Model):
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
         gitiles_id=last_passed_gitiles_id,
-        commit_position=last_passed_cp)
+        commit_position=last_passed_commit_position)
 
     first_failed_commit = GitilesCommit(
         gitiles_host=gitiles_host,
         gitiles_project=gitiles_project,
         gitiles_ref=gitiles_ref,
         gitiles_id=first_failed_gitiles_id,
-        commit_position=first_failed_cp)
+        commit_position=first_failed_commit_position)
 
     return cls(
         luci_project=luci_project,

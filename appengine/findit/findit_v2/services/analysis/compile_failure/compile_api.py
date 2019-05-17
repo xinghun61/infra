@@ -27,14 +27,20 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   Returns:
     (bool): Returns True if a new analysis starts, otherwise False.
   """
-  if context.luci_project_name == 'chromium':
+  luci_project = context.luci_project_name
+  if luci_project == 'chromium':
     logging.warning('Findit does not support chromium project in v2.')
     return False
 
-  project_api = projects.GetProjectAPI(context.luci_project_name)
+  project_api = projects.GetProjectAPI(luci_project)
   if not project_api:
-    logging.debug('Unsupported project %s', context.luci_project_name)
+    logging.debug('Unsupported project %s', luci_project)
     return False
+
+  # Project config for if failures should be grouped to reduce duplicated
+  # analyses.
+  should_group_failures = projects.PROJECT_CFG.get(
+      luci_project, {}).get('should_group_failures')
 
   detailed_compile_failures = project_api.GetCompileFailures(
       build, compile_steps)
@@ -42,7 +48,6 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   # in current failed build.
   pre_compile_analysis.UpdateCompileFailuresWithFirstFailureInfo(
       context, build, detailed_compile_failures)
-  # TODO(crbug.com/949836): Look for existing failure groups.
   pre_compile_analysis.SaveCompileFailures(context, build,
                                            detailed_compile_failures)
 
@@ -50,13 +55,29 @@ def AnalyzeCompileFailure(context, build, compile_steps):
   first_failures_in_current_build = (
       pre_compile_analysis.GetFirstFailuresInCurrentBuild(
           context, build, detailed_compile_failures))
-  if not first_failures_in_current_build['failures']:
-    # No first time failures in current build. No need for a new analysis.
+  if not first_failures_in_current_build.get('failures'):
+    logging.info(
+        'No new analysis for build %d because all failures have '
+        'happened in previous builds.', build.id)
+    return False
+
+  # Filters out the first failures with existing failure group.
+  if should_group_failures:
+    failures_without_existing_group = (
+        pre_compile_analysis.GetFirstFailuresInCurrentBuildWithoutGroup(
+            context, build, first_failures_in_current_build))
+  else:
+    failures_without_existing_group = first_failures_in_current_build
+
+  if not failures_without_existing_group.get('failures'):
+    logging.info(
+        'All failures have matching failure groups in build %s,'
+        ' no need to start a new analysis.', build.id)
     return False
 
   # Start a new analysis to analyze the first time failures.
-  pre_compile_analysis.SaveCompileAnalysis(context, build,
-                                           first_failures_in_current_build)
+  pre_compile_analysis.SaveCompileAnalysis(
+      context, build, failures_without_existing_group, should_group_failures)
   compile_failure_rerun_analysis.RerunBasedAnalysis(context, build.id, build)
   return True
 
