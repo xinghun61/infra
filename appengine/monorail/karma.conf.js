@@ -62,6 +62,7 @@ module.exports = function(config) {
       'karma-chrome-launcher',
       'karma-coverage',
       'karma-mocha',
+      'karma-mocha-reporter',
       'karma-parallel',
       'karma-sinon',
       'karma-sourcemap-loader',
@@ -101,7 +102,7 @@ module.exports = function(config) {
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
-    reporters: ['spec'].concat(coverage ? ['coverage'] : []),
+    reporters: ['mocha', 'spec'].concat(coverage ? ['coverage'] : []),
 
 
     // configure coverage reporter
