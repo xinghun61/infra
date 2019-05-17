@@ -97,7 +97,7 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 		}
 	}
 
-	printTaskInfo(originalTasks, siteEnv)
+	printTaskInfo(originalTasks, showTaskLimit, "rerun", siteEnv)
 	if answer := prompt(fmt.Sprintf("Do you want to rerun %d tasks? [y/N] > ", len(originalTasks))); !answer {
 		return errors.New("user cancelled")
 	}
@@ -136,22 +136,6 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	return printIDMap(a.GetOut(), originalToRerunID, siteEnv)
-}
-
-func printTaskInfo(results []*swarming.SwarmingRpcsTaskResult, siteEnv site.Environment) {
-	fmt.Println(strings.Repeat("-", 80))
-	fmt.Printf("Found %d tasks to rerun:\n", len(results))
-	for i, r := range results {
-		if i < showTaskLimit {
-			fmt.Printf("%s\n", swarmingTaskURL(siteEnv, r.TaskId))
-		} else {
-			break
-		}
-	}
-	if len(results) > showTaskLimit {
-		fmt.Printf("... and %d more tasks\n", len(results)-showTaskLimit)
-	}
-	fmt.Println(strings.Repeat("-", 80))
 }
 
 func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsTaskRequest, preserveParent bool, siteEnv site.Environment) (map[string]*swarming.SwarmingRpcsNewTaskRequest, error) {

@@ -323,3 +323,21 @@ func prompt(s string) bool {
 	answer = strings.TrimSpace(answer)
 	return answer == "y" || answer == "Y"
 }
+
+// printTaskInfo displays a list of user-friendly list of tasks (with a given
+// upper limit), with a header of the form "Found X tasks to <showText>:"
+func printTaskInfo(results []*swarming.SwarmingRpcsTaskResult, showLimit int, showText string, siteEnv site.Environment) {
+	fmt.Fprintln(os.Stderr, strings.Repeat("-", 80))
+	fmt.Fprintf(os.Stderr, "Found %d tasks to %s:\n", len(results), showText)
+	for i, r := range results {
+		if i < showTaskLimit {
+			fmt.Fprintf(os.Stderr, "%s\n", swarmingTaskURL(siteEnv, r.TaskId))
+		} else {
+			break
+		}
+	}
+	if len(results) > showTaskLimit {
+		fmt.Fprintf(os.Stderr, "... and %d more tasks\n", len(results)-showTaskLimit)
+	}
+	fmt.Fprintln(os.Stderr, strings.Repeat("-", 80))
+}
