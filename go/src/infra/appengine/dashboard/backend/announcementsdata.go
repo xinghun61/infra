@@ -18,12 +18,13 @@ import (
 
 // Announcement contains details of an announcement
 type Announcement struct {
-	ID        int64 `gae:"$id"`
-	Retired   bool
-	StartTime time.Time
-	EndTime   time.Time
-	Message   string
-	Creator   string
+	ID            int64 `gae:"$id"`
+	Retired       bool
+	StartTime     time.Time
+	EndTime       time.Time
+	Message       string
+	Creator       string
+	PlatformNames []string
 }
 
 // Platform contains information for where and how an ancestor Announcement should be displayed.
@@ -100,6 +101,10 @@ func CreateLiveAnnouncement(c context.Context, message, creator string, platform
 		Message:   message,
 		Creator:   creator,
 	}
+	announcement.PlatformNames = make([]string, len(platforms))
+	for i, p := range platforms {
+		announcement.PlatformNames[i] = p.Name
+	}
 	err := datastore.RunInTransaction(c, func(c context.Context) error {
 		if err := datastore.Put(c, announcement); err != nil {
 			return fmt.Errorf("error writing announcement to datastore - %s", err)
@@ -127,30 +132,15 @@ func CreateLiveAnnouncement(c context.Context, message, creator string, platform
 //
 // It returns (announcements, nil) on success, and (nil, err) on datastore or conversion errors.
 func GetLiveAnnouncements(c context.Context, platformName string) ([]*dashpb.Announcement, error) {
-	var liveAnns []*Announcement
 	annQ := datastore.NewQuery("Announcement").Eq("Retired", false)
+	if platformName != "" {
+		annQ = annQ.Eq("PlatformNames", platformName)
+	}
+	var liveAnns []*Announcement
 	if err := datastore.GetAll(c, annQ, &liveAnns); err != nil {
 		return nil, fmt.Errorf("error getting Announcement entities - %s", err)
 	}
-
-	finalAnns := liveAnns
-	if platformName != "" {
-		finalAnns = make([]*Announcement, 0, len(liveAnns))
-		pKeys := make([]*datastore.Key, len(liveAnns))
-		for i, ann := range liveAnns {
-			pKeys[i] = datastore.NewKey(c, "Platform", platformName, 0, datastore.KeyForObj(c, ann))
-		}
-		existsR, err := datastore.Exists(c, pKeys)
-		if err != nil {
-			return nil, fmt.Errorf("error checking for platform existence - %s", err)
-		}
-		for i, ann := range liveAnns {
-			if existsR.Get(0, i) {
-				finalAnns = append(finalAnns, ann)
-			}
-		}
-	}
-	return GetAllAnnouncementsPlatforms(c, finalAnns)
+	return GetAllAnnouncementsPlatforms(c, liveAnns)
 }
 
 // GetAllAnnouncementsPlatforms takes Announcements that have incomplete or empty

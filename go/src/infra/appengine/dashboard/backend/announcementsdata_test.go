@@ -12,6 +12,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock/testclock"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -123,8 +124,17 @@ func TestCreateLiveAnnouncement(t *testing.T) {
 				existsR, _ := datastore.Exists(ctx, pKey)
 				So(existsR.All(), ShouldBeTrue)
 			}
-			existsR, _ := datastore.Exists(ctx, annKey)
-			So(existsR.All(), ShouldBeTrue)
+			announcement := &Announcement{ID: ann.Id}
+			err = datastore.Get(ctx, announcement)
+			So(err, ShouldBeNil)
+			expected := &Announcement{
+				ID:            ann.Id,
+				Message:       "Cow cow cow",
+				Creator:       "cowman",
+				StartTime:     testclock.TestRecentTimeUTC.Round(time.Microsecond),
+				PlatformNames: []string{"monorail", "som"},
+			}
+			So(expected, ShouldResemble, announcement)
 		})
 	})
 }
