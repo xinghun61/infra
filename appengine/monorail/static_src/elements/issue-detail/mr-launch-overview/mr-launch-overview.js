@@ -60,17 +60,23 @@ export class MrLaunchOverview extends connectStore(LitElement) {
     };
   }
 
+  constructor() {
+    super();
+    this.approvals = [];
+    this.phases = [];
+    this.hidden = false;
+  }
+
   stateChanged(state) {
     if (!issue.issue(state)) return;
 
-    this.approvals = issue.issue(state).approvalValues;
-    this.phases = issue.issue(state).phases;
+    this.approvals = issue.issue(state).approvalValues || [];
+    this.phases = issue.issue(state).phases || [];
   }
 
   update(changedProperties) {
     if (changedProperties.has('phases') || changedProperties.has('approvals')) {
-      this.hidden = (!this.phases || !this.phases.length)
-        && (!this.approvals || !this.approvals.length);
+      this.hidden = !this.phases.length && !this.approvals.length;
     }
     super.update(changedProperties);
   }
