@@ -301,8 +301,8 @@
 </div>
 
 <mr-bulk-approval-update
-  project-name="[projectname]"
-  local-ids-str="[local_ids_str]"
+  projectName="[projectname]"
+  localIdsStr="[local_ids_str]"
 ></mr-bulk-approval-update>
 
 <script type="text/javascript" nonce="[nonce]">

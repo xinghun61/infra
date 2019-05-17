@@ -17,63 +17,10 @@ import '../mr-comment-list/mr-comment-list.js';
 import 'elements/issue-detail/metadata/mr-edit-metadata/mr-edit-metadata.js';
 import 'elements/issue-detail/metadata/mr-metadata/mr-metadata.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+import {APPROVER_RESTRICTED_STATUSES, STATUS_ENUM_TO_TEXT, TEXT_TO_STATUS_ENUM,
+  STATUS_CLASS_MAP, CLASS_ICON_MAP, APPROVAL_STATUSES,
+} from 'elements/shared/approval-consts.js';
 
-const APPROVER_RESTRICTED_STATUSES = new Set(
-  ['NA', 'Approved', 'NotApproved']);
-
-const STATUS_ENUM_TO_TEXT = {
-  '': 'NotSet',
-  'NEEDS_REVIEW': 'NeedsReview',
-  'NA': 'NA',
-  'REVIEW_REQUESTED': 'ReviewRequested',
-  'REVIEW_STARTED': 'ReviewStarted',
-  'NEED_INFO': 'NeedInfo',
-  'APPROVED': 'Approved',
-  'NOT_APPROVED': 'NotApproved',
-};
-
-const TEXT_TO_STATUS_ENUM = {
-  'NotSet': 'NOT_SET',
-  'NeedsReview': 'NEEDS_REVIEW',
-  'NA': 'NA',
-  'ReviewRequested': 'REVIEW_REQUESTED',
-  'ReviewStarted': 'REVIEW_STARTED',
-  'NeedInfo': 'NEED_INFO',
-  'Approved': 'APPROVED',
-  'NotApproved': 'NOT_APPROVED',
-};
-
-const STATUS_CLASS_MAP = {
-  'NotSet': 'status-notset',
-  'NeedsReview': 'status-pending',
-  'NA': 'status-notset',
-  'ReviewRequested': 'status-pending',
-  'ReviewStarted': 'status-pending',
-  'NeedInfo': 'status-pending',
-  'Approved': 'status-approved',
-  'NotApproved': 'status-rejected',
-};
-
-const STATUS_DOCSTRING_MAP = {
-  'NotSet': '',
-  'NeedsReview': 'Approval gate needs work',
-  'NA': 'Approval gate not required',
-  'ReviewRequested': 'Approval requested',
-  'ReviewStarted': 'Approval in progress',
-  'NeedInfo': 'Approval review needs more information',
-  'Approved': 'Approved for Launch',
-  'NotApproved': 'Not Approved for Launch',
-};
-
-const CLASS_ICON_MAP = {
-  'status-notset': 'remove',
-  'status-pending': 'autorenew',
-  'status-approved': 'done',
-  'status-rejected': 'close',
-};
-
-const APPROVAL_STATUSES = Object.keys(STATUS_CLASS_MAP).map((status) => ({
-  status, docstring: STATUS_DOCSTRING_MAP[status], rank: 1}));
 
 /**
  * `<mr-approval-card>`

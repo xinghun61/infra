@@ -5,7 +5,6 @@
 import {assert} from 'chai';
 import {MrBulkApprovalUpdate, NO_APPROVALS_MESSAGE,
   NO_UPDATES_MESSAGE} from './mr-bulk-approval-update.js';
-import {flush} from '@polymer/polymer/lib/utils/flush.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 let element;
@@ -62,6 +61,9 @@ describe('mr-bulk-approval-update', () => {
     prpcClient.call.returns(promise);
 
     sinon.spy(element, 'fetchApprovals');
+
+    await element.updateComplete;
+
     root.querySelector('.js-showApprovals').click();
     assert.isTrue(element.fetchApprovals.calledOnce);
 
@@ -78,6 +80,9 @@ describe('mr-bulk-approval-update', () => {
   it('fetchApprovals: applicable fields dont exist', async () => {
     const promise = Promise.resolve({fieldDefs: []});
     prpcClient.call.returns(promise);
+
+    await element.updateComplete;
+
     root.querySelector('.js-showApprovals').click();
 
     await promise;
@@ -94,12 +99,11 @@ describe('mr-bulk-approval-update', () => {
       {fieldRef: {fieldName: 'Approval-One', type: 'APPROVAL_TYPE'}},
       {fieldRef: {fieldName: 'Approval-Two', type: 'APPROVAL_TYPE'}},
     ];
-    element.set('approvals', fieldDefs);
+    element.approvals = fieldDefs;
     element.projectName = 'chromium';
     element.localIdsStr = '1,2,3';
 
-    // Wait for dom-if template stamping.
-    flush();
+    await element.updateComplete;
 
     root.querySelector('#commentText').value = 'comment';
     root.querySelector('#statusInput').value = 'NotApproved';
@@ -150,12 +154,11 @@ describe('mr-bulk-approval-update', () => {
       {fieldRef: {fieldName: 'Approval-One', type: 'APPROVAL_TYPE'}},
       {fieldRef: {fieldName: 'Approval-Two', type: 'APPROVAL_TYPE'}},
     ];
-    element.set('approvals', fieldDefs);
+    element.approvals = fieldDefs;
     element.projectName = 'chromium';
     element.localIdsStr = '1,2,3';
 
-    // Wait for dom-if template stamping.
-    flush();
+    await element.updateComplete;
 
     root.querySelector('#commentText').value = 'comment';
     root.querySelector('#statusInput').value = 'NotApproved';
