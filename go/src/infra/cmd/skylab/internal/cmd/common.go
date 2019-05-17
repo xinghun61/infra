@@ -269,7 +269,7 @@ func getSwarmingResultsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 	return results, nil
 }
 
-func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []string, includePassed bool) ([]*swarming.SwarmingRpcsTaskResult, error) {
+func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []string) ([]*swarming.SwarmingRpcsTaskResult, error) {
 	ctx, cf := context.WithTimeout(ctx, 60*time.Second)
 	defer cf()
 	var results *swarming.SwarmingRpcsTaskList
@@ -281,20 +281,8 @@ func getSwarmingResultsForTags(ctx context.Context, s *swarming.Service, tags []
 	if err := swarmingCallWithRetries(ctx, getResults); err != nil {
 		return nil, errors.Annotate(err, fmt.Sprintf("get swarming result for tags %s", tags)).Err()
 	}
-	var filteredTasks []*swarming.SwarmingRpcsTaskResult
-	if !includePassed {
-		for _, r := range results.Items {
-			// Failure includes: COMPLETED_FAILURE (test failure), TIMED OUT
-			// Internal Failure includes: BOT_DIED
-			// Tasks in CANCELED, NO_RESOURCE, EXPIRED are skipped (won't be rerun)
-			if r.Failure || r.InternalFailure {
-				filteredTasks = append(filteredTasks, r)
-			}
-		}
-	} else {
-		filteredTasks = results.Items
-	}
-	return filteredTasks, nil
+
+	return results.Items, nil
 }
 
 func getSwarmingRequestsForIds(ctx context.Context, IDs []string, s *swarming.Service) ([]*swarming.SwarmingRpcsTaskRequest, error) {

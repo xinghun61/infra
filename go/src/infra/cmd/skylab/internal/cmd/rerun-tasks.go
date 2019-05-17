@@ -92,8 +92,11 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 			return err
 		}
 	} else {
-		if originalTasks, err = getSwarmingResultsForTags(ctx, s, c.tags, c.includePassed); err != nil {
+		if originalTasks, err = getSwarmingResultsForTags(ctx, s, c.tags); err != nil {
 			return err
+		}
+		if !c.includePassed {
+			originalTasks = filterPassedRequests(originalTasks)
 		}
 	}
 
@@ -136,6 +139,20 @@ func (c *rerunTasksRun) innerRun(a subcommands.Application, args []string, env s
 	}
 
 	return printIDMap(a.GetOut(), originalToRerunID, siteEnv)
+}
+
+// filterPassedResults removes result items for passed tasks.
+func filterPassedRequests(results []*swarming.SwarmingRpcsTaskResult) []*swarming.SwarmingRpcsTaskResult {
+	filtered := make([]*swarming.SwarmingRpcsTaskResult, 0, len(results))
+	for _, r := range results {
+		// Failure includes: COMPLETED_FAILURE (test failure), TIMED OUT
+		// Internal Failure includes: BOT_DIED
+		// Tasks in CANCELED, NO_RESOURCE, EXPIRED are skipped (won't be rerun)
+		if r.Failure || r.InternalFailure {
+			filtered = append(filtered, r)
+		}
+	}
+	return filtered
 }
 
 func getNewRequests(taskIDs []string, originalRequests []*swarming.SwarmingRpcsTaskRequest, preserveParent bool, siteEnv site.Environment) (map[string]*swarming.SwarmingRpcsNewTaskRequest, error) {
