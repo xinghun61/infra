@@ -61,6 +61,7 @@ type Assigner struct {
 	CCsRaw [][]byte `gae:",noindex" json:"-"`
 
 	Description string `gae:",noindex"`
+	Comment     string `gae:",noindex"`
 
 	// IsDryRun specifies if the assigner should process tasks without
 	// issue update operations.
@@ -96,6 +97,7 @@ func (a *Assigner) updateIfChanged(c context.Context, cfg *config.Assigner, rev 
 	a.Owners = cfg.Owners
 	a.IssueQuery = *cfg.IssueQuery
 	a.Description = cfg.Description
+	a.Comment = cfg.Comment
 	a.IsDryRun = cfg.DryRun
 	a.ConfigRevision = rev
 

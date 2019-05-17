@@ -74,7 +74,7 @@ message Assigner {
 
   // The duration between the start of an Assigner run and the next one.
   //
-  // This value be at least a minute long.
+  // This value should be at least a minute long.
   google.protobuf.Duration interval = 3;
 
   // IssueQuery describes the search criteria to look for issues to assign.
@@ -93,4 +93,8 @@ message Assigner {
 
   // The description shown on UI.
   string description = 9;
+
+  // Comment is an additional message that is added to the body of the issue
+  // comment that is posted when an issue gets updated.
+  string comment = 10;
 }
