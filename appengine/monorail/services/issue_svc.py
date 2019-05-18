@@ -1498,6 +1498,40 @@ class IssueService(object):
         cnxn, iids_to_invalidate, modified_timestamp=issue.modified_timestamp,
         invalidate=invalidate)
 
+    # Add a comment to the newly added issues saying they are now blocking
+    # this issue.
+    for add_issue in self.GetIssues(cnxn, delta.blocked_on_add):
+      self.CreateIssueComment(
+          cnxn, add_issue, reporter_id, content='',
+          amendments=[tracker_bizobj.MakeBlockingAmendment(
+              [(issue.project_name, issue.local_id)], [],
+              default_project_name=add_issue.project_name)])
+    # Add a comment to the newly removed issues saying they are no longer
+    # blocking this issue.
+    for remove_issue in self.GetIssues(cnxn, delta.blocked_on_remove):
+      self.CreateIssueComment(
+          cnxn, remove_issue, reporter_id, content='',
+          amendments=[tracker_bizobj.MakeBlockingAmendment(
+              [], [(issue.project_name, issue.local_id)],
+              default_project_name=remove_issue.project_name)])
+
+    # Add a comment to the newly added issues saying they are now blocked on
+    # this issue.
+    for add_issue in self.GetIssues(cnxn, delta.blocking_add):
+      self.CreateIssueComment(
+          cnxn, add_issue, reporter_id, content='',
+          amendments=[tracker_bizobj.MakeBlockedOnAmendment(
+              [(issue.project_name, issue.local_id)], [],
+              default_project_name=add_issue.project_name)])
+    # Add a comment to the newly removed issues saying they are no longer
+    # blocked on this issue.
+    for remove_issue in self.GetIssues(cnxn, delta.blocking_remove):
+      self.CreateIssueComment(
+          cnxn, remove_issue, reporter_id, content='',
+          amendments=[tracker_bizobj.MakeBlockedOnAmendment(
+              [], [(issue.project_name, issue.local_id)],
+              default_project_name=remove_issue.project_name)])
+
     if not invalidate:
       cnxn.Commit()
 

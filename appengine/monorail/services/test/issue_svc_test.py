@@ -1160,6 +1160,130 @@ class IssueServiceTest(unittest.TestCase):
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
 
+  def testDeltaUpdateIssue_BlockedOn(self):
+    commenter_id = 222
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111, summary='sum',
+        status='Live', issue_id=78901, project_name='proj')
+    blockedon_issue = fake.MakeTestIssue(
+        project_id=789, local_id=2, owner_id=111, summary='sum sum',
+        status='Live', issue_id=78902, project_name='proj')
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssue')
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
+    self.mox.StubOutWithMock(self.services.issue, 'UpdateIssue')
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
+    self.mox.StubOutWithMock(self.services.issue, '_UpdateIssuesModified')
+    self.mox.StubOutWithMock(self.services.issue, "SortBlockedOn")
+
+    # Calls in ApplyIssueDelta
+    # Call to find added blockedon issues.
+    self.services.issue.GetIssues(
+        self.cnxn, [blockedon_issue.issue_id]).AndReturn([blockedon_issue])
+    # Call to find removed blockedon issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    # Call to sort blockedon issues.
+    self.services.issue.SortBlockedOn(
+        self.cnxn, issue, [blockedon_issue.issue_id]).AndReturn(([78902], [0]))
+
+    self.services.issue.UpdateIssue(
+        self.cnxn, issue, commit=False, invalidate=False)
+    amendments = [
+        tracker_bizobj.MakeBlockedOnAmendment(
+            [('proj', 2)], [], default_project_name='proj')]
+    self.services.issue.CreateIssueComment(
+        self.cnxn, issue, commenter_id, 'comment text', attachments=None,
+        amendments=amendments, commit=False, is_description=False,
+        kept_attachments=None)
+    # Call to find added blockedon issues.
+    self.services.issue.GetIssues(
+        self.cnxn, [blockedon_issue.issue_id]).AndReturn([blockedon_issue])
+    self.services.issue.CreateIssueComment(
+        self.cnxn, blockedon_issue, commenter_id, content='',
+        amendments=[tracker_bizobj.MakeBlockingAmendment(
+            [(issue.project_name, issue.local_id)], [],
+            default_project_name='proj')])
+    # Call to find removed blockedon issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    # Call to find added blocking issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    # Call to find removed blocking issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+
+    self.services.issue._UpdateIssuesModified(
+        self.cnxn, {issue.issue_id, blockedon_issue.issue_id},
+        modified_timestamp=self.now, invalidate=True)
+    self.SetUpEnqueueIssuesForIndexing([78901])
+
+    self.mox.ReplayAll()
+    delta = tracker_pb2.IssueDelta(blocked_on_add=[blockedon_issue.issue_id])
+    self.services.issue.DeltaUpdateIssue(
+        self.cnxn, self.services, commenter_id, issue.project_id, config,
+        issue, delta, comment='comment text',
+        index_now=False, timestamp=self.now)
+    self.mox.VerifyAll()
+
+  def testDeltaUpdateIssue_Blocking(self):
+    commenter_id = 222
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111, summary='sum',
+        status='Live', issue_id=78901, project_name='proj')
+    blocking_issue = fake.MakeTestIssue(
+        project_id=789, local_id=2, owner_id=111, summary='sum sum',
+        status='Live', issue_id=78902, project_name='proj')
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssue')
+    self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
+    self.mox.StubOutWithMock(self.services.issue, 'UpdateIssue')
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
+    self.mox.StubOutWithMock(self.services.issue, '_UpdateIssuesModified')
+    self.mox.StubOutWithMock(self.services.issue, "SortBlockedOn")
+
+    # Calls in ApplyIssueDelta
+    # Call to find added blocking issues.
+    self.services.issue.GetIssues(
+        self.cnxn, [blocking_issue.issue_id]).AndReturn([blocking_issue])
+    # Call to find removed blocking issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+
+    self.services.issue.UpdateIssue(
+        self.cnxn, issue, commit=False, invalidate=False)
+    amendments = [
+        tracker_bizobj.MakeBlockingAmendment(
+            [('proj', 2)], [], default_project_name='proj')]
+    self.services.issue.CreateIssueComment(
+        self.cnxn, issue, commenter_id, 'comment text', attachments=None,
+        amendments=amendments, commit=False, is_description=False,
+        kept_attachments=None)
+    # Call to find added blockedon issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    # Call to find removed blockedon issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    # Call to find added blocking issues.
+    self.services.issue.GetIssues(
+        self.cnxn, [blocking_issue.issue_id]).AndReturn([blocking_issue])
+    self.services.issue.CreateIssueComment(
+        self.cnxn, blocking_issue, commenter_id, content='',
+        amendments=[tracker_bizobj.MakeBlockedOnAmendment(
+            [(issue.project_name, issue.local_id)], [],
+            default_project_name='proj')])
+    # Call to find removed blocking issues.
+    self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
+    self.services.issue._UpdateIssuesModified(
+        self.cnxn, {issue.issue_id, blocking_issue.issue_id},
+        modified_timestamp=self.now, invalidate=True)
+    self.SetUpEnqueueIssuesForIndexing([78901])
+
+    self.mox.ReplayAll()
+    delta = tracker_pb2.IssueDelta(blocking_add=[blocking_issue.issue_id])
+    self.services.issue.DeltaUpdateIssue(
+        self.cnxn, self.services, commenter_id, issue.project_id, config,
+        issue, delta, comment='comment text',
+        index_now=False, timestamp=self.now)
+    self.mox.VerifyAll()
+
   def testApplyIssueComment(self):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, owner_id=111, summary='sum',
