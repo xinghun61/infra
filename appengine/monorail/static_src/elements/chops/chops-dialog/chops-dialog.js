@@ -10,7 +10,6 @@ const ESC_KEYCODE = 27;
  * `<chops-dialog>` displays a modal/dialog overlay.
  *
  * @customElement
- * @polymer
  */
 export class ChopsDialog extends LitElement {
   static get styles() {

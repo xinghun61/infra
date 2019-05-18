@@ -4,11 +4,11 @@
 [include "../webpack-out/mr-app.ezt"]
 
 <mr-app [if-any logged_in_user]
-  user-display-name="[logged_in_user.email]"[end]
-  issue-entry-url="[issue_entry_url]"
-  login-url="[login_url]"
-  logout-url="[logout_url]"
-  version-base="[version_base]"
+  userDisplayName="[logged_in_user.email]"[end]
+  issueEntryUrl="[issue_entry_url]"
+  loginUrl="[login_url]"
+  logoutUrl="[logout_url]"
+  versionBase="[version_base]"
 ></mr-app>
 
 [include "../framework/polymer-footer.ezt"]

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// This file bundles together all Polymer elements used on the
+// This file bundles together all web components elements used on the
 // legacy EZT pages. This is to avoid having issues with registering
 // duplicate versions of dependencies.
 

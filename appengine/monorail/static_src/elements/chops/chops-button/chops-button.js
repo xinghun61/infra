@@ -11,7 +11,6 @@ const DEFAULT_INPUT_KEYS = [13, 32];
  * `<chops-button>` displays a styled button component with a few niceties.
  *
  * @customElement
- * @polymer
  * @demo /demo/chops-button_demo.html
  */
 export class ChopsButton extends LitElement {

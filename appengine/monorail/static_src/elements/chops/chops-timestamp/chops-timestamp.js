@@ -12,7 +12,6 @@ import {standardTime, standardTimeShort} from './chops-timestamp-helpers';
  * This element shows a time in a human readable form.
  *
  * @customElement
- * @polymer
  */
 export class ChopsTimestamp extends LitElement {
   render() {

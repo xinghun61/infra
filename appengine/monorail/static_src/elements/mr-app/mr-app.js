@@ -2,9 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import 'polymer-resin/standalone/polymer-resin.js';
-import 'noclosure-resin-bridge';
-import {PolymerElement, html} from '@polymer/polymer';
+import {LitElement, html} from 'lit-element';
 import page from 'page';
 import qs from 'qs';
 
@@ -18,54 +16,48 @@ import 'elements/framework/mr-keystrokes/mr-keystrokes.js';
 /**
  * `<mr-app>`
  *
- * The container component for all pages under the Monorail Polymer SPA.
+ * The container component for all pages under the Monorail SPA.
  *
  */
-export class MrApp extends connectStore(PolymerElement) {
-  static get template() {
+export class MrApp extends connectStore(LitElement) {
+  render() {
     return html`
-      <script>
-        security.polymer_resin.install({
-          'allowedIdentifierPrefixes': [''],
-          'safeTypesBridge': security.polymer_resin.noclosure_bridge,
-        });
-      </script>
       <mr-keystrokes
-        project-name="[[projectName]]"
-        issue-id="[[queryParams.id]]"
-        query-params="[[queryParams]]"
-        issue-entry-url="[[issueEntryUrl]]"
+        .projectName=${this.projectName}
+        .issueId=${this.queryParams.id}
+        .queryParams=${this.queryParams}
+        .issueEntryUrl=${this.issueEntryUrl}
       ></mr-keystrokes>
       <mr-header
-        project-name="[[projectName]]"
-        user-display-name="[[userDisplayName]]"
-        issue-entry-url="[[issueEntryUrl]]"
-        login-url="[[loginUrl]]"
-        logout-url="[[logoutUrl]]"
+        .projectName=${this.projectName}
+        .userDisplayName=${this.userDisplayName}
+        .issueEntryUrl=${this.issueEntryUrl}
+        .loginUrl=${this.loginUrl}
+        .logoutUrl=${this.logoutUrl}
       ></mr-header>
       <main></main>
     `;
   }
 
-  static get is() {
-    return 'mr-app';
-  }
-
   static get properties() {
     return {
-      issueEntryUrl: String,
-      loginUrl: String,
-      logoutUrl: String,
-      projectName: String,
-      userDisplayName: String,
-      queryParams: Object,
-      dirtyForms: Array,
-      versionBase: String,
-      _currentContext: {
-        type: Object,
-        value: {},
-      },
+      issueEntryUrl: {type: String},
+      loginUrl: {type: String},
+      logoutUrl: {type: String},
+      projectName: {type: String},
+      userDisplayName: {type: String},
+      queryParams: {type: Object},
+      dirtyForms: {type: Array},
+      versionBase: {type: String},
+      _currentContext: {type: Object},
     };
+  }
+
+  constructor() {
+    super();
+    this.queryParams = {};
+    this.dirtyForms = [];
+    this._currentContext = [];
   }
 
   stateChanged(state) {
@@ -149,8 +141,6 @@ export class MrApp extends connectStore(PolymerElement) {
 
     this.projectName = ctx.params.project;
 
-    __webpack_public_path__ = `${this.versionBase}/static/dist/`;
-
     await import(/* webpackChunkName: "mr-issue-page" */ '../issue-detail/mr-issue-page/mr-issue-page.js');
     // TODO(zhangtiff): Make sure the properties passed in to the loaded
     // component can still dynamically change.
@@ -171,4 +161,4 @@ export class MrApp extends connectStore(PolymerElement) {
   }
 }
 
-customElements.define(MrApp.is, MrApp);
+customElements.define('mr-app', MrApp);
