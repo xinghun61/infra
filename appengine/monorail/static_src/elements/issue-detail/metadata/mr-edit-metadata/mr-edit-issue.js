@@ -8,9 +8,9 @@ import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
 import * as ui from 'elements/reducers/ui.js';
+import {arrayToEnglish} from 'elements/shared/helpers.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import './mr-edit-metadata.js';
-
 
 /**
  * `<mr-edit-issue>`
@@ -122,11 +122,16 @@ export class MrEditIssue extends connectStore(LitElement) {
   }
 
   async save() {
-    this._resetOnChange = true;
     const form = this.shadowRoot.querySelector('mr-edit-metadata');
+    const delta = form.delta;
+    if (!_checkRemovedRestrictions(delta.labelRefsRemove)) {
+      return;
+    }
+
+    this._resetOnChange = true;
     const message = {
       issueRef: this.issueRef,
-      delta: form.delta,
+      delta: delta,
       commentContent: form.getCommentContent(),
       sendEmail: form.sendEmail,
     };
@@ -182,6 +187,18 @@ export class MrEditIssue extends connectStore(LitElement) {
       (status) => status.status === currentStatusRef.status)) return statusDefs;
     return [currentStatusRef, ...statusDefs];
   }
+}
+
+function _checkRemovedRestrictions(labelRefsRemove) {
+  if (!labelRefsRemove) return true;
+  const removedRestrictions = labelRefsRemove
+    .map(({label}) => label)
+    .filter((label) => label.toLowerCase().startsWith('restrict-'));
+  const removeRestrictionsMessage =
+    'You are removing these restrictions:\n' +
+    arrayToEnglish(removedRestrictions) + '\n' +
+    'This might allow more people to access this issue. Are you sure?';
+  return !removedRestrictions.length || confirm(removeRestrictionsMessage);
 }
 
 customElements.define('mr-edit-issue', MrEditIssue);
