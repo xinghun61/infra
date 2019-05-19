@@ -1,4 +1,4 @@
-# Copyright 2017 The Chromium Authors. All rights reserved.
+# Copyright 2019 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -6,10 +6,6 @@ from recipe_engine.recipe_api import Property
 
 
 DEPS = [
-  'depot_tools/bot_update',
-  'depot_tools/gclient',
-  'depot_tools/git',
-  'depot_tools/tryserver',
   'recipe_engine/buildbucket',
   'recipe_engine/context',
   'recipe_engine/file',
@@ -19,6 +15,11 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/runtime',
   'recipe_engine/step',
+
+  'depot_tools/bot_update',
+  'depot_tools/gclient',
+  'depot_tools/git',
+  'depot_tools/tryserver',
 ]
 
 
@@ -41,21 +42,50 @@ PROPERTIES = {
 
 
 NONTRIVIAL_ROLL_FOOTER = 'Recipe-Nontrivial-Roll'
-
-
 MANUAL_CHANGE_FOOTER = 'Recipe-Manual-Change'
-
-
 BYPASS_FOOTER = 'Recipe-Tryjob-Bypass-Reason'
+KNOWN_FOOTERS = [NONTRIVIAL_ROLL_FOOTER, MANUAL_CHANGE_FOOTER, BYPASS_FOOTER]
 
+FOOTER_ADD_TEMPLATE = '''
+Add
 
-def _get_recipe_dep(api, recipes_cfg_path, project):
-  """Extracts url and revision of |project| from given recipes.cfg."""
-  current_cfg = api.json.read(
-    'read recipes.cfg',
-    recipes_cfg_path, step_test_data=lambda: api.json.test_api.output({}))
-  dep = current_cfg.json.output.get('deps', {}).get(project, {})
-  return dep.get('url'), dep.get('revision')
+    {footer}: {up_id}
+
+To your CL message.
+'''.strip()
+
+MANUAL_CHANGE_MSG = '''
+This means that your upstream CL (this one) will require MANUAL CODE CHANGES
+in the downstream repo {down_id!r}. Best practice is to prepare all downstream
+changes before landing the upstream CL, using:
+
+    {down_id}/{down_recipes} -O {up_id}=/path/to/local/{up_id} test train
+
+When that CL has been reviewed, you can land this upstream change. Once the
+upstream change lands, roll it into your downstream CL:
+
+    {down_id}/recipes.py manual_roll   # may require running multiple times.
+
+Re-train expectations and upload the expectations plus the roll to your
+downstream CL. It's customary to copy the outputs of manual_roll to create
+a changelog to attach to the downstream CL as well to help reviewers understand
+what the roll contains.
+'''.strip()
+
+NONTRIVIAL_CHANGE_MSG = '''
+This means that your upstream CL (this one) will change the EXPECTATION FILES
+in the downstream repo {down_id!r}.
+
+The recipe roller will automatically prepare the non-trivial CL and will upload
+it with `git cl upload --r-owners` to the downstream repo. Best practice is to
+review this non-trivial roll CL to ensure that the expectations you see there
+are expected.
+'''
+
+EXTRA_MSG = {
+  NONTRIVIAL_ROLL_FOOTER: NONTRIVIAL_CHANGE_MSG,
+  MANUAL_CHANGE_FOOTER: MANUAL_CHANGE_MSG,
+}
 
 
 def _checkout_project(
@@ -64,11 +94,10 @@ def _checkout_project(
 
   gclient_config = api.gclient.make_config()
   gclient_config.got_revision_reverse_mapping['got_revision'] = project
-  s = gclient_config.solutions.add()
-  s.name = project
-  s.url = url
-  if revision:
-    s.revision = revision
+  soln = gclient_config.solutions.add()
+  soln.name = project
+  soln.url = url
+  soln.revision = revision
 
   with api.context(cwd=workdir):
     ret = api.bot_update.ensure_checkout(
@@ -76,7 +105,42 @@ def _checkout_project(
     with api.context(cwd=workdir.join(project)):
       # Clean out those stale pyc's!
       api.git('clean', '-xf')
-    return ret
+    return workdir.join(ret.json.output['root'])
+
+
+def _find_footer(api, repo_id):
+  all_footers = api.tryserver.get_footers()
+
+  found_set = set()
+  for footer in KNOWN_FOOTERS:
+    values = all_footers.get(footer, ())
+    if repo_id in values:
+      found_set.add(footer)
+
+  if BYPASS_FOOTER in found_set:
+    api.python.succeeding_step(
+        'BYPASS ENABLED',
+        'Roll tryjob bypassed for %r' % (repo_id,))
+    return None, True
+
+  if len(found_set) > 1:
+    api.python.failing_step(
+        'Too many footers for %r' % (repo_id,),
+        'Found too many footers in CL message:\n' + (
+          '\n'.join(' * '+f for f in sorted(found_set)))
+    )
+
+  return found_set.pop() if found_set else None, False
+
+
+def _find_recipes_py(api, repo_path):
+  recipes_cfg = api.file.read_json(
+      'parse recipes.cfg',
+      repo_path.join('infra', 'config', 'recipes.cfg'),
+      test_data={
+        'recipes_path': 'some/path',
+      })
+  return api.path.join(recipes_cfg.get('recipes_path', ''), 'recipes.py')
 
 
 def RunSteps(api, upstream_id, upstream_url, downstream_id, downstream_url):
@@ -86,299 +150,164 @@ def RunSteps(api, upstream_id, upstream_url, downstream_id, downstream_url):
   # required parameter for symmetric input for upstream/downstream.
   # TODO: figure out upstream_id from downstream's repo recipes.cfg file using
   # patch and deprecated both upstream_id and upstream_url parameters.
-  workdir_base = api.path['cache'].join('recipe_roll_tryjob')
-  upstream_workdir = workdir_base.join(upstream_id)
-  downstream_workdir = workdir_base.join(downstream_id)
-  engine_workdir = workdir_base.join('recipe_engine')
+  workdir_base = api.path['cache'].join('builder')
 
-  upstream_checkout_step = _checkout_project(
-      api, upstream_workdir, upstream_id, upstream_url,
-      patch=False, name="upstream")
-  downstream_checkout_step = _checkout_project(
-      api, downstream_workdir, downstream_id, downstream_url,
+  # First, check to see if the user has bypassed this tryjob's analysis
+  # entirely.
+  actual_footer, bypass = _find_footer(api, upstream_id)
+  if bypass:
+    return
+
+  # If not, we run a 'train' on the downstream repo, using the upstream
+  # checkout.
+  #
+  # If the train fails, we require a Manual-Change footer
+  # If the train creates a diff, we require a Nontrivial-Roll footer
+  # If the train is clean, we require no footers
+  upstream_checkout = _checkout_project(
+      api, workdir_base.join(upstream_id), upstream_id, upstream_url,
+      patch=True, name="upstream")
+  downstream_checkout = _checkout_project(
+      api, workdir_base.join(downstream_id), downstream_id, downstream_url,
       patch=False, name="downstream")
 
-  upstream_checkout = upstream_workdir.join(
-      upstream_checkout_step.json.output['root'])
-  downstream_checkout = downstream_workdir.join(
-      downstream_checkout_step.json.output['root'])
-
-  # Use recipe engine version matching the upstream one.
-  # This most closely simulates rolling the upstream change.
-  if upstream_id == 'recipe_engine':
-    engine_checkout = upstream_checkout
-  else:
-    engine_url, engine_revision = _get_recipe_dep(
-        api, upstream_checkout.join('infra', 'config', 'recipes.cfg'),
-        'recipe_engine')
-
-    engine_checkout_step = _checkout_project(
-        api, engine_workdir, 'recipe_engine',
-        engine_url, revision=engine_revision, patch=False, name="engine")
-    engine_checkout = engine_workdir.join(
-        engine_checkout_step.json.output['root'])
-
-  downstream_recipes_cfg = downstream_checkout.join(
-      'infra', 'config', 'recipes.cfg')
-  recipes_py = engine_checkout.join('recipes.py')
-
+  expected_footer = None
+  recipes_relpath = _find_recipes_py(api, downstream_checkout)
   try:
-    orig_downstream_test = api.python('test (without patch)',
-        recipes_py,
-        ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_id, upstream_checkout),
-         'test', 'run', '--json', api.json.output()],
-        venv=True,
-        step_test_data=lambda: api.json.test_api.output({}))
-  except api.step.StepFailure as ex:
-    orig_downstream_test = ex.result
+    api.python('train recipes',
+        downstream_checkout.join(recipes_relpath),
+        ['-O', '%s=%s' % (upstream_id, upstream_checkout), 'test', 'train'])
 
-  try:
-    orig_downstream_train = api.python('train (without patch)',
-        recipes_py,
-        ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_id, upstream_checkout),
-         'test', 'train', '--json', api.json.output()],
-        venv=True,
-        step_test_data=lambda: api.json.test_api.output({}))
-  except api.step.StepFailure as ex:
-    orig_downstream_train = ex.result
+    with api.context(cwd=downstream_checkout):
+      # This has the benefit of showing the expectation diff to the user.
+      dirty_check = api.git(
+          'diff', '--exit-code', name='post-train diff', ok_ret='any')
 
-  upstream_revision = upstream_checkout_step.json.output[
-      'manifest'][upstream_id]['revision']
-  _checkout_project(
-       api, upstream_workdir, upstream_id, upstream_url,
-       patch=True, revision=upstream_revision, name="upstream_patched")
+    if dirty_check.retcode != 0:
+      expected_footer = NONTRIVIAL_ROLL_FOOTER
+  except api.step.StepFailure:
+    expected_footer = MANUAL_CHANGE_FOOTER
 
-  downstream_revision = downstream_checkout_step.json.output[
-      'manifest'][downstream_id]['revision']
-  _checkout_project(
-       api, downstream_workdir, downstream_id, downstream_url,
-       patch=False, revision=downstream_revision, name="downstream_patched")
-
-  # Since we patched upstream repo (potentially including recipes.cfg),
-  # make sure to keep our recipe engine checkout in sync.
-  if upstream_id != 'recipe_engine':
-    engine_url, engine_revision = _get_recipe_dep(
-        api, upstream_checkout.join('infra', 'config', 'recipes.cfg'),
-        'recipe_engine')
-    _checkout_project(
-        api, engine_workdir, 'recipe_engine',
-        engine_url, revision=engine_revision, patch=False,
-        name="engine_patched")
-
-  try:
-    patched_downstream_test = api.python('test (with patch)',
-        recipes_py,
-        ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_id, upstream_checkout),
-         'test', 'run', '--json', api.json.output()],
-        venv=True,
-        step_test_data=lambda: api.json.test_api.output({}))
-  except api.step.StepFailure as ex:
-    patched_downstream_test = ex.result
-
-  try:
-    patched_downstream_train = api.python('train (with patch)',
-        recipes_py,
-        ['--package', downstream_recipes_cfg,
-         '-O', '%s=%s' % (upstream_id, upstream_checkout),
-         'test', 'train', '--json', api.json.output()],
-        venv=True,
-        step_test_data=lambda: api.json.test_api.output({}))
-  except api.step.StepFailure as ex:
-    patched_downstream_train = ex.result
-
-  if patched_downstream_test.retcode == 0:
+  # Either expected_footer and actual_footer are both None or both matching
+  # footers.
+  if expected_footer == actual_footer:
+    if expected_footer:
+      msg = (
+        'CL message contains correct footer (%r) for this repo.'
+      ) % expected_footer
+    else:
+      msg = 'CL is trivial and message contains no footers for this repo.'
+    api.python.succeeding_step('Roll OK', msg)
     return
 
-  try:
-    test_diff = api.python('diff (test)',
-        recipes_py,
-        ['--package', downstream_recipes_cfg,
-         'test', 'diff',
-         '--baseline', api.json.input(orig_downstream_test.json.output),
-         '--actual', api.json.input(patched_downstream_test.json.output)],
-        venv=True)
-  except api.step.StepFailure as ex:
-    test_diff = ex.result
-
-  if test_diff.retcode == 0:
-    return
-
-  cl_footers = api.tryserver.get_footers()
-
-  nontrivial_roll_footer = cl_footers.get(NONTRIVIAL_ROLL_FOOTER, [])
-  manual_change_footer = cl_footers.get(MANUAL_CHANGE_FOOTER, [])
-  bypass_footer = cl_footers.get(BYPASS_FOOTER, [])
-
-  if downstream_id in manual_change_footer:
-    api.python.succeeding_step(
-        'result',
-        ('Recognized %s footer for %s.' %
-             (MANUAL_CHANGE_FOOTER, downstream_id)))
-  elif downstream_id in nontrivial_roll_footer:
-    api.python.succeeding_step(
-        'result',
-        ('Recognized %s footer for %s.' %
-             (NONTRIVIAL_ROLL_FOOTER, downstream_id)))
-
-  try:
-    train_diff = api.python('diff (train)',
-        recipes_py,
-        ['--package', downstream_recipes_cfg,
-         'test', 'diff',
-         '--baseline', api.json.input(orig_downstream_train.json.output),
-         '--actual', api.json.input(patched_downstream_train.json.output)],
-        venv=True)
-  except api.step.StepFailure as ex:
-    train_diff = ex.result
-
-  # In theory we could return early when bypass footer is present. Executing
-  # test steps anyway helps provide more data points for this recipe's logic.
-  if bypass_footer:
-    api.python.succeeding_step(
-        'result',
-        ('Recognized %s footer: %s.' %
-             (BYPASS_FOOTER, '; '.join(bypass_footer))))
-    return
-
-  if train_diff.retcode == 0:
-    if (downstream_id not in manual_change_footer and
-        downstream_id not in nontrivial_roll_footer):
-      api.python.failing_step(
-          'result',
-          ('Add "%s: %s" footer to the CL to acknowledge the change will '
-           'require nontrivial roll in %r repo') % (
-               NONTRIVIAL_ROLL_FOOTER, downstream_id, downstream_id))
-    return
-
-  if downstream_id in manual_change_footer:
-    api.python.succeeding_step(
-        'result',
-        ('Recognized %s footer for %s.' %
-             (MANUAL_CHANGE_FOOTER, downstream_id)))
-  else:
+  # trivial roll, but user has footer in CL message.
+  if expected_footer is None and actual_footer is not None:
     api.python.failing_step(
-        'result',
-        ('Add "%s: %s" footer to the CL to acknowledge the change will require '
-         'manual code changes in %r repo') % (
-             MANUAL_CHANGE_FOOTER, downstream_id, downstream_id))
+        'UNEXPECTED FOOTER IN CL MESSAGE',
+        'Change is trivial, but found %r footer' % (actual_footer,))
+
+  # nontrivial/manual roll, but user has wrong footer in CL message.
+  if expected_footer is not None and actual_footer is not None:
+    api.python.failing_step(
+        'WRONG FOOTER IN CL MESSAGE',
+        'Change reqires %r, but found %r footer' % (
+          expected_footer, actual_footer,))
+
+  # expected != None at this point, so actual_footer must be None
+  msg = FOOTER_ADD_TEMPLATE + EXTRA_MSG[expected_footer]
+  api.python.failing_step(
+      'MISSING FOOTER IN CL MESSAGE',
+      msg.format(
+          footer=expected_footer,
+          up_id=upstream_id,
+          down_id=downstream_id,
+          down_recipes=recipes_relpath,
+      ))
 
 
 def GenTests(api):
-  def test(name, upstream_id='recipe_engine', downstream_id='depot_tools',
-           cl_description=None):
+  def test(name, *footers):
+    upstream_id = 'recipe_engine'
+    downstream_id = 'depot_tools'
     repo_urls = {
       'build':
-        'https://chromium.googlesource.com/chromium/tools/build',
+      'https://chromium.googlesource.com/chromium/tools/build',
       'depot_tools':
-        'https://chromium.googlesource.com/chromium/tools/depot_tools',
+      'https://chromium.googlesource.com/chromium/tools/depot_tools',
       'recipe_engine':
-        'https://chromium.googlesource.com/infra/luci/recipes-py',
+      'https://chromium.googlesource.com/infra/luci/recipes-py',
     }
-    res = (
-        api.test(name)
-        + api.runtime(is_luci=True, is_experimental=False)
-        + api.properties(
-            upstream_id=upstream_id,
-            upstream_url=repo_urls[upstream_id],
-            downstream_id=downstream_id,
-            downstream_url=repo_urls[downstream_id])
-        + api.buildbucket.try_build(
-            git_repo=repo_urls[upstream_id],
-            change_number=456789,
-            patch_set=12)
-    )
-    if cl_description:
-      res += api.override_step_data('gerrit changes', api.json.output([{
+    return (
+      api.test(name)
+      + api.runtime(is_luci=True, is_experimental=False)
+      + api.properties(
+          upstream_id=upstream_id,
+          upstream_url=repo_urls[upstream_id],
+          downstream_id=downstream_id,
+          downstream_url=repo_urls[downstream_id])
+      + api.buildbucket.try_build(
+          git_repo=repo_urls[upstream_id],
+          change_number=456789,
+          patch_set=12)
+      + api.override_step_data('gerrit changes', api.json.output([{
         'revisions': {
-            'deadbeef': {'_number': 12, 'commit': {'message': cl_description}},
-         }
+          'deadbeef': {'_number': 12, 'commit': {'message': ''}},
+        }
       }]))
-    return res
+      + api.step_data(
+          'parse description', api.json.output({
+            k: [upstream_id] for k in footers
+          }))
+    )
 
   yield (
-    test('basic')
+    test('find_trivial_roll')
   )
 
   yield (
-    test('without_patch_test_fail') +
-    api.step_data('test (without patch)', retcode=1)
+    test('bypass', BYPASS_FOOTER)
+    + api.post_check(lambda check, steps: check('BYPASS ENABLED' in steps))
   )
 
   yield (
-    test('without_patch_train_fail') +
-    api.step_data('train (without patch)', retcode=1)
+    test('too_many_footers', MANUAL_CHANGE_FOOTER, NONTRIVIAL_ROLL_FOOTER)
+    + api.post_check(lambda check, steps: check(
+        "Too many footers for 'recipe_engine'" in steps
+    ))
   )
 
   yield (
-    test('with_patch_test_fail') +
-    api.step_data('test (with patch)', retcode=1)
+    test('find_trivial_roll_unexpected', MANUAL_CHANGE_FOOTER)
+    + api.post_check(lambda check, steps: check(
+        'UNEXPECTED FOOTER IN CL MESSAGE' in steps
+    ))
   )
 
   yield (
-    test('with_patch_train_fail') +
-    api.step_data('train (with patch)', retcode=1)
+    test('find_manual_roll_missing')
+    + api.step_data('train recipes', retcode=1)
+    + api.post_check(lambda check, steps: check(
+        MANUAL_CHANGE_FOOTER in steps['MISSING FOOTER IN CL MESSAGE'].step_text
+    ))
   )
 
   yield (
-    test('diff_test_fail', cl_description='No-Footers.') +
-    api.step_data('test (with patch)', retcode=1) +
-    api.step_data('diff (test)', retcode=1) +
-    api.override_step_data('parse description', api.json.output({}))
+    test('find_manual_roll_wrong', NONTRIVIAL_ROLL_FOOTER)
+    + api.step_data('train recipes', retcode=1)
+    + api.post_check(lambda check, steps: check(
+        MANUAL_CHANGE_FOOTER in steps['WRONG FOOTER IN CL MESSAGE'].step_text
+    ))
   )
 
   yield (
-    test('diff_test_fail_ack',
-         cl_description='Recipe-Nontrivial-Roll: depot_tools') +
-    api.step_data('test (with patch)', retcode=1) +
-    api.step_data('diff (test)', retcode=1) +
-    api.override_step_data(
-        'parse description', api.json.output(
-            {'Recipe-Nontrivial-Roll': ['depot_tools']}))
+    test('find_non_trivial_roll')
+    + api.step_data('post-train diff', retcode=1)
+    + api.post_check(lambda check, steps: check(
+      NONTRIVIAL_ROLL_FOOTER in steps['MISSING FOOTER IN CL MESSAGE'].step_text
+    ))
   )
 
   yield (
-    test('diff_train_fail',
-         cl_description='Recipe-Nontrivial-Roll: depot_tools') +
-    api.step_data('test (with patch)', retcode=1) +
-    api.step_data('diff (test)', retcode=1) +
-    api.step_data('diff (train)', retcode=1) +
-    api.override_step_data(
-        'parse description', api.json.output(
-            {'Recipe-Nontrivial-Roll': ['depot_tools']}))
-  )
-
-  yield (
-    test('diff_train_fail_ack',
-         cl_description='Recipe-Manual-Change: depot_tools') +
-    api.step_data('test (with patch)', retcode=1) +
-    api.step_data('diff (test)', retcode=1) +
-    api.step_data('diff (train)', retcode=1) +
-    api.override_step_data(
-        'parse description', api.json.output(
-            {'Recipe-Manual-Change': ['depot_tools']}))
-  )
-
-  yield (
-    test('diff_train_fail_ack_engine_checkout',
-         upstream_id='depot_tools', downstream_id='build',
-         cl_description='Recipe-Manual-Change: build') +
-    api.step_data('test (with patch)', retcode=1) +
-    api.step_data('diff (test)', retcode=1) +
-    api.step_data('diff (train)', retcode=1) +
-    api.override_step_data(
-        'parse description', api.json.output(
-            {'Recipe-Manual-Change': ['build']}))
-  )
-
-  yield (
-    test('bypass',
-         cl_description='Recipe-Tryjob-Bypass-Reason: Autoroller') +
-    api.step_data('test (with patch)', retcode=1) +
-    api.step_data('diff (test)', retcode=1) +
-    api.override_step_data(
-        'parse description', api.json.output(
-            {'Recipe-Tryjob-Bypass-Reason': ['Autoroller']}))
+    test('non_trivial_roll_match', NONTRIVIAL_ROLL_FOOTER)
+    + api.step_data('post-train diff', retcode=1)
   )

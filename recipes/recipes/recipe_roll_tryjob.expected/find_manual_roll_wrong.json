@@ -1,0 +1,332 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_REPO[depot_tools]/gerrit_client.py",
+      "changes",
+      "--host",
+      "https://chromium-review.googlesource.com",
+      "--json_file",
+      "/path/to/tmp/json",
+      "--limit",
+      "1",
+      "-p",
+      "change=456789",
+      "-o",
+      "ALL_REVISIONS",
+      "-o",
+      "ALL_COMMITS"
+    ],
+    "env": {
+      "PATH": "<PATH>:RECIPE_REPO[depot_tools]"
+    },
+    "infra_step": true,
+    "name": "gerrit changes",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@[@@@",
+      "@@@STEP_LOG_LINE@json.output@  {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"deadbeef\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"_number\": 12, @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"commit\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"message\": \"\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        }@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@]@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_REPO[depot_tools]/git_footers.py",
+      "--json",
+      "/path/to/tmp/json"
+    ],
+    "name": "parse description",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Nontrivial-Roll\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/builder/recipe_engine"
+    ],
+    "infra_step": true,
+    "name": "recipe_engine checkout"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_REPO[depot_tools]/gerrit_client.py",
+      "changes",
+      "--host",
+      "https://chromium-review.googlesource.com",
+      "--json_file",
+      "/path/to/tmp/json",
+      "--limit",
+      "1",
+      "-p",
+      "change=456789",
+      "-o",
+      "ALL_REVISIONS",
+      "-o",
+      "DOWNLOAD_COMMANDS"
+    ],
+    "cwd": "[CACHE]/builder/recipe_engine",
+    "env": {
+      "PATH": "<PATH>:RECIPE_REPO[depot_tools]"
+    },
+    "infra_step": true,
+    "name": "gerrit fetch current CL info",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@[@@@",
+      "@@@STEP_LOG_LINE@json.output@  {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"branch\": \"master\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"184ebe53805e102605d11f6b143486d15c23a09c\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"_number\": \"12\", @@@",
+      "@@@STEP_LOG_LINE@json.output@        \"ref\": \"refs/changes/89/456789/12\"@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@]@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec-path",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipe_engine', 'url': 'https://chromium.googlesource.com/infra/luci/recipes-py'}]",
+      "--patch_root",
+      "recipe_engine",
+      "--revision_mapping_file",
+      "{\"got_revision\": \"recipe_engine\"}",
+      "--git-cache-dir",
+      "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--patch_ref",
+      "https://chromium.googlesource.com/infra/luci/recipes-py@refs/heads/master:refs/changes/89/456789/12",
+      "--revision",
+      "recipe_engine@HEAD"
+    ],
+    "cwd": "[CACHE]/builder/recipe_engine",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "bot_update",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\": \"HEAD\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/recipe_engine.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"88cacb3086f508cc2e4c620a968149db53e34e35\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"recipe_engine\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"88cacb3086f508cc2e4c620a968149db53e34e35\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#291664}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"recipe_engine\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"source_manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"directories\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"recipe_engine\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"git_checkout\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"repo_url\": \"https://fake.org/recipe_engine.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"revision\": \"88cacb3086f508cc2e4c620a968149db53e34e35\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        }@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"version\": 0@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision@\"88cacb3086f508cc2e4c620a968149db53e34e35\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#291664}\"@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-xf"
+    ],
+    "cwd": "[CACHE]/builder/recipe_engine/recipe_engine",
+    "infra_step": true,
+    "name": "git clean"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/builder/depot_tools"
+    ],
+    "infra_step": true,
+    "name": "depot_tools checkout"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec-path",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'depot_tools', 'url': 'https://chromium.googlesource.com/chromium/tools/depot_tools'}]",
+      "--patch_root",
+      "depot_tools",
+      "--revision_mapping_file",
+      "{\"got_revision\": \"depot_tools\"}",
+      "--git-cache-dir",
+      "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "depot_tools@HEAD"
+    ],
+    "cwd": "[CACHE]/builder/depot_tools",
+    "env_suffixes": {
+      "PATH": [
+        "RECIPE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "bot_update (without patch)",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": \"HEAD\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/depot_tools.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#91780}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"source_manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"directories\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"depot_tools\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@        \"git_checkout\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@          \"repo_url\": \"https://fake.org/depot_tools.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@          \"revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@STEP_LOG_LINE@json.output@        }@@@",
+      "@@@STEP_LOG_LINE@json.output@      }@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"version\": 0@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision@\"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#91780}\"@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-xf"
+    ],
+    "cwd": "[CACHE]/builder/depot_tools/depot_tools",
+    "infra_step": true,
+    "name": "git clean (2)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "[CACHE]/builder/depot_tools/depot_tools/infra/config/recipes.cfg",
+      "/path/to/tmp/"
+    ],
+    "infra_step": true,
+    "name": "parse recipes.cfg"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/builder/depot_tools/depot_tools/some/path/recipes.py",
+      "-O",
+      "recipe_engine=[CACHE]/builder/recipe_engine/recipe_engine",
+      "test",
+      "train"
+    ],
+    "name": "train recipes",
+    "~followup_annotations": [
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(1)"
+    ],
+    "name": "WRONG FOOTER IN CL MESSAGE",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Change reqires 'Recipe-Manual-Change', but found 'Recipe-Nontrivial-Roll' footer@@@",
+      "@@@STEP_FAILURE@@@"
+    ]
+  },
+  {
+    "failure": {
+      "failure": {},
+      "humanReason": "Step('WRONG FOOTER IN CL MESSAGE') (retcode: 1)"
+    },
+    "name": "$result"
+  }
+]
