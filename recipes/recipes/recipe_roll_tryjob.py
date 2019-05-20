@@ -111,17 +111,17 @@ def _checkout_project(
 def _find_footer(api, repo_id):
   all_footers = api.tryserver.get_footers()
 
+  if BYPASS_FOOTER in all_footers:
+    api.python.succeeding_step(
+        'BYPASS ENABLED',
+        'Roll tryjob bypassed for %r' % (repo_id,))
+    return None, True
+
   found_set = set()
   for footer in KNOWN_FOOTERS:
     values = all_footers.get(footer, ())
     if repo_id in values:
       found_set.add(footer)
-
-  if BYPASS_FOOTER in found_set:
-    api.python.succeeding_step(
-        'BYPASS ENABLED',
-        'Roll tryjob bypassed for %r' % (repo_id,))
-    return None, True
 
   if len(found_set) > 1:
     api.python.failing_step(
