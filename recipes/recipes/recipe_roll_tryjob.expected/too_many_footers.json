@@ -51,10 +51,10 @@
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ], @@@",
       "@@@STEP_LOG_LINE@json.output@  \"Recipe-Nontrivial-Roll\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -66,7 +66,7 @@
       "-u",
       "import sys; sys.exit(1)"
     ],
-    "name": "Too many footers for 'recipe_engine'",
+    "name": "Too many footers for 'depot_tools'",
     "~followup_annotations": [
       "@@@STEP_TEXT@Found too many footers in CL message:<br/> * Recipe-Manual-Change<br/> * Recipe-Nontrivial-Roll@@@",
       "@@@STEP_FAILURE@@@"
@@ -75,7 +75,7 @@
   {
     "failure": {
       "failure": {},
-      "humanReason": "Step(\"Too many footers for 'recipe_engine'\") (retcode: 1)"
+      "humanReason": "Step(\"Too many footers for 'depot_tools'\") (retcode: 1)"
     },
     "name": "$result"
   }

@@ -51,7 +51,7 @@
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"

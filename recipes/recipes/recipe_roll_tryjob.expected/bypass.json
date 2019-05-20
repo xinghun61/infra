@@ -51,7 +51,7 @@
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"Recipe-Tryjob-Bypass-Reason\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"recipe_engine\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -65,7 +65,7 @@
     ],
     "name": "BYPASS ENABLED",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Roll tryjob bypassed for 'recipe_engine'@@@"
+      "@@@STEP_TEXT@Roll tryjob bypassed for 'depot_tools'@@@"
     ]
   },
   {

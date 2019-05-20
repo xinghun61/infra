@@ -49,7 +49,7 @@ KNOWN_FOOTERS = [NONTRIVIAL_ROLL_FOOTER, MANUAL_CHANGE_FOOTER, BYPASS_FOOTER]
 FOOTER_ADD_TEMPLATE = '''
 Add
 
-    {footer}: {up_id}
+    {footer}: {down_id}
 
 To your CL message.
 '''.strip()
@@ -154,7 +154,7 @@ def RunSteps(api, upstream_id, upstream_url, downstream_id, downstream_url):
 
   # First, check to see if the user has bypassed this tryjob's analysis
   # entirely.
-  actual_footer, bypass = _find_footer(api, upstream_id)
+  actual_footer, bypass = _find_footer(api, downstream_id)
   if bypass:
     return
 
@@ -256,7 +256,7 @@ def GenTests(api):
       }]))
       + api.step_data(
           'parse description', api.json.output({
-            k: [upstream_id] for k in footers
+            k: [downstream_id] for k in footers
           }))
     )
 
@@ -272,7 +272,7 @@ def GenTests(api):
   yield (
     test('too_many_footers', MANUAL_CHANGE_FOOTER, NONTRIVIAL_ROLL_FOOTER)
     + api.post_check(lambda check, steps: check(
-        "Too many footers for 'recipe_engine'" in steps
+        "Too many footers for 'depot_tools'" in steps
     ))
   )
 
