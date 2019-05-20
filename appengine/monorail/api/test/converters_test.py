@@ -420,6 +420,20 @@ class ConverterFunctionsTest(unittest.TestCase):
         is_derived=True)
     self.assertEqual(expected, actual)
 
+  def testConvertFieldValue_Unicode(self):
+    """We can convert one FieldValueView unicode item to a protoc FieldValue."""
+    actual = converters.ConvertFieldValue(
+        1, 'Size', u'\xe2\x9d\xa4\xef\xb8\x8f',
+        tracker_pb2.FieldTypes.STR_TYPE, phase_name='Canary')
+    expected = issue_objects_pb2.FieldValue(
+        field_ref=common_pb2.FieldRef(
+            field_id=1,
+            field_name='Size',
+            type=common_pb2.STR_TYPE),
+        value=u'\xe2\x9d\xa4\xef\xb8\x8f',
+        phase_ref=issue_objects_pb2.PhaseRef(phase_name='Canary'))
+    self.assertEqual(expected, actual)
+
   def testConvertFieldValues(self):
     self.fd_2.approval_id = 3
     self.config.field_defs = [
@@ -1367,6 +1381,27 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(
         actual,
         [tracker_pb2.FieldValue(user_id=111, field_id=4, derived=False)])
+
+  def testIngestFieldValues_Unicode(self):
+    """We can ingest unicode strings."""
+    self.config.field_defs = [self.fd_1, self.fd_2, self.fd_4, self.fd_6]
+    field_values = [
+        issue_objects_pb2.FieldValue(
+            value=u'\xe2\x9d\xa4\xef\xb8\x8f',
+            field_ref=common_pb2.FieldRef(field_name='FirstField')
+        ),
+    ]
+
+    actual = converters.IngestFieldValues(
+        self.cnxn, self.services.user, field_values, self.config, [])
+    self.assertEqual(
+        actual,
+        [
+            tracker_pb2.FieldValue(
+               str_value=u'\xe2\x9d\xa4\xef\xb8\x8f', field_id=1,
+               derived=False),
+        ]
+    )
 
   def testIngestFieldValues_InvalidUser(self):
     """We reject invalid user email strings."""

@@ -202,10 +202,12 @@ def ConvertIssueRefs(issue_ids, related_refs_dict):
 def ConvertFieldValue(field_id, field_name, value, field_type,
                       approval_name=None, phase_name=None, is_derived=False):
   """Convert one field value view item into a protoc FieldValue."""
+  if not isinstance(value, basestring):
+    value = str(value)
   fv = issue_objects_pb2.FieldValue(
       field_ref=ConvertFieldRef(field_id, field_name, field_type,
                                 approval_name),
-      value=str(value),
+      value=value,
       is_derived=is_derived)
   if phase_name:
     fv.phase_ref.phase_name = phase_name
@@ -684,11 +686,11 @@ def IngestFieldValues(cnxn, user_service, field_values, config, phases=None):
   for fv in field_values:
     fd = fds_by_name.get(fv.field_ref.field_name.lower())
     if fd:
-      if not str(fv.value):
+      if not fv.value:
         logging.info('Ignoring blank field value: %r', fv)
         continue
       ingested_fv = field_helpers.ParseOneFieldValue(
-          cnxn, user_service, fd, str(fv.value))
+          cnxn, user_service, fd, fv.value)
       if not ingested_fv:
         raise exceptions.InputException(
           'Unparsable value for field %s' % fv.field_ref.field_name)
