@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/appengine/tq/tqtesting"
+	"go.chromium.org/luci/common/clock/testclock"
 
 	"infra/appengine/arquebus/app/backend/model"
 	"infra/appengine/arquebus/app/config"
@@ -24,14 +25,49 @@ import (
 	"infra/monorailv2/api/api_proto"
 )
 
+var (
+	// sample rotation shifts.
+	mockShifts = map[string]*oncallShift{
+		"rotation1": {
+			Primary:     "r1pri@@test.com",
+			Secondaries: []string{"r1sec1@test.com", "r1sec2@test.com"},
+			Started:     testclock.TestRecentTimeUTC.Unix(),
+		},
+		"rotation2": {
+			Primary:     "r2pri@@test.com",
+			Secondaries: []string{"r2sec1@test.com", "r2sec2@test.com"},
+			Started:     testclock.TestRecentTimeUTC.Unix(),
+		},
+		"rotation3": {
+			Primary:     "r3pri@@test.com",
+			Secondaries: []string{"r3sec1@test.com", "r3sec2@test.com"},
+			Started:     testclock.TestRecentTimeUTC.Unix(),
+		},
+	}
+)
+
 // createTestContextWithTQ creates a test context with testable a TaskQueue.
 func createTestContextWithTQ() context.Context {
+	// create a context with config first.
+	c := util.CreateTestContext()
+	c = config.SetConfig(c, &config.Config{
+		AccessGroup:      "engineers",
+		MonorailHostname: "example.org",
+		RotangHostname:   "example.net",
+
+		Assigners: []*config.Assigner{},
+	})
+
+	// install TQ handlers
 	d := &tq.Dispatcher{}
 	registerTaskHandlers(d)
-
-	c := util.CreateTestContext()
 	tq := tqtesting.GetTestable(c, d)
 	tq.CreateQueues()
+
+	// set sample rotation shifts
+	for rotation, shift := range mockShifts {
+		setShiftResponse(c, rotation, shift)
+	}
 	return setDispatcher(c, d)
 }
 
@@ -41,10 +77,10 @@ func createAssigner(c context.Context, id string) *model.Assigner {
 	So(proto.UnmarshalText(util.SampleValidAssignerCfg, &cfg), ShouldBeNil)
 	cfg.Id = id
 
-	So(UpdateAssigners(c, []*config.Assigner{&cfg}, "revision-1"), ShouldBeNil)
+	So(UpdateAssigners(c, []*config.Assigner{&cfg}, "rev-1"), ShouldBeNil)
 	datastore.GetTestable(c).CatchupIndexes()
-	assigner, err := GetAssigner(c, cfg.Id)
-	So(assigner.ID, ShouldEqual, cfg.Id)
+	assigner, err := GetAssigner(c, id)
+	So(assigner.ID, ShouldEqual, id)
 	So(err, ShouldBeNil)
 	So(assigner, ShouldNotBeNil)
 

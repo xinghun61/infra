@@ -9,30 +9,8 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"go.chromium.org/luci/common/clock/testclock"
-
 	"infra/appengine/arquebus/app/config"
 	"infra/monorailv2/api/api_proto"
-)
-
-var (
-	shifts = []*oncallShift{
-		{
-			Primary:     "r1pri@@test.com",
-			Secondaries: []string{"r1sec1@test.com", "r1sec2@test.com"},
-			Started:     testclock.TestRecentTimeUTC.Unix(),
-		},
-		{
-			Primary:     "r2pri@@test.com",
-			Secondaries: []string{"r2sec1@test.com", "r2sec2@test.com"},
-			Started:     testclock.TestRecentTimeUTC.Unix(),
-		},
-		{
-			Primary:     "r2pri@@test.com",
-			Secondaries: []string{"r3sec1@test.com", "r3sec2@test.com"},
-			Started:     testclock.TestRecentTimeUTC.Unix(),
-		},
-	}
 )
 
 func TestAssignee(t *testing.T) {
@@ -41,11 +19,6 @@ func TestAssignee(t *testing.T) {
 
 	Convey("findAssigneeAndCCs", t, func() {
 		c := createTestContextWithTQ()
-		c = config.SetConfig(c, &config.Config{
-			AccessGroup:      "engineers",
-			MonorailHostname: "example.com",
-			RotangHostname:   "example.net",
-		})
 
 		// create sample assigner and tasks.
 		assigner := createAssigner(c, assignerID)
@@ -80,8 +53,6 @@ func TestAssignee(t *testing.T) {
 		})
 
 		Convey("works with UserSource_Oncall", func() {
-			setShiftResponse(c, "rotation1", shifts[0])
-
 			Convey("for assignees", func() {
 				assigner.AssigneesRaw = createRawUserSources(
 					oncallUserSource("rotation1", config.Oncall_PRIMARY),
@@ -89,7 +60,10 @@ func TestAssignee(t *testing.T) {
 				assigner.CCsRaw = createRawUserSources()
 				assignee, ccs, err := findAssigneeAndCCs(c, assigner, task)
 				So(err, ShouldBeNil)
-				So(assignee, ShouldResemble, monorailUser(shifts[0].Primary))
+				So(
+					assignee, ShouldResemble,
+					monorailUser(mockShifts["rotation1"].Primary),
+				)
 				So(ccs, ShouldBeNil)
 			})
 
@@ -103,11 +77,11 @@ func TestAssignee(t *testing.T) {
 				So(assignee, ShouldBeNil)
 				So(
 					ccs[0], ShouldResemble,
-					monorailUser(shifts[0].Secondaries[0]),
+					monorailUser(mockShifts["rotation1"].Secondaries[0]),
 				)
 				So(
 					ccs[1], ShouldResemble,
-					monorailUser(shifts[0].Secondaries[1]),
+					monorailUser(mockShifts["rotation1"].Secondaries[1]),
 				)
 			})
 		})
@@ -129,9 +103,6 @@ func TestAssignee(t *testing.T) {
 			})
 
 			Convey("with multiple UserSource_Oncalls", func() {
-				setShiftResponse(c, "rotation1", shifts[0])
-				setShiftResponse(c, "rotation2", shifts[1])
-				setShiftResponse(c, "rotation3", shifts[2])
 				assigner.AssigneesRaw = createRawUserSources(
 					oncallUserSource("rotation1", config.Oncall_PRIMARY),
 					oncallUserSource("rotation2", config.Oncall_PRIMARY),
@@ -141,14 +112,15 @@ func TestAssignee(t *testing.T) {
 				assignee, ccs, err := findAssigneeAndCCs(c, assigner, task)
 				So(err, ShouldBeNil)
 				// it should be the primary of rotation1
-				So(assignee, ShouldResemble, monorailUser(shifts[0].Primary))
+				So(
+					assignee, ShouldResemble,
+					monorailUser(mockShifts["rotation1"].Primary),
+				)
 				So(ccs, ShouldBeNil)
 			})
 
 			Convey("with a mix of available and unavailable shifts", func() {
 				setShiftResponse(c, "rotation1", &oncallShift{})
-				setShiftResponse(c, "rotation2", shifts[1])
-				setShiftResponse(c, "rotation3", shifts[2])
 				assigner.AssigneesRaw = createRawUserSources(
 					oncallUserSource("rotation1", config.Oncall_PRIMARY),
 					oncallUserSource("rotation2", config.Oncall_PRIMARY),
@@ -159,14 +131,15 @@ func TestAssignee(t *testing.T) {
 				So(err, ShouldBeNil)
 				// it should be the primary of rotation2, as rotation1 is
 				// not available.
-				So(assignee, ShouldResemble, monorailUser(shifts[1].Primary))
+				So(
+					assignee, ShouldResemble,
+					monorailUser(mockShifts["rotation2"].Primary),
+				)
 				So(ccs, ShouldBeNil)
 			})
 		})
 
 		Convey("CCs includes users from all the listed sources", func() {
-			setShiftResponse(c, "rotation1", shifts[0])
-			setShiftResponse(c, "rotation2", shifts[1])
 			assigner.AssigneesRaw = createRawUserSources()
 			assigner.CCsRaw = createRawUserSources(
 				oncallUserSource("rotation1", config.Oncall_SECONDARY),
@@ -180,10 +153,10 @@ func TestAssignee(t *testing.T) {
 			// ccs should be rotation1.secondaries + rotation2.secondaries +
 			// oncall1@test.com
 			var expected []*monorail.UserRef
-			for _, user := range shifts[0].Secondaries {
+			for _, user := range mockShifts["rotation1"].Secondaries {
 				expected = append(expected, monorailUser(user))
 			}
-			for _, user := range shifts[1].Secondaries {
+			for _, user := range mockShifts["rotation2"].Secondaries {
 				expected = append(expected, monorailUser(user))
 			}
 			expected = append(expected, monorailUser("oncall1@test.com"))
