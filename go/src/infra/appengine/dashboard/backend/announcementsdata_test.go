@@ -162,3 +162,15 @@ func TestGetLiveAnnouncements(t *testing.T) {
 		})
 	})
 }
+
+func TestRetireAnnouncement(t *testing.T) {
+	ctx := newTestContext()
+	cowProto, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
+	Convey("RetireAnnouncement", t, func() {
+		err := RetireAnnouncement(ctx, cowProto.Id)
+		So(err, ShouldBeNil)
+		announcement := &Announcement{ID: cowProto.Id}
+		datastore.Get(ctx, announcement)
+		So(announcement.Retired, ShouldBeTrue)
+	})
+}

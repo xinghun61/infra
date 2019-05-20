@@ -156,7 +156,7 @@ func GetAllAnnouncementsPlatforms(c context.Context, announcements []*Announceme
 			workC <- func() error {
 				platforms, err := ann.getPlatforms(c)
 				if err != nil {
-					return fmt.Errorf("error getting Platform entities -%s", err)
+					return fmt.Errorf("error getting Platform entities - %s", err)
 				}
 				annProtos[i], err = ann.ToProto(platforms)
 				if err != nil {
@@ -174,4 +174,20 @@ func GetAllAnnouncementsPlatforms(c context.Context, announcements []*Announceme
 
 // TODO(jojwang)
 // func GetRetiredAnnouncements(offset int) ([]*dashpb.Announcement, error)
-// func RetireAnnouncement(announcementId int64) error
+
+// RetireAnnouncement sets a given announcement's retired to true.
+//
+// It returns nil on success and err on datastore errors.
+func RetireAnnouncement(c context.Context, announcementID int64) error {
+	announcement := &Announcement{ID: announcementID}
+	return datastore.RunInTransaction(c, func(c context.Context) error {
+		if err := datastore.Get(c, announcement); err != nil {
+			return fmt.Errorf("error getting Announcement - %s", err)
+		}
+		announcement.Retired = true
+		if err := datastore.Put(c, announcement); err != nil {
+			return fmt.Errorf("error saving Announcement - %s", err)
+		}
+		return nil
+	}, nil)
+}
