@@ -715,10 +715,17 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     if approval_fd is None:
       raise exceptions.NoSuchFieldDefException()
 
-    try:
-      comment = self.services.issue.GetCommentsByID(
-          mr.cnxn, [comment_id], collections.defaultdict(int))[0]
-    except IndexError:
+    # GetCommentsForIssue will fill the sequence for all comments, while
+    # other method for getting a single comment will not.
+    # The comment sequence is especially useful for Approval issues with
+    # many comment sections.
+    comment = None
+    all_comments = self.services.issue.GetCommentsForIssue(mr.cnxn, issue_id)
+    for c in all_comments:
+      if c.id == comment_id:
+        comment = c
+        break
+    if not comment:
       raise exceptions.NoSuchCommentException()
 
     field_user_ids = set()
