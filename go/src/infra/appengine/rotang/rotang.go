@@ -42,6 +42,12 @@ type Config struct {
 	Shifts           ShiftConfig
 	Expiration       int
 	Enabled          bool
+	// External defines a rotation where RotaNG is not the
+	// shift Scheduler. Instead the Calendar is used as the
+	// source for shift information.
+	External bool
+	// ExternalMatch defines what to match in the calendar events.
+	ExternalMatch string
 }
 
 // ShiftConfig holds the Shift configuration.
