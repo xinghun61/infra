@@ -42,9 +42,11 @@ type waitTaskRun struct {
 }
 
 type taskResult struct {
-	Name    string `json:"name"`
-	State   string `json:"state"`
-	Failure bool   `json:"failure"`
+	Name  string `json:"name"`
+	State string `json:"state"`
+	// TODO(crbug.com/964573): Deprecate this field.
+	Failure bool `json:"failure"`
+	Success bool `json:"success"`
 }
 
 type waitTaskResult struct {
@@ -148,6 +150,16 @@ func getSwarmingStdoutsForIds(ctx context.Context, IDs []string, s *swarming.Ser
 	return results, nil
 }
 
+func asTaskResult(s *swarming.SwarmingRpcsTaskResult) *taskResult {
+	return &taskResult{
+		Name:  s.Name,
+		State: s.State,
+		// TODO(crbug.com/964573): Deprecate this field.
+		Failure: s.Failure,
+		Success: !s.Failure && (s.State == "COMPLETED" || s.State == "COMPLETED_SUCCESS"),
+	}
+}
+
 func postWaitTask(ctx context.Context, taskID string, s *swarming.Service, w io.Writer) error {
 	results, err := getSwarmingResultsForIds(ctx, []string{taskID}, s)
 	if err != nil {
@@ -163,9 +175,9 @@ func postWaitTask(ctx context.Context, taskID string, s *swarming.Service, w io.
 	}
 	childResults := make([]*taskResult, len(childs))
 	for i, c := range childs {
-		childResults[i] = &taskResult{Name: c.Name, State: c.State, Failure: c.Failure}
+		childResults[i] = asTaskResult(c)
 	}
-	tr := &taskResult{Name: results[0].Name, State: results[0].State, Failure: results[0].Failure}
+	tr := asTaskResult(results[0])
 	result := &waitTaskResult{
 		TaskResult:   tr,
 		Stdout:       stdouts[0].Output,
