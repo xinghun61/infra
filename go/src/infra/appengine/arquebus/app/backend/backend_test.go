@@ -5,67 +5,16 @@
 package backend
 
 import (
-	"context"
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
 
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/appengine/tq"
-	"go.chromium.org/luci/appengine/tq/tqtesting"
 	"go.chromium.org/luci/common/clock"
 
 	"infra/appengine/arquebus/app/backend/model"
-	"infra/appengine/arquebus/app/config"
-	"infra/appengine/arquebus/app/util"
 )
-
-// createTestContextWithTQ creates a test context with testable a TaskQueue.
-func createTestContextWithTQ() context.Context {
-	d := &tq.Dispatcher{}
-	registerTaskHandlers(d)
-
-	c := util.CreateTestContext()
-	tq := tqtesting.GetTestable(c, d)
-	tq.CreateQueues()
-	return setDispatcher(c, d)
-}
-
-// createAssigner creates a sample Assigner entity.
-func createAssigner(c context.Context, id string) *model.Assigner {
-	var cfg config.Assigner
-	So(proto.UnmarshalText(util.SampleValidAssignerCfg, &cfg), ShouldBeNil)
-	cfg.Id = id
-
-	So(UpdateAssigners(c, []*config.Assigner{&cfg}, "revision-1"), ShouldBeNil)
-	datastore.GetTestable(c).CatchupIndexes()
-	assigner, err := GetAssigner(c, cfg.Id)
-	So(assigner.ID, ShouldEqual, cfg.Id)
-	So(err, ShouldBeNil)
-	So(assigner, ShouldNotBeNil)
-
-	return assigner
-}
-
-func triggerScheduleTaskHandler(c context.Context, id string) []*model.Task {
-	req := &ScheduleAssignerTask{AssignerId: id}
-	So(scheduleAssignerTaskHandler(c, req), ShouldBeNil)
-	_, tasks, err := GetAssignerWithTasks(c, id, 99999, true)
-	So(err, ShouldBeNil)
-	return tasks
-}
-
-func triggerRunTaskHandler(c context.Context, assignerID string, taskID int64) *model.Task {
-	req := &RunAssignerTask{AssignerId: assignerID, TaskId: taskID}
-	So(runAssignerTaskHandler(c, req), ShouldBeNil)
-	assigner, task, err := GetTask(c, assignerID, taskID)
-	So(assigner.ID, ShouldEqual, assignerID)
-	So(err, ShouldBeNil)
-	So(task, ShouldNotBeNil)
-	return task
-}
 
 func TestBackend(t *testing.T) {
 	t.Parallel()

@@ -5,20 +5,13 @@
 package backend
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"net/url"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	. "github.com/smartystreets/goconvey/convey"
 
-	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/common/clock/testclock"
 
 	"infra/appengine/arquebus/app/config"
-	"infra/appengine/arquebus/app/util"
 	"infra/monorailv2/api/api_proto"
 )
 
@@ -41,40 +34,6 @@ var (
 		},
 	}
 )
-
-func setShiftResponse(c context.Context, rotation string, shift *oncallShift) {
-	data, _ := json.Marshal(shift)
-	url := fmt.Sprintf(
-		"https://%s/legacy/%s.json", config.Get(c).RotangHostname,
-		url.QueryEscape(rotation),
-	)
-	transport := urlfetch.Get(c).(*util.MockHTTPTransport)
-	transport.Responses[url] = string(data)
-}
-
-func monorailUser(email string) *monorail.UserRef {
-	return &monorail.UserRef{DisplayName: email}
-}
-
-func emailUserSource(email string) *config.UserSource {
-	return &config.UserSource{From: &config.UserSource_Email{Email: email}}
-}
-
-func oncallUserSource(rotation string, position config.Oncall_Position) *config.UserSource {
-	return &config.UserSource{
-		From: &config.UserSource_Oncall{Oncall: &config.Oncall{
-			Rotation: rotation, Position: position,
-		}},
-	}
-}
-
-func createRawUserSources(sources ...*config.UserSource) [][]byte {
-	raw := make([][]byte, len(sources))
-	for i, source := range sources {
-		raw[i], _ = proto.Marshal(source)
-	}
-	return raw
-}
 
 func TestAssignee(t *testing.T) {
 	t.Parallel()
