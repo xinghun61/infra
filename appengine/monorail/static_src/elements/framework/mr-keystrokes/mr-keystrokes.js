@@ -298,11 +298,14 @@ export class MrKeystrokes extends connectStore(LitElement) {
 
     if (canComment) {
       // Navigate to the form to make changes.
-      // TODO(zhangtiff): Make this keystroke work even when the URL is
-      // already set to #makechanges.
       Mousetrap.bind('r', (e) => {
         e.preventDefault();
-        page('#makechanges');
+
+        // Force a hash change even the hash is already makechanges.
+        if (window.location.hash.toLowerCase() === '#makechanges') {
+          window.location.hash = ' ';
+        }
+        window.location.hash = '#makechanges';
       });
     }
 
