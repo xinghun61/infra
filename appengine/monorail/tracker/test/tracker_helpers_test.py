@@ -910,9 +910,9 @@ class HelpersTest(unittest.TestCase):
         # If there is no trace for some derived value, why is None.
         }
     derived_users_by_id = {
-      111: testing_helpers.Blank(email='one@example.com'),
-      222: testing_helpers.Blank(email='two@example.com'),
-      333: testing_helpers.Blank(email='three@example.com'),
+      111: testing_helpers.Blank(display_name='one@example.com'),
+      222: testing_helpers.Blank(display_name='two@example.com'),
+      333: testing_helpers.Blank(display_name='three@example.com'),
       }
     actual = tracker_helpers.PairDerivedValuesWithRuleExplanations(
         proposed_issue, traces, derived_users_by_id)

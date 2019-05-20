@@ -1589,6 +1589,35 @@ class IssuesServicerTest(unittest.TestCase):
         [vnw for vnw in response.derived_ccs])
 
   @patch('testing.fake.FeaturesService.GetFilterRules')
+  def testPresubmitIssue_DerivedCCsNonMember(self, mockGetFilterRules):
+    """Test that we can return obscured cc emails to non-members."""
+    field_id = self.AddField('Foo', 'ENUM_TYPE')
+    issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)
+    issue_delta = issue_objects_pb2.IssueDelta(
+        owner_ref=common_pb2.UserRef(user_id=111),
+        field_vals_add=[issue_objects_pb2.FieldValue(
+            value='Bar', field_ref=common_pb2.FieldRef(field_id=field_id))])
+
+    mockGetFilterRules.return_value = [
+        filterrules_helpers.MakeRule('Foo=Bar', add_cc_ids=[222, 333])]
+
+    request = issues_pb2.PresubmitIssueRequest(
+        issue_ref=issue_ref, issue_delta=issue_delta)
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='nonmember@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(self.issues_svcr.PresubmitIssue, mc, request)
+
+    self.assertEqual(
+        [common_pb2.ValueAndWhy(
+            value='approv...@example.com',
+            why='Added by rule: IF Foo=Bar THEN ADD CC'),
+         common_pb2.ValueAndWhy(
+            value='approv...@example.com',
+            why='Added by rule: IF Foo=Bar THEN ADD CC')],
+        [vnw for vnw in response.derived_ccs])
+
+  @patch('testing.fake.FeaturesService.GetFilterRules')
   def testPresubmitIssue_Warnings(self, mockGetFilterRules):
     """Test that we can match owner rules and return warnings."""
     issue_ref = common_pb2.IssueRef(project_name='proj', local_id=1)

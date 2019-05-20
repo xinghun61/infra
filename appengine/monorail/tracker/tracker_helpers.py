@@ -434,17 +434,23 @@ def PairDerivedValuesWithRuleExplanations(
       {'value': lab,
        'why': traces.get((tracker_pb2.FieldID.LABELS, lab))}
       for lab in proposed_issue.derived_labels]
+
+  derived_users_by_id = {
+      user_id: user_view.display_name
+      for user_id, user_view in derived_users_by_id.iteritems()
+      if user_view.display_name}
+
   derived_owner_and_why = []
   if proposed_issue.derived_owner_id:
     derived_owner_and_why = [{
-        'value': derived_users_by_id[proposed_issue.derived_owner_id].email,
+        'value': derived_users_by_id[proposed_issue.derived_owner_id],
         'why': traces.get(
             (tracker_pb2.FieldID.OWNER, proposed_issue.derived_owner_id))}]
   derived_cc_and_why = [
-      {'value': derived_users_by_id[cc_id].email,
+      {'value': derived_users_by_id[cc_id],
        'why': traces.get((tracker_pb2.FieldID.CC, cc_id))}
       for cc_id in proposed_issue.derived_cc_ids
-      if cc_id in derived_users_by_id and derived_users_by_id[cc_id].email]
+      if cc_id in derived_users_by_id]
 
   warnings_and_why = [
       {'value': warning,

@@ -552,7 +552,7 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
   @monorail_servicer.PRPCMethod
   def PresubmitIssue(self, mc, request):
     """Provide the UI with warnings and suggestions."""
-    _project, issue, config = self._GetProjectIssueAndConfig(
+    project, issue, config = self._GetProjectIssueAndConfig(
         mc, request.issue_ref, issue_required=False)
 
     with mc.profiler.Phase('making user views'):
@@ -589,6 +589,8 @@ class IssuesServicer(monorail_servicer.MonorailServicer):
       derived_users_by_id = framework_views.MakeAllUserViews(
           mc.cnxn, self.services.user, [proposed_issue.derived_owner_id],
           proposed_issue.derived_cc_ids)
+      framework_views.RevealAllEmailsToMembers(
+          mc.auth, project, derived_users_by_id)
 
     with mc.profiler.Phase('pair derived values with rule explanations'):
       (derived_labels, derived_owners, derived_ccs, warnings, errors) = (
