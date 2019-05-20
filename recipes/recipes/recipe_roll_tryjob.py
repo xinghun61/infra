@@ -114,7 +114,9 @@ def _find_footer(api, repo_id):
   if BYPASS_FOOTER in all_footers:
     api.python.succeeding_step(
         'BYPASS ENABLED',
-        'Roll tryjob bypassed for %r' % (repo_id,))
+        'Roll tryjob bypassed for %r' % (
+          # It's unlikely that there's more than one value, but just in case...
+          ', '.join(all_footers[BYPASS_FOOTER]),))
     return None, True
 
   found_set = set()
@@ -256,7 +258,8 @@ def GenTests(api):
       }]))
       + api.step_data(
           'parse description', api.json.output({
-            k: [downstream_id] for k in footers
+            k: ['Reasons' if k == BYPASS_FOOTER else downstream_id]
+            for k in footers
           }))
     )
 
