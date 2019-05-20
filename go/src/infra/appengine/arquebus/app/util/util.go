@@ -26,6 +26,8 @@ import (
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 )
 
 var (
@@ -91,6 +93,10 @@ func SetupTaskIndexes(c context.Context) {
 func CreateTestContext() context.Context {
 	c := memory.Use(context.Background())
 	SetupTaskIndexes(c)
+	c = authtest.MockAuthConfig(c)
+	c = auth.WithState(c, &authtest.FakeState{
+		Identity: "user:foo@example.org",
+	})
 
 	c = urlfetch.Set(c, &MockHTTPTransport{
 		Responses: map[string]string{},
