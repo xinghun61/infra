@@ -8,6 +8,7 @@
   --chops-light-green-50: #f1f8e9;
   --chops-yellow-50: #fffde7;
   --chops-orange-50: #fff3e0;
+  --chops-orange-200: #ffcc80;
   --chops-gray-50: #fafafa;
   --chops-gray-200: #eee;
   --chops-gray-300: #e0e0e0;
@@ -51,6 +52,7 @@
 
   --chops-error-bubble-bg: var(--chops-red-50);
   --chops-notice-bubble-bg: var(--chops-orange-50);
+  --chops-notice-border: 1px solid var(--chops-orange-200);
   --chops-help-bubble-bg: var(--chops-blue-50);
   --chops-field-error-color: var(--chops-red-700);
   --chops-selected-bg: var(--chops-yellow-50);

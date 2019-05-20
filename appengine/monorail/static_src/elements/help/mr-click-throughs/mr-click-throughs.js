@@ -11,14 +11,13 @@ import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 /**
- * `<mr-cues>`
+ * `<mr-click-throughs>`
  *
- * An element that displays brief on-page help or help
- * dialogs at appropriate times based on the issue being
- * viewed and the user's preferences.
+ * An element that displays help dialogs that the user is required
+ * to click through before they can participate in the community.
  *
  */
-export class MrCues extends connectStore(LitElement) {
+export class MrClickThroughs extends connectStore(LitElement) {
   constructor() {
     super();
   }
@@ -50,17 +49,11 @@ export class MrCues extends connectStore(LitElement) {
         margin: 0.5em 0;
         text-align: right;
       }
-      i.material-icons {
-        color: #FF6F00;
-        margin-right: 4px;
-      }
     `];
   }
 
   render() {
     return html`
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
       <chops-dialog
         id="privacyDialog"
         ?opened=${this._showPrivacyDialog}
@@ -175,4 +168,4 @@ export class MrCues extends connectStore(LitElement) {
   }
 }
 
-customElements.define('mr-cues', MrCues);
+customElements.define('mr-click-throughs', MrClickThroughs);

@@ -3,14 +3,14 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {MrCues} from './mr-cues.js';
+import {MrClickThroughs} from './mr-click-throughs.js';
 import page from 'page';
 
 let element;
 
-describe('mr-cues', () => {
+describe('mr-click-throughs', () => {
   beforeEach(() => {
-    element = document.createElement('mr-cues');
+    element = document.createElement('mr-click-throughs');
     document.body.appendChild(element);
 
     sinon.stub(page, 'call');
@@ -23,7 +23,7 @@ describe('mr-cues', () => {
   });
 
   it('initializes', () => {
-    assert.instanceOf(element, MrCues);
+    assert.instanceOf(element, MrClickThroughs);
   });
 
   it('stateChanged', () => {

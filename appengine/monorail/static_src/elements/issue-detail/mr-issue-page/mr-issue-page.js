@@ -22,7 +22,7 @@ import '../dialogs/mr-move-copy-issue/mr-move-copy-issue.js';
 import '../dialogs/mr-convert-issue/mr-convert-issue.js';
 import '../dialogs/mr-related-issues-table/mr-related-issues-table.js';
 import '../dialogs/mr-update-issue-hotlists/mr-update-issue-hotlists.js';
-import '../dialogs/mr-cues/mr-cues.js';
+import '../../help/mr-click-throughs/mr-click-throughs.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 const APPROVAL_COMMENT_COUNT = 5;
@@ -170,7 +170,8 @@ export class MrIssuePage extends connectStore(LitElement) {
       : DETAIL_COMMENT_COUNT;
 
     return html`
-      <mr-cues id="cues" .userDisplayName=${this.userDisplayName}></mr-cues>
+      <mr-click-throughs
+         .userDisplayName=${this.userDisplayName}></mr-click-throughs>
       ${this.fetchIssueError ? html`
         <div class="container-no-issue" id="fetch-error">
           ${this.fetchIssueError.description}
