@@ -541,6 +541,44 @@ class FeaturesService(object):
     """Completely destroy filter rule info for the specified project."""
     self.filterrule_tbl.Delete(cnxn, project_id=project_id)
 
+  def ExpungeFilterRulesByUser(self, cnxn, emails_by_id):
+    """Wipes any Filter Rules containing the given users.
+
+    This method will not commit the operation. This method will not make
+    changes to in-memory data.
+    Args:
+      cnxn: connection to SQL database.
+      emails_by_id: dict of {user_id: email} of all users we want to
+        expunge
+
+    Returns:
+      Dictionary of {project_id: [(predicate, consequence), ..]} for Filter
+      Rules that will be deleted for containing the given emails.
+    """
+    where_conds = []
+    for user_id, email in emails_by_id.iteritems():
+      fmt_email = '%%%s%%' % email
+      notify_str = '%%add_notify:%s%%' % email
+      cc_id_str = '%%add_cc_id:%s%%' % user_id
+      where_conds.extend([
+          ('predicate LIKE %s', [fmt_email]),
+          ('consequence LIKE %s', [notify_str]),
+          ('consequence LIKE %s', [cc_id_str])])
+
+    rows = self.filterrule_tbl.Select(
+        cnxn, ['project_id', 'predicate', 'consequence'],
+        where=where_conds, or_where_conds=True)
+
+    project_rules_dict = {}
+    for (project_id, predicate, consequence) in rows:
+      project_rules_dict.setdefault(project_id, []).append(
+          (predicate, consequence))
+
+    self.filterrule_tbl.Delete(
+        cnxn, where=where_conds, or_where_conds=True, commit=False)
+
+    return project_rules_dict
+
   ### Creating hotlists
 
   def CreateHotlist(

@@ -1714,12 +1714,15 @@ class WorkEnv(object):
 
     # self.services.features.ExpungeUsersInHotlists(user_ids)
 
+    # deleted_rules = self.services.features.ExpungeFilterRulesByUser(emails)
+
     # self.services.template.ExpungeUsersInTemplates(self.mc.cnxn, user_ids)
     # self.services.config.ExpungeUsersInConfigs(self.mc.cnxn, user_ids)
     # self.services.usergroup.ExpungeUsersInGroups(self.mc.cnxn, user_ids)
     # self.services.user.ExpungeUsers(self.mc.cnxn, user_ids)
 
     # self.services.usergroup.group_dag.MarkObsolete()
+    # send emails for deleted FilterRules to project owners.
     return
 
   ### Group methods
