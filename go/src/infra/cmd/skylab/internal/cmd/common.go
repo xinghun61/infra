@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -215,14 +216,16 @@ func swarmingTagErrorIfTransient(err error) error {
 	if err == nil {
 		return err
 	}
-	apiErr, ok := err.(*googleapi.Error)
-	if !ok {
-		return err
+
+	if e, ok := err.(net.Error); ok && e.Temporary() {
+		return transient.Tag.Apply(err)
 	}
-	if !swarmingRetryableCodes[apiErr.Code] {
-		return err
+
+	if e, ok := err.(*googleapi.Error); ok && swarmingRetryableCodes[e.Code] {
+		return transient.Tag.Apply(err)
 	}
-	return transient.Tag.Apply(err)
+
+	return err
 }
 
 // swarmingCallWithRetries calls the given function, retrying transient swarming
