@@ -773,6 +773,27 @@ def IngestPagination(pagination):
     max_items = min(max_items, pagination.max_items)
   return pagination.start, max_items
 
+
+def ConvertCommit(
+    commit_sha, author_id, commit_time, commit_message, commit_repo_url):
+  """Convert a protorpc UserCommit to a protoc Commit."""
+
+  result = user_objects_pb2.Commit(
+      commit_sha=commit_sha,
+      author_id=author_id,
+      commit_time=commit_time,
+      commit_message=commit_message,
+      commit_repo_url=commit_repo_url)
+
+  return result
+
+def ConvertCommitList(commits):
+  """Convert a list protorpc UserCommit to a protoc Commit."""
+  result = []
+  for c in commits:
+    result.append(ConvertCommit(c[0], c[1], c[2], c[3], c[4]))
+  return result
+
 # Convert and ingest objects in project_objects.proto.
 
 def ConvertStatusDef(status_def):

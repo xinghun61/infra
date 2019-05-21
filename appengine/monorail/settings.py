@@ -434,5 +434,18 @@ maximum_snapshot_period_end = 4294967295
 # Percent of requests to report to cloud tracing.
 trace_fraction = 0.1
 
+# Keeping this table small for now so that it can be changed later if necessary
+# should be enough space to store commits from the main repos for the past year.
+# This number is the maximum number of user commits allowed in the UserCommits
+# SQL table. If the max is exceeded, the oldest commits will be dropped.
+max_rows_in_usercommits_table = 20000
+
+# Number of commits to add from a new repo if there's less than 20k commits in
+# the database
+usercommits_backfill_max = 10000
+
+# URLs that the User Commits Cron will be collecting commit data from.
+usercommits_repo_urls = ['https://chromium.googlesource.com/infra/infra/']
+
 # The maximum number of rows chart queries can scan.
 chart_query_max_rows = 10000

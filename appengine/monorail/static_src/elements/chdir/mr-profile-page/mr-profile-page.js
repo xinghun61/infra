@@ -10,6 +10,7 @@ import {prpcClient} from 'prpc-client-instance.js';
 import 'elements/framework/mr-header/mr-header.js';
 import '../mr-activity-table/mr-activity-table.js';
 import '../mr-comment-table/mr-comment-table.js';
+import '../mr-commit-table/mr-commit-table.js';
 
 /**
  * `<mr-profile-page>`
@@ -117,6 +118,13 @@ export class MrProfilePage extends PolymerElement {
             ></mr-activity-table>
           </template>
           <div class="dataTable">
+            <mr-commit-table
+              user="[[viewedUser]]"
+              commits="[[commits]]"
+              selected-date="{{selectedDate}}">
+            </mr-commit-table>
+          </div>
+          <div class="dataTable">
             <mr-comment-table
               user="[[viewedUser]]"
               viewed-user-id="[[viewedUserId]]"
@@ -170,6 +178,27 @@ export class MrProfilePage extends PolymerElement {
   }
 
   _getUserData() {
+    const d = new Date();
+    const n = d.getTime();
+    let currentTime = n / 1000;
+    currentTime = Math.ceil(currentTime);
+    const fromTime = currentTime - 31536000;
+
+    const commitMessage = {
+      email: this.viewedUser,
+      fromTimestamp: fromTime,
+      untilTimestamp: currentTime,
+    };
+
+    const getCommits = prpcClient.call(
+      'monorail.Users', 'GetUserCommits', commitMessage
+    );
+
+    getCommits.then((resp) => {
+      this.commits = resp.userCommits;
+    }, (error) => {
+    });
+
     const commentMessage = {
       userRef: {
         userId: this.viewedUserId,

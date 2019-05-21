@@ -40,6 +40,7 @@ export class MrDayIcon extends PolymerElement {
         }
       </style>
       <paper-tooltip>
+        [[commits]] Commits<br>
         [[comments]] Comments<br>
         <chops-timestamp timestamp="[[date]]"></chops-timestamp>
       </paper-tooltip>

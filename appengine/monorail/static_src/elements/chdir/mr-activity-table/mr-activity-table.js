@@ -39,7 +39,7 @@ export class MrActivityTable extends PolymerElement {
         <span></span>
       </template>
       <template is="dom-repeat" items="[[activityArray]]" as="day">
-        <mr-day-icon activity-level="[[day.activityNum]]" on-tap="_onDaySelected" selected="[[_computeIsSelected(selectedDate, day.date)]]" comments="[[day.comments]]" date="[[day.date]]">
+        <mr-day-icon activity-level="[[day.activityNum]]" on-tap="_onDaySelected" selected="[[_computeIsSelected(selectedDate, day.date)]]" commits="[[day.commits]]" comments="[[day.comments]]" date="[[day.date]]">
         </mr-day-icon>
       </template>
     `;
@@ -56,6 +56,9 @@ export class MrActivityTable extends PolymerElement {
       },
       viewedUserId: {
         type: Number,
+      },
+      commits: {
+        type: Array,
       },
       comments: {
         type: Array,
@@ -85,7 +88,7 @@ export class MrActivityTable extends PolymerElement {
       activityArray: {
         type: Array,
         reflectToAttribute: true,
-        computed: 'computeActivityArray(comments, todayUnixEndTime)',
+        computed: 'computeActivityArray(commits, comments, todayUnixEndTime)',
         observer: '_computeWeekdayStart',
       },
       months: {
@@ -138,20 +141,31 @@ export class MrActivityTable extends PolymerElement {
     return todayEndTime;
   }
 
-  computeActivityArray(comments, todayUnixEndTime) {
+  computeActivityArray(commits, comments, todayUnixEndTime) {
     if (!todayUnixEndTime) {
       return [];
     }
+    commits = commits || [];
     comments = comments || [];
 
     const activityArray = [];
     for (let i = 0; i < 93; i++) {
       const arrayDate = (todayUnixEndTime - ((i) * 86400));
       activityArray.push({
+        commits: 0,
         comments: 0,
         activityNum: 0,
         date: arrayDate,
       });
+    }
+
+    for (let i = 0; i < commits.length; i++) {
+      const day = Math.floor((todayUnixEndTime - commits[i].commitTime) / 86400);
+      if (day > 92) {
+        break;
+      }
+      activityArray[day].commits++;
+      activityArray[day].activityNum++;
     }
 
     for (let i = 0; i < comments.length; i++) {

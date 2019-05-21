@@ -1678,6 +1678,30 @@ class WorkEnv(object):
   # FUTURE: DeleteUser()
   # FUTURE: ListStarredUsers()
 
+  def GetUserCommits(self, user_id, from_timestamp, to_timestamp):
+    """Return a user's commits given their user id or email.
+
+    Args:
+      user_id: int user ID.
+
+    Returns:
+      A list of commits from the given user.
+
+    Raises:
+      exceptions.InputException: User was not specified properly.
+    """
+    if user_id is None:
+      raise exceptions.InputException('No user specified')
+
+    author_id = self.services.user.LookupUserID(
+        self.mc.cnxn, user_id, autocreate=True)
+
+    with self.mc.profiler.Phase('getting user commits of %r' % (user_id)):
+      commits = self.services.user.GetUserCommits(
+          self.mc.cnxn, author_id, from_timestamp, to_timestamp)
+
+    return commits
+
   def ExpungeUsers(self, _user_ids):
     """Permanently deletes user data and removes remaining user references
        for all listed users."""
