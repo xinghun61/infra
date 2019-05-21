@@ -9,7 +9,7 @@ import 'elements/chops/chops-button/chops-button.js';
 import {fieldTypes} from 'elements/shared/field-types.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles';
 
-const DELIMITER_REGEX = /[,;\s+]/;
+const DELIMITER_REGEX = /[,;\s]/;
 const DELIMITABLE_TYPES = [fieldTypes.STR_TYPE, fieldTypes.URL_TYPE,
   fieldTypes.DATE_TYPE];
 

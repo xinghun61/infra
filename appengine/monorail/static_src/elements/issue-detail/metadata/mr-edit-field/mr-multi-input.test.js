@@ -109,7 +109,7 @@ describe('mr-multi-input', () => {
 
     // Simulate user input.
     const input = element.shadowRoot.querySelector('#multi0');
-    input.value = 'jaunty;jackalope,, jumps joyously!';
+    input.value = 'jaunty;jackalope,, jumps joyously! foo+bar@example.com';
     await element._onBlur();
 
     await element.updateComplete;
@@ -118,11 +118,12 @@ describe('mr-multi-input', () => {
     assert.deepEqual(
       Array.from(element.shadowRoot.querySelectorAll('input')).map(
         (input) => input.value),
-      ['jaunty', 'jackalope', 'jumps', 'joyously!', '']);
+      ['jaunty', 'jackalope', 'jumps', 'joyously!', 'foo+bar@example.com', '']);
 
     // values are updated
     assert.deepEqual(
-      element.getValues(), ['jaunty', 'jackalope', 'jumps', 'joyously!']);
+      element.getValues(),
+      ['jaunty', 'jackalope', 'jumps', 'joyously!', 'foo+bar@example.com']);
   });
 
   it('input value has commas but is not delimitable', async () => {
