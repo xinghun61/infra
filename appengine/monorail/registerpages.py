@@ -69,7 +69,6 @@ from sitewide import userprofile
 from sitewide import usersettings
 from sitewide import userclearbouncing
 from sitewide import userupdates
-from sitewide import usercommits
 
 from tracker import componentcreate
 from tracker import componentdetail
@@ -213,7 +212,6 @@ class ServletRegistry(object):
           componentexport.ComponentTrainingDataExport,
         urls.COMPONENT_DATA_EXPORT_TASK:
           componentexport.ComponentTrainingDataExportTask,
-        urls.COMMIT_DATA_CRON: usercommits.GetCommitsCron,
         urls.FLT_ISSUE_CONVERSION_TASK: fltconversion.FLTConvertTask,
         })
 

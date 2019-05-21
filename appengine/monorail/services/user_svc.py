@@ -28,7 +28,6 @@ DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
 HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
 LINKEDACCOUNT_TABLE_NAME = 'LinkedAccount'
 LINKEDACCOUNTINVITE_TABLE_NAME = 'LinkedAccountInvite'
-USERCOMMITS_TABLE_NAME = 'UserCommits'
 
 USER_COLS = [
     'user_id', 'email', 'is_site_admin', 'notify_issue_change',
@@ -197,7 +196,6 @@ class UserService(object):
     self.linkedaccount_tbl = sql.SQLTableManager(LINKEDACCOUNT_TABLE_NAME)
     self.linkedaccountinvite_tbl = sql.SQLTableManager(
         LINKEDACCOUNTINVITE_TABLE_NAME)
-    self.usercommits_tbl = sql.SQLTableManager(USERCOMMITS_TABLE_NAME)
 
     # Like a dictionary {user_id: email}
     self.email_cache = caches.RamCache(cache_manager, 'user', max_size=50000)
@@ -474,15 +472,6 @@ class UserService(object):
 
     # Write the user settings to the database.
     self.UpdateUser(cnxn, user_id, user)
-
-  def GetUserCommits(self, cnxn, user_id, from_timestamp, to_timestamp):
-    user_commits = self.usercommits_tbl.Select(
-        cnxn, cols=['*'], author_id=[user_id],
-        where=[('commit_time >= %s', [from_timestamp]),
-            ('commit_time <= %s', [to_timestamp])
-        ],
-        order_by=[('commit_time DESC', [])])
-    return user_commits
 
   def GetRecentlyVisitedHotlists(self, cnxn, user_id):
     recent_hotlist_rows = self.hotlistvisithistory_tbl.Select(
