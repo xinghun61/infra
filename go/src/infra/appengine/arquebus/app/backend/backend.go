@@ -17,6 +17,7 @@ package backend
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -24,10 +25,14 @@ import (
 	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/prpc"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/arquebus/app/backend/model"
 	"infra/appengine/arquebus/app/config"
+	"infra/appengine/arquebus/app/util"
+	"infra/monorailv2/api/api_proto"
 )
 
 var (
@@ -53,9 +58,31 @@ func GetDispatcher(c context.Context) *tq.Dispatcher {
 	return c.Value(&ctxKeyDispatcher).(*tq.Dispatcher)
 }
 
-// setDispatcher installs the dispatcher instance into the context.
 func setDispatcher(c context.Context, dispatcher *tq.Dispatcher) context.Context {
 	return context.WithValue(c, &ctxKeyDispatcher, dispatcher)
+}
+
+var ctxKeyMonorailClient = "monorail client"
+
+func setMonorailClient(c context.Context, mc monorail.IssuesClient) context.Context {
+	return context.WithValue(c, &ctxKeyMonorailClient, mc)
+}
+
+func getMonorailClient(c context.Context) monorail.IssuesClient {
+	return c.Value(&ctxKeyMonorailClient).(monorail.IssuesClient)
+}
+
+func createMonorailClient(c context.Context) (monorail.IssuesClient, error) {
+	transport, err := auth.GetRPCTransport(c, auth.AsSelf)
+	if err != nil {
+		return nil, err
+	}
+	return monorail.NewIssuesPRPCClient(
+		&prpc.Client{
+			C:    &http.Client{Transport: transport},
+			Host: config.Get(c).MonorailHostname,
+		},
+	), nil
 }
 
 // InstallHandlers installs TaskQueue handlers into a given task queue.
@@ -63,10 +90,20 @@ func InstallHandlers(r *router.Router, m router.MiddlewareChain) {
 	dispatcher := &tq.Dispatcher{BaseURL: "/internal/tq/"}
 	registerTaskHandlers(dispatcher)
 
-	// install the dispatcher into the context so that it can be accessed via
-	// the context
+	// install the dispatcher and monorail client into the context so that
+	// they can be accessed via the context and overwritten in unit tests.
 	m = m.Extend(func(rc *router.Context, next router.Handler) {
 		rc.Context = setDispatcher(rc.Context, dispatcher)
+
+		mc, err := createMonorailClient(rc.Context)
+		if err != nil {
+			util.ErrStatus(
+				rc, http.StatusInternalServerError,
+				"failed to create an RPC channel for Monorail: %s", err,
+			)
+			return
+		}
+		rc.Context = setMonorailClient(rc.Context, mc)
 		next(rc)
 	})
 	dispatcher.InstallRoutes(r, m)
@@ -158,7 +195,6 @@ func startTaskRun(c context.Context, assignerID string, taskID int64) (assigner 
 		if err != nil {
 			return err
 		}
-
 		if task.Status != model.TaskStatus_Scheduled {
 			logging.Warningf(c, ""+
 				`the status is not "scheduled.", but "%q". It's likely `+

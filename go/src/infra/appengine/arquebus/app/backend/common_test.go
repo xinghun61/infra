@@ -19,6 +19,8 @@ import (
 	"go.chromium.org/luci/appengine/tq/tqtesting"
 	"go.chromium.org/luci/common/clock/testclock"
 
+	"google.golang.org/grpc"
+
 	"infra/appengine/arquebus/app/backend/model"
 	"infra/appengine/arquebus/app/config"
 	"infra/appengine/arquebus/app/util"
@@ -63,12 +65,15 @@ func createTestContextWithTQ() context.Context {
 	registerTaskHandlers(d)
 	tq := tqtesting.GetTestable(c, d)
 	tq.CreateQueues()
+	c = setDispatcher(c, d)
 
 	// set sample rotation shifts
 	for rotation, shift := range mockShifts {
 		setShiftResponse(c, rotation, shift)
 	}
-	return setDispatcher(c, d)
+
+	// install a mocked Monorail client with an empty response
+	return mockListIssues(c)
 }
 
 // createAssigner creates a sample Assigner entity.
@@ -137,4 +142,52 @@ func oncallUserSource(rotation string, position config.Oncall_Position) *config.
 			Rotation: rotation, Position: position,
 		}},
 	}
+}
+
+// ----------------------------------
+// test Monorail Issue Client
+
+type testIssueClientStorage struct {
+	issuesToList   []*monorail.Issue
+	issuesToUpdate map[string]*monorail.UpdateIssueRequest
+}
+
+type testIssueClient struct {
+	monorail.IssuesClient
+	storage *testIssueClientStorage
+}
+
+func newTestIssueClient(issues ...*monorail.Issue) testIssueClient {
+	return testIssueClient{
+		storage: &testIssueClientStorage{
+			issuesToList:   issues,
+			issuesToUpdate: map[string]*monorail.UpdateIssueRequest{},
+		},
+	}
+}
+
+func (client testIssueClient) UpdateIssue(c context.Context, in *monorail.UpdateIssueRequest, opts ...grpc.CallOption) (*monorail.IssueResponse, error) {
+	client.storage.issuesToUpdate[genIssueKey(
+		in.IssueRef.ProjectName, in.IssueRef.LocalId,
+	)] = in
+	return &monorail.IssueResponse{}, nil
+}
+
+func (client testIssueClient) ListIssues(c context.Context, in *monorail.ListIssuesRequest, opts ...grpc.CallOption) (*monorail.ListIssuesResponse, error) {
+	return &monorail.ListIssuesResponse{
+		Issues: client.storage.issuesToList,
+	}, nil
+}
+
+func mockListIssues(c context.Context, issues ...*monorail.Issue) context.Context {
+	return setMonorailClient(c, newTestIssueClient(issues...))
+}
+
+func getIssueUpdateRequests(c context.Context, projectName string, localID uint32) *monorail.UpdateIssueRequest {
+	issuesToUpdate := getMonorailClient(c).(testIssueClient).storage.issuesToUpdate
+	return issuesToUpdate[genIssueKey(projectName, localID)]
+}
+
+func genIssueKey(projectName string, localID uint32) string {
+	return fmt.Sprintf("%s:%d", projectName, localID)
 }

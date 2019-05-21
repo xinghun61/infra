@@ -26,8 +26,10 @@ import (
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
+	"go.chromium.org/luci/server/router"
 )
 
 var (
@@ -131,4 +133,13 @@ func (t MockHTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 
 	response.Body = ioutil.NopCloser(strings.NewReader(responseBody))
 	return response, nil
+}
+
+// ErrStatus sends an HTTP response with the error status and message.
+func ErrStatus(rc *router.Context, status int, format string, args ...interface{}) {
+	c := rc.Context
+	msg := fmt.Sprintf(format, args...)
+	logging.Errorf(c, "Status %d msg %s", status, msg)
+	rc.Writer.WriteHeader(status)
+	rc.Writer.Write([]byte(msg))
 }

@@ -17,29 +17,19 @@ package frontend
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/xsrf"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 
 	"infra/appengine/arquebus/app/config"
+	"infra/appengine/arquebus/app/util"
 )
-
-// errStatus sends an HTTP response with the error status and message.
-func errStatus(rc *router.Context, status int, format string, args ...interface{}) {
-	c := rc.Context
-	msg := fmt.Sprintf(format, args...)
-	logging.Errorf(c, "Status %d msg %s", status, msg)
-	rc.Writer.WriteHeader(status)
-	rc.Writer.Write([]byte(msg))
-}
 
 // InstallHandlers adds HTTP handlers that render HTML pages.
 func InstallHandlers(r *router.Router, bm router.MiddlewareChain) {
@@ -93,12 +83,12 @@ func hasAccess(rc *router.Context, next router.Handler) {
 	c := rc.Context
 	isMember, err := auth.IsMember(c, config.Get(c).AccessGroup)
 	if err != nil {
-		errStatus(rc, http.StatusInternalServerError, err.Error())
+		util.ErrStatus(rc, http.StatusInternalServerError, err.Error())
 		return
 	} else if !isMember {
 		url, err := auth.LoginURL(c, rc.Params.ByName("path"))
 		if err != nil {
-			errStatus(
+			util.ErrStatus(
 				rc, http.StatusForbidden,
 				"Access denied err:"+err.Error())
 			return
