@@ -33,7 +33,7 @@ func (h *State) JobEventUpdate(ctx *router.Context) {
 }
 
 func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
-	if !cfg.Config.Enabled {
+	if !cfg.Config.Enabled || cfg.Config.External {
 		logging.Infof(ctx.Context, "updating of shifts for rota: %q disabled.", cfg.Config.Name)
 		return nil
 	}

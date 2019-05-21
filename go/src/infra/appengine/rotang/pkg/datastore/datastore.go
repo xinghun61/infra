@@ -513,7 +513,7 @@ func (s *Store) RotaEnabled(ctx context.Context, name string) (bool, error) {
 	}
 
 	if len(cfg) != 1 {
-		return false, status.Errorf(codes.Internal, "Unexpected number of configurations returned")
+		return false, status.Errorf(codes.Internal, "unexpected number of configurations returned")
 	}
 	return cfg[0].Config.Enabled, nil
 
@@ -529,7 +529,10 @@ func (s *Store) changeRotaState(ctx context.Context, name string, state bool) er
 		return err
 	}
 	if len(cfg) != 1 {
-		return status.Errorf(codes.Internal, "Unexpected number of configurations returned")
+		return status.Errorf(codes.Internal, "unexpected number of configurations returned")
+	}
+	if cfg[0].Config.External {
+		return status.Errorf(codes.InvalidArgument, "can't enable external rotation")
 	}
 	cfg[0].Config.Enabled = state
 	return s.UpdateRotaConfig(ctx, cfg[0])

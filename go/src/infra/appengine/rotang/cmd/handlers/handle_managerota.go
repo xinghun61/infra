@@ -13,7 +13,7 @@ import (
 
 // HandleManageRota handles the rota management interface.
 func (h *State) HandleManageRota(ctx *router.Context) {
-	args, err := h.listRotations(ctx)
+	args, err := h.listRotations(ctx, false)
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return

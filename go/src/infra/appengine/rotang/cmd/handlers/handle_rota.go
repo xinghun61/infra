@@ -132,6 +132,7 @@ func (h *State) modifyRota(ctx *router.Context, cfg *rotang.Configuration, jr *j
 	// Want to keep the Enabled state of the config before.
 	// Enable/Disable of the configuration is handled elsewhere.
 	jr.Cfg.Config.Enabled = cfg.Config.Enabled
+	jr.Cfg.Config.External = cfg.Config.External
 	return h.configStore(ctx.Context).UpdateRotaConfig(ctx.Context, &jr.Cfg)
 }
 

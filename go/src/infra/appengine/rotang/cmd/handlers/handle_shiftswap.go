@@ -71,6 +71,9 @@ func (h *State) shiftChanges(ctx *router.Context, cfg *rotang.Configuration, ss 
 	if ss == nil || cfg == nil || usr == nil {
 		return status.Errorf(codes.InvalidArgument, "cfg, ss and usr must be set.")
 	}
+	if cfg.Config.External {
+		return status.Errorf(codes.InvalidArgument, "switching shifts for external rotations not supported")
+	}
 
 	var us []rotang.ShiftEntry
 	for _, ss := range ss.SplitShifts {

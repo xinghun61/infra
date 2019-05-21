@@ -131,4 +131,8 @@ message Rotation {
   // A rotation needs to be enabled to create/modify Google calendar
   // events and sending e-mails.
   bool enabled = 2;
+  // external signifies if this rotation is external.
+  // An external rotation fetches shifts from a shared calendar.
+  // Commonly used to get G3 oncall information in to RotaNG.
+  bool external = 3;
 }

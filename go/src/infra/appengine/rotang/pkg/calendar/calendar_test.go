@@ -414,11 +414,14 @@ func TestTrooperToShifts(t *testing.T) {
 				EndTime:   midnight,
 				OnCall: []rotang.ShiftMember{
 					{
-						Email: "not1@google.com",
+						Email:     "not1@google.com",
+						ShiftName: "troopers",
 					}, {
-						Email: "not2@google.com",
+						Email:     "not2@google.com",
+						ShiftName: "troopers",
 					}, {
-						Email: "not3@google.com",
+						Email:     "not3@google.com",
+						ShiftName: "troopers",
 					},
 				},
 			}, {
@@ -427,11 +430,14 @@ func TestTrooperToShifts(t *testing.T) {
 				EndTime:   midnight.Add(fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
-						Email: "this1@google.com",
+						Email:     "this1@google.com",
+						ShiftName: "troopers",
 					}, {
-						Email: "this2@google.com",
+						Email:     "this2@google.com",
+						ShiftName: "troopers",
 					}, {
-						Email: "this3@google.com",
+						Email:     "this3@google.com",
+						ShiftName: "troopers",
 					},
 				},
 			}, {
@@ -440,11 +446,14 @@ func TestTrooperToShifts(t *testing.T) {
 				EndTime:   midnight.Add(2 * fullDay),
 				OnCall: []rotang.ShiftMember{
 					{
-						Email: "nope1@google.com",
+						Email:     "nope1@google.com",
+						ShiftName: "troopers",
 					}, {
-						Email: "nope2@google.com",
+						Email:     "nope2@google.com",
+						ShiftName: "troopers",
 					}, {
-						Email: "nope3@google.com",
+						Email:     "nope3@google.com",
+						ShiftName: "troopers",
 					},
 				},
 			},
@@ -453,7 +462,7 @@ func TestTrooperToShifts(t *testing.T) {
 	}
 
 	for _, tst := range tests {
-		res, err := trooperToShifts(tst.events, tst.match)
+		res, err := trooperToShifts(tst.events, tst.match, "troopers")
 		if got, want := (err != nil), tst.fail; got != want {
 			t.Errorf("%s: trooperToShifts(_, %q) = %t want: %t, err: %v", tst.name, tst.match, got, want, err)
 			continue
@@ -463,7 +472,7 @@ func TestTrooperToShifts(t *testing.T) {
 		}
 
 		if diff := pretty.Compare(tst.want, res); diff != "" {
-			t.Errorf("%s: trooperToShifte(_, %q) differ -want +got, %s", tst.name, tst.match, diff)
+			t.Errorf("%s: trooperToShifts(_, %q) differ -want +got, %s", tst.name, tst.match, diff)
 		}
 	}
 
@@ -511,7 +520,7 @@ func TestTrooperShifts(t *testing.T) {
 
 	for _, tst := range tests {
 		c := New(tst.credFunc)
-		_, err := c.TrooperShifts(tst.ctx, tst.cal, tst.match, tst.from, tst.to)
+		_, err := c.TrooperShifts(tst.ctx, tst.cal, tst.match, "legacy_shift", tst.from, tst.to)
 		if got, want := (err != nil), tst.fail; got != want {
 			t.Errorf("%s: TrooperShifts(ctx, %q, %q, %v, %v) = %t want: %t, err: %v", tst.name, tst.cal, tst.match, tst.from, tst.to, got, want, err)
 			continue

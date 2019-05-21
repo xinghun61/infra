@@ -42,7 +42,7 @@ func (h *State) JobEmail(ctx *router.Context) {
 
 // notifyEmail figures out if a notification should be sent for the specified shift.
 func (h *State) notifyEmail(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
-	if !cfg.Config.Email.Enabled || !cfg.Config.Enabled {
+	if !cfg.Config.Email.Enabled || !cfg.Config.Enabled || cfg.Config.External {
 		msg := "config not Enabled"
 		if cfg.Config.Enabled {
 			msg = "e-mail notifications disabled"

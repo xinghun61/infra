@@ -280,7 +280,7 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 	var lastShift time.Time
 	for _, split := range ss.SplitShifts {
 		for _, shift := range split.Shifts {
-			if cfg.Config.Enabled {
+			if cfg.Config.Enabled && !cfg.Config.External {
 				cshift, err := h.calendar.UpdateEvent(ctx, cfg, &shift)
 				if err != nil {
 					logging.Warningf(ctx.Context, "Updating  calendar entry for shift: %v failed: %v", shift, err)
@@ -314,7 +314,7 @@ func (h *State) handleUpdatedShifts(ctx *router.Context, cfg *rotang.Configurati
 		if err := shiftStorer.DeleteShift(ctx.Context, cfg.Config.Name, s.StartTime); err != nil {
 			return err
 		}
-		if cfg.Config.Enabled {
+		if cfg.Config.Enabled && !cfg.Config.External {
 			if err := h.calendar.DeleteEvent(ctx, cfg, &s); err != nil {
 				if status.Code(err) != codes.NotFound {
 					logging.Warningf(ctx.Context, "Deleting calendar entry for shift: %v failed: %v", s, err)

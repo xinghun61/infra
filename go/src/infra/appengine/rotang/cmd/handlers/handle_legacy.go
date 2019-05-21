@@ -56,14 +56,17 @@ func doCORS(ctx *router.Context) {
 const (
 	trooperCal   = "google.com_3aov6uidfjscpj2hrpsd8i4e7o@group.calendar.google.com"
 	matchSummary = "CCI-Trooper:"
+	trooperShift = "Legacy Trooper"
+	trooperRota  = "troopers"
+	cciRota      = "CCI-Trooper"
 )
 
 var trooperRotationNamePattern = regexp.MustCompile("(chrome-ops-([[:word:]]|-)+).json")
 var matchSummaryByRotation = map[string]string{
-	"chrome-ops-client-infra": "CCI-Trooper:",
-	"chrome-ops-devx":         "DevX-Trooper:",
-	"chrome-ops-foundation":   "Foundation-Trooper:",
-	"chrome-ops-sre":          "SRE-Trooper:",
+	"chrome-ops-client-infra": "CCI-Trooper",
+	"chrome-ops-devx":         "DevX Trooper",
+	"chrome-ops-foundation":   "Foundation-Trooper",
+	"chrome-ops-sre":          "SRE-Trooper",
 }
 
 type trooperJSON struct {
@@ -73,6 +76,7 @@ type trooperJSON struct {
 }
 
 func (h *State) legacyTrooperByRotation(ctx *router.Context, file string) (string, error) {
+	// TODO(olakar): Remove this when arquebus have switched over to using the pRPC API.
 	patternMatches := trooperRotationNamePattern.FindStringSubmatch(file)
 	if len(patternMatches) == 0 {
 		return "", status.Errorf(codes.NotFound, "Invalid trooper rotation name.")
@@ -90,7 +94,7 @@ func (h *State) legacyTrooperByRotation(ctx *router.Context, file string) (strin
 	enc := json.NewEncoder(&buf)
 	start := clock.Now(ctx.Context)
 	end := start.Add(fullDay * 8)
-	shifts, err := h.legacyCalendar.TrooperShifts(ctx, trooperCal, summary, start, end)
+	shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, summary, start, end)
 	if err != nil && status.Code(err) != codes.NotFound {
 		return "", err
 	}
@@ -124,33 +128,41 @@ func (h *State) legacyTrooperByRotation(ctx *router.Context, file string) (strin
 
 func (h *State) legacyTrooper(ctx *router.Context, file string) (string, error) {
 	updated := clock.Now(ctx.Context)
-	oc, err := h.legacyCalendar.TrooperOncall(ctx, trooperCal, matchSummary, updated)
-	if err != nil && status.Code(err) != codes.NotFound {
-		return "", err
+	shift, err := h.shiftStore(ctx.Context).Oncall(ctx.Context, clock.Now(ctx.Context), cciRota)
+	if err != nil {
+		if status.Code(err) != codes.NotFound {
+			return "", err
+		}
+		shift = &rotang.ShiftEntry{}
 	}
+
+	var oncallers []string
+	for _, o := range shift.OnCall {
+		oncallers = append(oncallers, strings.Split(o.Email, "@")[0])
+	}
+
 	switch file {
 	case "trooper.js":
 		str := "None"
-		if len(oc) > 0 {
-			str = oc[0]
-			if len(oc) > 1 {
-				str += ", secondary: " + strings.Join(oc[1:], ", ")
+		if len(oncallers) > 0 {
+			str = oncallers[0]
+			if len(oncallers) > 1 {
+				str += ", secondary: " + strings.Join(oncallers[1:], ", ")
 			}
 		}
 		return "document.write('" + str + "');", nil
 	case "current_trooper.json", "trooper.json":
 		primary := "None"
 		secondary := make([]string, 0)
-		if len(oc) > 0 {
-			primary = oc[0]
-			if len(oc) > 1 {
-				secondary = oc[1:]
+		if len(oncallers) > 0 {
+			primary = oncallers[0]
+			if len(oncallers) > 1 {
+				secondary = oncallers[1:]
 			}
 		}
 
 		var buf bytes.Buffer
-		enc := json.NewEncoder(&buf)
-		if err := enc.Encode(&trooperJSON{
+		if err := json.NewEncoder(&buf).Encode(&trooperJSON{
 			Primary:   primary,
 			Secondary: secondary,
 			UnixTS:    updated.Unix(),
@@ -159,10 +171,10 @@ func (h *State) legacyTrooper(ctx *router.Context, file string) (string, error) 
 		}
 		return buf.String(), nil
 	case "current_trooper.txt":
-		if len(oc) == 0 {
+		if len(oncallers) == 0 {
 			return "None", nil
 		}
-		return strings.Join(oc, ","), nil
+		return strings.Join(oncallers, ","), nil
 	default:
 		return "", status.Errorf(codes.InvalidArgument, "legacyTrooper only handles `trooper.js` and `current_trooper.txt`")
 	}
@@ -326,9 +338,8 @@ var rotaToName = map[string][2]string{
 }
 
 const (
-	fullDay     = 24 * time.Hour
-	timeDelta   = 90 * fullDay
-	trooperRota = "troopers"
+	fullDay   = 24 * time.Hour
+	timeDelta = 90 * fullDay
 )
 
 type allRotations struct {
@@ -377,7 +388,7 @@ func (h *State) legacyAllRotations(ctx *router.Context, _ string) (string, error
 		buildLegacyRotation(dateMap, k, shifts)
 	}
 	// Troopers rotation.
-	ts, err := h.legacyCalendar.TrooperShifts(ctx, trooperCal, matchSummary, start, end)
+	ts, err := h.legacyCalendar.TrooperShifts(ctx, trooperCal, matchSummary, trooperShift, start, end)
 	if err != nil {
 		return "", err
 	}

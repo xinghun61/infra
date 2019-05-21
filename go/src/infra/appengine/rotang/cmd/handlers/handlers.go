@@ -50,7 +50,7 @@ func adminOrOwner(ctx *router.Context, cfg *rotang.Configuration) bool {
 
 // listRotations generates a list of rotations owned by current user.
 // If the current user is an admin all rotations will be listed.
-func (h *State) listRotations(ctx *router.Context) (templates.Args, error) {
+func (h *State) listRotations(ctx *router.Context, external bool) (templates.Args, error) {
 	if err := ctx.Context.Err(); err != nil {
 		return nil, err
 	}
@@ -64,6 +64,17 @@ func (h *State) listRotations(ctx *router.Context) (templates.Args, error) {
 		return nil, err
 	}
 
+	if !external {
+		var noExternal []*rotang.Configuration
+		for _, r := range rotas {
+			if r.Config.External {
+				continue
+			}
+			noExternal = append(noExternal, r)
+		}
+		rotas = noExternal
+	}
+
 	if !aeuser.IsAdmin(appengine.NewContext(ctx.Request)) {
 		var permRotas []*rotang.Configuration
 		for _, rota := range rotas {
@@ -73,6 +84,7 @@ func (h *State) listRotations(ctx *router.Context) (templates.Args, error) {
 				}
 			}
 		}
+		rotas = permRotas
 	}
 	return templates.Args{"Rotas": rotas}, nil
 }

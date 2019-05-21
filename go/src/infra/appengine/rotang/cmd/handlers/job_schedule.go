@@ -35,7 +35,7 @@ func (h *State) JobSchedule(ctx *router.Context) {
 const genComment = "auto extended"
 
 func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t time.Time) error {
-	if cfg.Config.Expiration == 0 || !cfg.Config.Enabled {
+	if cfg.Config.Expiration == 0 || !cfg.Config.Enabled || cfg.Config.External {
 		logging.Infof(ctx.Context, "scheduling of shifts for rota: %q disabled.", cfg.Config.Name)
 		return nil
 	}

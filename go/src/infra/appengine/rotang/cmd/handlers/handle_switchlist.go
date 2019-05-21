@@ -9,7 +9,7 @@ import (
 
 // HandleRotaSwitchList lists rotations not yest switched over.
 func (h *State) HandleRotaSwitchList(ctx *router.Context) {
-	args, err := h.listRotations(ctx)
+	args, err := h.listRotations(ctx, false)
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return

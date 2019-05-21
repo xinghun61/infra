@@ -276,244 +276,567 @@ func TestLegacySheriff(t *testing.T) {
 func TestLegacyTroopers(t *testing.T) {
 	ctx := newTestContext()
 
+	h := testSetup(t)
+
 	tests := []struct {
 		name       string
 		fail       bool
-		calFail    bool
 		ctx        *router.Context
+		legacyFunc func(*router.Context, string) (string, error)
 		file       string
-		oncallers  []string
-		updateTime time.Time
+		cfg        rotang.Configuration
+		members    []rotang.Member
+		shifts     []rotang.ShiftEntry
+		time       time.Time
 		want       string
 	}{{
 		name: "Success JS",
 		ctx: &router.Context{
 			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
 		},
-		file:       "trooper.js",
-		oncallers:  []string{"primary1", "secondary1", "secondary2"},
-		updateTime: midnight,
-		want:       "document.write('primary1, secondary: secondary1, secondary2');",
+		time: midnight,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: cciRota,
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@google.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		legacyFunc: h.legacyTrooper,
+		members: []rotang.Member{
+			{
+				Email: "primary1@google.com",
+			}, {
+				Email: "secondary1@google.com",
+			}, {
+				Email: "secondary2@google.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@google.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "trooper.js",
+		want: "document.write('primary1, secondary: secondary1, secondary2');",
 	}, {
 		name: "Success JSON",
 		ctx: &router.Context{
 			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
 		},
-		file:       "current_trooper.json",
-		oncallers:  []string{"primary1", "secondary1", "secondary2"},
-		updateTime: midnight,
-		want:       `{"primary":"primary1","secondaries":["secondary1","secondary2"],"updated_unix_timestamp":1143936000}` + "\n",
+		time:       midnight,
+		legacyFunc: h.legacyTrooper,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: cciRota,
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@google.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "primary1@google.com",
+			}, {
+				Email: "secondary1@google.com",
+			}, {
+				Email: "secondary2@google.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@google.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "current_trooper.json",
+		want: `{"primary":"primary1","secondaries":["secondary1","secondary2"],"updated_unix_timestamp":1143936000}` + "\n",
 	}, {
 		name: "Success trooper.json",
 		ctx: &router.Context{
 			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
 		},
-		file:       "current_trooper.json",
-		oncallers:  []string{"primary1", "secondary1", "secondary2"},
-		updateTime: midnight,
-		want:       `{"primary":"primary1","secondaries":["secondary1","secondary2"],"updated_unix_timestamp":1143936000}` + "\n",
+		time:       midnight,
+		legacyFunc: h.legacyTrooper,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: cciRota,
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@google.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "primary1@google.com",
+			}, {
+				Email: "secondary1@google.com",
+			}, {
+				Email: "secondary2@google.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@google.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "trooper.json",
+		want: `{"primary":"primary1","secondaries":["secondary1","secondary2"],"updated_unix_timestamp":1143936000}` + "\n",
 	}, {
 		name: "Success txt",
 		ctx: &router.Context{
 			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
 		},
-		file:       "current_trooper.txt",
-		oncallers:  []string{"primary1", "secondary1", "secondary2"},
-		updateTime: midnight,
-		want:       "primary1,secondary1,secondary2",
-	}, {
-		name:    "Calendar fail",
-		fail:    true,
-		calFail: true,
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
+		time:       midnight,
+		legacyFunc: h.legacyTrooper,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: cciRota,
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@google.com",
+					ShiftName: "external",
+				},
+			},
 		},
-		file:       "current_trooper.txt",
-		oncallers:  []string{"primary1", "secondary1", "secondary2"},
-		updateTime: midnight,
+		members: []rotang.Member{
+			{
+				Email: "primary1@google.com",
+			}, {
+				Email: "secondary1@google.com",
+			}, {
+				Email: "secondary2@google.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@google.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "current_trooper.txt",
+		want: "primary1,secondary1,secondary2",
 	}, {
-		name: "Unknown file",
+		name: "File not found",
 		fail: true,
 		ctx: &router.Context{
 			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
 		},
-		file:       "unknown_trooper.txt",
-		oncallers:  []string{"primary1", "secondary1", "secondary2"},
-		updateTime: midnight,
-	},
-	}
-
-	h := testSetup(t)
-
-	for _, tst := range tests {
-		h.legacyCalendar.(*fakeCal).SetTroopers(tst.oncallers, tst.calFail)
-
-		tst.ctx.Context = clock.Set(tst.ctx.Context, testclock.New(tst.updateTime))
-
-		resStr, err := h.legacyTrooper(tst.ctx, tst.file)
-		if got, want := (err != nil), tst.fail; got != want {
-			t.Errorf("%s: legacyTrooper(ctx) = %t want: %t, err: %v", tst.name, got, want, err)
-			continue
-		}
-		if err != nil {
-			continue
-		}
-
-		if diff := pretty.Compare(tst.want, resStr); diff != "" {
-			t.Errorf("%s: legacyTrooper(ctx) differ -want +got,\n%s", tst.name, diff)
-		}
-	}
-
-}
-
-func TestLegacyTroopersByRotation(t *testing.T) {
-	ctx := newTestContext()
-
-	tests := []struct {
-		name      string
-		fail      bool
-		calFail   bool
-		ctx       *router.Context
-		file      string
-		calShifts []rotang.ShiftEntry
-		time      time.Time
-		want      string
-	}{{
-		name: "Success chrome-ops-devx.json",
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
-		},
-		file: "chrome-ops-devx.json",
-		calShifts: []rotang.ShiftEntry{
-			{
-				StartTime: midnight,
-				EndTime:   midnight.Add(5 * fullDay),
-				OnCall: []rotang.ShiftMember{
-					{Email: "primary@oncall.com"},
-					{Email: "secondary1@oncall.com"},
-					{Email: "secondary2@oncall.com"},
+		time:       midnight,
+		legacyFunc: h.legacyTrooper,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: cciRota,
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@google.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@google.com",
+					ShiftName: "external",
 				},
 			},
 		},
-		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143936000}` + "\n",
-	}, {
-		name: "Success chrome-ops-foundation.json",
-		calShifts: []rotang.ShiftEntry{
+		members: []rotang.Member{
 			{
-				StartTime: midnight,
-				EndTime:   midnight.Add(5 * fullDay),
-				OnCall: []rotang.ShiftMember{
-					{Email: "primary@oncall.com"},
-					{Email: "secondary1@oncall.com"},
-					{Email: "secondary2@oncall.com"},
-				},
+				Email: "primary1@google.com",
+			}, {
+				Email: "secondary1@google.com",
+			}, {
+				Email: "secondary2@google.com",
 			},
 		},
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
-		},
-		file: "chrome-ops-foundation.json",
-		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143936000}` + "\n",
-	}, {
-		name: "Success chrome-ops-client-infra.json",
-		calShifts: []rotang.ShiftEntry{
+		shifts: []rotang.ShiftEntry{
 			{
-				StartTime: midnight,
-				EndTime:   midnight.Add(5 * fullDay),
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
 				OnCall: []rotang.ShiftMember{
-					{Email: "primary@oncall.com"},
-					{Email: "secondary1@oncall.com"},
-					{Email: "secondary2@oncall.com"},
+					{
+						Email:     "primary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@google.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@google.com",
+						ShiftName: "external",
+					},
 				},
 			},
-		},
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
-		},
-		file: "chrome-ops-client-infra.json",
-		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143936000}` + "\n",
-	}, {
-		name: "Success chrome-ops-sre.json",
-		calShifts: []rotang.ShiftEntry{
-			{
-				StartTime: midnight,
-				EndTime:   midnight.Add(5 * fullDay),
-				OnCall: []rotang.ShiftMember{
-					{Email: "primary@oncall.com"},
-					{Email: "secondary1@oncall.com"},
-					{Email: "secondary2@oncall.com"},
-				},
-			},
-		},
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
-		},
-		file: "chrome-ops-sre.json",
-		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143936000}` + "\n",
-	}, {
-		name:    "Calendar fail",
-		fail:    true,
-		calFail: true,
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
-		},
-		file: "chrome-ops-sre.txt",
-	}, {
-		name: "Unknown file",
-		fail: true,
-		time: midnight,
-		ctx: &router.Context{
-			Context: ctx,
-			Writer:  httptest.NewRecorder(),
-			Request: httptest.NewRequest("GET", "/legacy", nil),
 		},
 		file: "unknown_trooper.txt",
+	}, {
+		name: "Success CCI trooper by rotation",
+		ctx: &router.Context{
+			Context: ctx,
+		},
+		time:       midnight,
+		legacyFunc: h.legacyTrooperByRotation,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: cciRota,
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@oncall.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "primary@oncall.com",
+			}, {
+				Email: "secondary1@oncall.com",
+			}, {
+				Email: "secondary2@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@oncall.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "chrome-ops-client-infra.json",
+		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143849600}` + "\n",
+	}, {
+		name: "Success Foundation trooper by rotation",
+		ctx: &router.Context{
+			Context: ctx,
+		},
+		time:       midnight,
+		legacyFunc: h.legacyTrooperByRotation,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: "Foundation-Trooper",
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@oncall.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "primary@oncall.com",
+			}, {
+				Email: "secondary1@oncall.com",
+			}, {
+				Email: "secondary2@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@oncall.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "chrome-ops-foundation.json",
+		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143849600}` + "\n",
+	}, {
+		name: "Success DevX trooper by rotation",
+		ctx: &router.Context{
+			Context: ctx,
+		},
+		time:       midnight,
+		legacyFunc: h.legacyTrooperByRotation,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: "DevX Trooper",
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@oncall.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "primary@oncall.com",
+			}, {
+				Email: "secondary1@oncall.com",
+			}, {
+				Email: "secondary2@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@oncall.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "chrome-ops-devx.json",
+		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143849600}` + "\n",
+	}, {
+		name: "Success DevX trooper by rotation",
+		ctx: &router.Context{
+			Context: ctx,
+		},
+		time:       midnight,
+		legacyFunc: h.legacyTrooperByRotation,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: "SRE-Trooper",
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@oncall.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "primary@oncall.com",
+			}, {
+				Email: "secondary1@oncall.com",
+			}, {
+				Email: "secondary2@oncall.com",
+			},
+		},
+		shifts: []rotang.ShiftEntry{
+			{
+				StartTime: midnight.Add(-1 * fullDay),
+				EndTime:   midnight.Add(fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "primary@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary1@oncall.com",
+						ShiftName: "external",
+					}, {
+						Email:     "secondary2@oncall.com",
+						ShiftName: "external",
+					},
+				},
+			},
+		},
+		file: "chrome-ops-sre.json",
+		want: `{"primary":"primary@oncall.com","secondaries":["secondary1@oncall.com","secondary2@oncall.com"],"updated_unix_timestamp":1143849600}` + "\n",
+	}, {
+		name: "DevX nobody on-call",
+		ctx: &router.Context{
+			Context: ctx,
+		},
+		time:       midnight,
+		legacyFunc: h.legacyTrooperByRotation,
+		cfg: rotang.Configuration{
+			Config: rotang.Config{
+				Name: "SRE-Trooper",
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "primary@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary1@oncall.com",
+					ShiftName: "external",
+				}, {
+					Email:     "secondary2@oncall.com",
+					ShiftName: "external",
+				},
+			},
+		},
+		members: []rotang.Member{
+			{
+				Email: "primary@oncall.com",
+			}, {
+				Email: "secondary1@oncall.com",
+			}, {
+				Email: "secondary2@oncall.com",
+			},
+		},
+		file: "chrome-ops-devx.json",
+		want: `{"primary":"None","secondaries":[],"updated_unix_timestamp":1143936000}` + "\n",
 	},
 	}
 
-	h := testSetup(t)
-
 	for _, tst := range tests {
-		h.legacyCalendar.(*fakeCal).Set(tst.calShifts, tst.calFail, false, 0)
+		t.Run(tst.name, func(t *testing.T) {
+			for _, m := range tst.members {
+				if err := h.memberStore(ctx).CreateMember(ctx, &m); err != nil {
+					t.Fatalf("%s: CreateMember(ctx, _) failed: %v", tst.name, err)
+				}
+				defer h.memberStore(ctx).DeleteMember(ctx, m.Email)
+			}
+			if err := h.configStore(ctx).CreateRotaConfig(ctx, &tst.cfg); err != nil {
+				t.Fatalf("%s: CreateRotaConfig(ctx, _) failed: %v", tst.name, err)
+			}
+			defer h.configStore(ctx).DeleteRotaConfig(ctx, tst.cfg.Config.Name)
+			if err := h.shiftStore(ctx).AddShifts(ctx, tst.cfg.Config.Name, tst.shifts); err != nil {
+				t.Fatalf("%s: AddShifts(ctx, %q, _ ) failed: %v", tst.name, tst.cfg.Config.Name, err)
+			}
+			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.cfg.Config.Name)
 
-		tst.ctx.Context = clock.Set(tst.ctx.Context, testclock.New(tst.time))
+			tst.ctx.Context = clock.Set(tst.ctx.Context, testclock.New(tst.time))
 
-		resStr, err := h.legacyTrooperByRotation(tst.ctx, tst.file)
-		if got, want := (err != nil), tst.fail; got != want {
-			t.Errorf("%s: legacyTrooper(ctx) = %t want: %t, err: %v", tst.name, got, want, err)
-			continue
-		}
-		if err != nil {
-			continue
-		}
+			resStr, err := tst.legacyFunc(tst.ctx, tst.file)
+			if got, want := (err != nil), tst.fail; got != want {
+				t.Fatalf("%s: legacyTrooper(ctx) = %t want: %t, err: %v", tst.name, got, want, err)
+			}
 
-		if diff := pretty.Compare(tst.want, resStr); diff != "" {
-			t.Errorf("%s: legacyTrooper(ctx) differ -want +got,\n%s", tst.name, diff)
-		}
+			if err != nil {
+				return
+			}
+
+			if diff := pretty.Compare(tst.want, resStr); diff != "" {
+				t.Errorf("%s: legacyTrooper(ctx) differ -want +got,\n%s", tst.name, diff)
+			}
+		})
 	}
-
 }
 
 func TestLegacyAllRotations(t *testing.T) {

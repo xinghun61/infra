@@ -41,7 +41,7 @@ func (h *State) safeToMigrateCalendar(ctx context.Context, cfg *rotang.Configura
 			continue
 		}
 		if rota.Config.Calendar == cfg.Config.Calendar {
-			if !rota.Config.Enabled {
+			if !rota.Config.Enabled || rota.Config.External {
 				return false, nil
 			}
 		}

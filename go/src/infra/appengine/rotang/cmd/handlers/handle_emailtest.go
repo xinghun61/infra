@@ -37,7 +37,7 @@ func (h *State) HandleEmailTest(ctx *router.Context) {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	args, err := h.listRotations(ctx)
+	args, err := h.listRotations(ctx, false)
 	if err != nil {
 		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
 		return
