@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import {equalsIgnoreCase} from './helpers';
+import {UserInputError} from 'elements/shared/errors.js';
 
 // Match: projectName:localIdFormat
 const ISSUE_ID_REGEX = /(?:([a-z0-9-]+):)?(\d+)/i;
@@ -56,7 +57,7 @@ export function issueStringToRef(defaultProjectName, idStr) {
 
   const matches = idStr.match(ISSUE_ID_REGEX);
   if (!matches) {
-    return null;
+    throw new UserInputError('Expected [projectName:]issueId.');
   }
   const projectName = matches[1] ? matches[1] : defaultProjectName;
   const localId = Number.parseInt(matches[2]);

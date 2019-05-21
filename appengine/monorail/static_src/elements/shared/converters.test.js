@@ -46,6 +46,10 @@ describe('issueStringToRef', () => {
       issueStringToRef('proj', 'foo:1234'),
       {projectName: 'foo', localId: 1234});
   });
+
+  it('throws on invalid input', () => {
+    assert.throws(() => issueStringToRef('proj', 'foo'));
+  });
 });
 
 describe('issueRefToString', () => {

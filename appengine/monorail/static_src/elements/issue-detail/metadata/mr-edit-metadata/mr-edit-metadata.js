@@ -517,6 +517,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
       projectName: {type: String},
       isApproval: {type: Boolean},
       issuePermissions: {type: Object},
+      issueRef: {type: Object},
       hasApproverPrivileges: {type: Boolean},
       showNicheFields: {type: Boolean},
       disabled: {type: Boolean},
@@ -538,6 +539,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.ownerName = '';
     this.sendEmail = true;
     this.mergedInto = {};
+    this.issueRef = {};
     this.fieldGroups = HARDCODED_FIELD_GROUPS;
   }
 
@@ -605,6 +607,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
   stateChanged(state) {
     this.fieldValueMap = issue.fieldValueMap(state);
     this.issueType = issue.type(state);
+    this.issueRef = issue.issueRef(state);
     this.presubmitResponse = issue.presubmitResponse(state);
     this.projectConfig = project.project(state).config;
     this.projectName = issue.issueRef(state).projectName;
@@ -685,10 +688,13 @@ export class MrEditMetadata extends connectStore(LitElement) {
 
   get delta() {
     try {
+      this.error = '';
+      this.disabled = false;
       return this._getDelta();
     } catch (e) {
       if (!(e instanceof UserInputError)) throw e;
       this.error = e.message;
+      this.disabled = true;
       return {};
     }
   }
@@ -700,16 +706,15 @@ export class MrEditMetadata extends connectStore(LitElement) {
     const statusInput = root.querySelector('#statusInput');
     if (this._canEditStatus && statusInput) {
       const statusDelta = statusInput.delta;
-      const errorMessage = 'Invalid input for field: mergedInto';
       if (statusDelta.mergedInto) {
-        result.mergedIntoRef = issueStringToRef(
-          this.projectName, statusDelta.mergedInto);
-        if (!result.mergedIntoRef) {
-          throw new UserInputError(errorMessage);
+        try {
+          result.mergedIntoRef = this._issueStringToRef(statusDelta.mergedInto);
+        } catch (e) {
+          if (!(e instanceof UserInputError)) throw e;
+          throw new UserInputError(
+            `${statusDelta.mergedInto} is not a valid issue to merge into: ` +
+            `${e.message}`);
         }
-      }
-      if (this.error === errorMessage) {
-        this.error = '';
       }
       if (statusDelta.status) {
         result.status = statusDelta.status;
@@ -757,10 +762,10 @@ export class MrEditMetadata extends connectStore(LitElement) {
           result, 'components', 'compRefs', componentStringToRef);
         this._updateDeltaWithAddedAndRemoved(
           result, 'blockedOn', 'blockedOnRefs',
-          issueStringToRef.bind(null, this.projectName));
+          this._issueStringToRef.bind(this));
         this._updateDeltaWithAddedAndRemoved(
           result, 'blocking', 'blockingRefs',
-          issueStringToRef.bind(null, this.projectName));
+          this._issueStringToRef.bind(this));
       }
     }
 
@@ -809,27 +814,40 @@ export class MrEditMetadata extends connectStore(LitElement) {
     const input = this.shadowRoot.querySelector(`#${fieldName}Input`);
     if (!input) return;
 
-    // TODO(ehmaldonado): Tell the user what format is a valid input.
-    const errorMessage = `Invalid input for field: ${fieldName}`;
-
     this._addListChangesToDelta(
-      delta, input.getValuesAdded(), key + 'Add', errorMessage, mapFn);
+      delta, input.getValuesAdded(), fieldName, key + 'Add', mapFn);
+    // Don't alert when removing invalid values.
     this._addListChangesToDelta(
-      delta, input.getValuesRemoved(), key + 'Remove', errorMessage, mapFn);
-
-    if (this.error === errorMessage) {
-      this.error = '';
-    }
+      delta, input.getValuesRemoved(), fieldName, key + 'Remove', mapFn, true);
   }
 
-  _addListChangesToDelta(delta, values, key, errorMessage, mapFn) {
+  _addListChangesToDelta(delta, values, fieldName, key, mapFn, ignoreErrors) {
     if (!values || !values.length) return;
-    const mappedValues = values.map(mapFn);
-    if (!mappedValues.every(Boolean)) {
-      throw new UserInputError(errorMessage);
+    if (!delta.hasOwnProperty(key)) {
+      delta[key] = [];
     }
-    if (!delta.hasOwnProperty(key)) delta[key] = [];
-    delta[key].push(...mappedValues);
+    values.map((value) => {
+      try {
+        delta[key].push(mapFn(value, ignoreErrors));
+      } catch (e) {
+        if (!(e instanceof UserInputError)) throw e;
+        if (ignoreErrors) return;
+        throw new UserInputError(
+          `${value} is not a valid value for field ${fieldName}: ` +
+          `${e.message}`);
+      }
+    });
+  }
+
+  _issueStringToRef(issueStr, ignoreErrors) {
+    const result = issueStringToRef(this.projectName, issueStr);
+    if (!ignoreErrors &&
+      result.projectName === this.issueRef.projectName &&
+      result.localId === this.issueRef.localId) {
+      throw new UserInputError(
+        'You cannot block or merge an issue into itself.');
+    }
+    return result;
   }
 
   // This function exists because <label for="inputId"> doesn't work for custom

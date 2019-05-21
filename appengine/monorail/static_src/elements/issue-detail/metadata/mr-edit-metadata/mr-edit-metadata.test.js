@@ -118,7 +118,117 @@ describe('mr-edit-metadata', () => {
     const statusComponent = element.shadowRoot.querySelector('#statusInput');
     statusComponent.shadowRoot.querySelector('#mergedIntoInput').setValue('xx');
     assert.deepEqual(element.delta, {});
-    assert.equal(element.error, 'Invalid input for field: mergedInto');
+    assert.equal(
+      element.error,
+      'xx is not a valid issue to merge into: Expected [projectName:]issueId.');
+  });
+
+  it('cannot block an issue on itself', async () => {
+    element.projectName = 'proj';
+    element.issueRef = {projectName: 'proj', localId: 123};
+
+    await element.updateComplete;
+
+    ['blockedOn', 'blocking'].forEach((fieldName) => {
+      const input =
+        element.shadowRoot.querySelector(`#${fieldName}Input`);
+      input.setValue(['123']);
+      assert.deepEqual(element.delta, {});
+      assert.equal(
+        element.error,
+        `123 is not a valid value for field ${fieldName}: ` +
+        'You cannot block or merge an issue into itself.');
+
+      input.setValue(['proj:123']);
+      assert.deepEqual(element.delta, {});
+      assert.equal(
+        element.error,
+        `proj:123 is not a valid value for field ${fieldName}: ` +
+        'You cannot block or merge an issue into itself.');
+
+      input.setValue(['proj2:123']);
+      assert.notDeepEqual(element.delta, {});
+      assert.equal(element.error, '');
+
+      input.setValue([]);
+    });
+  });
+
+  it('cannot block an issue on itself', async () => {
+    element.statuses = [
+      {'status': 'New'},
+      {'status': 'Duplicate'},
+    ];
+    element.status = 'New';
+    element.projectName = 'proj';
+    element.issueRef = {projectName: 'proj', localId: 123};
+
+    await element.updateComplete;
+
+    const statusComponent = element.shadowRoot.querySelector(
+      '#statusInput');
+    const root = statusComponent.shadowRoot;
+    const statusInput = root.querySelector('#statusInput');
+    statusInput.value = 'Duplicate';
+    statusInput.dispatchEvent(new Event('change'));
+
+    await element.updateComplete;
+
+    root.querySelector('#mergedIntoInput').setValue('proj:123');
+    assert.deepEqual(element.delta, {});
+    assert.equal(
+      element.error,
+      'proj:123 is not a valid issue to merge into: ' +
+      'You cannot block or merge an issue into itself.');
+
+    root.querySelector('#mergedIntoInput').setValue('123');
+    assert.deepEqual(element.delta, {});
+    assert.equal(
+      element.error,
+      '123 is not a valid issue to merge into: ' +
+      'You cannot block or merge an issue into itself.');
+
+    root.querySelector('#mergedIntoInput').setValue('proj2:123');
+    assert.notDeepEqual(element.delta, {});
+    assert.equal(element.error, '');
+  });
+
+  it('can remove invalid values', async () => {
+    element.projectName = 'proj';
+    element.issueRef = {projectName: 'proj', localId: 123};
+
+    element.statuses = [
+      {'status': 'Duplicate'},
+    ];
+    element.status = 'Duplicate';
+    element.mergedInto = element.issueRef;
+
+    element.blockedOn = [element.issueRef];
+    element.blocking = [element.issueRef];
+
+    await element.updateComplete;
+
+    const blockedOnInput = element.shadowRoot.querySelector('#blockedOnInput');
+    const blockingInput = element.shadowRoot.querySelector('#blockingInput');
+    const statusInput = element.shadowRoot.querySelector('#statusInput');
+
+    await element.updateComplete;
+
+    const mergedIntoInput =
+      statusInput.shadowRoot.querySelector('#mergedIntoInput');
+
+    blockedOnInput.setValue([]);
+    blockingInput.setValue([]);
+    mergedIntoInput.setValue('proj:124');
+
+    assert.deepEqual(
+      element.delta,
+      {
+        blockedOnRefsRemove: [{projectName: 'proj', localId: 123}],
+        blockingRefsRemove: [{projectName: 'proj', localId: 123}],
+        mergedIntoRef: {projectName: 'proj', localId: 124},
+      });
+    assert.equal(element.error, '');
   });
 
   it('not changing status produces no delta', async () => {
