@@ -65,7 +65,7 @@ func createTestContextWithTQ() context.Context {
 	registerTaskHandlers(d)
 	tq := tqtesting.GetTestable(c, d)
 	tq.CreateQueues()
-	c = setDispatcher(c, d)
+	c = util.SetDispatcher(c, d)
 
 	// set sample rotation shifts
 	for rotation, shift := range mockShifts {

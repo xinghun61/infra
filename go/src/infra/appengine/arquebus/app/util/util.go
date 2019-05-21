@@ -26,6 +26,7 @@ import (
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
@@ -142,4 +143,16 @@ func ErrStatus(rc *router.Context, status int, format string, args ...interface{
 	logging.Errorf(c, "Status %d msg %s", status, msg)
 	rc.Writer.WriteHeader(status)
 	rc.Writer.Write([]byte(msg))
+}
+
+var ctxKeyDispatcher = "tq dispatcher"
+
+// GetDispatcher returns the dispatcher instance installed in the context.
+func GetDispatcher(c context.Context) *tq.Dispatcher {
+	return c.Value(&ctxKeyDispatcher).(*tq.Dispatcher)
+}
+
+// SetDispatcher installs the dispatcher instance into the context.
+func SetDispatcher(c context.Context, dispatcher *tq.Dispatcher) context.Context {
+	return context.WithValue(c, &ctxKeyDispatcher, dispatcher)
 }

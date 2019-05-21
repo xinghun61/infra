@@ -22,8 +22,10 @@ import (
 	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
+
 	"infra/appengine/arquebus/app/backend"
 	"infra/appengine/arquebus/app/config"
+	"infra/appengine/arquebus/app/util"
 )
 
 // http500res sets status to 500 and puts a given error message in response.
@@ -69,7 +71,7 @@ func scheduleAssigners(c *router.Context) {
 			},
 		})
 	}
-	if err := backend.GetDispatcher(ctx).AddTask(ctx, tasks...); err != nil {
+	if err := util.GetDispatcher(ctx).AddTask(ctx, tasks...); err != nil {
 		http500res(c, err, "failed to add tasks to task queue")
 		return
 	}
@@ -81,8 +83,12 @@ func scheduleAssigners(c *router.Context) {
 //
 // All handlers serve paths under /internal/cron/*
 // These handlers can only be called by appengine's cron service.
-func InstallHandlers(r *router.Router, mwBase router.MiddlewareChain) {
+func InstallHandlers(r *router.Router, dispatcher *tq.Dispatcher, mwBase router.MiddlewareChain) {
 	m := mwBase.Extend(gaemiddleware.RequireCron)
+	m = m.Extend(func(rc *router.Context, next router.Handler) {
+		rc.Context = util.SetDispatcher(rc.Context, dispatcher)
+		next(rc)
+	})
 	r.GET("/internal/cron/update-assigners", m, updateAssigners)
 	r.GET("/internal/cron/schedule-assigners", m, scheduleAssigners)
 }

@@ -51,17 +51,6 @@ var (
 	nRetriesForSavingTaskEntity = 8
 )
 
-var ctxKeyDispatcher = "tq dispatcher"
-
-// GetDispatcher returns the dispatcher instance installed in the context.
-func GetDispatcher(c context.Context) *tq.Dispatcher {
-	return c.Value(&ctxKeyDispatcher).(*tq.Dispatcher)
-}
-
-func setDispatcher(c context.Context, dispatcher *tq.Dispatcher) context.Context {
-	return context.WithValue(c, &ctxKeyDispatcher, dispatcher)
-}
-
 var ctxKeyMonorailClient = "monorail client"
 
 func setMonorailClient(c context.Context, mc monorail.IssuesClient) context.Context {
@@ -86,14 +75,13 @@ func createMonorailClient(c context.Context) (monorail.IssuesClient, error) {
 }
 
 // InstallHandlers installs TaskQueue handlers into a given task queue.
-func InstallHandlers(r *router.Router, m router.MiddlewareChain) {
-	dispatcher := &tq.Dispatcher{BaseURL: "/internal/tq/"}
+func InstallHandlers(r *router.Router, dispatcher *tq.Dispatcher, m router.MiddlewareChain) {
 	registerTaskHandlers(dispatcher)
 
 	// install the dispatcher and monorail client into the context so that
 	// they can be accessed via the context and overwritten in unit tests.
 	m = m.Extend(func(rc *router.Context, next router.Handler) {
-		rc.Context = setDispatcher(rc.Context, dispatcher)
+		rc.Context = util.SetDispatcher(rc.Context, dispatcher)
 
 		mc, err := createMonorailClient(rc.Context)
 		if err != nil {
@@ -184,7 +172,7 @@ func scheduleRuns(c context.Context, assignerID string, tasks []*model.Task) err
 			ETA: task.ExpectedStart,
 		}
 	}
-	return GetDispatcher(c).AddTask(c, tqTasks...)
+	return util.GetDispatcher(c).AddTask(c, tqTasks...)
 }
 
 // startTaskRun updates the task status, based on the current status of

@@ -19,6 +19,7 @@ import (
 	"net/http"
 
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	"go.chromium.org/luci/appengine/tq"
 	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/config/validation"
 	"go.chromium.org/luci/server/router"
@@ -40,11 +41,12 @@ func init() {
 	// -------------------------
 	r := router.New()
 	m := standard.Base().Extend(config.Middleware)
+	dispatcher := &tq.Dispatcher{BaseURL: "/internal/tq/"}
 
 	standard.InstallHandlers(r)
-	backend.InstallHandlers(r, m)
+	backend.InstallHandlers(r, dispatcher, m)
 	frontend.InstallHandlers(r, m)
-	cron.InstallHandlers(r, m)
+	cron.InstallHandlers(r, dispatcher, m)
 
 	config.SetupValidation(&validation.Rules)
 	http.DefaultServeMux.Handle("/", r)
