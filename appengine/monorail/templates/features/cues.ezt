@@ -90,7 +90,7 @@
     [end]
 
     [# Teach users that color blocks mean that an issue participant may not be available.]
-    [is cue "availibility_msgs"]
+    [is cue "availability_msgs"]
       <b>Note:</b>
       Color blocks (like <span class="availability_unsure" style="padding:0">&#9608;</span> or
       <span class="availability_never" style="padding:0">&#9608;</span>)

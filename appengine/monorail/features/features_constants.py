@@ -24,7 +24,7 @@ KNOWN_CUES = (
     'search_for_numbers',
     'dit_keystrokes',
     'italics_mean_derived',
-    'availibility_msgs',
+    'availability_msgs',
     'stale_fulltext',
     'document_team_duties',
     'showing_ids_instead_of_tiles',

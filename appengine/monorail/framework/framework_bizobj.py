@@ -197,7 +197,7 @@ USER_PREF_DEFS = {
   'code_of_conduct': re.compile('(true|false)'),
   'dit_keystrokes': re.compile('(true|false)'),
   'italics_mean_derived': re.compile('(true|false)'),
-  'availibility_msgs': re.compile('(true|false)'),
+  'availability_msgs': re.compile('(true|false)'),
   'your_email_bounced': re.compile('(true|false)'),
   'search_for_numbers': re.compile('(true|false)'),
   'restrict_new_issues': re.compile('(true|false)'),

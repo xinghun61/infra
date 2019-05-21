@@ -229,7 +229,7 @@ class IssueDetailTest(unittest.TestCase):
         derived_cc=[testing_helpers.Blank(user_id=333, avail_message='')])
     page_data = {'issue': issue_view}
     help_data = servlet.GatherHelpData(mr, page_data)
-    self.assertEqual('availibility_msgs', help_data['cue'])
+    self.assertEqual('availability_msgs', help_data['cue'])
 
     # User is viewing an issue with all participants available.
     # No help cue is shown.

@@ -455,12 +455,12 @@ class IssueDetailEzt(issuepeek.IssuePeek):
     # Check if the user's query is just the ID of an existing issue.
     # If so, display a "did you mean to search?" cue card.
     jump_local_id = None
-    any_availibility_message = False
+    any_availability_message = False
     iv = page_data.get('issue')
     if iv:
       participant_views = (
           [iv.owner, iv.derived_owner] + iv.cc + iv.derived_cc)
-      any_availibility_message = any(
+      any_availability_message = any(
           pv.avail_message for pv in participant_views
           if pv and pv.user_id)
 
@@ -474,9 +474,9 @@ class IssueDetailEzt(issuepeek.IssuePeek):
           'search_for_numbers' not in dismissed):
       jump_local_id = int(mr.query)
       help_data['cue'] = 'search_for_numbers'
-    elif (any_availibility_message and
-          'availibility_msgs' not in dismissed):
-      help_data['cue'] = 'availibility_msgs'
+    elif (any_availability_message and
+          'availability_msgs' not in dismissed):
+      help_data['cue'] = 'availability_msgs'
 
     help_data.update({
         'is_privileged_domain_user': ezt.boolean(is_privileged_domain_user),
