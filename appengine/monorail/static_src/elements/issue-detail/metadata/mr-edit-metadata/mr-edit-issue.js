@@ -173,11 +173,13 @@ export class MrEditIssue extends connectStore(LitElement) {
   }
 
   _presubmitIssue(evt) {
-    const message = {
-      issueRef: this.issueRef,
-      issueDelta: evt.detail.delta,
-    };
-    store.dispatch(issue.presubmit(message));
+    if (Object.keys(evt.detail.delta).length) {
+      const message = {
+        issueRef: this.issueRef,
+        issueDelta: evt.detail.delta,
+      };
+      store.dispatch(issue.presubmit(message));
+    }
   }
 
   _availableStatuses(statusDefsArg, currentStatusRef) {
