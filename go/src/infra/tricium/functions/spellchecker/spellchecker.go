@@ -17,7 +17,7 @@ import (
 	"strings"
 	"unicode"
 
-	"infra/tricium/api/v1"
+	tricium "infra/tricium/api/v1"
 )
 
 // commentFormat is the expected format for the commentsJSONPath file.
@@ -53,6 +53,7 @@ var (
 	ignoredWords = []string{
 		"als",     // "ambient light sensor"
 		"backed",  // "backed by"
+		"cas",     // "Content Addressed Storage"
 		"ect",     // effective connection type
 		"gae",     // Google App Engine
 		"seeked",  // JS event
