@@ -63,7 +63,6 @@
             "Linux Builder",
             "Linux Tests",
             "linux-gcc-rel",
-            "linux-xenial-rel",
             "linux-jumbo-rel",
             "Linux Builder (dbg)(32)",
             "Linux Builder (dbg)",
