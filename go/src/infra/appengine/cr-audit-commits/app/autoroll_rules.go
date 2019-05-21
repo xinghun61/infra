@@ -17,6 +17,9 @@ const (
 
 	fileAFDO            = "chrome/android/profiles/newest.txt"
 	fileDEPS            = "DEPS"
+	fileFreeTypeConfigH = "third_party/freetype/include/freetype-custom-config/ftconfig.h"
+	fileFreeTypeOptionH = "third_party/freetype/include/freetype-custom-config/ftoption.h"
+	fileFreeTypeReadme  = "third_party/freetype/README.chromium"
 	fileFuchsiaSDKLinux = "build/fuchsia/linux.sdk.sha1"
 	fileFuchsiaSDKMac   = "build/fuchsia/mac.sdk.sha1"
 	fileSkiaManifest    = "manifest/skia"

@@ -101,6 +101,9 @@ var RuleMap = map[string]*RepoConfig{
 				[]string{
 					fileAFDO,
 					fileDEPS,
+					fileFreeTypeReadme,
+					fileFreeTypeConfigH,
+					fileFreeTypeOptionH,
 					fileFuchsiaSDKLinux,
 					fileFuchsiaSDKMac,
 				}),
