@@ -201,7 +201,8 @@ class TSMonJSHandler(webapp2.RequestHandler):
 
         if metric.is_cumulative() and not self._start_time_is_valid(start_time):
           self.response.set_status(400)
-          self.response.write('Invalid start_time: %s.' % start_time)
+          self.response.write(
+              'Invalid start_time: %s.' % cgi.escape(str(start_time)))
           logging.warning(
               'gae_ts_mon error: Invalid start_time: %s.', start_time)
           return
