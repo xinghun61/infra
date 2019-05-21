@@ -234,6 +234,7 @@ func printDeploymentStatus(w io.Writer, deploymentID string, ds *fleet.GetDeploy
 	fmt.Fprintf(tw, "Status:\t%s\n", ds.GetStatus())
 	fmt.Fprintf(tw, "Inventory change URL:\t%s\n", ds.GetChangeUrl())
 	fmt.Fprintf(tw, "Deploy task URL:\t%s\n", ds.GetTaskUrl())
+	fmt.Fprintf(tw, "Message:\t%s\n", ds.GetMessage())
 	return tw.Flush()
 }
 
