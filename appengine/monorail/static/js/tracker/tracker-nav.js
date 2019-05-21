@@ -43,7 +43,7 @@ function TKR_goToAnchor(anchor) {
  * @return {Element} user editable colspec form field.
  */
 function TKR_getColspecElement() {
-  let elem = document.getElementById('colspec_field');
+  const elem = document.getElementById('colspec_field');
   return elem && elem.firstChild;
 }
 
@@ -104,11 +104,11 @@ function _getSearchBarComponent() {
  */
 function TKR_formatContextQueryArgs() {
   let args = '';
-  let colSpecElem = TKR_getColspecElement();
+  const colSpecElem = TKR_getColspecElement();
   if (!colSpecElem) {
     return;
   }
-  let colspec = colSpecElem.value;
+  const colspec = colSpecElem.value;
   if (_ctxHotlistID != '') args += '&hotlist_id=' + _ctxHotlistID;
   if (_ctxCan != 2) args += '&can=' + _ctxCan;
   args += '&q=' + encodeURIComponent(_ctxQuery);
@@ -121,7 +121,7 @@ function TKR_formatContextQueryArgs() {
 }
 
 // Fields that should use ":" when filtering.
-var _PRETOKENIZED_FIELDS = [
+const _PRETOKENIZED_FIELDS = [
   'owner', 'reporter', 'cc', 'commentby', 'component'];
 
 /**
@@ -163,10 +163,10 @@ function TKR_addSort(colname, descending) {
   if ($('sort')) {
     existingSortSpec = $('sort').value;
   }
-  let oldSpecs = existingSortSpec.split(/ +/);
+  const oldSpecs = existingSortSpec.split(/ +/);
   let sortDirective = colname;
   if (descending) sortDirective = '-' + colname;
-  let specs = [sortDirective];
+  const specs = [sortDirective];
   for (let i = 0; i < oldSpecs.length; i++) {
     if (oldSpecs[i] != '' && oldSpecs[i] != colname &&
         oldSpecs[i] != '-' + colname) {
@@ -174,7 +174,7 @@ function TKR_addSort(colname, descending) {
     }
   }
 
-  let isHotlist = window.location.href.includes('/hotlists/');
+  const isHotlist = window.location.href.includes('/hotlists/');
   let url = isHotlist ? ($('hotlist_name').value + '?') : ('list?');
   url += ('can='+ TKR_getArtifactCanField().value + '&q=' +
       TKR_getArtifactSearchField().value);

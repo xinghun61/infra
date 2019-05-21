@@ -212,9 +212,15 @@ export class MrSearchBar extends LitElement {
           @focus=${searchEditStarted}
           @blur=${searchEditFinished}
         />
-        ${this.keptQueryParams.map((param) => (this.queryParams && (param in this.queryParams) ? html`
-            <input type="hidden" id=${param} name=${param} value=${this.queryParams[param]} />
-          ` : ''))}
+        ${this.keptQueryParams.map((param) => html`
+            <input
+              type="hidden"
+              id=${param}
+              name=${param}
+              value=${this.queryParams[param] || ''}
+              ?disabled=${!(param in this.queryParams)}
+            />
+          `)}
         <button type="submit">
           <i class="material-icons">search</i>
         </button>
@@ -244,6 +250,7 @@ export class MrSearchBar extends LitElement {
 
   constructor() {
     super();
+    this.queryParams = {};
     this.keptQueryParams = [
       'sort',
       'groupby',

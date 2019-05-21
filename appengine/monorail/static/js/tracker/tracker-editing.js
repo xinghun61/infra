@@ -18,49 +18,49 @@
 /**
  * Here are some string constants that are used repeatedly in the code.
  */
-var TKR_SELECTED_CLASS = 'selected';
-var TKR_UNDEF_CLASS = 'undef';
-var TKR_NOVEL_CLASS = 'novel';
-var TKR_EXCL_CONFICT_CLASS = 'exclconflict';
-var TKR_QUESTION_MARK_CLASS = 'questionmark';
-var TKR_ATTACHPROMPT_ID = 'attachprompt';
-var TKR_ATTACHAFILE_ID = 'attachafile';
-var TKR_ATTACHMAXSIZE_ID = 'attachmaxsize';
-var TKR_CURRENT_TEMPLATE_INDEX_ID = 'current_template_index';
-var TKR_PROMPT_MEMBERS_ONLY_CHECKBOX_ID = 'members_only_checkbox';
-var TKR_PROMPT_SUMMARY_EDITOR_ID = 'summary_editor';
-var TKR_PROMPT_SUMMARY_MUST_BE_EDITED_CHECKBOX_ID =
+let TKR_SELECTED_CLASS = 'selected';
+let TKR_UNDEF_CLASS = 'undef';
+let TKR_NOVEL_CLASS = 'novel';
+let TKR_EXCL_CONFICT_CLASS = 'exclconflict';
+let TKR_QUESTION_MARK_CLASS = 'questionmark';
+let TKR_ATTACHPROMPT_ID = 'attachprompt';
+let TKR_ATTACHAFILE_ID = 'attachafile';
+let TKR_ATTACHMAXSIZE_ID = 'attachmaxsize';
+let TKR_CURRENT_TEMPLATE_INDEX_ID = 'current_template_index';
+let TKR_PROMPT_MEMBERS_ONLY_CHECKBOX_ID = 'members_only_checkbox';
+let TKR_PROMPT_SUMMARY_EDITOR_ID = 'summary_editor';
+let TKR_PROMPT_SUMMARY_MUST_BE_EDITED_CHECKBOX_ID =
     'summary_must_be_edited_checkbox';
-var TKR_PROMPT_CONTENT_EDITOR_ID = 'content_editor';
-var TKR_PROMPT_STATUS_EDITOR_ID = 'status_editor';
-var TKR_PROMPT_OWNER_EDITOR_ID = 'owner_editor';
-var TKR_PROMPT_ADMIN_NAMES_EDITOR_ID = 'admin_names_editor';
-var TKR_OWNER_DEFAULTS_TO_MEMBER_CHECKBOX_ID =
+let TKR_PROMPT_CONTENT_EDITOR_ID = 'content_editor';
+let TKR_PROMPT_STATUS_EDITOR_ID = 'status_editor';
+let TKR_PROMPT_OWNER_EDITOR_ID = 'owner_editor';
+let TKR_PROMPT_ADMIN_NAMES_EDITOR_ID = 'admin_names_editor';
+let TKR_OWNER_DEFAULTS_TO_MEMBER_CHECKBOX_ID =
     'owner_defaults_to_member_checkbox';
-var TKR_OWNER_DEFAULTS_TO_MEMBER_AREA_ID =
+let TKR_OWNER_DEFAULTS_TO_MEMBER_AREA_ID =
     'owner_defaults_to_member_area';
-var TKR_COMPONENT_REQUIRED_CHECKBOX_ID =
+let TKR_COMPONENT_REQUIRED_CHECKBOX_ID =
     'component_required_checkbox';
-var TKR_PROMPT_COMPONENTS_EDITOR_ID = 'components_editor';
-var TKR_FIELD_EDITOR_ID_PREFIX = 'tmpl_custom_';
-var TKR_PROMPT_LABELS_EDITOR_ID_PREFIX = 'label';
-var TKR_CONFIRMAREA_ID = 'confirmarea';
-var TKR_DISCARD_YOUR_CHANGES = 'Discard your changes?';
+let TKR_PROMPT_COMPONENTS_EDITOR_ID = 'components_editor';
+let TKR_FIELD_EDITOR_ID_PREFIX = 'tmpl_custom_';
+let TKR_PROMPT_LABELS_EDITOR_ID_PREFIX = 'label';
+let TKR_CONFIRMAREA_ID = 'confirmarea';
+let TKR_DISCARD_YOUR_CHANGES = 'Discard your changes?';
 // Note, users cannot enter '<'.
-var TKR_DELETED_PROMPT_NAME = '<DELETED>';
+let TKR_DELETED_PROMPT_NAME = '<DELETED>';
 // Display warning if labels contain the following prefixes.
 // The following list is the same as tracker_constants.RESERVED_PREFIXES except
 // for the 'hotlist' prefix. 'hostlist' will be added when it comes a full
 // feature and when projects that use 'Hostlist-*' labels are transitioned off.
-var TKR_LABEL_RESERVED_PREFIXES = [
-    'id', 'project', 'reporter', 'summary', 'status', 'owner', 'cc',
-    'attachments', 'attachment', 'component', 'opened', 'closed',
-    'modified', 'is', 'has', 'blockedon', 'blocking', 'blocked', 'mergedinto',
-    'stars', 'starredby', 'description', 'comment', 'commentby', 'label',
-    'rank', 'explicit_status', 'derived_status', 'explicit_owner',
-    'derived_owner', 'explicit_cc', 'derived_cc', 'explicit_label',
-    'derived_label', 'last_comment_by', 'exact_component',
-    'explicit_component', 'derived_component']
+let TKR_LABEL_RESERVED_PREFIXES = [
+  'id', 'project', 'reporter', 'summary', 'status', 'owner', 'cc',
+  'attachments', 'attachment', 'component', 'opened', 'closed',
+  'modified', 'is', 'has', 'blockedon', 'blocking', 'blocked', 'mergedinto',
+  'stars', 'starredby', 'description', 'comment', 'commentby', 'label',
+  'rank', 'explicit_status', 'derived_status', 'explicit_owner',
+  'derived_owner', 'explicit_cc', 'derived_cc', 'explicit_label',
+  'derived_label', 'last_comment_by', 'exact_component',
+  'explicit_component', 'derived_component'];
 
 /**
  * Select all the issues on the issue list page.
@@ -83,13 +83,13 @@ function TKR_selectNoneIssues() {
  * @param {boolean} checked True means select issues, False means deselect.
  */
 function TKR_selectIssues(checked) {
-  var table = $('resultstable');
-  for (var r = 0; r < table.rows.length; ++r) {
-    var row = table.rows[r];
-    var firstCell = row.cells[0];
+  let table = $('resultstable');
+  for (let r = 0; r < table.rows.length; ++r) {
+    let row = table.rows[r];
+    let firstCell = row.cells[0];
     if (firstCell.tagName == 'TD') {
-      for (var e = 0; e < firstCell.childNodes.length; ++e) {
-        var element = firstCell.childNodes[e];
+      for (let e = 0; e < firstCell.childNodes.length; ++e) {
+        let element = firstCell.childNodes[e];
         if (element.tagName == 'INPUT' && element.type == 'checkbox') {
           element.checked = checked ? 'checked' : '';
           if (checked) {
@@ -107,7 +107,7 @@ function TKR_selectIssues(checked) {
 /**
  * The ID number to append to the next dynamically created file upload field.
  */
-var TKR_nextFileID = 1;
+let TKR_nextFileID = 1;
 
 
 /**
@@ -119,36 +119,36 @@ var TKR_nextFileID = 1;
  *  e.g. issue update form and issue description update form
  */
 function TKR_addAttachmentFields(id, attachprompt_id,
-    attachafile_id, attachmaxsize_id) {
+  attachafile_id, attachmaxsize_id) {
   if (TKR_nextFileID >= 16) {
     return;
   }
   if (typeof attachprompt_id === 'undefined')
-    attachprompt_id = TKR_ATTACHPROMPT_ID;
+    {attachprompt_id = TKR_ATTACHPROMPT_ID;}
   if (typeof attachafile_id === 'undefined')
-    attachafile_id = TKR_ATTACHAFILE_ID;
+    {attachafile_id = TKR_ATTACHAFILE_ID;}
   if (typeof attachmaxsize_id === 'undefined')
-    attachmaxsize_id = TKR_ATTACHMAXSIZE_ID;
-  var el = $(id);
+    {attachmaxsize_id = TKR_ATTACHMAXSIZE_ID;}
+  let el = $(id);
   el.style.marginTop = '4px';
-  var div = document.createElement('div');
+  let div = document.createElement('div');
   var id = 'file' + TKR_nextFileID;
-  var label = TKR_createChild(div, 'label', null, null, 'Attach file:');
+  let label = TKR_createChild(div, 'label', null, null, 'Attach file:');
   label.setAttribute('for', id);
-  var input = TKR_createChild(
-      div, 'input', null, id, null, "width:auto;margin-left:17px");
+  let input = TKR_createChild(
+    div, 'input', null, id, null, 'width:auto;margin-left:17px');
   input.setAttribute('type', 'file');
   input.name = id;
-  var removeLink = TKR_createChild(
-      div, 'a', null, null, 'Remove', "font-size:x-small");
+  let removeLink = TKR_createChild(
+    div, 'a', null, null, 'Remove', 'font-size:x-small');
   removeLink.href = '#';
   removeLink.addEventListener('click', function(event) {
-          console.log(arguments);
-          var target = event.target;
-          $(attachafile_id).focus();
-          target.parentNode.parentNode.removeChild(target.parentNode);
-          event.preventDefault();
-      });
+    console.log(arguments);
+    let target = event.target;
+    $(attachafile_id).focus();
+    target.parentNode.parentNode.removeChild(target.parentNode);
+    event.preventDefault();
+  });
   el.appendChild(div);
   el.querySelector('input').focus();
   ++TKR_nextFileID;
@@ -169,8 +169,10 @@ function TKR_openIssueUpdateForm() {
   TKR_goToAnchor('makechanges');
   TKR_forceProperTableWidth();
   window.setTimeout(
-      function () { document.getElementById('addCommentTextArea').focus(); },
-      100);
+    function() {
+document.getElementById('addCommentTextArea').focus();
+},
+    100);
 }
 
 
@@ -178,13 +180,13 @@ function TKR_openIssueUpdateForm() {
  * The index of the template that is currently selected for editing
  * on the administration page for issues.
  */
-var TKR_currentTemplateIndex = 0;
+let TKR_currentTemplateIndex = 0;
 
 
 /**
  * Array of field IDs that are defined in the current project, set by call to setFieldIDs().
  */
-var TKR_fieldIDs = [];
+let TKR_fieldIDs = [];
 
 
 function TKR_setFieldIDs(fieldIDs) {
@@ -202,46 +204,46 @@ function TKR_selectTemplate(widget) {
   TKR_currentTemplateIndex = widget.value;
   $(TKR_CURRENT_TEMPLATE_INDEX_ID).value = TKR_currentTemplateIndex;
 
-  var content_editor = $(TKR_PROMPT_CONTENT_EDITOR_ID);
+  let content_editor = $(TKR_PROMPT_CONTENT_EDITOR_ID);
   TKR_makeDefined(content_editor);
 
-  var can_edit = $('can_edit_' + TKR_currentTemplateIndex).value == 'yes';
-  var disabled = can_edit ? '' : 'disabled';
+  let can_edit = $('can_edit_' + TKR_currentTemplateIndex).value == 'yes';
+  let disabled = can_edit ? '' : 'disabled';
 
   $(TKR_PROMPT_MEMBERS_ONLY_CHECKBOX_ID).disabled = disabled;
   $(TKR_PROMPT_MEMBERS_ONLY_CHECKBOX_ID).checked = $(
-      'members_only_' + TKR_currentTemplateIndex).value == 'yes';
+    'members_only_' + TKR_currentTemplateIndex).value == 'yes';
   $(TKR_PROMPT_SUMMARY_EDITOR_ID).disabled = disabled;
   $(TKR_PROMPT_SUMMARY_EDITOR_ID).value = $(
-      'summary_' + TKR_currentTemplateIndex).value;
+    'summary_' + TKR_currentTemplateIndex).value;
   $(TKR_PROMPT_SUMMARY_MUST_BE_EDITED_CHECKBOX_ID).disabled = disabled;
   $(TKR_PROMPT_SUMMARY_MUST_BE_EDITED_CHECKBOX_ID).checked = $(
-      'summary_must_be_edited_' + TKR_currentTemplateIndex).value == 'yes';
+    'summary_must_be_edited_' + TKR_currentTemplateIndex).value == 'yes';
   content_editor.disabled = disabled;
   content_editor.value = $('content_' + TKR_currentTemplateIndex).value;
   $(TKR_PROMPT_STATUS_EDITOR_ID).disabled = disabled;
   $(TKR_PROMPT_STATUS_EDITOR_ID).value = $(
-      'status_' + TKR_currentTemplateIndex).value;
+    'status_' + TKR_currentTemplateIndex).value;
   $(TKR_PROMPT_OWNER_EDITOR_ID).disabled = disabled;
   $(TKR_PROMPT_OWNER_EDITOR_ID).value = $(
-      'owner_' + TKR_currentTemplateIndex).value;
+    'owner_' + TKR_currentTemplateIndex).value;
   $(TKR_OWNER_DEFAULTS_TO_MEMBER_CHECKBOX_ID).disabled = disabled;
   $(TKR_OWNER_DEFAULTS_TO_MEMBER_CHECKBOX_ID).checked = $(
-      'owner_defaults_to_member_' + TKR_currentTemplateIndex).value == 'yes';
+    'owner_defaults_to_member_' + TKR_currentTemplateIndex).value == 'yes';
   $(TKR_COMPONENT_REQUIRED_CHECKBOX_ID).disabled = disabled;
   $(TKR_COMPONENT_REQUIRED_CHECKBOX_ID).checked = $(
-      'component_required_' + TKR_currentTemplateIndex).value == 'yes';
+    'component_required_' + TKR_currentTemplateIndex).value == 'yes';
   $(TKR_OWNER_DEFAULTS_TO_MEMBER_AREA_ID).disabled = disabled;
   $(TKR_OWNER_DEFAULTS_TO_MEMBER_AREA_ID).style.display =
       $(TKR_PROMPT_OWNER_EDITOR_ID).value ? 'none' : '';
   $(TKR_PROMPT_COMPONENTS_EDITOR_ID).disabled = disabled;
   $(TKR_PROMPT_COMPONENTS_EDITOR_ID).value = $(
-      'components_' + TKR_currentTemplateIndex).value;
+    'components_' + TKR_currentTemplateIndex).value;
 
   // Blank out all custom field editors first, then fill them in during the next loop.
   for (var i = 0; i < TKR_fieldIDs.length; i++) {
-    var fieldEditor = $(TKR_FIELD_EDITOR_ID_PREFIX + TKR_fieldIDs[i]);
-    var holder = $('field_value_' + TKR_currentTemplateIndex + '_' + TKR_fieldIDs[i]);
+    let fieldEditor = $(TKR_FIELD_EDITOR_ID_PREFIX + TKR_fieldIDs[i]);
+    let holder = $('field_value_' + TKR_currentTemplateIndex + '_' + TKR_fieldIDs[i]);
     if (fieldEditor) {
       fieldEditor.disabled = disabled;
       fieldEditor.value = holder ? holder.value : '';
@@ -258,9 +260,9 @@ function TKR_selectTemplate(widget) {
 
   $(TKR_PROMPT_ADMIN_NAMES_EDITOR_ID).disabled = disabled;
   $(TKR_PROMPT_ADMIN_NAMES_EDITOR_ID).value = $(
-      'admin_names_' + TKR_currentTemplateIndex).value;
+    'admin_names_' + TKR_currentTemplateIndex).value;
 
-  var numNonDeletedTemplates = 0;
+  let numNonDeletedTemplates = 0;
   for (var i = 0; i < TKR_templateNames.length; i++) {
     if (TKR_templateNames[i] != TKR_DELETED_PROMPT_NAME) {
       numNonDeletedTemplates++;
@@ -269,31 +271,30 @@ function TKR_selectTemplate(widget) {
   if ($('delbtn')) {
     if (numNonDeletedTemplates > 1) {
       $('delbtn').disabled='';
-    }
-    else { // Don't allow the last template to be deleted.
+    } else { // Don't allow the last template to be deleted.
       $('delbtn').disabled='disabled';
     }
   }
 }
 
 
-var TKR_templateNames = [];  // Exported in tracker-onload.js
+var TKR_templateNames = []; // Exported in tracker-onload.js
 
 
 /**
  * Create a new issue template and add the needed form fields to the DOM.
  */
 function TKR_newTemplate() {
-  var newIndex = TKR_templateNames.length;
-  var templateName = prompt('Name of new template?', '');
+  let newIndex = TKR_templateNames.length;
+  let templateName = prompt('Name of new template?', '');
   templateName = templateName.replace(
-      /[&<>"]/g, ''  // " help emacs highlighing
+    /[&<>"]/g, '' // " help emacs highlighing
   );
   if (!templateName) return;
 
-  for (var i = 0; i < TKR_templateNames.length; i++) {
+  for (let i = 0; i < TKR_templateNames.length; i++) {
     if (templateName == TKR_templateNames[i]) {
-      alert('Please choose a unique name.')
+      alert('Please choose a unique name.');
       return;
     }
   }
@@ -301,17 +302,17 @@ function TKR_newTemplate() {
   TKR_addTemplateHiddenFields(newIndex, templateName);
   TKR_templateNames.push(templateName);
 
-  var templateOption = TKR_createChild(
-      $('template_menu'), 'option', null, null, templateName);
+  let templateOption = TKR_createChild(
+    $('template_menu'), 'option', null, null, templateName);
   templateOption.value = newIndex;
   templateOption.selected = 'selected';
 
-  var developerOption = TKR_createChild(
-      $('default_template_for_developers'), 'option', null, null, templateName);
+  let developerOption = TKR_createChild(
+    $('default_template_for_developers'), 'option', null, null, templateName);
   developerOption.value = templateName;
 
-  var userOption = TKR_createChild(
-      $('default_template_for_users'), 'option', null, null, templateName);
+  let userOption = TKR_createChild(
+    $('default_template_for_users'), 'option', null, null, templateName);
   userOption.value = templateName;
 
   TKR_selectTemplate($('template_menu'));
@@ -323,11 +324,11 @@ function TKR_newTemplate() {
  * for a new issue template to the issue admin form.
  */
 function TKR_addTemplateHiddenFields(templateIndex, templateName) {
-  var parentEl = $('adminTemplates');
+  let parentEl = $('adminTemplates');
   TKR_appendHiddenField(
-      parentEl, 'template_id_' + templateIndex, 'template_id_' + templateIndex, '0');
+    parentEl, 'template_id_' + templateIndex, 'template_id_' + templateIndex, '0');
   TKR_appendHiddenField(parentEl, 'name_' + templateIndex,
-      'name_' + templateIndex, templateName);
+    'name_' + templateIndex, templateName);
   TKR_appendHiddenField(parentEl, 'members_only_' + templateIndex);
   TKR_appendHiddenField(parentEl, 'summary_' + templateIndex);
   TKR_appendHiddenField(parentEl, 'summary_must_be_edited_' + templateIndex);
@@ -343,19 +344,19 @@ function TKR_addTemplateHiddenFields(templateIndex, templateName) {
   var i = 0;
   while ($('label_0_' + i)) {
     TKR_appendHiddenField(parentEl, 'label_' + templateIndex,
-       'label_' + templateIndex + '_' + i);
+      'label_' + templateIndex + '_' + i);
     i++;
   }
 
   for (var i = 0; i < TKR_fieldIDs.length; i++) {
-    var fieldId = 'field_value_' + templateIndex + '_' + TKR_fieldIDs[i];
+    let fieldId = 'field_value_' + templateIndex + '_' + TKR_fieldIDs[i];
     TKR_appendHiddenField(parentEl, fieldId, fieldId);
   }
 
   TKR_appendHiddenField(parentEl, 'admin_names_' + templateIndex);
   TKR_appendHiddenField(
-      parentEl, 'can_edit_' + templateIndex, 'can_edit_' + templateIndex,
-      'yes');
+    parentEl, 'can_edit_' + templateIndex, 'can_edit_' + templateIndex,
+    'yes');
 }
 
 
@@ -364,10 +365,10 @@ function TKR_addTemplateHiddenFields(templateIndex, templateName) {
  * to the given array.
  */
 function TKR_appendHiddenField(parentEl, name, opt_id, opt_value) {
-    var input = TKR_createChild(parentEl, 'input', null, opt_id || name);
-    input.setAttribute('type', 'hidden');
-    input.name = name;
-    input.value = opt_value || '';
+  let input = TKR_createChild(parentEl, 'input', null, opt_id || name);
+  input.setAttribute('type', 'hidden');
+  input.name = name;
+  input.value = opt_value || '';
 }
 
 
@@ -391,14 +392,14 @@ function TKR_deleteTemplate() {
  * Utility function to rebuild the template menu on the issue admin page.
  */
 function TKR_rebuildTemplateMenu() {
-  var parentEl = $('template_menu');
+  let parentEl = $('template_menu');
   while (parentEl.childNodes.length)
-      parentEl.removeChild(parentEl.childNodes[0]);
-  for (var i = 0; i < TKR_templateNames.length; i++) {
+    {parentEl.removeChild(parentEl.childNodes[0]);}
+  for (let i = 0; i < TKR_templateNames.length; i++) {
     if (TKR_templateNames[i] != TKR_DELETED_PROMPT_NAME) {
-        var option = TKR_createChild(
-            parentEl, 'option', null, null, TKR_templateNames[i]);
-        option.value = i;
+      let option = TKR_createChild(
+        parentEl, 'option', null, null, TKR_templateNames[i]);
+      option.value = i;
     }
   }
 }
@@ -408,18 +409,18 @@ function TKR_rebuildTemplateMenu() {
  * Utility function to rebuild a default template drop-down.
  */
 function TKR_rebuildDefaultTemplateMenu(menuID) {
-  var defaultTemplateName = $(menuID).value;
-  var parentEl = $(menuID);
+  let defaultTemplateName = $(menuID).value;
+  let parentEl = $(menuID);
   while (parentEl.childNodes.length)
-      parentEl.removeChild(parentEl.childNodes[0]);
-  for (var i = 0; i < TKR_templateNames.length; i++) {
+    {parentEl.removeChild(parentEl.childNodes[0]);}
+  for (let i = 0; i < TKR_templateNames.length; i++) {
     if (TKR_templateNames[i] != TKR_DELETED_PROMPT_NAME) {
-        var option = TKR_createChild(
-            parentEl, 'option', null, null, TKR_templateNames[i]);
-        option.values = TKR_templateNames[i];
-        if (defaultTemplateName == TKR_templateNames[i]) {
-            option.setAttribute('selected', 'selected');
-        }
+      let option = TKR_createChild(
+        parentEl, 'option', null, null, TKR_templateNames[i]);
+      option.values = TKR_templateNames[i];
+      if (defaultTemplateName == TKR_templateNames[i]) {
+        option.setAttribute('selected', 'selected');
+      }
     }
   }
 }
@@ -433,7 +434,7 @@ function TKR_rebuildDefaultTemplateMenu(menuID) {
  * @param {string} templateName The name of the template to switch to.
  */
 function TKR_switchTemplate(projectName, templateName) {
-  var ok = true;
+  let ok = true;
   if (TKR_isDirty()) {
     ok = confirm('Switching to a different template will lose the text you entered.');
   }
@@ -488,8 +489,8 @@ function TKR_saveTemplate() {
         $(TKR_PROMPT_OWNER_EDITOR_ID).value ? 'none' : '';
 
     for (var i = 0; i < TKR_fieldIDs.length; i++) {
-      var fieldID = TKR_fieldIDs[i];
-      var fieldEditor = $(TKR_FIELD_EDITOR_ID_PREFIX + fieldID);
+      let fieldID = TKR_fieldIDs[i];
+      let fieldEditor = $(TKR_FIELD_EDITOR_ID_PREFIX + fieldID);
       if (fieldEditor) {
         _saveFieldValue(fieldID, fieldEditor.value);
       }
@@ -497,9 +498,9 @@ function TKR_saveTemplate() {
 
     var i = 0;
     while ($('label_' + TKR_currentTemplateIndex + '_' + i)) {
-     $('label_' + TKR_currentTemplateIndex + '_' + i).value =
+      $('label_' + TKR_currentTemplateIndex + '_' + i).value =
          $(TKR_PROMPT_LABELS_EDITOR_ID_PREFIX + i).value;
-     i++;
+      i++;
     }
 
     $('admin_names_' + TKR_currentTemplateIndex).value =
@@ -509,7 +510,7 @@ function TKR_saveTemplate() {
 
 
 function _saveFieldValue(fieldID, val) {
-  var fieldValId = 'field_value_' + TKR_currentTemplateIndex + '_' + fieldID;
+  let fieldValId = 'field_value_' + TKR_currentTemplateIndex + '_' + fieldID;
   $(fieldValId).value = val;
 }
 
@@ -519,7 +520,7 @@ function _saveFieldValue(fieldID, val) {
  * page load. It is used for comparison on page unload to prompt the user
  * before abandoning changes. It is initialized in TKR_onload().
 */
-var TKR_initialFormValues;
+let TKR_initialFormValues;
 
 
 /**
@@ -527,8 +528,8 @@ var TKR_initialFormValues;
  * input fields of interest (omits search box, e.g.)
  */
 function TKR_currentFormValues() {
-  var inputs = document.querySelectorAll('input, textarea, select, checkbox');
-  var values = [];
+  let inputs = document.querySelectorAll('input, textarea, select, checkbox');
+  let values = [];
 
   for (i = 0; i < inputs.length; i++) {
     // Don't include blank inputs. This prevents a popup if the user
@@ -561,9 +562,9 @@ function TKR_isDirty() {
  * @param {string} nextUrl The page to show after discarding.
  */
 function TKR_confirmDiscardUpdate(nextUrl) {
- if (!TKR_isDirty() || confirm(TKR_DISCARD_YOUR_CHANGES)) {
-  document.location = nextUrl;
- }
+  if (!TKR_isDirty() || confirm(TKR_DISCARD_YOUR_CHANGES)) {
+    document.location = nextUrl;
+  }
 }
 
 
@@ -574,9 +575,9 @@ function TKR_confirmDiscardUpdate(nextUrl) {
  * @param {Element} discardButton The 'Discard' button.
  */
 function TKR_confirmDiscardEntry(discardButton) {
- if (!TKR_isDirty() || confirm(TKR_DISCARD_YOUR_CHANGES)) {
-  TKR_go('list');
- }
+  if (!TKR_isDirty() || confirm(TKR_DISCARD_YOUR_CHANGES)) {
+    TKR_go('list');
+  }
 }
 
 
@@ -638,7 +639,7 @@ function TKR_exposeExistingLabelFields() {
  * We use this to clear the placeholder in the new issue summary field
  * exactly once.
  */
-var TKR_firstEvent = true;
+let TKR_firstEvent = true;
 
 
 /**
@@ -659,12 +660,12 @@ function TKR_clearOnFirstEvent(initialSummary) {
  * to people who like to encode issue classification info in the summary line.
  */
 function TKR_keepJustSummaryPrefixes(s) {
-  var matches = s.match(/^(\[[^\]]+\])+|^(\S+:\s*)+/);
+  let matches = s.match(/^(\[[^\]]+\])+|^(\S+:\s*)+/);
   if (matches == null) {
     return '';
   }
 
-  var prefix = matches[0];
+  let prefix = matches[0];
   if (prefix.substr(prefix.length - 1) != ' ') {
     prefix += ' ';
   }
@@ -674,12 +675,12 @@ function TKR_keepJustSummaryPrefixes(s) {
 /**
  * An array of label <input>s that start with reserved prefixes.
  */
-var TKR_labelsWithReservedPrefixes = [];
+let TKR_labelsWithReservedPrefixes = [];
 
 /**
  * An array of label <input>s that are equal to reserved words.
  */
-var TKR_labelsConflictingWithReserved = [];
+let TKR_labelsConflictingWithReserved = [];
 
 /**
  * An array of novel issue status values entered by the user on the
@@ -688,34 +689,34 @@ var TKR_labelsConflictingWithReserved = [];
  * one element, but a list is used for consistency with the list of
  * novel labels.
  */
-var TKR_novelStatuses = [];
+let TKR_novelStatuses = [];
 
 /**
  * An array of novel issue label values entered by the user on the
  * current page. 'Novel' means that they are not well known and are
  * likely to be typos.
  */
-var TKR_novelLabels = [];
+let TKR_novelLabels = [];
 
 /**
  * A boolean that indicates whether the entered owner value is valid or not.
  */
-var TKR_invalidOwner = false;
+let TKR_invalidOwner = false;
 
 /**
  * The user has changed the issue status text field.  This function
  * checks whether it is a well-known status value.  If not, highlight it
  * as a potential typo.
  * @param {Element} textField The issue status text field.
- * @returns Always returns true to indicate that the browser should
+ * @return Always returns true to indicate that the browser should
  * continue to process the user input event normally.
  */
 function TKR_confirmNovelStatus(textField) {
-  var v = textField.value.trim().toLowerCase();
-  var isNovel = (v !== '');
-  var wellKnown = TKR_statusWords;
-  for (var i = 0; i < wellKnown.length && isNovel; ++i) {
-    var wk = wellKnown[i];
+  let v = textField.value.trim().toLowerCase();
+  let isNovel = (v !== '');
+  let wellKnown = TKR_statusWords;
+  for (let i = 0; i < wellKnown.length && isNovel; ++i) {
+    let wk = wellKnown[i];
     if (v == wk.toLowerCase()) {
       isNovel = false;
     }
@@ -741,29 +742,29 @@ function TKR_confirmNovelStatus(textField) {
  * whether it is a well-known label value.  If not, highlight it as a
  * potential typo.
  * @param {Element} textField An issue label text field.
- * @returns Always returns true to indicate that the browser should
+ * @return Always returns true to indicate that the browser should
  * continue to process the user input event normally.
  *
  * TODO(jrobbins): code duplication with function above.
  */
 function TKR_confirmNovelLabel(textField) {
-  var v = textField.value.trim().toLowerCase();
+  let v = textField.value.trim().toLowerCase();
   if (v.search('-') == 0) {
     v = v.substr(1);
   }
-  var isNovel = (v !== '');
+  let isNovel = (v !== '');
   if (v.indexOf('?') > -1) {
-    isNovel = false;  // We don't count labels that the user must edit anyway.
+    isNovel = false; // We don't count labels that the user must edit anyway.
   }
-  var wellKnown = TKR_labelWords;
+  let wellKnown = TKR_labelWords;
   for (var i = 0; i < wellKnown.length && isNovel; ++i) {
-    var wk = wellKnown[i];
+    let wk = wellKnown[i];
     if (v == wk.toLowerCase()) {
       isNovel = false;
     }
   }
 
-  var containsReservedPrefix = false;
+  let containsReservedPrefix = false;
   var textFieldWarningDisplayed = TKR_labelsWithReservedPrefixes.indexOf(textField) != -1;
   for (var i = 0; i < TKR_LABEL_RESERVED_PREFIXES.length; ++i) {
     if (v.startsWith(TKR_LABEL_RESERVED_PREFIXES[i] + '-')) {
@@ -776,10 +777,10 @@ function TKR_confirmNovelLabel(textField) {
   }
   if (!containsReservedPrefix && textFieldWarningDisplayed) {
     TKR_labelsWithReservedPrefixes.splice(
-        TKR_labelsWithReservedPrefixes.indexOf(textField), 1);
+      TKR_labelsWithReservedPrefixes.indexOf(textField), 1);
   }
 
-  var conflictsWithReserved = false;
+  let conflictsWithReserved = false;
   var textFieldWarningDisplayed =
       TKR_labelsConflictingWithReserved.indexOf(textField) != -1;
   for (var i = 0; i < TKR_LABEL_RESERVED_PREFIXES.length; ++i) {
@@ -793,7 +794,7 @@ function TKR_confirmNovelLabel(textField) {
   }
   if (!conflictsWithReserved && textFieldWarningDisplayed) {
     TKR_labelsConflictingWithReserved.splice(
-        TKR_labelsConflictingWithReserved.indexOf(textField), 1);
+      TKR_labelsConflictingWithReserved.indexOf(textField), 1);
   }
 
   if (isNovel) {
@@ -817,14 +818,14 @@ function TKR_confirmNovelLabel(textField) {
  * duplicate labels and multiple labels that share an single exclusive
  * prefix (e.g., Priority).
  */
-var TKR_usedPrefixes = {};
+let TKR_usedPrefixes = {};
 
 /**
  * This is a prefix to the HTML ids of each label editing field.
  * It varied by page, so it is set in the HTML page.  Needed to initialize
  * our validation across label input text fields.
  */
-var TKR_labelFieldIDPrefix = '';
+let TKR_labelFieldIDPrefix = '';
 
 /**
  * Initialize the set of all used labels on forms that allow users to
@@ -832,7 +833,7 @@ var TKR_labelFieldIDPrefix = '';
  * itself, and we do not want to offer duplicates of those.
  */
 function TKR_prepLabelAC() {
-  var i = 0;
+  let i = 0;
   while ($('label'+i)) {
     TKR_validateLabel($('label'+i));
     i++;
@@ -845,14 +846,14 @@ function TKR_prepLabelAC() {
 function TKR_prepOwnerField(validOwners) {
   if ($('owneredit')) {
     currentOwner = $('owneredit').value;
-    if (currentOwner == "") {
+    if (currentOwner == '') {
       // Empty owner field is not an invalid owner.
       invalidOwner = false;
       return;
     }
     invalidOwner = true;
-    for (var i = 0; i < validOwners.length; i++) {
-      var owner = validOwners[i].name;
+    for (let i = 0; i < validOwners.length; i++) {
+      let owner = validOwners[i].name;
       if (currentOwner == owner) {
         invalidOwner = false;
         break;
@@ -872,11 +873,10 @@ function TKR_updateUsedPrefixes(textField) {
     DeleteArrayElement(TKR_usedPrefixes[textField.oldPrefix], textField);
   }
 
-  var prefix = textField.value.split('-')[0].toLowerCase();
+  let prefix = textField.value.split('-')[0].toLowerCase();
   if (TKR_usedPrefixes[prefix] == undefined) {
     TKR_usedPrefixes[prefix] = [textField];
-  }
-  else {
+  } else {
     TKR_usedPrefixes[prefix].push(textField);
   }
   textField.oldPrefix = prefix;
@@ -890,9 +890,9 @@ function TKR_updateUsedPrefixes(textField) {
  * a warning message to encourage the user to correct the conflict.
  */
 function TKR_highlightExclusiveLabelPrefixConflicts() {
-  var conflicts = [];
-  for (var prefix in TKR_usedPrefixes) {
-    var textFields = TKR_usedPrefixes[prefix];
+  let conflicts = [];
+  for (let prefix in TKR_usedPrefixes) {
+    let textFields = TKR_usedPrefixes[prefix];
     if (textFields == undefined || textFields.length == 0) {
       delete TKR_usedPrefixes[prefix];
     } else if (textFields.length > 1 &&
@@ -910,8 +910,8 @@ function TKR_highlightExclusiveLabelPrefixConflicts() {
     }
   }
   if (conflicts.length > 0) {
-    var severity = TKR_restrict_to_known ? 'Error' : 'Warning';
-    var confirm_area = $(TKR_CONFIRMAREA_ID);
+    let severity = TKR_restrict_to_known ? 'Error' : 'Warning';
+    let confirm_area = $(TKR_CONFIRMAREA_ID);
     if (confirm_area) {
       $('confirmmsg').textContent = (severity +
           ': Multiple values for: ' + conflicts.join(', '));
@@ -926,7 +926,7 @@ function TKR_highlightExclusiveLabelPrefixConflicts() {
  * is bad enough to prevent submission of the form.  When this
  * list is non-empty, the submit button gets disabled.
  */
-var TKR_labelsBlockingSubmit = [];
+let TKR_labelsBlockingSubmit = [];
 
 /**
  * Look for any "?" characters in the label and, if found,
@@ -935,7 +935,7 @@ var TKR_labelsBlockingSubmit = [];
  * @param {Element} textField An issue label text field.
  */
 function TKR_highlightQuestionMarks(textField) {
-  var tfIndex = TKR_labelsBlockingSubmit.indexOf(textField);
+  let tfIndex = TKR_labelsBlockingSubmit.indexOf(textField);
   if (textField.value.indexOf('?') > -1 && tfIndex == -1) {
     TKR_labelsBlockingSubmit.push(textField);
     textField.classList.add(TKR_QUESTION_MARK_CLASS);
@@ -944,7 +944,7 @@ function TKR_highlightQuestionMarks(textField) {
     textField.classList.remove(TKR_QUESTION_MARK_CLASS);
   }
 
-  var block_submit_msg = $('blocksubmitmsg');
+  let block_submit_msg = $('blocksubmitmsg');
   if (block_submit_msg) {
     if (TKR_labelsBlockingSubmit.length > 0) {
       block_submit_msg.textContent = 'You must edit labels that contain "?".';
@@ -978,10 +978,10 @@ function TKR_validateLabel(textField) {
  * In that case, on-page JS will prevent submission.
  */
 function TKR_updateConfirmBeforeSubmit() {
-  var severity = TKR_restrict_to_known ? 'Error' : 'Note';
-  var novelWord = TKR_restrict_to_known ? 'undefined' : 'uncommon';
-  var msg = '';
-  var labels = TKR_novelLabels.map(function(item) {
+  let severity = TKR_restrict_to_known ? 'Error' : 'Note';
+  let novelWord = TKR_restrict_to_known ? 'undefined' : 'uncommon';
+  let msg = '';
+  let labels = TKR_novelLabels.map(function(item) {
     return item.value;
   });
   if (TKR_novelStatuses.length > 0 && TKR_novelLabels.length > 0) {
@@ -993,20 +993,20 @@ function TKR_updateConfirmBeforeSubmit() {
   }
 
   for (var i = 0; i < TKR_labelsWithReservedPrefixes.length; ++i) {
-    msg += "\nNote: The label " + TKR_labelsWithReservedPrefixes[i].value +
-           " starts with a reserved word. This is not recommended."
+    msg += '\nNote: The label ' + TKR_labelsWithReservedPrefixes[i].value +
+           ' starts with a reserved word. This is not recommended.';
   }
   for (var i = 0; i < TKR_labelsConflictingWithReserved.length; ++i) {
-    msg += "\nNote: The label " + TKR_labelsConflictingWithReserved[i].value +
-           " conflicts with a reserved word. This is not recommended."
+    msg += '\nNote: The label ' + TKR_labelsConflictingWithReserved[i].value +
+           ' conflicts with a reserved word. This is not recommended.';
   }
   // Display the owner is no longer a member note only if an owner error is not
   // already shown on the page.
   if (TKR_invalidOwner && !$('ownererror')) {
-    msg += "\nNote: Current owner is no longer a project member."
+    msg += '\nNote: Current owner is no longer a project member.';
   }
 
-  var confirm_area = $(TKR_CONFIRMAREA_ID);
+  let confirm_area = $(TKR_CONFIRMAREA_ID);
   if (confirm_area) {
     $('confirmmsg').textContent = msg;
     if (msg != '') {
@@ -1063,22 +1063,22 @@ function TKR_handleListActions(actionsMenu) {
 
 
 async function TKR_handleDetailActions(localId) {
-  var moreActions = $('more_actions');
+  let moreActions = $('more_actions');
 
   if (moreActions.value == 'delete') {
     $('copy_issue_form_fragment').style.display = 'none';
     $('move_issue_form_fragment').style.display = 'none';
-    var ok = confirm(
+    let ok = confirm(
       'Normally, you should just close issues by setting their status ' +
       'to a closed value.\n' +
       'Are you sure you want to delete this issue?');
     if (ok) {
       await window.prpcClient.call('monorail.Issues', 'DeleteIssue', {
-          issueRef: {
-            projectName: window.CS_env.projectName,
-            localId: localId,
-          },
-          delete: true,
+        issueRef: {
+          projectName: window.CS_env.projectName,
+          localId: localId,
+        },
+        delete: true,
       });
       location.reload(true);
       return;
@@ -1105,12 +1105,12 @@ async function TKR_handleDetailActions(localId) {
  */
 async function TKR_flagSpam(isSpam) {
   const selectedIssueRefs = [];
-  issueRefs.forEach(issueRef => {
+  issueRefs.forEach((issueRef) => {
     const checkbox = $('cb_' + issueRef.id);
     if (checkbox && checkbox.checked) {
       selectedIssueRefs.push({
-          projectName: issueRef.project_name,
-          localId: issueRef.id,
+        projectName: issueRef.project_name,
+        localId: issueRef.id,
       });
     }
   });
@@ -1134,18 +1134,18 @@ function TKR_addToHotlist() {
   if (selectedIssueRefs.length > 0) {
     window.__hotlists_dialog.ShowUpdateHotlistDialog();
   } else {
-    alert('Please select some issues to add to a hotlist')
+    alert('Please select some issues to add to a hotlist');
   }
 }
 
 
 function GetSelectedIssuesRefs() {
-  var selectedIssueRefs = [];
-  for (var i = 0; i < issueRefs.length; i++) {
-    var checkbox = document.getElementById('cb_' + issueRefs[i]['id'])
+  let selectedIssueRefs = [];
+  for (let i = 0; i < issueRefs.length; i++) {
+    let checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
     if (checkbox == null) {
       checkbox = document.getElementById(
-          'cb_' + issueRefs[i]['project_name'] + ':' + issueRefs[i]['id'])
+        'cb_' + issueRefs[i]['project_name'] + ':' + issueRefs[i]['id']);
     }
     if (checkbox && checkbox.checked) {
       selectedIssueRefs.push(issueRefs[i]);
@@ -1159,7 +1159,7 @@ function onResponseUpdateUI(modifiedHotlists, remainingHotlists) {
   while (list.firstChild) {
     list.removeChild(list.firstChild);
   }
-  remainingHotlists.forEach(hotlist => {
+  remainingHotlists.forEach((hotlist) => {
     const name = hotlist[0];
     const userId = hotlist[1];
     const url = `/u/${userId}/hotlists/${name}`;
@@ -1174,7 +1174,7 @@ function onResponseUpdateUI(modifiedHotlists, remainingHotlists) {
 }
 
 function onAddIssuesResponse(modifiedHotlists) {
-  const hotlistNames = modifiedHotlists.map(hotlist => hotlist[0]).join(', ');
+  const hotlistNames = modifiedHotlists.map((hotlist) => hotlist[0]).join(', ');
   $('notice').textContent = 'Successfully updated ' + hotlistNames;
   $('update-issues-hotlists').style.display = 'none';
   $('alert-table').style.display = 'table';
@@ -1193,14 +1193,14 @@ function onAddIssuesFailure(reason) {
  */
 // TODO(jrobbins): cross-project bulk edit
 function TKR_HandleBulkEdit() {
-  var selectedIssueRefs = GetSelectedIssuesRefs();
-  var selectedLocalIDs = [];
-  for(var i = 0; i < selectedIssueRefs.length; i++) {
+  let selectedIssueRefs = GetSelectedIssuesRefs();
+  let selectedLocalIDs = [];
+  for (let i = 0; i < selectedIssueRefs.length; i++) {
     selectedLocalIDs.push(selectedIssueRefs[i]['id']);
   }
   if (selectedLocalIDs.length > 0) {
-    var selectedLocalIDString = selectedLocalIDs.join(',');
-    var url = 'bulkedit?ids=' + selectedLocalIDString;
+    let selectedLocalIDString = selectedLocalIDs.join(',');
+    let url = 'bulkedit?ids=' + selectedLocalIDString;
     TKR_go(url + _ctxArgs);
   } else {
     alert('Please select some issues to edit');
@@ -1220,16 +1220,16 @@ function TKR_ignoreWidgetIfOpIsClear(selectEl, inputID) {
  * Array of original labels on the served page, so that we can notice
  * when the used submits a form that has any Restrict-* labels removed.
  */
-var TKR_allOrigLabels = [];
+let TKR_allOrigLabels = [];
 
 
 /**
  * Prevent users from easily entering "+1" comments.
  */
 function TKR_checkPlusOne() {
-  var c = $('addCommentTextArea').value;
-  var instructions = (
-      '\nPlease use the star icon instead.\n' +
+  let c = $('addCommentTextArea').value;
+  let instructions = (
+    '\nPlease use the star icon instead.\n' +
       'Stars show your interest without annoying other users.');
   if (new RegExp('^\\s*[-+]+[0-9]+\\s*.{0,30}$', 'm').test(c) &&
       c.length < 150) {
@@ -1248,15 +1248,15 @@ function TKR_checkPlusOne() {
  * If the user removes Restrict-* labels, ask them if they are sure.
  */
 function TKR_checkUnrestrict(prevent_restriction_removal) {
-  var removedRestrictions = [];
+  let removedRestrictions = [];
 
-  for (var i = 0; i < TKR_allOrigLabels.length; ++i) {
-    var origLabel = TKR_allOrigLabels[i];
+  for (let i = 0; i < TKR_allOrigLabels.length; ++i) {
+    let origLabel = TKR_allOrigLabels[i];
     if (origLabel.indexOf('Restrict-') == 0) {
-      var found = false;
-      var j = 0;
+      let found = false;
+      let j = 0;
       while ($('label' + j)) {
-        var newLabel = $('label' + j).value;
+        let newLabel = $('label' + j).value;
         if (newLabel == origLabel) {
           found = true;
           break;
@@ -1274,17 +1274,17 @@ function TKR_checkUnrestrict(prevent_restriction_removal) {
   }
 
   if (prevent_restriction_removal) {
-    var msg = 'You may not remove restriction labels.';
+    let msg = 'You may not remove restriction labels.';
     alert(msg);
     return false;
   }
 
-   var instructions = (
-      'You are removing these restrictions:\n   ' +
+  let instructions = (
+    'You are removing these restrictions:\n   ' +
       removedRestrictions.join('\n   ') +
       '\nThis may allow more people to access this issue.' +
       '\nAre you sure?');
-   return confirm(instructions);
+  return confirm(instructions);
 }
 
 
@@ -1294,7 +1294,7 @@ function TKR_checkUnrestrict(prevent_restriction_removal) {
  * @param {string} colname The name of the column to start showing.
  */
 function TKR_addColumn(colname) {
-  var colspec = TKR_getColspecElement();
+  let colspec = TKR_getColspecElement();
   colspec.value = colspec.value + ' ' + colname;
   $('colspecform').submit();
 }
@@ -1304,7 +1304,7 @@ function TKR_addColumn(colname) {
  * Allow members to shift-click to select multiple issues.  This keeps
  * track of the last row that the user clicked a checkbox on.
  */
-var TKR_lastSelectedRow = undefined;
+let TKR_lastSelectedRow = undefined;
 
 
 /**
@@ -1339,7 +1339,7 @@ function TKR_rangeSelectRow(row, checked) {
     row.classList.remove('selected');
   }
 
-  var td = row.firstChild;
+  let td = row.firstChild;
   while (td && td.tagName != 'TD') {
     td = td.nextSibling;
   }
@@ -1347,7 +1347,7 @@ function TKR_rangeSelectRow(row, checked) {
     return;
   }
 
-  var checkbox = td.firstChild;
+  let checkbox = td.firstChild;
   while (checkbox && checkbox.tagName != 'INPUT') {
     checkbox = checkbox.nextSibling;
   }
@@ -1365,14 +1365,14 @@ function TKR_rangeSelectRow(row, checked) {
  * @param {Element} el The checkbox that was clicked.
  */
 function TKR_checkRangeSelect(evt, el) {
-  var clicked_row = el.parentNode.parentNode.rowIndex;
+  let clicked_row = el.parentNode.parentNode.rowIndex;
   if (clicked_row == TKR_lastSelectedRow) {
     return;
   }
   if (TKR_hasShiftKey(evt) && TKR_lastSelectedRow != undefined) {
-    var results_table = $('resultstable');
-    var delta = (clicked_row > TKR_lastSelectedRow) ? 1 : -1;
-    for (var i = TKR_lastSelectedRow; i != clicked_row; i += delta) {
+    let results_table = $('resultstable');
+    let delta = (clicked_row > TKR_lastSelectedRow) ? 1 : -1;
+    for (let i = TKR_lastSelectedRow; i != clicked_row; i += delta) {
       TKR_rangeSelectRow(results_table.rows[i], el.checked);
     }
   }
@@ -1398,9 +1398,9 @@ function TKR_makeIssueLink(issueRef) {
  * @param {number} colIndex index of the column that is being shown or hidden.
  */
 function TKR_toggleColumnUpdate(colIndex) {
-  var shownCols = TKR_getColspecElement().value.split(' ');
-  var filteredCols = [];
-  for (var i=0; i< shownCols.length; i++) {
+  let shownCols = TKR_getColspecElement().value.split(' ');
+  let filteredCols = [];
+  for (let i=0; i< shownCols.length; i++) {
     if (_allColumnNames[colIndex] != shownCols[i].toLowerCase()) {
       filteredCols.push(shownCols[i]);
     }
@@ -1418,9 +1418,9 @@ function TKR_toggleColumnUpdate(colIndex) {
  * @param {number} colIndex index of the column that is being shown or hidden.
  */
 function TKR_addGroupBy(colIndex) {
-  var colName = _allColumnNames[colIndex];
-  var shownCols = TKR_getColspecElement().value.split(' ');
-  var filteredCols = [];
+  let colName = _allColumnNames[colIndex];
+  let shownCols = TKR_getColspecElement().value.split(' ');
+  let filteredCols = [];
   for (var i=0; i < shownCols.length; i++) {
     if (shownCols[i] && colName != shownCols[i].toLowerCase()) {
       filteredCols.push(shownCols[i]);
@@ -1429,9 +1429,9 @@ function TKR_addGroupBy(colIndex) {
 
   TKR_getColspecElement().value = filteredCols.join(' ');
 
-  var groupSpec = $('groupbyspec');
-  var shownGroupings = groupSpec.value.split(' ');
-  var filteredGroupings = [];
+  let groupSpec = $('groupbyspec');
+  let shownGroupings = groupSpec.value.split(' ');
+  let filteredGroupings = [];
   for (i=0; i < shownGroupings.length; i++) {
     if (shownGroupings[i] && colName != shownGroupings[i].toLowerCase()) {
       filteredGroupings.push(shownGroupings[i]);
@@ -1448,10 +1448,10 @@ function TKR_addGroupBy(colIndex) {
  */
 function TKR_addMultiFieldValueWidget(
   el, field_id, field_type, opt_validate_1, opt_validate_2, field_phase_name) {
-  var widget = document.createElement('INPUT');
+  let widget = document.createElement('INPUT');
   widget.name = (field_phase_name && (
     field_phase_name != '')) ? `custom_${field_id}_${field_phase_name}`
-      : `custom_${field_id}`;
+    : `custom_${field_id}`;
   if (field_type == 'str' || field_type =='url') {
     widget.size = 90;
   }
@@ -1463,7 +1463,7 @@ function TKR_addMultiFieldValueWidget(
     widget.addEventListener('focus', function(event) {
       _acrob(null);
       _acof(event);
-     });
+    });
   }
   if (field_type == 'int' || field_type == 'date') {
     widget.style.textAlign = 'right';
@@ -1479,9 +1479,9 @@ function TKR_addMultiFieldValueWidget(
 
   el.parentNode.insertBefore(widget, el);
 
-  var del_button = document.createElement('U');
+  let del_button = document.createElement('U');
   del_button.onclick = function(event) {
-      _removeMultiFieldValueWidget(event.target);
+    _removeMultiFieldValueWidget(event.target);
   };
   del_button.textContent = 'X';
   el.parentNode.insertBefore(del_button, el);
@@ -1489,14 +1489,14 @@ function TKR_addMultiFieldValueWidget(
 
 
 function TKR_removeMultiFieldValueWidget(el) {
-  var target = el.previousSibling;
+  let target = el.previousSibling;
   while (target && target.tagName != 'INPUT') {
     target = target.previousSibling;
   }
   if (target) {
     el.parentNode.removeChild(target);
   }
-  el.parentNode.removeChild(el);  // the X itself
+  el.parentNode.removeChild(el); // the X itself
 }
 
 
@@ -1505,14 +1505,14 @@ function TKR_removeMultiFieldValueWidget(el) {
  * before submitting the form.
  */
 function TKR_trimCommas() {
-  var ccField = $('memberccedit');
+  let ccField = $('memberccedit');
   if (ccField) {
     ccField.value = ccField.value.replace(/,\s*$/, '');
-   }
+  }
   ccField = $('memberenter');
   if (ccField) {
     ccField.value = ccField.value.replace(/,\s*$/, '');
-   }
+  }
 }
 
 
@@ -1520,10 +1520,10 @@ function TKR_trimCommas() {
  * Identify which issues have been checkedboxed for removal from hotlist.
  */
 function HTL_removeIssues() {
-  var selectedLocalIDs = [];
-  for (var i = 0; i < issueRefs.length; i++) {
+  let selectedLocalIDs = [];
+  for (let i = 0; i < issueRefs.length; i++) {
     issueRef = issueRefs[i]['project_name']+':'+issueRefs[i]['id'];
-    var checkbox = document.getElementById('cb_' + issueRef);
+    let checkbox = document.getElementById('cb_' + issueRef);
     if (checkbox && checkbox.checked) {
       selectedLocalIDs.push(issueRef);
     }
@@ -1533,12 +1533,12 @@ function HTL_removeIssues() {
     if (!confirm('Remove all selected issues?')) {
       return;
     }
-    var selectedLocalIDString = selectedLocalIDs.join(',');
+    let selectedLocalIDString = selectedLocalIDs.join(',');
     $('bulk_remove_local_ids').value = selectedLocalIDString;
     $('bulk_remove_value').value = 'true';
     setCurrentColSpec();
 
-    var form = $('bulkremoveissues');
+    let form = $('bulkremoveissues');
     form.submit();
   } else {
     alert('Please select some issues to remove');
@@ -1554,16 +1554,16 @@ async function saveNote(textBox, hotlistID) {
   const projectName = textBox.getAttribute('projectname');
   const localId = textBox.getAttribute('localid');
   await window.prpcClient.call(
-      'monorail.Features', 'UpdateHotlistIssueNote', {
-          hotlistRef: {
-            hotlistId: hotlistID,
-          },
-          issueRef: {
-            projectName: textBox.getAttribute('projectname'),
-            localId: textBox.getAttribute('localid'),
-          },
-          note: textBox.value,
-  });
+    'monorail.Features', 'UpdateHotlistIssueNote', {
+      hotlistRef: {
+        hotlistId: hotlistID,
+      },
+      issueRef: {
+        projectName: textBox.getAttribute('projectname'),
+        localId: textBox.getAttribute('localid'),
+      },
+      note: textBox.value,
+    });
   $(`itemnote_${projectName}_${localId}`).value = textBox.value;
 }
 
@@ -1576,10 +1576,10 @@ function TKR_loadStatusSelect(projectName, selectId, selected, isBulkEdit=false)
   const projectRequestMessage = {
     project_name: projectName};
   const statusesPromise = window.prpcClient.call(
-      'monorail.Projects', 'ListStatuses', projectRequestMessage);
-  statusesPromise.then(statusesResponse => {
+    'monorail.Projects', 'ListStatuses', projectRequestMessage);
+  statusesPromise.then((statusesResponse) => {
     const jsonData = TKR_convertStatuses(statusesResponse);
-    let statusSelect = document.getElementById(selectId);
+    const statusSelect = document.getElementById(selectId);
     // An initial option with value='selected' had to be added in HTML
     // to prevent TKR_isDirty() from registering a change in the select input
     // even when the user has not selected a different value.
@@ -1590,7 +1590,7 @@ function TKR_loadStatusSelect(projectName, selectId, selected, isBulkEdit=false)
     }
     // Add unrecognized status (can be empty status) to open statuses.
     let selectedFound = false;
-    jsonData.open.concat(jsonData.closed).forEach(status => {
+    jsonData.open.concat(jsonData.closed).forEach((status) => {
       if (status.name === selected) {
         selectedFound = true;
       }
@@ -1600,36 +1600,36 @@ function TKR_loadStatusSelect(projectName, selectId, selected, isBulkEdit=false)
     }
     // Add open statuses.
     if (jsonData.open.length > 0) {
-      let openGroup =
+      const openGroup =
           statusSelect.appendChild(createStatusGroup('Open', jsonData.open, selected, isBulkEdit));
     }
     if (jsonData.closed.length > 0) {
-      statusSelect.appendChild(createStatusGroup("Closed", jsonData.closed, selected));
+      statusSelect.appendChild(createStatusGroup('Closed', jsonData.closed, selected));
     }
-  })
+  });
 }
 
 function createStatusGroup(groupName, options, selected, isBulkEdit=false) {
-  let groupElement = document.createElement('optgroup')
+  const groupElement = document.createElement('optgroup');
   groupElement.label = groupName;
-  options.forEach(option => {
-    let opt = document.createElement('option');
+  options.forEach((option) => {
+    const opt = document.createElement('option');
     opt.value = option.name;
     opt.selected = (selected === option.name) ? true : false;
     // Special case for when opt represents an empty status.
-    if (opt.value === ''){
+    if (opt.value === '') {
       if (isBulkEdit) {
-        opt.textContent = '--- (no change)'
-        opt.setAttribute('aria-label', 'no change')
+        opt.textContent = '--- (no change)';
+        opt.setAttribute('aria-label', 'no change');
       } else {
-        opt.textContent = '--- (empty status)'
-        opt.setAttribute('aria-label', 'empty status')
+        opt.textContent = '--- (empty status)';
+        opt.setAttribute('aria-label', 'empty status');
       }
     } else {
       opt.textContent = option.doc ? `${option.name} = ${option.doc}` : option.name;
     }
     groupElement.appendChild(opt);
-  })
+  });
   return groupElement;
 }
 
@@ -1637,23 +1637,23 @@ function createStatusGroup(groupName, options, selected, isBulkEdit=false) {
  * Generate DOM for a filter rules preview section.
  */
 function renderFilterRulesSection(section_id, heading, value_why_list) {
-  var section = $(section_id);
+  let section = $(section_id);
   while (section.firstChild) {
     section.removeChild(section.firstChild);
   }
   if (value_why_list.length == 0) return false;
 
   section.appendChild(document.createTextNode(heading + ': '));
-  for (var i = 0; i < value_why_list.length; ++i) {
+  for (let i = 0; i < value_why_list.length; ++i) {
     if (i > 0) {
       section.appendChild(document.createTextNode(', '));
     }
-    var value = value_why_list[i].value;
-    var why = value_why_list[i].why;
-    var span = section.appendChild(
-        document.createElement('span'));
-	span.textContent = value;
-	if (why) span.setAttribute('title', why);
+    let value = value_why_list[i].value;
+    let why = value_why_list[i].why;
+    let span = section.appendChild(
+      document.createElement('span'));
+    span.textContent = value;
+    if (why) span.setAttribute('title', why);
   }
   return true;
 }
@@ -1663,22 +1663,22 @@ function renderFilterRulesSection(section_id, heading, value_why_list) {
  * Generate DOM for a filter rules preview section bullet list.
  */
 function renderFilterRulesListSection(section_id, heading, value_why_list) {
-  var section = $(section_id);
+  let section = $(section_id);
   while (section.firstChild) {
     section.removeChild(section.firstChild);
   }
   if (value_why_list.length == 0) return false;
 
   section.appendChild(document.createTextNode(heading + ': '));
-  var bulletList = document.createElement('ul');
+  let bulletList = document.createElement('ul');
   section.appendChild(bulletList);
-  for (var i = 0; i < value_why_list.length; ++i) {
-    var listItem = document.createElement('li');
+  for (let i = 0; i < value_why_list.length; ++i) {
+    let listItem = document.createElement('li');
     bulletList.appendChild(listItem);
-    var value = value_why_list[i].value;
-    var why = value_why_list[i].why;
-    var span = listItem.appendChild(
-        document.createElement('span'));
+    let value = value_why_list[i].value;
+    let why = value_why_list[i].why;
+    let span = listItem.appendChild(
+      document.createElement('span'));
     span.textContent = value;
     if (why) span.setAttribute('title', why);
   }
@@ -1692,18 +1692,18 @@ function renderFilterRulesListSection(section_id, heading, value_why_list) {
  */
 function TKR_presubmit() {
   const issue_form = (
-      document.forms.create_issue_form || document.forms.issue_update_form);
+    document.forms.create_issue_form || document.forms.issue_update_form);
   if (!issue_form) {
     return;
   }
 
   const inputs = issue_form.querySelectorAll(
-      'input:not([type="file"]), textarea, select');
+    'input:not([type="file"]), textarea, select');
   if (!inputs) {
     return;
   }
 
-  let valuesByName = new Map();
+  const valuesByName = new Map();
   for (const key in inputs) {
     if (!inputs.hasOwnProperty(key)) {
       continue;
@@ -1713,13 +1713,13 @@ function TKR_presubmit() {
       continue;
     }
     if (!valuesByName.has(input.name)) {
-      valuesByName.set(input.name, [])
+      valuesByName.set(input.name, []);
     }
     valuesByName.get(input.name).push(input.value);
   }
 
   const issueDelta = TKR_buildIssueDelta(valuesByName);
-  let issueRef = {project_name: window.CS_env.projectName};
+  const issueRef = {project_name: window.CS_env.projectName};
   if (valuesByName.has('id')) {
     issueRef.local_id = valuesByName.get('id')[0];
   }
@@ -1729,64 +1729,64 @@ function TKR_presubmit() {
     issue_delta: issueDelta,
   };
   const presubmitPromise = window.prpcClient.call(
-      'monorail.Issues', 'PresubmitIssue', presubmitMessage);
+    'monorail.Issues', 'PresubmitIssue', presubmitMessage);
 
-  presubmitPromise.then(response => {
+  presubmitPromise.then((response) => {
     $('owner_avail_state').style.display = (
-        response.ownerAvailabilityState ? '' : 'none');
+      response.ownerAvailabilityState ? '' : 'none');
     $('owner_avail_state').className = (
-        'availability_' + response.ownerAvailabilityState);
+      'availability_' + response.ownerAvailabilityState);
     $('owner_availability').textContent = response.ownerAvailability;
 
     let derived_labels;
     if (response.derivedLabels) {
       derived_labels = renderFilterRulesSection(
-          'preview_filterrules_labels', 'Labels', response.derivedLabels);
+        'preview_filterrules_labels', 'Labels', response.derivedLabels);
     }
     let derived_owner_email;
     if (response.derivedOwners) {
       derived_owner_email = renderFilterRulesSection(
-          'preview_filterrules_owner', 'Owner', response.derivedOwners[0]);
+        'preview_filterrules_owner', 'Owner', response.derivedOwners[0]);
     }
     let derived_cc_emails;
     if (response.derivedCcs) {
       derived_cc_emails = renderFilterRulesSection(
-          'preview_filterrules_ccs', 'Cc', response.derivedCcs);
+        'preview_filterrules_ccs', 'Cc', response.derivedCcs);
     }
     let warnings;
     if (response.warnings) {
       warnings = renderFilterRulesListSection(
-          'preview_filterrules_warnings', 'Warnings', response.warnings);
+        'preview_filterrules_warnings', 'Warnings', response.warnings);
     }
     let errors;
     if (response.errors) {
       errors = renderFilterRulesListSection(
-          'preview_filterrules_errors', 'Errors', response.errors);
+        'preview_filterrules_errors', 'Errors', response.errors);
     }
 
     if (derived_labels || derived_owner_email || derived_cc_emails ||
         warnings || errors) {
-        $('preview_filterrules_area').style.display = '';
+      $('preview_filterrules_area').style.display = '';
     } else {
-        $('preview_filterrules_area').style.display = 'none';
+      $('preview_filterrules_area').style.display = 'none';
     }
   });
 }
 
 function HTL_deleteHotlist(form) {
-  if (confirm("Are you sure you want to delete this hotlist? This cannot be undone.")) {
+  if (confirm('Are you sure you want to delete this hotlist? This cannot be undone.')) {
     $('delete').value = 'true';
     form.submit();
   }
 }
 
 function HTL_toggleIssuesShown(toggleIssuesButton) {
-  let can = toggleIssuesButton.value;
-  let hotlist_name = $('hotlist_name').value;
+  const can = toggleIssuesButton.value;
+  const hotlist_name = $('hotlist_name').value;
   let url = `${hotlist_name}?can=${can}`;
-  let hidden_cols = $('colcontrol').classList.value;
+  const hidden_cols = $('colcontrol').classList.value;
   if (window.location.href.includes('&colspec') || hidden_cols) {
-    let col_spec = TKR_getColspecElement().value;
+    const col_spec = TKR_getColspecElement().value;
     let sort = '';
     if ($('sort')) {
       sort = $('sort').value.split(' ').join('+');
