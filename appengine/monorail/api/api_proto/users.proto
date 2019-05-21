@@ -15,7 +15,6 @@ service Users {
   rpc ListReferencedUsers (ListReferencedUsersRequest) returns (ListReferencedUsersResponse) {}
   rpc GetMemberships (GetMembershipsRequest) returns (GetMembershipsResponse) {}
   rpc GetSavedQueries (GetSavedQueriesRequest) returns (GetSavedQueriesResponse) {}
-  rpc GetUserCommits (GetUserCommitsRequest) returns (GetUserCommitsResponse) {}
   rpc GetUserStarCount (GetUserStarCountRequest) returns (GetUserStarCountResponse) {}
   rpc StarUser (StarUserRequest) returns (StarUserResponse) {}
   rpc GetUserPrefs (GetUserPrefsRequest) returns (GetUserPrefsResponse) {}
@@ -69,20 +68,6 @@ message GetSavedQueriesRequest {
 message GetSavedQueriesResponse {
   repeated SavedQuery saved_queries = 1;
 }
-
-
-// Next available tag: 4
-message GetUserCommitsRequest {
-  string email = 2;
-  fixed32 from_timestamp = 3;
-  fixed32 until_timestamp = 4;
-}
-
-
-message GetUserCommitsResponse {
-  repeated Commit user_commits = 1;
-}
-
 
 // Next available tag: 3
 message GetUserStarCountRequest {

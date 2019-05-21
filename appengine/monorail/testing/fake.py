@@ -449,8 +449,6 @@ class UserService(object):
     self.users_by_id = {}
     self.test_users = {}
     self.visited_hotlists = {} # user_id:[(hotlist_id, viewed), ...]
-    self.user_commits = [("mysha2",  3784859778, 2, "hi", "repo"),
-        ("mysha1",  3784859778, 1, "hi", "repo")]
     self.invite_rows = []
     self.linked_account_rows = []
     self.prefs_dict = {}  # {user_id: UserPrefs}
@@ -671,9 +669,6 @@ class UserService(object):
     except KeyError:
       self.visited_hotlists[user_id] = []
     self.visited_hotlists[user_id].append(hotlist_id)
-
-  def GetUserCommits(self, _cnxn, user_email, from_timestamp, to_timestamp):
-      return self.user_commits
 
 class AbstractStarService(object):
   """Fake StarService."""

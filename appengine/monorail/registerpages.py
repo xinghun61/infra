@@ -213,7 +213,6 @@ class ServletRegistry(object):
           componentexport.ComponentTrainingDataExport,
         urls.COMPONENT_DATA_EXPORT_TASK:
           componentexport.ComponentTrainingDataExportTask,
-        urls.COMMIT_DATA_CRON: usercommits.GetCommitsCron,
         urls.FLT_ISSUE_CONVERSION_TASK: fltconversion.FLTConvertTask,
         })
 

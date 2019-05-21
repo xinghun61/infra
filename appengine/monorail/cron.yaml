@@ -41,7 +41,3 @@ cron:
   url: /_cron/componentDataExport
   timezone: US/Pacific
   schedule: every mon 1:00
-- description: add new user commit data to the database
-  url: /_cron/getCommitsCron
-  timezone: US/Pacific
-  schedule: every 24 hours synchronized
