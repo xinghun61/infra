@@ -34,6 +34,9 @@ from waterfall import waterfall_config
 DEFAULT_AUTO_CREATE_REVERT_DAILY_THRESHOLD_COMPILE = 10
 DEFAULT_AUTO_COMMIT_REVERT_DAILY_THRESHOLD_COMPILE = 4
 
+FINDIT_BUILD_FAILURE_COMPONENT = 'Tools>Test>FindIt'
+FINDIT_FLAKE_COMPONENT = 'Tools>Test>FindIt>Flakiness'
+
 _MANUAL_LINK = 'https://goo.gl/adB34D'
 _SURVEY_LINK = 'https://goo.gl/forms/iPQbwFyo98N9tJ7o1'
 
@@ -44,6 +47,20 @@ def _GetCodeReview(code_review_data):
     return None
   return codereview_util.GetCodeReviewForReview(
       code_review_data['review_server_host'])
+
+
+def CreateFinditWrongBugLink(component, culprit_link, revision):
+  """Create a link to file a bug for a false positive culprit."""
+  false_positive_bug_query = urllib.urlencode({
+      'status': 'Available',
+      'labels': 'Test-Findit-Wrong',
+      'components': component,
+      'summary': 'Wrongly blame %s' % revision,
+      'comment': 'Detail is %s' % culprit_link
+  })
+
+  return 'https://bugs.chromium.org/p/chromium/issues/entry?%s' % (
+      false_positive_bug_query)
 
 
 def _AddReviewers(revision, culprit, codereview, revert_change_id, submitted):
@@ -63,16 +80,8 @@ def _AddReviewers(revision, culprit, codereview, revert_change_id, submitted):
                   culprit.key.urlsafe() if culprit else '')
     return
 
-  false_positive_bug_query = urllib.urlencode({
-      'status': 'Available',
-      'labels': 'Test-Findit-Wrong',
-      'components': 'Tools>Test>FindIt',
-      'summary': 'Wrongly blame %s' % revision,
-      'comment': 'Detail is %s' % culprit_link
-  })
-  false_positive_bug_link = (
-      'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
-          false_positive_bug_query)
+  false_positive_bug_link = CreateFinditWrongBugLink(
+      FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
 
   auto_revert_bug_query = urllib.urlencode({
       'status': 'Available',
@@ -99,7 +108,7 @@ def _AddReviewers(revision, culprit, codereview, revert_change_id, submitted):
 
         For more information about Findit auto-revert: %s.
 
-        Sheriffs, it'll be much appreciated if you could take several minutes
+        Sheriffs, it'll be much appreciated if you could take a couple minutes
         to fill out this survey: %s.""") % (false_positive_bug_link,
                                             auto_revert_bug_link, _MANUAL_LINK,
                                             _SURVEY_LINK)
@@ -114,7 +123,7 @@ def _AddReviewers(revision, culprit, codereview, revert_change_id, submitted):
 
         For more information about Findit auto-revert: %s.
 
-        Sheriffs, it'll be much appreciated if you could take several minutes
+        Sheriffs, it'll be much appreciated if you could take a couple minutes
         to fill out this survey: %s.""") % (false_positive_bug_link,
                                             _MANUAL_LINK, _SURVEY_LINK)
 
@@ -308,12 +317,16 @@ def SendNotificationForCulprit(parameters, codereview_info):
   culprit = entity_util.GetEntityFromUrlsafeKey(parameters.cl_key)
   assert culprit
 
+  culprit_link = culprit.GetCulpritLink()
   revision = culprit.revision
   repo_name = culprit.repo_name
 
   codereview = _GetCodeReview(codereview_info)
   commit_position = codereview_info['commit_position']
   review_change_id = codereview_info['review_change_id']
+
+  false_positive_bug_link = CreateFinditWrongBugLink(
+      FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
 
   sent = False
   if codereview and review_change_id:
@@ -327,8 +340,10 @@ def SendNotificationForCulprit(parameters, codereview_info):
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
-    https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
-        action, commit_position or revision, culprit.key.urlsafe())
+    %s
+    If it is a false positive, please report it at %s.""") % (
+        action, commit_position or revision, culprit_link,
+        false_positive_bug_link)
     sent = codereview.PostMessage(review_change_id, message, should_email)
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)

@@ -27,16 +27,18 @@ from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
 _NOTIFICATION_MESSAGE_TEMPLATE = textwrap.dedent("""
-Findit (https://goo.gl/kROfz5) identified this CL at revision {} as the culprit
+Findit (https://goo.gl/kROfz5) identified this CL at revision {culprit_revision} as the culprit
 for introducing flakiness in the tests as shown on:
-https://analysis.chromium.org/p/chromium/flake-portal/analysis/culprit?key={}
+{culprit_link}
 
 If the results are correct, please either revert this CL, disable, or fix the
-flaky test.""")
+flaky test.
+{flake_bug_link}
+If it is a false positive, please report the failure to
+{findit_wrong_bug_link}
+""")
 
-_NOTIFICATION_WITH_BUG_TEMPLATE = textwrap.dedent("""
-{}
-
+_BUG_TEMPLATE = textwrap.dedent("""
 Bug: https://bugs.chromium.org/p/chromium/issues/detail?id={}
 """)
 
@@ -53,13 +55,15 @@ def _GenerateMessageText(culprit, bug_id):
   Returns:
     message (str): The body of the notification to send.
   """
-  main_message = _NOTIFICATION_MESSAGE_TEMPLATE.format(
-      culprit.commit_position or culprit.revision, culprit.key.urlsafe())
 
-  if bug_id is None:
-    return main_message
+  false_positive_bug_link = gerrit.CreateFinditWrongBugLink(
+      gerrit.FINDIT_FLAKE_COMPONENT, culprit.GetCulpritLink(), culprit.revision)
 
-  return _NOTIFICATION_WITH_BUG_TEMPLATE.format(main_message, bug_id)
+  return _NOTIFICATION_MESSAGE_TEMPLATE.format(
+      culprit_revision=culprit.commit_position or culprit.revision,
+      culprit_link=culprit.GetCulpritLink(),
+      flake_bug_link=_BUG_TEMPLATE.format(bug_id) if bug_id else '',
+      findit_wrong_bug_link=false_positive_bug_link)
 
 
 def AbortCreateAndSubmitRevert(parameters, runner_id):

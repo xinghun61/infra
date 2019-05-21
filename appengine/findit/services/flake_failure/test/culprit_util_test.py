@@ -659,3 +659,11 @@ class CulpritUtilTest(wf_testcase.WaterfallTestCase):
   def testGenerateMessageTextWithoutBug(self):
     culprit = FlakeCulprit.Create('repo', 'revision', 12345)
     self.assertIn('revision', culprit_util._GenerateMessageText(culprit, None))
+
+  @mock.patch.object(gerrit, 'CreateFinditWrongBugLink')
+  def testGenerateMessageTextContainsFalsePositiveMessage(
+      self, mocked_create_bug_link):
+    culprit = FlakeCulprit.Create('repo', 'revision', 12345)
+    mocked_create_bug_link.return_value = 'https://bugs.chromium.org/buglink1'
+    self.assertIn('https://bugs.chromium.org/buglink1',
+                  culprit_util._GenerateMessageText(culprit, None))

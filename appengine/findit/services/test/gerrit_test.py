@@ -116,16 +116,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     culprit_link = ('https://analysis.chromium.org/waterfall/culprit?key=%s' %
                     (culprit.key.urlsafe()))
-    false_positive_bug_query = urllib.urlencode({
-        'status': 'Available',
-        'labels': 'Test-Findit-Wrong',
-        'components': 'Tools>Test>FindIt',
-        'summary': 'Wrongly blame %s' % revision,
-        'comment': 'Detail is %s' % culprit_link
-    })
-    false_positive_bug_link = (
-        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
-            false_positive_bug_query)
+    false_positive_bug_link = gerrit.CreateFinditWrongBugLink(
+        gerrit.FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
 
     auto_revert_bug_query = urllib.urlencode({
         'status': 'Available',
@@ -146,7 +138,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
         For more information about Findit auto-revert: %s.
 
-        Sheriffs, it'll be much appreciated if you could take several minutes
+        Sheriffs, it'll be much appreciated if you could take a couple minutes
         to fill out this survey: %s.""") % (
         false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK,
         gerrit._SURVEY_LINK)
@@ -215,16 +207,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     culprit_link = ('https://analysis.chromium.org/p/chromium/flake-portal/'
                     'analysis/culprit?key=%s' % (culprit.key.urlsafe()))
-    false_positive_bug_query = urllib.urlencode({
-        'status': 'Available',
-        'labels': 'Test-Findit-Wrong',
-        'components': 'Tools>Test>FindIt',
-        'summary': 'Wrongly blame %s' % revision,
-        'comment': 'Detail is %s' % culprit_link
-    })
-    false_positive_bug_link = (
-        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
-            false_positive_bug_query)
+    false_positive_bug_link = gerrit.CreateFinditWrongBugLink(
+        gerrit.FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
 
     auto_revert_bug_query = urllib.urlencode({
         'status': 'Available',
@@ -245,7 +229,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
         For more information about Findit auto-revert: %s.
 
-        Sheriffs, it'll be much appreciated if you could take several minutes
+        Sheriffs, it'll be much appreciated if you could take a couple minutes
         to fill out this survey: %s.""") % (
         false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK,
         gerrit._SURVEY_LINK)
@@ -448,16 +432,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     culprit_link = ('https://analysis.chromium.org/waterfall/culprit?key=%s' %
                     culprit.key.urlsafe())
-    false_positive_bug_query = urllib.urlencode({
-        'status': 'Available',
-        'labels': 'Test-Findit-Wrong',
-        'components': 'Tools>Test>FindIt',
-        'summary': 'Wrongly blame %s' % revision,
-        'comment': 'Detail is %s' % culprit_link
-    })
-    false_positive_bug_link = (
-        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
-            false_positive_bug_query)
+    false_positive_bug_link = gerrit.CreateFinditWrongBugLink(
+        gerrit.FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
 
     auto_revert_bug_query = urllib.urlencode({
         'status': 'Available',
@@ -478,7 +454,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
         For more information about Findit auto-revert: %s.
 
-        Sheriffs, it'll be much appreciated if you could take several minutes
+        Sheriffs, it'll be much appreciated if you could take a couple minutes
         to fill out this survey: %s.""") % (
         false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK,
         gerrit._SURVEY_LINK)
@@ -522,15 +498,8 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     culprit_link = ('https://analysis.chromium.org/waterfall/culprit?key=%s' %
                     (culprit.key.urlsafe()))
-    false_positive_bug_query = urllib.urlencode({
-        'status': 'Available',
-        'labels': 'Test-Findit-Wrong',
-        'components': 'Tools>Test>FindIt',
-        'summary': 'Wrongly blame %s' % revision,
-        'comment': 'Detail is %s' % culprit_link
-    })
-    bug_link = ('https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
-        false_positive_bug_query)
+    false_positive_bug_link = gerrit.CreateFinditWrongBugLink(
+        gerrit.FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
         Please confirm this revert if it is correct.
@@ -539,9 +508,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
         For more information about Findit auto-revert: %s.
 
-        Sheriffs, it'll be much appreciated if you could take several minutes
-        to fill out this survey: %s.""") % (bug_link, gerrit._MANUAL_LINK,
-                                            gerrit._SURVEY_LINK)
+        Sheriffs, it'll be much appreciated if you could take a couple minutes
+        to fill out this survey: %s.""") % (
+        false_positive_bug_link, gerrit._MANUAL_LINK, gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
   @mock.patch.object(gerrit, '_GetCodeReview', return_value=None)
@@ -571,6 +540,10 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
+    culprit_link = culprit.GetCulpritLink()
+    false_positive_bug_link = gerrit.CreateFinditWrongBugLink(
+        gerrit.FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
+
     parameters = SendNotificationForCulpritParameters(
         cl_key=culprit.key.urlsafe(),
         force_notify=False,
@@ -582,8 +555,10 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
-    https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
-        'confirmed', self.culprit_commit_position, culprit.key.urlsafe())
+    https://analysis.chromium.org/waterfall/culprit?key=%s
+    If it is a false positive, please report it at %s.""") % (
+        'confirmed', self.culprit_commit_position, culprit.key.urlsafe(),
+        false_positive_bug_link)
     mock_post.assert_called_once_with(self.review_change_id, message, False)
 
   @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
@@ -596,6 +571,10 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
+    culprit_link = culprit.GetCulpritLink()
+    false_positive_bug_link = gerrit.CreateFinditWrongBugLink(
+        gerrit.FINDIT_BUILD_FAILURE_COMPONENT, culprit_link, revision)
+
     parameters = SendNotificationForCulpritParameters(
         cl_key=culprit.key.urlsafe(),
         force_notify=False,
@@ -607,8 +586,10 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
-    https://analysis.chromium.org/waterfall/culprit?key=%s""") % (
-        'identified', self.culprit_commit_position, culprit.key.urlsafe())
+    https://analysis.chromium.org/waterfall/culprit?key=%s
+    If it is a false positive, please report it at %s.""") % (
+        'identified', self.culprit_commit_position, culprit.key.urlsafe(),
+        false_positive_bug_link)
     mock_post.assert_called_once_with(self.review_change_id, message, True)
 
   @mock.patch.object(gerrit, '_GetCodeReview', return_value=_CODEREVIEW)
