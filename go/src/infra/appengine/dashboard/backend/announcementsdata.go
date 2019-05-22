@@ -126,21 +126,23 @@ func CreateLiveAnnouncement(c context.Context, message, creator string, platform
 	return announcement.ToProto(platforms)
 }
 
-// GetLiveAnnouncements returns dashpb.Announcements that are not retired.
-// If a platformName is specified, only live Announcements that are ancestor to the
-// platform will be returned. Otherwise, all live Announcements will be returned.
+// GetAnnouncements returns dashpb.Announcements.
+// If a platformName is specified, only Announcements that are ancestor to the
+// platform will be returned.
+// If offset or limit are < 0, they will be ignored.
+// The returned Announcements will be either all retired, or all not retired.
 //
 // It returns (announcements, nil) on success, and (nil, err) on datastore or conversion errors.
-func GetLiveAnnouncements(c context.Context, platformName string) ([]*dashpb.Announcement, error) {
-	annQ := datastore.NewQuery("Announcement").Eq("Retired", false)
+func GetAnnouncements(c context.Context, platformName string, retired bool, limit, offset int32) ([]*dashpb.Announcement, error) {
+	annQ := datastore.NewQuery("Announcement").Eq("Retired", retired).Limit(limit).Offset(offset)
 	if platformName != "" {
 		annQ = annQ.Eq("PlatformNames", platformName)
 	}
-	var liveAnns []*Announcement
-	if err := datastore.GetAll(c, annQ, &liveAnns); err != nil {
+	var announcements []*Announcement
+	if err := datastore.GetAll(c, annQ, &announcements); err != nil {
 		return nil, fmt.Errorf("error getting Announcement entities - %s", err)
 	}
-	return GetAllAnnouncementsPlatforms(c, liveAnns)
+	return GetAllAnnouncementsPlatforms(c, announcements)
 }
 
 // GetAllAnnouncementsPlatforms takes Announcements that have incomplete or empty
@@ -171,9 +173,6 @@ func GetAllAnnouncementsPlatforms(c context.Context, announcements []*Announceme
 	}
 	return annProtos, nil
 }
-
-// TODO(jojwang)
-// func GetRetiredAnnouncements(offset int) ([]*dashpb.Announcement, error)
 
 // RetireAnnouncement sets a given announcement's retired to true.
 //

@@ -19,7 +19,7 @@ import (
 
 var chickenAnn = &Announcement{Message: "chicken is missing", Creator: "farmer1"}
 var cowAnn = &Announcement{Message: "cow is missing", Creator: "farmer2"}
-var retiredAnn = &Announcement{Message: "fox is missing", Creator: "farmer3", Retired: true}
+var foxAnn = &Announcement{Message: "fox is missing", Creator: "farmer3"}
 
 var chickBarnPlat = &Platform{Name: "barn"}
 var chickHousePlat = &Platform{Name: "house", URLPaths: []string{"kitchen/*"}}
@@ -28,6 +28,8 @@ var chickenPlats = []*Platform{chickBarnPlat, chickHousePlat}
 var cowBarnPlat = &Platform{Name: "barn"}
 var cowFieldPlat = &Platform{Name: "field"}
 var cowPlats = []*Platform{cowBarnPlat, cowFieldPlat}
+
+var foxPlats = []*Platform{{Name: "forest"}}
 
 func TestConvertAnnouncement(t *testing.T) {
 	startTS := int64(764797594)
@@ -139,26 +141,54 @@ func TestCreateLiveAnnouncement(t *testing.T) {
 	})
 }
 
-func TestGetLiveAnnouncements(t *testing.T) {
-	Convey("GetLiveAnnouncements", t, func() {
-		ctx := newTestContext()
-		datastore.Put(ctx, retiredAnn)
-		cowProto, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
-		chickenProto, _ := CreateLiveAnnouncement(ctx, chickenAnn.Message, chickenAnn.Creator, chickenPlats)
+func TestGetAnnouncements(t *testing.T) {
+	ctx := newTestContext()
+	foxProto, _ := CreateLiveAnnouncement(ctx, foxAnn.Message, foxAnn.Creator, foxPlats)
+	RetireAnnouncement(ctx, foxProto.Id)
+
+	cowProto, _ := CreateLiveAnnouncement(ctx, cowAnn.Message, cowAnn.Creator, cowPlats)
+	chickenProto, _ := CreateLiveAnnouncement(ctx, chickenAnn.Message, chickenAnn.Creator, chickenPlats)
+	Convey("GetAnnouncements live", t, func() {
+
 		Convey("get all live announcements", func() {
-			anns, err := GetLiveAnnouncements(ctx, "")
+			anns, err := GetAnnouncements(ctx, "", false, -1, -1)
 			So(err, ShouldBeNil)
 			So(anns, ShouldResemble, []*dashpb.Announcement{cowProto, chickenProto})
 		})
 		Convey("get live announcements for house", func() {
-			anns, err := GetLiveAnnouncements(ctx, "house")
+			anns, err := GetAnnouncements(ctx, "house", false, -1, -1)
 			So(err, ShouldBeNil)
 			So(anns, ShouldResemble, []*dashpb.Announcement{chickenProto})
 		})
 		Convey("get live announcements for barn", func() {
-			anns, err := GetLiveAnnouncements(ctx, "barn")
+			anns, err := GetAnnouncements(ctx, "barn", false, -1, -1)
 			So(err, ShouldBeNil)
 			So(anns, ShouldResemble, []*dashpb.Announcement{cowProto, chickenProto})
+		})
+	})
+	Convey("GetAnnouncements retired", t, func() {
+		RetireAnnouncement(ctx, cowProto.Id)
+		cowProto.Retired = true
+		foxProto.Retired = true
+		Convey("get all retired announcements", func() {
+			anns, err := GetAnnouncements(ctx, "", true, -1, -1)
+			So(err, ShouldBeNil)
+			So(anns, ShouldResemble, []*dashpb.Announcement{foxProto, cowProto})
+		})
+		Convey("get limited and offset retired announcements", func() {
+			RetireAnnouncement(ctx, chickenProto.Id)
+			chickenProto.Retired = true
+			anns, err := GetAnnouncements(ctx, "", true, 3, 1)
+			So(err, ShouldBeNil)
+			So(anns, ShouldResemble, []*dashpb.Announcement{cowProto, chickenProto})
+			anns, err = GetAnnouncements(ctx, "", true, 1, -1)
+			So(err, ShouldBeNil)
+			So(anns, ShouldResemble, []*dashpb.Announcement{foxProto})
+		})
+		Convey("get retired announcements for field", func() {
+			anns, err := GetAnnouncements(ctx, "field", true, -1, -1)
+			So(err, ShouldBeNil)
+			So(anns, ShouldResemble, []*dashpb.Announcement{cowProto})
 		})
 	})
 }
