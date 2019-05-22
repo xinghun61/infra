@@ -103,8 +103,14 @@ def _CreateIssueSearchDocuments(
       if cd:
         component_paths.append(cd.path)
 
-    field_values = [str(tracker_bizobj.GetFieldValue(fv, users_by_id))
+    field_values = [tracker_bizobj.GetFieldValue(fv, users_by_id)
                     for fv in issue.field_values]
+    # Convert to string only the values that are not strings already.
+    # This is done because the default encoding in appengine seems to be 'ascii'
+    # and string values might contain unicode characters, so str will fail to
+    # encode them.
+    field_values = [value if isinstance(value, basestring) else str(value)
+                    for value in field_values]
 
     metadata = '%s %s %s %s %s %s' % (
         tracker_bizobj.GetStatus(issue),

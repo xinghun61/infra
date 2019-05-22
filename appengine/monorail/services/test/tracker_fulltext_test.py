@@ -127,7 +127,7 @@ class TrackerFulltextTest(unittest.TestCase):
         False, False, None, None, None, None, False, None, None, None,
         'no_action', 'A custom string field', False)
     str_field_value = tracker_bizobj.MakeFieldValue(
-        2, None, 'Greetings', None, None, None, False)
+        2, None, u'\xf0\x9f\x92\x96\xef\xb8\x8f', None, None, None, False)
     # TODO(jrobbins): user-type field 3
     date_field = tracker_bizobj.MakeFieldDef(
         4, 123, 'CustomDate', tracker_pb2.FieldTypes.DATE_TYPE, None, False,
@@ -147,7 +147,7 @@ class TrackerFulltextTest(unittest.TestCase):
     issue_doc = self.docs[0]
     metadata = issue_doc.fields[2]
     self.assertEqual(
-      u'New test@example.com []  42 Greetings 2009-02-13 ',
+      u'New test@example.com []  42 \xf0\x9f\x92\x96\xef\xb8\x8f 2009-02-13 ',
       metadata.value)
 
   def testExtractCommentText(self):
