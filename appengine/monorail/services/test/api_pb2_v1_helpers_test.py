@@ -246,7 +246,8 @@ class ApiV1HelpersTest(unittest.TestCase):
           3, None, 'string', None, None, None, False, phase_id=4),
       # missing phase
       tracker_bizobj.MakeFieldValue(
-          3, None, 'string', None, None, None, False, phase_id=2),
+          3, None, u'\xe2\x9d\xa4\xef\xb8\x8f', None, None, None, False,
+          phase_id=2),
     ]
     phases = [
         tracker_pb2.Phase(phase_id=3, name="JustAPhase", rank=4),
@@ -282,7 +283,8 @@ class ApiV1HelpersTest(unittest.TestCase):
               derived=False),
            api_pb2_v1.FieldValue(fieldName='StringField', fieldValue='string',
                                  phaseName="NotAPhase", derived=False),
-           api_pb2_v1.FieldValue(fieldName='StringField', fieldValue='string',
+           api_pb2_v1.FieldValue(fieldName='StringField',
+                                 fieldValue=u'\xe2\x9d\xa4\xef\xb8\x8f',
                                  derived=False),
           ]
       )

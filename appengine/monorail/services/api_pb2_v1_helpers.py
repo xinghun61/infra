@@ -238,7 +238,9 @@ def convert_issue(cls, issue, mar, services):
       val = _get_user_email(
           services.user, mar.cnxn, fv.user_id)
     else:
-      val = str(tracker_bizobj.GetFieldValue(fv, {}))
+      val = tracker_bizobj.GetFieldValue(fv, {})
+      if not isinstance(val, basestring):
+        val = str(val)
     new_fv = api_pb2_v1.FieldValue(
         fieldName=fd.field_name,
         fieldValue=val,
