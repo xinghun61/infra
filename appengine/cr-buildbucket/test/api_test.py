@@ -696,8 +696,8 @@ class BuildPredicateToSearchQueryTests(BaseTestCase):
         build=rpc_pb2.BuildRange(start_build_id=100, end_build_id=90),
     )
     q = api.build_predicate_to_search_query(predicate)
-    self.assertEqual(q.build_low, 100)
-    self.assertEqual(q.build_high, 90)
+    self.assertEqual(q.build_low, 89)
+    self.assertEqual(q.build_high, 101)
 
   def test_canary(self):
     predicate = rpc_pb2.BuildPredicate(canary=common_pb2.YES)

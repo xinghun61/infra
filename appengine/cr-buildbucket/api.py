@@ -203,8 +203,15 @@ def build_predicate_to_search_query(predicate):
   # Filter by build range.
   if predicate.HasField('build'):
     # 0 means no boundary.
-    q.build_low = predicate.build.start_build_id or None
-    q.build_high = predicate.build.end_build_id or None
+    # Convert BuildRange to search.Query.{build_low, build_high}.
+    # Note that, unlike build_low/build_high, BuildRange encapsulates the fact
+    # that build ids are decreasing. We need to reverse the order.
+    if predicate.build.start_build_id:  # pragma: no branch
+      # Add 1 because start_build_id is inclusive and build_high is exclusive.
+      q.build_high = predicate.build.start_build_id + 1
+    if predicate.build.end_build_id:  # pragma: no branch
+      # Subtract 1 because end_build_id is exclusive and build_low is inclusive.
+      q.build_low = predicate.build.end_build_id - 1
 
   # Filter by canary.
   if predicate.canary != common_pb2.UNSET:
