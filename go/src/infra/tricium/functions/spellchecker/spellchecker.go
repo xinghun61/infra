@@ -51,14 +51,16 @@ var (
 	// ignoredWords are words that might be in the dictionary but shouldn't be
 	// flagged.
 	ignoredWords = []string{
-		"als",     // "ambient light sensor"
-		"backed",  // "backed by"
-		"cas",     // "Content Addressed Storage"
-		"ect",     // effective connection type
-		"gae",     // Google App Engine
-		"seeked",  // JS event
-		"tast",    // Name of a ChromeOS test
-		"wontfix", // Monorail bug status
+		"als",      // abbr. for ambient light sensor
+		"backed",   // as in "backed by"
+		"cas",      // abbr. for Content Addressed Storage
+		"copyable", // Valid usage, and used in C++, e.g. is_trivially_copyable
+		"ect",      // abbr. for effective connection type
+		"gae",      // abbr. for Google App Engine
+		"ith",      // ordinal form of variable i, like nth
+		"seeked",   // JS event
+		"tast",     // Name of a ChromeOS test
+		"wontfix",  // Monorail bug status
 	}
 	textFileExts = []string{".txt", ".md"}
 
