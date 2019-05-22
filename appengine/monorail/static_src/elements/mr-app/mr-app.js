@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {LitElement, html} from 'lit-element';
+import {LitElement, html, css} from 'lit-element';
 import page from 'page';
 import qs from 'qs';
 
@@ -13,6 +13,8 @@ import {arrayToEnglish} from 'elements/shared/helpers.js';
 import 'elements/framework/mr-header/mr-header.js';
 import 'elements/framework/mr-keystrokes/mr-keystrokes.js';
 
+import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
+
 /**
  * `<mr-app>`
  *
@@ -20,6 +22,14 @@ import 'elements/framework/mr-keystrokes/mr-keystrokes.js';
  *
  */
 export class MrApp extends connectStore(LitElement) {
+  static get styles() {
+    return [SHARED_STYLES, css`
+      main {
+        border-top: var(--chops-normal-border);
+      }
+    `];
+  }
+
   render() {
     return html`
       <mr-keystrokes
@@ -35,6 +45,7 @@ export class MrApp extends connectStore(LitElement) {
         .loginUrl=${this.loginUrl}
         .logoutUrl=${this.logoutUrl}
       ></mr-header>
+      <mr-cue cuePrefName="search_for_numbers" centered></mr-cue>
       <main></main>
     `;
   }

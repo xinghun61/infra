@@ -116,6 +116,11 @@ export class MrMetadata extends connectStore(LitElement) {
           </td>
         </tr>
       `: ''}
+     <tr>
+       <td colspan="2">
+         <mr-cue cuePrefName="availability_msgs"></mr-cue>
+       </td>
+     </tr>
 
       ${this.issueStatus ? html`
         <tr>

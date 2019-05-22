@@ -3,40 +3,51 @@
 // found in the LICENSE file.
 
 import {LitElement, html, css} from 'lit-element';
+import qs from 'qs';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as user from 'elements/reducers/user.js';
+import * as issue from 'elements/reducers/issue.js';
 import 'elements/chops/chops-button/chops-button.js';
 import 'elements/chops/chops-dialog/chops-dialog.js';
 import {SHARED_STYLES} from 'elements/shared/shared-styles.js';
 import {prpcClient} from 'prpc-client-instance.js';
 
 /**
- * `<mr-click-throughs>`
+ * `<mr-cue>`
  *
- * An element that displays help dialogs that the user is required
- * to click through before they can participate in the community.
+ * An element that displays one of a set of predefined help messages
+ * iff that message is appropriate to the current user and page.
  *
  */
 export class MrCue extends connectStore(LitElement) {
   constructor() {
     super();
     this.prefs = new Map();
+    this.issue = null;
+    this.referencedUsers = new Map();
   }
 
   static get properties() {
     return {
-      signedIn: {type: Boolean},
+      issue: {type: Object},
+      referencedUsers: {type: Object},
+      user: {type: Object},
       cuePrefName: {type: String},
       prefs: {type: Object},
       prefsLoaded: {type: Boolean},
+      jumpLocalId: {type: Number},
     };
   }
 
   static get styles() {
     return [SHARED_STYLES, css`
+      :host([centered]) {
+        display: flex;
+        justify-content: center;
+      }
       .cue {
         margin: 2px 0;
-        padding: 2px 4px;
+        padding: 2px 4px 2px 8px;
         background: var(--chops-notice-bubble-bg);
         border:  var(--chops-notice-border);
         text-align: center;
@@ -48,6 +59,7 @@ export class MrCue extends connectStore(LitElement) {
        float: right;
        font-size: 14px;
        padding: 2px;
+       cursor: pointer;
       }
       i.material-icons:hover {
         background: rgba(0, 0, 0, .2);
@@ -59,11 +71,11 @@ export class MrCue extends connectStore(LitElement) {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
       <div class="cue" ?hidden=${this.hidden}>
-        ${this.message}
         <i class="material-icons"
            title="Don't show this message again."
            @click=${this.dismiss}
            >close</i>
+        ${this.message}
       </div>
     `;
   }
@@ -77,12 +89,60 @@ export class MrCue extends connectStore(LitElement) {
           <a href="https://chromium.googlesource.com/chromium/src/+/master/CODE_OF_CONDUCT.md"
              target="_blank">code of conduct</a>.
           `;
+
+      case 'availability_msgs':
+        if (this._availablityMsgsRelevant(this.issue)) {
+          return html`
+            <b>Note:</b>
+            Clock icons indicate that users may not be available.
+            Tooltips show the reason.
+            `;
+        }
+
+      case 'search_for_numbers':
+        if (this._searchForNumbersRelevant(this.jumpLocalId)) {
+          return html`
+            <b>Tip:</b>
+            To find issues containing "${this.jumpLocalId}", use quotes.
+            `;
+        }
     }
   }
 
+  _availablityMsgsRelevant(issue) {
+    if (!issue) return false;
+    return (this._anyUnvailable([issue.ownerRef]) ||
+            this._anyUnvailable(issue.ccRefs));
+  }
+
+  _anyUnvailable(userRefList) {
+    if (!userRefList) return false;
+    for (const userRef of userRefList) {
+      if (userRef) {
+        const participant = this.referencedUsers.get(userRef.displayName);
+        if (participant && participant.availability) return true;
+      }
+    }
+  }
+
+  _searchForNumbersRelevant(jumpLocalId) {
+    return jumpLocalId;
+  }
+
   stateChanged(state) {
+    this.issue = issue.issue(state);
+    this.referencedUsers = issue.referencedUsers(state);
+    this.user = user.user(state);
     this.prefs = user.user(state).prefs;
+    this.signedIn = this.user && this.user.userId;
     this.prefsLoaded = user.user(state).prefsLoaded;
+
+    const queryString = window.location.search.substring(1);
+    const queryParams = qs.parse(queryString);
+    const q = queryParams.q;
+    if (q && q.match(new RegExp('^\\d+$'))) {
+      this.jumpLocalId = Number(q);
+    }
   }
 
   get hidden() {
@@ -92,7 +152,7 @@ export class MrCue extends connectStore(LitElement) {
   }
 
   alreadyDismissed(pref) {
-    return this.prefs.get(pref) === 'true';
+    return this.prefs && this.prefs.get(pref) === 'true';
   }
 
   dismiss() {
@@ -112,7 +172,7 @@ export class MrCue extends connectStore(LitElement) {
         console.error('SetUserPrefs failed: ' + reason);
       });
     } else {
-      store.dispatch(user.setPrefs(newPrefs));
+      store.dispatch(user.setPrefs(new Map([[pref, 'true']])));
     }
   }
 }

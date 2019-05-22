@@ -164,9 +164,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
             rel="stylesheet">
       <form id="editForm">
-        <mr-cue
-          signedIn
-          .cuePrefName=${'code_of_conduct'}></mr-cue>
+        <mr-cue cuePrefName="code_of_conduct"></mr-cue>
         <textarea
           id="commentText"
           placeholder="Add a comment"

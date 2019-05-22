@@ -43,6 +43,7 @@ export class MrHeader extends LitElement {
           position: sticky;
           padding: 0 4px;
           font-size: var(--chops-large-font-size);
+          margin-bottom: -1px;
         }
         @media (max-width: 840px) {
           :host {
