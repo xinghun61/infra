@@ -121,7 +121,10 @@ export class MrIssueMetadata extends connectStore(LitElement) {
               star
             </i>
           `: html`
-            <i class="material-icons" title="Click to star this issue">
+            <i
+              class="material-icons"
+              title="${this._userId ? 'Click' : 'Log in'} to star this issue"
+            >
               star_border
             </i>
           `}
@@ -190,7 +193,7 @@ export class MrIssueMetadata extends connectStore(LitElement) {
         </div>
       `: ''}
 
-      ${this.user && this.user.userId ? html`
+      ${this._userId ? html`
         <div class="bottom-section-cell">
           <h3>Your Hotlists:</h3>
           <div class="bottom-section-content" id="user-hotlists">
@@ -270,14 +273,17 @@ export class MrIssueMetadata extends connectStore(LitElement) {
     this._type = issue.type(state);
   }
 
+  get _userId() {
+    return this.user && this.user.userId;
+  }
+
   get _canStar() {
-    const {fetchingIsStarred, starringIssue} = this;
-    return !(fetchingIsStarred || starringIssue);
+    const {fetchingIsStarred, starringIssue, _userId} = this;
+    return _userId && !fetchingIsStarred && !starringIssue;
   }
 
   get _hotlistsByRole() {
     const issueHotlists = this.issueHotlists;
-    const userId = this.user && this.user.userId;
     const owner = this.issue && this.issue.ownerRef;
     const cc = this.issue && this.issue.ccRefs;
 
@@ -287,7 +293,7 @@ export class MrIssueMetadata extends connectStore(LitElement) {
       others: [],
     };
     (issueHotlists || []).forEach((hotlist) => {
-      if (hotlist.ownerRef.userId === userId) {
+      if (hotlist.ownerRef.userId === this._userId) {
         hotlists.user.push(hotlist);
       } else if (_userIsParticipant(hotlist.ownerRef, owner, cc)) {
         hotlists.participants.push(hotlist);

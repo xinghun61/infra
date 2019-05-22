@@ -24,6 +24,7 @@ describe('mr-issue-metadata', () => {
 
   it('clicking star toggles star', async () => {
     sinon.spy(element, 'toggleStar');
+    element.user = {userId: 1234};
 
     await element.updateComplete;
 
@@ -34,6 +35,13 @@ describe('mr-issue-metadata', () => {
     assert.isTrue(element.toggleStar.called);
 
     element.toggleStar.restore();
+  });
+
+  it('starring is disabled when user is not logged-in', async () => {
+    await element.updateComplete;
+
+    const star = element.shadowRoot.querySelector('.star-button');
+    assert.isTrue(star.disabled);
   });
 
   it('labels render', async () => {
