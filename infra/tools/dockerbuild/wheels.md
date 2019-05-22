@@ -450,6 +450,20 @@ wheel: <
 
 * *universal*
 
+## **backports.shutil_get_terminal_size**
+
+### 1.0.0
+
+```protobuf
+wheel: <
+  name: "infra/python/wheels/backports_shutil_get_terminal_size-py2_py3"
+  version: "version:1.0.0"
+>
+```
+
+
+* *universal*
+
 ## **bcrypt**
 
 ### 3.1.4
