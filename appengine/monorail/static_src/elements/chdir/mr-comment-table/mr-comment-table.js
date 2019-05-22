@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import '@polymer/polymer/polymer-legacy.js';
-import {html} from '@polymer/polymer/lib/utils/html-tag.js';
-import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+import {LitElement, html, css} from 'lit-element';
+import 'elements/framework/mr-comment-content/mr-comment-content.js';
+import 'elements/chops/chops-timestamp/chops-timestamp.js';
 
 /**
  * `<mr-comment-table>`
@@ -12,123 +12,107 @@ import {PolymerElement} from '@polymer/polymer/polymer-element.js';
  * The list of comments for a Monorail Polymer profile.
  *
  */
-export class MrCommentTable extends PolymerElement {
-  static get template() {
+export class MrCommentTable extends LitElement {
+  static get styles() {
+    return css`
+      .ellipsis {
+        max-width: 50%;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      table {
+        word-wrap: break-word;
+        width: 100%;
+      }
+      tr {
+        font-size: var(--chops-main-font-size);
+        font-weight: normal;
+        text-align: left;
+        line-height: 180%;
+      }
+      td, th {
+        border-bottom: var(--chops-normal-border);
+        padding: 0.25em 16px;
+      }
+      td {
+        text-overflow: ellipsis;
+      }
+      th {
+        text-align: left;
+      }
+      .no-wrap {
+        white-space: nowrap;
+      }
+    `;
+  }
+
+  render() {
+    const comments = this._displayedComments(this.selectedDate, this.comments);
+    // TODO(zhangtiff): render deltas for comment changes.
     return html`
-      <style>
-        .ellipsis {
-          max-width: 50%;
-          text-overflow: ellipsis;
-          overflow: hidden;
-          white-space: nowrap;
-        }
-        table {
-          word-wrap: break-word;
-          width: 100%;
-        }
-        tr {
-          font-size: 90%;
-          font-weight: normal;
-          text-align: left;
-          margin: 0 auto;
-          padding: 2em 1em;
-          height: 20px;
-        }
-        td {
-          background: #f8f8f8;
-          padding: 4px;
-          padding-left: 8px;
-          text-overflow: ellipsis;
-        }
-        th {
-          text-decoration: none;
-          margin-right: 0;
-          padding-right: 0;
-          padding-left: 8px;
-          white-space: nowrap;
-          background: #e3e9ff;
-          text-align: left;
-          border-right: 1px solid #fff;
-          border-top: 1px solid #fff;
-        }
-      </style>
       <table cellspacing="0" cellpadding="0">
         <tbody>
            <tr id="heading-row">
-            <th style="width:20%;">Date</th>
-            <th style="width:10%;">Project</th>
-            <th style="width:50%;">Comment</th>
-            <th style="width:20%;">Issue Link</th>
+            <th>Date</th>
+            <th>Project</th>
+            <th>Comment</th>
+            <th>Issue Link</th>
           </tr>
 
-          <template is="dom-repeat" items="[[displayedComments]]" as="comment">
+          ${comments && comments.length ? comments.map((comment) => html`
             <tr id="row">
-              <td style="width:20%;">
+              <td class="no-wrap">
                 <chops-timestamp
-                  timestamp="[[comment.timestamp]]"
+                  .timestamp=${comment.timestamp}
                   short
                 ></chops-timestamp>
               </td>
-              <td style="width:10%;">[[comment.projectName]]</td>
-              <td class="ellipsis" style="width:50%;">[[_truncateMessage(comment.content)]]</td>
-              <td style="width:20%;">
-                <a href\$="/p/[[comment.projectName]]/issues/detail?id=[[comment.localId]]">
-                  Issue [[comment.localId]]
+              <td>${comment.projectName}</td>
+              <td class="ellipsis">
+                <mr-comment-content
+                  .content=${this._truncateMessage(comment.content)}
+                ></mr-comment-content>
+              </td>
+              <td class="no-wrap">
+                <a href="/p/${comment.projectName}/issues/detail?id=${comment.localId}">
+                  Issue ${comment.localId}
                 </a>
               </td>
             </tr>
-          </template>
-          <template is="dom-if" if="[[_checkIfCommentsEmpty(displayedComments)]]">
+          `) : html`
             <tr>
               <td colspan="4"><i>No comments.</i></td>
             </tr>
-          </template>
+          `}
         </tbody>
       </table>
     `;
   }
 
-  static get is() {
-    return 'mr-comment-table';
-  }
-
   static get properties() {
     return {
-      user: {
-        type: String,
-      },
-      displayedComments: {
-        type: Array,
-        computed: '_computedComments(selectedDate, comments)',
-        value: [],
-      },
-      viewedUserId: {
-        type: Number,
-      },
-      comments: {
-        type: Array,
-        notify: true,
-        value: [],
-      },
-      selectedDate: {
-        type: Number,
-        notify: true,
-      },
+      comments: {type: Array},
+      selectedDate: {type: Number},
     };
+  }
+
+  constructor() {
+    super();
+    this.comments = [];
   }
 
   _truncateMessage(message) {
     return message && message.substring(0, message.indexOf('\n'));
   }
 
-  _computedComments(selectedDate, comments) {
-    if (selectedDate == undefined) {
+  _displayedComments(selectedDate, comments) {
+    if (!selectedDate) {
       return comments;
     } else {
       const computedComments = [];
-      if (comments == undefined) {
-        return computedComments;
-      }
+      if (!comments) return computedComments;
+
       for (let i = 0; i < comments.length; i++) {
         if (comments[i].timestamp <= selectedDate &&
            comments[i].timestamp >= (selectedDate - 86400)) {
@@ -138,9 +122,5 @@ export class MrCommentTable extends PolymerElement {
       return computedComments;
     }
   }
-
-  _checkIfCommentsEmpty(displayedComments) {
-    return !displayedComments || displayedComments.length === 0;
-  }
 }
-customElements.define(MrCommentTable.is, MrCommentTable);
+customElements.define('mr-comment-table', MrCommentTable);

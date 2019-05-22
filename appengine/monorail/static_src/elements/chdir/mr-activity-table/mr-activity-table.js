@@ -20,15 +20,11 @@ export class MrActivityTable extends PolymerElement {
           width: 90%;
           text-align: center;
           line-height: 110%;
-          justify-items: center;
-          min-height: 30%;
+          align-items: center;
+          justify-content: space-between;
         }
         :host[hidden] {
           display: none;
-        }
-        span {
-          font-size: 10px;
-          place-self: center;
         }
       </style>
 
@@ -39,7 +35,12 @@ export class MrActivityTable extends PolymerElement {
         <span></span>
       </template>
       <template is="dom-repeat" items="[[activityArray]]" as="day">
-        <mr-day-icon activity-level="[[day.activityNum]]" on-tap="_onDaySelected" selected="[[_computeIsSelected(selectedDate, day.date)]]" comments="[[day.comments]]" date="[[day.date]]">
+        <mr-day-icon
+          activity-level="[[day.activityNum]]"
+          on-tap="_onDaySelected"
+          selected="[[_computeIsSelected(selectedDate, day.date)]]"
+          comments="[[day.comments]]"
+          date="[[day.date]]">
         </mr-day-icon>
       </template>
     `;

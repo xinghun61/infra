@@ -24,7 +24,7 @@ export class MrDayIcon extends PolymerElement {
           border-color: hsl(87, 20%, 45%);
         }
         :host([activity-level="0"]) {
-          background-color: hsl(107, 10%, 97%);
+          background-color: var(--chops-blue-gray-50);
         }
         :host([activity-level="1"]) {
           background-color: hsl(87, 70%, 87%);

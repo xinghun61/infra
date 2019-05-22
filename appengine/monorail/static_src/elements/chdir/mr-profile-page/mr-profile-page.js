@@ -22,42 +22,33 @@ export class MrProfilePage extends PolymerElement {
     return html`
       <style>
         .history-container {
-          width: 70%;
           padding: 1em 16px;
-          padding-top: 35px;
-          padding-bottom: 75px;
-          padding-left: 30px;
-          padding-right: 30px;
           display: flex;
           flex-direction: column;
-          flex-wrap: no-wrap;
           min-height: 100%;
+          box-sizing: border-box;
+          flex-grow: 1;
         }
-        .dataTable {
-          width: 80%;
-          overflow-x: auto;
-          margin-bottom: 55px;
-          margin-left: 30px;
-          margin-right: 30px;
-          max-height: 300px;
+        mr-comment-table {
+          width: 100%;
+          margin-bottom: 1em;
+          box-sizing: border-box;
         }
-        .activityGraph {
-          width: 80%;
-          overflow-x: auto;
-          margin-bottom: 55px;
-          margin-left: 30px;
-          margin-right: 30px;
-          max-height: 300px;
+        mr-activity-table {
+          width: 70%;
+          flex-grow: 0;
+          margin: auto;
+          margin-bottom: 5em;
+          height: 200px;
+          box-sizing: border-box;
         }
         .metadata-container {
-          font-size: 85%;
-          background: hsl(120, 35%, 95%);
-          border: 1px solid hsl(120, 15%, 90%);
+          font-size: var(--chops-main-font-size);
+          border-right: var(--chops-normal-border);
           width: 15%;
           min-width: 256px;
           flex-grow: 0;
           flex-shrink: 0;
-          margin-right: 16px;
           box-sizing: border-box;
           min-height: 100%;
         }
@@ -78,16 +69,9 @@ export class MrProfilePage extends PolymerElement {
         .profile-data {
           text-align: center;
           padding-top: 40%;
-          font-size: 110%;
-        }
-        .commitTable {
-          width: 80%;
-          overflow-x: auto;
-          height: 400px;
+          font-size: var(--chops-main-font-size);
         }
       </style>
-      <app-location query-params="{{queryParams}}" url-space-regex="^/u/(.*)/polymer$"></app-location>
-
       <mr-header
         user-display-name="[[user]]"
         login-url="[[loginUrl]]"
@@ -108,7 +92,6 @@ export class MrProfilePage extends PolymerElement {
         <div class="history-container">
           <template is="dom-if" if="[[!_hideActivityTracker]]">
             <mr-activity-table
-              class="activityGraph"
               user="[[viewedUser]]"
               viewed-user-id="[[viewedUserId]]"
               commits="[[commits]]"
@@ -116,14 +99,12 @@ export class MrProfilePage extends PolymerElement {
               selected-date="{{selectedDate}}"
             ></mr-activity-table>
           </template>
-          <div class="dataTable">
-            <mr-comment-table
-              user="[[viewedUser]]"
-              viewed-user-id="[[viewedUserId]]"
-              comments="[[comments]]"
-              selected-date="{{selectedDate}}">
-            </mr-comment-table>
-          </div>
+          <mr-comment-table
+            user="[[viewedUser]]"
+            viewed-user-id="[[viewedUserId]]"
+            comments="[[comments]]"
+            selected-date="[[selectedDate]]">
+          </mr-comment-table>
         </div>
       </div>
     `;
