@@ -1177,6 +1177,22 @@ class WorkEnv(object):
           raise permissions.PermissionException(
               'Users lack permission EditIssue in issue')
 
+    if delta.merged_into:
+      # Reject attempts to merge an issue into an issue we cannot view and edit.
+      merged_into_issue = self.GetIssue(
+          delta.merged_into, use_cache=False, allow_viewing_deleted=True)
+      self._AssertPermInIssue(issue, permissions.EDIT_ISSUE)
+      # Reject attempts to merge an issue into itself.
+      if issue.issue_id == delta.merged_into:
+        raise exceptions.InputException(
+          'Cannot merge an issue into itself.')
+
+    # Reject attempts to block on issue on itself.
+    if (issue.issue_id in delta.blocked_on_add
+        or issue.issue_id in delta.blocking_add):
+      raise exceptions.InputException(
+        'Cannot block an issue on itself.')
+
     project = self.GetProject(issue.project_id)
     config = self.GetProjectConfig(issue.project_id)
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
@@ -1212,8 +1228,6 @@ class WorkEnv(object):
 
     with self.mc.profiler.Phase('Following up after issue update'):
       if delta.merged_into:
-        merged_into_issue = self.GetIssue(
-            delta.merged_into, use_cache=False, allow_viewing_deleted=True)
         tracker_helpers.MergeCCsAndAddComment(
             self.services, self.mc, issue, merged_into_issue)
       self.services.project.UpdateRecentActivity(

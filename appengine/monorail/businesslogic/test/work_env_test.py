@@ -1658,6 +1658,81 @@ class WorkEnvTest(unittest.TestCase):
         'Issue 1 has been merged into this issue.',
         comments[-1].content)
 
+  def testUpdateIssue_MergeIntoRestrictedIssue(self):
+    """We cannot merge into an issue we cannot view and edit."""
+    self.SignIn(333)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    issue2 = fake.MakeTestIssue(789, 2, 'summary2', 'Available', 111)
+    self.services.issue.TestAddIssue(issue)
+    self.services.issue.TestAddIssue(issue2)
+
+    delta = tracker_pb2.IssueDelta(
+        merged_into=issue2.issue_id,
+        status='Duplicate')
+
+    issue2.labels = ['Restrict-View-Foo']
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.UpdateIssue(issue, delta, '')
+
+    issue2.labels = ['Restrict-EditIssue-Foo']
+    with self.work_env as we:
+      with self.assertRaises(permissions.PermissionException):
+        we.UpdateIssue(issue, delta, '')
+
+    # Original issue still available.
+    self.assertEqual('Available', issue.status)
+    # Target issue was not modified.
+    self.assertEqual([], issue2.cc_ids)
+    # No comment was added.
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue2.issue_id)
+    self.assertEqual(1, len(comments))
+
+  def testUpdateIssue_MergeIntoItself(self):
+    """We cannot merge an issue into itself."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    self.services.issue.TestAddIssue(issue)
+    delta = tracker_pb2.IssueDelta(
+        merged_into=issue.issue_id,
+        status='Duplicate')
+
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException) as cm:
+        we.UpdateIssue(issue, delta, '')
+    self.assertEqual('Cannot merge an issue into itself.', cm.exception.message)
+
+    # Original issue still available.
+    self.assertEqual('Available', issue.status)
+    # No comment was added.
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    self.assertEqual(1, len(comments))
+
+  def testUpdateIssue_BlockOnItself(self):
+    """We cannot block an issue on itself."""
+    self.SignIn()
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'Available', 111)
+    self.services.issue.TestAddIssue(issue)
+
+    delta = tracker_pb2.IssueDelta(blocked_on_add=[issue.issue_id])
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException) as cm:
+        we.UpdateIssue(issue, delta, '')
+    self.assertEqual('Cannot block an issue on itself.', cm.exception.message)
+
+    delta = tracker_pb2.IssueDelta(blocking_add=[issue.issue_id])
+    with self.work_env as we:
+      with self.assertRaises(exceptions.InputException) as cm:
+        we.UpdateIssue(issue, delta, '')
+    self.assertEqual('Cannot block an issue on itself.', cm.exception.message)
+
+    # Original issue was not modified.
+    self.assertEqual(0, len(issue.blocked_on_iids))
+    self.assertEqual(0, len(issue.blocking_iids))
+    # No comment was added.
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue.issue_id)
+    self.assertEqual(1, len(comments))
+
   @mock.patch(
       'features.send_notifications.PrepareAndSendIssueChangeNotification')
   def testUpdateIssue_Attachments(self, fake_pasicn):
