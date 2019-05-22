@@ -98,7 +98,7 @@ export class MrHeader extends LitElement {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <a href="/p/${this.projectName}/">
+      <a href=${this.projectName ? `/p/${this.projectName}/` : '/'}>
         ${this.projectThumbnailUrl ? html`
           <img
             class="project-logo"
@@ -114,12 +114,16 @@ export class MrHeader extends LitElement {
       </a>
       <mr-dropdown
         class="project-selector"
-        .text=${this.projectName}
+        .text=${this.projectName || 'Select a project'}
         .items=${this._projectDropdownItems}
         menuAlignment="left"
         title=${this.presentationConfig.projectSummary}
       ></mr-dropdown>
-      <a class="button emphasized new-issue-link" href=${this.issueEntryUrl}>
+      <a
+        ?hidden=${!this.projectName}
+        class="button emphasized new-issue-link"
+        href=${this.issueEntryUrl}
+      >
         New issue
       </a>
       <mr-search-bar
@@ -129,12 +133,14 @@ export class MrHeader extends LitElement {
         .defaultCan=${this._defaultCan}
         .initialValue=${this._initialSearch}
         .queryParams=${this.queryParams}
+        ?hidden=${!this.projectName}
       ></mr-search-bar>
 
       <div class="right-section">
         <mr-dropdown
           icon="settings"
           .items=${this._projectSettingsItems}
+          ?hidden=${!this.projectName}
         ></mr-dropdown>
 
         ${this.userDisplayName ? html`
