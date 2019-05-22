@@ -271,13 +271,18 @@ class IssueBulkEdit(servlet.Servlet):
     if post_data.get('op_memberenter') == 'remove':
       cc_ids, cc_ids_remove = parsed.users.cc_ids_remove, parsed.users.cc_ids
 
+    issue_list_iids = {issue.issue_id for issue in issue_list}
     if post_data.get('op_blockedonenter') == 'append':
+      if issue_list_iids.intersection(parsed.blocked_on.iids):
+        mr.errors.blocked_on = 'Cannot block an issue on itself.'
       blocked_on_add = parsed.blocked_on.iids
       blocked_on_remove = []
     else:
       blocked_on_add = []
       blocked_on_remove = parsed.blocked_on.iids
     if post_data.get('op_blockingenter') == 'append':
+      if issue_list_iids.intersection(parsed.blocking.iids):
+        mr.errors.blocking = 'Cannot block an issue on itself.'
       blocking_add = parsed.blocking.iids
       blocking_remove = []
     else:

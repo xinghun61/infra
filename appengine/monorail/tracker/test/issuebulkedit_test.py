@@ -513,6 +513,32 @@ class IssueBulkEditTest(unittest.TestCase):
     self.assertEqual('Invalid issue ID 12345', mr.errors.blocked_on)
     self.assertEqual('Invalid issue ID 54321', mr.errors.blocking)
 
+  def testProcessFormData_BlockIssuesOnItself(self):
+    """Test PFD processes invalid blocked_on and blocking values."""
+    local_id_1, _ = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
+    local_id_2, _ = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'issue summary', 'New', 111,
+        [], [], [], [], 111, 'test issue')
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.project,
+        perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
+        user_info={'user_id': 111})
+    mr.project_name = 'proj'
+    mr.local_id_list = [local_id_1, local_id_2]
+
+    self._MockMethods()
+    post_data = fake.PostData(
+        op_blockedonenter=['append'], blocked_on=[str(local_id_1)],
+        op_blockingenter=['append'], blocking=[str(local_id_2)],
+        can=[1], q=[''],
+        colspec=[''], sort=[''], groupby=[''], start=[0], num=[100])
+    self.servlet.ProcessFormData(mr, post_data)
+
+    self.assertEqual('Cannot block an issue on itself.', mr.errors.blocked_on)
+    self.assertEqual('Cannot block an issue on itself.', mr.errors.blocking)
+
   def testProcessFormData_NormalBlockIssues(self):
     """Test PFD processes blocked_on and blocking values."""
     local_id_1, _ = self.services.issue.CreateIssue(
