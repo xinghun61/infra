@@ -480,7 +480,7 @@ class SQLTableManager(object):
     cursor.close()
     return result
 
-  def Delete(self, cnxn, where=None, commit=True, **kwargs):
+  def Delete(self, cnxn, where=None, commit=True, limit=None, **kwargs):
     """Delete the specified table rows.
 
     Args:
@@ -488,6 +488,7 @@ class SQLTableManager(object):
       where: Optional list of WHERE conditions saying which rows to update.
       commit: Set to False if this operation is part of a series of operations
           that should not be committed until the final one is done.
+      limit: Optional LIMIT on the number of rows deleted.
       **kwargs: WHERE-clause equality and set-membership conditions.
 
     Returns:
@@ -498,6 +499,7 @@ class SQLTableManager(object):
 
     stmt = Statement.MakeDelete(self.table_name)
     stmt.AddWhereTerms(where, **kwargs)
+    stmt.SetLimitAndOffset(limit, None)
     stmt_str, stmt_args = stmt.Generate()
 
     cursor = cnxn.Execute(stmt_str, stmt_args, commit=commit)

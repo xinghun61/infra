@@ -311,6 +311,14 @@ class TableManagerTest(unittest.TestCase):
         self.master_cnxn.last_executed)
     self.assertEqual(1, rowcount)
 
+  def testDelete_Limit(self):
+    self.emp_tbl.Delete(self.cnxn, fulltime=True, limit=3)
+    self.assertEqual(
+        'DELETE FROM Employee'
+        '\nWHERE fulltime = 1'
+        '\nLIMIT 3',
+        self.master_cnxn.last_executed)
+
 
 class StatementTest(unittest.TestCase):
 
