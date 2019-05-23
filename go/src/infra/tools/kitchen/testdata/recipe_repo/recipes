@@ -43,7 +43,7 @@ def main():
   assert get_current_account() == 'recipe_acc', get_current_account()
   if os.environ.get('SWARMING_TASK_ID'):
     assert get_git_email() == 'recipe@example.com', get_git_email()
-    assert get_gsutil_token() == 'fake_recipe_acc_token', get_gsutil_token()
+    assert get_gsutil_token() == 'fake_token_0', get_gsutil_token()
     if sys.platform != 'win32':
       assert get_devshell_email() == 'recipe@example.com', get_devshell_email()
 
