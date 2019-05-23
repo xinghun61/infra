@@ -2,133 +2,92 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import {html} from '@polymer/polymer/lib/utils/html-tag.js';
-import {PolymerElement} from '@polymer/polymer/polymer-element.js';
+import {LitElement, html, css} from 'lit-element';
 import './mr-day-icon.js';
 
-export class MrActivityTable extends PolymerElement {
-  static get template() {
-    return html`
-      <style>
-        :host {
-          display: grid;
-          /* 8 columns = 7 days of the week + 1 column to label the week */
-          grid-auto-flow: column;
-          grid-auto-columns: auto auto auto auto auto auto auto auto auto auto auto auto auto;
-          grid-template-rows: auto auto auto auto auto auto auto;
-          margin: auto;
-          width: 90%;
-          text-align: center;
-          line-height: 110%;
-          align-items: center;
-          justify-content: space-between;
-        }
-        :host[hidden] {
-          display: none;
-        }
-      </style>
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKDAY_ABBREVIATIONS = 'M T W T F S S'.split(' ');
+const SECONDS_PER_DAY = 24 * 60 * 60;
+// Only show comments from this many days ago and later.
+const MAX_COMMENT_AGE = 31 * 3;
 
-      <template is="dom-repeat" items="[[daysOfWeek]]">
-        <span>[[item]]</span>
-      </template>
-      <template is="dom-repeat" items="[[startWeekday]]">
-        <span></span>
-      </template>
-      <template is="dom-repeat" items="[[activityArray]]" as="day">
-        <mr-day-icon
-          activity-level="[[day.activityNum]]"
-          on-tap="_onDaySelected"
-          selected="[[_computeIsSelected(selectedDate, day.date)]]"
-          comments="[[day.comments]]"
-          date="[[day.date]]">
-        </mr-day-icon>
-      </template>
+export class MrActivityTable extends LitElement {
+  static get styles() {
+    return css`
+      :host {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: repeat(13, auto);
+        grid-template-rows: repeat(7, auto);
+        margin: auto;
+        width: 90%;
+        text-align: center;
+        line-height: 110%;
+        align-items: center;
+        justify-content: space-between;
+      }
+      :host[hidden] {
+        display: none;
+      }
     `;
   }
 
-  static get is() {
-    return 'mr-activity-table';
+  render() {
+    return html`
+      ${WEEKDAY_ABBREVIATIONS.map((weekday) => html`<span>${weekday}</span>`)}
+      ${this._weekdayOffset.map(() => html`<span></span>`)}
+      ${this._activityArray.map((day) => html`
+        <mr-day-icon
+          .selected=${this.selectedDate === day.date}
+          .commentCount=${day.commentCount}
+          .date=${day.date}
+          @click=${this._selectDay}
+        ></mr-day-icon>
+      `)}
+    `;
   }
 
   static get properties() {
     return {
-      user: {
-        type: String,
-      },
-      viewedUserId: {
-        type: Number,
-      },
-      comments: {
-        type: Array,
-      },
-      startWeekday: {
-        type: Array,
-      },
-      todayUnixEndTime: {
-        type: Number,
-        value: () => {
-          const now = new Date();
-          const today = new Date(Date.UTC(
-            now.getUTCFullYear(),
-            now.getUTCMonth(),
-            now.getUTCDate(),
-            24, 0, 0));
-          const todayEndTime = today.getTime() / 1000;
-          return todayEndTime;
-        },
-      },
-      daysOfWeek: {
-        type: Array,
-        value: () => {
-          return 'M T W T F S S'.split(' ');
-        },
-      },
-      activityArray: {
-        type: Array,
-        reflectToAttribute: true,
-        computed: 'computeActivityArray(comments, todayUnixEndTime)',
-        observer: '_computeWeekdayStart',
-      },
-      months: {
-        type: Array,
-        value: () => {
-          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-          const now = new Date();
-          return [monthNames[now.getMonth()],
-            monthNames[now.getMonth() - 1],
-            monthNames[now.getMonth() - 2]];
-        },
-      },
-      selectedDate: {
-        type: Number,
-        notify: true,
-      },
+      comments: {type: Array},
+      selectedDate: {type: Number},
     };
   }
 
-  _computeIsSelected(day, itemDay) {
-    return this.selectedDate == itemDay;
-  }
-
-  _onDaySelected(event) {
-    if (this.selectedDate == event.target.date) {
+  _selectDay(event) {
+    const target = event.target;
+    if (this.selectedDate === target.date) {
       this.selectedDate = undefined;
     } else {
-      this.selectedDate = event.target.date;
+      this.selectedDate = target.date;
     }
+
+    this.dispatchEvent(new CustomEvent('dateChange', {
+      detail: {
+        date: this.selectedDate,
+      },
+    }));
   }
 
-  _computeWeekdayStart() {
-    const startDate = new Date(this.activityArray[0].date * 1000);
+  get months() {
+    const currentMonth = (new Date()).getMonth();
+    return [MONTH_NAMES[currentMonth],
+      MONTH_NAMES[currentMonth - 1],
+      MONTH_NAMES[currentMonth - 2]];
+  }
+
+  get _weekdayOffset() {
+    const startDate = new Date(this._activityArray[0].date * 1000);
     const startWeekdayNum = startDate.getDay()-1;
     const emptyDays = [];
     for (let i = 0; i < startWeekdayNum; i++) {
       emptyDays.push(' ');
     }
-    this.startWeekday = emptyDays;
+    return emptyDays;
   }
 
-  _getTodayUnixTime() {
+  get _todayUnixTime() {
     const now = new Date();
     const today = new Date(Date.UTC(
       now.getUTCFullYear(),
@@ -139,32 +98,29 @@ export class MrActivityTable extends PolymerElement {
     return todayEndTime;
   }
 
-  computeActivityArray(comments, todayUnixEndTime) {
-    if (!todayUnixEndTime) {
-      return [];
-    }
-    comments = comments || [];
+  get _activityArray() {
+    const todayUnixEndTime = this._todayUnixTime;
+    const comments = this.comments || [];
 
     const activityArray = [];
-    for (let i = 0; i < 93; i++) {
-      const arrayDate = (todayUnixEndTime - ((i) * 86400));
-      activityArray.push({
-        comments: 0,
-        activityNum: 0,
+    for (let i = 0; i < MAX_COMMENT_AGE; i++) {
+      const arrayDate = (todayUnixEndTime - ((i) * SECONDS_PER_DAY));
+      activityArray.unshift({
+        commentCount: 0,
         date: arrayDate,
       });
     }
 
     for (let i = 0; i < comments.length; i++) {
-      const day = Math.floor((todayUnixEndTime - comments[i].timestamp) / 86400);
-      if (day > 92) {
-        break;
+      const commentAge = Math.floor(
+        (todayUnixEndTime - comments[i].timestamp) / SECONDS_PER_DAY);
+      if (commentAge < MAX_COMMENT_AGE) {
+        const pos = MAX_COMMENT_AGE - commentAge - 1;
+        activityArray[pos].commentCount++;
       }
-      activityArray[day].comments++;
-      activityArray[day].activityNum++;
     }
-    activityArray.reverse();
+
     return activityArray;
   }
 }
-customElements.define(MrActivityTable.is, MrActivityTable);
+customElements.define('mr-activity-table', MrActivityTable);

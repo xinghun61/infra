@@ -6,13 +6,13 @@
 [include "../webpack-out/mr-profile-page.ezt"]
 
 <mr-profile-page
-  viewed-user-id="[viewed_user_id]"
-  viewed-user="[viewed_user_display_name]" [if-any logged_in_user]
+  viewedUserId="[viewed_user_id]"
+  viewedUser="[viewed_user_display_name]" [if-any logged_in_user]
   user="[logged_in_user.email]"[end]
-  login-url="[login_url]"
-  logout-url="[logout_url]"
-  last-visit-str="[last_visit_str]"
-  starred-users="[starred_users_json]"
+  loginUrl="[login_url]"
+  logoutUrl="[logout_url]"
+  lastVisitStr="[last_visit_str]"
+  starredUsers="[starred_users_json]"
 ></mr-profile-page>
 
 [include "../framework/polymer-footer.ezt"]
