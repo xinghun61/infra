@@ -69,18 +69,12 @@ _Layout = collections.namedtuple('Layout', (
     # The list of vendor directories. Each will have a Glide "deps.yaml" in it.
     'vendor_paths',
 
-    # List of additional paths to add to GOPATH.
-    'go_paths',
-
     # The list of DEPS'd in paths that contain Go sources. This is used to
     # determine when our vendored tools need to be re-installed.
     'go_deps_paths',
 
     # Go package paths of tools to install into the bootstrap environment.
     'go_install_tools',
-
-    # If True, augment the existing GOPATH instead of replacing it.
-    'preserve_gopath',
 ))
 
 class Layout(_Layout):
@@ -97,10 +91,8 @@ _EMPTY_LAYOUT = Layout(
     toolset_root=None,
     workspace=None,
     vendor_paths=None,
-    go_paths=None,
     go_deps_paths=None,
-    go_install_tools=None,
-    preserve_gopath=False)
+    go_install_tools=None)
 
 
 # Infra standard layout.
@@ -123,8 +115,6 @@ LAYOUT = Layout(
         'infra/cmd/bqexport',
         'infra/cmd/cloudsqlhelper',
     ],
-    go_paths=None,
-    preserve_gopath=False,
 )
 
 
@@ -395,8 +385,6 @@ def get_go_environ(layout):
 
   Args:
     layout: The Layout to derive the environment from.
-    preserve_gopath (bool): True if environment should be added to existing
-        GOPATH instead of replace it.
   """
   env = os.environ.copy()
   env['GOROOT'] = os.path.join(layout.toolset_root, 'go')
@@ -407,11 +395,7 @@ def get_go_environ(layout):
 
   vendor_paths = layout.vendor_paths or ()
   all_go_paths = []
-  if layout.preserve_gopath and 'GOPATH' in env:
-    all_go_paths.append(env['GOPATH'])
   all_go_paths.extend(os.path.join(p, '.vendor') for p in vendor_paths)
-  if layout.go_paths:
-    all_go_paths.extend(layout.go_paths)
   if layout.workspace:
     all_go_paths.append(layout.workspace)
   env['GOPATH'] = os.pathsep.join(all_go_paths)
@@ -474,8 +458,7 @@ def bootstrap(layout, logging_level):
   Supposed to be called at the beginning of some script (it modifies logger).
 
   Args:
-    go_paths: list of paths to search for deps.lock, for each path deps.py
-        will install all dependencies in <path>/.vendor/src/*.
+    layout: instance of Layout describing what to install and where.
     logging_level: logging level of bootstrap process.
   """
   logging.basicConfig()
@@ -511,30 +494,13 @@ def bootstrap(layout, logging_level):
         os.environ[k] = v
 
 
-def prepare_go_environ(preserve_gopath=False, toolset_root=None,
-                       deps_only=False):
+def prepare_go_environ():
   """Returns dict with environment variables to set to use Go toolset.
 
   Installs or updates the toolset and vendored dependencies if necessary.
-
-  Args:
-    preserve_gopath (bool): True if environment should be added to existing
-        GOPATH instead of replace it.
-    toolset_root (str or None): If not None, the path to the toolset root to
-        use.
-    deps_only (bool): If True, don't install local repository tooling as part
-        of bootstrap setup.
   """
-  layout = LAYOUT._replace(
-      preserve_gopath=preserve_gopath)
-  if toolset_root:
-    layout = layout._replace(toolset_root=toolset_root)
-  if deps_only:
-    layout = layout._replace(
-        go_deps_paths=[],
-        go_install_tools=[])
-  bootstrap(layout, logging.INFO)
-  return get_go_environ(layout)
+  bootstrap(LAYOUT, logging.INFO)
+  return get_go_environ(LAYOUT)
 
 
 def find_executable(name, workspaces):

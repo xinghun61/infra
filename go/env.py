@@ -16,7 +16,6 @@ $ ./env.py go version
 
 assert __name__ == '__main__'
 
-import argparse
 import imp
 import os
 import pipes
@@ -64,26 +63,12 @@ else:
 
 
 def main():
-  parser = argparse.ArgumentParser()
-  # TODO(vadimsh): Remove these options. They were used by luci_deploy tool
-  # which is long gone.
-  parser.add_argument('--preserve-gopath', action='store_true',
-      help='Preserve the existing GOPATH, appending to it instead of '
-           'overwriting it.')
-  parser.add_argument('--toolset-root', action='store', metavar='PATH',
-      help='Use this path for the toolset root instead of default.')
-  parser.add_argument('--deps-only', action='store_true',
-      help='If True, only download and install dependencies in "deps" files.')
+  args = sys.argv[1:]
+  if args and args[0] == '--':
+    args.pop(0)
 
-  args, extras = parser.parse_known_args()
-  if extras and extras[0] == '--':
-    extras.pop(0)
-
-  new = bootstrap.prepare_go_environ(
-      preserve_gopath=args.preserve_gopath,
-      toolset_root=args.toolset_root,
-      deps_only=args.deps_only)
-  if not extras:
+  new = bootstrap.prepare_go_environ()
+  if not args:
     for key, value in sorted(new.iteritems()):
       if old.get(key) != value:
         emit_env_var(key, value)
@@ -101,7 +86,7 @@ def main():
     if 'VIRTUAL_ENV' in old:
       emit_env_var('VIRTUAL_ENV', old['VIRTUAL_ENV'])
   else:
-    exe = extras[0]
+    exe = args[0]
     if exe == 'python':
       exe = sys.executable
     else:
@@ -109,7 +94,7 @@ def main():
       # executable is referenced by name (and not by path).
       if os.sep not in exe:
         exe = bootstrap.find_executable(exe, [bootstrap.WORKSPACE])
-    sys.exit(subprocess.call([exe] + extras[1:], env=new))
+    sys.exit(subprocess.call([exe] + args[1:], env=new))
 
 
 assert __name__ == '__main__'
