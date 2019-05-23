@@ -1,4 +1,4 @@
-<mr-chart project-name="[projectname]"></mr-chart>
+<mr-chart projectName="[projectname]"></mr-chart>
 
 <div>
   <div class="help" style="padding: 1em;">

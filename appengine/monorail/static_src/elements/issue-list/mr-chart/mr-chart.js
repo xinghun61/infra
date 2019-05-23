@@ -2,89 +2,176 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import AutoRefreshPrpcClient from 'prpc.js';
+import {LitElement, html, css} from 'lit-element';
+import {prpcClient} from 'prpc-client-instance.js';
+import './chops-chart.js';
 
 const DEFAULT_NUM_DAYS = 30;
+const CHART_OPTIONS = {
+  animation: false,
+  responsive: true,
+  title: {
+    display: true,
+    text: 'Issues over time',
+  },
+  tooltips: {
+    mode: 'index',
+    intersect: false,
+  },
+  hover: {
+    mode: 'nearest',
+    intersect: true,
+  },
+  scales: {
+    xAxes: [{
+      display: true,
+      scaleLabel: {
+        display: true,
+        labelString: 'Day',
+      },
+    }],
+    yAxes: [{
+      display: true,
+      ticks: {
+        beginAtZero: true,
+      },
+      scaleLabel: {
+        display: true,
+        labelString: 'Value',
+      },
+    }],
+  },
+};
 
-export default class MrChart extends HTMLElement {
-  static is() {
-    return 'mr-chart';
+export default class MrChart extends LitElement {
+  static get properties() {
+    return {
+      progress: {type: Number},
+      projectName: {type: String},
+      indices: {type: Array},
+      values: {type: Array},
+      unsupportedFields: {type: Array},
+      searchLimitReached: {type: Boolean},
+    };
+  }
+
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      chops-chart {
+        max-width: 100%;
+      }
+      div#options {
+        max-width: 360px;
+        margin: 2em auto;
+        text-align: center;
+      }
+      div#options #unsupported-fields {
+        font-weight: bold;
+        color: orange;
+      }
+      p#search-limit-message {
+        display: none;
+        font-size: 1.25em;
+        padding: 0.25em;
+        background-color: var(--chops-orange-50);
+      }
+      progress {
+        background-color: white;
+        border: 1px solid #666;
+        margin: 0 0 1em;
+        width: 100%;
+        visibility: visible;
+      }
+      ::-webkit-progress-bar {
+        background-color: white;
+      }
+      progress::-webkit-progress-value {
+        transition: width 1s;
+        background-color: rgb(54, 162, 235);
+      }
+    `;
+  }
+
+  render() {
+    const doneLoading = this.progress === 1;
+    return html`
+      <chops-chart
+        type="line"
+        .options=${CHART_OPTIONS}
+        .data=${this._chartData(this.indices, this.values)}
+      ></chops-chart>
+      <div id="options">
+        <p id="unsupported-fields">
+          ${this.unsupportedFields.length ? `
+            Unsupported fields: ${this.unsupportedFields.join(', ')}`: ''}
+        </p>
+        <progress
+          value=${this.progress}
+          ?hidden=${doneLoading}
+        >Loading chart...</progress>
+        <p id="search-limit-message" ?hidden=${!this.searchLimitReached}>
+          Note: Some results are not being counted.
+          Please narrow your query.
+        </p>
+        <label for="end-date">Choose end date:</label>
+        <br />
+        <input
+          type="date"
+          id="end-date"
+          name="end-date"
+          .value=${this.endDate && this.endDate.toISOString().substr(0, 10)}
+          ?disabled=${!doneLoading}
+          @change=${this._onEndDateChanged}
+        />
+      </div>
+    `;
+  }
+
+  constructor() {
+    super();
+    this.progress = 0.05;
+    this.values = [];
+    this.indices = [];
+    this.unsupportedFields = [];
+    this.endDate = MrChart.getEndDate();
   }
 
   async connectedCallback() {
-    this._animationFrameRequested = false;
+    super.connectedCallback();
 
-    this.projectName = this.getAttribute('project-name');
     if (!this.projectName || !this.projectName.length) {
-      throw new Error('Attribute `project-name` required.');
+      throw new Error('Attribute `projectName` required.');
     }
-    this.values = [];
-    this.indices = [];
 
+    // Load Chart.js before chops-chart to allow data points to render as soon as
+    // they are loaded.
     await import(/* webpackChunkName: "chartjs" */ 'chart.js/dist/Chart.min.js');
 
-    // Set up DOM and initialize chart onto canvas.
-    const shadowRoot = this.attachShadow({mode: 'open'});
-    shadowRoot.appendChild(this._template().content.cloneNode(true));
-    const ctx = shadowRoot.getElementById('canvas').getContext('2d');
-    this.chart = new window.Chart(ctx, this._chartConfig(this.indices, this.values));
-    this.progressBar = shadowRoot.querySelector('progress');
-    this.endDateInput = shadowRoot.getElementById('end-date');
-    this.unsupportedFieldsEl = shadowRoot.getElementById('unsupported-fields');
-    this.searchLimitEl = shadowRoot.getElementById('search-limit-message');
-
     this.dispatchEvent(new Event('chartLoaded'));
-
-    // Set up pRPC client.
-    this.prpcClient = new AutoRefreshPrpcClient(
-      window.CS_env.token, window.CS_env.tokenExpiresSec);
-
-    // Get initial date.
-    const endDate = MrChart.getEndDate();
-    this.endDateInput.value = endDate.toISOString().substr(0, 10);
-
-    this.endDateInput.addEventListener('change', (e) => {
-      const newEndDate = MrChart.dateStringToDate(e.target.value);
-      this._fetchData(newEndDate);
-
-      const urlParams = MrChart.getSearchParams();
-      urlParams.set('end_date', this.endDateInput.value);
-      const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
-      window.history.pushState({}, '', newUrl);
-    });
-
-    this._fetchData(endDate);
+    this._fetchData(this.endDate);
   }
 
-  _updateChartValues() {
-    if (this._animationFrameRequested) {
-      return;
-    }
+  _onEndDateChanged(e) {
+    const value = e.target.value;
+    this.endDate = MrChart.dateStringToDate(value);
+    this._fetchData(this.endDate);
 
-    this._animationFrameRequested = true;
-    window.requestAnimationFrame(() => {
-      this.chart.data.datasets[0].data = this.values;
-      this.chart.data.labels = this.indices;
-      this.chart.update();
+    const urlParams = MrChart.getSearchParams();
 
-      if (this.progressBar.value === 1) {
-        this.progressBar.style.visibility = 'hidden';
-        this.endDateInput.disabled = false;
-      } else {
-        this.progressBar.style.visibility = 'visible';
-        this.endDateInput.disabled = true;
-      }
-
-      this._animationFrameRequested = false;
-    });
+    // TODO(zhangtiff): Integrate with frontend routing once charts is part of the SPA.
+    urlParams.set('end_date', value);
+    const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
+    window.history.pushState({}, '', newUrl);
   }
 
   async _fetchData(endDate) {
     // Reset chart variables except indices.
-    this.progressBar.value = 0.05;
-
-    // Render blank chart.
-    this._updateChartValues();
+    this.progress = 0.05;
 
     let numTimestampsLoaded = 0;
     const timestampsChronological = MrChart.makeTimestamps(endDate);
@@ -101,32 +188,25 @@ export default class MrChart extends HTMLElement {
       this.values[index] = data.issues;
       numTimestampsLoaded += 1;
       const progressValue = numTimestampsLoaded / timestamps.length;
-      this.progressBar.setAttribute('value', progressValue);
-      this.progressBar.style.setProperty('--value', progressValue + '%');
+      this.progress = progressValue;
 
-      this._updateChartValues();
       return data;
     });
 
     const chartData = await Promise.all(fetchPromises);
+
     this.dispatchEvent(new Event('allDataLoaded'));
 
+    // Check if the query includes any field values that are not supported.
     const flatUnsupportedFields = chartData.reduce((acc, datum) => {
       if (datum.unsupportedField) {
         acc = acc.concat(datum.unsupportedField);
       }
       return acc;
     }, []);
-    const uniqueUnsupportedFields = Array.from(new Set(flatUnsupportedFields));
-    if (uniqueUnsupportedFields.length > 0) {
-      this.unsupportedFieldsEl.innerText = 'Unsupported fields: ' +
-        uniqueUnsupportedFields.join(', ');
-    }
+    this.unsupportedFields = Array.from(new Set(flatUnsupportedFields));
 
-    const searchLimitReached = chartData.some((d) => d.searchLimitReached);
-    if (searchLimitReached) {
-      this.searchLimitEl.style.display = 'block';
-    }
+    this.searchLimitReached = chartData.some((d) => d.searchLimitReached);
   }
 
   _fetchDataAtTimestamp(timestamp) {
@@ -140,7 +220,7 @@ export default class MrChart extends HTMLElement {
         query: query,
         cannedQuery: cannedQuery,
       };
-      const callPromise = this.prpcClient.call('monorail.Issues',
+      const callPromise = prpcClient.call('monorail.Issues',
         'IssueSnapshot', message);
       return callPromise.then((response) => {
         resolve({
@@ -153,110 +233,17 @@ export default class MrChart extends HTMLElement {
     });
   }
 
-  _chartConfig(indices, values) {
+  _chartData(indices, values) {
     return {
-      type: 'line',
-      data: {
-        labels: indices,
-        datasets: [{
-          label: 'Issue count',
-          backgroundColor: 'rgb(54, 162, 235)',
-          borderColor: 'rgb(54, 162, 235)',
-          data: values,
-          fill: false,
-        }],
-      },
-      options: {
-        responsive: true,
-        title: {
-          display: true,
-          text: 'Issues over time',
-        },
-        tooltips: {
-          mode: 'index',
-          intersect: false,
-        },
-        hover: {
-          mode: 'nearest',
-          intersect: true,
-        },
-        scales: {
-          xAxes: [{
-            display: true,
-            scaleLabel: {
-              display: true,
-              labelString: 'Day',
-            },
-          }],
-          yAxes: [{
-            display: true,
-            ticks: {
-              beginAtZero: true,
-            },
-            scaleLabel: {
-              display: true,
-              labelString: 'Value',
-            },
-          }],
-        },
-      },
+      labels: indices,
+      datasets: [{
+        label: 'Issue count',
+        backgroundColor: 'rgb(54, 162, 235)',
+        borderColor: 'rgb(54, 162, 235)',
+        data: values,
+        fill: false,
+      }],
     };
-  }
-
-  _template() {
-    const tmpl = document.createElement('template');
-    // Warning: do not interpolate any variables into the below string.
-    // Also don't use innerHTML anywhere other than in this specific scenario.
-    tmpl.innerHTML = `
-      <style>
-        div#container {
-          max-width: 800px;
-          margin: 0 auto;
-        }
-        div#options {
-          max-width: 360px;
-          margin: 2em auto;
-          text-align: center;
-        }
-        div#options #unsupported-fields {
-          font-weight: bold;
-          color: orange;
-        }
-        p#search-limit-message {
-          display: none;
-          font-size: 1.25em;
-          padding: 0.25em;
-          background-color: var(--chops-orange-50);
-        }
-        progress {
-          background-color: white;
-          border: 1px solid #666;
-          margin: 0 0 1em;
-        }
-        ::-webkit-progress-bar {
-          background-color: white;
-        }
-        progress::-webkit-progress-value {
-          transition: width 1s;
-          background-color: rgb(54, 162, 235);
-        }
-      </style>
-      <div id="container">
-        <canvas id="canvas"></canvas>
-        <div id="options">
-          <p id="unsupported-fields"></p>
-          <progress value="0.05" style="width: 100%; visibility: visible;">Loading chart...</progress>
-          <p id="search-limit-message">
-            Note: Some results are not being counted.
-            Please narrow your query.
-          </p>
-          <label for="end-date">Choose end date:</label>
-          <br />
-          <input type="date" id="end-date" name="end-date" value="" />
-        </div>
-      </div>
-    `;
-    return tmpl;
   }
 
   // Move first, last, and median to the beginning of the array, recursively.
@@ -304,6 +291,8 @@ export default class MrChart extends HTMLElement {
 
   // Return a URLSearchParams object. Separate method for stubbing.
   static getSearchParams() {
+    // TODO(zhangtiff): Make this use page.js's queryParams object instead
+    // of parsing URL params multuple times, once charts is integrated with the SPA.
     return new URLSearchParams(document.location.search.substring(1));
   }
 
@@ -331,4 +320,4 @@ export default class MrChart extends HTMLElement {
   }
 }
 
-customElements.define(MrChart.is(), MrChart);
+customElements.define('mr-chart', MrChart);

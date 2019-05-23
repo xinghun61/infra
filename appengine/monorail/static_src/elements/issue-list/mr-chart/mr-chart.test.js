@@ -17,7 +17,7 @@ const beforeEachElement = () => {
     element = null;
   }
   const el = document.createElement('mr-chart');
-  el.setAttribute('project-name', 'rutabaga');
+  el.setAttribute('projectName', 'rutabaga');
   chartLoadedPromise = new Promise((resolve) => {
     el.addEventListener('chartLoaded', resolve);
   });
@@ -56,9 +56,6 @@ describe('mr-chart', () => {
       });
     });
 
-    // Stub RAF to execute immediately.
-    sinon.stub(window, 'requestAnimationFrame').callsFake((func) => func());
-
     element = beforeEachElement();
   });
 
@@ -66,11 +63,14 @@ describe('mr-chart', () => {
     document.body.removeChild(element);
 
     window.fetch.restore();
-    window.requestAnimationFrame.restore();
     AutoRefreshPrpcClient.isTokenExpired.restore();
   });
 
-  describe('constructor', () => {
+  describe('initializes', () => {
+    it('renders', () => {
+      assert.instanceOf(element, MrChart);
+    });
+
     it('sets this.projectname', () => {
       assert.equal(element.projectName, 'rutabaga');
     });
@@ -177,9 +177,13 @@ describe('mr-chart', () => {
     });
 
     it('changes URL param when end_date input changes', async () => {
-      element.endDateInput.value = '2017-10-02';
+      await element.updateComplete;
+
+      const endDateInput = element.shadowRoot.querySelector('#end-date');
+      endDateInput.value = '2017-10-02';
+
       const event = new Event('change');
-      element.endDateInput.dispatchEvent(event);
+      endDateInput.dispatchEvent(event);
 
       sinon.assert.calledOnce(history.pushState);
       sinon.assert.calledWith(history.pushState, {}, '',
@@ -197,30 +201,37 @@ describe('mr-chart', () => {
     });
 
     it('visible based on loading progress', async () => {
-      assert.equal(element.progressBar.style.visibility, 'visible');
-      assert.equal(element.progressBar.value, 0.05);
-      assert.isTrue(element.endDateInput.disabled);
+      await element.updateComplete;
+      const progressBar = element.shadowRoot.querySelector('progress');
+      const endDateInput = element.shadowRoot.querySelector('#end-date');
+
+      assert.isFalse(progressBar.hasAttribute('hidden'));
+      assert.equal(progressBar.value, 0.05);
+      assert.isTrue(endDateInput.disabled);
 
       const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
       await element._fetchData(endDate);
+      await element.updateComplete;
 
-      assert.equal(element.progressBar.style.visibility, 'hidden');
-      assert.equal(element.progressBar.value, 1);
-      assert.isFalse(element.endDateInput.disabled);
+      assert.isTrue(progressBar.hasAttribute('hidden'));
+      assert.equal(progressBar.value, 1);
+      assert.isFalse(endDateInput.disabled);
 
       const endDate2 = new Date(Date.UTC(2018, 5, 3, 23, 59, 59));
       const fetchDataPromise = element._fetchData(endDate2);
+      await element.updateComplete;
 
       // Values are reset on second call.
-      assert.equal(element.progressBar.style.visibility, 'visible');
-      assert.equal(element.progressBar.value, 0.05);
-      assert.isTrue(element.endDateInput.disabled);
+      assert.isFalse(progressBar.hasAttribute('hidden'));
+      assert.equal(progressBar.value, 0.05);
+      assert.isTrue(endDateInput.disabled);
 
       await fetchDataPromise;
+      await element.updateComplete;
 
-      assert.equal(element.progressBar.style.visibility, 'hidden');
-      assert.equal(element.progressBar.value, 1);
-      assert.isFalse(element.endDateInput.disabled);
+      assert.isTrue(progressBar.hasAttribute('hidden'));
+      assert.equal(progressBar.value, 1);
+      assert.isFalse(endDateInput.disabled);
     });
   });
 
