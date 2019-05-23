@@ -129,6 +129,9 @@ class TSMonJSHandler(webapp2.RequestHandler):
     The user of this library is responsible for validating XSRF tokens via
     implementing the method self.xsrf_is_valid.
     """
+    self.response.headers.add('Content-Security-Policy', "default-src 'none'")
+    self.response.content_type = 'text/plain; charset=UTF-8'
+
     if not self._metrics:
       self.response.set_status(400)
       self.response.write('No metrics have been registered.')
