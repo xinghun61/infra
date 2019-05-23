@@ -650,6 +650,166 @@ func TestMakeShifts(t *testing.T) {
 		memberPool []rotang.Member
 		want       []rotang.ShiftEntry
 	}{{
+		name:     "Single shift with OOO members",
+		schedule: 4,
+		start:    midnight.Add(12 * time.Hour),
+		cfg: &rotang.Configuration{
+			Config: rotang.Config{
+				Description: "Test",
+				Name:        "test rota",
+				Shifts: rotang.ShiftConfig{
+					StartTime:    midnight,
+					ShiftMembers: 2,
+					Length:       2,
+					Shifts: []rotang.Shift{
+						{
+							Name:     "MTV Shift",
+							Duration: 24 * time.Hour,
+						},
+					},
+				},
+			},
+			Members: []rotang.ShiftMember{
+				{
+					Email:     "mtv1@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+				{
+					Email:     "mtv2@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+				{
+					Email:     "mtv3@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+				{
+					Email:     "mtv4@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+				{
+					Email:     "mtv5@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+				{
+					Email:     "mtv6@oncall.com",
+					ShiftName: "MTV Shift",
+				},
+			},
+		},
+		memberPool: []rotang.Member{
+			{
+				Email: "mtv1@oncall.com",
+				OOO: []rotang.OOO{
+					{
+						Start:    midnight.Add(8 * time.Hour),
+						Duration: 800 * time.Hour,
+						Comment:  "Gone for a while",
+					},
+				},
+			},
+			{
+				Email: "mtv2@oncall.com",
+				OOO: []rotang.OOO{
+					{
+						Start:    midnight.Add(2*fullDay + 8*time.Hour),
+						Duration: 800 * time.Hour,
+						Comment:  "Vacation",
+					},
+				},
+			},
+			{
+				Email: "mtv3@oncall.com",
+				OOO: []rotang.OOO{
+					{
+						Start:    midnight.Add(8 * time.Hour),
+						Duration: 800 * time.Hour,
+						Comment:  "Just off",
+					},
+				},
+			},
+			{
+				Email: "mtv4@oncall.com",
+				OOO: []rotang.OOO{
+					{
+						Start:    midnight.Add(8 * time.Hour),
+						Duration: 2 * time.Hour,
+						Comment:  "Perf",
+					},
+				},
+			},
+			{
+				Email: "mtv5@oncall.com",
+				OOO:   []rotang.OOO{},
+			},
+			{
+				Email: "mtv6@oncall.com",
+				OOO: []rotang.OOO{
+					{
+						Start:    midnight.Add(2*fullDay + 8*time.Hour),
+						Duration: 2 * time.Hour,
+						Comment:  "Perf",
+					},
+				},
+			},
+		},
+		want: []rotang.ShiftEntry{
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight,
+				EndTime:   midnight.Add(2 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv2@oncall.com",
+						ShiftName: "MTV Shift",
+					}, {
+						Email:     "mtv5@oncall.com",
+						ShiftName: "MTV Shift",
+					},
+				},
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(2 * fullDay),
+				EndTime:   midnight.Add(4 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv4@oncall.com",
+						ShiftName: "MTV Shift",
+					}, {
+						Email:     "mtv5@oncall.com",
+						ShiftName: "MTV Shift",
+					},
+				},
+			}, {
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(4 * fullDay),
+				EndTime:   midnight.Add(6 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv6@oncall.com",
+						ShiftName: "MTV Shift",
+					}, {
+						Email:     "mtv4@oncall.com",
+						ShiftName: "MTV Shift",
+					},
+				},
+			},
+			{
+				Name:      "MTV Shift",
+				StartTime: midnight.Add(6 * fullDay),
+				EndTime:   midnight.Add(8 * fullDay),
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv5@oncall.com",
+						ShiftName: "MTV Shift",
+					}, {
+						Email:     "mtv6@oncall.com",
+						ShiftName: "MTV Shift",
+					},
+				},
+			},
+		},
+	}, {
 		name:     "More than 2 shifts",
 		schedule: 2,
 		start:    midnight.Add(12 * time.Hour),

@@ -758,11 +758,11 @@ func TestLegacyNoHistory(t *testing.T) {
 					EndTime:   midnight.Add(5*fullDay + 12*time.Hour),
 					OnCall: []rotang.ShiftMember{
 						{
-							Email:     "bbtest@google.com",
+							Email:     "aatest@google.com",
 							ShiftName: "MTV shift",
 						},
 						{
-							Email:     "cctest@google.com",
+							Email:     "bbtest@google.com",
 							ShiftName: "MTV shift",
 						},
 					},

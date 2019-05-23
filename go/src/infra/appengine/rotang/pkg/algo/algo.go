@@ -205,6 +205,7 @@ func MakeShifts(sc *rotang.Configuration, start time.Time, membersByShift [][]ro
 				propMember := shiftMembers[0]
 				shiftMembers = shiftMembers[1:]
 				if PersonalOutage(shiftStart, sc.Config.Shifts.Length, sc.Config.Shifts.Shifts[shiftIdx].Duration, propMember) {
+					perShiftIdx[shiftIdx]++
 					continue
 				}
 				se.OnCall = append(se.OnCall, rotang.ShiftMember{
