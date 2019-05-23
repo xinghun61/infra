@@ -45,8 +45,9 @@ type taskResult struct {
 	Name  string `json:"name"`
 	State string `json:"state"`
 	// TODO(crbug.com/964573): Deprecate this field.
-	Failure bool `json:"failure"`
-	Success bool `json:"success"`
+	Failure   bool   `json:"failure"`
+	Success   bool   `json:"success"`
+	TaskRunID string `json:"task-run-id"`
 }
 
 type waitTaskResult struct {
@@ -155,8 +156,9 @@ func asTaskResult(s *swarming.SwarmingRpcsTaskResult) *taskResult {
 		Name:  s.Name,
 		State: s.State,
 		// TODO(crbug.com/964573): Deprecate this field.
-		Failure: s.Failure,
-		Success: !s.Failure && (s.State == "COMPLETED" || s.State == "COMPLETED_SUCCESS"),
+		Failure:   s.Failure,
+		Success:   !s.Failure && (s.State == "COMPLETED" || s.State == "COMPLETED_SUCCESS"),
+		TaskRunID: s.RunId,
 	}
 }
 
