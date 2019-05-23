@@ -29,17 +29,14 @@ func (h *State) HandleGenerate(ctx *router.Context) {
 	}
 
 	var start time.Time
-	var shifts []rotang.ShiftEntry
+	shifts, err := h.shiftStore(ctx.Context).AllShifts(ctx.Context, rota.Config.Name)
+	if err != nil && status.Code(err) != codes.NotFound {
+		http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	switch ctx.Request.FormValue("startTime") {
 	case "":
-		var err error
-		if shifts, err = h.shiftStore(ctx.Context).AllShifts(ctx.Context, rota.Config.Name); err != nil {
-			if status.Code(err) != codes.NotFound {
-				http.Error(ctx.Writer, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			start = clock.Now(ctx.Context)
-		}
+		start = clock.Now(ctx.Context)
 	default:
 		var err error
 		if start, err = time.ParseInLocation(elementTimeFormat, ctx.Request.FormValue("startTime"), mtvTime); err != nil {
