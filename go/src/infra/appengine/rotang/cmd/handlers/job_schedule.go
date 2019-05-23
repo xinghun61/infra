@@ -42,8 +42,11 @@ func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t
 	if len(cfg.Config.Shifts.Shifts) == 0 {
 		return status.Errorf(codes.InvalidArgument, "no shifts configured for rota: %q", cfg.Config.Name)
 	}
-	shifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, t, time.Time{})
-	if len(shifts)/len(cfg.Config.Shifts.Shifts) > cfg.Config.Expiration {
+	currentShifts, err := h.shiftStore(ctx.Context).ShiftsFromTo(ctx.Context, cfg.Config.Name, t, time.Time{})
+	if err != nil && status.Code(err) != codes.NotFound {
+		return err
+	}
+	if len(currentShifts)/len(cfg.Config.Shifts.Shifts) > cfg.Config.Expiration {
 		logging.Infof(ctx.Context, "still enough shifts scheduled for rota: %q", cfg.Config.Name)
 		return nil
 	}
@@ -59,7 +62,14 @@ func (h *State) scheduleShifts(ctx *router.Context, cfg *rotang.Configuration, t
 		}
 		ms = append(ms, *rm)
 	}
-	ss, err := g.Generate(cfg, t, shifts, ms, cfg.Config.ShiftsToSchedule)
+
+	// The Generator needs the full shift history to make accurate decisions.
+	allShifts, err := h.shiftStore(ctx.Context).AllShifts(ctx.Context, cfg.Config.Name)
+	if err != nil && status.Code(err) != codes.NotFound {
+		return err
+	}
+
+	ss, err := g.Generate(cfg, t, allShifts, ms, cfg.Config.ShiftsToSchedule)
 	if err != nil {
 		return err
 	}
