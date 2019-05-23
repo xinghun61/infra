@@ -29,7 +29,7 @@ func checkConstraints(m schema.Metrics) error {
 		return fmt.Errorf("invalid metrics version: %v", m.MetricsVersion)
 	case m.Timestamp < 0:
 		return fmt.Errorf("invalid timestamp: %v", m.Timestamp)
-	case !knownCommands.Has(m.Command):
+	case m.Command != "" && !knownCommands.Has(m.Command):
 		return fmt.Errorf("unknown command: %v", m.Command)
 	case unknownArguments.Len() != 0:
 		return fmt.Errorf("unknown arguments: %v", unknownArguments)
@@ -39,13 +39,13 @@ func checkConstraints(m schema.Metrics) error {
 		return fmt.Errorf("unknown project URLs: %v", unknownProjectURLs)
 	case m.DepotToolsAge < 0:
 		return fmt.Errorf("invalid depot_tools age: %v", m.DepotToolsAge)
-	case !knownArchs.Has(m.HostArch):
+	case m.HostArch != "" && !knownArchs.Has(m.HostArch):
 		return fmt.Errorf("unknown architecture: %v", m.HostArch)
-	case !knownOSs.Has(m.HostOs):
+	case m.HostOs != "" && !knownOSs.Has(m.HostOs):
 		return fmt.Errorf("unknown OS: %v", m.HostOs)
-	case !pythonVersionRegex.MatchString(m.PythonVersion):
+	case m.PythonVersion != "" && !pythonVersionRegex.MatchString(m.PythonVersion):
 		return fmt.Errorf("invalid python version: %v", m.PythonVersion)
-	case !gitVersionRegex.MatchString(m.GitVersion):
+	case m.GitVersion != "" && !gitVersionRegex.MatchString(m.GitVersion):
 		return fmt.Errorf("invalid git version: %v", m.GitVersion)
 	default:
 		return nil
@@ -55,7 +55,7 @@ func checkConstraints(m schema.Metrics) error {
 func checkSubCommandConstraints(c schema.SubCommand) error {
 	unknownArguments := unknownStrings(knownSubCommandArguments, c.Arguments)
 	switch {
-	case !knownSubCommands.Has(c.Command):
+	case c.Command != "" && !knownSubCommands.Has(c.Command):
 		return fmt.Errorf("invalid sub-command: %v", c.Command)
 	case unknownArguments.Len() != 0:
 		return fmt.Errorf("unknown sub-command arguments: %v", unknownArguments)
@@ -69,11 +69,11 @@ func checkSubCommandConstraints(c schema.SubCommand) error {
 func checkHTTPRequestConstraints(r schema.HttpRequest) error {
 	unknownArguments := unknownStrings(knownHTTPArguments, r.Arguments)
 	switch {
-	case !knownHTTPHosts.Has(r.Host):
+	case r.Host != "" && !knownHTTPHosts.Has(r.Host):
 		return fmt.Errorf("unknown HTTP host: %v", r.Host)
-	case !knownHTTPMethods.Has(r.Method):
+	case r.Method != "" && !knownHTTPMethods.Has(r.Method):
 		return fmt.Errorf("unknown HTTP method: %v", r.Method)
-	case !knownHTTPPaths.Has(r.Path):
+	case r.Path != "" && !knownHTTPPaths.Has(r.Path):
 		return fmt.Errorf("unknown HTTP path: %v", r.Path)
 	case unknownArguments.Len() != 0:
 		return fmt.Errorf("unknown HTTP arguments: %v", unknownArguments)

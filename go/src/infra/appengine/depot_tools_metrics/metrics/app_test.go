@@ -52,6 +52,29 @@ func TestExtractsMetrics(t *testing.T) {
 	}
 }
 
+func TestDealsWithUnsetFields(t *testing.T) {
+	jsonInput := `
+		{"metrics_version": 1,
+		 "timestamp": 1234,
+		 "http_requests": [{
+			"arguments": ["ALL_REVISIONS"],
+			"status": 500
+		 }],
+		 "sub_commands": [{"exit_code": 0}],
+		 "host_arch": "x86"}`
+
+	var metrics schema.Metrics
+	err := jsonpb.UnmarshalString(jsonInput, &metrics)
+	if err != nil {
+		t.Fatalf("failed unexpectedly with %v\n", err)
+	}
+
+	err = checkConstraints(metrics)
+	if err != nil {
+		t.Fatalf("failed unexpectedly with %v\n", err)
+	}
+}
+
 func TestRejectsBadReports(t *testing.T) {
 	testCases := [][2]string{
 		{
