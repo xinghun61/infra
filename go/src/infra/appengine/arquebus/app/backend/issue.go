@@ -16,19 +16,40 @@ package backend
 
 import (
 	"context"
+	"fmt"
+	"net/url"
+	"strings"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
+	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/arquebus/app/backend/model"
+	"infra/appengine/arquebus/app/config"
 	"infra/monorailv2/api/api_proto"
 )
+
+const (
+	// OptOutLabel stops Arquebus updating the issue, if added.
+	OptOutLabel = "Arquebus-Opt-Out"
+)
+
+func issueLink(c context.Context, issue *monorail.Issue) string {
+	return fmt.Sprintf(
+		"https://%s/p/%s/issues/detail?id=%d",
+		config.Get(c).MonorailHostname, issue.ProjectName, issue.LocalId,
+	)
+}
 
 // searchAndUpdateIssues searches and update issues for the Assigner.
 func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *model.Task) (int, error) {
 	assignee, ccs, err := findAssigneeAndCCs(c, assigner, task)
 	if err != nil {
-		task.WriteLog(c, "Failed to find assignees and ccs; %s", err.Error())
+		task.WriteLog(c, "Failed to find assignees and ccs; %s", err)
 		return 0, err
 	}
-
 	if assignee == nil && ccs == nil {
 		// early stop if there is no one available to assign or cc issues to.
 		task.WriteLog(
@@ -38,26 +59,135 @@ func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *mo
 		return 0, nil
 	}
 
-	issues, err := searchIssues(c, assigner, task)
+	mc := getMonorailClient(c)
+	issues, err := searchIssues(c, mc, assigner, task)
 	if err != nil {
-		task.WriteLog(c, "Failed to search issues; %s", err.Error())
+		task.WriteLog(c, "Failed to search issues; %s", err)
 		return 0, err
 	}
-	return updateIssues(c, assigner, task, issues, assignee, ccs)
+	return updateIssues(c, mc, assigner, task, issues, assignee, ccs)
 }
 
-func searchIssues(c context.Context, assigner *model.Assigner, task *model.Task) ([]*monorail.Issue, error) {
-	// TODO(crbug/849469) implement me
-	task.WriteLog(c, "No issues have been found.")
-	return nil, nil
-}
+func searchIssues(c context.Context, mc monorail.IssuesClient, assigner *model.Assigner, task *model.Task) ([]*monorail.Issue, error) {
+	task.WriteLog(c, "Seaching issues...")
+	query := assigner.IssueQuery
+	res, err := mc.ListIssues(c, &monorail.ListIssuesRequest{
+		Query:        fmt.Sprintf("%s -label:%s", query.Q, OptOutLabel),
+		CannedQuery:  uint32(monorail.SearchScope_OPEN),
+		ProjectNames: query.ProjectNames,
 
-func updateIssues(c context.Context, assigner *model.Assigner, task *model.Task, issues []*monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (int, error) {
-	nUpdated := 0
-	for range issues {
-		// TODO(crbug/849469) implement me
-		nUpdated++
+		// This assumes that the search query includes a filter to exclude
+		// the previously updated issues.
+		// TODO(crbug/965385) - provide a solution to write search queries
+		// easier and safer.
+		Pagination: &monorail.Pagination{
+			Start:    0,
+			MaxItems: 20,
+		},
+	})
+	if err != nil {
+		return nil, err
 	}
-	task.WriteLog(c, "%d issues have been updated.", nUpdated)
+	if len(res.Issues) == 0 {
+	}
+
+	task.WriteLog(c, "Found %d issues", len(res.Issues))
+	return res.Issues, nil
+}
+
+func updateIssues(c context.Context, mc monorail.IssuesClient, assigner *model.Assigner, task *model.Task, issues []*monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (int, error) {
+	nUpdated := 0
+
+	for _, issue := range issues {
+		delta, actionable := createIssueDelta(c, task, issue, assignee, ccs)
+		if !actionable {
+			// no delta found - skip updating the issue.
+			continue
+		}
+
+		task.WriteLog(c, "Updating %s", issueLink(c, issue))
+		if assigner.IsDryRun {
+			task.WriteLog(
+				c, "Dry-run is set; skip updating %s", issueLink(c, issue),
+			)
+			continue
+		}
+		_, err := mc.UpdateIssue(c, &monorail.UpdateIssueRequest{
+			IssueRef: &monorail.IssueRef{
+				ProjectName: issue.ProjectName,
+				LocalId:     issue.LocalId,
+			},
+			SendEmail:      true,
+			Delta:          delta,
+			CommentContent: genCommentContent(c, assigner, task),
+		})
+
+		if err != nil {
+			logging.Errorf(c, "failed to update the issue: %s", err)
+			task.WriteLog(c, "Failed to update the issue: %s", err)
+		} else {
+			nUpdated++
+		}
+	}
+	task.WriteLog(c, "%d issues updated", nUpdated)
 	return nUpdated, nil
+}
+
+func createIssueDelta(c context.Context, task *model.Task, issue *monorail.Issue, assignee *monorail.UserRef, ccs []*monorail.UserRef) (delta *monorail.IssueDelta, actionable bool) {
+	// Note that Arquebus never unassigns issues from the current owner.
+	delta = &monorail.IssueDelta{
+		Status:    &wrappers.StringValue{Value: "Assigned"},
+		CcRefsAdd: findCcsToAdd(task, issue.CcRefs, ccs),
+	}
+	if assignee != nil && !proto.Equal(issue.OwnerRef, assignee) {
+		actionable = true
+		delta.OwnerRef = assignee
+		task.WriteLog(c, "Found a new issue owner %s", assignee.DisplayName)
+	}
+	if len(delta.CcRefsAdd) > 0 {
+		actionable = true
+		task.WriteLog(c, "Found %s to add in CC", delta.CcRefsAdd)
+	}
+	return
+}
+
+// findCcsToAdd() returns a list of UserRefs that have not been cc-ed yet, but
+// should be.
+func findCcsToAdd(task *model.Task, existingCCs, proposedCCs []*monorail.UserRef) []*monorail.UserRef {
+	if len(proposedCCs) == 0 {
+		return []*monorail.UserRef{}
+	}
+	ccmap := make(map[uint64]*monorail.UserRef, len(existingCCs))
+	for _, cc := range existingCCs {
+		ccmap[cc.UserId] = cc
+	}
+
+	var ccsToAdd []*monorail.UserRef
+	for _, cc := range proposedCCs {
+		if _, exist := ccmap[cc.UserId]; !exist {
+			ccsToAdd = append(ccsToAdd, cc)
+		}
+	}
+	return ccsToAdd
+}
+
+func genCommentContent(c context.Context, assigner *model.Assigner, task *model.Task) string {
+	taskURL := fmt.Sprintf(
+		"https://%s.appspot.com/assigner/%s/task/%d",
+		info.AppID(c), url.QueryEscape(assigner.ID), task.ID,
+	)
+	messages := []string{
+		fmt.Sprintf("Issue Update by Arquebus (%s)", taskURL),
+		fmt.Sprintf(
+			"To stop Arquebus updating this issue, please add %s in label",
+			OptOutLabel,
+		),
+	}
+	if assigner.Comment != "" {
+		messages = append(
+			messages, "-----------------------------------------------",
+		)
+		messages = append(messages, assigner.Comment)
+	}
+	return strings.Join(messages, "\n")
 }

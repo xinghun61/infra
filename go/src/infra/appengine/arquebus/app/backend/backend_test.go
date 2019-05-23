@@ -14,6 +14,7 @@ import (
 	"go.chromium.org/luci/common/clock"
 
 	"infra/appengine/arquebus/app/backend/model"
+	"infra/monorailv2/api/api_proto"
 )
 
 func TestBackend(t *testing.T) {
@@ -22,6 +23,8 @@ func TestBackend(t *testing.T) {
 
 	Convey("scheduleAssignerTaskHandler", t, func() {
 		c := createTestContextWithTQ()
+
+		// create a sample assigner with tasks.
 		createAssigner(c, assignerID)
 		tasks := triggerScheduleTaskHandler(c, assignerID)
 		So(tasks, ShouldNotBeNil)
@@ -44,6 +47,10 @@ func TestBackend(t *testing.T) {
 		So(tasks, ShouldNotBeNil)
 
 		Convey("works", func() {
+			c = mockListIssues(
+				c, &monorail.Issue{ProjectName: "test", LocalId: 123},
+			)
+
 			for _, task := range tasks {
 				So(task.Status, ShouldEqual, model.TaskStatus_Scheduled)
 				task := triggerRunTaskHandler(c, assignerID, task.ID)

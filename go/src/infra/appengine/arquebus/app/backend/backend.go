@@ -258,6 +258,7 @@ func endTaskRun(c context.Context, task *model.Task, nIssuesUpdated int, issueUp
 // runAssignerTaskHandler runs an Assigner task, based on the Task entity.
 func runAssignerTaskHandler(c context.Context, tqTask proto.Message) error {
 	msg := tqTask.(*RunAssignerTask)
+
 	assigner, task, err := startTaskRun(c, msg.AssignerId, msg.TaskId)
 	if err != nil {
 		// if it fails to update the Task entity with a new status, then
