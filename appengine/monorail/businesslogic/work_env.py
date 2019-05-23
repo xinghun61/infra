@@ -7,7 +7,9 @@
 
 A work environment is used by request handlers for the legacy UI, v1
 API, and v2 API.  The WorkEnvironment operations are a common code
-path that does permission checking, rate limiting, and other systemic
+path that does permission checking, input validation, coordination of
+service-level calls, follow-up tasks (e.g., triggering
+notifications after certain operations) and other systemic
 functionality so that that code is not duplicated in multiple request
 handlers.
 
@@ -21,7 +23,7 @@ frameworks:
 + Call the WorkEnvironment to perform the requested action
   - Catch exceptions and generate error messages
 + UI: Decide screen flow, and on-page online-help
-+ Render the result business objects as UI HTML or API response protobufs.
++ Render the result business objects as UI HTML or API response protobufs
 
 Responsibilities of WorkEnv:
 + Most monitoring, profiling, and logging
@@ -29,14 +31,19 @@ Responsibilities of WorkEnv:
   - Check permissions
   - Detailed validation of request parameters
   - Raise exceptions to indicate problems
-+ Call the services layer to make DB changes
++ Make coordinated calls to the services layer to make DB changes
+  - E.g., calls may need to be made in a specific order
 + Enqueue tasks for background follow-up work:
   - E.g., email notifications
 
 Responsibilities of the Services layer:
-+ CRUD operations on objects in the database
++ Individual CRUD operations on objects in the database
+  - Each services class should be independent of others
 + App-specific interface around external services:
   - E.g., GAE search, GCS, monorail-predict
++ Business object caches
++ Breaking large operations into batches as appropriate for the underlying
+  data storage service, e.g., DB shards and search engine indexing.
 """
 
 import collections
