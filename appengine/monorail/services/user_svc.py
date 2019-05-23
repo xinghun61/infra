@@ -673,3 +673,25 @@ class UserService(object):
     self.userprefs_tbl.InsertRows(
         cnxn, USERPREFS_COLS, userprefs_rows, replace=True)
     self.userprefs_2lc.InvalidateKeys(cnxn, [user_id])
+
+  ### Expunge all User Data from DB
+
+  def ExpungeUsers(self, cnxn, user_ids):
+    """Completely wipes user data from User DB tables for given users.
+
+    This method will not commit the operation. This method will not make
+    changes to in-memory data.
+    NOTE: This method ends with an operation that deletes user rows. If
+    appropriate methods that remove references to the User table rows are
+    not called before, the commit will fail. See work_env.ExpungeUsers
+    for more info.
+
+    Args:
+      cnxn: connection to SQL database.
+      user_ids: list of user_ids for users we want to delete.
+    """
+    self.linkedaccount_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.linkedaccountinvite_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.dismissedcues_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.userprefs_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+    self.user_tbl.Delete(cnxn, user_id=user_ids, commit=False)

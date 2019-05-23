@@ -508,3 +508,20 @@ class UserServiceTest(unittest.TestCase):
         [(111, 'code_font', 'true'),
          (111, 'keep_perms_open', 'true')],
         replace=True)
+
+  def testExpungeUsers(self):
+    self.user_service.linkedaccount_tbl.Delete = mock.Mock()
+    self.user_service.linkedaccountinvite_tbl.Delete = mock.Mock()
+    self.user_service.dismissedcues_tbl.Delete = mock.Mock()
+    self.user_service.userprefs_tbl.Delete = mock.Mock()
+    self.user_service.user_tbl.Delete = mock.Mock()
+
+    user_ids = [222L, 444L]
+    self.user_service.ExpungeUsers(self.cnxn, user_ids)
+
+    calls = [mock.call(self.cnxn, user_id=user_ids, commit=False)]
+    self.user_service.linkedaccount_tbl.Delete.has_calls(calls)
+    self.user_service.linkedaccountinvite_tbl.Delete.has_calls(calls)
+    self.user_service.dismissedcues_tbl.Delete.has_calls(calls)
+    self.user_service.userprefs_tbl.Delete.has_calls(calls)
+    self.user_service.user_tbl.Delete.has_calls(calls)

@@ -1709,6 +1709,7 @@ class WorkEnv(object):
     # self.services.template.ExpungeUsersInTemplates(self.mc.cnxn, user_ids)
     # self.services.config.ExpungeUsersInConfigs(self.mc.cnxn, user_ids)
     # self.services.usergroup.ExpungeUsersInGroups(self.mc.cnxn, user_ids)
+
     # self.services.user.ExpungeUsers(self.mc.cnxn, user_ids)
 
     # self.services.usergroup.group_dag.MarkObsolete()
@@ -1723,15 +1724,6 @@ class WorkEnv(object):
   # FUTURE: DeleteGroup()
 
   ### Hotlist methods
-
-  def expungeUsersInHotlists(self, _user_ids):
-    pass
-      # use self.services.features.TransferHotistOwnership() to transfer
-      # as many hotlists has possible.
-      #self.services.features.ExpungeUsersInHotlists(
-      #  self.mc.cnxn, user_ids, self.services.star, self.services.user)
-      # self.services.features.ExpungeHotlists will be called
-      # in ExpungeUsersInHotlists
 
   # FUTURE: TransferHotlistOwnership(), checks permissions before calling
   # self.services.features.TransferHotlistOwnership()
