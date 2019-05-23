@@ -133,3 +133,8 @@ func (gc *GerritClient) AbandonChange(ctx context.Context, in *gerrit.AbandonCha
 	}
 	return nil, fmt.Errorf("No change for %+v", in)
 }
+
+// GetMergeable implements the gerrit.GerritClient interface.
+func (gc *GerritClient) GetMergeable(ctx context.Context, req *gerrit.GetMergeableRequest, opts ...grpc.CallOption) (*gerrit.MergeableInfo, error) {
+	return nil, fmt.Errorf("Fake GetMergeable not yet implemented")
+}
