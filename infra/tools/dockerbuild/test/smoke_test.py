@@ -6,7 +6,9 @@ import os
 import subprocess
 import unittest
 
-TESTDATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'testdata')
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+SPEC = os.path.join(THIS_DIR, '..', 'standalone.vpython')
+TESTDATA = os.path.join(THIS_DIR, 'testdata')
 
 
 class TestSmoke(unittest.TestCase):
@@ -30,7 +32,7 @@ def run_vpython(script):
   env = escape_virtual_env(os.environ)
   env['PYTHONDONTWRITEBYTECODE'] = '1'
   proc = subprocess.Popen(
-      ['vpython', script],
+      ['vpython', '-vpython-spec', SPEC, script],
       stdout=subprocess.PIPE,
       stderr=subprocess.STDOUT)
   out, _ = proc.communicate()
