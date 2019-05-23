@@ -12,6 +12,8 @@ import json
 import re
 import urllib
 
+from buildbucket_proto import common_pb2
+from buildbucket_proto.build_pb2 import BuilderID
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common import rpc_util
@@ -46,14 +48,6 @@ _MASTER_URL_PATTERNS = [  # yapf: disable
 _MILO_SWARMING_TASK_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/swarming/task/([^/]+)(?:/.*)?$')
 
-_CI_SWARMING_TASK_URL_PATTERN = re.compile(
-    r'^https?://ci\.chromium\.org/swarming/task/([^/]+)(?:/.*)?$')
-
-_SWARMING_TASK_URL_PATTERNS = [  # yapf: disable
-    _MILO_SWARMING_TASK_URL_PATTERN,
-    _CI_SWARMING_TASK_URL_PATTERN,
-]
-
 _BUILD_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)(?:/.*)?$' % _HOST_NAME_PATTERN)
 
@@ -78,11 +72,8 @@ _BUILD_URL_PATTERNS = [  # yapf: disable
     _CI_BUILD_URL_PATTERN,
 ]
 
-_MILO_BUILDINFO_ENDPOINT = ('https://luci-milo.appspot.com/'
-                            'prpc/milo.BuildInfo/Get')
 _MILO_ENDPOINT = 'https://luci-milo.appspot.com/prpc/milo.Buildbot'
 _MILO_ENDPOINT_BUILD = '%s/GetBuildbotBuildJSON' % _MILO_ENDPOINT
-_MILO_ENDPOINT_MASTER = '%s/GetCompressedMasterJSON' % _MILO_ENDPOINT
 
 _STEP_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)/steps/([^/]+)(/.*)?$' %
@@ -128,43 +119,18 @@ def _ProcessMiloData(response_json, master_name, builder_name, build_number=''):
   return data_json
 
 
-def _GetMasterJsonData(http_client,
-                       master_name,
-                       builder_name='',
-                       build_number=''):
-  req = {
-      'name': master_name,
-      'exclude_deprecated': True,
-  }
-  _, response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER, req,
-                                               http_client)
-
-  return _ProcessMiloData(response_json, master_name, builder_name,
-                          build_number)
-
-
-def ListBuildersOnMaster(master_name, http_client):
-  master_data_json = _GetMasterJsonData(http_client, master_name)
-  if not master_data_json:
-    return []
-  data = json.loads(master_data_json)
-  return [bot for bot in data.get('builders', {}).keys()]
-
-
-def GetRecentCompletedBuilds(master_name, builder_name, http_client):
+def GetRecentCompletedBuilds(master_name, builder_name, page_size=None):
   """Returns a sorted list of recent completed builds for the given builder.
 
   Sorted by completed time, newer builds at beginning of the returned list.
   """
-  master_data_json = _GetMasterJsonData(http_client, master_name, builder_name)
-  if not master_data_json:
-    return []
+  luci_project, luci_bucket = GetLuciProjectAndBucketForMaster(master_name)
+  search_builds_response = buildbucket_client.SearchV2BuildsOnBuilder(
+      BuilderID(project=luci_project, bucket=luci_bucket, builder=builder_name),
+      status=common_pb2.ENDED_MASK,
+      page_size=page_size)
 
-  master_data = json.loads(master_data_json)
-  meta_data = master_data.get('builders', {}).get(builder_name, {})
-  cached_builds = meta_data.get('cachedBuilds', [])
-  current_builds = meta_data.get('currentBuilds', [])
-  return sorted(set(cached_builds) - set(current_builds), reverse=True)
+  return [build.number for build in search_builds_response.builds]
 
 
 def GetMasterNameFromUrl(url):
@@ -420,15 +386,23 @@ def ValidateBuildUrl(url):
       _BUILD_URL_PATTERN.match(url))
 
 
-def GetBuildInfo(build, http_client):
-  master, builder, build_number = ParseBuildUrl(build)
-  request = {
-      'buildbot': {
-          'masterName': master,
-          'builderName': builder,
-          'buildNumber': build_number
-      }
-  }
-  _, build_info = rpc_util.DownloadJsonData(_MILO_BUILDINFO_ENDPOINT, request,
-                                            http_client)
-  return build_info
+def GetLuciProjectAndBucketForMaster(master_name):
+  """Matches master_name to Luci project and bucket.
+
+  This is a temporary and hacky solution to remove Findit's dependencies on
+  milo API.
+
+  (TODO: crbug.com/965557): deprecate this when a long solution is in place.
+
+  Args:
+    master_name (str): Name of the master for this test.
+
+  Returns:
+    (str, str): Luci project and bucket
+  """
+
+  bucket = 'ci'
+  if master_name.startswith('tryserver'):
+    bucket = 'cq'
+
+  return 'chromium', bucket

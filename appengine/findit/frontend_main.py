@@ -11,7 +11,6 @@ from gae_libs.pipelines import pipeline_status_ui
 from handlers import auto_revert_metrics
 from handlers import build_failure
 from handlers import check_duplicate_failures
-from handlers import check_trybot_mapping
 from handlers import config
 from handlers import culprit
 from handlers import failure_log
@@ -49,8 +48,6 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/check-duplicate-failures',
      check_duplicate_failures.CheckDuplicateFailures),
-    ('/waterfall/check-trybot-mapping',
-     check_trybot_mapping.CheckTrybotMapping),
     ('/waterfall/config', config.Configuration),
     ('/waterfall/culprit', culprit.Culprit),
     ('/waterfall/failure', build_failure.BuildFailure),

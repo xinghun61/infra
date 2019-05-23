@@ -8,9 +8,9 @@ import json
 import logging
 import urllib
 
+from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
-from buildbucket_proto import common_pb2
 from buildbucket_proto.rpc_pb2 import BuildPredicate
 from buildbucket_proto.rpc_pb2 import GetBuildRequest
 from buildbucket_proto.rpc_pb2 import ScheduleBuildRequest
@@ -366,9 +366,9 @@ def GetV2BuildByBuilderAndBuildNumber(project,
 
 
 def SearchV2BuildsOnBuilder(builder,
-                            status=common_pb2.ENDED_MASK,
+                            status=None,
                             create_time_range=None,
-                            page_size=20,
+                            page_size=None,
                             fields=None):
   """Searches builds on a builder.
 
@@ -391,6 +391,7 @@ def SearchV2BuildsOnBuilder(builder,
         fields are populated by default.
   """
   predicate = BuildPredicate(builder=builder, status=status)
+
   if create_time_range:
     if create_time_range[0]:  # pragma: no cover.
       # Left bound specified.

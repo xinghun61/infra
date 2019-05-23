@@ -59,8 +59,8 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
 
   # TODO: cache and throttle QPS to the same master.
   # 3. Retrieve latest completed build cycle on the buildbot.
-  builds = buildbot.GetRecentCompletedBuilds(wf_master_name, wf_builder_name,
-                                             http_client)
+  builds = buildbot.GetRecentCompletedBuilds(
+      wf_master_name, wf_builder_name, page_size=1)
   if not builds:
     logging.error('Couldn\'t find latest builds.')
     return no_matching_result  # No name of the step.

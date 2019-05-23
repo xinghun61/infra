@@ -154,8 +154,8 @@ def GetFailureType(build_info):
 
 def GetLatestBuildNumber(master_name, builder_name):
   """Attempts to get the latest build number on master_name/builder_name."""
-  recent_builds = buildbot.GetRecentCompletedBuilds(master_name, builder_name,
-                                                    FinditHttpClient())
+  recent_builds = buildbot.GetRecentCompletedBuilds(
+      master_name, builder_name, page_size=1)
 
   if recent_builds is None:
     # Likely a network error.

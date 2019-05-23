@@ -12,8 +12,10 @@ import os
 import unittest
 
 from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 
 from common import rpc_util
+from common.waterfall import buildbucket_client
 from libs.http.retry_http_client import RetryHttpClient
 from waterfall import buildbot
 
@@ -32,51 +34,17 @@ class BuildBotTest(unittest.TestCase):
     self.stdout_stream = 'stdout_stream'
     self.step_metadata_stream = 'step_metadata_stream'
 
-  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=(404, None))
-  def testFailToGetRecentCompletedBuilds(self, _):
-    self.assertEqual([], buildbot.GetRecentCompletedBuilds('m', 'b', _))
-
-  @mock.patch.object(buildbot, '_GetMasterJsonData')
-  def testListBuildersOnMaster(self, mocked_fn):
-    mocked_fn.return_value = json.dumps({
-        'builders': {
-            'builder_1': {},
-            'builder_2': {}
-        }
-    })
-
-    self.assertEqual(['builder_1', 'builder_2'],
-                     buildbot.ListBuildersOnMaster('master', RetryHttpClient()))
-
-  @mock.patch.object(buildbot, '_GetMasterJsonData', return_value=None)
-  def testListBuildersOnMasterError(self, _):
-    self.assertEqual([],
-                     buildbot.ListBuildersOnMaster('master', RetryHttpClient()))
-
-  @mock.patch.object(rpc_util, 'DownloadJsonData')
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
   def testGetRecentCompletedBuilds(self, mock_fn):
-    builders_data = {
-        'builders': {
-            'b': {
-                'cachedBuilds': [33, 32, 34, 35],
-                'currentBuilds': [35]
-            }
-        }
-    }
-
-    builders_json_data = json.dumps(builders_data)
-    compressed_file = io.BytesIO()
-    with gzip.GzipFile(fileobj=compressed_file, mode='w') as compressed:
-      compressed.write(builders_json_data)
-
-    data = {'data': base64.b64encode(compressed_file.getvalue())}
-    compressed_file.close()
-    mock_fn.return_value = (200, json.dumps(data))
+    mock_fn.return_value = SearchBuildsResponse(
+        builds=[Build(
+            number=34), Build(number=33),
+                Build(number=32)])
     self.assertEqual([34, 33, 32],
                      buildbot.GetRecentCompletedBuilds('m', 'b',
                                                        RetryHttpClient()))
 
-  def testGetMasternameFromUrl(self):
+  def testGetMasterNameFromUrl(self):
     cases = {
         None: None,
         '': None,
@@ -429,12 +397,3 @@ class BuildBotTest(unittest.TestCase):
     self.assertTrue(buildbot.ValidateBuildUrl(non_swarm_url))
     self.assertTrue(buildbot.ValidateBuildUrl(legacy_url))
     self.assertFalse(buildbot.ValidateBuildUrl(bad_url))
-
-  @mock.patch.object(rpc_util, 'DownloadJsonData')
-  def testGetBuildInfo(self, mock_fn):
-    mock_fn.return_value = (200, 'data')
-    with mock.patch.object(buildbot, 'ParseBuildUrl') as mock_parse:
-      mock_parse.return_value = ('m', 'b', 1)
-      build_info = buildbot.GetBuildInfo('fake_url', 'fake_http_client')
-      self.assertIn('buildbot', mock_fn.call_args[0][1])
-      self.assertEqual('data', build_info)
