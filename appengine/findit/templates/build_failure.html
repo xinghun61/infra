@@ -7,7 +7,6 @@
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <script src="/ui/js/common.js"></script>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-  <link rel="import" href="/ui/elements/analysis/triage-help.html">
   <link rel="import" href="/ui/elements/cats-app.html">
   {% block head %}{% endblock head %}
   <style>
@@ -69,25 +68,6 @@
       });
     }
 
-    function triageHelp() {
-      $('#triage-help-button').prop('disabled', true);
-      var parameters = {
-        'url': findit.buildUrl,
-        'xsrf_token': findit.xsrfToken,
-        'format': 'json',
-        'concise': 1,
-      };
-      document.getElementById('triage-help-result').requesting = true;
-      $('#triage-help-result-container').show();
-      $.post('/waterfall/help-triage', parameters, function(data) {
-        document.getElementById('triage-help-result').entries = data;
-        document.getElementById('triage-help-result').requesting = false;
-        $('#triage-help-button').prop('disabled', false);
-      }).fail(function(xhr) {
-        handleLogin(xhr.status);
-      });
-    }
-
     {% block functions %}{% endblock functions %}
 
     $(function() {
@@ -112,8 +92,6 @@
           $('#status_message').attr('class', 'completed');
 
           {% block failure_classification %}{% endblock failure_classification %}
-
-          $('#triage-help-button').click(triageHelp);
         }
       }
 
@@ -202,15 +180,6 @@
               <input type="hidden" name="url" value="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}" />
               <input type="submit" value="Force Rerun Analysis" />
           </form>
-      </div>
-
-      <br><br>
-      <div id="triage-help">
-        <button id="triage-help-button">Triage help</button>
-        <br>
-        <div id="triage-help-result-container" class="hidden">
-          <triage-help id="triage-help-result"></triage-help>
-        </div>
       </div>
     {% endif %}
 
