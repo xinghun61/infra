@@ -176,6 +176,11 @@ class ServletRegistry(object):
 
   def _RegisterProjectHandlers(self):
     """Register page and form handlers that operate within a project."""
+
+    self._SetupServlets({
+        # Note: the following are at URLS that are not externally accessible.
+        urls.NOTIFY_RULES_DELETED_TASK: notify.NotifyRulesDeletedTask,
+    })
     self._SetupProjectServlets({
         urls.ADMIN_INTRO: projectsummary.ProjectSummary,
         urls.PEOPLE_LIST: peoplelist.PeopleList,

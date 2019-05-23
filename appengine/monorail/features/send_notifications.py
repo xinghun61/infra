@@ -94,3 +94,17 @@ def SendIssueBulkChangeNotification(
   taskqueue.add(
       url=urls.NOTIFY_BULK_CHANGE_TASK + '.do', params=params,
       queue_name=features_constants.QUEUE_NOTIFICATIONS)
+
+
+def PrepareAndSendDeletedFilterRulesNotification(
+    project_id, hostport, filter_rule_strs):
+  """Create a task to notify project owners of deleted filter rules."""
+
+  params = dict(
+      project_id=project_id, filter_rules=','.join(filter_rule_strs),
+      hostport=hostport)
+
+  logging.info('adding task with params %r', params)
+  taskqueue.add(
+      url=urls.NOTIFY_RULES_DELETED_TASK + '.do', params=params,
+      queue_name=features_constants.QUEUE_NOTIFICATIONS)

@@ -116,3 +116,17 @@ class SendNotificationTest(unittest.TestCase):
         ['    Status: New',
          '    Labels: -Removed Added'],
         params['amendments'].split('\n'))
+
+  def testPrepareAndSendDeletedFilterRulesNotifications(self):
+    filter_rule_strs = ['if yellow make orange', 'if orange make blue']
+    send_notifications.PrepareAndSendDeletedFilterRulesNotification(
+        789, 'testbed-test.appspotmail.com', filter_rule_strs)
+
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.NOTIFY_RULES_DELETED_TASK + '.do')
+    self.assertEqual(1, len(tasks))
+    params = dict(urllib.unquote_plus(item).split('=')
+                  for item in tasks[0].payload.split('&'))
+    self.assertEqual(params['project_id'], '789')
+    self.assertEqual(params['filter_rules'],
+                     'if yellow make orange,if orange make blue')

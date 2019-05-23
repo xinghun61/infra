@@ -441,6 +441,28 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         approval_value, comment, issue, [777], omit_ids=[444, 333])
     self.assertItemsEqual(rids, [111, 222, 555, 777])
 
+  def testNotifyRulesDeletedTask(self):
+    self.services.project.TestAddProject(
+        'proj', owner_ids=[777L, 888L], project_id=789)
+    self.services.user.TestAddUser('owner1@test.com', 777L)
+    self.services.user.TestAddUser('cow@test.com', 888L)
+    task = notify.NotifyRulesDeletedTask(
+        request=None, response=None, services=self.services)
+    params = {'project_id': 789,
+              'filter_rules': 'if green make yellow,if orange make blue'}
+    mr = testing_helpers.MakeMonorailRequest(
+        params=params,
+        method='POST',
+        services=self.services)
+    result = task.HandleRequest(mr)
+    self.assertEqual(len(result['tasks']), 2)
+    body = result['tasks'][0]['body']
+    self.assertTrue('if green make yellow' in body)
+    self.assertTrue('if green make yellow' in body)
+    self.assertTrue('/p/proj/adminRules' in body)
+    self.assertItemsEqual(
+        ['cow@test.com', 'owner1@test.com'], result['notified'])
+
   def testOutboundEmailTask_Normal(self):
     """We can send an email."""
     params = {

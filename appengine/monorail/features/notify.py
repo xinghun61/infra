@@ -853,6 +853,72 @@ class NotifyApprovalChangeTask(notify_helpers.NotifyTaskBase):
     return list(set(recipient_ids))
 
 
+class NotifyRulesDeletedTask(notify_helpers.NotifyTaskBase):
+  """JSON servlet that sends one email."""
+
+  _EMAIL_TEMPLATE = 'project/rules-deleted-notification-email.ezt'
+
+  def HandleRequest(self, mr):
+    """Process the task to notify project owners after a filter rule
+      has been deleted.
+
+    Args:
+      mr: common information parsed from the HTTP request.
+
+    Returns:
+      Results dictionary in JSON format which is useful for debugging.
+    """
+    project_id = mr.GetPositiveIntParam('project_id')
+    rules = mr.GetListParam('filter_rules')
+    hostport = mr.GetParam('hostport')
+
+    params = dict(
+        project_id=project_id,
+        rules=rules,
+        hostport=hostport,
+        )
+    logging.info('deleted filter rules params are %r', params)
+
+    project = self.services.project.GetProject(mr.cnxn, project_id)
+    emails_by_id = self.services.user.LookupUserEmails(
+        mr.cnxn, project.owner_ids, ignore_missed=True)
+
+    tasks = self._MakeRulesDeletedEmailTasks(
+        hostport, project, emails_by_id, rules)
+    notified = notify_helpers.AddAllEmailTasks(tasks)
+
+    return {
+        'params': params,
+        'notified': notified,
+        'tasks': tasks,
+        }
+
+  def _MakeRulesDeletedEmailTasks(self, hostport, project, emails_by_id, rules):
+
+    rules_url = framework_helpers.FormatAbsoluteURLForDomain(
+        hostport, project.project_name, urls.ADMIN_RULES)
+
+    email_data = {
+        'project_name': project.project_name,
+        'rules': rules,
+        'rules_url': rules_url,
+    }
+    logging.info(email_data)
+    subject = '%s Project: Deleted Filter Rules' % project.project_name
+    email_body = self.email_template.GetResponse(email_data)
+    body = notify_helpers._TruncateBody(email_body)
+
+    email_tasks = []
+    for rid in project.owner_ids:
+      from_addr = emailfmt.FormatFromAddr(
+          project, reveal_addr=True, can_reply_to=False)
+      dest_email = emails_by_id.get(rid)
+      email_tasks.append(
+          dict(from_addr=from_addr, to=dest_email, subject=subject, body=body))
+
+    return email_tasks
+
+
 class OutboundEmailTask(jsonfeed.InternalTask):
   """JSON servlet that sends one email."""
 
