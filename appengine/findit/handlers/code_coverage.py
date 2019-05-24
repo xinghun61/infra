@@ -20,6 +20,7 @@ from google.protobuf import json_format
 from common import monitoring
 from common.findit_http_client import FinditHttpClient
 from common.waterfall.buildbucket_client import GetV2Build
+from gae_libs.appengine_util import IsInternalInstance
 from gae_libs.caches import PickledMemCache
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
@@ -646,14 +647,8 @@ class ProcessCodeCoverageData(BaseHandler):
           'Could not retrieve build #%d from buildbucket, retry' % build_id,
           404)
 
-    # Only process Chromium coverage bots.
-    if (build.builder.project not in ('chromium', 'chrome') or
-        build.builder.bucket not in ('coverage', 'ci', 'try') or
-        build.builder.builder not in ('chromeos-vm-code-coverage',
-                                      'linux-chromeos-code-coverage',
-                                      'linux-chromeos-oobe-code-coverage',
-                                      'linux-code-coverage',
-                                      'linux-coverage-rel')):
+    if not self._IsCoverageBuild(build.builder.project, build.builder.bucket,
+                                 build.builder.builder):
       return
 
     # Convert the Struct to standard dict, to use .get, .iteritems etc.
@@ -687,6 +682,33 @@ class ProcessCodeCoverageData(BaseHandler):
       assert build.input.gitiles_commit is not None, 'Expect a commit'
       self._ProcessFullRepositoryData(build.input.gitiles_commit, data,
                                       full_gs_dir, build.builder, build_id)
+
+  # TODO(crbug.com/965559): Move this to a config, which can be easily changed
+  # without commit/deployment cycles.
+  def _IsCoverageBuild(self, project, bucket, builder):
+    """Returns True if the given build is related to code coverage.
+
+    Args:
+      project (str): buildbucket project name.
+      bucket (str): buildbucket bucket name.
+      builder (str): buildbucket builder name.
+
+    Returns:
+      True if the given build is related to code coverage, otherwise False.
+    """
+    # The internal instance of the coverage service is deployed and used ONLY by
+    # the cast and libassistant team.
+    if IsInternalInstance():
+      return (project in ('cast-chromecast-internal') and
+              bucket in ('libassistant-absolute_coverage') and
+              builder in ('master.tryserver.cast-chromecast-internal.gce'))
+
+    return (project in ('chromium', 'chrome') and
+            bucket in ('coverage', 'ci', 'try') and
+            builder in ('chromeos-vm-code-coverage',
+                        'linux-chromeos-code-coverage',
+                        'linux-chromeos-oobe-code-coverage',
+                        'linux-code-coverage', 'linux-coverage-rel'))
 
   def HandlePost(self):
     """Loads the data from GS bucket, and dumps them into ndb."""

@@ -47,6 +47,15 @@ def GetApplicationId():  # pragma: no cover.
   return app_identity.get_application_id()
 
 
+def IsInternalInstance():
+  """Returns True if it is an googleplex app.
+
+  An app is in googleplex if its app id starts with google.com:.
+  """
+  app_id = app_identity.get_application_id()
+  return app_id.startswith('google.com:')
+
+
 def IsStaging():
   """Returns True if it is a staging app.
 

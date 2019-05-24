@@ -37,3 +37,10 @@ class AppengineUtilTest(unittest.TestCase):
   @mock.patch.object(appengine_util, 'IsStaging', return_value=False)
   def testIsProductionApp(self, *_):
     self.assertTrue(appengine_util.IsInProductionApp())
+
+  @mock.patch.object(
+      appengine_util.app_identity,
+      'get_application_id',
+      side_effect=['google.com:findit-for-me'])
+  def testIsInternalInstance(self, *_):
+    self.assertTrue(appengine_util.IsInternalInstance())
