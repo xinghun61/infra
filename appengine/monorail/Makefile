@@ -91,7 +91,6 @@ build_js:
 	$(WEBPACK_PATH) --mode=production
 
 clean_deps:
-	rm -rf bower_components
 	rm -rf node_modules
 
 node_deps:

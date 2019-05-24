@@ -1,5 +1,5 @@
 {
-  "description": "polymer monorail skeleton",
+  "description": "Monorail Issue Tracker",
   "name": "monorail",
   "version": "1.0.0",
   "directories": {},
@@ -38,9 +38,6 @@
   "dependencies": {
     "@chopsui/prpc-client": "0.0.2",
     "@chopsui/tsmon-client": "0.0.1",
-    "@polymer/paper-tooltip": "^3.0.1",
-    "@polymer/polymer": "^3.0.0",
-    "@webcomponents/shadycss": "^1.0.0",
     "@webcomponents/webcomponentsjs": "^2.2.7",
     "chart.js": "^2.7.2",
     "debounce": "^1.2.0",
@@ -48,9 +45,7 @@
     "lit-element": "^2.0.0",
     "lit-html": "^1.0.0",
     "mousetrap": "^1.6.3",
-    "noclosure-resin-bridge": "^1.0.0",
     "page": "^1.11.3",
-    "polymer-resin": "^2.0.0",
     "pwa-helpers": "^0.9.0",
     "qs": "^6.6.0",
     "redux": "^4.0.0",

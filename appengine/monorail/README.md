@@ -47,7 +47,6 @@ Here's how to run Monorail locally for development on any unix system (not under
 1.  Configure the site defaults in settings.py.  You can leave it as-is for now.
 1.  Set up the front-end development environment:
     1.  Make sure you've run `gclient runhooks`, which will install the correct versions of `node` and `npm`.
-    1.  Run `npm install -g bower` to install Bower.
 1.  Run the app:
     1.  Run 'make serve'
 1.  Browse the app at localhost:8080 your browser.

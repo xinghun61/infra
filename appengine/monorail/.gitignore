@@ -15,7 +15,6 @@ htmlcov
 workspace.xml
 static_src/**/*\.min.js*
 static/dist
-bower_components
 node_modules
 deployed_node_modules
 elements/mock-data/*\.json
