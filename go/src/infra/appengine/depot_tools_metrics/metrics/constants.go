@@ -105,6 +105,7 @@ var (
 		"dry_run",
 		"email",
 		"enable_auto_submit",
+		"enable_metrics",
 		"f",
 		"fast",
 		"field",
@@ -247,6 +248,9 @@ var (
 		"dart-review.googlesource.com",
 		"pdfium-review.googlesource.com",
 		"skia-review.googlesource.com",
+		"us1-mirror-chromium-review.googlesource.com",
+		"us2-mirror-chromium-review.googlesource.com",
+		"us3-mirror-chromium-review.googlesource.com",
 		"webrtc-review.googlesource.com",
 	)
 
