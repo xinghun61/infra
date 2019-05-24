@@ -4,13 +4,18 @@
 
 import {assert} from 'chai';
 import {displayNameToUserRef, labelStringToRef, componentStringToRef,
-  issueStringToRef, issueRefToString, fieldNameToLabelPrefix,
-  commentListToDescriptionList,
+  issueStringToRef, issueStringToBlockingRef, issueRefToString,
+  fieldNameToLabelPrefix, commentListToDescriptionList, valueToFieldValue,
 } from './converters.js';
 
 describe('displayNameToUserRef', () => {
   it('converts displayName', () => {
-    assert.deepEqual(displayNameToUserRef('foo'), {displayName: 'foo'});
+    assert.deepEqual(
+      displayNameToUserRef('foo@bar.com'),
+      {displayName: 'foo@bar.com'});
+  });
+  it('throws on invalid email', () => {
+    assert.throws(() => displayNameToUserRef('foo'));
   });
 });
 
@@ -49,6 +54,29 @@ describe('issueStringToRef', () => {
 
   it('throws on invalid input', () => {
     assert.throws(() => issueStringToRef('proj', 'foo'));
+  });
+});
+
+describe('issueStringToBlockingRef', () => {
+  it('converts issue default project', () => {
+    assert.deepEqual(
+      issueStringToBlockingRef('proj', 1, '1234'),
+      {projectName: 'proj', localId: 1234});
+  });
+
+  it('converts issue with project', () => {
+    assert.deepEqual(
+      issueStringToBlockingRef('proj', 1, 'foo:1234'),
+      {projectName: 'foo', localId: 1234});
+  });
+
+  it('throws on invalid input', () => {
+    assert.throws(() => issueStringToBlockingRef('proj', 1, 'foo'));
+  });
+
+  it('throws when blocking an issue on itself', () => {
+    assert.throws(() => issueStringToBlockingRef('proj', 123, 'proj:123'));
+    assert.throws(() => issueStringToBlockingRef('proj', 123, '123'));
   });
 });
 
@@ -106,5 +134,17 @@ describe('commentListToDescriptionList', () => {
       {content: 'hello', descriptionNum: 1},
       {content: 'description', descriptionNum: 2},
     ]);
+  });
+});
+
+describe('valueToFieldValue', () => {
+  it('converts field ref and value', () => {
+    assert.deepEqual(valueToFieldValue(
+      {fieldName: 'name', fieldId: 'id'},
+      'value',
+    ), {
+      fieldRef: {fieldName: 'name', fieldId: 'id'},
+      value: 'value',
+    });
   });
 });

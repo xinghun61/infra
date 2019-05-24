@@ -120,7 +120,7 @@ describe('mr-edit-metadata', () => {
     assert.deepEqual(element.delta, {});
     assert.equal(
       element.error,
-      'xx is not a valid issue to merge into: Expected [projectName:]issueId.');
+      'Invalid issue ref: xx. Expected [projectName:]issueId.');
   });
 
   it('cannot block an issue on itself', async () => {
@@ -136,15 +136,14 @@ describe('mr-edit-metadata', () => {
       assert.deepEqual(element.delta, {});
       assert.equal(
         element.error,
-        `123 is not a valid value for field ${fieldName}: ` +
-        'You cannot block or merge an issue into itself.');
+        `Invalid issue ref: 123. Cannot merge or block an issue on itself.`);
 
       input.setValue(['proj:123']);
       assert.deepEqual(element.delta, {});
       assert.equal(
         element.error,
-        `proj:123 is not a valid value for field ${fieldName}: ` +
-        'You cannot block or merge an issue into itself.');
+        `Invalid issue ref: proj:123. ` +
+        'Cannot merge or block an issue on itself.');
 
       input.setValue(['proj2:123']);
       assert.notDeepEqual(element.delta, {});
@@ -154,7 +153,7 @@ describe('mr-edit-metadata', () => {
     });
   });
 
-  it('cannot block an issue on itself', async () => {
+  it('cannot merge an issue into itself', async () => {
     element.statuses = [
       {'status': 'New'},
       {'status': 'Duplicate'},
@@ -178,19 +177,33 @@ describe('mr-edit-metadata', () => {
     assert.deepEqual(element.delta, {});
     assert.equal(
       element.error,
-      'proj:123 is not a valid issue to merge into: ' +
-      'You cannot block or merge an issue into itself.');
+      `Invalid issue ref: proj:123. Cannot merge or block an issue on itself.`);
 
     root.querySelector('#mergedIntoInput').setValue('123');
     assert.deepEqual(element.delta, {});
     assert.equal(
       element.error,
-      '123 is not a valid issue to merge into: ' +
-      'You cannot block or merge an issue into itself.');
+      `Invalid issue ref: 123. Cannot merge or block an issue on itself.`);
 
     root.querySelector('#mergedIntoInput').setValue('proj2:123');
     assert.notDeepEqual(element.delta, {});
     assert.equal(element.error, '');
+  });
+
+  it('cannot set invalid emails', async () => {
+    await element.updateComplete;
+
+    element.shadowRoot.querySelector('#ccInput').setValue(['invalid!email']);
+    assert.deepEqual(element.delta, {});
+    assert.equal(
+      element.error,
+      `Invalid email address: invalid!email`);
+
+    element.shadowRoot.querySelector('#ownerInput').setValue('invalid!email2');
+    assert.deepEqual(element.delta, {});
+    assert.equal(
+      element.error,
+      `Invalid email address: invalid!email2`);
   });
 
   it('can remove invalid values', async () => {
@@ -221,6 +234,7 @@ describe('mr-edit-metadata', () => {
     blockingInput.setValue([]);
     mergedIntoInput.setValue('proj:124');
 
+    console.log('Actual', JSON.stringify(element.delta));
     assert.deepEqual(
       element.delta,
       {
@@ -298,12 +312,14 @@ describe('mr-edit-metadata', () => {
         fieldRef: {
           fieldName: 'testField',
           fieldId: 1,
+          type: 'ENUM_TYPE',
         },
       },
       {
         fieldRef: {
           fieldName: 'fakeField',
           fieldId: 2,
+          type: 'ENUM_TYPE',
         },
       },
     ];
@@ -318,6 +334,7 @@ describe('mr-edit-metadata', () => {
           fieldRef: {
             fieldName: 'testField',
             fieldId: 1,
+            type: 'ENUM_TYPE',
           },
           value: 'test value',
         },
@@ -327,6 +344,7 @@ describe('mr-edit-metadata', () => {
           fieldRef: {
             fieldName: 'fakeField',
             fieldId: 2,
+            type: 'ENUM_TYPE',
           },
           value: 'prev value',
         },
@@ -433,6 +451,7 @@ describe('mr-edit-metadata', () => {
           fieldRef: {
             fieldName: 'enumField',
             fieldId: 1,
+            type: 'ENUM_TYPE',
           },
           value: 'one',
         },
@@ -440,6 +459,7 @@ describe('mr-edit-metadata', () => {
           fieldRef: {
             fieldName: 'enumField',
             fieldId: 1,
+            type: 'ENUM_TYPE',
           },
           value: 'two',
         },
@@ -483,6 +503,7 @@ describe('mr-edit-metadata', () => {
           fieldRef: {
             fieldName: 'enumField',
             fieldId: 1,
+            type: 'ENUM_TYPE',
           },
           value: 'two',
         },
@@ -490,6 +511,7 @@ describe('mr-edit-metadata', () => {
           fieldRef: {
             fieldName: 'enumField2',
             fieldId: 2,
+            type: 'ENUM_TYPE',
           },
           value: 'three',
         },
@@ -551,12 +573,14 @@ describe('mr-edit-metadata', () => {
         fieldRef: {
           fieldName: 'testField',
           fieldId: 1,
+          type: 'ENUM_TYPE',
         },
       },
       {
         fieldRef: {
           fieldName: 'fakeField',
           fieldId: 2,
+          type: 'ENUM_TYPE',
         },
       },
     ];
