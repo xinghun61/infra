@@ -15,11 +15,14 @@
 package inventory
 
 import (
+	"reflect"
+	"testing"
+
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
+	"infra/appengine/crosskylabadmin/app/frontend/internal/datastore/deploy"
 	"infra/appengine/crosskylabadmin/app/frontend/internal/fakes"
 	"infra/libs/skylab/inventory"
-	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
@@ -432,6 +435,35 @@ func TestRedeployDut(t *testing.T) {
 
 		})
 	})
+}
+
+func TestGetDeploymentStatus(t *testing.T) {
+	t.Parallel()
+	ctx := testingContext()
+	id, err := deploy.PutStatus(ctx, &deploy.Status{
+		IsFinal: true,
+		Status:  fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED,
+		Reason:  "something went wrong",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tf, validate := newTestFixture(t)
+	defer validate()
+	got, err := tf.Inventory.GetDeploymentStatus(ctx, &fleet.GetDeploymentStatusRequest{
+		DeploymentId: id,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &fleet.GetDeploymentStatusResponse{
+		Status:  fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_FAILED,
+		Message: "something went wrong",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("GetDeploymentStatus() = %#v; want %#v", got, want)
+	}
 }
 
 // getLabFromLastChange gets the latest inventory.Lab committed to

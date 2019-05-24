@@ -150,6 +150,7 @@ func (is *ServerImpl) GetDeploymentStatus(ctx context.Context, req *fleet.GetDep
 	resp = &fleet.GetDeploymentStatusResponse{
 		Status:    ds.Status,
 		ChangeUrl: ds.ChangeURL,
+		Message:   ds.Reason,
 	}
 	if ds.TaskID != "" {
 		resp.TaskUrl = swarming.URLForTask(ctx, ds.TaskID)
