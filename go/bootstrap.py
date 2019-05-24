@@ -397,9 +397,7 @@ def update_vendor_packages(workspace, toolset_root, force=False):
 
 
 def get_go_environ(layout):
-  """Returns a copy of os.environ with added GO* environment variables.
-
-  Overrides GOROOT, GOPATH and GOBIN. Keeps everything else. Idempotent.
+  """Returns a copy of os.environ with mutated GO* environment variables.
 
   Args:
     layout: The Layout to derive the environment from.
@@ -452,6 +450,11 @@ def get_go_environ(layout):
 
   # Don't use default cache in '~'.
   env['GOCACHE'] = os.path.join(layout.workspace, '.cache')
+
+  # Infra Go workspace is not ready for modules yet, attempting to use them
+  # will cause pain.
+  env['GOPROXY'] = 'off'
+  env['GO111MODULE'] = 'off'
 
   # Add a tag to the prompt
   infra_prompt_tag = env.get('INFRA_PROMPT_TAG')
