@@ -79,7 +79,7 @@ func (g *gitRepo) resolveSpec(ctx context.Context, spec fetchSpec) (ret fetchSpe
 
 func (g *gitRepo) ensureFetched(ctx context.Context, resolvedSpec fetchSpec) (err error) {
 	if !g.hasCommit(ctx, resolvedSpec.revision) {
-		err = g.git(ctx, "fetch", "https://"+g.remoteRepo, resolvedSpec.ref+":"+resolvedSpec.ref)
+		err = g.git(ctx, "fetch", "--update-head-ok", "https://"+g.remoteRepo, resolvedSpec.ref+":"+resolvedSpec.ref)
 	}
 	return err
 }
