@@ -9,6 +9,7 @@ const webpack = require('webpack');
 const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ScriptExtHtmlWebpackPlugin = require('script-ext-html-webpack-plugin');
+const CircularDependencyPlugin = require('circular-dependency-plugin');
 
 const config = {
   entry: {
@@ -19,6 +20,14 @@ const config = {
   },
   devtool: 'eval-source-map',
   plugins: [
+    new CircularDependencyPlugin({
+      // exclude detection of files based on a RegExp
+      exclude: /a\.js|node_modules/,
+      // add errors to webpack instead of warnings
+      failOnError: true,
+      // set the current working directory for displaying module paths
+      cwd: process.cwd(),
+    }),
     new HtmlWebpackPlugin({
       chunks: ['mr-app'],
       template: 'static_src/webpacked-scripts-template.html',

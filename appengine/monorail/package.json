@@ -6,6 +6,7 @@
   "devDependencies": {
     "axe-core": "^3.2.2",
     "chai": "^3.5.0",
+    "circular-dependency-plugin": "^5.0.2",
     "deep-equal": "^1.0.1",
     "eslint": "^5.16.0",
     "eslint-config-google": "^0.12.0",
