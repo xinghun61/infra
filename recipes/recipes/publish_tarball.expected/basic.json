@@ -262,6 +262,24 @@
   },
   {
     "cmd": [
+      "[START_DIR]/src/buildtools/linux64/gn",
+      "--version"
+    ],
+    "name": "get gn version",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
+      "git",
+      "-C",
+      "[CLEANUP]/gn_tmp_1/gn",
+      "checkout",
+      "0790d304"
+    ],
+    "name": "checkout gn commit"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "[CLEANUP]/gn_tmp_1/gn/build/gen.py"

@@ -7,6 +7,7 @@
 from recipe_engine import post_process, recipe_api
 
 import contextlib
+import re
 
 DEPS = [
   'build/chromium',
@@ -285,6 +286,16 @@ def publish_tarball(api):
     git_root = temp_dir.join('gn')
     api.step('checkout gn',
              ['git', 'clone', 'https://gn.googlesource.com/gn', git_root])
+
+    # Check out the same version of gn as the one pulled down from gclient.
+    result = api.step(
+        'get gn version',
+        [api.path['checkout'].join('buildtools', 'linux64', 'gn'), '--version'],
+        stdout=api.raw_io.output())
+    match = re.match(r'\d+ \((.+)\)$', result.stdout.strip())
+    commit = match.group(1)
+    api.step('checkout gn commit', ['git', '-C', git_root, 'checkout', commit])
+
     tools_gn = api.path['checkout'].join('tools', 'gn')
     api.python('generate last_commit_position.h',
                git_root.join('build', 'gen.py'))
@@ -357,6 +368,8 @@ def GenTests(api):
     api.properties.generic(version='74.0.3729.169') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
+    api.step_data('get gn version',
+                  stdout=api.raw_io.output('1496 (0790d304)')) +
     api.path.exists(api.path['checkout'].join(
         'third_party', 'node', 'node_modules.tar.gz.sha1'))
   )
@@ -380,6 +393,8 @@ def GenTests(api):
     api.properties.generic(version='74.0.3729.169') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
+    api.step_data('get gn version',
+                  stdout=api.raw_io.output('1496 (0790d304)')) +
     api.path.exists(api.path['checkout'].join(
         'third_party', 'node', 'node_modules.tar.gz.sha1'))
   )
@@ -404,5 +419,7 @@ def GenTests(api):
                                                 '--gcc-toolchain=/usr',
                                                 '--skip-build',
                                                 '--without-fuchsia']) +
-    api.post_process(post_process.DropExpectation)
+    api.post_process(post_process.DropExpectation) +
+    api.step_data('get gn version',
+                  stdout=api.raw_io.output('1496 (0790d304)'))
   )
