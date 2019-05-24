@@ -64,4 +64,4 @@ normal swarmbucket request sent to a multibot and making it execute on
 fine, you can proceed to update the stable pin.
 
 The call site of the script is also defined in
-[puppet](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/etc/puppet/modules/chrome_infra/templates/setup/docker/swarm/swarm_docker_cron.sh.erb).
+[puppet](https://chrome-internal.googlesource.com/infra/puppet/+/c9a06caeac7e236ac9e20e4f97c267faf53bf7ab/puppetm/etc/puppet/modules/chrome_infra/templates/setup/docker/swarm/swarm_docker_cron.sh.erb).

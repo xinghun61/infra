@@ -15,7 +15,7 @@ developer workstation is unsupported.
 
 ### Automatic image building
 Everyday at 8am PST, a builder on the internal.infra.cron waterfall builds a
-fresh version of the image. This [builder](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/swarm-docker-image-builder)
+fresh version of the image. This [builder](https://ci.chromium.org/p/infra-internal/builders/luci.infra-internal.prod/swarm-docker-image-builder)
 essentially runs `./build.sh` and uploads the resultant image to a docker
 [container registry](https://docs.docker.com/registry/). The registry, hosted
 by gcloud, is located at
@@ -43,11 +43,11 @@ Image deployment
 --------------------------
 Image deployment is done via puppet. When a new image needs to be rolled out,
 grab the image name in the step-text of the "Push image" step on the
-[image-building bot](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/swarm-docker-image-builder).
+[image-building bot](https://ci.chromium.org/p/infra-internal/builders/luci.infra-internal.prod/swarm-docker-image-builder).
 It should look like swarm_docker:$date. (The bot runs once a day, but you can
 manually trigger a build if you don't want to wait.) To deploy, update the
-image pins in puppet for [canary bots](https://chrome-internal.googlesource.com/infra/puppet/+/a7d607c2363eaf8eabc0deac8de544de3ada96f8/puppetm/opt/puppet/conf/nodes.yaml#780),
-followed by [stable bots](https://chrome-internal.googlesource.com/infra/puppet/+/a7d607c2363eaf8eabc0deac8de544de3ada96f8/puppetm/opt/puppet/conf/nodes.yaml#1013).
+image pins in puppet for [canary bots](https://chrome-internal.googlesource.com/infra/puppet/+/c9a06caeac7e236ac9e20e4f97c267faf53bf7ab/puppetm/opt/puppet/conf/nodes.yaml#778),
+followed by [stable bots](https://chrome-internal.googlesource.com/infra/puppet/+/c9a06caeac7e236ac9e20e4f97c267faf53bf7ab/puppetm/opt/puppet/conf/nodes.yaml#1159).
 The canary pin affects bots on [chromium-swarm-dev](https://chromium-swarm-dev.appspot.com),
 which is not used by any builders, but can be used for manual testing before
 updating stable pin. Please trigger a build on this bot by manually editing a
