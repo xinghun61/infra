@@ -174,8 +174,7 @@ def install_toolset(toolset_root, version):
   if cmd.returncode:
     raise Failure('CIPD call failed, exit code %d' % cmd.returncode)
   LOGGER.info('Validating...')
-  if not check_hello_world(toolset_root):
-    raise Failure('Something is not right, test program doesn\'t work')
+  check_hello_world(toolset_root)
 
 
 def download_file(url, path):
@@ -206,20 +205,47 @@ def check_hello_world(toolset_root):
     path = os.path.join(tmp, 'hello.go')
     write_file([path], r"""
         package main
-        func main() { println("hello, world\n") }
+        import "fmt"
+        func main() { fmt.Println("hello, world") }
     """)
-    layout = _EMPTY_LAYOUT._replace(
-        toolset_root=toolset_root,
-        workspace=tmp)
+    out = call_bare_go(toolset_root, tmp, ['run', path])
+    if out != 'hello, world':
+      raise Failure('Unexpected output from the sample program:\n%s' % out)
 
-    out = subprocess.check_output(
-        [get_go_exe(toolset_root), 'run', path],
-        env=get_go_environ(layout),
-        stderr=subprocess.STDOUT)
-    if out.strip() != 'hello, world':
-      LOGGER.error('Failed to run sample program:\n%s', out)
-      return False
-    return True
+
+def call_bare_go(toolset_root, workspace, args):
+  """Calls 'go <args>' in the given workspace scrubbing all other Go env vars.
+
+  Args:
+    toolset_root: where Go is installed at.
+    workspace: value for GOPATH, all other Go-specific env vars are scrubbed.
+    args: command line arguments for 'go' tool.
+
+  Returns:
+    Captured stripped stdout+stderr.
+
+  Raises:
+    Failure if the call failed. All details are logged in this case.
+  """
+  cmd = [get_go_exe(toolset_root)] + args
+  env = get_go_environ(_EMPTY_LAYOUT._replace(
+      toolset_root=toolset_root,
+      workspace=workspace))
+  proc = subprocess.Popen(
+      cmd,
+      env=env,
+      cwd=workspace,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.STDOUT)
+  out, _ = proc.communicate()
+  if proc.returncode:
+    LOGGER.error('Failed to run %s: exit code %d', cmd, proc.returncode)
+    LOGGER.error('Environment:')
+    for k, v in sorted(env.items()):
+      LOGGER.error('  %s = %s', k, v)
+    LOGGER.error('Output:\n\n%s', out)
+    raise Failure('Go invocation failed, see the log')
+  return out.strip()
 
 
 def infra_version_outdated(root):
@@ -265,15 +291,7 @@ def ensure_glide_installed(toolset_root):
     return
 
   def install(workspace, pkg):
-    layout = _EMPTY_LAYOUT._replace(
-        toolset_root=toolset_root,
-        workspace=workspace)
-
-    subprocess.check_call(
-        [get_go_exe(toolset_root), 'install', pkg],
-        cwd=tmp,
-        env=get_go_environ(layout),
-        stdout=sys.stderr)
+    call_bare_go(toolset_root, workspace, ['install', pkg])
     # Windows os.rename doesn't support overwrites.
     name = pkg[pkg.rfind('/')+1:]
     dest = os.path.join(toolset_root, 'go', 'bin', name + EXE_SFX)
