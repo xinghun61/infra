@@ -18,6 +18,7 @@ import logging
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from findit_v2.services.context import Context
 from gae_libs.caches import PickledMemCache
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.cache_decorator import Cached
@@ -284,3 +285,21 @@ def GetRepoUrlFromContext(context):
   """
   return 'https://{host}/{project}.git'.format(
       host=context.gitiles_host, project=context.gitiles_project)
+
+
+def GetRepoUrlFromV2Build(build):
+  """Constructs repo url from a build's info.
+
+  Args:
+    build (build_pb2.Build): Info of a build.
+
+  Returns:
+    (str): repo url.
+  """
+  context = Context(
+      luci_project_name=build.builder.project,
+      gitiles_host=build.input.gitiles_commit.host,
+      gitiles_project=build.input.gitiles_commit.project,
+      gitiles_ref=build.input.gitiles_commit.ref,
+      gitiles_id=build.input.gitiles_commit.id)
+  return GetRepoUrlFromContext(context)

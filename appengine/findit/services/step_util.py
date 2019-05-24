@@ -8,6 +8,7 @@ import inspect
 import json
 import logging
 
+from buildbucket_proto import common_pb2
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common.constants import SUPPORTED_ISOLATED_SCRIPT_TESTS
@@ -21,7 +22,6 @@ from model.isolated_target import IsolatedTarget
 from services import constants
 from services import swarming
 from waterfall import build_util
-from waterfall import buildbot
 from waterfall import waterfall_config
 
 _HTTP_CLIENT = FinditHttpClient()
@@ -133,7 +133,7 @@ def GetValidBuild(master_name, builder_name, requested_build_number, step_name,
     _, candidate_build = build_util.GetBuildInfo(master_name, builder_name,
                                                  candidate_build_number)
     if (candidate_build and candidate_build.commit_position is not None and
-        (candidate_build.result != buildbot.EXCEPTION or
+        (candidate_build.result != common_pb2.INFRA_FAILURE or
          swarming.CanFindSwarmingTaskFromBuildForAStep(
              _HTTP_CLIENT, master_name, builder_name, candidate_build_number,
              step_name))):

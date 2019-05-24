@@ -6,6 +6,9 @@ from datetime import datetime
 from datetime import timedelta
 import mock
 
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
+
 from findit_v2.services.context import Context
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.gitiles_repository import GitilesRepository
@@ -399,3 +402,15 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual('https://gitiles.host.com/project/name.git',
                      git.GetRepoUrlFromContext(context))
+
+  def testGetRepoUrlFromV2Build(self):
+    build = Build(
+        builder=BuilderID(
+            project='chromium', bucket='try', builder='linux-rel'))
+    build.input.gitiles_commit.host = 'gitiles.host.com'
+    build.input.gitiles_commit.project = 'project/name'
+    build.input.gitiles_commit.ref = 'ref/heads/master'
+    build.input.gitiles_commit.id = 'git_sha_123'
+
+    self.assertEqual('https://gitiles.host.com/project/name.git',
+                     git.GetRepoUrlFromV2Build(build))

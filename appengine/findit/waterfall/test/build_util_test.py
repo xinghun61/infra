@@ -6,6 +6,7 @@ import datetime
 import json
 import mock
 
+from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
@@ -15,6 +16,7 @@ from common.waterfall import failure_type
 from infra_api_clients import crrev
 from model.isolated_target import IsolatedTarget
 from model.wf_build import WfBuild
+from services import git
 from services import swarming
 from waterfall import build_util
 from waterfall import buildbot
@@ -124,27 +126,33 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(build.data, 'Test get build data from milo updated')
 
+  @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=Build())
+  @mock.patch.object(buildbot, 'ExtractBuildInfoFromV2Build')
   @mock.patch.object(build_util, 'DownloadBuildData')
-  def testGetBuildInfo(self, mocked_fn):
+  def testGetBuildInfo(self, mocked_fn, mock_build_info, _):
     build = WfBuild.Create('m', 'b', 123)
-    build.data = json.dumps({
-        'properties': [['got_revision', 'a_git_hash'],
-                       ['got_revision_cp', 'refs/heads/master@{#12345}']],
-    })
+    build.build_id = '8000000123'
     mocked_fn.return_value = (200, build)
+
+    expected_build_info = BuildInfo('m', 'b', 123)
+    expected_build_info.chromium_revision = 'a_git_hash'
+    mock_build_info.return_value = expected_build_info
 
     _, build_info = build_util.GetBuildInfo('m', 'b', 123)
     self.assertEqual(build_info.chromium_revision, 'a_git_hash')
 
+  @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=Build())
+  @mock.patch.object(buildbot, 'ExtractBuildInfoFromV2Build')
   @mock.patch.object(build_util, 'DownloadBuildData')
-  def testGetBuildInfoNoUpdate(self, mocked_fn):
+  def testGetBuildInfoNoUpdate(self, mocked_fn, mock_build_info, _):
     build = WfBuild.Create('m', 'b', 123)
+    build.build_id = '8000000123'
     build.completed = True
-    build.data = json.dumps({
-        'properties': [['got_revision', 'a_git_hash'],
-                       ['got_revision_cp', 'refs/heads/master@{#12345}']],
-    })
     mocked_fn.return_value = (200, build)
+
+    expected_build_info = BuildInfo('m', 'b', 123)
+    expected_build_info.chromium_revision = 'a_git_hash'
+    mock_build_info.return_value = expected_build_info
 
     _, build_info = build_util.GetBuildInfo('m', 'b', 123)
     self.assertEqual(build_info.chromium_revision, 'a_git_hash')
@@ -155,7 +163,6 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 123
     build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = {}
     mocked_fn.return_value = (404, build)
 
     self.assertEquals((404, None),
@@ -169,7 +176,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGetFailureTypeInfra(self):
     build_info = BuildInfo('m', 'b', 123)
-    build_info.result = buildbot.EXCEPTION
+    build_info.result = common_pb2.INFRA_FAILURE
     build_info.failed_steps = ['compile']
     self.assertEqual(failure_type.INFRA, build_util.GetFailureType(build_info))
 
@@ -232,26 +239,23 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
                      build_util.GetLatestCommitPositionAndRevision(
                          master_name, builder_name, target_name))
 
-  @mock.patch.object(
-      IsolatedTarget,
-      'FindIsolateBeforeCommitPositionByMaster',
-      return_value=None)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber')
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testGetLatestCommitPositionWithBuild(self, mocked_build,
-                                           mocked_build_number, _):
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=100000)
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
+  def testGetLatestCommitPositionWithBuild(self, mocked_build, _):
     master_name = 'm'
     builder_name = 'b'
     target_name = 't'
-    latest_build_number = 12345
     expected_commit_position = 100000
     expected_revision = 'r100000'
-    mocked_build_number.return_value = latest_build_number
-    mocked_build_info = BuildInfo(master_name, builder_name,
-                                  latest_build_number)
-    mocked_build_info.commit_position = expected_commit_position
-    mocked_build_info.chromium_revision = expected_revision
-    mocked_build.return_value = 200, mocked_build_info
+
+    build = Build(
+        builder=BuilderID(
+            project='chromium', bucket='ci', builder=builder_name))
+    build.input.gitiles_commit.project = 'chromium/src'
+    build.input.gitiles_commit.host = 'chromium.googlesource.com'
+    build.input.gitiles_commit.ref = 'refs/heads/master'
+    build.input.gitiles_commit.id = expected_revision
+    mocked_build.return_value = SearchBuildsResponse(builds=[build])
 
     self.assertEqual((expected_commit_position, expected_revision),
                      build_util.GetLatestCommitPositionAndRevision(

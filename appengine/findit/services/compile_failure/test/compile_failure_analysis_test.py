@@ -523,19 +523,6 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         status='Completed',
         analysis_type='Heuristic')
 
-  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
-  def testRecordCompileFailureAnalysisStateChange(self, mock_mon):
-    compile_failure_analysis.RecordCompileFailureAnalysisStateChange(
-        'm', 'b', analysis_status.COMPLETED, analysis_approach_type.HEURISTIC)
-    mock_mon.assert_called_once_with(
-        master_name='m',
-        builder_name='b',
-        failure_type='compile',
-        canonical_step_name='compile',
-        isolate_target_name='N/A',
-        status='Completed',
-        analysis_type='Heuristic')
-
   def testGetSuspectedCLsWithCompileFailuresNoHeuristicResult(self):
     expected_suspected_revisions = []
     self.assertEqual(
@@ -545,20 +532,23 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testGetSuspectedCLsWithCompileFailures(self):
     heuristic_result = CompileHeuristicResult.FromSerializable({
-        'failures': [{
-            'step_name': 'step1',
-            'suspected_cls': [],
-        }, {
-            'step_name': 'step2',
-            'suspected_cls': [
-                {
-                    'revision': 'r1',
-                },
-                {
-                    'revision': 'r2',
-                },
-            ],
-        }]
+        'failures': [
+            {
+                'step_name': 'step1',
+                'suspected_cls': [],
+            },
+            {
+                'step_name': 'step2',
+                'suspected_cls': [
+                    {
+                        'revision': 'r1',
+                    },
+                    {
+                        'revision': 'r2',
+                    },
+                ],
+            }
+        ]
     })
     expected_suspected_revisions = [['step2', 'r1', None],
                                     ['step2', 'r2', None]]

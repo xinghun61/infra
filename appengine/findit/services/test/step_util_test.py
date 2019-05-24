@@ -7,6 +7,7 @@ import json
 import logging
 import mock
 
+from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.step_pb2 import Step
 
@@ -19,7 +20,6 @@ from model.wf_build import WfBuild
 from services import step_util
 from services import swarming
 from waterfall import build_util
-from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
@@ -35,7 +35,8 @@ class MockWaterfallBuild(object):
 def _MockedGetBuildInfo(master_name, builder_name, build_number):
   build = BuildInfo(master_name, builder_name, build_number)
   build.commit_position = (build_number + 1) * 10
-  build.result = buildbot.SUCCESS if build_number > 4 else buildbot.EXCEPTION
+  build.result = (
+      common_pb2.SUCCESS if build_number > 4 else common_pb2.INFRA_FAILURE)
   return 200, build
 
 

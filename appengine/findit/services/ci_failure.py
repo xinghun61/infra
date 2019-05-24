@@ -197,7 +197,7 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
 
   build_failure_type = build_util.GetFailureType(build_info)
   failed = (
-      build_info.result != buildbot.SUCCESS and bool(build_info.failed_steps))
+      build_info.result != common_pb2.SUCCESS and bool(build_info.failed_steps))
 
   failure_info = {
       'failed': failed,
@@ -282,9 +282,7 @@ def GetLaterBuildsWithAnySameStepFailure(master_name,
     # Checks all builds after current build.
     _, newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                   newer_build_number)
-    if newer_build_info and newer_build_info.result in [
-        buildbot.SUCCESS, buildbot.WARNINGS
-    ]:
+    if newer_build_info and newer_build_info.result == common_pb2.SUCCESS:
       return {}
 
     for failed_step in failed_steps or []:

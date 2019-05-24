@@ -306,8 +306,11 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
   @mock.patch.object(step_util, 'StepIsSupportedForMaster', return_value=True)
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testGetBuildFailureInfo(self, mock_fn, _):
+  @mock.patch.object(
+      buildbot, 'GetBlameListForV2Build', return_value=['rev223'])
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
+  def testGetBuildFailureInfo(self, mock_build, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -315,9 +318,22 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.PENDING)
 
-    mock_fn.return_value = (200,
-                            self._GetBuildData(master_name, builder_name,
-                                               build_number))
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.build_id = '80000000223'
+    build.completed = True
+    build.put()
+
+    build_223 = Build(
+        id=80000000223, number=build_number, status=common_pb2.FAILURE)
+    build_223.input.gitiles_commit.id = 'rev223'
+    step1 = Step(name='compile', status=common_pb2.SUCCESS)
+    log = step1.logs.add()
+    log.name = 'stdout'
+    step2 = Step(name='abc_test', status=common_pb2.FAILURE)
+    log = step2.logs.add()
+    log.name = 'stdout'
+    build_223.steps.extend([step1, step2])
+    mock_build.return_value = build_223
 
     failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
         master_name, builder_name, build_number)
@@ -328,13 +344,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'builder_name': builder_name,
         'build_number': build_number,
         'is_luci': None,
-        'buildbucket_bucket': None,
-        'buildbucket_id': None,
-        'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
+        'buildbucket_bucket': '',
+        'buildbucket_id': 80000000223,
+        'chromium_revision': 'rev223',
         'builds': {
             build_number: {
-                'blame_list': ['64c72819e898e952103b63eabc12772f9640af07'],
-                'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07'
+                'blame_list': ['rev223'],
+                'chromium_revision': 'rev223'
             }
         },
         'failed_steps': {
@@ -400,9 +416,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         status='Skipped',
         analysis_type='Pre-Analysis')
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
+  @mock.patch.object(
+      buildbot, 'GetBlameListForV2Build', return_value=['rev121'])
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)
+  @mock.patch.object(buildbucket_client, 'GetV2Build')
   @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
-  def testGetBuildFailureInfoBuildSuccess(self, mock_monitoring, mock_fn):
+  def testGetBuildFailureInfoBuildSuccess(self, mock_monitoring, mock_build,
+                                          *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 121
@@ -410,9 +430,22 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.PENDING)
 
-    mock_fn.return_value = (200,
-                            self._GetBuildData(master_name, builder_name,
-                                               build_number))
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.build_id = '80000000223'
+    build.completed = True
+    build.put()
+
+    build_121 = Build(
+        id=80000000121, number=build_number, status=common_pb2.FAILURE)
+    build_121.input.gitiles_commit.id = 'rev121'
+    step1 = Step(name='net_unittests', status=common_pb2.SUCCESS)
+    log = step1.logs.add()
+    log.name = 'stdout'
+    step2 = Step(name='unit_tests', status=common_pb2.SUCCESS)
+    log = step2.logs.add()
+    log.name = 'stdout'
+    build_121.steps.extend([step1, step2])
+    mock_build.return_value = build_121
 
     failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
         master_name, builder_name, build_number)
@@ -422,15 +455,15 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
-        'chromium_revision': '5934404dc5392ab3ae2c82b52b366889fb858d91',
+        'chromium_revision': 'rev121',
         'builds': {},
         'failed_steps': {},
         'failure_type': failure_type.UNKNOWN,
         'parent_mastername': None,
         'parent_buildername': None,
         'is_luci': None,
-        'buildbucket_bucket': None,
-        'buildbucket_id': None,
+        'buildbucket_bucket': '',
+        'buildbucket_id': 80000000121,
     }
 
     self.assertEqual(expected_failure_info, failure_info)
@@ -448,10 +481,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
       buildbot, 'GetBuildDataFromMilo', return_value=(200, '{"data": "data"}'))
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
-  @mock.patch.object(buildbot, 'GetBuildResult')
-  def testGetLaterBuildsWithAnySameStepFailurePassedThenFailed(
-      self, mock_fn, *_):
-    mock_fn.side_effect = [buildbot.SUCCESS, buildbot.FAILURE]
+  def testGetLaterBuildsWithAnySameStepFailurePassedThenFailed(self, *_):
     self.assertEquals({},
                       ci_failure.GetLaterBuildsWithAnySameStepFailure(
                           'm', 'b', 123))
@@ -460,7 +490,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetLaterBuildsWithAnySameStepFailureNotStepLevel(self, mock_fn, *_):
-    build_info_1 = MockBuildInfo(result=buildbot.FAILURE, failed_steps=['b'])
+    build_info_1 = MockBuildInfo(result=common_pb2.FAILURE, failed_steps=['b'])
     mock_fn.side_effect = [(200, build_info_1), (200, build_info_1)]
     self.assertEqual({},
                      ci_failure.GetLaterBuildsWithAnySameStepFailure(
@@ -470,7 +500,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetLaterBuildsWithAnySameStepFailure(self, mock_fn, *_):
-    build_info_1 = MockBuildInfo(result=buildbot.FAILURE, failed_steps=['a'])
+    build_info_1 = MockBuildInfo(result=common_pb2.FAILURE, failed_steps=['a'])
     mock_fn.side_effect = [(200, build_info_1), (200, build_info_1)]
     self.assertEqual({
         124: ['a'],

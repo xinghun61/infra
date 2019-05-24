@@ -5,6 +5,7 @@
 import json
 import logging
 
+from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import BuilderID
 from google.protobuf.field_mask_pb2 import FieldMask
 
@@ -17,6 +18,7 @@ from libs import time_util
 from model.isolated_target import IsolatedTarget
 from model.wf_build import WfBuild
 from services import constants as services_constants
+from services import git
 from services import swarming
 from waterfall import buildbot
 
@@ -120,10 +122,12 @@ def GetBuildInfo(master_name, builder_name, build_number):
   """
   status_code, build = DownloadBuildData(master_name, builder_name,
                                          build_number)
-  if not build.data:
+  if not build.build_id:
     return status_code, None
-  build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
-                                         build_number, build.data)
+
+  bb_build = buildbucket_client.GetV2Build(build.build_id)
+  build_info = buildbot.ExtractBuildInfoFromV2Build(master_name, builder_name,
+                                                    build_number, bb_build)
 
   if not build.completed:
     build.start_time = build_info.build_start_time
@@ -139,7 +143,7 @@ def GetFailureType(build_info):
     return failure_type.UNKNOWN
   # TODO(robertocn): Consider also bailing out of tests with infra failures.
   if constants.COMPILE_STEP_NAME in build_info.failed_steps:
-    if build_info.result == buildbot.EXCEPTION:
+    if build_info.result == common_pb2.INFRA_FAILURE:
       return failure_type.INFRA
     return failure_type.COMPILE
   # TODO(http://crbug.com/602733): differentiate test steps from infra ones.
@@ -198,15 +202,22 @@ def GetLatestCommitPositionAndRevision(master_name, builder_name, target_name):
 
   # Fallback to buildbot for builds not yet migrated to LUCI.
   # TODO (crbug.com/804617): Remove fallback logic after migration is complete.
-  latest_build_number = GetLatestBuildNumber(master_name, builder_name)
+  luci_project, luci_bucket = buildbot.GetLuciProjectAndBucketForMaster(
+      master_name)
+  search_builds_response = buildbucket_client.SearchV2BuildsOnBuilder(
+      BuilderID(project=luci_project, bucket=luci_bucket, builder=builder_name),
+      page_size=1)
 
-  if not latest_build_number:
+  if not search_builds_response:
     # Something is wrong. Calling code should be responsible for checking for
     # the return value.
     return None, None
 
-  _, latest_build = GetBuildInfo(master_name, builder_name, latest_build_number)
-  return latest_build.commit_position, latest_build.chromium_revision
+  latest_build = search_builds_response.builds[0]
+  revision = latest_build.input.gitiles_commit.id
+  repo_url = git.GetRepoUrlFromV2Build(latest_build)
+  return git.GetCommitPositionFromRevision(
+      latest_build.input.gitiles_commit.id, repo_url=repo_url), revision
 
 
 # TODO(crbug/821865): Remove this after new flake pipelines are stable.
