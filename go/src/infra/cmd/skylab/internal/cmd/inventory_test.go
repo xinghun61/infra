@@ -5,134 +5,159 @@
 package cmd
 
 import (
-	"bytes"
-	"reflect"
-	"testing"
-
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
+	"infra/libs/skylab/inventory"
+	"testing"
 
 	"github.com/kylelemons/godebug/pretty"
 )
 
-func TestCompileInventoryReport(t *testing.T) {
-	// TODO(ayatane): Fix these tests.  They depend on trailing
-	// whitespace and really shouldn't be comparing the formatted
-	// text.  Also, the sort order is non-deterministic.
-	t.Skip("Sort order is non-deterministic.")
-	var (
-		botDimensions1 = &fleet.BotDimensions{
-			Pools:   []string{"wifi"},
-			Model:   "model1",
-			DutName: "name1",
-		}
+var (
+	botDimensions1 = &fleet.BotDimensions{
+		Pools:   []string{"wifi"},
+		Model:   "model1",
+		DutName: "name1",
+	}
 
-		botDimensions2 = &fleet.BotDimensions{
-			Pools:   []string{"wifi", "LTE"},
-			Model:   "model2",
-			DutName: "name2",
-		}
+	botDimensions2 = &fleet.BotDimensions{
+		Pools:   []string{"wifi", "LTE"},
+		Model:   "model2",
+		DutName: "name2",
+	}
 
-		botDimensionsDut1 = &fleet.BotDimensions{
-			Pools:   []string{"DUT_POOL_CQ"},
-			Model:   "model1",
-			DutName: "dutCQ",
-		}
+	botDimensionsDut1 = &fleet.BotDimensions{
+		Pools:   []string{"DUT_POOL_CQ"},
+		Model:   "model1",
+		DutName: "dutCQ",
+	}
 
-		botDimensionsDut2 = &fleet.BotDimensions{
-			Pools:   []string{"DUT_POOL_SUITES"},
-			Model:   "model1",
-			DutName: "dutSUITES",
-		}
+	botDimensionsDut2 = &fleet.BotDimensions{
+		Pools:   []string{"DUT_POOL_SUITES"},
+		Model:   "model1",
+		DutName: "dutSUITES",
+	}
 
-		bs = []*fleet.BotSummary{
-			{
-				DutId:      "chromeOS-1",
-				DutState:   fleet.DutState_Ready,
-				Health:     fleet.Health_Healthy,
-				Dimensions: botDimensions1,
-			},
-			{
-				DutId:      "chromeOS-2",
-				DutState:   fleet.DutState_Ready,
-				Health:     fleet.Health_Healthy,
-				Dimensions: botDimensions1,
-			},
-			{
-				DutId:      "chromeOS-3",
-				DutState:   fleet.DutState_Ready,
-				Health:     fleet.Health_Unhealthy,
-				Dimensions: botDimensions2,
-			},
-			{
-				DutId:      "chromeOS-4",
-				DutState:   fleet.DutState_Ready,
-				Health:     fleet.Health_Unhealthy,
-				Dimensions: botDimensions2,
-			},
-			{
-				DutId:      "chromeOS-5",
-				DutState:   fleet.DutState_Ready,
-				Health:     fleet.Health_Unhealthy,
-				Dimensions: botDimensionsDut1,
-			},
-			{
-				DutId:      "chromeOS-6",
-				DutState:   fleet.DutState_DutStateInvalid,
-				Health:     fleet.Health_Healthy,
-				Dimensions: botDimensionsDut1,
-			},
-			{
-				DutId:      "chromeOS-7",
-				DutState:   fleet.DutState_Ready,
-				Health:     fleet.Health_Healthy,
-				Dimensions: botDimensionsDut2,
-			},
-		}
-	)
-
-	tests := []struct {
-		desc       string
-		botSummary []*fleet.BotSummary
-		showPools  bool
-		want       string
-	}{
+	bs = []*fleet.BotSummary{
 		{
-			desc:       "LabCount/ModelCount_test",
-			botSummary: bs,
-			showPools:  false,
-			want: `Inventory by location
-===============================================================================
-Location   Avail  Good  Bad  Spare  Total  
-name2      0      0     2    0      2      
-dutCQ      1      1     1    0      2      
-dutSUITES  1      1     0    1      1      
-name1      2      2     0    0      2      
-
-Inventory by model
-===============================================================================
-Model   Avail  Good  Bad  Spare  Total  
-model2  0      0     2    0      2      
-model1  0      4     1    1      5      
-`,
+			DutId:      "chromeOS-1",
+			DutState:   fleet.DutState_Ready,
+			Health:     fleet.Health_Healthy,
+			Dimensions: botDimensions1,
 		},
 		{
-			desc:       "DutPoolCount_test",
-			botSummary: bs,
-			showPools:  true,
-			want: `DUT Pool Count by model
-===============================================================================
-Model   DUT_POOL_CQ  DUT_POOL_SUITES  
-model1  1/2          1/1              
-model2  0/0          0/0              
-`,
+			DutId:      "chromeOS-2",
+			DutState:   fleet.DutState_Ready,
+			Health:     fleet.Health_Healthy,
+			Dimensions: botDimensions1,
+		},
+		{
+			DutId:      "chromeOS-3",
+			DutState:   fleet.DutState_Ready,
+			Health:     fleet.Health_Unhealthy,
+			Dimensions: botDimensions2,
+		},
+		{
+			DutId:      "chromeOS-4",
+			DutState:   fleet.DutState_Ready,
+			Health:     fleet.Health_Unhealthy,
+			Dimensions: botDimensions2,
+		},
+		{
+			DutId:      "chromeOS-5",
+			DutState:   fleet.DutState_Ready,
+			Health:     fleet.Health_Unhealthy,
+			Dimensions: botDimensionsDut1,
+		},
+		{
+			DutId:      "chromeOS-6",
+			DutState:   fleet.DutState_DutStateInvalid,
+			Health:     fleet.Health_Healthy,
+			Dimensions: botDimensionsDut1,
+		},
+		{
+			DutId:      "chromeOS-7",
+			DutState:   fleet.DutState_Ready,
+			Health:     fleet.Health_Healthy,
+			Dimensions: botDimensionsDut2,
 		},
 	}
+)
+
+func TestCompileInventoryReport(t *testing.T) {
 	t.Parallel()
-	for _, test := range tests {
-		got := printInventoryReportToBuffer(test.botSummary, test.showPools)
-		if !reflect.DeepEqual(got, test.want) {
-			t.Errorf(`%s returned diff (-got +want): %s`, test.desc, pretty.Compare(got, test.want))
-		}
+	t.Skip("Sort order is non-deterministic.")
+	want := inventoryReport{
+		labs: []*inventoryCount{
+			{
+				name:  "name2",
+				good:  0,
+				bad:   2,
+				spare: 0,
+			},
+			{
+				name:  "dutCQ",
+				good:  1,
+				bad:   1,
+				spare: 0,
+			},
+			{
+				name:  "dutSUITES",
+				good:  1,
+				bad:   0,
+				spare: 1,
+			},
+			{
+				name:  "name1",
+				good:  2,
+				bad:   0,
+				spare: 0,
+			},
+		},
+		models: []*inventoryCount{
+			{
+				name:  "model1",
+				good:  4,
+				bad:   1,
+				spare: 1,
+			},
+			{
+				name:  "model2",
+				good:  0,
+				bad:   2,
+				spare: 0,
+			},
+		},
+	}
+	got := compileInventoryReport(bs)
+	if diff := pretty.Compare(got, want); diff != "" {
+		t.Errorf(`%s returned diff (-got +want): %s`, "LabCount/ModelCount_test", diff)
+	}
+}
+
+func TestCompileInventoryReportByDutPool(t *testing.T) {
+	t.Parallel()
+	want := []*modelPools{
+		{
+			name: "model1",
+			pools: map[inventory.SchedulableLabels_DUTPool]poolStateCount{
+				inventory.SchedulableLabels_DUT_POOL_CQ: {
+					ready: 1,
+					total: 2,
+				},
+				inventory.SchedulableLabels_DUT_POOL_SUITES: {
+					ready: 1,
+					total: 1,
+				},
+			},
+		},
+		{
+			name:  "model2",
+			pools: map[inventory.SchedulableLabels_DUTPool]poolStateCount{},
+		},
+	}
+	got := compileInventoryReportByDutPool(bs)
+	if diff := pretty.Compare(got, want); diff != "" {
+		t.Errorf(`%s returned diff (-got +want): %s`, "DutPoolCount_test", diff)
 	}
 }
 
@@ -192,14 +217,4 @@ func TestGetBotLabNumberOnBadName(t *testing.T) {
 	if got != want {
 		t.Errorf(`getBotLabNumber("chromeos4-rack1-row-2-host3") = %s; want %s`, got, want)
 	}
-}
-
-func printInventoryReportToBuffer(bs []*fleet.BotSummary, showPools bool) string {
-	w := &bytes.Buffer{}
-	if showPools {
-		printInventoryByDutPool(w, compileInventoryReportByDutPool(bs))
-	} else {
-		printInventory(w, compileInventoryReport(bs))
-	}
-	return w.String()
 }
