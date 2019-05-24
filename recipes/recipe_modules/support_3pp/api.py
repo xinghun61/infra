@@ -603,6 +603,7 @@ class Support3ppApi(recipe_api.RecipeApi):
         expanded_build_plan.add((subpkg, 'latest'))
 
     ret = []
-    for spec, version in sorted(expanded_build_plan):
-      ret.append(self._build_resolved_spec(spec, version, force_build))
+    with self.m.step.defer_results():
+      for spec, version in sorted(expanded_build_plan):
+        ret.append(self._build_resolved_spec(spec, version, force_build))
     return ret, unsupported

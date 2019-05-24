@@ -312,3 +312,62 @@ def GenTests(api):
           api.file.glob_paths(['[CACHE]/path/something/3pp.pb']))
       + api.expect_exception('DuplicatePackage')
   )
+
+  dep = '''
+  create {
+    platform_re: "linux-amd64|mac-.*"
+    source {
+      git {
+        repo: "https://go.repo/dep"
+        tag_pattern: "v%s"
+      }
+    }
+    build {}
+  }
+  upload { pkg_prefix: "pkg" }
+  '''
+  tool = '''
+  create {
+    platform_re: "linux-amd64|mac-.*"
+    source {
+      git {
+        repo: "https://go.repo/tool"
+      }
+    }
+    build {
+      tool: "dep"
+    }
+  }
+  upload { pkg_prefix: "pkg" }
+  '''
+  unsupported = '''
+  create { unsupported: true }
+  '''
+  yield (api.test('building package failed')
+      + api.properties(GOOS='linux', GOARCH='amd64')
+      + api.step_data(
+          'find package specs',
+          api.file.glob_paths(['[CACHE]/builder/package_repo/%s/3pp.pb' % pkg
+                               for pkg in ['dep', 'tool', 'unsupported']]))
+      + api.step_data(
+          "load package specs.read 'dep'",
+          api.file.read_text(dep))
+      + api.step_data(
+          "load package specs.read 'tool'",
+          api.file.read_text(tool))
+      + api.step_data(
+          "load package specs.read 'unsupported'",
+          api.file.read_text(unsupported))
+      + api.step_data(
+          'building dep.run installation.install.sh %s %s' % (
+              '[START_DIR]/3pp/wd/dep/linux-amd64/1.5.0-rc1/out',
+              '[START_DIR]/3pp/wd/dep/linux-amd64/1.5.0-rc1/deps_prefix'),
+          retcode=1)
+      + api.override_step_data(
+          ('building tool.fetch sources.installing tools.building dep'
+           '.cipd describe 3pp/pkg/dep/linux-amd64'),
+          api.cipd.example_describe(
+          '3pp/pkg/dep/linux-amd64',
+          version='version:1.5.0-rc1', test_data_tags=['version:1.5.0-rc1']),
+      )
+  )
