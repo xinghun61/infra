@@ -394,14 +394,14 @@ func redeployDUT(ctx context.Context, s *gitstore.InventoryStore, sc clients.Swa
 	if !proto.Equal(oldSpecs, newSpecs) {
 		ds.ChangeURL, err = updateDUTSpecs(ctx, s, oldSpecs, newSpecs, o.GetAssignServoPortIfMissing())
 		if err != nil {
-			failDeployStatus(ctx, ds, "failed to update DUT specs")
+			failDeployStatus(ctx, ds, fmt.Sprintf("failed to update DUT specs: %s", err))
 			return ds
 		}
 	}
 
 	ds.TaskID, err = scheduleDUTPreparationTask(ctx, sc, oldSpecs.GetId(), a)
 	if err != nil {
-		failDeployStatus(ctx, ds, "failed to create deploy task")
+		failDeployStatus(ctx, ds, fmt.Sprintf("failed to create deploy task: %s", err))
 		return ds
 	}
 	return ds
@@ -456,7 +456,7 @@ func updateDUTSpecs(ctx context.Context, s *gitstore.InventoryStore, od, nd *inv
 // Swarming.
 func refreshDeployStatus(ctx context.Context, sc clients.SwarmingClient, ds *deploy.Status) error {
 	if ds.TaskID == "" {
-		failDeployStatus(ctx, ds, "unknown deploy task ID")
+		failDeployStatus(ctx, ds, "missing deploy task ID in deploy request entry")
 		return nil
 	}
 
@@ -476,7 +476,7 @@ func refreshDeployStatus(ctx context.Context, sc clients.SwarmingClient, ds *dep
 	case "PENDING", "RUNNING":
 		ds.Status = fleet.GetDeploymentStatusResponse_DUT_DEPLOYMENT_STATUS_IN_PROGRESS
 	default:
-		failDeployStatus(ctx, ds, "deploy Skylab task failed")
+		failDeployStatus(ctx, ds, fmt.Sprintf("unhandled deploy task state: %s", tr.State))
 	}
 	return nil
 }
