@@ -18,53 +18,56 @@ from services.parameters import TestFailedSteps
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
-_SAMPLE_BUILD_STEP_DATA = [{
-    'failure':
-        True,
-    'id':
-        '2944afa502297110',
-    'internal_failure':
-        False,
-    'name':
-        'unit_tests/Windows-XP-SP3/123c706dde/XP Tests (1)/39454',
-    'state':
-        112,
-    'tags': [
-        'buildername:XP Tests (1)', 'buildnumber:39442', 'cpu:x86-32',
-        'data:123c706ddeeadcc761d612f732ddde9322400446', 'gpu:none',
-        'master:chromium.win', 'name:unit_tests', 'os:Windows-XP-SP3',
-        'pool:Chrome', 'priority:25', 'project:chromium', 'purpose:CI',
-        'purpose:post-commit', 'stepname:unit_tests', 'user:'
-    ],
-    'try_number':
-        0,
-    'user':
-        '',
-    'outputs_ref': {
-        'isolatedserver': 'https://isolateserver.appspot.com',
-        'namespace': 'default-gzip',
-        'isolated': 'isolatedhashunittests'
+_SAMPLE_BUILD_STEP_DATA = [
+    {
+        'failure':
+            True,
+        'id':
+            '2944afa502297110',
+        'internal_failure':
+            False,
+        'name':
+            'unit_tests/Windows-XP-SP3/123c706dde/XP Tests (1)/39454',
+        'state':
+            112,
+        'tags': [
+            'buildername:XP Tests (1)', 'buildnumber:39442', 'cpu:x86-32',
+            'data:123c706ddeeadcc761d612f732ddde9322400446', 'gpu:none',
+            'master:chromium.win', 'name:unit_tests', 'os:Windows-XP-SP3',
+            'pool:Chrome', 'priority:25', 'project:chromium', 'purpose:CI',
+            'purpose:post-commit', 'stepname:unit_tests', 'user:'
+        ],
+        'try_number':
+            0,
+        'user':
+            '',
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhashunittests'
+        }
+    },
+    {
+        'failure':
+            False,
+        'id':
+            '2944afa502297111',
+        'internal_failure':
+            False,
+        'tags': [
+            'buildername:XP Tests (1)', 'buildnumber:39442', 'cpu:x86-32',
+            'data:123c706ddeeadcc761d612f732ddde9322400446', 'gpu:none',
+            'master:chromium.win', 'name:unit_tests', 'os:Windows-XP-SP3',
+            'pool:Chrome', 'priority:25', 'project:chromium', 'purpose:CI',
+            'purpose:post-commit', 'stepname:unit_tests', 'user:'
+        ],
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhashunittests1'
+        }
     }
-}, {
-    'failure':
-        False,
-    'id':
-        '2944afa502297111',
-    'internal_failure':
-        False,
-    'tags': [
-        'buildername:XP Tests (1)', 'buildnumber:39442', 'cpu:x86-32',
-        'data:123c706ddeeadcc761d612f732ddde9322400446', 'gpu:none',
-        'master:chromium.win', 'name:unit_tests', 'os:Windows-XP-SP3',
-        'pool:Chrome', 'priority:25', 'project:chromium', 'purpose:CI',
-        'purpose:post-commit', 'stepname:unit_tests', 'user:'
-    ],
-    'outputs_ref': {
-        'isolatedserver': 'https://isolateserver.appspot.com',
-        'namespace': 'default-gzip',
-        'isolated': 'isolatedhashunittests1'
-    }
-}]
+]
 
 _REF_REQUEST = {
     'expiration_secs': '3600',
@@ -280,21 +283,24 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
         step_name,
         None,
         only_failure=False)
-    expected_data = [{
-        'digest':
-            'isolatedhashunittests',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }, {
-        'digest':
-            'isolatedhashunittests1',
-        'namespace':
-            'default-gzip',
-        'isolatedserver':
-            waterfall_config.GetSwarmingSettings().get('isolated_server')
-    }]
+    expected_data = [
+        {
+            'digest':
+                'isolatedhashunittests',
+            'namespace':
+                'default-gzip',
+            'isolatedserver':
+                waterfall_config.GetSwarmingSettings().get('isolated_server')
+        },
+        {
+            'digest':
+                'isolatedhashunittests1',
+            'namespace':
+                'default-gzip',
+            'isolatedserver':
+                waterfall_config.GetSwarmingSettings().get('isolated_server')
+        }
+    ]
     self.assertEqual(sorted(expected_data), sorted(data))
 
   @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=[])
@@ -507,10 +513,10 @@ class SwarmingTest(wf_testcase.WaterfallTestCase):
                 '3600',
             'extra_args': [
                 '--flag=value',
-                '--gtest_filter=a.b:a.c',
-                '--gtest_repeat=%d' % iterations,
-                '--test-launcher-retry-limit=0',
-                '--gtest_also_run_disabled_tests',
+                '--isolated-script-test-filter=a.b::a.c',
+                '--isolated-script-test-repeat=%d' % iterations,
+                '--isolated-script-test-launcher-retry-limit=0',
+                '--isolated-script-test-also-run-disabled-tests',
             ],
             'grace_period_secs':
                 '30',

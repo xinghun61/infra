@@ -55,6 +55,15 @@ def _UpdateRequestWithPubSubCallback(request, runner_id):
   request.pubsub_userdata = json.dumps({'runner_id': runner_id})
 
 
+def _IsTestFilter(arg):
+  test_filter_args = [
+      '--gtest_filter', '--test-launcher-filter-file',
+      '--isolated-script-test-filter'
+  ]
+  return any(
+      arg.startswith(test_filter_arg) for test_filter_arg in test_filter_args)
+
+
 def CreateNewSwarmingTaskRequestTemplate(runner_id, ref_task_id, ref_request,
                                          master_name, builder_name, step_name,
                                          tests, iterations):
@@ -83,32 +92,17 @@ def CreateNewSwarmingTaskRequestTemplate(runner_id, ref_task_id, ref_request,
 
   # Set the gtest_filter to run the given tests only.
   # Remove existing test filter first.
+  new_request.properties.extra_args = ListOfBasestring.FromSerializable(
+      [a for a in new_request.properties.extra_args if not _IsTestFilter(a)])
 
-  new_request.properties.extra_args = ListOfBasestring.FromSerializable([
-      a for a in new_request.properties.extra_args
-      if (not a.startswith('--gtest_filter') and
-          not a.startswith('--test-launcher-filter-file'))
-  ])
   new_request.properties.extra_args.append(
-      '--gtest_filter=%s' % ':'.join(tests))
+      '--isolated-script-test-filter=%s' % '::'.join(tests))
 
-  # On Android, --gtest_repeat is only supported for gtest, but not for other
-  # test types. E.g. instrumentation tests currently support it via
-  # --test-repeat.
-  #
-  # Here we blindly treat all tests on Android as gtest, and let other test
-  # types fail out, because it is hard to distinguish them programmatically
-  # while the majority is gtest.
-  #
-  # https://crbug.com/669632 tracks the effort to unify the command switches
-  # of the Android test runner that are used here.
-  new_request.properties.extra_args.append('--gtest_repeat=%s' % iterations)
+  new_request.properties.extra_args.append(
+      '--isolated-script-test-repeat=%s' % iterations)
 
-  ref_os = swarming_util.GetTagValue(ref_request.tags, 'os') or ''
-  if ref_os.lower() == 'android':  # Workaround. pragma: no cover.
-    new_request.properties.extra_args.append('--num_retries=0')
-  else:
-    new_request.properties.extra_args.append('--test-launcher-retry-limit=0')
+  new_request.properties.extra_args.append(
+      '--isolated-script-test-launcher-retry-limit=0')
 
   # Also rerun disabled tests. Scenario: the test was disabled before Findit
   # runs any analysis. One possible case:
@@ -125,7 +119,8 @@ def CreateNewSwarmingTaskRequestTemplate(runner_id, ref_task_id, ref_request,
   #
   # Note: test runner on Android ignores this flag because it is not supported
   # yet even though it exists.
-  new_request.properties.extra_args.append('--gtest_also_run_disabled_tests')
+  new_request.properties.extra_args.append(
+      '--isolated-script-test-also-run-disabled-tests')
 
   # Remove the env setting for sharding.
   sharding_settings = ['GTEST_SHARD_INDEX', 'GTEST_TOTAL_SHARDS']
@@ -217,8 +212,8 @@ def ListSwarmingTasksDataByTags(http_client,
 def GetNeededIsolatedDataFromTaskResults(task_results, only_failure):
   needed_isolated_data = defaultdict(list)
   for item in task_results:
-    swarming_step_name = item.tags.get('stepname')[
-        0] if 'stepname' in item.tags else None
+    swarming_step_name = item.tags.get(
+        'stepname')[0] if 'stepname' in item.tags else None
 
     if not item.outputs_ref or not swarming_step_name:
       # Task might time out and no outputs_ref was saved.
