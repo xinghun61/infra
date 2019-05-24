@@ -8,6 +8,7 @@ import mock
 
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
+from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
 
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
@@ -20,9 +21,9 @@ from waterfall import buildbot
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
-
 # pylint:disable=unused-argument, unused-variable
 # https://crbug.com/947753
+
 
 class MockBuild(object):
 
@@ -36,12 +37,6 @@ MOCK_BUILDS = [(None,
                         'swarming_tag:log_location:logdog://host/project/path'
                     ]
                 }))]
-
-
-def _MockedGetBuildInfo(master_name, builder_name, build_number):
-  build = BuildInfo(master_name, builder_name, build_number)
-  build.commit_position = (build_number + 1) * 10
-  return 200, build
 
 
 class BuildUtilTest(wf_testcase.WaterfallTestCase):
@@ -71,46 +66,6 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build.completed = False
     build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
     self.assertTrue(build_util._BuildDataNeedUpdating(build))
-
-  def testBuildDataNotNeedUpdating(self):
-    build = WfBuild.Create('m', 'b', 1)
-
-    # Build is not completed yet but data is recent.
-    build.data = 'dummy'
-    build.completed = False
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(60)
-    self.assertFalse(build_util._BuildDataNeedUpdating(build))
-
-    # Build was completed and data is final.
-    build.data = 'dummy'
-    build.completed = True
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
-    self.assertFalse(build_util._BuildDataNeedUpdating(build))
-
-  @mock.patch.object(build_util, '_GetBuildIDForLUCIBuild', return_value=None)
-  @mock.patch.object(
-      build_util, '_GetLogLocationForBuildbotBuild', return_value='location')
-  def testGetBuildDataNotDownloadAgain(self, mock_location, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    build = WfBuild.Create(master_name, builder_name, build_number)
-
-    build.data = 'dummy'
-    build.completed = False
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(60)
-    build.log_location = 'location'
-    build.put()
-
-    build_util.DownloadBuildData(master_name, builder_name, build_number)
-
-    expected_build_data = 'dummy'
-
-    self.assertEqual(expected_build_data, build.data)
-    # Assertions have never worked properly because we were using mock 1.0.1.
-    # After rolling to mock 2.0.0, which fixes assertions, these assertions now
-    # fail. https://crbug.com/947753.
-    # mock_location.assert_has_called_once_with(expected_build_data)
 
   @mock.patch.object(build_util, '_GetBuildIDForLUCIBuild', return_value=None)
   @mock.patch.object(
@@ -168,25 +123,6 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build_util.DownloadBuildData(master_name, builder_name, build_number)
 
     self.assertEqual(build.data, 'Test get build data from milo updated')
-
-  def testGetBuildEndTime(self):
-    cases = {
-        'null': None,
-        '1467740016': datetime.datetime(2016, 7, 5, 17, 33, 36),
-    }
-    for end_time, expected_time in cases.iteritems():
-      master_name = 'm'
-      builder_name = 'b'
-      build_number = 123
-      build = WfBuild.Create(master_name, builder_name, build_number)
-      build.data = '{"times": [1467738821, %s]}' % end_time
-      build.completed = True
-      build.last_crawled_time = self._TimeBeforeNowBySeconds(10)
-      build.put()
-
-      self.assertEqual(
-          expected_time,
-          build_util.GetBuildEndTime(master_name, builder_name, build_number))
 
   @mock.patch.object(build_util, 'DownloadBuildData')
   def testGetBuildInfo(self, mocked_fn):
@@ -350,38 +286,26 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         None, build_util.FindValidBuildNumberForStepNearby('m', 'b', 's', 5))
 
-  def _PreviousBuilds(self, master_name, builder_name, build_number):
+  def _PreviousBuilds(self, master_name, builder_name, build_id):
     builds = []
     for build in build_util.IteratePreviousBuildsFrom(master_name, builder_name,
-                                                      build_number, 20):
+                                                      build_id, 20):
       builds.append(build)
     return builds
 
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testIteratePreviousBuildsFrom(self, mock_info):
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
+  def testIteratePreviousBuildsFrom(self, mock_previous_build):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 124
+    build_id = 80000000124
 
-    mock_info.side_effect = [(200,
-                              _MockedGetBuildInfo(master_name, builder_name,
-                                                  123)), (404, None)]
+    mock_previous_build.side_effect = [
+        SearchBuildsResponse(builds=[Build(id=80000000123)]),
+        SearchBuildsResponse(builds=[]),
+    ]
 
     self.assertEqual(
-        1, len(self._PreviousBuilds(master_name, builder_name, build_number)))
-
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testIteratePreviousBuildsFromFailed(self, mock_info):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-
-    mock_info.side_effect = [(500, None)]
-
-    with self.assertRaises(Exception):
-      self.assertEqual([],
-                       self._PreviousBuilds(master_name, builder_name,
-                                            build_number))
+        1, len(self._PreviousBuilds(master_name, builder_name, build_id)))
 
   def testGetLogLocationForBuildNoneData(self):
     self.assertIsNone(build_util._GetLogLocationForBuildbotBuild(None))

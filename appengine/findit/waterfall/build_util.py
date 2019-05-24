@@ -5,6 +5,7 @@
 import json
 import logging
 
+from buildbucket_proto.build_pb2 import BuilderID
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common import constants
@@ -23,7 +24,7 @@ HTTP_CLIENT_NO_404_ERROR = FinditHttpClient(no_error_logging_statuses=[404])
 
 
 def _BuildDataNeedUpdating(build):
-  return (not build.data or (
+  return (not build.build_id or (
       not build.completed and
       (time_util.GetUTCNow() - build.last_crawled_time).total_seconds() >= 300))
 
@@ -131,13 +132,6 @@ def GetBuildInfo(master_name, builder_name, build_number):
     build.put()
 
   return status_code, build_info
-
-
-def GetBuildEndTime(master_name, builder_name, build_number):
-  _, build = DownloadBuildData(master_name, builder_name, build_number)
-  build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
-                                         build_number, build.data)
-  return build_info.build_end_time
 
 
 def GetFailureType(build_info):
@@ -259,24 +253,30 @@ def FindValidBuildNumberForStepNearby(master_name,
   return None
 
 
-# TODO(crbug/804617): Modify this function to use new LUCI API when it's ready.
-def IteratePreviousBuildsFrom(master_name, builder_name, build_number,
-                              entry_limit):
+def IteratePreviousBuildsFrom(master_name, builder_name, build_id, entry_limit):
+  luci_project, luci_bucket = buildbot.GetLuciProjectAndBucketForMaster(
+      master_name)
+  builder = BuilderID(
+      project=luci_project, bucket=luci_bucket, builder=builder_name)
 
-  n = build_number - 1
   entry_number = 0
-  while n >= 0 and entry_number <= entry_limit:  # pragma: no branch.
-    status_code, build_info = GetBuildInfo(master_name, builder_name, n)
-    n -= 1
-    if build_info:
-      entry_number += 1
-      yield build_info
-    elif status_code == 404:
-      continue
-    else:
-      # 404 means we hit a gap. Otherwise there is something wrong.
-      raise Exception('Failed to download build data for build %s/%s/%d' %
-                      (master_name, builder_name, n))
+  # End_build_id in build_range when query the previous build.
+  end_build_id = build_id
+  while entry_number <= entry_limit:  # pragma: no branch.
+    search_builds_response = buildbucket_client.SearchV2BuildsOnBuilder(
+        builder,
+        build_range=(None, end_build_id),
+        page_size=1,
+        fields=FieldMask(paths=['builds.*.*']))
+
+    if not search_builds_response.builds:
+      # No more previous build.
+      return
+
+    previous_build = search_builds_response.builds[0]
+    end_build_id = previous_build.id
+    entry_number += 1
+    yield previous_build
 
 
 def GetBuilderInfoForLUCIBuild(build_id):

@@ -6,6 +6,8 @@
 from collections import defaultdict
 import logging
 
+from buildbucket_proto import common_pb2
+
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
 from libs import analysis_status
@@ -90,18 +92,22 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
   Returns:
     failure_info (CompileFailureInfo, TestFailureInfo): updated failure_info.
   """
+  _, build = build_util.DownloadBuildData(master_name, builder_name,
+                                          build_number)
   failed_steps = failure_info.failed_steps
   failure_info.builds = _UpdateStringTypedBuildKeyToInt(failure_info.builds)
+
   # Look back for first known failures.
-  for build_info in build_util.IteratePreviousBuildsFrom(
-      master_name, builder_name, build_number, _MAX_BUILDS_TO_CHECK):
-    # Extraction should stop when we reach to the first build.
+  for previous_build in build_util.IteratePreviousBuildsFrom(
+      master_name, builder_name, build.build_id, _MAX_BUILDS_TO_CHECK):
+    build_info = buildbot.ExtractBuildInfoFromV2Build(
+        master_name, builder_name, previous_build.number, previous_build)
 
     failure_info.builds[build_info.build_number] = (
         FailureInfoBuild.FromSerializable(
             _GetBlameListAndRevisionForBuild(build_info)))
 
-    if build_info.result == buildbot.SUCCESS:
+    if build_info.result == common_pb2.SUCCESS:
       for step_name in failed_steps:
         if failed_steps[step_name].last_pass is None:
           failed_steps[step_name].last_pass = build_info.build_number

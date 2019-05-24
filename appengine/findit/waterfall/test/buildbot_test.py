@@ -553,7 +553,7 @@ class BuildBotTest(unittest.TestCase):
     self.assertTrue(buildbot.ValidateBuildUrl(legacy_url))
     self.assertFalse(buildbot.ValidateBuildUrl(bad_url))
 
-  def testGGetLuciProjectAndBucketForMasterTry(self):
+  def testGetLuciProjectAndBucketForMasterTry(self):
     self.assertEqual(
         ('chromium', 'try'),
         buildbot.GetLuciProjectAndBucketForMaster('tryserver.chromium/linux'))

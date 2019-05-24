@@ -398,7 +398,7 @@ def GetBlameListForV2Build(build):
   previous_build = search_build_response.builds[
       0] if search_build_response.builds else None
   if not previous_build:
-    logging.error('No previous build found for build %d.', build.id)
+    logging.warning('No previous build found for build %d.', build.id)
     return None
 
   context = Context(
@@ -408,7 +408,8 @@ def GetBlameListForV2Build(build):
       gitiles_ref=build.input.gitiles_commit.ref,
       gitiles_id=build.input.gitiles_commit.id)
   repo_url = git.GetRepoUrlFromContext(context)
-  previous_build_gitiles_id = previous_build.input.gitiles_commit.id
+  previous_build_gitiles_id = (
+      previous_build.input.gitiles_commit.id if previous_build else None)
 
   return git.GetCommitsBetweenRevisionsInOrder(previous_build_gitiles_id,
                                                context.gitiles_id, repo_url)

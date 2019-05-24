@@ -7,11 +7,18 @@ import logging
 import mock
 import os
 
+from buildbucket_proto import common_pb2
+from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
+from buildbucket_proto.step_pb2 import Step
+
+from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from services import ci_failure
+from services import git
 from services import monitoring
 from services import step_util
 from services.parameters import BaseFailedSteps
@@ -53,33 +60,12 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     with open(file_name, 'r') as f:
       return f.read()
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(500, None))
-  def testFailedToExtractBuildInfo(self, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-    failed_steps = {'a': {'current_failure': 124, 'first_failure': 124}}
-    builds = {
-        124: {
-            'chromium_revision': 'some_git_hash',
-            'blame_list': ['some_git_hash']
-        }
-    }
-    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
-    builds = FailureInfoBuilds.FromSerializable(builds)
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
-                                   analysis_status.RUNNING)
-
-    failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
-    with self.assertRaises(Exception):
-      failure_info = ci_failure.CheckForFirstKnownFailure(
-          master_name, builder_name, build_number, failure_info)
-
-    self.assertEqual(failed_steps, failure_info.failed_steps)
-
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self, mock_fn):
+  @mock.patch.object(
+      buildbot, 'GetBlameListForV2Build', return_value=['rev123'])
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
+  def testStopLookingBackIfAllFailedStepsPassedInLastBuild(
+      self, mock_search_builds, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -90,20 +76,29 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'supported': True
         }
     }
-    builds = {
-        124: {
-            'chromium_revision': 'some_git_hash',
-            'blame_list': ['some_git_hash']
-        }
-    }
+    builds = {124: {'chromium_revision': 'rev124', 'blame_list': ['rev124']}}
     failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
     builds = FailureInfoBuilds.FromSerializable(builds)
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.build_id = '80000000124'
+    build.completed = True
+    build.put()
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
-    # Setup build data for builds:
-    mock_fn.side_effect = [(200,
-                            self._GetBuildData(master_name, builder_name, 123))]
+    build_123 = Build(number=123, status=common_pb2.FAILURE)
+    step1 = Step(name='a', status=common_pb2.SUCCESS)
+    log = step1.logs.add()
+    log.name = 'stdout'
+    step2 = Step(name='net_unittests', status=common_pb2.FAILURE)
+    log = step2.logs.add()
+    log.name = 'stdout'
+    step3 = Step(name='unit_tests', status=common_pb2.FAILURE)
+    log = step3.logs.add()
+    log.name = 'stdout'
+    build_123.steps.extend([step1, step2, step3])
+    build_123.input.gitiles_commit.id = 'rev123'
+    mock_search_builds.side_effect = [SearchBuildsResponse(builds=[build_123])]
 
     expected_failed_steps = {
         'a': {
@@ -116,12 +111,12 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     expected_builds = {
         124: {
-            'chromium_revision': 'some_git_hash',
-            'blame_list': ['some_git_hash']
+            'chromium_revision': 'rev124',
+            'blame_list': ['rev124']
         },
         123: {
-            'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
-            'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
+            'chromium_revision': 'rev123',
+            'blame_list': ['rev123']
         }
     }
 
@@ -133,8 +128,11 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
                      failure_info.failed_steps.ToSerializable())
     self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testStopLookingBackIfFindTheFirstBuild(self, mock_fn):
+  @mock.patch.object(
+      buildbot, 'GetBlameListForV2Build', side_effect=[['rev1'], ['rev0']])
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
+  def testStopLookingBackIfFindTheFirstBuild(self, mock_search_builds, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 2
@@ -150,22 +148,38 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'supported': True
         }
     }
-    builds = {
-        '2': {
-            'chromium_revision': '5934404dc5392ab3ae2c82b52b366889fb858d91',
-            'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
-        }
-    }
+    builds = {'2': {'chromium_revision': 'rev2', 'blame_list': ['rev2']}}
     failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
     builds = FailureInfoBuilds.FromSerializable(builds)
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.build_id = '80000000124'
+    build.completed = True
+    build.put()
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
     # Setup build data for builds:
-    mock_fn.side_effect = [(200, self._GetBuildData(
-        master_name, builder_name, 1)), (200,
-                                         self._GetBuildData(
-                                             master_name, builder_name, 0))]
+    step1 = Step(name='a_tests', status=common_pb2.FAILURE)
+    log = step1.logs.add()
+    log.name = 'stdout'
+
+    step2 = Step(name='unit_tests', status=common_pb2.FAILURE)
+    log = step2.logs.add()
+    log.name = 'stdout'
+
+    build_1 = Build(number=1, status=common_pb2.FAILURE)
+    build_1.steps.extend([step1, step2])
+    build_1.input.gitiles_commit.id = 'rev1'
+
+    build_0 = Build(number=0, status=common_pb2.FAILURE)
+    build_0.steps.extend([step1, step2])
+    build_0.input.gitiles_commit.id = 'rev0'
+
+    mock_search_builds.side_effect = [
+        SearchBuildsResponse(builds=[build_1]),
+        SearchBuildsResponse(builds=[build_0]),
+        SearchBuildsResponse(builds=[])
+    ]
 
     expected_failed_steps = {
         'a_tests': {
@@ -184,16 +198,16 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     expected_builds = {
         2: {
-            'chromium_revision': '5934404dc5392ab3ae2c82b52b366889fb858d91',
-            'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
+            'chromium_revision': 'rev2',
+            'blame_list': ['rev2']
         },
         1: {
-            'chromium_revision': '5934404dc5392ab3ae2c82b52b366889fb858d91',
-            'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
+            'chromium_revision': 'rev1',
+            'blame_list': ['rev1']
         },
         0: {
-            'chromium_revision': '5934404dc5392ab3ae2c82b52b366889fb858d91',
-            'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
+            'chromium_revision': 'rev0',
+            'blame_list': ['rev0']
         },
     }
     failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
@@ -205,8 +219,11 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
                      failure_info.failed_steps.ToSerializable())
     self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testLookBackUntilGreenBuild(self, mock_fn):
+  @mock.patch.object(
+      buildbot, 'GetBlameListForV2Build', side_effect=[['rev122'], ['rev121']])
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
+  def testLookBackUntilGreenBuild(self, mock_search_builds, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -222,33 +239,34 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'supported': True
         }
     }
-    builds = {
-        123: {
-            'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
-            'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
-        }
-    }
+    builds = {123: {'chromium_revision': 'rev123', 'blame_list': ['rev123']}}
     failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
     builds = FailureInfoBuilds.FromSerializable(builds)
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.build_id = '80000000123'
+    build.completed = True
+    build.put()
 
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
-    # Setup build data for builds:
-    # 122: mock a build in datastore to ensure it is not fetched again.
-    build = WfBuild.Create(master_name, builder_name, 122)
-    build.data = self._GetBuildData(master_name, builder_name, 122)
-    build.completed = True
-    build.put()
-    # 121: mock a build in datastore to ensure it is updated.
-    build = WfBuild.Create(master_name, builder_name, 121)
-    build.data = 'Blow up if used!'
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(7200)
-    build.completed = False
-    build.put()
+    build_121 = Build(number=121, status=common_pb2.SUCCESS)
+    build_121.input.gitiles_commit.id = 'rev121'
 
-    mock_fn.side_effect = [(200,
-                            self._GetBuildData(master_name, builder_name, 121))]
+    build_122 = Build(number=122, status=common_pb2.FAILURE)
+    step1 = Step(name='net_unittests', status=common_pb2.SUCCESS)
+    log = step1.logs.add()
+    log.name = 'stdout'
+    step2 = Step(name='unit_tests', status=common_pb2.FAILURE)
+    log = step2.logs.add()
+    log.name = 'stdout'
+    build_122.steps.extend([step1, step2])
+    build_122.input.gitiles_commit.id = 'rev122'
+
+    mock_search_builds.side_effect = [
+        SearchBuildsResponse(builds=[build_122]),
+        SearchBuildsResponse(builds=[build_121])
+    ]
 
     expected_failed_steps = {
         'net_unittests': {
@@ -267,112 +285,22 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     expected_builds = {
         123: {
-            'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
-            'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
+            'chromium_revision': 'rev123',
+            'blame_list': ['rev123']
         },
         122: {
-            'chromium_revision': '5934404dc5392ab3ae2c82b52b366889fb858d91',
-            'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
+            'chromium_revision': 'rev122',
+            'blame_list': ['rev122']
         },
         121: {
-            'chromium_revision':
-                '5934404dc5392ab3ae2c82b52b366889fb858d91',
-            'blame_list': [
-                '2fe8767f011a20ed8079d3aba7008acd95842f79',
-                'c0ed134137c98c2935bf32e85f74d4e94c2b980d',
-                '63820a74b4b5a3e6707ab89f92343e7fae7104f0'
-            ]
+            'chromium_revision': 'rev121',
+            'blame_list': ['rev121',]
         }
     }
 
     failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
     ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
                                          build_number, failure_info)
-    self.assertEqual(expected_failed_steps,
-                     failure_info.failed_steps.ToSerializable())
-    self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
-
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testCheckForFirstKnownFailureHitBuildNumberGap(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    failed_steps = {
-        'net_unittests': {
-            'current_failure': 123,
-            'first_failure': 123,
-            'supported': True
-        },
-        'unit_tests': {
-            'current_failure': 123,
-            'first_failure': 123,
-            'supported': True
-        }
-    }
-    builds = {
-        123: {
-            'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
-            'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
-        }
-    }
-    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
-    builds = FailureInfoBuilds.FromSerializable(builds)
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
-                                   analysis_status.RUNNING)
-
-    # Setup build data for builds:
-    # 122: mock a gap.
-    build = WfBuild.Create(master_name, builder_name, 122)
-    build.data = {}
-    build.completed = False
-    build.put()
-    # 121: mock a build in datastore to ensure it is updated.
-    build = WfBuild.Create(master_name, builder_name, 121)
-    build.data = 'Blow up if used!'
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(7200)
-    build.completed = False
-    build.put()
-
-    mock_fn.side_effect = [(404, None), (200,
-                                         self._GetBuildData(
-                                             master_name, builder_name, 121))]
-
-    expected_failed_steps = {
-        'net_unittests': {
-            'last_pass': 121,
-            'current_failure': 123,
-            'first_failure': 123,
-            'supported': True
-        },
-        'unit_tests': {
-            'last_pass': 121,
-            'current_failure': 123,
-            'first_failure': 123,
-            'supported': True
-        }
-    }
-
-    expected_builds = {
-        123: {
-            'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
-            'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
-        },
-        121: {
-            'chromium_revision':
-                '5934404dc5392ab3ae2c82b52b366889fb858d91',
-            'blame_list': [
-                '2fe8767f011a20ed8079d3aba7008acd95842f79',
-                'c0ed134137c98c2935bf32e85f74d4e94c2b980d',
-                '63820a74b4b5a3e6707ab89f92343e7fae7104f0'
-            ]
-        }
-    }
-
-    failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
-    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
-                                         build_number, failure_info)
-
     self.assertEqual(expected_failed_steps,
                      failure_info.failed_steps.ToSerializable())
     self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
