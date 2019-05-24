@@ -191,7 +191,7 @@ def UpdateCompileFailuresWithFirstFailureInfo(context, build,
   # Requests to buildbucket for each failed build separately.
   search_builds_response = buildbucket_client.SearchV2BuildsOnBuilder(
       build.builder,
-      create_time_range=(None, build.create_time),
+      build_range=(None, build.id),
       page_size=constants.MAX_BUILDS_TO_CHECK)
   previous_builds = search_builds_response.builds
 

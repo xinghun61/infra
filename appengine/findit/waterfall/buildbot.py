@@ -14,12 +14,15 @@ import urllib
 
 from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import BuilderID
+from google.protobuf import json_format
 from google.protobuf.field_mask_pb2 import FieldMask
 
 from common import rpc_util
 from common.waterfall import buildbucket_client
+from findit_v2.services.context import Context
 from gae_libs.caches import PickledMemCache
 from libs.cache_decorator import Cached
+from services import git
 from waterfall.build_info import BuildInfo
 
 # TODO(crbug.com/787676): Use an api rather than parse urls to get the relevant
@@ -87,7 +90,8 @@ _COMMIT_POSITION_PATTERN = re.compile(r'refs/heads/master@{#(\d+)}$',
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
 
 
-def _ProcessMiloData(response_json, master_name, builder_name, build_number=''):
+def _ProcessMiloData(response_json, master_name, builder_name,
+                     build_number=''):  # pragma: no cover.
   if not response_json:
     return None
   try:
@@ -379,6 +383,119 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   return build_info
 
 
+def GetBlameListForV2Build(build):
+  """ Uses gitiles_commit from the previous build and current build to get
+     blame_list.
+
+  Args:
+    build (build_pb2.Build): All info about the build.
+
+  Returns:
+    (list of str): Blame_list of the build.
+  """
+  search_build_response = buildbucket_client.SearchV2BuildsOnBuilder(
+      build.builder, build_range=(None, build.id), page_size=1)
+  previous_build = search_build_response.builds[
+      0] if search_build_response.builds else None
+  if not previous_build:
+    logging.error('No previous build found for build %d.', build.id)
+    return None
+
+  context = Context(
+      luci_project_name=build.builder.project,
+      gitiles_host=build.input.gitiles_commit.host,
+      gitiles_project=build.input.gitiles_commit.project,
+      gitiles_ref=build.input.gitiles_commit.ref,
+      gitiles_id=build.input.gitiles_commit.id)
+  repo_url = git.GetRepoUrlFromContext(context)
+  previous_build_gitiles_id = previous_build.input.gitiles_commit.id
+
+  return git.GetCommitsBetweenRevisionsInOrder(previous_build_gitiles_id,
+                                               context.gitiles_id, repo_url)
+
+
+def ExtractBuildInfoFromV2Build(master_name, builder_name, build_number, build):
+  """Generates BuildInfo using bb v2 build info.
+
+  This conversion is needed to keep Findit v1 running, will be deprecated in
+  v2 (TODO: crbug.com/966982).
+
+  Args:
+    master_name (str): The name of the master.
+    builder_name (str): The name of the builder.
+    build_number (int): The build number.
+    build (build_pb2.Build): All info about the build.
+
+  Returns:
+    (BuildInfo)
+  """
+  build_info = BuildInfo(master_name, builder_name, build_number)
+
+  input_properties = json_format.MessageToDict(build.input.properties)
+
+  chromium_revision = build.input.gitiles_commit.id
+  runtime = input_properties.get('$recipe_engine/runtime') or {}
+
+  build_info.chromium_revision = chromium_revision
+  context = Context(
+      luci_project_name=build.builder.project,
+      gitiles_host=build.input.gitiles_commit.host,
+      gitiles_project=build.input.gitiles_commit.project,
+      gitiles_ref=build.input.gitiles_commit.ref,
+      gitiles_id=build.input.gitiles_commit.id)
+  repo_url = git.GetRepoUrlFromContext(context)
+  build_info.commit_position = git.GetCommitPositionFromRevision(
+      context.gitiles_id, repo_url=repo_url)
+
+  build_info.build_start_time = build.create_time.ToDatetime()
+  build_info.build_end_time = build.end_time.ToDatetime()
+  build_info.completed = bool(build_info.build_end_time)
+  build_info.result = build.status
+  build_info.parent_buildername = input_properties.get('parent_buildername')
+  build_info.parent_mastername = input_properties.get('parent_mastername')
+  build_info.buildbucket_id = build.id
+  build_info.buildbucket_bucket = build.builder.bucket
+  build_info.is_luci = runtime.get('is_luci')
+
+  build_info.blame_list = GetBlameListForV2Build(build)
+
+  # Step categories:
+  # 1. A step is passed if it is in SUCCESS status.
+  # 2. A step is failed if it is in FAILURE status.
+  # 3. A step is not passed if it is not in SUCCESS status. This category
+  #   includes steps in statuses: FAILURE, INFRA_FAILURE, CANCELED, etc.
+  for step in build.steps:
+    step_name = step.name
+    step_status = step.status
+
+    if not step_name:
+      continue
+
+    if step_status in [
+        common_pb2.STATUS_UNSPECIFIED, common_pb2.SCHEDULED, common_pb2.STARTED
+    ]:
+      continue
+
+    if step_status != common_pb2.SUCCESS:
+      build_info.not_passed_steps.append(step_name)
+
+    if step_name == 'Failure reason':
+      # 'Failure reason' is always red when the build breaks or has exception,
+      # but it is not a failed step.
+      continue
+
+    if not step.logs:
+      # Skip wrapping steps.
+      continue
+
+    if step_status == common_pb2.SUCCESS:
+      build_info.passed_steps.append(step_name)
+    elif step_status == common_pb2.FAILURE:
+      build_info.failed_steps.append(step_name)
+
+  return build_info
+
+
 def ValidateBuildUrl(url):
   return bool(
       _MILO_MASTER_URL_PATTERN.match(url) or
@@ -403,6 +520,6 @@ def GetLuciProjectAndBucketForMaster(master_name):
 
   bucket = 'ci'
   if master_name.startswith('tryserver'):
-    bucket = 'cq'
+    bucket = 'try'
 
   return 'chromium', bucket

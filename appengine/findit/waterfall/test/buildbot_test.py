@@ -4,19 +4,21 @@
 
 import base64
 from datetime import datetime
-import gzip
-import io
 import json
 import mock
 import os
 import unittest
 
+from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
+from buildbucket_proto.build_pb2 import BuilderID
 from buildbucket_proto.rpc_pb2 import SearchBuildsResponse
+from buildbucket_proto.step_pb2 import Step
 
 from common import rpc_util
 from common.waterfall import buildbucket_client
 from libs.http.retry_http_client import RetryHttpClient
+from services import git
 from waterfall import buildbot
 
 
@@ -379,6 +381,159 @@ class BuildBotTest(unittest.TestCase):
 
     self.assertEqual(expected_blame_list, build_info.blame_list)
 
+  @mock.patch.object(
+      buildbot, 'GetBlameListForV2Build', return_value=['rev2', 'rev3'])
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)
+  def testExtractBuildInfoFromV2BuildComplete(self, *_):
+    master_name = 'chromium.linux'
+    builder_name = 'Linux Tests'
+    bucket = 'ci'
+    build_id = 8765000000056123
+    build_number = 56123
+    build_start_time = datetime(2019, 5, 21)
+    build_end_time = datetime(2019, 5, 21, 1)
+    gitiles_id = 'rev4'
+
+    build = Build(
+        id=build_id,
+        number=build_number,
+        builder=BuilderID(
+            project='chromium', bucket=bucket, builder=builder_name))
+    build.input.gitiles_commit.project = 'chromium/src'
+    build.input.gitiles_commit.host = 'chromium.googlesource.com'
+    build.input.gitiles_commit.ref = 'refs/heads/master'
+    build.input.gitiles_commit.id = gitiles_id
+    build.input.properties['$recipe_engine/runtime'] = {'is_luci': True}
+    build.input.properties['parent_buildername'] = 'Linux Builder'
+    build.input.properties['parent_mastername'] = 'chromium.linux'
+
+    build.create_time.FromDatetime(build_start_time)
+    build.end_time.FromDatetime(build_end_time)
+    build.status = common_pb2.FAILURE
+
+    step1 = Step(name='s1', status=common_pb2.SUCCESS)
+    log = step1.logs.add()
+    log.name = 'stdout'
+    step2 = Step(name='s2', status=common_pb2.SUCCESS)
+    step3 = Step(name='s3', status=common_pb2.FAILURE)
+    log = step3.logs.add()
+    log.name = 'stdout'
+    step4 = Step(name='s4', status=common_pb2.FAILURE)
+    step_fr = Step(name='Failure reason', status=common_pb2.FAILURE)
+    build.steps.extend([step1, step2, step3, step4, step_fr])
+
+    build_info = buildbot.ExtractBuildInfoFromV2Build(master_name, builder_name,
+                                                      build_number, build)
+
+    self.assertEqual(master_name, build_info.master_name)
+    self.assertEqual(builder_name, build_info.builder_name)
+    self.assertEqual(build_number, build_info.build_number)
+    self.assertEqual(build_start_time, build_info.build_start_time)
+    self.assertEqual(build_end_time, build_info.build_end_time)
+    self.assertEqual(gitiles_id, build_info.chromium_revision)
+    self.assertEqual(654332, build_info.commit_position)
+    self.assertTrue(build_info.completed)
+    self.assertEqual(common_pb2.FAILURE, build_info.result)
+    self.assertItemsEqual(['rev2', 'rev3'], build_info.blame_list)
+    self.assertItemsEqual(['s3'], build_info.failed_steps)
+    self.assertItemsEqual(['s1'], build_info.passed_steps)
+    self.assertItemsEqual(['s3', 's4', 'Failure reason'],
+                          build_info.not_passed_steps)
+    self.assertEqual(bucket, build_info.buildbucket_bucket)
+    self.assertEqual(build_id, build_info.buildbucket_id)
+    self.assertTrue(build_info.is_luci)
+
+  @mock.patch.object(
+      buildbot, 'GetBlameListForV2Build', return_value=['rev2', 'rev3'])
+  @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)
+  def testExtractBuildInfoFromV2BuildRunning(self, *_):
+    master_name = 'chromium.linux'
+    builder_name = 'Linux Tests'
+    bucket = 'ci'
+    build_id = 8765000000056123
+    build_number = 56123
+    build_start_time = datetime(2019, 5, 21)
+    build_end_time = datetime(2019, 5, 21, 1)
+    gitiles_id = 'rev4'
+
+    build = Build(
+        id=build_id,
+        number=build_number,
+        builder=BuilderID(
+            project='chromium', bucket=bucket, builder=builder_name))
+    build.input.gitiles_commit.project = 'chromium/src'
+    build.input.gitiles_commit.host = 'chromium.googlesource.com'
+    build.input.gitiles_commit.ref = 'refs/heads/master'
+    build.input.gitiles_commit.id = gitiles_id
+    build.input.properties['$recipe_engine/runtime'] = {'is_luci': True}
+    build.input.properties['parent_buildername'] = 'Linux Builder'
+    build.input.properties['parent_mastername'] = 'chromium.linux'
+
+    build.create_time.FromDatetime(build_start_time)
+    build.end_time.FromDatetime(build_end_time)
+    build.status = common_pb2.STARTED
+
+    step1 = Step(name='s1', status=common_pb2.SUCCESS)
+    log = step1.logs.add()
+    log.name = 'stdout'
+    step2 = Step(name='s2', status=common_pb2.SUCCESS)
+    step3 = Step(name='s3', status=common_pb2.FAILURE)
+    log = step3.logs.add()
+    log.name = 'stdout'
+    step4 = Step(name='s4', status=common_pb2.FAILURE)
+    step5 = Step(name='s5', status=common_pb2.STARTED)
+    build.steps.extend([step1, step2, step3, step4, step5])
+
+    build_info = buildbot.ExtractBuildInfoFromV2Build(master_name, builder_name,
+                                                      build_number, build)
+
+    self.assertEqual(master_name, build_info.master_name)
+    self.assertEqual(builder_name, build_info.builder_name)
+    self.assertEqual(build_number, build_info.build_number)
+    self.assertEqual(build_start_time, build_info.build_start_time)
+    self.assertEqual(build_end_time, build_info.build_end_time)
+    self.assertEqual(gitiles_id, build_info.chromium_revision)
+    self.assertEqual(654332, build_info.commit_position)
+    self.assertTrue(build_info.completed)
+    self.assertEqual(common_pb2.STARTED, build_info.result)
+    self.assertItemsEqual(['rev2', 'rev3'], build_info.blame_list)
+    self.assertItemsEqual(['s3'], build_info.failed_steps)
+    self.assertItemsEqual(['s1'], build_info.passed_steps)
+    self.assertItemsEqual(['s3', 's4'], build_info.not_passed_steps)
+    self.assertEqual(bucket, build_info.buildbucket_bucket)
+    self.assertEqual(build_id, build_info.buildbucket_id)
+    self.assertTrue(build_info.is_luci)
+
+  @mock.patch.object(git, 'GetCommitsBetweenRevisionsInOrder')
+  @mock.patch.object(buildbucket_client, 'SearchV2BuildsOnBuilder')
+  def testGetBlameListForV2Build(self, mock_search_build, mock_revisions):
+    gitiles_project = 'chromium/src'
+    gitiles_host = 'chromium.googlesource.com'
+    gitiles_ref = 'refs/heads/master'
+
+    build = Build()
+    build.input.gitiles_commit.project = gitiles_project
+    build.input.gitiles_commit.host = gitiles_host
+    build.input.gitiles_commit.ref = gitiles_ref
+    build.input.gitiles_commit.id = 'rev4'
+
+    previous_build = Build()
+    previous_build.input.gitiles_commit.project = gitiles_project
+    previous_build.input.gitiles_commit.host = gitiles_host
+    previous_build.input.gitiles_commit.ref = gitiles_ref
+    previous_build.input.gitiles_commit.id = 'rev1'
+    mock_search_build.return_value = SearchBuildsResponse(
+        builds=[previous_build])
+
+    expected_blame_list = ['rev4', 'rev3', 'rev2']
+    mock_revisions.return_value = expected_blame_list
+
+    self.assertEqual(expected_blame_list,
+                     buildbot.GetBlameListForV2Build(build))
+
+    mock_revisions.assert_called_once_with(
+        'rev1', 'rev4', 'https://chromium.googlesource.com/chromium/src.git')
+
   def testGetCommitPosition(self):
     self.assertIsNone(buildbot.GetCommitPosition(None))
     self.assertIsNone(buildbot.GetCommitPosition(''))
@@ -397,3 +552,8 @@ class BuildBotTest(unittest.TestCase):
     self.assertTrue(buildbot.ValidateBuildUrl(non_swarm_url))
     self.assertTrue(buildbot.ValidateBuildUrl(legacy_url))
     self.assertFalse(buildbot.ValidateBuildUrl(bad_url))
+
+  def testGGetLuciProjectAndBucketForMasterTry(self):
+    self.assertEqual(
+        ('chromium', 'try'),
+        buildbot.GetLuciProjectAndBucketForMaster('tryserver.chromium/linux'))

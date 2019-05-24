@@ -367,6 +367,7 @@ def GetV2BuildByBuilderAndBuildNumber(project,
 
 def SearchV2BuildsOnBuilder(builder,
                             status=None,
+                            build_range=None,
                             create_time_range=None,
                             page_size=None,
                             fields=None):
@@ -391,6 +392,14 @@ def SearchV2BuildsOnBuilder(builder,
         fields are populated by default.
   """
   predicate = BuildPredicate(builder=builder, status=status)
+
+  if build_range:
+    if build_range[0]:  # pragma: no cover.
+      # Left bound specified.
+      predicate.build.start_build_id = int(build_range[0])
+    if build_range[1]:
+      # Right bound specified.
+      predicate.build.end_build_id = int(build_range[1])
 
   if create_time_range:
     if create_time_range[0]:  # pragma: no cover.

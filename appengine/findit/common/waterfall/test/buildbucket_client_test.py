@@ -358,7 +358,25 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     mock_post.return_value = (200, binary_data, mock_headers)
 
     res = buildbucket_client.SearchV2BuildsOnBuilder(
-        builder, create_time_range=(0, datetime(2019, 4, 9, 3, 33)))
+        builder, create_time_range=(None, datetime(2019, 4, 9, 3, 33)))
+
+    self.assertEqual('next_page_token', res.next_page_token)
+    self.assertEqual(1, len(res.builds))
+    self.assertEqual(100, res.builds[0].number)
+
+  @mock.patch.object(FinditHttpClient, 'Post')
+  def testSearchV2BuildsOnBuilderWithBuildRange(self, mock_post):
+    builder = BuilderID(project='chromium', bucket='try', builder='linux-rel')
+
+    mock_build = Build(number=100)
+    mock_response = SearchBuildsResponse(
+        next_page_token='next_page_token', builds=[mock_build])
+    mock_headers = {'X-Prpc-Grpc-Code': '0'}
+    binary_data = mock_response.SerializeToString()
+    mock_post.return_value = (200, binary_data, mock_headers)
+
+    res = buildbucket_client.SearchV2BuildsOnBuilder(
+        builder, build_range=(None, 800000000099), page_size=1)
 
     self.assertEqual('next_page_token', res.next_page_token)
     self.assertEqual(1, len(res.builds))
