@@ -232,7 +232,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
 
     reference_build = BuildInfo(master_name, builder_name, build_number)
     reference_build.commit_position = start_commit_position
-    mock_reference_build.return_value = (None, reference_build)
+    mock_reference_build.return_value = reference_build
 
     luci_name = 'chromium'
     bucket_name = 'ci'
@@ -333,7 +333,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
     reference_build.commit_position = start_commit_position
     reference_build.parent_mastername = parent_mastername
     reference_build.parent_buildername = parent_buildername
-    mock_reference_build.return_value = (None, reference_build)
+    mock_reference_build.return_value = reference_build
     mock_heuristic.return_value = False
 
     calculated_next_commit_id = CommitID(commit_position=999, revision='r999')
@@ -434,7 +434,7 @@ class NextCommitPositionPipelineTest(WaterfallTestCase):
 
     reference_build = BuildInfo(master_name, builder_name, build_number)
     reference_build.commit_position = start_commit_position
-    mock_reference_build.return_value = (None, reference_build)
+    mock_reference_build.return_value = reference_build
 
     lower_bound_build = BuildInfo(master_name, builder_name, build_number - 1)
     lower_bound_build.commit_position = expected_next_commit_id.commit_position

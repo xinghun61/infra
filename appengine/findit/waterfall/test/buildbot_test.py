@@ -155,20 +155,6 @@ class BuildBotTest(unittest.TestCase):
         expected_url,
         buildbot.CreateBuildUrl(master_name, builder_name, build_number))
 
-  @mock.patch.object(rpc_util, 'DownloadJsonData')
-  def testGetBuildDataFromMiloSuccess(self, mock_fn):
-    master_name = 'a'
-    builder_name = 'b c'
-    build_number = 1
-
-    response = {'data': base64.b64encode('response')}
-    mock_fn.return_value = (200, json.dumps(response))
-
-    self.assertEqual(
-        (200, 'response'),
-        buildbot.GetBuildDataFromMilo(master_name, builder_name, build_number,
-                                      self.http_client))
-
   @mock.patch.object(
       buildbot, 'GetBlameListForV2Build', return_value=['rev2', 'rev3'])
   @mock.patch.object(git, 'GetCommitPositionFromRevision', return_value=654332)

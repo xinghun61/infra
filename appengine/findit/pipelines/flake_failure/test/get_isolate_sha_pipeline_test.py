@@ -183,7 +183,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     build.commit_position = requested_commit_position
     build.parent_mastername = parent_mastername
     build.parent_buildername = parent_buildername
-    mocked_reference_build.return_value = (None, build)
+    mocked_reference_build.return_value = build
 
     isolated_target = IsolatedTarget.Create(
         build_id, luci_name, bucket_name, parent_mastername, parent_buildername,
@@ -277,7 +277,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
 
     build = BuildInfo(master_name, builder_name, build_number)
     build.commit_position = containing_build_commit_position
-    mocked_reference_build.return_value = (None, build)
+    mocked_reference_build.return_value = build
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -368,7 +368,7 @@ class GetIsolateShaPipelineTest(WaterfallTestCase):
     build = BuildInfo(master_name, builder_name, build_number)
     build.commit_position = requested_commit_position
     mocked_build_info.return_value = (None, build)
-    mocked_reference_build.return_value = (None, build)
+    mocked_reference_build.return_value = build
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)

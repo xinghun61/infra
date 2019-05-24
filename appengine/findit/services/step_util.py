@@ -47,8 +47,8 @@ def _GetCandidateBounds(master_name, builder_name, upper_bound, lower_bound,
   """
   while upper_bound - lower_bound > 1:
     candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
-    _, candidate_build = build_util.GetBuildInfo(master_name, builder_name,
-                                                 candidate_build_number)
+    candidate_build = build_util.GetBuildInfo(master_name, builder_name,
+                                              candidate_build_number)
     assert candidate_build
 
     if candidate_build.commit_position == requested_commit_position:
@@ -130,8 +130,8 @@ def GetValidBuild(master_name, builder_name, requested_build_number, step_name,
   while increment <= maximum_search_distance:
     candidate_build_number = requested_build_number + increment * direction
 
-    _, candidate_build = build_util.GetBuildInfo(master_name, builder_name,
-                                                 candidate_build_number)
+    candidate_build = build_util.GetBuildInfo(master_name, builder_name,
+                                              candidate_build_number)
     if (candidate_build and candidate_build.commit_position is not None and
         (candidate_build.result != common_pb2.INFRA_FAILURE or
          swarming.CanFindSwarmingTaskFromBuildForAStep(
@@ -228,8 +228,8 @@ def GetValidBoundingBuildsForStep(
 
   assert upper_bound_build_number is not None, 'upper_bound can\'t be None'
 
-  _, latest_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                 upper_bound_build_number)
+  latest_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                              upper_bound_build_number)
   logging.debug('latest_build_info: %r', latest_build_info)
 
   assert latest_build_info, 'Couldn\'t find build info for %s/%s/%s' % (
@@ -448,8 +448,7 @@ def GetWaterfallBuildStepLog(master_name,
                              log_name='stdout'):
   """Returns specific log of the specified step."""
 
-  _, build = build_util.DownloadBuildData(master_name, builder_name,
-                                          build_number)
+  build = build_util.DownloadBuildData(master_name, builder_name, build_number)
 
   if build.build_id:
     # This build should be a LUCI build.

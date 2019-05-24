@@ -506,8 +506,7 @@ class BuildFailure(BaseHandler):
       # Only allow admin to force a re-run and set the build_completed.
       force = is_admin and self.request.get('force') == '1'
 
-      _, build = build_util.GetBuildInfo(master_name, builder_name,
-                                         build_number)
+      build = build_util.GetBuildInfo(master_name, builder_name, build_number)
       if not build:
         return BaseHandler.CreateError(
             'Can\'t get information about build "%s/%s/%s".' %

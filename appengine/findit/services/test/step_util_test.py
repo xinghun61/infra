@@ -37,7 +37,7 @@ def _MockedGetBuildInfo(master_name, builder_name, build_number):
   build.commit_position = (build_number + 1) * 10
   build.result = (
       common_pb2.SUCCESS if build_number > 4 else common_pb2.INFRA_FAILURE)
-  return 200, build
+  return build
 
 
 class StepUtilTest(wf_testcase.WaterfallTestCase):
@@ -93,9 +93,9 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     valid_build_102.commit_position = 1020
 
     mocked_get_build_info.side_effect = [
-        (mock.ANY, invalid_build_100),
-        (mock.ANY, invalid_build_101),
-        (mock.ANY, valid_build_102),
+        invalid_build_100,
+        invalid_build_101,
+        valid_build_102,
     ]
 
     self.assertEqual(
@@ -115,9 +115,9 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     valid_build_102.commit_position = 1020
 
     mocked_get_build_info.side_effect = [
-        (mock.ANY, invalid_build_100),
-        (mock.ANY, invalid_build_101),
-        (mock.ANY, valid_build_102),
+        invalid_build_100,
+        invalid_build_101,
+        valid_build_102,
     ]
 
     self.assertIsNone(
@@ -136,9 +136,9 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     valid_build_98.commit_position = 980
 
     mocked_get_build_info.side_effect = [
-        (mock.ANY, invalid_build_100),
-        (mock.ANY, invalid_build_99),
-        (mock.ANY, valid_build_98),
+        invalid_build_100,
+        invalid_build_99,
+        valid_build_98,
     ]
 
     self.assertEqual(
@@ -260,14 +260,14 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
       'GetStepLogLegacy',
       return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
   @mock.patch.object(
-      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+      build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
   def testGetStepMetadata(self, *_):
     step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
                                                        'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
   @mock.patch.object(
-      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+      build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
   @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value=':')
   def testMalformattedNinjaInfo(self, *_):
     step_metadata = step_util.GetWaterfallBuildStepLog(
@@ -275,7 +275,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(step_metadata)
 
   @mock.patch.object(
-      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+      build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
   def testGetStepMetadataStepNone(self, *_):
@@ -284,7 +284,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(step_metadata)
 
   @mock.patch.object(
-      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+      build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
   @mock.patch.object(logdog_util, '_GetStreamForStep', return_value=None)
@@ -302,13 +302,13 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
     build = WfBuild.Create('m', 'b', 123)
     build.build_id = '8948240770002521488'
     build.put()
-    mock_build.return_value = (None, build)
+    mock_build.return_value = build
     step_metadata = step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None,
                                                        'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
   @mock.patch.object(
-      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+      build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
   @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
@@ -319,7 +319,7 @@ class StepUtilTest(wf_testcase.WaterfallTestCase):
         step_util.GetWaterfallBuildStepLog('m', 'b', 123, 's', None))
 
   @mock.patch.object(
-      build_util, 'DownloadBuildData', return_value=(200, MockWaterfallBuild()))
+      build_util, 'DownloadBuildData', return_value=MockWaterfallBuild())
   @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log')
   @mock.patch.object(logging, 'error')
   def testGetStepLogNotJosonLoadable(self, mocked_log, *_):

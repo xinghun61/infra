@@ -355,7 +355,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(404, None))
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testCannotGetBuildInfo(self, mocked_ValidateAuthToken, _):
     mocked_ValidateAuthToken.side_effect = [(True, False)]
@@ -391,7 +391,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.completed = False
-    mock_fn.return_value = (200, build_info)
+    mock_fn.return_value = build_info
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
@@ -430,7 +430,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.completed = False
-    mock_fn.return_value = (200, build_info)
+    mock_fn.return_value = build_info
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
@@ -456,7 +456,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.completed = False
-    mock_fn.return_value = (200, build_info)
+    mock_fn.return_value = build_info
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=False)
 

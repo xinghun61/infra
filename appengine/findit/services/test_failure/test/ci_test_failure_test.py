@@ -10,6 +10,7 @@ from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
 from services import ci_failure
 from services import constants
+from services import step_util
 from services import swarmed_test_util
 from services import swarming
 from services.parameters import FailureInfoBuilds
@@ -110,10 +111,11 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
+  @mock.patch.object(step_util, 'GetCanonicalStepName', return_value='abc_test')
   @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
   @mock.patch.object(ci_test_failure, 'swarmed_test_util')
   def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(
-      self, mock_module, _):
+      self, mock_module, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 221
@@ -179,32 +181,38 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
                 'status': 'SUCCESS',
                 'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
             }],
-            'Unittest1.Subtest2': [{
-                'elapsed_time_ms': 66,
-                'losless_snippet': True,
-                'output_snippet': 'a/b/u1s2.cc:1234: Failure\\n',
-                'status': 'FAILURE',
-                'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDogRmF'
-            }, {
-                'elapsed_time_ms': 50,
-                'losless_snippet': True,
-                'output_snippet': '[       OK ]\\n',
-                'status': 'SUCCESS',
-                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
-            }],
-            'Unittest2.Subtest1': [{
-                'elapsed_time_ms': 56,
-                'losless_snippet': True,
-                'output_snippet': 'ERROR',
-                'status': 'FAILURE',
-                'output_snippet_base64': 'RVJST1I6eF90ZXN0LmN'
-            }, {
-                'elapsed_time_ms': 1,
-                'losless_snippet': True,
-                'output_snippet': '[       OK ]\\n',
-                'status': 'SUCCESS',
-                'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
-            }],
+            'Unittest1.Subtest2': [
+                {
+                    'elapsed_time_ms': 66,
+                    'losless_snippet': True,
+                    'output_snippet': 'a/b/u1s2.cc:1234: Failure\\n',
+                    'status': 'FAILURE',
+                    'output_snippet_base64': 'YS9iL3UxczIuY2M6MTIzNDogRmF'
+                },
+                {
+                    'elapsed_time_ms': 50,
+                    'losless_snippet': True,
+                    'output_snippet': '[       OK ]\\n',
+                    'status': 'SUCCESS',
+                    'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+                }
+            ],
+            'Unittest2.Subtest1': [
+                {
+                    'elapsed_time_ms': 56,
+                    'losless_snippet': True,
+                    'output_snippet': 'ERROR',
+                    'status': 'FAILURE',
+                    'output_snippet_base64': 'RVJST1I6eF90ZXN0LmN'
+                },
+                {
+                    'elapsed_time_ms': 1,
+                    'losless_snippet': True,
+                    'output_snippet': '[       OK ]\\n',
+                    'status': 'SUCCESS',
+                    'output_snippet_base64': 'WyAgICAgICBPSyBdCg=='
+                }
+            ],
         }]
     }
 

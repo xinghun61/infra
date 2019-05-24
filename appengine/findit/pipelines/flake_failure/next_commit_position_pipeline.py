@@ -104,8 +104,8 @@ class NextCommitPositionPipeline(SynchronousPipeline):
 
     # Round off the next calculated commit position to the nearest builds on
     # both sides.
-    _, reference_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                      analysis.build_number)
+    reference_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                   analysis.build_number)
     parent_mastername = reference_build_info.parent_mastername or master_name
     parent_buildername = (
         reference_build_info.parent_buildername or builder_name)

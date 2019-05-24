@@ -368,7 +368,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failure_info, failure_info)
     self.assertTrue(should_proceed)
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(500, None))
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
   @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
   def testGetBuildFailureInfoFailedGetBuildInfo(self, mock_monitoring, _):
     master_name = 'm'
@@ -390,30 +390,6 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         canonical_step_name='unknown',
         isolate_target_name='unknown',
         status='Error',
-        analysis_type='Pre-Analysis')
-
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=(404, None))
-  @mock.patch.object(monitoring, 'OnWaterfallAnalysisStateChange')
-  def testGetBuildFailureInfo404(self, mock_monitoring, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
-                                   analysis_status.PENDING)
-
-    failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
-        master_name, builder_name, build_number)
-
-    self.assertEqual({}, failure_info)
-    self.assertFalse(should_proceed)
-    mock_monitoring.assert_called_once_with(
-        master_name='m',
-        builder_name='b',
-        failure_type='unknown',
-        canonical_step_name='unknown',
-        isolate_target_name='unknown',
-        status='Skipped',
         analysis_type='Pre-Analysis')
 
   @mock.patch.object(
@@ -478,20 +454,24 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         analysis_type='Pre-Analysis')
 
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromMilo', return_value=(200, '{"data": "data"}'))
-  @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
-  def testGetLaterBuildsWithAnySameStepFailurePassedThenFailed(self, *_):
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testGetLaterBuildsWithAnySameStepFailurePassedThenFailed(
+      self, mock_build_info, _):
+    mock_build_info.side_effect = [
+        MockBuildInfo(result=common_pb2.FAILURE, failed_steps=['a']),
+        MockBuildInfo(result=common_pb2.SUCCESS, failed_steps=None)
+    ]
     self.assertEquals({},
                       ci_failure.GetLaterBuildsWithAnySameStepFailure(
-                          'm', 'b', 123))
+                          'm', 'b', 123, failed_steps=['a']))
 
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetLaterBuildsWithAnySameStepFailureNotStepLevel(self, mock_fn, *_):
     build_info_1 = MockBuildInfo(result=common_pb2.FAILURE, failed_steps=['b'])
-    mock_fn.side_effect = [(200, build_info_1), (200, build_info_1)]
+    mock_fn.side_effect = [build_info_1, build_info_1]
     self.assertEqual({},
                      ci_failure.GetLaterBuildsWithAnySameStepFailure(
                          'm', 'b', 123, failed_steps=['a']))
@@ -501,7 +481,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetLaterBuildsWithAnySameStepFailure(self, mock_fn, *_):
     build_info_1 = MockBuildInfo(result=common_pb2.FAILURE, failed_steps=['a'])
-    mock_fn.side_effect = [(200, build_info_1), (200, build_info_1)]
+    mock_fn.side_effect = [build_info_1, build_info_1]
     self.assertEqual({
         124: ['a'],
         125: ['a']

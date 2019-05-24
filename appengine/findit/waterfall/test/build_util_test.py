@@ -54,77 +54,20 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     with self.mock_urlfetch() as urlfetch:
       self.mocked_urlfetch = urlfetch
 
-  def _TimeBeforeNowBySeconds(self, seconds):
-    return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
-
-  def testBuildDataNeedUpdating(self):
-    build = WfBuild.Create('m', 'b', 1)
-
-    # Build data is not available.
-    self.assertTrue(build_util._BuildDataNeedUpdating(build))
-
-    # Build was not completed and data is not recent.
-    build.data = 'dummy'
-    build.completed = False
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
-    self.assertTrue(build_util._BuildDataNeedUpdating(build))
-
-  @mock.patch.object(build_util, '_GetBuildIDForLUCIBuild', return_value=None)
-  @mock.patch.object(
-      build_util, '_GetLogLocationForBuildbotBuild', return_value='location')
-  @mock.patch.object(
-      buildbot,
-      'GetBuildDataFromMilo',
-      return_value=(200, 'Test get build data from build master'))
-  def testGetBuildDataFromMilo(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-
-    _, build = build_util.DownloadBuildData(master_name, builder_name,
-                                            build_number)
-
-    expected_build_data = 'Test get build data from build master'
-
-    self.assertEqual(expected_build_data, build.data)
-
-  @mock.patch.object(build_util, '_GetBuildIDForLUCIBuild', return_value=None)
-  @mock.patch.object(
-      build_util, '_GetLogLocationForBuildbotBuild', return_value='location')
-  @mock.patch.object(
-      buildbot,
-      'GetBuildDataFromMilo',
-      return_value=(200, 'Test get build data from milo'))
-  def testDownloadBuildDataSourceFromBM(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    build = WfBuild.Create(master_name, builder_name, build_number)
+  @mock.patch.object(buildbucket_client, 'GetV2BuildByBuilderAndBuildNumber')
+  def testDownloadBuildDataNoNeed(self, mock_get_build):
+    build = WfBuild.Create('m', 'b', 123)
+    build.build_id = '8000000123'
     build.put()
+    build_util.DownloadBuildData('m', 'b', 123)
+    self.assertFalse(mock_get_build.called)
 
-    build_util.DownloadBuildData(master_name, builder_name, build_number)
-
-    self.assertEqual(build.data, 'Test get build data from milo')
-
-  @mock.patch.object(build_util, '_GetBuildIDForLUCIBuild', return_value=None)
-  @mock.patch.object(
-      build_util, '_GetLogLocationForBuildbotBuild', return_value='location')
-  @mock.patch.object(
-      buildbot,
-      'GetBuildDataFromMilo',
-      return_value=(200, 'Test get build data from milo updated'))
-  def testDownloadBuildDataSourceFromBMUpateBuildData(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = 'Original build data'
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
-    build.put()
-
-    build_util.DownloadBuildData(master_name, builder_name, build_number)
-
-    self.assertEqual(build.data, 'Test get build data from milo updated')
+  @mock.patch.object(buildbucket_client, 'GetV2BuildByBuilderAndBuildNumber')
+  def testDownloadBuildData(self, mock_get_build):
+    mock_get_build.return_value = Build(id=8000000123)
+    build = build_util.DownloadBuildData('m', 'b', 123)
+    self.assertIsNotNone(build)
+    self.assertEqual('8000000123', build.build_id)
 
   @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=Build())
   @mock.patch.object(buildbot, 'ExtractBuildInfoFromV2Build')
@@ -132,13 +75,13 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   def testGetBuildInfo(self, mocked_fn, mock_build_info, _):
     build = WfBuild.Create('m', 'b', 123)
     build.build_id = '8000000123'
-    mocked_fn.return_value = (200, build)
+    mocked_fn.return_value = build
 
     expected_build_info = BuildInfo('m', 'b', 123)
     expected_build_info.chromium_revision = 'a_git_hash'
     mock_build_info.return_value = expected_build_info
 
-    _, build_info = build_util.GetBuildInfo('m', 'b', 123)
+    build_info = build_util.GetBuildInfo('m', 'b', 123)
     self.assertEqual(build_info.chromium_revision, 'a_git_hash')
 
   @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=Build())
@@ -148,26 +91,14 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build = WfBuild.Create('m', 'b', 123)
     build.build_id = '8000000123'
     build.completed = True
-    mocked_fn.return_value = (200, build)
+    mocked_fn.return_value = build
 
     expected_build_info = BuildInfo('m', 'b', 123)
     expected_build_info.chromium_revision = 'a_git_hash'
     mock_build_info.return_value = expected_build_info
 
-    _, build_info = build_util.GetBuildInfo('m', 'b', 123)
+    build_info = build_util.GetBuildInfo('m', 'b', 123)
     self.assertEqual(build_info.chromium_revision, 'a_git_hash')
-
-  @mock.patch.object(build_util, 'DownloadBuildData')
-  def testGetBuildInfoBuildNotAvailable(self, mocked_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    build = WfBuild.Create(master_name, builder_name, build_number)
-    mocked_fn.return_value = (404, build)
-
-    self.assertEquals((404, None),
-                      build_util.GetBuildInfo(master_name, builder_name,
-                                              build_number))
 
   def testGetFailureTypeUnknown(self):
     build_info = BuildInfo('m', 'b', 123)
@@ -261,35 +192,6 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
                      build_util.GetLatestCommitPositionAndRevision(
                          master_name, builder_name, target_name))
 
-  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
-  def testFindValidBuildNumberForStepNearby(self, mock_list_fn):
-    # pylint: disable=unused-argument
-    def ListFnImpl(http, master, builder, build_number, step):
-      if build_number == 8:
-        return ['foo']
-      return []
-
-    mock_list_fn.side_effect = ListFnImpl
-    self.assertEqual(
-        8, build_util.FindValidBuildNumberForStepNearby('m', 'b', 's', 5))
-
-  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags')
-  def testFindValidBuildNumberForStepNearbyWithExcluded(self, mock_list_fn):
-    # pylint: disable=unused-argument
-    def ListFnImpl(http, master, builder, build_number, step):
-      if build_number == 8 or build_number == 6:
-        return ['foo']
-      return []
-
-    mock_list_fn.side_effect = ListFnImpl
-    self.assertEqual(
-        8, build_util.FindValidBuildNumberForStepNearby('m', 'b', 's', 5, [6]))
-
-  @mock.patch.object(swarming, 'ListSwarmingTasksDataByTags', return_value=[])
-  def testFindValidBuildNumberForStepNearbyWhenNoneValid(self, _):
-    self.assertEqual(
-        None, build_util.FindValidBuildNumberForStepNearby('m', 'b', 's', 5))
-
   def _PreviousBuilds(self, master_name, builder_name, build_id):
     builds = []
     for build in build_util.IteratePreviousBuildsFrom(master_name, builder_name,
@@ -310,64 +212,6 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(
         1, len(self._PreviousBuilds(master_name, builder_name, build_id)))
-
-  def testGetLogLocationForBuildNoneData(self):
-    self.assertIsNone(build_util._GetLogLocationForBuildbotBuild(None))
-
-  def testGetLogLocationForBuildNoUsefulInfo(self):
-    data_json = {
-        'properties': [[
-            'others', 'other_property', 'Annotation(LogDog Bootstrap)'
-        ]]
-    }
-    self.assertIsNone(
-        build_util._GetLogLocationForBuildbotBuild(json.dumps(data_json)))
-
-  def testGetLogLocationForBuildForBuildbotBuild(self):
-    location = ('logdog://logs.chromium.org/chromium/bb/m/b/1/+/recipes/'
-                'annotations')
-    data_json = {
-        'properties': [[
-            'log_location', location, 'Annotation(LogDog Bootstrap)'
-        ]]
-    }
-    self.assertEqual(
-        location,
-        build_util._GetLogLocationForBuildbotBuild(json.dumps(data_json)))
-
-  def testGetBuildIDForLUCIBuildNoneData(self):
-    self.assertIsNone(build_util._GetBuildIDForLUCIBuild(None))
-
-  def testGetBuildIDForLUCIBuildNoBuildbucket(self):
-    data_json = {'properties': []}
-    self.assertIsNone(build_util._GetBuildIDForLUCIBuild(json.dumps(data_json)))
-
-  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  def testGetBuildIDForLUCIBuild(self, _):
-    data_json = {
-        'properties': [[
-            'buildbucket',
-            {
-                'hostname': 'cr-buildbucket.appspot.com',
-                'build': {
-                    'created_ts':
-                        1524589900472560,
-                    'tags': ['builder:Linux Builder (dbg)',],
-                    'bucket':
-                        'luci.chromium.ci',
-                    'created_by':
-                        'user:luci-scheduler@appspot.gserviceaccount.com',
-                    'project':
-                        'chromium',
-                    'id':
-                        '8948345336480880560'
-                }
-            }, 'setup_build'
-        ]]
-    }
-
-    self.assertEqual('8948345336480880560',
-                     build_util._GetBuildIDForLUCIBuild(json.dumps(data_json)))
 
   @mock.patch.object(buildbucket_client, 'GetV2Build', return_value=None)
   def testGetBuilderInfoForLUCIBuildNoBuildInfo(self, _):

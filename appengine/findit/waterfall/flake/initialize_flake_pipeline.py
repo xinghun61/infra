@@ -175,13 +175,13 @@ def ScheduleAnalysisIfNeeded(
     logging.info('Initializing flake analysis pipeline for key: %s',
                  analysis.key)
 
-    _, starting_build_info = build_util.GetBuildInfo(
-        normalized_test.master_name, normalized_test.builder_name,
-        normalized_test.build_number)
+    starting_build_info = build_util.GetBuildInfo(normalized_test.master_name,
+                                                  normalized_test.builder_name,
+                                                  normalized_test.build_number)
 
-    _, original_build_info = build_util.GetBuildInfo(original_test.master_name,
-                                                     original_test.builder_name,
-                                                     original_test.build_number)
+    original_build_info = build_util.GetBuildInfo(original_test.master_name,
+                                                  original_test.builder_name,
+                                                  original_test.build_number)
 
     assert starting_build_info, (
         'Failed to get starting build for flake analysis')

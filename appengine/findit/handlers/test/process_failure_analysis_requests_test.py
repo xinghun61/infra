@@ -15,19 +15,18 @@ from waterfall.build_info import BuildInfo
 
 
 class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication(
-      [
-          ('/process-failure-analysis-requests',
-           process_failure_analysis_requests.ProcessFailureAnalysisRequests),
-      ],
-      debug=True)
+  app_module = webapp2.WSGIApplication([
+      ('/process-failure-analysis-requests',
+       process_failure_analysis_requests.ProcessFailureAnalysisRequests),
+  ],
+                                       debug=True)
 
   def _MockGetBuildInfo(self, build_info):
 
     def MockedGetBuildInfo(*_):
       if build_info:
-        return 200, build_info
-      return 404, build_info
+        return build_info
+      return None
 
     self.mock(build_util, 'GetBuildInfo', MockedGetBuildInfo)
 

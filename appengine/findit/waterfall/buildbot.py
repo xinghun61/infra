@@ -73,48 +73,12 @@ _BUILD_URL_PATTERNS = [  # yapf: disable
     _CI_BUILD_URL_PATTERN,
 ]
 
-_MILO_ENDPOINT = 'https://luci-milo.appspot.com/prpc/milo.Buildbot'
-_MILO_ENDPOINT_BUILD = '%s/GetBuildbotBuildJSON' % _MILO_ENDPOINT
-
 _STEP_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)/steps/([^/]+)(/.*)?$' %
     _HOST_NAME_PATTERN)
 
 _COMMIT_POSITION_PATTERN = re.compile(r'refs/heads/master@{#(\d+)}$',
                                       re.IGNORECASE)
-
-
-def _ProcessMiloData(response_json, master_name, builder_name,
-                     build_number=''):  # pragma: no cover.
-  if not response_json:
-    return None
-  try:
-    response_data = json.loads(response_json)
-  except Exception:  # pragma: no cover
-    logging.error('Failed to load json data for %s-%s-%s' %
-                  (master_name, builder_name, build_number))
-    return None
-  try:
-    decoded_data = base64.b64decode(response_data.get('data'))
-  except Exception:  # pragma: no cover
-    logging.error('Failed to b64decode data for %s-%s-%s' %
-                  (master_name, builder_name, build_number))
-    return None
-
-  if build_number:
-    # Build data is not compressed.
-    return decoded_data
-
-  try:
-    with io.BytesIO(decoded_data) as compressed_file:
-      with gzip.GzipFile(fileobj=compressed_file) as decompressed_file:
-        data_json = decompressed_file.read()
-  except Exception:  # pragma: no cover
-    logging.error('Failed to decompress data for %s-%s-%s' %
-                  (master_name, builder_name, build_number))
-    return None
-
-  return data_json
 
 
 def GetRecentCompletedBuilds(master_name, builder_name, page_size=None):
@@ -241,20 +205,6 @@ def CreateBuildUrl(master_name, builder_name, build_number):
   builder_name = urllib.quote(builder_name)
   return 'https://ci.chromium.org/buildbot/%s/%s/%s' % (
       master_name, builder_name, build_number)
-
-
-def GetBuildDataFromMilo(master_name, builder_name, build_number, http_client):
-  """Returns the json-format data of the build."""
-  data = {
-      'master': master_name,
-      'builder': builder_name,
-      'buildNum': build_number,
-      'exclude_deprecated': True,
-  }
-  status_code, response_json = rpc_util.DownloadJsonData(
-      _MILO_ENDPOINT_BUILD, data, http_client)
-  return status_code, _ProcessMiloData(response_json, master_name, builder_name,
-                                       str(build_number))
 
 
 def GetCommitPosition(commit_position_line):

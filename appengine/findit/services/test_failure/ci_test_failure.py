@@ -81,7 +81,8 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
       list_isolated_data, http_client)
 
   test_results_object = test_results_util.GetTestResultObject(result_log)
-  if not step_util.IsStepSupportedByFindit(
+
+  if not test_results_object or not step_util.IsStepSupportedByFindit(
       test_results_object,
       step_util.GetCanonicalStepName(master_name, builder_name, build_number,
                                      step_name), master_name):
@@ -111,9 +112,9 @@ def _GetTestLevelLogForAStep(master_name, builder_name, build_number, step_name,
       step.log_data != constants.TOO_LARGE_LOG):
     # Test level log has been saved for this step.
     try:
-      return json.loads(
-          step.log_data
-      ) if step.log_data != constants.FLAKY_FAILURE_LOG else {}
+      if step.log_data == constants.FLAKY_FAILURE_LOG:
+        return {}
+      return json.loads(step.log_data)
     except ValueError:
       logging.error(
           'log_data %s of step %s/%s/%d/%s is not json loadable.' %

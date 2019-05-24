@@ -92,8 +92,7 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
   Returns:
     failure_info (CompileFailureInfo, TestFailureInfo): updated failure_info.
   """
-  _, build = build_util.DownloadBuildData(master_name, builder_name,
-                                          build_number)
+  build = build_util.DownloadBuildData(master_name, builder_name, build_number)
   failed_steps = failure_info.failed_steps
   failure_info.builds = _UpdateStringTypedBuildKeyToInt(failure_info.builds)
 
@@ -150,31 +149,9 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
   Returns:
     A dict of failure info and a flag for should start analysis.
   """
-  status_code, build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                    build_number)
+  build_info = build_util.GetBuildInfo(master_name, builder_name, build_number)
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   assert analysis
-
-  # TODO(crbug/804617): Remove this when new LUCI API is ready.
-  if status_code == 404:
-    # Hits a build number gap. Should skip the analysis.
-    analysis.status = analysis_status.SKIPPED
-    analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
-    analysis.put()
-
-    # Findit analysis doesn't start. At this point it doesn't matter which
-    # step failed, so use 'unknown' for all the step related information.
-    monitoring.OnWaterfallAnalysisStateChange(
-        master_name=master_name,
-        builder_name=builder_name,
-        failure_type='unknown',
-        canonical_step_name='unknown',
-        isolate_target_name='unknown',
-        status=analysis_status.STATUS_TO_DESCRIPTION[analysis_status.SKIPPED],
-        analysis_type=analysis_approach_type.STATUS_TO_DESCRIPTION[
-            analysis_approach_type.PRE_ANALYSIS])
-
-    return {}, False
 
   if not build_info:
     logging.error('Failed to extract build info for build %s/%s/%d',
@@ -255,9 +232,6 @@ def GetLaterBuildsWithAnySameStepFailure(master_name,
                                          failed_steps=None):
   """Gets successive failed builds with the same failure as the referred build.
 
-    If failed_steps is provided, this function can drill down to step_level
-    as well.
-
     The function will stop looking further and abandon all its findings if:
       - find a non-failed build (build ends in success or warning) or
       - find a build with non-overlapping failures.
@@ -280,8 +254,8 @@ def GetLaterBuildsWithAnySameStepFailure(master_name,
       break
 
     # Checks all builds after current build.
-    _, newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                  newer_build_number)
+    newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                               newer_build_number)
     if newer_build_info and newer_build_info.result == common_pb2.SUCCESS:
       return {}
 
