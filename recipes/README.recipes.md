@@ -975,9 +975,9 @@ It must have the permission to schedule a Dataflow job for your project.
 
 [DEPS](/recipes/recipes/snapshots/builder.py#5): [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/cipd][recipe_engine/recipe_modules/cipd], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/snapshots/builder.py#68)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/snapshots/builder.py#75)(api):**
 
-&mdash; **def [get\_value](/recipes/recipes/snapshots/builder.py#48)(pairs, key):**
+&mdash; **def [get\_value](/recipes/recipes/snapshots/builder.py#55)(pairs, key):**
 
 Returns a the value for the given key in the given pairs.
 

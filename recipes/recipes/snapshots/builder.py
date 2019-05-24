@@ -42,6 +42,13 @@ BOTS_TEST_DATA = [
         ],
         'machine_type': 'mt',
     },
+    {
+        'bot_id': 'missing-machine-type',
+        'dimensions': [
+            {'key': 'os', 'value': ['Ubuntu', 'Ubuntu-14.04']},
+            {'key': 'pool', 'value': ['Chrome']},
+        ],
+    },
 ]
 
 
@@ -96,7 +103,10 @@ def RunSteps(api):
           if set(get_value(bot['dimensions'], 'os')).intersection(OSES):
             # Pool is required, but snapshotting is pool-independent.
             pool = get_value(bot['dimensions'], 'pool')[0]
-            bots[bot['machine_type']] = (bot['bot_id'], pool)
+            # TODO(crbug/723130): Revise for GCE Provider.
+            # machine_type is no longer set for any bots.
+            if bot.get('machine_type'):
+              bots[bot['machine_type']] = (bot['bot_id'], pool)
 
       api.buildbucket.set_buildbucket_host('%s.appspot.com' % bb_server)
       builds = []
