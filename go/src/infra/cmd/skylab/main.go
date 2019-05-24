@@ -51,6 +51,7 @@ func getApplication() *cli.Application {
 			subcommands.Section("Tasks"),
 			cmd.CreateTest,
 			cmd.CreateSuite,
+			cmd.LeaseDut,
 			cmd.Repair,
 			cmd.RerunTasks,
 			subcommands.Section("Internal use"),

@@ -91,7 +91,6 @@ func httpClient(ctx context.Context, f *authcli.Flags) (*http.Client, error) {
 		return nil, errors.Annotate(err, "failed to create HTTP client").Err()
 	}
 	return c, nil
-
 }
 
 const swarmingAPISuffix = "_ah/api/swarming/v1/"
