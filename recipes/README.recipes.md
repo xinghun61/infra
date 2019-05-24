@@ -897,31 +897,31 @@ Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
 
 [DEPS](/recipes/recipes/publish_tarball.py#11): [build/chromium][build/recipe_modules/chromium], [build/trigger][build/recipe_modules/trigger], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [omahaproxy](#recipe_modules-omahaproxy), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/scheduler][recipe_engine/recipe_modules/scheduler], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/publish_tarball.py#350)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/publish_tarball.py#344)(api):**
 
-&emsp; **@contextlib.contextmanager**<br>&mdash; **def [copytree\_checkout](/recipes/recipes/publish_tarball.py#101)(api):**
+&emsp; **@contextlib.contextmanager**<br>&mdash; **def [copytree\_checkout](/recipes/recipes/publish_tarball.py#98)(api):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_lite\_tarball](/recipes/recipes/publish_tarball.py#112)(api, version):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_lite\_tarball](/recipes/recipes/publish_tarball.py#109)(api, version):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_nacl\_tarball](/recipes/recipes/publish_tarball.py#180)(api, version):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_nacl\_tarball](/recipes/recipes/publish_tarball.py#177)(api, version):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_tarball](/recipes/recipes/publish_tarball.py#69)(api, args, source, destination):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_tarball](/recipes/recipes/publish_tarball.py#66)(api, args, source, destination):**
 
-&mdash; **def [gsutil\_upload](/recipes/recipes/publish_tarball.py#42)(api, source, bucket, dest, args):**
+&mdash; **def [gsutil\_upload](/recipes/recipes/publish_tarball.py#39)(api, source, bucket, dest, args):**
 
-&mdash; **def [publish\_tarball](/recipes/recipes/publish_tarball.py#227)(api):**
+&mdash; **def [publish\_tarball](/recipes/recipes/publish_tarball.py#224)(api):**
 
-&mdash; **def [published\_all\_tarballs](/recipes/recipes/publish_tarball.py#62)(version, ls_result):**
+&mdash; **def [published\_all\_tarballs](/recipes/recipes/publish_tarball.py#59)(version, ls_result):**
 
-&mdash; **def [published\_full\_tarball](/recipes/recipes/publish_tarball.py#46)(version, ls_result):**
+&mdash; **def [published\_full\_tarball](/recipes/recipes/publish_tarball.py#43)(version, ls_result):**
 
-&mdash; **def [published\_lite\_tarball](/recipes/recipes/publish_tarball.py#50)(version, ls_result):**
+&mdash; **def [published\_lite\_tarball](/recipes/recipes/publish_tarball.py#47)(version, ls_result):**
 
-&mdash; **def [published\_nacl\_tarball](/recipes/recipes/publish_tarball.py#58)(version, ls_result):**
+&mdash; **def [published\_nacl\_tarball](/recipes/recipes/publish_tarball.py#55)(version, ls_result):**
 
-&mdash; **def [published\_test\_tarball](/recipes/recipes/publish_tarball.py#54)(version, ls_result):**
+&mdash; **def [published\_test\_tarball](/recipes/recipes/publish_tarball.py#51)(version, ls_result):**
 
-&mdash; **def [trigger\_publish\_tarball\_jobs](/recipes/recipes/publish_tarball.py#204)(api):**
+&mdash; **def [trigger\_publish\_tarball\_jobs](/recipes/recipes/publish_tarball.py#201)(api):**
 ### *recipes* / [recipe\_autoroller](/recipes/recipes/recipe_autoroller.py)
 
 [DEPS](/recipes/recipes/recipe_autoroller.py#7): [recipe\_autoroller](#recipe_modules-recipe_autoroller), [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/time][recipe_engine/recipe_modules/time]

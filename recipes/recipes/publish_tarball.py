@@ -34,10 +34,7 @@ DEPS = [
 # several months and publish_tarball will keep re-running on the same broken
 # version.  This blacklist exists to exclude those broken versions so the bot
 # doesn't keep retrying and sending build failure emails out.
-BLACKLISTED_VERSIONS = [
-    '67.0.3376.0',
-    '67.0.3376.1',
-]
+BLACKLISTED_VERSIONS = []
 
 def gsutil_upload(api, source, bucket, dest, args):
   api.gsutil.upload(source, bucket, dest, args, name=str('upload ' + dest))
@@ -210,7 +207,7 @@ def trigger_publish_tarball_jobs(api):
   # to avoid running into errors with older releases.
   # Exclude ios - it often uses internal buildspecs so public ones don't work.
   for release in api.omahaproxy.history(
-      min_major_version=66, exclude_platforms=['ios']):
+      min_major_version=74, exclude_platforms=['ios']):
     if release['channel'] not in ('stable', 'beta', 'dev', 'canary'):
       continue
     version = release['version']
@@ -248,24 +245,22 @@ def publish_tarball(api):
       ['touch', api.path['checkout'].join(
           'chrome', 'test', 'data', 'webui', 'i18n_process_css_test.html')])
 
-  if int(version.split('.')[0]) >= 65:
-    update_script = 'update.py'
-    update_args = ['--force-local-build']
-    if [int(x) for x in version.split('.')] >= [76, 0, 3784, 0]:
-      # After 76.0.3784.0, build.py is used instead of update.py to build clang.
-      update_script = 'build.py'
-      update_args = []
+  update_script = 'update.py'
+  update_args = ['--force-local-build']
+  if [int(x) for x in version.split('.')] >= [76, 0, 3784, 0]:
+    # After 76.0.3784.0, build.py is used instead of update.py to build clang.
+    update_script = 'build.py'
+    update_args = []
 
-    update_args.extend(['--without-android',
-                        '--use-system-cmake',
-                        '--gcc-toolchain=/usr',
-                        '--skip-build'])
-    if [int(x) for x in version.split('.')] >= [71, 0, 3551, 0]:
-      update_args.append('--without-fuchsia')
+  update_args.extend(['--without-android',
+                      '--use-system-cmake',
+                      '--gcc-toolchain=/usr',
+                      '--skip-build',
+                      '--without-fuchsia'])
 
-    api.step('download clang sources', [
-        api.path['checkout'].join('tools', 'clang', 'scripts', update_script)
-        ] + update_args)
+  api.step('download clang sources', [
+      api.path['checkout'].join('tools', 'clang', 'scripts', update_script)
+      ] + update_args)
 
   api.python('fetch android AFDO profile', api.path['checkout'].join(
       'chrome', 'android', 'profiles', 'update_afdo_profile.py'), [])
@@ -285,26 +280,25 @@ def publish_tarball(api):
         ]
     )
 
-  if [int(x) for x in version.split('.')] >= [69, 0, 3491, 0]:
-    try:
-      temp_dir = api.path.mkdtemp('gn')
-      git_root = temp_dir.join('gn')
-      api.step('checkout gn',
-               ['git', 'clone', 'https://gn.googlesource.com/gn', git_root])
-      tools_gn = api.path['checkout'].join('tools', 'gn')
-      api.python('generate last_commit_position.h',
-                 git_root.join('build', 'gen.py'))
-      api.file.remove('rm README.md', tools_gn.join('README.md'))
-      for f in api.file.listdir(
-          'listdir gn', git_root, test_data=['build', '.git']):
-        basename = api.path.basename(f)
-        if basename not in ['.git', '.gitignore', '.linux-sysroot', 'out']:
-          api.file.move('move gn ' + basename, f, tools_gn.join(basename))
-      api.file.move('move last_commit_position.h',
-                    git_root.join('out', 'last_commit_position.h'),
-                    tools_gn.join('bootstrap', 'last_commit_position.h'))
-    finally:
-      api.file.rmtree('rmtree temp dir', temp_dir)
+  try:
+    temp_dir = api.path.mkdtemp('gn')
+    git_root = temp_dir.join('gn')
+    api.step('checkout gn',
+             ['git', 'clone', 'https://gn.googlesource.com/gn', git_root])
+    tools_gn = api.path['checkout'].join('tools', 'gn')
+    api.python('generate last_commit_position.h',
+               git_root.join('build', 'gen.py'))
+    api.file.remove('rm README.md', tools_gn.join('README.md'))
+    for f in api.file.listdir(
+        'listdir gn', git_root, test_data=['build', '.git']):
+      basename = api.path.basename(f)
+      if basename not in ['.git', '.gitignore', '.linux-sysroot', 'out']:
+        api.file.move('move gn ' + basename, f, tools_gn.join(basename))
+    api.file.move('move last_commit_position.h',
+                  git_root.join('out', 'last_commit_position.h'),
+                  tools_gn.join('bootstrap', 'last_commit_position.h'))
+  finally:
+    api.file.rmtree('rmtree temp dir', temp_dir)
 
   with api.step.defer_results():
     if not published_full_tarball(version, ls_result):
@@ -360,7 +354,7 @@ def GenTests(api):
   yield (
     api.test('basic') +
     api.runtime(is_luci=True, is_experimental=False) +
-    api.properties.generic(version='69.0.3493.0') +
+    api.properties.generic(version='74.0.3729.169') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
     api.path.exists(api.path['checkout'].join(
@@ -370,20 +364,20 @@ def GenTests(api):
   yield (
     api.test('dupe') +
     api.runtime(is_luci=True, is_experimental=False) +
-    api.properties.generic(version='69.0.3493.0') +
+    api.properties.generic(version='74.0.3729.169') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output(
-        'gs://chromium-browser-official/chromium-69.0.3493.0.tar.xz\n'
-        'gs://chromium-browser-official/chromium-69.0.3493.0-lite.tar.xz\n'
-        'gs://chromium-browser-official/chromium-69.0.3493.0-testdata.tar.xz\n'
-        'gs://chromium-browser-official/chromium-69.0.3493.0-nacl.tar.xz\n'
+        'gs://chromium-browser-official/chromium-74.0.3729.169.tar.xz\n'
+        'gs://chromium-browser-official/chromium-74.0.3729.169-lite.tar.xz\n'
+        'gs://chromium-browser-official/chromium-74.0.3729.169-testdata.tar.xz\n'
+        'gs://chromium-browser-official/chromium-74.0.3729.169-nacl.tar.xz\n'
     ))
   )
 
   yield (
     api.test('clang-no-fuchsia') +
     api.runtime(is_luci=True, is_experimental=False) +
-    api.properties.generic(version='71.0.3551.0') +
+    api.properties.generic(version='74.0.3729.169') +
     api.platform('linux', 64) +
     api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
     api.path.exists(api.path['checkout'].join(
