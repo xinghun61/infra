@@ -304,6 +304,11 @@ export class MrIssuePage extends connectStore(LitElement) {
         store.dispatch(issue.fetchIssuePageData({issueRef: this.issueRef}));
       }
 
+      // TODO(ehmaldonado): Remove once the old autocomplete code is deprecated.
+      if (this.issueRef.projectName !== changedProperties.projectName) {
+        window.TKR_fetchOptions(this.issueRef.projectName);
+      }
+
       const oldRef = changedProperties.get('issueRef');
       const oldProjectName = oldRef && oldRef.projectName;
       if (this.issueRef.projectName && oldProjectName

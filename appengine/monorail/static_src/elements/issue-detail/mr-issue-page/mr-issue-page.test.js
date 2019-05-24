@@ -29,11 +29,15 @@ describe('mr-issue-page', () => {
     element = document.createElement('mr-issue-page');
     document.body.appendChild(element);
     sinon.stub(prpcClient, 'call');
+    // TODO(ehmaldonado): Remove once the old autocomplete code is deprecated.
+    window.TKR_fetchOptions = () => {};
   });
 
   afterEach(() => {
     document.body.removeChild(element);
     prpcClient.call.restore();
+    // TODO(ehmaldonado): Remove once the old autocomplete code is deprecated.
+    window.TKR_fetchOptions = undefined;
   });
 
   it('initializes', () => {
