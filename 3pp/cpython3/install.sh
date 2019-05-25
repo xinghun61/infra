@@ -221,7 +221,3 @@ rm -vrf $PREFIX/lib/pkgconfig
 rm -vrf $PREFIX/share
 rm -vrf $PREFIX/lib/$PYTHON_MAJOR/lib-dynload/*.{so,dylib} || true
 touch $PREFIX/lib/$PYTHON_MAJOR/lib-dynload/.keep
-
-# The install process hardlinks these two files, but CIPD then turns them into
-# copies. Symlink them instead.
-(cd $PREFIX/bin && rm ${PYTHON_MAJOR}m && ln -s $PYTHON_MAJOR ${PYTHON_MAJOR}m)
