@@ -45,7 +45,6 @@ BOTS_TEST_DATA = [
     {
         'bot_id': 'missing-machine-type',
         'dimensions': [
-            {'key': 'os', 'value': ['Ubuntu', 'Ubuntu-14.04']},
             {'key': 'pool', 'value': ['Chrome']},
         ],
     },
@@ -62,14 +61,11 @@ def get_value(pairs, key):
 
   Returns:
     The value for the given key.
-
-  Raises:
-    ValueError: If the key doesn't exist.
   """
   for p in pairs:
     if p['key'] == key:
       return p['value']
-  raise ValueError # pragma: no cover
+  return []
 
 
 def RunSteps(api):
