@@ -37,7 +37,7 @@ index 620b48a6e7..b5877e6ce8 100644
  AC_CHECK_LIB(nsl, t_open, [LIBS="-lnsl $LIBS"]) # SVR4
  AC_CHECK_LIB(socket, socket, [LIBS="-lsocket $LIBS"], [], $LIBS) # SVR4 sockets
  
-+# py-vesion-override option
++# py-version-override option
 +AC_MSG_CHECKING(for Python version override)
 +AC_ARG_ENABLE(py-version-override,
 +AS_HELP_STRING([--enable-py-version-override=PY_VERSION],
@@ -56,9 +56,9 @@ diff --git a/pyconfig.h.in b/pyconfig.h.in
 index a82e82cc9c..6fb3172177 100644
 --- a/pyconfig.h.in
 +++ b/pyconfig.h.in
-@@ -1334,6 +1334,9 @@
-    externally defined: 0 */
- #undef Py_HASH_ALGORITHM
+@@ -1381,6 +1381,9 @@
+ /* Define if you want to enable tracing references for debugging purpose */
+ #undef Py_TRACE_REFS
  
 +/* Define to override the PY_VERSION reported Python version. */
 +#undef PY_VERSION_OVERRIDE
