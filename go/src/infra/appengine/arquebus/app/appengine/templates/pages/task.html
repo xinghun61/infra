@@ -1,0 +1,113 @@
+{{define "title"}}Arquebus {{.ID}}{{end}}
+
+{{define "head"}}
+<style type="text/css">
+#task-property-table {
+  table-layout: fixed;
+}
+
+#task-property-table th {
+  background-color:#e8bb424d;
+  color: #58a559;
+}
+
+#task-log-table th {
+  background-color:#e8bb424d;
+  color: #58a559;
+}
+
+.underline {
+  text-decoration: underline !important;
+}
+
+#task-property-table td.long {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+nav.top-pager ul.pager {
+  margin-top: 0px;
+  margin-bottom: 10px;
+}
+
+nav.bottom-pager ul.pager {
+  margin-top: 10px;
+  margin-bottom: 0px;
+}
+</style>
+{{end}}
+
+{{define "content"}}
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item"><a href="/">All Assigners</a></li>
+  <li class="breadcrumb-item"><a href="/assigner/{{.Assigner.ID}}">{{.Assigner.ID}}</a></li>
+  <li class="breadcrumb-item active">{{.Task.ID}}</li>
+</ol>
+
+<hr />
+
+<div class="panel" id="task-property-table">
+  <table class="table table-bordered table-hover">
+    <thead>
+      <tr>
+        <th class="col-lg-2">ID</th>
+        <th class="col-lg-2">ExpectedStart</th>
+        <th class="col-lg-2">Started</th>
+        <th class="col-lg-2">Ended</th>
+        <th class="col-lg-1">Status</th>
+        <th class="col-lg-2">
+          <div title="Noop is a Task success without issues updated. e.g., no issues found, no assignees available, drained, etc">
+            Noop &#x1F6C8;
+          </div>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{.Task.ID}}</td>
+        <td class="timestamp need-formatting">
+          {{.Task.ExpectedStart.Unix}}
+        </td>
+        <td class="timestamp need-formatting">
+          {{if .Task.Started.IsZero}}
+          Not started
+          {{else}}
+          {{.Task.Started.Unix}}
+          {{end}}
+        </td>
+        <td class="timestamp need-formatting">
+          {{if .Task.Ended.IsZero}}
+          Not ended
+          {{else}}
+          {{.Task.Ended.Unix}}
+          {{end}}
+        </td>
+        <td>{{.Task.Status}}</td>
+        <td>{{.Task.WasNoopSuccess}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="panel" id="task-log-table">
+  <table class="table table-bordered table-hover">
+    <thead>
+      <tr>
+        <th class="col-lg-2">Timestamp</th>
+        <th class="col-lg-3">Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Task.Logs}}
+      <tr>
+        <td class="timestamp need-formatting">{{.Timestamp.Unix}}</td>
+        <td>{{.Message}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{end}}

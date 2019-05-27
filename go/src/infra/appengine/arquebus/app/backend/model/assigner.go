@@ -221,8 +221,8 @@ func GetAllAssigners(c context.Context) ([]*Assigner, error) {
 	return assigners, nil
 }
 
-// genAssignerKey generates a datastore key for a given assigner object.
-func genAssignerKey(c context.Context, assigner *Assigner) *datastore.Key {
+// GenAssignerKey generates a datastore key for a given assigner object.
+func GenAssignerKey(c context.Context, assigner *Assigner) *datastore.Key {
 	return datastore.KeyForObj(c, assigner)
 }
 
@@ -250,7 +250,7 @@ func EnsureScheduledTasks(c context.Context, assignerID string) ([]*Task, error)
 	for ; !nextETA.After(scheduleUpTo); nextETA = nextETA.Add(assigner.Interval) {
 		assigner.LatestSchedule = nextETA
 		newTask := &Task{
-			AssignerKey:   genAssignerKey(c, assigner),
+			AssignerKey:   GenAssignerKey(c, assigner),
 			ExpectedStart: nextETA,
 			Status:        TaskStatus_Scheduled,
 		}

@@ -51,7 +51,7 @@ func createTasks(c context.Context, assigner *Assigner, status TaskStatus, start
 	var tasks []*Task
 	for _, s := range startTimes {
 		tasks = append(tasks, &Task{
-			AssignerKey:   genAssignerKey(c, assigner),
+			AssignerKey:   GenAssignerKey(c, assigner),
 			Status:        status,
 			ExpectedStart: s,
 		})

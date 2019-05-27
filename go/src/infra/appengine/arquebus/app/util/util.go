@@ -94,7 +94,8 @@ func SetupTaskIndexes(c context.Context) {
 
 // CreateTestContext creates a test context to be used in unit tests.
 func CreateTestContext() context.Context {
-	c := memory.Use(context.Background())
+	c := context.Background()
+	c = memory.UseWithAppID(c, "arquebus-dev")
 	SetupTaskIndexes(c)
 	c = authtest.MockAuthConfig(c)
 	c = auth.WithState(c, &authtest.FakeState{

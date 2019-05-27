@@ -6,9 +6,9 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 projdir := $(patsubst %/,%,$(dir $(mkfile_path)))
 
 dev:
-	DATASTORE_EMULATOR_HOST=localhost:8081 gae.py devserver -A dev --app-dir $(projdir)/app -- \
+	gae.py devserver -A dev --app-dir $(projdir)/app -- \
 		--host 0.0.0.0 --port 8082 --admin_port 7999 --log_level debug \
-		--enable_console --enable_host_checking no \
+		--enable_console --enable_host_checking no --clear_datastore
 
 #------------------------------------------------------------
 # Arquebus PROD

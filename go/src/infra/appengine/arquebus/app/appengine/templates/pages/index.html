@@ -1,0 +1,83 @@
+{{define "title"}}Arquebus{{end}}
+
+{{define "head"}}
+<style type="text/css">
+#assigner-list table {
+  table-layout: fixed;
+
+}
+#assigner-list-table td.long {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#assigner-list-table th {
+  background-color:#e8bb424d;
+  color: #58a559;
+}
+
+.drained {
+  color: red;
+}
+.enabled {
+  color: green;
+}
+.dry-run {
+  color: coral;
+}
+#owners-list {
+  list-style-type: none;
+  padding-left: 0
+}
+</style>
+{{end}}
+
+{{define "assigner-status"}}
+{{if .IsDrained}}drained{{else if .IsDryRun}}dry-run{{else}}enabled{{end}}
+{{end}}
+
+{{define "dry-run-class"}}
+{{if .IsDryRun}}dry-run{{else}}non-dry-run{{end}}
+{{end}}
+
+{{define "content"}}
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item active">All Assigners</li>
+</ol>
+
+<hr />
+
+<div class="panel" id="assigner-list-table">
+  <table class="table table-bordered table-hover">
+    <thead>
+      <tr>
+        <th style="col-lg-2">AssignerID</th>
+        <th style="col-lg-2">Owner(s)</th>
+        <th style="col-lg-2">Status</th>
+        <th style="col-lg-3">LatestSchedule</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{range .Assigners }}
+      <tr>
+        <td><a href="/assigner/{{.ID}}">{{.ID}}</a></td>
+        <td>
+          <ul id="owners-list">
+            {{range .Owners}}
+            <li><a href="mailto://{{.}}">{{.}}</a></li>
+            {{end}}
+          </ul>
+        </td>
+        <td class={{template "assigner-status" .}}>
+          {{template "assigner-status" .}}
+        </td>
+        <td class="timestamp need-formatting">
+          {{if .LatestSchedule.IsZero}}Not started{{else}}{{.LatestSchedule.Unix}}{{end}}</td>
+      </tr>
+      {{end}}
+    </tbody>
+  </table>
+</div>
+
+{{end}}

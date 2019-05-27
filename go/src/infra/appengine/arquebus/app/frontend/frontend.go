@@ -45,6 +45,10 @@ func InstallHandlers(r *router.Router, bm router.MiddlewareChain) {
 		),
 	)
 	m = m.Extend(hasAccess)
+
+	r.GET("/", m, indexPage)
+	r.GET("/assigner/:AssignerID", m, assignerPage)
+	r.GET("/assigner/:AssignerID/task/:TaskID", m, taskPage)
 }
 
 // prepareTemplates constructs templates.Bundle for HTML handlers.

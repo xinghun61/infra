@@ -1,0 +1,151 @@
+{{define "title"}}Arquebus {{.ID}}{{end}}
+
+{{define "head"}}
+<style type="text/css">
+#assigner-table {
+  table-layout: fixed;
+}
+.underline {
+  text-decoration: underline !important;
+}
+
+#assigner-table td.long {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#assigner-config-description {
+  white-space: pre-wrap;
+}
+
+nav.top-pager ul.pager {
+  margin-top: 0px;
+  margin-bottom: 10px;
+}
+
+nav.bottom-pager ul.pager {
+  margin-top: 10px;
+  margin-bottom: 0px;
+}
+
+.panel-arquebus .panel-heading {
+  background-color:#e8bb424d;
+}
+
+.panel-arquebus .panel-heading b {
+  color: #58a559;
+}
+</style>
+{{end}}
+
+{{define "content"}}
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item"><span style="width:100px;"></span><a href="/">All Assigners</a></li>
+  <li class="breadcrumb-item active">{{.Assigner.ID}}</li>
+</ol>
+
+<hr />
+
+<div class="panel panel-arquebus">
+  <div class="panel-heading">
+    <b>Configs</b> (rev <a href="{{.ConfigLink}}">{{.Assigner.ConfigRevision}}</a>)
+  </div>
+  <table class="table table-bordered table-hover">
+    <tbody>
+      <tr>
+        <td class="col-lg-1">ID</td><td class="col-lg-3">{{.Assigner.ID}}</td>
+        <td class="col-lg-4" colspan="2">Description</td>
+      </tr>
+      <tr>
+        <td>Interval</td><td>{{.Assigner.Interval}}</td>
+        <td rowspan="6">{{.Assigner.Description}}</td>
+      </tr>
+      <tr><td>IsDryRun</td><td>{{.Assigner.IsDryRun}}</td></tr>
+      <tr><td>IsDrained</td><td>{{.Assigner.IsDrained}}</td></tr>
+      <tr>
+        <td>Owners</td>
+        <td>
+          <div>
+            {{range .Assigner.Owners}}
+            <a href="mailto://{{.}}">{{.}}</a>
+            {{end}}
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>Assignees</td>
+        <td>
+          <div>
+            {{range .Assigner.Assignees}}
+              {{if .GetEmail}}
+                <a href="mailto://{{.GetEmail}}">email://{{.GetEmail}}</a>
+              {{else if .GetOncall}}
+                <a href=#>{{.GetOncall}}</a>
+              {{end}}
+            {{end}}
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>CCs</td>
+        <td>
+          <div>
+            {{range .Assigner.CCs}}
+              {{if .GetEmail}}
+                <a href="mailto://{{.GetEmail}}">email://{{.GetEmail}}</a>
+              {{else if .GetOncall}}
+                <a href=#>{{.GetOncall}}</a>
+              {{end}}
+            {{end}}
+          </div>
+        </td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<div class="panel panel-arquebus">
+  <div class="panel-heading">
+    <b>Task History</b>
+  </div>
+  <table id="assigner-table" class="table table-bordered table-hover" >
+      <thead>
+        <tr>
+          <th class="col-lg-2">ID</th>
+          <th class="col-lg-3">ExpectedStart</th>
+          <th class="col-lg-3">Started</th>
+          <th class="col-lg-3">Ended</th>
+          <th class="col-lg-2">Status</th>
+          <th class="col-lg-2">
+            <div title="Noop is a Task success without issues updated. e.g., no issues found, no assignees available, drained, etc">
+              Noop &#x1F6C8;
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Tasks}}
+        <tr>
+          <td>
+            <a href="/assigner/{{$.Assigner.ID}}/task/{{.ID}}">{{.ID}}</a>
+          </td>
+          <td class="timestamp need-formatting">
+            {{.ExpectedStart.Unix}}
+          </td>
+          <td class="timestamp need-formatting">
+            {{if .Started.IsZero}}Not started{{else}}{{.Started.Unix}}{{end}}
+          </td>
+          <td class="timestamp need-formatting">
+            {{if .Ended.IsZero}}Not ended{{else}}{{.Ended.Unix}}{{end}}
+          </td>
+          <td>{{.Status}}</td>
+          <td>{{.WasNoopSuccess}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+  </table>
+</div>
+{{end}}

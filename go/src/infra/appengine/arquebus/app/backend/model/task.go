@@ -76,7 +76,7 @@ func GetTask(c context.Context, assignerID string, taskID int64) (*Assigner, *Ta
 	if err != nil {
 		return nil, nil, err
 	}
-	task := &Task{AssignerKey: genAssignerKey(c, assigner), ID: taskID}
+	task := &Task{AssignerKey: GenAssignerKey(c, assigner), ID: taskID}
 	if err := datastore.Get(c, task); err != nil {
 		return nil, nil, err
 	}
@@ -92,7 +92,7 @@ func GetTask(c context.Context, assignerID string, taskID int64) (*Assigner, *Ta
 // TODO(crbug/849469): add pagination
 func GetTasks(c context.Context, assigner *Assigner, limit int32, includeNoopSuccess bool) ([]*Task, error) {
 	var tasks []*Task
-	q := datastore.NewQuery(taskKind).Ancestor(genAssignerKey(c, assigner))
+	q := datastore.NewQuery(taskKind).Ancestor(GenAssignerKey(c, assigner))
 	if includeNoopSuccess == false {
 		q = q.Eq("WasNoopSuccess", false)
 	}
