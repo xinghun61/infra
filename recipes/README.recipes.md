@@ -138,7 +138,7 @@ Essentially a shim around scripts in
 https://chromium.googlesource.com/infra/infra.git/+/master/build/
 and its internal counterpart.
 
-&mdash; **def [build](/recipes/recipe_modules/infra_cipd/api.py#64)(self):**
+&mdash; **def [build](/recipes/recipe_modules/infra_cipd/api.py#70)(self):**
 
 Builds packages.
 
@@ -154,15 +154,15 @@ Arguments:
 
 Doesn't support nesting.
 
-&mdash; **def [tags](/recipes/recipe_modules/infra_cipd/api.py#108)(self, git_repo_url, revision):**
+&mdash; **def [tags](/recipes/recipe_modules/infra_cipd/api.py#114)(self, git_repo_url, revision):**
 
 Returns tags to be attached to uploaded CIPD packages.
 
-&mdash; **def [test](/recipes/recipe_modules/infra_cipd/api.py#72)(self, skip_if_cross_compiling=False):**
+&mdash; **def [test](/recipes/recipe_modules/infra_cipd/api.py#78)(self, skip_if_cross_compiling=False):**
 
 Tests previously built packages integrity.
 
-&mdash; **def [upload](/recipes/recipe_modules/infra_cipd/api.py#81)(self, tags, step_test_data=None):**
+&mdash; **def [upload](/recipes/recipe_modules/infra_cipd/api.py#87)(self, tags, step_test_data=None):**
 
 Uploads previously built packages.
 ### *recipe_modules* / [infra\_system](/recipes/recipe_modules/infra_system)

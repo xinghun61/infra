@@ -19,7 +19,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
   def __init__(self, buildnumber, **kwargs):
     super(InfraCIPDApi, self).__init__(**kwargs)
     self._buildnumber = buildnumber
-    self._cur_ctx = None  # (path_to_repo, is_cross_compile)
+    self._cur_ctx = None  # (path_to_repo, is_cross_compile, name_prefix)
 
   @contextlib.contextmanager
   def context(self, path_to_repo, goos=None, goarch=None):
@@ -38,13 +38,13 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     if bool(goos) != bool(goarch):  # pragma: no cover
       raise ValueError('GOOS and GOARCH must be either both set or both unset')
 
-    env, name_prefix = None, None
+    env, name_prefix = None, ''
     if goos and goarch:
       env = {'GOOS': goos, 'GOARCH': goarch}
       name_prefix ='[GOOS:%s GOARCH:%s]' % (goos, goarch)
-    self._cur_ctx = (path_to_repo, (goos and goarch))
+    self._cur_ctx = (path_to_repo, (goos and goarch), name_prefix)
     try:
-      with self.m.context(env=env, name_prefix=name_prefix):
+      with self.m.context(env=env):
         yield
     finally:
       self._cur_ctx = None
@@ -61,10 +61,16 @@ class InfraCIPDApi(recipe_api.RecipeApi):
       raise Exception('must be run under infra_cipd.context')
     return self._cur_ctx[1]
 
+  @property
+  def _ctx_name_prefix(self):
+    if self._cur_ctx is None:  # pragma: no cover
+      raise Exception('must be run under infra_cipd.context')
+    return self._cur_ctx[2]
+
   def build(self):
     """Builds packages."""
     return self.m.python(
-        'cipd - build packages',
+        self._ctx_name_prefix+'cipd - build packages',
         self._ctx_path_to_repo.join('build', 'build.py'),
         ['--builder', self.m.buildbucket.builder_name],
         venv=True)
@@ -74,7 +80,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     if self._ctx_is_cross_compile and skip_if_cross_compiling:
       return None
     return self.m.python(
-        'cipd - test packages integrity',
+        self._ctx_name_prefix+'cipd - test packages integrity',
         self._ctx_path_to_repo.join('build', 'test_packages.py'),
         venv=True)
 
@@ -90,7 +96,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     args.extend(tags)
     try:
       return self.m.python(
-          'cipd - upload packages',
+          self._ctx_name_prefix+'cipd - upload packages',
           self._ctx_path_to_repo.join('build', 'build.py'),
           args,
           step_test_data=step_test_data or self.test_api.example_upload,
