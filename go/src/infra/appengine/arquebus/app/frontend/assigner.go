@@ -31,7 +31,7 @@ import (
 const (
 	// TaskFetchLimit is the maximum number of Task entities to to be fetched.
 	//
-	// TODO(crbug/849469): Make this limit adjustable when paging option
+	// TODO(crbug/967522): Make this limit adjustable when paging option
 	// is supported.
 	taskFetchLimit = 20
 
@@ -55,7 +55,7 @@ func assignerPage(c *router.Context) {
 	}
 
 	assigner, tasks, err := backend.GetAssignerWithTasks(
-		// TODO(crbug/849469): add a param for alternating includeNoopSuccess
+		// TODO(crbug/967527): add a param for alternating includeNoopSuccess
 		c.Context, assignerID, taskFetchLimit, true,
 	)
 	if err == datastore.ErrNoSuchEntity {

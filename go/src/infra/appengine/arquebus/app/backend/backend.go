@@ -121,9 +121,6 @@ func GetAssigner(c context.Context, aid string) (*model.Assigner, error) {
 // UpdateAssigners updates all the Assigner entities, based on the configs,
 // and remove the assigners of which configs no longer exist.
 func UpdateAssigners(c context.Context, cfgs []*config.Assigner, rev string) error {
-	// TODO(crbug/849469): validate the input configs. It's possible that
-	// an existing, valid config becomes invalid due to application code
-	// changes.
 	return model.UpdateAssigners(c, cfgs, rev)
 }
 
@@ -243,7 +240,7 @@ func endTaskRun(c context.Context, task *model.Task, nIssuesUpdated int, issueUp
 	case issueUpdateError != nil:
 		task.Status = model.TaskStatus_Failed
 	default:
-		// TODO(crbug/849469): replace Task.WasNoopSuccess with
+		// TODO(crbug/967525): replace Task.WasNoopSuccess with
 		// Task.nIssuesUpdated.
 		task.WasNoopSuccess = true
 		task.Status = model.TaskStatus_Succeeded

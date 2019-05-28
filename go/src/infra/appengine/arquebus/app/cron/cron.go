@@ -48,6 +48,7 @@ func updateAssigners(c *router.Context) {
 	cfgs := config.Get(ctx).Assigners
 	rev := config.GetConfigRevision(ctx)
 
+	// TODO(crbug/967549) - revalidate the configs
 	if err := backend.UpdateAssigners(ctx, cfgs, rev); err != nil {
 		http500res(c, err, "failed to update assigners")
 		return

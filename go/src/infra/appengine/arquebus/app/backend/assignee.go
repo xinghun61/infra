@@ -100,7 +100,7 @@ func setShiftCache(c context.Context, key string, shift *oncallShift) error {
 	if err != nil {
 		return err
 	}
-	// TODO(crbug/849469), if RotaNG provides an RPC to return
+	// TODO(crbug/967523), if RotaNG provides an RPC to return
 	// the end timestamp of a shift, update this logic to maximise the cache
 	// duration, based on the shift end timestamp.
 	item.SetValue(bytes).SetExpiration(maxShiftCacheDuration)
@@ -123,7 +123,7 @@ func findShift(c context.Context, task *model.Task, rotation string) (*oncallShi
 		return &shift, nil
 	}
 
-	// TODO(crbug/849469), use RotaNG PRPC APIs instead.
+	// TODO(crbug/967523), use RotaNG PRPC APIs instead.
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err

@@ -89,7 +89,7 @@ func GetTask(c context.Context, assignerID string, taskID int64) (*Assigner, *Ta
 // If includeNoopSuccess is true, the return includes the Task entities
 // that were completed successfully without issue updates.
 //
-// TODO(crbug/849469): add pagination
+// TODO(crbug/967522): add pagination
 func GetTasks(c context.Context, assigner *Assigner, limit int32, includeNoopSuccess bool) ([]*Task, error) {
 	var tasks []*Task
 	q := datastore.NewQuery(taskKind).Ancestor(GenAssignerKey(c, assigner))

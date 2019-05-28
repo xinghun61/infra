@@ -36,7 +36,7 @@ func TestBackend(t *testing.T) {
 		})
 
 		Convey("doesn't schedule new tasks for a drained assigner.", func() {
-			// TODO(crbug/849469): implement me.
+			// TODO(crbug/967519): implement me.
 		})
 	})
 
@@ -93,7 +93,7 @@ func TestBackend(t *testing.T) {
 		})
 
 		Convey("cancelling tasks, if the assigner has been drained.", func() {
-			// TODO(crbug/849469): implement me.
+			// TODO(crbug/967519): implement me.
 		})
 	})
 }
