@@ -53,8 +53,7 @@ create {
 }
 
 create {
-  # We never supported 64bit python for python2; why start now?
-  platform_re: "windows-386"
+  platform_re: "windows-.*"
   source { script { name: "fetch.py" } }
   build {
     tool: "lessmsi"
