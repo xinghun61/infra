@@ -27,7 +27,6 @@
     ],
     "infra_step": true,
     "name": "Check for existing source checkout dir",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@glob@[CACHE]/codesearch_update_submodules_mirror/src@@@",
       "@@@STEP_LOG_END@glob@@@"
@@ -106,7 +105,6 @@
     "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
     "name": "Check for new commits.Get latest commit hash in source repo",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]

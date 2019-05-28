@@ -90,7 +90,6 @@
       "version"
     ],
     "name": "docker version",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@1.2.3@@@"
     ]
@@ -108,7 +107,6 @@
       "reference=android_docker:*"
     ],
     "name": "clear old images.list images",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -144,8 +142,7 @@
       "3m"
     ],
     "infra_step": true,
-    "name": "get access token for service-account-container_registry_pusher.json",
-    "stdout": "/path/to/tmp/"
+    "name": "get access token for service-account-container_registry_pusher.json"
   },
   {
     "cmd": [
@@ -181,7 +178,6 @@
       "gcr.io/chromium-container-registry/android_docker:2012-05-14-12-53"
     ],
     "name": "docker push",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@image = android_docker:1-2-3: digest: sha256:deadbeef size:123@@@"
     ]

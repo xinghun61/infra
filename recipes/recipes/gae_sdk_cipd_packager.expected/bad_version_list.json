@@ -19,7 +19,6 @@
     ],
     "infra_step": true,
     "name": "Sync go/linux-amd64.gsutil Get Latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_SUMMARY_TEXT@No latest version for prefix: gs://appengine-sdks/featured/go_appengine_sdk_linux_amd64-@@@",
@@ -46,7 +45,6 @@
     ],
     "infra_step": true,
     "name": "Sync go/mac-amd64.gsutil Get Latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_SUMMARY_TEXT@No latest version for prefix: gs://appengine-sdks/featured/go_appengine_sdk_darwin_amd64-@@@",
@@ -73,7 +71,6 @@
     ],
     "infra_step": true,
     "name": "Sync python/all.gsutil Get Latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_SUMMARY_TEXT@No latest version for prefix: gs://appengine-sdks/featured/google_appengine_@@@",

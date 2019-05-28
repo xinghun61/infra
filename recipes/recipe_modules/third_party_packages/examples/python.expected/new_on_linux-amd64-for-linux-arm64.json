@@ -128,7 +128,6 @@
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
     "name": "read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
     ]
@@ -397,7 +396,6 @@
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
     "name": "ncurses-6.0.get profiles",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@Embedding 2 profile(s)@@@"

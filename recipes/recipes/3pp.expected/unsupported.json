@@ -12,7 +12,6 @@
     ],
     "infra_step": true,
     "name": "read cached checkouts",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/badc0ffe@@@",
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/deadbeef@@@",
@@ -79,7 +78,6 @@
     "cwd": "[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a",
     "infra_step": true,
     "name": "load packages from desired repos.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -113,7 +111,6 @@
     ],
     "infra_step": true,
     "name": "load packages from desired repos.find package specs",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/63dc52509fb3f064956e6d7c3a3446c6fe74309a/support_3pp/pkg_a/3pp.pb@@@",

@@ -19,7 +19,6 @@
     ],
     "infra_step": true,
     "name": "find package specs",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/already_uploaded/3pp.pb@@@",
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/bottom_dep/3pp.pb@@@",
@@ -1080,7 +1079,6 @@
       "_3PP_TOOL_PLATFORM": "linux-amd64"
     },
     "name": "building fetch_and_package.fetch.py latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@resolved version: 2.0.0@@@"
@@ -1506,7 +1504,6 @@
     },
     "infra_step": true,
     "name": "building posix_tool.fetch sources.unpack_archive.find archive to unpack",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@3@@@",
       "@@@STEP_TEXT@found 'archive.tgz'@@@",
@@ -2023,7 +2020,6 @@
       "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building windows_experiment.fetch.py latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@resolved version: 2.0.0@@@"
@@ -2881,7 +2877,6 @@
     },
     "infra_step": true,
     "name": "building tool.fetch sources.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -2983,7 +2978,6 @@
     },
     "infra_step": true,
     "name": "building tool.fetch sources.find patches in patches",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_END@glob@@@"
@@ -3626,7 +3620,6 @@
     },
     "infra_step": true,
     "name": "building tool (2).git ls-remote",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@resolved version: 1.5.0-rc1@@@"
@@ -4239,7 +4232,6 @@
       "_3PP_TOOL_PLATFORM": "mac-amd64"
     },
     "name": "building pkg.fetch.py latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@resolved version: 2.0.0@@@"

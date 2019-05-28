@@ -19,7 +19,6 @@
     ],
     "infra_step": true,
     "name": "find package specs",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/dep/3pp.pb@@@",
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/tool/3pp.pb@@@",
@@ -106,7 +105,6 @@
     },
     "infra_step": true,
     "name": "building dep.git ls-remote",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@resolved version: 1.5.0-rc1@@@"
@@ -286,7 +284,6 @@
     },
     "infra_step": true,
     "name": "building dep.fetch sources.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -581,7 +578,6 @@
     },
     "infra_step": true,
     "name": "building tool.fetch sources.installing tools.building dep.git ls-remote",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@4@@@",
       "@@@STEP_TEXT@resolved version: 1.5.0-rc1@@@"
@@ -864,7 +860,6 @@
     },
     "infra_step": true,
     "name": "building tool.fetch sources.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -1230,7 +1225,6 @@
     },
     "infra_step": true,
     "name": "building tool (2).git ls-remote",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@resolved version: v1.5.0-rc1@@@"
@@ -1447,7 +1441,6 @@
     },
     "infra_step": true,
     "name": "building tool (2).fetch sources.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"

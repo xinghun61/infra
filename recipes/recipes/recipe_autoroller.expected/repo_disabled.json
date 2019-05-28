@@ -103,7 +103,6 @@
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"

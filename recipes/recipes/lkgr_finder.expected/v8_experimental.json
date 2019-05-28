@@ -197,8 +197,7 @@
       "PATH": "RECIPE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
-    "name": "git cache",
-    "stdout": "/path/to/tmp/"
+    "name": "git cache"
   },
   {
     "cmd": [
@@ -250,7 +249,6 @@
     "cwd": "[CACHE]/builder/workdir",
     "infra_step": true,
     "name": "read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
     ]

@@ -127,7 +127,6 @@
     },
     "infra_step": true,
     "name": "read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
     ]
@@ -435,7 +434,6 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "name": "ncurses-6.0.get profiles",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@Embedding 2 profile(s)@@@"

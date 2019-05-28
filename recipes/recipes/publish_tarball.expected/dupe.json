@@ -11,8 +11,7 @@
       "gs://chromium-browser-official/"
     ],
     "infra_step": true,
-    "name": "gsutil ls",
-    "stdout": "/path/to/tmp/"
+    "name": "gsutil ls"
   },
   {
     "jsonResult": null,

@@ -19,7 +19,6 @@
     ],
     "infra_step": true,
     "name": "find package specs",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@glob@[CACHE]/builder/package_repo/[CACHE]/builder/package_repo/bad/3pp.pb@@@",
       "@@@STEP_LOG_END@glob@@@"

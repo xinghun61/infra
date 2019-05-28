@@ -149,7 +149,6 @@
     "cwd": "[CACHE]/infra_gclient_with_go/infra",
     "infra_step": true,
     "name": "get change list",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@change list is too long@1@@@",
       "@@@STEP_LOG_LINE@change list is too long@0@@@",

@@ -47,7 +47,6 @@
     "cwd": "[START_DIR]/swarming.client",
     "infra_step": true,
     "name": "read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
     ]
@@ -119,7 +118,6 @@
       "gs://chromeos-image-archive/some-device-type-full/LATEST-12345.0.0"
     ],
     "name": "find latest image at 12345.gsutil cat LATEST-12345",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -149,7 +147,6 @@
       "bots/list?dimensions=device_type:some-device-type&dimensions=pool:some-swarming-pool"
     ],
     "name": "get all bots",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"items\": [@@@",
@@ -221,7 +218,6 @@
     ],
     "infra_step": true,
     "name": "flash bots.out_of_date_bot",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -265,7 +261,6 @@
     ],
     "infra_step": true,
     "name": "wait for 1 flashing jobs.buildbucket.get",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -301,7 +296,6 @@
     ],
     "infra_step": true,
     "name": "wait for 1 flashing jobs.buildbucket.get (2)",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -337,7 +331,6 @@
     ],
     "infra_step": true,
     "name": "wait for 1 flashing jobs.buildbucket.get (3)",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -373,7 +366,6 @@
       "bot/out_of_date_bot/get"
     ],
     "name": "wait for bots to become available again.get status of out_of_date_bot",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -416,7 +408,6 @@
       "bot/out_of_date_bot/get"
     ],
     "name": "wait for bots to become available again.get status of out_of_date_bot (2)",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -459,7 +450,6 @@
       "bot/out_of_date_bot/get"
     ],
     "name": "wait for bots to become available again.get status of out_of_date_bot (3)",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -488,7 +478,6 @@
     ],
     "infra_step": true,
     "name": "retrigger myself",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"results\": [@@@",

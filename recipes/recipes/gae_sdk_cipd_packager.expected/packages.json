@@ -16,7 +16,6 @@
     ],
     "infra_step": true,
     "name": "Sync go/linux-amd64.gsutil Get Latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@ 10.2.3@@@"
@@ -139,7 +138,6 @@
     ],
     "infra_step": true,
     "name": "Sync go/mac-amd64.gsutil Get Latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@ 10.2.3@@@"
@@ -202,7 +200,6 @@
     ],
     "infra_step": true,
     "name": "Sync python/all.gsutil Get Latest",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@ 10.2.3@@@"

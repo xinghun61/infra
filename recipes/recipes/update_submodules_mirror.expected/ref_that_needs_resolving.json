@@ -27,7 +27,6 @@
     ],
     "infra_step": true,
     "name": "Check for existing source checkout dir",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@glob@[CACHE]/codesearch_update_submodules_mirror/src@@@",
       "@@@STEP_LOG_END@glob@@@"
@@ -108,8 +107,7 @@
       ]
     },
     "infra_step": true,
-    "name": "gclient evaluate DEPS",
-    "stdout": "/path/to/tmp/"
+    "name": "gclient evaluate DEPS"
   },
   {
     "cmd": [
@@ -120,8 +118,7 @@
     ],
     "cwd": "[CACHE]/codesearch_update_submodules_mirror/src/",
     "infra_step": true,
-    "name": "git ls-remote",
-    "stdout": "/path/to/tmp/"
+    "name": "git ls-remote"
   },
   {
     "cmd": [

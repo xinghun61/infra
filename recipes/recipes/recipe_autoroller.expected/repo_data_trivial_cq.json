@@ -100,7 +100,6 @@
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "infra_step": true,
     "name": "build.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -212,8 +211,6 @@
     ],
     "infra_step": true,
     "name": "build.gsutil repo_state",
-    "stderr": "/path/to/tmp/",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@ (trivial)@@@",
@@ -232,7 +229,6 @@
     ],
     "cwd": "[CACHE]/builder/recipe_autoroller/build",
     "name": "build.git cl status",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@commit@@@"

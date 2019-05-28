@@ -117,7 +117,6 @@
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
     "name": "python.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -401,7 +400,6 @@
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
     "name": "python.ncurses-6.0.get profiles",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_TEXT@Embedding 2 profile(s)@@@"
@@ -1475,7 +1473,6 @@
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
     "name": "git.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -2556,7 +2553,6 @@
     "cwd": "[START_DIR]/ninja/checkout",
     "infra_step": true,
     "name": "ninja.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -2800,7 +2796,6 @@
     "cwd": "[START_DIR]/cmake/checkout",
     "infra_step": true,
     "name": "cmake.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -3043,7 +3038,6 @@
     "cwd": "[START_DIR]/swig/checkout",
     "infra_step": true,
     "name": "swig.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
@@ -3653,7 +3647,6 @@
       "PATH": "[START_DIR]/nodejs/bin"
     },
     "name": "firebase.fetch firebase-tools version",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -3837,7 +3830,6 @@
     "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
     "infra_step": true,
     "name": "dep.read revision",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"

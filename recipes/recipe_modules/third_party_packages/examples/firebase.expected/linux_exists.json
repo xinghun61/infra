@@ -36,8 +36,7 @@
     "env": {
       "PATH": "[START_DIR]/nodejs/bin"
     },
-    "name": "fetch firebase-tools version",
-    "stdout": "/path/to/tmp/"
+    "name": "fetch firebase-tools version"
   },
   {
     "cmd": [

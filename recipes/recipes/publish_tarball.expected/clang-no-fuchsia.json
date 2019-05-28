@@ -11,8 +11,7 @@
       "gs://chromium-browser-official/"
     ],
     "infra_step": true,
-    "name": "gsutil ls",
-    "stdout": "/path/to/tmp/"
+    "name": "gsutil ls"
   },
   {
     "cmd": [
@@ -265,8 +264,7 @@
       "[START_DIR]/src/buildtools/linux64/gn",
       "--version"
     ],
-    "name": "get gn version",
-    "stdout": "/path/to/tmp/"
+    "name": "get gn version"
   },
   {
     "cmd": [
@@ -311,7 +309,6 @@
     ],
     "infra_step": true,
     "name": "listdir gn",
-    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@listdir@[CLEANUP]/gn_tmp_1/gn/.git@@@",
       "@@@STEP_LOG_LINE@listdir@[CLEANUP]/gn_tmp_1/gn/build@@@",
@@ -448,7 +445,6 @@
     "infra_step": true,
     "name": "luci-scheduler.EmitTriggers",
     "stdin": "{\"batches\": [{\"jobs\": [{\"job\": \"Build From Tarball\", \"project\": \"infra\"}], \"trigger\": {\"buildbucket\": {\"properties\": {\"version\": \"74.0.3729.169\"}, \"tags\": [\"parent_buildername:TestBuilder\", \"parent_buildnumber:571\", \"user_agent:recipe\"]}, \"id\": \"6a0a73b0-070b-492b-9135-9f26a2a00001\", \"title\": \"TestBuilder/571\"}}], \"timestamp\": 1337000001500000}",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@input@{@@@",
       "@@@STEP_LOG_LINE@input@    \"batches\": [@@@",
