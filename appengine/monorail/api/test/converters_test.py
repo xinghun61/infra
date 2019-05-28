@@ -264,11 +264,23 @@ class ConverterFunctionsTest(unittest.TestCase):
     user2 = user_pb2.User(
         user_id=2, email='user2@example.com', is_site_admin=True,
         last_visit_timestamp=self.NOW)
-    user3 = user_pb2.User(user_id=3, email='user3@example.com')
+    user3 = user_pb2.User(
+        user_id=3, email='user3@example.com',
+        linked_child_ids=[4])
     user4 = user_pb2.User(
-        user_id=4, email='user4@example.com', last_visit_timestamp=1)
+        user_id=4, email='user4@example.com', last_visit_timestamp=1,
+        linked_parent_id=3)
+    users_by_id = {
+        3: testing_helpers.Blank(
+            display_name='user3@example.com', email='user3@example.com',
+            banned=False),
+        4: testing_helpers.Blank(
+            display_name='user4@example.com', email='user4@example.com',
+            banned=False),
+        }
 
-    actual = converters.ConvertUsers([user1, user2, user3, user4])
+    actual = converters.ConvertUsers(
+        [user1, user2, user3, user4], users_by_id)
     self.assertItemsEqual(
         actual,
         [user_objects_pb2.User(user_id=1, email='user1@example.com'),
@@ -279,11 +291,15 @@ class ConverterFunctionsTest(unittest.TestCase):
          user_objects_pb2.User(
             user_id=3,
             email='user3@example.com',
-            availability='User never visited'),
+            availability='User never visited',
+            linked_child_refs=[common_pb2.UserRef(
+              user_id=4, display_name='user4@example.com')]),
          user_objects_pb2.User(
             user_id=4,
             email='user4@example.com',
-            availability='Last visit > 30 days ago'),
+            availability='Last visit > 30 days ago',
+            linked_parent_ref=common_pb2.UserRef(
+              user_id=3, display_name='user3@example.com')),
          ])
 
   def testConvetPrefValues(self):

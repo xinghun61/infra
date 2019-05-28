@@ -27,10 +27,13 @@ class UsersServicer(monorail_servicer.MonorailServicer):
   def GetUser(self, mc, request):
     """Return info about the specified user."""
     with work_env.WorkEnv(mc, self.services) as we:
-      users = we.ListReferencedUsers([request.user_ref.display_name])
+      users, linked_user_ids = we.ListReferencedUsers(
+          [request.user_ref.display_name])
+      linked_user_views = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, linked_user_ids)
 
     with mc.profiler.Phase('converting to response objects'):
-      response_users = converters.ConvertUsers(users)
+      response_users = converters.ConvertUsers(users, linked_user_views)
 
     return response_users[0]
 
@@ -41,10 +44,12 @@ class UsersServicer(monorail_servicer.MonorailServicer):
     if request.user_refs:
       emails = [user_ref.display_name for user_ref in request.user_refs]
     with work_env.WorkEnv(mc, self.services) as we:
-      users = we.ListReferencedUsers(emails)
+      users, linked_user_ids = we.ListReferencedUsers(emails)
+      linked_user_views = framework_views.MakeAllUserViews(
+          mc.cnxn, self.services.user, linked_user_ids)
 
     with mc.profiler.Phase('converting to response objects'):
-      response_users = converters.ConvertUsers(users)
+      response_users = converters.ConvertUsers(users, linked_user_views)
       response = users_pb2.ListReferencedUsersResponse(users=response_users)
 
     return response

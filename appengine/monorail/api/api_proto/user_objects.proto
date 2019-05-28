@@ -8,16 +8,20 @@
 
 syntax = "proto3";
 
+import "api/api_proto/common.proto";
+
 package monorail;
 
 // TODO(jojwang): monorail:1701, fill User with all info necessary for
 // creating a user profile page.
-// Next available tag: 5
+// Next available tag: 7
 message User {
   string email = 1;
   int64 user_id = 2;
   bool is_site_admin = 3;
   string availability = 4;
+  UserRef linked_parent_ref = 5;
+  repeated UserRef linked_child_refs = 6;
 }
 
 

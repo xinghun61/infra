@@ -2352,9 +2352,23 @@ class WorkEnvTest(unittest.TestCase):
     user6 = self.services.user.TestAddUser('test6@example.com', 666)
     with self.work_env as we:
       # We ignore emails that are empty or belong to non-existent users.
-      users = we.ListReferencedUsers(
+      users, linked_user_ids = we.ListReferencedUsers(
           ['test4@example.com', 'test5@example.com', 'test6@example.com', ''])
       self.assertItemsEqual(users, [user5, user6])
+      self.assertEqual(linked_user_ids, [])
+
+  def testListReferencedUsers_Linked(self):
+    """We return User PBs and the IDs of any linked accounts."""
+    user5 = self.services.user.TestAddUser('test5@example.com', 555)
+    user5.linked_child_ids = [666, 777]
+    user6 = self.services.user.TestAddUser('test6@example.com', 666)
+    user6.linked_parent_id = 555
+    with self.work_env as we:
+      # We ignore emails that are empty or belong to non-existent users.
+      users, linked_user_ids = we.ListReferencedUsers(
+          ['test4@example.com', 'test5@example.com', 'test6@example.com', ''])
+      self.assertItemsEqual(users, [user5, user6])
+      self.assertItemsEqual(linked_user_ids, [555, 666, 777])
 
   def testStarUser_Normal(self):
     """We can star and unstar a user."""

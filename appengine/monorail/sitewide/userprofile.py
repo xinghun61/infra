@@ -235,7 +235,7 @@ def _ComputePossibleParentAccounts(
   possible_domains = settings.linkable_domains.get(user_view.domain, [])
   possible_emails = ['%s@%s' % (user_view.username, domain)
                      for domain in possible_domains]
-  found_users = we.ListReferencedUsers(possible_emails)
+  found_users, _ = we.ListReferencedUsers(possible_emails)
   found_emails = [user.email for user in found_users]
   return found_emails
 

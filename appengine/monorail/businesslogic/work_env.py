@@ -1511,13 +1511,29 @@ class WorkEnv(object):
     return visible_group_ids
 
   def ListReferencedUsers(self, emails):
-    """Return a of the given emails' User PBs."""
+    """Return a list of the given emails' User PBs, plus linked account ids.
+
+    Args:
+      emails: list of emails of users to look up.
+
+    Returns:
+      A pair (users, linked_users_ids) where users is an unsorted list of
+      User PBs and linked_user_ids is a list of user IDs of any linked accounts.
+    """
     with self.mc.profiler.Phase('getting existing users'):
       user_id_dict = self.services.user.LookupExistingUserIDs(
           self.mc.cnxn, emails)
       users_by_id = self.services.user.GetUsersByIDs(
           self.mc.cnxn, user_id_dict.values())
-    return users_by_id.values()
+      user_list = users_by_id.values()
+
+      linked_user_ids = []
+      for user in user_list:
+        if user.linked_parent_id:
+          linked_user_ids.append(user.linked_parent_id)
+        linked_user_ids.extend(user.linked_child_ids)
+
+    return user_list, linked_user_ids
 
   def StarUser(self, user_id, starred):
     """Star or unstar the specified user.

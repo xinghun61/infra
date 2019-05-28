@@ -140,14 +140,34 @@ def ConvertUserRefs(explicit_user_ids, derived_user_ids, users_by_id,
   return result
 
 
-def ConvertUsers(users):
-  return [
-      user_objects_pb2.User(
-          user_id=user.user_id,
-          email=user.email,
-          is_site_admin=user.is_site_admin,
-          availability=framework_helpers.GetUserAvailability(user)[0])
-      for user in users]
+def ConvertUsers(users, users_by_id):
+  """Use the given protorpc Users to create protoc Users.
+
+  Args:
+    users: list of protorpc Users to convert.
+    users_by_id: dict {user_id: UserView} of all Users linked
+      from the users list.
+
+  Returns:
+    A list of protoc Users.
+  """
+  result = []
+  for user in users:
+    linked_parent_ref = None
+    if user.linked_parent_id:
+      linked_parent_ref = ConvertUserRefs(
+          [user.linked_parent_id], [], users_by_id, False)[0]
+    linked_child_refs = ConvertUserRefs(
+        user.linked_child_ids, [], users_by_id, False)
+    converted_user = user_objects_pb2.User(
+        user_id=user.user_id,
+        email=user.email,
+        is_site_admin=user.is_site_admin,
+        availability=framework_helpers.GetUserAvailability(user)[0],
+        linked_parent_ref=linked_parent_ref,
+        linked_child_refs=linked_child_refs)
+    result.append(converted_user)
+  return result
 
 
 def ConvertPrefValues(userprefvalues):
