@@ -55,7 +55,6 @@ ci_builder(name = 'infra-continuous-mac-10.12-64', os = 'Mac-10.12')
 
 # CI Win.
 ci_builder(name = 'infra-continuous-win7-64', os = 'Windows')
-ci_builder(name = 'infra-continuous-win7-32', os = 'Windows', cpu = 'x86-32')
 ci_builder(name = 'infra-continuous-win10-64', os = 'Windows-10')
 
 # All trybots.

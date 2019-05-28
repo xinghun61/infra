@@ -17,6 +17,18 @@
     "cmd": [
       "vpython",
       "-u",
+      "[BUILDER_CACHE]/assume/infra/build/test_packages.py"
+    ],
+    "env": {
+      "GOARCH": "arm64",
+      "GOOS": "linux"
+    },
+    "name": "[GOOS:linux GOARCH:arm64]cipd - test packages integrity"
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
       "[BUILDER_CACHE]/assume/infra/build/build.py",
       "--no-rebuild",
       "--upload",

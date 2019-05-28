@@ -35,18 +35,27 @@ DEPS = [
 # CIPD packages for. 'native' means "do not cross-compile, build for the host
 # platform". Targeting 'native' will also usually build non-go based packages.
 #
+# Additionally, a variant may have a sequence of options appended to it,
+# separated by colons. e.g. 'VARIANT:option:option'. Currently the supported
+# options are:
+#   * 'test' - Run the tests. By default no tests are run.
+#
 # If the builder is not in this set, or the list of GOOS-GOARCH for it is empty,
 # it won't be used for building CIPD packages.
 #
 # Only builders named '*-packager-*' builders will actually upload CIPD
 # packages, while '*-continuous-*' builders merely verify that CIPD packages can
 # be built.
+#
+# TODO(iannucci): make packager role explicit with `package=cipd_prefix` option.
+# TODO(iannucci): remove this dict and put this all configuration as explicit
+#    property inputs to the recipe :)
 CIPD_PACKAGE_BUILDERS = {
   # trusty-64 is the primary builder for linux-amd64, and the rest just
   # cross-compile to different platforms (to speed up the overall cycle time by
   # doing stuff in parallel).
   'infra-continuous-precise-64': ['linux-arm', 'linux-arm64'],
-  'infra-continuous-trusty-64':  ['native', 'linux-386'],
+  'infra-continuous-trusty-64':  ['native:test', 'linux-386'],
   'infra-continuous-xenial-64':  ['linux-mipsle', 'linux-mips64',
                                   'linux-mips64le'],
   'infra-continuous-yakkety-64': ['linux-s390x'],
@@ -56,19 +65,21 @@ CIPD_PACKAGE_BUILDERS = {
   'infra-continuous-mac-10.10-64': [],
   'infra-continuous-mac-10.11-64': [],
   'infra-continuous-mac-10.12-64': [],
-  'infra-continuous-mac-10.13-64': ['native'],
+  'infra-continuous-mac-10.13-64': ['native:test'],
 
-  # Windows builders each build and test for their own bitness.
-  'infra-continuous-win-32': ['native'],
-  'infra-continuous-win-64': ['native'],
+  # Windows 64 bit builder runs and tests for both 64 && 32 bit.
+  'infra-continuous-win10-64': ['native:test', 'windows-386:test'],
 
   # Internal builders, they use exact same recipe.
-  'infra-internal-continuous-trusty-64': ['native', 'linux-arm', 'linux-arm64'],
-  'infra-internal-continuous-win-32': ['native'],
-  'infra-internal-continuous-win-64': ['native'],
+  'infra-internal-continuous-trusty-64': [
+    'native:test',
+    'linux-arm',
+    'linux-arm64',
+  ],
+  'infra-internal-continuous-win-64': ['native:test', 'windows-386:test'],
   'infra-internal-continuous-mac-10.10-64': [],
   'infra-internal-continuous-mac-10.11-64': [],
-  'infra-internal-continuous-mac-10.13-64': ['native'],
+  'infra-internal-continuous-mac-10.13-64': ['native:test'],
 
 
   # Builders that upload CIPD packages.
@@ -76,7 +87,7 @@ CIPD_PACKAGE_BUILDERS = {
   # In comments is approximate runtime for building and testing packages, per
   # platform (as of Mar 28 2019). We try to balance xc1 and xc2.
   'infra-packager-linux-64': [
-    'native',            # ~ 140 sec
+    'native:test',       # ~ 140 sec
   ],
   'infra-packager-linux-xc1': [
     'linux-386',         # ~90 sec
@@ -91,14 +102,16 @@ CIPD_PACKAGE_BUILDERS = {
     'linux-ppc64le',     # ~40 sec
     'linux-s390x',       # ~40 sec
   ],
-  'infra-packager-mac-64': ['native'],
-  'infra-packager-win-32': ['native'],
-  'infra-packager-win-64': ['native'],
+  'infra-packager-mac-64': ['native:test'],
+  'infra-packager-win-64': ['native:test', 'windows-386:test'],
 
-  'infra-internal-packager-linux-64': ['native', 'linux-arm', 'linux-arm64'],
-  'infra-internal-packager-mac-64': ['native'],
-  'infra-internal-packager-win-32': ['native'],
-  'infra-internal-packager-win-64': ['native'],
+  'infra-internal-packager-linux-64': [
+    'native:test',
+    'linux-arm',
+    'linux-arm64',
+  ],
+  'infra-internal-packager-mac-64': ['native:test'],
+  'infra-internal-packager-win-64': ['native:test', 'windows-386:test'],
 }
 
 
@@ -192,13 +205,18 @@ def build_main(api, checkout, buildername, project_name, repo_url, rev):
         venv=True)
 
     for plat in CIPD_PACKAGE_BUILDERS.get(buildername, []):
+      options = plat.split(':')
+      plat = options.pop(0)
+
       if plat == 'native':
         goos, goarch = None, None
       else:
         goos, goarch = plat.split('-', 1)
+
       with api.infra_cipd.context(api.path['checkout'], goos, goarch):
         api.infra_cipd.build()
-        api.infra_cipd.test(skip_if_cross_compiling=True)
+        if 'test' in options:
+          api.infra_cipd.test()
         if is_packager:
           if api.runtime.is_experimental:
             api.step('no CIPD package upload in experimental mode', cmd=None)
@@ -233,7 +251,7 @@ def GenTests(api):
 
   yield test('public-ci-linux', 'infra-continuous-trusty-64',
              PUBLIC_REPO, 'infra', 'ci', 'linux')
-  yield test('public-ci-win', 'infra-continuous-win-32',
+  yield test('public-ci-win', 'infra-continuous-win10-64',
              PUBLIC_REPO, 'infra', 'ci', 'win')
 
   yield test('internal-ci-linux', 'infra-internal-continuous-trusty-64',

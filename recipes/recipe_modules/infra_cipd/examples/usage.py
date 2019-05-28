@@ -29,7 +29,7 @@ def RunSteps(api):
       goos=api.properties.get('goos'),
       goarch=api.properties.get('goarch')):
     api.infra_cipd.build()
-    api.infra_cipd.test(skip_if_cross_compiling=True)
+    api.infra_cipd.test()
     if api.properties.get('buildnumber'):
       api.infra_cipd.upload(api.infra_cipd.tags(url, rev))
 

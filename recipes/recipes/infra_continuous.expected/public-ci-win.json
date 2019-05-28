@@ -151,7 +151,7 @@
       "-u",
       "[CACHE]\\infra_gclient_with_go\\infra\\build\\build.py",
       "--builder",
-      "infra-continuous-win-32"
+      "infra-continuous-win10-64"
     ],
     "env_prefixes": {
       "PATH": [
@@ -172,6 +172,42 @@
       ]
     },
     "name": "cipd - test packages integrity"
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "[CACHE]\\infra_gclient_with_go\\infra\\build\\build.py",
+      "--builder",
+      "infra-continuous-win10-64"
+    ],
+    "env": {
+      "GOARCH": "386",
+      "GOOS": "windows"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "name": "[GOOS:windows GOARCH:386]cipd - build packages"
+  },
+  {
+    "cmd": [
+      "vpython",
+      "-u",
+      "[CACHE]\\infra_gclient_with_go\\infra\\build\\test_packages.py"
+    ],
+    "env": {
+      "GOARCH": "386",
+      "GOOS": "windows"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "C:\\infra-system\\bin"
+      ]
+    },
+    "name": "[GOOS:windows GOARCH:386]cipd - test packages integrity"
   },
   {
     "jsonResult": null,

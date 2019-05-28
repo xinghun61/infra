@@ -19,7 +19,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
   def __init__(self, buildnumber, **kwargs):
     super(InfraCIPDApi, self).__init__(**kwargs)
     self._buildnumber = buildnumber
-    self._cur_ctx = None  # (path_to_repo, is_cross_compile, name_prefix)
+    self._cur_ctx = None  # (path_to_repo, name_prefix)
 
   @contextlib.contextmanager
   def context(self, path_to_repo, goos=None, goarch=None):
@@ -42,7 +42,7 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     if goos and goarch:
       env = {'GOOS': goos, 'GOARCH': goarch}
       name_prefix ='[GOOS:%s GOARCH:%s]' % (goos, goarch)
-    self._cur_ctx = (path_to_repo, (goos and goarch), name_prefix)
+    self._cur_ctx = (path_to_repo, name_prefix)
     try:
       with self.m.context(env=env):
         yield
@@ -56,16 +56,10 @@ class InfraCIPDApi(recipe_api.RecipeApi):
     return self._cur_ctx[0]
 
   @property
-  def _ctx_is_cross_compile(self):
-    if self._cur_ctx is None:  # pragma: no cover
-      raise Exception('must be run under infra_cipd.context')
-    return self._cur_ctx[1]
-
-  @property
   def _ctx_name_prefix(self):
     if self._cur_ctx is None:  # pragma: no cover
       raise Exception('must be run under infra_cipd.context')
-    return self._cur_ctx[2]
+    return self._cur_ctx[1]
 
   def build(self):
     """Builds packages."""
@@ -75,10 +69,8 @@ class InfraCIPDApi(recipe_api.RecipeApi):
         ['--builder', self.m.buildbucket.builder_name],
         venv=True)
 
-  def test(self, skip_if_cross_compiling=False):
+  def test(self):
     """Tests previously built packages integrity."""
-    if self._ctx_is_cross_compile and skip_if_cross_compiling:
-      return None
     return self.m.python(
         self._ctx_name_prefix+'cipd - test packages integrity',
         self._ctx_path_to_repo.join('build', 'test_packages.py'),
