@@ -16,10 +16,9 @@ DISABLED_TESTS = [
     '.*appengine/chromium_build/app_test.py',
 ]
 
-# LGTM FROM iannucci@ REQUIRED TO EDIT THIS LIST:
 DISABLED_PYLINT_WARNINGS = [
-  'W0231',  # __init__ method from base class is not called
-  'W0232',  # Class has no __init__ method
+    'no-init',                # Class has no __init__ method
+    'super-init-not-called',  # __init__ method from base class is not called
 ]
 
 DISABLED_PROJECTS = [
