@@ -22,6 +22,7 @@ service OncallInfo {
   rpc Shifts(ShiftsRequest) returns (ShiftsResponse) {}
 }
 
+
 // OncallRequest contains the name of the rotation of interest.
 message OncallRequest {
   // name is a required field containing the name of the rotation
@@ -53,7 +54,7 @@ message OncallResponse {
   //  utc2@oncall.com
   //
   // A rotation using a tz_consider generator would generate a shift with one
-  // one member from each TZ.
+  // member from each TZ.
   //   syd1@oncall.com , est1@oncall.com , mtv1@oncall.com and utc1@oncall.com
   bool tz_consider = 2;
 }
@@ -135,4 +136,49 @@ message Rotation {
   // An external rotation fetches shifts from a shared calendar.
   // Commonly used to get G3 oncall information in to RotaNG.
   bool external = 3;
+}
+
+// The RotationAdmin service provides an API to manage Rotation configurations.
+service RotationAdmin {
+  // CreateExternal creates a new external rotation.
+  // An external rotation scrapes a calendar to populate it's shifts.
+  rpc CreateExternal(CreateExternalRequest) returns (CreateExternalResponse) {}
+  // DeleteExternal deletes an existing external rotation.
+  rpc DeleteExternal(DeleteExternalRequest) returns (DeleteExternalResponse) {}
+}
+
+// CreateExternal request contain the information needed to create an external
+// rotation.
+message CreateExternalRequest {
+  // name is a required field naming the new rotation.
+  string name = 1;
+  // calendar is a required field specifying the Google calendar ID
+  // of the rotation calendar.
+  // Service account `rota-ng@appspot.gserviceaccount.com` need to have permissions
+  // to read events from the calendar.
+  string calendar = 2;
+  // owners_email is a required field containing a list of owners e-mail addresses.
+  repeated string owners_emails = 3;
+  // description is an optional field describing the rotation.
+  string description = 4;
+  // match is a required field matching the Summary of the event.
+  // Eg. from the CCI-Trooper rotation.
+  //
+  // With summary of an event looks something like this.
+  //
+  //  `CCI-Trooper: primary, secondary`
+  //
+  // The match filed should be set to `CCI-Trooper:`
+  string match = 5;
+}
+
+// CreateExternalResponse is the result of a CreateRequest.
+message CreateExternalResponse {
+}
+
+message DeleteExternalRequest {
+  string name = 1;
+}
+
+message DeleteExternalResponse {
 }

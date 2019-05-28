@@ -48,6 +48,19 @@ func adminOrOwner(ctx *router.Context, cfg *rotang.Configuration) bool {
 	return false
 }
 
+func isOwner(ctx context.Context, cfg *rotang.Configuration) bool {
+	usr := auth.CurrentUser(ctx)
+	if usr == nil || usr.Email == "" {
+		return false
+	}
+	for _, m := range cfg.Config.Owners {
+		if usr.Email == m {
+			return true
+		}
+	}
+	return false
+}
+
 // listRotations generates a list of rotations owned by current user.
 // If the current user is an admin all rotations will be listed.
 func (h *State) listRotations(ctx *router.Context, external bool) (templates.Args, error) {

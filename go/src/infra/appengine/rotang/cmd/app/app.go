@@ -245,6 +245,10 @@ func init() {
 		Service: h,
 		Prelude: checkAPIAccess,
 	})
+	apb.RegisterRotationAdminServer(&api, &apb.DecoratedRotationAdmin{
+		Service: h,
+		Prelude: checkAPIAccess,
+	})
 	discovery.Enable(&api)
 	api.InstallHandlers(r, standard.Base())
 
