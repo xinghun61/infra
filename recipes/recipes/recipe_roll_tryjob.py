@@ -186,6 +186,7 @@ def RunSteps(api, upstream_id, upstream_url, downstream_id, downstream_url):
           'diff', '--exit-code', name='post-train diff', ok_ret='any')
 
     if dirty_check.retcode != 0:
+      dirty_check.presentation.status = 'FAILURE'
       expected_footer = NONTRIVIAL_ROLL_FOOTER
   except api.step.StepFailure:
     expected_footer = MANUAL_CHANGE_FOOTER
