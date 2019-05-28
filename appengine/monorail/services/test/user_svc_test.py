@@ -525,3 +525,30 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.dismissedcues_tbl.Delete.has_calls(calls)
     self.user_service.userprefs_tbl.Delete.has_calls(calls)
     self.user_service.user_tbl.Delete.has_calls(calls)
+
+  def testTotalUsersCount(self):
+    self.user_service.user_tbl.SelectValue = mock.Mock()
+    self.user_service.TotalUsersCount(self.cnxn)
+    self.user_service.user_tbl.SelectValue.assert_called_once_with(
+        self.cnxn, col='COUNT(*)')
+
+  def testGetAllUserEmailsBatch(self):
+    rows = [('cow@test.com',), ('pig@test.com',), ('fox@test.com',)]
+    self.user_service.user_tbl.Select = mock.Mock(return_value=rows)
+    emails = self.user_service.GetAllUserEmailsBatch(self.cnxn)
+    self.user_service.user_tbl.Select.assert_called_once_with(
+        self.cnxn, cols=['email'], limit=1000, offset=0,
+        order_by=[('user_id ASC'), []])
+    self.assertItemsEqual(
+        emails, ['cow@test.com', 'pig@test.com', 'fox@test.com'])
+
+  def testGetAllUserEmailsBatch_CustomLimit(self):
+    rows = [('cow@test.com',), ('pig@test.com',), ('fox@test.com',)]
+    self.user_service.user_tbl.Select = mock.Mock(return_value=rows)
+    emails = self.user_service.GetAllUserEmailsBatch(
+        self.cnxn, limit=30, offset=60)
+    self.user_service.user_tbl.Select.assert_called_once_with(
+        self.cnxn, cols=['email'], limit=30, offset=60,
+        order_by=[('user_id ASC'), []])
+    self.assertItemsEqual(
+        emails, ['cow@test.com', 'pig@test.com', 'fox@test.com'])

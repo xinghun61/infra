@@ -695,3 +695,25 @@ class UserService(object):
     self.dismissedcues_tbl.Delete(cnxn, user_id=user_ids, commit=False)
     self.userprefs_tbl.Delete(cnxn, user_id=user_ids, commit=False)
     self.user_tbl.Delete(cnxn, user_id=user_ids, commit=False)
+
+  def TotalUsersCount(self, cnxn):
+    """Returns the total number of rows in the User table."""
+    return self.user_tbl.SelectValue(cnxn, col='COUNT(*)')
+
+  def GetAllUserEmailsBatch(self, cnxn, limit=1000, offset=0):
+    """Returns a list of user emails.
+
+    This method can be used for listing all user emails in Monorail's DB.
+    The list will contain at most [limit] emails, and be ordered by
+    user_id. The list will start at the given offset value.
+
+    Args:
+      cnxn: connection to SQL database.
+      limit: limit on the number of emails returned, defaults to 1000.
+      offset: starting index of the list, defaults to 0.
+
+    """
+    rows = self.user_tbl.Select(
+        cnxn, cols=['email'],
+        limit=limit, offset=offset, order_by=[('user_id ASC'), []])
+    return [row[0] for row in rows]
