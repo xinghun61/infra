@@ -73,7 +73,7 @@ func TestRun(t *testing.T) {
 		"https://github.com/koalaman/shellcheck/wiki/SC2034")
 	assertMapKeyEqual(t, comment, "path", "bad.sh")
 	assertMapKeyEqual(t, comment, "startLine", float64(3))
-	assertMapKeyEqual(t, comment, "endLine", float64(4))
+	assertMapKeyEqual(t, comment, "endLine", float64(3))
 }
 
 func assertMapKeyEqual(t *testing.T, m map[string]interface{}, k string, want interface{}) {
