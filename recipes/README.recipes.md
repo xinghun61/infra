@@ -503,7 +503,7 @@ This module uses the following named caches:
 
 #### **class [Support3ppApi](/recipes/recipe_modules/support_3pp/api.py#379)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#568)(self, packages=(), platform='', force_build=False):**
+&mdash; **def [ensure\_uploaded](/recipes/recipe_modules/support_3pp/api.py#574)(self, packages=(), platform='', force_build=False):**
 
 Executes entire {fetch,build,package,verify,upload} pipeline for all the
 packages listed, targeting the given platform.
@@ -521,7 +521,7 @@ and their tagged versions, as well as a list of unsupported packages.
 
 &mdash; **def [initialize](/recipes/recipe_modules/support_3pp/api.py#399)(self):**
 
-&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#518)(self, path):**
+&mdash; **def [load\_packages\_from\_path](/recipes/recipe_modules/support_3pp/api.py#524)(self, path):**
 
 Loads all package definitions from the given path.
 

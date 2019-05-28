@@ -341,7 +341,7 @@ def GenTests(api):
   upload { pkg_prefix: "pkg" }
   '''
   unsupported = '''
-  create { unsupported: true }
+  create { verify { test: "verify.py" } }
   '''
   yield (api.test('building package failed')
       + api.properties(GOOS='linux', GOARCH='amd64')
