@@ -222,7 +222,7 @@ import:
   subpackages:
   - errgroup
 - package: golang.org/x/sys
-  version: 13d03a9a82fba647c21a0ef8fba44a795d0f0835
+  version: master
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - unix
