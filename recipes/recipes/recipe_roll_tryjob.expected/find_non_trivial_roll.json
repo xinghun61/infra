@@ -299,7 +299,8 @@
       "-O",
       "recipe_engine=[CACHE]/builder/recipe_engine/recipe_engine",
       "test",
-      "train"
+      "train",
+      "--no-docs"
     ],
     "name": "train recipes"
   },

@@ -178,7 +178,8 @@ def RunSteps(api, upstream_id, upstream_url, downstream_id, downstream_url):
   try:
     api.python('train recipes',
         downstream_checkout.join(recipes_relpath),
-        ['-O', '%s=%s' % (upstream_id, upstream_checkout), 'test', 'train'])
+        ['-O', '%s=%s' % (upstream_id, upstream_checkout), 'test', 'train',
+         '--no-docs'])
 
     with api.context(cwd=downstream_checkout):
       # This has the benefit of showing the expectation diff to the user.
