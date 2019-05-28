@@ -57,6 +57,8 @@ message ChopsService {
 // The ChromeOps Announcements service definition.
 service ChopsAnnouncements {
   rpc CreateLiveAnnouncement (CreateLiveAnnouncementRequest) returns (CreateLiveAnnouncementResponse) {}
+  rpc RetireAnnouncement (RetireAnnouncementRequest) returns (Announcement) {}
+  rpc SearchAnnouncements (SearchAnnouncementsRequest) returns (SearchAnnouncementsResponse) {}
 }
 
 message CreateLiveAnnouncementRequest {
@@ -66,6 +68,23 @@ message CreateLiveAnnouncementRequest {
 
 message CreateLiveAnnouncementResponse {
   Announcement announcement = 1;
+}
+
+message RetireAnnouncementRequest {
+  int64 announcement_id = 1;
+}
+
+message SearchAnnouncementsRequest {
+  string platform_name = 1;
+  bool retired = 2;
+  // A limit <= 0 will be ignored.
+  int32 limit = 3;
+  // An offset < 0, will be ignored.
+  int32 offset = 4;
+}
+
+message SearchAnnouncementsResponse {
+  repeated Announcement announcements = 1;
 }
 
 // Platform represents a ChOps frontend service (eg. "monorail", "gerrit" for chromium) in

@@ -126,14 +126,28 @@ func CreateLiveAnnouncement(c context.Context, message, creator string, platform
 	return announcement.ToProto(platforms)
 }
 
-// GetAnnouncements returns dashpb.Announcements.
+// ListAnnouncements returns dashpb.Announcements for all given announcementIDs.
+//
+// It returns (announcements, nil) on success, and (nil, err) on datastore or conversion errors.
+func ListAnnouncements(c context.Context, announcementIDs ...int64) ([]*dashpb.Announcement, error) {
+	anns := make([]*Announcement, len(announcementIDs))
+	for i, id := range announcementIDs {
+		anns[i] = &Announcement{ID: id}
+	}
+	if err := datastore.Get(c, anns); err != nil {
+		return nil, err
+	}
+	return GetAllAnnouncementsPlatforms(c, anns)
+}
+
+// SearchAnnouncements returns dashpb.Announcements.
 // If a platformName is specified, only Announcements that are ancestor to the
 // platform will be returned.
 // If offset or limit are < 0, they will be ignored.
 // The returned Announcements will be either all retired, or all not retired.
 //
 // It returns (announcements, nil) on success, and (nil, err) on datastore or conversion errors.
-func GetAnnouncements(c context.Context, platformName string, retired bool, limit, offset int32) ([]*dashpb.Announcement, error) {
+func SearchAnnouncements(c context.Context, platformName string, retired bool, limit, offset int32) ([]*dashpb.Announcement, error) {
 	annQ := datastore.NewQuery("Announcement").Eq("Retired", retired).Limit(limit).Offset(offset)
 	if platformName != "" {
 		annQ = annQ.Eq("PlatformNames", platformName)

@@ -53,7 +53,7 @@ func announcementsPrelude(ctx context.Context, methodName string, _req proto.Mes
 type announcementsServiceImpl struct{}
 
 func (s *announcementsServiceImpl) CreateLiveAnnouncement(ctx context.Context, req *dashpb.CreateLiveAnnouncementRequest) (*dashpb.CreateLiveAnnouncementResponse, error) {
-	if len(req.Platforms) > 0 {
+	if len(req.Platforms) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "no platforms specified")
 	}
 	ingestedPlatforms := IngestPlatforms(req.Platforms)
@@ -66,4 +66,31 @@ func (s *announcementsServiceImpl) CreateLiveAnnouncement(ctx context.Context, r
 	return &dashpb.CreateLiveAnnouncementResponse{
 		Announcement: announcement,
 	}, nil
+}
+
+func (s *announcementsServiceImpl) RetireAnnouncement(ctx context.Context, req *dashpb.RetireAnnouncementRequest) (*dashpb.Announcement, error) {
+	if req.AnnouncementId == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Id field was empty")
+	}
+	err := backend.RetireAnnouncement(ctx, req.AnnouncementId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error retiring announcement - %s", err)
+	}
+	ann, err := backend.ListAnnouncements(ctx, req.AnnouncementId)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error getting updated announcement - %s", err)
+	}
+	return ann[0], nil
+}
+
+func (s *announcementsServiceImpl) SearchAnnouncements(ctx context.Context, req *dashpb.SearchAnnouncementsRequest) (*dashpb.SearchAnnouncementsResponse, error) {
+	// If Limit is 0, set to -1 so it is ignored and no limit is applied.
+	if req.Limit == 0 {
+		req.Limit = -1
+	}
+	anns, err := backend.SearchAnnouncements(ctx, req.PlatformName, req.Retired, req.Limit, req.Offset)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error getting announcements - %s", err)
+	}
+	return &dashpb.SearchAnnouncementsResponse{Announcements: anns}, nil
 }

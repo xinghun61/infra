@@ -39,3 +39,37 @@ func (s *DecoratedChopsAnnouncements) CreateLiveAnnouncement(c context.Context, 
 	}
 	return
 }
+
+func (s *DecoratedChopsAnnouncements) RetireAnnouncement(c context.Context, req *RetireAnnouncementRequest) (rsp *Announcement, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "RetireAnnouncement", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.RetireAnnouncement(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "RetireAnnouncement", rsp, err)
+	}
+	return
+}
+
+func (s *DecoratedChopsAnnouncements) SearchAnnouncements(c context.Context, req *SearchAnnouncementsRequest) (rsp *SearchAnnouncementsResponse, err error) {
+	if s.Prelude != nil {
+		var newCtx context.Context
+		newCtx, err = s.Prelude(c, "SearchAnnouncements", req)
+		if err == nil {
+			c = newCtx
+		}
+	}
+	if err == nil {
+		rsp, err = s.Service.SearchAnnouncements(c, req)
+	}
+	if s.Postlude != nil {
+		err = s.Postlude(c, "SearchAnnouncements", rsp, err)
+	}
+	return
+}
