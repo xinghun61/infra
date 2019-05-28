@@ -99,7 +99,8 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 				continue
 			}
 
-			latestStepFailures := stepSet(alertableStepFailures(latestBuild))
+			latestStepFailures := stepSet(
+				filterNestedSteps(alertableStepFailures(latestBuild)))
 
 			// buildsByFailingStep contains one key for each failing step in latestBuild.
 			// values are slices of Build records representing continuous build runs of that failure,
@@ -293,6 +294,26 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 	}
 
 	return ret, err
+}
+
+// Only return steps which represent leaf nodes.
+// See this comment for explanation of step name flattening:
+// https://chromium.googlesource.com/infra/luci/luci-go/+/HEAD/buildbucket/proto/step.proto#50
+func filterNestedSteps(steps []*bbpb.Step) []*bbpb.Step {
+	ret := []*bbpb.Step{}
+	// Assumes that nested steps always appear in order where
+	// a child immediately follows its parent, if it is nested.
+	for i, step := range steps {
+		if i <= len(steps)-2 {
+			nextStep := steps[i+1]
+			if strings.HasPrefix(nextStep.Name, step.Name+"|") {
+				// Skip this step since it has at least one child.
+				continue
+			}
+		}
+		ret = append(ret, step)
+	}
+	return ret
 }
 
 func alertableStepFailures(build *bbpb.Build) []*bbpb.Step {

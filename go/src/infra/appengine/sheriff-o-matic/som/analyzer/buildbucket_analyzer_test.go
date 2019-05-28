@@ -816,6 +816,205 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(alertedBuilders[0].FirstFailingRev.Position, ShouldEqual, 12)
 		So(alertedBuilders[0].LatestPassingRev.Position, ShouldEqual, 2)
 	})
+
+	Convey("Filter nested steps", t, func() {
+		Convey("Non-nested case, despite prefix matches", func() {
+			steps := []*bbpb.Step{
+				{
+					Name:   "step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name nested-step-name really-nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+			}
+			got := filterNestedSteps(steps)
+			So(len(got), ShouldEqual, 3)
+		})
+
+		Convey("Simple nested case", func() {
+			steps := []*bbpb.Step{
+				{
+					Name:   "step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name|really-nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+			}
+			got := filterNestedSteps(steps)
+			So(len(got), ShouldEqual, 1)
+		})
+
+		Convey("Nested, with siblings", func() {
+			steps := []*bbpb.Step{
+				{
+					Name:   "step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name|really-nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name|really-nested-sibling-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name|really-nested-sibling-step-name-3",
+					Status: bbpb.Status_FAILURE,
+				},
+			}
+			got := filterNestedSteps(steps)
+			So(len(got), ShouldEqual, 3)
+			So(got[0].Name, ShouldEqual, "step-name|nested-step-name|really-nested-step-name")
+			So(got[1].Name, ShouldEqual, "step-name|nested-step-name|really-nested-sibling-step-name")
+			So(got[2].Name, ShouldEqual, "step-name|nested-step-name|really-nested-sibling-step-name-3")
+		})
+
+		Convey("Mixed nested, non-nested case, end on non-nested", func() {
+			steps := []*bbpb.Step{
+				{
+					Name:   "first-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name|really-nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "last-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+			}
+			got := filterNestedSteps(steps)
+			So(len(got), ShouldEqual, 3)
+			So(got[0].Name, ShouldEqual, "first-step-name")
+			So(got[1].Name, ShouldEqual, "step-name|nested-step-name|really-nested-step-name")
+			So(got[2].Name, ShouldEqual, "last-step-name")
+		})
+
+		Convey("Mixed nested, non-nested case, end on nested", func() {
+			steps := []*bbpb.Step{
+				{
+					Name:   "first-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name|really-nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+			}
+			got := filterNestedSteps(steps)
+			So(len(got), ShouldEqual, 2)
+			So(got[0].Name, ShouldEqual, "first-step-name")
+			So(got[1].Name, ShouldEqual, "step-name|nested-step-name|really-nested-step-name")
+		})
+
+		Convey("Mixed nested, non-nested case, start on nested", func() {
+			steps := []*bbpb.Step{
+				{
+					Name:   "step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "step-name|nested-step-name|really-nested-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+				{
+					Name:   "last-step-name",
+					Status: bbpb.Status_FAILURE,
+				},
+			}
+			got := filterNestedSteps(steps)
+			So(len(got), ShouldEqual, 2)
+			So(got[0].Name, ShouldEqual, "step-name|nested-step-name|really-nested-step-name")
+			So(got[1].Name, ShouldEqual, "last-step-name")
+		})
+	})
+
+	Convey("Nested steps", t, func() {
+		a := New(0, 100)
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
+				{
+					Number: 42,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_FAILURE,
+						},
+						{
+							Name:   "step-name|nested-step-name",
+							Status: bbpb.Status_FAILURE,
+						},
+						{
+							Name:   "step-name|nested-step-name|really-nested-step-name",
+							Status: bbpb.Status_FAILURE,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input: inputProperties("some-master.foo", "linux-rel"),
+				},
+			},
+			Err: nil,
+		}
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{builderID})
+		So(err, ShouldBeNil)
+		So(failures, ShouldNotBeEmpty)
+		So(failures[0].StepAtFault, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step, ShouldNotBeNil)
+		So(failures[0].StepAtFault.Step.Name, ShouldEqual,
+			"step-name|nested-step-name|really-nested-step-name")
+
+		So(failures[0].Builders, ShouldNotBeEmpty)
+		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
+		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 42)
+		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 42)
+	})
 }
 
 type buildersByName []messages.AlertedBuilder
