@@ -760,3 +760,80 @@ def _ParseOneRule(
     raise exceptions.InputException()
 
   return rule
+
+
+def OwnerCcsInvolvedInFilterRules(rules):
+  """Finds all user_ids in the given rules and returns them.
+
+  Args:
+    rules: a list of FilterRule PBs.
+
+  Returns:
+    A set of user_ids.
+  """
+  user_ids = set()
+  for rule in rules:
+    if rule.default_owner_id:
+      user_ids.add(rule.default_owner_id)
+    user_ids.update(rule.add_cc_ids)
+  return user_ids
+
+
+def BuildFilterRuleStrings(filter_rules, emails_by_id):
+  """Builds strings that represent filter rules.
+
+  Args:
+    filter_rules: a list of FilterRule PBs.
+    emails_by_id: a dict of {user_id: email, ..} of user_ids in the FilterRules.
+
+  Returns:
+    A list of strings each representing a FilterRule.
+    eg. "if predicate then consequence"
+  """
+  rule_strs = []
+  for rule in filter_rules:
+    cons = ""
+    if rule.add_labels:
+      cons = 'add label(s): %s' % ', '.join(rule.add_labels)
+    elif rule.default_status:
+      cons = 'set default status: %s' % rule.default_status
+    elif rule.default_owner_id:
+      cons = 'set default owner: %s' % emails_by_id.get(
+          rule.default_owner_id, 'user not found')
+    elif rule.add_cc_ids:
+      cons = 'add cc(s): %s' % ', '.join(
+        [emails_by_id.get(user_id, 'user not found')
+         for user_id in rule.add_cc_ids])
+    elif rule.add_notify_addrs:
+      cons = 'notify: %s' % ', '.join(rule.add_notify_addrs)
+
+    rule_strs.append('if %s then %s' % (rule.predicate, cons))
+
+  return rule_strs
+
+
+def BuildRedactedFilterRuleStrings(
+    cnxn, rules_by_project, user_service, hide_emails):
+  """Converts FilterRule PBs in strings that hide references to hide_emails.
+
+  Args:
+    rules_by_project: a dict of {project_id, [filter_rule, ...], ...}
+      with FilterRule PBs.
+    user_service:
+    hide_emails: a list of emails that should not be shown in rule strings.
+  """
+  rule_strs_by_project = {}
+  prohibited_re = re.compile(
+      r'\b%s\b' % r'\b|\b'.join(map(re.escape, hide_emails)))
+  for project_id, rules in rules_by_project.iteritems():
+    user_ids_in_rules = OwnerCcsInvolvedInFilterRules(rules)
+    emails_by_id = user_service.LookupUserEmails(
+        cnxn, user_ids_in_rules, ignore_missed=True)
+    rule_strs = BuildFilterRuleStrings(rules, emails_by_id)
+    censored_strs = [
+        prohibited_re.sub(framework_constants.DELETED_USER_NAME, rule_str)
+        for rule_str in rule_strs]
+
+    rule_strs_by_project[project_id] = censored_strs
+
+  return rule_strs_by_project

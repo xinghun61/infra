@@ -495,19 +495,25 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
   def testExpungeFilterRulesByUser(self):
     emails = {333L: 'chicken@farm.test', 222L: 'cow@fart.test'}
     rows = [
-        (1, 'owner:cow@fart.test', 'add_label:happy-cows'),
-        (1, 'owner:cow@fart.test', 'add_label:balloon'),
-        (16, 'label:queue-eggs', 'add_notify:chicken@fart.test'),
-        (17, 'owner:farmer@farm.test', 'add_cc_id:111L add_cc_id: 222L')]
+        (1, 45, 'owner:cow@fart.test', 'add_label:happy-cows'),
+        (1, 46, 'owner:cow@fart.test', 'add_label:balloon'),
+        (16, 47, 'label:queue-eggs', 'add_notify:chicken@fart.test'),
+        (17, 48, 'owner:farmer@farm.test', 'add_cc_id:111L add_cc_id: 222L')]
     self.features_service.filterrule_tbl.Select = mock.Mock(return_value=rows)
     self.features_service.filterrule_tbl.Delete = mock.Mock()
 
     rules_dict = self.features_service.ExpungeFilterRulesByUser(
         self.cnxn, emails)
-    expected_dict = {1: [(rows[0][1], rows[0][2]),
-                         (rows[1][1], rows[1][2])],
-                     16: [(rows[2][1], rows[2][2])],
-                     17: [(rows[3][1], rows[3][2])]}
+    expected_dict = {
+        1: [tracker_pb2.FilterRule(
+            predicate=rows[0][2], add_labels=['happy-cows']),
+            tracker_pb2.FilterRule(
+                predicate=rows[1][2], add_labels=['balloon'])],
+        16: [tracker_pb2.FilterRule(
+            predicate=rows[2][2], add_notify_addrs=['chicken@fart.test'])],
+        17: [tracker_pb2.FilterRule(
+            predicate=rows[3][2], add_cc_ids=[111L, 222L])],
+    }
     self.assertItemsEqual(rules_dict, expected_dict)
 
     where_conds = [('predicate LIKE %s', ['%cow@fart.test%']),
@@ -518,7 +524,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
                    ('consequence LIKE %s', ['%add_cc_id:333%'])]
     args, kwargs = self.features_service.filterrule_tbl.Select.call_args
     self.assertEqual(
-        args, (self.cnxn, ['project_id', 'predicate', 'consequence']))
+        args, (self.cnxn, features_svc.FILTERRULE_COLS))
     self.assertItemsEqual(kwargs['where'], where_conds)
     self.assertTrue(kwargs['or_where_conds'])
 

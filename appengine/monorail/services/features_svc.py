@@ -566,13 +566,9 @@ class FeaturesService(object):
           ('consequence LIKE %s', [cc_id_str])])
 
     rows = self.filterrule_tbl.Select(
-        cnxn, ['project_id', 'predicate', 'consequence'],
-        where=where_conds, or_where_conds=True)
+        cnxn, FILTERRULE_COLS, where=where_conds, or_where_conds=True)
 
-    project_rules_dict = {}
-    for (project_id, predicate, consequence) in rows:
-      project_rules_dict.setdefault(project_id, []).append(
-          (predicate, consequence))
+    project_rules_dict = self._DeserializeFilterRules(rows)
 
     self.filterrule_tbl.Delete(
         cnxn, where=where_conds, or_where_conds=True, commit=False)

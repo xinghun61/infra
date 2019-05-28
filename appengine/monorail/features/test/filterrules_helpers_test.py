@@ -13,6 +13,7 @@ from google.appengine.api import taskqueue
 
 import settings
 from features import filterrules_helpers
+from framework import framework_constants
 from framework import template_helpers
 from framework import urls
 from proto import ast_pb2
@@ -839,3 +840,80 @@ class FilterRulesHelpersTest(unittest.TestCase):
     self.assertEquals(rules[3].add_labels[1], 'cold')
     self.assertEquals(len(rules), 4)
     self.assertFalse(errors.AnyErrors())
+
+  def testOwnerCcsInvolvedInFilterRules(self):
+    rules = [
+        tracker_pb2.FilterRule(add_cc_ids=[111L, 333L], default_owner_id=999L),
+        tracker_pb2.FilterRule(default_owner_id=888L),
+        tracker_pb2.FilterRule(add_cc_ids=[999L, 777L]),
+        tracker_pb2.FilterRule(),
+        ]
+    actual_user_ids = filterrules_helpers.OwnerCcsInvolvedInFilterRules(rules)
+    self.assertItemsEqual([111L, 333L, 777L, 888L, 999L], actual_user_ids)
+
+  def testBuildFilterRuleStrings(self):
+    rules = [
+        tracker_pb2.FilterRule(
+            predicate='label:machu', add_cc_ids=[111L, 333L, 999L]),
+        tracker_pb2.FilterRule(predicate='label:pichu', default_owner_id=222L),
+        tracker_pb2.FilterRule(
+            predicate='owner:farmer@test.com',
+            add_labels=['cows-farting', 'chicken', 'machu-pichu']),
+        tracker_pb2.FilterRule(predicate='label:beach', default_status='New'),
+        tracker_pb2.FilterRule(
+            predicate='label:rainforest',
+            add_notify_addrs=['cake@test.com', 'pie@test.com']),
+    ]
+    emails_by_id = {
+        111L: 'cow@test.com', 222L: 'fox@test.com', 333L: 'llama@test.com'}
+    rule_strs = filterrules_helpers.BuildFilterRuleStrings(rules, emails_by_id)
+
+    self.assertItemsEqual(
+        rule_strs, [
+            'if label:machu '
+            'then add cc(s): cow@test.com, llama@test.com, user not found',
+            'if label:pichu then set default owner: fox@test.com',
+            'if owner:farmer@test.com '
+            'then add label(s): cows-farting, chicken, machu-pichu',
+            'if label:beach then set default status: New',
+            'if label:rainforest then notify: cake@test.com, pie@test.com',
+        ])
+
+  def testBuildRedactedFilterRuleStrings(self):
+    rules_by_project = {
+        16: [
+            tracker_pb2.FilterRule(
+                predicate='label:machu', add_cc_ids=[111L, 333L, 999L]),
+            tracker_pb2.FilterRule(
+                predicate='label:pichu', default_owner_id=222L)],
+        19: [
+            tracker_pb2.FilterRule(
+                predicate='owner:farmer@test.com',
+                add_labels=['cows-farting', 'chicken', 'machu-pichu']),
+            tracker_pb2.FilterRule(
+                predicate='label:rainforest',
+                add_notify_addrs=['cake@test.com', 'pie@test.com'])],
+        }
+    deleted_emails = ['farmer@test.com', 'pie@test.com', 'fox@test.com']
+    self.services.user.TestAddUser('cow@test.com', 111L)
+    self.services.user.TestAddUser('fox@test.com', 222L)
+    self.services.user.TestAddUser('llama@test.com', 333L)
+    actual = filterrules_helpers.BuildRedactedFilterRuleStrings(
+        self.cnxn, rules_by_project, self.services.user, deleted_emails)
+
+    self.assertItemsEqual(
+        actual,
+        {16: [
+            'if label:machu '
+            'then add cc(s): cow@test.com, llama@test.com, user not found',
+            'if label:pichu '
+            'then set default owner: %s' %
+            framework_constants.DELETED_USER_NAME],
+         19: [
+             'if owner:%s '
+             'then add label(s): cows-farting, chicken, machu-pichu' %
+             framework_constants.DELETED_USER_NAME,
+             'if label:rainforest '
+             'then notify: cake@test.com, %s' %
+             framework_constants.DELETED_USER_NAME],
+        })
