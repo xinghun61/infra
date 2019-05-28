@@ -3041,6 +3041,90 @@ class IssueService(object):
     if invalidate:
       self.InvalidateIIDs(cnxn, [parent_id])
 
+  # Expunge Users from Issues system.
+  def ExpungeUsersInIssues(self, cnxn, emails_by_id):
+    """Removes all references to given users from issue DB tables.
+
+    This method will not commit the operations. This method will
+    not make changes to in-memory data.
+
+    Args:
+      cnxn: connection to SQL database.
+      emails_by_id: dict of {user_id: email} of all users we want
+        to expunge.
+    """
+    commit = False
+    user_ids = list(emails_by_id.keys())
+
+    # Reassign commenter_id and delete inbound_messages.
+    shard_id = sql.RandomShardID()
+    comment_content_id_rows = self.comment_tbl.Select(
+        cnxn, cols=['Comment.id', 'commentcontent_id'], commenter_id=user_ids,
+        shard_id=shard_id)
+    comment_ids = [row[0] for row in comment_content_id_rows]
+    commentcontent_ids = [row[1] for row in comment_content_id_rows]
+    self.commentcontent_tbl.Update(
+        cnxn,
+        {'inbound_message': None},
+        id=commentcontent_ids,
+        commit=commit)
+    self.comment_tbl.Update(
+        cnxn,
+        {'commenter_id': framework_constants.DELETED_USER_ID},
+        id=comment_ids,
+        commit=commit)
+
+    # Reassign deleted_by comments deleted_by.
+    self.comment_tbl.Update(
+        cnxn,
+        {'deleted_by': framework_constants.DELETED_USER_ID},
+        deleted_by=user_ids,
+        commit=commit)
+
+    # Remove users in field values.
+    self.issue2fieldvalue_tbl.Delete(cnxn, user_id=user_ids, commit=commit)
+    self.issueapproval2approver_tbl.Delete(
+        cnxn, user_id=user_ids, commit=commit)
+    self.issue2approvalvalue_tbl.Update(
+        cnxn,
+        {'setter_id': framework_constants.DELETED_USER_ID},
+        setter_id=user_ids,
+        commit=commit)
+
+    # Remove users in issue updates.
+    self.issueupdate_tbl.Update(
+        cnxn,
+        {'added_user_id': framework_constants.DELETED_USER_ID},
+        added_user_id=user_ids,
+        commit=commit)
+    self.issueupdate_tbl.Update(
+        cnxn,
+        {'removed_user_id': framework_constants.DELETED_USER_ID},
+        removed_user_id=user_ids,
+        commit=commit)
+
+    # Remove users in issue notify.
+    self.issue2notify_tbl.Delete(
+        cnxn, email=emails_by_id.values(), commit=commit)
+
+    # Remove users in issue.
+    self.issue2cc_tbl.Delete(cnxn, cc_id=user_ids, commit=commit)
+    self.issue_tbl.Update(
+        cnxn,
+        {'owner_id': None},
+        owner_id=user_ids,
+        commit=commit)
+    self.issue_tbl.Update(
+        cnxn,
+        {'derived_owner_id': None},
+        derived_owner_id=user_ids,
+        commit=commit)
+    self.issue_tbl.Update(
+        cnxn,
+        {'reporter_id': framework_constants.DELETED_USER_ID},
+        reporter_id=user_ids,
+        commit=commit)
+
 
 def _UpdateClosedTimestamp(config, issue, old_effective_status):
   """Sets or unsets the closed_timestamp based based on status changes.

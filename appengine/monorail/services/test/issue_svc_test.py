@@ -20,6 +20,7 @@ from google.appengine.ext import testbed
 
 import settings
 from framework import exceptions
+from framework import framework_constants
 from framework import sql
 from proto import tracker_pb2
 from services import caches
@@ -2374,6 +2375,95 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.services.issue.ApplyIssueRerank(self.cnxn, 78901, relations_to_change)
     self.mox.VerifyAll()
+
+  def testExpungeUsersInIssues(self):
+    id_rows = [(12, 112), (13, 113)]
+    comment_ids = [12, 13]
+    content_ids = [112, 113]
+    self.services.issue.comment_tbl.Select = Mock(
+        return_value=id_rows)
+    self.services.issue.commentcontent_tbl.Update = Mock()
+    self.services.issue.comment_tbl.Update = Mock()
+
+    self.services.issue.issue2fieldvalue_tbl.Delete = Mock()
+    self.services.issue.issueapproval2approver_tbl.Delete = Mock()
+    self.services.issue.issue2approvalvalue_tbl.Update = Mock()
+
+    self.services.issue.issueupdate_tbl.Update = Mock()
+
+    self.services.issue.issue2notify_tbl.Delete = Mock()
+
+    self.services.issue.issue2cc_tbl.Delete = Mock()
+    self.services.issue.issue_tbl.Update = Mock()
+
+    emails = ['cow@farm.com', 'pig@farm.com', 'chicken@farm.com']
+    user_ids = [222L, 888L, 444L]
+    emails_by_id = {user_id: email for user_id, email in zip(user_ids, emails)}
+    commit = False
+
+    self.services.issue.ExpungeUsersInIssues(self.cnxn, emails_by_id)
+
+    self.services.issue.comment_tbl.Select.assert_called_once()
+    _cnxn, kwargs = self.services.issue.comment_tbl.Select.call_args
+    self.assertEqual(kwargs['cols'], ['Comment.id', 'commentcontent_id'])
+    self.assertItemsEqual(kwargs['commenter_id'], user_ids)
+
+    # since user_ids are passed to ExpungeUsersInIssues via a dictionary,
+    # we cannot know the order of the user_ids list that the method
+    # ends up using. To be able to use assert_called_with()
+    # rather than extract call_args, we are saving the order of user_ids
+    # used by the method after confirming that it has the correct items.
+    user_ids = kwargs['commenter_id']
+
+    self.services.issue.commentcontent_tbl.Update.assert_called_once_with(
+        self.cnxn, {'inbound_message': None}, id=content_ids, commit=commit)
+    self.assertEqual(
+        len(self.services.issue.comment_tbl.Update.call_args_list), 2)
+    self.services.issue.comment_tbl.Update.assert_any_call(
+        self.cnxn, {'commenter_id': framework_constants.DELETED_USER_ID},
+        id=comment_ids, commit=False)
+    self.services.issue.comment_tbl.Update.assert_any_call(
+        self.cnxn, {'deleted_by': framework_constants.DELETED_USER_ID},
+        deleted_by=user_ids, commit=False)
+
+    # field values
+    self.services.issue.issue2fieldvalue_tbl.Delete.assert_called_once_with(
+        self.cnxn, user_id=user_ids, commit=commit)
+    self.services.issue.issueapproval2approver_tbl.\
+Delete.assert_called_once_with(
+        self.cnxn, user_id=user_ids, commit=commit)
+    self.services.issue.issue2approvalvalue_tbl.Update.assert_called_once_with(
+        self.cnxn, {'setter_id': framework_constants.DELETED_USER_ID},
+        setter_id=user_ids, commit=commit)
+
+    # issue updates
+    self.services.issue.issueupdate_tbl.Update.assert_any_call(
+        self.cnxn, {'added_user_id': framework_constants.DELETED_USER_ID},
+        added_user_id=user_ids, commit=commit)
+    self.services.issue.issueupdate_tbl.Update.assert_any_call(
+        self.cnxn, {'removed_user_id': framework_constants.DELETED_USER_ID},
+        removed_user_id=user_ids, commit=commit)
+    self.assertEqual(
+        2, len(self.services.issue.issueupdate_tbl.Update.call_args_list))
+
+    # issue notify
+    call_args_list = self.services.issue.issue2notify_tbl.Delete.call_args_list
+    self.assertEqual(1, len(call_args_list))
+    _cnxn, kwargs = call_args_list[0]
+    self.assertItemsEqual(kwargs['email'], emails)
+    self.assertEqual(kwargs['commit'], commit)
+
+    # issue objects
+    self.services.issue.issue_tbl.Update.assert_any_call(
+        self.cnxn, {'owner_id': None}, owner_id=user_ids, commit=commit)
+    self.services.issue.issue_tbl.Update.assert_any_call(
+        self.cnxn, {'derived_owner_id': None}, derived_owner_id=user_ids,
+        commit=commit)
+    self.services.issue.issue_tbl.Update.assert_any_call(
+        self.cnxn, {'reporter_id': framework_constants.DELETED_USER_ID},
+        reporter_id=user_ids, commit=commit)
+    self.assertEqual(
+        3, len(self.services.issue.issue_tbl.Update.call_args_list))
 
 
 class IssueServiceFunctionsTest(unittest.TestCase):
