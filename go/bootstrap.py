@@ -69,6 +69,9 @@ _Layout = collections.namedtuple('Layout', (
     # The list of vendor directories. Each will have a Glide "deps.yaml" in it.
     'vendor_paths',
 
+    # List of paths to append to GOPATH (in additional to `workspace`).
+    'go_paths',
+
     # The list of DEPS'd in paths that contain Go sources. This is used to
     # determine when our vendored tools need to be re-installed.
     'go_deps_paths',
@@ -91,6 +94,7 @@ _EMPTY_LAYOUT = Layout(
     toolset_root=None,
     workspace=None,
     vendor_paths=None,
+    go_paths=None,
     go_deps_paths=None,
     go_install_tools=None)
 
@@ -100,6 +104,7 @@ LAYOUT = Layout(
     toolset_root=TOOLSET_ROOT,
     workspace=WORKSPACE,
     vendor_paths=[WORKSPACE],
+    go_paths=[],
     go_deps_paths=[os.path.join(WORKSPACE, _p) for _p in (
         'src/go.chromium.org/gae',
         'src/go.chromium.org/luci',
@@ -412,6 +417,8 @@ def get_go_environ(layout):
   vendor_paths = layout.vendor_paths or ()
   all_go_paths = []
   all_go_paths.extend(os.path.join(p, '.vendor') for p in vendor_paths)
+  if layout.go_paths:
+    all_go_paths.extend(layout.go_paths)
   if layout.workspace:
     all_go_paths.append(layout.workspace)
   env['GOPATH'] = os.pathsep.join(all_go_paths)
