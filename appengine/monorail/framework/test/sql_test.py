@@ -291,6 +291,15 @@ class TableManagerTest(unittest.TestCase):
         self.master_cnxn.last_executed)
     self.assertEqual(2, rowcount)
 
+  def testUpdate_Limit(self):
+    self.emp_tbl.Update(
+        self.cnxn, {'fulltime': True}, limit=8, emp_id=[111, 222])
+    self.assertEqual(
+        'UPDATE Employee SET fulltime=1'
+        '\nWHERE emp_id IN (111,222)'
+        '\nLIMIT 8',
+        self.master_cnxn.last_executed)
+
   def testIncrementCounterValue(self):
     self.master_cnxn.rowcount = 1
     self.master_cnxn.lastrowid = 9

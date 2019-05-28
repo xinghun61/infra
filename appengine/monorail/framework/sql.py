@@ -429,7 +429,7 @@ class SQLTableManager(object):
     else:
       return None
 
-  def Update(self, cnxn, delta, where=None, commit=True, **kwargs):
+  def Update(self, cnxn, delta, where=None, commit=True, limit=None, **kwargs):
     """Update one or more rows.
 
     Args:
@@ -438,6 +438,7 @@ class SQLTableManager(object):
       where: Optional list of WHERE conditions saying which rows to update.
       commit: Set to False if this operation is part of a series of operations
           that should not be committed until the final one is done.
+      limit: Optional LIMIT on the number of rows updated.
       **kwargs: WHERE-clause equality and set-membership conditions.
 
     Returns:
@@ -448,6 +449,7 @@ class SQLTableManager(object):
 
     stmt = Statement.MakeUpdate(self.table_name, delta)
     stmt.AddWhereTerms(where, **kwargs)
+    stmt.SetLimitAndOffset(limit, None)
     stmt_str, stmt_args = stmt.Generate()
 
     cursor = cnxn.Execute(stmt_str, stmt_args, commit=commit)
