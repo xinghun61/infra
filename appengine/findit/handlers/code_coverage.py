@@ -934,7 +934,8 @@ class ServeCodeCoverageData(BaseHandler):
         # sandbox enabled and coverage build doesn't work with sandbox yet, the
         # coverage data for blink code are wrong, so skip serving coverage data
         # for those files. Remove this once the bug is fixed.
-        if project == 'chromium/src' and path.startswith('third_party/blink'):
+        if project == 'chromium/src' and (path.startswith('third_party/blink')
+                                          or path.startswith('content/')):
           continue
 
         formatted_data['files'].append({
