@@ -55,7 +55,8 @@ def GetBuildInfo(master_name, builder_name, build_number):
   if not build.build_id:
     return None
 
-  bb_build = buildbucket_client.GetV2Build(build.build_id)
+  bb_build = buildbucket_client.GetV2Build(build.build_id,
+                                           fields=FieldMask(paths=['*']))
   build_info = buildbot.ExtractBuildInfoFromV2Build(master_name, builder_name,
                                                     build_number, bb_build)
 
