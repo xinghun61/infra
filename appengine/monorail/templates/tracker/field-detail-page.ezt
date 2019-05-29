@@ -101,11 +101,27 @@
       <th>Applicable:</th>
       <td>When issue type is:
         [if-any allow_edit]
+         [define oddball_applicability]Yes[end]
           <select id="applicable_type" name="applicable_type">
-            <option value="" [is initial_applicable_type ""]selected="selected"[end]>Anything</option>
+            <option value=""
+              [is initial_applicable_type ""]
+                selected="selected"
+                [define oddball_applicability]No[end]
+              [end]
+            >Anything</option>
             <option disabled="disabled">----</option>
             [for well_known_issue_types]
-              <option value="[well_known_issue_types]" [is initial_applicable_type well_known_issue_types]selected="selected"[end]>[well_known_issue_types]</option>
+              <option value="[well_known_issue_types]"
+                [is initial_applicable_type well_known_issue_types]
+                  selected="selected"
+                  [define oddball_applicability]No[end]
+                [end]
+              >[well_known_issue_types]</option>
+            [end]
+            [# If an oddball type was used, keep it.]
+            [is oddball_applicability "Yes"]
+              <option value="[initial_applicable_type]" selected="selected"
+              >[initial_applicable_type]</option>
             [end]
           </select>
         [else]
