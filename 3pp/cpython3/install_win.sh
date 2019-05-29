@@ -36,3 +36,5 @@ mv SourceDir/* "$PREFIX/bin"
 # fixed, we can stop doing this (but will maybe have to tweak pip_bootstrap
 # somehow to take advantage of the new syntax).
 rm -vrf "$PREFIX/bin/Scripts"
+
+mv "$PREFIX/bin/python.exe" "$PREFIX/bin/python3.exe"
