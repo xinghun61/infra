@@ -66,18 +66,9 @@ export class ChopsdashApp extends PolymerElement {
       </app-header>
       <div class="content">
         <tree-status></tree-status>
-        <!-- TODO(jojwang): Only the second table is showing up because none of our services have SLAs.
-          When there are both tables become visible on the dashboard make it clear to users
-          that one table is for services covered by an SLA and one is not.-->
         <template is="dom-if" if="[[services.length]]">
           <div class="table">
             <status-table services="[[services]]" latest-date-ts="{{latestDateTs}}" is-googler="[[isGoogler]]">
-            </status-table>
-          </div>
-        </template>
-        <template is="dom-if" if="[[nonSLAServices.length]]">
-          <div class="table">
-            <status-table services="[[nonSLAServices]]" latest-date-ts="{{latestDateTs}}" is-googler="[[isGoogler]]">
             </status-table>
           </div>
         </template>
@@ -108,10 +99,7 @@ export class ChopsdashApp extends PolymerElement {
 
   static get properties() {
     return {
-      isGoogler: {
-        type: Boolean,
-        value: false,
-      },
+      isGoogler: Boolean,
       lastUpdated: {
         type: Object,
         value: {time: moment(Date.now()).format('M/DD/YYYY, h:mm a'), relativeTime: 0}
@@ -125,9 +113,6 @@ export class ChopsdashApp extends PolymerElement {
       },
       loginUrl: String,
       logoutUrl: String,
-      // Services that are not covered by an SLA.
-      nonSLAServices: Array,
-      // Services covered by an SLA.
       services: Array,
       user: String,
     }
@@ -138,8 +123,7 @@ export class ChopsdashApp extends PolymerElement {
     const promise = prpcClient.call(
         'dashboard.ChopsServiceStatus', 'GetAllServicesData', message)
     promise.then((resp) => {
-      this.nonSLAServices = resp.nonslaServices;
-      this.services = resp.services;
+      this.services = resp.nonslaServices;
     }, (error) => {
       console.log(error);  // TODO(jojwang): display response errors in UI.
     });
