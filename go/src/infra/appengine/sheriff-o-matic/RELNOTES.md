@@ -1,13 +1,17 @@
-# Release Notes sheriff-o-matic 2019-05-24
 
-- 4 commits, 2 bugs affected since ecf85f3 (2019-04-18T23:46:36Z)
-- 3 Authors:
-  - agable@chromium.org
+# Release Notes sheriff-o-matic 2019-05-29
+
+- 6 commits, 3 bugs affected since ecf85f3 (2019-04-18T23:46:36Z)
+- 4 Authors:
+  - seanmccullough@chromium.org
   - dtu@google.com
   - tikuta@chromium.org
+  - agable@chromium.org
 
 ## Changes in this release
 
+- [[som, cros] Filter out non-leaf nodes in nested steps.](https://chromium-review.googlesource.com/c/infra/infra/+/1632528) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES.md for push](https://chromium-review.googlesource.com/c/infra/infra/+/1628988) (seanmccullough@chromium.org)
 - [[som] Add chromeos to tree -> sheriff-rotation mapping.](https://chromium-review.googlesource.com/c/infra/infra/+/1628145) (dtu@google.com)
 - [remove reference to linux-xenial-rel](https://chromium-review.googlesource.com/c/infra/infra/+/1621583) (tikuta@chromium.org)
 - [[som] Update relnotes for routine release](https://chromium-review.googlesource.com/c/infra/infra/+/1574112) (agable@chromium.org)
@@ -18,8 +22,12 @@
 - dtu@google.com:
   -  [https://crbug.com/957609](https://crbug.com/957609)
 
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/950042](https://crbug.com/950042)
+
 - tikuta@chromium.org:
   -  [https://crbug.com/964197](https://crbug.com/964197)
+
 
 # Release Notes sheriff-o-matic 2019-04-18
 
