@@ -48,11 +48,16 @@ class AbstractStarServiceTest(unittest.TestCase):
     self.star_service.ExpungeStars(self.cnxn, 123)
     self.mox.VerifyAll()
 
-  def testExpungeUsersByStars(self):
-    user_ids = [2, 3, 4]
-    self.star_service.ExpungeStarsByUsers(self.cnxn, user_ids)
+  def testExpungeStars_Limit(self):
+    self.star_service.ExpungeStars(self.cnxn, 123, limit=50)
     self.mock_tbl.Delete.assert_called_once_with(
-        self.cnxn, user_id=user_ids, commit=False)
+        self.cnxn, commit=True, limit=50, item_id=123)
+
+  def testExpungeStarsByUsers(self):
+    user_ids = [2, 3, 4]
+    self.star_service.ExpungeStarsByUsers(self.cnxn, user_ids, limit=40)
+    self.mock_tbl.Delete.assert_called_once_with(
+        self.cnxn, user_id=user_ids, commit=False, limit=40)
 
   def SetUpLookupItemsStarrers(self):
     self.mock_tbl.Select(

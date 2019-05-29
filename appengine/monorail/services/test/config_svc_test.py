@@ -831,25 +831,25 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service.approvaldef2approver_tbl.Delete = mock.Mock()
 
     user_ids = [111L, 222L, 333L]
-    self.config_service.ExpungeUsersInConfigs(self.cnxn, user_ids)
+    self.config_service.ExpungeUsersInConfigs(self.cnxn, user_ids, limit=50)
 
     self.config_service.component2admin_tbl.Delete.assert_called_once_with(
-        self.cnxn, admin_id=user_ids, commit=False)
+        self.cnxn, admin_id=user_ids, commit=False, limit=50)
     self.config_service.component2cc_tbl.Delete.assert_called_once_with(
-        self.cnxn, cc_id=user_ids, commit=False)
+        self.cnxn, cc_id=user_ids, commit=False, limit=50)
     cdef_calls = [
         mock.call(
             self.cnxn, {'creator_id': framework_constants.DELETED_USER_ID},
-            creator_id=user_ids, commit=False),
+            creator_id=user_ids, commit=False, limit=50),
         mock.call(
             self.cnxn, {'modifier_id': framework_constants.DELETED_USER_ID},
-            modifier_id=user_ids, commit=False)]
+            modifier_id=user_ids, commit=False, limit=50)]
     self.config_service.componentdef_tbl.Update.assert_has_calls(cdef_calls)
 
     self.config_service.fielddef2admin_tbl.Delete.assert_called_once_with(
-        self.cnxn, admin_id=user_ids, commit=False)
+        self.cnxn, admin_id=user_ids, commit=False, limit=50)
     self.config_service.approvaldef2approver_tbl.Delete.assert_called_once_with(
-        self.cnxn, approver_id=user_ids, commit=False)
+        self.cnxn, approver_id=user_ids, commit=False, limit=50)
 
   ### Custom field definitions
 

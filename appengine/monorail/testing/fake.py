@@ -678,7 +678,7 @@ class AbstractStarService(object):
     self.stars_by_starrer_id = {}
     self.expunged_item_ids = []
 
-  def ExpungeStars(self, _cnxn, item_id, commit=True):
+  def ExpungeStars(self, _cnxn, item_id, commit=True, limit=None):
     self.expunged_item_ids.append(item_id)
     old_starrers = self.stars_by_item_id.get(item_id, [])
     self.stars_by_item_id[item_id] = []
@@ -688,7 +688,7 @@ class AbstractStarService(object):
             it for it in self.stars_by_starrer_id[old_starrer]
             if it != item_id]
 
-  def ExpungeStarsByUsers(self, _cnxn, user_ids):
+  def ExpungeStarsByUsers(self, _cnxn, user_ids, limit=None):
     for user_id in user_ids:
       item_ids = self.stars_by_starrer_id.pop(user_id, [])
       for item_id in item_ids:

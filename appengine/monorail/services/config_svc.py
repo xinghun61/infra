@@ -1005,23 +1005,26 @@ class ConfigService(object):
 
     self.config_2lc.InvalidateKeys(cnxn, [project_id])
 
-  def ExpungeUsersInConfigs(self, cnxn, user_ids):
+  def ExpungeUsersInConfigs(self, cnxn, user_ids, limit=None):
     """Wipes specified users from the configs system.
 
       This method will not commit the operation. This method will
       not make changes to in-memory data.
     """
-    self.component2admin_tbl.Delete(cnxn, admin_id=user_ids, commit=False)
-    self.component2cc_tbl.Delete(cnxn, cc_id=user_ids, commit=False)
+    self.component2admin_tbl.Delete(
+        cnxn, admin_id=user_ids, commit=False, limit=limit)
+    self.component2cc_tbl.Delete(
+        cnxn, cc_id=user_ids, commit=False, limit=limit)
     self.componentdef_tbl.Update(
         cnxn, {'creator_id': framework_constants.DELETED_USER_ID},
-        creator_id=user_ids, commit=False)
+        creator_id=user_ids, commit=False, limit=limit)
     self.componentdef_tbl.Update(
         cnxn, {'modifier_id': framework_constants.DELETED_USER_ID},
-        modifier_id=user_ids, commit=False)
-    self.fielddef2admin_tbl.Delete(cnxn, admin_id=user_ids, commit=False)
+        modifier_id=user_ids, commit=False, limit=limit)
+    self.fielddef2admin_tbl.Delete(
+        cnxn, admin_id=user_ids, commit=False, limit=limit)
     self.approvaldef2approver_tbl.Delete(
-        cnxn, approver_id=user_ids, commit=False)
+        cnxn, approver_id=user_ids, commit=False, limit=limit)
 
   ### Custom field definitions
 

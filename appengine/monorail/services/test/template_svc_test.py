@@ -441,13 +441,13 @@ class ExpungeUsersInTemplatesTest(TemplateServiceTest):
 
   def testExpungeUsersInTemplates(self):
     user_ids = [111L, 222L]
-    self.template_service.ExpungeUsersInTemplates(self.cnxn, user_ids)
+    self.template_service.ExpungeUsersInTemplates(self.cnxn, user_ids, limit=60)
 
     self.template_service.template2admin_tbl.Delete.assert_called_once_with(
-            self.cnxn, admin_id=user_ids, commit=False)
+            self.cnxn, admin_id=user_ids, commit=False, limit=60)
     self.template_service.template2fieldvalue_tbl\
         .Delete.assert_called_once_with(
-            self.cnxn, user_id=user_ids, commit=False)
+            self.cnxn, user_id=user_ids, commit=False, limit=60)
     self.template_service.template_tbl.Update.assert_called_once_with(
         self.cnxn, {'owner_id': None}, owner_id=user_ids, commit=False)
 

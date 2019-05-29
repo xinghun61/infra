@@ -1717,24 +1717,65 @@ class WorkEnv(object):
 
   def ExpungeUsers(self, _user_ids):
     """Permanently deletes user data and removes remaining user references
-       for all listed users."""
+       for all listed users.
+
+      To avoid any executions that might take too long and make the site hang,
+      a limit clause will be added to some operations. If any user references
+      are left behind due to the cut-off, the final services.user.ExpungeUsers
+      will fail because we cannot delete User rows that are still referenced
+      in other tables. work_env.ExpungeUsers can be called again until all user
+      references are removed and the final services.user.ExpungeUsers succeeds.
+      The limit clause will not be applied in operations for tables that contain
+      user_id or email columns but do not officially Reference the User table.
+      E.g. SpamVerdict and SpamReport. These user references must all be removed
+      before the attempt to delete rows from User is made. The limit will also
+      not be applied for sets of operations where values removed in earlier
+      operations would have to be known in order for later operations to
+      succeed.  E.g. ExpungeUsersIngroups().
+    """
+    # limit = 10000
+    # Spam verdict and report tables have user_id columns that do not
+    # reference User. No limit will be applied.
     # self.services.spam.ExpungeUsersInSpam(self.mc.cnxn, user_ids)
-    # self.services.issue.ExpungeUsersInIssues(self.mc.cnxn, user_ids)
-    # self.services.star.ExpungeUsersInStars(self.mc.cnxn, user_ids)
 
-    # self.services.features.ExpungeUsersInQuickEdits(self.mc.cnxn, user_ids)
-    # self.services.features.ExpungeUsersInSavedQueries(self.mc.cnxn, user_ids)
+    # self.services.issue.ExpungeUsersInIssues(
+    #   self.mc.cnxn, user_ids, limit=limit)
 
+    # self.services.issue_star.ExpungeUsersInStars(
+    #   self.mc.cnxn, user_ids, limit=limit)
+    # self.services.project_star.ExpungeUsersInStars(
+    #   self.mc.cnxn, user_ids, limit=limit)
+    # self.services.hotlist_star.ExpungeUsersInStars(
+    #   self.mc.cnxn, user_ids, limit=limit)
+    # self.services.user_star.ExpungeUsersInStars(
+    #   self.mc.cnxn, user_ids, limit=limit)
+    # for user_id in user_ids:
+    #   self.services.user_star.ExpungeStars(
+    #      self.mc.cnxn, user_id, commit=False, limit=limit)
+
+    # self.services.features.ExpungeUsersInQuickEdits(
+    #   self.mc.cnxn, user_ids, limit=limit)
+    # self.services.features.ExpungeUsersInSavedQueries(
+    #   self.mc.cnxn, user_ids, limit=limit)
+
+    # No limit will be applied for expunging in hotlists.
     # self.services.features.ExpungeUsersInHotlists(user_ids)
 
-    # self.services.template.ExpungeUsersInTemplates(self.mc.cnxn, user_ids)
-    # self.services.config.ExpungeUsersInConfigs(self.mc.cnxn, user_ids)
-    # self.services.usergroup.ExpungeUsersInGroups(self.mc.cnxn, user_ids)
+    # self.services.template.ExpungeUsersInTemplates(
+    #   self.mc.cnxn, user_ids, limit=limit)
+    # self.services.config.ExpungeUsersInConfigs(
+    #   self.mc.cnxn, user_ids, limit=limit)
+    # No limit will be applied for expunging in UserGroups.
+    # self.services.usergroup.ExpungeUsersInGroups(
+    #   self.mc.cnxn, user_ids, limit=limit)
 
+    # No limit will be applied for expunging in FilterRules.
     #deleted_rules = self.services.features.ExpungeFilterRulesByUser(emails)
     #rule_strs_by_project = filterrules_helpers.BuildRedactedFilterRuleStrings(
     #self.mc.cnxn, deleted_rules, self.services.user, emails)
 
+    # We will attempt to expunge all given users here. Limiting the users we
+    # delete should be done before work_env.ExpungeUsers is called.
     # self.services.user.ExpungeUsers(self.mc.cnxn, user_ids)
 
     # self.services.usergroup.group_dag.MarkObsolete()

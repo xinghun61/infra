@@ -2400,13 +2400,16 @@ class IssueServiceTest(unittest.TestCase):
     user_ids = [222L, 888L, 444L]
     emails_by_id = {user_id: email for user_id, email in zip(user_ids, emails)}
     commit = False
+    limit = 50
 
-    self.services.issue.ExpungeUsersInIssues(self.cnxn, emails_by_id)
+    self.services.issue.ExpungeUsersInIssues(
+        self.cnxn, emails_by_id, limit=limit)
 
     self.services.issue.comment_tbl.Select.assert_called_once()
     _cnxn, kwargs = self.services.issue.comment_tbl.Select.call_args
     self.assertEqual(kwargs['cols'], ['Comment.id', 'commentcontent_id'])
     self.assertItemsEqual(kwargs['commenter_id'], user_ids)
+    self.assertEqual(kwargs['limit'], limit)
 
     # since user_ids are passed to ExpungeUsersInIssues via a dictionary,
     # we cannot know the order of the user_ids list that the method
@@ -2424,17 +2427,30 @@ class IssueServiceTest(unittest.TestCase):
         id=comment_ids, commit=False)
     self.services.issue.comment_tbl.Update.assert_any_call(
         self.cnxn, {'deleted_by': framework_constants.DELETED_USER_ID},
-        deleted_by=user_ids, commit=False)
+        deleted_by=user_ids, commit=False, limit=limit)
 
     # field values
     self.services.issue.issue2fieldvalue_tbl.Delete.assert_called_once_with(
-        self.cnxn, user_id=user_ids, commit=commit)
+        self.cnxn, user_id=user_ids, commit=commit, limit=limit)
     self.services.issue.issueapproval2approver_tbl.\
 Delete.assert_called_once_with(
-        self.cnxn, user_id=user_ids, commit=commit)
+        self.cnxn, user_id=user_ids, commit=commit, limit=limit)
     self.services.issue.issue2approvalvalue_tbl.Update.assert_called_once_with(
         self.cnxn, {'setter_id': framework_constants.DELETED_USER_ID},
-        setter_id=user_ids, commit=commit)
+        setter_id=user_ids, commit=commit, limit=limit)
+
+    # issue objects
+    self.services.issue.issue_tbl.Update.assert_any_call(
+        self.cnxn, {'owner_id': None}, owner_id=user_ids,
+        commit=commit, limit=limit)
+    self.services.issue.issue_tbl.Update.assert_any_call(
+        self.cnxn, {'derived_owner_id': None}, derived_owner_id=user_ids,
+        commit=commit, limit=limit)
+    self.services.issue.issue_tbl.Update.assert_any_call(
+        self.cnxn, {'reporter_id': framework_constants.DELETED_USER_ID},
+        reporter_id=user_ids, commit=commit, limit=limit)
+    self.assertEqual(
+        3, len(self.services.issue.issue_tbl.Update.call_args_list))
 
     # issue updates
     self.services.issue.issueupdate_tbl.Update.assert_any_call(
@@ -2452,18 +2468,6 @@ Delete.assert_called_once_with(
     _cnxn, kwargs = call_args_list[0]
     self.assertItemsEqual(kwargs['email'], emails)
     self.assertEqual(kwargs['commit'], commit)
-
-    # issue objects
-    self.services.issue.issue_tbl.Update.assert_any_call(
-        self.cnxn, {'owner_id': None}, owner_id=user_ids, commit=commit)
-    self.services.issue.issue_tbl.Update.assert_any_call(
-        self.cnxn, {'derived_owner_id': None}, derived_owner_id=user_ids,
-        commit=commit)
-    self.services.issue.issue_tbl.Update.assert_any_call(
-        self.cnxn, {'reporter_id': framework_constants.DELETED_USER_ID},
-        reporter_id=user_ids, commit=commit)
-    self.assertEqual(
-        3, len(self.services.issue.issue_tbl.Update.call_args_list))
 
 
 class IssueServiceFunctionsTest(unittest.TestCase):

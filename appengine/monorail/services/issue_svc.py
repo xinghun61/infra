@@ -3042,7 +3042,7 @@ class IssueService(object):
       self.InvalidateIIDs(cnxn, [parent_id])
 
   # Expunge Users from Issues system.
-  def ExpungeUsersInIssues(self, cnxn, emails_by_id):
+  def ExpungeUsersInIssues(self, cnxn, emails_by_id, limit=None):
     """Removes all references to given users from issue DB tables.
 
     This method will not commit the operations. This method will
@@ -3052,6 +3052,7 @@ class IssueService(object):
       cnxn: connection to SQL database.
       emails_by_id: dict of {user_id: email} of all users we want
         to expunge.
+      limit: Optional, the limit for each operation.
     """
     commit = False
     user_ids = list(emails_by_id.keys())
@@ -3060,7 +3061,7 @@ class IssueService(object):
     shard_id = sql.RandomShardID()
     comment_content_id_rows = self.comment_tbl.Select(
         cnxn, cols=['Comment.id', 'commentcontent_id'], commenter_id=user_ids,
-        shard_id=shard_id)
+        shard_id=shard_id, limit=limit)
     comment_ids = [row[0] for row in comment_content_id_rows]
     commentcontent_ids = [row[1] for row in comment_content_id_rows]
     self.commentcontent_tbl.Update(
@@ -3079,17 +3080,40 @@ class IssueService(object):
         cnxn,
         {'deleted_by': framework_constants.DELETED_USER_ID},
         deleted_by=user_ids,
-        commit=commit)
+        commit=commit, limit=limit)
 
     # Remove users in field values.
-    self.issue2fieldvalue_tbl.Delete(cnxn, user_id=user_ids, commit=commit)
+    self.issue2fieldvalue_tbl.Delete(
+        cnxn, user_id=user_ids, commit=commit, limit=limit)
     self.issueapproval2approver_tbl.Delete(
-        cnxn, user_id=user_ids, commit=commit)
+        cnxn, user_id=user_ids, commit=commit, limit=limit)
     self.issue2approvalvalue_tbl.Update(
         cnxn,
         {'setter_id': framework_constants.DELETED_USER_ID},
         setter_id=user_ids,
-        commit=commit)
+        commit=commit, limit=limit)
+
+    # Remove users in issue.
+    self.issue2cc_tbl.Delete(cnxn, cc_id=user_ids, commit=commit, limit=limit)
+    self.issue_tbl.Update(
+        cnxn,
+        {'owner_id': None},
+        owner_id=user_ids,
+        commit=commit, limit=limit)
+    self.issue_tbl.Update(
+        cnxn,
+        {'derived_owner_id': None},
+        derived_owner_id=user_ids,
+        commit=commit, limit=limit)
+    self.issue_tbl.Update(
+        cnxn,
+        {'reporter_id': framework_constants.DELETED_USER_ID},
+        reporter_id=user_ids,
+        commit=commit, limit=limit)
+
+    # Note: issueupdate_tbl's and issue2notify's user_id columns do not
+    # reference the User table. So all values need to updated here before
+    # User rows can be deleted safely. No limit will be applied.
 
     # Remove users in issue updates.
     self.issueupdate_tbl.Update(
@@ -3106,24 +3130,6 @@ class IssueService(object):
     # Remove users in issue notify.
     self.issue2notify_tbl.Delete(
         cnxn, email=emails_by_id.values(), commit=commit)
-
-    # Remove users in issue.
-    self.issue2cc_tbl.Delete(cnxn, cc_id=user_ids, commit=commit)
-    self.issue_tbl.Update(
-        cnxn,
-        {'owner_id': None},
-        owner_id=user_ids,
-        commit=commit)
-    self.issue_tbl.Update(
-        cnxn,
-        {'derived_owner_id': None},
-        derived_owner_id=user_ids,
-        commit=commit)
-    self.issue_tbl.Update(
-        cnxn,
-        {'reporter_id': framework_constants.DELETED_USER_ID},
-        reporter_id=user_ids,
-        commit=commit)
 
 
 def _UpdateClosedTimestamp(config, issue, old_effective_status):

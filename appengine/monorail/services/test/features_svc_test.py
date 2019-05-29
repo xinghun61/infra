@@ -164,12 +164,13 @@ class FeaturesServiceTest(unittest.TestCase):
     self.features_service.quickeditmostrecent_tbl.Delete = mock.Mock()
     self.features_service.quickedithistory_tbl.Delete = mock.Mock()
 
-    self.features_service.ExpungeQuickEditsByUsers(self.cnxn, user_ids)
+    self.features_service.ExpungeQuickEditsByUsers(
+        self.cnxn, user_ids, limit=50)
 
     self.features_service.quickeditmostrecent_tbl.Delete.\
-assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
+assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     self.features_service.quickedithistory_tbl.Delete.\
-assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
+assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
 
   ### Saved User and Project Queries
 
@@ -370,12 +371,13 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
     self.features_service.user2savedquery_tbl.Delete = mock.Mock()
     self.features_service.savedquery_tbl.Delete = mock.Mock()
 
-    self.features_service.ExpungeSavedQueriesByUsers(self.cnxn, user_ids)
+    self.features_service.ExpungeSavedQueriesByUsers(
+        self.cnxn, user_ids, limit=50)
 
     self.features_service.user2savedquery_tbl.Select.assert_called_once_with(
-        self.cnxn, cols=['query_id'], user_id=user_ids)
+        self.cnxn, cols=['query_id'], user_id=user_ids, limit=50)
     self.features_service.user2savedquery_tbl.Delete.assert_called_once_with(
-        self.cnxn, user_id=user_ids, commit=commit)
+        self.cnxn, query_id=[8, 9], commit=commit)
     self.features_service.savedquery_tbl.Delete.assert_called_once_with(
         self.cnxn, id=[8, 9], commit=commit)
 
@@ -927,8 +929,11 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
     self.features_service.ExpungeHotlists(
         self.cnxn, hotlist_ids, star_service, user_service)
 
-    star_calls = [mock.call(self.cnxn, commit=False, hotlist_id=hotlist_ids[0]),
-                  mock.call(self.cnxn, commit=False, hotlist_id=hotlist_ids[1])]
+    star_calls = [
+        mock.call(
+            self.cnxn, commit=False, limit=None, hotlist_id=hotlist_ids[0]),
+        mock.call(
+            self.cnxn, commit=False, limit=None, hotlist_id=hotlist_ids[1])]
     hotliststar_tbl.Delete.assert_has_calls(star_calls)
 
     user_service.hotlistvisithistory_tbl.Delete.assert_called_once_with(
@@ -994,8 +999,8 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit)
 
     self.features_service.hotlist2issue_tbl.Delete.assert_called_once_with(
         self.cnxn, hotlist_id=delete_hotlists, commit=False)
-    hotliststar_tbl.Delete.assert_has_calls(
-        [mock.call(self.cnxn, commit=False, hotlist_id=delete_hotlists[0])])
+    hotliststar_tbl.Delete.assert_called_once_with(
+        self.cnxn, commit=False, limit=None, hotlist_id=delete_hotlists[0])
     self.features_service.hotlist_tbl.Delete.assert_called_once_with(
         self.cnxn, id=delete_hotlists, commit=False)
 

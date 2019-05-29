@@ -222,15 +222,17 @@ class FeaturesService(object):
     self.quickeditmostrecent_tbl.Delete(cnxn, project_id=project_id)
     self.quickedithistory_tbl.Delete(cnxn, project_id=project_id)
 
-  def ExpungeQuickEditsByUsers(self, cnxn, user_ids):
+  def ExpungeQuickEditsByUsers(self, cnxn, user_ids, limit=None):
     """Completely delete every given users' quick edits.
 
     This method will not commit the operations. This method will
     not make changes to in-memory data.
     """
     commit = False
-    self.quickeditmostrecent_tbl.Delete(cnxn, user_id=user_ids, commit=commit)
-    self.quickedithistory_tbl.Delete(cnxn, user_id=user_ids, commit=commit)
+    self.quickeditmostrecent_tbl.Delete(
+        cnxn, user_id=user_ids, commit=commit, limit=limit)
+    self.quickedithistory_tbl.Delete(
+        cnxn, user_id=user_ids, commit=commit, limit=limit)
 
   ### Saved User and Project Queries
 
@@ -430,7 +432,7 @@ class FeaturesService(object):
     self.project2savedquery_tbl.Delete(cnxn, project_id=project_id)
     self.savedquery_tbl.Delete(cnxn, id=savedquery_ids)
 
-  def ExpungeSavedQueriesByUsers(self, cnxn, user_ids):
+  def ExpungeSavedQueriesByUsers(self, cnxn, user_ids, limit=None):
     """Completely delete every given users' saved queries.
 
     This method will not commit the operations. This method will
@@ -438,9 +440,10 @@ class FeaturesService(object):
     """
     commit = False
     savedquery_rows = self.user2savedquery_tbl.Select(
-        cnxn, cols=['query_id'], user_id=user_ids)
+        cnxn, cols=['query_id'], user_id=user_ids, limit=limit)
     savedquery_ids = [row[0] for row in savedquery_rows]
-    self.user2savedquery_tbl.Delete(cnxn, user_id=user_ids, commit=commit)
+    self.user2savedquery_tbl.Delete(
+        cnxn, query_id=savedquery_ids, commit=commit)
     self.savedquery_tbl.Delete(cnxn, id=savedquery_ids, commit=commit)
 
 
