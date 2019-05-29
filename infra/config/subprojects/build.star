@@ -60,10 +60,10 @@ recipes.roll_trybots(
 
 # External testers (defined in another projects) for recipe rolls.
 luci.cq_tryjob_verifier(
-    builder = 'external/infra-internal/try/build_limited Roll Tester (build)',
+    builder = 'infra-internal:try/build_limited Roll Tester (build)',
     cq_group = 'build cq',
 )
 luci.cq_tryjob_verifier(
-    builder = 'external/infra-internal/try/release_scripts Roll Tester (build)',
+    builder = 'infra-internal:try/release_scripts Roll Tester (build)',
     cq_group = 'build cq',
 )

@@ -26,7 +26,7 @@ Includes CI configs for the following subprojects:
   * https://chromium.googlesource.com/infra/testing/expect_tests
 """
 
-lucicfg.check_version('1.7.1', 'Please update depot_tools')
+lucicfg.check_version('1.7.8', 'Please update depot_tools')
 
 
 # Tell lucicfg what files it is allowed to touch.
