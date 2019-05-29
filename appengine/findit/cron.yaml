@@ -19,11 +19,6 @@ cron:
   url: /waterfall/cron/obscure-emails
   schedule: every day 00:00
 
-- description: Perform full builds on bot compile caches.
-  url: /waterfall/cron/periodic-build-ahead
-  # Business hours PDT expressed in UTC.
-  schedule: every 5 minutes from 16:00 to 00:00
-
 - description: Query and store flakes on cq.
   url: /flake/detection/cron/detect-flakes
   schedule: every 30 minutes
