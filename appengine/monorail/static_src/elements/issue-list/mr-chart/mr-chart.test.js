@@ -88,7 +88,7 @@ describe('mr-chart', () => {
       // Stub MrChart.makeTimestamps to return 6, not 30 data points.
       const originalMakeTimestamps = MrChart.makeTimestamps;
       sinon.stub(MrChart, 'makeTimestamps').callsFake((endDate) => {
-        return originalMakeTimestamps(endDate, 6);
+        return originalMakeTimestamps(endDate, 1, 6);
       });
       sinon.stub(MrChart, 'getEndDate').callsFake(() => {
         return new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
@@ -258,10 +258,31 @@ describe('mr-chart', () => {
         const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
         const secondsInDay = 24 * 60 * 60;
 
-        assert.deepEqual(MrChart.makeTimestamps(endDate, 6), [
+        assert.deepEqual(MrChart.makeTimestamps(endDate, 1, 6), [
           1541289599 - (secondsInDay * 5), 1541289599 - (secondsInDay * 4),
           1541289599 - (secondsInDay * 3), 1541289599 - (secondsInDay * 2),
           1541289599 - (secondsInDay * 1), 1541289599 - (secondsInDay * 0),
+        ]);
+      });
+      it('tests frequency greater than 1', () => {
+        const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+        const secondsInDay = 24 * 60 * 60;
+
+        assert.deepEqual(MrChart.makeTimestamps(endDate, 2, 6), [
+          1541289599 - (secondsInDay * 4),
+          1541289599 - (secondsInDay * 2),
+          1541289599 - (secondsInDay * 0),
+        ]);
+      });
+      it('tests frequency greater than 1', () => {
+        const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+        const secondsInDay = 24 * 60 * 60;
+
+        assert.deepEqual(MrChart.makeTimestamps(endDate, 2, 7), [
+          1541289599 - (secondsInDay * 6),
+          1541289599 - (secondsInDay * 4),
+          1541289599 - (secondsInDay * 2),
+          1541289599 - (secondsInDay * 0),
         ]);
       });
     });

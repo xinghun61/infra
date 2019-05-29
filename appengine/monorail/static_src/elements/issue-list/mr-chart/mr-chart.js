@@ -52,6 +52,7 @@ export default class MrChart extends LitElement {
       values: {type: Array},
       unsupportedFields: {type: Array},
       searchLimitReached: {type: Boolean},
+      frequency: {type: Number},
     };
   }
 
@@ -139,6 +140,7 @@ export default class MrChart extends LitElement {
     this.indices = [];
     this.unsupportedFields = [];
     this.endDate = MrChart.getEndDate();
+    this.frequency = 1;
   }
 
   async connectedCallback() {
@@ -174,7 +176,7 @@ export default class MrChart extends LitElement {
     this.progress = 0.05;
 
     let numTimestampsLoaded = 0;
-    const timestampsChronological = MrChart.makeTimestamps(endDate);
+    const timestampsChronological = MrChart.makeTimestamps(endDate, this.frequency);
     const tsToIndexMap = new Map(timestampsChronological.map((ts, idx) => (
       [ts, idx]
     )));
@@ -263,14 +265,14 @@ export default class MrChart extends LitElement {
   }
 
   // Populate array of timestamps we want to fetch.
-  static makeTimestamps(endDate, numDays=DEFAULT_NUM_DAYS) {
+  static makeTimestamps(endDate, frequency, numDays=DEFAULT_NUM_DAYS) {
     if (!endDate) {
       throw new Error('endDate required');
     }
     const endTimeSeconds = Math.round(endDate.getTime() / 1000);
     const secondsInDay = 24 * 60 * 60;
     const timestampsChronological = [];
-    for (let i = 0; i < numDays; i++) {
+    for (let i = 0; i < numDays; i += frequency) {
       timestampsChronological.unshift(endTimeSeconds - (secondsInDay * i));
     }
     return timestampsChronological;
