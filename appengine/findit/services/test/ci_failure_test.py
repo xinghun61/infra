@@ -345,7 +345,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'build_number': build_number,
         'is_luci': None,
         'buildbucket_bucket': '',
-        'buildbucket_id': 80000000223,
+        'buildbucket_id': '80000000223',
         'chromium_revision': 'rev223',
         'builds': {
             build_number: {
@@ -439,7 +439,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'parent_buildername': None,
         'is_luci': None,
         'buildbucket_bucket': '',
-        'buildbucket_id': 80000000121,
+        'buildbucket_id': '80000000121',
     }
 
     self.assertEqual(expected_failure_info, failure_info)

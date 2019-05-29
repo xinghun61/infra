@@ -2,12 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
-import gzip
-import io
 import inspect
 import logging
-import json
 import re
 import urllib
 
@@ -16,7 +12,6 @@ from buildbucket_proto.build_pb2 import BuilderID
 from google.protobuf import json_format
 from google.protobuf.field_mask_pb2 import FieldMask
 
-from common import rpc_util
 from common.waterfall import buildbucket_client
 from gae_libs.caches import PickledMemCache
 from libs.cache_decorator import Cached
@@ -274,7 +269,7 @@ def ExtractBuildInfoFromV2Build(master_name, builder_name, build_number, build):
   build_info.result = build.status
   build_info.parent_buildername = input_properties.get('parent_buildername')
   build_info.parent_mastername = input_properties.get('parent_mastername')
-  build_info.buildbucket_id = build.id
+  build_info.buildbucket_id = str(build.id)
   build_info.buildbucket_bucket = build.builder.bucket
   build_info.is_luci = runtime.get('is_luci')
 

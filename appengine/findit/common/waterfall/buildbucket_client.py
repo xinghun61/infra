@@ -379,6 +379,7 @@ def SearchV2BuildsOnBuilder(builder,
     status (common_pb2.Status): Status of searched builds, like
       common_pb2.FAILURE. common_pb2.ENDED_MASK can be used when search for all
       completed builds regardless of status.
+    build_range (tuple): A pair of build_ids for the range of the build.
     create_time_range (tuple): A pair of datetimes for the range of the build
       create_time. Both ends are optional. The format is like:
       (

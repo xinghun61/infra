@@ -214,7 +214,7 @@ class BuildBotTest(unittest.TestCase):
     self.assertItemsEqual(['s3', 's4', 'Failure reason'],
                           build_info.not_passed_steps)
     self.assertEqual(bucket, build_info.buildbucket_bucket)
-    self.assertEqual(build_id, build_info.buildbucket_id)
+    self.assertEqual(str(build_id), build_info.buildbucket_id)
     self.assertTrue(build_info.is_luci)
 
   @mock.patch.object(
@@ -275,7 +275,7 @@ class BuildBotTest(unittest.TestCase):
     self.assertItemsEqual(['s1'], build_info.passed_steps)
     self.assertItemsEqual(['s3', 's4'], build_info.not_passed_steps)
     self.assertEqual(bucket, build_info.buildbucket_bucket)
-    self.assertEqual(build_id, build_info.buildbucket_id)
+    self.assertEqual(str(build_id), build_info.buildbucket_id)
     self.assertTrue(build_info.is_luci)
 
   @mock.patch.object(git, 'GetCommitsBetweenRevisionsInOrder')
