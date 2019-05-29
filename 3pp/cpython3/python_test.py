@@ -73,16 +73,6 @@ class TestPython(unittest.TestCase):
     rv = subprocess.call([self.python, '-c', script])
     self.assertEqual(rv, 0)
 
-  def test_sqlite_version(self):
-    script = (
-        'import sqlite3; '
-        'print(".".join(str(x) for x in sqlite3.sqlite_version_info))')
-    proc = subprocess.Popen([self.python, '-c', script],
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    stdout, _ = proc.communicate()
-    self.assertEqual(proc.returncode, 0)
-    self.assertEqual(stdout.strip(), '3.19.3') # Matches sqlite3 CIPD package.
-
 
 if __name__ == '__main__':
   platform = os.environ['_3PP_PLATFORM']
