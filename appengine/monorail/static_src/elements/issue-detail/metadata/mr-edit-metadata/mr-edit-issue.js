@@ -4,6 +4,7 @@
 
 import {LitElement, html, css} from 'lit-element';
 
+import 'elements/chops/chops-snackbar/chops-snackbar.js';
 import {store, connectStore} from 'elements/reducers/base.js';
 import * as issue from 'elements/reducers/issue.js';
 import * as project from 'elements/reducers/project.js';
@@ -37,6 +38,9 @@ export class MrEditIssue extends connectStore(LitElement) {
       <h2 id="makechanges" class="medium-heading">
         <a href="#makechanges">Add a comment and make changes</a>
       </h2>
+      <chops-snackbar ?hidden=${!this._issueUpdated}>
+        Your comment was added.
+      </chops-snackbar>
       <mr-edit-metadata
         formName="Issue Edit"
         .ownerName=${this._ownerDisplayName(issue.ownerRef)}
@@ -81,6 +85,9 @@ export class MrEditIssue extends connectStore(LitElement) {
       focusId: {
         type: String,
       },
+      _issueUpdated: {
+        type: Boolean,
+      },
       _resetOnChange: {
         type: Boolean,
       },
@@ -112,6 +119,7 @@ export class MrEditIssue extends connectStore(LitElement) {
     if (this.issue && changedProperties.has('issue')) {
       if (this._resetOnChange) {
         this._resetOnChange = false;
+        this._issueUpdated = true;
         this.reset();
       }
     }
@@ -128,6 +136,7 @@ export class MrEditIssue extends connectStore(LitElement) {
       return;
     }
 
+    this._issueUpdated = false;
     this._resetOnChange = true;
     const message = {
       issueRef: this.issueRef,

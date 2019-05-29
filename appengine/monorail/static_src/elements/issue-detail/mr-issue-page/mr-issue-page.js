@@ -55,6 +55,7 @@ export class MrIssuePage extends connectStore(LitElement) {
           flex-direction: column;
           align-items: stretch;
           justify-content: flex-start;
+          z-index: 200;
         }
         .container-issue-content {
           padding: 0;
