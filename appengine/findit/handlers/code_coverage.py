@@ -573,6 +573,10 @@ class ProcessCodeCoverageData(BaseHandler):
       path (str): Source absolute path to the file.
       revision (str): The gitile revision of the file in its own repo.
     """
+    # Due to security concerns, don't cache source files for internal projects.
+    if IsInternalInstance():
+      return
+
     assert path.startswith('//'), 'All file path should start with "//"'
     assert revision, 'A valid revision is required'
 
