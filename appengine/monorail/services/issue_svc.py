@@ -2235,7 +2235,7 @@ class IssueService(object):
     for amendment in amendments:
       key = amendment.field, amendment.custom_field_name
       fields_dict.setdefault(key, []).append(amendment)
-    for (field, _custom_name), amendments in fields_dict.iteritems():
+    for (field, _custom_name), amendments in sorted(fields_dict.iteritems()):
       new_amendment = tracker_pb2.Amendment()
       new_amendment.field = field
       for amendment in amendments:
