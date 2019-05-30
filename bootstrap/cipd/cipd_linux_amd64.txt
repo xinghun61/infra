@@ -9,7 +9,7 @@
 infra/tools/protoc/linux-amd64    protobuf_version:v3.6.1
 
 # Node.js deployment.
-infra/nodejs/nodejs/linux-amd64   node_version:8.9.4
+infra/nodejs/nodejs/linux-amd64   node_version:10.15.3
 
 # ADB binary.
 infra/adb/linux-amd64             adb_version:1.0.36
