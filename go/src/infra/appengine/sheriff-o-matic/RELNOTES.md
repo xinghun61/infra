@@ -1,7 +1,7 @@
 
-# Release Notes sheriff-o-matic 2019-05-29
+# Release Notes sheriff-o-matic 2019-05-30
 
-- 6 commits, 3 bugs affected since ecf85f3 (2019-04-18T23:46:36Z)
+- 8 commits, 3 bugs affected since ecf85f3 (2019-04-18T23:46:36Z)
 - 4 Authors:
   - seanmccullough@chromium.org
   - dtu@google.com
@@ -10,6 +10,8 @@
 
 ## Changes in this release
 
+- [[som] Fix issues with make deploy targets](https://chromium-review.googlesource.com/c/infra/infra/+/1635131) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES for push](https://chromium-review.googlesource.com/c/infra/infra/+/1636578) (seanmccullough@chromium.org)
 - [[som, cros] Filter out non-leaf nodes in nested steps.](https://chromium-review.googlesource.com/c/infra/infra/+/1632528) (seanmccullough@chromium.org)
 - [[som] Update RELNOTES.md for push](https://chromium-review.googlesource.com/c/infra/infra/+/1628988) (seanmccullough@chromium.org)
 - [[som] Add chromeos to tree -> sheriff-rotation mapping.](https://chromium-review.googlesource.com/c/infra/infra/+/1628145) (dtu@google.com)
