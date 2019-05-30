@@ -1,6 +1,7 @@
 .PHONY: test
 WCT_PATH = ./node_modules/web-component-tester/bin/wct
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
+GAE_PY?= python gae.py
 
 default: help
 
@@ -31,11 +32,15 @@ bower_cipd: deps
 	cipd pkg-build -pkg-def ./cipd/sheriff-o-matic.yaml -pkg-var platform:linux-amd64 -out ./cipd/bower_components.cipd
 	cipd pkg-register ./cipd/bower_components.cipd
 
-getversion:
-	$(eval VERS := $(shell ../../../../../luci/appengine/components/tools/calculate_version.py | cut -c 1-35))
+getversion_prod:
+	$(eval VERS := $(shell ./gae.py version -p ./frontend -A sheriff-o-matic | cut -c 1-35))
 	echo version is $(VERS)
 
-deploy_prod: build getversion
+getversion_staging:
+	$(eval VERS := $(shell ./gae.py version -p ./frontend -A sheriff-o-matic-staging | cut -c 1-35))
+	echo version is $(VERS)
+
+deploy_prod: build getversion_prod
 	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml frontend/queue.yaml --project sheriff-o-matic --version $(VERS)
 	rm frontend/elements/som-app/som-app.vulcanized.html
 
@@ -50,7 +55,7 @@ update_bq_prod: bqtools
 	bqschemaupdater -proto-dir ./som/model/gen -table sheriff-o-matic.events.alerts -message gen.SOMAlertsEvent
 	bqschemaupdater -proto-dir ./som/model/gen -table sheriff-o-matic.events.annotations -message gen.SOMAnnotationEvent
 
-deploy_staging: build getversion
+deploy_staging: build getversion_staging
 	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml frontend/queue.yaml --project sheriff-o-matic-staging --version $(VERS)
 	rm frontend/elements/som-app/som-app.vulcanized.html
 

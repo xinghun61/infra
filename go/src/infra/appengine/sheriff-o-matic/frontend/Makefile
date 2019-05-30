@@ -9,7 +9,7 @@ help:
 	@sed -n '/^[a-zA-Z0-9_]*:/s/:.*//p' <Makefile
 
 node_deps:
-	npm install
+	npm ci
 
 bower_deps: node_deps
 	npx bower install
