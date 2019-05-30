@@ -12,6 +12,8 @@ const CRBUG_LINK_RE_PROJECT_GROUP = 4;
 const CRBUG_LINK_RE_ID_GROUP = 6;
 const ISSUE_TRACKER_RE = /(\b(issues?|bugs?)[ \t]*(:|=|\b))([ \t]*((\b[-a-z0-9]+)[:\#])?(\#?)(\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
 const PROJECT_LOCALID_RE = /((\b(issue|bug)[ \t]*(:|=)?[ \t]*)?((\b[-a-z0-9]+)[:\#])?(\#?)(\d+))/gi;
+const PROJECT_COMMENT_RE = /((\b(comment)[ \t]*(:|=)?[ \t]*)(\#?)(\d+))/gi;
+const PROJECT_COMMENT_ABBR_RE = /((\B(\#)(c))(\d+))/gi;
 const PROJECT_LOCALID_RE_PROJECT_GROUP = 6;
 const PROJECT_LOCALID_RE_ID_GROUP = 8;
 const IMPLIED_EMAIL_RE = /\b[a-z]((-|\.)?[a-z0-9])+@[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b/gi;
@@ -108,6 +110,24 @@ Components.set(
     },
     refRegs: [GIT_HASH_RE, SVN_REF_RE],
     replacer: ReplaceRevisionRef,
+  }
+);
+Components.set(
+  '07-comment',
+  {
+    lookup: null,
+    extractRefs: null,
+    refRegs: [PROJECT_COMMENT_RE],
+    replacer: ReplaceCommentRef,
+  }
+);
+Components.set(
+  '08-abbreviatedcomment',
+  {
+    lookup: null,
+    extractRefs: null,
+    refRegs: [PROJECT_COMMENT_ABBR_RE],
+    replacer: ReplaceAbbrCommentRef,
   }
 );
 
@@ -234,6 +254,16 @@ function ReplaceUserRef(match, components, _currentProjectName) {
     }
   }
   textRun.href = `mailto:${match[0]}`;
+  return [textRun];
+}
+
+function ReplaceCommentRef(match) {
+  const textRun = {content: match[0], tag: 'a', href: '#c' + match[6]};
+  return [textRun];
+}
+
+function ReplaceAbbrCommentRef(match) {
+  const textRun = {content: match[0], tag: 'a', href: '#c' + match[5]};
   return [textRun];
 }
 

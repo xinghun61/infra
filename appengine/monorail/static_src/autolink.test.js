@@ -704,5 +704,68 @@ describe('autolink', () => {
           {content: 'returns</b>'},
         ]);
     });
+
+    // Test to check that comment references are properly linked.
+    it('comments are correctly linked', () => {
+      const plainString =
+      'comment1, comment : 5, Comment =10, comment #4, #c57';
+      const actualTextRuns = markupAutolinks(plainString, componentRefs);
+      console.log(actualTextRuns);
+      assert.deepEqual(
+        actualTextRuns, [
+          {
+            content: 'comment1',
+            tag: 'a',
+            href: '#c1',
+          },
+          {
+            content: ', ',
+          },
+          {
+            content: 'comment : 5',
+            tag: 'a',
+            href: '#c5',
+          },
+          {
+            content: ', ',
+          },
+          {
+            content: 'Comment =10',
+            tag: 'a',
+            href: '#c10',
+          },
+          {
+            content: ', ',
+          },
+          {
+            content: 'comment #4',
+            tag: 'a',
+            href: '#c4',
+          },
+          {
+            content: ', ',
+          },
+          {
+            content: '#c57',
+            tag: 'a',
+            href: '#c57',
+          },
+        ]
+      );
+    });
+
+    // Check that improperly formatted comment references do not get linked.
+    it('comments that should not be linked', () => {
+      const plainString =
+      'comment number 4, comment-4, comment= # 5, comment#c56';
+      const actualTextRuns = markupAutolinks(plainString, componentRefs);
+      assert.deepEqual(
+        actualTextRuns, [
+          {
+            content: 'comment number 4, comment-4, comment= # 5, comment#c56',
+          },
+        ]
+      );
+    });
   });
 });
