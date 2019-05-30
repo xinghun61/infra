@@ -1,5 +1,5 @@
-hash: cca4dbfa2bb8e128298f8fb3fbb19db0d4ca1146fed37dc15f1ee2ca9c78e399
-updated: 2019-05-30T09:54:22.057287-07:00
+hash: 42a5198c01437ed69fba5230a4116ce8896f9fc86f9d09ef6fa16b6e23ff14c7
+updated: 2019-05-30T13:50:16.889364164-04:00
 imports:
 - name: cloud.google.com/go
   version: 61166ef305533a6c5b0b3275df2cb544d678339a
@@ -385,7 +385,7 @@ imports:
   subpackages:
   - plugin/grpc
 - name: go.skia.org/infra
-  version: 4b25cd8e28b8df104675c4ba03e11625be674598
+  version: 51f363cffa0ef26ce0fe0bfdc8b197c288025774
   repo: https://skia.googlesource.com/buildbot.git
   subpackages:
   - gold-client/cmd/goldctl
@@ -393,7 +393,7 @@ imports:
   version: 47ec06841dbebd22858703426bb09ee7e1b42f73
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
-  version: 9ed24406dee1f593f40f852f27f1092bd20d5852
+  version: 5fe048940515964bf06e43b97ac5c2ab35a45396
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
@@ -443,7 +443,7 @@ imports:
   version: 342b2e1fbaa52c93f31447ad2c6abc048c63e475
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 12d73424210d5399ae74d7e94f5c464d70d02406
+  version: 2b03ca6e44eb97adb8824db161059e54d6014dc3
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -491,7 +491,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 0435a4bb26ac754b679412c2d7f93748b99897ca
+  version: d40a99589506629cb87657c1740d1ffb492c6580
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
