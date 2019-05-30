@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	v1 "infra/tricium/api/v1"
 	math "math"
 )
@@ -465,6 +467,20 @@ type TrackerServer interface {
 	WorkerLaunched(context.Context, *WorkerLaunchedRequest) (*WorkerLaunchedResponse, error)
 	// WorkerDone marks the specified worker as done.
 	WorkerDone(context.Context, *WorkerDoneRequest) (*WorkerDoneResponse, error)
+}
+
+// UnimplementedTrackerServer can be embedded to have forward compatible implementations.
+type UnimplementedTrackerServer struct {
+}
+
+func (*UnimplementedTrackerServer) WorkflowLaunched(ctx context.Context, req *WorkflowLaunchedRequest) (*WorkflowLaunchedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WorkflowLaunched not implemented")
+}
+func (*UnimplementedTrackerServer) WorkerLaunched(ctx context.Context, req *WorkerLaunchedRequest) (*WorkerLaunchedResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WorkerLaunched not implemented")
+}
+func (*UnimplementedTrackerServer) WorkerDone(ctx context.Context, req *WorkerDoneRequest) (*WorkerDoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method WorkerDone not implemented")
 }
 
 func RegisterTrackerServer(s prpc.Registrar, srv TrackerServer) {

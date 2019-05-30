@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -335,6 +337,17 @@ type DriverServer interface {
 	Trigger(context.Context, *TriggerRequest) (*TriggerResponse, error)
 	// Collect collects results from a swarming task running a Tricium worker.
 	Collect(context.Context, *CollectRequest) (*CollectResponse, error)
+}
+
+// UnimplementedDriverServer can be embedded to have forward compatible implementations.
+type UnimplementedDriverServer struct {
+}
+
+func (*UnimplementedDriverServer) Trigger(ctx context.Context, req *TriggerRequest) (*TriggerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Trigger not implemented")
+}
+func (*UnimplementedDriverServer) Collect(ctx context.Context, req *CollectRequest) (*CollectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Collect not implemented")
 }
 
 func RegisterDriverServer(s prpc.Registrar, srv DriverServer) {

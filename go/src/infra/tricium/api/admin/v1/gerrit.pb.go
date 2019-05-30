@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -172,6 +174,14 @@ func (c *gerritClient) PollProject(ctx context.Context, in *PollProjectRequest, 
 type GerritServer interface {
 	// PollProject polls Gerrit for changes to analyze.
 	PollProject(context.Context, *PollProjectRequest) (*PollProjectResponse, error)
+}
+
+// UnimplementedGerritServer can be embedded to have forward compatible implementations.
+type UnimplementedGerritServer struct {
+}
+
+func (*UnimplementedGerritServer) PollProject(ctx context.Context, req *PollProjectRequest) (*PollProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PollProject not implemented")
 }
 
 func RegisterGerritServer(s prpc.Registrar, srv GerritServer) {

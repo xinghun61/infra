@@ -13,6 +13,11 @@ import (
 	"infra/tricium/appengine/common/config"
 )
 
+// ConfigServer represents the Tricium pRPC Config server.
+type configServer struct{}
+
+var server = &configServer{}
+
 func (*configServer) GenerateWorkflow(c context.Context, req *admin.GenerateWorkflowRequest) (*admin.GenerateWorkflowResponse, error) {
 	if req.Project == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "missing project name")

@@ -7,16 +7,10 @@ syntax = "proto3";
 package admin;
 
 import "infra/tricium/api/admin/v1/workflow.proto";
-import "infra/tricium/api/v1/config.proto";
 import "infra/tricium/api/v1/data.proto";
 
-// Config includes RPCs related to validating configs.
+// Config includes RPCs related to configs.
 service Config {
-  // Validates a Tricium config.
-  //
-  // The config to validate is specified in the request.
-  rpc Validate(ValidateRequest) returns (ValidateResponse);
-
   // Generates a workflow -- decides which Tricium functions to run.
   //
   // The Tricium config to generate for is specified by the project and list of
@@ -24,25 +18,8 @@ service Config {
   //
   // GenerateWorkflow is in "Config" just because generating a workflow
   // requires a valid project config and service config combination.
+  // TODO(qyearsley) Move this into launcher or somewhere else more appropriate.
   rpc GenerateWorkflow(GenerateWorkflowRequest) returns (GenerateWorkflowResponse);
-}
-
-message ValidateRequest {
-  // The project configuration to validate.
-  tricium.ProjectConfig project_config = 1;
-
-  // The service config to use (optional).
-  //
-  // If not provided, the default service config will be used.
-  tricium.ServiceConfig service_config = 2;
-}
-
-message ValidateResponse {
-  // The config used for validation.
-  //
-  // This is the resulting config after flattening and merging the provided
-  // project and service config.
-  tricium.ProjectConfig validated_config = 1;
 }
 
 message GenerateWorkflowRequest {

@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	v1 "infra/tricium/api/v1"
 	math "math"
 )
@@ -217,6 +219,14 @@ func (c *launcherClient) Launch(ctx context.Context, in *LaunchRequest, opts ...
 type LauncherServer interface {
 	// Launch launches a workflow for provided request details.
 	Launch(context.Context, *LaunchRequest) (*LaunchResponse, error)
+}
+
+// UnimplementedLauncherServer can be embedded to have forward compatible implementations.
+type UnimplementedLauncherServer struct {
+}
+
+func (*UnimplementedLauncherServer) Launch(ctx context.Context, req *LaunchRequest) (*LaunchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Launch not implemented")
 }
 
 func RegisterLauncherServer(s prpc.Registrar, srv LauncherServer) {

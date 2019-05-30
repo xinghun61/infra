@@ -10,6 +10,8 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -180,6 +182,14 @@ func (c *reporterClient) ReportResults(ctx context.Context, in *ReportResultsReq
 type ReporterServer interface {
 	// ReportResults reports Tricium results.
 	ReportResults(context.Context, *ReportResultsRequest) (*ReportResultsResponse, error)
+}
+
+// UnimplementedReporterServer can be embedded to have forward compatible implementations.
+type UnimplementedReporterServer struct {
+}
+
+func (*UnimplementedReporterServer) ReportResults(ctx context.Context, req *ReportResultsRequest) (*ReportResultsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ReportResults not implemented")
 }
 
 func RegisterReporterServer(s prpc.Registrar, srv ReporterServer) {
