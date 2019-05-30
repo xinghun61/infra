@@ -6,6 +6,7 @@ package main
 
 import (
 	"os/exec"
+	"path"
 	"strings"
 
 	"go.chromium.org/luci/common/errors"
@@ -35,9 +36,9 @@ func (g *gitRepo) hasCommit(ctx context.Context, commit string) bool {
 	return g.gitQuiet(ctx, "cat-file", "-e", commit+"^{commit}") == nil
 }
 
-// resolveSpec resolves any symbolic ref to a concrete ref, and resolves the
-// current commit ID of that ref.
-func (g *gitRepo) resolveSpec(ctx context.Context, spec fetchSpec) (ret fetchSpec, err error) {
+// resolveSpec resolves any symbolic ref, or ref glob, to an array of concrete
+// refs, and resolves the current commit ID of each ref.
+func (g *gitRepo) resolveSpec(ctx context.Context, spec fetchSpec) (ret []fetchSpec, err error) {
 	logging.Debugf(ctx, "gitRepo.resolveRef")
 	cmd := exec.CommandContext(ctx, "git", "ls-remote", "--symref", "https://"+g.remoteRepo, spec.ref)
 	out, err := cmd.CombinedOutput()
@@ -54,7 +55,9 @@ func (g *gitRepo) resolveSpec(ctx context.Context, spec fetchSpec) (ret fetchSpe
 		return
 	}
 
-	ret = spec
+	ret = make([]fetchSpec, 0, len(lines))
+	// Map of symbolic ref name to concrete ref name.
+	syms := make(map[string]string)
 	for _, line := range lines {
 		logging.Debugf(ctx, "parsing: %q", line)
 		toks := strings.SplitN(line, "\t", 2)
@@ -62,16 +65,37 @@ func (g *gitRepo) resolveSpec(ctx context.Context, spec fetchSpec) (ret fetchSpe
 			logging.Debugf(ctx, "skipping line without tab")
 			continue
 		}
-		if toks[1] != spec.ref {
-			logging.Debugf(ctx, "skipping line without HEAD")
+		// Git's ref globbing logic is close enough to path's globbing logic,
+		// so just use that to verify 'ls-remote' glob matches.
+		matched, _ := path.Match(spec.ref, toks[1])
+		if !matched {
+			logging.Debugf(ctx, "Skipping line without '%q' ref", spec.ref)
 			continue
 		}
 		if !strings.HasPrefix(toks[0], "ref: ") {
+			ret = append(ret, spec)
 			if !spec.isPinned() {
-				ret.revision = toks[0]
+				ret[len(ret)-1].revision = toks[0]
+			}
+			// Replace any glob ref with the resolved ref.
+			if toks[1] != spec.ref {
+				ret[len(ret)-1].ref = toks[1]
 			}
 		} else {
-			ret.ref = strings.TrimPrefix(toks[0], "ref: ")
+			// Store symbolic ref lines to fully resolve after all the other results
+			// are processed.
+			syms[toks[1]] = strings.TrimPrefix(toks[0], "ref: ")
+		}
+	}
+	if len(ret) == 0 {
+		ret = append(ret, spec)
+	}
+
+	// Find any specs that contain a symbolic ref, and substitute that ref's
+	// concrete ref (e.g. deadbeef,HEAD -> deadbeef,refs/heads/master)
+	for i := range ret {
+		if concreteRef, ok := syms[ret[i].ref]; ok {
+			ret[i].ref = concreteRef
 		}
 	}
 	return
