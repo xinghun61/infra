@@ -272,9 +272,17 @@ func (c *cmdBundle) run(ctx context.Context) error {
 					return errors.Reason("bug: %q doesn't result in a valid CIPD package", repoName).Err()
 				}
 				pkgVers := "git_revision:" + resolvedSpec.revision
-				pkgRefArgs := []string{"-ref", spec.ref}
+				pkgRefArgs := make([]string, 0, 2)
+				if err := cipd_common.ValidatePackageRef(spec.ref); err == nil {
+					pkgRefArgs = append(pkgRefArgs, "-ref", spec.ref)
+				}
 				if resolvedSpec.ref != spec.ref {
-					pkgRefArgs = append(pkgRefArgs, "-ref", resolvedSpec.ref)
+					if err := cipd_common.ValidatePackageRef(resolvedSpec.ref); err == nil {
+						pkgRefArgs = append(pkgRefArgs, "-ref", resolvedSpec.ref)
+					}
+				}
+				if len(pkgRefArgs) == 0 {
+					return errors.Reason("bug: %s doesn't resolve to a valid CIPD ref name", spec.ref).Err()
 				}
 
 				if c.localDest == "" && c.cipd.serverQuiet(ctx, "resolve", pkgName, "-version", pkgVers) == nil {
