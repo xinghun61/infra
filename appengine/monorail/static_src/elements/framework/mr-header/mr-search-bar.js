@@ -211,6 +211,7 @@ export class MrSearchBar extends LitElement {
           aria-label="Search box"
           @focus=${searchEditStarted}
           @blur=${searchEditFinished}
+          spellcheck="false"
         />
         ${this.keptQueryParams.map((param) => html`
             <input

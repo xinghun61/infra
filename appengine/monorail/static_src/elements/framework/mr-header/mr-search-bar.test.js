@@ -67,4 +67,10 @@ describe('mr-search-bar', () => {
     assert.equal(queryOptions[1].value, '202');
     assert.equal(queryOptions[1].textContent, 'hello world');
   });
+
+  it('spell check is off for search bar', async () => {
+    await element.updateComplete;
+    const searchElement = element.shadowRoot.querySelector('#searchq');
+    assert.equal(searchElement.getAttribute('spellcheck'), 'false');
+  });
 });
