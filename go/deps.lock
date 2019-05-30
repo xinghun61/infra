@@ -1,5 +1,5 @@
-hash: 42a5198c01437ed69fba5230a4116ce8896f9fc86f9d09ef6fa16b6e23ff14c7
-updated: 2019-05-30T13:50:16.889364164-04:00
+hash: b56f9d541ce00bd147f2883dfa7f8bec7ca0d6e13b7fc46881aaf48b300e3b7c
+updated: 2019-05-30T12:19:38.703168-07:00
 imports:
 - name: cloud.google.com/go
   version: 61166ef305533a6c5b0b3275df2cb544d678339a
@@ -25,7 +25,7 @@ imports:
   version: f61b66f89f4a311bef65f13e575bcf1a2ffadda6
   repo: https://chromium.googlesource.com/external/github.com/asaskevich/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: 559483a0366bf695a03e28c43232263070e4c2e5
+  version: d2a9248a9f9ff1b017e0eb58d6f04ef91e6d8ac9
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -390,7 +390,7 @@ imports:
   subpackages:
   - gold-client/cmd/goldctl
 - name: go.starlark.net
-  version: 47ec06841dbebd22858703426bb09ee7e1b42f73
+  version: 30ae18b8564f6cd89b550b19dbdae92e0ec5b0a3
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
   version: 5fe048940515964bf06e43b97ac5c2ab35a45396
@@ -434,7 +434,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 6a60838ec2595395fabc7b2e6c2ae9fb5a87722d
+  version: ad28b68e88f12448a1685d038ffea87bbbb34148
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - unix
@@ -443,7 +443,7 @@ imports:
   version: 342b2e1fbaa52c93f31447ad2c6abc048c63e475
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 2b03ca6e44eb97adb8824db161059e54d6014dc3
+  version: ce1a3806b557e2b3236499f772c2320f933d5a80
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
