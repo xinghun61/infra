@@ -134,7 +134,7 @@ export class MrMetadata extends connectStore(LitElement) {
         </tr>
       `: ''}
 
-      ${this.issueStatus === 'Duplicate' ? html`
+      ${this.issueStatus.status === 'Duplicate' ? html`
         <tr>
           <th>MergedInto:</th>
           <td>
