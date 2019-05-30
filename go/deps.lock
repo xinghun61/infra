@@ -1,8 +1,8 @@
-hash: 65f49007007cb8bb736bd18e6a1a3149f2fb53c5f9d338ba28fc4405f2317e2f
-updated: 2019-05-27T23:08:01.428777+09:00
+hash: cca4dbfa2bb8e128298f8fb3fbb19db0d4ca1146fed37dc15f1ee2ca9c78e399
+updated: 2019-05-30T09:54:22.057287-07:00
 imports:
 - name: cloud.google.com/go
-  version: 913ed651c4eccdddf6bc8a50b5baccb3ea134134
+  version: 61166ef305533a6c5b0b3275df2cb544d678339a
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -25,7 +25,7 @@ imports:
   version: f61b66f89f4a311bef65f13e575bcf1a2ffadda6
   repo: https://chromium.googlesource.com/external/github.com/asaskevich/govalidator.git
 - name: github.com/aws/aws-sdk-go
-  version: 6136ddbdf7e8060259161ae6750cedc73b0301fd
+  version: 559483a0366bf695a03e28c43232263070e4c2e5
   repo: https://chromium.googlesource.com/external/github.com/aws/aws-sdk-go.git
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -380,7 +380,7 @@ imports:
   version: cf5003e89e5a68181295c9383cd3329ef85549ac
   repo: https://chromium.googlesource.com/external/github.com/zeebo/bencode.git
 - name: go.opencensus.io
-  version: f24e56296b3a742d13b8368bbb1e831f9b0d2c7f
+  version: 9c377598961b706d1542bd2d84d538b5094d596e
   repo: https://chromium.googlesource.com/external/github.com/census-instrumentation/opencensus-go.git
   subpackages:
   - plugin/grpc
@@ -393,12 +393,12 @@ imports:
   version: 47ec06841dbebd22858703426bb09ee7e1b42f73
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - name: golang.org/x/build
-  version: 53eb64caae213133fe111d9c03c9cc546827c8af
+  version: 9ed24406dee1f593f40f852f27f1092bd20d5852
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
 - name: golang.org/x/crypto
-  version: 22d7a77e9e5f409e934ed268692e56707cd169e5
+  version: 20be4c3c3ed52bfccdb2d59a412ee1a936d175a7
   repo: https://go.googlesource.com/crypto.git
   subpackages:
   - ssh/terminal
@@ -434,7 +434,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 9cd6430ef91e39e1a0ec0470cf1321a33ef1b887
+  version: 6a60838ec2595395fabc7b2e6c2ae9fb5a87722d
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - unix
@@ -443,7 +443,7 @@ imports:
   version: 342b2e1fbaa52c93f31447ad2c6abc048c63e475
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 7be61e1b0e514e106d83fc439d56a79143738603
+  version: 12d73424210d5399ae74d7e94f5c464d70d02406
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -491,7 +491,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: f34abd951385fe8c8e78833b9bc980340464f3ef
+  version: 0435a4bb26ac754b679412c2d7f93748b99897ca
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

@@ -363,7 +363,7 @@ import:
   - bmp
   - tiff
 - package: go.starlark.net
-  version: master
+  version: 47ec06841dbebd22858703426bb09ee7e1b42f73
   repo: https://chromium.googlesource.com/external/github.com/google/starlark-go.git
 - package: github.com/chzyer/readline
   version: master
