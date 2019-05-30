@@ -29,7 +29,7 @@ var WaitTask = &subcommands.Command{
 		c.authFlags.Register(&c.Flags, site.DefaultAuthOptions)
 		c.envFlags.Register(&c.Flags)
 
-		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", 20, "The maxinum number of minutes to wait for the task to finish.")
+		c.Flags.IntVar(&c.timeoutMins, "timeout-mins", -1, "The maxinum number of minutes to wait for the task to finish. Default: no timeout.")
 		return c
 	},
 }
@@ -77,7 +77,13 @@ func (c *waitTaskRun) innerRun(a subcommands.Application, args []string, env sub
 		return err
 	}
 
-	taskWaitCtx, taskWaitCancel := context.WithTimeout(ctx, time.Duration(c.timeoutMins)*time.Minute)
+	var taskWaitCtx context.Context
+	var taskWaitCancel context.CancelFunc
+	if c.timeoutMins >= 0 {
+		taskWaitCtx, taskWaitCancel = context.WithTimeout(ctx, time.Duration(c.timeoutMins)*time.Minute)
+	} else {
+		taskWaitCtx, taskWaitCancel = context.WithCancel(ctx)
+	}
 	defer taskWaitCancel()
 
 	if err = waitTask(taskWaitCtx, taskID, s); err != nil {
