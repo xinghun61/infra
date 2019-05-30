@@ -142,7 +142,7 @@ class BuildRequest(_BuildRequestBase):
       build_proto.canary = sbr.canary == common_pb2.YES
     else:
       canary_percentage = _DEFAULT_CANARY_PERCENTAGE
-      if builder_cfg.HasField(  # pragma: no branch
+      if builder_cfg and builder_cfg.HasField(  # pragma: no branch
           'task_template_canary_percentage'):
         canary_percentage = builder_cfg.task_template_canary_percentage.value
       build_proto.canary = _should_be_canary(canary_percentage)
