@@ -234,7 +234,6 @@ describe('mr-edit-metadata', () => {
     blockingInput.setValue([]);
     mergedIntoInput.setValue('proj:124');
 
-    console.log('Actual', JSON.stringify(element.delta));
     assert.deepEqual(
       element.delta,
       {

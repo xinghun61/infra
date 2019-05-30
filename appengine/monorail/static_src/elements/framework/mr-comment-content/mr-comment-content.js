@@ -67,9 +67,13 @@ export class MrCommentContent extends connectStore(LitElement) {
         case 'br':
           return html`<br>`;
         case 'a':
-          return html`
-            <a class="line" target="_blank" href=${run.href} class=${run.css}
-                title=${ifDefined(run.title)}>${run.content}</a>`;
+          return html`<a
+            class="line"
+            target="_blank"
+            href=${run.href}
+            class=${run.css}
+            title=${ifDefined(run.title)}
+          >${run.content}</a>`;
         default:
           return html`<span class="line">${run.content}</span>`;
       }
