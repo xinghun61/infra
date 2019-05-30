@@ -74,8 +74,10 @@ class JSChecker(object):
     if only_changed_lines:
       # Filter ESList errors for only modified lines.
       output = self.FilterESLintForChangedLines(output, changed_lines)
+    if not output:
+      return []
     output = 'ESLint (%s files)\n%s' % (len(affected_js_files_paths), output)
-    return [self.output_api.PresubmitPromptWarning(output)] if output else []
+    return [self.output_api.PresubmitPromptWarning(output)]
 
   def GetChangedLines(self, affect_file_obj):
     """Gets a list of string to filter from ESLint output.
