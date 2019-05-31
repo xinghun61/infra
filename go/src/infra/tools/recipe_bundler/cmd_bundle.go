@@ -100,6 +100,12 @@ type fetchSpec struct {
 	ref      string
 }
 
+type packageInfo struct {
+	name    string
+	version string
+	refs    []string
+}
+
 func (f fetchSpec) isPinned() bool {
 	return f.revision != "FETCH_HEAD"
 }
@@ -254,6 +260,136 @@ func (c *cmdBundle) mkRepoDirs(repoName string) (repo, bundleDir string, err err
 	return
 }
 
+func (c *cmdBundle) prepPackage(repoName string, specref string, resolvedSpec fetchSpec) (pkg packageInfo, err error) {
+	pkg.name = ""
+	if strings.Contains(repoName, "internal") {
+		pkg.name = fmt.Sprintf("%s/%s", c.packageNameInternalPrefix, repoName)
+	} else {
+		pkg.name = fmt.Sprintf("%s/%s", c.packageNamePrefix, repoName)
+	}
+	if err = cipd_common.ValidatePackageName(pkg.name); err != nil {
+		err = errors.Reason("bug: %q doesn't result in a valid CIPD package", repoName).Err()
+		return
+	}
+
+	pkg.version = "git_revision:" + resolvedSpec.revision
+	pkg.refs = make([]string, 0, 2)
+	if err := cipd_common.ValidatePackageRef(specref); err == nil {
+		pkg.refs = append(pkg.refs, specref)
+	}
+	if resolvedSpec.ref != specref {
+		if err := cipd_common.ValidatePackageRef(resolvedSpec.ref); err == nil {
+			pkg.refs = append(pkg.refs, resolvedSpec.ref)
+		}
+	}
+	if len(pkg.refs) == 0 {
+		err = errors.Reason("bug: %s doesn't resolve to a valid CIPD ref name", specref).Err()
+		return
+	}
+
+	return
+}
+
+func (c *cmdBundle) resolvePackage(ctx context.Context, pkg packageInfo, spec fetchSpec) (exists bool, err error) {
+	exists = false
+
+	if c.localDest == "" && c.cipd.serverQuiet(ctx, "resolve", pkg.name, "-version", pkg.version) == nil {
+		exists = true
+		logging.Infof(ctx, "CIPD already has `%s %s`", pkg.name, pkg.version)
+
+		if spec.isPinned() {
+			// if the user requested a pinned revision, don't presume that we
+			// need to move a ref for them.
+			err = nil
+			return
+		}
+
+		// We just got the "freshest" value for these refs, so set them in CIPD.
+		pkgRefArgs := make([]string, 0, len(pkg.refs))
+		for _, ref := range pkg.refs {
+			pkgRefArgs = append(pkgRefArgs, "-ref", ref)
+		}
+		cmd := append([]string{
+			"set-ref",
+			pkg.name,
+			"-version", pkg.version,
+		}, pkgRefArgs...)
+		err = c.cipd.server(ctx, cmd...)
+		return
+	}
+
+	return
+}
+
+func (c *cmdBundle) createBundle(ctx context.Context, pkg packageInfo, spec, resolvedSpec fetchSpec, repo gitRepo, bundleDir string) (err error) {
+	// Get initial repo checkout
+	logging.Infof(ctx, "fetching: %v", resolvedSpec)
+	if err = repo.git(ctx, "init"); err == nil {
+		if err = repo.ensureFetched(ctx, resolvedSpec); err == nil {
+			err = repo.git(ctx, "checkout", resolvedSpec.revision)
+		}
+	}
+	if err != nil {
+		return err
+	}
+
+	logging.Infof(ctx, "recipes fetch + bundle")
+	var r recipes
+	// The destination dir must be empty or 'bundle' will fail.
+	if err = os.RemoveAll(bundleDir); err == nil {
+		err = os.MkdirAll(bundleDir, 0777)
+	}
+	if r, err = newRecipes(repo.localPath); err == nil {
+		if err = r.run(ctx, "fetch"); err == nil {
+			err = r.run(ctx, "bundle", "--destination", bundleDir)
+		}
+	}
+	if err != nil {
+		return err
+	}
+	logging.Infof(ctx, "finished bundling")
+
+	// package or package+upload
+	commonArgs := []string{
+		"-name", pkg.name,
+		"-in", bundleDir,
+	}
+
+	if c.localDest != "" {
+		pkgFile := fmt.Sprintf("%s_%s.zip", pathSquisher.Replace(pkg.name), resolvedSpec.revision)
+		cmd := []string{
+			"pkg-build",
+			"-install-mode", "copy",
+			"-out", filepath.Join(c.localDest, pkgFile),
+		}
+		cmd = append(cmd, commonArgs...)
+		if err = c.cipd.local(ctx, cmd...); err != nil {
+			return err
+		}
+		logging.Infof(ctx, "finished cipd pkg-build: %q", pkgFile)
+	} else {
+		cmd := []string{
+			"create",
+			"-install-mode", "copy",
+			"-tag", pkg.version,
+		}
+		cmd = append(cmd, commonArgs...)
+		if !spec.isPinned() {
+			pkgRefArgs := make([]string, 0, len(pkg.refs))
+			for _, ref := range pkg.refs {
+				pkgRefArgs = append(pkgRefArgs, "-ref", ref)
+			}
+			cmd = append(cmd, pkgRefArgs...)
+		}
+		if err = c.cipd.server(ctx, cmd...); err != nil {
+			return err
+		}
+		logging.Infof(ctx, "finished cipd create: `%s %s`", pkg.name, pkg.version)
+	}
+
+	return nil
+}
+
 func (c *cmdBundle) run(ctx context.Context) error {
 	return parallel.FanOutIn(func(ch chan<- func() error) {
 		for repoName, spec := range c.repos {
@@ -266,119 +402,25 @@ func (c *cmdBundle) run(ctx context.Context) error {
 				}
 				ctx := logging.SetField(ctx, "repo", repoName)
 
-				for _, specref := range strings.Split(spec.ref, ",") {
-					resolvedSpecs, err := repo.resolveSpec(ctx, fetchSpec{spec.revision, specref})
-					for _, resolvedSpec := range resolvedSpecs {
-						logging.Infof(ctx, "got revision/ref: %q -> %q", spec, resolvedSpec)
-
-						pkgName := ""
-						if strings.Contains(repoName, "internal") {
-							pkgName = fmt.Sprintf("%s/%s", c.packageNameInternalPrefix, repoName)
-						} else {
-							pkgName = fmt.Sprintf("%s/%s", c.packageNamePrefix, repoName)
-						}
-
-						if err := cipd_common.ValidatePackageName(pkgName); err != nil {
-							return errors.Reason("bug: %q doesn't result in a valid CIPD package", repoName).Err()
-						}
-						pkgVers := "git_revision:" + resolvedSpec.revision
-						pkgRefArgs := make([]string, 0, 2)
-						if err := cipd_common.ValidatePackageRef(specref); err == nil {
-							pkgRefArgs = append(pkgRefArgs, "-ref", specref)
-						}
-						if resolvedSpec.ref != specref {
-							if err := cipd_common.ValidatePackageRef(resolvedSpec.ref); err == nil {
-								pkgRefArgs = append(pkgRefArgs, "-ref", resolvedSpec.ref)
+				return parallel.FanOutIn(func(chSpec chan<- func() error) {
+					for _, specref := range strings.Split(spec.ref, ",") {
+						resolvedSpecs, err := repo.resolveSpec(ctx, fetchSpec{spec.revision, specref})
+						for _, resolvedSpec := range resolvedSpecs {
+							specref, resolvedSpec := specref, resolvedSpec
+							chSpec <- func() error {
+								logging.Infof(ctx, "got revision/ref: %q -> %q", spec, resolvedSpec)
+								var pkg packageInfo
+								if pkg, err = c.prepPackage(repoName, specref, resolvedSpec); err != nil {
+									return err
+								}
+								if exists, err := c.resolvePackage(ctx, pkg, spec); exists {
+									return err
+								}
+								return c.createBundle(ctx, pkg, spec, resolvedSpec, repo, bundleDir)
 							}
-						}
-						if len(pkgRefArgs) == 0 {
-							return errors.Reason("bug: %s doesn't resolve to a valid CIPD ref name", specref).Err()
-						}
-
-						if c.localDest == "" && c.cipd.serverQuiet(ctx, "resolve", pkgName, "-version", pkgVers) == nil {
-							logging.Infof(ctx, "CIPD already has `%s %s`", pkgName, pkgVers)
-
-							if spec.isPinned() {
-								// if the user requested a pinned revision, don't presume that we
-								// need to move a ref for them.
-								return nil
-							}
-
-							// We just got the "freshest" value for these refs, so set them in CIPD.
-							cmd := append([]string{
-								"set-ref",
-								pkgName,
-								"-version", pkgVers,
-							}, pkgRefArgs...)
-							c.cipd.server(ctx, cmd...)
-							continue
-						}
-
-						// Get initial repo checkout
-						logging.Infof(ctx, "fetching: %v", resolvedSpec)
-						if err = repo.git(ctx, "init"); err == nil {
-							if err = repo.ensureFetched(ctx, resolvedSpec); err == nil {
-								err = repo.git(ctx, "checkout", resolvedSpec.revision)
-							}
-						}
-						if err != nil {
-							return err
-						}
-
-						// recipes spec+bundle
-						logging.Infof(ctx, "recipes fetch + bundle")
-						var r recipes
-						// The destination dir must be empty, so make sure it's recreated
-						// between specs.
-						if err = os.RemoveAll(bundleDir); err == nil {
-							err = os.MkdirAll(bundleDir, 0777)
-						}
-						if r, err = newRecipes(repoDir); err == nil {
-							if err = r.run(ctx, "fetch"); err == nil {
-								err = r.run(ctx, "bundle", "--destination", bundleDir)
-							}
-						}
-						if err != nil {
-							return err
-						}
-						logging.Infof(ctx, "finished bundling")
-
-						commonArgs := []string{
-							"-name", pkgName,
-							"-in", bundleDir,
-						}
-
-						// package or package+upload
-						if c.localDest != "" {
-							pkgFile := fmt.Sprintf("%s_%s.zip", pathSquisher.Replace(pkgName), resolvedSpec.revision)
-							cmd := []string{
-								"pkg-build",
-								"-install-mode", "copy",
-								"-out", filepath.Join(c.localDest, pkgFile),
-							}
-							cmd = append(cmd, commonArgs...)
-							if err = c.cipd.local(ctx, cmd...); err != nil {
-								return err
-							}
-							logging.Infof(ctx, "finished cipd pkg-build: %q", pkgFile)
-						} else {
-							cmd := []string{
-								"create",
-								"-install-mode", "copy",
-								"-tag", pkgVers,
-							}
-							cmd = append(cmd, commonArgs...)
-							if !spec.isPinned() {
-								cmd = append(cmd, pkgRefArgs...)
-							}
-							if err = c.cipd.server(ctx, cmd...); err != nil {
-								return err
-							}
-							logging.Infof(ctx, "finished cipd create: `%s %s`", pkgName, pkgVers)
 						}
 					}
-				}
-				return nil
+				})
 			}
 		}
 	})
