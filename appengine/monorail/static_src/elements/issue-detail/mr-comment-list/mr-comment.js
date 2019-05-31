@@ -45,6 +45,7 @@ export class MrComment extends LitElement {
         reflect: true,
       },
       _isExpandedIfDeleted: {type: Boolean},
+      _showOriginalContent: {type: Boolean},
     };
   }
 
@@ -134,7 +135,7 @@ export class MrComment extends LitElement {
         ${_shouldOfferCommentOptions(this.comment) ? html`
           <div class="comment-options">
             <mr-dropdown
-              .items=${_commentOptions(this._isExpandedIfDeleted, this.comment, this._toggleHideDeletedComment.bind(this))}
+              .items=${this._commentOptions}
               icon="more_vert"
             ></mr-dropdown>
           </div>
@@ -182,11 +183,14 @@ export class MrComment extends LitElement {
   }
 
   _renderBody() {
+    const commentContent = this._showOriginalContent ?
+      this.comment.inboundMessage :
+      this.comment.content;
     return html`
       <div class="comment-body">
         <mr-comment-content
           ?hidden=${this.comment.descriptionNum}
-          .content=${this.comment.content}
+          .content=${commentContent}
           ?isDeleted=${this.comment.isDeleted}
         ></mr-comment-content>
         <div ?hidden=${this.comment.descriptionNum}>
@@ -204,6 +208,47 @@ export class MrComment extends LitElement {
     `;
   }
 
+  get _commentOptions() {
+    const options = [];
+    if (_canExpandDeletedComment(this.comment)) {
+      const text =
+        (this.isExpandedIfDeleted ? 'Hide' : 'Show') + ' comment content';
+      options.push({
+        text: text,
+        handler: this._toggleHideDeletedComment.bind(this),
+      });
+      options.push({separator: true});
+    }
+    if (this.comment.canDelete) {
+      const text =
+        (this.comment.isDeleted ? 'Undelete' : 'Delete') + ' comment';
+      options.push({
+        text: text,
+        handler: _deleteComment.bind(null, this.comment),
+      });
+    }
+    if (this.comment.canFlag) {
+      const text = (this.comment.isSpam ? 'Unflag' : 'Flag') + ' comment';
+      options.push({
+        text: text,
+        handler: _flagComment.bind(null, this.comment),
+      });
+    }
+    if (this.comment.inboundMessage) {
+      const text =
+        (this._showOriginalContent ? 'Hide' : 'Show') + ' original email';
+      options.push({
+        text: text,
+        handler: this._toggleShowOriginalContent.bind(this),
+      });
+    }
+    return options;
+  }
+
+  _toggleShowOriginalContent() {
+    this._showOriginalContent = !this._showOriginalContent;
+  }
+
   _toggleHideDeletedComment() {
     this._isExpandedIfDeleted = !this._isExpandedIfDeleted;
   }
@@ -215,35 +260,6 @@ function _shouldShowComment(isExpandedIfDeleted, comment) {
 
 function _shouldOfferCommentOptions(comment) {
   return comment.canDelete || comment.canFlag;
-}
-
-function _commentOptions(isExpandedIfDeleted, comment, toggleHandler) {
-  const options = [];
-  if (_canExpandDeletedComment(comment)) {
-    const text =
-      (isExpandedIfDeleted ? 'Hide' : 'Show') + ' comment content';
-    options.push({
-      text: text,
-      handler: toggleHandler,
-    });
-    options.push({separator: true});
-  }
-  if (comment.canDelete) {
-    const text =
-      (comment.isDeleted ? 'Undelete' : 'Delete') + ' comment';
-    options.push({
-      text: text,
-      handler: _deleteComment.bind(null, comment),
-    });
-  }
-  if (comment.canFlag) {
-    const text = (comment.isSpam ? 'Unflag' : 'Flag') + ' comment';
-    options.push({
-      text: text,
-      handler: _flagComment.bind(null, comment),
-    });
-  }
-  return options;
 }
 
 function _canExpandDeletedComment(comment) {
