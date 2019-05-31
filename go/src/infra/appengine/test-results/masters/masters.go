@@ -147,6 +147,10 @@ var Known = []*Master{
 		Name:       "TryServerChromiumWin",
 		Identifier: "tryserver.chromium.win",
 	},
+	{
+		Name:       "TryServerInfra",
+		Identifier: "luci.infra.try",
+	},
 }
 
 // Master represents the properties of a master.
