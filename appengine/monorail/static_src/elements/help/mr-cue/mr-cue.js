@@ -36,6 +36,7 @@ export class MrCue extends connectStore(LitElement) {
       prefs: {type: Object},
       prefsLoaded: {type: Boolean},
       jumpLocalId: {type: Number},
+      loginUrl: {type: String},
     };
   }
 
@@ -99,6 +100,15 @@ export class MrCue extends connectStore(LitElement) {
             `;
         }
 
+      case 'switch_to_parent_account':
+        if (this._switchToParentAccountRelevant()) {
+          return html`
+            You are signed in to a linked account.
+            <a href="${this.loginUrl}">
+               Switch to ${this.user.linkedParentRef.displayName}</a>.
+            `;
+        }
+
       case 'search_for_numbers':
         if (this._searchForNumbersRelevant(this.jumpLocalId)) {
           return html`
@@ -123,6 +133,10 @@ export class MrCue extends connectStore(LitElement) {
         if (participant && participant.availability) return true;
       }
     }
+  }
+
+  _switchToParentAccountRelevant() {
+    return this.user && this.user.linkedParentRef;
   }
 
   _searchForNumbersRelevant(jumpLocalId) {

@@ -98,6 +98,25 @@ describe('mr-cue', () => {
     assert.isFalse(element.hidden);
   });
 
+  it('switch_to_parent_account cue is hidden if no linked account', () => {
+    element.prefsLoaded = true;
+    element.cuePrefName = 'switch_to_parent_account';
+
+    element.user = undefined;
+    assert.isTrue(element.hidden);
+
+    element.user = {groups: []};
+    assert.isTrue(element.hidden);
+  });
+
+  it('switch_to_parent_account is shown if user has parent account', () => {
+    element.prefsLoaded = true;
+    element.cuePrefName = 'switch_to_parent_account';
+    element.user = {linkedParentRef: {displayName: 'parent@example.com'}};
+
+    assert.isFalse(element.hidden);
+  });
+
   it('search_for_numbers cue is hidden if no number was used', () => {
     element.prefsLoaded = true;
     element.cuePrefName = 'search_for_numbers';
