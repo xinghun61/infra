@@ -190,7 +190,9 @@ message Data {
   // The replacement should be for one continuous section of a file.
   message Replacement {
 
-    // Path to file for this replacement.
+    // Path to the file for this replacement.
+    //
+    // An empty string indicates the commit message.
     string path = 1;
 
     // A replacement string.

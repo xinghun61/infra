@@ -699,7 +699,9 @@ func (m *Data_Suggestion) GetReplacements() []*Data_Replacement {
 //
 // The replacement should be for one continuous section of a file.
 type Data_Replacement struct {
-	// Path to file for this replacement.
+	// Path to the file for this replacement.
+	//
+	// An empty string indicates the commit message.
 	Path string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
 	// A replacement string.
 	Replacement string `protobuf:"bytes,2,opt,name=replacement,proto3" json:"replacement,omitempty"`

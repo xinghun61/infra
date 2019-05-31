@@ -262,8 +262,14 @@ func createFillSuggestions(suggestions []*tricium.Data_Suggestion) []*suggestion
 	for _, s := range suggestions {
 		var replacements []*replacement
 		for _, r := range s.Replacements {
+			// As in the Comment struct, an empty string in a replacement
+			// indicates a replacement in the commit message.
+			path := r.Path
+			if len(r.Path) == 0 {
+				path = commitMessagePath
+			}
 			replacements = append(replacements, &replacement{
-				Path:        r.Path,
+				Path:        path,
 				Replacement: r.Replacement,
 				Range: &commentRange{
 					StartLine:      int(r.StartLine),
