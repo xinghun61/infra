@@ -164,3 +164,5 @@ blacklist:
     description: someone crawling gerrit and webrtc issues with a browser
   - subnet: 70.166.125.12
     description: someone making tons of API calls over the rate limit
+  - subnet: 103.42.57.49
+    description: someone making tons of API calls over the rate limit
