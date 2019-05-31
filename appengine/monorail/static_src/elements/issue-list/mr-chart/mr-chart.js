@@ -6,7 +6,7 @@ import {LitElement, html, css} from 'lit-element';
 import {prpcClient} from 'prpc-client-instance.js';
 import './chops-chart.js';
 
-const DEFAULT_NUM_DAYS = 30;
+const DEFAULT_NUM_DAYS = 90;
 const CHART_OPTIONS = {
   animation: false,
   responsive: true,
@@ -52,6 +52,7 @@ export default class MrChart extends LitElement {
       values: {type: Array},
       unsupportedFields: {type: Array},
       searchLimitReached: {type: Boolean},
+      dateRange: {type: Number},
       frequency: {type: Number},
     };
   }
@@ -67,13 +68,39 @@ export default class MrChart extends LitElement {
         max-width: 100%;
       }
       div#options {
-        max-width: 360px;
+        max-width: 480px;
         margin: 2em auto;
         text-align: center;
       }
       div#options #unsupported-fields {
         font-weight: bold;
         color: orange;
+      }
+      div#options #align {
+        display: flex;
+      }
+      div#options #align #frequency {
+        display: inline-block;
+        width: 50%;
+      }
+      div#options #align #frequency #two-toggle {
+        font-size: 95%;
+        text-align: center;
+        margin-bottom: 5px;
+      }
+      div#options #align #time {
+        display: inline-block;
+        width: 50%;
+      }
+      .choice {
+        padding: 4px 10px;
+        background: var(--chops-choice-bg);
+        color: var(--chops-choice-color);
+        text-decoration: none;
+        display: inline-block;
+      }
+      .choice.checked {
+        background: var(--chops-blue-50);
       }
       p#search-limit-message {
         display: none;
@@ -119,16 +146,37 @@ export default class MrChart extends LitElement {
           Note: Some results are not being counted.
           Please narrow your query.
         </p>
-        <label for="end-date">Choose end date:</label>
-        <br />
-        <input
-          type="date"
-          id="end-date"
-          name="end-date"
-          .value=${this.endDate && this.endDate.toISOString().substr(0, 10)}
-          ?disabled=${!doneLoading}
-          @change=${this._onEndDateChanged}
-        />
+        <div id="align">
+          <div id="frequency">
+            <label for="two-toggle">Choose date range:</label>
+            <div id="two-toggle">
+              <chops-button @click="${this._setDateRange.bind(this, 180)}"
+                class="${this.dateRange === 180 ? 'choice checked': 'choice'}">
+                180 Days
+              </chops-button>
+              <chops-button @click="${this._setDateRange.bind(this, 90)}"
+                class="${this.dateRange === 90 ? 'choice checked': 'choice'}">
+                90 Days
+              </chops-button>
+              <chops-button @click="${this._setDateRange.bind(this, 30)}"
+                class="${this.dateRange === 30 ? 'choice checked': 'choice'}">
+                30 Days
+              </chops-button>
+            </div>
+          </div>
+          <div id="time">
+            <label for="end-date">Choose end date:</label>
+            <br />
+            <input
+              type="date"
+              id="end-date"
+              name="end-date"
+              .value=${this.endDate && this.endDate.toISOString().substr(0, 10)}
+              ?disabled=${!doneLoading}
+              @change=${this._onEndDateChanged}
+            />
+          </div>
+        </div>
       </div>
     `;
   }
@@ -140,7 +188,8 @@ export default class MrChart extends LitElement {
     this.indices = [];
     this.unsupportedFields = [];
     this.endDate = MrChart.getEndDate();
-    this.frequency = 1;
+    this.dateRange = 90;
+    this.frequency = 7;
   }
 
   async connectedCallback() {
@@ -176,7 +225,7 @@ export default class MrChart extends LitElement {
     this.progress = 0.05;
 
     let numTimestampsLoaded = 0;
-    const timestampsChronological = MrChart.makeTimestamps(endDate, this.frequency);
+    const timestampsChronological = MrChart.makeTimestamps(endDate, this.frequency, this.dateRange);
     const tsToIndexMap = new Map(timestampsChronological.map((ts, idx) => (
       [ts, idx]
     )));
@@ -246,6 +295,15 @@ export default class MrChart extends LitElement {
         fill: false,
       }],
     };
+  }
+
+  // Change date range and frequency based on button clicked
+  _setDateRange(dateRange) {
+    if (this.dateRange !== dateRange) {
+      this.dateRange = dateRange;
+      this.frequency = dateRange === 30 ? 1 : 7;
+      this._fetchData(this.endDate);
+    }
   }
 
   // Move first, last, and median to the beginning of the array, recursively.
