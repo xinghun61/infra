@@ -1,0 +1,10 @@
+package: chromiumos/infra/cros_test_platform/${platform}
+description: Binary steps implementations for cros_test_platform recipe.
+platforms:
+  - linux-amd64
+go_packages:
+  - infra/cmd/cros_test_platform
+root: ../../go/bin
+data:
+  - file: cros_test_platform${exe_suffix}
+  - version_file: .versions/cros_test_platform${exe_suffix}.cipd_version
