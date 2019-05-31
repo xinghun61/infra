@@ -55,6 +55,39 @@ func TestSpellCheckerAnalyzeFiles(t *testing.T) {
 		So(results, ShouldResemble, expected)
 	})
 
+	Convey("Analyzing simple file with one misspelling generates one comment", t, func() {
+		results := &tricium.Data_Results{}
+		analyzeFile(bufio.NewScanner(strings.NewReader("Updat the thing")), "", true, nil, results)
+		So(results, ShouldResemble, &tricium.Data_Results{
+			Comments: []*tricium.Data_Comment{
+				{
+					Path:      "",
+					Message:   `"Updat" is a possible misspelling of "Update".`,
+					Category:  "SpellChecker",
+					StartLine: 1,
+					EndLine:   1,
+					StartChar: 0,
+					EndChar:   5,
+					Suggestions: []*tricium.Data_Suggestion{
+						{
+							Description: "Misspelling fix suggestion",
+							Replacements: []*tricium.Data_Replacement{
+								{
+									Path:        "",
+									Replacement: "Update",
+									StartLine:   1,
+									EndLine:     1,
+									StartChar:   0,
+									EndChar:     5,
+								},
+							},
+						},
+					},
+				},
+			},
+		})
+	})
+
 	Convey("Words in all caps are not checked", t, func() {
 		fileContent := "/* DONT COMENT */"
 		results := &tricium.Data_Results{}

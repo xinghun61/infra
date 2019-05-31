@@ -97,8 +97,6 @@ func main() {
 
 	results := &tricium.Data_Results{}
 
-	// TODO(qyearsley): Also check the commit message, which is available
-	// as string in data.CommitMessage and doesn't have to be read from disk.
 	for _, file := range input.Files {
 		if !file.IsBinary {
 			fileExt := filepath.Ext(file.Path)
@@ -117,6 +115,9 @@ func main() {
 			closeFileOrDie(f)
 		}
 	}
+
+	// Also check the commit message.
+	analyzeFile(bufio.NewScanner(strings.NewReader(input.CommitMessage)), "", true, nil, results)
 
 	// Write Tricium RESULTS data.
 	path, err := tricium.WriteDataType(*outputDir, results)
