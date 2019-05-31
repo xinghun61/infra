@@ -37,7 +37,7 @@ sdk_version=$(
 echo "Using sdk $sdk_version"
 
 archive_url="https://storage.googleapis.com/chromeos-prebuilt/host/amd64/amd64-host/chroot-${sdk_version}/packages/dev-util/${archive}"
-curl "${archive_url}" -o "${archive}"
+curl -f "${archive_url}" -o "${archive}" || die "Unable to download new shellcheck package"
 
 shasum -a 512 "${archive}" > "${sumfile}"
 rm "${archive}"
