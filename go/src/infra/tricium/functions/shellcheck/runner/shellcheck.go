@@ -57,7 +57,7 @@ func (r *Runner) Version() (string, error) {
 // for any issues detected.
 func (r *Runner) Warnings(paths ...string) ([]Warning, error) {
 	// Build shellcheck args.
-	args := []string{"--format=json"}
+	args := []string{"--format=json1"}
 	if r.Exclude != "" {
 		args = append(args, fmt.Sprintf("--exclude=%s", r.Exclude))
 	}

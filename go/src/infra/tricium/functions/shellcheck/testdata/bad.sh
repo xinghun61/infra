@@ -1,3 +1,4 @@
 #!/bin/bash
 
-unused="variable"
+	unused="variable"
+echo "$11"

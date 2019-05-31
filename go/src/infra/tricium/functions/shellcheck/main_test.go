@@ -15,6 +15,8 @@ import (
 	"strings"
 	"testing"
 
+	. "github.com/smartystreets/goconvey/convey"
+
 	"infra/tricium/functions/shellcheck/runner"
 )
 
@@ -33,8 +35,8 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Skip("no valid shellcheck bin found; skipping test")
 	}
-	if !strings.HasPrefix(version, "0.4.") {
-		t.Skipf("got shellcheck version %q want 0.4.x; skipping test", version)
+	if !strings.HasPrefix(version, "0.6.") {
+		t.Skipf("got shellcheck version %q want 0.6.x; skipping test", version)
 	}
 
 	outputDir, err := ioutil.TempDir("", "tricium-shellcheck-test")
@@ -57,23 +59,40 @@ func TestRun(t *testing.T) {
 	}
 
 	comments, ok := results["comments"]
-	if !ok {
-		t.Fatalf("results have no comments key")
-	}
+	Convey("Results should be properly formatted", t, func() {
+		Convey("Results should have comments", func() {
+			So(ok, ShouldBeTrue)
+		})
 
-	if len(comments) != 1 {
-		t.Fatalf("got %d comments want 1", len(comments))
-	}
+		Convey("There should be two comments", func() {
+			So(len(comments), ShouldEqual, 2)
+		})
 
-	comment := comments[0]
-	assertMapKeyEqual(t, comment, "category", "ShellCheck/SC2034")
-	assertMapKeyEqual(t, comment, "message",
-		"warning: unused appears unused. Verify it or export it.")
-	assertMapKeyEqual(t, comment, "url",
-		"https://github.com/koalaman/shellcheck/wiki/SC2034")
-	assertMapKeyEqual(t, comment, "path", "bad.sh")
-	assertMapKeyEqual(t, comment, "startLine", float64(3))
-	assertMapKeyEqual(t, comment, "endLine", float64(3))
+		Convey("Comments should have specific contents", func() {
+			So(comments, ShouldResemble, []map[string]interface{}{
+				{
+					"category":  "ShellCheck/SC2034",
+					"message":   "warning: unused appears unused. Verify use (or export if used externally).",
+					"url":       "https://github.com/koalaman/shellcheck/wiki/SC2034",
+					"path":      "bad.sh",
+					"startLine": float64(3),
+					"endLine":   float64(3),
+					"startChar": float64(1),
+					"endChar":   float64(7),
+				},
+				{
+					"category":  "ShellCheck/SC1037",
+					"message":   "error: Braces are required for positionals over 9, e.g. ${10}.",
+					"url":       "https://github.com/koalaman/shellcheck/wiki/SC1037",
+					"path":      "bad.sh",
+					"startLine": float64(4),
+					"endLine":   float64(4),
+					"startChar": float64(6),
+					"endChar":   float64(6),
+				},
+			})
+		})
+	})
 }
 
 func assertMapKeyEqual(t *testing.T, m map[string]interface{}, k string, want interface{}) {

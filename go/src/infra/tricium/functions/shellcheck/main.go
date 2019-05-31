@@ -57,7 +57,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error checking shellcheck version: %v", err)
 		}
-		if !strings.HasPrefix(version, "0.") || version < "0.4" {
+		if !strings.HasPrefix(version, "0.") || version < "0.6" {
 			log.Fatalf("Found shellcheck with unsupported version %q", version)
 		}
 	}
@@ -104,12 +104,11 @@ func run(r *runner.Runner, inputDir, outputDir, pathFilters string) {
 			Message:  fmt.Sprintf("%s: %s", warn.Level, warn.Message),
 			Url:      warn.WikiURL(),
 			Path:     warn.File,
-			// shellcheck uses 1-based columns and inclusive end positions;
-			// Tricium needs 0-based columns and exclusive end positions.
+			// shellcheck uses 1-based columns, but Tricium needs 0-based columns.
 			StartLine: warn.Line,
 			EndLine:   warn.EndLine,
 			StartChar: warn.Column - 1,
-			EndChar:   warn.EndColumn,
+			EndChar:   warn.EndColumn - 1,
 		})
 	}
 
