@@ -112,3 +112,17 @@ class MidAirCollisionException(Error):
     super(MidAirCollisionException, self).__init__()
     self.name = name  # human-readable name for the artifact being edited.
     self.continue_issue_id = continue_issue_id  # ID of issue to start over.
+
+
+class InvalidExternalIssueReference(Error):
+  """Improperly formatted external issue reference.
+
+  External issue references must be of the form:
+
+      $tracker_shortname/$tracker_specific_id
+
+  For example, issuetracker.google.com issues:
+
+      b/123456789
+  """
+  pass

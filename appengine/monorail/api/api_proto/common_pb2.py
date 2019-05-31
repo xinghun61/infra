@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"j\n\x08\x46ieldRef\x12\x10\n\x08\x66ield_id\x18\x01 \x01(\x04\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12!\n\x04type\x18\x03 \x01(\x0e\x32\x13.monorail.FieldType\x12\x15\n\rapproval_name\x18\x04 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"2\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"P\n\nHotlistRef\x12\x12\n\nhotlist_id\x18\x01 \x01(\x04\x12\x0c\n\x04name\x18\x02 \x01(\t\x12 \n\x05owner\x18\x03 \x01(\x0b\x32\x11.monorail.UserRef\")\n\x0bValueAndWhy\x12\r\n\x05value\x18\x01 \x01(\t\x12\x0b\n\x03why\x18\x02 \x01(\t\".\n\nPagination\x12\x11\n\tmax_items\x18\x01 \x01(\r\x12\r\n\x05start\x18\x02 \x01(\r\"R\n\nSavedQuery\x12\x10\n\x08query_id\x18\x01 \x01(\x04\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t\x12\x15\n\rproject_names\x18\x04 \x03(\t*\x91\x01\n\tFieldType\x12\x0b\n\x07NO_TYPE\x10\x00\x12\r\n\tENUM_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0c\n\x08STR_TYPE\x10\x03\x12\r\n\tUSER_TYPE\x10\x04\x12\r\n\tDATE_TYPE\x10\x05\x12\r\n\tBOOL_TYPE\x10\x06\x12\x0c\n\x08URL_TYPE\x10\x07\x12\x11\n\rAPPROVAL_TYPE\x10\x08\x62\x06proto3')
+  serialized_pb=_b('\n\x1a\x61pi/api_proto/common.proto\x12\x08monorail\"0\n\x0c\x43omponentRef\x12\x0c\n\x04path\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"j\n\x08\x46ieldRef\x12\x10\n\x08\x66ield_id\x18\x01 \x01(\x04\x12\x12\n\nfield_name\x18\x02 \x01(\t\x12!\n\x04type\x18\x03 \x01(\x0e\x32\x13.monorail.FieldType\x12\x15\n\rapproval_name\x18\x04 \x01(\t\"-\n\x08LabelRef\x12\r\n\x05label\x18\x01 \x01(\t\x12\x12\n\nis_derived\x18\x02 \x01(\x08\"C\n\tStatusRef\x12\x0e\n\x06status\x18\x01 \x01(\t\x12\x12\n\nmeans_open\x18\x02 \x01(\x08\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"J\n\x08IssueRef\x12\x14\n\x0cproject_name\x18\x01 \x01(\t\x12\x10\n\x08local_id\x18\x02 \x01(\r\x12\x16\n\x0e\x65xt_identifier\x18\x03 \x01(\t\"D\n\x07UserRef\x12\x0f\n\x07user_id\x18\x01 \x01(\x04\x12\x14\n\x0c\x64isplay_name\x18\x02 \x01(\t\x12\x12\n\nis_derived\x18\x03 \x01(\x08\"P\n\nHotlistRef\x12\x12\n\nhotlist_id\x18\x01 \x01(\x04\x12\x0c\n\x04name\x18\x02 \x01(\t\x12 \n\x05owner\x18\x03 \x01(\x0b\x32\x11.monorail.UserRef\")\n\x0bValueAndWhy\x12\r\n\x05value\x18\x01 \x01(\t\x12\x0b\n\x03why\x18\x02 \x01(\t\".\n\nPagination\x12\x11\n\tmax_items\x18\x01 \x01(\r\x12\r\n\x05start\x18\x02 \x01(\r\"R\n\nSavedQuery\x12\x10\n\x08query_id\x18\x01 \x01(\x04\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05query\x18\x03 \x01(\t\x12\x15\n\rproject_names\x18\x04 \x03(\t*\x91\x01\n\tFieldType\x12\x0b\n\x07NO_TYPE\x10\x00\x12\r\n\tENUM_TYPE\x10\x01\x12\x0c\n\x08INT_TYPE\x10\x02\x12\x0c\n\x08STR_TYPE\x10\x03\x12\r\n\tUSER_TYPE\x10\x04\x12\r\n\tDATE_TYPE\x10\x05\x12\r\n\tBOOL_TYPE\x10\x06\x12\x0c\n\x08URL_TYPE\x10\x07\x12\x11\n\rAPPROVAL_TYPE\x10\x08\x62\x06proto3')
 )
 
 _FIELDTYPE = _descriptor.EnumDescriptor(
@@ -68,8 +68,8 @@ _FIELDTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=694,
-  serialized_end=839,
+  serialized_start=718,
+  serialized_end=863,
 )
 _sym_db.RegisterEnumDescriptor(_FIELDTYPE)
 
@@ -280,6 +280,13 @@ _ISSUEREF = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='ext_identifier', full_name='monorail.IssueRef.ext_identifier', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -293,7 +300,7 @@ _ISSUEREF = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=314,
-  serialized_end=364,
+  serialized_end=388,
 )
 
 
@@ -337,8 +344,8 @@ _USERREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=366,
-  serialized_end=434,
+  serialized_start=390,
+  serialized_end=458,
 )
 
 
@@ -382,8 +389,8 @@ _HOTLISTREF = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=436,
-  serialized_end=516,
+  serialized_start=460,
+  serialized_end=540,
 )
 
 
@@ -420,8 +427,8 @@ _VALUEANDWHY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=518,
-  serialized_end=559,
+  serialized_start=542,
+  serialized_end=583,
 )
 
 
@@ -458,8 +465,8 @@ _PAGINATION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=561,
-  serialized_end=607,
+  serialized_start=585,
+  serialized_end=631,
 )
 
 
@@ -510,8 +517,8 @@ _SAVEDQUERY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=609,
-  serialized_end=691,
+  serialized_start=633,
+  serialized_end=715,
 )
 
 _FIELDREF.fields_by_name['type'].enum_type = _FIELDTYPE

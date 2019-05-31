@@ -52,6 +52,12 @@ describe('issueStringToRef', () => {
       {projectName: 'foo', localId: 1234});
   });
 
+  it('converts external issue references', () => {
+    assert.deepEqual(
+      issueStringToRef('proj', 'b/123456'),
+      {extIdentifier: 'b/123456'});
+  });
+
   it('throws on invalid input', () => {
     assert.throws(() => issueStringToRef('proj', 'foo'));
   });
@@ -103,6 +109,13 @@ describe('issueRefToString', () => {
     assert.equal(
       '1234',
       issueRefToString({projectName: 'proj', localId: 1234}, 'proj')
+    );
+  });
+
+  it('external ref', () => {
+    assert.equal(
+      'b/123456',
+      issueRefToString({extIdentifier: 'b/123456'}, 'proj')
     );
   });
 });

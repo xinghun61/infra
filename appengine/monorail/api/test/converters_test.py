@@ -1079,6 +1079,19 @@ class ConverterFunctionsTest(unittest.TestCase):
     self.assertEqual(
         [1, 2], converters.IngestComponentRefs(refs, self.config))
 
+  def testIngestIssueRefs_ValidatesExternalRefs(self):
+    """IngestIssueRefs requires external refs have at least one slash."""
+    ref = common_pb2.IssueRef(ext_identifier='b123456')
+    with self.assertRaises(exceptions.InvalidExternalIssueReference):
+      converters.IngestIssueRefs(self.cnxn, [ref], self.services)
+
+  def testIngestIssueRefs_SkipsExternalRefs(self):
+    """IngestIssueRefs skips external refs."""
+    ref = common_pb2.IssueRef(ext_identifier='b/123456')
+    actual = converters.IngestIssueRefs(
+        self.cnxn, [ref], self.services)
+    self.assertEqual([], actual)
+
   def testIngestIssueDelta_Empty(self):
     """An empty protorpc IssueDelta makes an empty protoc IssueDelta."""
     delta = issue_objects_pb2.IssueDelta()

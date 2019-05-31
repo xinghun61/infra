@@ -552,6 +552,13 @@ def IngestIssueRefs(cnxn, issue_refs, services):
   project_names_to_id = services.project.LookupProjectIDs(cnxn, project_names)
   project_local_id_pairs = []
   for ref in issue_refs:
+    if ref.ext_identifier:
+      # TODO(jeffcarp): For external tracker refs, once we have the classes
+      # set up, validate that the tracker for this specific ref is supported
+      # and store the external ref in the issue properly.
+      if '/' not in ref.ext_identifier:
+        raise exceptions.InvalidExternalIssueReference()
+      continue
     if ref.project_name in project_names_to_id:
       pair = (project_names_to_id[ref.project_name], ref.local_id)
       project_local_id_pairs.append(pair)

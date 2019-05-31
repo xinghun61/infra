@@ -61,10 +61,11 @@ message StatusRef {
 }
 
 
-// Next available tag: 3
+// Next available tag: 4
 message IssueRef {
   string project_name = 1;
   uint32 local_id = 2;
+  string ext_identifier = 3; // For referencing external issues, e.g. b/1234.
 }
 
 

@@ -63,6 +63,11 @@ export function componentRefsToStrings(componentRefs) {
 export function issueStringToRef(defaultProjectName, idStr) {
   if (!idStr) return {};
 
+  // If the string includes a slash, it's an external tracker ref.
+  if (idStr.includes('/')) {
+    return {extIdentifier: idStr};
+  }
+
   const matches = idStr.match(ISSUE_ID_REGEX);
   if (!matches) {
     throw new UserInputError(
@@ -84,6 +89,11 @@ export function issueStringToBlockingRef(projectName, localId, idStr) {
 
 export function issueRefToString(ref, projectName) {
   if (!ref) return '';
+
+  if (ref.hasOwnProperty('extIdentifier')) {
+    return ref.extIdentifier;
+  }
+
   if (projectName && projectName.length
       && equalsIgnoreCase(ref.projectName, projectName)) {
     return `${ref.localId}`;
