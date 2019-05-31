@@ -112,6 +112,8 @@ func updateIssues(c context.Context, mc monorail.IssuesClient, assigner *model.A
 			)
 			continue
 		}
+		// TODO(crbug/monorail/5629) - If Monorail supports test-and-update API
+		// for issues, then use the API instead.
 		_, err := mc.UpdateIssue(c, &monorail.UpdateIssueRequest{
 			IssueRef: &monorail.IssueRef{
 				ProjectName: issue.ProjectName,
