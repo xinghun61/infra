@@ -48,3 +48,46 @@ class AuthDataTest(unittest.TestCase):
         self.cnxn, auth, self.services)
     self.assertEqual(auth.user_id, 111)
     self.assertEqual(auth.effective_ids, {111, 888})
+
+  def testFinishInitialization_AccountHasParent(self):
+    """The parent's effective_ids are added to child's."""
+    child = self.services.user.TestAddUser('child@example.com', 111)
+    child.linked_parent_id = 222
+    parent = self.services.user.TestAddUser('parent@example.com', 222)
+    parent.linked_child_ids = [111]
+    auth = authdata.AuthData(user_id=111, email='child@example.com')
+    authdata.AuthData._FinishInitialization(
+        self.cnxn, auth, self.services)
+    self.assertEqual(auth.user_id, 111)
+    self.assertEqual(auth.effective_ids, {111, 222})
+
+    self.services.usergroup.TestAddMembers(888, [111])
+    self.services.usergroup.TestAddMembers(999, [222])
+    auth = authdata.AuthData(user_id=111, email='child@example.com')
+    authdata.AuthData._FinishInitialization(
+        self.cnxn, auth, self.services)
+    self.assertEqual(auth.user_id, 111)
+    self.assertEqual(auth.effective_ids, {111, 222, 888, 999})
+
+  def testFinishInitialization_AccountHasChildren(self):
+    """All linked child effective_ids are added to parent's."""
+    child1 = self.services.user.TestAddUser('child1@example.com', 111)
+    child1.linked_parent_id = 333
+    child2 = self.services.user.TestAddUser('child3@example.com', 222)
+    child2.linked_parent_id = 333
+    parent = self.services.user.TestAddUser('parent@example.com', 333)
+    parent.linked_child_ids = [111, 222]
+
+    auth = authdata.AuthData(user_id=333, email='parent@example.com')
+    authdata.AuthData._FinishInitialization(
+        self.cnxn, auth, self.services)
+    self.assertEqual(auth.user_id, 333)
+    self.assertEqual(auth.effective_ids, {111, 222, 333})
+
+    self.services.usergroup.TestAddMembers(888, [111])
+    self.services.usergroup.TestAddMembers(999, [222])
+    auth = authdata.AuthData(user_id=333, email='parent@example.com')
+    authdata.AuthData._FinishInitialization(
+        self.cnxn, auth, self.services)
+    self.assertEqual(auth.user_id, 333)
+    self.assertEqual(auth.effective_ids, {111, 222, 333, 888, 999})

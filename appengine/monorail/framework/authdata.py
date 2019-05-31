@@ -125,6 +125,16 @@ class AuthData(object):
     return auth
 
   @classmethod
+  def _AddEffectiveIDsOfLinkedAccounts(
+      cls, cnxn, services, effective_ids, linked_account_id):
+    """Add any linked account IDs to the current user's effective_ids."""
+    effective_ids.add(linked_account_id)
+    linked_memberships = services.usergroup.LookupMemberships(
+        cnxn, linked_account_id)
+    effective_ids.update(linked_memberships)
+
+
+  @classmethod
   def _FinishInitialization(cls, cnxn, auth, services, user_pb=None):
     """Fill in the test of the fields based on the user_id."""
     direct_memberships = services.usergroup.LookupMemberships(
@@ -137,6 +147,12 @@ class AuthData(object):
       computed_memberships = services.usergroup.LookupComputedMemberships(
           cnxn, auth.user_view.domain)
       auth.effective_ids.update(computed_memberships)
+      if auth.user_pb.linked_parent_id:
+        cls._AddEffectiveIDsOfLinkedAccounts(
+            cnxn, services, auth.effective_ids, auth.user_pb.linked_parent_id)
+      for child_id in auth.user_pb.linked_child_ids:
+        cls._AddEffectiveIDsOfLinkedAccounts(
+            cnxn, services, auth.effective_ids, child_id)
 
   def __repr__(self):
     """Return a string more useful for debugging."""
