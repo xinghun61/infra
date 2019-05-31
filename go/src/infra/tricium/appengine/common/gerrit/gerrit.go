@@ -40,6 +40,10 @@ const (
 	// The timestamp format used by Gerrit (using the reference date).
 	// All timestamps are in UTC.
 	timeStampLayout = "2006-01-02 15:04:05.000000000"
+	// Gerrit's "magic path" to indicate that a comment should be posted to the
+	// commit message; see:
+	// https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#file-id
+	commitMessagePath = "/COMMIT_MSG"
 )
 
 // API specifies the Gerrit REST API tuned to the needs of Tricium.
@@ -218,12 +222,18 @@ func fetchResponse(c context.Context, url string, headers map[string]string) ([]
 // Checks for presence of position info to distinguish file comments, line
 // comments, and comments with character ranges.
 func createRobotComment(c context.Context, runID int64, comment tricium.Data_Comment) *robotCommentInput {
+	// An empty string path from the analyzer signifies that the comment is on
+	// the commit message. In Gerrit, to indicate this, a "magic path" is used.
+	path := comment.Path
+	if len(comment.Path) == 0 {
+		path = commitMessagePath
+	}
 	roco := &robotCommentInput{
 		Message:        comment.Message,
 		RobotID:        comment.Category,
 		RobotRunID:     strconv.FormatInt(runID, 10),
 		URL:            composeRunURL(c, runID),
-		Path:           comment.Path,
+		Path:           path,
 		Properties:     map[string]string{"tricium_comment_uuid": comment.Id},
 		FixSuggestions: createFillSuggestions(comment.Suggestions),
 	}
@@ -392,6 +402,10 @@ func CommentIsInChangedLines(c context.Context, trackComment *track.Comment, cha
 	if err := jsonpb.UnmarshalString(string(trackComment.Comment), &data); err != nil {
 		logging.WithError(err).Errorf(c, "Failed to unmarshal comment.")
 		return false
+	}
+
+	if len(data.Path) == 0 {
+		return true // This is a comment on the commit message, which is always kept.
 	}
 
 	if data.StartLine == 0 {

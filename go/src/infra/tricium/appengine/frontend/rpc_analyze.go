@@ -159,6 +159,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		request.GitURL = source.GitUrl
 		request.GitRef = source.GitRef
 		request.GerritReportingDisabled = repo.DisableReporting
+		request.CommitMessage = source.CommitMessage
 	} else if source := req.GetGitCommit(); source != nil {
 		request.GitURL = source.Url
 		request.GitRef = source.Ref
@@ -181,10 +182,11 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	// TODO(qyearsley): Clarify variable names to reflect the difference
 	// between track.AnalyzeRequest and tricium.AnalyzeRequest.
 	lr := &admin.LaunchRequest{
-		Project: req.Project,
-		Files:   req.Files,
-		GitUrl:  request.GitURL,
-		GitRef:  request.GitRef,
+		Project:       req.Project,
+		Files:         req.Files,
+		GitUrl:        request.GitURL,
+		GitRef:        request.GitRef,
+		CommitMessage: request.CommitMessage,
 	}
 
 	// This is a cross-group transaction because first AnalyzeRequest is

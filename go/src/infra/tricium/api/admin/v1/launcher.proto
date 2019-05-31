@@ -14,7 +14,8 @@ service Launcher {
   rpc Launch(LaunchRequest) returns (LaunchResponse);
 }
 
-// LaunchRequest contains the details needed to launch a workflow for an analysis request.
+// LaunchRequest contains the details needed to launch a workflow for an
+// analysis request.
 message LaunchRequest {
   // The run ID created by a Tricium.Analyze call.
   int64 run_id = 1;
@@ -32,6 +33,11 @@ message LaunchRequest {
 
   // File metadata from the root of the Git repository.
   repeated tricium.Data.File files = 5;
+
+  // Commit message text from Gerrit if available.
+  //
+  // If this launch request is not for Gerrit, this could be an empty string.
+  string commit_message = 6;
 }
 
 message LaunchResponse {

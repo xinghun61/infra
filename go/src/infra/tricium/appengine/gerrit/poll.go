@@ -409,16 +409,21 @@ func enqueueAnalyzeRequests(c context.Context, luciProject string, repo *tricium
 			}.Infof(c, "Skipping change with no files.")
 			continue
 		}
+		commitMessage := ""
+		if curRev.Commit != nil {
+			commitMessage = curRev.Commit.Message
+		}
 		req := &tricium.AnalyzeRequest{
 			Project: luciProject,
 			Files:   files,
 			Source: &tricium.AnalyzeRequest_GerritRevision{
 				GerritRevision: &tricium.GerritRevision{
-					Host:    gerritProject.Host,
-					Project: gerritProject.Project,
-					Change:  change.ID,
-					GitRef:  curRev.Ref,
-					GitUrl:  gerritProject.GitUrl,
+					Host:          gerritProject.Host,
+					Project:       gerritProject.Project,
+					Change:        change.ID,
+					GitRef:        curRev.Ref,
+					GitUrl:        gerritProject.GitUrl,
+					CommitMessage: commitMessage,
 				},
 			},
 		}

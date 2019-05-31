@@ -118,9 +118,10 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, 
 
 	// Isolate initial input.
 	inputHash, err := isolator.IsolateGitFileDetails(c, wf.IsolateServer, &tricium.Data_GitFileDetails{
-		Repository: req.GitUrl,
-		Ref:        req.GitRef,
-		Files:      req.Files,
+		Repository:    req.GitUrl,
+		Ref:           req.GitRef,
+		Files:         req.Files,
+		CommitMessage: req.CommitMessage,
 	})
 	if err != nil {
 		return errors.Annotate(err, "failed to isolate git file details").Err()

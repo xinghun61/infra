@@ -97,6 +97,8 @@ func main() {
 
 	results := &tricium.Data_Results{}
 
+	// TODO(qyearsley): Also check the commit message, which is available
+	// as string in data.CommitMessage and doesn't have to be read from disk.
 	for _, file := range input.Files {
 		if !file.IsBinary {
 			fileExt := filepath.Ext(file.Path)

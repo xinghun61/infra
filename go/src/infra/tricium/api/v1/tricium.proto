@@ -88,6 +88,9 @@ message GerritRevision {
   // This value should be the fetch URL for a revision of a change. Note that
   // the last number of a change revision ref is the corresponding patch set.
   string git_ref = 5;
+
+  // Commit message text from Gerrit.
+  string commit_message = 6;
 }
 
 message GitCommit {

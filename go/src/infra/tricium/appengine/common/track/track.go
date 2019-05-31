@@ -86,6 +86,9 @@ type AnalyzeRequest struct {
 	// Disabled Gerrit reporting means that no progress or result messages
 	// are sent to Gerrit.
 	GerritReportingDisabled bool `gae:",noindex"`
+	// Commit message provided by Gerrit if applicable. This may not be present
+	// in older entities, and may be empty for non-Gerrit requests.
+	CommitMessage string `gae:",noindex"`
 }
 
 // AnalyzeRequestResult tracks the state of a tricium.Analyze request.

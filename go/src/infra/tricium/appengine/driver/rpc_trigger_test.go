@@ -79,6 +79,7 @@ func TestHelperFunctions(t *testing.T) {
 			GerritHost:    "http://my-gerrit-review.com/my-project",
 			GerritProject: "my-project",
 			GerritChange:  "my-project~master~I8473b95934b5732ac55d26311a706c9c2bde9940",
+			CommitMessage: "My CL summary\n\nBug: 123\n",
 		}), ShouldBeNil)
 
 		So(ds.Put(ctx, &track.AnalyzeRequest{

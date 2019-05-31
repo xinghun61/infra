@@ -158,6 +158,7 @@ func TestLaunchRequest(t *testing.T) {
 					{Path: "README.md"},
 					{Path: "README2.md"},
 				},
+				CommitMessage: "CL summary\n\nBug: 123\n",
 			}, &mockConfigProvider{}, common.MockIsolator, common.MockTaskServerAPI, common.MockPubSub)
 			So(err, ShouldBeNil)
 
@@ -184,6 +185,7 @@ func TestLaunchRequest(t *testing.T) {
 					{Path: "README.md"},
 					{Path: "README2.md"},
 				},
+				CommitMessage: "CL summary\n\nBug: 123\n",
 			}, config.MockProvider, common.MockIsolator, common.MockTaskServerAPI, common.MockPubSub)
 			So(err, ShouldBeNil)
 

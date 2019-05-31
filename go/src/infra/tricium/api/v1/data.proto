@@ -61,6 +61,8 @@ message Data {
     string repository = 2;
     string ref = 3;
     repeated File files = 4;
+
+    string commit_message = 5;
   }
 
 
@@ -76,6 +78,8 @@ message Data {
 
     // Files from the root of the isolated input.
     repeated File files = 3;
+
+    string commit_message = 4;
   }
 
   message File {
@@ -153,6 +157,9 @@ message Data {
     string url = 4;
 
     // Path to the file this comment is for.
+    //
+    // If this path is the empty string, then the comment is on the commit
+    // message text, rather than an actual file.
     string path = 5;
 
     // Position information. If start_line is omitted, then the comment
