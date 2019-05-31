@@ -29,10 +29,10 @@ func (*mockIsolator) IsolateGitFileDetails(c context.Context, serverURL string, 
 func (*mockIsolator) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, inputIsolate string) (string, error) {
 	return "", nil
 }
-func (*mockIsolator) LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error) {
+func (*mockIsolator) LayerIsolates(c context.Context, serverURL, namespace, isolatedInput, isolatedOutput string) (string, error) {
 	return "", nil
 }
-func (*mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {
+func (*mockIsolator) FetchIsolatedResults(c context.Context, serverURL, namespace, isolatedOutput string) (string, error) {
 	result := &tricium.Data_Results{
 		Comments: []*tricium.Data_Comment{
 			{Message: "Hello"},

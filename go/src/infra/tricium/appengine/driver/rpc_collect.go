@@ -105,6 +105,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 	b, err := proto.Marshal(&admin.WorkerDoneRequest{
 		RunId:              req.RunId,
 		Worker:             req.Worker,
+		IsolatedNamespace:  result.IsolatedNamespace,
 		IsolatedOutputHash: result.IsolatedOutputHash,
 		Provides:           w.Provides,
 		State:              workerState,
@@ -154,7 +155,7 @@ func collect(c context.Context, req *admin.CollectRequest,
 	isolatedInput := req.IsolatedInputHash
 	if result.IsolatedOutputHash != "" {
 		isolatedInput, err = isolator.LayerIsolates(
-			c, wf.IsolateServer, req.IsolatedInputHash, result.IsolatedOutputHash)
+			c, wf.IsolateServer, result.IsolatedNamespace, req.IsolatedInputHash, result.IsolatedOutputHash)
 		if err != nil {
 			return errors.Annotate(err, "failed layer isolates").Err()
 		}

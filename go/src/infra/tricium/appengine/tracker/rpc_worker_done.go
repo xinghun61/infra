@@ -214,6 +214,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	logging.Fields{
 		"runID":             req.RunId,
 		"worker":            req.Worker,
+		"isolatedNamespace": req.IsolatedNamespace,
 		"isolatedOutput":    req.IsolatedOutputHash,
 		"buildbucketOutput": req.BuildbucketOutput,
 	}.Infof(c, "[tracker] Worker done request received.")
@@ -252,7 +253,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	hasOutput := req.IsolatedOutputHash != "" || req.BuildbucketOutput != ""
 	isAnalyzer := req.Provides == tricium.Data_RESULTS
 	if req.State == tricium.State_SUCCESS && isAnalyzer && hasOutput {
-		comments, err = collectComments(c, isolator, run.IsolateServerURL,
+		comments, err = collectComments(c, isolator, run.IsolateServerURL, req.IsolatedNamespace,
 			req.IsolatedOutputHash, req.BuildbucketOutput, functionName, workerKey)
 		if err != nil {
 			return errors.Annotate(err, "failed to get worker results").Err()
@@ -497,17 +498,17 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 // collectComments collects the comments in the results from the analyzer.
 //
-// Exactly one of isolatedOutputHash and buildbucketOutput should be populated.
-func collectComments(c context.Context, isolator common.IsolateAPI, isolateServerURL, isolatedOutputHash, buildbucketOutput, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
+// Either isolatedNamespace and isolatedOutputHash, or buildbucketOutput, should be populated.
+func collectComments(c context.Context, isolator common.IsolateAPI, isolateServerURL, isolatedNamespace, isolatedOutputHash, buildbucketOutput, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
 	var comments []*track.Comment
 	results := tricium.Data_Results{}
 	// If isolate is present, fetch the data. Otherwise, unmarshal the buildbucket output.
 	if isolatedOutputHash != "" {
-		resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedOutputHash)
+		resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedNamespace, isolatedOutputHash)
 		if err != nil {
 			return comments, errors.Annotate(err, "failed to fetch isolated worker result").Err()
 		}
-		logging.Infof(c, "Fetched isolated result (%q): %q", isolatedOutputHash, resultsStr)
+		logging.Infof(c, "Fetched isolated result (%q, %q): %q", isolatedNamespace, isolatedOutputHash, resultsStr)
 		if err := jsonpb.UnmarshalString(resultsStr, &results); err != nil {
 			return comments, errors.Annotate(err, "failed to unmarshal results data").Err()
 		}

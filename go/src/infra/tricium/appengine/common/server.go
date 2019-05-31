@@ -76,6 +76,7 @@ type CollectParameters struct {
 type CollectResult struct {
 	State              ResultState
 	IsolatedOutputHash string
+	IsolatedNamespace  string
 	BuildbucketOutput  string
 }
 
@@ -126,5 +127,6 @@ func (mockTaskServerAPI) Collect(c context.Context, params *CollectParameters) (
 	return &CollectResult{
 		State:              Success,
 		IsolatedOutputHash: "mockisolatedoutput",
+		IsolatedNamespace:  "mockisolatednamespace",
 	}, nil
 }

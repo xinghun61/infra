@@ -54,11 +54,12 @@ message WorkerLaunchedResponse {
 //
 // This message should be sent by the Driver after results from the swarming
 // task for a worker have been collected. Depending on the type of worker, either
-// the isolated_output_hash (for swarming tasks) or the buildbucket_output (for
-// buildbucket builds) should be populated.
+// the isolated_output_hash and isolated_namespace (for swarming tasks) or the
+// buildbucket_output (for buildbucket builds) should be populated.
 message WorkerDoneRequest {
   int64 run_id = 1;
   string worker = 2;
+  string isolated_namespace = 7;
   string isolated_output_hash = 3;
   tricium.Data.Type provides = 4;
   tricium.State state = 5;

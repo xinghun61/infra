@@ -26,6 +26,7 @@ import (
 const (
 	isolateDevServerURL  = "https://isolateserver-dev.appspot.com"
 	isolateProdServerURL = "https://isolateserver.appspot.com"
+	isolateNamespace     = "default-gzip" // The namespace to use when isolating new inputs.
 )
 
 // IsolateAPI defines the interface to the isolate server.
@@ -54,14 +55,16 @@ type IsolateAPI interface {
 	// Layered isolates are used to communicate data from one worker to its
 	// successor workers. The content of the isolates output is copied and
 	// the provided isolated input is added as an include.
-	LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error)
+	//
+	// The input and output use the same hash namespace.
+	LayerIsolates(c context.Context, serverURL, namespace, isolatedInput, isolatedOutput string) (string, error)
 
 	// FetchIsolatedResult fetches isolated Tricium result output as a JSON
 	// string.
 	//
 	// The output is assumed to be on the form of a Tricium result and
 	// located in tricium/data/results.json in the isolated output.
-	FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error)
+	FetchIsolatedResults(c context.Context, serverURL, namespace, isolatedOutput string) (string, error)
 }
 
 // IsolateServer implements the IsolateAPI interface.
@@ -85,8 +88,7 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 		data:  []byte(gitDetailsData),
 		isIso: false,
 	}
-	// TODO(qyearsley): Fix.
-	h := isolated.GetHash(isolatedclient.DefaultNamespace)
+	h := isolated.GetHash(isolateNamespace)
 	chunks[0].file = &isolated.File{
 		Digest: isolated.HashBytes(h, chunks[0].data),
 		Mode:   &mode,
@@ -128,8 +130,7 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, isolatedInput string) (string, error) {
 	// TODO(qyearsley): Include command deadline.
 	mode := 0444
-	// TODO(qyearsley): Fix.
-	h := isolated.GetHash(isolatedclient.DefaultNamespace)
+	h := isolated.GetHash(isolateNamespace)
 	iso := isolated.New(h)
 	switch wi := worker.Impl.(type) {
 	case *admin.Worker_Recipe:
@@ -163,14 +164,13 @@ func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker
 }
 
 // LayerIsolates implements the IsolateAPI interface.
-func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error) {
+func (s isolateServer) LayerIsolates(c context.Context, serverURL, namespace, isolatedInput, isolatedOutput string) (string, error) {
 	mode := 0444
-	outIso, err := s.fetchIsolated(c, serverURL, isolatedOutput)
+	outIso, err := s.fetchIsolated(c, serverURL, namespace, isolatedOutput)
 	if err != nil {
 		return "", errors.Annotate(err, "failed to fetch output isolate").Err()
 	}
-	// TODO(qyearsley): Fix.
-	h := isolated.GetHash(isolatedclient.DefaultNamespace)
+	h := isolated.GetHash(namespace)
 	iso := isolated.New(h)
 	iso.Files = outIso.Files
 	iso.Includes = []isolated.HexDigest{isolated.HexDigest(isolatedInput)}
@@ -195,17 +195,17 @@ func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput
 }
 
 // FetchIsolatedResults implements the IsolateAPI interface.
-func (s isolateServer) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {
-	outIso, err := s.fetchIsolated(c, serverURL, isolatedOutput)
+func (s isolateServer) FetchIsolatedResults(c context.Context, serverURL, namespace, digest string) (string, error) {
+	outIso, err := s.fetchIsolated(c, serverURL, namespace, digest)
 	if err != nil {
 		return "", errors.Annotate(err, "failed to fetch output isolate").Err()
 	}
 	resultsFile, ok := outIso.Files["tricium/data/results.json"]
 	if !ok {
-		return "", errors.Reason("missing results file in isolated output, isolated output: %s", isolatedOutput).Err()
+		return "", errors.Reason("missing results file in isolated output, isolated output: (%s, %s)", namespace, digest).Err()
 	}
 	buf := &buffer{}
-	if err := s.fetch(c, serverURL, string(resultsFile.Digest), buf); err != nil {
+	if err := s.fetch(c, serverURL, namespace, string(resultsFile.Digest), buf); err != nil {
 		return "", errors.Annotate(err, "failed to fetch result file").Err()
 	}
 	// TODO(qyearsley): Switch to io.Reader to avoid keeping the whole buffer in memory.
@@ -222,7 +222,7 @@ func (s isolateServer) isolateChunks(c context.Context, serverURL string, chunks
 			IsIsolated: chnk.isIso,
 		}
 	}
-	client, err := s.createIsolateClient(c, serverURL)
+	client, err := s.createIsolateClient(c, serverURL, isolateNamespace)
 	if err != nil {
 		return err
 	}
@@ -243,8 +243,8 @@ func (s isolateServer) isolateChunks(c context.Context, serverURL string, chunks
 	})
 }
 
-func (s isolateServer) fetch(c context.Context, serverURL, digest string, buf *buffer) error {
-	client, err := s.createIsolateClient(c, serverURL)
+func (s isolateServer) fetch(c context.Context, serverURL, namespace, digest string, buf *buffer) error {
+	client, err := s.createIsolateClient(c, serverURL, namespace)
 	if err != nil {
 		return err
 	}
@@ -254,9 +254,9 @@ func (s isolateServer) fetch(c context.Context, serverURL, digest string, buf *b
 	return nil
 }
 
-func (s isolateServer) fetchIsolated(c context.Context, serverURL, digest string) (*isolated.Isolated, error) {
+func (s isolateServer) fetchIsolated(c context.Context, serverURL, namespace, digest string) (*isolated.Isolated, error) {
 	buf := &buffer{}
-	if err := s.fetch(c, serverURL, digest, buf); err != nil {
+	if err := s.fetch(c, serverURL, namespace, digest, buf); err != nil {
 		return nil, errors.Annotate(err, "failed to fetch isolated").Err()
 	}
 	iso := &isolated.Isolated{}
@@ -268,7 +268,7 @@ func (s isolateServer) fetchIsolated(c context.Context, serverURL, digest string
 	return iso, nil
 }
 
-func (s isolateServer) createIsolateClient(c context.Context, serverURL string) (*isolatedclient.Client, error) {
+func (s isolateServer) createIsolateClient(c context.Context, serverURL, namespace string) (*isolatedclient.Client, error) {
 	authTransport, err := auth.GetRPCTransport(c, auth.AsSelf)
 	if err != nil {
 		return nil, errors.Annotate(err, "failed to setup auth transport for isolate client").Err()
@@ -278,7 +278,7 @@ func (s isolateServer) createIsolateClient(c context.Context, serverURL string) 
 		return nil, errors.Annotate(err, "failed to setup anonymous transport for isolate client").Err()
 	}
 	return isolatedclient.New(&http.Client{Transport: anonTransport}, &http.Client{Transport: authTransport},
-		serverURL, isolatedclient.DefaultNamespace, nil, nil), nil
+		serverURL, namespace, nil, nil), nil
 }
 
 type isoChunk struct {
@@ -321,13 +321,13 @@ func (mockIsolator) IsolateWorker(c context.Context, serverURL string, worker *a
 // LayerIsolates is a mock function for MockIsolator.
 //
 // For any testing that actually uses the return values, create a new mock.
-func (mockIsolator) LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error) {
+func (mockIsolator) LayerIsolates(c context.Context, serverURL, namespace, isolatedInput, isolatedOutput string) (string, error) {
 	return "mockmockmock", nil
 }
 
 // FetchIsolatedResults is a mock function for MockIsolator.
 //
 // For any testing using the return value, create a new mock.
-func (mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {
+func (mockIsolator) FetchIsolatedResults(c context.Context, serverURL, namespace, isolatedOutput string) (string, error) {
 	return "mockmockmock", nil
 }

@@ -125,6 +125,7 @@ func (s swarmingServer) Collect(c context.Context, params *CollectParameters) (*
 			"taskState": result.State,
 		}.Infof(c, "Task had no output.")
 	} else {
+		result.IsolatedNamespace = taskResult.OutputsRef.Namespace
 		result.IsolatedOutputHash = taskResult.OutputsRef.Isolated
 	}
 
