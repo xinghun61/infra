@@ -140,6 +140,7 @@
 
 [if-any allow_edit]
 <script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
   function checkSubmit() {
     _checkLeafName('[projectname]', '[component_def.parent_path]', '[component_def.leaf_name]', CS_env.token);
   }
