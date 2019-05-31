@@ -47,14 +47,14 @@ func issueLink(c context.Context, issue *monorail.Issue) string {
 func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *model.Task) (int, error) {
 	assignee, ccs, err := findAssigneeAndCCs(c, assigner, task)
 	if err != nil {
-		task.WriteLog(c, "Failed to find assignees and ccs; %s", err)
+		task.WriteLog(c, "Failed to find assignees and CCs; %s", err)
 		return 0, err
 	}
 	if assignee == nil && ccs == nil {
 		// early stop if there is no one available to assign or cc issues to.
 		task.WriteLog(
-			c, "No one was available to be assigned or cc-ed; "+
-				"skipping issue searches and updates.",
+			c, "No one was available to be assigned or CCed; "+
+				"skipping issue searches and updates",
 		)
 		return 0, nil
 	}
@@ -69,7 +69,7 @@ func searchAndUpdateIssues(c context.Context, assigner *model.Assigner, task *mo
 }
 
 func searchIssues(c context.Context, mc monorail.IssuesClient, assigner *model.Assigner, task *model.Task) ([]*monorail.Issue, error) {
-	task.WriteLog(c, "Seaching issues...")
+	task.WriteLog(c, "Started searching issues")
 	query := assigner.IssueQuery
 	res, err := mc.ListIssues(c, &monorail.ListIssuesRequest{
 		Query:        fmt.Sprintf("%s -label:%s", query.Q, OptOutLabel),
@@ -177,9 +177,10 @@ func genCommentContent(c context.Context, assigner *model.Assigner, task *model.
 		info.AppID(c), url.QueryEscape(assigner.ID), task.ID,
 	)
 	messages := []string{
-		fmt.Sprintf("Issue Update by Arquebus (%s)", taskURL),
+		"Issue update by Arquebus.",
+		"Task details: " + taskURL,
 		fmt.Sprintf(
-			"To stop Arquebus updating this issue, please add %s in label",
+			"To stop Arquebus updating this issue, please add the label %q.",
 			OptOutLabel,
 		),
 	}

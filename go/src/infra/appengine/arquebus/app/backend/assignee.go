@@ -169,7 +169,7 @@ func findOncallers(c context.Context, task *model.Task, oncall *config.Oncall) (
 				DisplayName: shift.Primary},
 			)
 			task.WriteLog(
-				c, "Found primary oncaller %s of %s: ",
+				c, "Found primary oncaller %s of %s",
 				shift.Primary, oncall.Rotation,
 			)
 		}
@@ -179,7 +179,7 @@ func findOncallers(c context.Context, task *model.Task, oncall *config.Oncall) (
 				DisplayName: secondary},
 			)
 			task.WriteLog(
-				c, "Found secondary oncaller %s of %s: ",
+				c, "Found secondary oncaller %s of %s",
 				secondary, oncall.Rotation,
 			)
 		}
