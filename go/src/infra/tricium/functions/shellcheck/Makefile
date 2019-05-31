@@ -4,6 +4,10 @@
 
 SRCS := $(wildcard *.go runner/*.go)
 
+.PHONY: all clean
+
+all: shellcheck_tricium bin
+
 shellcheck_tricium: $(SRCS)
 	go build -o shellcheck_tricium
 
