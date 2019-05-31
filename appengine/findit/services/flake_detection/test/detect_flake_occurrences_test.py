@@ -383,6 +383,49 @@ class DetectFlakesOccurrencesTest(WaterfallTestCase):
     self.assertEqual(expected_tags, flake.tags)
 
   @mock.patch.object(
+      step_util, 'GetCanonicalStepName', return_value='context_lost_tests')
+  @mock.patch.object(
+      detect_flake_occurrences, '_GetTestLocation', return_value=None)
+  def testUpdateTestLocationAndTagsNoLocationWithComponent(self, *_):
+    flake = Flake(
+        normalized_test_name='suite.test',
+        normalized_step_name='telemetry_gpu_integration_test',
+        tags=['gerrit_project::chromium/src'],
+    )
+    occurrences = [
+        FlakeOccurrence(
+            step_ui_name='context_lost_tests',
+            build_configuration=BuildConfiguration(
+                legacy_master_name='master',
+                luci_builder='builder',
+                legacy_build_number=123,
+            )),
+    ]
+    component_mapping = {
+        'base/feature/': 'root>a>b',
+        'base/feature/url': 'root>a>b>c',
+    }
+    watchlist = {
+        'feature': 'base/feature',
+        'url': r'base/feature/url_test\.cc',
+        'other': 'a/b/c',
+    }
+
+    expected_tags = sorted([
+        'gerrit_project::chromium/src',
+        'component::Internals>GPU>Testing',
+    ])
+
+    for tag in flake.tags:
+      name = tag.split(TAG_DELIMITER)[0]
+      self.assertTrue(name in detect_flake_occurrences.SUPPORTED_TAGS)
+
+    self.assertTrue(
+        detect_flake_occurrences._UpdateTestLocationAndTags(
+            flake, occurrences, component_mapping, watchlist))
+    self.assertEqual(expected_tags, flake.tags)
+
+  @mock.patch.object(
       detect_flake_occurrences,
       '_GetTestLocation',
       return_value=NDBTestLocation(file_path='base/feature/url_test.cc',))

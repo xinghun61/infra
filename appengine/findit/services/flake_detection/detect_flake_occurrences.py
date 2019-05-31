@@ -105,6 +105,33 @@ _FLAKE_TASK_CACHED_SECONDS = 24 * 60 * 60
 
 _FLAKINESS_METADATA_STEP = 'FindIt Flakiness'
 
+# Special mapping between steps and components.
+# So that Findit can still auto assign the component to some flakes' bugs even
+# if cannot get their components based on test location.
+_MAP_STEP_NAME_TO_COMPONENTS = {
+    'context_lost_tests': ['Internals>GPU>Testing'],
+    'depth_capture_tests': ['Internals>GPU>Testing'],
+    'gpu_process_launch_tests': ['Internals>GPU>Testing'],
+    'hardware_accelerated_feature_tests': ['Internals>GPU>Testing'],
+    'info_collection_tests': ['Internals>GPU>Testing'],
+    'maps_pixel_test': ['Internals>GPU>Testing'],
+    'pixel_skia_gold_test': ['Internals>GPU>Testing'],
+    'pixel_test': ['Internals>GPU>Testing'],
+    'screenshot_sync': ['Internals>GPU>Testing'],
+    'webgl_conformance_vulkan_passthrough_tests': [
+        'Internals>GPU>Testing', 'Blink>WebGL'
+    ],
+    'webgl2_conformance_d3d11_validating_tests': ['Blink>WebGL'],
+    'webgl2_conformance_gl_passthrough_tests': ['Blink>WebGL'],
+    'webgl2_conformance_tests': ['Blink>WebGL'],
+    'webgl_conformance_d3d11_validating_tests': ['Blink>WebGL'],
+    'webgl_conformance_d3d9_passthrough_tests': ['Blink>WebGL'],
+    'webgl_conformance_d3d9_validating_tests': ['Blink>WebGL'],
+    'webgl_conformance_gl_passthrough_tests': ['Blink>WebGL'],
+    'webgl_conformance_gles_passthrough': ['Blink>WebGL'],
+    'webgl_conformance_tests': ['Blink>WebGL'],
+}
+
 
 def _CreateFlakeFromRow(row):
   """Creates a Flake entity from a row fetched from BigQuery."""
@@ -364,16 +391,17 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
     # For Gtest, we read the test location from the output.json
     test_location = _GetTestLocation(occurrences[0])
 
+  updated = False
+  # Ignore old test-location-based tags.
+  all_tags = set([
+      t for t in (flake.tags or [])
+      if not t.startswith(('watchlist::', 'directory::', 'source::',
+                           'parent_component::', 'component::'))
+  ])
   if test_location:
+    updated = True
     flake.test_location = test_location
     file_path = test_location.file_path
-
-    # Ignore old test-location-based tags.
-    all_tags = set([
-        t for t in (flake.tags or [])
-        if not t.startswith(('watchlist::', 'directory::', 'source::',
-                             'parent_component::', 'component::'))
-    ])
 
     # Use watchlist to set the watchlist tags for the flake.
     for watchlist, pattern in watchlists.iteritems():
@@ -409,8 +437,28 @@ def _UpdateTestLocationAndTags(flake, occurrences, component_mapping,
 
     flake.tags = sorted(all_tags)
     flake.last_test_location_based_tag_update_time = time_util.GetUTCNow()
+  else:
+    if flake.normalized_step_name == 'telemetry_gpu_integration_test':
+      # Special case for telemetry_gpu_integration_test.
+      components = []
+      for occurrence in occurrences:
+        canonical_step_name = step_util.GetCanonicalStepName(
+            master_name=occurrence.build_configuration.legacy_master_name,
+            builder_name=occurrence.build_configuration.luci_builder,
+            build_number=occurrence.build_configuration.legacy_build_number,
+            step_name=occurrence
+            .step_ui_name) or occurrence.step_ui_name.split()[0]
+        components.extend(_MAP_STEP_NAME_TO_COMPONENTS.get(canonical_step_name))
+      components = list(set(components))  # To remove duplicates.
 
-  return test_location is not None
+      if components:
+        flake.component = components[0]
+        all_tags = all_tags.union(
+            set(['component::%s' % component for component in components]))
+        flake.tags = sorted(all_tags)
+        updated = True
+
+  return updated
 
 
 def _UpdateFlakeMetadata(all_occurrences):
