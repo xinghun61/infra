@@ -60,7 +60,7 @@
         'Mac64 Debug',
         'Mac64 Release',
         'Win (more configs)',
-        'Win32 ASan',
+        'Win64 ASan',
         'Win32 Debug (Clang)',
         'Win32 Release (Clang)',
         'Win32 Release',
