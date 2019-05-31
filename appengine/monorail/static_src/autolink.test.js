@@ -51,6 +51,28 @@ describe('autolink', () => {
       );
     });
 
+    it('Replace crbug with found components, with comment', () => {
+      const str = 'crbug.com/monorail/1234#c1';
+      const match = refRegs[0].exec(str);
+      refRegs[0].lastIndex = 0;
+      const components = {
+        closedRefs: [
+          {summary: 'Issue summary', localId: 1234, projectName: 'monorail'},
+          {},
+        ]};
+      const actualRun = replacer(match, components);
+      assert.deepEqual(
+        actualRun,
+        [{
+          tag: 'a',
+          css: 'strike-through',
+          href: '/p/monorail/issues/detail?id=1234#c1',
+          title: 'Issue summary',
+          content: str,
+        }]
+      );
+    });
+
     it('Replace crbug with default project_name', () => {
       const str = 'crbug.com/1234';
       const match = refRegs[0].exec(str);

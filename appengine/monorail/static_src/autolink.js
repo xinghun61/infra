@@ -10,6 +10,7 @@ const CRBUG_DEFAULT_PROJECT = 'chromium';
 const CRBUG_LINK_RE = /(\b(https?:\/\/)?crbug\.com\/)((\b[-a-z0-9]+)(\/))?(\d+)\b(\#c[0-9]+)?/gi;
 const CRBUG_LINK_RE_PROJECT_GROUP = 4;
 const CRBUG_LINK_RE_ID_GROUP = 6;
+const CRBUG_LINK_RE_COMMENT_GROUP = 7;
 const ISSUE_TRACKER_RE = /(\b(issues?|bugs?)[ \t]*(:|=|\b))([ \t]*((\b[-a-z0-9]+)[:\#])?(\#?)(\d+)\b(,?[ \t]*(and|or)?)?)+/gi;
 const PROJECT_LOCALID_RE = /((\b(issue|bug)[ \t]*(:|=)?[ \t]*)?((\b[-a-z0-9]+)[:\#])?(\#?)(\d+))/gi;
 const PROJECT_COMMENT_RE = /((\b(comment)[ \t]*(:|=)?[ \t]*)(\#?)(\d+))/gi;
@@ -183,7 +184,8 @@ function ExtractTrackerProjectAndIssueIds(match, currentProjectName) {
 }
 
 // Replace plain text references with links functions.
-function ReplaceIssueRef(stringMatch, projectName, localId, components) {
+function ReplaceIssueRef(stringMatch, projectName, localId, components,
+  commentId) {
   if (components.openRefs && components.openRefs.length) {
     const openRef = components.openRefs.find((ref) => {
       return ref.localId && ref.projectName && (ref.localId == localId) &&
@@ -191,7 +193,7 @@ function ReplaceIssueRef(stringMatch, projectName, localId, components) {
     });
     if (openRef) {
       return createIssueRefRun(
-        projectName, localId, openRef.summary, false, stringMatch);
+        projectName, localId, openRef.summary, false, stringMatch, commentId);
     }
   }
   if (components.closedRefs && components.closedRefs.length) {
@@ -201,7 +203,7 @@ function ReplaceIssueRef(stringMatch, projectName, localId, components) {
     });
     if (closedRef) {
       return createIssueRefRun(
-        projectName, localId, closedRef.summary, true, stringMatch);
+        projectName, localId, closedRef.summary, true, stringMatch, commentId);
     }
   }
   return {content: stringMatch};
@@ -213,12 +215,18 @@ function ReplaceCrbugIssueRef(match, components, _currentProjectName) {
   const projectName =
     match[CRBUG_LINK_RE_PROJECT_GROUP] || CRBUG_DEFAULT_PROJECT;
   const localId = match[CRBUG_LINK_RE_ID_GROUP];
-  return [ReplaceIssueRef(match[0], projectName, localId, components)];
+  let commentId = '';
+  if (match[CRBUG_LINK_RE_COMMENT_GROUP] !== undefined) {
+    commentId = match[CRBUG_LINK_RE_COMMENT_GROUP];
+  }
+  return [ReplaceIssueRef(match[0], projectName, localId, components,
+    commentId)];
 }
 
 function ReplaceTrackerIssueRef(match, components, currentProjectName) {
   components = components || {};
   const issueRefRE = PROJECT_LOCALID_RE;
+  const commentId = '';
   let textRuns = [];
   let refMatch;
   let pos = 0;
@@ -232,7 +240,7 @@ function ReplaceTrackerIssueRef(match, components, currentProjectName) {
     }
     textRuns.push(ReplaceIssueRef(
       refMatch[0], currentProjectName,
-      refMatch[PROJECT_LOCALID_RE_ID_GROUP], components));
+      refMatch[PROJECT_LOCALID_RE_ID_GROUP], components, commentId));
     pos = refMatch.index + refMatch[0].length;
   }
   if (match[0].slice(pos) !== '') {
@@ -312,11 +320,12 @@ function ReplaceRevisionRef(match, _components, _currentProjectName) {
 }
 
 // Create custom textrun functions.
-function createIssueRefRun(projectName, localId, summary, isClosed, content) {
+function createIssueRefRun(projectName, localId, summary, isClosed, content,
+  commentId) {
   return {
     tag: 'a',
     css: isClosed ? 'strike-through' : '',
-    href: `/p/${projectName}/issues/detail?id=${localId}`,
+    href: `/p/${projectName}/issues/detail?id=${localId}${commentId}`,
     title: summary || '',
     content: content,
   };
