@@ -109,7 +109,6 @@
     "name": "Updating https://chromium.googlesource.com/foo/bar"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

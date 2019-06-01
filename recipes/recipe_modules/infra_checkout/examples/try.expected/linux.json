@@ -188,7 +188,6 @@
     "name": "presubmit"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

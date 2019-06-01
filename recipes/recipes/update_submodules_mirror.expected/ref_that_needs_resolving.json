@@ -208,7 +208,6 @@
     "name": "git push --tags"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

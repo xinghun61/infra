@@ -116,7 +116,6 @@
     "name": "remove gsutil directory"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

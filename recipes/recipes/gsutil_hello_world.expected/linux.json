@@ -43,7 +43,6 @@
     "name": "upload_to_google_storage"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

@@ -1241,7 +1241,6 @@
     "name": "rmtree temp dir (7)"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

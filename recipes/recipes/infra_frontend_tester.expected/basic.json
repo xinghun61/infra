@@ -327,7 +327,6 @@
     "name": "sheriff-o-matic generate js coverage report"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

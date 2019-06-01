@@ -176,7 +176,6 @@
     "name": "git diff-index"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

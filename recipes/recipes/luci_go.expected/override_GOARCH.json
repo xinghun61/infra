@@ -186,7 +186,6 @@
     "name": "go test"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

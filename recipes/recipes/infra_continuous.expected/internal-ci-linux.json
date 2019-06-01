@@ -227,7 +227,6 @@
     "name": "[GOOS:linux GOARCH:arm64]cipd - build packages"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

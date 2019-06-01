@@ -227,7 +227,6 @@
     "name": "skipping slow cipd packaging tests"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

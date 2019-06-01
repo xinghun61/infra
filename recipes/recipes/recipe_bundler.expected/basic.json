@@ -43,7 +43,6 @@
     "name": "run recipe_bundler"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

@@ -210,7 +210,6 @@
     "name": "[GOOS:windows GOARCH:386]cipd - test packages integrity"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

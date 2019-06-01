@@ -193,7 +193,6 @@
     "name": "[GOOS:linux GOARCH:386]cipd - build packages"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

@@ -151,7 +151,6 @@
     "name": "Cleaning build dir."
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

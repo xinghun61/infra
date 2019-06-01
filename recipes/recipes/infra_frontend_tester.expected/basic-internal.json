@@ -195,7 +195,6 @@
     "name": "chromiumdash generate js coverage report"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

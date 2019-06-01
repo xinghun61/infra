@@ -41,7 +41,6 @@
     "name": "Updating https://chromium.googlesource.com/v8/v8"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

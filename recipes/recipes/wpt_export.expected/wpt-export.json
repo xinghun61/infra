@@ -171,7 +171,6 @@
     "name": "Export Chromium commits and in-flight CLs to WPT"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]

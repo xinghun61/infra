@@ -248,7 +248,6 @@
     "name": "cipd - test packages integrity"
   },
   {
-    "jsonResult": null,
     "name": "$result"
   }
 ]
