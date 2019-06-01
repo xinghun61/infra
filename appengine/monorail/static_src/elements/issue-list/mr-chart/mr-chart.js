@@ -4,7 +4,6 @@
 
 import {LitElement, html, css} from 'lit-element';
 import {prpcClient} from 'prpc-client-instance.js';
-import MonorailTSMon from '../../../monitoring/monorail-ts-mon.js'
 import './chops-chart.js';
 
 const DEFAULT_NUM_DAYS = 90;
@@ -304,7 +303,6 @@ export default class MrChart extends LitElement {
       this.dateRange = dateRange;
       this.frequency = dateRange === 30 ? 1 : 7;
       this._fetchData(this.endDate);
-      MonorailTSMon.recordDateRangeChange(dateRange);
     }
   }
 

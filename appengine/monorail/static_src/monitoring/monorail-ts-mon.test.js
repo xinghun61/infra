@@ -74,31 +74,6 @@ describe('MonorailTSMon', () => {
     });
   });
 
-  describe('recordDateRangeChange', () => {
-    beforeEach(() => {
-      mts.dateRangeMetric = {add: sinon.spy()};
-      sinon.stub(MonorailTSMon, 'isPageVisible').callsFake(() => (true));
-    });
-
-    afterEach(() => {
-      MonorailTSMon.isPageVisible.restore();
-    });
-
-    it('records date range change by clicking button', () => {
-      mts.recordDateRangeChange(180);
-      sinon.assert.calledOnce(mts.dateRangeMetric.add);
-      assert.equal(mts.dateRangeMetric.add.args[0][0], 1);
-      assert.isString(mts.dateRangeMetric.add.getCall(0).args[1].get(
-        'client_id'));
-      assert.equal(mts.dateRangeMetric.add.getCall(0).args[1].get(
-        'host_name'), 'rutabaga-version');
-      assert.equal(mts.dateRangeMetric.add.getCall(0).args[1].get(
-        'document_visible'), true);
-      assert.equal(mts.dateRangeMetric.add.getCall(0).args[1].get(
-        'date_range'), 180);
-    });
-  });
-
   describe('recordPageLoadTiming', () => {
     beforeEach(() => {
       mts.pageLoadMetric = {add: sinon.spy()};

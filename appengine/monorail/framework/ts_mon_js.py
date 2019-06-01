@@ -41,10 +41,6 @@ AUTOCOMPLETE_POPULATE_LATENCY_METRIC = ts_mon.CumulativeDistributionMetric(
     'Latency between page load and autocomplete options loading.'
   ), field_spec=STANDARD_FIELDS,
   units=ts_mon.MetricsDataUnits.MILLISECONDS)
-CHARTS_SWITCH_DATE_RANGE_METRIC = ts_mon.CounterMetric(
-  'monorail/frontend/charts/switch_date_range', (
-    'Number of times user clicks frequency button.'
-  ), field_spec=STANDARD_FIELDS + [ts_mon.IntegerField('date_range')])
 
 # Page load metrics.
 DOM_CONTENT_LOADED_EXTRA_FIELDS = [
@@ -64,7 +60,6 @@ class MonorailTSMonJSHandler(TSMonJSHandler):
         ISSUE_CREATE_LATENCY_METRIC,
         ISSUE_UPDATE_LATENCY_METRIC,
         AUTOCOMPLETE_POPULATE_LATENCY_METRIC,
-        CHARTS_SWITCH_DATE_RANGE_METRIC,
         DOM_CONTENT_LOADED_METRIC])
 
   def xsrf_is_valid(self, body):
