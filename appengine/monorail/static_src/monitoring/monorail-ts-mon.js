@@ -66,6 +66,17 @@ export default class MonorailTSMon extends TSMonClient {
       },
     ];
 
+    this.dateRangeMetric = this.counter(
+      'monorail/frontend/charts/switch_date_range',
+      'Number of times user changes date range.',
+      null, (new Map([
+        ['client_id', TSMonClient.stringField('client_id')],
+        ['host_name', TSMonClient.stringField('host_name')],
+        ['document_visible', TSMonClient.boolField('document_visible')],
+        ['date_range', TSMonClient.intField('date_range')],
+      ]))
+    );
+
     this.pageLoadMetric = this.cumulativeDistribution(
       'frontend/dom_content_loaded',
       'domContentLoaded performance timing.',
@@ -104,6 +115,16 @@ export default class MonorailTSMon extends TSMonClient {
         metric.metric.add(elapsed, metricFields);
       }
     }
+  }
+
+  recordDateRangeChange(dateRange) {
+    const metricFields = new Map([
+      ['client_id', this.clientId],
+      ['host_name', window.CS_env.app_version],
+      ['document_visible', MonorailTSMon.isPageVisible()],
+      ['date_range', dateRange],
+    ]);
+    this.dateRangeMetric.add(1, metricFields);
   }
 
   // Make sure this function runs after the page is loaded.
