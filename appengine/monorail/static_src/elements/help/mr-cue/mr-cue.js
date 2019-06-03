@@ -71,7 +71,7 @@ export class MrCue extends connectStore(LitElement) {
   render() {
     return html`
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <div class="cue" ?hidden=${this.hidden}>
+      <div class="cue" ?hidden=${this.hidden} id="message">
         <i class="material-icons"
            title="Don't show this message again."
            @click=${this.dismiss}
@@ -82,40 +82,36 @@ export class MrCue extends connectStore(LitElement) {
   }
 
   get message() {
-    switch (this.cuePrefName) {
-      case 'code_of_conduct':
+    if (this.cuePrefName == 'code_of_conduct') {
+      return html`
+        Please keep discussions respectful and constructive.
+        See our
+        <a href="https://chromium.googlesource.com/chromium/src/+/master/CODE_OF_CONDUCT.md"
+           target="_blank">code of conduct</a>.
+        `;
+    } else if (this.cuePrefName == 'availability_msgs') {
+      if (this._availablityMsgsRelevant(this.issue)) {
         return html`
-          Please keep discussions respectful and constructive.
-          See our
-          <a href="https://chromium.googlesource.com/chromium/src/+/master/CODE_OF_CONDUCT.md"
-             target="_blank">code of conduct</a>.
+          <b>Note:</b>
+          Clock icons indicate that users may not be available.
+          Tooltips show the reason.
           `;
-
-      case 'availability_msgs':
-        if (this._availablityMsgsRelevant(this.issue)) {
-          return html`
-            <b>Note:</b>
-            Clock icons indicate that users may not be available.
-            Tooltips show the reason.
-            `;
-        }
-
-      case 'switch_to_parent_account':
-        if (this._switchToParentAccountRelevant()) {
-          return html`
-            You are signed in to a linked account.
-            <a href="${this.loginUrl}">
-               Switch to ${this.user.linkedParentRef.displayName}</a>.
-            `;
-        }
-
-      case 'search_for_numbers':
-        if (this._searchForNumbersRelevant(this.jumpLocalId)) {
-          return html`
-            <b>Tip:</b>
-            To find issues containing "${this.jumpLocalId}", use quotes.
-            `;
-        }
+      }
+    } else if (this.cuePrefName == 'switch_to_parent_account') {
+      if (this._switchToParentAccountRelevant()) {
+        return html`
+          You are signed in to a linked account.
+          <a href="${this.loginUrl}">
+             Switch to ${this.user.linkedParentRef.displayName}</a>.
+          `;
+      }
+    } else if (this.cuePrefName == 'search_for_numbers') {
+      if (this._searchForNumbersRelevant(this.jumpLocalId)) {
+        return html`
+          <b>Tip:</b>
+          To find issues containing "${this.jumpLocalId}", use quotes.
+          `;
+      }
     }
   }
 

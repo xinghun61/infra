@@ -74,7 +74,8 @@ describe('mr-cue', () => {
     assert.isTrue(element.hidden);
   });
 
-  it('availability cue is shown if issue particpants are unavailable', () => {
+  it('availability cue is shown if issue particpants are unavailable',
+     async () => {
     element.prefsLoaded = true;
     element.cuePrefName = 'availability_msgs';
     element.referencedUsers = new Map([
@@ -86,7 +87,11 @@ describe('mr-cue', () => {
       ownerRef: {displayName: 'user@example.com'},
       ccRefs: [{}, {}],
     };
+    await element.updateComplete;
+
     assert.isFalse(element.hidden);
+    const messageEl = element.shadowRoot.querySelector('#message');
+    assert.include(messageEl.innerText, 'Clock icons');
 
     element.issue = {
       summary: 'owner is unavailable',
@@ -95,7 +100,9 @@ describe('mr-cue', () => {
         {displayName: 'ok@example.com'},
         {displayName: 'user@example.com'}],
     };
+    await element.updateComplete;
     assert.isFalse(element.hidden);
+    assert.include(messageEl.innerText, 'Clock icons');
   });
 
   it('switch_to_parent_account cue is hidden if no linked account', () => {
@@ -109,12 +116,16 @@ describe('mr-cue', () => {
     assert.isTrue(element.hidden);
   });
 
-  it('switch_to_parent_account is shown if user has parent account', () => {
+  it('switch_to_parent_account is shown if user has parent account',
+     async () => {
     element.prefsLoaded = true;
     element.cuePrefName = 'switch_to_parent_account';
     element.user = {linkedParentRef: {displayName: 'parent@example.com'}};
 
+    await element.updateComplete;
     assert.isFalse(element.hidden);
+    const messageEl = element.shadowRoot.querySelector('#message');
+    assert.include(messageEl.innerText, 'a linked account');
   });
 
   it('search_for_numbers cue is hidden if no number was used', () => {
@@ -125,11 +136,16 @@ describe('mr-cue', () => {
     assert.isTrue(element.hidden);
   });
 
-  it('search_for_numbers cue is shown if jumped to issue ID', () => {
+  it('search_for_numbers cue is shown if jumped to issue ID',
+     async () => {
     element.prefsLoaded = true;
     element.cuePrefName = 'search_for_numbers';
     element.issue = {};
     element.jumpLocalId = '123'.match(new RegExp('^\\d+$'));
+
+    await element.updateComplete;
     assert.isFalse(element.hidden);
+    const messageEl = element.shadowRoot.querySelector('#message');
+    assert.include(messageEl.innerText, 'use quotes');
   });
 });
