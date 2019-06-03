@@ -73,7 +73,7 @@
        [define detail_url]/p/[projectname]/components/detail?component=[format "url"][component_defs.path][end][end]
        <tr data-url="[detail_url]" class="comprow [component_defs.classes]">
          [if-any perms.EditProject]
-           <td class="cb">
+           <td class="cb rowwidgets">
              <input type="checkbox" data-path="[component_defs.path]" class="checkRangeSelect">
            </td>
          [end]
@@ -135,15 +135,15 @@ runOnLoad(function() {
 
   var checkboxNodes = document.getElementsByClassName("checkRangeSelect");
   var checkboxes = Array();
-   for (var i = 0; i < checkboxNodes.length; ++i) {
-     var checkbox = checkboxNodes.item(i);
-     checkboxes.push(checkbox);
-     checkbox.addEventListener("click", function (event) {
-         _checkRangeSelect(event, event.target);
-         _highlightRow(event.target);
-         updateEnabled();
-     });
-   }
+  for (var i = 0; i < checkboxNodes.length; ++i) {
+    var checkbox = checkboxNodes.item(i);
+    checkboxes.push(checkbox);
+    checkbox.addEventListener("click", function (event) {
+      _checkRangeSelect(event, event.target);
+      _highlightRow(event.target);
+      updateEnabled();
+    });
+  }
 
   function updateEnabled() {
     var anySelected = checkboxes.some(function(checkbox) {
