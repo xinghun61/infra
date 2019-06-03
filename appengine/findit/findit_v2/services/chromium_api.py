@@ -34,7 +34,7 @@ class ChromiumProjectAPI(ProjectAPI):
     Returns:
       (dict): Information about detailed compile failures.
       {
-        'build_packages': {
+        'install packages': {
           'failures': {
             'pkg': {
               'rule': 'emerge',

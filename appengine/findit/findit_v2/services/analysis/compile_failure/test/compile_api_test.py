@@ -85,7 +85,7 @@ class CompileApiTest(wf_testcase.TestCase):
   def testAnalyzeCompileFailure(self, mock_first_failure_in_build, *_):
     mock_first_failure_in_build.return_value = {
         'failures': {
-            'build_packages': {
+            'install packages': {
                 'output_targets': ['target4', 'target1', 'target2']
             }
         }
@@ -114,11 +114,11 @@ class CompileApiTest(wf_testcase.TestCase):
     build.input.gitiles_commit.id = 'git_sha_6543221'
     build.create_time.FromDatetime(datetime(2019, 4, 9))
     step1 = Step(name='s1', status=common_pb2.SUCCESS)
-    step2 = Step(name='build_packages', status=common_pb2.FAILURE)
+    step2 = Step(name='install packages', status=common_pb2.FAILURE)
     build.steps.extend([step1, step2])
 
     mock_compile_failures.return_value = {
-        'build_packages': {
+        'install packages': {
             'failures': {
                 'target1 target2': {
                     'output_targets': ['target1.o', 'target2.o'],
@@ -161,7 +161,7 @@ class CompileApiTest(wf_testcase.TestCase):
     rerun_build = CompileRerunBuild.get_by_id(
         build_id, parent=self.analysis.key)
     self.assertItemsEqual(['target1.o', 'target2.o'],
-                          rerun_build.GetFailedTargets()['build_packages'])
+                          rerun_build.GetFailedTargets()['install packages'])
 
   def testProcessAndSaveRerunBuildResultAnalysisMissing(self):
     build_id = 8000000000123
@@ -233,7 +233,7 @@ class CompileApiTest(wf_testcase.TestCase):
     build.input.gitiles_commit.id = 'git_sha_6543221'
     build.create_time.FromDatetime(datetime(2019, 4, 9))
     step1 = Step(name='s1', status=common_pb2.SUCCESS)
-    step2 = Step(name='build_packages', status=common_pb2.SUCCESS)
+    step2 = Step(name='install packages', status=common_pb2.SUCCESS)
     build.steps.extend([step1, step2])
 
     CompileRerunBuild.Create(

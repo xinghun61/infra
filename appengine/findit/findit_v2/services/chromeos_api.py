@@ -12,7 +12,7 @@ from findit_v2.model.compile_failure import CompileFailureGroup
 from findit_v2.services.failure_type import StepTypeEnum
 from findit_v2.services.project_api import ProjectAPI
 
-_COMPILE_STEP_NAME = 'build_packages'
+_COMPILE_STEP_NAME = 'install packages'
 
 
 class ChromeOSProjectAPI(ProjectAPI):
@@ -89,8 +89,8 @@ class ChromeOSProjectAPI(ProjectAPI):
 
     failures_dict = detailed_compile_failures[_COMPILE_STEP_NAME]['failures']
     for failure in build_compile_failure_output.get('failures', []):
-      # Joins targets in a str for faster look up when looking for the same
-      # failures in previous builds.
+      # In ChromeOS build, output_target is a json string like
+      # "{\"category\": \"chromeos-base\", \"packageName\": \"cryptohome\"}"
       output_targets = frozenset(failure['output_targets'])
       failures_dict[output_targets] = {
           'rule': failure.get('rule'),

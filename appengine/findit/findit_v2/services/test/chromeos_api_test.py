@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import json
 
 from buildbucket_proto.build_pb2 import Build
 from buildbucket_proto.build_pb2 import BuilderID
@@ -54,7 +55,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
   def testCompileStep(self):
     step = Step()
-    step.name = 'build_packages'
+    step.name = 'install packages'
     log = step.logs.add()
     log.name = 'stdout'
     self.assertEqual(StepTypeEnum.COMPILE,
@@ -76,19 +77,27 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build.input.gitiles_commit.project = 'project/name'
     build.input.gitiles_commit.ref = 'ref/heads/master'
     build.input.gitiles_commit.id = 'git_sha'
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    output_target2 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
     build.output.properties['build_compile_failure_output'] = {
         'failures': [{
-            'output_targets': ['chromeos/target1'],
+            'output_targets': [output_target1, output_target2],
             'rule': 'emerge'
         },]
     }
     step = Step()
-    step.name = 'build_packages'
+    step.name = 'install packages'
 
     expected_failures = {
-        'build_packages': {
+        'install packages': {
             'failures': {
-                frozenset(['chromeos/target1']): {
+                frozenset([output_target1, output_target2]): {
                     'rule': 'emerge',
                     'first_failed_build': {
                         'id': build_id,
@@ -119,10 +128,10 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build.input.gitiles_commit.ref = 'ref/heads/master'
     build.input.gitiles_commit.id = 'git_sha'
     step = Step()
-    step.name = 'build_packages'
+    step.name = 'install packages'
 
     expected_failures = {
-        'build_packages': {
+        'install packages': {
             'failures': {},
             'first_failed_build': {
                 'id': build_id,
@@ -145,7 +154,11 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
   def testGetCompileRerunBuildInputProperties(self):
     build_target = 'abc'
-    targets = {'build_packages': ['target1']}
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    targets = {'install packages': [output_target1]}
 
     build = Build()
     build.input.properties['build_target'] = {'name': build_target}
@@ -156,7 +169,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
             'name': build_target
         },
         'findit_bisect': {
-            'targets': ['target1']
+            'targets': [output_target1]
         },
         'build_image': False
     }
@@ -168,7 +181,11 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
   def testGetCompileRerunBuildInputPropertiesOtherStep(self):
     build_target = 'abc'
-    targets = {'compile': ['target1']}
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    targets = {'compile': [output_target1]}
 
     build = Build()
     build.input.properties['build_target'] = {'name': build_target}
@@ -190,10 +207,15 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         'commit_id': 'git_sha_121'
     }
 
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+
     first_failures_in_current_build = {
         'failures': {
-            'build_packages': {
-                'output_targets': [frozenset(['target1'])],
+            'install packages': {
+                'output_targets': [frozenset([output_target1])],
                 'last_passed_build': last_passed_build_info,
             },
         },
@@ -214,6 +236,15 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
     build.input.gitiles_commit.ref = 'ref/heads/master'
     build.input.gitiles_commit.id = 'git_sha'
 
+    output_target1 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target1'
+    })
+    output_target2 = json.dumps({
+        'category': 'chromeos-base',
+        'packageName': 'target2'
+    })
+
     last_passed_build_info = {
         'id': 8000000000121,
         'number': 121,
@@ -222,10 +253,10 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     first_failures_in_current_build = {
         'failures': {
-            'build_packages': {
+            'install packages': {
                 'output_targets': [
-                    frozenset(['target1']),
-                    frozenset(['target2'])
+                    frozenset([output_target1]),
+                    frozenset([output_target2])
                 ],
                 'last_passed_build':
                     last_passed_build_info,
@@ -236,7 +267,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     compile_failure = CompileFailure.Create(
         self.group_build.key,
-        'build_packages', ['target1'],
+        'install packages', [output_target1],
         'CXX',
         first_failed_build_id=self.group_build_id,
         last_passed_build_id=8000000000160)
@@ -276,7 +307,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     first_failures_in_current_build = {
         'failures': {
-            'build_packages': {
+            'install packages': {
                 'output_targets': [frozenset(['target1']),],
                 'last_passed_build': last_passed_build_info,
             },
@@ -286,7 +317,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
 
     compile_failure = CompileFailure.Create(
         self.group_build.key,
-        'build_packages', ['target1'],
+        'install packages', ['target1'],
         'CXX',
         first_failed_build_id=self.group_build_id,
         last_passed_build_id=8000000000160)
@@ -306,7 +337,7 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         compile_failure_keys=[compile_failure.key]).put()
 
     expected_failures_with_existing_group = {
-        'build_packages': {
+        'install packages': {
             frozenset(['target1']): self.group_build_id
         }
     }
