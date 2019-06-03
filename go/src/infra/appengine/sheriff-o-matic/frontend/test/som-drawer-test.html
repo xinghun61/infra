@@ -14,9 +14,9 @@
   'use strict';
 
   suite('basic tests', function() {
-    var clock;
     var element;
     var server;
+    var stubbedFetch;
     var responseHeaders = {
         json: {'Content-Type': 'application/json'},
         text: {'Content-Type': 'text/html'},
@@ -25,8 +25,7 @@
     setup(function() {
       element = fixture('basic');
       server = sinon.fakeServer.create();
-
-      clock = sinon.useFakeTimers();
+      stubbedFetch = sinon.stub(window, 'fetch');
 
       element.$.fetchTrooper.auto = false;
 
@@ -38,6 +37,7 @@
 
     teardown(function() {
       server.restore();
+      stubbedFetch.restore();
     });
 
     test('renders current trooper', function(done) {
@@ -82,24 +82,19 @@
     });
 
     test('computes sheriffs from JSON', function(done) {
-      // 12/14/2016 10:34pm UTC.
-      let unixTime = 1481754863;
-      clock.tick(unixTime * 1000);
-
-      let pstTime = unixTime - 8 * 60 * 60;
+      const body = {emails: ['foo@example.com', 'bar@example.com']};
+      const init = {status: 200, headers: responseHeaders.json};
+      const response = new window.Response(JSON.stringify(body), init);
+      stubbedFetch.returns(Promise.resolve(response));
 
       element.tree = {'name': 'chromium'};
-      element._sheriffRotations = {
-        'rotations': ['chrome'],
-        'calendar': [
-          {'date': 'fakedate', 'participants': [['no one']]},
-          {'date': '2016-12-14', 'participants': [['someone']]}
-        ],
-      };
+
       flush(function () {
-        assert.equal(1, element._sheriffs.length);
-        assert.equal('someone', element._sheriffs[0].username);
-        assert.deepEqual(new Date(pstTime * 1000), element._sheriffs[0].endDate);
+        assert.equal(1, element._rotations.length);
+        assert.deepEqual({
+          name: 'Chromium Sheriff',
+          people: ['foo@example.com', 'bar@example.com'],
+        }, element._rotations[0]);
         done();
       });
     });

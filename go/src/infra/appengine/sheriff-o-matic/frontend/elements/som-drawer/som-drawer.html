@@ -36,6 +36,11 @@
         margin-top: 0.5em;
         padding-left: 48px;
       }
+      iframe {
+        border: 0;
+        height: 220px;
+        width: 256px;
+      }
       .menu-item {
         padding: 0.75em;
         padding-left: 32px;
@@ -67,13 +72,6 @@
         url="https://rota-ng.appspot.com/legacy/current_trooper.txt"
         handle-as="text"
         last-response="{{_trooperString}}"
-    ></iron-ajax>
-    <iron-ajax
-        id="fetchSheriffs"
-        auto
-        url="https://rota-ng.appspot.com/legacy/all_rotations.js"
-        handle-as="json"
-        last-response="{{_sheriffRotations}}"
     ></iron-ajax>
     <som-settings
         link-style="{{linkStyle}}"
@@ -114,6 +112,9 @@
     </h2>
 
     <iron-collapse id="onCallMenu" opened no-animation>
+      <template is="dom-if" if="[[_isCros(tree)]]">
+        <iframe src="https://frog.googleplex.com/?rota=chromeos-arc-constable-pst,chromeos-arc-constable-nonpst,chromeos-ci-eng,chromeos-build-eng&showEscChain=true"></iframe>
+      </template>
       <label>Trooper (<a href="https://goto.google.com/bugatrooper" target="_blank">go/bugatrooper</a>)</label>
       <ul id="currentTroopers">
         <template is="dom-repeat" items="[[_troopers]]" as="trooper">
@@ -121,13 +122,15 @@
         </template>
       </ul>
 
-      <template is="dom-if" if="[[_sheriffs]]">
-        <label>[[tree.display_name]] Sheriffs</label>
-        <ul id="currentSheriffs">
-          <template is="dom-repeat" items="[[_sheriffs]]" as="sheriff">
-            <li>[[sheriff.username]] <small>(ends [[_formatDateShort(sheriff.endDate)]] PST)</small></li>
-          </template>
-        </ul>
+      <template is="dom-if" if="[[_rotations]]">
+        <template is="dom-repeat" items="[[_rotations]]" as="rotation">
+          <label>[[rotation.name]]</label>
+          <ul>
+            <template is="dom-repeat" items="[[rotation.people]]" as="person">
+              <li>[[person]]</li>
+            </template>
+          </ul>
+        </template>
       </template>
     </iron-collapse>
 

@@ -4,6 +4,57 @@
 // This does not need to refresh very frequently.
 const drawerRefreshDelayMs = 60 * 60 * 1000;
 
+const ROTATIONS = {
+  'android': [
+    {
+      name: 'Android Sheriff',
+      url: 'https://rota-ng.appspot.com/legacy/sheriff_android.json',
+    },
+  ],
+  'chromeos': [
+    {
+      name: 'Sheriffs (MTV)',
+      url: 'https://rota-ng.appspot.com/legacy/sheriff_cros_mtv.json',
+    },
+    {
+      name: 'Sheriffs (Non-MTV)',
+      url: 'https://rota-ng.appspot.com/legacy/sheriff_cros_nonmtv.json',
+    },
+    {
+      name: 'Gardener',
+      url: 'https://rota-ng.appspot.com/legacy/sheriff_cr_cros_gardeners.json',
+    },
+    {
+      name: 'Infra Deputy',
+      url: 'https://rotation.googleplex.com/json?id=5660790132572160',
+    },
+    {
+      name: 'Morning Planner',
+      url: 'https://rotation.googleplex.com/json?id=140009',
+    },
+    {
+      name: 'Moblab Peeler',
+      url: 'https://rotation.googleplex.com/json?id=6383984776839168',
+    },
+    {
+      name: 'Jetstream Sheriff',
+      url: 'https://rotation.googleplex.com/json?id=5186988682510336',
+    },
+  ],
+  'chromium': [
+    {
+      name: 'Chromium Sheriff',
+      url: 'https://rota-ng.appspot.com/legacy/sheriff.json',
+    },
+  ],
+  'chromium.perf': [
+    {
+      name: 'Chromium Perf Sheriff',
+      url: 'https://rota-ng.appspot.com/legacy/sheriff_perfbot.json',
+    },
+  ],
+};
+
 class SomDrawer extends Polymer.Element {
 
   static get is() {
@@ -18,18 +69,7 @@ class SomDrawer extends Polymer.Element {
         notify: true,
       },
       _rotations: {
-        type: Object,
-        value: {
-          'android': 'android',
-          'chromeos': 'chromeos',
-          'chromium': 'chrome',
-          'chromium.perf': 'perfbot',
-        },
-      },
-      _sheriffRotations: Object,
-      _sheriffs: {
         type: Array,
-        computed: '_computeSheriffs(tree.name, _sheriffRotations, _rotations)',
         value: null,
       },
       _staticPageList: {
@@ -39,7 +79,10 @@ class SomDrawer extends Polymer.Element {
           return [];
         },
       },
-      tree: Object,
+      tree: {
+        type: Object,
+        observer: '_treeChanged',
+      },
       trees: Object,
       _treesList: {
         type: Array,
@@ -77,7 +120,6 @@ class SomDrawer extends Polymer.Element {
 
   _refresh() {
     this.$.fetchTrooper.generateRequest();
-    this.$.fetchSheriffs.generateRequest();
   }
 
   _refreshAsync() {
@@ -85,73 +127,46 @@ class SomDrawer extends Polymer.Element {
     this.async(this._refreshAsync, drawerRefreshDelayMs);
   }
 
-  // Gets current tree sheriffs from file at:
-  // http://chromium-build.appspot.com/p/chromium/all_rotations.js
-  _computeSheriffs(treeName, sheriffData, rotations) {
-    if (!treeName || !sheriffData || !(treeName in rotations)) {
-      return null;
-    }
-    let rotation = rotations[treeName];
-    let i = sheriffData['rotations'].indexOf(rotation);
+  _isCros(tree) {
+    return tree && tree.name === 'chromeos';
+  }
 
-    let date = new Date();
-
-    // Date() is UTC by default. Convert to PST.
-    date.setHours(date.getHours() - 8);
-
-    let datestamp = this._formatDate(date);
-
-    let dateData = sheriffData['calendar'].filter(function(obj) {
-      return obj.date == datestamp;
-    })[0];
-
-    if (!dateData || !dateData['participants']) {
-      return null;
+  _treeChanged(tree) {
+    if (!(tree && ROTATIONS[tree.name])) {
+      return;
     }
 
-    let sheriffs = dateData['participants'][i];
-
-    let sheriffMap = sheriffs.reduce((map, s) => {
-      map[s] = date;
-      return map;
-    }, {});
-
-    // Keep looping through dates until the current sheriffs no long have
-    // shifts.
-    let flag = true;
-    let dayMs = 24 * 60 * 60 * 1000;
-    while (flag) {
-      flag = false;
-
-      // If the day is a Friday, then we add more days to account for the
-      // weekend.
-      if (date.getDay() == 5) {
-        date = new Date(date.getTime() + dayMs * 3);
-      } else {
-        date = new Date(date.getTime() + dayMs);
-      }
-      datestamp = this._formatDate(date);
-      dateData = sheriffData['calendar'].filter(function(obj) {
-        return obj.date == datestamp;
-      })[0];
-      if (dateData) {
-        let nextSheriffs = dateData['participants'][i];
-
-        let intersection = sheriffs.filter(function(s) {
-          return nextSheriffs.indexOf(s) != -1;
+    this._rotations = [];
+    const self = this;
+    ROTATIONS[tree.name].forEach(function(rotation) {
+      switch (rotation.url.split('/')[2]) {
+      case 'rota-ng.appspot.com':
+        fetch(rotation.url, {
+          method: 'GET',
+        }).then(function(response) {
+          return response.json();
+        }).then(function(response) {
+          self.push('_rotations', {
+            name: rotation.name,
+            people: response.emails,
+          });
         });
-
-        intersection.forEach((s) => {
-          flag = true;
-          sheriffMap[s] = date;
+        break;
+      case 'rotation.googleplex.com':
+        fetch(rotation.url, {
+          method: 'GET',
+          credentials: 'include',
+        }).then(function(response) {
+          return response.json();
+        }).then(function(response) {
+          self.push('_rotations', {
+            name: rotation.name,
+            people: [response.primary],
+          });
         });
+        break;
       }
-    }
-
-    let result = Object.keys(sheriffMap).map((key) => {
-      return {'username': key, 'endDate': sheriffMap[key]};
     });
-    return result;
   }
 
   _computeStaticPageList(staticPages) {
