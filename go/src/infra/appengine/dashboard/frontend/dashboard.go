@@ -42,6 +42,9 @@ func newRPCServer() *prpc.Server {
 		AccessControl: func(c context.Context, origin string) bool {
 			return true
 		},
+		Authenticator: &auth.Authenticator{
+			Methods: []auth.Method{server.CookieAuth},
+		},
 	}
 }
 
@@ -93,19 +96,27 @@ func dashboard(ctx *router.Context) {
 		return
 	}
 
+	var isTrooper bool
 	var isGoogler bool
 	var isAnonymous bool
 	var user string
 	if userIdentity := auth.CurrentIdentity(c); userIdentity == identity.AnonymousIdentity {
 		isAnonymous = true
 		isGoogler = false
+		isTrooper = false
 	} else {
 		user = userIdentity.Email()
 		isAnonymous = false
 		isGoogler, err = auth.IsMember(c, authGroup)
 		if err != nil {
-			http.Error(w, "failed to determine membership status", http.StatusInternalServerError)
-			logging.Errorf(c, "failed to determine membership status: %v", err)
+			http.Error(w, "failed to determine chopsdash membership status", http.StatusInternalServerError)
+			logging.Errorf(c, "failed to determine chopsdash membership status: %v", err)
+			return
+		}
+		isTrooper, err = auth.IsMember(c, announcementGroup)
+		if err != nil {
+			http.Error(w, "failed to determine announcements membership status", http.StatusInternalServerError)
+			logging.Errorf(c, "failed to determine announcements membership status: %v", err)
 			return
 		}
 	}
@@ -114,6 +125,7 @@ func dashboard(ctx *router.Context) {
 		"IsAnoymous": isAnonymous,
 		"User":       user,
 		"IsGoogler":  isGoogler,
+		"IsTrooper":  isTrooper,
 		"LoginURL":   loginURL,
 		"LogoutURL":  logoutURL,
 	})

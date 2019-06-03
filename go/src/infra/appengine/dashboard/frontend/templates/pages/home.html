@@ -11,7 +11,7 @@
   }
 </style>
 <body>
-  <chopsdash-app user="{{.User}}" {{if .IsGoogler}}is-googler{{end}} logout-url="{{.LogoutURL}}" login-url="{{.LoginURL}}">
+  <chopsdash-app user="{{.User}}" {{if .IsGoogler}}is-googler{{end}} {{if .IsTrooper}}is-trooper{{end}} logout-url="{{.LogoutURL}}" login-url="{{.LoginURL}}">
   </chopsdash-app>
 </body>
 <script>

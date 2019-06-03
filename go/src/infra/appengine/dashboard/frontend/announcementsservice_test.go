@@ -41,9 +41,8 @@ func TestAnnouncementsPrelude(t *testing.T) {
 		{"RetireAnnouncement", trooper, 0},
 		{"UpdateAnnouncementPlatforms", anon, codes.Unauthenticated},
 		{"UpdateAnnouncementPlatforms", someone, codes.PermissionDenied},
-		{"GetRetiredAnnouncements", anon, 0},
-		{"GetLiveAnnouncements", anon, 0},
-		{"GetRetiredAnnouncements", someone, 0},
+		{"SearchAnnouncements", anon, 0},
+		{"SearchAnnouncements", someone, 0},
 	}
 
 	for i, tc := range testCases {

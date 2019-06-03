@@ -24,8 +24,7 @@ var perMethodACL = map[string]string{
 	"CreateLiveAnnouncement":      announcementGroup,
 	"RetireAnnouncement":          announcementGroup,
 	"UpdateAnnouncementPlatforms": announcementGroup,
-	"GetLiveAnnouncements":        "*",
-	"GetRetiredAnnouncements":     "*",
+	"SearchAnnouncements":         "*",
 }
 
 func announcementsPrelude(ctx context.Context, methodName string, _req proto.Message) (context.Context, error) {

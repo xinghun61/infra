@@ -5,6 +5,8 @@
 import {LitElement, html, css} from 'lit-element';
 import {prpcClient} from 'prpc.js';
 
+import {SHARED_STYLES} from 'shared-styles.js';
+
 /**
  * `<announcements-table>`
  *
@@ -21,7 +23,7 @@ export class AnnouncementsTable extends LitElement {
   }
 
   static get styles() {
-    return css`
+    return [SHARED_STYLES, css`
       :host {
         font-family: Roboto, Noto, sans-serif;
       }
@@ -41,9 +43,6 @@ export class AnnouncementsTable extends LitElement {
       }
       td > div.date {
         color: grey;
-      }
-      .small {
-        font-size: 12px;
       }
       td.platforms {
         color: grey;
@@ -67,7 +66,7 @@ export class AnnouncementsTable extends LitElement {
       tr:last-child {
         border-bottom: none;
       }
-    `;
+    `];
   }
 
   render() {

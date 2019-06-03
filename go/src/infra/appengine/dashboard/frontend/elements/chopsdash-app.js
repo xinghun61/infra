@@ -16,6 +16,7 @@ import {prpcClient} from 'prpc.js';
 import 'last-updated-message.js';
 import 'tree-status.js';
 import 'status-table.js';
+import 'chops-announcements.js';
 
 
 /**
@@ -66,6 +67,7 @@ export class ChopsdashApp extends PolymerElement {
       </app-header>
       <div class="content">
         <tree-status></tree-status>
+        <chops-announcements is-trooper="[[isTrooper]]"></chops-announcements>
         <template is="dom-if" if="[[services.length]]">
           <div class="table">
             <status-table services="[[services]]" latest-date-ts="{{latestDateTs}}" is-googler="[[isGoogler]]">
@@ -100,6 +102,7 @@ export class ChopsdashApp extends PolymerElement {
   static get properties() {
     return {
       isGoogler: Boolean,
+      isTrooper: Boolean,
       lastUpdated: {
         type: Object,
         value: {time: moment(Date.now()).format('M/DD/YYYY, h:mm a'), relativeTime: 0}
