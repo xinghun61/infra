@@ -40,12 +40,6 @@ BUILDERS = freeze({
     'lkgr_status_gs_path': 'chromium-v8/lkgr-status',
     'allowed_lag': 4,
   },
-  'WebRTC lkgr finder': {
-    'project': 'webrtc',
-    'repo': 'https://webrtc.googlesource.com/src',
-    'ref': 'refs/heads/lkgr',
-    'lkgr_status_gs_path': 'chromium-webrtc/lkgr-status',
-  }
 })
 
 
@@ -218,42 +212,28 @@ def GenTests(api):
     )
 
   yield (
-      api.test('webrtc_lkgr_failure') +
-      test_props_and_data('WebRTC lkgr finder') +
-      api.step_data(
-          'calculate webrtc lkgr',
-          retcode=1
-      )
-  )
-
-  yield (
-      api.test('webrtc_lkgr_stale') +
-      test_props_and_data('WebRTC lkgr finder') +
-      api.step_data(
-          'calculate webrtc lkgr',
-          retcode=2
-      )
-  )
-
-  yield (
       api.test('v8_experimental') +
       test_props_and_data('V8 lkgr finder') +
       api.runtime(is_luci=True, is_experimental=True)
   )
 
-  yield (
-      api.test('custom_properties') +
-      test_props_and_data('custom-lkgr-finder') +
-      api.properties(
-          project='custom',
-          repo='https://custom.googlesource.com/src',
-          ref='refs/heads/lkgr',
-          lkgr_status_gs_path='custom/lkgr-status') +
-      api.runtime(is_luci=True, is_experimental=False) +
-      api.post_process(post_process.MustRun, 'calculate custom lkgr') +
-      api.post_process(post_process.StatusCodeIn, 0) +
-      api.post_process(post_process.DropExpectation)
-  )
+  for retcode, suffix in [(0, ''), (1, '_failure'), (2, '_stale')]:
+    yield (
+        api.test('custom_properties' + suffix) +
+        test_props_and_data('custom-lkgr-finder') +
+        api.step_data(
+            'calculate custom lkgr',
+            retcode=retcode
+        ) +
+        api.properties(
+            project='custom',
+            repo='https://custom.googlesource.com/src',
+            ref='refs/heads/lkgr',
+            lkgr_status_gs_path='custom/lkgr-status') +
+        api.runtime(is_luci=True, is_experimental=False) +
+        api.post_process(post_process.MustRun, 'calculate custom lkgr') +
+        api.post_process(post_process.StatusCodeIn, 1 if retcode == 1 else 0)
+    )
 
   yield (
       api.test('missing_all_properties') +
