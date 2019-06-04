@@ -268,7 +268,7 @@ export class TSMonClient {
       if (current.value instanceof Distribution) {
         current.value.add(value);
       } else {
-        current += value;
+        current.value += value;
       }
     } else {
       if (current.value instanceof Distribution) {

@@ -330,3 +330,32 @@ suite('flush', () => {
     ));
   });
 });
+
+suite('cumulative nondistribution: counter', () => {
+  test('add', () => {
+    const metricFields = new Map(Object.entries({
+      'some_string': TSMonClient.stringField('some_string'),
+      'some_bool': TSMonClient.boolField('some_bool'),
+      'some_int': TSMonClient.intField('some_int'),
+    }));
+    const counterTest = tsm.counter('frontend/counter_test', 'test counter',
+      null, metricFields);
+    const fields = new Map(Object.entries({
+      'some_string': 'foo',
+      'some_bool': true,
+      'some_int': 42,
+    }));
+    const key = counterTest.tsMon._metricKey(counterTest.name, fields);
+    counterTest.add(1, fields);
+    assert.equal(1, counterTest.tsMon._metricValues.get(key).value);
+    counterTest.add(1, fields);
+    assert.equal(2, counterTest.tsMon._metricValues.get(key).value);
+    const fieldsChanged = new Map(Object.entries({
+      'some_string': 'foo',
+      'some_bool': true,
+      'some_int': 43,
+    }));
+    counterTest.add(1, fieldsChanged);
+    assert.equal(2, counterTest.tsMon._metricValues.get(key).value);
+  });
+});
