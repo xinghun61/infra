@@ -90,7 +90,7 @@ def update_docker(canary, version='18.06.3~ce~3-0~ubuntu'):  # pragma: no cover
 
   try:
     subprocess.check_call(['/usr/bin/apt-get', 'install', '-y',
-                           '--allow-downgrades', package_with_version])
+                           package_with_version])
   except subprocess.CalledProcessError:
     logging.exception('Unable to install/upgrade docker-ce to %s.', version)
     return False
