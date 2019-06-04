@@ -249,6 +249,10 @@ func init() {
 		Service: h,
 		Prelude: checkAPIAccess,
 	})
+	apb.RegisterMemberAdminServer(&api, &apb.DecoratedMemberAdmin{
+		Service: h,
+		Prelude: checkAPIAccess,
+	})
 	discovery.Enable(&api)
 	api.InstallHandlers(r, standard.Base())
 

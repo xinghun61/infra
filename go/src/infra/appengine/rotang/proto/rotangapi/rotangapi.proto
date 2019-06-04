@@ -182,3 +182,31 @@ message DeleteExternalRequest {
 
 message DeleteExternalResponse {
 }
+
+// The MemberAdmin service provides an API to handle rotation members..
+service MemberAdmin {
+  // RotationMembers returns the members of a rotation together with when they were last OnCall and OOO information.
+  // Owner permissions for the rotation is required.
+  rpc RotationMembers(RotationMembersRequest) returns (RotationMembersResponse) {}
+}
+
+message RotationMembersRequest {
+  string name = 1;
+}
+
+message RotationMembersResponse {
+  string rotation = 1;
+  repeated MemberInfo members = 2;
+}
+
+message MemberInfo {
+  OnCaller member = 2;
+  repeated ShiftEntry oncall_shifts = 3;
+  repeated OOO ooo = 4;
+}
+
+message OOO {
+  google.protobuf.Timestamp start = 1;
+  google.protobuf.Timestamp end = 2;
+  string comment = 3;
+	}
