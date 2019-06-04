@@ -933,7 +933,7 @@ Rolls recipes.cfg dependencies for public projects.
 
 [DEPS](/recipes/recipes/recipe_bundler.py#8): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/recipe_bundler.py#41)(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs, package_name_prefix, package_name_internal_prefix):**
+&mdash; **def [RunSteps](/recipes/recipes/recipe_bundler.py#48)(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs, repo_specs_optional, package_name_prefix, package_name_internal_prefix):**
 ### *recipes* / [recipe\_roll\_tryjob](/recipes/recipes/recipe_roll_tryjob.py)
 
 [DEPS](/recipes/recipes/recipe_roll_tryjob.py#8): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [recipe\_engine/buildbucket][recipe_engine/recipe_modules/buildbucket], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/runtime][recipe_engine/recipe_modules/runtime], [recipe\_engine/step][recipe_engine/recipe_modules/step]

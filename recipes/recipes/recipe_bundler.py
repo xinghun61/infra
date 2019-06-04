@@ -26,6 +26,13 @@ PROPERTIES = {
     kind=List(str),
     help=('The list of repo specs to process, as defined by recipe_bundler\'s '
           '"-r" flag.'),
+    default=[]
+  ),
+
+  'repo_specs_optional': Property(
+    kind=List(str),
+    help=('Like "repo_specs", but it\'s not an error if any these fail.'),
+    default=[]
   ),
 
   'package_name_prefix': Property(
@@ -39,7 +46,8 @@ PROPERTIES = {
 
 
 def RunSteps(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs,
-             package_name_prefix, package_name_internal_prefix):
+             repo_specs_optional, package_name_prefix,
+             package_name_internal_prefix):
   bundler_path = api.path['cache'].join('builder', 'bundler')
   api.cipd.ensure(bundler_path, {
     recipe_bundler_pkg: recipe_bundler_vers,
@@ -54,10 +62,19 @@ def RunSteps(api, recipe_bundler_pkg, recipe_bundler_vers, repo_specs,
     '-package-name-internal-prefix', package_name_internal_prefix,
   ]
 
-  for spec in repo_specs:
-    cmd += ['-r', spec]
+  if repo_specs:
+    args = []
+    for spec in repo_specs:
+      args += ['-r', spec]
+    api.step('run recipe_bundler', cmd + args)
 
-  api.step('run recipe_bundler', cmd)
+  if repo_specs_optional:
+    args = []
+    for spec in repo_specs_optional:
+      args += ['-r', spec]
+    # TODO(mmoss): If bundling fails, set a "Warning" step result rather than
+    # just ignoring the errors? Requires crbug.com/854099.
+    api.step('run optional recipe_bundler', cmd + args, ok_ret='any')
 
 
 def GenTests(api):
@@ -70,3 +87,13 @@ def GenTests(api):
     package_name_prefix='infra/recipe_bundles',
     package_name_internal_prefix='infra_internal/recipe_bundles',
   )
+
+  yield api.test('basic_optional') + api.properties(
+    recipe_bundler_vers='latest',
+    repo_specs_optional=[
+      'chromium.googlesource.com/chromium/tools/build:'
+      'FETCH_HEAD,refs/heads/maybe/bogus',
+    ],
+    package_name_prefix='infra/recipe_bundles',
+    package_name_internal_prefix='infra_internal/recipe_bundles',
+  ) + api.step_data('run optional recipe_bundler', retcode=1)
