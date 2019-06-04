@@ -67,7 +67,7 @@ suite('chops-announcements', () => {
     assert.equal(liveTable.isTrooper, false);
   });
 
-  test('announcemented fetched when announcements updated', async () => {
+  test('announcement fetched when announcements retired', async () => {
     await element.updateComplete;
 
     const liveTable = element.shadowRoot.getElementById(
@@ -81,4 +81,30 @@ suite('chops-announcements', () => {
       prpcStub, 'dashboard.ChopsAnnouncements', 'SearchAnnouncements',
       {retired: false});
   });
+
+  test('announcement fetched when announcement create', async () => {
+    element.isTrooper = true;
+
+    await element.updateComplete;
+
+    const annInput = element.shadowRoot.querySelector(
+      'announcement-input');
+    annInput.dispatchEvent(new CustomEvent('announcement-created'));
+
+    await element._fetchLiveAnnoucements;
+
+    sinon.assert.calledTwice(prpcStub);
+    sinon.assert.alwaysCalledWith(
+      prpcStub, 'dashboard.ChopsAnnouncements', 'SearchAnnouncements',
+      {retired: false});
+  });
+
+  test('announcement-input not shown when user not trooper', async () => {
+    await element.updateComplete;
+
+    assert.isUndefined(element.isTrooper);
+    const annInput = element.shadowRoot.querySelector('announcement-input');
+    assert.isNull(annInput);
+  });
+
 });
