@@ -288,6 +288,7 @@ var (
 
 	knownSubCommands = stringset.NewFromSlice(
 		"git push",
+		"presubmit",
 	)
 
 	knownSubCommandArguments = stringset.NewFromSlice(
