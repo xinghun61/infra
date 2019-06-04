@@ -75,7 +75,7 @@ func uploadHandler(c *router.Context) {
 		return
 	}
 
-	reportGitPushMetrics(c.Context, metrics)
+	reportDepotToolsMetrics(c.Context, metrics)
 
 	ctx := appengine.WithContext(c.Context, c.Request)
 	err = putMetrics(ctx, metrics)

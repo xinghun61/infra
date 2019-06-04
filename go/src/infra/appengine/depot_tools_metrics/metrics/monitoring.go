@@ -21,7 +21,8 @@ import (
 const chromiumSrc = "https://chromium.googlesource.com/chromium/src"
 
 var (
-	// GitLatency keeps track of how long it takes to run a git command per repo and exit code.
+	// GitLatency keeps track of how long it takes to run a git command per repo
+	// and exit code.
 	// We only keep track of the git commands executed by a depot_tools command.
 	GitLatency = metric.NewCumulativeDistribution(
 		"depot_tools_metrics/git/latency",
@@ -34,10 +35,23 @@ var (
 		field.Int("exit_code"),
 		field.String("repo"),
 	)
+
+	// PresubmitLatency keeps track of how long it takes to run presubmit cheks
+	// per repo and exit code.
+	PresubmitLatency = metric.NewCumulativeDistribution(
+		"depot_tools_metrics/presubmit",
+		"Time it takes to run presubmit checks.",
+		&types.MetricMetadata{Units: types.Seconds},
+		// A growth factor if 1.03 with 200 buckets covers up to about 5m,
+		// which is the interval we're interested about.
+		distribution.GeometricBucketer(1.03, 200),
+		field.Int("exit_code"),
+		field.String("repo"),
+	)
 )
 
-// reportGitPushMetrics reports git push metrics to ts_mon.
-func reportGitPushMetrics(ctx context.Context, m schema.Metrics) {
+// reportDepotToolsMetrics reports metrics to ts_mon.
+func reportDepotToolsMetrics(ctx context.Context, m schema.Metrics) {
 	if len(m.ProjectUrls) == 0 {
 		return
 	}
@@ -49,9 +63,11 @@ func reportGitPushMetrics(ctx context.Context, m schema.Metrics) {
 		repo = chromiumSrc
 	}
 	for _, sc := range m.SubCommands {
-		if sc.Command != "git push" {
-			continue
+		if sc.Command == "git push" {
+			GitLatency.Add(ctx, sc.ExecutionTime, "git push", sc.ExitCode, repo)
 		}
-		GitLatency.Add(ctx, sc.ExecutionTime, "git push", sc.ExitCode, repo)
+		if sc.Command == "presubmit" {
+			PresubmitLatency.Add(ctx, sc.ExecutionTime, sc.ExitCode, repo)
+		}
 	}
 }
