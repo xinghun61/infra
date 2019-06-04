@@ -158,7 +158,7 @@ class FeaturesServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def testExpungeQuickEditsByUsers(self):
-    user_ids = [333L, 555L, 777L]
+    user_ids = [333, 555, 777]
     commit = False
 
     self.features_service.quickeditmostrecent_tbl.Delete = mock.Mock()
@@ -362,7 +362,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     self.mox.VerifyAll()
 
   def testExpungeSavedQueriesByUsers(self):
-    user_ids = [222L, 444L, 666L]
+    user_ids = [222, 444, 666]
     commit = False
 
     sv_rows = [(8,), (9,)]
@@ -495,12 +495,12 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     self.mox.VerifyAll()
 
   def testExpungeFilterRulesByUser(self):
-    emails = {333L: 'chicken@farm.test', 222L: 'cow@fart.test'}
+    emails = {'chicken@farm.test': 333, 'cow@fart.test': 222}
     rows = [
         (1, 45, 'owner:cow@fart.test', 'add_label:happy-cows'),
         (1, 46, 'owner:cow@fart.test', 'add_label:balloon'),
         (16, 47, 'label:queue-eggs', 'add_notify:chicken@fart.test'),
-        (17, 48, 'owner:farmer@farm.test', 'add_cc_id:111L add_cc_id: 222L')]
+        (17, 48, 'owner:farmer@farm.test', 'add_cc_id:111 add_cc_id: 222')]
     self.features_service.filterrule_tbl.Select = mock.Mock(return_value=rows)
     self.features_service.filterrule_tbl.Delete = mock.Mock()
 
@@ -514,7 +514,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
         16: [tracker_pb2.FilterRule(
             predicate=rows[2][2], add_notify_addrs=['chicken@fart.test'])],
         17: [tracker_pb2.FilterRule(
-            predicate=rows[3][2], add_cc_ids=[111L, 222L])],
+            predicate=rows[3][2], add_cc_ids=[111, 222])],
     }
     self.assertItemsEqual(rules_dict, expected_dict)
 
@@ -594,10 +594,10 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
 
   def testTransferHotlistOwnership(self):
     hotlist_id = 123
-    new_owner_id = 222L
+    new_owner_id = 222
     hotlist = fake.Hotlist(hotlist_name='unique', hotlist_id=hotlist_id,
-                           owner_ids=[111L], editor_ids=[222L, 333L],
-                           follower_ids=[444L])
+                           owner_ids=[111], editor_ids=[222, 333],
+                           follower_ids=[444])
     # LookupHotlistIDs, proposed new owner, owns no hotlist with the same name.
     self.features_service.hotlist2user_tbl.Select = mock.Mock(
         return_value=[(223, new_owner_id), (567, new_owner_id)])
@@ -617,22 +617,22 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     self.features_service.GetHotlist.assert_called_once_with(
         self.cnxn, hotlist_id, use_cache=False)
     insert_rows = [(hotlist_id, new_owner_id, 'owner'),
-                   (hotlist_id, 333L, 'editor'),
-                   (hotlist_id, 111L, 'editor'),
-                   (hotlist_id, 444L, 'follower')]
+                   (hotlist_id, 333, 'editor'),
+                   (hotlist_id, 111, 'editor'),
+                   (hotlist_id, 444, 'follower')]
     self.features_service.hotlist2user_tbl.InsertRows.assert_called_once_with(
         self.cnxn, features_svc.HOTLIST2USER_COLS, insert_rows, commit=False)
 
   def testTransferHotlistOwnership_RejectNewOwner(self):
     hotlist = fake.Hotlist(hotlist_name='sameName', hotlist_id=123,
-                           owner_ids=[111L], editor_ids=[222L])
+                           owner_ids=[111], editor_ids=[222])
     self.features_service.hotlist2user_tbl.Select = mock.Mock(
-        return_value=[(123, 222L), (567, 222L)])
+        return_value=[(123, 222), (567, 222)])
     self.features_service.hotlist_tbl.Select = mock.Mock(
         return_value=[(123, 'sameName'), (567, 'diffName')])
     with self.assertRaises(exceptions.InputException):
       self.features_service.TransferHotlistOwnership(
-          self.cnxn, hotlist, 222L, True)
+          self.cnxn, hotlist, 222, True)
 
   def SetUpLookupHotlistIDs(self):
     self.features_service.hotlist_tbl.Select(
@@ -816,7 +816,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
   def SetUpUpdateHotlistItems(self, cnxn, hotlist_id, remove, added_tuples):
     self.features_service.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id, issue_id=remove, commit=False)
-    rank = 1L
+    rank = 1
     added_tuples_with_rank = [(issue_id, rank+10*mult, user_id, ts, note) for
                               mult, (issue_id, user_id, ts, note) in
                               enumerate(added_tuples)]
@@ -857,16 +857,16 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
 
   def testRemoveIssuesFromHotlists(self):
     issue_rows = [
-      (456, 555, 1L, None, None, ''),
-      (456, 666, 11L, None, None, ''),
+      (456, 555, 1, None, None, ''),
+      (456, 666, 11, None, None, ''),
     ]
     issues = [tracker_pb2.Issue(issue_id=issue_rows[0][1])]
     self.SetUpGetHotlists(456, issue_rows=issue_rows)
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [555], [])
     issue_rows = [
-      (789, 555, 1L, None, None, ''),
-      (789, 666, 11L, None, None, ''),
+      (789, 555, 1, None, None, ''),
+      (789, 666, 11, None, None, ''),
     ]
     self.SetUpGetHotlists(789, issue_rows=issue_rows)
     self.SetUpUpdateHotlistItems(
@@ -951,24 +951,24 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
     star_service = star_svc.AbstractStarService(
         self.cache_manager, hotliststar_tbl, 'hotlist_id', 'user_id', 'hotlist')
     user_service = user_svc.UserService(self.cache_manager)
-    user_ids = [111L, 222L]
+    user_ids = [111, 222]
 
-    # hotlist1 will get transferred to 333L
+    # hotlist1 will get transferred to 333
     hotlist1 = fake.Hotlist(hotlist_name='unique', hotlist_id=123,
-                            owner_ids=[111L], editor_ids=[222L, 333L])
+                            owner_ids=[111], editor_ids=[222, 333])
     # hotlist2 will get deleted
     hotlist2 = fake.Hotlist(hotlist_name='name', hotlist_id=223,
-                            owner_ids=[222L], editor_ids=[111L, 333L])
+                            owner_ids=[222], editor_ids=[111, 333])
     delete_hotlists = [hotlist2.hotlist_id]
     hotlists_by_id = {hotlist1.hotlist_id: hotlist1,
                       hotlist2.hotlist_id: hotlist2}
     self.features_service.LookupUserHotlists = mock.Mock(
         return_value=hotlists_by_id)
 
-    # User 333L already has a hotlist named 'name'.
+    # User 333 already has a hotlist named 'name'.
     def side_effect(_cnxn, hotlist_names, owner_ids):
-      if 333L in owner_ids and 'name' in hotlist_names:
-        return {('name', 333L): 567}
+      if 333 in owner_ids and 'name' in hotlist_names:
+        return {('name', 333): 567}
       return {}
     self.features_service.LookupHotlistIDs = mock.Mock(
         side_effect=side_effect)
@@ -988,7 +988,7 @@ assert_called_once_with(self.cnxn, user_id=user_ids, commit=commit, limit=50)
         self.cnxn, user_ids, star_service, user_service)
 
     self.features_service.UpdateHotlistRoles.assert_called_once_with(
-        self.cnxn, hotlist1.hotlist_id, [333L], [222L], [], commit=False)
+        self.cnxn, hotlist1.hotlist_id, [333], [222], [], commit=False)
 
     self.features_service.hotlist2user_tbl.Delete.assert_has_calls(
         [mock.call(self.cnxn, user_id=user_ids, commit=False),

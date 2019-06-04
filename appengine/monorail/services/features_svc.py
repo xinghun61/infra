@@ -544,14 +544,14 @@ class FeaturesService(object):
     """Completely destroy filter rule info for the specified project."""
     self.filterrule_tbl.Delete(cnxn, project_id=project_id)
 
-  def ExpungeFilterRulesByUser(self, cnxn, emails_by_id):
+  def ExpungeFilterRulesByUser(self, cnxn, user_ids_by_email):
     """Wipes any Filter Rules containing the given users.
 
     This method will not commit the operation. This method will not make
     changes to in-memory data.
     Args:
       cnxn: connection to SQL database.
-      emails_by_id: dict of {user_id: email} of all users we want to
+      user_ids_by_email: dict of {user_id: email} of all users we want to
         expunge
 
     Returns:
@@ -559,7 +559,7 @@ class FeaturesService(object):
       Rules that will be deleted for containing the given emails.
     """
     where_conds = []
-    for user_id, email in emails_by_id.iteritems():
+    for email, user_id in user_ids_by_email.iteritems():
       fmt_email = '%%%s%%' % email
       notify_str = '%%add_notify:%s%%' % email
       cc_id_str = '%%add_cc_id:%s%%' % user_id
