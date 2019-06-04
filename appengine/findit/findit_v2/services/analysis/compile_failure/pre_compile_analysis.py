@@ -197,6 +197,11 @@ def UpdateCompileFailuresWithFirstFailureInfo(context, build,
 
   need_go_back = False
   for prev_build in previous_builds:
+    if prev_build.id == build.id:
+      # TODO(crbug.com/969124): remove the check when SearchBuilds RPC works as
+      # expected.
+      continue
+
     prev_build_info = {
         'id': prev_build.id,
         'number': prev_build.number,

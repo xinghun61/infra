@@ -220,10 +220,18 @@ def GetBlameListForV2Build(build):
   Returns:
     (list of str): Blame_list of the build.
   """
-  search_build_response = buildbucket_client.SearchV2BuildsOnBuilder(
-      build.builder, build_range=(None, build.id), page_size=1)
-  previous_build = search_build_response.builds[
-      0] if search_build_response.builds else None
+
+  search_builds_response = buildbucket_client.SearchV2BuildsOnBuilder(
+      build.builder, build_range=(None, build.id), page_size=2)
+
+  previous_build = None
+  for search_build in search_builds_response.builds:
+    # TODO(crbug.com/969124): remove the loop when SearchBuilds RPC works as
+    # expected.
+    if search_build.id != build.id:
+      previous_build = search_build
+      break
+
   if not previous_build:
     logging.warning('No previous build found for build %d.', build.id)
 

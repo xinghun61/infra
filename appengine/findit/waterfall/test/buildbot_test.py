@@ -285,13 +285,13 @@ class BuildBotTest(unittest.TestCase):
     gitiles_host = 'chromium.googlesource.com'
     gitiles_ref = 'refs/heads/master'
 
-    build = Build()
+    build = Build(id=80000000123)
     build.input.gitiles_commit.project = gitiles_project
     build.input.gitiles_commit.host = gitiles_host
     build.input.gitiles_commit.ref = gitiles_ref
     build.input.gitiles_commit.id = 'rev4'
 
-    previous_build = Build()
+    previous_build = Build(id=80000000122)
     previous_build.input.gitiles_commit.project = gitiles_project
     previous_build.input.gitiles_commit.host = gitiles_host
     previous_build.input.gitiles_commit.ref = gitiles_ref

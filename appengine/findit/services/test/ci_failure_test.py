@@ -167,11 +167,11 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     log = step2.logs.add()
     log.name = 'stdout'
 
-    build_1 = Build(number=1, status=common_pb2.FAILURE)
+    build_1 = Build(number=1, status=common_pb2.FAILURE, id=80000000001)
     build_1.steps.extend([step1, step2])
     build_1.input.gitiles_commit.id = 'rev1'
 
-    build_0 = Build(number=0, status=common_pb2.FAILURE)
+    build_0 = Build(number=0, status=common_pb2.FAILURE, id=80000000000)
     build_0.steps.extend([step1, step2])
     build_0.input.gitiles_commit.id = 'rev0'
 
@@ -250,10 +250,10 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
-    build_121 = Build(number=121, status=common_pb2.SUCCESS)
+    build_121 = Build(number=121, status=common_pb2.SUCCESS, id=80000000121)
     build_121.input.gitiles_commit.id = 'rev121'
 
-    build_122 = Build(number=122, status=common_pb2.FAILURE)
+    build_122 = Build(number=122, status=common_pb2.FAILURE, id=80000000122)
     step1 = Step(name='net_unittests', status=common_pb2.SUCCESS)
     log = step1.logs.add()
     log.name = 'stdout'

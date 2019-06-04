@@ -55,8 +55,8 @@ def GetBuildInfo(master_name, builder_name, build_number):
   if not build.build_id:
     return None
 
-  bb_build = buildbucket_client.GetV2Build(build.build_id,
-                                           fields=FieldMask(paths=['*']))
+  bb_build = buildbucket_client.GetV2Build(
+      build.build_id, fields=FieldMask(paths=['*']))
   build_info = buildbot.ExtractBuildInfoFromV2Build(master_name, builder_name,
                                                     build_number, bb_build)
 
@@ -164,14 +164,25 @@ def IteratePreviousBuildsFrom(master_name, builder_name, build_id, entry_limit):
     search_builds_response = buildbucket_client.SearchV2BuildsOnBuilder(
         builder,
         build_range=(None, end_build_id),
-        page_size=1,
+        page_size=2,
         fields=FieldMask(paths=['builds.*.*']))
 
     if not search_builds_response.builds:
       # No more previous build.
       return
 
-    previous_build = search_builds_response.builds[0]
+    previous_build = None
+    # TODO(crbug.com/969124): remove the loop when SearchBuilds RPC works as
+    # expected.
+    for search_build in search_builds_response.builds:
+      if search_build.id != end_build_id:
+        previous_build = search_build
+        break
+
+    if not previous_build:
+      logging.warning('No previous build found for build %d.', end_build_id)
+      return
+
     end_build_id = previous_build.id
     entry_number += 1
     yield previous_build
