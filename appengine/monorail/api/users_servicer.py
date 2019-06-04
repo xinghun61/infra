@@ -10,6 +10,7 @@ from api.api_proto import users_pb2
 from api.api_proto import users_prpc_pb2
 from api.api_proto import user_objects_pb2
 from businesslogic import work_env
+from framework import authdata
 from framework import framework_views
 from framework import permissions
 
@@ -178,4 +179,27 @@ class UsersServicer(monorail_servicer.MonorailServicer):
       we.UnlinkAccounts(parent_id, child_id)
 
     result = users_pb2.UnlinkAccountsResponse()
+    return result
+
+  @monorail_servicer.PRPCMethod
+  def GetUsersProjects(self, mc, request):
+    user_ids = converters.IngestUserRefs(
+        mc.cnxn, request.user_refs, self.services.user)
+    user_auths = [
+        authdata.AuthData.FromUserID(mc.cnxn, user_id, self.services)
+        for user_id in user_ids]
+
+    result = users_pb2.GetUsersProjectsResponse()
+    with work_env.WorkEnv(mc, self.services) as we:
+      for user_ref, auth in zip(request.user_refs, user_auths):
+        starred = we.ListStarredProjects(auth.user_id)
+        owner, _archived, member, contrib = we.GetUserProjects(
+            auth.effective_ids)
+        user_projects = result.users_projects.add()
+        user_projects.user_ref.CopyFrom(user_ref)
+        user_projects.owner_of.extend(p.project_name for p in owner)
+        user_projects.member_of.extend(p.project_name for p in member)
+        user_projects.contributor_to.extend(p.project_name for p in contrib)
+        user_projects.starred_projects.extend(p.project_name for p in starred)
+
     return result

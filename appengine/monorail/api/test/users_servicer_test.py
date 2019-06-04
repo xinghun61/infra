@@ -20,6 +20,7 @@ from framework import authdata
 from framework import exceptions
 from framework import monorailcontext
 from framework import permissions
+from proto import project_pb2
 from proto import tracker_pb2
 from proto import user_pb2
 from testing import fake
@@ -38,6 +39,7 @@ class UsersServicerTest(unittest.TestCase):
         user_star=fake.UserStarService(),
         usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
+        project_star=fake.ProjectStarService(),
         features=fake.FeaturesService())
     self.project = self.services.project.TestAddProject('proj', project_id=987)
     self.user = self.services.user.TestAddUser('owner@example.com', 111)
@@ -538,3 +540,64 @@ class UsersServicerTest(unittest.TestCase):
     self.CallWrapped(self.users_svcr.UnlinkAccounts, mc, request)
 
     self.assertEqual([], self.services.user.linked_account_rows)
+
+  def AddUserProjects(self, user_id):
+    project_states = {
+        'live': project_pb2.ProjectState.LIVE,
+        'archived': project_pb2.ProjectState.ARCHIVED,
+        'deletable': project_pb2.ProjectState.DELETABLE}
+
+    for name, state in project_states.iteritems():
+      self.services.project.TestAddProject(
+          'owner-%s-%s' % (name, user_id), state=state, owner_ids=[user_id])
+      self.services.project.TestAddProject(
+          'committer-%s-%s' % (name, user_id), state=state,\
+          committer_ids=[user_id])
+      contributor = self.services.project.TestAddProject(
+          'contributor-%s-%s' % (name, user_id), state=state)
+      contributor.contributor_ids = [user_id]
+
+    members_only = self.services.project.TestAddProject(
+        'members-only-' + str(user_id), owner_ids=[user_id])
+    members_only.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+
+  def testGetUsersProjects(self):
+    self.user = self.services.user.TestAddUser('test3@example.com', 333)
+    self.services.project_star.SetStar(
+        self.cnxn, self.project.project_id, 222, True)
+    self.project.committer_ids.extend([222])
+
+    self.AddUserProjects(222)
+    self.AddUserProjects(333)
+
+    request = users_pb2.GetUsersProjectsRequest(user_refs=[
+        common_pb2.UserRef(display_name='test2@example.com'),
+        common_pb2.UserRef(display_name='test3@example.com')])
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.users_svcr.GetUsersProjects, mc, request)
+
+    self.assertEqual([
+        user_objects_pb2.UserProjects(
+            user_ref=common_pb2.UserRef(display_name='test2@example.com'),
+            owner_of=['members-only-222', 'owner-live-222'],
+            member_of=['committer-live-222', 'proj'],
+            contributor_to=['contributor-live-222'],
+            starred_projects=['proj']),
+        user_objects_pb2.UserProjects(
+            user_ref=common_pb2.UserRef(display_name='test3@example.com'),
+            owner_of=['owner-live-333'],
+            member_of=['committer-live-333'],
+            contributor_to=['contributor-live-333'])],
+        list(response.users_projects))
+
+  def testGetUsersProjects_NoUserRefs(self):
+    request = users_pb2.GetUsersProjectsRequest()
+    mc = monorailcontext.MonorailContext(
+        self.services, cnxn=self.cnxn, requester='test2@example.com')
+    mc.LookupLoggedInUserPerms(self.project)
+    response = self.CallWrapped(
+        self.users_svcr.GetUsersProjects, mc, request)
+    self.assertEqual([], list(response.users_projects))

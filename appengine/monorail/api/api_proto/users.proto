@@ -24,6 +24,7 @@ service Users {
   rpc InviteLinkedParent (InviteLinkedParentRequest) returns (InviteLinkedParentResponse) {}
   rpc AcceptLinkedChild (AcceptLinkedChildRequest) returns (AcceptLinkedChildResponse) {}
   rpc UnlinkAccounts (UnlinkAccountsRequest) returns (UnlinkAccountsResponse) {}
+  rpc GetUsersProjects (GetUsersProjectsRequest) returns (GetUsersProjectsResponse) {}
 }
 
 
@@ -165,4 +166,16 @@ message UnlinkAccountsRequest {
 
 // Next available tag: 1
 message UnlinkAccountsResponse {
+}
+
+
+// Next available tag: 2
+message GetUsersProjectsRequest {
+  repeated UserRef user_refs = 1;
+}
+
+
+// Next available tag: 5
+message GetUsersProjectsResponse {
+  repeated UserProjects users_projects = 1;
 }

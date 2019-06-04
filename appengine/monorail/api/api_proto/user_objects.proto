@@ -30,3 +30,13 @@ message UserPrefValue {
   string name = 1;
   string value = 2;
 }
+
+
+// Next available tag: 6
+message UserProjects {
+  UserRef user_ref = 1;
+  repeated string owner_of = 2;
+  repeated string member_of = 3;
+  repeated string contributor_to = 4;
+  repeated string starred_projects = 5;
+}

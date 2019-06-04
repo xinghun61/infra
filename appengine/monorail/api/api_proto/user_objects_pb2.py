@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='monorail',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n api/api_proto/user_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\xaf\x01\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x15\n\ris_site_admin\x18\x03 \x01(\x08\x12\x14\n\x0c\x61vailability\x18\x04 \x01(\t\x12,\n\x11linked_parent_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12,\n\x11linked_child_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\",\n\rUserPrefValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\tb\x06proto3')
+  serialized_pb=_b('\n api/api_proto/user_objects.proto\x12\x08monorail\x1a\x1a\x61pi/api_proto/common.proto\"\xaf\x01\n\x04User\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x0f\n\x07user_id\x18\x02 \x01(\x03\x12\x15\n\ris_site_admin\x18\x03 \x01(\x08\x12\x14\n\x0c\x61vailability\x18\x04 \x01(\t\x12,\n\x11linked_parent_ref\x18\x05 \x01(\x0b\x32\x11.monorail.UserRef\x12,\n\x11linked_child_refs\x18\x06 \x03(\x0b\x32\x11.monorail.UserRef\",\n\rUserPrefValue\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\"\x8a\x01\n\x0cUserProjects\x12#\n\x08user_ref\x18\x01 \x01(\x0b\x32\x11.monorail.UserRef\x12\x10\n\x08owner_of\x18\x02 \x03(\t\x12\x11\n\tmember_of\x18\x03 \x03(\t\x12\x16\n\x0e\x63ontributor_to\x18\x04 \x03(\t\x12\x18\n\x10starred_projects\x18\x05 \x03(\tb\x06proto3')
   ,
   dependencies=[api_dot_api__proto_dot_common__pb2.DESCRIPTOR,])
 
@@ -130,10 +130,71 @@ _USERPREFVALUE = _descriptor.Descriptor(
   serialized_end=296,
 )
 
+
+_USERPROJECTS = _descriptor.Descriptor(
+  name='UserProjects',
+  full_name='monorail.UserProjects',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='user_ref', full_name='monorail.UserProjects.user_ref', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='owner_of', full_name='monorail.UserProjects.owner_of', index=1,
+      number=2, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='member_of', full_name='monorail.UserProjects.member_of', index=2,
+      number=3, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='contributor_to', full_name='monorail.UserProjects.contributor_to', index=3,
+      number=4, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='starred_projects', full_name='monorail.UserProjects.starred_projects', index=4,
+      number=5, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=299,
+  serialized_end=437,
+)
+
 _USER.fields_by_name['linked_parent_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 _USER.fields_by_name['linked_child_refs'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
+_USERPROJECTS.fields_by_name['user_ref'].message_type = api_dot_api__proto_dot_common__pb2._USERREF
 DESCRIPTOR.message_types_by_name['User'] = _USER
 DESCRIPTOR.message_types_by_name['UserPrefValue'] = _USERPREFVALUE
+DESCRIPTOR.message_types_by_name['UserProjects'] = _USERPROJECTS
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 User = _reflection.GeneratedProtocolMessageType('User', (_message.Message,), dict(
@@ -149,6 +210,13 @@ UserPrefValue = _reflection.GeneratedProtocolMessageType('UserPrefValue', (_mess
   # @@protoc_insertion_point(class_scope:monorail.UserPrefValue)
   ))
 _sym_db.RegisterMessage(UserPrefValue)
+
+UserProjects = _reflection.GeneratedProtocolMessageType('UserProjects', (_message.Message,), dict(
+  DESCRIPTOR = _USERPROJECTS,
+  __module__ = 'api.api_proto.user_objects_pb2'
+  # @@protoc_insertion_point(class_scope:monorail.UserProjects)
+  ))
+_sym_db.RegisterMessage(UserProjects)
 
 
 # @@protoc_insertion_point(module_scope)
