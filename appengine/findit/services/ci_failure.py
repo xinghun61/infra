@@ -237,7 +237,7 @@ def GetLaterBuildsWithAnySameStepFailure(master_name,
       - find a build with non-overlapping failures.
   """
   latest_build_numbers = buildbot.GetRecentCompletedBuilds(
-      master_name, builder_name, FinditHttpClient())
+      master_name, builder_name)
   builds_with_same_failed_steps = defaultdict(list)
 
   if not latest_build_numbers:
