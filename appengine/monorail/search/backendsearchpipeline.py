@@ -10,6 +10,9 @@ of issues in the system. The backend search pipeline retrieves the issues
 that match the user query, puts them into memcache, and returns them to
 the frontend search pipeline.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import re

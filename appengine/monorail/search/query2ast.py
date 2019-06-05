@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """A set of functions that integrate the GAE search index with Monorail."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import datetime

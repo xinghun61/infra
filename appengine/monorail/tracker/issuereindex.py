@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Classes that implement an admin utility to re-index issues in bulk."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import urllib

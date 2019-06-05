@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Tests for the client config service."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import base64
 import unittest

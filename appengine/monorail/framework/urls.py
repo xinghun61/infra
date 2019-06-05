@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Constants that define the Monorail URL space."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 # URLs of site-wide Monorail pages
 HOSTING_HOME = '/hosting/'  # the big search box w/ popular labels

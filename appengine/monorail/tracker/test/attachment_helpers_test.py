@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Unittest for the tracker helpers module."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from mock import Mock, patch
 import unittest

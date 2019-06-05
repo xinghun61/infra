@@ -10,6 +10,9 @@ banned by adding a 'banned' field to his/her User PB in the DB.  Whenever
 a user with a banned indicator visits any page, AssertBasePermission()
 checks has_banned and redirects to this page.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

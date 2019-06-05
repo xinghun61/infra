@@ -11,6 +11,9 @@ persistence layer on top of an SQL database.
 
 Business objects are described in tracker_pb2.py and tracker_bizobj.py.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import json

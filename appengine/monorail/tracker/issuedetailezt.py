@@ -10,6 +10,9 @@ Summary of classes:
                process additional comments or metadata changes on it.
   FlagSpamForm: Record the user's desire to report the issue as spam.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import httplib
 import json

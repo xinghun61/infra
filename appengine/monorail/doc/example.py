@@ -1,7 +1,12 @@
 # This example uses Google APIs Client for Python, you can download it here:
 # https://developers.google.com/api-client-library/python/
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 import apiclient
+
 import httplib2
 
 from oauth2client.file import Storage

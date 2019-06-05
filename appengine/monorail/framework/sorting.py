@@ -19,6 +19,9 @@ key-value labels, the well-known labels are considered to come
 before any non-well-known labels, and those well-known labels sort in
 the order in which they are defined in the tool config PB.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

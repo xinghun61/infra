@@ -8,6 +8,9 @@
 Unlike most attachments, this is not a download, it is a full HTML page
 with safely escaped user content.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

@@ -10,6 +10,9 @@ called "canned queries".  Or, they can be personal saved queries that
 may appear in the search scope drop-down, on the user's dashboard, or
 in the user's subscription.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import re

@@ -14,6 +14,9 @@ To manually test this API locally, use the following steps:
 4. Click shield icon in the omnibar and allow unsafe scripts.
 5. Click on the "Services" menu item in the API Explorer.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import datetime
 import endpoints

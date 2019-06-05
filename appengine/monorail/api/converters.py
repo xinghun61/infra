@@ -11,6 +11,9 @@ will always be a need for conversion because out internal objects may have
 field that we do not want to expose externally, or the format of some fields
 may be different than how we want to expose them.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

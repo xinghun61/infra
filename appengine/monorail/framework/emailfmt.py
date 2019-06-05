@@ -9,6 +9,9 @@ Specifically, this module has the logic for generating various email
 header lines that help match inbound and outbound email to the project
 and artifact that generated it.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import hmac
 import logging

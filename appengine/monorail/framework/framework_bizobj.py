@@ -9,6 +9,9 @@ These are classes and functions that operate on the objects that
 users care about in Monorail but that are not part of just one specific
 component: e.g., projects, users, and labels.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import re

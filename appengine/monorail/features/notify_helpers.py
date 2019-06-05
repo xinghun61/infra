@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Helper functions for email notifications of issue changes."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import cgi
 import json

@@ -8,6 +8,9 @@
 A "feed" is a servlet that is accessed by another part of our system and that
 responds with a JSON value rather than HTML to display in a browser.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import httplib
 import json

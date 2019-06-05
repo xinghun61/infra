@@ -9,6 +9,9 @@ These classes implement the Statuses, Labels and fields, Components, Rules, and
 Views subtabs under the Process tab.  Unlike most servlet modules, this single
 file holds a base class and several related servlet classes.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import itertools

@@ -5,6 +5,9 @@
 
 """Set of helpers for constructing spam-related pages.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 from framework import template_helpers
 from third_party import ezt
 

@@ -8,6 +8,9 @@
 This module has functions that are reused in multiple servlets or
 other modules.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import logging

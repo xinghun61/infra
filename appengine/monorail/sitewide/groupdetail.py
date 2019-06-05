@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """A class to display a user group, including a paginated list of members."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import time

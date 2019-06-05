@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Service manager to initialize all services."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from features import autolink
 from services import cachemanager_svc

@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Implemention of the hotlist issues list output as a CSV file."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from features import hotlistissues
 from framework import framework_views

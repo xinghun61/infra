@@ -9,6 +9,9 @@ This page handles the /wiki and /source urls which are forwarded from Codesite.
 If a project has defined appropriate urls, then the users are forwarded there.
 If not, they are redirected to adminIntro.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import httplib
 

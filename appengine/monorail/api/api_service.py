@@ -23,6 +23,9 @@
 # TODO(agable): Actually integrate the rpcexplorer.
 # You can use the API Explorer here: https://bugs.chromium.org/rpcexplorer
 
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from api import features_servicer
 from api import issues_servicer

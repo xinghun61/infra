@@ -36,6 +36,9 @@ some optimizations: (a) splitting the table into multiple tables by
 kind, or (b) sharding the table by cache_key.  Or, maybe leverage memcache
 to avoid even hitting the DB in the frequent case where nothing has changed.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import logging

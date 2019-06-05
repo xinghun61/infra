@@ -5,6 +5,9 @@
 """ Tasks and handlers for maintaining the spam classifier model. These
     should be run via cron and task queue rather than manually.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import cgi
 import csv

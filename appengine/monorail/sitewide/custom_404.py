@@ -11,6 +11,9 @@ rather than telling them "404. That's an error. That's all we know."
 which is maddeningly not helpful when we already have a project pb
 loaded.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import httplib
 from framework import exceptions

@@ -19,6 +19,9 @@ names, alias names, and value placeholders into the generated string.  These
 functions use the string format() method and the "{varname}" syntax to avoid
 confusion with the "%s" syntax used for SQL value placeholders.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

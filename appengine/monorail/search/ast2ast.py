@@ -27,6 +27,9 @@ The simplified main query is better because:
     the lookup and simplification logic plus the main query logic this way
     than it would be to deal with an even more complex SQL main query.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import logging

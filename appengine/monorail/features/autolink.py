@@ -27,6 +27,9 @@ The dictionary of regexes is used here because, in the future, we
 might add more regexes for each component rather than have one complex
 regex per component.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import re

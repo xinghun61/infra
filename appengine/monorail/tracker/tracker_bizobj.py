@@ -9,6 +9,9 @@ These are classes and functions that operate on the objects that
 users care about in the issue tracker: e.g., issues, and the issue
 tracker configuration.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import logging

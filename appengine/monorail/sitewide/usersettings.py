@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Classes for the user settings (preferences) page."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import time
 import urllib

@@ -14,6 +14,9 @@ TODO(jrobbins): give the user better options on how to proceed.
 Summary of classes:
   ArtifactCollision: Show an error message explaining the mid-air collision.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import re
 

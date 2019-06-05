@@ -13,6 +13,9 @@ User groups are represented in the database by:
 Membership of a user X in user group Y is represented as:
 - A row in the UserGroup table with user_id=X and group_id=Y.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import logging

@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Classes to implement the hotlistpeople page and related forms."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import time

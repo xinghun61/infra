@@ -23,6 +23,9 @@ If these secret values ever need to change:
 (1) Make the change on the Google Cloud Console in the Cloud Datastore tab.
 (2) Flush memcache.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

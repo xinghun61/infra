@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Helper functions used in user group modules."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from framework import framework_views
 from proto import usergroup_pb2

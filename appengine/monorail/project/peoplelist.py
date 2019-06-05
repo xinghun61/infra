@@ -9,6 +9,9 @@ This page lists owners, members, and contribtors.  For each
 member, we display their username, permission system role + extra
 perms, and notes on their involvement in the project.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import time

@@ -18,6 +18,9 @@ The user role is one of admin, owner, member, outsider user, or anon.
 The project status is one of the project states defined in project_pb2,
 or a special constant defined below.  Likewise for access level.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import bisect
 import collections

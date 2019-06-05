@@ -8,6 +8,9 @@
 This page is shown when the user performs a given type of action
 too many times in a 24-hour period or exceeds a lifetime limit.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from framework import servlet
 

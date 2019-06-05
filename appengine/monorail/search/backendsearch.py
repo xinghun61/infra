@@ -19,6 +19,9 @@ checking.  The user ID for the special "me" term can also be passed in
 (so that you can view another user's dashboard and "me" will refer to
 them).
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import time

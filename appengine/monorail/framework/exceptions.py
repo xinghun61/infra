@@ -5,6 +5,9 @@
 
 """Exception classes used throughout monorail.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 class Error(Exception):
   """Base class for errors from this module."""

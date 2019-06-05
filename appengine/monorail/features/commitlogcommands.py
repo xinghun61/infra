@@ -12,6 +12,9 @@ It could also be expanded to allow new issues to be created. Or, to
 handle commands in commit-log messages if the version control system
 invokes a webhook.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import re

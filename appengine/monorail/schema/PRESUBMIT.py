@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Presubmit script just for Monorail's SQL files."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 
 def AlterTableCheck(input_api, output_api):  # pragma: no cover

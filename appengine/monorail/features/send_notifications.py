@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Functions that prepare and send email notifications of issue changes."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 
 import logging

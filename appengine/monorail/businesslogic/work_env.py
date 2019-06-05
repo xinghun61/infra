@@ -45,6 +45,9 @@ Responsibilities of the Services layer:
 + Breaking large operations into batches as appropriate for the underlying
   data storage service, e.g., DB shards and search engine indexing.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import logging

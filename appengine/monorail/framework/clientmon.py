@@ -7,6 +7,9 @@
 
 Updates frontend/js_errors ts_mon metric.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import json
 import logging

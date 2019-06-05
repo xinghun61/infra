@@ -11,6 +11,9 @@ JSON-formatted dict with issue_ids that that user is not allowed to
 view.  As a side-effect, this servlet updates multiple entries
 in memcache, including each "nonviewable:USER_ID;PROJECT_ID;SHARD_ID".
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

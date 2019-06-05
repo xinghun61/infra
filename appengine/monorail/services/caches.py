@@ -17,6 +17,9 @@ info about related issues.  We never use the cache to load objects as
 part of a read-modify-save sequence because that could cause stored data
 to revert to a previous state.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

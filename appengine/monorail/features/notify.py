@@ -11,6 +11,9 @@ the project-wide mailing list, issue owners, cc'd users, starrers,
 also-notify addresses, and users who have saved queries with email notification
 set.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import json

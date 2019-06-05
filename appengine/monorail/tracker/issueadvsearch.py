@@ -9,6 +9,9 @@ The advanced search page simply displays an HTML page with a form.
 The form handler converts the widget-based query into a googley query
 string and redirects the user to the issue list servlet.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import re

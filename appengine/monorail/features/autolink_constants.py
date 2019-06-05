@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Some constants of regexes used in Monorail to validate urls and emails."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import re
 import settings

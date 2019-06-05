@@ -21,6 +21,9 @@ strings.
 For more info, see the "Sorting in Monorail" and "What makes Monorail Fast?"
 design docs.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 

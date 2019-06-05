@@ -9,6 +9,9 @@ Summary of classes:
   IssueBulkEdit: Show a form for editing multiple issues and allow the
      user to update them all at once.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import httplib

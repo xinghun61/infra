@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Message classes for use by template_helpers_test."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 from protorpc import messages
 

@@ -10,6 +10,9 @@
   UserUpdatesDevelopers: Handles displaying starred developers
   UserUpdatesIndividual: Handles displaying activities by the viewed user
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 
 import logging

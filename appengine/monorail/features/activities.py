@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """Code to support project and user activies pages."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 import time

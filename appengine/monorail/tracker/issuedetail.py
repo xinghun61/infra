@@ -9,6 +9,10 @@ Summary of classes:
   IssueDetail: Show one issue in detail w/ all metadata and comments, and
                process additional comments or metadata changes on it.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
+
 
 import logging
 

@@ -16,6 +16,9 @@ Summary of page classes:
   Servlet: abstract base class for all Monorail servlets.
   _ContextDebugItem: displays page_data elements for on-page debugging.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import gc
 import httplib

@@ -10,6 +10,9 @@ Summary of page classes:
                   MIME type.
   IssueAttachmentDeletion: Form handler for deleting attachments.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import base64
 import logging

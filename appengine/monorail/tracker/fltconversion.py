@@ -4,6 +4,9 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """FLT task to be manually triggered to convert launch issues."""
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import collections
 import logging

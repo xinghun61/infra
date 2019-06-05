@@ -9,6 +9,9 @@ To simplify our servlets and avoid duplication of code, we parse some
 info out of the request as soon as we get it and then pass a MonorailRequest
 object to the servlet-specific request handler methods.
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import endpoints
 import logging

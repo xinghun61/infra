@@ -8,6 +8,9 @@
 These are classes and functions that operate on the objects that users care
 about in features (eg. hotlists).
 """
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import logging
 
