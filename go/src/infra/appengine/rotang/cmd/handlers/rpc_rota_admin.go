@@ -36,6 +36,7 @@ func (h *State) CreateExternal(ctx context.Context, req *apb.CreateExternalReque
 	return &apb.CreateExternalResponse{}, h.configStore(ctx).CreateRotaConfig(ctx, &rotang.Configuration{
 		Config: rotang.Config{
 			Name:          req.GetName(),
+			Calendar:      req.GetCalendar(),
 			Description:   req.GetDescription(),
 			Owners:        req.GetOwnersEmails(),
 			External:      true,

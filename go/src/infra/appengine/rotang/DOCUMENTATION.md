@@ -14,6 +14,7 @@ This document contains information on how to use the RotaNG web interface.
     - [From legacy JSON file](#new-from-json)
     - [Update from legacy JSON file](#update-from-legacy-json-file)
     - [Configuration Options](#configuration-options)
+    - [External Rotations](#external-rotations)
   - [Manage Shifts](#manage-shifts)
     - [History](#history)
     - [Current](#current)
@@ -303,6 +304,42 @@ Note: *For the OOO entries to be saved you need to click the `Update` button whe
     **Note**: This option is only available for 24h shifts.
 
 
+### External Rotations
+
+RotaNG support External rotations by scraping a Google calendar. Matching calendar events are then converted to RotaNG shifts.
+This gives that OnCall informatin can be given for both RotaNG native rotation and external rotations.
+
+Shifts from External Rotations can not be changed from RotaNG, shift swaps, scheduling and shift management is disabled.
+
+The proto is described [here](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/rotang/proto/rotangapi/rotangapi.proto), see `CreateExternalRequest`.
+
+#### Create External Rotation
+
+Creating an External Rotation is done through prpc.
+
+Example text proto CCI_Trooper:
+
+```
+me: "CCI Trooper",
+calendar: "google.com_3aov6uidfjscpj2hrpsd8i4e7o@group.calendar.google.com",
+owners_emails: ["olakar@google.com"],
+description: "CCI Trooper external",
+match: "CCI-Trooper:",
+```
+
+Example usage:
+
+```
+cat CCI_Trooper | prpc call -format text rota-ng-staging.appspot.com rotangapi.RotationAdmin.CreateExternal
+```
+
+#### Delete External Rotation
+
+Example usage:
+
+```
+echo '{ "name": "CCI Trooper" }' | prpc call rota-ng-staging.appspot.com rotangapi.RotationAdmin.DeleteExternal
+```
 
 
 ### Manage shifts

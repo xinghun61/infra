@@ -39,7 +39,7 @@ func (h *State) JobExternal(ctx *router.Context) {
 		start := clock.Now(ctx.Context)
 		shifts, err := h.calendar.TrooperShifts(ctx, cfg.Config.Calendar, cfg.Config.ExternalMatch, externalShift, start, start.Add(fullDay*14))
 		if err != nil && status.Code(err) != codes.NotFound {
-			logging.Warningf(ctx.Context, "TrooperShifts(ctx, %q , %q , _, _) failed: %v", cfg.Config.Calendar, cfg.Config.Name)
+			logging.Warningf(ctx.Context, "TrooperShifts(ctx, %q , %q , _, _) failed: %v", cfg.Config.Calendar, cfg.Config.Name, err)
 			continue
 		}
 
