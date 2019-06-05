@@ -135,11 +135,10 @@ Components.set(
 // Lookup referenced artifacts functions.
 function LookupReferencedIssues(issueRefs, componentName) {
   return new Promise((resolve, reject) => {
-    const message = {
-      issueRefs: issueRefs,
-    };
+    issueRefs = issueRefs.filter(
+      ({projectName, localId}) => projectName && parseInt(localId));
     const listReferencedIssues = prpcClient.call(
-      'monorail.Issues', 'ListReferencedIssues', message);
+      'monorail.Issues', 'ListReferencedIssues', {issueRefs});
     return listReferencedIssues.then((response) => {
       resolve({'componentName': componentName, 'existingRefs': response});
     });

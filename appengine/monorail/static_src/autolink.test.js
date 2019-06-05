@@ -1,5 +1,7 @@
+import sinon from 'sinon';
 import {assert} from 'chai';
 import {autolink} from './autolink.js';
+import {prpcClient} from 'prpc-client-instance.js';
 
 const components = autolink.Components;
 const markupAutolinks = autolink.markupAutolinks;
@@ -788,6 +790,35 @@ describe('autolink', () => {
           },
         ]
       );
+    });
+  });
+
+  describe('getReferencedArtifacts', () => {
+    beforeEach(() => {
+      sinon.stub(prpcClient, 'call').returns(Promise.resolve({}));
+    });
+
+    afterEach(() => {
+      prpcClient.call.restore();
+    });
+
+    it('filters invalid issue refs', async () => {
+      const comments = [
+        {
+          content: 'issue 0 issue 1 Bug: chromium:3 Bug: chromium:0',
+        },
+      ];
+      autolink.getReferencedArtifacts(comments, 'proj');
+      assert.isTrue(prpcClient.call.calledWith(
+        'monorail.Issues',
+        'ListReferencedIssues',
+        {
+          issueRefs: [
+            {projectName: 'proj', localId: '1'},
+            {projectName: 'chromium', localId: '3'},
+          ],
+        },
+      ));
     });
   });
 });
