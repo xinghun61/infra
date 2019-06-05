@@ -171,7 +171,6 @@ class ChromeOSProjectAPITest(wf_testcase.TestCase):
         'findit_bisect': {
             'targets': [output_target1]
         },
-        'build_image': False
     }
 
     self.assertEqual(

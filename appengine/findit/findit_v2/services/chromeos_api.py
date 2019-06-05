@@ -256,5 +256,4 @@ class ChromeOSProjectAPI(ProjectAPI):
         'findit_bisect': {
             'targets': targets
         },
-        'build_image': False
     }
