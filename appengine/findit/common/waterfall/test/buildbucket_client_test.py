@@ -225,30 +225,6 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('Not Found', error.message)
     self.assertIsNone(build)
 
-  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testSearchBuildsSuccess(self, mocked_fetch):
-    tags = [('tag', 'builder:Linux Test')]
-    response = {'builds': [{'status': 'COMPLETED'}]}
-    mocked_fetch.return_value = _Result(
-        status_code=200, content=json.dumps(response), headers={})
-    self.assertEqual(response, buildbucket_client.SearchBuilds(tags))
-
-  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testSearchBuildsFailed(self, mocked_fetch):
-    tags = [('tag', 'builder:Linux Test')]
-    response = 'Not Found'
-    mocked_fetch.return_value = _Result(
-        status_code=404, content=response, headers={})
-    self.assertIsNone(buildbucket_client.SearchBuilds(tags))
-
-  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
-  def testSearchBuildsResponseNotJsonSerializable(self, mocked_fetch):
-    tags = [('tag', 'builder:Linux Test')]
-    response = 'Not json serializable.'
-    mocked_fetch.return_value = _Result(
-        status_code=200, content=response, headers={})
-    self.assertIsNone(buildbucket_client.SearchBuilds(tags))
-
   @mock.patch.object(FinditHttpClient, 'Post')
   def testGetV2Build(self, mock_post):
     build_id = '8945610992972640896'

@@ -6,7 +6,6 @@
 import collections
 import json
 import logging
-import urllib
 
 from buildbucket_proto import common_pb2
 from buildbucket_proto.build_pb2 import Build
@@ -28,9 +27,6 @@ _BUILDBUCKET_PUT_GET_ENDPOINT = (
     'https://{hostname}/_ah/api/buildbucket/v1/builds'.format(
         hostname=_BUILDBUCKET_HOST))
 _LUCI_PREFIX = 'luci.'
-_BUILDBUCKET_SEARCH_ENDPOINT = (
-    'https://{hostname}/_ah/api/buildbucket/v1/search'.format(
-        hostname=_BUILDBUCKET_HOST))
 _BUILDBUCKET_V2_GET_BUILD_ENDPOINT = (
     'https://{hostname}/prpc/buildbucket.v2.Builds/GetBuild'.format(
         hostname=_BUILDBUCKET_HOST))
@@ -279,31 +275,6 @@ def GetTryJobs(build_ids):
       json_results.append(error_content)
 
   return _ConvertFuturesToResults(json_results)
-
-
-def SearchBuilds(tags):
-  """Returns data for builds that are searched by tags.
-
-  Args:
-    tags (list): A list of tags and their values in the format as
-      [('tag', 'buildername:Linux Tests'].
-
-  Returns:
-    data (dict): A dict of builds' info.
-  """
-  tag_str = urllib.urlencode(tags)
-  status_code, content, _response_headers = FinditHttpClient().Get(
-      _BUILDBUCKET_SEARCH_ENDPOINT + '?' + tag_str, headers=_GetHeaders())
-  if status_code == 200:
-    try:
-      return json.loads(content or '{}')
-    except (ValueError, TypeError):
-      logging.exception('Failed to search for builds using tags %s', tag_str)
-  else:
-    logging.error(
-        'Failed to search for builds using tags %s with status_code %d.',
-        tag_str, status_code)
-  return None
 
 
 def GetV2Build(build_id, fields=None):
