@@ -300,9 +300,8 @@ class ProcessCodeCoverageDataTest(WaterfallTestCase):
     mocked_is_request_from_appself.assert_called()
 
     mocked_get_validated_data.assert_called_with(
-        'https://storage.googleapis.com/code-coverage-data/presubmit/'
-        'chromium-review.googlesource.com/138000/4/try/linux-coverage-rel/'
-        '123456789/metadata/all.json.gz')
+        '/code-coverage-data/presubmit/chromium-review.googlesource.com/138000/'
+        '4/try/linux-coverage-rel/123456789/metadata/all.json.gz')
 
     expected_entity = PresubmitCoverageData.Create(
         server_host='chromium-review.googlesource.com',

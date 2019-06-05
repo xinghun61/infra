@@ -90,16 +90,19 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
 }
 
 
-def _GetValidatedData(gs_url):  # pragma: no cover.
-  """Returns the json data from the given GS url after validation.
+def _GetValidatedData(gs_path):  # pragma: no cover.
+  """Returns the json data from the given GS path after validation.
+
+  Args:
+    gs_path (str): Path to the file, in the format /bucket/object.
 
   Returns:
     json_data (dict): the json data of the file pointed by the given GS url, or
         None if the data can't be retrieved.
   """
-  logging.info('Fetching %s', gs_url)
-  status, content, _ = FinditHttpClient().Get(gs_url)
-  assert status == 200, 'Can not retrieve the data: %s' % gs_url
+  logging.info('Fetching data from %s', gs_path)
+  content = _GetFileContentFromGs(gs_path)
+  assert content, 'Failed to fetch coverage json data from %s' % gs_path
 
   logging.info('Decompressing and loading coverage data...')
   decompressed_data = zlib.decompress(content)
@@ -425,8 +428,8 @@ class FetchSourceFile(BaseHandler):
 class ProcessCodeCoverageData(BaseHandler):
   PERMISSION_LEVEL = Permission.APP_SELF
 
-  def _ProcessFullRepositoryData(self, commit, data, full_gs_dir, builder,
-                                 build_id):
+  def _ProcessFullRepositoryData(self, commit, data, full_gs_metadata_dir,
+                                 builder, build_id):
 
     # Load the commit log first so that we could fail fast before redo all.
     repo_url = 'https://%s/%s.git' % (commit.host, commit.project)
@@ -479,7 +482,7 @@ class ProcessCodeCoverageData(BaseHandler):
 
       def IterateOverFileShards(file_shards):
         for file_path in file_shards:
-          url = '%s/%s' % (full_gs_dir, file_path)
+          url = '%s/%s' % (full_gs_metadata_dir, file_path)
           # Download data one by one.
           yield _GetValidatedData(url).get('files', [])
 
@@ -658,7 +661,7 @@ class ProcessCodeCoverageData(BaseHandler):
     # Convert the Struct to standard dict, to use .get, .iteritems etc.
     properties = dict(build.output.properties.items())
     gs_bucket = properties.get('coverage_gs_bucket')
-    gs_path = properties.get('coverage_metadata_gs_path')
+    gs_metadata_dir = properties.get('coverage_metadata_gs_path')
     if properties.get('process_coverage_data_failure'):
       monitoring.code_coverage_cq_errors.increment({
           'project': build.builder.project,
@@ -667,14 +670,13 @@ class ProcessCodeCoverageData(BaseHandler):
       })
 
     # Ensure that the coverage data is ready.
-    if not gs_bucket or not gs_path:
+    if not gs_bucket or not gs_metadata_dir:
       logging.warn('coverage GS bucket info not available in %r', build.id)
       return
 
-    full_gs_dir = 'https://storage.googleapis.com/%s/%s' % (gs_bucket, gs_path)
-    gs_url = '%s/all.json.gz' % full_gs_dir
-
-    data = _GetValidatedData(gs_url)
+    full_gs_metadata_dir = '/%s/%s' % (gs_bucket, gs_metadata_dir)
+    all_json_gs_path = '%s/all.json.gz' % full_gs_metadata_dir
+    data = _GetValidatedData(all_json_gs_path)
 
     # Save the data in json.
     if build.builder.bucket == 'try':
@@ -685,7 +687,8 @@ class ProcessCodeCoverageData(BaseHandler):
     else:  # For a commit, we save the data by file and directory.
       assert build.input.gitiles_commit is not None, 'Expect a commit'
       self._ProcessFullRepositoryData(build.input.gitiles_commit, data,
-                                      full_gs_dir, build.builder, build_id)
+                                      full_gs_metadata_dir, build.builder,
+                                      build_id)
 
   # TODO(crbug.com/965559): Move this to a config, which can be easily changed
   # without commit/deployment cycles.
