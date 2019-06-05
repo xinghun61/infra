@@ -47,7 +47,7 @@ tic_prefix=$(realpath ../tic_prefix)
   mkdir -p $tic_build
   cd $tic_build
 
-  $src/configure --enable-termcap --prefix $tic_prefix
+  "$src/configure" --enable-termcap --prefix "$tic_prefix" || cat "$tic_build/config.log"
   make install -j $(nproc)
 )
 
