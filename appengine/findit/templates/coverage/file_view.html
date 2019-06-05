@@ -48,6 +48,13 @@
     .highlight-row:hover {
       background-color: #F0F0F0;
     }
+    .sticky{
+      position: sticky;
+      top: 28px;
+      padding: 8px;
+      background: white;
+      text-align: left;
+    }
     .legend {
       font-family: monospace;
     }
@@ -119,31 +126,31 @@
   <cats-app id="app" components="Tools>CodeCoverage" page-header="Code Coverage: line-by-line coverage (Chrome Browser for {{platform_ui_name}})">
     <div style="font-size:18px">
     Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>&platform={{platform}}">Component View</a>
-    <br>
-    <br>
     </div>
-    <div class="legend">
-      Legend:
-      <div class="color-sample covered-code"> Covered </div>
-      <div class="color-sample uncovered-code"> Not Covered </div>
-      <div class="color-sample incoverable-code"> Not-Compiled/Not-Instrumented </div>
-    </div>
-    <table>
-      <thead>
-        <tr class="coverage-header">
-          <th colspan="3">
+    <div style="width: fit-content;">
+    <div class="coverage-header">
             <a href="/p/chromium/coverage?host={{host}}&project={{project}}&platform={{platform}}">{{project}}</a>
             - {{data.commit_position or revision}}
             - <a href="/p/chromium/coverage?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path={{path_root}}&platform={{platform}}">{{path_root}}</a>{% for name, sub_path in path_parts %}<a style="padding-left:.3ex;" title="{{sub_path}}" href="/p/chromium/coverage/{{'dir' if name.endswith('/') else 'file'}}?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path={{sub_path}}&platform={{platform}}">{{name}}</a>{% endfor %}
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th class="sticky" colspan="3" style="top: -2px;">
+            <div class="legend">
+              Legend:
+              <div class="color-sample covered-code"> Covered </div>
+              <div class="color-sample uncovered-code"> Not Covered </div>
+              <div class="color-sample incoverable-code"> Not-Compiled/Not-Instrumented </div>
+            </div>
           </th>
         </tr>
         <tr>
-          <th>Line</th>
-          <th>Count</th>
-          <th>Source Code <span id="link-first-uncovered"></span></th>
+          <th class="sticky">Line</th>
+          <th class="sticky">Count</th>
+          <th class="sticky">Source Code <span id="link-first-uncovered"></span></th>
         </tr>
       </thead>
-
       <tbody id="report-data-container">
       {% for num, info in data.line_to_data %}
         <tr id="{{num}}" class="highlight-row">
@@ -182,5 +189,6 @@
       {% endfor %}
       </tbody>
     </table>
+    </div>
   </cats-app>
 </body>
