@@ -166,3 +166,5 @@ blacklist:
     description: someone making tons of API calls over the rate limit
   - subnet: 103.42.57.49
     description: someone making tons of API calls over the rate limit
+  - subnet: 193.148.16.227
+    description: someone making tons of API calls over the rate limit
