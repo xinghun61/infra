@@ -303,6 +303,7 @@ export default class MrChart extends LitElement {
       this.dateRange = dateRange;
       this.frequency = dateRange === 30 ? 1 : 7;
       this._fetchData(this.endDate);
+      window.getTSMonClient().recordDateRangeChange(dateRange);
     }
   }
 

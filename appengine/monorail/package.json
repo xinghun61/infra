@@ -38,7 +38,7 @@
   "license": "ISC",
   "dependencies": {
     "@chopsui/prpc-client": "0.0.2",
-    "@chopsui/tsmon-client": "0.0.1",
+    "@chopsui/tsmon-client": "1.0.1",
     "@webcomponents/webcomponentsjs": "^2.2.7",
     "chart.js": "^2.7.2",
     "debounce": "^1.2.0",
