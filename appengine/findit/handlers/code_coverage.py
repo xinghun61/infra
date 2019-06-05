@@ -707,8 +707,8 @@ class ProcessCodeCoverageData(BaseHandler):
     # the cast and libassistant team.
     if IsInternalInstance():
       return (project in ('cast-chromecast-internal') and
-              bucket in ('libassistant-absolute_coverage') and
-              builder in ('master.tryserver.cast-chromecast-internal.gce'))
+              bucket in ('master.tryserver.cast-chromecast-internal.gce') and
+              builder in ('libassistant-absolute_coverage'))
 
     return (project in ('chromium', 'chrome') and
             bucket in ('coverage', 'ci', 'try') and
