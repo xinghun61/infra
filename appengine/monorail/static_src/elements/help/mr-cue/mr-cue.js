@@ -25,6 +25,7 @@ export class MrCue extends connectStore(LitElement) {
     this.prefs = new Map();
     this.issue = null;
     this.referencedUsers = new Map();
+    this.nondismissible = false;
   }
 
   static get properties() {
@@ -33,6 +34,7 @@ export class MrCue extends connectStore(LitElement) {
       referencedUsers: {type: Object},
       user: {type: Object},
       cuePrefName: {type: String},
+      nondismissible: {type: Boolean},
       prefs: {type: Object},
       prefsLoaded: {type: Boolean},
       jumpLocalId: {type: Number},
@@ -62,6 +64,9 @@ export class MrCue extends connectStore(LitElement) {
        padding: 2px;
        cursor: pointer;
       }
+      i.material-icons[hidden] {
+        display: none;
+      }
       i.material-icons:hover {
         background: rgba(0, 0, 0, .2);
       }
@@ -75,6 +80,7 @@ export class MrCue extends connectStore(LitElement) {
         <i class="material-icons"
            title="Don't show this message again."
            @click=${this.dismiss}
+           ?hidden=${this.nondismissible}
            >close</i>
         ${this.message}
       </div>

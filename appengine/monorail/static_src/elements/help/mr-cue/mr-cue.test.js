@@ -148,4 +148,13 @@ describe('mr-cue', () => {
     const messageEl = element.shadowRoot.querySelector('#message');
     assert.include(messageEl.innerText, 'use quotes');
   });
+
+  it('cue is dismissible unless there is attribute nondismissible',
+     async () => {
+    assert.isFalse(element.nondismissible);
+
+    element.setAttribute('nondismissible', '');
+    await element.updateComplete;
+    assert.isTrue(element.nondismissible);
+  });
 });

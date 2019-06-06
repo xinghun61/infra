@@ -47,7 +47,7 @@ export class MrApp extends connectStore(LitElement) {
       ></mr-header>
       <mr-cue cuePrefName="switch_to_parent_account"
               .loginUrl=${this.loginUrl}
-              centered></mr-cue>
+              centered nondismissible></mr-cue>
       <mr-cue cuePrefName="search_for_numbers" centered></mr-cue>
       <main></main>
     `;
