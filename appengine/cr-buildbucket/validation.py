@@ -82,11 +82,12 @@ STEP_SEP = '|'
 # The order of functions must match the order of messages in common.proto.
 
 
-def validate_gerrit_change(change):
+def validate_gerrit_change(change, require_project=False):
   """Validates common_pb2.GerritChange."""
   # project is not required.
   _check_truth(change, 'host', 'change', 'patchset')
-  if not change.project:  # pragma: no branch
+  if require_project and not change.project:  # pragma: no branch
+    # TODO(nodir): escalate to an error.
     logging.warning('gerrit_change.project is not specified')
 
 
@@ -237,7 +238,10 @@ def validate_schedule_build_request(
     with _enter('gitiles_commit'):
       validate_gitiles_commit(req.gitiles_commit)
 
-  _check_repeated(req, 'gerrit_changes', validate_gerrit_change)
+  _check_repeated(
+      req, 'gerrit_changes',
+      lambda c: validate_gerrit_change(c, require_project=True)
+  )
 
   with _enter('tags'):
     validate_tags(req.tags, 'new')
