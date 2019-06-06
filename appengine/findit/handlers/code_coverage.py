@@ -85,9 +85,76 @@ _POSTSUBMIT_PLATFORM_INFO_MAP = {
     'oobe-code-mauve': {
         'bucket': 'ci',
         'builder': 'linux-chromeos-oobe-code-coverage',
-        'ui_name': 'ChromeOS on Linux for OOBE (Custom for Code Mauve)',
+        'ui_name': 'ChromeOS on Linux for OOBE',
     },
 }
+
+
+def _GetSameOrMostRecentReportForEachPlatform(host, project, ref, revision):
+  """Find the matching report on other platforms, or the most recent.
+
+  The intent of this function is to help the UI list the platforms that are
+  available, and let the user switch. If a report with the same revision exists
+  use it, otherwise use the most recent one.
+  """
+  result = {}
+  platforms = _POSTSUBMIT_PLATFORM_INFO_MAP.keys()
+  for platform in platforms:
+    bucket = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['bucket']
+    builder = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['builder']
+    same_report = PostsubmitReport.Get(
+        server_host=host,
+        project=project,
+        ref=ref,
+        revision=revision,
+        bucket=bucket,
+        builder=builder)
+    if same_report:
+      result[platform] = same_report
+      continue
+    query = PostsubmitReport.query(
+        PostsubmitReport.gitiles_commit.server_host == host,
+        PostsubmitReport.gitiles_commit.project == project,
+        PostsubmitReport.bucket == bucket, PostsubmitReport.builder ==
+        builder).order(-PostsubmitReport.commit_position).order(
+            -PostsubmitReport.commit_timestamp)
+    entities = query.fetch(limit=1)
+    if entities:
+      result[platform] = entities[0]
+  return result
+
+
+def _MakePlatformSelect(host, project, ref, revision, path, current_platform):
+  """Populate values needed to render a form to let the user switch platforms.
+
+  This will produce parameters needed for the form to post to the same page so
+  that upon submission it loads the report at the same path, and it will also
+  provide the options that can be selected in the dropdown.
+  """
+  result = {
+      'params': {
+          'host': host,
+          'project': project,
+          'ref': ref,
+      },
+      'options': [],
+  }
+  if path:
+    result['params']['path'] = path
+  for platform, report in _GetSameOrMostRecentReportForEachPlatform(
+      host, project, ref, revision).iteritems():
+    value = platform
+    if report.gitiles_commit.revision == revision:
+      # If the same revision is available in the target platform, append it to
+      # the platform name s.t. the form can populate this revision field before
+      # submission.
+      value = '%s#%s' % (platform, revision)
+    result['options'].append({
+        'value': value,
+        'ui_name': _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['ui_name'],
+        'selected': platform == current_platform,
+    })
+  return result
 
 
 def _GetValidatedData(gs_path):  # pragma: no cover.
@@ -886,6 +953,7 @@ class ServeCodeCoverageData(BaseHandler):
     path = self.request.get('path')
     data_type = self.request.get('data_type')
     platform = self.request.get('platform', 'linux')
+    list_reports = self.request.get('list_reports', False)
 
     if not data_type and path:
       if path.endswith('/'):
@@ -963,6 +1031,7 @@ class ServeCodeCoverageData(BaseHandler):
     elif project:
       logging.info('Servicing coverage data for postsubmit')
       template = None
+      warning = None
 
       if platform not in _POSTSUBMIT_PLATFORM_INFO_MAP:
         return BaseHandler.CreateError(
@@ -970,7 +1039,7 @@ class ServeCodeCoverageData(BaseHandler):
       bucket = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['bucket']
       builder = _POSTSUBMIT_PLATFORM_INFO_MAP[platform]['builder']
 
-      if not revision:
+      if list_reports:
         query = PostsubmitReport.query(
             PostsubmitReport.gitiles_commit.server_host == host,
             PostsubmitReport.gitiles_commit.project == project,
@@ -996,22 +1065,38 @@ class ServeCodeCoverageData(BaseHandler):
 
         template = 'coverage/project_view.html'
         data_type = 'project'
+
       else:
-        report = PostsubmitReport.Get(
-            server_host=host,
-            project=project,
-            ref=ref,
-            revision=revision,
-            bucket=bucket,
-            builder=builder)
-        if not report:
-          return BaseHandler.CreateError('Report record not found', 404)
+        warning = None
+        if not data_type:
+          data_type = 'dirs'
+        if not revision:
+          query = PostsubmitReport.query(
+              PostsubmitReport.gitiles_commit.server_host == host,
+              PostsubmitReport.gitiles_commit.project == project,
+              PostsubmitReport.bucket == bucket, PostsubmitReport.builder ==
+              builder).order(-PostsubmitReport.commit_position).order(
+                  -PostsubmitReport.commit_timestamp)
+          entities = query.fetch(limit=1)
+          report = entities[0]
+          revision = report.gitiles_commit.revision
+
+        else:
+          report = PostsubmitReport.Get(
+              server_host=host,
+              project=project,
+              ref=ref,
+              revision=revision,
+              bucket=bucket,
+              builder=builder)
+          if not report:
+            return BaseHandler.CreateError('Report record not found', 404)
 
         template = 'coverage/summary_view.html'
         if data_type == 'dirs':
-          path = path or '//'
+          default_path = '//'
         elif data_type == 'components':
-          path = path or '>>'
+          default_path = '>>'
         else:
           if data_type != 'files':
             return BaseHandler.CreateError(
@@ -1019,6 +1104,8 @@ class ServeCodeCoverageData(BaseHandler):
                 400)
 
           template = 'coverage/file_view.html'
+
+        path = path or default_path
 
         if data_type == 'files':
           entity = FileCoverageData.Get(
@@ -1029,7 +1116,15 @@ class ServeCodeCoverageData(BaseHandler):
               path=path,
               bucket=bucket,
               builder=builder)
-        else:
+          if not entity:
+            warning = (
+                'File "%s" does not exist in this report, defaulting to root' %
+                path)
+            logging.warning(warning)
+            path = '//'
+            data_type = 'dirs'
+            template = 'coverage/summary_view.html'
+        if data_type != 'files':
           entity = SummaryCoverageData.Get(
               server_host=host,
               project=project,
@@ -1039,9 +1134,21 @@ class ServeCodeCoverageData(BaseHandler):
               path=path,
               bucket=bucket,
               builder=builder)
-
-        if not entity:
-          return BaseHandler.CreateError('Requested path does not exist', 404)
+          if not entity:
+            warning = (
+                'Path "%s" does not exist in this report, defaulting to root' %
+                path)
+            logging.warning(warning)
+            path = default_path
+            entity = SummaryCoverageData.Get(
+                server_host=host,
+                project=project,
+                ref=ref,
+                revision=revision,
+                data_type=data_type,
+                path=path,
+                bucket=bucket,
+                builder=builder)
 
         metadata = entity.data
         data = {
@@ -1127,8 +1234,13 @@ class ServeCodeCoverageData(BaseHandler):
                   data_type,
               'path_parts':
                   path_parts,
+              'platform_select':
+                  _MakePlatformSelect(host, project, ref, revision, path,
+                                      platform),
               'banner':
                   _GetBanner(project),
+              'warning':
+                  warning,
           },
           'template': template,
       }

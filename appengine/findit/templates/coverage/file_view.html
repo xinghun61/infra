@@ -84,10 +84,17 @@
       color: FUCHSIA;
       text-align: right;
     }
+    .offset-anchor {
+      display: block;
+      position: relative;
+      top: -90px;
+      visibility: hidden;
+    }
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/cats-app.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="/ui/js/coverage.js"></script>
   <script>
     $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
@@ -124,8 +131,23 @@
 
 <body>
   <cats-app id="app" components="Tools>CodeCoverage" page-header="Code Coverage: line-by-line coverage (Chrome Browser for {{platform_ui_name}})">
+<div>
     <div style="font-size:18px">
-    Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>&platform={{platform}}">Component View</a>
+    <form id="platform_select_form" method="get">
+      Platform:
+      <select id="platform_select" name="platform" onchange="switchPlatform()">
+      {% for option in platform_select.options %}
+        <option value="{{option.value}}" {% if option.selected %}selected="selected" {% endif %}>{{option.ui_name}}</option>
+      {% endfor %}
+      </select>
+      {% for name, value in platform_select.params.iteritems() %}
+        <input type="hidden" name="{{name}}" value="{{value}}"/>
+      {% endfor %}
+      Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>&platform={{platform}}">Component View</a>.
+      See <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&platform={{platform}}&list_reports=true">Previous Reports</a>.
+    </form>
+    <br>
+    <br>
     </div>
     <div style="width: fit-content;">
     <div class="coverage-header">
@@ -153,13 +175,19 @@
       </thead>
       <tbody id="report-data-container">
       {% for num, info in data.line_to_data %}
-        <tr id="{{num}}" class="highlight-row">
+        <tr id="{{num}}-row" class="highlight-row">
           {% if info.count == 0 %}
-            <td class="uncovered-code" title="Uncovered line"><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td class="uncovered-code" title="Uncovered line">
+            <a href="#{{num}}"><pre>{{num}}</pre></a>
+            <a id="{{num}}" class="offset-anchor"></a>
+            </td>
             <td class="uncovered-count"><pre>0</pre></td>
             <td ><pre class="uncovered-code" title="Uncovered code">{{info.line}}</pre></td>
           {% elif info.is_partially_covered %}
-            <td class="partially-covered-code" title="Partially covered line"><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td class="partially-covered-code" title="Partially covered line">
+            <a href="#{{num}}"><pre>{{num}}</pre></a>
+            <a id="{{num}}" class="offset-anchor"></a>
+            </td>
             <td class="partial-count" title="{{info.count}}">
                 <pre>{{HumanReadableCount(info.count)}}</pre>
             </td>
@@ -175,13 +203,19 @@
               </pre>
             </td>
           {% elif info.count > 0 %}
-            <td class="covered-code" title="Covered line"><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td class="covered-code" title="Covered line">
+            <a href="#{{num}}"><pre>{{num}}</pre></a>
+            <a id="{{num}}" class="offset-anchor"></a>
+            </td>
             <td class="covered-count" title="{{info.count}}">
               <pre>{{HumanReadableCount(info.count)}}</pre>
             </td>
             <td><pre>{{info.line}}</pre></td>
           {% else %}
-            <td><a href="#{{num}}"><pre>{{num}}</pre></a></td>
+            <td>
+            <a href="#{{num}}"><pre>{{num}}</pre></a>
+            <a id="{{num}}" class="offset-anchor"></a>
+            </td>
             <td><!-- Intentionally empty. Count would go here. --></td>
             <td><pre>{{info.line}}</pre></td>
           {% endif %}

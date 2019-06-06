@@ -47,10 +47,19 @@
     tfoot tr {
       font-size: 16px;
     }
+    .warning {
+      background-color: #FFD0D0;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      font-family: sans-serif;
+      font-style: italic;
+    }
   </style>
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/cats-app.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="/ui/js/coverage.js"></script>
   <script>
     function FilterComponents() {
       let filterString = $('#filter').val() || '';
@@ -94,13 +103,33 @@
   <cats-app id="app" components="Tools>CodeCoverage" page-header="Code Coverage: summary by {{data_type}} (Chrome Browser for {{platform_ui_name}})">
     <div>
       <div style="font-size:18px">
-        {% if data_type == 'components' %}
-        Switch to <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=//&platform={{platform}}">Directory View</a>.
-        {% else %}
-        Switch to <a href="/p/chromium/coverage/component?host={{host}}&project={{project}}&ref={{ref}}&revision={{revision}}&path=>>&platform={{platform}}">Component View</a>.
+        <form id="platform_select_form" method="get">
+          Platform:
+          <select id="platform_select" name="platform" onchange="switchPlatform()">
+          {% for option in platform_select.options %}
+            <option value="{{option.value}}" {% if option.selected %}selected="selected" {% endif %}>{{option.ui_name}}</option>
+          {% endfor %}
+          </select>
+          View:
+          <select id="view_select" name="path" onchange="switchPlatform()">
+          {% if data_type == 'components' %}
+            <option value="{{path}}" selected="selected">By Component</option>
+            <option value="//">By Directory</option>
+          {% else %}
+            <option value="{{path}}" selected="selected">By Directory</option>
+            <option value=">>">By Component</option>
+          {% endif %}
+          </select>
+          {% for name, value in platform_select.params.iteritems() %}
+            <input type="hidden" name="{{name}}" value="{{value}}"/>
+          {% endfor %}
+          See <a href="/p/chromium/coverage/dir?host={{host}}&project={{project}}&ref={{ref}}&platform={{platform}}&list_reports=true">Previous Reports</a>
+        </form>
+        <br>
+        <br>
+        {% if warning %}
+        <div class="warning">{{warning}}</div>
         {% endif %}
-        <br>
-        <br>
       </div>
       <div class="legend">
         Legend:

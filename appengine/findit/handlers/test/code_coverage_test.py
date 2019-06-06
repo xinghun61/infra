@@ -511,8 +511,9 @@ class ServeCodeCoverageDataTest(WaterfallTestCase):
     report = _CreateSamplePostsubmitReport()
     report.put()
 
-    request_url = ('/p/chromium/coverage?host=%s&project=%s&platform=%s') % (
-        host, project, platform)
+    request_url = (
+        '/p/chromium/coverage?host=%s&project=%s&platform=%s&list_reports=true'
+    ) % (host, project, platform)
     response = self.test_app.get(request_url)
     self.assertEqual(200, response.status_int)
 
