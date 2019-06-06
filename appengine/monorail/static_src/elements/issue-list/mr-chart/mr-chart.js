@@ -7,6 +7,8 @@ import {prpcClient} from 'prpc-client-instance.js';
 import './chops-chart.js';
 
 const DEFAULT_NUM_DAYS = 90;
+const SECONDS_IN_DAY = 24 * 60 * 60;
+const MAX_QUERY_SIZE = 90;
 const CHART_OPTIONS = {
   animation: false,
   responsive: true,
@@ -51,7 +53,7 @@ export default class MrChart extends LitElement {
       indices: {type: Array},
       values: {type: Array},
       unsupportedFields: {type: Array},
-      searchLimitReached: {type: Boolean},
+      dateRangeNotLegal: {type: Boolean},
       dateRange: {type: Number},
       frequency: {type: Number},
     };
@@ -68,7 +70,7 @@ export default class MrChart extends LitElement {
         max-width: 100%;
       }
       div#options {
-        max-width: 480px;
+        max-width: 720px;
         margin: 2em auto;
         text-align: center;
       }
@@ -88,7 +90,7 @@ export default class MrChart extends LitElement {
         text-align: center;
         margin-bottom: 5px;
       }
-      div#options #align #time {
+      div#options #align .time {
         display: inline-block;
         width: 50%;
       }
@@ -102,7 +104,7 @@ export default class MrChart extends LitElement {
       .choice.checked {
         background: var(--chops-blue-50);
       }
-      p#search-limit-message {
+      p .warning-message {
         display: none;
         font-size: 1.25em;
         padding: 0.25em;
@@ -142,9 +144,17 @@ export default class MrChart extends LitElement {
           value=${this.progress}
           ?hidden=${doneLoading}
         >Loading chart...</progress>
-        <p id="search-limit-message" ?hidden=${!this.searchLimitReached}>
+        <p class="warning-message" ?hidden=${!this.searchLimitReached}>
           Note: Some results are not being counted.
           Please narrow your query.
+        </p>
+        <p class="warning-message" ?hidden=${!this.maxQuerySizeReached}>
+          Your query is too long.
+          Showing ${MAX_QUERY_SIZE} weeks from end date.
+        </p>
+        <p class="warning-message" ?hidden=${!this.dateRangeNotLegal}>
+          Your requested date range does not exist.
+          Showing ${MAX_QUERY_SIZE} days from end date.
         </p>
         <div id="align">
           <div id="frequency">
@@ -164,7 +174,19 @@ export default class MrChart extends LitElement {
               </chops-button>
             </div>
           </div>
-          <div id="time">
+          <div class="time">
+            <label for="start-date">Choose start date:</label>
+            <br />
+            <input
+              type="date"
+              id="start-date"
+              name="start-date"
+              .value=${this.startDate && this.startDate.toISOString().substr(0, 10)}
+              ?disabled=${!doneLoading}
+              @change=${this._onDateChanged}
+            />
+          </div>
+          <div class="time">
             <label for="end-date">Choose end date:</label>
             <br />
             <input
@@ -173,7 +195,7 @@ export default class MrChart extends LitElement {
               name="end-date"
               .value=${this.endDate && this.endDate.toISOString().substr(0, 10)}
               ?disabled=${!doneLoading}
-              @change=${this._onEndDateChanged}
+              @change=${this._onDateChanged}
             />
           </div>
         </div>
@@ -188,8 +210,7 @@ export default class MrChart extends LitElement {
     this.indices = [];
     this.unsupportedFields = [];
     this.endDate = MrChart.getEndDate();
-    this.dateRange = 90;
-    this.frequency = 7;
+    this.startDate = MrChart.getStartDate(this.endDate, DEFAULT_NUM_DAYS);
   }
 
   async connectedCallback() {
@@ -204,28 +225,64 @@ export default class MrChart extends LitElement {
     await import(/* webpackChunkName: "chartjs" */ 'chart.js/dist/Chart.min.js');
 
     this.dispatchEvent(new Event('chartLoaded'));
-    this._fetchData(this.endDate);
+    this._fetchData();
   }
 
-  _onEndDateChanged(e) {
+  // Fetch corresponding data when start date or end date changes
+  _onDateChanged(e) {
     const value = e.target.value;
-    this.endDate = MrChart.dateStringToDate(value);
-    this._fetchData(this.endDate);
 
+    if (e.target.id === 'end-date') {
+      this.endDate = MrChart.dateStringToDate(value);
+    }
+    else {
+      this.startDate = MrChart.dateStringToDate(value);
+    }
+
+    this._fetchData();
     const urlParams = MrChart.getSearchParams();
 
     // TODO(zhangtiff): Integrate with frontend routing once charts is part of the SPA.
-    urlParams.set('end_date', value);
+    urlParams.set(e.target.id, value);
     const newUrl = `${location.protocol}//${location.host}${location.pathname}?${urlParams.toString()}`;
     window.history.pushState({}, '', newUrl);
   }
 
-  async _fetchData(endDate) {
+  async _fetchData() {
+    this.dateRange = Math.ceil((this.endDate - this.startDate) / (1000 * SECONDS_IN_DAY));
+
+    // Coordinate different parameters and flags, protection against illegal queries
+    if (this.dateRange <= 0) { // Case for start date greater than end date
+      this.frequency = 7;
+      this.dateRangeNotLegal = true;
+      this.maxQuerySizeReached = false;
+      this.dateRange = MAX_QUERY_SIZE;
+    } else {
+      console.log(this.dateRange);
+      this.dateRangeNotLegal = false;
+      if (this.dateRange >= MAX_QUERY_SIZE * 7) {
+        // Case for date range too long, requires >= MAX_QUERY_SIZE queries
+        this.frequency = 7;
+        this.maxQuerySizeReached = true;
+        this.dateRange = MAX_QUERY_SIZE * 7;
+      } else {
+        this.maxQuerySizeReached = false;
+        if (this.dateRange < MAX_QUERY_SIZE) {
+          // Case for small date range, displayed in daily frequency
+          this.frequency = 1;
+        } else {
+          // Case for medium date range, displayed in weekly frequency
+          this.frequency = 7;
+        }
+      }
+    }
+
     // Reset chart variables except indices.
     this.progress = 0.05;
 
     let numTimestampsLoaded = 0;
-    const timestampsChronological = MrChart.makeTimestamps(endDate, this.frequency, this.dateRange);
+    const timestampsChronological = MrChart.makeTimestamps(this.endDate,
+      this.frequency, this.dateRange);
     const tsToIndexMap = new Map(timestampsChronological.map((ts, idx) => (
       [ts, idx]
     )));
@@ -300,9 +357,8 @@ export default class MrChart extends LitElement {
   // Change date range and frequency based on button clicked
   _setDateRange(dateRange) {
     if (this.dateRange !== dateRange) {
-      this.dateRange = dateRange;
-      this.frequency = dateRange === 30 ? 1 : 7;
-      this._fetchData(this.endDate);
+      this.startDate = new Date(this.endDate.getTime() - 1000 * SECONDS_IN_DAY * dateRange);
+      this._fetchData();
       window.getTSMonClient().recordDateRangeChange(dateRange);
     }
   }
@@ -329,10 +385,9 @@ export default class MrChart extends LitElement {
       throw new Error('endDate required');
     }
     const endTimeSeconds = Math.round(endDate.getTime() / 1000);
-    const secondsInDay = 24 * 60 * 60;
     const timestampsChronological = [];
     for (let i = 0; i < numDays; i += frequency) {
-      timestampsChronological.unshift(endTimeSeconds - (secondsInDay * i));
+      timestampsChronological.unshift(endTimeSeconds - (SECONDS_IN_DAY * i));
     }
     return timestampsChronological;
   }
@@ -357,11 +412,11 @@ export default class MrChart extends LitElement {
     return new URLSearchParams(document.location.search.substring(1));
   }
 
-  // Returns a Date taken from end_date URL param, defaults to current date.
+  // Returns a Date taken from URL param, defaults to current date
   static getEndDate() {
     const urlParams = MrChart.getSearchParams();
-    if (urlParams.has('end_date')) {
-      const date = MrChart.dateStringToDate(urlParams.get('end_date'));
+    if (urlParams.has('end-date')) {
+      const date = MrChart.dateStringToDate(urlParams.get('end-date'));
       if (date) {
         return date;
       }
@@ -371,6 +426,19 @@ export default class MrChart extends LitElement {
     today.setMinutes(59);
     today.setSeconds(59);
     return today;
+  }
+
+  // Returns a Date taken from URL param, defaults to DEFAULT_NUM_DAYS days ago
+  static getStartDate(endDate, diff) {
+    const urlParams = MrChart.getSearchParams();
+    if (urlParams.has('start-date')) {
+      const date = MrChart.dateStringToDate(urlParams.get('start-date'));
+      if (date) {
+        return date;
+      }
+    }
+    const startDate = new Date(endDate.getTime() - 1000 * SECONDS_IN_DAY * diff);
+    return startDate;
   }
 
   static makeIndices(timestamps) {

@@ -119,8 +119,8 @@ describe('mr-chart', () => {
       sinon.stub(MrChart.prototype, '_fetchDataAtTimestamp').callsFake(
         async (ts) => ({issues: timestampMap.get(ts)}));
 
-      const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
-      await element._fetchData(endDate);
+      element.endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
+      await element._fetchData();
 
       assert.deepEqual(element.indices, [
         '10/29/2018', '10/30/2018', '10/31/2018',
@@ -163,6 +163,51 @@ describe('mr-chart', () => {
     });
   });
 
+  describe('start date change detection', () => {
+    beforeEach(async () => {
+      await chartLoadedPromise;
+
+      sinon.spy(window.history, 'pushState');
+      sinon.spy(element, '_fetchData');
+    });
+
+    afterEach(() => {
+      element._fetchData.restore();
+      window.history.pushState.restore();
+    });
+
+    it('illegal query: start-date is greater than end-date', async () => {
+      await element.updateComplete;
+
+      const startDateInput = element.shadowRoot.querySelector('#start-date');
+      startDateInput.value = '2019-11-06';
+
+      const event = new Event('change');
+      startDateInput.dispatchEvent(event);
+
+      sinon.assert.calledOnce(element._fetchData);
+      assert.equal(element.dateRange, 90);
+      assert.equal(element.frequency, 7);
+      assert.equal(element.dateRangeNotLegal, true);
+    });
+
+    it('illegal query: end_date - start_date requires more than 90 queries',
+      async () => {
+        await element.updateComplete;
+
+        const startDateInput = element.shadowRoot.querySelector('#start-date');
+        startDateInput.value = '2016-10-03';
+
+        const event = new Event('change');
+        startDateInput.dispatchEvent(event);
+
+        sinon.assert.calledOnce(element._fetchData);
+        assert.equal(element.dateRange, 90 * 7);
+        assert.equal(element.frequency, 7);
+        assert.equal(element.maxQuerySizeReached, true);
+      });
+  });
+
   describe('end date change detection', () => {
     beforeEach(async () => {
       await chartLoadedPromise;
@@ -187,11 +232,9 @@ describe('mr-chart', () => {
 
       sinon.assert.calledOnce(history.pushState);
       sinon.assert.calledWith(history.pushState, {}, '',
-        sinon.match('end_date=2017-10-02'));
+        sinon.match('end-date=2017-10-02'));
 
       sinon.assert.calledOnce(element._fetchData);
-      const endDate = new Date(Date.UTC(2017, 9, 2, 23, 59, 59));
-      sinon.assert.calledWith(element._fetchData, endDate);
     });
   });
 
@@ -203,22 +246,29 @@ describe('mr-chart', () => {
     it('visible based on loading progress', async () => {
       await element.updateComplete;
       const progressBar = element.shadowRoot.querySelector('progress');
+      const startDateInput = element.shadowRoot.querySelector('#start-date');
       const endDateInput = element.shadowRoot.querySelector('#end-date');
 
       assert.isFalse(progressBar.hasAttribute('hidden'));
       assert.equal(progressBar.value, 0.05);
       assert.isTrue(endDateInput.disabled);
 
-      const endDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
-      await element._fetchData(endDate);
+      startDateInput.value = '2017-10-03';
+      endDateInput.value = '2018-10-03';
+
+      const event = new Event('change');
+      startDateInput.dispatchEvent(event);
+      endDateInput.dispatchEvent(event);
+
+      await element._fetchData();
       await element.updateComplete;
 
       assert.isTrue(progressBar.hasAttribute('hidden'));
       assert.equal(progressBar.value, 1);
       assert.isFalse(endDateInput.disabled);
 
-      const endDate2 = new Date(Date.UTC(2018, 5, 3, 23, 59, 59));
-      const fetchDataPromise = element._fetchData(endDate2);
+      element.endDate = new Date(Date.UTC(2018, 5, 3, 23, 59, 59));
+      const fetchDataPromise = element._fetchData();
       await element.updateComplete;
 
       // Values are reset on second call.
@@ -234,7 +284,6 @@ describe('mr-chart', () => {
       assert.isFalse(endDateInput.disabled);
     });
   });
-
 
   describe('static methods', () => {
     describe('sortInBisectOrder', () => {
@@ -328,7 +377,7 @@ describe('mr-chart', () => {
 
       it('returns end date if in URL params', () => {
         const searchParams = new URLSearchParams();
-        searchParams.set('end_date', '2018-11-03');
+        searchParams.set('end-date', '2018-11-03');
         MrChart.getSearchParams.returns(searchParams);
 
         const expectedDate = new Date(Date.UTC(2018, 10, 3, 23, 59, 59));
@@ -347,12 +396,13 @@ describe('mr-chart', () => {
         expectedDate.setMinutes(59);
         expectedDate.setSeconds(59);
 
-        assert.equal(MrChart.getEndDate().getTime(), expectedDate.getTime());
+        assert.equal(MrChart.getEndDate().getTime(),
+          expectedDate.getTime());
       });
 
       it('returns EOD of URL param is empty', () => {
         const searchParams = new URLSearchParams();
-        searchParams.set('end_date', '');
+        searchParams.set('end-date', '');
         MrChart.getSearchParams.returns(searchParams);
 
         const expectedDate = new Date();
@@ -360,7 +410,50 @@ describe('mr-chart', () => {
         expectedDate.setMinutes(59);
         expectedDate.setSeconds(59);
 
-        assert.equal(MrChart.getEndDate().getTime(), expectedDate.getTime());
+        assert.equal(MrChart.getEndDate().getTime(),
+          expectedDate.getTime());
+      });
+    });
+
+    describe('getStartDate', () => {
+      let clock;
+
+      beforeEach(() => {
+        sinon.stub(MrChart, 'getSearchParams');
+        clock = sinon.useFakeTimers(10000);
+      });
+
+      afterEach(() => {
+        clock.restore();
+        MrChart.getSearchParams.restore();
+      });
+
+      it('returns start date if in URL params', () => {
+        const searchParams = new URLSearchParams();
+        searchParams.set('start-date', '2018-07-03');
+        MrChart.getSearchParams.returns(searchParams);
+
+        const expectedDate = new Date(Date.UTC(2018, 6, 3, 23, 59, 59));
+        // Time sanity check.
+        assert.equal(Math.round(expectedDate.getTime() / 1e3), 1530662399);
+
+        const actual = MrChart.getStartDate(expectedDate, 90);
+        assert.equal(actual.getTime(), expectedDate.getTime());
+      });
+
+      it('returns EOD of current date if not in URL params', () => {
+        MrChart.getSearchParams.returns(new URLSearchParams());
+
+        const today = new Date();
+        today.setHours(23);
+        today.setMinutes(59);
+        today.setSeconds(59);
+
+        const secondsInDay = 24 * 60 * 60;
+        const expectedDate = new Date(today.getTime()
+          - 1000 * 90 * secondsInDay);
+        assert.equal(MrChart.getStartDate(today, 90).getTime(),
+          expectedDate.getTime());
       });
     });
 
