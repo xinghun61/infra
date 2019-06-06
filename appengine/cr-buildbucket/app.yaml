@@ -8,6 +8,8 @@ runtime: python27
 api_version: 1
 threadsafe: true
 instance_class: F4
+automatic_scaling:
+  max_concurrent_requests: 8
 
 handlers:
 - url: /favicon.ico
