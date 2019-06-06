@@ -380,11 +380,13 @@ def GetFirstFailuresInCurrentBuild(context, build, detailed_compile_failures):
 
 
 def _GetFailuresWithoutMatchingCompileFailureGroups(
-    first_failures_in_current_build, failures_with_existing_group):
+    current_build_id, first_failures_in_current_build,
+    failures_with_existing_group):
   """Regenerates first_failures_in_current_build without any failures with
     existing group.
 
   Args:
+    current_build_id (int): Id of the current build that's being analyzed.
     first_failures_in_current_build (dict): A dict for failures that happened
       the first time in current build.
       {
@@ -425,7 +427,10 @@ def _GetFailuresWithoutMatchingCompileFailureGroups(
       'failures'].iteritems():
     step_failures_without_existing_group = []
     for output_target in step_failure['output_targets']:
-      if output_target in failures_with_existing_group.get(step_ui_name, {}):
+      if (output_target in failures_with_existing_group.get(step_ui_name, {})
+          and failures_with_existing_group[step_ui_name][output_target] !=
+          current_build_id):
+        # Failure is grouped into another failure.
         continue
       step_failures_without_existing_group.append(output_target)
     if step_failures_without_existing_group:
@@ -526,7 +531,7 @@ def GetFirstFailuresInCurrentBuildWithoutGroup(context, build,
                                              failures_with_existing_group)
 
   return _GetFailuresWithoutMatchingCompileFailureGroups(
-      first_failures_in_current_build, failures_with_existing_group)
+      build.id, first_failures_in_current_build, failures_with_existing_group)
 
 
 def _CreateAndSaveFailureGroupEntity(

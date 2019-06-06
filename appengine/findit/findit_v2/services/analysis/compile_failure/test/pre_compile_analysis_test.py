@@ -964,3 +964,74 @@ class PreCompileAnalysisTest(wf_testcase.TestCase):
         expected_result,
         pre_compile_analysis.GetFirstFailuresInCurrentBuildWithoutGroup(
             self.context, self.build, first_failures_in_current_build))
+
+  @mock.patch.object(
+      git, 'GetCommitPositionFromRevision', side_effect=[66680, 66666, 66680])
+  @mock.patch.object(
+      ChromiumProjectAPI,
+      'GetFailuresWithMatchingCompileFailureGroups',
+      return_value={'compile': {
+          frozenset(['target1']): 8000000000123
+      }})
+  def testGetFirstFailuresInCurrentBuildWithoutGroupExistingGroupForSameBuild(
+      self, *_):
+    build_121_info = {
+        'id': 8000000000121,
+        'number': self.build_number - 2,
+        'commit_id': 'git_sha_121'
+    }
+    first_failures_in_current_build = {
+        'failures': {
+            'compile': {
+                'output_targets': [
+                    frozenset(['target1']),
+                    frozenset(['target2'])
+                ],
+                'last_passed_build':
+                    build_121_info,
+            },
+        },
+        'last_passed_build': build_121_info
+    }
+
+    # Creates and saves entities of the existing group.
+    detailed_compile_failures = {
+        'compile': {
+            'failures': {
+                frozenset(['target1']): {
+                    'rule': 'CXX',
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_121_info,
+                },
+                frozenset(['target2']): {
+                    'rule': 'ACTION',
+                    'first_failed_build': self.build_info,
+                    'last_passed_build': build_121_info,
+                },
+            },
+            'first_failed_build': self.build_info,
+            'last_passed_build': build_121_info,
+        },
+    }
+
+    pre_compile_analysis.SaveCompileFailures(self.context, self.build,
+                                             detailed_compile_failures)
+
+    expected_result = {
+        'failures': {
+            'compile': {
+                'output_targets': [
+                    frozenset(['target1']),
+                    frozenset(['target2'])
+                ],
+                'last_passed_build':
+                    build_121_info,
+            },
+        },
+        'last_passed_build': build_121_info
+    }
+
+    self.assertEqual(
+        expected_result,
+        pre_compile_analysis.GetFirstFailuresInCurrentBuildWithoutGroup(
+            self.context, self.build, first_failures_in_current_build))
