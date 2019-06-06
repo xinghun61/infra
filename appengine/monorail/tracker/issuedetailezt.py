@@ -395,7 +395,7 @@ class IssueDetailEzt(issuepeek.IssuePeek):
         'searchtip': 'You can jump to any issue by number',
         'starred': ezt.boolean(starred),
         'discourage_plus_one': ezt.boolean(discourage_plus_one),
-        'pagegen': str(long(time.time() * 1000000)),
+        'pagegen': str(int(time.time() * 1000000)),
 
         # For deep linking and input correction after a failed submit.
         'initial_summary': issue_view.summary,
@@ -641,7 +641,7 @@ class IssueDetailEzt(issuepeek.IssuePeek):
         raise permissions.PermissionException(
             'User lacks permission to edit fields')
 
-    page_generation_time = long(post_data['pagegen'])
+    page_generation_time = int(post_data['pagegen'])
     reporter_id = mr.auth.user_id
     # TODO(jrobbins): consider captcha 3 score in API
 

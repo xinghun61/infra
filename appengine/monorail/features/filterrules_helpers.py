@@ -11,6 +11,8 @@ from __future__ import absolute_import
 import logging
 import re
 
+import six
+
 from google.appengine.api import taskqueue
 
 import settings
@@ -584,7 +586,7 @@ def _Compare(op, rule_values, issue_values):
     return all(not _HasText(rv, issue_values) for rv in rule_values)
 
   val_type = type(min(issue_values))
-  if val_type == int or val_type == long:
+  if val_type in six.integer_types:
     try:
       rule_values = [int(rv) for rv in rule_values]
     except ValueError:
@@ -596,7 +598,7 @@ def _Compare(op, rule_values, issue_values):
   elif op == ast_pb2.QueryOp.NE:
     return all(rv not in issue_values for rv in rule_values)
 
-  if val_type != int and val_type != long:
+  if val_type not in six.integer_types:
     return False  # Inequalities only work on numeric fields
 
   if op == ast_pb2.QueryOp.GT:

@@ -91,7 +91,7 @@ def ValidateToken(
 
   try:
     decoded = base64.urlsafe_b64decode(str(token))
-    token_time = long(decoded.split(DELIMITER)[-1])
+    token_time = int(decoded.split(DELIMITER)[-1])
   except (TypeError, ValueError):
     raise TokenIncorrect('could not decode token')
   now = GetRoundedTime()

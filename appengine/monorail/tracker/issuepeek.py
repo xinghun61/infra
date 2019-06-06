@@ -142,7 +142,7 @@ class IssuePeek(servlet.Servlet):
         'searchtip': 'You can jump to any issue by number',
         'starred': ezt.boolean(starred),
 
-        'pagegen': str(long(time.time() * 1000000)),
+        'pagegen': str(int(time.time() * 1000000)),
 
         'restrict_to_known': ezt.boolean(restrict_to_known),
         'prevent_restriction_removal': ezt.boolean(
@@ -255,7 +255,7 @@ class IssuePeek(servlet.Servlet):
     send_email = 'send_email' in post_data
     comment = post_data.get('comment', '')
     slot_used = int(post_data.get('slot_used', 1))
-    page_generation_time = long(post_data['pagegen'])
+    page_generation_time = int(post_data['pagegen'])
     with work_env.WorkEnv(mr, self.services) as we:
       issue = we.GetIssueByLocalID(
           mr.project_id, mr.local_id, use_cache=False)

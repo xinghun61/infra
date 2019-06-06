@@ -14,6 +14,7 @@ import re
 import unittest
 
 import mox
+import six
 
 from google.appengine.api import oauth
 from google.appengine.api import users
@@ -161,7 +162,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
         path='/foo?notice=%s' % notice_id)
 
     value = mr.GetIntParam('notice')
-    self.assertTrue(isinstance(value, long))
+    self.assertTrue(isinstance(value, six.integer_types))
     self.assertEqual(notice_id, value)
 
   def testGetIntListParam_NoParam(self):

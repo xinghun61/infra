@@ -118,7 +118,7 @@ def PredictComponent(raw_text, config):
   best_score_index = _GetComponentPrediction(ml_engine, instance)
   component_id = components_by_index.get(str(best_score_index))
   if component_id:
-    component_id = long(component_id)
+    component_id = int(component_id)
 
   # The predicted component id might not exist.
   if tracker_bizobj.FindComponentDefByID(component_id, config) is None:

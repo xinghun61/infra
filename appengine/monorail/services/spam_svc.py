@@ -86,7 +86,7 @@ class SpamService(object):
         lambda: ([], collections.defaultdict(list)))
 
     for row in rows:
-      issue_id = long(row[0])
+      issue_id = int(row[0])
       user_id = row[1]
       if row[2]:
         comment_id = row[2]
@@ -111,7 +111,7 @@ class SpamService(object):
                                   issue_id=issue_ids, group_by=['issue_id'])
     counts = {}
     for row in rows:
-      counts[long(row[0])] = row[1]
+      counts[int(row[0])] = row[1]
     return counts
 
   def LookupIssueVerdicts(self, cnxn, issue_ids):
@@ -121,7 +121,7 @@ class SpamService(object):
                                    issue_id=issue_ids, group_by=['issue_id'])
     counts = {}
     for row in rows:
-      counts[long(row[0])] = row[1]
+      counts[int(row[0])] = row[1]
     return counts
 
   def LookupIssueVerdictHistory(self, cnxn, issue_ids):
@@ -444,7 +444,7 @@ class SpamService(object):
      ret = []
      for row in issue_results:
        ret.append(ModerationItem(
-         issue_id=long(row[0]),
+         issue_id=int(row[0]),
          is_spam=row[1] == 1,
          reason=row[2],
          classifier_confidence=row[3],
@@ -524,7 +524,7 @@ class SpamService(object):
      ret = []
      for row in comment_results:
        ret.append(ModerationItem(
-         comment_id=long(row[0]),
+         comment_id=int(row[0]),
          is_spam=row[1] == 1,
          reason=row[2],
          classifier_confidence=row[3],
@@ -561,7 +561,7 @@ class SpamService(object):
         limit=limit,
         )
 
-    issue_ids = [long(row[0]) for row in results if row[0]]
+    issue_ids = [int(row[0]) for row in results if row[0]]
     issues = issue_service.GetIssues(cnxn, issue_ids)
     comments = issue_service.GetCommentsForIssues(cnxn, issue_ids)
     first_comments = {}
@@ -600,7 +600,7 @@ class SpamService(object):
         limit=limit,
         )
 
-    comment_ids = [long(row[0]) for row in results if row[0]]
+    comment_ids = [int(row[0]) for row in results if row[0]]
     # Don't care about sequence numbers in this context yet.
     comments = issue_service.GetCommentsByID(cnxn, comment_ids,
         defaultdict(int))
