@@ -461,3 +461,9 @@ indexes:
   - name: tags
   - name: report_time
     direction: desc
+
+# For Findit v2
+- kind: CompileRerunBuild
+  ancestor: yes
+  properties:
+  - name: gitiles_commit.commit_position
