@@ -115,7 +115,9 @@ export class MrIssuePage extends connectStore(LitElement) {
         }
         mr-issue-metadata {
           position: sticky;
+          overflow-y: scroll;
           top: var(--monorail-header-height);
+          height: calc(100vh - var(--monorail-header-height));
         }
         mr-launch-overview {
           border-left: var(--chops-normal-border);
