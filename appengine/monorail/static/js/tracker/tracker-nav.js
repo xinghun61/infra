@@ -73,7 +73,7 @@ function TKR_getSearchColspecElement() {
  */
 function TKR_getArtifactSearchField() {
   const element = _getSearchBarComponent();
-  if (!element) return;
+  if (!element) return $('searchq');
 
   return element.shadowRoot.querySelector('#searchq');
 }
@@ -85,7 +85,7 @@ function TKR_getArtifactSearchField() {
  */
 function TKR_getArtifactCanField() {
   const element = _getSearchBarComponent();
-  if (!element) return;
+  if (!element) return $('can');
 
   return element.shadowRoot.querySelector('#can');
 }
