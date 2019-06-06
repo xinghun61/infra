@@ -21,11 +21,20 @@ import {LitElement, html, svg} from 'lit-element/lit-element.js';
  *   const headers = await signin.getAuthorizationHeaders();
  */
 export class ChopsSignin extends LitElement {
+  constructor() {
+    super();
+    this._onUserUpdate = this._onUserUpdate.bind(this);
+  }
+
   connectedCallback() {
     super.connectedCallback();
-    this.addEventListener('click', this.onClick_.bind(this));
-    window.addEventListener('user-update', this.onUserUpdate_.bind(this));
+    this.addEventListener('click', this._onClick.bind(this));
+    window.addEventListener('user-update', this._onUserUpdate);
     this.clientIdChanged();
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener('user-update', this._onUserUpdate);
   }
 
   render() {
@@ -97,7 +106,7 @@ export class ChopsSignin extends LitElement {
     </svg>`;
   }
 
-  onUserUpdate_() {
+  _onUserUpdate() {
     this.profile = getUserProfileSync();
     if (this.profile) {
       this.setAttribute('title', 'Sign out of Google');
@@ -106,7 +115,7 @@ export class ChopsSignin extends LitElement {
     }
   }
 
-  onClick_() {
+  _onClick() {
     return authInitializedPromise.then(function() {
       const auth = gapi.auth2.getAuthInstance();
       if (auth.currentUser.get().isSignedIn()) {

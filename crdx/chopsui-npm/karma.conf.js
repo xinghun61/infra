@@ -59,6 +59,10 @@ module.exports = function(config) {
       mode: 'development',
       resolve: {
         modules: ['node_modules'],
+        alias: {
+          '@chopsui/chops-checkbox': path.resolve(
+            'elements/chops-checkbox/chops-checkbox.js'),
+        },
       },
       module: {
         rules: [

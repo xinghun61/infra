@@ -1,0 +1,14 @@
+{
+  "name": "@chopsui/chops-loading",
+  "version": "0.1.5",
+  "description": "A shared loading spinner element for Chops.",
+  "author": "The Chromium Authors",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui-npm.git"
+  },
+  "dependencies": {
+    "lit-element": "^2.0.0"
+  }
+}

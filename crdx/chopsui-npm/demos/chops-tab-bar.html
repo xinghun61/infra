@@ -1,0 +1,45 @@
+<!doctype html>
+<title>chops-tab-bar demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="/node_modules/@webcomponents/webcomponentsjs/webcomponents-bundle.js"></script>
+<script type="module" src="/elements/chops-tab-bar.js"></script>
+<script type="module" src="/elements/chops-tab.js"></script>
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+.tab {
+  border: 2px solid blue;
+  padding: 4px;
+}
+</style>
+<chops-tab-bar id="bar" .selected="b">
+  <chops-tab name="a" onclick="handle(event)">aaa</chops-tab>
+  <chops-tab name="b" onclick="handle(event)">bbb</chops-tab>
+  <chops-tab name="c" onclick="handle(event)">ccc</chops-tab>
+</chops-tab-bar>
+<div class="tab" id="tab_a">
+  aisle<br>
+  aardvark<br>
+  apple<br>
+</div>
+<div class="tab" id="tab_b">
+  bdellium<br>
+  banana<br>
+  bratwurst<br>
+</div>
+<div class="tab" id="tab_c">
+  czar<br>
+  chicken<br>
+  cat<br>
+</div>
+<script>
+function handle(event) {
+  bar.selected = event.target.name;
+  for (const tab of document.querySelectorAll('.tab')) {
+    tab.style.display = (tab.id === 'tab_' + bar.selected) ? 'block' : 'none';
+  }
+}
+handle({target: {name: 'b'}});
+</script>

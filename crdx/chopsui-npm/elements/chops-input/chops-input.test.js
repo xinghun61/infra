@@ -3,15 +3,15 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import {ChopsSignin} from './index.js';
+import {ChopsInput} from './chops-input.js';
 import {auditA11y} from '../../test-helpers';
 
 let element;
 
-suite('chops-signin');
+suite('chops-input');
 
 beforeEach(() => {
-  element = document.createElement('chops-signin');
+  element = document.createElement('chops-input');
   document.body.appendChild(element);
 });
 
@@ -20,23 +20,21 @@ afterEach(() => {
 });
 
 test('initializes', () => {
-  assert.equal(element.constructor.name, 'ChopsSignin');
+  assert.instanceOf(element, ChopsInput);
 });
 
-test('lack of clientId results in error message', async () => {
+test('clickFocuses', async () => {
+  assert.isFalse(element.focused);
+  element.click();
   await element.updateComplete;
-  assert.isDefined(element.errorMsg);
+  assert.isTrue(element.focused);
 });
 
-test('clientId set, no error message', async () => {
-  element.setAttribute('client-id', 'foobar');
+test('keyup', async () => {
   await element.updateComplete;
-  assert.isUndefined(element.errorMsg);
-});
-
-test('update user', () => {
-  element._onUserUpdate();
-  assert.equal(element.title, 'Sign in with Google');
+  element.native.value = 'hello';
+  element.native.dispatchEvent(new CustomEvent('keyup'));
+  assert.strictEqual(element.value, element.native.value);
 });
 
 test('a11y', () => {
