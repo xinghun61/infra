@@ -397,7 +397,7 @@ def GetAndUpdateMergedIssue(flake_issue):
   monorail_project = flake_issue.monorail_project
   merged_issue = monorail_util.GetMergedDestinationIssueForId(
       flake_issue.issue_id, monorail_project)
-  if flake_issue.issue_id != merged_issue.id:
+  if merged_issue and flake_issue.issue_id != merged_issue.id:
     logging.info(
         'Flake issue %s was merged to %s, updates this issue and'
         ' all issues were merged into it.',
@@ -417,8 +417,9 @@ def _AddFlakeToGroupWithIssue(flake_groups_to_update_issue, flake_issue, flake,
     return True
 
   merged_monorail_issue = GetAndUpdateMergedIssue(flake_issue)
-  if not (merged_monorail_issue.open or
-          monorail_util.IsIssueClosedWithinAWeek(merged_monorail_issue)):
+  if not merged_monorail_issue or not (
+      merged_monorail_issue.open or
+      monorail_util.IsIssueClosedWithinAWeek(merged_monorail_issue)):
     # Only creates new group of flakes by FlakeIssue if the issue is still
     # open or closed within a week.
     return False
@@ -627,6 +628,10 @@ def _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue):
   monorail_project = flake_issue.monorail_project
   issue_link = FlakeIssue.GetLinkForIssue(monorail_project, issue_id)
 
+  if not monorail_issue:
+    # Possible reason: Findit doesn't have access to the monorail issue.
+    return
+
   assert monorail_issue.status is not None, (
       'Failed to get issue.status from {}'.format(issue_link))
   assert monorail_issue.updated or monorail_issue.closed, (
@@ -636,8 +641,8 @@ def _UpdateFlakeIssueWithMonorailIssue(flake_issue, monorail_issue):
     # Impacted |merge_destination_key|s need to be updated.
     merged_monorail_issue = monorail_util.GetMergedDestinationIssueForId(
         issue_id, monorail_project)
-    assert merged_monorail_issue.id, (
-        'Failed to get merged monorail issue {}'.format(issue_link))
+    if not merged_monorail_issue.id:
+      logging.warning('Failed to get merged monorail issue %s', issue_link)
 
     _UpdateMergeDestinationAndIssueLeaves(flake_issue, merged_monorail_issue)
 

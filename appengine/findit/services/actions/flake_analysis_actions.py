@@ -74,6 +74,10 @@ def _MergeFlakeIssuesAndUpdateMonorail(culprit, culprit_flake_issue,
       culprit_flake_issue.issue_id)
   flake_monorail_issue = monorail_util.GetMonorailIssueForIssueId(
       flake_issue.issue_id)
+  if not culprit_monorail_issue or not flake_monorail_issue:
+    logging.info('Not merge flake issues due to no sufficient info on %d or %d',
+                 culprit_flake_issue.issue_id, flake_issue.issue_id)
+    return None, None
 
   if (monorail_util.WasCreatedByFindit(culprit_monorail_issue) and
       not monorail_util.WasCreatedByFindit(flake_monorail_issue)):
@@ -235,8 +239,9 @@ def UpdateMonorailBugWithCulprit(analysis_urlsafe_key):
   # Don't comment if the issue is closed.
   latest_merged_monorail_issue = monorail_util.GetMonorailIssueForIssueId(
       flake_issue_to_update.issue_id)
-  if not latest_merged_monorail_issue.open:
-    logging.info('Skipping updating issue %s which is closed', issue_link)
+  if not latest_merged_monorail_issue or not latest_merged_monorail_issue.open:
+    logging.info('Skipping updating issue %s which is not accessible or closed',
+                 issue_link)
     return
 
   # Don't comment if there are existing updates by Findit to prevent spamming.

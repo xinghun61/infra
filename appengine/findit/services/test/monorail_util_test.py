@@ -4,17 +4,18 @@
 import datetime
 import mock
 
+from googleapiclient.errors import HttpError
+
 from libs import time_util
 from monorail_api import Comment
 from monorail_api import Issue
-from monorail_api import IssueTrackerAPI
 from services import issue_generator
 from services import monorail_util
 from waterfall.test import wf_testcase
 
-
 # pylint:disable=unused-argument, unused-variable
 # https://crbug.com/947753
+
 
 class TestIssueGenerator(issue_generator.FlakyTestIssueGenerator):
   """A FlakyTestIssueGenerator used for testing."""
@@ -395,6 +396,13 @@ class MonorailUtilTest(wf_testcase.WaterfallTestCase):
     mocked_issue_tracker_api.return_value.getIssue.return_value = issue
     self.assertEqual(
         issue, monorail_util.GetMonorailIssueForIssueId(12345, 'chromium'))
+
+  @mock.patch('services.monorail_util.IssueTrackerAPI')
+  def testGetMonorailIssueForIssueIdHttpError(self, mocked_issue_tracker_api):
+    mocked_issue_tracker_api.return_value.getIssue.side_effect = HttpError(
+        mock.Mock(), 'error')
+    self.assertIsNone(
+        monorail_util.GetMonorailIssueForIssueId(12345, 'chromium'))
 
   @mock.patch.object(monorail_util, 'UpdateBug')
   def testMergeDuplicateIssues(self, mocked_update_bug):

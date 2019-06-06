@@ -4,6 +4,8 @@
 """Functions for interfacing with Mororail bugs."""
 import logging
 
+from googleapiclient.errors import HttpError
+
 from common import constants
 from gae_libs import appengine_util
 from libs import time_util
@@ -68,19 +70,27 @@ def OpenBugAlreadyExistsForId(bug_id, project_id='chromium'):
   return existing_bug and existing_bug.open
 
 
-def GetMonorailIssueForIssueId(issue_id, monorail_project='chromium'):
+def GetMonorailIssueForIssueId(issue_id,
+                               monorail_project='chromium',
+                               issue_tracker_api=None):
   """Returns a Monorail Issue object representation given an issue_id.
 
   Args:
     issue_id (int): The id to query Monorail with.
     monorail_project (str): The project name to query Monorail with.
+    issue_tracker_api (IssueTrackerAPI): When provided, no need to create a new
+      one.
 
   Returns:
     (Issue): An Issue object representing what is currently stored on Monorail.
   """
-  issue_tracker_api = IssueTrackerAPI(
+  issue_tracker_api = issue_tracker_api or IssueTrackerAPI(
       monorail_project, use_staging=appengine_util.IsStaging())
-  return issue_tracker_api.getIssue(issue_id)
+  try:
+    return issue_tracker_api.getIssue(issue_id)
+  except HttpError as e:
+    logging.warning('Failed to download monorail issue %d: %s.', issue_id, e)
+    return None
 
 
 def WasCreatedByFindit(issue):
@@ -107,14 +117,22 @@ def GetMergedDestinationIssueForId(issue_id, monorail_project='chromium'):
 
   issue_tracker_api = IssueTrackerAPI(
       monorail_project, use_staging=appengine_util.IsStaging())
-  issue = issue_tracker_api.getIssue(issue_id)
+  issue = GetMonorailIssueForIssueId(
+      issue_id, issue_tracker_api=issue_tracker_api)
   visited_issues = set()
 
   while issue and issue.merged_into:
     logging.info('Issue %s was merged into %s on project: %s.', issue.id,
                  issue.merged_into, monorail_project)
     visited_issues.add(issue)
-    issue = issue_tracker_api.getIssue(issue.merged_into)
+    merged_issue = GetMonorailIssueForIssueId(
+        issue.merged_into, issue_tracker_api=issue_tracker_api)
+
+    if not merged_issue:
+      # Cannot access merged_issue, could be an restricted issue.
+      return issue
+
+    issue = merged_issue
     if issue in visited_issues:
       # There is a cycle, bails out.
       break
@@ -139,7 +157,11 @@ def GetComments(issue_id, monorail_project='chromium'):
   """Returns a list of Monorail Comment objects given an issue id."""
   issue_tracker_api = IssueTrackerAPI(
       monorail_project, use_staging=appengine_util.IsStaging())
-  return issue_tracker_api.getComments(issue_id)
+  try:
+    return issue_tracker_api.getComments(issue_id)
+  except HttpError as e:
+    logging.warning('Failed to get comments of issue %d: %s', issue_id, e)
+    return []
 
 
 def CreateBug(issue, project_id='chromium'):
@@ -163,7 +185,12 @@ def UpdateBug(issue, comment, project_id='chromium'):
 
   issue_tracker_api = IssueTrackerAPI(
       project_id, use_staging=appengine_util.IsStaging())
-  issue_tracker_api.update(issue, comment, send_email=True)
+
+  try:
+    issue_tracker_api.update(issue, comment, send_email=True)
+  except HttpError as e:
+    logging.warning('Failed to update monorail issue %d: %s.', issue.id, e)
+    return issue.id
 
   return issue.id
 
@@ -209,6 +236,9 @@ def UpdateIssueWithIssueGenerator(issue_id, issue_generator, reopen=False):
   """
   issue = GetMergedDestinationIssueForId(issue_id,
                                          issue_generator.GetMonorailProject())
+  if not issue:
+    return
+
   for label in issue_generator.GetLabels():
     # It is most likely that existing issues already have their priorities set
     # by developers, so it would be annoy if FindIt tries to overwrite it.
