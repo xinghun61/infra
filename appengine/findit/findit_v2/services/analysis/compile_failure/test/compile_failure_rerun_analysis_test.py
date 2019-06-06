@@ -153,6 +153,20 @@ class CompileFailureRerunAnalysisTest(wf_testcase.TestCase):
     rerun_build = CompileRerunBuild.get_by_id(
         new_build_id, parent=self.analysis.key)
     self.assertIsNotNone(rerun_build)
+    mock_trigger_build.assert_called_once_with(
+        rerun_builder,
+        common_pb2.GitilesCommit(
+            project=rerun_commit.gitiles_project,
+            host=rerun_commit.gitiles_host,
+            ref=rerun_commit.gitiles_ref,
+            id=rerun_commit.gitiles_id), {'recipe': 'compile'},
+        tags=[{
+            'value': 'compile-failure-culprit-finding',
+            'key': 'purpose'
+        }, {
+            'value': str(self.build.id),
+            'key': 'analyzed_build_id'
+        }])
 
   @mock.patch.object(
       ChromiumProjectAPI,

@@ -253,7 +253,7 @@ class ChromeOSProjectAPI(ProjectAPI):
         'build_target': {
             'name': build_target
         },
-        'findit_bisect': {
+        '$chromeos/cros_bisect': {
             'targets': targets
         },
     }

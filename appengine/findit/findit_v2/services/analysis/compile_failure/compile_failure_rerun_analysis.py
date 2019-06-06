@@ -114,10 +114,11 @@ def _GetRerunBuildTags(analyzed_build_id):
   return [{
       'key': constants.RERUN_BUILD_PURPOSE_TAG_KEY,
       'value': constants.COMPILE_RERUN_BUILD_PURPOSE
-  }, {
-      'key': constants.ANALYZED_BUILD_ID_TAG_KEY,
-      'value': analyzed_build_id
-  }]
+  },
+          {
+              'key': constants.ANALYZED_BUILD_ID_TAG_KEY,
+              'value': str(analyzed_build_id)
+          }]
 
 
 # pylint: disable=E1120
@@ -164,8 +165,13 @@ def TriggerRerunBuild(context, analyzed_build_id, referred_build, analysis_key,
         'for build %d.', analyzed_build_id)
     return
 
+  gitiles_commit_pb = common_pb2.GitilesCommit(
+      project=rerun_commit.gitiles_project,
+      host=rerun_commit.gitiles_host,
+      ref=rerun_commit.gitiles_ref,
+      id=rerun_commit.gitiles_id)
   new_build = buildbucket_client.TriggerV2Build(
-      rerun_builder, rerun_commit, input_properties, tags=rerun_tags)
+      rerun_builder, gitiles_commit_pb, input_properties, tags=rerun_tags)
 
   if not new_build:
     logging.error(
