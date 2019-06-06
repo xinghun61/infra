@@ -429,7 +429,7 @@ import:
   repo: https://chromium.googlesource.com/external/github.com/go-warnings/warnings.git
 - package: go.skia.org/infra
   repo: https://skia.googlesource.com/buildbot.git
-  version: 51f363cffa0ef26ce0fe0bfdc8b197c288025774
+  version: 326c4dc30d5cb08b5b0596796ad06c0d65a998d9
   subpackages:
   - gold-client/cmd/goldctl
 - package: github.com/flynn/json5
