@@ -90,7 +90,7 @@ export class MrIssuePage extends connectStore(LitElement) {
           background: var(--monorail-metadata-toggled-bg);
           border-right: var(--chops-normal-border);
           border-bottom: var(--chops-normal-border);
-          width: 16%;
+          width: 24em;
           min-width: 256px;
           flex-grow: 0;
           flex-shrink: 0;
@@ -127,7 +127,7 @@ export class MrIssuePage extends connectStore(LitElement) {
           box-sizing: border-box;
           min-height: 100%;
         }
-        @media (max-width: 1024px) {
+        @media (max-width: 1126px) {
           .container-issue-content {
             flex-direction: column;
             padding: 0 var(--mr-issue-page-horizontal-padding);
