@@ -8,9 +8,8 @@ import urlparse
 RIETVELD_CODE_REVIEW_URL_PATTERN = re.compile(
     '^(?:Review URL|Review-Url): (?P<url>.*/(?P<change_id>\d+)).*$',
     re.IGNORECASE)
-COMMIT_POSITION_PATTERN = re.compile(
-    '^Cr-Commit-Position: refs/heads/master@{#(?P<commit_position>\d+)}$',
-    re.IGNORECASE)
+COMMIT_POSITION_PATTERN = (
+    r'^Cr-Commit-Position: %s@{#(?P<commit_position>\d+)}$')
 REVERTED_REVISION_PATTERN = re.compile(
     '^> Committed: https://.+/(?P<revision>[0-9a-fA-F]{40})$', re.IGNORECASE)
 
@@ -21,7 +20,7 @@ GERRIT_REVIEW_URL_PATTERN = re.compile('^Reviewed-on: (?P<url>.*/\d+).*$',
 CHANGE_INFO_PATTERN = re.compile('^.*:.*$', re.IGNORECASE)
 
 
-def ExtractChangeInfo(message):
+def ExtractChangeInfo(message, ref):
   """Returns the commit position and code review url in the commit message.
 
   A "commit position" is something similar to SVN version ids; i.e.,
@@ -70,7 +69,9 @@ def ExtractChangeInfo(message):
       break
 
     if not change_info['commit_position']:
-      match = COMMIT_POSITION_PATTERN.match(line)
+      commit_position_pattern = re.compile(COMMIT_POSITION_PATTERN % ref,
+                                           re.IGNORECASE)
+      match = commit_position_pattern.match(line)
       if match:
         change_info['commit_position'] = int(match.group('commit_position'))
 

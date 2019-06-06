@@ -242,7 +242,8 @@ def RerunBasedAnalysis(context, analyzed_build_id, referred_build):
       analysis.first_failed_commit.gitiles_id,
       analysis.first_failed_commit.commit_position,
       analysis.last_passed_commit.commit_position,
-      repo_url=git.GetRepoUrlFromContext(context))
+      repo_url=git.GetRepoUrlFromContext(context),
+      ref=context.gitiles_ref)
   analysis_completed = True
   analysis_error = None
 

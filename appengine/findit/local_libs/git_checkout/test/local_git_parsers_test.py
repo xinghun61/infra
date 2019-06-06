@@ -118,11 +118,13 @@ class LocalGitParsersTest(unittest.TestCase):
         'https://repo/+/revision', 'https://codereview.chromium.org/2391763002',
         'c9cc182781484f9010f062859cda048afefefefe')
 
-    changelog = local_git_parsers.GitChangeLogParser()(output, 'https://repo')
+    changelog = local_git_parsers.GitChangeLogParser()(output, 'https://repo',
+                                                       'refs/heads/master')
     self.assertDictEqual(expected_changelog.ToDict(), changelog.ToDict())
 
   def testGitChangeLogParserParseEmptyOutput(self):
-    self.assertIsNone(local_git_parsers.GitChangeLogParser()(None, 'repo'))
+    self.assertIsNone(local_git_parsers.GitChangeLogParser()(None, 'repo',
+                                                             'ref'))
 
   def testGitChangeLogsParser(self):
     output = textwrap.dedent("""
@@ -212,17 +214,20 @@ class LocalGitParsersTest(unittest.TestCase):
             'http://repo/+/rev3', None, None),
     ]
 
-    changelogs = local_git_parsers.GitChangeLogsParser()(output, 'http://repo')
+    changelogs = local_git_parsers.GitChangeLogsParser()(output, 'http://repo',
+                                                         'ref')
     for changelog, expected_changelog in zip(changelogs, expected_changelogs):
       self.assertEqual(changelog.ToDict(), expected_changelog.ToDict())
 
   def testGitChangeLogsParserParseEmptyOutput(self):
-    self.assertIsNone(local_git_parsers.GitChangeLogsParser()(None, 'repo'))
+    self.assertIsNone(local_git_parsers.GitChangeLogsParser()(None, 'repo',
+                                                              'ref'))
 
   def testGitChangeLogsParserWithEmptyChangelog(self):
     output = '**Changelog start**\nblablabla'
-    self.assertEqual(local_git_parsers.GitChangeLogsParser()(output,
-                                                             'http://repo'), [])
+    self.assertEqual(
+        local_git_parsers.GitChangeLogsParser()(output, 'http://repo', 'ref'),
+        [])
 
   def testGitDiffParser(self):
     self.assertEqual('output', local_git_parsers.GitDiffParser()('output'))
@@ -236,6 +241,7 @@ class LocalGitParsersTest(unittest.TestCase):
         """)
     self.assertListEqual(local_git_parsers.GitCommitsParser()(output),
                          ['5789567', '95bbc94', '463b55a', '3e84f37'])
+
 
 if __name__ == '__main__':
   unittest.main()

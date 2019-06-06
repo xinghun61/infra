@@ -2,10 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
 import os
 from urlparse import urlparse
-import StringIO
 import subprocess
 import threading
 
@@ -33,10 +31,7 @@ def ConvertRemoteCommitToLocal(revision, repo_path):  # pragma: no cover.
     temp_file_path = os.path.join(CHECKOUT_ROOT_DIR, '.tmp.parse_head')
     with open(temp_file_path, 'wb') as f:
       subprocess.check_call(
-                'cd %s && git rev-parse HEAD' %
-                repo_path,
-                stdout=f,
-                shell=True)
+          'cd %s && git rev-parse HEAD' % repo_path, stdout=f, shell=True)
 
     with open(temp_file_path) as f:
       revision = f.read().strip()
@@ -56,8 +51,8 @@ def GetRevisionRangeForGitCommand(start_revision, end_revision, repo_path):
 
   start_revision = ConvertRemoteCommitToLocal(start_revision, repo_path)
   end_revision = ConvertRemoteCommitToLocal(end_revision, repo_path)
-  return end_revision if not start_revision else '%s..%s' % (
-      start_revision, end_revision)
+  return end_revision if not start_revision else '%s..%s' % (start_revision,
+                                                             end_revision)
 
 
 class LocalGitRepository(GitRepository):
@@ -70,10 +65,11 @@ class LocalGitRepository(GitRepository):
   # Keep track all the updated repos, so every repo only get updated once.
   _updated_repos = set()
 
-  def __init__(self, repo_url=None):
+  def __init__(self, repo_url=None, ref=None):
     self._host = None
     self._repo_path = None
     self._repo_url = repo_url
+    self._ref = ref or 'refs/heads/master'
     if repo_url is not None:
       parsed_url = urlparse(repo_url)
       self._host = parsed_url.netloc
@@ -137,8 +133,8 @@ class LocalGitRepository(GitRepository):
                 stderr=null_handle,
                 shell=True)
         except subprocess.CalledProcessError as e:  # pragma: no cover.
-          raise Exception('Exception while updating %s: %s' % (self.repo_path,
-                                                               e))
+          raise Exception(
+              'Exception while updating %s: %s' % (self.repo_path, e))
 
       LocalGitRepository._updated_repos.add(self.repo_url)
 
@@ -154,10 +150,9 @@ class LocalGitRepository(GitRepository):
     command = ('git log --pretty=format:"%s" --max-count=1 --raw '
                '--no-abbrev %s' % (_CHANGELOG_FORMAT_STRING,
                                    ConvertRemoteCommitToLocal(
-                                       revision,
-                                       self.real_repo_path)))
+                                       revision, self.real_repo_path)))
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
-    return self.changelog_parser(output, self.repo_url)
+    return self.changelog_parser(output, self.repo_url, self._ref)
 
   def GetChangeLogs(self, start_revision, end_revision):  # pylint: disable=W
     """Returns change log list in (start_revision, end_revision].
@@ -172,7 +167,7 @@ class LocalGitRepository(GitRepository):
         revision_range, _CHANGELOGS_FORMAT_STRING)
 
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
-    return self.changelogs_parser(output, self.repo_url)
+    return self.changelogs_parser(output, self.repo_url, self._ref)
 
   def GetChangeDiff(self, revision, path=None):  # pylint: disable=W
     """Returns the diff of the given revision."""
@@ -185,8 +180,8 @@ class LocalGitRepository(GitRepository):
 
   def GetBlame(self, path, revision):
     """Returns blame of the file at ``path`` of the given revision."""
-    command = 'git blame --incremental %s -- %s' % (
-        ConvertRemoteCommitToLocal(revision, self.real_repo_path), path)
+    command = 'git blame --incremental %s -- %s' % (ConvertRemoteCommitToLocal(
+        revision, self.real_repo_path), path)
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))
     return self.blame_parser(output, path, revision)
 

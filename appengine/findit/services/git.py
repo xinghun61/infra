@@ -31,7 +31,7 @@ from services.constants import CHROMIUM_GIT_REPOSITORY_URL
 _COMMIT_REVISION_MAP_CACHE_EXPIRE_TIME_SECONDS = 1 * 24 * 60 * 60
 
 
-def GetGitBlame(repo_url, revision, touched_file_path):
+def GetGitBlame(repo_url, revision, touched_file_path, ref=None):
   """Gets git blames of touched_file.
 
   Args:
@@ -39,13 +39,14 @@ def GetGitBlame(repo_url, revision, touched_file_path):
     revision (str): Revision for the change.
     touched_file_path (str): Full path of a file in change_log.
   """
-  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   return git_repo.GetBlame(touched_file_path, revision)
 
 
 def PullChangeLogs(start_revision,
                    end_revision,
                    repo_url=CHROMIUM_GIT_REPOSITORY_URL,
+                   ref=None,
                    **kwargs):
   """Pulls change logs for CLs between start_revision and end_revision.
 
@@ -65,7 +66,7 @@ def PullChangeLogs(start_revision,
   if not start_revision:
     return {}
 
-  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   change_logs = {}
 
   change_log_list = git_repo.GetChangeLogs(start_revision, end_revision,
@@ -78,9 +79,9 @@ def PullChangeLogs(start_revision,
 
 
 # TODO(crbug.com/841581): Convert return value to DTO.
-def GetCommitsInfo(revisions, repo_url=CHROMIUM_GIT_REPOSITORY_URL):
+def GetCommitsInfo(revisions, repo_url=CHROMIUM_GIT_REPOSITORY_URL, ref=None):
   """Gets commit_positions and review urls for revisions."""
-  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   cls = {}
   # TODO(crbug/767759): remove hard-coded 'chromium' when DEPS file parsing is
   # supported.
@@ -95,12 +96,14 @@ def GetCommitsInfo(revisions, repo_url=CHROMIUM_GIT_REPOSITORY_URL):
   return cls
 
 
-def GetCodeReviewInfoForACommit(revision, repo_url=CHROMIUM_GIT_REPOSITORY_URL):
+def GetCodeReviewInfoForACommit(revision,
+                                repo_url=CHROMIUM_GIT_REPOSITORY_URL,
+                                ref=None):
   """Returns change info of the given revision.
 
   Returns commit position, code-review url, host and change_id.
   """
-  repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   change_log = repo.GetChangeLog(revision)
   if not change_log:
     return {}
@@ -115,16 +118,18 @@ def GetCodeReviewInfoForACommit(revision, repo_url=CHROMIUM_GIT_REPOSITORY_URL):
 
 
 def GetCommitPositionFromRevision(revision,
-                                  repo_url=CHROMIUM_GIT_REPOSITORY_URL):
+                                  repo_url=CHROMIUM_GIT_REPOSITORY_URL,
+                                  ref=None):
   """Returns the corresponding commit position given a git revision."""
-  return GetCommitsInfo([revision], repo_url).get(revision,
-                                                  {}).get('commit_position')
+  return GetCommitsInfo([revision], repo_url,
+                        ref).get(revision, {}).get('commit_position')
 
 
 def GetCommitsBetweenRevisionsInOrder(start_revision,
                                       end_revision,
                                       repo_url=CHROMIUM_GIT_REPOSITORY_URL,
-                                      ascending=True):
+                                      ascending=True,
+                                      ref=None):
   """Gets the revisions between start_revision and end_revision.
 
   Args:
@@ -137,7 +142,7 @@ def GetCommitsBetweenRevisionsInOrder(start_revision,
   Returns:
     A list of revisions sorted in order chronologically.
   """
-  repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   commits = repo.GetCommitsBetweenRevisions(start_revision, end_revision)
 
   if ascending:
@@ -150,7 +155,7 @@ def CountRecentCommits(repo_url,
                        time_period=datetime.timedelta(hours=1)):
   """Gets the number of commits that landed recently.
 
-  By default, this function will count the commits landed in the master branch
+  By default, this function will count the commits landed in the master ref
   during last hour, but can be used to count the commits landed in any ref in
   the most recent period of any arbitrary size.
 
@@ -165,7 +170,7 @@ def CountRecentCommits(repo_url,
   """
   count = 0
   cutoff = time_util.GetUTCNow() - time_period
-  git_repo = NonCachedGitilesRepository(FinditHttpClient(), repo_url)
+  git_repo = NonCachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   next_rev = ref
   while next_rev:
     # 100 is a reasonable size for a page.
@@ -180,8 +185,8 @@ def CountRecentCommits(repo_url,
   return count
 
 
-def GetAuthor(revision, repo_url=CHROMIUM_GIT_REPOSITORY_URL):
-  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+def GetAuthor(revision, repo_url=CHROMIUM_GIT_REPOSITORY_URL, ref=None):
+  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   change_log = git_repo.GetChangeLog(revision)
   return change_log.author if change_log else None
 
@@ -203,10 +208,11 @@ def IsAuthoredByNoAutoRevertAccount(revision):
 
 def ChangeCommittedWithinTime(revision,
                               repo_url=CHROMIUM_GIT_REPOSITORY_URL,
-                              hours=24):
+                              hours=24,
+                              ref=None):
   """Returns True if the change was committed within the time given."""
   delta = timedelta(hours=hours)
-  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   change_log = git_repo.GetChangeLog(revision)
   culprit_commit_time = change_log.committer.time
 
@@ -227,7 +233,8 @@ def ChangeCommittedWithinTime(revision,
 def MapCommitPositionsToGitHashes(end_revision,
                                   end_commit_position,
                                   start_commit_position,
-                                  repo_url=CHROMIUM_GIT_REPOSITORY_URL):
+                                  repo_url=CHROMIUM_GIT_REPOSITORY_URL,
+                                  ref=None):
   """Gets git_hashes of commit_positions between start_commit_position and
     end_commit_position, both ends are included.
 
@@ -237,6 +244,7 @@ def MapCommitPositionsToGitHashes(end_revision,
     start_commit_position (int): Commit position of the start commit.
       It cannot be greater than end_commit_position.
     repo_url (str): Url of the git repo. Default to chromium repo url.
+    ref (str): Name of the ref.
 
   Returns:
     dict: A map of commit_positions in range to the corresponding git_hashes.
@@ -251,8 +259,7 @@ def MapCommitPositionsToGitHashes(end_revision,
   assert start_commit_position <= end_commit_position, (
       'start_commit_position {} is greater than end_commit_position {}'.format(
           start_commit_position, end_commit_position))
-
-  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
+  git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url, ref)
   commit_position_range = end_commit_position - start_commit_position + 1
 
   logs, _ = git_repo.GetNChangeLogs(end_revision, commit_position_range)
@@ -263,13 +270,15 @@ def GetRevisionForCommitPositionByAnotherCommit(
     base_revision,
     base_commit_position,
     requested_commit_position,
-    repo_url=CHROMIUM_GIT_REPOSITORY_URL):
+    repo_url=CHROMIUM_GIT_REPOSITORY_URL,
+    ref=None):
   """Gets revision of the requested commit by the information of the base commit
 
   requested_commit_position should not be greater than the base_commit_position.
   """
   revisions = MapCommitPositionsToGitHashes(base_revision, base_commit_position,
-                                            requested_commit_position, repo_url)
+                                            requested_commit_position, repo_url,
+                                            ref)
 
   return revisions.get(requested_commit_position)
 

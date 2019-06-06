@@ -14,81 +14,92 @@ from libs.gitiles import commit_util
 class CodeReviewUtilTest(testing.AppengineTestCase):
 
   def testExtractChangeInfo(self):
-    testcases = [{
-        'message': 'balabala...\n'
-                   '\n'
-                   'BUG=604502\n'
-                   '\n'
-                   'Review-Url: https://codereview.chromium.org/1927593004\n'
-                   'Cr-Commit-Position: refs/heads/master@{#390254}\n',
-        'commit_position': 390254,
-        'code_review_url': 'https://codereview.chromium.org/1927593004',
-        'change_id': '1927593004',
-        'host': 'codereview.chromium.org',
-    }, {
-        'message': 'balabala...\n'
-                   '\n'
-                   'BUG=409934\n'
-                   '\n'
-                   'Review URL: https://codereview.chromium.org/547753003\n'
-                   '\n'
-                   'Cr-Commit-Position: refs/heads/master@{#293661}',
-        'commit_position': 293661,
-        'code_review_url': 'https://codereview.chromium.org/547753003',
-        'change_id': '547753003',
-        'host': 'codereview.chromium.org',
-    }, {
-        'message': 'Review URL: https://codereview.chromium.org/469523002\n'
-                   '\n'
-                   'Cr-Commit-Position: refs/heads/master@{#289120}',
-        'commit_position': 289120,
-        'code_review_url': 'https://codereview.chromium.org/469523002',
-        'change_id': '469523002',
-        'host': 'codereview.chromium.org',
-    }, {
-        'message': 'balabala...\n'
-                   '\n'
-                   'balabala...\n'
-                   '\n'
-                   'R=test4@chromium.org\n'
-                   '\n'
-                   'Review URL: https://codereview.chromium.org/469523002\n',
-        'commit_position': None,
-        'code_review_url': 'https://codereview.chromium.org/469523002',
-        'change_id': '469523002',
-        'host': 'codereview.chromium.org',
-    }, {
-        'message': None,
-        'commit_position': None,
-        'code_review_url': None,
-        'change_id': None,
-        'host': None,
-    }, {
-        'message': 'abc',
-        'commit_position': None,
-        'code_review_url': None,
-        'change_id': None,
-        'host': None,
-    }, {
-        'message':
-            'balabala...\n'
-            '\n'
-            'balabala...\n'
-            '\n'
-            'R=test4@chromium.org\n'
-            '\n'
-            'Change-Id: Iaa54f242b5b2fa10870503ef88291b9422cb47ca\n'
-            'Reviewed-on: https://chromium-review.googlesource.com/45425\n'
-            'Cr-Commit-Position: refs/heads/master@{#456563}',
-        'commit_position': 456563,
-        'code_review_url': 'https://chromium-review.googlesource.com/q/'
-                           'Iaa54f242b5b2fa10870503ef88291b9422cb47ca',
-        'change_id': 'Iaa54f242b5b2fa10870503ef88291b9422cb47ca',
-        'host': 'chromium-review.googlesource.com',
-    }]
+    testcases = [
+        {
+            'message':
+                'balabala...\n'
+                '\n'
+                'BUG=604502\n'
+                '\n'
+                'Review-Url: https://codereview.chromium.org/1927593004\n'
+                'Cr-Commit-Position: refs/heads/master@{#390254}\n',
+            'commit_position': 390254,
+            'code_review_url': 'https://codereview.chromium.org/1927593004',
+            'change_id': '1927593004',
+            'host': 'codereview.chromium.org',
+        },
+        {
+            'message': 'balabala...\n'
+                       '\n'
+                       'BUG=409934\n'
+                       '\n'
+                       'Review URL: https://codereview.chromium.org/547753003\n'
+                       '\n'
+                       'Cr-Commit-Position: refs/heads/master@{#293661}',
+            'commit_position': 293661,
+            'code_review_url': 'https://codereview.chromium.org/547753003',
+            'change_id': '547753003',
+            'host': 'codereview.chromium.org',
+        },
+        {
+            'message': 'Review URL: https://codereview.chromium.org/469523002\n'
+                       '\n'
+                       'Cr-Commit-Position: refs/heads/master@{#289120}',
+            'commit_position': 289120,
+            'code_review_url': 'https://codereview.chromium.org/469523002',
+            'change_id': '469523002',
+            'host': 'codereview.chromium.org',
+        },
+        {
+            'message':
+                'balabala...\n'
+                '\n'
+                'balabala...\n'
+                '\n'
+                'R=test4@chromium.org\n'
+                '\n'
+                'Review URL: https://codereview.chromium.org/469523002\n',
+            'commit_position': None,
+            'code_review_url': 'https://codereview.chromium.org/469523002',
+            'change_id': '469523002',
+            'host': 'codereview.chromium.org',
+        },
+        {
+            'message': None,
+            'commit_position': None,
+            'code_review_url': None,
+            'change_id': None,
+            'host': None,
+        },
+        {
+            'message': 'abc',
+            'commit_position': None,
+            'code_review_url': None,
+            'change_id': None,
+            'host': None,
+        },
+        {
+            'message':
+                'balabala...\n'
+                '\n'
+                'balabala...\n'
+                '\n'
+                'R=test4@chromium.org\n'
+                '\n'
+                'Change-Id: Iaa54f242b5b2fa10870503ef88291b9422cb47ca\n'
+                'Reviewed-on: https://chromium-review.googlesource.com/45425\n'
+                'Cr-Commit-Position: refs/heads/master@{#456563}',
+            'commit_position': 456563,
+            'code_review_url': 'https://chromium-review.googlesource.com/q/'
+                               'Iaa54f242b5b2fa10870503ef88291b9422cb47ca',
+            'change_id': 'Iaa54f242b5b2fa10870503ef88291b9422cb47ca',
+            'host': 'chromium-review.googlesource.com',
+        }
+    ]
 
     for testcase in testcases:
-      change_info = commit_util.ExtractChangeInfo(testcase['message'])
+      change_info = commit_util.ExtractChangeInfo(testcase['message'],
+                                                  'refs/heads/master')
       self.assertEqual(
           change_info.get('commit_position'), testcase['commit_position'])
       self.assertEqual(

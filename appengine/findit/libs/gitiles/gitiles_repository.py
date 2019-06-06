@@ -26,12 +26,13 @@ REVERTED_REVISION_PATTERN = re.compile(
     '^> Committed: https://.+/([0-9a-fA-F]{40})$', re.IGNORECASE)
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
 CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
+_DEFAULT_REF = 'refs/heads/master'
 
 
 class GitilesRepository(GitRepository):
   """Use Gitiles to access a repository on https://chromium.googlesource.com."""
 
-  def __init__(self, http_client, repo_url=None):
+  def __init__(self, http_client, repo_url=None, ref=None):
     super(GitilesRepository, self).__init__()
     if repo_url and repo_url.endswith('/'):
       self._repo_url = repo_url[:-1]
@@ -39,6 +40,7 @@ class GitilesRepository(GitRepository):
       self._repo_url = repo_url
 
     self._http_client = http_client
+    self._ref = ref or _DEFAULT_REF
 
   @classmethod
   def Factory(cls, http_client):  # pragma: no cover
@@ -107,7 +109,7 @@ class GitilesRepository(GitRepository):
                        self._GetDateTimeFromString(data['time']))
 
   def _ParseChangeLogFromLogData(self, data):
-    change_info = commit_util.ExtractChangeInfo(data['message'])
+    change_info = commit_util.ExtractChangeInfo(data['message'], self._ref)
 
     touched_files = []
     for file_diff in data['tree_diff']:

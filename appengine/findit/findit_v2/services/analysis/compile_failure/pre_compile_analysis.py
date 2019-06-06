@@ -640,9 +640,9 @@ def SaveCompileAnalysis(context, build, failures_without_existing_group,
   last_passed_gitiles_id = failures_without_existing_group['last_passed_build'][
       'commit_id']
   last_passed_commit_position = git.GetCommitPositionFromRevision(
-      last_passed_gitiles_id, repo_url)
+      last_passed_gitiles_id, repo_url, ref=context.gitiles_ref)
   first_failed_commit_position = git.GetCommitPositionFromRevision(
-      context.gitiles_id, repo_url)
+      context.gitiles_id, repo_url, ref=context.gitiles_ref)
 
   if should_group_failures:
     _CreateAndSaveFailureGroupEntity(

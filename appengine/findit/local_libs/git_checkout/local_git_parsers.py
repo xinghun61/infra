@@ -123,8 +123,8 @@ class GitBlameParser(GitParser):
         elif AUTHOR_MAIL_PATTERN.match(line):
           commit_info[region_info.revision]['author_email'] = (
               commit_util.NormalizeEmail(
-                  AUTHOR_MAIL_PATTERN.match(line).group(1).replace('<', '')
-                  .replace('>', '')))
+                  AUTHOR_MAIL_PATTERN.match(line).group(1).replace(
+                      '<', '').replace('>', '')))
         # Sample: author-time 1311863160.
         elif AUTHOR_TIME_PATTERN.match(line):
           commit_info[region_info.revision]['author_time'] = (
@@ -141,9 +141,9 @@ class GitBlameParser(GitParser):
     if region_info:
       blame.AddRegion(
           Region(region_info.start, region_info.count, region_info.revision,
-                 commit_info[region_info.revision]['author_name'], commit_info[
-                     region_info.revision]['author_email'], commit_info[
-                         region_info.revision]['author_time']))
+                 commit_info[region_info.revision]['author_name'],
+                 commit_info[region_info.revision]['author_email'],
+                 commit_info[region_info.revision]['author_time']))
 
     return blame if blame else None
 
@@ -177,7 +177,7 @@ def GetFileChangeInfo(change_type, path1, path2):
 
 class GitChangeLogParser(GitParser):
 
-  def __call__(self, output, repo_url):  # pylint:disable=W
+  def __call__(self, output, repo_url, ref):  # pylint:disable=W
     """Parses output of 'git log --pretty=format:<format>.
 
     For example:
@@ -242,8 +242,9 @@ class GitChangeLogParser(GitParser):
             COMMITTER_TIME_PATTERN.match(line).group(1), DATETIME_FORMAT)
       elif (CHANGED_FILE_PATTERN1.match(line) or
             CHANGED_FILE_PATTERN2.match(line)):
-        match = (CHANGED_FILE_PATTERN1.match(line) or
-                 CHANGED_FILE_PATTERN2.match(line))
+        match = (
+            CHANGED_FILE_PATTERN1.match(line) or
+            CHANGED_FILE_PATTERN2.match(line))
         # For modify, add, delete, the pattern is like:
         # :100644 100644 df565d 6593e M modules/audio_coding/BUILD.gn
         # For rename, copy, the pattern is like:
@@ -252,16 +253,15 @@ class GitChangeLogParser(GitParser):
         if change_type:
           info['touched_files'].append(
               GetFileChangeInfo(
-                  change_type,
-                  match.group(6), None
-                  if len(match.groups()) < 7 else match.group(7)))
+                  change_type, match.group(6),
+                  None if len(match.groups()) < 7 else match.group(7)))
 
     # If commit is not parsed, the changelog will be {'author': {}, 'committer':
     # {}, 'message': ''}, return None instead.
     if not 'revision' in info:
       return None
 
-    change_info = commit_util.ExtractChangeInfo(info['message'])
+    change_info = commit_util.ExtractChangeInfo(info['message'], ref)
     info['commit_position'] = change_info.get('commit_position')
     info['code_review_url'] = change_info.get('code_review_url')
     info['reverted_revision'] = commit_util.GetRevertedRevision(info['message'])
@@ -272,7 +272,7 @@ class GitChangeLogParser(GitParser):
 
 class GitChangeLogsParser(GitParser):
 
-  def __call__(self, output, repo_url):  # pylint:disable=W
+  def __call__(self, output, repo_url, ref):  # pylint:disable=W
     """Parses output of 'git log --pretty=format:<format> s_rev..e_rev'.
 
     For example:
@@ -332,7 +332,7 @@ class GitChangeLogsParser(GitParser):
           continue
 
         try:
-          change_log = git_changelog_parser(changelog_str, repo_url)
+          change_log = git_changelog_parser(changelog_str, repo_url, ref)
         except Exception:  # pragma: no cover
           # Skip those mal-formatted changelogs.
           # TODO(katesonia): Investigate those mal-formatted changelog strings,
@@ -345,7 +345,7 @@ class GitChangeLogsParser(GitParser):
       else:
         changelog_str += line + '\n'
 
-    change_log = git_changelog_parser(changelog_str, repo_url)
+    change_log = git_changelog_parser(changelog_str, repo_url, ref)
     if change_log:
       changelogs.append(change_log)
 
@@ -409,7 +409,7 @@ class GitCommitsParser(object):
   For example:
   The output is like:
 
-  578956728fd1653f71722be150e2a158a19fa04c (HEAD -> master) Move some ...
+  578956728fd1653f71722be150e2a158a19fa04c (HEAD -> ref) Move some ...
   95bbc94d79f726cfecf15f47d8a487f6d42ac8ad Add a feature flag for the ...
   463b55a16e6303c9efd32da390b5a8fcbc4d5c8a Disable system health smoke ...
   3e84f37dbcbb8e2b2d5c5f7679f7f1164943ee39 Fix use-after-free introduced ...
