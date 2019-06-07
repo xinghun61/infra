@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"google.golang.org/api/calendar/v3"
 	gcal "google.golang.org/api/calendar/v3"
 )
 
@@ -403,6 +404,17 @@ func calToTime(calTime *gcal.EventDateTime) (time.Time, error) {
 	return time.ParseInLocation(time.RFC3339, calTime.DateTime, tz)
 }
 
+func keepDeclined(evt *calendar.Event) []*calendar.EventAttendee {
+	var declined []*calendar.EventAttendee
+	for _, attendee := range evt.Attendees {
+		if attendee.ResponseStatus != "declined" {
+			continue
+		}
+		declined = append(declined, attendee)
+	}
+	return declined
+}
+
 // UpdateEvent updates the calendar event with information from the provided updated shift.
 func (c *Calendar) UpdateEvent(ctx *router.Context, cfg *rotang.Configuration, updated *rotang.ShiftEntry) (*rotang.ShiftEntry, error) {
 	if err := ctx.Context.Err(); err != nil {
@@ -426,6 +438,13 @@ func (c *Calendar) UpdateEvent(ctx *router.Context, cfg *rotang.Configuration, u
 	if len(events) != 1 {
 		return nil, status.Errorf(codes.NotFound, "wrong mumber of events returned")
 	}
+
+	currentEvent, err := cal.Events.Get(cfg.Config.Calendar, updated.EvtID).Do()
+	if err != nil {
+		return nil, err
+	}
+
+	events[0].Attendees = append(events[0].Attendees, keepDeclined(currentEvent)...)
 
 	evt, err := cal.Events.Update(cfg.Config.Calendar, updated.EvtID, events[0]).Do()
 	if err != nil {

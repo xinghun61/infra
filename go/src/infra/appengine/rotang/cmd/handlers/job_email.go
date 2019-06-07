@@ -155,8 +155,8 @@ func emailFromTemplate(subject, body string, info *rotang.Info) (string, string,
 	return subjectBuf.String(), bodyBuf.String(), nil
 }
 
-func (h *State) sendNobodyOncall(ctx *router.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry) error {
-	subject, body, err := emailFromTemplate(h.nobodyEmail.Subject, h.nobodyEmail.Body, &rotang.Info{
+func (h *State) sendMissingOncall(ctx *router.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry) error {
+	subject, body, err := emailFromTemplate(h.missingEmail.Subject, h.missingEmail.Body, &rotang.Info{
 		RotaName:    cfg.Config.Name,
 		ShiftConfig: cfg.Config.Shifts,
 		ShiftEntry:  *shift,
@@ -167,11 +167,32 @@ func (h *State) sendNobodyOncall(ctx *router.Context, cfg *rotang.Configuration,
 
 	to, sender := h.setSender(ctx, cfg.Config.Owners)
 
+	logging.Infof(ctx.Context, "sending NobodyOncall email for rotation: %q to: %v", cfg.Config.Name, cfg.Config.Owners)
 	return h.mailSender.Send(ctx.Context, &mail.Message{
 		Sender:  sender,
 		To:      to,
 		Subject: subject,
 		Body:    body,
 	})
+}
 
+func (h *State) sendEventDeclined(ctx *router.Context, cfg *rotang.Configuration, shift *rotang.ShiftEntry, declinedMembers []string) error {
+	subject, body, err := emailFromTemplate(h.declinedEventEmail.Subject, h.declinedEventEmail.Body, &rotang.Info{
+		RotaName:    cfg.Config.Name,
+		ShiftConfig: cfg.Config.Shifts,
+		ShiftEntry:  *shift,
+	})
+	if err != nil {
+		return err
+	}
+
+	to, sender := h.setSender(ctx, declinedMembers)
+
+	logging.Infof(ctx.Context, "sending DeclinedEvent email for rotation: %q to: %v", cfg.Config.Name, declinedMembers)
+	return h.mailSender.Send(ctx.Context, &mail.Message{
+		Sender:  sender,
+		To:      to,
+		Subject: subject,
+		Body:    body,
+	})
 }

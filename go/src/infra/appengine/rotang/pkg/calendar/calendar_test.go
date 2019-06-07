@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"google.golang.org/api/calendar/v3"
 	gcal "google.golang.org/api/calendar/v3"
 )
 
@@ -1611,6 +1612,63 @@ func TestUpdateEvent(t *testing.T) {
 				t.Fatalf("%s: UpdateEvent(ctx, _, _) = %t want: %t, err: %v", tst.name, got, want, err)
 			}
 		})
+	}
+}
+
+func TestKeepDeclined(t *testing.T) {
+	tests := []struct {
+		name string
+		in   *calendar.Event
+		want []*calendar.EventAttendee
+	}{{
+		name: "Nobody declined",
+		in: &calendar.Event{
+			Attendees: []*calendar.EventAttendee{
+				{
+					Email:          "test1@test.com",
+					ResponseStatus: "accepted",
+				}, {
+					Email:          "test2@test.com",
+					ResponseStatus: "accepted",
+				},
+			},
+		},
+	}, {
+		name: "Two declined",
+		in: &calendar.Event{
+			Attendees: []*calendar.EventAttendee{
+				{
+					Email:          "test1@test.com",
+					ResponseStatus: "accepted",
+				}, {
+					Email:          "test2@test.com",
+					ResponseStatus: "declined",
+				}, {
+					Email:          "test3@test.com",
+					ResponseStatus: "declined",
+				}, {
+					Email:          "test4@test.com",
+					ResponseStatus: "accepted",
+				},
+			},
+		},
+		want: []*calendar.EventAttendee{
+			{
+				Email:          "test2@test.com",
+				ResponseStatus: "declined",
+			}, {
+				Email:          "test3@test.com",
+				ResponseStatus: "declined",
+			},
+		},
+	},
+	}
+
+	for _, tst := range tests {
+		got := keepDeclined(tst.in)
+		if diff := pretty.Compare(tst.want, got); diff != "" {
+			t.Errorf("%s: keepDeclined() differ -want +got: \n%s", tst.name, diff)
+		}
 	}
 }
 

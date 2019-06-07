@@ -1393,7 +1393,7 @@ var _RotationAdmin_serviceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MemberAdminClient interface {
 	// RotationMembers returns the members of a rotation together with when they were last OnCall and OOO information.
-	// Owner permissons for the rotation is required.
+	// Owner permissions for the rotation is required.
 	RotationMembers(ctx context.Context, in *RotationMembersRequest, opts ...grpc.CallOption) (*RotationMembersResponse, error)
 }
 type memberAdminPRPCClient struct {
@@ -1433,7 +1433,7 @@ func (c *memberAdminClient) RotationMembers(ctx context.Context, in *RotationMem
 // MemberAdminServer is the server API for MemberAdmin service.
 type MemberAdminServer interface {
 	// RotationMembers returns the members of a rotation together with when they were last OnCall and OOO information.
-	// Owner permissons for the rotation is required.
+	// Owner permissions for the rotation is required.
 	RotationMembers(context.Context, *RotationMembersRequest) (*RotationMembersResponse, error)
 }
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/kylelemons/godebug/pretty"
+	"go.chromium.org/gae/service/mail"
 	"go.chromium.org/luci/server/router"
 )
 
@@ -126,7 +127,9 @@ func TestEventUpdate(t *testing.T) {
 		time       time.Time
 		memberPool []rotang.Member
 		shifts     []rotang.ShiftEntry
+		events     []rotang.ShiftEntry
 		want       []rotang.ShiftEntry
+		email      []mail.Message
 	}{{
 		name: "Config not enabled",
 		ctx: &router.Context{
@@ -274,6 +277,31 @@ func TestEventUpdate(t *testing.T) {
 				EvtID:     "before 2",
 			},
 		},
+		events: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(-weekDuration),
+				EndTime:   midnight.Add(-weekDuration + 5*fullDay),
+				EvtID:     "before 1",
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "before 2",
+			},
+		},
 		want: []rotang.ShiftEntry{
 			{
 				Name: "MTV All Day",
@@ -368,6 +396,31 @@ func TestEventUpdate(t *testing.T) {
 				EvtID:     "Before2",
 			},
 		},
+		events: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "Before1",
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
+				EvtID:     "Before2",
+			},
+		},
 		want: []rotang.ShiftEntry{
 			{
 				Name: "MTV All Day",
@@ -403,6 +456,7 @@ func TestEventUpdate(t *testing.T) {
 		cfg: &rotang.Configuration{
 			Config: rotang.Config{
 				Name:             "Test Rota",
+				Owners:           []string{"owner1@owner.com", "owner2@owner.com"},
 				Enabled:          true,
 				Expiration:       2,
 				ShiftsToSchedule: 2,
@@ -411,7 +465,7 @@ func TestEventUpdate(t *testing.T) {
 					Length:       5,
 					Skip:         2,
 					Generator:    "Fair",
-					ShiftMembers: 1,
+					ShiftMembers: 2,
 					Shifts: []rotang.Shift{
 						{
 							Name:     "MTV All Day",
@@ -427,6 +481,18 @@ func TestEventUpdate(t *testing.T) {
 				}, {
 					Email:     "oncaller2@oncall.com",
 					ShiftName: "MTV All Day",
+				}, {
+					Email:     "oncaller3@oncall.com",
+					ShiftName: "MTV All Day",
+				}, {
+					Email:     "oncaller4@oncall.com",
+					ShiftName: "MTV All Day",
+				}, {
+					Email:     "oncaller5@oncall.com",
+					ShiftName: "MTV All Day",
+				}, {
+					Email:     "oncaller6@oncall.com",
+					ShiftName: "MTV All Day",
 				},
 			},
 		},
@@ -437,8 +503,65 @@ func TestEventUpdate(t *testing.T) {
 			{
 				Email: "oncaller2@oncall.com",
 			},
+			{
+				Email: "oncaller3@oncall.com",
+			},
+			{
+				Email: "oncaller4@oncall.com",
+			},
+			{
+				Email: "oncaller5@oncall.com",
+			},
+			{
+				Email: "oncaller6@oncall.com",
+			},
 		},
 		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller1@oncall.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "oncaller2@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(5 * fullDay),
+				EvtID:     "Before1",
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller3@oncall.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "oncaller4@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(12 * fullDay),
+				EvtID:     "Before2",
+			}, {
+				Name: "MTV All Day",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "oncaller5@oncall.com",
+						ShiftName: "MTV All Day",
+					}, {
+						Email:     "oncaller6@oncall.com",
+						ShiftName: "MTV All Day",
+					},
+				},
+				StartTime: midnight.Add(14 * fullDay),
+				EndTime:   midnight.Add(19 * fullDay),
+				EvtID:     "Before3",
+			},
+		},
+		events: []rotang.ShiftEntry{
 			{
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
@@ -450,17 +573,24 @@ func TestEventUpdate(t *testing.T) {
 				StartTime: midnight,
 				EndTime:   midnight.Add(5 * fullDay),
 				EvtID:     "Before1",
-			}, {
+			},
+			{
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
 					{
-						Email:     "oncaller2@oncall.com",
+						Email:     "oncaller4@oncall.com",
 						ShiftName: "MTV All Day",
 					},
 				},
 				StartTime: midnight.Add(7 * fullDay),
 				EndTime:   midnight.Add(12 * fullDay),
 				EvtID:     "Before2",
+			}, {
+				Name:      "MTV All Day",
+				OnCall:    []rotang.ShiftMember{},
+				StartTime: midnight.Add(14 * fullDay),
+				EndTime:   midnight.Add(19 * fullDay),
+				EvtID:     "Before3",
 			},
 		},
 		want: []rotang.ShiftEntry{
@@ -479,13 +609,51 @@ func TestEventUpdate(t *testing.T) {
 				Name: "MTV All Day",
 				OnCall: []rotang.ShiftMember{
 					{
-						Email:     "oncaller2@oncall.com",
+						Email:     "oncaller4@oncall.com",
 						ShiftName: "MTV All Day",
 					},
 				},
 				StartTime: midnight.Add(7 * fullDay),
 				EndTime:   midnight.Add(12 * fullDay),
 				EvtID:     "1",
+			}, {
+				Name:      "MTV All Day",
+				StartTime: midnight.Add(14 * fullDay),
+				EndTime:   midnight.Add(19 * fullDay),
+				EvtID:     "2",
+			},
+		},
+		email: []mail.Message{
+			{
+				Sender:  "admin@example.com",
+				To:      []string{"oncaller2@oncall.com"},
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			}, {
+				Sender:  "admin@example.com",
+				To:      []string{"owner1@owner.com", "owner2@owner.com"},
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			}, {
+				Sender:  "admin@example.com",
+				To:      []string{"oncaller3@oncall.com"},
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			}, {
+				Sender:  "admin@example.com",
+				To:      []string{"owner1@owner.com", "owner2@owner.com"},
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			}, {
+				Sender:  "admin@example.com",
+				To:      []string{"oncaller5@oncall.com", "oncaller6@oncall.com"},
+				Subject: "TestSubject",
+				Body:    "TestBody",
+			}, {
+				Sender:  "admin@example.com",
+				To:      []string{"owner1@owner.com", "owner2@owner.com"},
+				Subject: "TestSubject",
+				Body:    "TestBody",
 			},
 		},
 	}, {
@@ -566,6 +734,70 @@ func TestEventUpdate(t *testing.T) {
 			},
 		},
 		shifts: []rotang.ShiftEntry{
+			{
+				Name: "MTV Shift",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv1@oncall.com",
+						ShiftName: "MTV Shift",
+					},
+				},
+				StartTime: midnight,
+				EndTime:   midnight.Add(4*fullDay + 8*time.Hour),
+			}, {
+				Name: "SYD Shift",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "syd1@oncall.com",
+						ShiftName: "SYD Shift",
+					},
+				},
+				StartTime: midnight.Add(8 * time.Hour),
+				EndTime:   midnight.Add(4*fullDay + 16*time.Hour),
+			}, {
+				Name: "EU Shift",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "eu1@oncall.com",
+						ShiftName: "EU Shift",
+					},
+				},
+				StartTime: midnight.Add(16 * time.Hour),
+				EndTime:   midnight.Add(5 * fullDay),
+			},
+			{
+				Name: "MTV Shift",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "mtv2@oncall.com",
+						ShiftName: "MTV Shift",
+					},
+				},
+				StartTime: midnight.Add(7 * fullDay),
+				EndTime:   midnight.Add(4*fullDay + 8*time.Hour + weekDuration),
+			}, {
+				Name: "SYD Shift",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "syd2@oncall.com",
+						ShiftName: "SYD Shift",
+					},
+				},
+				StartTime: midnight.Add(8*time.Hour + weekDuration),
+				EndTime:   midnight.Add(4*fullDay + 16*time.Hour + weekDuration),
+			}, {
+				Name: "EU Shift",
+				OnCall: []rotang.ShiftMember{
+					{
+						Email:     "eu2@oncall.com",
+						ShiftName: "EU Shift",
+					},
+				},
+				StartTime: midnight.Add(16*time.Hour + weekDuration),
+				EndTime:   midnight.Add(5*fullDay + weekDuration),
+			},
+		},
+		events: []rotang.ShiftEntry{
 			{
 				Name: "MTV Shift",
 				OnCall: []rotang.ShiftMember{
@@ -722,16 +954,20 @@ func TestEventUpdate(t *testing.T) {
 			}
 
 			h.calendar.(*fakeCal).events = make(map[time.Time]rotang.ShiftEntry)
-			for i := range tst.shifts {
-				sp := tst.shifts[i]
+			for i := range tst.events {
+				sp := tst.events[i]
 				h.calendar.(*fakeCal).events[sp.StartTime] = sp
 			}
 			defer h.shiftStore(ctx).DeleteAllShifts(ctx, tst.cfg.Config.Name)
 
 			h.calendar.(*fakeCal).Set(nil, false, tst.changeID, 0)
+
+			testMail := mail.GetTestable(tst.ctx.Context)
+			testMail.Reset()
+
 			err := h.eventUpdate(tst.ctx, tst.cfg, midnight)
 			if got, want := (err != nil), tst.fail; got != want {
-				t.Fatalf("%s: scheduleShifts(ctx, _, %v) = %t want: %t, err: %v", tst.name, midnight, got, want, err)
+				t.Fatalf("%s: eventUpdate(ctx, _, %v) = %t want: %t, err: %v", tst.name, midnight, got, want, err)
 			}
 			if err != nil {
 				return
@@ -744,6 +980,15 @@ func TestEventUpdate(t *testing.T) {
 
 			if diff := pretty.Compare(tst.want, got); diff != "" {
 				t.Fatalf("%s: scheduleShifts(ctx, _, %v) differ -want +got, %s", tst.name, midnight, diff)
+			}
+
+			var gotMsg []mail.Message
+			for _, m := range testMail.SentMessages() {
+				gotMsg = append(gotMsg, m.Message)
+			}
+
+			if diff := pretty.Compare(tst.email, gotMsg); diff != "" {
+				t.Fatalf("%s: JobEventUpdate(ctx) differ -want =got, \n%s", tst.name, diff)
 			}
 		})
 	}

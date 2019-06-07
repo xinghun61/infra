@@ -71,13 +71,24 @@ func (h *State) eventUpdate(ctx *router.Context, cfg *rotang.Configuration, t ti
 			return err
 		}
 
-		if len(s.OnCall) > 0 && len(resShift.OnCall) == 0 {
-			// Only send a mail out if this was changed in the calendar.
-			// This gives that if an owner removes all OnCallers from a shift
-			// no mail will be sent. Also only one mail will be sent on detecting
-			// the first change to the calendar.
-			if err := h.sendNobodyOncall(ctx, cfg, &s); err != nil {
-				logging.Warningf(ctx.Context, "sending NobodyOncall email for rota: %q failed: %v", cfg.Config.Name, err)
+		if len(resShift.OnCall) < len(s.OnCall) {
+			memberSet := make(map[string]struct{})
+			for _, m := range resShift.OnCall {
+				memberSet[m.Email] = struct{}{}
+			}
+			var memberChanged []string
+			for _, m := range s.OnCall {
+				if _, ok := memberSet[m.Email]; !ok {
+					memberChanged = append(memberChanged, m.Email)
+				}
+			}
+			if err := h.sendEventDeclined(ctx, cfg, &s, memberChanged); err != nil {
+				logging.Warningf(ctx.Context, "sending EventDeclined email for rota: %q failed: %v", cfg.Config.Name, err)
+			}
+			if len(resShift.OnCall) < cfg.Config.Shifts.ShiftMembers {
+				if err := h.sendMissingOncall(ctx, cfg, &s); err != nil {
+					logging.Warningf(ctx.Context, "sending missingOncall email for rota: %q failed: %v", cfg.Config.Name, err)
+				}
 			}
 		}
 
