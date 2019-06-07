@@ -32,14 +32,15 @@ from tracker import tracker_constants
 
 class IssueListUnitTest(unittest.TestCase):
   def setUp(self):
-    self.services = service_manager.Services(project=fake.ProjectService(),
-                                             config=fake.ConfigService(),
-                                             usergroup=fake.UserGroupService(),
-                                             issue=fake.IssueService(),
-                                             issue_star=fake.IssueStarService(),
-                                             cache_manager=fake.CacheManager(),
-                                             features=fake.FeaturesService(),
-                                             user=fake.UserService())
+    self.services = service_manager.Services(
+        project=fake.ProjectService(),
+        config=fake.ConfigService(),
+        usergroup=fake.UserGroupService(),
+        issue=fake.IssueService(),
+        issue_star=fake.IssueStarService(),
+        cache_manager=fake.CacheManager(),
+        features=fake.FeaturesService(),
+        user=fake.UserService())
     self.servlet = issuelist.IssueList(
         'req', 'res', services=self.services)
     self.project = self.services.project.TestAddProject('proj')
@@ -80,8 +81,7 @@ class IssueListUnitTest(unittest.TestCase):
     pass
 
   def testGatherHelpData_GridSwitchesToIDs(self):
-    services = service_manager.Services()
-    servlet = issuelist.IssueList('req', 'res', services=services)
+    servlet = issuelist.IssueList('req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest()
     page_data = {'results': [1, 2, 3]}
 
@@ -110,8 +110,7 @@ class IssueListUnitTest(unittest.TestCase):
     self.assertEqual('showing_ids_instead_of_tiles', help_data['cue'])
 
   def testGatherHelpData_KeystrokeHelp(self):
-    services = service_manager.Services()
-    servlet = issuelist.IssueList('req', 'res', services=services)
+    servlet = issuelist.IssueList('req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest()
 
     page_data = {'table_data': []}
@@ -127,8 +126,7 @@ class IssueListUnitTest(unittest.TestCase):
     self.assertEqual(None, help_data['cue'])
 
   def testGatherHelpData_ItalicsMeanDerived(self):
-    services = service_manager.Services()
-    servlet = issuelist.IssueList('req', 'res', services=services)
+    servlet = issuelist.IssueList('req', 'res', services=self.services)
     mr = testing_helpers.MakeMonorailRequest()
 
     page_data = {'table_data': []}

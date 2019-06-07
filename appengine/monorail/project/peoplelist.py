@@ -18,6 +18,7 @@ import time
 
 from third_party import ezt
 
+from businesslogic import work_env
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -122,10 +123,14 @@ class PeopleList(servlet.Servlet):
       A dict of values to drive on-page user help, to be added to page_data.
     """
     help_data = super(PeopleList, self).GatherHelpData(mr, page_data)
+    with work_env.WorkEnv(mr, self.services) as we:
+      userprefs = we.GetUserPrefs(mr.auth.user_id)
+    dismissed = [
+        pv.name for pv in userprefs.prefs if pv.value == 'true']
     if (mr.auth.user_id and
         not framework_bizobj.UserIsInProject(
             mr.project, mr.auth.effective_ids) and
-        'how_to_join_project' not in mr.auth.user_pb.dismissed_cues):
+        'how_to_join_project' not in dismissed):
       help_data['cue'] = 'how_to_join_project'
 
     return help_data

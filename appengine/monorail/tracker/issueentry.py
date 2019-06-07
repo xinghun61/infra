@@ -236,7 +236,10 @@ class IssueEntry(servlet.Servlet):
     help_data = super(IssueEntry, self).GatherHelpData(mr, page_data)
     dismissed = []
     if mr.auth.user_pb:
-      dismissed = mr.auth.user_pb.dismissed_cues
+      with work_env.WorkEnv(mr, self.services) as we:
+        userprefs = we.GetUserPrefs(mr.auth.user_id)
+      dismissed = [
+          pv.name for pv in userprefs.prefs if pv.value == 'true']
     is_privileged_domain_user = framework_bizobj.IsPriviledgedDomainUser(
         mr.auth.user_pb.email)
     if (mr.auth.user_id and

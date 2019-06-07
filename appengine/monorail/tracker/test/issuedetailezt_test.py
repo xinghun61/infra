@@ -49,6 +49,7 @@ class IssueDetailTest(unittest.TestCase):
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
         project=fake.ProjectService(),
         issue_star=fake.IssueStarService(),
         spam=fake.SpamService())
@@ -201,12 +202,18 @@ class IssueDetailTest(unittest.TestCase):
     self.assertEqual('privacy_click_through', help_data['cue'])
 
     # And, the code of conduct cue card.
-    mr.auth.user_pb.dismissed_cues = ['privacy_click_through']
+    self.services.user.SetUserPrefs(
+        'cnxn', 111,
+        [user_pb2.UserPrefValue(name='privacy_click_through', value='true')])
     help_data = servlet.GatherHelpData(mr, {})
     self.assertEqual('code_of_conduct', help_data['cue'])
 
     mr.auth.user_pb.dismissed_cues = [
         'privacy_click_through', 'code_of_conduct']
+    self.services.user.SetUserPrefs(
+        'cnxn', 111,
+        [user_pb2.UserPrefValue(name='privacy_click_through', value='true'),
+         user_pb2.UserPrefValue(name='code_of_conduct', value='true')])
     # User did not jump to an issue, no query at all.
     help_data = servlet.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])

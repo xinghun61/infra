@@ -10,6 +10,7 @@ from __future__ import absolute_import
 
 import logging
 
+from businesslogic import work_env
 from framework import framework_bizobj
 from framework import permissions
 from framework import servlet
@@ -57,7 +58,10 @@ class ProjectSummary(servlet.Servlet):
       A dict of values to drive on-page user help, to be added to page_data.
     """
     help_data = super(ProjectSummary, self).GatherHelpData(mr, page_data)
-    dismissed = mr.auth.user_pb.dismissed_cues
+    with work_env.WorkEnv(mr, self.services) as we:
+      userprefs = we.GetUserPrefs(mr.auth.user_id)
+    dismissed = [
+        pv.name for pv in userprefs.prefs if pv.value == 'true']
     project = mr.project
 
     # Cue cards for project owners.

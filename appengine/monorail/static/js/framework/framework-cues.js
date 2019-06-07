@@ -28,7 +28,8 @@ function CS_dismissCue(cueId) {
 
   if (CS_env.token) {
     window.prpcClient.call(
-      'monorail.Features', 'DismissCue', {'cue_id': cueId});
+      'monorail.Users', 'SetUserPrefs',
+      {prefs: [{name: cueId, value: 'true'}]});
   }
   return false;
 }

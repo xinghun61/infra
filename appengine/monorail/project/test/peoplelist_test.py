@@ -13,6 +13,7 @@ import unittest
 from framework import authdata
 from framework import permissions
 from project import peoplelist
+from proto import user_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -116,3 +117,42 @@ class PeopleListTest(unittest.TestCase):
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.servlet.ProcessFormData(mr, {})
+
+  def testGatherHelpData_Anon(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/people/list',
+        project=self.project)
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None, 'cue': None},
+        help_data)
+
+  def testGatherHelpData_Nonmember(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/people/list',
+        project=self.project)
+    mr.auth.user_id = 999
+    mr.auth.effective_ids = {999}
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None, 'cue': 'how_to_join_project'},
+        help_data)
+
+    self.servlet.services.user.SetUserPrefs(
+        'cnxn', 999,
+        [user_pb2.UserPrefValue(name='how_to_join_project', value='true')])
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None, 'cue': None},
+        help_data)
+
+  def testGatherHelpData_Member(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/people/list',
+        project=self.project)
+    mr.auth.user_id = 111
+    mr.auth.effective_ids = {111}
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None, 'cue': None},
+        help_data)

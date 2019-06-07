@@ -205,6 +205,12 @@ USER_PREF_DEFS = {
   'search_for_numbers': re.compile('(true|false)'),
   'restrict_new_issues': re.compile('(true|false)'),
   'public_issue_notice': re.compile('(true|false)'),
+  'you_are_on_vacation': re.compile('(true|false)'),
+  'how_to_join_project': re.compile('(true|false)'),
+  'document_team_duties': re.compile('(true|false)'),
+  'showing_ids_instead_of_tiles': re.compile('(true|false)'),
+  'issue_timestamps': re.compile('(true|false)'),
+  'stale_fulltext': re.compile('(true|false)'),
   }
 MAX_PREF_VALUE_LENGTH = 80
 

@@ -433,6 +433,65 @@ class IssueEntryTest(unittest.TestCase):
     page_data = self.servlet.GatherPageData(mr)
     self.assertIn('Restrict-View-Google', page_data['labels'])
 
+  def testGatherHelpData_Anon(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', project=self.project)
+    mr.auth.user_pb = user_pb2.User()
+    mr.auth.user_id = 0
+
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None,
+         'cue': None,
+         'is_privileged_domain_user': None},
+        help_data)
+
+  def testGatherHelpData_NewUser(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', project=self.project)
+    mr.auth.user_pb = user_pb2.User(user_id=111)
+    mr.auth.user_id = 111
+
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None,
+         'cue': 'privacy_click_through',
+         'is_privileged_domain_user': None},
+        help_data)
+
+  def testGatherHelpData_AlreadyClickedThroughPrivacy(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', project=self.project)
+    mr.auth.user_pb = user_pb2.User(user_id=111)
+    mr.auth.user_id = 111
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111,
+        [user_pb2.UserPrefValue(name='privacy_click_through', value='true')])
+
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None,
+         'cue': 'code_of_conduct',
+         'is_privileged_domain_user': None},
+        help_data)
+
+  def testGatherHelpData_DismissedEverything(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', project=self.project)
+    mr.auth.user_pb = user_pb2.User(user_id=111)
+    mr.auth.user_id = 111
+    self.services.user.SetUserPrefs(
+        self.cnxn, 111,
+        [user_pb2.UserPrefValue(name='privacy_click_through', value='true'),
+         user_pb2.UserPrefValue(name='code_of_conduct', value='true')])
+
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(
+        {'account_cue': None,
+         'cue': None,
+         'is_privileged_domain_user': None},
+        help_data)
+
   def testProcessFormData_RedirectToEnteredIssue(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', project=self.project)

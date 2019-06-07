@@ -22,6 +22,7 @@ from framework import servlet
 from framework import xsrf
 from proto import project_pb2
 from proto import tracker_pb2
+from proto import user_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -49,7 +50,8 @@ class ServletTest(unittest.TestCase):
     services = service_manager.Services(
         project=fake.ProjectService(),
         project_star=fake.ProjectStarService(),
-        user=fake.UserService())
+        user=fake.UserService(),
+        usergroup=fake.UserGroupService())
     services.user.TestAddUser('user@example.com', 111)
     self.page_class = TestableServlet(
         webapp2.Request.blank('/'), webapp2.Response(), services=services)
@@ -247,11 +249,14 @@ class ServletTest(unittest.TestCase):
     project = fake.Project(project_name='proj')
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj', project=project)
+    mr.auth.user_id = 111
     mr.auth.user_pb.vacation_message = 'Gone skiing'
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual('you_are_on_vacation', help_data['cue'])
 
-    mr.auth.user_pb.dismissed_cues = ['you_are_on_vacation']
+    self.page_class.services.user.SetUserPrefs(
+        'cnxn', 111,
+        [user_pb2.UserPrefValue(name='you_are_on_vacation', value='true')])
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
     self.assertEqual(None, help_data['account_cue'])
@@ -260,11 +265,14 @@ class ServletTest(unittest.TestCase):
     project = fake.Project(project_name='proj')
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj', project=project)
+    mr.auth.user_id = 111
     mr.auth.user_pb.email_bounce_timestamp = 1497647529
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual('your_email_bounced', help_data['cue'])
 
-    mr.auth.user_pb.dismissed_cues = ['your_email_bounced']
+    self.page_class.services.user.SetUserPrefs(
+        'cnxn', 111,
+        [user_pb2.UserPrefValue(name='your_email_bounced', value='true')])
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
     self.assertEqual(None, help_data['account_cue'])

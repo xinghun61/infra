@@ -249,7 +249,10 @@ class IssueList(servlet.Servlet):
     help_data = super(IssueList, self).GatherHelpData(mr, page_data)
     dismissed = []
     if mr.auth.user_pb:
-      dismissed = mr.auth.user_pb.dismissed_cues
+      with work_env.WorkEnv(mr, self.services) as we:
+        userprefs = we.GetUserPrefs(mr.auth.user_id)
+      dismissed = [
+          pv.name for pv in userprefs.prefs if pv.value == 'true']
 
     if mr.project_id:
       config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)

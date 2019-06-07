@@ -13,6 +13,7 @@ import unittest
 from framework import permissions
 from project import projectsummary
 from proto import project_pb2
+from proto import user_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -24,6 +25,7 @@ class ProjectSummaryTest(unittest.TestCase):
     services = service_manager.Services(
         project=fake.ProjectService(),
         user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
         project_star=fake.ProjectStarService())
     self.project = services.project.TestAddProject(
         'proj', project_id=123, summary='sum',
@@ -69,5 +71,15 @@ class ProjectSummaryTest(unittest.TestCase):
         project_pb2.ProjectCommitments.MemberCommitment())
     self.servlet.services.project.TestStoreProjectCommitments(
         project_commitments)
+    help_data = self.servlet.GatherHelpData(mr, {})
+    self.assertEqual(None, help_data['cue'])
+
+  def testGatherHelpData_Dismissed(self):
+    mr = testing_helpers.MakeMonorailRequest(project=self.project)
+    mr.auth.user_id = 111
+    self.project.committer_ids.extend([111, 222])
+    self.servlet.services.user.SetUserPrefs(
+        'cnxn', 111,
+        [user_pb2.UserPrefValue(name='document_team_duties', value='true')])
     help_data = self.servlet.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
