@@ -137,7 +137,7 @@ export LDLAST
 ./configure --prefix "$PREFIX" --host="$CROSS_TRIPLE" \
   --disable-shared --without-system-ffi --enable-ipv6 \
   --enable-py-version-override="$PY_VERSION" \
-  --with-openssl="$DEPS_PREFIX" \
+  --with-openssl="$DEPS_PREFIX" --with-libs="-lrt" \
   $EXTRA_CONFIGURE_ARGS
 
 export LDFLAGS=
