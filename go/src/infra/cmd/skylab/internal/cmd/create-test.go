@@ -18,8 +18,8 @@ import (
 	"go.chromium.org/luci/common/flag"
 
 	"infra/cmd/skylab/internal/site"
-	"infra/cmd/skylab_swarming_worker/worker"
 	"infra/libs/skylab/swarming"
+	"infra/libs/skylab/worker"
 )
 
 // CreateTest subcommand: create a test task.

@@ -16,8 +16,8 @@ import (
 	"go.chromium.org/luci/common/errors"
 
 	"infra/cmd/skylab/internal/site"
-	"infra/cmd/skylab_swarming_worker/worker"
 	"infra/libs/skylab/swarming"
+	"infra/libs/skylab/worker"
 )
 
 // Repair subcommand: Repair hosts.

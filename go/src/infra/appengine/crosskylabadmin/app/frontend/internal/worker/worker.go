@@ -23,7 +23,7 @@ import (
 
 	fleet "infra/appengine/crosskylabadmin/api/fleet/v1"
 	"infra/appengine/crosskylabadmin/app/config"
-	"infra/cmd/skylab_swarming_worker/worker"
+	"infra/libs/skylab/worker"
 )
 
 // Task contains the information required to create a Skylab swarming task.
