@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 import {assert} from 'chai';
-import sinon from 'sinon';
 import {MrEditMetadata} from './mr-edit-metadata.js';
 import {ISSUE_EDIT_PERMISSION, ISSUE_EDIT_SUMMARY_PERMISSION,
   ISSUE_EDIT_STATUS_PERMISSION, ISSUE_EDIT_OWNER_PERMISSION,
@@ -13,12 +12,17 @@ import {store} from 'elements/reducers/base.js';
 
 
 let element;
+let savePromise;
 
 
 describe('mr-edit-metadata', () => {
   beforeEach(() => {
     element = document.createElement('mr-edit-metadata');
     document.body.appendChild(element);
+
+    savePromise = new Promise((resolve) => {
+      element.addEventListener('save', resolve);
+    });
 
     sinon.stub(store, 'dispatch');
 
@@ -32,6 +36,18 @@ describe('mr-edit-metadata', () => {
 
   it('initializes', () => {
     assert.instanceOf(element, MrEditMetadata);
+  });
+
+  it('saves on form submit', async () => {
+    await element.updateComplete;
+    element.shadowRoot.querySelector('#editForm').dispatchEvent(
+      new CustomEvent('submit', {bubbles: true, cancellable: true}));
+
+    // savePromise is resolved when element has dispatched the 'save' event,
+    // which is dispatched only when element.save() is called.
+    // This is a roundabout way of testing that submitting a form calls
+    // element.save(). Otherwise this test will hang.
+    await savePromise;
   });
 
   it('disconnecting element reports form is not dirty', () => {
