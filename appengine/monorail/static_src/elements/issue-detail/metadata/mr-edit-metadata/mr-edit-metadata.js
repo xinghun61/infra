@@ -539,6 +539,7 @@ export class MrEditMetadata extends connectStore(LitElement) {
     this.sendEmail = true;
     this.mergedInto = {};
     this.issueRef = {};
+    this.disabled = true;
     this.fieldGroups = HARDCODED_FIELD_GROUPS;
   }
 
@@ -693,8 +694,9 @@ export class MrEditMetadata extends connectStore(LitElement) {
   get delta() {
     try {
       this.error = '';
-      this.disabled = false;
-      return this._getDelta();
+      const delta = this._getDelta();
+      this.disabled = isEmptyObject(delta);
+      return delta;
     } catch (e) {
       if (!(e instanceof UserInputError)) throw e;
       this.error = e.message;
