@@ -9,19 +9,20 @@ import (
 
 	"infra/monitoring/messages"
 
-	"github.com/golang/protobuf/ptypes/struct"
+	"infra/appengine/test-results/model"
+
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/luci/appengine/gaetesting"
 	bbpb "go.chromium.org/luci/buildbucket/proto"
 	"go.chromium.org/luci/common/logging/gologger"
-	"infra/appengine/test-results/model"
 )
 
 var (
 	builderID = &bbpb.BuilderID{Project: "chromium", Bucket: "ci", Builder: "linux-rel"}
 )
 
-func inputProperties(master, builder string) *bbpb.Build_Input {
+func inputProperties(master, builder, host, repo, hash string) *bbpb.Build_Input {
 	return &bbpb.Build_Input{
 		Properties: &structpb.Struct{
 			Fields: map[string]*structpb.Value{
@@ -29,6 +30,7 @@ func inputProperties(master, builder string) *bbpb.Build_Input {
 				"buildername": {Kind: &structpb.Value_StringValue{StringValue: master}},
 			},
 		},
+		GitilesCommit: &bbpb.GitilesCommit{Host: host, Project: repo, Id: hash},
 	}
 }
 
@@ -84,7 +86,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input: inputProperties("some-master.foo", "linux-rel", "", "", ""),
 				},
 			},
 			Err: nil,
@@ -124,7 +126,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input: inputProperties("some-master.foo", "linux-rel", "", "", ""),
 				},
 			},
 			Err: nil,
@@ -190,7 +192,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
@@ -205,7 +207,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
@@ -220,7 +222,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 			},
@@ -267,7 +269,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
@@ -282,7 +284,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
@@ -297,7 +299,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 			},
@@ -327,6 +329,8 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 9)
 		So(failures[0].Builders[0].FirstFailingRev.Position, ShouldEqual, 2)
 		So(failures[0].Builders[0].LatestPassingRev.Position, ShouldEqual, 1)
+		So(failures[0].RegressionRanges[0].Repo, ShouldEqual, "chromium/src")
+		So(failures[0].RegressionRanges[0].Host, ShouldEqual, "https://chromium.googlesource.com")
 	})
 
 	Convey("multiple failures, single failing step with others passing, failing step skipped in one build", t, func() {
@@ -348,7 +352,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
@@ -363,7 +367,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
@@ -377,7 +381,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 				// TODO: add a test case where there has never been a passing
@@ -393,7 +397,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#0}", "deadbeef"),
 				},
 			},
@@ -455,7 +459,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#3}", "deadbeef"),
 				},
 				{
@@ -477,7 +481,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
@@ -499,7 +503,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 				{
@@ -521,7 +525,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input:  inputProperties("some-master.foo", "linux-rel"),
+					Input:  inputProperties("some-master.foo", "linux-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#0}", "deadbeef"),
 				},
 			},
@@ -603,7 +607,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
-					Input:  inputProperties("some-master.foo", "a-rel"),
+					Input:  inputProperties("some-master.foo", "a-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#32}", "deadbeef"),
 				},
 				{
@@ -625,7 +629,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
-					Input:  inputProperties("some-master.foo", "b-rel"),
+					Input:  inputProperties("some-master.foo", "b-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#31}", "deadbeef"),
 				},
 				{
@@ -647,7 +651,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
-					Input:  inputProperties("some-master.foo", "a-rel"),
+					Input:  inputProperties("some-master.foo", "a-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#23}", "deadbeef"),
 				},
 				{
@@ -669,7 +673,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
-					Input:  inputProperties("some-master.foo", "b-rel"),
+					Input:  inputProperties("some-master.foo", "b-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#22}", "deadbeef"),
 				},
 				{
@@ -691,7 +695,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
-					Input:  inputProperties("some-master.foo", "a-rel"),
+					Input:  inputProperties("some-master.foo", "a-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#12}", "deadbeef"),
 				},
 				{
@@ -713,7 +717,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
-					Input:  inputProperties("some-master.foo", "b-rel"),
+					Input:  inputProperties("some-master.foo", "b-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#11}", "deadbeef"),
 				},
 				{
@@ -735,7 +739,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "a-rel",
 					},
-					Input:  inputProperties("some-master.foo", "a-rel"),
+					Input:  inputProperties("some-master.foo", "a-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#2}", "deadbeef"),
 				},
 				{
@@ -757,7 +761,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "b-rel",
 					},
-					Input:  inputProperties("some-master.foo", "b-rel"),
+					Input:  inputProperties("some-master.foo", "b-rel", "", "", ""),
 					Output: outputProperties("refs/heads/master@{#1}", "deadbeef"),
 				},
 			},
@@ -990,7 +994,7 @@ func TestBuildBucketAlerts(t *testing.T) {
 					Builder: &bbpb.BuilderID{
 						Builder: "linux-rel",
 					},
-					Input: inputProperties("some-master.foo", "linux-rel"),
+					Input: inputProperties("some-master.foo", "linux-rel", "", "", ""),
 				},
 			},
 			Err: nil,
@@ -1014,6 +1018,82 @@ func TestBuildBucketAlerts(t *testing.T) {
 		So(failures[0].Builders[0].Name, ShouldEqual, "linux-rel")
 		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 42)
 		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 42)
+
+	})
+
+	Convey("missing output info filled with input info", t, func() {
+		a := New(0, 100)
+		a.BuildBucket = &client.StubBuildBucket{
+			Latest: []*bbpb.Build{
+				{
+					// Build numbers on waterfall builders reflect source order.
+					Number: 9,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_FAILURE,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input: inputProperties(
+						"some-master.foo", "linux-rel", "http://chrome-internal.googlesource.com", "chromeos/test", "abc123"),
+					Output: outputProperties("", ""),
+				},
+				{
+					// Build numbers on waterfall builders reflect source order.
+					Number: 8,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_FAILURE,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input:  inputProperties("some-master.foo", "linux-rel", "http://chrome-internal.googlesource.com", "chromeos/test", "abc122"),
+					Output: outputProperties("", ""),
+				},
+				{
+					// Build numbers on waterfall builders reflect source order.
+					Number: 7,
+					Steps: []*bbpb.Step{
+						{
+							Name:   "step-name",
+							Status: bbpb.Status_SUCCESS,
+						},
+					},
+					Builder: &bbpb.BuilderID{
+						Builder: "linux-rel",
+					},
+					Input:  inputProperties("some-master.foo", "linux-rel", "http://chrome-internal.googlesource.com", "chromeos/test", "abc121"),
+					Output: outputProperties("", ""),
+				},
+			},
+		}
+		ctx := gaetesting.TestingContext()
+		ctx = gologger.StdConfig.Use(ctx)
+		tr := &client.StubTestResults{}
+		lr := &client.StubLogReader{}
+		fi := &client.StubFindIt{}
+		a.BuildBucketStepAnalyzers = step.DefaultBuildBucketStepAnalyzers(tr, lr, fi)
+		a.FindIt = fi
+		failures, err := a.BuildBucketAlerts(ctx, []*bbpb.BuilderID{builderID})
+		So(err, ShouldBeNil)
+		So(failures, ShouldNotBeEmpty)
+		So(len(failures), ShouldEqual, 1)
+		So(failures[0].Builders, ShouldNotBeEmpty)
+		So(failures[0].Builders[0].FirstFailure, ShouldEqual, 8)
+		So(failures[0].Builders[0].LatestFailure, ShouldEqual, 9)
+		So(failures[0].Builders[0].FirstFailingRev.Position, ShouldEqual, 0)
+		So(failures[0].Builders[0].FirstFailingRev.GitHash, ShouldEqual, "abc122")
+		So(failures[0].Builders[0].LatestPassingRev.Position, ShouldEqual, 0)
+		So(failures[0].Builders[0].LatestPassingRev.GitHash, ShouldEqual, "abc121")
+		So(failures[0].RegressionRanges[0].Revisions, ShouldResemble, []string{"abc121", "abc122"})
+		So(failures[0].RegressionRanges[0].Repo, ShouldEqual, "chromeos/test")
+		So(failures[0].RegressionRanges[0].Host, ShouldEqual, "http://chrome-internal.googlesource.com")
 	})
 }
 

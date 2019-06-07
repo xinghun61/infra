@@ -196,15 +196,32 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 					alertedBuilder.LatestPassing = int64(lastPassing.Number)
 					firstFailingRev, err := commitRevFromOutputProperties(firstFailure)
 					if err != nil {
-						logging.Errorf(ctx, "getting commit rev: %v %#v", err, firstFailure)
-					} else {
+						logging.Errorf(ctx, "failed getting commit from output, trying input: %v %#v", err, firstFailure)
+						// Note: commitRevFromOutProperties will fail for chromeos builds
+						// because chromeos builds don't have 'got_revision or 'got_revision_cp'.
+						// Equivalent information for chromeos can be fetched from the build input.
+						// (There is currently no way to get commit positions for chromeos. The frontend will
+						// handle substituting positions with revisions.)
+						// TODO: All builds should have rev or positions extracted using the same
+						// method.
+						firstFailingRev, err = commitRevFromInput(firstFailure)
+						if err != nil {
+							logging.Errorf(ctx, "getting commit rev: %v %#v", err, firstFailure)
+						}
+					}
+					if err == nil {
 						alertedBuilder.FirstFailingRev = firstFailingRev
 					}
 
 					lastPassingRev, err := commitRevFromOutputProperties(lastPassing)
 					if err != nil {
-						logging.Errorf(ctx, "getting commit rev: %v %#v", err, lastPassing)
-					} else {
+						logging.Errorf(ctx, "failed getting commit from output, trying input: %v %#v", err, lastPassing)
+						lastPassingRev, err = commitRevFromInput(lastPassing)
+						if err != nil {
+							logging.Errorf(ctx, "getting commit rev: %v %#v", err, lastPassing)
+						}
+					}
+					if err == nil {
 						alertedBuilder.LatestPassingRev = lastPassingRev
 					}
 				} else {
@@ -244,12 +261,13 @@ func (a *Analyzer) BuildBucketAlerts(ctx context.Context, builderIDs []*bbpb.Bui
 		regressionRanges := []*messages.RegressionRange{}
 		if latestRev != nil && earliestRev != nil {
 			regressionRanges = append(regressionRanges, &messages.RegressionRange{
-				Repo: "chromium",
+				Repo: earliestRev.Repo,
 				Positions: []string{
 					fmt.Sprintf("%s@{#%d}", earliestRev.Branch, earliestRev.Position),
 					fmt.Sprintf("%s@{#%d}", latestRev.Branch, latestRev.Position),
 				},
-				Revisions: []string{earliestRev.GitHash},
+				Revisions: []string{earliestRev.GitHash, latestRev.GitHash},
+				Host:      earliestRev.Host,
 			})
 		}
 
@@ -380,6 +398,14 @@ func commitRevFromOutputProperties(build *bbpb.Build) (*messages.RevisionSummary
 
 	ret := &messages.RevisionSummary{
 		GitHash: revField.GetStringValue(),
+		// TODO: For all cases, get Host and Repo from the build input, like
+		// in commitRevFromInput. Until it is verified that build inputs
+		// for chromeos and chromium can be treated the same, the following will work
+		// because got_revision is only available for chromium builds. Therefore,
+		// with a successful fetch of revField, we can assume for now that
+		// Host and Repo are the following.
+		Host: "https://chromium.googlesource.com",
+		Repo: "chromium/src",
 	}
 
 	cpField, ok := build.Output.Properties.Fields["got_revision_cp"]
@@ -392,6 +418,19 @@ func commitRevFromOutputProperties(build *bbpb.Build) (*messages.RevisionSummary
 		ret.Position = pos
 	}
 
+	return ret, nil
+}
+
+func commitRevFromInput(build *bbpb.Build) (*messages.RevisionSummary, error) {
+	if build.Input == nil || build.Input.GitilesCommit == nil {
+		return nil, fmt.Errorf("build input and/or gitilescommit not set")
+	}
+
+	ret := &messages.RevisionSummary{
+		GitHash: build.Input.GitilesCommit.Id,
+		Repo:    build.Input.GitilesCommit.Project,
+		Host:    build.Input.GitilesCommit.Host,
+	}
 	return ret, nil
 }
 

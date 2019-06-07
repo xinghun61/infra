@@ -233,6 +233,7 @@ type RegressionRange struct {
 	Revisions            []string                   `json:"revisions"`
 	Positions            []string                   `json:"positions"`
 	RevisionsWithResults []RevisionWithFinditResult `json:"revisions_with_results"`
+	Host                 string                     `json:"host"`
 }
 
 // RevisionWithFinditResult saves information from Findit about a specific revision.
@@ -260,4 +261,7 @@ type RevisionSummary struct {
 	Description string    `json:"description"`
 	Author      string    `json:"author"`
 	When        EpochTime `json:"when"`
+	// Host and Repo were added to differentiate chromium from chromeos revisions.
+	Host string `json:"host"`
+	Repo string `json:"repo"`
 }
